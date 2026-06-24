@@ -2,15 +2,12 @@ package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.ArticleTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertArticleRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.UpsertPageRequest;
 import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.config.MediaUrlProperties;
 import com.bigbike.bigbike_backend.persistence.entity.content.ArticleEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.ContentCategoryEntity;
-import com.bigbike.bigbike_backend.persistence.entity.content.PageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.ContentCategoryJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.content.PageJpaRepository;
 import java.util.List;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
@@ -19,18 +16,15 @@ import org.springframework.stereotype.Component;
 public class ContentRequestValidator {
 
     private final ArticleJpaRepository articleJpaRepository;
-    private final PageJpaRepository pageJpaRepository;
     private final ContentCategoryJpaRepository contentCategoryJpaRepository;
     private final MediaUrlProperties mediaUrlProperties;
 
     public ContentRequestValidator(
             ObjectProvider<ArticleJpaRepository> articleJpaRepositoryProvider,
-            ObjectProvider<PageJpaRepository> pageJpaRepositoryProvider,
             ObjectProvider<ContentCategoryJpaRepository> contentCategoryJpaRepositoryProvider,
             MediaUrlProperties mediaUrlProperties
     ) {
         this.articleJpaRepository = articleJpaRepositoryProvider.getIfAvailable();
-        this.pageJpaRepository = pageJpaRepositoryProvider.getIfAvailable();
         this.contentCategoryJpaRepository = contentCategoryJpaRepositoryProvider.getIfAvailable();
         this.mediaUrlProperties = mediaUrlProperties;
     }
@@ -135,59 +129,6 @@ public class ContentRequestValidator {
         }
     }
 
-    public String validatePageRequest(
-            UpsertPageRequest request,
-            PageEntity current,
-            boolean create,
-            List<ApiErrorDetail> errors
-    ) {
-        String slug = AdminMutationValidators.trimToNull(request.getSlug());
-        if (create) {
-            AdminMutationValidators.validateRequiredSlug(slug, "slug", errors);
-            AdminMutationValidators.validateRequiredText(request.getTitle(), "title", "Title", errors);
-            // Content can be supplied either as legacy `body` HTML or as `bodyBlocks` (V140);
-            // the server renders blocks → body, so require body only when no blocks are sent.
-            if (!hasBodyBlocks(request.isBodyBlocksPresent(), request.getBodyBlocks())) {
-                AdminMutationValidators.validateRequiredText(request.getBody(), "body", "Body", errors);
-            }
-            if (request.getPublishStatus() == null) {
-                errors.add(new ApiErrorDetail("publishStatus", "REQUIRED", "publishStatus is required."));
-            }
-            if (request.getPageType() == null) {
-                errors.add(new ApiErrorDetail("pageType", "REQUIRED", "pageType is required."));
-            }
-        } else {
-            AdminMutationValidators.validateOptionalSlug(slug, "slug", errors);
-            if (request.getTitle() != null) {
-                AdminMutationValidators.validateRequiredText(request.getTitle(), "title", "Title", errors);
-            }
-            if (request.getBody() != null) {
-                AdminMutationValidators.validateRequiredText(request.getBody(), "body", "Body", errors);
-            }
-        }
-
-        AdminMutationValidators.validateSeoMeta(
-                request.getSeo(),
-                "seo",
-                mediaUrlProperties.getPublicBaseUrl(),
-                errors
-        );
-        AdminMutationValidators.validateImageAsset(
-                request.getHeroImage(),
-                "heroImage",
-                mediaUrlProperties.getPublicBaseUrl(),
-                errors
-        );
-        if (slug != null) {
-            PageEntity existingBySlug = pageJpaRepository.findBySlug(slug).orElse(null);
-            if (existingBySlug != null && (current == null || !existingBySlug.getId().equals(current.getId()))) {
-                errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use."));
-            }
-        }
-
-        return slug;
-    }
-
     public ContentCategoryEntity resolveCategory(String categoryIdRaw, List<ApiErrorDetail> errors) {
         String categoryId = AdminMutationValidators.trimToNull(categoryIdRaw);
         if (categoryId == null) {
@@ -198,21 +139,5 @@ public class ContentRequestValidator {
             errors.add(new ApiErrorDetail("categoryId", "NOT_FOUND", "Category does not exist."));
         }
         return category;
-    }
-
-    public PageEntity resolveParentPage(String parentIdRaw, String currentPageId, List<ApiErrorDetail> errors) {
-        String parentId = AdminMutationValidators.trimToNull(parentIdRaw);
-        if (parentId == null) {
-            return null;
-        }
-        if (currentPageId != null && currentPageId.equals(parentId)) {
-            errors.add(new ApiErrorDetail("parentId", "INVALID_VALUE", "Page cannot be its own parent."));
-            return null;
-        }
-        PageEntity parent = pageJpaRepository.findById(parentId).orElse(null);
-        if (parent == null) {
-            errors.add(new ApiErrorDetail("parentId", "NOT_FOUND", "Parent page does not exist."));
-        }
-        return parent;
     }
 }

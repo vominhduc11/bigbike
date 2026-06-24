@@ -8,15 +8,11 @@ import com.bigbike.bigbike_backend.domain.content.ArticleTranslations;
 
 import com.bigbike.bigbike_backend.domain.content.ContentCategorySummary;
 import com.bigbike.bigbike_backend.domain.content.ContentCategoryWithCount;
-import com.bigbike.bigbike_backend.domain.content.Page;
-import com.bigbike.bigbike_backend.domain.content.PageTranslations;
 
 import com.bigbike.bigbike_backend.persistence.entity.content.ArticleEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.ContentCategoryEntity;
-import com.bigbike.bigbike_backend.persistence.entity.content.PageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.ContentCategoryJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.content.PageJpaRepository;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +35,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class JpaContentReadRepository implements ContentReadRepository {
 
     private final ArticleJpaRepository articleJpaRepository;
-    private final PageJpaRepository pageJpaRepository;
     private final ContentCategoryJpaRepository contentCategoryJpaRepository;
 
     // --- Single-entity lookups ---
@@ -64,21 +59,6 @@ public class JpaContentReadRepository implements ContentReadRepository {
     @Override
     public Optional<Article> findArticleById(String id) {
         return articleJpaRepository.findById(id).map(this::toDomain);
-    }
-
-    @Override
-    public Optional<Page> findPageBySlug(String slug) {
-        return pageJpaRepository.findBySlug(slug).map(this::toDomain);
-    }
-
-    @Override
-    public Optional<Page> findPageBySlug(String slug, String locale) {
-        return pageJpaRepository.findBySlug(slug).map(e -> toDomain(e, locale));
-    }
-
-    @Override
-    public Optional<Page> findPageById(String id) {
-        return pageJpaRepository.findById(id).map(this::toDomain);
     }
 
     // --- Full-scan for GlobalSearchService ---
@@ -118,13 +98,13 @@ public class JpaContentReadRepository implements ContentReadRepository {
 
     @Override
     public org.springframework.data.domain.Page<Article> listPublishedArticles(
-            String categorySlug, String q, Boolean featured, Pageable pageable, String locale) {
+            String categorySlug, String q, Boolean featured, Boolean homeExperience, Pageable pageable, String locale) {
         String normalizedQ = normalizeQuery(q);
         String normalizedCategory = (categorySlug != null && !categorySlug.isBlank()) ? categorySlug : null;
 
         org.springframework.data.domain.Page<String> idPage =
                 articleJpaRepository.findPublishedArticleIds(
-                        PublishStatus.PUBLISHED, normalizedCategory, normalizedQ, featured, pageable);
+                        PublishStatus.PUBLISHED, normalizedCategory, normalizedQ, featured, homeExperience, pageable);
 
         return fetchAndOrderArticles(idPage, pageable, locale);
     }
@@ -142,32 +122,12 @@ public class JpaContentReadRepository implements ContentReadRepository {
         return fetchAndOrderArticles(idPage, pageable, locale);
     }
 
-    @Override
-    public org.springframework.data.domain.Page<Page> listPagesAdmin(
-            PublishStatus publishStatus, String q, Pageable pageable, String locale) {
-        String normalizedQ = normalizeQuery(q);
-
-        org.springframework.data.domain.Page<String> idPage =
-                pageJpaRepository.findAdminPageIds(publishStatus, normalizedQ, pageable);
-
-        return fetchAndOrderPages(idPage, pageable, locale);
-    }
-
     // --- Non-paginated filter for admin combined listing ---
 
     @Override
     public List<Article> findArticlesByFilter(PublishStatus publishStatus, String q, String locale) {
         // Admin VI/EN switch (strict English): ở EN chỉ giữ bài có title_en — ẩn bài chưa dịch.
         return articleJpaRepository.findByFilter(publishStatus, normalizeQuery(q))
-                .stream()
-                .filter(e -> !"en".equals(locale) || isPresent(e.getTitleEn()))
-                .map(e -> toDomain(e, locale, false)).toList();
-    }
-
-    @Override
-    public List<Page> findPagesByFilter(PublishStatus publishStatus, String q, String locale) {
-        // Admin VI/EN switch (strict English): ở EN chỉ giữ trang có title_en.
-        return pageJpaRepository.findByFilter(publishStatus, normalizeQuery(q))
                 .stream()
                 .filter(e -> !"en".equals(locale) || isPresent(e.getTitleEn()))
                 .map(e -> toDomain(e, locale, false)).toList();
@@ -194,18 +154,6 @@ public class JpaContentReadRepository implements ContentReadRepository {
         }
         List<ArticleEntity> entities = articleJpaRepository.findWithAssociationsByIdIn(ids);
         List<Article> ordered = orderByIds(entities, ids, ArticleEntity::getId)
-                .stream().map(e -> toDomain(e, locale, false)).toList();
-        return new PageImpl<>(ordered, pageable, idPage.getTotalElements());
-    }
-
-    private org.springframework.data.domain.Page<Page> fetchAndOrderPages(
-            org.springframework.data.domain.Page<String> idPage, Pageable pageable, String locale) {
-        List<String> ids = idPage.getContent();
-        if (ids.isEmpty()) {
-            return new PageImpl<>(List.of(), pageable, idPage.getTotalElements());
-        }
-        List<PageEntity> entities = pageJpaRepository.findWithParentByIdIn(ids);
-        List<Page> ordered = orderByIds(entities, ids, PageEntity::getId)
                 .stream().map(e -> toDomain(e, locale, false)).toList();
         return new PageImpl<>(ordered, pageable, idPage.getTotalElements());
     }
@@ -256,6 +204,7 @@ public class JpaContentReadRepository implements ContentReadRepository {
                 toCategorySummaries(entity),
                 entity.getPublishStatus(),
                 entity.isFeatured(),
+                entity.isHomeExperience(),
                 toSeoMeta(
                         pick(entity.getSeoTitle(), entity.getSeoTitleEn(), locale),
                         pick(entity.getSeoDescription(), entity.getSeoDescriptionEn(), locale),
@@ -269,48 +218,6 @@ public class JpaContentReadRepository implements ContentReadRepository {
                         entity.isSeoNoIndex()
                 ),
                 includeTranslations ? toArticleTranslations(entity) : null,
-                entity.getPublishedAt(),
-                entity.getCreatedAt(),
-                entity.getUpdatedAt(),
-                includeTranslations ? entity.getBodyBlocks() : null
-        );
-    }
-
-    private Page toDomain(PageEntity entity) {
-        return toDomain(entity, "vi", true);
-    }
-
-    private Page toDomain(PageEntity entity, String locale) {
-        return toDomain(entity, locale, false);
-    }
-
-    private Page toDomain(PageEntity entity, String locale, boolean includeTranslations) {
-        return new Page(
-                entity.getId(),
-                entity.getSlug(),
-                pick(entity.getTitle(), entity.getTitleEn(), locale),
-                pick(entity.getBody(), entity.getBodyEn(), locale),
-                entity.getPageType(),
-                entity.getParent() != null ? entity.getParent().getId() : null,
-                entity.getPublishStatus(),
-                toSeoMeta(
-                        pick(entity.getSeoTitle(), entity.getSeoTitleEn(), locale),
-                        pick(entity.getSeoDescription(), entity.getSeoDescriptionEn(), locale),
-                        entity.getSeoCanonicalUrl(),
-                        entity.getSeoOgImageId(),
-                        entity.getSeoOgImageUrl(),
-                        entity.getSeoOgImageAlt(),
-                        entity.getSeoOgImageWidth(),
-                        entity.getSeoOgImageHeight(),
-                        entity.getSeoOgImageMimeType(),
-                        false
-                ),
-                entity.getHeroImageUrl(),
-                entity.getHeroImageAlt(),
-                pick(entity.getHeroTitle(), entity.getHeroTitleEn(), locale),
-                pick(entity.getHeroDescription(), entity.getHeroDescriptionEn(), locale),
-                pick(entity.getHeroKicker(), entity.getHeroKickerEn(), locale),
-                includeTranslations ? toPageTranslations(entity) : null,
                 entity.getPublishedAt(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),
@@ -389,20 +296,6 @@ public class JpaContentReadRepository implements ContentReadRepository {
                         entity.getTitleEn(),
                         entity.getExcerptEn(),
                         entity.getBodyEn(),
-                        entity.getSeoTitleEn(),
-                        entity.getSeoDescriptionEn()
-                )
-        );
-    }
-
-    private static PageTranslations toPageTranslations(PageEntity entity) {
-        return new PageTranslations(
-                new PageTranslations.PageContent(
-                        entity.getTitleEn(),
-                        entity.getBodyEn(),
-                        entity.getHeroTitleEn(),
-                        entity.getHeroDescriptionEn(),
-                        entity.getHeroKickerEn(),
                         entity.getSeoTitleEn(),
                         entity.getSeoDescriptionEn()
                 )

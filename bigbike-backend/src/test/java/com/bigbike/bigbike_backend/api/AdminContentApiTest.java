@@ -71,42 +71,8 @@ class AdminContentApiTest {
     }
 
     @Test
-    void shouldListPagesAsAdmin() throws Exception {
-        mockMvc.perform(get("/api/v1/admin/content")
-                        .param("type", "PAGE")
-                        .param("q", "chinh-sach")
-                        .param("size", "20")
-                        .header("X-Admin-Permissions", "content.read"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.pagination.totalItems").value(1))
-                .andExpect(jsonPath("$.data[0].type").value("PAGE"));
-    }
-
-    @Test
-    void shouldFilterPagesByPublishStatus() throws Exception {
-        mockMvc.perform(get("/api/v1/admin/content")
-                        .param("type", "PAGE")
-                        .param("publishStatus", "PUBLISHED")
-                        .param("q", "chinh-sach")
-                        .param("size", "20")
-                        .header("X-Admin-Permissions", "content.read"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.pagination.totalItems").value(1));
-
-        mockMvc.perform(get("/api/v1/admin/content")
-                        .param("type", "PAGE")
-                        .param("publishStatus", "DRAFT")
-                        .param("q", "nhap")
-                        .param("size", "20")
-                        .header("X-Admin-Permissions", "content.read"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.pagination.totalItems").value(1));
-    }
-
-    @Test
-    void shouldListCombinedContentWithoutTypeFilter() throws Exception {
-        // Use q to isolate seed data for stable counts (3 blog articles + 1 policy page = 4)
+    void shouldListContentWithoutTypeFilter() throws Exception {
+        // Module Trang đã gỡ — content giờ chỉ còn Bài viết (3 blog articles seed).
         mockMvc.perform(get("/api/v1/admin/content")
                         .param("q", "blog")
                         .param("size", "20")
@@ -135,19 +101,6 @@ class AdminContentApiTest {
                 .andExpect(jsonPath("$.data.id").value("article_chon_mu_fullface"))
                 .andExpect(jsonPath("$.data.type").value("ARTICLE"))
                 .andExpect(jsonPath("$.data.slug").value("chon-mu-fullface-phu-hop"))
-                .andExpect(jsonPath("$.data.publishStatus").value("PUBLISHED"))
-                .andExpect(jsonPath("$.meta.requestId").exists());
-    }
-
-    @Test
-    void shouldReturnPageDetailWithNewFields() throws Exception {
-        mockMvc.perform(get("/api/v1/admin/content/page/page_chinh_sach_bao_hanh")
-                        .header("X-Admin-Permissions", "content.read"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.id").value("page_chinh_sach_bao_hanh"))
-                .andExpect(jsonPath("$.data.type").value("PAGE"))
-                .andExpect(jsonPath("$.data.slug").value("chinh-sach-bao-hanh"))
-                .andExpect(jsonPath("$.data.pageType").value("POLICY"))
                 .andExpect(jsonPath("$.data.publishStatus").value("PUBLISHED"))
                 .andExpect(jsonPath("$.meta.requestId").exists());
     }

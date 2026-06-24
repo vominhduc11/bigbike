@@ -663,34 +663,6 @@ export async function fetchContentCategories() {
   return (payload?.data ?? []).map((c) => ({ id: String(c.id ?? ''), slug: String(c.slug ?? ''), name: String(c.name ?? '') }))
 }
 
-export async function fetchContentPageRefs() {
-  const payload = await requestJson('/admin/content/reference/pages')
-  return (payload?.data ?? []).map((p) => ({ id: String(p.id ?? ''), slug: String(p.slug ?? ''), title: String(p.title ?? '') }))
-}
-
-function mapContentCategory(c) {
-  const s = c && typeof c === 'object' ? c : {}
-  return { id: String(s.id ?? ''), slug: String(s.slug ?? ''), name: String(s.name ?? '') }
-}
-
-// Content (blog) category CRUD — POST/PATCH /admin/content/content-categories (perm content.update).
-// Note: createCategory() above targets /admin/categories (product categories) — a different resource.
-export async function createContentCategory(input) {
-  const payload = await requestJson('/admin/content/content-categories', { method: 'POST', body: input })
-  return mapContentCategory(payload?.data)
-}
-
-export async function updateContentCategory(categoryId, input) {
-  const payload = await requestJson(`/admin/content/content-categories/${categoryId}`, { method: 'PATCH', body: input })
-  return mapContentCategory(payload?.data)
-}
-
-// Hard-delete a content (blog) category. Backend returns 204 and rejects with
-// CATEGORY_IN_USE when articles still reference it.
-export async function deleteContentCategory(categoryId) {
-  await requestJson(`/admin/content/content-categories/${categoryId}`, { method: 'DELETE' })
-}
-
 export async function fetchRedirects(query) {
   try {
     const payload = await requestJson('/admin/redirects', { query: buildRedirectQuery(query) })
@@ -1205,34 +1177,6 @@ export async function saveHomeHighlights(slots) {
     body: { slots },
   })
   return { items: Array.isArray(payload?.data) ? payload.data : [] }
-}
-
-// Guide page builder (/huong-dan layout). Returns { heroTitleVi, heroTitleEn, heroImageUrl, entries }.
-// Detail bodies live in Content -> Pages (referenced by each entry's pageSlug).
-export async function fetchGuidePage() {
-  const payload = await requestJson('/admin/guide-page')
-  const data = payload?.data ?? {}
-  return {
-    heroTitleVi: data.heroTitleVi ?? '',
-    heroTitleEn: data.heroTitleEn ?? '',
-    heroImageUrl: data.heroImageUrl ?? '',
-    entries: Array.isArray(data.entries) ? data.entries : [],
-  }
-}
-
-// Saves the hero plus the whole guide card list in one PUT.
-export async function saveGuidePage({ heroTitleVi, heroTitleEn, heroImageUrl, entries }) {
-  const payload = await requestJson('/admin/guide-page', {
-    method: 'PUT',
-    body: { heroTitleVi, heroTitleEn, heroImageUrl, entries },
-  })
-  const data = payload?.data ?? {}
-  return {
-    heroTitleVi: data.heroTitleVi ?? '',
-    heroTitleEn: data.heroTitleEn ?? '',
-    heroImageUrl: data.heroImageUrl ?? '',
-    entries: Array.isArray(data.entries) ? data.entries : [],
-  }
 }
 
 // Home Videos

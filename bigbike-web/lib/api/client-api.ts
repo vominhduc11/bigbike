@@ -11,7 +11,7 @@ import type {
   SaveAddressPayload,
   UpdateCustomerProfilePayload,
 } from "@/lib/contracts/commerce";
-import type { Article, Brand, Category, Page, Product } from "@/lib/contracts/public";
+import type { Article, Brand, Category, Product } from "@/lib/contracts/public";
 import { env } from "@/env";
 
 const API_BASE_URL = env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
@@ -116,10 +116,6 @@ export function fetchPublicBrand(slug: string, lang?: string): Promise<Brand> {
 
 export function fetchPublicCategory(slug: string, lang?: string): Promise<Category> {
   return clientRequest("GET", withLang(`/api/v1/categories/${encodeURIComponent(slug)}`, lang));
-}
-
-export function fetchPublicPage(slug: string, lang?: string): Promise<Page> {
-  return clientRequest("GET", withLang(`/api/v1/pages/${encodeURIComponent(slug)}`, lang));
 }
 
 export type PublicProductListQuery = {

@@ -2,9 +2,9 @@
 // Extracted from SettingsScreen.jsx to keep the screen file focused on behaviour
 // and to keep fast-refresh happy (non-component exports live in .js).
 import {
-  Store, Phone, CreditCard, Tag, Globe, Settings,
-  Home, Building2, Image as ImageIcon, Package, Users,
-  Landmark, ShieldCheck, ShoppingBag,
+  Store, Phone, Globe, Settings,
+  Home, Building2, Image as ImageIcon, Users,
+  Landmark,
 } from 'lucide-react'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
 
@@ -69,13 +69,6 @@ export function validateValue(key, value) {
   if (k.includes('hotline') || k.includes('phone')) {
     if (!/^[\d\s+-]+$/.test(value)) return 'settings.valPhone'
   }
-  // Tax rate must be a fraction in [0, 1] (vd 0.10 = 10%).
-  if (k.includes('rate')) {
-    const n = Number(value)
-    if (Number.isNaN(n) || n < 0 || n > 1) {
-      return 'settings.valRate'
-    }
-  }
   // Money / stock thresholds must be non-negative numbers.
   if (k.includes('threshold') || k.includes('amount') || k.includes('min_amount')) {
     const n = Number(value)
@@ -88,7 +81,7 @@ export function validateValue(key, value) {
 
 // Groups whose display text is shown on the storefront and can carry an English
 // translation. Config / contact / store / tax keys stay Vietnamese-only.
-const TRANSLATABLE_GROUPS = new Set(['GENERAL', 'PUBLIC_HOME', 'PUBLIC_PRODUCT', 'PUBLIC_HERO', 'SEO'])
+const TRANSLATABLE_GROUPS = new Set(['GENERAL', 'PUBLIC_HOME', 'PUBLIC_HERO', 'SEO'])
 
 // A setting is English-translatable when it lives in a translatable group AND renders
 // as text (rich-text, long-text, or a plain text input) — never images/URLs/numbers/phones.
@@ -110,19 +103,15 @@ export function isTranslatableSetting(setting) {
 export const BANNERS_TAB_ID = '__banners__'
 
 export const TAB_ORDER = [
-  'GENERAL', 'CONTACT', 'PAYMENT', 'PUBLIC_HOME', 'PUBLIC_PRODUCT', 'PUBLIC_HERO', 'PROMO', 'SEO', 'STORE', 'TAX', 'INVENTORY',
+  'GENERAL', 'CONTACT', 'PAYMENT', 'PUBLIC_HOME', 'PUBLIC_HERO', 'SEO', 'STORE',
   'PRODUCT_ASSIGN',
 ]
 
 // Tabs whose values directly affect pricing / checkout / operations — saving
 // these requires an explicit confirmation.
-export const SENSITIVE_SETTING_TABS = new Set(['STORE', 'TAX'])
+export const SENSITIVE_SETTING_TABS = new Set(['STORE'])
 
 // Group/key bị ẩn vì không thuộc trách nhiệm của admin shop:
-// - SECURITY: thiết lập kỹ thuật (login attempts, session timeout) — devops set, không phải admin shop
-// - PAYMENT_SEPAY: cổng thanh toán SePay đã gỡ khỏi hệ thống (V59) — chỉ còn dữ liệu rác, ẩn khỏi UI
-// - COMMERCE: rác import WordPress (key site.currency = VND) trùng với store_currency (nhóm STORE,
-//   đã ẩn vì luôn VND). Hàng rào phòng hờ ở UI; bản ghi gốc đã được xoá ở migration V192.
 // - PUBLIC_HERO: ảnh banner đầu trang render bằng trình riêng (BannerScreen) có preview ráp sẵn,
 //   nay nhúng làm tab "Banner trang" NGAY TRONG màn Cài đặt (xem BANNERS_TAB_ID) — ẩn khỏi danh
 //   sách tab generic để không hiện 2 lần / sửa 2 nơi.
@@ -131,10 +120,8 @@ export const SENSITIVE_SETTING_TABS = new Set(['STORE', 'TAX'])
 //   là TRANG TĨNH, không còn trình dựng — không màn admin nào sửa nhóm này (cố định theo yêu cầu owner).
 //   Bản ghi vẫn ở site_settings để web/header/footer đọc; muốn cho sửa lại thì bỏ 'CONTACT' khỏi
 //   HIDDEN_GROUPS để hiện lại tab Cài đặt › Liên hệ.
-// - PUBLIC_ABOUT: trang Giới thiệu (/gioi-thieu) nay là TRANG TĨNH trong web — chữ cố định trong
-//   code (i18n `About`), không đọc settings nữa. Admin không quản lý copy trang này; ẩn tab khỏi
-//   Cài đặt. 28 dòng about_page_* vẫn còn trong DB (không xoá) nhưng không tác động gì tới web.
-export const HIDDEN_GROUPS = new Set(['SECURITY', 'PAYMENT_SEPAY', 'COMMERCE', 'PUBLIC_HERO', 'CONTACT', 'PUBLIC_ABOUT'])
+// (PUBLIC_ABOUT đã gỡ hẳn V274 — trang Giới thiệu là trang tĩnh, không còn nhóm settings.)
+export const HIDDEN_GROUPS = new Set(['PUBLIC_HERO', 'CONTACT'])
 
 // Field cụ thể bị ẩn vì giá trị mặc định luôn đúng cho shop VN, đổi gây rủi ro:
 // - store_currency: luôn VND
@@ -146,13 +133,9 @@ export const TAB_META = {
   CONTACT:     { icon: Phone,      labelKey: 'settings.group_contact' },
   PAYMENT:     { icon: Landmark,   labelKey: 'settings.group_payment' },
   PUBLIC_HOME: { icon: Home,       labelKey: 'settings.group_public_home' },
-  PUBLIC_PRODUCT: { icon: ShoppingBag, labelKey: 'settings.group_public_product' },
   PUBLIC_HERO: { icon: ImageIcon,  labelKey: 'settings.group_public_hero' },
-  PROMO:       { icon: Tag,        labelKey: 'settings.group_promo' },
   SEO:         { icon: Globe,      labelKey: 'settings.group_seo' },
   STORE:       { icon: Building2,  labelKey: 'settings.group_store' },
-  TAX:         { icon: CreditCard, labelKey: 'settings.group_tax' },
-  INVENTORY:   { icon: Package,    labelKey: 'settings.group_inventory' },
   PRODUCT_ASSIGN: { icon: Users,   labelKey: 'settings.group_product_assign' },
 }
 
@@ -207,8 +190,6 @@ export const KEY_LABELS_VI = {
   home_content_bottom_html: 'Nội dung SEO cuối trang chủ (rich-text)',
   // store (operational)
   low_stock_threshold: 'Ngưỡng cảnh báo sắp hết hàng (số lượng)',
-  // inventory (operational)
-  reservation_ttl_minutes: 'Số phút giữ hàng trong giỏ trước khi nhả lại kho',
   // public_hero — Tất cả sản phẩm
   hero_products_image_url: 'Ảnh hero — trang Tất cả sản phẩm (desktop)',
   hero_products_mobile_image_url: 'Ảnh hero — trang Tất cả sản phẩm (điện thoại)',
@@ -296,7 +277,6 @@ export const SECTION_GUIDE = {
   hero_default:    { title: 'Banner mặc định — trang listing chưa đặt ảnh riêng', path: '/san-pham' },
   seo_home:        { title: 'SEO trang chủ (thẻ meta / khi chia sẻ)', path: '/' },
   internal_store:  { title: 'Nội bộ — không hiển thị cho khách', path: null, internal: true },
-  internal_inv:    { title: 'Nội bộ — quy tắc vận hành kho', path: null, internal: true },
   internal_assign: { title: 'Màn Tạo/Sửa sản phẩm (trong admin)', path: null, internal: true },
 }
 export const SECTION_ORDER = Object.keys(SECTION_GUIDE)
@@ -368,8 +348,6 @@ export const KEY_GUIDE = {
   home_content_bottom_html: ['seo_home', 'đoạn nội dung cuối trang chủ'],
 
   low_stock_threshold:      ['internal_store', 'ngưỡng cảnh báo sắp hết hàng'],
-
-  reservation_ttl_minutes:  ['internal_inv', 'thời gian giữ hàng trong giỏ'],
 
   product_assign_title:         ['internal_assign', 'tiêu đề banner phân công'],
   product_assign_role_content:  ['internal_assign', 'tên vai trò Content'],

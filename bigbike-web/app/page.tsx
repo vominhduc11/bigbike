@@ -123,7 +123,8 @@ export default async function HomePage() {
   const [
     slidersResult,
     categoriesResult,
-    expArticlesResult,
+    expPickedResult,
+    expFallbackResult,
     newsArticlesResult,
     brandsResult,
     settingsResult,
@@ -139,6 +140,9 @@ export default async function HomePage() {
       showOnHomepage: true,
       lang: locale,
     }),
+    // "Góc trải nghiệm": ưu tiên các bài admin chọn tay (homeExperience=true), tối đa 3, mới nhất trước.
+    listArticles({ page: 1, homeExperience: true, size: 3, sort: "publishedAt:desc", lang: locale }),
+    // Dự phòng khi admin chưa chọn bài nào: 3 bài Reviews mới nhất (hành vi cũ).
     listArticles({ page: 1, category: "reviews", size: 3, sort: "publishedAt:desc", lang: locale }),
     listArticles({ page: 1, category: "tin-tuc", size: 3, sort: "publishedAt:desc", lang: locale }),
     listBrands({ page: 1, size: 12, sort: "name:asc", lang: locale }),
@@ -191,7 +195,9 @@ export default async function HomePage() {
     .filter((s): s is NonNullable<typeof s> => s !== null);
 
   const categories = categoriesResult.data ?? [];
-  const expArticles = expArticlesResult.data ?? [];
+  // Bài admin chọn tay được ưu tiên; nếu chưa chọn bài nào thì dùng 3 bài Reviews mới nhất.
+  const expPicked = expPickedResult.data ?? [];
+  const expArticles = expPicked.length > 0 ? expPicked : (expFallbackResult.data ?? []);
   const newsArticles = newsArticlesResult.data ?? [];
   const brands = brandsResult.data ?? [];
   const carouselProducts = carouselProductsResult.data ?? [];

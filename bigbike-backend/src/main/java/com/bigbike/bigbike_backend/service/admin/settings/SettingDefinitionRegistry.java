@@ -184,83 +184,13 @@ public class SettingDefinitionRegistry {
                         .publicAllowed()
                         .description("Tiêu đề khu Video trải nghiệm trên trang chủ.").build(),
 
-                // ── PUBLIC_ABOUT ── (toàn bộ copy trang Giới thiệu /gioi-thieu — admin sửa được,
-                // giữ nguyên bố cục lưới 5 ô; web render settings-first, fallback copy theme khi trống)
-                SettingDefinition.builder("about_page_kicker", "public_about", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Trang Giới thiệu — tiêu đề nhỏ (kicker) khối đầu trang.").build(),
-                SettingDefinition.builder("about_page_tagline", "public_about", SettingValueType.LONG_TEXT)
-                        .publicAllowed()
-                        .description("Trang Giới thiệu — câu tagline khối đầu trang.").build(),
-                SettingDefinition.builder("about_page_intro_html", "public_about", SettingValueType.HTML)
-                        .publicAllowed()
-                        .description("Trang Giới thiệu — đoạn giới thiệu mở đầu (rich-text, gồm 4 đoạn).").build(),
-                SettingDefinition.builder("about_page_quality_heading", "public_about", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Trang Giới thiệu — tiêu đề khối Chất lượng dịch vụ.").build(),
-                SettingDefinition.builder("about_page_quality_body", "public_about", SettingValueType.LONG_TEXT)
-                        .publicAllowed()
-                        .description("Trang Giới thiệu — mô tả khối Chất lượng dịch vụ.").build(),
-
-                SettingDefinition.builder("about_page_service1_title", "public_about", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 1: tiêu đề.").build(),
-                SettingDefinition.builder("about_page_service1_body", "public_about", SettingValueType.LONG_TEXT)
-                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 1: mô tả.").build(),
-                SettingDefinition.builder("about_page_service1_image", "public_about", SettingValueType.IMAGE_URL)
-                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 1: hình minh hoạ.").build(),
-                SettingDefinition.builder("about_page_service1_highlight", "public_about", SettingValueType.BOOLEAN)
-                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 1: nền cam nổi bật.").build(),
-
-                SettingDefinition.builder("about_page_service2_title", "public_about", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 2: tiêu đề.").build(),
-                SettingDefinition.builder("about_page_service2_body", "public_about", SettingValueType.LONG_TEXT)
-                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 2: mô tả.").build(),
-                SettingDefinition.builder("about_page_service2_image", "public_about", SettingValueType.IMAGE_URL)
-                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 2: hình minh hoạ.").build(),
-                SettingDefinition.builder("about_page_service2_highlight", "public_about", SettingValueType.BOOLEAN)
-                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 2: nền cam nổi bật.").build(),
-
-                SettingDefinition.builder("about_page_service3_title", "public_about", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 3: tiêu đề.").build(),
-                SettingDefinition.builder("about_page_service3_body", "public_about", SettingValueType.LONG_TEXT)
-                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 3: mô tả.").build(),
-                SettingDefinition.builder("about_page_service3_image", "public_about", SettingValueType.IMAGE_URL)
-                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 3: hình minh hoạ.").build(),
-                SettingDefinition.builder("about_page_service3_highlight", "public_about", SettingValueType.BOOLEAN)
-                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 3: nền cam nổi bật.").build(),
-
-                SettingDefinition.builder("about_page_service4_title", "public_about", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 4: tiêu đề.").build(),
-                SettingDefinition.builder("about_page_service4_body", "public_about", SettingValueType.LONG_TEXT)
-                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 4: mô tả.").build(),
-                SettingDefinition.builder("about_page_service4_image", "public_about", SettingValueType.IMAGE_URL)
-                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 4: hình minh hoạ.").build(),
-                SettingDefinition.builder("about_page_service4_highlight", "public_about", SettingValueType.BOOLEAN)
-                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 4: nền cam nổi bật.").build(),
-
-                SettingDefinition.builder("about_page_service5_title", "public_about", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 5: tiêu đề.").build(),
-                SettingDefinition.builder("about_page_service5_body", "public_about", SettingValueType.LONG_TEXT)
-                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 5: mô tả.").build(),
-                SettingDefinition.builder("about_page_service5_image", "public_about", SettingValueType.IMAGE_URL)
-                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 5: hình minh hoạ.").build(),
-                SettingDefinition.builder("about_page_service5_highlight", "public_about", SettingValueType.BOOLEAN)
-                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 5: nền cam nổi bật.").build(),
-
-                SettingDefinition.builder("about_page_connect_heading", "public_about", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Giới thiệu — tiêu đề khối Kết nối với chúng tôi.").build(),
-                SettingDefinition.builder("about_page_connect_intro1", "public_about", SettingValueType.LONG_TEXT)
-                        .publicAllowed().description("Trang Giới thiệu — dòng 1 khối Kết nối.").build(),
-                SettingDefinition.builder("about_page_connect_intro2", "public_about", SettingValueType.LONG_TEXT)
-                        .publicAllowed().description("Trang Giới thiệu — dòng 2 khối Kết nối.").build(),
-
                 // ── PUBLIC_PRODUCT ── (KHÔNG còn setting chung nào.)
                 // Mọi nội dung trang chi tiết sản phẩm giờ quản theo TỪNG sản phẩm:
                 //  • Khối "cam kết" dưới nút mua → bảng product_commitments (V232).
                 //  • Dải "tin cậy" trên tên sản phẩm → bảng product_trust_badges (V233).
                 // 6 khóa product_commitment_* (V228) gỡ ở V232; 2 khóa product_trust_* gỡ ở V233.
 
-                // ── PUBLIC_HERO ── (hero banner cho listing pages không có PageEntity)
+                // ── PUBLIC_HERO ── (hero banner cho các trang listing, không thuộc CMS)
                 SettingDefinition.builder("hero_products_image_url", "public_hero", SettingValueType.IMAGE_URL)
                         .publicAllowed()
                         .description("Ảnh nền hero trang Tất cả sản phẩm (/san-pham).").build(),
@@ -363,15 +293,7 @@ public class SettingDefinitionRegistry {
                         .description("Tên vai trò 3 (mặc định: Quản lý) trên banner phân công.").build(),
                 SettingDefinition.builder("product_assign_items_manager", "product_assign", SettingValueType.LONG_TEXT)
                         .superAdminOnly()
-                        .description("Danh sách công việc do vai trò Quản lý phụ trách.").build(),
-
-                // ── SECURITY ──
-                SettingDefinition.builder("login_max_attempts", "SECURITY", SettingValueType.INTEGER)
-                        .min(1L).max(50L)
-                        .description("Số lần đăng nhập sai tối đa trước khi khoá tạm.").build(),
-                SettingDefinition.builder("session_timeout_minutes", "SECURITY", SettingValueType.INTEGER)
-                        .min(1L).max(1440L)
-                        .description("Idle timeout cho admin session (phút).").build()
+                        .description("Danh sách công việc do vai trò Quản lý phụ trách.").build()
         );
     }
 }

@@ -24,6 +24,8 @@ public record Article(
         PublishStatus publishStatus,
         /** Featured article flag (V222). */
         boolean featured,
+        /** Homepage Experience carousel pick flag (V272). */
+        boolean homeExperience,
         SeoMeta seo,
         /** Non-null only on admin detail reads (V138). Null on public/list reads. */
         ArticleTranslations translations,

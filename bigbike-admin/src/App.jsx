@@ -156,9 +156,10 @@ function parseRoute(pathname) {
 
   if (module === 'featured-products') return { kind: 'screen', name: 'featured-products' }
 
+  // Module Nội dung chỉ còn BÀI VIẾT (Tin tức) — trang tĩnh đã gỡ khỏi admin (owner 2026-06-24).
   if (module === 'content' && !id) return { kind: 'screen', name: 'content-list' }
-  if (module === 'content' && id && sub === 'new') return { kind: 'screen', name: 'content-create', contentType: id.toUpperCase() === 'PAGES' || id.toUpperCase() === 'PAGE' ? 'PAGE' : 'ARTICLE' }
-  if (module === 'content' && id && sub) return { kind: 'screen', name: 'content-detail', contentType: id.toUpperCase() === 'PAGES' || id.toUpperCase() === 'PAGE' ? 'PAGE' : 'ARTICLE', contentId: sub }
+  if (module === 'content' && id && sub === 'new') return { kind: 'screen', name: 'content-create', contentType: 'ARTICLE' }
+  if (module === 'content' && id && sub) return { kind: 'screen', name: 'content-detail', contentType: 'ARTICLE', contentId: sub }
 
   if (module === 'orders' && !id) return { kind: 'screen', name: 'orders-list' }
   if (module === 'orders' && id)  return { kind: 'screen', name: 'order-detail', orderId: id }

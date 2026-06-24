@@ -8,7 +8,6 @@ import {
   deleteContent,
   fetchContentCategories,
   fetchContentDetail,
-  fetchContentPageRefs,
 
   mapValidationErrors,
   previewArticle,
@@ -53,14 +52,9 @@ import {
 import { ContentAssignmentBanner } from './content-detail/ContentAssignmentBanner'
 import { SectionCard } from './content-detail/SectionCard'
 import { Field } from './content-detail/Field'
-import { GuidePageBuilderPanel } from './GuidePageBuilderScreen'
 
-// Trang CMS đặc biệt có trình dựng khối nhúng kèm (gộp quản lý vào module Nội dung). Khóa theo slug
-// cố định của trang (PAGE_RULE_003) — khớp cách web định tuyến riêng /huong-dan.
-const SPECIAL_BUILDERS = {
-  'huong-dan': { kind: 'guide', tabLabelKey: 'content.detail.tabGuideBuilder' },
-}
-
+// Module chỉ còn quản lý BÀI VIẾT (ARTICLE). Trang thông tin tĩnh + trình dựng /huong-dan đã gỡ
+// khỏi admin (owner 2026-06-24) — nội dung đóng cứng trong web.
 export function ContentDetailScreen({ contentType, contentId, isCreate = false, navigate, canUpdate }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
@@ -126,24 +120,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     staleTime: 5 * 60 * 1000,
   })
 
-  // Parent-page picker — only PAGE content can have a parent. Loaded lazily.
-  const { data: pageRefs = [] } = useQuery({
-    queryKey: ['content-reference', 'pages'],
-    queryFn: fetchContentPageRefs,
-    staleTime: 5 * 60 * 1000,
-    enabled: normalizedType === 'PAGE',
-  })
-
-  // Exclude self to avoid a page being its own parent. Keep the current parent
-  // visible even before refs finish loading so the Select trigger isn't blank.
-  const parentPageOptions = useMemo(() => {
-    const opts = (pageRefs || []).filter((p) => p.id && p.id !== contentId)
-    if (form.parentId && !opts.some((p) => p.id === form.parentId)) {
-      opts.unshift({ id: form.parentId, slug: '', title: form.parentId })
-    }
-    return opts
-  }, [pageRefs, contentId, form.parentId])
-
   const loadedItem = fetchResult?.item ?? null
   const selectedCategoryRef = findOptionById(
     [loadedItem?.category, ...(Array.isArray(loadedItem?.categories) ? loadedItem.categories : [])].filter(Boolean),
@@ -186,18 +162,12 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   )
   const formRef = useRef(null)
 
-  // Trình dựng khối nhúng (trang Liên hệ / Hướng dẫn): giữ luôn mounted để ref + cờ "chưa lưu"
-  // sống độc lập với tab đang xem; lưu chung trong một lần bấm Lưu của trang.
-  const builderRef = useRef(null)
-  const [builderDirty, setBuilderDirty] = useState(false)
-  const combinedDirty = isDirty || builderDirty
-
   useEffect(() => {
-    if (!combinedDirty) return
+    if (!isDirty) return
     const handler = (e) => { e.preventDefault(); e.returnValue = '' }
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
-  }, [combinedDirty])
+  }, [isDirty])
 
   useEffect(() => {
     if (!isCreate) return
@@ -281,26 +251,10 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
     setIsSubmitting(true)
     setValidationErrors({})
-    const pageChanged = isCreate || isDirty
-    const builderChanged = Boolean(builderRef.current?.isDirty?.())
     try {
-      // Lưu phần trang trước (tiêu đề/nội dung/SEO) nếu có thay đổi.
-      if (pageChanged) {
-        await saveMutation.mutateAsync(toPayload(form, isCreate))
-      }
-      // Lưu phần trình dựng khối nhúng (Hướng dẫn) trong cùng một lần bấm Lưu.
-      if (builderChanged) {
-        setIsSubmitting(true) // page onSuccess đã tắt cờ — bật lại trong lúc lưu builder
-        await builderRef.current.save()
-      }
-      // Chỉ có thay đổi ở trình dựng (trang không đổi): saveMutation.onSuccess không chạy nên báo ở đây.
-      if (!pageChanged && builderChanged) {
-        toast.success(t('content.detail.successUpdatePage'))
-        setSavedFlash(true)
-        setTimeout(() => setSavedFlash(false), 1200)
-      }
+      await saveMutation.mutateAsync(toPayload(form, isCreate))
     } catch {
-      // Lỗi đã được toast ở onError của từng mutation (trang/builder). Ở đây chỉ cần kết thúc trạng thái.
+      // Lỗi đã được toast ở onError của mutation. Ở đây chỉ cần kết thúc trạng thái.
     } finally {
       setIsSubmitting(false)
     }
@@ -382,9 +336,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
   const isArticle = normalizedType === 'ARTICLE'
 
-  // Trang CMS đặc biệt (Liên hệ / Hướng dẫn) có trình dựng khối nhúng — khóa theo slug đã lưu.
-  const specialBuilder = !isCreate && !isArticle ? (SPECIAL_BUILDERS[state.item?.slug ?? ''] ?? null) : null
-
   // Nhãn cho ô bắt buộc — gắn dấu * đỏ ngay sau tên ô (cùng kiểu với SectionCard)
   // để admin biết chính xác ô nào trong thẻ "bắt buộc" phải điền (tiêu chí 7.8).
   const requiredLabel = (text) => (
@@ -414,14 +365,14 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   ]
   const seoPassed = seoChecks.filter((c) => c.ok).length
 
-  const saveDotState = isSubmitting ? 'saving' : savedFlash ? 'saved' : combinedDirty ? 'dirty' : 'saved'
+  const saveDotState = isSubmitting ? 'saving' : savedFlash ? 'saved' : isDirty ? 'dirty' : 'saved'
   const saveDotClass =
     saveDotState === 'saving' ? 'bg-[var(--admin-color-status-info-text)] animate-pulse'
     : saveDotState === 'dirty' ? 'bg-[var(--admin-color-status-warning-text)] animate-pulse'
     :                            'bg-[var(--admin-color-status-success-text)]'
   const saveLabel = isSubmitting
     ? t('content.detail.savingShort', { defaultValue: 'Đang lưu...' })
-    : combinedDirty
+    : isDirty
       ? t('content.detail.saveDirty', { defaultValue: 'Có thay đổi chưa lưu' })
       : t('content.detail.saveClean', { defaultValue: 'Đã lưu' })
 
@@ -434,7 +385,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     : t('content.detail.saveBtn')
 
   async function handleClose() {
-    if (combinedDirty) {
+    if (isDirty) {
       const confirmed = await showConfirm(
         t('products.detail.unsavedChangesConfirm', { defaultValue: 'Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?' }),
         t('products.detail.unsavedChangesTitle', { defaultValue: 'Có thay đổi chưa lưu' }),
@@ -542,8 +493,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
           items={[
             { key: 'content', label: t('content.detail.tabContent'),     count: tabCounts.content || undefined },
             { key: 'seo',     label: t('content.detail.tabSeoPublish'),  count: tabCounts.seo     || undefined },
-            // Trang có trình dựng khối nhúng (Hướng dẫn) hiển thị thêm một tab riêng.
-            ...(specialBuilder ? [{ key: 'builder', label: t(specialBuilder.tabLabelKey) }] : []),
           ]}
         />
 
@@ -598,16 +547,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                         onChange={(e) => updateField('slug', e.target.value)}
                         disabled={isReadOnly}
                         className="font-mono"
-                      />
-                    </Field>
-                  )}
-
-                  {!isArticle && (
-                    <Field label={t('content.detail.pageType')} error={validationErrors.pageType}>
-                      <Input
-                        value={form.pageType}
-                        onChange={(e) => updateField('pageType', e.target.value)}
-                        disabled={isReadOnly || !isCreate}
                       />
                     </Field>
                   )}
@@ -672,59 +611,30 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
               {/* ── Card: Hình ảnh — article gallery / page hero ── */}
               <SectionCard title={t('content.detail.sectionMedia')}>
-                {isArticle ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Field full label={t('content.detail.coverImageUrl')} hint={t('content.detail.coverImageUrlHint')}>
-                      <ImageUrlInput
-                        value={form.coverImageUrl}
-                        onChange={(url) => updateField('coverImageUrl', url)}
-                        alt={form.coverImageAlt}
-                        onAltChange={(v) => updateField('coverImageAlt', v)}
-                        disabled={isReadOnly}
-                        error={validationErrors.coverImageUrl}
-                        recommend={IMAGE_RECO.cover}
-                      />
-                    </Field>
-                    <Field full label={t('content.detail.productImageUrl', { defaultValue: 'Ảnh sản phẩm (overlay carousel)' })} hint={t('content.detail.productImageUrlHint', { defaultValue: 'Ảnh PNG nền trong hiển thị chồng lên ảnh bìa trong carousel Góc Trải Nghiệm ở trang chủ.' })}>
-                      <ImageUrlInput
-                        value={form.productImageUrl}
-                        onChange={(url) => updateField('productImageUrl', url)}
-                        alt={form.productImageAlt}
-                        onAltChange={(v) => updateField('productImageAlt', v)}
-                        disabled={isReadOnly}
-                        error={validationErrors.productImageUrl}
-                        recommend={IMAGE_RECO.squareMedium}
-                      />
-                    </Field>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-start gap-2 mb-4 p-3 bg-[var(--admin-color-status-info-bg)] border border-[var(--admin-color-status-info-border)] text-[var(--admin-color-status-info-text)] text-sm">
-                      <Info size={14} className="mt-0.5 shrink-0" />
-                      <span>{t('content.detail.heroHint', { defaultValue: 'Khối ảnh + tiêu đề lớn hiển thị đầu trang. Để trống ảnh nếu chưa có — trang sẽ rơi về nền mặc định.' })}</span>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Field full label={t('content.detail.heroImage', { defaultValue: 'Ảnh hero' })}>
-                        <ImageUrlInput
-                          value={form.heroImageUrl}
-                          onChange={(url) => updateField('heroImageUrl', url)}
-                          disabled={isReadOnly}
-                          error={validationErrors['heroImage.url']}
-                          recommend={IMAGE_RECO.bannerWide}
-                        />
-                      </Field>
-                      <Field label={t('content.detail.heroTitle', { defaultValue: 'Tiêu đề hero' })} hint={isEnLang ? t('content.detail.enFieldHint') : undefined}>
-                        <Input
-                          value={isEnLang ? (form.translations?.en?.heroTitle ?? '') : form.heroTitle}
-                          onChange={(e) => isEnLang ? updateTranslation('heroTitle', e.target.value) : updateField('heroTitle', e.target.value)}
-                          disabled={isReadOnly}
-                          placeholder={t('content.detail.heroTitlePlaceholder', { defaultValue: 'Để trống nếu muốn dùng tên trang' })}
-                          maxLength={256}
-                        />
-                      </Field>
-                    </div>
-                  </>
-                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field full label={t('content.detail.coverImageUrl')} hint={t('content.detail.coverImageUrlHint')}>
+                    <ImageUrlInput
+                      value={form.coverImageUrl}
+                      onChange={(url) => updateField('coverImageUrl', url)}
+                      alt={form.coverImageAlt}
+                      onAltChange={(v) => updateField('coverImageAlt', v)}
+                      disabled={isReadOnly}
+                      error={validationErrors.coverImageUrl}
+                      recommend={IMAGE_RECO.cover}
+                    />
+                  </Field>
+                  <Field full label={t('content.detail.productImageUrl', { defaultValue: 'Ảnh sản phẩm (overlay carousel)' })} hint={t('content.detail.productImageUrlHint', { defaultValue: 'Ảnh PNG nền trong hiển thị chồng lên ảnh bìa trong carousel Góc Trải Nghiệm ở trang chủ.' })}>
+                    <ImageUrlInput
+                      value={form.productImageUrl}
+                      onChange={(url) => updateField('productImageUrl', url)}
+                      alt={form.productImageAlt}
+                      onAltChange={(v) => updateField('productImageAlt', v)}
+                      disabled={isReadOnly}
+                      error={validationErrors.productImageUrl}
+                      recommend={IMAGE_RECO.squareMedium}
+                    />
+                  </Field>
+                </div>
               </SectionCard>
             </>
           )}
@@ -876,23 +786,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
               {/* ── Card: Hiển thị ── */}
               <SectionCard title={t('content.detail.sectionPublish', { defaultValue: 'Hiển thị' })} required>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {!isArticle && form.parentId !== undefined && (
-                    <Field label={t('content.detail.parentPage')}>
-                      <Select
-                        value={form.parentId ? form.parentId : '__none__'}
-                        onValueChange={(val) => updateField('parentId', val === '__none__' ? '' : val)}
-                        disabled={isReadOnly}
-                      >
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__none__">{t('content.detail.parentPageNone')}</SelectItem>
-                          {parentPageOptions.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>{p.title || `/${p.slug}`}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                  )}
                   <Field label={t('content.detail.publishStatus')} error={validationErrors.publishStatus}>
                     <Select value={form.publishStatus} onValueChange={(val) => updateField('publishStatus', val)} disabled={isReadOnly}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
@@ -914,6 +807,15 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                         <span>{t('content.detail.featured')}</span>
                       </label>
                       <span className="text-xs text-muted-foreground">{t('content.detail.featuredHint')}</span>
+                      <label className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
+                        <Checkbox
+                          checked={form.homeExperience}
+                          onCheckedChange={(checked) => updateField('homeExperience', checked === true)}
+                          disabled={isReadOnly}
+                        />
+                        <span>{t('content.detail.homeExperience', { defaultValue: 'Hiển thị ở "Góc trải nghiệm" trang chủ' })}</span>
+                      </label>
+                      <span className="text-xs text-muted-foreground">{t('content.detail.homeExperienceHint', { defaultValue: 'Bật để chọn bài này vào băng chuyền "Góc trải nghiệm cùng BigBike" ở trang chủ. Hiển thị tối đa 3 bài được chọn (mới nhất trước). Nếu không chọn bài nào, trang chủ tự lấy 3 bài Reviews mới nhất.' })}</span>
                     </div>
                   )}
                 </div>
@@ -921,14 +823,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
             </>
           )}
         </form>
-
-        {/* Trình dựng khối nhúng (Hướng dẫn) — luôn mounted để giữ ref + cờ "chưa lưu";
-            ẩn khi không ở tab "builder". Lưu chung với nút Lưu của trang. */}
-        {specialBuilder && (
-          <div className={cn('flex flex-col gap-6 pb-4', activeTab === 'builder' ? '' : 'hidden')}>
-            <GuidePageBuilderPanel ref={builderRef} canUpdate={canUpdate} onDirtyChange={setBuilderDirty} />
-          </div>
-        )}
 
         <StickyActionBar
           info={
@@ -963,7 +857,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
           )}
           <Button
             type="button"
-            disabled={isReadOnly || (!isCreate && !combinedDirty)}
+            disabled={isReadOnly || (!isCreate && !isDirty)}
             onClick={handleSubmit}
           >
             {isSubmitting && <Loader2 size={14} className="animate-spin mr-1.5" />}

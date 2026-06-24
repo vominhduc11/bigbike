@@ -87,6 +87,10 @@ public class ArticleEntity {
     @Column(nullable = false)
     private boolean featured;
 
+    /** Homepage Experience carousel pick flag (V272) — drives the public {@code ?homeExperience=true} filter. */
+    @Column(name = "home_experience", nullable = false)
+    private boolean homeExperience;
+
     private String seoTitle;
 
     @Column(columnDefinition = "text")

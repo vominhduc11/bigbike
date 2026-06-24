@@ -3,9 +3,9 @@ import {
   listArticles,
   listBrands,
   listCategories,
-  listPages,
   listProducts,
 } from "@/lib/api/public-api";
+import { getGuideLayout } from "@/lib/content/static-pages";
 import {
   toArticleListPath,
   toArticlePath,
@@ -19,21 +19,14 @@ import {
   toProductPath,
 } from "@/lib/utils/routes";
 
-// Map backend page slug → web route slug for POLICY pages served under /chinh-sach/
-const POLICY_BACKEND_TO_ROUTE: Record<string, string> = {
-  "chinh-sach-bao-ve-thong-tin-ca-nhan": "bao-mat",
-  "chinh-sach-bao-hanh": "bao-hanh",
-  "chinh-sach-doi-tra-hang": "doi-tra",
-  "cac-dieu-kien-va-dieu-khoan": "dieu-khoan",
-};
-
-function toPageUrl(page: { slug: string; type?: string | null }): string {
-  const routeSlug = POLICY_BACKEND_TO_ROUTE[page.slug];
-  if (routeSlug) {
-    return toCanonicalUrl(`/chinh-sach/${routeSlug}/`);
-  }
-  return toCanonicalUrl(toPagePath(page.slug));
-}
+// Trang thông tin ĐÃ ĐÓNG CỨNG (lib/content/static-pages) — không còn fetch backend.
+// Chính sách phục vụ tại /chinh-sach/{slug-gốc} (khớp menu "policy" + canonical của trang).
+const POLICY_PAGE_SLUGS = [
+  "chinh-sach-bao-ve-thong-tin-ca-nhan",
+  "chinh-sach-bao-hanh",
+  "chinh-sach-doi-tra-hang",
+  "cac-dieu-kien-va-dieu-khoan",
+];
 
 // Single-file sitemap suitable for the cutover catalog (< 50k URLs).
 // If product/article counts grow past Google's 50k-per-file limit later,
@@ -68,7 +61,7 @@ async function fetchAll<T>(
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [products, categories, brands, articles, pages] = await Promise.all([
+  const [products, categories, brands, articles] = await Promise.all([
     fetchAll((page) =>
       listProducts({ page, size: PAGE_SIZE, sort: "createdAt:desc" }),
     ),
@@ -81,7 +74,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     fetchAll((page) =>
       listArticles({ page, size: PAGE_SIZE, sort: "publishedAt:desc" }),
     ),
-    listPages(),
   ]);
 
   const entries: MetadataRoute.Sitemap = [
@@ -176,13 +168,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   }
 
-  for (const p of pages.data) {
-    if (p.seo?.noIndex) continue;
+  // Trang chính sách tĩnh (/chinh-sach/{slug-gốc}).
+  for (const slug of POLICY_PAGE_SLUGS) {
     entries.push({
-      url: toPageUrl(p),
-      lastModified: p.updatedAt ? new Date(p.updatedAt) : STATIC_PAGE_DATES.home,
+      url: toCanonicalUrl(`/chinh-sach/${slug}/`),
+      lastModified: STATIC_PAGE_DATES.policy,
       changeFrequency: "yearly",
-      priority: p.type === "POLICY" ? 0.3 : 0.5,
+      priority: 0.3,
+    });
+  }
+
+  // Trang con của Hướng dẫn (/huong-dan/{segment}/).
+  for (const entry of getGuideLayout("vi").entries) {
+    entries.push({
+      url: toCanonicalUrl(`/huong-dan/${entry.pathSegment}/`),
+      lastModified: STATIC_PAGE_DATES.guide,
+      changeFrequency: "yearly",
+      priority: 0.5,
     });
   }
 

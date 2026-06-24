@@ -23,6 +23,8 @@
 > **Serial feature removed (2026-06-23, V259).** `inventory.*` now gates **stock reads / manual quantity adjustments only** — the admin inventory serial endpoints (`/inventory/serials*`, `/variants/{id}/serials`, `/products/{id}/serials`, `/serials/{id}/status`, `/serials/import`) were deleted along with serial tracking.
 >
 > **Warranty module removed (2026-06-23, V266).** The `warranty.read` / `warranty.write` permissions were **deleted** together with the warranty feature (admin warranty endpoints, public lookup, records, and the `/bao-hanh` page). They were dropped from `PermissionCatalog` and revoked from every role by the migration.
+>
+> **Pages + Guide-page modules removed (2026-06-24).** `content.read` / `content.update` now scope to **articles (Tin tức) only** — the static CMS pages module and the guide-page builder were removed (tables `pages` + `guide_page_layout` dropped at `V271`; admin pages CRUD, `reference/pages`, and the `GET`/`PUT /admin/guide-page` endpoints deleted). The 10 info/policy pages are now hardcoded in `bigbike-web`. The permission keys themselves are **unchanged** (still `content.read` / `content.update`); only their reach shrank to article management.
 
 ## Roles
 
@@ -76,9 +78,6 @@ Status: `CONFIRMED_FROM_CODE` — `SettingDefinitionRegistry.java`, `AdminSettin
 |---|---|---|---|
 | `/api/v1/admin/**` | Spring Security URL gate requires `isAuthenticated() and !hasRole('CUSTOMER')` — any admin role (built-in or custom) passes, a logged-in customer is rejected (403). Fine-grained permission is then enforced at controller level by `requirePermission()`. See `PERMISSION_RBAC_AUDIT.md` findings F1/F2. | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `DevAdminAuthService.requirePermission`, admin controllers |
 | `POST /api/v1/admin/products/preview` | `products.update` (live preview dry-run; no persistence) | `CONFIRMED_FROM_CODE` | `AdminCatalogController.previewProduct`, `AdminCatalogMutationService.previewProduct` |
-| `GET /api/v1/admin/guide-page` | `content.read` (trình dựng trang Hướng dẫn) | `CONFIRMED_FROM_CODE` | `AdminGuidePageController.java` |
-| `PUT /api/v1/admin/guide-page` | `content.update` (lưới ô + hero trang `/huong-dan`; không ghi xuyên `site_settings`) | `CONFIRMED_FROM_CODE` | `AdminGuidePageController.java`, `GuidePageService.save` |
-| `GET /api/v1/guide-page` | public (storefront `/huong-dan` đọc bố cục trình dựng; whitelist GET trong `SecurityConfig`, fallback bố cục mặc định nếu trống) | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `PublicGuidePageController.java` |
 | `/api/v1/admin/dashboard` GET | `orders.read`; `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`, or `ROLE_SHOP_MANAGER` | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `AdminDashboardController.java` |
 | `/api/v1/admin/orders/{orderId}/audit` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.listAuditTrail`, `AdminOrderService.listAuditTrail` |
 | `/api/v1/customer/orders/**` | `ROLE_CUSTOMER` | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |

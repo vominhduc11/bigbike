@@ -58,7 +58,7 @@ File này liên quan trực tiếp đến:
 | Fulfillment | `fulfillmentStatus` | `fulfillmentStatus` field observed in order detail. (Shipping-method state removed 2026-06-23 — `SHIP_RULE_001`.) | Fulfillment state transitions not confirmed. | Partial backend | `STATUS_ONLY` / `NEEDS_VERIFICATION` | `AdminOrderService.java`, `CheckoutService.java` |
 | Inventory / Stock | `stockState`, availability flag | `IN_STOCK`, `OUT_OF_STOCK` | `stockState` mirrors the boolean availability toggle (V261). Admin không set thủ công qua catalog API. Sản phẩm/biến thể mới luôn bắt đầu `OUT_OF_STOCK`. Bán/huỷ không tự đổi availability. | Backend policy/service | `CONFIRMED_BACKEND_ENFORCED` | `ProductStockState.java`, `AdminInventoryService.java`, `AdminCatalogMutationService.java`, `CheckoutService.java`, `BUSINESS_RULES.md` STOCK_RULE_001–009 |
 | Admin User | `status`, `role` | Status: `INVITED`, `ACTIVE`, `DISABLED`, `SUSPENDED`; Roles: `SUPER_ADMIN`, `ADMIN`, `EDITOR`, `SHOP_MANAGER` (built-in, V200) + custom roles. New users start `INVITED` (no password) and become `ACTIVE` on accepting an email invite. | Status/role update validation; self-deactivation and Super Admin demotion guardrails; invite token lifecycle. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminAdminUsersService.java`, `AdminInviteService.java`, `SecurityConfig.java` |
-| Content Article/Page | `publishStatus` | Same `PublishStatus` enum; active values: `DRAFT`, `PUBLISHED`, `HIDDEN`, `TRASH`; legacy `ARCHIVED` migrated sang `HIDDEN`. | Publish transitions enforced on update; delete sets `TRASH` (soft-delete, restore `TRASH` → `DRAFT`). | Backend service | `CONFIRMED_BACKEND_ENFORCED`; public filtering `NEEDS_VERIFICATION` | `AdminContentController.java`, `AdminContentMutationService.java`, `AdminMutationValidators.java` |
+| Content Article | `publishStatus` | Same `PublishStatus` enum; active values: `DRAFT`, `PUBLISHED`, `HIDDEN`, `TRASH`; legacy `ARCHIVED` migrated sang `HIDDEN`. | Publish transitions enforced on update; delete sets `TRASH` (soft-delete, restore `TRASH` → `DRAFT`). | Backend service | `CONFIRMED_BACKEND_ENFORCED`; public filtering `NEEDS_VERIFICATION` | `AdminContentController.java`, `AdminContentMutationService.java`, `AdminMutationValidators.java` |
 | Media | `status` | `ACTIVE`, `INACTIVE`, `DELETED` | Upload creates `ACTIVE`; update validates allowed statuses; soft-delete sets `DELETED`; restore sets `ACTIVE`; hard-delete removes row/object. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminMediaService.java` |
 | Notification | `isRead` (boolean) | Email/websocket events + persistent table. `isRead` toggled by mark-read endpoints. | `false` → `true` via mark-read / mark-all-read. | Backend service | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `V102__create_admin_notifications_table.sql` |
 | Settings | No lifecycle state confirmed | Public/private behavior exists in docs/controllers; no state machine confirmed. | N/A | `STATUS_ONLY` / `NEEDS_VERIFICATION` | `AdminSettingsController`, `PublicSettingsController`, `PHASE_1J...` |
@@ -601,7 +601,7 @@ Custom role support exists through role repository/controller.
 
 ### Purpose
 
-Content state machine quản lý publish lifecycle của articles/pages và ảnh hưởng public content/SEO.
+Content state machine quản lý publish lifecycle của articles (bài viết / Tin tức) và ảnh hưởng public content/SEO. (Trước 2026-06-24 áp dụng cho cả static CMS pages — module pages đã gỡ, trang thông tin nay tĩnh ở web nên chỉ còn bài viết có lifecycle này.)
 
 ### State Field
 
@@ -611,11 +611,11 @@ Content state machine quản lý publish lifecycle của articles/pages và ản
 
 - Shared `PublishStatus` enum giữ nguyên 7 values cho backward compat với dữ liệu cũ, nhưng admin API chỉ chấp nhận: `DRAFT`, `PUBLISHED`, `HIDDEN`, `TRASH`.
 - Legacy values `ARCHIVED`, `PENDING`, `PRIVATE` bị block bởi `AdminMutationValidators` khi dùng làm transition target.
-- Content delete (article/page) set `TRASH` — nhất quán với product soft-delete.
+- Content delete (article) set `TRASH` — nhất quán với product soft-delete.
 
 ### Initial State
 
-- Create article/page requires `publishStatus` in request.
+- Create article requires `publishStatus` in request.
 - Patch logic fallback is `DRAFT` when create and request is null, but create validation requires publishStatus.
 
 ### Terminal States
@@ -652,8 +652,8 @@ Same forbidden publish transition rules as product, enforced by shared validator
 
 ### Backend Enforcement
 
-- Update article/page calls `validatePublishTransition`.
-- Delete article/page sets `publishStatus = TRASH` directly (nhất quán với product soft-delete).
+- Update article calls `validatePublishTransition`.
+- Delete article sets `publishStatus = TRASH` directly (nhất quán với product soft-delete).
 - Public content visibility filtering needs deeper audit.
 
 ### Test Coverage
@@ -860,7 +860,7 @@ Notes:
 | Inventory states | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/domain/catalog/ProductStockState.java` | Product stock states. | High |
 | Inventory availability | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminInventoryController.java` | Per-variant / per-product boolean availability toggle (V261); `stockState` mirrors it. | High |
 | Content state | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminContentController.java` | Admin content accepted status filters and permission boundary. | Medium-High |
-| Content transitions | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminContentMutationService.java` | Article/page create/update/delete, shared publish validator, publishedAt/revalidation side effects. | High |
+| Content transitions | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminContentMutationService.java` | Article create/update/delete, shared publish validator, publishedAt/revalidation side effects. | High |
 | Media states | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminMediaService.java` | Media `ACTIVE/INACTIVE/DELETED`, upload active, delete/restore/hard delete behavior. | High |
 | Admin user states | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminAdminUsersService.java` | Admin status values, user creation active, self-deactivation and Super Admin demotion guardrails. | High |
 | Security/permissions | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/SecurityConfig.java`, admin controllers | Admin/customer/public access boundary and role protection. | High |

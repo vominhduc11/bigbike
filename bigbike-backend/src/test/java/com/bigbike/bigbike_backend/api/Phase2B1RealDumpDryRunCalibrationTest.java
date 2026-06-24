@@ -8,7 +8,6 @@ import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressBrandMapp
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressCategoryMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressMediaMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressMenuMapper;
-import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressPageMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressPermalinkManagerMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressProductMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressRedirectMapper;
@@ -53,7 +52,6 @@ class Phase2B1RealDumpDryRunCalibrationTest {
     @Autowired WordPressCategoryMapper categoryMapper;
     @Autowired WordPressBrandMapper brandMapper;
     @Autowired WordPressMediaMapper mediaMapper;
-    @Autowired WordPressPageMapper pageMapper;
     @Autowired WordPressArticleMapper articleMapper;
     @Autowired WordPressVariationMapper variationMapper;
     @Autowired WordPressMenuMapper menuMapper;
@@ -205,7 +203,6 @@ class Phase2B1RealDumpDryRunCalibrationTest {
         assertThat(categoryMapper).isNotNull();
         assertThat(brandMapper).isNotNull();
         assertThat(mediaMapper).isNotNull();
-        assertThat(pageMapper).isNotNull();
         assertThat(articleMapper).isNotNull();
         assertThat(variationMapper).isNotNull();
         assertThat(menuMapper).isNotNull();

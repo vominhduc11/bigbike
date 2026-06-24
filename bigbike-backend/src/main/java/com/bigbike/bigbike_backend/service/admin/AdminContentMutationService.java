@@ -1,9 +1,7 @@
 package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.ArticleTranslationRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.PageTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertArticleRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.UpsertPageRequest;
 import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.api.error.MutationNotImplementedException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
@@ -12,14 +10,11 @@ import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.content.AdminContentItem;
 import com.bigbike.bigbike_backend.domain.content.Article;
-import com.bigbike.bigbike_backend.domain.content.Page;
 import com.bigbike.bigbike_backend.persistence.entity.content.ArticleEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.ContentCategoryEntity;
-import com.bigbike.bigbike_backend.persistence.entity.content.PageEntity;
 
 import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.ContentCategoryJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.content.PageJpaRepository;
 import com.bigbike.bigbike_backend.repository.content.ContentReadRepository;
 import com.bigbike.bigbike_backend.repository.content.JpaContentReadRepository;
 import java.time.Instant;
@@ -36,23 +31,19 @@ import org.springframework.transaction.annotation.Transactional;
 import static com.bigbike.bigbike_backend.service.admin.ContentFieldApplier.addSlugTag;
 import static com.bigbike.bigbike_backend.service.admin.ContentFieldApplier.addTag;
 import static com.bigbike.bigbike_backend.service.admin.ContentFieldApplier.applyCoverImage;
-import static com.bigbike.bigbike_backend.service.admin.ContentFieldApplier.applyHeroImage;
 import static com.bigbike.bigbike_backend.service.admin.ContentFieldApplier.applyProductImage;
 import static com.bigbike.bigbike_backend.service.admin.ContentFieldApplier.applySeo;
 import static com.bigbike.bigbike_backend.service.admin.ContentFieldApplier.articleJson;
 import static com.bigbike.bigbike_backend.service.admin.ContentFieldApplier.clearCoverImage;
-import static com.bigbike.bigbike_backend.service.admin.ContentFieldApplier.clearHeroImage;
 import static com.bigbike.bigbike_backend.service.admin.ContentFieldApplier.clearProductImage;
 import static com.bigbike.bigbike_backend.service.admin.ContentFieldApplier.clearSeo;
 import static com.bigbike.bigbike_backend.service.admin.ContentFieldApplier.generateId;
-import static com.bigbike.bigbike_backend.service.admin.ContentFieldApplier.pageJson;
 import static com.bigbike.bigbike_backend.service.admin.ContentFieldApplier.toAdminContentItem;
 
 @Service
 public class AdminContentMutationService {
 
     private final ArticleJpaRepository articleJpaRepository;
-    private final PageJpaRepository pageJpaRepository;
     private final ContentCategoryJpaRepository contentCategoryJpaRepository;
     private final ContentReadRepository contentReadRepository;
     private final JpaContentReadRepository jpaContentReadRepository;
@@ -63,7 +54,6 @@ public class AdminContentMutationService {
 
     public AdminContentMutationService(
             ObjectProvider<ArticleJpaRepository> articleJpaRepositoryProvider,
-            ObjectProvider<PageJpaRepository> pageJpaRepositoryProvider,
             ObjectProvider<ContentCategoryJpaRepository> contentCategoryJpaRepositoryProvider,
             ContentReadRepository contentReadRepository,
             ObjectProvider<JpaContentReadRepository> jpaContentReadRepositoryProvider,
@@ -73,7 +63,6 @@ public class AdminContentMutationService {
             ContentRequestValidator contentRequestValidator
     ) {
         this.articleJpaRepository = articleJpaRepositoryProvider.getIfAvailable();
-        this.pageJpaRepository = pageJpaRepositoryProvider.getIfAvailable();
         this.contentCategoryJpaRepository = contentCategoryJpaRepositoryProvider.getIfAvailable();
         this.contentReadRepository = contentReadRepository;
         this.jpaContentReadRepository = jpaContentReadRepositoryProvider.getIfAvailable();
@@ -165,58 +154,6 @@ public class AdminContentMutationService {
     }
 
     @Transactional
-    public AdminContentItem createPage(UpsertPageRequest request, UUID adminId) {
-        requireJpaPersistenceEnabled();
-
-        List<ApiErrorDetail> errors = new ArrayList<>();
-        String slug = contentRequestValidator.validatePageRequest(request, null, true, errors);
-        AdminMutationValidators.throwIfErrors(errors);
-
-        Instant now = Instant.now();
-        PageEntity entity = new PageEntity();
-        entity.setId(generateId("page"));
-        entity.setCreatedAt(now);
-        entity.setUpdatedAt(now);
-
-        PageEntity parent = contentRequestValidator.resolveParentPage(request.getParentId(), null, errors);
-        AdminMutationValidators.throwIfErrors(errors);
-        applyPagePatch(entity, request, slug, parent, true);
-        pageJpaRepository.save(entity);
-        auditLog("CONTENT_PAGE_CREATED", "CONTENT", adminId, null, pageJson(entity));
-        revalidatePage(entity, null);
-
-        Page page = contentReadRepository.findPageById(entity.getId())
-                .orElseThrow(() -> new NotFoundException("Content not found."));
-        return toAdminContentItem(page);
-    }
-
-    @Transactional
-    public AdminContentItem updatePage(String pageId, UpsertPageRequest request, UUID adminId) {
-        requireJpaPersistenceEnabled();
-
-        PageEntity entity = pageJpaRepository.findById(pageId)
-                .orElseThrow(() -> new NotFoundException("Content not found."));
-        String previousSlug = entity.getSlug();
-
-        List<ApiErrorDetail> errors = new ArrayList<>();
-        String slug = contentRequestValidator.validatePageRequest(request, entity, false, errors);
-        PageEntity parent = contentRequestValidator.resolveParentPage(request.getParentId(), entity.getId(), errors);
-        PublishStatus nextStatus = request.getPublishStatus() == null ? entity.getPublishStatus() : request.getPublishStatus();
-        AdminMutationValidators.validatePublishTransition(entity.getPublishStatus(), nextStatus, "publishStatus", errors);
-        AdminMutationValidators.throwIfErrors(errors);
-
-        entity.setUpdatedAt(Instant.now());
-        applyPagePatch(entity, request, slug, parent, false);
-        pageJpaRepository.save(entity);
-        auditLog("CONTENT_PAGE_UPDATED", "CONTENT", adminId, null, pageJson(entity));
-        revalidatePage(entity, previousSlug);
-
-        Page page = contentReadRepository.findPageById(entity.getId())
-                .orElseThrow(() -> new NotFoundException("Content not found."));
-        return toAdminContentItem(page);
-    }
-
-    @Transactional
     public AdminContentItem deleteArticle(String articleId, UUID adminId) {
         requireJpaPersistenceEnabled();
         ArticleEntity entity = articleJpaRepository.findById(articleId)
@@ -231,24 +168,8 @@ public class AdminContentMutationService {
         return toAdminContentItem(article);
     }
 
-    @Transactional
-    public AdminContentItem deletePage(String pageId, UUID adminId) {
-        requireJpaPersistenceEnabled();
-        PageEntity entity = pageJpaRepository.findById(pageId)
-                .orElseThrow(() -> new NotFoundException("Content not found."));
-        entity.setPublishStatus(PublishStatus.TRASH);
-        entity.setUpdatedAt(Instant.now());
-        pageJpaRepository.save(entity);
-        auditLog("CONTENT_PAGE_DELETED", "CONTENT", adminId, null, pageJson(entity));
-        revalidatePage(entity, null);
-        Page page = contentReadRepository.findPageById(entity.getId())
-                .orElseThrow(() -> new NotFoundException("Content not found."));
-        return toAdminContentItem(page);
-    }
-
     private void requireJpaPersistenceEnabled() {
         if (articleJpaRepository == null
-                || pageJpaRepository == null
                 || contentCategoryJpaRepository == null) {
             throw new MutationNotImplementedException(
                     "Content mutation APIs require JPA persistence profile. Mock profile is read-only."
@@ -312,6 +233,13 @@ public class AdminContentMutationService {
             entity.setFeatured(request.getFeatured());
         }
 
+        // Homepage Experience pick flag (V272): same optional-on-update semantics as featured.
+        if (create) {
+            entity.setHomeExperience(Boolean.TRUE.equals(request.getHomeExperience()));
+        } else if (request.getHomeExperience() != null) {
+            entity.setHomeExperience(request.getHomeExperience());
+        }
+
         if (request.getCoverImage() != null) {
             applyCoverImage(entity, request.getCoverImage());
         } else if (create) {
@@ -360,95 +288,8 @@ public class AdminContentMutationService {
         }
     }
 
-    private void applyPagePatch(
-            PageEntity entity,
-            UpsertPageRequest request,
-            String normalizedSlug,
-            PageEntity parent,
-            boolean create
-    ) {
-        if (create || normalizedSlug != null) {
-            entity.setSlug(normalizedSlug);
-        }
-        if (create || request.getTitle() != null) {
-            entity.setTitle(AdminMutationValidators.trimToNull(request.getTitle()));
-        }
-        if (request.isBodyBlocksPresent()) {
-            entity.setBodyBlocks(request.getBodyBlocks());
-            String rendered = request.getBodyBlocks() != null && !request.getBodyBlocks().isEmpty()
-                    ? descriptionBlockRenderer.renderBlocksToHtml(request.getBodyBlocks())
-                    : "";
-            entity.setBody(rendered);
-        } else if (create || request.getBody() != null) {
-            entity.setBody(AdminMutationValidators.trimToNull(request.getBody()));
-        }
-        if (create || request.getParentId() != null) {
-            entity.setParent(parent);
-        }
-        if (create || request.getPageType() != null) {
-            entity.setPageType(request.getPageType());
-        }
-        if (create || request.getPublishStatus() != null) {
-            PublishStatus nextStatus = request.getPublishStatus() == null ? PublishStatus.DRAFT : request.getPublishStatus();
-            if (nextStatus == PublishStatus.PUBLISHED && entity.getPublishStatus() != PublishStatus.PUBLISHED) {
-                entity.setPublishedAt(Instant.now());
-            }
-            if (nextStatus != PublishStatus.PUBLISHED) {
-                entity.setPublishedAt(null);
-            }
-            entity.setPublishStatus(nextStatus);
-        }
-
-        if (request.getSeo() != null) {
-            applySeo(entity, request.getSeo());
-        } else if (create) {
-            clearSeo(entity);
-        }
-
-        // Hero fields are independently patchable so admin can edit text without re-uploading image.
-        if (request.getHeroImage() != null) {
-            applyHeroImage(entity, request.getHeroImage());
-        } else if (create) {
-            clearHeroImage(entity);
-        }
-        if (create || request.getHeroTitle() != null) {
-            entity.setHeroTitle(AdminMutationValidators.trimToNull(request.getHeroTitle()));
-        }
-        if (create || request.getHeroDescription() != null) {
-            entity.setHeroDescription(AdminMutationValidators.trimToNull(request.getHeroDescription()));
-        }
-        if (create || request.getHeroKicker() != null) {
-            entity.setHeroKicker(AdminMutationValidators.trimToNull(request.getHeroKicker()));
-        }
-
-        PageTranslationRequest translations = request.getTranslations();
-        PageTranslationRequest.PageContentRequest en =
-                translations != null ? translations.getEn() : null;
-        if (en != null) {
-            entity.setTitleEn(AdminMutationValidators.trimToNull(en.getTitle()));
-            entity.setBodyEn(AdminMutationValidators.trimToNull(en.getBody()));
-            entity.setHeroTitleEn(AdminMutationValidators.trimToNull(en.getHeroTitle()));
-            entity.setHeroDescriptionEn(AdminMutationValidators.trimToNull(en.getHeroDescription()));
-            entity.setHeroKickerEn(AdminMutationValidators.trimToNull(en.getHeroKicker()));
-            entity.setSeoTitleEn(AdminMutationValidators.trimToNull(en.getSeoTitle()));
-            entity.setSeoDescriptionEn(AdminMutationValidators.trimToNull(en.getSeoDescription()));
-        } else if (create) {
-            entity.setTitleEn(null);
-            entity.setBodyEn(null);
-            entity.setHeroTitleEn(null);
-            entity.setHeroDescriptionEn(null);
-            entity.setHeroKickerEn(null);
-            entity.setSeoTitleEn(null);
-            entity.setSeoDescriptionEn(null);
-        }
-    }
-
     private void revalidateArticle(ArticleEntity entity, String previousSlug) {
         revalidateEntityTags("articles", "article:", previousSlug, entity.getSlug());
-    }
-
-    private void revalidatePage(PageEntity entity, String previousSlug) {
-        revalidateEntityTags("pages", "page:", previousSlug, entity.getSlug());
     }
 
     private void revalidateEntityTags(

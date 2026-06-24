@@ -62,10 +62,10 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
   }, [state.items, isSuperAdmin])
 
   // Danh sách tab điều hướng = các settingGroup thật + tab "Banner trang" (nhúng BannerScreen).
-  // Banner chèn ngay sau PUBLIC_PRODUCT cho gần các tab nội dung trang công khai.
+  // Banner chèn ngay sau Trang chủ (PUBLIC_HOME) cho gần các tab nội dung trang công khai.
   const navTabs = useMemo(() => {
     const tabs = [...groups.keys()].map((group) => ({ id: group, kind: 'group' }))
-    const i = tabs.findIndex((tab) => tab.id === 'PUBLIC_PRODUCT')
+    const i = tabs.findIndex((tab) => tab.id === 'PUBLIC_HOME')
     const bannerTab = { id: BANNERS_TAB_ID, kind: 'banners' }
     if (i === -1) tabs.push(bannerTab)
     else tabs.splice(i + 1, 0, bannerTab)

@@ -10,12 +10,10 @@ import type {
   ClientError,
   ContentCategoryWithCount,
   DataResult,
-  GuidePageLayout,
   HomeHighlightItem,
   HomeSlider,
   HomeVideo,
   ListResult,
-  Page,
   PublicMenu,
   PublicSiteSetting,
   Product,
@@ -329,6 +327,7 @@ export type ArticleListQuery = {
   category?: string;
   q?: string;
   featured?: boolean;
+  homeExperience?: boolean;
   lang?: string;
 };
 
@@ -342,6 +341,7 @@ export function listArticles(query: ArticleListQuery): Promise<ListResult<Articl
       category: query.category,
       q: query.q,
       featured: query.featured ? "true" : undefined,
+      homeExperience: query.homeExperience ? "true" : undefined,
       lang: query.lang,
     },
     3600,
@@ -357,29 +357,12 @@ export function listContentCategories(): Promise<ListResult<ContentCategoryWithC
   return loadList("/api/v1/content-categories", {}, 3600, ["articles"]);
 }
 
-export function listPages(): Promise<ListResult<Page>> {
-  return loadList("/api/v1/pages", {}, 3600, ["pages"]);
-}
-
-export function getPageBySlug(slug: string, lang?: string): Promise<DataResult<Page>> {
-  return loadDataWithQuery(`/api/v1/pages/${slug}`, { lang }, 3600, ["pages", `page:${slug}`, `lang:${lang ?? "vi"}`]);
-}
-
 export function getPublicMenu(location: string, lang?: string): Promise<DataResult<PublicMenu>> {
   return loadDataWithQuery(`/api/v1/menus/${location}`, { lang }, 3600, ["menus", `lang:${lang ?? "vi"}`]);
 }
 
 export function listPublicSettings(lang?: string): Promise<DataResult<PublicSiteSetting[]>> {
   return loadDataWithQuery("/api/v1/settings/public", { lang }, 3600, ["settings", `lang:${lang ?? "vi"}`]);
-}
-
-export function getGuidePageLayout(lang?: string): Promise<DataResult<GuidePageLayout>> {
-  return loadDataWithQuery(
-    "/api/v1/guide-page",
-    { lang },
-    3600,
-    ["guide-page", "page:huong-dan", `lang:${lang ?? "vi"}`],
-  );
 }
 
 /** Active sliders for a given placement location (e.g. "home", "category_sidebar"). */

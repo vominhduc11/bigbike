@@ -1,41 +1,34 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
-import { LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
 import { AboutPageContent, type AboutBrandLogo } from "@/components/about/AboutPageContent";
-import { getPageBySlug, listBrands, listPublicSettings } from "@/lib/api/public-api";
+import { listBrands, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { resolveMediaUrl, safeText } from "@/lib/utils/format";
+import { resolveMediaUrl } from "@/lib/utils/format";
 import { toHomePath, toPagePath } from "@/lib/utils/routes";
 import { pickSetting } from "@/lib/utils/settings";
 
-// Trang Giới thiệu: HERO (banner đầu trang) + SEO vẫn do admin quản lý bình thường qua bảng `pages`
-// (Nội dung → trang gioi-thieu: tiêu đề/ảnh hero/SEO). Riêng THÂN BÀI là TĨNH — chữ cố định trong code
-// (i18n `About`), admin không sửa, không đọc settings public_about. Logo hãng + liên hệ là dữ liệu chung.
+// Trang Giới thiệu: TĨNH HOÀN TOÀN — tiêu đề/hero/SEO cố định trong code, thân bài tĩnh (i18n `About`).
+// Logo hãng + thông tin liên hệ là dữ liệu chung (brands + site_settings), không phải nội dung trang.
 
 export async function generateMetadata(): Promise<Metadata> {
-  const [locale, t] = await Promise.all([getLocale(), getTranslations("StaticPage")]);
-  const pageResult = await getPageBySlug("gioi-thieu", locale);
-  const page = pageResult.data;
-
+  const t = await getTranslations("StaticPage");
   return buildPublicMetadata({
-    title: page?.seo?.title ?? page?.title ?? t("aboutTitle"),
-    description: page?.seo?.description ?? t("aboutDescription"),
-    canonicalPath: page?.seo?.canonicalUrl ?? toPagePath("gioi-thieu"),
-    noIndex: page?.seo?.noIndex ?? false,
+    title: t("aboutTitle"),
+    description: t("aboutDescription"),
+    canonicalPath: toPagePath("gioi-thieu"),
   });
 }
 
 export default async function AboutPage() {
   const locale = await getLocale();
-  const [pageResult, brandsResult, settingsResult] = await Promise.all([
-    getPageBySlug("gioi-thieu", locale),
+  const [t, brandsResult, settingsResult] = await Promise.all([
+    getTranslations("StaticPage"),
     listBrands({ page: 1, size: 8, sort: "name:asc", lang: locale }),
     listPublicSettings(locale),
   ]);
 
-  const page = pageResult.data;
-  const pageTitle = safeText(page?.title, "Giới thiệu");
+  const pageTitle = t("aboutTitle");
   const settings = settingsResult.data ?? [];
   const setting = (key: string) => pickSetting(settings, [key]);
 
@@ -57,32 +50,28 @@ export default async function AboutPage() {
     .filter((b): b is AboutBrandLogo => b !== null);
 
   return (
-    <LocalizedContentProvider kind="page" slug="gioi-thieu">
-      <WpStaticShell
-        title={page?.heroTitle ?? pageTitle}
-        titleNode={<LText field="title">{page?.heroTitle ?? pageTitle}</LText>}
-        heroBgUrl={page?.heroImageUrl}
-        breadcrumb={[
-          { label: "Bigbike.vn", href: toHomePath() },
-          { label: pageTitle, labelNode: <LText field="title">{pageTitle}</LText> },
-        ]}
-      >
-        <div className="container">
-          <div className="row">
-            <div className="col-md-12">
-              <AboutPageContent
-                brands={brands}
-                contact={{
-                  address: setting("contact_address"),
-                  hotline: setting("hotline"),
-                  hotline2: setting("hotline_2"),
-                  facebookUrl: setting("facebook_url"),
-                }}
-              />
-            </div>
+    <WpStaticShell
+      title={pageTitle}
+      breadcrumb={[
+        { label: "Bigbike.vn", href: toHomePath() },
+        { label: pageTitle },
+      ]}
+    >
+      <div className="container">
+        <div className="row">
+          <div className="col-md-12">
+            <AboutPageContent
+              brands={brands}
+              contact={{
+                address: setting("contact_address"),
+                hotline: setting("hotline"),
+                hotline2: setting("hotline_2"),
+                facebookUrl: setting("facebook_url"),
+              }}
+            />
           </div>
         </div>
-      </WpStaticShell>
-    </LocalizedContentProvider>
+      </div>
+    </WpStaticShell>
   );
 }

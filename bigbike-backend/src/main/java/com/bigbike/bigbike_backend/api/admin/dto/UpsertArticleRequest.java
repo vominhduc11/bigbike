@@ -48,6 +48,9 @@ public class UpsertArticleRequest {
     /** Featured article flag (V222). Null = leave unchanged on update. */
     private Boolean featured;
 
+    /** Homepage Experience carousel pick flag (V272). Null = leave unchanged on update. */
+    private Boolean homeExperience;
+
     @Valid
     private SeoMetaRequest seo;
 

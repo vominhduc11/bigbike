@@ -463,27 +463,9 @@ export type Article = {
   publishStatus: PublishStatus;
   /** Khi true, bài thuộc nhóm "Tin nổi bật" — lọc qua `GET /api/v1/articles?featured=true`. */
   featured?: boolean;
+  /** Khi true, bài được chọn vào carousel "Góc trải nghiệm" trang chủ — lọc qua `?homeExperience=true` (V272). */
+  homeExperience?: boolean;
   seo?: SeoMeta;
-  publishedAt?: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type PageType = "ABOUT" | "CONTACT" | "POLICY" | "HELP" | "CUSTOM";
-
-export type Page = {
-  id: string;
-  slug: string;
-  title: string;
-  body: string;
-  type: PageType;
-  publishStatus: PublishStatus;
-  seo?: SeoMeta;
-  heroImageUrl?: string | null;
-  heroImageAlt?: string | null;
-  heroTitle?: string | null;
-  heroDescription?: string | null;
-  heroKicker?: string | null;
   publishedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -538,23 +520,6 @@ export type PublicSiteSetting = {
   settingKey: string;
   settingValue: string;
   settingGroup: string | null;
-};
-
-/** One enabled card of the admin-managed guide landing page (/huong-dan). Title/desc resolved by lang. */
-export type GuideEntry = {
-  pathSegment: string;
-  pageSlug: string;
-  icon: string | null;
-  title: string;
-  description: string | null;
-  sortOrder: number;
-};
-
-/** The admin-managed guide landing page (/huong-dan): hero + grid of cards. Resolved by lang. */
-export type GuidePageLayout = {
-  heroTitle: string | null;
-  heroImageUrl: string | null;
-  entries: GuideEntry[];
 };
 
 export type ClientError = {

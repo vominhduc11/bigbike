@@ -800,7 +800,7 @@ Mỗi danh mục / sản phẩm / thương hiệu / **bài viết** có thêm c�
 
 **Redirect:** catalog (danh mục/sản phẩm/thương hiệu) đổi/xoá `slug_en` tự sinh 301 (`autoCreateSlugRedirect`) — đổi → old-EN→new-EN; xoá → old-EN→URL vi; honored runtime bởi `bigbike-web/proxy.ts` qua `/api/internal/redirect`. **Bài viết KHÔNG có cơ chế redirect** (module nội dung không có `autoCreateSlugRedirect`) — đổi/xoá `slug_en` không sinh 301.
 
-**Ngoài phạm vi:** `pages` (trang tĩnh) KHÔNG có `slug_en` (giữ `PAGE_RULE_003` — web định tuyến một số trang tĩnh/chính sách bằng slug cố định).
+**Ngoài phạm vi:** trang thông tin/chính sách nay là **nội dung tĩnh ở web** (module pages đã gỡ 2026-06-24, bảng `pages` drop ở `V271`) — web định tuyến bằng slug cố định trong `static-pages.json`, không qua backend.
 
 Status: `CONFIRMED_FROM_CODE` — `CategoryEntity`/`ProductEntity`/`BrandEntity`/`ArticleEntity` (`slugEn`), `*JpaRepository.findBySlugEn`, `JpaCatalogReadRepository`/`JpaContentReadRepository` (map `slugEn` + OR-resolve), `AdminCatalogMutationService`/`AdminContentMutationService` (validate), migrations `V213`/`V214`/`V215`/`V216`.
 
@@ -836,30 +836,23 @@ Migration `V222__add_article_featured_and_seo_no_index.sql` thêm 2 cột boolea
 
 **Lưu ý lịch sử — `articles.seo_no_index`:** cột này từng tồn tại ở `V1` nhưng bị **DROP** ở `V152` (chưa dùng đến). `V222` **tái thêm** để dùng thật trong contract per-article SEO noindex.
 
-**Pages:** không có `featured` và không bật `seo_no_index` đợt này — `featured` không áp dụng; `noIndex` luôn `false`.
-
 Status: `CONFIRMED_FROM_CODE` — `ArticleEntity.featured`, `ArticleEntity.seoNoIndex`, migration `V222__add_article_featured_and_seo_no_index.sql` (ghi chú: cột `seo_no_index` từng bị drop ở `V152`). Xem [API_CONTRACT.md](API_CONTRACT.md) §"Article payload — featured + seo.noIndex (V222)".
 
-### Page bilingual content — English columns (V138)
+### Article home_experience (V272)
 
-Trang tĩnh có 2 bản nội dung: **tiếng Việt** (canonical) và **tiếng Anh** (tùy chọn).
-Bản tiếng Anh lưu trên các cột `_en` nullable cùng dòng trong bảng `pages`.
+Migration `V272__add_article_home_experience.sql` thêm 1 cột boolean vào bảng `articles`:
 
-**Cột `_en` trên `pages`** (đều nullable):
+| Cột | Kiểu | Default | Map ra payload | Ý nghĩa |
+|---|---|---|---|---|
+| `home_experience` | `BOOLEAN NOT NULL` | `false` | top-level `homeExperience` | Admin chọn tay bài vào carousel "Góc trải nghiệm cùng BigBike" trên trang chủ — điều khiển query param `homeExperience=true` của `GET /api/v1/articles`. |
 
-| Cột tiếng Việt | Cột tiếng Anh | Kiểu |
-|---|---|---|
-| `title` | `title_en` | `VARCHAR(255)` |
-| `body` | `body_en` | `TEXT` |
-| `hero_title` | `hero_title_en` | `VARCHAR(255)` |
-| `hero_description` | `hero_description_en` | `TEXT` |
-| `hero_kicker` | `hero_kicker_en` | `VARCHAR(255)` |
-| `seo_title` | `seo_title_en` | `VARCHAR(255)` |
-| `seo_description` | `seo_description_en` | `TEXT` |
+Trang chủ hiển thị tối đa 3 bài có `home_experience = true` (mới nhất trước). Khi **không** bài nào được chọn, web fall back về 3 bài mới nhất thuộc category `reviews` (logic ở `app/page.tsx`, xem [API_CONTRACT.md](API_CONTRACT.md) §"Article list — homeExperience (V272)").
 
-Fallback: giống `PRODUCT_RULE_002` — mỗi trường lùi về VI khi EN bị null/blank. Xem `PAGE_RULE_001/002`.
+Status: `CONFIRMED_FROM_CODE` — `ArticleEntity.homeExperience`, migration `V272__add_article_home_experience.sql`. Xem [API_CONTRACT.md](API_CONTRACT.md) §"Article payload — featured + seo.noIndex (V222)".
 
-Status: `CONFIRMED_FROM_CODE` — `PageEntity`, `PageTranslations` domain record, migration `V138`.
+### Page bilingual content — REMOVED (2026-06-24)
+
+> **REMOVED (2026-06-24).** Bảng `pages` đã drop ở `V271__drop_pages_and_guide_page.sql` cùng entity `PageEntity` / domain `Page` / `PageTranslations` / enum `PageType`. Các cột song ngữ `_en` của trang (title/body/hero_*/seo_*, thêm ở `V138`) không còn. 10 trang thông tin/chính sách nay là **nội dung tĩnh trong `bigbike-web`** (nguồn `static-pages.json`, song ngữ VI/EN cố định trong code) — không còn dữ liệu trang trong DB. Bài viết (`articles`) vẫn giữ cột song ngữ — xem §"Article bilingual content (V138)".
 
 ### Menu item bilingual label — English column (V160)
 
@@ -917,15 +910,9 @@ Status: `CONFIRMED_FROM_CODE` — `HomeVideoEntity.titleEn`, `HomeVideo.titleEn`
 
 Status: `CONFIRMED_FROM_CODE` — `ArticleEntity.bodyBlocks`, `Article.bodyBlocks`, `AdminContentItem.bodyBlocks`, `UpsertArticleRequest.bodyBlocksPresent`, `AdminContentMutationService.applyArticlePatch`, migration `V140/V141`.
 
-### Page body blocks — `body_blocks` (V140)
+### Page body blocks — REMOVED (2026-06-24)
 
-`pages.body_blocks` là cột `jsonb` thêm vào trong migration `V140`. Cùng định dạng block với article — xem §"Article body blocks (V140)".
-
-**Migration (V141):** HTML cũ trong cột `body` của tất cả page đã được parse sang blocks bởi `BodyBlockParser`.
-
-**Read / mutation semantics:** giống hệt article `body_blocks` — xem §"Article body blocks (V140)".
-
-Status: `CONFIRMED_FROM_CODE` — `PageEntity.bodyBlocks`, `Page.bodyBlocks`, `AdminContentItem.bodyBlocks`, `UpsertPageRequest.bodyBlocksPresent`, `AdminContentMutationService.applyPagePatch`, migration `V140/V141`.
+> **REMOVED (2026-06-24).** Cột `pages.body_blocks` (V140) cùng cả bảng `pages` đã drop ở `V271`. Module pages đã gỡ; trang thông tin nay tĩnh ở web. Article body blocks vẫn còn — xem §"Article body blocks (V140)".
 
 ### Contact page layout — đã gỡ (`contact_page_layout`, V224 → drop V270)
 
@@ -933,28 +920,9 @@ Trang `/lien-he` nay là **trang tĩnh**: bố cục cố định trong code web
 
 Status: `CONFIRMED_FROM_CODE` — `bigbike-web/app/lien-he/page.tsx`, `bigbike-web/components/contact/ContactPageContent.tsx`, migration `V270__drop_contact_page_layout.sql`.
 
-### Guide page layout — `guide_page_layout.entries` (V227)
+### Guide page layout — REMOVED (2026-06-24)
 
-Bảng singleton `guide_page_layout(id uuid PK, hero_title_vi text, hero_title_en text, hero_image_url text, entries jsonb NOT NULL, updated_at timestamptz)` — đúng **một dòng** (id cố định `…0000d0`, seed trong `V227`). Cột `entries` là mảng ô của trang tổng `/huong-dan`; builder thay cả mảng khi lưu (giống pattern save-whole-list của contact page / home highlights).
-
-Hero (3 cột riêng, không nằm trong JSON): `hero_title_vi` / `hero_title_en` (web lùi về VI khi EN trống) + `hero_image_url` (ảnh banner, URL MinIO).
-
-Mỗi phần tử (`GuideEntry`):
-
-| field | kiểu | ghi chú |
-|---|---|---|
-| `id` | string | khóa ổn định cho reorder |
-| `enabled` | boolean | ô có render trên web không |
-| `sortOrder` | int | thứ tự trong lưới (tăng dần) |
-| `pathSegment` | string | đoạn URL dưới `/huong-dan/` (vd `mua-hang` → `/huong-dan/mua-hang/`) |
-| `pageSlug` | string | slug trang CMS chứa nội dung chi tiết (vd `huong-dan-mua-hang`) |
-| `icon` | string? | tên lucide (vd `BookOpen`) **hoặc** URL ảnh MinIO |
-| `titleVi` / `titleEn` | string | tiêu đề ô song ngữ; web lùi về VI khi EN trống |
-| `descriptionVi` / `descriptionEn` | string? | mô tả ngắn song ngữ |
-
-**Phân chia nguồn nội dung:** layout (lưới ô + hero) ở `guide_page_layout`; **thân bài chi tiết** vẫn ở trang CMS (`pages`) theo `pageSlug` — giữ nguyên SEO, bản EN, rich text của module Trang. Web lấy lưới + sidebar + map `pathSegment→pageSlug` từ entries (một nguồn duy nhất; không còn đọc menu location `guide` cho sidebar). Xem `BUSINESS_RULES.md` §"Guide Page Builder Rules".
-
-Status: `CONFIRMED_FROM_CODE` — `GuideEntry.java`, `GuidePageLayoutEntity.java`, `GuideEntriesConverter.java`, `GuidePageService.java`, migration `V227`.
+> **REMOVED (2026-06-24).** Bảng singleton `guide_page_layout` (V227) đã drop ở `V271__drop_pages_and_guide_page.sql` cùng entity `GuidePageLayoutEntity` / `GuideEntry` / `GuideEntriesConverter` / `GuidePageService`. Trang Hướng dẫn `/huong-dan` (+ 3 trang con) nay là **nội dung tĩnh trong `bigbike-web`** (nguồn `static-pages.json`). Trình dựng trang Hướng dẫn trong admin cũng đã gỡ.
 
 ### Product homepage placement (V111+)
 
@@ -989,31 +957,11 @@ Evidence:
 - `V149__drop_recommended_carousel_block.sql` — removes RECOMMENDED_CAROUSEL, tightens check constraint
 - `API_CONTRACT.md` §"Admin Catalog Contract" — documents filter/sort params + new homepage-blocks endpoint
 
-### Page hero fields (V98)
+### Page hero fields — REMOVED (2026-06-24)
 
-`PageEntity` holds an optional hero banner block surfaced on public CMS pages (`/gioi-thieu`, `/lien-he`, `/chinh-sach/*`, `/huong-dan*`). Hero is independent of the SEO OG image and the article cover image.
-
-| Column | DB column | Type | Nullable | Purpose |
-|---|---|---|---|---|
-| `heroImageUrl` | `hero_image_url` | `VARCHAR(1024)` | YES | Public URL of hero background. Empty/null → web falls back to `wp-cat-hero--no-img` gradient. |
-| `heroImageAlt` | `hero_image_alt` | `VARCHAR(512)` | YES | Alt text for accessibility. |
-| `heroTitle` | `hero_title` | `VARCHAR(256)` | YES | Heading override. If null, web renders `page.title`. |
-| `heroDescription` | `hero_description` | `VARCHAR(1024)` | YES | Short tagline below the heading. Plain text. |
-| `heroKicker` | `hero_kicker` | `VARCHAR(128)` | YES | Small uppercase chip rendered above the heading (e.g. `GIỚI THIỆU`). |
-
-Migration: `V98__add_page_hero_fields.sql` — `ALTER TABLE pages ADD COLUMN hero_* …` (all nullable, no default).
-
-For the **listing pages** (`/san-pham`, `/brands`, `/tin-tuc`) which have no `PageEntity`, the same five hero attributes are stored as `SiteSettingEntity` rows in setting group `public_hero` (15 keys total — see [API_CONTRACT.md](API_CONTRACT.md#admin-settings-contract)).
-
-Status: `CONFIRMED_FROM_CODE`
-
-Evidence:
-- `PageEntity.java` — added 5 `hero*` fields
-- `Page.java` — domain record extended with hero fields
-- `UpsertPageRequest.java` — admin DTO accepts `heroImage` + `heroTitle` + `heroDescription` + `heroKicker`
-- `JpaContentReadRepository.toDomain(PageEntity)` — maps entity → domain
-- `SettingDefinitionRegistry.java` — registers 15 `hero_(products|brands|news)_*` keys
-- `V98__add_page_hero_fields.sql`
+> **REMOVED (2026-06-24).** Các cột hero trên `pages` (V98: `hero_image_url`, `hero_image_alt`, `hero_title`, `hero_description`, `hero_kicker`) đã drop cùng cả bảng `pages` ở `V271`. Trang thông tin/chính sách nay tĩnh ở web (hero cố định trong code, không do admin quản lý).
+>
+> **Vẫn còn:** hero của các **trang danh sách** (`/san-pham`, `/brands`, `/tin-tuc`) — lưu ở `SiteSettingEntity` nhóm `public_hero`, quản lý qua màn **Banner trang** (`BannerScreen.jsx`). Đó là cơ chế riêng, không liên quan tới bảng `pages`.
 
 ### Article ↔ Product relation — REMOVED (V167)
 
@@ -1198,40 +1146,22 @@ Evidence: `AdminAnalyticsResponse.java`, `AdminReportService.java`, `OrderJpaRep
 | `general` | Site name, footer text, BCT registration URL | Cài đặt chung |
 | `contact` | Hotline/email/address, opening hours, social links — **shared site data** for the header/footer + the static `/lien-he` and `/gioi-thieu` pages. Since 2026-06-23 both the contact page builder and the Settings "Liên hệ" tab are gone; the group has **no admin UI** (hidden via `HIDDEN_GROUPS`). Rows stay in the DB and feed the web read-only; unhide `CONTACT` to allow editing again. | (ẩn — dữ liệu chung, không UI) |
 | `public_home` | Homepage hotline, promo banner, experience/about blocks | Trang chủ |
-| `public_about` | **Unused since 2026-06-23.** The About page's **body copy is now static** — hardcoded in the web via the i18n `About` namespace, not read from settings. The 28 keys (seeded `V223`/`V269`) remain in the DB but drive nothing; admin "Trang Giới thiệu" tab is hidden (`HIDDEN_GROUPS`). The page **hero banner + SEO stay admin-managed** via the `pages` entity. | (ẩn — không dùng) |
-| `public_product` | **No shared settings.** All product-detail content is per-product now: the commitment-rows block under the buy buttons (`product.commitments`, child table `product_commitments`, V232) and the trust-badge row above the title (`product.trustBadges`, child table `product_trust_badges`, V233). The former `product_commitment_*` (V228) and `product_trust_*` keys were removed in V232/V233. | Trang sản phẩm |
+| `payment` | Bank-transfer account shown to customers at checkout — holder, number, bank, branch (4 keys) | Thanh toán |
+| `public_about` | **Removed 2026-06-24 (V274).** The About page (`/gioi-thieu`) is **fully static** — copy from i18n `About`, the 5 service tiles from theme assets; the web never read these keys (`AboutPageContent.tsx`). The 28 rows (seeded V223, re-seeded V269), the `SettingDefinitionRegistry` defs, and `AboutServiceMediaSeeder` were all dropped. | (đã gỡ) |
+| `public_product` | **No shared settings.** All product-detail content is per-product now: the commitment-rows block under the buy buttons (`product.commitments`, child table `product_commitments`, V232) and the trust-badge row above the title (`product.trustBadges`, child table `product_trust_badges`, V233). The former `product_commitment_*` (V228) and `product_trust_*` keys were removed in V232/V233. | (không có tab — nhóm trống) |
 | `public_hero` | Hero banners for listing pages (`/san-pham`, `/brands`, `/tin-tuc`) — 17 keys (5 per page incl. per-page `illustration_url` + 2 global fallbacks). Managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`), not the generic settings screen. | Banner trang |
-| `promo` | Homepage promotion banner | Khuyến mãi |
+| `promo` | **No rows.** The promo-banner keys live in the `public_home` group (`promo_title`/`promo_off`/`promo_href`/`promo_image_url`), not a separate `promo` group — no `promo` group exists in the DB. | (không có tab — nhóm trống) |
 | `seo` | Homepage SEO title/description, OG image, bottom HTML block | SEO website |
 | `store` | Operational: low-stock threshold | Cửa hàng |
-| `inventory` | Operational. The `default_warranty_months` key was **removed in V266** (warranty module dropped); `reservation_ttl_minutes` and `serial_inventory_only` were **removed in V259** (serial tracking dropped). | Tồn kho |
+| `inventory` | **No rows.** The `default_warranty_months` key was removed in V266 (warranty module dropped); `reservation_ttl_minutes` and `serial_inventory_only` in V259 (serial tracking dropped). No `inventory` group remains in the DB. | (không có tab — nhóm trống) |
 | `product_assign` | Editable text of the "Phân công" guide shown on the product create/edit screen — role names + task lists (7 keys). **Super-admin-only writable** (see below). | Phân công sản phẩm |
-| `security` | Login attempts, session timeout — devops-managed, hidden from the admin UI | (hidden) |
+| `security` | **Removed 2026-06-24 (V273).** `login_max_attempts` + `session_timeout_minutes` were seeded (V29) but **never enforced** by any auth/session code (no account lockout, no idle-timeout); dropped from the DB and from `SettingDefinitionRegistry`. | (đã gỡ) |
 
 **Removed:** `payment_sepay` — the SePay payment gateway was removed in V59; any leftover `payment_sepay` rows are deleted by V132.
 
-### `public_about` keys — full About page content (V223)
+### `public_about` keys — removed (2026-06-24, V274)
 
-> **Unused since 2026-06-23.** The About page's **body copy** is now static (hardcoded in the web, i18n `About` namespace) and these `public_about` settings drive nothing. The page's **hero banner + SEO are still admin-managed** via the `pages` entity (Nội dung module). The 28 rows stay in the DB (not dropped) and the keys below are kept for reference only.
-
-The `/gioi-thieu` page was previously rendered from hardcoded theme copy (i18n `About` namespace) whenever the `Page.body` was blank. `V223__seed_about_page_content_settings.sql` lifts that copy into `site_settings` (group `public_about`, all `is_public = true`) so the shop admin can edit every part from **Cài đặt → Trang Giới thiệu** while keeping the original 5-tile layout. Each text key is seeded with both `setting_value` (VI) and `setting_value_en` (EN). The web page reads settings-first and falls back to the i18n `About` defaults only when a key is blank.
-
-| `setting_key` | Type | Content |
-|---|---|---|
-| `about_page_kicker` | STRING | Intro block-head small heading |
-| `about_page_tagline` | LONG_TEXT | Intro block-head tagline |
-| `about_page_intro_html` | HTML | Four opening paragraphs (rich-text) |
-| `about_page_quality_heading` | STRING | "Chất lượng dịch vụ" heading |
-| `about_page_quality_body` | LONG_TEXT | "Chất lượng dịch vụ" body |
-| `about_page_service{1..5}_title` | STRING | Service tile title |
-| `about_page_service{1..5}_body` | LONG_TEXT | Service tile body |
-| `about_page_service{1..5}_image` | IMAGE_URL | Service tile image. V223 seeds the theme path `images/a-{n}.png`; on startup **`AboutServiceMediaSeeder`** uploads the 5 bundled defaults (`resources/seed/about-services/a-{n}.png`) to MinIO, creates `media` rows, and rewrites the setting to the `/media/...` URL. |
-| `about_page_service{1..5}_highlight` | BOOLEAN | Orange tile background (default: tiles 1 & 5 = true) |
-| `about_page_connect_heading` | STRING | "Kết nối với chúng tôi" heading |
-| `about_page_connect_intro1` | LONG_TEXT | Connect block paragraph 1 |
-| `about_page_connect_intro2` | LONG_TEXT | Connect block paragraph 2 |
-
-Tile count is fixed at 5 (the grid layout depends on it); adding/removing tiles is a separate enhancement. The store/hotline/Facebook cards in the connect block still read the shared `contact` keys; brand logos still load from the brand taxonomy.
+> **Removed (2026-06-24, V274).** The entire `public_about` setting group (all `about_page_*` keys, seeded by V223 and re-seeded by V269) was **dropped**. The About page (`/gioi-thieu`) is fully static: the copy comes from the i18n `About` namespace and the 5 service tiles from theme assets (`AboutPageContent.tsx`) — the web never consumed these settings. Removed together: the 28 DB rows (V274), the 28 `SettingDefinitionRegistry` definitions, and the runtime `AboutServiceMediaSeeder` (+ its 5 bundled seed images). The store/hotline/Facebook cards in the connect block still read the shared `contact` keys; brand logos still load from the brand taxonomy.
 
 ### `public_warranty` keys — removed (2026-06-23, V266)
 
@@ -1270,10 +1200,10 @@ Migration `V132__cleanup_sepay_and_normalize_inventory_settings.sql`:
 Status: `CONFIRMED_FROM_CODE`
 
 Evidence:
-- `SettingDefinitionRegistry.java` — registers keys for `general`/`contact`/`public_home`/`public_about`/`public_hero`/`promo`/`seo`/`store`/`tax`/`product_assign`
+- `SettingDefinitionRegistry.java` — registers keys for `general`/`contact`/`payment`/`public_home`/`public_hero`/`seo`/`store`/`product_assign` (the `promo`/`tax`/`inventory`/`public_product`/`security`/`public_about` groups have **no** registered keys)
 - `V157__seed_product_assignment_settings.sql` — seeds the 7 `product_assign_*` rows
 - `AdminProductAssignmentController.java` — `GET /api/v1/admin/product-assignment` (read for the banner, `products.read`)
-- `SettingsScreen.jsx` — `TAB_ORDER` / `TAB_META` (tab rendering), `HIDDEN_GROUPS` (`security`, `payment_sepay`), super-admin filter for `superAdminOnly` keys
+- `SettingsScreen.jsx` — `TAB_ORDER` / `TAB_META` (tab rendering), `HIDDEN_GROUPS` (`public_hero`, `contact`), super-admin filter for `superAdminOnly` keys
 - `V59__remove_sepay_payment_artifacts.sql`, `V132__cleanup_sepay_and_normalize_inventory_settings.sql`
 
 ### PDP mockup port — bilingual description blocks, featured specs, per-product tabs (V229–V231)

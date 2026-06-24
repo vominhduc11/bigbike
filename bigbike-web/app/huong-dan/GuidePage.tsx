@@ -8,9 +8,7 @@ import type { LucideIcon } from "lucide-react";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import type { WpStaticSidebarItem } from "@/components/wp/WpStaticSidebar";
 import { WpStaticSidebarLayout } from "@/components/wp/WpStaticSidebarLayout";
-import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
-import { getGuidePageLayout, getPageBySlug } from "@/lib/api/public-api";
-import type { GuideEntry, GuidePageLayout } from "@/lib/contracts/public";
+import { getGuideLayout, getStaticPage, type StaticGuideEntry } from "@/lib/content/static-pages";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toHomePath } from "@/lib/utils/routes";
@@ -20,8 +18,7 @@ import { toHomePath } from "@/lib/utils/routes";
 const GUIDE_HERO_BG = "/wp-content/themes/bigbike/images/policy1.png";
 const GUIDE_HERO_ILLUSTRATION = "/wp-content/themes/bigbike/images/policy.png";
 
-// Lucide icons the guide builder offers. `icon` may instead be an image path/URL (rendered as <img>).
-// Keep in sync with ICON_OPTIONS in bigbike-admin/src/screens/GuidePageBuilderScreen.jsx.
+// Lucide icons dùng cho ô hướng dẫn. `icon` có thể là đường dẫn ảnh (render <img>).
 const ICONS: Record<string, LucideIcon> = {
   BookOpen, ShoppingCart, Ruler, Hand, HardHat, ShieldCheck, Wrench, Info, HelpCircle, FileText,
 };
@@ -34,21 +31,15 @@ export function buildEntryPath(segment: string): string {
   return `/huong-dan/${encodeURIComponent(segment)}/`;
 }
 
-/** Admin-managed layout; empty fallback keeps the page rendering before the migration row exists. */
-async function loadGuideLayout(locale: string): Promise<GuidePageLayout> {
-  const result = await getGuidePageLayout(locale);
-  return result.data ?? { heroTitle: null, heroImageUrl: null, entries: [] };
-}
-
-function findEntry(entries: GuideEntry[], subSegments?: string[]): GuideEntry | null {
+function findEntry(entries: StaticGuideEntry[], subSegments?: string[]): StaticGuideEntry | null {
   if (!subSegments || subSegments.length === 0) return null;
   return entries.find((e) => e.pathSegment === subSegments[0]) ?? null;
 }
 
-/** Title/description for {@code generateMetadata}; falls back to the Guide translations. */
+/** Title/description cho {@code generateMetadata}; fallback về Guide translations. */
 export async function resolveGuideMeta(subSegments: string[] | undefined, locale: string) {
   const t = await getTranslations("Guide");
-  const layout = await loadGuideLayout(locale);
+  const layout = getGuideLayout(locale);
   const entry = findEntry(layout.entries, subSegments);
   if (entry) {
     return {
@@ -60,7 +51,7 @@ export async function resolveGuideMeta(subSegments: string[] | undefined, locale
   return { title: t("title"), description: t("description"), path: "/huong-dan/" };
 }
 
-function buildSidebar(entries: GuideEntry[], currentPath: string): WpStaticSidebarItem[] {
+function buildSidebar(entries: StaticGuideEntry[], currentPath: string): WpStaticSidebarItem[] {
   return entries.map((e) => {
     const href = buildEntryPath(e.pathSegment);
     return { label: e.title, href, current: href === currentPath };
@@ -84,12 +75,11 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
     getLocale(),
   ]);
 
-  const layout = await loadGuideLayout(locale);
+  const layout = getGuideLayout(locale);
   const entries = layout.entries;
   const isRoot = !subSegments || subSegments.length === 0;
 
   const heroTitle = safeText(layout.heroTitle, t("heroTitle"));
-  const heroBg = layout.heroImageUrl ? (resolveMediaUrl(layout.heroImageUrl) ?? layout.heroImageUrl) : GUIDE_HERO_BG;
 
   // ── Root landing: hero + grid of guide cards ────────────────────────────────
   if (isRoot) {
@@ -97,7 +87,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
     return (
       <WpStaticShell
         title={heroTitle}
-        heroBgUrl={heroBg}
+        heroBgUrl={GUIDE_HERO_BG}
         heroIllustrationUrl={GUIDE_HERO_ILLUSTRATION}
         breadcrumb={[
           { label: tBreadcrumb("home"), href: toHomePath() },
@@ -131,44 +121,42 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
     );
   }
 
-  // ── Sub-page: render the CMS page bound to the matched card ──────────────────
+  // ── Sub-page: render nội dung tĩnh gắn với ô đã khớp ─────────────────────────
   const entry = findEntry(entries, subSegments);
   if (!entry) {
     notFound();
   }
 
-  const currentPath = buildEntryPath(entry.pathSegment);
-  const sidebarItems = buildSidebar(entries, currentPath);
-
-  const pageResult = await getPageBySlug(entry.pageSlug, locale);
-  if (!pageResult.data) {
+  const page = getStaticPage(entry.pageSlug, locale);
+  if (!page) {
     notFound();
   }
 
-  const page = pageResult.data;
+  const currentPath = buildEntryPath(entry.pathSegment);
+  const sidebarItems = buildSidebar(entries, currentPath);
   const pageTitle = safeText(page.title, entry.title);
 
   return (
-    <LocalizedContentProvider kind="page" slug={entry.pageSlug}>
-      <WpStaticShell
-        title={page.heroTitle ?? pageTitle}
-        titleNode={<LText field="title">{page.heroTitle ?? pageTitle}</LText>}
-        heroBgUrl={page.heroImageUrl ?? heroBg}
-        heroIllustrationUrl={GUIDE_HERO_ILLUSTRATION}
-        breadcrumb={[
-          { label: tBreadcrumb("home"), href: toHomePath() },
-          { label: t("breadcrumb"), href: "/huong-dan/" },
-          { label: pageTitle, labelNode: <LText field="title">{pageTitle}</LText> },
-        ]}
-      >
-        <WpStaticSidebarLayout
-          sidebarItems={sidebarItems}
-          sidebarEmptyLabel={t("emptyMenu")}
-          bodyNode={
-            <LHtml field="body" viHtml={sanitizeRichHtml(page.body)} className="static-page wyswyg" />
-          }
-        />
-      </WpStaticShell>
-    </LocalizedContentProvider>
+    <WpStaticShell
+      title={page.heroTitle ?? pageTitle}
+      heroBgUrl={GUIDE_HERO_BG}
+      heroIllustrationUrl={GUIDE_HERO_ILLUSTRATION}
+      breadcrumb={[
+        { label: tBreadcrumb("home"), href: toHomePath() },
+        { label: t("breadcrumb"), href: "/huong-dan/" },
+        { label: pageTitle },
+      ]}
+    >
+      <WpStaticSidebarLayout
+        sidebarItems={sidebarItems}
+        sidebarEmptyLabel={t("emptyMenu")}
+        bodyNode={
+          <div
+            className="static-page wyswyg"
+            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
+          />
+        }
+      />
+    </WpStaticShell>
   );
 }

@@ -46,6 +46,7 @@ public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, Strin
                  OR primaryCat.slug = :categorySlug
                  OR EXISTS (SELECT 1 FROM a.categories c WHERE c.slug = :categorySlug))
             AND (:featured IS NULL OR a.featured = :featured)
+            AND (:homeExperience IS NULL OR a.homeExperience = :homeExperience)
             AND (:q IS NULL
                  OR LOWER(a.title) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))
                  OR LOWER(a.excerpt) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%')))
@@ -57,6 +58,7 @@ public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, Strin
                  OR primaryCat.slug = :categorySlug
                  OR EXISTS (SELECT 1 FROM a.categories c WHERE c.slug = :categorySlug))
             AND (:featured IS NULL OR a.featured = :featured)
+            AND (:homeExperience IS NULL OR a.homeExperience = :homeExperience)
             AND (:q IS NULL
                  OR LOWER(a.title) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))
                  OR LOWER(a.excerpt) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%')))
@@ -66,6 +68,7 @@ public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, Strin
             @Param("categorySlug") String categorySlug,
             @Param("q") String q,
             @Param("featured") Boolean featured,
+            @Param("homeExperience") Boolean homeExperience,
             Pageable pageable);
 
     /**

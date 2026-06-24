@@ -200,8 +200,8 @@ Evidence:
 
 - `ARTICLE_RULE_001`: Mỗi bài viết bắt buộc có **bản nội dung tiếng Việt** (canonical). **Bản tiếng Anh là tùy chọn**. `CONFIRMED_FROM_CODE`
 - `ARTICLE_RULE_002`: Khi đọc bài viết bằng tiếng Anh (`lang=en`), mỗi trường thiếu bản tiếng Anh sẽ **tự lùi về bản tiếng Việt theo từng trường** (title, excerpt, body, seoTitle, seoDescription). `CONFIRMED_FROM_CODE`
-- `ARTICLE_RULE_003`: `slug` tiếng Việt là **canonical**; mỗi bài viết có thêm `slugEn` (slug tiếng Anh) **tùy chọn**. Khi xem bản tiếng Anh, URL dùng `slugEn`; **trống thì lùi về `slug` tiếng Việt**. Web tra cứu bài viết theo **vi HOẶC en** slug (cả hai URL mở cùng bài viết). `slugEn` phải **duy nhất** trong phạm vi bài viết và **không được trùng** bất kỳ `slug` tiếng Việt nào của bài viết khác (cross-column uniqueness — partial-unique index lo en-vs-en, vi-vs-en enforce ở tầng ứng dụng). **Chỉ áp dụng cho bài viết — trang tĩnh (pages) giữ nguyên `PAGE_RULE_003`** (slug cố định, không có `slugEn`). `CONFIRMED_FROM_CODE`
-- `ARTICLE_RULE_004`: Admin có thể đánh dấu một bài viết là **nổi bật** (`featured`). Web hiển thị các bài `featured` ở khu **"Tin nổi bật"**; nếu **không có bài nào** được đánh dấu nổi bật, web **fallback sang các bài viết mới nhất**. `featured` chỉ áp dụng cho bài viết — trang tĩnh (pages) không có. `CONFIRMED_FROM_CODE`
+- `ARTICLE_RULE_003`: `slug` tiếng Việt là **canonical**; mỗi bài viết có thêm `slugEn` (slug tiếng Anh) **tùy chọn**. Khi xem bản tiếng Anh, URL dùng `slugEn`; **trống thì lùi về `slug` tiếng Việt**. Web tra cứu bài viết theo **vi HOẶC en** slug (cả hai URL mở cùng bài viết). `slugEn` phải **duy nhất** trong phạm vi bài viết và **không được trùng** bất kỳ `slug` tiếng Việt nào của bài viết khác (cross-column uniqueness — partial-unique index lo en-vs-en, vi-vs-en enforce ở tầng ứng dụng). **Chỉ áp dụng cho bài viết** (slug cố định cho trang thông tin/chính sách nay nằm tĩnh ở web, xem "Static Page Rules — REMOVED" bên dưới). `CONFIRMED_FROM_CODE`
+- `ARTICLE_RULE_004`: Admin có thể đánh dấu một bài viết là **nổi bật** (`featured`). Web hiển thị các bài `featured` ở khu **"Tin nổi bật"**; nếu **không có bài nào** được đánh dấu nổi bật, web **fallback sang các bài viết mới nhất**. `featured` chỉ áp dụng cho bài viết. `CONFIRMED_FROM_CODE`
 
 Evidence:
 
@@ -214,20 +214,15 @@ Evidence:
 - `V138__add_article_page_bilingual_content.sql`, `V216__add_article_slug_en.sql`, `V222__add_article_featured_and_seo_no_index.sql`
 - `DATA_CONTRACT.md` — "Article bilingual content", "Article featured + seo_no_index (V222)"
 
-## Static Page Rules
+## Static Page Rules — REMOVED (2026-06-24)
 
-- `PAGE_RULE_001`: Mỗi trang tĩnh bắt buộc có **bản nội dung tiếng Việt** (canonical). **Bản tiếng Anh là tùy chọn**. `CONFIRMED_FROM_CODE`
-- `PAGE_RULE_002`: Khi đọc trang bằng tiếng Anh (`lang=en`), mỗi trường thiếu bản tiếng Anh sẽ **tự lùi về bản tiếng Việt theo từng trường** (title, body, heroTitle, heroDescription, heroKicker, seoTitle, seoDescription). `CONFIRMED_FROM_CODE`
-- `PAGE_RULE_003`: `slug` của trang dùng chung 1 bản (không dịch theo ngôn ngữ). `CONFIRMED_FROM_CODE`
-
-Evidence:
-
-- `PageEntity.java` (các cột `title_en`, `body_en`, `hero_title_en`, `hero_description_en`, `hero_kicker_en`, `seo_title_en`, `seo_description_en`)
-- `JpaContentReadRepository.java` (resolve locale + fallback cho page)
-- `ContentController.java` (`lang` param trên page endpoints)
-- `AdminContentMutationService.java` (`applyPagePatch` ghi cột `_en`)
-- `V138__add_article_page_bilingual_content.sql`
-- `DATA_CONTRACT.md` — "Page bilingual content"
+> **REMOVED / Deprecated 2026-06-24.** Module "Trang tĩnh CMS" (pages) đã gỡ khỏi toàn stack. 10 trang thông tin (Giới thiệu, Liên hệ, Hướng dẫn + 3 trang con, 4 trang chính sách) nay **đóng cứng trong `bigbike-web`** (nguồn `static-pages.json` + `static-pages.ts`, song ngữ VI/EN cố định trong code). Không còn bảng `pages` (drop ở `V271`), không còn endpoint hay màn admin quản lý trang. Các rule dưới đây **không còn áp dụng** — giữ lại làm lịch sử.
+>
+> - ~~`PAGE_RULE_001`~~: (cũ) Mỗi trang tĩnh bắt buộc có bản nội dung tiếng Việt; bản tiếng Anh tùy chọn. → Nay nội dung song ngữ cố định trong code web.
+> - ~~`PAGE_RULE_002`~~: (cũ) Đọc trang `lang=en` lùi về VI theo từng trường. → Không còn — web tự chọn bản theo locale.
+> - ~~`PAGE_RULE_003`~~: (cũ) `slug` của trang dùng chung 1 bản. → Slug nay là route cố định trong web.
+>
+> Lý do gỡ: 10 trang này nội dung ổn định, không cần admin sửa thường xuyên → chuyển thành tĩnh để đơn giản hoá vận hành. Bài viết (ARTICLE_RULE_*) **vẫn còn** quản lý động qua module Nội dung (Tin tức).
 
 ## Contact Page Rules
 
@@ -244,27 +239,17 @@ Evidence:
 - `V270__drop_contact_page_layout.sql` (drop bảng; gỡ controller/service/entity/DTO/converter contact-page + whitelist `SecurityConfig`)
 - `bigbike-admin/src/screens/settings/constants.js` (`CONTACT` trong `HIDDEN_GROUPS`)
 
-## Guide Page Builder Rules
+## Guide Page Builder Rules — REMOVED (2026-06-24)
 
-Trang tổng `/huong-dan` không phải nội dung tĩnh: lưới ô hướng dẫn + hero do admin dựng qua **trình dựng trang Hướng dẫn**. Thân bài chi tiết của từng ô vẫn là một trang CMS (module Trang) trỏ tới qua `pageSlug` — giữ nguyên SEO/bản EN/rich text.
-
-- `GUIDE_PAGE_RULE_000`: Trình dựng được **nhúng làm một tab bên trong trang editor của module Nội dung** (mở trang CMS slug `huong-dan` → tab "Lưới hướng dẫn"); **không còn màn "Trang Hướng dẫn" riêng** ở menu. Hero/lưới (phần trình dựng) và tiêu đề/SEO (phần trang CMS) lưu **chung trong một lần bấm Lưu** của trang. `CONFIRMED_FROM_CODE`
-- `GUIDE_PAGE_RULE_001`: Lưới là một mảng ô (tối đa 40) lưu trong bảng singleton `guide_page_layout`. Mỗi ô có `enabled`, `sortOrder`, `pathSegment` (đoạn URL dưới `/huong-dan/`), `pageSlug` (trang CMS chứa nội dung), `icon` (lucide hoặc URL ảnh MinIO), tiêu đề/mô tả song ngữ. `CONFIRMED_FROM_CODE`
-- `GUIDE_PAGE_RULE_002`: Web dựng lưới, sidebar và map `pathSegment→pageSlug` **chỉ** từ entries của builder — không còn đọc menu location `guide` cho sidebar (menu đó giữ lại nhưng không dùng cho trang này). Ô `pathSegment` không khớp entry nào → 404. `CONFIRMED_FROM_CODE`
-- `GUIDE_PAGE_RULE_003`: Tiêu đề/mô tả/hero lùi về bản tiếng Việt khi thiếu bản tiếng Anh (giống `PAGE_RULE_002`). Quản lý bằng quyền `content.update`; storefront chỉ nhận ô `enabled`. Ảnh icon/hero upload qua media library → MinIO, chỉ lưu URL. `CONFIRMED_FROM_CODE`
-
-Evidence:
-
-- `GuideEntry.java`, `GuidePageLayoutEntity.java`, `GuideEntriesConverter.java`
-- `GuidePageService.java`, `AdminGuidePageController.java` (`content.update`), `PublicGuidePageController.java`
-- `V227__add_guide_page_layout.sql`
-- `bigbike-web/app/huong-dan/GuidePage.tsx` (render động), `bigbike-admin/src/screens/GuidePageBuilderScreen.jsx` (export `GuidePageBuilderPanel`, nhúng trong `ContentDetailScreen.jsx`)
+> **REMOVED / Deprecated 2026-06-24.** Trang Hướng dẫn `/huong-dan` (+ 3 trang con `mua-hang`/`size-mu`/`size-gang-tay`) nay là **nội dung tĩnh trong `bigbike-web`** (nguồn `static-pages.json`). Trình dựng trang Hướng dẫn (GuidePageBuilder) trong admin đã gỡ; bảng `guide_page_layout` drop ở `V271`; endpoint admin/public guide-page không còn. Các rule dưới đây **không còn áp dụng** — giữ lại làm lịch sử.
+>
+> - ~~`GUIDE_PAGE_RULE_000`~~..~~`GUIDE_PAGE_RULE_003`~~: (cũ) Lưới ô + hero do admin dựng qua trình dựng nhúng trong module Nội dung, lưu ở `guide_page_layout`, web dựng lưới/sidebar từ entries. → Toàn bộ chuyển thành tĩnh trong web.
 
 ## Policy Page Rules
 
-Trang chính sách `/chinh-sach/{slug}` do admin quản lý hoàn toàn: thân bài là một trang CMS (module Trang) bình thường, còn thanh bên (danh sách + thứ tự các trang chính sách) do admin dựng qua **menu vị trí `policy`** — tái dùng trình quản lý Menu sẵn có, không cần builder riêng.
+Trang chính sách `/chinh-sach/{slug}`: **thân bài nay là nội dung tĩnh trong `bigbike-web`** (nguồn `static-pages.json`, module pages gỡ 2026-06-24 — không còn trang CMS), còn thanh bên (danh sách + thứ tự các trang chính sách) **vẫn** do admin dựng qua **menu vị trí `policy`** — tái dùng trình quản lý Menu sẵn có. Phần menu sidebar GIỮ NGUYÊN; chỉ nguồn thân bài đổi từ CMS sang tĩnh.
 
-- `POLICY_PAGE_RULE_001`: `slug` trên URL là slug của chính trang CMS — web phân giải trực tiếp `GET /api/v1/pages/{slug}`, không còn bảng map slug hard-code. Slug không khớp trang CMS nào → 404. `CONFIRMED_FROM_CODE`
+- `POLICY_PAGE_RULE_001`: `slug` trên URL khớp trang chính sách tĩnh trong web; web tự phân giải nội dung từ `static-pages.json` (**không còn** gọi `GET /api/v1/pages/{slug}`). Slug không khớp trang tĩnh nào → 404. `CONFIRMED_FROM_CODE`
 - `POLICY_PAGE_RULE_002`: Thanh bên dựng từ menu location `policy` (`GET /api/v1/menus/policy`); mỗi mục trỏ tới `/chinh-sach/{page-slug}`, mục đang xem mang trạng thái `current` khi slug khớp. Admin thêm/bớt/sắp thứ tự mục như menu header/footer. Chỉ mục `ACTIVE` hiển thị. `CONFIRMED_FROM_CODE`
 - `POLICY_PAGE_RULE_003`: `policy` là một system menu slot (cạnh `primary`/`footer`/`guide`) — admin không tạo/xóa container, chỉ quản lý mục bên trong. Nhãn mục song ngữ (`label` VI + `label_en`), lùi về VI khi thiếu EN (giống menu khác). V226 seed sẵn 4 mục chính sách. `CONFIRMED_FROM_CODE`
 

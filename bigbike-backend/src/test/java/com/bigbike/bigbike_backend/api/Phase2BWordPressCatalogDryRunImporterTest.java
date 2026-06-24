@@ -10,7 +10,6 @@ import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressBrandMapp
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressCategoryMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressMediaMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressMenuMapper;
-import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressPageMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressPermalinkManagerMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressProductMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressRedirectMapper;
@@ -53,7 +52,6 @@ class Phase2BWordPressCatalogDryRunImporterTest {
     @Autowired WordPressCategoryMapper categoryMapper;
     @Autowired WordPressBrandMapper brandMapper;
     @Autowired WordPressMediaMapper mediaMapper;
-    @Autowired WordPressPageMapper pageMapper;
     @Autowired WordPressArticleMapper articleMapper;
     @Autowired WordPressVariationMapper variationMapper;
     @Autowired WordPressMenuMapper menuMapper;
@@ -332,27 +330,6 @@ class Phase2BWordPressCatalogDryRunImporterTest {
     // PAGES / ARTICLES
     // ═══════════════════════════════════════════════════════════════════════════
 
-    // ── 15. mapsPagesWithSeoMetadata ──────────────────────────────────────────
-    @Test
-    void dryRun_mapsPagesWithSeoMetadata() {
-        WpPost post = new WpPost(301L, 1L, LocalDateTime.now(), LocalDateTime.now(),
-                "About BigBike content.", "Giới thiệu", "", "publish", "closed",
-                "gioi-thieu", "page", 0L, 0, "", "", 0L);
-
-        List<WpPostMeta> metas = List.of(
-                meta(301L, "rank_math_title", "Giới thiệu BigBike | BigBike.vn"),
-                meta(301L, "rank_math_description", "Tìm hiểu về cửa hàng BigBike.")
-        );
-
-        WordPressPageMapper.MappedPage result = pageMapper.map(post, metas);
-
-        assertThat(result.slug()).isEqualTo("gioi-thieu");
-        assertThat(result.status()).isEqualTo("PUBLISHED");
-        assertThat(result.seoTitle()).isEqualTo("Giới thiệu BigBike | BigBike.vn");
-        assertThat(result.seoDescription()).isEqualTo("Tìm hiểu về cửa hàng BigBike.");
-        assertThat(result.expectedUrl()).isEqualTo("/gioi-thieu.html");
-    }
-
     // ── 16. mapsArticlesWithSeoMetadata ──────────────────────────────────────
     @Test
     void dryRun_mapsArticlesWithSeoMetadata() {
@@ -575,7 +552,6 @@ class Phase2BWordPressCatalogDryRunImporterTest {
         assertThat(sqlDumpRowReader).isNotNull();
         assertThat(categoryMapper).isNotNull();
         assertThat(brandMapper).isNotNull();
-        assertThat(pageMapper).isNotNull();
         assertThat(articleMapper).isNotNull();
         assertThat(variationMapper).isNotNull();
         assertThat(permalinkMapper).isNotNull();

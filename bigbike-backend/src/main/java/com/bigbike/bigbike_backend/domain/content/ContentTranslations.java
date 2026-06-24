@@ -2,18 +2,13 @@ package com.bigbike.bigbike_backend.domain.content;
 
 /**
  * Unified translation container returned on admin detail reads (V138).
- * Wraps either ArticleTranslations or PageTranslations — exactly one will be non-null.
+ * Only Article translations remain — the static Pages module was removed (V271).
  */
 public record ContentTranslations(
-        ArticleTranslations article,
-        PageTranslations page
+        ArticleTranslations article
 ) {
 
     public static ContentTranslations fromArticle(ArticleTranslations translations) {
-        return new ContentTranslations(translations, null);
-    }
-
-    public static ContentTranslations fromPage(PageTranslations translations) {
-        return new ContentTranslations(null, translations);
+        return new ContentTranslations(translations);
     }
 }

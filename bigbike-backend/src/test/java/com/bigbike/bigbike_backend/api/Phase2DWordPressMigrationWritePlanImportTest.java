@@ -78,7 +78,6 @@ class Phase2DWordPressMigrationWritePlanImportTest {
                 MigrationDomain.CATEGORIES,
                 MigrationDomain.BRANDS,
                 MigrationDomain.MEDIA,
-                MigrationDomain.PAGES,
                 MigrationDomain.ARTICLES,
                 MigrationDomain.REDIRECTS,
                 MigrationDomain.MENUS

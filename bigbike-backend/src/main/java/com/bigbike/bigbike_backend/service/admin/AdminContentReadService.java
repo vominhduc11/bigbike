@@ -5,7 +5,6 @@ import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.content.AdminContentItem;
 import com.bigbike.bigbike_backend.domain.content.Article;
 import com.bigbike.bigbike_backend.domain.content.ContentTranslations;
-import com.bigbike.bigbike_backend.domain.content.Page;
 import com.bigbike.bigbike_backend.repository.content.ContentReadRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.common.PaginationService;
@@ -16,7 +15,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -43,47 +41,22 @@ public class AdminContentReadService {
         String normalizedType = normalizeType(type);
         String locale = normalizeLocale(lang);
         // Admin VI/EN switch (strict English): ở EN, repo đã lọc bỏ mục chưa có title_en
-        // qua findArticlesByFilter/findPagesByFilter. DB pagination (listArticlesAdmin)
-        // không lọc theo title_en nên ở EN ta đi qua nhánh filter + phân trang trong Java
-        // (số lượng content nhỏ) để đếm trang đúng sau khi ẩn mục chưa dịch.
+        // qua findArticlesByFilter. DB pagination (listArticlesAdmin) không lọc theo
+        // title_en nên ở EN ta đi qua nhánh filter + phân trang trong Java (số lượng nhỏ)
+        // để đếm trang đúng sau khi ẩn mục chưa dịch.
         boolean strictEnglish = "en".equals(locale);
 
-        if ("ARTICLE".equals(normalizedType)) {
-            if (strictEnglish) {
-                List<AdminContentItem> items = contentReadRepository.findArticlesByFilter(statusFilter, query, locale)
-                        .stream().map(AdminContentReadService::fromArticle)
-                        .sorted(contentComparator(sortSpec)).toList();
-                return paginationService.paginate(items, page, size);
-            }
-            org.springframework.data.domain.Page<Article> ap = contentReadRepository
-                    .listArticlesAdmin(statusFilter, query, toPageable(sortSpec, page, size), locale);
-            return mapToPageResult(ap, AdminContentReadService::fromArticle);
+        // Content giờ chỉ còn Bài viết (Tin tức) — module Trang tĩnh đã gỡ. Tham số type
+        // được giữ tương thích nhưng mọi nhánh đều trả về bài viết.
+        if (strictEnglish) {
+            List<AdminContentItem> items = contentReadRepository.findArticlesByFilter(statusFilter, query, locale)
+                    .stream().map(AdminContentReadService::fromArticle)
+                    .sorted(contentComparator(sortSpec)).toList();
+            return paginationService.paginate(items, page, size);
         }
-        if ("PAGE".equals(normalizedType)) {
-            if (strictEnglish) {
-                List<AdminContentItem> items = contentReadRepository.findPagesByFilter(statusFilter, query, locale)
-                        .stream().map(AdminContentReadService::fromPage)
-                        .sorted(contentComparator(sortSpec)).toList();
-                return paginationService.paginate(items, page, size);
-            }
-            org.springframework.data.domain.Page<Page> pp = contentReadRepository
-                    .listPagesAdmin(statusFilter, query, toPageable(sortSpec, page, size), locale);
-            return mapToPageResult(pp, AdminContentReadService::fromPage);
-        }
-
-        // Combined: load filtered articles + pages from DB, merge+sort+paginate in Java
-        List<AdminContentItem> articles = contentReadRepository
-                .findArticlesByFilter(statusFilter, query, locale)
-                .stream().map(AdminContentReadService::fromArticle).toList();
-        List<AdminContentItem> pages = contentReadRepository
-                .findPagesByFilter(statusFilter, query, locale)
-                .stream().map(AdminContentReadService::fromPage).toList();
-
-        List<AdminContentItem> merged = Stream.concat(articles.stream(), pages.stream())
-                .sorted(contentComparator(sortSpec))
-                .toList();
-
-        return paginationService.paginate(merged, page, size);
+        org.springframework.data.domain.Page<Article> ap = contentReadRepository
+                .listArticlesAdmin(statusFilter, query, toPageable(sortSpec, page, size), locale);
+        return mapToPageResult(ap, AdminContentReadService::fromArticle);
     }
 
     @Transactional(readOnly = true)
@@ -92,9 +65,6 @@ public class AdminContentReadService {
         return switch (normalizedType) {
             case "ARTICLE" -> contentReadRepository.findArticleById(id)
                     .map(AdminContentReadService::fromArticle)
-                    .orElseThrow(() -> new NotFoundException("Content not found."));
-            case "PAGE" -> contentReadRepository.findPageById(id)
-                    .map(AdminContentReadService::fromPage)
                     .orElseThrow(() -> new NotFoundException("Content not found."));
             default -> throw new NotFoundException("Content not found.");
         };
@@ -113,6 +83,7 @@ public class AdminContentReadService {
                 article.productImage(),
                 article.publishStatus(),
                 article.featured(),
+                article.homeExperience(),
                 article.seo(),
                 article.publishedAt(),
                 article.createdAt(),
@@ -125,54 +96,8 @@ public class AdminContentReadService {
                 null,
                 null,
                 null,
-                null,
                 article.bodyBlocks(),
                 ContentTranslations.fromArticle(article.translations())
-        );
-    }
-
-    static AdminContentItem fromPage(Page page) {
-        return new AdminContentItem(
-                page.id(),
-                "PAGE",
-                page.slug(),
-                null,                       // slugEn — pages keep PAGE_RULE_003 (no English slug)
-                page.title(),
-                null,
-                page.body(),
-                null,
-                null,
-                page.publishStatus(),
-                false,                      // featured — pages are never featured
-                page.seo(),
-                page.publishedAt(),
-                page.createdAt(),
-                page.updatedAt(),
-                null,
-                null,
-                null,
-                page.type(),
-                page.parentId(),
-                pageHeroImage(page),
-                page.heroTitle(),
-                page.heroDescription(),
-                page.heroKicker(),
-                page.bodyBlocks(),
-                ContentTranslations.fromPage(page.translations())
-        );
-    }
-
-    private static com.bigbike.bigbike_backend.domain.catalog.ImageAsset pageHeroImage(Page page) {
-        if (page.heroImageUrl() == null && page.heroImageAlt() == null) {
-            return null;
-        }
-        return new com.bigbike.bigbike_backend.domain.catalog.ImageAsset(
-                null,
-                page.heroImageUrl(),
-                page.heroImageAlt(),
-                null,
-                null,
-                null
         );
     }
 

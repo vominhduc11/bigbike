@@ -9,7 +9,6 @@ import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressCustomerM
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressMediaMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressMenuMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressOrderMapper;
-import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressPageMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressProductMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressRedirectMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressVariationMapper;
@@ -93,7 +92,6 @@ public class WordPressMigrationImportService {
     private final WordPressCategoryMapper categoryMapper;
     private final WordPressBrandMapper brandMapper;
     private final WordPressMediaMapper mediaMapper;
-    private final WordPressPageMapper pageMapper;
     private final WordPressArticleMapper articleMapper;
     private final WordPressMenuMapper menuMapper;
     private final WordPressRedirectMapper redirectMapper;
@@ -104,7 +102,6 @@ public class WordPressMigrationImportService {
     private final CategoryImporter categoryImporter;
     private final BrandImporter brandImporter;
     private final MediaImporter mediaImporter;
-    private final PageImporter pageImporter;
     private final ArticleImporter articleImporter;
     private final RedirectImporter redirectImporter;
     private final MenuImporter menuImporter;
@@ -125,7 +122,6 @@ public class WordPressMigrationImportService {
             WordPressCategoryMapper categoryMapper,
             WordPressBrandMapper brandMapper,
             WordPressMediaMapper mediaMapper,
-            WordPressPageMapper pageMapper,
             WordPressArticleMapper articleMapper,
             WordPressMenuMapper menuMapper,
             WordPressRedirectMapper redirectMapper,
@@ -134,7 +130,6 @@ public class WordPressMigrationImportService {
             CategoryImporter categoryImporter,
             BrandImporter brandImporter,
             MediaImporter mediaImporter,
-            PageImporter pageImporter,
             ArticleImporter articleImporter,
             RedirectImporter redirectImporter,
             MenuImporter menuImporter,
@@ -154,7 +149,6 @@ public class WordPressMigrationImportService {
         this.categoryMapper = categoryMapper;
         this.brandMapper = brandMapper;
         this.mediaMapper = mediaMapper;
-        this.pageMapper = pageMapper;
         this.articleMapper = articleMapper;
         this.menuMapper = menuMapper;
         this.redirectMapper = redirectMapper;
@@ -164,7 +158,6 @@ public class WordPressMigrationImportService {
         this.categoryImporter = categoryImporter;
         this.brandImporter = brandImporter;
         this.mediaImporter = mediaImporter;
-        this.pageImporter = pageImporter;
         this.articleImporter = articleImporter;
         this.redirectImporter = redirectImporter;
         this.menuImporter = menuImporter;
@@ -311,14 +304,13 @@ public class WordPressMigrationImportService {
 
             // ── 3. Partition posts ────────────────────────────────────────────
             List<WpPost> productPosts = new ArrayList<>(), variationPosts = new ArrayList<>(),
-                    attachmentPosts = new ArrayList<>(), pagePosts = new ArrayList<>(),
+                    attachmentPosts = new ArrayList<>(),
                     articlePosts = new ArrayList<>(), navMenuItemPosts = new ArrayList<>();
             for (WpPost post : allPosts) {
                 switch (post.postType()) {
                     case "product"           -> productPosts.add(post);
                     case "product_variation" -> variationPosts.add(post);
                     case "attachment"        -> attachmentPosts.add(post);
-                    case "page"              -> pagePosts.add(post);
                     case "post"              -> articlePosts.add(post);
                     case "nav_menu_item"     -> navMenuItemPosts.add(post);
                 }
@@ -381,15 +373,6 @@ public class WordPressMigrationImportService {
                 }
                 results.put(MigrationDomain.BRANDS, brandImporter.importBatch(
                         brands, options, mediaByLegacyId, mediaUrlProperties.getPublicBaseUrl()));
-            }
-
-            // ── 7. Pages ──────────────────────────────────────────────────────
-            if (options.includesDomain(MigrationDomain.PAGES)) {
-                List<WordPressPageMapper.MappedPage> pages = new ArrayList<>();
-                for (WpPost post : pagePosts) {
-                    pages.add(pageMapper.map(post, metaByPost.getOrDefault(post.id(), List.of())));
-                }
-                results.put(MigrationDomain.PAGES, pageImporter.importBatch(pages, options));
             }
 
             // ── 8. Articles ───────────────────────────────────────────────────

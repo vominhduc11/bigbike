@@ -2,8 +2,6 @@ package com.bigbike.bigbike_backend.api.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertArticleRequest;
 
-import com.bigbike.bigbike_backend.api.admin.dto.UpsertCategoryRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.UpsertPageRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
@@ -11,7 +9,6 @@ import com.bigbike.bigbike_backend.domain.content.AdminContentItem;
 import com.bigbike.bigbike_backend.domain.content.Article;
 
 import com.bigbike.bigbike_backend.domain.content.ContentCategoryItem;
-import com.bigbike.bigbike_backend.domain.content.ContentPageRefItem;
 import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
 import com.bigbike.bigbike_backend.service.admin.AdminContentMutationService;
 import com.bigbike.bigbike_backend.service.admin.AdminContentReadService;
@@ -143,25 +140,6 @@ public class AdminContentController extends AdminControllerSupport {
         return apiResponseFactory.data(adminContentMutationService.updateArticle(id, payload, resolveAdminId()), request);
     }
 
-    @PostMapping("/pages")
-    public ApiDataResponse<AdminContentItem> createPage(
-            @Valid @RequestBody UpsertPageRequest payload,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "content.update");
-        return apiResponseFactory.data(adminContentMutationService.createPage(payload, resolveAdminId()), request);
-    }
-
-    @PatchMapping("/pages/{id}")
-    public ApiDataResponse<AdminContentItem> updatePage(
-            @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
-            @Valid @RequestBody UpsertPageRequest payload,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "content.update");
-        return apiResponseFactory.data(adminContentMutationService.updatePage(id, payload, resolveAdminId()), request);
-    }
-
     @DeleteMapping("/{type}/{id}")
     public ApiDataResponse<AdminContentItem> deleteContent(
             @PathVariable @Pattern(regexp = CONTENT_PATH_TYPE_REGEX, message = "Invalid content type.") String type,
@@ -169,9 +147,6 @@ public class AdminContentController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "content.update");
-        if ("page".equalsIgnoreCase(type)) {
-            return apiResponseFactory.data(adminContentMutationService.deletePage(id, resolveAdminId()), request);
-        }
         return apiResponseFactory.data(adminContentMutationService.deleteArticle(id, resolveAdminId()), request);
     }
 
@@ -200,55 +175,13 @@ public class AdminContentController extends AdminControllerSupport {
         throw new UnauthorizedException("No authenticated admin principal.");
     }
 
-    // ── Reference lists (for article/page form dropdowns) ────────────────────
+    // ── Reference lists (for article form dropdowns) ─────────────────────────
 
     @GetMapping("/reference/categories")
     public ApiListResponse<ContentCategoryItem> listCategoryRefs(HttpServletRequest request) {
         devAdminAuthService.requirePermission(request, "content.read");
         List<ContentCategoryItem> items = adminContentReferenceService.listCategories();
         return apiResponseFactory.list(new PageResult<>(items, 1, items.size(), items.size(), 1), request);
-    }
-
-    @GetMapping("/reference/pages")
-    public ApiListResponse<ContentPageRefItem> listPageRefs(HttpServletRequest request) {
-        devAdminAuthService.requirePermission(request, "content.read");
-        List<ContentPageRefItem> items = adminContentReferenceService.listPageRefs();
-        return apiResponseFactory.list(new PageResult<>(items, 1, items.size(), items.size(), 1), request);
-    }
-
-    // ── Content Category CRUD ────────────────────────────────────────────────
-
-    @PostMapping("/content-categories")
-    public ApiDataResponse<ContentCategoryItem> createCategory(
-            @Valid @RequestBody UpsertCategoryRequest payload,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "content.update");
-        return apiResponseFactory.data(adminContentReferenceService.createCategory(payload), request);
-    }
-
-    @PatchMapping("/content-categories/{id}")
-    public ApiDataResponse<ContentCategoryItem> updateCategory(
-            @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
-            @Valid @RequestBody UpsertCategoryRequest payload,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "content.update");
-        return apiResponseFactory.data(adminContentReferenceService.updateCategory(id, payload), request);
-    }
-
-    /**
-     * Hard-delete a content category. Blocked with {@code CATEGORY_IN_USE} if any article
-     * still references it (primary or many-to-many) — articles are never touched as a side effect.
-     */
-    @DeleteMapping("/content-categories/{id}")
-    public org.springframework.http.ResponseEntity<Void> deleteCategory(
-            @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "content.update");
-        adminContentReferenceService.deleteCategory(id);
-        return org.springframework.http.ResponseEntity.noContent().build();
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

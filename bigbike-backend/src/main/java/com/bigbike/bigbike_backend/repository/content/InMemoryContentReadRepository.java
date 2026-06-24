@@ -7,8 +7,6 @@ import com.bigbike.bigbike_backend.domain.content.Article;
 
 import com.bigbike.bigbike_backend.domain.content.ContentCategorySummary;
 import com.bigbike.bigbike_backend.domain.content.ContentCategoryWithCount;
-import com.bigbike.bigbike_backend.domain.content.Page;
-import com.bigbike.bigbike_backend.domain.content.PageType;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -27,7 +25,6 @@ import org.springframework.stereotype.Repository;
 public class InMemoryContentReadRepository implements ContentReadRepository {
 
     private final List<Article> articles;
-    private final List<Page> pages;
 
     public InMemoryContentReadRepository() {
         ContentCategorySummary ridingGuide = new ContentCategorySummary("content_cat_guide", "huong-dan", "Hướng dẫn");
@@ -53,6 +50,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                 List.of(ridingGuide),
                 PublishStatus.PUBLISHED,
                 true,                       // featured
+                true,                       // homeExperience
                 new SeoMeta(
                         "Cách Chọn Mũ Fullface Phù Hợp",
                         "Hướng dẫn chọn mũ fullface cho biker.",
@@ -87,6 +85,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                 List.of(news),
                 PublishStatus.DRAFT,
                 false,                      // featured
+                false,                      // homeExperience
                 new SeoMeta(
                         "Xu Hướng Đồ Bảo Hộ 2026",
                         "Tin tức và phân tích xu hướng đồ bảo hộ biker 2026.",
@@ -102,62 +101,6 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
         );
 
         this.articles = List.of(article1, article2);
-
-        Page pageAbout = new Page(
-                "page_gioi_thieu",
-                "gioi-thieu",
-                "Giới Thiệu BigBike",
-                "<p>BigBike là cửa hàng đồ bảo hộ và phụ kiện biker.</p>",
-                PageType.ABOUT,
-                null,
-                PublishStatus.PUBLISHED,
-                new SeoMeta(
-                        "Giới Thiệu BigBike",
-                        "Thông tin về BigBike.",
-                        "https://bigbike.vn/gioi-thieu/",
-                        null,
-                        false
-                ),
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                Instant.parse("2026-04-01T01:00:00Z"),
-                Instant.parse("2026-04-01T01:00:00Z"),
-                Instant.parse("2026-04-18T05:00:00Z"),
-                null
-        );
-
-        Page pageWarranty = new Page(
-                "page_chinh_sach_bao_hanh",
-                "chinh-sach-bao-hanh",
-                "Chính Sách Bảo Hành",
-                "<p>Chính sách bảo hành áp dụng theo từng nhóm sản phẩm.</p>",
-                PageType.POLICY,
-                null,
-                PublishStatus.PUBLISHED,
-                new SeoMeta(
-                        "Chính Sách Bảo Hành",
-                        "Chính sách bảo hành tại BigBike.",
-                        "https://bigbike.vn/chinh-sach-bao-hanh/",
-                        null,
-                        false
-                ),
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                Instant.parse("2026-04-01T01:00:00Z"),
-                Instant.parse("2026-04-01T01:00:00Z"),
-                Instant.parse("2026-04-18T05:00:00Z"),
-                null
-        );
-
-        this.pages = List.of(pageAbout, pageWarranty);
     }
 
     @Override
@@ -193,27 +136,13 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
     }
 
     @Override
-    public Optional<Page> findPageBySlug(String slug) {
-        return pages.stream().filter(p -> p.slug().equals(slug)).findFirst();
-    }
-
-    @Override
-    public Optional<Page> findPageBySlug(String slug, String locale) {
-        return findPageBySlug(slug);
-    }
-
-    @Override
-    public Optional<Page> findPageById(String id) {
-        return pages.stream().filter(p -> p.id().equals(id)).findFirst();
-    }
-
-    @Override
     public org.springframework.data.domain.Page<Article> listPublishedArticles(
-            String categorySlug, String q, Boolean featured, Pageable pageable, String locale) {
+            String categorySlug, String q, Boolean featured, Boolean homeExperience, Pageable pageable, String locale) {
         List<Article> filtered = articles.stream()
                 .filter(a -> a.publishStatus() == PublishStatus.PUBLISHED)
                 .filter(a -> matchesCategory(a, categorySlug))
                 .filter(a -> featured == null || a.featured() == featured)
+                .filter(a -> homeExperience == null || a.homeExperience() == homeExperience)
                 .filter(a -> matchesArticleQuery(a, q))
                 .toList();
         return toSpringPage(filtered, pageable, InMemoryContentReadRepository::articleComparator);
@@ -230,28 +159,10 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
     }
 
     @Override
-    public org.springframework.data.domain.Page<Page> listPagesAdmin(
-            PublishStatus publishStatus, String q, Pageable pageable, String locale) {
-        List<Page> filtered = pages.stream()
-                .filter(p -> publishStatus == null || p.publishStatus() == publishStatus)
-                .filter(p -> matchesPageQuery(p, q))
-                .toList();
-        return toSpringPage(filtered, pageable, InMemoryContentReadRepository::pageComparator);
-    }
-
-    @Override
     public List<Article> findArticlesByFilter(PublishStatus publishStatus, String q, String locale) {
         return articles.stream()
                 .filter(a -> publishStatus == null || a.publishStatus() == publishStatus)
                 .filter(a -> matchesArticleAdminQuery(a, q))
-                .toList();
-    }
-
-    @Override
-    public List<Page> findPagesByFilter(PublishStatus publishStatus, String q, String locale) {
-        return pages.stream()
-                .filter(p -> publishStatus == null || p.publishStatus() == publishStatus)
-                .filter(p -> matchesPageQuery(p, q))
                 .toList();
     }
 
@@ -301,12 +212,6 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
         return containsLower(a.title(), term) || containsLower(a.excerpt(), term) || containsLower(a.slug(), term);
     }
 
-    private static boolean matchesPageQuery(Page p, String q) {
-        if (q == null || q.isBlank()) return true;
-        String term = q.toLowerCase(Locale.ROOT);
-        return containsLower(p.title(), term) || containsLower(p.slug(), term);
-    }
-
     private static boolean containsLower(String s, String termLower) {
         return s != null && s.toLowerCase(Locale.ROOT).contains(termLower);
     }
@@ -321,16 +226,6 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
             case "publishedAt" -> Comparator.comparing(
                     a -> a.publishedAt() != null ? a.publishedAt() : a.createdAt());
             default -> Comparator.comparing(a -> a.publishedAt() != null ? a.publishedAt() : a.createdAt());
-        };
-        return dir == Sort.Direction.ASC ? comp : comp.reversed();
-    }
-
-    private static Comparator<Page> pageComparator(String field, Sort.Direction dir) {
-        Comparator<Page> comp = switch (field) {
-            case "title" -> Comparator.comparing(Page::title, String.CASE_INSENSITIVE_ORDER);
-            case "createdAt" -> Comparator.comparing(Page::createdAt);
-            case "updatedAt" -> Comparator.comparing(Page::updatedAt);
-            default -> Comparator.comparing(Page::updatedAt);
         };
         return dir == Sort.Direction.ASC ? comp : comp.reversed();
     }

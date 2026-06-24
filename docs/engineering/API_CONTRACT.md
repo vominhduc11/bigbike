@@ -45,7 +45,6 @@ By default every API response carries `Cache-Control: no-cache, no-store, max-ag
 - `GET /api/v1/brands`, `/api/v1/brands/**`
 - `GET /api/v1/catalog/**` (facets)
 - `GET /api/v1/articles`, `/api/v1/articles/**`
-- `GET /api/v1/pages`, `/api/v1/pages/**`
 - `GET /api/v1/menus/**`
 - `GET /api/v1/sliders`, `/api/v1/home-videos`, `/api/v1/content-categories`
 - `GET /api/v1/settings/public`
@@ -171,17 +170,21 @@ No query params. Response shape: `ApiListResponse<ContentCategoryWithCount>`:
 
 **Counting semantics:** an article counts toward a category when that category is its primary `category` **or** appears in its many-to-many `categories` list — the same membership rule as the `category` filter of `GET /api/v1/articles`. Every content category is returned (including `articleCount = 0`), ordered by `name`. Status: `CONFIRMED_FROM_CODE` — `ContentController.listContentCategories`, `ContentReadService.listContentCategories`.
 
-**Admin CRUD** (consumed by the admin Content screen "Quản lý danh mục bài viết" modal — `ContentCategoryManagerModal`):
+**Admin reference list** (`content.read`): `GET /api/v1/admin/content/reference/categories` → `ApiListResponse<ContentCategoryItem>` (`{ id, slug, name }`), ordered by `name`. Feeds the article editor's category picker so an article can be assigned to existing categories. Status: `CONFIRMED_FROM_CODE` — `AdminContentController.listCategories`, `AdminContentReferenceService.listCategories`, `adminApi.fetchContentCategories`.
 
-| Method | Path | Permission | Body | Response |
-|---|---|---|---|---|
-| `POST` | `/api/v1/admin/content/content-categories` | `content.update` | `UpsertCategoryRequest` (`slug` lowercase-kebab, `name`, optional `description`/`visible`/`showOnHomepage`/`sortOrder`/`parentId`) | `ApiDataResponse<ContentCategoryItem>` (`{ id, slug, name }`) |
-| `PATCH` | `/api/v1/admin/content/content-categories/{id}` | `content.update` | same `UpsertCategoryRequest` | `ApiDataResponse<ContentCategoryItem>` |
-| `DELETE` | `/api/v1/admin/content/content-categories/{id}` | `content.update` | — | `204 No Content` |
+**No admin CRUD.** There is no create/update/delete endpoint for content categories — the admin "Quản lý danh mục bài viết" screen was removed (the inventory of categories is fixed/seed-managed). Articles can only be assigned to categories that already exist; the public list and the article-editor picker both read from the same `content_categories` table.
 
-**Delete guard:** `DELETE` is blocked with `400 VALIDATION_ERROR` carrying a detail `{ field: "category", code: "CATEGORY_IN_USE" }` when any article (any publish status) still references the category as its primary `category` or in its many-to-many `categories` list. Articles are never modified as a side effect — the editor must reassign/remove them first. Mirrors the product-category delete guard.
+## Static CMS Pages + Guide Page — REMOVED (2026-06-24)
 
-Status: `CONFIRMED_FROM_CODE` — `AdminContentController.createCategory/updateCategory/deleteCategory`, `AdminContentReferenceService.deleteCategory`, `ContentCategoryJpaRepository.countArticlesUsingCategory`, `adminApi.createContentCategory/updateContentCategory/deleteContentCategory`. (Note: `createCategory()` in `adminApi.js` targets `/admin/categories` — **product** categories — a separate resource.)
+> **REMOVED (2026-06-24).** Module "Trang tĩnh CMS" (pages) và module Guide Page Builder đã bị gỡ khỏi toàn stack. 10 trang thông tin — Giới thiệu (`/gioi-thieu`), Liên hệ (`/lien-he`), Hướng dẫn (`/huong-dan` + 3 trang con `/huong-dan/{mua-hang|size-mu|size-gang-tay}`), và 4 trang chính sách (`/chinh-sach/{slug}`) — nay **đóng cứng (hardcode) trong `bigbike-web`** (nguồn freeze: `bigbike-web/lib/content/static-pages.json` + `static-pages.ts`, render qua route giữ nguyên URL gồm cả catch-all `/[slug]`). Web **không** còn gọi backend cho các trang này.
+>
+> **Endpoint đã gỡ:**
+> - Public `GET /api/v1/pages`, `GET /api/v1/pages/{slug}` — không còn.
+> - Public `GET /api/v1/guide-page` — không còn.
+> - Toàn bộ admin CRUD pages (`POST`/`PATCH`/`DELETE /api/v1/admin/content/pages`, type `PAGE` trong `GET /api/v1/admin/content`) + reference `GET /api/v1/admin/content/reference/pages` — không còn.
+> - Admin guide-page `GET`/`PUT /api/v1/admin/guide-page` — không còn.
+>
+> Bảng `pages` + `guide_page_layout` đã drop ở `V271__drop_pages_and_guide_page.sql`. Module Nội dung admin nay **chỉ còn quản lý bài viết (Tin tức)** — xem "Article Content Contract" bên dưới. Sidebar trang chính sách `/chinh-sach` vẫn lấy danh mục từ menu location `policy` (`GET /api/v1/menus/policy`), nhưng thân bài từng trang nay là nội dung tĩnh ở web (không còn `GET /api/v1/pages/{slug}`).
 
 ## Article Content Contract
 
@@ -199,23 +202,34 @@ Other existing list params (e.g. `category`, `q`, paging) are unaffected.
 
 Status: `CONFIRMED_FROM_CODE` — `ContentController.listArticles` (`featured` query param).
 
+### Article list — `GET /api/v1/articles` query param `homeExperience` (V272)
+
+`GET /api/v1/articles` — public, no auth. Accepts an optional boolean query param `homeExperience`:
+
+- `homeExperience=true` → returns **only** articles admin đã chọn vào carousel "Góc trải nghiệm cùng BigBike" trên trang chủ.
+- `homeExperience=false` or param omitted → no filtering (default list behaviour, unchanged).
+
+Combinable với các param khác (`category`, `featured`, `q`, paging). **Storefront fallback:** trang chủ gọi `?homeExperience=true&size=3`; nếu rỗng (admin chưa chọn bài nào) thì fall back về `?category=reviews&size=3&sort=publishedAt:desc` — hành vi cũ. Logic fallback nằm ở web (`app/page.tsx`), không ở backend.
+
+Status: `CONFIRMED_FROM_CODE` — `ContentController.listArticles` (`homeExperience` query param), `ArticleJpaRepository.findPublishedArticleIds`.
+
 ### Article payload — `featured` + `seo.noIndex` (V222)
 
 Both the public `Article` shape (`GET /api/v1/articles`, `GET /api/v1/articles/{slug}`) and admin `AdminContentItem` now carry:
 
 - `featured` — top-level boolean. `true` = bài viết được đánh dấu nổi bật.
+- `homeExperience` — top-level boolean (V272). `true` = bài được chọn vào carousel "Góc trải nghiệm" trang chủ.
 - `seo.noIndex` — boolean inside the `seo` object. `true` = trang đặt `noindex` (không cho search engine index bài này). The `seo` object may be `null` when no SEO field is set → treat `noIndex` as `false`.
 
-**Pages** không có `featured` và không bật `noIndex` đợt này — luôn `false`.
-
-**Admin upsert** (`POST` / `PATCH /api/v1/admin/content/articles`) accepts both:
+**Admin upsert** (`POST` / `PATCH /api/v1/admin/content/articles`) accepts cả:
 
 - top-level `featured` (boolean) — via `UpsertArticleRequest.featured`.
+- top-level `homeExperience` (boolean, V272) — via `UpsertArticleRequest.homeExperience`.
 - `seo.noIndex` (boolean) — via `SeoMetaRequest.noIndex`.
 
-On update (`PATCH`), `null` for either field = giữ nguyên giá trị hiện có (presence-flag pattern).
+On update (`PATCH`), `null` cho bất kỳ field nào = giữ nguyên giá trị hiện có (presence-flag pattern).
 
-Status: `CONFIRMED_FROM_CODE` — `ContentController.listArticles`, `UpsertArticleRequest.featured`, `SeoMetaRequest.noIndex`, migration `V222__add_article_featured_and_seo_no_index.sql`. Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article featured + seo_no_index (V222)".
+Status: `CONFIRMED_FROM_CODE` — `ContentController.listArticles`, `UpsertArticleRequest.featured`, `UpsertArticleRequest.homeExperience`, `SeoMetaRequest.noIndex`, migration `V222__add_article_featured_and_seo_no_index.sql`, `V272__add_article_home_experience.sql`. Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article featured + seo_no_index (V222)" và §"Article home_experience (V272)".
 
 ### Admin content list — sort params
 
@@ -225,7 +239,7 @@ Status: `CONFIRMED_FROM_CODE` — `ContentController.listArticles`, `UpsertArtic
 |---|---|
 | `title` | Case-insensitive. |
 | `createdAt` / `updatedAt` / `publishedAt` | Timestamps; `publishedAt` falls back to `createdAt` when null. |
-| `type` | `ARTICLE` / `PAGE`. DB-paginated path falls back to `updatedAt` (not a DB column). |
+| `type` | `ARTICLE` only (pages module gỡ 2026-06-24). DB-paginated path falls back to `updatedAt` (not a DB column). |
 | `publishStatus` | Sort theo trạng thái xuất bản (gom nhóm bản nháp/đã đăng khi triage nội dung). |
 
 An unsupported field returns `400 UNSUPPORTED_SORT_FIELD` (not a silent fallback) via `SortParser`. The admin content list screen exposes column sort on `title`, `publishStatus`, and `updatedAt`.
@@ -258,20 +272,20 @@ Status: `CONFIRMED_FROM_CODE` — `V167__drop_article_product_map.sql`, `Article
 
 ### Article / Page body blocks — `bodyBlocks` (V140)
 
-Admin detail reads (`AdminContentItem`) của cả Article lẫn Page giờ bao gồm `bodyBlocks: DescriptionBlock[] | null`. `null` = chưa có blocks; `[]` = body bị xoá rỗng. **Public read** (`GET /api/v1/articles/{slug}`, `GET /api/v1/pages/{slug}`) **không** trả `bodyBlocks` — web và mobile tiếp tục đọc `body` HTML như cũ.
+Admin detail reads (`AdminContentItem`) của Article bao gồm `bodyBlocks: DescriptionBlock[] | null`. `null` = chưa có blocks; `[]` = body bị xoá rỗng. **Public read** (`GET /api/v1/articles/{slug}`) **không** trả `bodyBlocks` — web và mobile tiếp tục đọc `body` HTML như cũ. (Page body blocks không còn — module pages đã gỡ 2026-06-24.)
 
 **Upsert mutation:**
-- Gửi key `bodyBlocks: [...]` trong `UpsertArticleRequest` / `UpsertPageRequest` → server render HTML từ blocks, ghi đè cả `body_blocks` lẫn `body`.
+- Gửi key `bodyBlocks: [...]` trong `UpsertArticleRequest` → server render HTML từ blocks, ghi đè cả `body_blocks` lẫn `body`.
 - Bỏ key `bodyBlocks` hoàn toàn → `body` được patch bình thường; `body_blocks` không bị đụng (presence-flag pattern, giống `products.descriptionBlocks`).
 - **Tạo mới (`POST`):** nội dung là bắt buộc — chấp nhận **hoặc** `body` **hoặc** `bodyBlocks` non-empty. Gửi `bodyBlocks` mà bỏ `body` vẫn hợp lệ (server tự render `body` từ blocks); chỉ báo lỗi `body REQUIRED` khi thiếu cả hai.
 
-Status: `CONFIRMED_FROM_CODE` — `UpsertArticleRequest.bodyBlocksPresent`, `UpsertPageRequest.bodyBlocksPresent`, `AdminContentMutationService`, `AdminContentItem.bodyBlocks`. Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article body blocks (V140)".
+Status: `CONFIRMED_FROM_CODE` — `UpsertArticleRequest.bodyBlocksPresent`, `AdminContentMutationService`, `AdminContentItem.bodyBlocks`. Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article body blocks (V140)".
 
-### Article / Page EN translations on admin read — `translations` (V138)
+### Article EN translations on admin read — `translations` (V138)
 
-Admin detail reads (`AdminContentItem`) của cả Article lẫn Page bao gồm `translations: { en: {...} } | null` — bản dịch tiếng Anh để form admin nạp lại tab EN. `null` trên list reads; non-null trên detail reads (`GET /api/v1/admin/content/{type}/{id}`). Shape `en` là superset: `title`, `excerpt` (article-only), `body`, `heroTitle` / `heroDescription` / `heroKicker` (page-only), `seoTitle`, `seoDescription` — trường không áp dụng cho loại đó = `null`. **Public read không đổi** (đọc cột canonical + fallback VI, không trả khối `translations`).
+Admin detail reads (`AdminContentItem`) của Article bao gồm `translations: { en: {...} } | null` — bản dịch tiếng Anh để form admin nạp lại tab EN. `null` trên list reads; non-null trên detail reads (`GET /api/v1/admin/content/{type}/{id}`). Shape `en`: `title`, `excerpt`, `body`, `seoTitle`, `seoDescription`. **Public read không đổi** (đọc cột canonical + fallback VI, không trả khối `translations`). (Page translations không còn — module pages đã gỡ 2026-06-24.)
 
-Status: `CONFIRMED_FROM_CODE` — `AdminContentItem.translations`, `ContentTranslations`, `ArticleTranslations` / `PageTranslations`, `AdminContentReadService.fromArticle` / `fromPage`. Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article bilingual content (V138)".
+Status: `CONFIRMED_FROM_CODE` — `AdminContentItem.translations`, `ContentTranslations`, `ArticleTranslations`, `AdminContentReadService.fromArticle`. Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article bilingual content (V138)".
 
 ## Commerce Mutation Contracts
 
@@ -739,7 +753,7 @@ Status: `CONFIRMED_FROM_CODE` — `CatalogController` (`lang` param public),
 
 Danh mục, sản phẩm, thương hiệu, **bài viết** có thêm slug tiếng Anh tùy chọn. Áp dụng cho
 `GET /api/v1/categories/{slug}`, `/products/{slug}`, `/brands/{slug}`, `/articles/{slug}` và các endpoint
-admin upsert tương ứng. (**Trang tĩnh** `pages` **không** có — giữ `PAGE_RULE_003`.)
+admin upsert tương ứng. (Trang thông tin/chính sách nay tĩnh ở web — không qua backend; module pages đã gỡ 2026-06-24.)
 
 **Lookup public — tra cứu theo vi HOẶC en slug:** path `{slug}` được resolve theo
 `slug` tiếng Việt **hoặc** `slug_en` (`findBySlug(slug).or(() -> findBySlugEn(slug))`, ưu tiên khớp
@@ -820,8 +834,9 @@ quản lý qua trình quản lý Menu như các slot khác (thêm/bớt/sắp x�
 
 **Đọc public:** `GET /api/v1/menus/policy?lang=vi|en` — shape `PublicMenu` chuẩn. Mỗi
 mục trỏ tới `/chinh-sach/{page-slug}`; web khớp `current` khi `page-slug` bằng slug đang
-xem. Thân bài trang là PAGE content thường (`GET /api/v1/pages/{slug}`); slug không khớp
-trang CMS nào → 404. Không còn bảng map slug hard-code trong `bigbike-web`.
+xem. **Thân bài từng trang nay là nội dung tĩnh trong `bigbike-web`** (nguồn `static-pages.json`,
+module pages đã gỡ 2026-06-24 — không còn `GET /api/v1/pages/{slug}`); slug không khớp trang
+tĩnh nào → 404. Menu `policy` chỉ cấp danh sách/thứ tự mục cho sidebar.
 
 **Ghi (admin):** dùng chung `POST/PATCH/DELETE /api/v1/admin/menus/{menuId}/items` như
 mọi menu. Container `policy` là system slot → không tạo/xóa được (chỉ quản lý mục bên
@@ -894,12 +909,7 @@ Status: `REMOVED`
   - `promo_title`, `promo_off`, `promo_href`, `promo_image_url` — homepage promo banner block.
   - `home_exp_subtitle`, `home_exp_title`, `home_exp_desc` — homepage experience/news teaser section copy.
   - `about_title`, `about_subtitle`, `about_content_html` — homepage about block copy.
-- `public_about`: **unused since 2026-06-23.** Was the editable copy for the **About page** (`/gioi-thieu`, added in `V223`). The About page's **body copy is now static** — hardcoded in the web via the i18n `About` namespace, not read from settings. The 28 keys stay in the DB (not dropped) but drive nothing; the admin "Trang Giới thiệu" settings tab is hidden (`HIDDEN_GROUPS`). **The page's hero banner (title/image) + SEO are still admin-managed** via the `pages` entity (`GET /api/v1/pages/gioi-thieu`, Nội dung module) — only the body copy is static.
-  - `about_page_kicker` (STRING), `about_page_tagline` (LONG_TEXT) — intro block-head.
-  - `about_page_intro_html` (HTML) — the four opening paragraphs as one rich-text field.
-  - `about_page_quality_heading` (STRING), `about_page_quality_body` (LONG_TEXT) — "Chất lượng dịch vụ" block-head.
-  - `about_page_service{1..5}_title` (STRING), `_body` (LONG_TEXT), `_image` (IMAGE_URL), `_highlight` (BOOLEAN) — the 5 service tiles; `_highlight=true` paints the orange tile background (defaults: tiles 1 & 5 highlighted). Tile count is fixed at 5 (layout constraint).
-  - `about_page_connect_heading` (STRING), `about_page_connect_intro1` (LONG_TEXT), `about_page_connect_intro2` (LONG_TEXT) — "Kết nối với chúng tôi" block. The store/hotline/Facebook cards below still read the shared `contact` keys; brand logos still load from the brand taxonomy.
+- `public_about`: **removed 2026-06-24 (V274).** Was the editable copy for the **About page** (`/gioi-thieu`, added in `V223`, re-seeded `V269`). The About page is **fully static** — copy from the i18n `About` namespace, 5 service tiles from theme assets (`AboutPageContent.tsx`); the web never consumed these settings. All 28 `about_page_*` keys were dropped from the DB, from `SettingDefinitionRegistry`, and the runtime `AboutServiceMediaSeeder` was deleted. The store/hotline/Facebook cards on the page still read the shared `contact` keys; brand logos still load from the brand taxonomy.
 - `public_product`: **no shared settings.** All product-detail content is per-product: commitment rows under the buy buttons (`product.commitments`, V232) and the trust-badge row above the title (`product.trustBadges`, V233). The former `product_commitment_*` (V228) and `product_trust_*` keys were removed in V232/V233.
 - `seo`:
   - `seo_home_title`, `seo_home_description`, `seo_home_h1`, `og_image_url`
@@ -912,7 +922,7 @@ Status: `CONFIRMED_FROM_CODE` — `SettingDefinitionRegistry.java`, `PublicSetti
 
 **Page hero settings (group `public_hero`, all `publicAllowed`):**
 
-For each listing page that lacks a `PageEntity` backing (`/san-pham`, `/brands`, `/tin-tuc`), the hero block is composed from 5 keys:
+For each listing page (`/san-pham`, `/brands`, `/tin-tuc`), the hero block is composed from 5 keys:
 
 | Key prefix | Type | Purpose |
 |---|---|---|
@@ -922,29 +932,15 @@ For each listing page that lacks a `PageEntity` backing (`/san-pham`, `/brands`,
 | `hero_<page>_image_alt` | `STRING` | Image alt text |
 | `hero_<page>_title` | `STRING` | Heading text |
 
-Concrete keys: `hero_products_*`, `hero_brands_*`, `hero_news_*` (15 total). All are returned by `GET /api/v1/settings/public`. Two global fallbacks also live in `public_hero`: `hero_default_bg_url` and `hero_default_illustration_url`, used when a page has no own background / illustration. **Cascade per page:** the page's own key → the matching global default → a hardcoded asset baked into `WpCategoryHero`. The `WpCategoryHero` web component renders `mobile_image_url` via an art-directed `<img>` overlay shown only below the `md` breakpoint. The `_description` and `_kicker` keys that earlier seeds carried were dropped in `V199__drop_unused_hero_settings.sql` (never consumed); `_mobile_image_url` was re-introduced in `V220__reseed_hero_mobile_settings.sql`; per-page `_illustration_url` was added in `V221__add_hero_per_page_illustration.sql` (previously all three pages shared `hero_default_illustration_url`). These keys are managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`). CMS pages (about/contact/policy/guides) carry the same hero fields directly on the `Page` entity instead — see [DATA_CONTRACT.md](DATA_CONTRACT.md) "Page hero fields".
-
-**`UpsertPageRequest` admin DTO** (admin can edit hero on any CMS page):
-- `heroImage`: `{ url, alt }` — same nested shape as `coverImage`. Send `{ url: "" }` to clear.
-- `heroTitle`, `heroDescription`, `heroKicker`: nullable strings.
-
-**Public `Page` response** adds `heroImageUrl`, `heroImageAlt`, `heroTitle`, `heroDescription`, `heroKicker` (all nullable strings) to the existing shape.
+Concrete keys: `hero_products_*`, `hero_brands_*`, `hero_news_*` (15 total). All are returned by `GET /api/v1/settings/public`. Two global fallbacks also live in `public_hero`: `hero_default_bg_url` and `hero_default_illustration_url`, used when a page has no own background / illustration. **Cascade per page:** the page's own key → the matching global default → a hardcoded asset baked into `WpCategoryHero`. The `WpCategoryHero` web component renders `mobile_image_url` via an art-directed `<img>` overlay shown only below the `md` breakpoint. The `_description` and `_kicker` keys that earlier seeds carried were dropped in `V199__drop_unused_hero_settings.sql` (never consumed); `_mobile_image_url` was re-introduced in `V220__reseed_hero_mobile_settings.sql`; per-page `_illustration_url` was added in `V221__add_hero_per_page_illustration.sql` (previously all three pages shared `hero_default_illustration_url`). These keys are managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`). (Trước đây các trang CMS about/contact/policy/guides mang hero trên `Page` entity — module pages đã gỡ 2026-06-24, các trang đó nay tĩnh ở web nên không còn hero do admin quản lý.)
 
 ## Contact Page (trang tĩnh — không có endpoint)
 
 Trang `/lien-he` là **trang tĩnh hoàn toàn**: bố cục, nhãn, tiêu đề và SEO cố định trong code web (i18n `Contact`/`StaticPage`), admin không quản lý. **Đã gỡ toàn bộ endpoint contact-page** (cả `GET/PUT /api/v1/admin/contact-page` lẫn public `GET /api/v1/contact-page`) và bảng `contact_page_layout` (drop ở `V270`, was V224). Số điện thoại/địa chỉ/giờ/mạng xã hội hiển thị trên trang là dữ liệu chung lấy từ `GET /api/v1/settings/public` (nhóm `contact`, cùng nguồn header/footer). Evidence: `bigbike-web/app/lien-he/page.tsx`, `bigbike-web/components/contact/ContactPageContent.tsx`, `V270__drop_contact_page_layout.sql`.
 
-## Guide Page Builder Contract
+## Guide Page Builder Contract — REMOVED (2026-06-24)
 
-Lưới trang tổng `/huong-dan` (xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Guide page layout"). Thân bài chi tiết vẫn qua `GET /api/v1/pages/{slug}` của module Trang.
-
-> **Admin UI (2026-06-23):** trình dựng được nhúng làm một tab trong trang editor của module Nội dung (mở trang CMS slug `huong-dan`), không còn màn riêng. Một lần bấm Lưu gọi `PUT /pages/{id}` rồi `PUT /admin/guide-page` — endpoint không đổi.
-
-| Endpoint | Permission | Behavior | Status | Evidence |
-|---|---|---|---|---|
-| `GET /api/v1/admin/guide-page` | `content.read` | Trả `{ heroTitleVi, heroTitleEn, heroImageUrl, entries }`: hero + toàn bộ ô (cả ô ẩn) để builder sửa. | `CONFIRMED_FROM_CODE` | `AdminGuidePageController.java`, `GuidePageService.getForAdmin` |
-| `PUT /api/v1/admin/guide-page` | `content.update` | Body `{ heroTitleVi, heroTitleEn, heroImageUrl, entries:[…] }`. Lưu cả mảng ô (tối đa 40). Revalidate `page:huong-dan`. | `CONFIRMED_FROM_CODE` | `AdminGuidePageController.java`, `GuidePageService.save` |
-| `GET /api/v1/guide-page` | public | `?lang=vi\|en`. Trả `{ heroTitle, heroImageUrl, entries }` với ô `enabled`, tiêu đề/mô tả đã resolve theo lang. Web dựng lưới + sidebar + map `pathSegment→pageSlug` từ payload này. | `CONFIRMED_FROM_CODE` | `PublicGuidePageController.java`, `GuidePageService.getPublic` |
+> **REMOVED (2026-06-24).** Trang Hướng dẫn `/huong-dan` (+ 3 trang con `mua-hang`/`size-mu`/`size-gang-tay`) nay là **nội dung tĩnh trong `bigbike-web`** (nguồn `static-pages.json`). Toàn bộ endpoint guide-page đã gỡ: admin `GET`/`PUT /api/v1/admin/guide-page` và public `GET /api/v1/guide-page` không còn tồn tại. Bảng `guide_page_layout` drop ở `V271`. Trình dựng trang Hướng dẫn (GuidePageBuilder) trong admin cũng đã gỡ. Xem "Static CMS Pages + Guide Page — REMOVED (2026-06-24)" ở trên.
 
 ## Customer Admin — Summary
 

@@ -105,30 +105,6 @@ class ContentPublicApiTest {
     }
 
     @Test
-    void shouldReturnPublishedPageBySlug() throws Exception {
-        mockMvc.perform(get("/api/v1/pages/chinh-sach-bao-hanh"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.id").value("page_chinh_sach_bao_hanh"))
-                .andExpect(jsonPath("$.data.slug").value("chinh-sach-bao-hanh"))
-                .andExpect(jsonPath("$.data.publishStatus").value("PUBLISHED"))
-                .andExpect(jsonPath("$.meta.requestId").exists());
-    }
-
-    @Test
-    void shouldReturn404ForUnknownPageSlug() throws Exception {
-        mockMvc.perform(get("/api/v1/pages/trang-khong-ton-tai"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("NOT_FOUND"));
-    }
-
-    @Test
-    void shouldReturn404ForDraftPageSlug() throws Exception {
-        mockMvc.perform(get("/api/v1/pages/trang-nhap-1"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("NOT_FOUND"));
-    }
-
-    @Test
     void shouldValidateInvalidSortField() throws Exception {
         mockMvc.perform(get("/api/v1/articles")
                         .param("sort", "unknown:desc"))

@@ -17,7 +17,6 @@ public class WordPressMigrationWritePlanService {
             MigrationDomain.CATEGORIES,
             MigrationDomain.BRANDS,
             MigrationDomain.MEDIA,
-            MigrationDomain.PAGES,
             MigrationDomain.ARTICLES,
             MigrationDomain.REDIRECTS,
             MigrationDomain.MENUS,
@@ -61,11 +60,6 @@ public class WordPressMigrationWritePlanService {
                 "media", MigrationConflictStrategy.UPSERT_BY_LEGACY_ID,
                 catalog.mediaMapped(), toList(catalog.mediaWarnings()), List.of(),
                 "upsert by legacyId; metadata only — no physical file copy in Phase 2D"));
-
-        ops.add(op(MigrationDomain.PAGES, MigrationOperationType.UPSERT,
-                "pages", MigrationConflictStrategy.UPSERT_BY_SLUG,
-                catalog.pagesMapped(), toList(catalog.pageWarnings()), List.of(),
-                "upsert by slug"));
 
         ops.add(op(MigrationDomain.ARTICLES, MigrationOperationType.UPSERT,
                 "articles", MigrationConflictStrategy.UPSERT_BY_SLUG,

@@ -5,7 +5,7 @@ import { toast } from '@/lib/toast'
 import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
-import { File, FileText, FolderTree, Plus } from 'lucide-react'
+import { FileText, Plus } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { AdminTable } from '../components/AdminTable'
 import { BulkActionBar } from '../components/BulkActionBar'
@@ -13,7 +13,6 @@ import { FilterChips } from '../components/FilterChips'
 import { PublishStatusBadge } from '../components/StatusBadge'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
-import { ContentCategoryManagerModal } from '../components/ContentCategoryManagerModal'
 import { deleteContent, fetchContent, updateContent } from '../lib/adminApi'
 import { allowedPublishOptions } from '../lib/contentPublishTransitions'
 import { showConfirm } from '../lib/confirm'
@@ -23,9 +22,13 @@ import { useContentLang } from '../lib/contentLang'
 import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 
+// Module chỉ còn quản lý BÀI VIẾT (Tin tức). Trang thông tin tĩnh (chính sách, hướng dẫn…)
+// đã đóng cứng trong web (owner 2026-06-24), không còn quản lý trong admin. type cố định ARTICLE.
+const ARTICLE_TYPE = 'ARTICLE'
+
 const INITIAL_QUERY = {
   search: '',
-  type: 'ALL',
+  type: ARTICLE_TYPE,
   publishStatus: 'ALL',
   sort: 'updatedAt:desc',
   page: 1,
@@ -43,7 +46,6 @@ export function ContentListScreen({ navigate, canUpdate }) {
   })
   const debouncedSearch = useDebounce(searchInput, 300)
   const isFirstSearchRender = useRef(true)
-  const [categoryModalOpen, setCategoryModalOpen] = useState(false)
   const [selected, setSelected] = useState([])
   const [bulkBusy, setBulkBusy] = useState(false)
 
@@ -74,21 +76,11 @@ export function ContentListScreen({ navigate, canUpdate }) {
     setQuery(INITIAL_QUERY)
   }
 
-  // Content type as a segmented tab bar — quick switch between articles & pages.
-  const typeTabs = useMemo(() => [
-    { key: 'ALL', label: t('common.all') },
-    { key: 'ARTICLE', label: t('content.typeArticle') },
-    { key: 'PAGE', label: t('content.typePage') },
-  ], [t])
-
   const items = state.items || []
   const pagination = state.pagination
-  // The header "create" button matches whichever type tab is active.
-  const createIsPage = query.type === 'PAGE'
-  const createPath = createIsPage ? '/admin/content/pages/new' : '/admin/content/articles/new'
+  const createPath = '/admin/content/articles/new'
 
   const isFiltered = query.search !== INITIAL_QUERY.search
-    || query.type !== INITIAL_QUERY.type
     || query.publishStatus !== INITIAL_QUERY.publishStatus
 
   const isTrashView = query.publishStatus === 'TRASH'
@@ -182,13 +174,6 @@ export function ContentListScreen({ navigate, canUpdate }) {
         onRemove: () => setSearchInput(INITIAL_QUERY.search),
       })
     }
-    if (query.type !== 'ALL') {
-      chips.push({
-        key: 'type',
-        label: `${t('content.filterType')}: ${query.type === 'PAGE' ? t('content.typePage') : t('content.typeArticle')}`,
-        onRemove: () => updateQuery({ type: 'ALL' }, { resetPage: true }),
-      })
-    }
     if (query.publishStatus !== 'ALL') {
       chips.push({
         key: 'publish',
@@ -197,7 +182,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
       })
     }
     return chips
-  }, [query.search, query.type, query.publishStatus, t])
+  }, [query.search, query.publishStatus, t])
 
   // Sort phía máy chủ — endpoint content nhận "field:dir" (mặc định updatedAt:desc).
   const [sortField, sortDir] = (query.sort || '').split(':')
@@ -211,40 +196,25 @@ export function ContentListScreen({ navigate, canUpdate }) {
       label: t('content.colContent'),
       sortable: true,
       skeletonWidth: '80%',
-      render: (item) => {
-        const isPage = item.type === 'PAGE'
-        return (
-          <div className="product-cell">
-            <span className="thumb">
-              {item.coverImage?.url ? (
-                <img
-                  src={item.coverImage.url}
-                  alt={item.coverImage.alt || item.title}
-                  referrerPolicy="no-referrer"
-                  loading="lazy"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              ) : isPage ? <File size={16} /> : <FileText size={16} />}
-            </span>
-            <div className="info">
-              <div className="name">{formatText(item.title)}</div>
-              <div className="sku">/{item.slug}</div>
-            </div>
-          </div>
-        )
-      },
-    },
-    {
-      key: 'type',
-      label: t('content.colType'),
-      render: (item) => {
-        const isPage = item.type === 'PAGE'
-        return (
-          <span className={`bb-badge ${isPage ? 'bb-badge-neutral' : 'bb-badge-info'}`}>
-            {isPage ? t('content.typePage') : t('content.typeArticle')}
+      render: (item) => (
+        <div className="product-cell">
+          <span className="thumb">
+            {item.coverImage?.url ? (
+              <img
+                src={item.coverImage.url}
+                alt={item.coverImage.alt || item.title}
+                referrerPolicy="no-referrer"
+                loading="lazy"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : <FileText size={16} />}
           </span>
-        )
-      },
+          <div className="info">
+            <div className="name">{formatText(item.title)}</div>
+            <div className="sku">/{item.slug}</div>
+          </div>
+        </div>
+      ),
     },
     {
       key: 'publishStatus',
@@ -262,26 +232,15 @@ export function ContentListScreen({ navigate, canUpdate }) {
     },
   ]
 
-  const mobileCard = (item) => {
-    const isPage = item.type === 'PAGE'
-    return {
-      title: formatText(item.title),
-      subtitle: `/${item.slug}`,
-      status: <PublishStatusBadge value={item.publishStatus} />,
-      meta: [
-        {
-          label: t('content.colType'),
-          value: (
-            <span className={`bb-badge ${isPage ? 'bb-badge-neutral' : 'bb-badge-info'}`}>
-              {isPage ? t('content.typePage') : t('content.typeArticle')}
-            </span>
-          ),
-        },
-        { label: t('content.colUpdated'), value: formatDateTime(item.updatedAt) },
-      ],
-      onClick: () => navigate(`/admin/content/${item.type.toLowerCase()}/${item.id}`),
-    }
-  }
+  const mobileCard = (item) => ({
+    title: formatText(item.title),
+    subtitle: `/${item.slug}`,
+    status: <PublishStatusBadge value={item.publishStatus} />,
+    meta: [
+      { label: t('content.colUpdated'), value: formatDateTime(item.updatedAt) },
+    ],
+    onClick: () => navigate(`/admin/content/${item.type.toLowerCase()}/${item.id}`),
+  })
 
   return (
     <div>
@@ -294,42 +253,17 @@ export function ContentListScreen({ navigate, canUpdate }) {
         <div className="bb-screen-actions">
           <button
             type="button"
-            className="bb-btn bb-btn-secondary"
-            disabled={!canUpdate}
-            onClick={() => setCategoryModalOpen(true)}
-            title={t('content.categoryManager.title', { defaultValue: 'Quản lý danh mục bài viết' })}
-          >
-            <FolderTree size={14} />{t('content.categoryManager.button', { defaultValue: 'Danh mục' })}
-          </button>
-          <button
-            type="button"
             className="bb-btn bb-btn-primary"
             disabled={!canUpdate}
             onClick={() => navigate(createPath)}
           >
             <Plus size={14} />
-            {createIsPage ? t('content.newPage') : t('content.newArticle')}
+            {t('content.newArticle')}
           </button>
         </div>
       </div>
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
-
-      {/* Type tabs — prototype segmented control */}
-      <div className="bb-seg" style={{ marginBottom: 16 }} role="tablist" aria-label={t('content.filterType')}>
-        {typeTabs.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            role="tab"
-            aria-selected={query.type === tab.key}
-            className={query.type === tab.key ? 'active' : ''}
-            onClick={() => updateQuery({ type: tab.key }, { resetPage: true })}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
 
       {/* Filter bar */}
       <div className="bb-filter-bar">
@@ -394,9 +328,9 @@ export function ContentListScreen({ navigate, canUpdate }) {
         ) : (
           <StatePanel
             tone="neutral"
-            title={t('content.emptyNoData', { defaultValue: 'Chưa có nội dung nào' })}
-            description={t('content.emptyNoDataDesc', { defaultValue: 'Bắt đầu bằng cách tạo bài viết hoặc trang đầu tiên.' })}
-            actionLabel={canUpdate ? (createIsPage ? t('content.newPage') : t('content.newArticle')) : undefined}
+            title={t('content.emptyNoData', { defaultValue: 'Chưa có bài viết nào' })}
+            description={t('content.emptyNoDataDesc', { defaultValue: 'Bắt đầu bằng cách tạo bài viết đầu tiên.' })}
+            actionLabel={canUpdate ? t('content.newArticle') : undefined}
             onAction={canUpdate ? () => navigate(createPath) : undefined}
           />
         )
@@ -428,11 +362,6 @@ export function ContentListScreen({ navigate, canUpdate }) {
           )}
         </div>
       )}
-
-      <ContentCategoryManagerModal
-        open={categoryModalOpen}
-        onClose={() => setCategoryModalOpen(false)}
-      />
     </div>
   )
 }

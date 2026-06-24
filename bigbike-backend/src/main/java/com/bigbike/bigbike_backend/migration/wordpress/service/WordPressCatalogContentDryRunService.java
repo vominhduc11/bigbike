@@ -5,7 +5,6 @@ import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressBrandMapp
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressCategoryMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressMediaMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressMenuMapper;
-import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressPageMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressPermalinkManagerMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressProductMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressRedirectMapper;
@@ -65,7 +64,6 @@ public class WordPressCatalogContentDryRunService {
     private final WordPressCategoryMapper categoryMapper;
     private final WordPressBrandMapper brandMapper;
     private final WordPressMediaMapper mediaMapper;
-    private final WordPressPageMapper pageMapper;
     private final WordPressArticleMapper articleMapper;
     private final WordPressMenuMapper menuMapper;
     private final WordPressRedirectMapper redirectMapper;
@@ -267,19 +265,9 @@ public class WordPressCatalogContentDryRunService {
             mediaMapped++;
         }
 
-        // ── 10. Map pages ─────────────────────────────────────────────────────
-        List<String> pageWarnings = new ArrayList<>();
-        Set<String> seenPageSlugs = new HashSet<>();
+        // ── 10. Pages — module gỡ (V271). Không còn map trang tĩnh; báo cáo để trống.
+        List<String> pageWarnings = List.of();
         int pagesMapped = 0, pagesSkipped = 0;
-        for (WpPost post : pagePosts) {
-            List<WpPostMeta> metas = metaByPost.getOrDefault(post.id(), List.of());
-            WordPressPageMapper.MappedPage mp = pageMapper.map(post, metas);
-            pageWarnings.addAll(mp.warnings());
-            if (mp.slug() != null && !seenPageSlugs.add(mp.slug())) {
-                pageWarnings.add("Duplicate page slug: " + mp.slug());
-            }
-            pagesMapped++;
-        }
 
         // ── 11. Map articles ──────────────────────────────────────────────────
         List<String> articleWarnings = new ArrayList<>();

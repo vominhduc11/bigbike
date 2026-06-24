@@ -4,7 +4,6 @@ public enum MigrationDomain {
     CATEGORIES,
     BRANDS,
     MEDIA,
-    PAGES,
     ARTICLES,
     REDIRECTS,
     MENUS,

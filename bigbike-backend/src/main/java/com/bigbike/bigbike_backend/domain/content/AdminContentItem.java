@@ -21,6 +21,8 @@ public record AdminContentItem(
         PublishStatus publishStatus,
         /** Featured article flag (V222). Articles only; false for pages. */
         boolean featured,
+        /** Homepage Experience carousel pick flag (V272). Articles only; false for pages. */
+        boolean homeExperience,
         SeoMeta seo,
         Instant publishedAt,
         Instant createdAt,
@@ -28,7 +30,6 @@ public record AdminContentItem(
         ContentCategorySummary category,
         String categoryId,
         List<ContentCategorySummary> categories,
-        PageType pageType,
         String parentId,
         ImageAsset heroImage,
         String heroTitle,

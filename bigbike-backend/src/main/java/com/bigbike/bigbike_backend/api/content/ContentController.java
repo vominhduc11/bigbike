@@ -5,7 +5,6 @@ import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.domain.content.Article;
 import com.bigbike.bigbike_backend.domain.content.ContentCategoryWithCount;
-import com.bigbike.bigbike_backend.domain.content.Page;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.content.ContentReadService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,10 +40,11 @@ public class ContentController {
             @RequestParam(required = false) @Pattern(regexp = SLUG_REGEX, message = "Invalid category slug.") String category,
             @RequestParam(required = false) @Size(max = 100) String q,
             @RequestParam(required = false) Boolean featured,
+            @RequestParam(required = false) Boolean homeExperience,
             @RequestParam(defaultValue = "vi") @Pattern(regexp = "^(vi|en)$", message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
-        return apiResponseFactory.list(contentReadService.listArticles(page, size, sort, category, q, featured, lang), request);
+        return apiResponseFactory.list(contentReadService.listArticles(page, size, sort, category, q, featured, homeExperience, lang), request);
     }
 
     @GetMapping("/articles/{slug}")
@@ -62,22 +62,6 @@ public class ContentController {
         PageResult<ContentCategoryWithCount> result =
                 new PageResult<>(categories, 1, categories.size(), categories.size(), 1);
         return apiResponseFactory.list(result, request);
-    }
-
-    @GetMapping("/pages")
-    public ApiListResponse<Page> listPages(HttpServletRequest request) {
-        List<Page> pages = contentReadService.listPublishedPages();
-        PageResult<Page> result = new PageResult<>(pages, 1, pages.size(), pages.size(), 1);
-        return apiResponseFactory.list(result, request);
-    }
-
-    @GetMapping("/pages/{slug}")
-    public ApiDataResponse<Page> getPageBySlug(
-            @PathVariable @Pattern(regexp = SLUG_REGEX, message = "Invalid slug.") String slug,
-            @RequestParam(defaultValue = "vi") @Pattern(regexp = "^(vi|en)$", message = "Invalid lang.") String lang,
-            HttpServletRequest request
-    ) {
-        return apiResponseFactory.data(contentReadService.getPageBySlug(slug, lang), request);
     }
 }
 

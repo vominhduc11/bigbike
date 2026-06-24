@@ -4,27 +4,22 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import type { WpStaticSidebarItem } from "@/components/wp/WpStaticSidebar";
 import { WpStaticSidebarLayout } from "@/components/wp/WpStaticSidebarLayout";
-import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
-import { getPageBySlug, getPublicMenu } from "@/lib/api/public-api";
+import { getPublicMenu } from "@/lib/api/public-api";
 import type { PublicMenu } from "@/lib/contracts/public";
+import { getStaticPage } from "@/lib/content/static-pages";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toHomePath } from "@/lib/utils/routes";
 
-// Sidebar + tập slug hợp lệ giờ do admin quản lý: menu vị trí "policy" + nội dung
-// trang (PAGE) trong CMS. Không còn map slug hard-code. URL = /chinh-sach/{page-slug}.
+// Sidebar = menu vị trí "policy" (module Menu admin quản lý). Nội dung trang ĐÃ ĐÓNG CỨNG
+// (lib/content/static-pages) — không còn gọi backend pages. URL = /chinh-sach/{page-slug}.
 const POLICY_MENU_LOCATION = "policy";
 const POLICY_BASE_PATH = "/chinh-sach";
 
 type Props = {
   params: Promise<{ slug: string }>;
 };
-
-// ISR on-demand: trang chính sách (CMS admin quản lý) → KHÔNG prebuild lúc build.
-export async function generateStaticParams() {
-  return [];
-}
 
 // Tách slug trang ra khỏi URL mục menu policy (/chinh-sach/{slug}) để so khớp "current".
 function menuItemSlug(url: string): string | null {
@@ -51,14 +46,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     getLocale(),
     getTranslations("StaticPage"),
   ]);
-  const pageResult = await getPageBySlug(slug, locale);
-  const page = pageResult?.data;
+  const page = getStaticPage(slug, locale);
   if (!page) return {};
   return buildPublicMetadata({
-    title: page.seo?.title ?? page.title ?? t("policy.title"),
-    description: page.seo?.description ?? t("policy.title"),
-    canonicalPath: page.seo?.canonicalUrl ?? `${POLICY_BASE_PATH}/${slug}/`,
-    noIndex: page.seo?.noIndex ?? false,
+    title: page.seoTitle ?? page.title ?? t("policy.title"),
+    description: page.seoDescription ?? t("policy.title"),
+    canonicalPath: page.seoCanonicalUrl ?? `${POLICY_BASE_PATH}/${slug}/`,
+    noIndex: false,
   });
 }
 
@@ -70,41 +64,35 @@ export default async function PolicyPage({ params }: Props) {
     getTranslations("Breadcrumb"),
   ]);
 
-  // Trang nội dung + menu sidebar tải song song.
-  const [result, menuResult] = await Promise.all([
-    getPageBySlug(slug, locale),
-    getPublicMenu(POLICY_MENU_LOCATION, locale),
-  ]);
-  // WP trả 404 khi page không tồn tại.
-  if (!result.data) {
+  const page = getStaticPage(slug, locale);
+  if (!page) {
     notFound();
   }
 
-  const page = result.data;
+  const menuResult = await getPublicMenu(POLICY_MENU_LOCATION, locale);
   const pageTitle = safeText(page.title, t("policy.title"));
   const sidebarItems = buildSidebarItems(menuResult?.data ?? null, slug);
 
   // page-static.php: .page-title + #main-content > .container > .row
   // > [.col-md-3 sidebar] + [.col-md-9 > .static-page.wyswyg].
   return (
-    <LocalizedContentProvider kind="page" slug={slug}>
-      <WpStaticShell
-        title={page.heroTitle ?? pageTitle}
-        titleNode={<LText field="title">{page.heroTitle ?? pageTitle}</LText>}
-        heroBgUrl={page.heroImageUrl}
-        breadcrumb={[
-          { label: tBreadcrumb("home"), href: toHomePath() },
-          { label: t("policy.title") },
-          { label: pageTitle, labelNode: <LText field="title">{pageTitle}</LText> },
-        ]}
-      >
-        <WpStaticSidebarLayout
-          sidebarItems={sidebarItems}
-          bodyNode={
-            <LHtml field="body" viHtml={sanitizeRichHtml(page.body)} className="static-page wyswyg" />
-          }
-        />
-      </WpStaticShell>
-    </LocalizedContentProvider>
+    <WpStaticShell
+      title={page.heroTitle ?? pageTitle}
+      breadcrumb={[
+        { label: tBreadcrumb("home"), href: toHomePath() },
+        { label: t("policy.title") },
+        { label: pageTitle },
+      ]}
+    >
+      <WpStaticSidebarLayout
+        sidebarItems={sidebarItems}
+        bodyNode={
+          <div
+            className="static-page wyswyg"
+            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
+          />
+        }
+      />
+    </WpStaticShell>
   );
 }

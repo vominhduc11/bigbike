@@ -18,13 +18,11 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.ArticleEntity;
-import com.bigbike.bigbike_backend.persistence.entity.content.PageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.content.PageJpaRepository;
 import com.bigbike.bigbike_backend.service.admin.AdminCatalogMutationService;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -64,9 +62,6 @@ class AdminMutationApiTest {
 
     @Autowired
     private ArticleJpaRepository articleJpaRepository;
-
-    @Autowired
-    private PageJpaRepository pageJpaRepository;
 
     @Autowired
     private AdminCatalogMutationService adminCatalogMutationService;
@@ -675,38 +670,6 @@ class AdminMutationApiTest {
                         .content("""
                                 {
                                   "title": "Phase 4G Article Updated %s",
-                                  "publishStatus": "PUBLISHED"
-                                }
-                                """.formatted(suffix)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.publishStatus").value("PUBLISHED"));
-
-        String pageSlug = "phase4g-page-" + suffix;
-        mockMvc.perform(post("/api/v1/admin/content/pages")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Admin-Permissions", "content.update")
-                        .content("""
-                                {
-                                  "slug": "%s",
-                                  "title": "Phase 4G Page %s",
-                                  "body": "<p>Page body</p>",
-                                  "pageType": "CUSTOM",
-                                  "publishStatus": "DRAFT"
-                                }
-                                """.formatted(pageSlug, suffix)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.type").value("PAGE"))
-                .andExpect(jsonPath("$.data.slug").value(pageSlug));
-
-        PageEntity page = pageJpaRepository.findBySlug(pageSlug)
-                .orElseThrow(() -> new IllegalStateException("Expected created page."));
-
-        mockMvc.perform(patch("/api/v1/admin/content/pages/{id}", page.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Admin-Permissions", "content.update")
-                        .content("""
-                                {
-                                  "title": "Phase 4G Page Updated %s",
                                   "publishStatus": "PUBLISHED"
                                 }
                                 """.formatted(suffix)))

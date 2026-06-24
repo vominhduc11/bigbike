@@ -87,6 +87,7 @@ export function buildEmptyForm(contentType) {
     body: '',
     publishStatus: 'DRAFT',
     featured: false,
+    homeExperience: false,
     seoNoIndex: false,
     pageType: 'CUSTOM',
     categoryId: '',
@@ -121,6 +122,7 @@ export function buildFormFromItem(contentType, item) {
     body: item.body || '',
     publishStatus: item.publishStatus === 'UNKNOWN' ? 'DRAFT' : item.publishStatus,
     featured: Boolean(item.featured),
+    homeExperience: Boolean(item.homeExperience),
     seoNoIndex: Boolean(item.seo?.noIndex),
     pageType: item.pageType || fallback.pageType,
     categoryId: item.categoryId || '',
@@ -243,6 +245,9 @@ export function toPayload(form, isCreate) {
 
     // Bài viết nổi bật — chỉ áp dụng cho ARTICLE; gửi boolean để backend áp dụng.
     payload.featured = Boolean(form.featured)
+
+    // Chọn vào "Góc trải nghiệm" trang chủ — chỉ ARTICLE; gửi boolean để backend áp dụng.
+    payload.homeExperience = Boolean(form.homeExperience)
   }
 
   if (form.type === 'PAGE') {

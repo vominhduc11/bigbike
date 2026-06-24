@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
-import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
-import { getPageBySlug } from "@/lib/api/public-api";
+import { getStaticPage } from "@/lib/content/static-pages";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
@@ -14,14 +13,12 @@ type StaticPageDetailProps = {
   params: Promise<{ slug: string }>;
 };
 
-// ISR on-demand: trang CMS admin quản lý → KHÔNG prebuild lúc build. Sinh khi truy cập
-// lần đầu + revalidate theo tag page:{slug}/pages khi admin sửa.
-export async function generateStaticParams() {
-  return [];
-}
-
 export async function generateMetadata({ params }: StaticPageDetailProps): Promise<Metadata> {
-  const [{ slug }, t] = await Promise.all([params, getTranslations("StaticPage")]);
+  const [{ slug }, locale, t] = await Promise.all([
+    params,
+    getLocale(),
+    getTranslations("StaticPage"),
+  ]);
   if (!isValidSlug(slug)) {
     return buildPublicMetadata({
       title: t("invalidTitle"),
@@ -31,9 +28,8 @@ export async function generateMetadata({ params }: StaticPageDetailProps): Promi
     });
   }
 
-  const locale = await getLocale();
-  const result = await getPageBySlug(slug, locale);
-  if (!result.data) {
+  const page = getStaticPage(slug, locale);
+  if (!page) {
     return buildPublicMetadata({
       title: t("notFoundTitle"),
       description: t("notFoundDescription"),
@@ -42,18 +38,18 @@ export async function generateMetadata({ params }: StaticPageDetailProps): Promi
     });
   }
 
-  const page = result.data;
   return buildPublicMetadata({
-    title: page.seo?.title ?? page.title,
-    description: page.seo?.description ?? `${page.title} — BigBike.`,
-    canonicalPath: page.seo?.canonicalUrl ?? toPagePath(page.slug),
-    noIndex: page.seo?.noIndex ?? false,
+    title: page.seoTitle ?? page.title,
+    description: page.seoDescription ?? `${page.title} — BigBike.`,
+    canonicalPath: page.seoCanonicalUrl ?? toPagePath(page.slug),
+    noIndex: false,
   });
 }
 
 export default async function StaticPageDetail({ params }: StaticPageDetailProps) {
-  const [{ slug }, t, tBreadcrumb] = await Promise.all([
+  const [{ slug }, locale, t, tBreadcrumb] = await Promise.all([
     params,
+    getLocale(),
     getTranslations("StaticPage"),
     getTranslations("Breadcrumb"),
   ]);
@@ -61,41 +57,33 @@ export default async function StaticPageDetail({ params }: StaticPageDetailProps
     notFound();
   }
 
-  const locale = await getLocale();
-  const result = await getPageBySlug(slug, locale);
-  // WP page.php trả 404 khi không có page — không có data nghĩa là không tồn tại.
-  if (!result.data) {
+  const page = getStaticPage(slug, locale);
+  if (!page) {
     notFound();
   }
 
-  const page = result.data;
   const pageTitle = safeText(page.title, t("contentFallback"));
 
   // page.php: .page-title (banner + breadcrumb) + #main-content > .container > .row
   // > .col-md-12 > .static-page.wyswyg.
   return (
-    <LocalizedContentProvider kind="page" slug={page.slug}>
-      <WpStaticShell
-        title={page.heroTitle ?? pageTitle}
-        titleNode={<LText field="title">{page.heroTitle ?? pageTitle}</LText>}
-        heroBgUrl={page.heroImageUrl}
-        breadcrumb={[
-          { label: tBreadcrumb("home"), href: toHomePath() },
-          { label: pageTitle, labelNode: <LText field="title">{pageTitle}</LText> },
-        ]}
-      >
-        <div className="container">
-          <div className="row">
-            <div className="col-md-12">
-              <LHtml
-                field="body"
-                viHtml={sanitizeRichHtml(page.body)}
-                className="static-page wyswyg"
-              />
-            </div>
+    <WpStaticShell
+      title={page.heroTitle ?? pageTitle}
+      breadcrumb={[
+        { label: tBreadcrumb("home"), href: toHomePath() },
+        { label: pageTitle },
+      ]}
+    >
+      <div className="container">
+        <div className="row">
+          <div className="col-md-12">
+            <div
+              className="static-page wyswyg"
+              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
+            />
           </div>
         </div>
-      </WpStaticShell>
-    </LocalizedContentProvider>
+      </div>
+    </WpStaticShell>
   );
 }

@@ -41,29 +41,6 @@ class ContentP1ApiTest {
         this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
     }
 
-    // ── P1-005: public pages list ─────────────────────────────────────────────
-
-    @Test
-    void shouldListPublishedPagesFromPublicEndpoint() throws Exception {
-        mockMvc.perform(get("/api/v1/pages"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                // Verify specific seeded published pages are present; do not assert exact total
-                // because other tests may create pages. Draft page_draft_1 must be excluded.
-                .andExpect(jsonPath("$.data[?(@.slug == 'gioi-thieu')]").isNotEmpty())
-                .andExpect(jsonPath("$.data[?(@.slug == 'chinh-sach-bao-hanh')]").isNotEmpty())
-                .andExpect(jsonPath("$.data[?(@.slug == 'trang-nhap-1')]").isEmpty())
-                .andExpect(jsonPath("$.meta.requestId").exists());
-    }
-
-    @Test
-    void shouldExcludeDraftPagesFromPublicList() throws Exception {
-        // page_draft_1 has slug "trang-nhap-1" — must not appear
-        mockMvc.perform(get("/api/v1/pages"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[?(@.slug == 'trang-nhap-1')]").isEmpty());
-    }
-
     // ── P1-003: category_map sync on PATCH ───────────────────────────────────
 
     @Test
@@ -175,20 +152,6 @@ class ContentP1ApiTest {
                         .header("X-Admin-Permissions", "content.read"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.meta.requestId").exists());
-    }
-
-    @Test
-    void shouldListPageRefsViaReferenceEndpoint() throws Exception {
-        mockMvc.perform(get("/api/v1/admin/content/reference/pages")
-                        .header("X-Admin-Permissions", "content.read"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                // All pages (published + draft) must appear; do not assert exact count
-                // because other tests may create pages.
-                .andExpect(jsonPath("$.data[?(@.slug == 'gioi-thieu')]").isNotEmpty())
-                .andExpect(jsonPath("$.data[?(@.slug == 'chinh-sach-bao-hanh')]").isNotEmpty())
-                .andExpect(jsonPath("$.data[?(@.slug == 'trang-nhap-1')]").isNotEmpty())
                 .andExpect(jsonPath("$.meta.requestId").exists());
     }
 

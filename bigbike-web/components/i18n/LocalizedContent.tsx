@@ -8,7 +8,6 @@ import {
   fetchPublicArticle,
   fetchPublicBrand,
   fetchPublicCategory,
-  fetchPublicPage,
   fetchPublicProduct,
 } from "@/lib/api/client-api";
 import { sanitizeRichHtml } from "@/lib/utils/html";
@@ -32,7 +31,7 @@ import { sanitizeRichHtml } from "@/lib/utils/html";
  * CATEGORY _RULE_002), nên field nào admin chưa dịch sẽ tự hiển thị `vi`.
  */
 
-type LocalizableKind = "product" | "article" | "brand" | "category" | "page";
+type LocalizableKind = "product" | "article" | "brand" | "category";
 
 type LocalizedRecord = Record<string, unknown>;
 
@@ -41,7 +40,6 @@ const FETCHERS: Record<LocalizableKind, (slug: string, lang: string) => Promise<
   article: fetchPublicArticle,
   brand: fetchPublicBrand,
   category: fetchPublicCategory,
-  page: fetchPublicPage,
 };
 
 type LocalizedContextValue = { data: LocalizedRecord | null };

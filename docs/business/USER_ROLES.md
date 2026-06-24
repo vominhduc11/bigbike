@@ -62,7 +62,7 @@ File này dùng làm nền cho:
 | Field | Value |
 |---|---|
 | Purpose | Người truy cập chưa đăng nhập, xem sản phẩm/content và có thể mua hàng dạng guest. |
-| Access Area | Homepage, product listing/detail, category/brand, search, articles/pages, public menu/settings, cart, checkout, order lookup. |
+| Access Area | Homepage, product listing/detail, category/brand, search, articles (Tin tức), static info/policy pages, public menu/settings, cart, checkout, order lookup. |
 | Main Actions | Xem sản phẩm/content, tìm kiếm, thêm giỏ hàng, checkout guest, quick-buy, submit review public nếu endpoint được dùng. |
 | Restricted Actions | Không được gọi admin APIs; không được xem customer account/order protected APIs nếu chưa authenticate; không được gọi customer protected routes. |
 | Related Modules | Homepage, Catalog, Search, Cart, Checkout, Content, Reviews, SEO/Menu. |
