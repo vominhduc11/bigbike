@@ -43,7 +43,7 @@ File này dùng làm nền cho:
 | Customer | Human user | Đăng ký/đăng nhập, checkout, quản lý profile/address/order. | Public web/mobile account area, customer APIs. | `CONFIRMED_FROM_CODE` | `CustomerAuthController`, `CustomerOrderController`, `CustomerAddressController`, `SecurityConfig`, `PHASE_1D_CUSTOMER_AUTH_REPORT.md` |
 | Admin | Internal user | Vận hành hệ thống ở mức rộng: product, order, customer, content, settings, media, users, reports. | Admin portal, admin APIs. | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java`, `SecurityConfig`, `bigbike-admin/README.md`, admin controllers |
 | Super Admin | Internal user | Quyền cao nhất, có wildcard permission và bảo vệ chống tự hạ quyền/last super admin demotion. | Admin portal, admin users/roles/settings/all admin modules. | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java`, `AdminAdminUsersService.java` |
-| Shop Manager | Internal user | Quản lý bán hàng/vận hành shop: products, orders, customers, shipping read, reviews. | Admin portal selected business modules. | `CONFIRMED_FROM_CODE` for role mapping; UI behavior `NEEDS_VERIFICATION` | `AdminRolePermissions.java` |
+| Shop Manager | Internal user | Quản lý bán hàng/vận hành shop: products, orders, customers, reviews. | Admin portal selected business modules. | `CONFIRMED_FROM_CODE` for role mapping; UI behavior `NEEDS_VERIFICATION` | `AdminRolePermissions.java` |
 | Editor | Internal user | Quản lý content/media/menu/slider, SEO redirects và đọc catalog. | Admin content/media/menu/slider/redirects modules. | `CONFIRMED_FROM_CODE` for role mapping; UI behavior `NEEDS_VERIFICATION` | `AdminRolePermissions.java`, `V200__reduce_default_roles.sql` |
 | Staff | Internal user | Role nghiệp vụ chung để gọi nhân viên vận hành; repo không có role exact `STAFF`. | Admin modules depending assigned role. | `INFERRED_FROM_STRUCTURE` | Business docs/admin scope; exact technical role absent in `AdminRolePermissions.java` |
 | System | System actor | Tự động validate, tạo order/payment/shipping, gửi notification, audit, websocket event. (Không trừ/hoàn kho — availability là cờ boolean admin tự bật/tắt, V261.) | Backend services/internal workflows. | `CONFIRMED_FROM_CODE` | `CheckoutService`, `AdminOrderService`, `AdminOrderWsService` |
@@ -179,11 +179,11 @@ Admin default role has broad business access to read/update many admin modules. 
 
 | Field | Value |
 |---|---|
-| Purpose | Quản lý vận hành bán hàng/shop ở mức product/order/customer/review/shipping read. |
+| Purpose | Quản lý vận hành bán hàng/shop ở mức product/order/customer/review. |
 | Access Area | Admin business operation modules. |
-| Main Actions | Product update/read, order processing, customer read/write, reviews read/write, shipping read. |
-| Restricted Actions | Không thấy permissions cho settings, admin users, media write, menus, redirects, full shipping write. |
-| Related Modules | Products, Orders, Customers, Shipping, Reviews. |
+| Main Actions | Product update/read, order processing, customer read/write, reviews read/write. |
+| Restricted Actions | Không thấy permissions cho settings, admin users, media write, menus, redirects. |
+| Related Modules | Products, Orders, Customers, Reviews. |
 | Related Business Processes | Product Management, Order Management, Customer Management, Review Moderation. |
 | Status | `CONFIRMED_FROM_CODE` for role map; UI behavior `NEEDS_VERIFICATION` |
 | Evidence | `AdminRolePermissions.java` |
@@ -311,7 +311,7 @@ Admin default role has broad business access to read/update many admin modules. 
 | Customer | Account auth, profile/address, checkout, order history/detail, returns. | Customer Account, Orders, Returns, Checkout. | Customer Account, Checkout, Return/Refund. | `CONFIRMED_FROM_CODE` |
 | Admin | Broad shop operation and admin module management. | Products, Orders, Customers, Media, Content, Settings, Reports, Users. | Product/Order/Content/Settings/Admin management. | `CONFIRMED_FROM_CODE` |
 | Super Admin | Highest-level system/admin governance. | All admin modules, users, roles, settings. | RBAC/User Management, Configuration, all operations. | `CONFIRMED_FROM_CODE` |
-| Shop Manager | Commercial/shop operations. | Products, Orders, Customers, Reviews, Shipping read. | Product Management, Order Management, Customer Management. | `CONFIRMED_FROM_CODE`; UI `NEEDS_VERIFICATION` |
+| Shop Manager | Commercial/shop operations. | Products, Orders, Customers, Reviews. | Product Management, Order Management, Customer Management. | `CONFIRMED_FROM_CODE`; UI `NEEDS_VERIFICATION` |
 | Editor | Content/media/menu/slider/redirect operations. | Content, Media, Menus, Sliders, Redirects. | Content/SEO, Media, Homepage Content, Redirect Management. | `CONFIRMED_FROM_CODE`; UI `NEEDS_VERIFICATION` |
 | Staff | Generic internal operator; exact access depends on assigned role/custom role. | Depends on role. | Depends on role. | `INFERRED_FROM_STRUCTURE` |
 | System | Enforce business rules and internal automation. | Checkout, Orders, Inventory, Returns, Notification, Audit. | Cross-process automation. | `CONFIRMED_FROM_CODE` |
@@ -345,7 +345,7 @@ Admin default role has broad business access to read/update many admin modules. 
 | Customer | Account, Profile, Addresses, Orders, Returns, Cart, Checkout. | View/manage own account and orders. | `CONFIRMED_FROM_CODE` | `CustomerAuthController`, `CustomerOrderController`, `SecurityConfig` |
 | Admin | Most admin business modules. | Manage/process/configure depending permission list. | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` |
 | Super Admin | All admin modules. | Manage/configure/govern all. | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` |
-| Shop Manager | Products, Catalog, Orders, Customers, Shipping read, Reviews. | Manage/process shop operations. | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` |
+| Shop Manager | Products, Catalog, Orders, Customers, Reviews. | Manage/process shop operations. | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` |
 | Editor | Products read, Catalog read, Content, Media, Menus, Sliders, Redirects. | Manage content/media/navigation/SEO redirects. | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` |
 | Staff | Depends on assigned role/custom role. | Needs verification. | `NEEDS_VERIFICATION` | `AdminRolePermissions.java`, `AdminRoleService` |
 | System | Checkout, Orders, Payment, Inventory, Returns, Notification, Audit. | System-only. | `CONFIRMED_FROM_CODE` | services |

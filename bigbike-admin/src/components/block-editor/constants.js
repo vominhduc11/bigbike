@@ -3,10 +3,10 @@
 // (pure constants/helpers live here to keep fast-refresh happy).
 import { generateId } from '@/lib/utils'
 
-export const BLOCK_TYPES = ['feature', 'heading', 'paragraph', 'list', 'image', 'video', 'callout', 'divider']
-
-// Vốn từ khối đầy đủ — dùng cho Content (bài viết/trang). Mỗi mục: nhãn i18n + type (+ preset).
-export const CONTENT_MENU = BLOCK_TYPES.map((type) => ({
+// Vốn từ khối cho Content (bài viết Tin tức): chỉ Tiêu đề / Đoạn văn / Danh sách / Hình ảnh.
+// Đã bỏ feature/callout/video/divider khỏi menu thêm (owner 2026-06-24). Bài cũ lỡ chứa các khối
+// này vẫn render/sửa được — BlockCard giữ nguyên nhánh hiển thị; chỉ chặn THÊM mới.
+export const CONTENT_MENU = ['heading', 'paragraph', 'list', 'image'].map((type) => ({
   type,
   labelKey: `products.detail.blocks.blockType${type.charAt(0).toUpperCase()}${type.slice(1)}`,
 }))

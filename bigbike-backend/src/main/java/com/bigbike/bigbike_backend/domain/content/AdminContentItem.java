@@ -37,7 +37,7 @@ public record AdminContentItem(
         String heroKicker,
         /** Structured body blocks (V140). Non-null only on admin detail reads. */
         List<DescriptionBlock> bodyBlocks,
-        /** English translations (V138). Non-null only on admin detail reads. */
-        ContentTranslations translations
+        /** English translations (V138). Non-null only on admin detail reads. Serializes as {@code {en: {...}}} per API_CONTRACT §"Article EN translations on admin read". */
+        ArticleTranslations translations
 ) {
 }

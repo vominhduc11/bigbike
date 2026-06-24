@@ -604,6 +604,9 @@ export function normalizeContentItem(input) {
     id,
     type,
     slug,
+    // English URL slug — top-level field on AdminContentItem (V216); must be extracted
+    // here so buildFormFromItem can read item.slugEn without getting undefined.
+    slugEn: toTrimmedString(source.slugEn) || undefined,
     title: toTrimmedString(source.title) || 'Untitled content',
     excerpt: toTrimmedString(source.excerpt) || undefined,
     body: toTrimmedString(source.body) || undefined,
@@ -626,6 +629,8 @@ export function normalizeContentItem(input) {
     publishStatus,
     // Bài viết nổi bật — backend gửi top-level boolean; mặc định false khi thiếu.
     featured: Boolean(source.featured),
+    // Chọn hiển thị ở "Góc trải nghiệm" trang chủ (V272).
+    homeExperience: Boolean(source.homeExperience),
     seo: normalizeSeoMeta(source.seo),
     publishedAt: toTrimmedString(source.publishedAt) || undefined,
     createdAt: toTrimmedString(source.createdAt) || undefined,

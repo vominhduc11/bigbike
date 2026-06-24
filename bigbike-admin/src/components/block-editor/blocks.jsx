@@ -56,10 +56,12 @@ export function HeadingBlockEditor({ block, onChange, disabled }) {
   )
 }
 
-export function ParagraphBlockEditor({ block, onChange, disabled }) {
+export function ParagraphBlockEditor({ block, onChange, disabled, productMode }) {
+  // Mô tả sản phẩm (productMode) giữ tab "Mã HTML"; bài viết Tin tức chỉ dùng trình soạn trực quan.
+  const Editor = productMode ? RichTextEditorWithSource : RichTextEditor
   return (
     <div className="flex-1">
-      <RichTextEditorWithSource
+      <Editor
         key={block._key}
         value={block.html || ''}
         onChange={(html) => onChange({ html })}
@@ -810,7 +812,7 @@ export function BlockCard({ block, disabled, sortable, onUpdate, onRemove, onDup
       <BlockTypeLabel type={block.type} />
       <div className="flex-1 min-w-0">
         {block.type === 'heading'   && <HeadingBlockEditor   block={block} onChange={onUpdate} disabled={disabled} />}
-        {block.type === 'paragraph' && <ParagraphBlockEditor block={block} onChange={onUpdate} disabled={disabled} />}
+        {block.type === 'paragraph' && <ParagraphBlockEditor block={block} onChange={onUpdate} disabled={disabled} productMode={productMode} />}
         {block.type === 'list'      && <ListBlockEditor      block={block} onChange={onUpdate} disabled={disabled} />}
         {block.type === 'image'     && <ImageBlockEditor     block={block} onChange={onUpdate} disabled={disabled} onPickImage={onPickImage} />}
         {block.type === 'video'     && <VideoBlockEditor     block={block} onChange={onUpdate} disabled={disabled} onPickVideo={onPickVideo} />}

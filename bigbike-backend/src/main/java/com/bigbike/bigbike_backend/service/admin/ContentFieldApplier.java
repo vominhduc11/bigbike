@@ -4,7 +4,6 @@ import com.bigbike.bigbike_backend.api.admin.dto.ImageAssetRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SeoMetaRequest;
 import com.bigbike.bigbike_backend.domain.content.AdminContentItem;
 import com.bigbike.bigbike_backend.domain.content.Article;
-import com.bigbike.bigbike_backend.domain.content.ContentTranslations;
 import com.bigbike.bigbike_backend.persistence.entity.content.ArticleEntity;
 import java.util.LinkedHashSet;
 
@@ -115,7 +114,7 @@ final class ContentFieldApplier {
                 null,
                 null,
                 article.bodyBlocks(),
-                ContentTranslations.fromArticle(article.translations())
+                article.translations()
         );
     }
 

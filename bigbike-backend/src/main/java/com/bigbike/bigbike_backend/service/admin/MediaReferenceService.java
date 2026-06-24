@@ -78,9 +78,6 @@ public class MediaReferenceService {
         collectLike(refs, "SELECT id::text, title FROM articles WHERE seo_og_image_url LIKE ?",
                 suffix, rs -> new MediaReferenceItem("CONTENT_SEO_OG", rs.getString(1), rs.getString(2), "/content/" + rs.getString(1)));
 
-        collectLike(refs, "SELECT id::text, title FROM pages WHERE seo_og_image_url LIKE ?",
-                suffix, rs -> new MediaReferenceItem("PAGE_SEO_OG", rs.getString(1), rs.getString(2), "/content/" + rs.getString(1)));
-
         // Sliders: file_path may appear anywhere inside the JSON blob (not necessarily at the end)
         String anywhere = "%" + media.getFilePath() + "%";
         collectLike(refs, "SELECT id::text, COALESCE(location,'') FROM sliders WHERE desktop_image::text LIKE ?",
@@ -128,7 +125,6 @@ public class MediaReferenceService {
                 "SELECT DISTINCT video_url FROM home_videos WHERE video_url IS NOT NULL AND video_url <> ''",
                 "SELECT DISTINCT cover_image_url FROM articles WHERE cover_image_url IS NOT NULL AND cover_image_url <> ''",
                 "SELECT DISTINCT seo_og_image_url FROM articles WHERE seo_og_image_url IS NOT NULL AND seo_og_image_url <> ''",
-                "SELECT DISTINCT seo_og_image_url FROM pages WHERE seo_og_image_url IS NOT NULL AND seo_og_image_url <> ''",
                 "SELECT COALESCE(desktop_image::text,'') || ' ' || COALESCE(mobile_image::text,'') FROM sliders",
         };
 
@@ -177,7 +173,6 @@ public class MediaReferenceService {
                 "SELECT video_url FROM home_videos WHERE video_url IS NOT NULL AND video_url <> ''",
                 "SELECT cover_image_url FROM articles WHERE cover_image_url IS NOT NULL AND cover_image_url <> ''",
                 "SELECT seo_og_image_url FROM articles WHERE seo_og_image_url IS NOT NULL AND seo_og_image_url <> ''",
-                "SELECT seo_og_image_url FROM pages WHERE seo_og_image_url IS NOT NULL AND seo_og_image_url <> ''",
                 "SELECT COALESCE(desktop_image::text,'') || ' ' || COALESCE(mobile_image::text,'') FROM sliders",
         };
 

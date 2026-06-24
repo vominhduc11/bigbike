@@ -28,8 +28,6 @@ public final class PermissionCatalog {
             new Entry("orders.write",                 false),
             new Entry("customers.read",               false),
             new Entry("customers.write",              false),
-            new Entry("shipping.read",                false),
-            new Entry("shipping.write",               false),
             new Entry("reviews.read",                 false),
             new Entry("reviews.write",                false),
             new Entry("reports.read",                 false),

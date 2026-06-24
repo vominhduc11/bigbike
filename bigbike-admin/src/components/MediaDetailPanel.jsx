@@ -21,7 +21,6 @@ const REFERENCE_TYPE_KEYS = {
   CONTENT: 'media.referenceType.CONTENT',
   CONTENT_PRODUCT_IMG: 'media.referenceType.CONTENT_PRODUCT_IMG',
   CONTENT_SEO_OG: 'media.referenceType.CONTENT_SEO_OG',
-  PAGE_SEO_OG: 'media.referenceType.PAGE_SEO_OG',
   SLIDER_DESKTOP: 'media.referenceType.SLIDER_DESKTOP',
   SLIDER_MOBILE: 'media.referenceType.SLIDER_MOBILE',
 }

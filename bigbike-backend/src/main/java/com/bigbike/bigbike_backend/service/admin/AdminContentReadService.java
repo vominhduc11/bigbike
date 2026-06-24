@@ -4,7 +4,6 @@ import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.content.AdminContentItem;
 import com.bigbike.bigbike_backend.domain.content.Article;
-import com.bigbike.bigbike_backend.domain.content.ContentTranslations;
 import com.bigbike.bigbike_backend.repository.content.ContentReadRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.common.PaginationService;
@@ -97,7 +96,7 @@ public class AdminContentReadService {
                 null,
                 null,
                 article.bodyBlocks(),
-                ContentTranslations.fromArticle(article.translations())
+                article.translations()
         );
     }
 
