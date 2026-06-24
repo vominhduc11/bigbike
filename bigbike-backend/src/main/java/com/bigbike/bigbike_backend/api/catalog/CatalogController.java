@@ -47,7 +47,6 @@ public class CatalogController {
 
     private static final Map<ProductStockState, String> STOCK_LABELS = Map.of(
             ProductStockState.IN_STOCK, "Còn hàng",
-            ProductStockState.LOW_STOCK, "Còn ít",
             ProductStockState.OUT_OF_STOCK, "Hết hàng"
     );
 

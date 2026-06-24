@@ -197,7 +197,6 @@ type TFn = (key: string) => string;
 export function stockStateLabelWithT(stockState: string | null | undefined, t: TFn): string {
   switch (stockState) {
     case "IN_STOCK": return t("stockState.IN_STOCK");
-    case "LOW_STOCK": return t("stockState.LOW_STOCK");
     case "OUT_OF_STOCK": return t("stockState.OUT_OF_STOCK");
     default: return t("stockState.UNKNOWN");
   }

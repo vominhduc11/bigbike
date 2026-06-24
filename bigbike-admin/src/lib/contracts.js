@@ -6,7 +6,6 @@
 export const PUBLISH_STATUS_VALUES = ['DRAFT', 'PUBLISHED', 'HIDDEN', 'TRASH']
 export const STOCK_STATE_VALUES = [
   'IN_STOCK',
-  'LOW_STOCK',
   'OUT_OF_STOCK',
 ]
 export const CONTENT_TYPE_VALUES = ['ARTICLE', 'PAGE']

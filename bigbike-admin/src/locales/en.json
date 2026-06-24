@@ -865,6 +865,8 @@
       "discountNeedsBaseHint": "Please enter Retail price or Compare-at price first.",
       "saleMustBeLower": "Sale price must be lower than retail price.",
       "forceOutOfStockHint": "The product will appear as \"Out of stock\" and cannot be purchased on the website, regardless of inventory above.",
+      "productStock": "Availability",
+      "productStockHint": "On to sell, off to show \"Out of stock\" on the website.",
       "mainImageTitle": "Primary image",
       "gallerySectionTitle": "Image gallery",
       "gallerySectionDescription": "Shared images across all colors: certificates, liner, size chart, packaging, etc. Used before variant selection or when a color has no dedicated gallery.",

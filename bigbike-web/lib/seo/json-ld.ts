@@ -368,8 +368,6 @@ function stockStateToAvailability(stockState: Product["stockState"]): string {
   switch (stockState) {
     case "IN_STOCK":
       return "https://schema.org/InStock";
-    case "LOW_STOCK":
-      return "https://schema.org/LimitedAvailability";
     case "OUT_OF_STOCK":
     default:
       return "https://schema.org/OutOfStock";

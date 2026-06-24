@@ -6,7 +6,6 @@
     "viewDetails": "Xem chi tiết",
     "outOfStock": "Hết hàng",
     "inStock": "Còn hàng",
-    "lowStock": "Còn ít",
     "remove": "Xoá",
     "save": "Lưu",
     "cancel": "Huỷ",
@@ -149,7 +148,6 @@
     "freeShipping": "Miễn phí vận chuyển nội thành",
     "stockState": {
       "IN_STOCK": "Còn hàng",
-      "LOW_STOCK": "Sắp hết hàng",
       "OUT_OF_STOCK": "Hết hàng",
       "UNKNOWN": "Đang cập nhật"
     },

@@ -44,8 +44,6 @@ function stockBadgeClassName(state: Product["stockState"]): string {
   switch (state) {
     case "IN_STOCK":
       return "border border-[var(--bb-state-success-border)] bg-[var(--bb-state-success-bg)] text-state-success-text";
-    case "LOW_STOCK":
-      return "border border-[var(--bb-state-warning)] bg-[var(--bb-state-warning)] text-black";
     case "OUT_OF_STOCK":
     default:
       return "border border-border bg-border text-muted-foreground";

@@ -453,11 +453,11 @@ Tracks the physical delivery lifecycle of `DELIVERY` orders. Since the platform 
 
 > **Serial-number tracking was removed (2026-06-23, V259).** There is no serial lifecycle state machine.
 >
-> **Inventory is a BOOLEAN availability toggle (2026-06-23, V261).** There is no tracked quantity. `stockState` is a two-state badge (`IN_STOCK` / `OUT_OF_STOCK`) that mirrors a per-variant / per-product availability flag the admin sets by hand. `LOW_STOCK` is no longer produced.
+> **Inventory is a BOOLEAN availability toggle (2026-06-23, V261).** There is no tracked quantity. `stockState` is a two-state badge (`IN_STOCK` / `OUT_OF_STOCK`) that mirrors a per-variant / per-product availability flag the admin sets by hand. `LOW_STOCK` was removed from the enum (V279).
 
 ### Purpose
 
-Availability is a boolean: per variant `product_variants.is_available`; per no-variant product `products.stock_state` set directly by the admin toggle. `stockState` mirrors that flag for product/variant availability. No on-hand count is kept.
+Availability is a boolean the admin sets by hand in the **product form**: a per-variant Còn/Hết switch (`product_variants.is_available`) and, for a no-variant product, a per-product Còn/Hết switch (persisted via `products.force_out_of_stock`). `products.stock_state` / `product_variants.stock_state` are **derived** badges, re-computed on every save (`InventoryPolicyService.recomputeProductState`): a variant mirrors its own `is_available`; a product-with-variants is `IN_STOCK` when ANY variant is available; a no-variant product mirrors its product-level switch. No on-hand count is kept.
 
 ### State Field
 
@@ -471,19 +471,18 @@ From `ProductStockState.java`:
 
 - `IN_STOCK`
 - `OUT_OF_STOCK`
-- `LOW_STOCK` — **enum value kept for compat but never produced** (no low-stock tier, V261).
 
 ### Initial State
 
-- New product / variant starts `OUT_OF_STOCK` (`is_available = false`); the admin must toggle it to "Còn hàng" before it can sell.
-- The admin product form does not expose a stockState picker. The Inventory module (`AdminInventoryController` availability endpoints) is the writer.
+- A new variant defaults to `is_available = true` (Còn hàng) in the product form; a new no-variant product defaults to `IN_STOCK` unless the admin flips its product-level switch to Hết. `stockState` is re-derived to match on save.
+- The **product form** is the writer (`AdminCatalogMutationService` → `InventoryPolicyService.recomputeProductState`): per-variant switch for products with variants, per-product switch for no-variant products. The form never sends a `stockState` picker — the badge is always derived. (The standalone `AdminInventoryController` availability endpoints still exist in the backend but are no longer wired to any admin screen.)
 
 ### Allowed Transitions
 
 | From | To | Actor / Role | Preconditions | Side Effects | Enforcement | Evidence |
 |---|---|---|---|---|---|---|
-| `OUT_OF_STOCK` | `IN_STOCK` | Admin / `inventory.write` | `PATCH .../availability` with `{ available: true }`. | Variant `is_available = true` (or no-variant `stock_state = IN_STOCK`); product-level re-aggregates from variants. | `CONFIRMED_BACKEND_ENFORCED` | `AdminInventoryController.java`, `AdminInventoryService.java` |
-| `IN_STOCK` | `OUT_OF_STOCK` | Admin / `inventory.write` | `PATCH .../availability` with `{ available: false }`. | Variant `is_available = false` (or no-variant `stock_state = OUT_OF_STOCK`); product-level re-aggregates. | `CONFIRMED_BACKEND_ENFORCED` | `AdminInventoryController.java`, `AdminInventoryService.java` |
+| `OUT_OF_STOCK` | `IN_STOCK` | Admin / `products.update` | Save product form with the Còn/Hết switch ON (variant `is_available = true`, or no-variant product not forced out). | `stock_state` re-derived to `IN_STOCK`; product-with-variants re-aggregates from variants. | `CONFIRMED_BACKEND_ENFORCED` | `AdminCatalogMutationService.java`, `InventoryPolicyService.java` |
+| `IN_STOCK` | `OUT_OF_STOCK` | Admin / `products.update` | Save product form with the Còn/Hết switch OFF (variant `is_available = false`, or no-variant product forced out). | `stock_state` re-derived to `OUT_OF_STOCK`; product-with-variants re-aggregates. | `CONFIRMED_BACKEND_ENFORCED` | `AdminCatalogMutationService.java`, `InventoryPolicyService.java` |
 
 **No automatic transitions:** a sale or cancel does **not** change availability. There is no quantity decrement or restore.
 
@@ -497,7 +496,7 @@ From `ProductStockState.java`:
 
 ### Frontend Behavior
 
-- Admin Inventory screen shows a "Còn hàng / Hết hàng" toggle per row; the public buy-box badge shows the two states only.
+- The admin product form shows a "Còn hàng / Hết hàng" switch per variant, and a single product-level switch for no-variant products; the public buy-box badge shows the two states only.
 
 ### Backend Enforcement
 

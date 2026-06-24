@@ -19,7 +19,6 @@ import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.domain.catalog.Brand;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
-import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeValueEntity;
@@ -56,6 +55,7 @@ import java.util.UUID;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.service.catalog.DescriptionBlockRenderer;
+import com.bigbike.bigbike_backend.service.inventory.InventoryPolicyService;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -80,6 +80,7 @@ public class AdminCatalogMutationService {
     private final DescriptionBlockRenderer descriptionBlockRenderer;
     private final RedirectJpaRepository redirectRepo;
     private final CatalogRequestValidator catalogRequestValidator;
+    private final InventoryPolicyService inventoryPolicyService;
 
     public AdminCatalogMutationService(
             ObjectProvider<ProductJpaRepository> productJpaRepositoryProvider,
@@ -95,7 +96,8 @@ public class AdminCatalogMutationService {
             AuditLogWriter auditLogWriter,
             DescriptionBlockRenderer descriptionBlockRenderer,
             ObjectProvider<RedirectJpaRepository> redirectRepoProvider,
-            CatalogRequestValidator catalogRequestValidator
+            CatalogRequestValidator catalogRequestValidator,
+            InventoryPolicyService inventoryPolicyService
     ) {
         this.productJpaRepository = productJpaRepositoryProvider.getIfAvailable();
         this.productVariantJpaRepository = productVariantJpaRepositoryProvider.getIfAvailable();
@@ -111,6 +113,7 @@ public class AdminCatalogMutationService {
         this.descriptionBlockRenderer = descriptionBlockRenderer;
         this.redirectRepo = redirectRepoProvider.getIfAvailable();
         this.catalogRequestValidator = catalogRequestValidator;
+        this.inventoryPolicyService = inventoryPolicyService;
     }
 
     @Transactional
@@ -559,9 +562,8 @@ public class AdminCatalogMutationService {
         }
         // BigBike is VND-only. DTO validator rejects anything else; persistence is hardcoded.
         entity.setCurrency("VND");
-        if (create) {
-            entity.setStockState(ProductStockState.OUT_OF_STOCK);
-        }
+        // stockState không set ở đây — luôn được dẫn xuất lại bởi recomputeProductState(entity)
+        // sau khi áp dụng variants + forceOutOfStock (xem cuối hàm).
         if (create || request.getForceOutOfStock() != null) {
             entity.setForceOutOfStock(Boolean.TRUE.equals(request.getForceOutOfStock()));
         }
@@ -713,6 +715,12 @@ public class AdminCatalogMutationService {
             entity.setVariants(new ArrayList<>());
         }
 
+        // Đồng bộ stockState mức sản phẩm với công tắc của admin:
+        //  - Có biến thể: CÒN nếu có ≥1 biến thể còn hàng, ngược lại HẾT.
+        //  - Không biến thể: theo công tắc Còn/Hết mức sản phẩm (lưu qua forceOutOfStock).
+        // Storefront + danh sách admin đọc stockState — xem InventoryPolicyService javadoc.
+        inventoryPolicyService.recomputeProductState(entity);
+
         if (request.getRelatedProductIds() != null) {
             entity.setRelatedProducts(resolveProductRefs(request.getRelatedProductIds(), entity.getId()));
         } else if (create) {
@@ -791,9 +799,6 @@ public class AdminCatalogMutationService {
                 variant.setCostPrice(req.getCostPrice());
             }
             variant.setCurrency("VND");
-            if (createVariant) {
-                variant.setStockState(ProductStockState.OUT_OF_STOCK);
-            }
             // Cover image = first image of the color gallery (admins no longer
             // enter it separately). Mirror every media field so the read path and
             // cart snapshot get a complete ImageAsset; clear them when the color
@@ -813,6 +818,11 @@ public class AdminCatalogMutationService {
                 variant.setImageMimeType(null);
             }
             variant.setAvailable(req.getIsAvailable() == null || req.getIsAvailable());
+            // Mô hình tồn kho boolean (owner 2026-06-23): stockState là field dẫn xuất,
+            // phải mirror công tắc isAvailable. Storefront + danh sách admin đọc stockState,
+            // không đọc isAvailable trực tiếp — nên phải đồng bộ tại đây, nếu không công tắc
+            // Còn/Hết của admin sẽ không "ăn" ra ngoài. Xem InventoryPolicyService javadoc.
+            inventoryPolicyService.recomputeStockState(variant);
 
             List<ProductVariantOptionEntity> options = new ArrayList<>();
             if (req.getOptions() != null) {

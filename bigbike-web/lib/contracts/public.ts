@@ -116,7 +116,6 @@ export type PublishStatus = "DRAFT" | "PUBLISHED" | "HIDDEN" | "TRASH";
 
 export type ProductStockState =
   | "IN_STOCK"
-  | "LOW_STOCK"
   | "OUT_OF_STOCK";
 
 export type ProductPrice = {

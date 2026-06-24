@@ -241,7 +241,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                                         new ProductVariantOption("Size", "L")
                                 ),
                                 new ProductPrice(BigDecimal.valueOf(3250000), BigDecimal.valueOf(3690000), BigDecimal.valueOf(3250000), "VND", null),
-                                ProductStockState.LOW_STOCK,
+                                ProductStockState.IN_STOCK,
                                 3,
                                 null,
                                 List.of(),
@@ -380,7 +380,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 new ProductPrice(BigDecimal.valueOf(2450000), BigDecimal.valueOf(2790000), BigDecimal.valueOf(2450000), "VND", null),
                 List.of(),
                 List.of(new ProductSpecification("Chất liệu", "Lưới + chống mài mòn", "Thông số", null, null, null)),
-                ProductStockState.LOW_STOCK,
+                ProductStockState.IN_STOCK,
                 4,
                 false,
                 PublishStatus.PUBLISHED,

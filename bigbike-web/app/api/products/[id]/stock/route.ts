@@ -4,7 +4,6 @@ export const dynamic = "force-dynamic";
 
 const STOCK_LABELS: Record<string, string> = {
   IN_STOCK: "Còn hàng",
-  LOW_STOCK: "Còn ít",
   OUT_OF_STOCK: "Hết hàng",
 };
 

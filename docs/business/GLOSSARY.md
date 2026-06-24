@@ -280,7 +280,7 @@ Nguyên tắc đọc file này:
 | Category | Business Term |
 | Definition | Inventory là quản lý tồn kho; Stock là **trạng thái có hàng** (boolean) của product/variant — không còn là số lượng (V261). |
 | BigBike Context | Availability là cờ "Còn hàng / Hết hàng" admin tự bật/tắt. Checkout chặn theo `is_available` của biến thể. **Bán không tự đổi availability** — admin tự đánh dấu "Hết hàng" khi hết (không tự chặn bán quá). Không decrement/restore số lượng. |
-| Example | `IN_STOCK`, `OUT_OF_STOCK` (`LOW_STOCK` giữ trong enum nhưng không còn sinh ra). |
+| Example | `IN_STOCK`, `OUT_OF_STOCK` (`LOW_STOCK` đã gỡ khỏi enum, V279). |
 | Related Docs | `BUSINESS_RULES.md`, `STATE_MACHINES.md`, `ACCEPTANCE_CRITERIA.md` |
 | Status | `CONFIRMED_FROM_REPO` |
 | Evidence | `ProductStockState.java`, `BUSINESS_RULES.md` |

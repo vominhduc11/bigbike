@@ -125,9 +125,9 @@ Status: `CONFIRMED_FROM_CODE`
   - **Per variant** — `product_variants.is_available` (existing column) is the **sole gate**. The variant's `stock_state` mirrors it: `IN_STOCK` if available, else `OUT_OF_STOCK`.
   - **Per product without variants** — `products.stock_state` (`IN_STOCK` / `OUT_OF_STOCK`) is set **directly** by the admin toggle. `products.force_out_of_stock` remains a hard override.
   - **Product with variants** — `stock_state` = `IN_STOCK` if **any** variant `is_available`, else `OUT_OF_STOCK`.
-- **Dormant quantity columns:** `product_variants.quantity_on_hand`, `products.stock_quantity` and `products.manage_stock` are **kept but no longer read** for availability. The `low_stock_threshold` site setting is now **unused**.
+- **Dormant quantity columns:** `product_variants.quantity_on_hand`, `products.stock_quantity` and `products.manage_stock` are **kept but no longer read** for availability. The `low_stock_threshold` site setting was **removed (V279)**.
 - **No quantity behavior:** no stock validation by quantity, no auto-decrement on sale, no stock restore on cancel, and **no stock movements written for sales or restores**. Selling does not change availability; the admin must manually mark an item "Hết hàng" when it sells out (overselling is not auto-prevented). The `stock_movements` ledger is dormant for this model.
-- `LOW_STOCK` is **no longer produced** (enum value kept for compat). There is no "low stock" tier.
+- `LOW_STOCK` was **removed from the enum (V279)**. There is no "low stock" tier.
 - Receipt-based receiving (`stock_receipts`, `stock_receipt_lines`, `stock_receipt_serials`) was **dropped in V120** — schema-only, never implemented in Java.
 
 Status:
@@ -156,7 +156,7 @@ Evidence:
 
 ### stockState — derived from boolean availability `CONFIRMED_FROM_CODE`
 
-`stockState` trên `product_variants` và `products` chỉ còn **hai trạng thái** (`IN_STOCK` / `OUT_OF_STOCK`), **mirror trực tiếp** từ cờ availability — **không** còn tính từ số lượng. `LOW_STOCK` không còn được sinh ra (giá trị enum giữ để tương thích).
+`stockState` trên `product_variants` và `products` chỉ còn **hai trạng thái** (`IN_STOCK` / `OUT_OF_STOCK`), **mirror trực tiếp** từ cờ availability — **không** còn tính từ số lượng. `LOW_STOCK` đã được gỡ khỏi enum (V279).
 
 | Bảng | Availability gate | stockState owner |
 |---|---|---|
@@ -164,7 +164,7 @@ Evidence:
 | `products` (không variant) | admin toggle | `product.stockState` set trực tiếp (`IN_STOCK` / `OUT_OF_STOCK`) |
 | `products` (có variant) | aggregate | `IN_STOCK` nếu **bất kỳ** variant `is_available`, else `OUT_OF_STOCK` |
 
-**Cột số lượng `quantity_on_hand` / `stock_quantity` / `manage_stock` giờ DORMANT** — giữ trong DB nhưng không đọc cho availability. `low_stock_threshold` không còn dùng.
+**Cột số lượng `quantity_on_hand` / `stock_quantity` / `manage_stock` giờ DORMANT** — giữ trong DB nhưng không đọc cho availability. `low_stock_threshold` đã gỡ (V279).
 
 **API input contract:** `stockState` bị bỏ khỏi `UpsertProductRequest` và `VariantRequest`. Availability đổi qua Inventory module (`PATCH .../availability`), không qua catalog create/update API.
 

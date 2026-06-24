@@ -29,8 +29,7 @@ export function StockStatus({
   const tProduct = useTranslations("Product");
   if (isLoading && !fallbackState) return null;
 
-  // Boolean tồn kho: chỉ còn Còn hàng / Hết hàng. LOW_STOCK không còn phát sinh
-  // (backend không emit) — gộp vào "Còn hàng", KHÔNG hiển thị số lượng.
+  // Tồn kho boolean: chỉ Còn hàng / Hết hàng, KHÔNG hiển thị số lượng.
   const rawState = data?.forceOutOfStock
     ? "OUT_OF_STOCK"
     : (data?.stockState ?? fallbackState) === "OUT_OF_STOCK"

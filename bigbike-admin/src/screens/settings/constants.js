@@ -188,8 +188,6 @@ export const KEY_LABELS_VI = {
   seo_home_description: 'SEO Description trang chủ (meta)',
   og_image_url: 'Ảnh khi share Facebook (Open Graph)',
   home_content_bottom_html: 'Nội dung SEO cuối trang chủ (rich-text)',
-  // store (operational)
-  low_stock_threshold: 'Ngưỡng cảnh báo sắp hết hàng (số lượng)',
   // public_hero — Tất cả sản phẩm
   hero_products_image_url: 'Ảnh hero — trang Tất cả sản phẩm (desktop)',
   hero_products_mobile_image_url: 'Ảnh hero — trang Tất cả sản phẩm (điện thoại)',
@@ -276,7 +274,6 @@ export const SECTION_GUIDE = {
   hero_news:       { title: 'Banner đầu trang Tin tức', path: '/tin-tuc' },
   hero_default:    { title: 'Banner mặc định — trang listing chưa đặt ảnh riêng', path: '/san-pham' },
   seo_home:        { title: 'SEO trang chủ (thẻ meta / khi chia sẻ)', path: '/' },
-  internal_store:  { title: 'Nội bộ — không hiển thị cho khách', path: null, internal: true },
   internal_assign: { title: 'Màn Tạo/Sửa sản phẩm (trong admin)', path: null, internal: true },
 }
 export const SECTION_ORDER = Object.keys(SECTION_GUIDE)
@@ -346,8 +343,6 @@ export const KEY_GUIDE = {
   seo_home_description:     ['seo_home', 'mô tả meta (kết quả Google)'],
   og_image_url:             ['seo_home', 'ảnh khi chia sẻ mạng xã hội'],
   home_content_bottom_html: ['seo_home', 'đoạn nội dung cuối trang chủ'],
-
-  low_stock_threshold:      ['internal_store', 'ngưỡng cảnh báo sắp hết hàng'],
 
   product_assign_title:         ['internal_assign', 'tiêu đề banner phân công'],
   product_assign_role_content:  ['internal_assign', 'tên vai trò Content'],

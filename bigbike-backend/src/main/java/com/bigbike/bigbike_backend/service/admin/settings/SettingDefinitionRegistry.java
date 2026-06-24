@@ -268,9 +268,6 @@ public class SettingDefinitionRegistry {
                         .description("Mã tiền tệ mặc định.").build(),
                 SettingDefinition.builder("store_timezone", "STORE", SettingValueType.STRING)
                         .description("Múi giờ dùng cho timestamp đơn hàng và scheduled job.").build(),
-                SettingDefinition.builder("low_stock_threshold", "STORE", SettingValueType.INTEGER)
-                        .min(0L).max(10_000L)
-                        .description("Ngưỡng low-stock cho variant.").build(),
 
                 // ── PRODUCT_ASSIGN ── (text phân công đội ngũ trên màn tạo/sửa sản phẩm; chỉ SUPER_ADMIN sửa)
                 SettingDefinition.builder("product_assign_title", "product_assign", SettingValueType.STRING)

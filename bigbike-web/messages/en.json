@@ -6,7 +6,6 @@
     "viewDetails": "View details",
     "outOfStock": "Out of stock",
     "inStock": "In stock",
-    "lowStock": "Low stock",
     "remove": "Remove",
     "save": "Save",
     "cancel": "Cancel",
@@ -149,7 +148,6 @@
     "freeShipping": "Free shipping in the city",
     "stockState": {
       "IN_STOCK": "In stock",
-      "LOW_STOCK": "Low stock",
       "OUT_OF_STOCK": "Out of stock",
       "UNKNOWN": "Updating"
     },

@@ -38,6 +38,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
@@ -1268,14 +1269,32 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     </Select>
                   </Field>
 
-                  <label className="md:col-span-2 flex items-start gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted">
-                    <Checkbox
-                      checked={form.forceOutOfStock}
-                      onCheckedChange={(checked) => updateField('forceOutOfStock', checked)}
-                      disabled={isReadOnly}
-                    />
-                    <span><strong>{t('products.detail.forceOutOfStock')}</strong> — {t('products.detail.forceOutOfStockHint')}</span>
-                  </label>
+                  {form.variants.length === 0 ? (
+                    // Sản phẩm KHÔNG biến thể: công tắc Còn/Hết mức sản phẩm (admin tự quyết).
+                    // Lưu qua forceOutOfStock; backend dẫn xuất stockState theo công tắc này.
+                    <div className="md:col-span-2 flex items-center gap-2.5 p-2.5 border border-border text-sm">
+                      <Switch
+                        checked={!form.forceOutOfStock}
+                        onCheckedChange={(checked) => updateField('forceOutOfStock', !checked)}
+                        disabled={isReadOnly}
+                        aria-label={t('products.detail.productStock')}
+                      />
+                      <span className={!form.forceOutOfStock ? 'text-success font-medium' : 'text-danger font-medium'}>
+                        {!form.forceOutOfStock ? t('status.stock.IN_STOCK') : t('status.stock.OUT_OF_STOCK')}
+                      </span>
+                      <span className="text-muted-foreground">— {t('products.detail.productStockHint')}</span>
+                    </div>
+                  ) : (
+                    // Sản phẩm CÓ biến thể: tồn kho theo từng biến thể; ô này là "buộc hết" toàn SP.
+                    <label className="md:col-span-2 flex items-start gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted">
+                      <Checkbox
+                        checked={form.forceOutOfStock}
+                        onCheckedChange={(checked) => updateField('forceOutOfStock', checked)}
+                        disabled={isReadOnly}
+                      />
+                      <span><strong>{t('products.detail.forceOutOfStock')}</strong> — {t('products.detail.forceOutOfStockHint')}</span>
+                    </label>
+                  )}
                 </div>
               </SectionCard>
 

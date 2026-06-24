@@ -77,7 +77,7 @@ final class AdminInventoryMapper {
 
     // Product-level aggregate of variant availability (BUSINESS_RULES STOCK_RULE_008,
     // boolean model since 2026-06-23). A product is IN_STOCK when ANY variant is
-    // available, else OUT_OF_STOCK. LOW_STOCK is never produced.
+    // available, else OUT_OF_STOCK.
     static String computeAggregateState(List<ProductVariantEntity> variants) {
         boolean anyIn = variants.stream().anyMatch(v -> v.getStockState() == ProductStockState.IN_STOCK);
         return anyIn ? "IN_STOCK" : "OUT_OF_STOCK";

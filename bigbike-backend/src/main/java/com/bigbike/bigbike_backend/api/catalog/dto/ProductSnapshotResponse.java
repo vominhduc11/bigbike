@@ -26,9 +26,8 @@ public record ProductSnapshotResponse(
             String label,
             boolean forceOutOfStock,
             /**
-             * On-hand count when known, otherwise null. Used by the
-             * storefront to render messages like "Chỉ còn 3 sản phẩm" when
-             * stockState is LOW_STOCK so urgency stays concrete.
+             * Dormant: on-hand quantity is no longer tracked for availability
+             * (boolean "còn/hết" model since 2026-06-23). The storefront ignores it.
              */
             Integer quantity
     ) {}

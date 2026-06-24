@@ -88,15 +88,15 @@ Evidence:
 - The admin sets availability by hand via a toggle in the Inventory screen. **Selling does NOT change availability** — there is no auto-decrement, no auto-restore, and no per-unit ledger for sales. `CONFIRMED_FROM_CODE`
 - **Overselling is NOT auto-prevented.** When an item sells out, the admin must manually flip it to **"Hết hàng"**; until then the storefront keeps accepting orders. `CONFIRMED_FROM_CODE`
 - Manual inventory movement types `IN` / `OUT` / `ADJUSTMENT` / `RETURN` are no longer written for sales or restores. (The `stock_movements` ledger is dormant for the availability model.) `CONFIRMED_FROM_CODE`
-- The dormant columns `product_variants.quantity_on_hand`, `products.stock_quantity` and `products.manage_stock` are kept for compatibility but are **not** read for availability. The `low_stock_threshold` site setting is now **irrelevant**. `CONFIRMED_FROM_CODE`
+- The dormant columns `product_variants.quantity_on_hand`, `products.stock_quantity` and `products.manage_stock` are kept for compatibility but are **not** read for availability. The `low_stock_threshold` site setting was **removed (V279)**. `CONFIRMED_FROM_CODE`
 - Receipt-based receiving tables were **dropped in V120** — schema-only, never implemented in Java. `REMOVED`
 
 ### Stock State Derivation Rules `CONFIRMED_FROM_CODE`
 
-- `stockState` is a two-state badge (`IN_STOCK` / `OUT_OF_STOCK`) that **mirrors the boolean availability**. `LOW_STOCK` is **no longer produced** — the enum value is kept only for compatibility. Admin cannot set `stockState` directly via the catalog create/update API; it is driven by the availability toggle on the Inventory module.
-- `STOCK_RULE_001`: New product or variant is always created **out of stock** (`stockState = OUT_OF_STOCK`, `is_available = false`); admin must toggle it to "Còn hàng" before it can sell.
+- `stockState` is a two-state badge (`IN_STOCK` / `OUT_OF_STOCK`) that **mirrors the boolean availability**. `LOW_STOCK` was **removed from the enum (V279)**. Admin cannot set `stockState` directly via the API; it is **derived on every product-form save** from the Còn/Hết toggles (`InventoryPolicyService.recomputeProductState`).
+- `STOCK_RULE_001`: A new variant defaults to **available** (`is_available = true`); a new no-variant product defaults to **in stock** unless the admin flips its product-level Còn/Hết switch to "Hết hàng". `stockState` is derived to match on save.
 - `STOCK_RULE_002`: Toggling availability is the only thing that changes a variant's / product's stock state. There is no quantity to recompute on sale, cancel, or return.
-- `STOCK_RULE_003`: ~~Quantity thresholds (`LOW_STOCK` tier, `low_stock_threshold`).~~ **REMOVED (V262).** No "sắp hết" tier exists; availability is binary. The `low_stock_threshold` setting is now unused.
+- `STOCK_RULE_003`: ~~Quantity thresholds (`LOW_STOCK` tier, `low_stock_threshold`).~~ **REMOVED (V262; `LOW_STOCK` enum value and `low_stock_threshold` setting fully deleted in V279).** No "sắp hết" tier exists; availability is binary.
 - `STOCK_RULE_004`: `forceOutOfStock` (product-level boolean) remains a separate hard override. It disables purchase on web even when the item is marked available. Still manually controlled by admin.
 - `STOCK_RULE_005`: For products **with variants**, availability is gated **per variant** by `product_variants.is_available`. The variant's `stockState` mirrors it (`IN_STOCK` if available, else `OUT_OF_STOCK`). The web variant selector (`VariantSelector.tsx`) dims unavailable options (still clickable for image preview); buying a variant requires `is_available = true`.
 - `STOCK_RULE_006`: For products **without variants**, `products.stock_state` (`IN_STOCK` / `OUT_OF_STOCK`) is set **directly by the admin toggle**. `forceOutOfStock` still hard-disables purchase regardless.

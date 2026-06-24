@@ -865,6 +865,8 @@
       "discountNeedsBaseHint": "Vui lòng nhập Giá niêm yết hoặc Giá gốc trước.",
       "saleMustBeLower": "Giá sale phải thấp hơn giá niêm yết.",
       "forceOutOfStockHint": "Sản phẩm sẽ hiển thị \"Hết hàng\" và không cho mua trên web, bất kể giá trị Tồn kho ở trên.",
+      "productStock": "Tình trạng còn hàng",
+      "productStockHint": "Bật để bán, tắt để hiển thị \"Hết hàng\" trên web.",
       "mainImageTitle": "Ảnh đại diện",
       "gallerySectionTitle": "Gallery ảnh",
       "gallerySectionDescription": "Ảnh dùng chung cho mọi màu: chứng chỉ, lớp lót, size chart, đóng gói... Hiển thị khi chưa chọn biến thể hoặc khi màu chưa có gallery riêng.",
