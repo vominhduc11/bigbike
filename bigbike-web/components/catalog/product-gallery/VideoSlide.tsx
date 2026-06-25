@@ -43,7 +43,7 @@ type VideoSlideProps = {
   onPlay?: () => void;
   /** Gọi khi video TẠM DỪNG → chạy lại dải ảnh ngay (không sang slide). */
   onPause?: () => void;
-  /** Gọi khi video XEM HẾT → KHÔNG phát lại, sang slide kế và chạy tiếp dải ảnh. */
+  /** Gọi khi video XEM HẾT → KHÔNG phát lại; đối xử như một tấm ảnh: đợi 3 giây rồi tự sang slide kế. */
   onEnded?: () => void;
 };
 

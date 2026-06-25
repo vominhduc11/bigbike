@@ -93,6 +93,9 @@ export function WpThemeInteractions() {
           nav.classList.toggle("active");
           nav.classList.remove("hidden");
         }
+        const isOpen = burger.classList.contains("active");
+        document.body.style.overflow = isOpen ? "hidden" : "";
+        document.documentElement.style.overflow = isOpen ? "hidden" : "";
         return;
       }
 

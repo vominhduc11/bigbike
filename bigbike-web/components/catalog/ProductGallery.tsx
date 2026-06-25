@@ -144,17 +144,16 @@ export function ProductGallery({
     applyAutoplay();
   }, [applyAutoplay]);
 
-  // Video TẠM DỪNG (khách bấm pause) → chạy lại dải ảnh ngay, không sang slide.
+  // Video TẠM DỪNG (khách bấm pause) → mở khoá, để dải ảnh chạy lại theo nhịp 3 giây.
   const handleVideoPause = useCallback(() => {
     videoPlayingRef.current = false;
     applyAutoplay();
   }, [applyAutoplay]);
 
-  // Xem HẾT video → KHÔNG phát lại: sang slide kế rồi chạy tiếp (nếu không đang hover).
+  // Xem HẾT video → KHÔNG tự phát lại. Đối xử y như một tấm ảnh: chỉ mở khoá rồi để
+  // autoplay đếm 3 giây mới tự sang slide kế (KHÔNG nhảy ngay).
   const handleVideoEnded = useCallback(() => {
     videoPlayingRef.current = false;
-    const sw = mainRef.current;
-    if (sw && !sw.destroyed) sw.slideNext();
     applyAutoplay();
   }, [applyAutoplay]);
 

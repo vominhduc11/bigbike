@@ -24,6 +24,8 @@ export function WpMobileMenuController() {
         "header .navigation.active, header .user-control--item.hammer-menu.active",
       )
       .forEach((el) => el.classList.remove("active"));
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
   }
 
   useEffect(() => {
