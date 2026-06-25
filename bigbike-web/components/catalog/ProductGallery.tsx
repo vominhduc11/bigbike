@@ -121,19 +121,32 @@ export function ProductGallery({
   // Tự quản bằng 2 cờ + 1 hàm áp dụng thay vì dựa vào pause nội bộ của Swiper (vốn
   // bị "nhả nhầm" khi con trỏ đè lên iframe video).
   const hoveringRef = useRef(false);
+  // `videoPlayingRef`: video ĐANG phát thật (YouTube API / video tải lên) — tín hiệu
+  // chính xác. `embedFocusedRef`: TikTok/Facebook không có sự kiện play nên chỉ đoán
+  // "khách đang xem" qua việc bấm vào iframe (cửa sổ mất focus) → tự bỏ khi khách bấm
+  // trở lại trang (cửa sổ lấy lại focus). Tách 2 cờ để TikTok/FB không kẹt cứng và
+  // không xung đột với trạng thái chính xác của YouTube.
   const videoPlayingRef = useRef(false);
+  const embedFocusedRef = useRef(false);
 
   const applyAutoplay = useCallback(() => {
     const sw = mainRef.current;
     if (!sw || sw.destroyed || !sw.autoplay) return;
-    const shouldRun = count > 1 && !hoveringRef.current && !videoPlayingRef.current;
+    const shouldRun =
+      count > 1 && !hoveringRef.current && !videoPlayingRef.current && !embedFocusedRef.current;
     if (shouldRun && !sw.autoplay.running) sw.autoplay.start();
     else if (!shouldRun && sw.autoplay.running) sw.autoplay.stop();
   }, [count]);
 
-  // Khách bấm play video → dừng hẳn để khỏi cắt ngang clip.
+  // Khách bấm play video → dừng để khỏi cắt ngang clip.
   const handleVideoPlay = useCallback(() => {
     videoPlayingRef.current = true;
+    applyAutoplay();
+  }, [applyAutoplay]);
+
+  // Video TẠM DỪNG (khách bấm pause) → chạy lại dải ảnh ngay, không sang slide.
+  const handleVideoPause = useCallback(() => {
+    videoPlayingRef.current = false;
     applyAutoplay();
   }, [applyAutoplay]);
 
@@ -145,9 +158,10 @@ export function ProductGallery({
     applyAutoplay();
   }, [applyAutoplay]);
 
-  // Đổi biến thể (Swiper remount) → bỏ cờ "đang xem video" để dải ảnh mới chạy lại.
+  // Đổi biến thể (Swiper remount) → bỏ mọi cờ video để dải ảnh mới chạy lại.
   useEffect(() => {
     videoPlayingRef.current = false;
+    embedFocusedRef.current = false;
   }, [currentVariantKey]);
 
   // Bắt rê chuột phủ TRỌN ảnh chính, kể cả khi con trỏ nằm trên iframe video. Khi
@@ -174,21 +188,36 @@ export function ProductGallery({
     return () => document.removeEventListener("pointermove", onPointerMove);
   }, [count, applyAutoplay]);
 
-  // Video nhúng TikTok/Facebook không có sự kiện play để bắt → khi khách bấm vào
-  // iframe (cửa sổ mất focus, iframe thành phần tử focus) coi như đang xem, dừng
-  // slide. (YouTube đã bắt play/kết thúc chính xác qua IFrame API trong VideoSlide.)
+  // TikTok/Facebook không có sự kiện play/kết thúc → đoán qua focus cửa sổ: bấm vào
+  // iframe (cửa sổ mất focus, iframe thành phần tử focus) = đang xem → dừng slide;
+  // bấm trở lại trang (cửa sổ lấy lại focus) = xem xong → chạy lại. Bỏ qua YouTube
+  // (đã quản chính xác qua IFrame API) để không kẹt khi khách pause YouTube.
   useEffect(() => {
     const onBlur = () => {
       window.setTimeout(() => {
         const el = document.activeElement;
         if (el?.tagName === "IFRAME" && mainBoxRef.current?.contains(el)) {
-          handleVideoPlay();
+          const src = (el as HTMLIFrameElement).src || "";
+          if (!/youtube\.com|youtube-nocookie\.com/.test(src)) {
+            embedFocusedRef.current = true;
+            applyAutoplay();
+          }
         }
       }, 0);
     };
+    const onFocus = () => {
+      if (embedFocusedRef.current) {
+        embedFocusedRef.current = false;
+        applyAutoplay();
+      }
+    };
     window.addEventListener("blur", onBlur);
-    return () => window.removeEventListener("blur", onBlur);
-  }, [handleVideoPlay]);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      window.removeEventListener("blur", onBlur);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [applyAutoplay]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.matchMedia) return;
@@ -272,6 +301,7 @@ export function ProductGallery({
                   <VideoSlide
                     video={item.asset}
                     onPlay={handleVideoPlay}
+                    onPause={handleVideoPause}
                     onEnded={handleVideoEnded}
                   />
                 ) : (

@@ -14,7 +14,7 @@ type YTNamespace = {
     el: HTMLElement,
     opts: { events?: { onStateChange?: (e: { data: number }) => void } },
   ) => YTPlayer;
-  PlayerState: { PLAYING: number; ENDED: number };
+  PlayerState: { PLAYING: number; PAUSED: number; ENDED: number };
 };
 type YTWindow = { YT?: YTNamespace; onYouTubeIframeAPIReady?: () => void };
 
@@ -41,14 +41,16 @@ type VideoSlideProps = {
   video: VideoAsset;
   /** Gọi khi khách BẮT ĐẦU phát video → dừng tự chạy dải ảnh để khỏi cắt ngang clip. */
   onPlay?: () => void;
+  /** Gọi khi video TẠM DỪNG → chạy lại dải ảnh ngay (không sang slide). */
+  onPause?: () => void;
   /** Gọi khi video XEM HẾT → KHÔNG phát lại, sang slide kế và chạy tiếp dải ảnh. */
   onEnded?: () => void;
 };
 
 /** Slide video trong carousel ảnh chính: YouTube/TikTok/Facebook → iframe embed; video thư viện → thẻ <video controls>.
- *  Video KHÔNG tự phát — khách phải bấm mới chạy. `onPlay`/`onEnded` chỉ phản ánh
- *  thao tác của khách (bấm play / xem hết) để điều khiển dải ảnh tự chạy. */
-export function VideoSlide({ video, onPlay, onEnded }: VideoSlideProps) {
+ *  Video KHÔNG tự phát — khách phải bấm mới chạy. `onPlay`/`onPause`/`onEnded` chỉ phản
+ *  ánh thao tác của khách để điều khiển dải ảnh tự chạy. */
+export function VideoSlide({ video, onPlay, onPause, onEnded }: VideoSlideProps) {
   const url = video.url ?? "";
   const ytId = getYouTubeId(url);
   const tiktokId = ytId ? null : getTikTokId(url);
@@ -56,9 +58,9 @@ export function VideoSlide({ video, onPlay, onEnded }: VideoSlideProps) {
   const resolved = resolveMediaUrl(url) ?? url;
   const title = video.title ?? "Video";
 
-  // YouTube: gắn IFrame Player API vào iframe để bắt PLAYING (khách bấm play) và
-  // ENDED (xem hết). Không gọi destroy khi unmount để tránh xung đột gỡ DOM với
-  // React — khi React gỡ iframe thì player cũng theo đó mất.
+  // YouTube: gắn IFrame Player API vào iframe để bắt PLAYING (bấm play), PAUSED (tạm
+  // dừng) và ENDED (xem hết). Không gọi destroy khi unmount để tránh xung đột gỡ DOM
+  // với React — khi React gỡ iframe thì player cũng theo đó mất.
   const ytFrameRef = useRef<HTMLIFrameElement | null>(null);
   const ytFrameId = `yt-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   useEffect(() => {
@@ -72,6 +74,7 @@ export function VideoSlide({ video, onPlay, onEnded }: VideoSlideProps) {
         events: {
           onStateChange: (e: { data: number }) => {
             if (e.data === YT.PlayerState.PLAYING) onPlay?.();
+            else if (e.data === YT.PlayerState.PAUSED) onPause?.();
             else if (e.data === YT.PlayerState.ENDED) onEnded?.();
           },
         },
@@ -80,7 +83,7 @@ export function VideoSlide({ video, onPlay, onEnded }: VideoSlideProps) {
     return () => {
       cancelled = true;
     };
-  }, [ytId, onPlay, onEnded]);
+  }, [ytId, onPlay, onPause, onEnded]);
 
   if (ytId) {
     return (
@@ -130,6 +133,7 @@ export function VideoSlide({ video, onPlay, onEnded }: VideoSlideProps) {
       playsInline
       poster={video.thumbnail?.url}
       onPlay={onPlay}
+      onPause={onPause}
       onEnded={onEnded}
     />
   );
