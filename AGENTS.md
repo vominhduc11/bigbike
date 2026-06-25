@@ -933,6 +933,11 @@ Validate: file type, file size, public URL, alt text (nếu public image), fallb
 - ✅ Facebook nhúng bằng CẢ đường link gốc (không tách id) qua `plugins/video.php`; CHỈ video công khai mới render. TikTok/Facebook không có ảnh thumbnail công khai như YouTube → admin tự chọn ảnh đại diện (từ MinIO); nếu không có thì web hiển thị ô nhúng làm đại diện.
 - ❌ Các nền tảng video khác (Vimeo, Dailymotion, …) vẫn cấm — chỉ YouTube + TikTok + Facebook.
 
+**Ngoại lệ — trang TĨNH đóng cứng trong code (KHÔNG phải admin-managed media):**
+- ✅ Rule MinIO ở trên chỉ áp dụng cho **media do admin quản lý qua app** (lưu trong DB, admin upload/sửa được). Các **trang tĩnh đóng cứng trong code** — nội dung freeze trong `bigbike-web/lib/content/static-pages*` và các component nội dung như `WarrantyPolicyContent`, `PrivacyPolicyContent`, `HelmetSizeGuideContent` — KHÔNG thuộc diện này.
+- ✅ Ảnh của trang tĩnh là **asset trong repo** (đặt trong `bigbike-web/public/...`, vd theme images `/wp-content/themes/bigbike/images/...`) và được import/tham chiếu thẳng trong code. Đây là tài nguyên build-time của FE, KHÔNG bắt buộc nằm trong MinIO.
+- ❌ Vẫn cấm hotlink ảnh từ host ngoài (CDN bên thứ ba, Facebook, `/wp/...` legacy) trong trang tĩnh — ảnh phải là asset nội bộ repo. (Trang size mũ `/huong-dan/size-mu` dựng lại 2026-06-25 đã gỡ ảnh Facebook hotlink cũ.)
+
 **Yêu cầu:**
 - ✅ Mọi luồng upload/chọn media trong admin (`MediaPickerModal`, `VideoPickerModal`, `ImageUrlInput`, …) phải kết thúc bằng object nằm trong MinIO trước khi lưu xuống DB (trừ video provider `youtube`/`tiktok`/`facebook` ở trên).
 - ✅ Media-URL whitelist của backend chỉ chấp nhận URL MinIO/`/media` cho **ảnh**; reject external host. Riêng **video** chấp nhận thêm host YouTube/TikTok/Facebook đã duyệt (`YouTubeUrlParser`, `TikTokUrlParser`, `FacebookUrlParser`, `HomeVideoUrlPolicy`).

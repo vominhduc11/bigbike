@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import { PrivacyPolicyContent } from "@/components/policy/PrivacyPolicyContent";
 import { WarrantyPolicyContent, type WarrantyContact } from "@/components/policy/WarrantyPolicyContent";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import type { WpStaticSidebarItem } from "@/components/wp/WpStaticSidebar";
@@ -22,6 +23,11 @@ const POLICY_BASE_PATH = "/chinh-sach";
 // Trang Chính sách bảo hành có bố cục thiết kế riêng (bảng thời hạn theo thương hiệu, quy trình…)
 // nên render qua component thay vì HTML CMS. Số điện thoại / Zalo / địa chỉ / giờ lấy từ site_settings.
 const WARRANTY_SLUG = "chinh-sach-bao-hanh";
+
+// Trang Chính sách bảo vệ thông tin cá nhân cũng có bố cục thiết kế riêng (mục thu thập, công cụ đo
+// lường, chia sẻ bên thứ ba, quyền của khách…) nên render qua component. Số liên hệ ĐÓNG CỨNG trong
+// component theo yêu cầu owner (xem PrivacyPolicyContent + allowlist guard).
+const PRIVACY_SLUG = "chinh-sach-bao-ve-thong-tin-ca-nhan";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -79,7 +85,7 @@ export default async function PolicyPage({ params }: Props) {
   const pageTitle = safeText(page.title, t("policy.title"));
   const sidebarItems = buildSidebarItems(menuResult?.data ?? null, slug);
 
-  // Trang bảo hành: bố cục component (bảng theo thương hiệu + quy trình), liên hệ lấy từ site_settings.
+  // Trang bảo hành & bảo mật: bố cục component riêng, số liên hệ lấy từ site_settings (không hardcode).
   let bodyNode: React.ReactNode;
   if (slug === WARRANTY_SLUG) {
     const settings = (await listPublicSettings(locale)).data ?? [];
@@ -92,6 +98,8 @@ export default async function PolicyPage({ params }: Props) {
       hoursWeekend: pickSetting(settings, ["opening_hours_weekend"]),
     };
     bodyNode = <WarrantyPolicyContent locale={locale} contact={contact} />;
+  } else if (slug === PRIVACY_SLUG) {
+    bodyNode = <PrivacyPolicyContent locale={locale} />;
   } else {
     bodyNode = (
       <div

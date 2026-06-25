@@ -119,6 +119,8 @@ Chi tiết: [AGENTS.md](AGENTS.md) §5.5.
 
 **Ngoại lệ — VIDEO nhúng YouTube + TikTok + Facebook (owner chốt 2026-06-25):** video (gallery video, "Video sản phẩm", video trang chủ, khối video bài viết) được phép dán link **YouTube**, **TikTok** hoặc **Facebook** làm nguồn (provider `youtube`|`tiktok`|`facebook`|`upload`; `upload` phải là MinIO). Web tự dựng iframe embed (`youtube-nocookie.com/embed/{id}`, `tiktok.com/embed/v2/{id}`, `facebook.com/plugins/video.php?href={url}`). Link rút gọn (`vt.tiktok.com`/`vm.tiktok.com`/`fb.watch`) bị reject — yêu cầu link đầy đủ. Facebook chỉ render video CÔNG KHAI. Nền tảng khác (Vimeo/Dailymotion…) vẫn cấm.
 
+**Ngoại lệ — trang TĨNH đóng cứng trong code:** rule MinIO chỉ áp dụng cho media **do admin quản lý qua app** (lưu DB). Trang tĩnh freeze trong code (`bigbike-web/lib/content/static-pages*`, component như `WarrantyPolicyContent`/`HelmetSizeGuideContent`) dùng **asset trong repo** (`bigbike-web/public/...`) — ảnh **KHÔNG bắt buộc** nằm MinIO. Vẫn cấm hotlink ảnh host ngoài trong trang tĩnh (ảnh phải là asset nội bộ repo).
+
 **Cấm:** hotlink **ảnh** từ host ngoài (CDN bên thứ ba, Drive, Imgur, link `/wp/...` legacy); embed video nền tảng ngoài YouTube/TikTok/Facebook; cho admin nhập URL ảnh ngoài làm nguồn media (cần nhập từ URL → backend **fetch về + re-upload vào MinIO**, lưu URL MinIO); write mới giữ link ảnh external (chỉ chấp nhận fallback đọc cho legacy chưa migrate).
 
 Chi tiết: [AGENTS.md](AGENTS.md) §14.3 (+ §8.1 media fields).

@@ -33,6 +33,24 @@ const bannedPatterns = [
   { label: "legacy storefront social handle", pattern: /bigbikegear/i },
 ];
 
+// Ngoại lệ có chủ ý (owner chốt): một số trang TĨNH đóng cứng số liên hệ trong nội dung thay vì lấy
+// từ site_settings. Chỉ miễn nhãn số điện thoại cho đúng các file này; mọi file khác vẫn bị kiểm tra
+// như thường.
+const allowlist = [
+  {
+    file: path.join(projectRoot, "components", "policy", "PrivacyPolicyContent.tsx"),
+    labels: new Set(["legacy storefront phone number"]),
+  },
+  {
+    file: path.join(projectRoot, "components", "guide", "HelmetSizeGuideContent.tsx"),
+    labels: new Set(["legacy storefront phone number"]),
+  },
+];
+
+function isAllowed(filePath, label) {
+  return allowlist.some((entry) => entry.file === filePath && entry.labels.has(label));
+}
+
 const violations = [];
 
 for (const bannedFile of bannedFiles) {
@@ -77,6 +95,10 @@ function walkRuntimeFiles(directory) {
     for (const { label, pattern } of bannedPatterns) {
       const match = pattern.exec(source);
       if (!match || match.index < 0) {
+        continue;
+      }
+
+      if (isAllowed(fullPath, label)) {
         continue;
       }
 
