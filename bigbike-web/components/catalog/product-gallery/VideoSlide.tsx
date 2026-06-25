@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { VideoAsset } from "@/lib/contracts/public";
 import { resolveMediaUrl } from "@/lib/utils/format";
 import { facebookEmbedUrl, getTikTokId, getYouTubeId, isFacebookVideoUrl, tiktokEmbedUrl } from "./media";
@@ -9,11 +9,15 @@ import { facebookEmbedUrl, getTikTokId, getYouTubeId, isFacebookVideoUrl, tiktok
 // khi video XEM HẾT (YouTube nhúng iframe chéo miền nên không có sự kiện DOM trực
 // tiếp). Không hề tự phát — chỉ lắng nghe trạng thái người dùng thao tác.
 type YTPlayer = { destroy?: () => void; pauseVideo?: () => void };
+type YTPlayerOptions = {
+  width?: string | number;
+  height?: string | number;
+  videoId?: string;
+  playerVars?: Record<string, string | number>;
+  events?: { onStateChange?: (e: { data: number }) => void };
+};
 type YTNamespace = {
-  Player: new (
-    el: HTMLElement,
-    opts: { events?: { onStateChange?: (e: { data: number }) => void } },
-  ) => YTPlayer;
+  Player: new (el: HTMLElement | string, opts: YTPlayerOptions) => YTPlayer;
   PlayerState: { PLAYING: number; PAUSED: number; ENDED: number };
 };
 type YTWindow = { YT?: YTNamespace; onYouTubeIframeAPIReady?: () => void };
@@ -60,22 +64,42 @@ export function VideoSlide({ video, active, onPlay, onPause, onEnded }: VideoSli
   const resolved = resolveMediaUrl(url) ?? url;
   const title = video.title ?? "Video";
 
-  // YouTube: gắn IFrame Player API vào iframe để bắt PLAYING (bấm play), PAUSED (tạm
-  // dừng) và ENDED (xem hết). Không gọi destroy khi unmount để tránh xung đột gỡ DOM
-  // với React — khi React gỡ iframe thì player cũng theo đó mất.
-  const ytFrameRef = useRef<HTMLIFrameElement | null>(null);
-  const ytFrameId = `yt-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const ytHostRef = useRef<HTMLDivElement | null>(null);
   const ytPlayerRef = useRef<YTPlayer | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const ytFrameId = `yt-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  // Khi YouTube API bị chặn (adblock/mạng) thì sau ~4s vẫn không gắn được player →
+  // hạ xuống iframe nhúng thường để video VẪN xem được (đánh đổi: lúc này không bắt
+  // được sự kiện play nên dải ảnh không tự dừng — trường hợp hiếm).
+  const [ytFallback, setYtFallback] = useState(false);
 
+  // YouTube: ĐỂ CHÍNH API tự dựng iframe từ một <div> rỗng (thay vì gắn vào iframe có
+  // sẵn — kiểu cũ khiến onStateChange thường KHÔNG bắn → dải ảnh không biết video đang
+  // chạy và vẫn nhảy slide). API tự dựng iframe nên sự kiện PLAYING/PAUSED/ENDED bắn
+  // tin cậy. Bọc trong wrapper: API thay thế <div> con bằng iframe của nó; React chỉ
+  // quản <div> ngoài nên không xung đột khi gỡ DOM.
   useEffect(() => {
     if (!ytId) return;
     let cancelled = false;
+    let player: YTPlayer | null = null;
+    const fallbackTimer = window.setTimeout(() => {
+      if (!cancelled) setYtFallback(true);
+    }, 4000);
     loadYouTubeApi().then(() => {
-      if (cancelled || !ytFrameRef.current) return;
+      if (cancelled) return;
       const YT = (window as unknown as YTWindow).YT;
-      if (!YT?.Player) return;
-      ytPlayerRef.current = new YT.Player(ytFrameRef.current, {
+      if (!YT?.Player || !ytHostRef.current) {
+        setYtFallback(true);
+        return;
+      }
+      window.clearTimeout(fallbackTimer);
+      player = new YT.Player(ytHostRef.current, {
+        width: "100%",
+        height: "100%",
+        videoId: ytId,
+        // KHÔNG có autoplay → khách phải bấm mới chạy. playsinline để iOS không ép
+        // mở toàn màn hình; rel=0 hạn chế gợi ý video lạ khi xem hết.
+        playerVars: { playsinline: 1, rel: 0 },
         events: {
           onStateChange: (e: { data: number }) => {
             if (e.data === YT.PlayerState.PLAYING) onPlay?.();
@@ -84,27 +108,44 @@ export function VideoSlide({ video, active, onPlay, onPause, onEnded }: VideoSli
           },
         },
       });
+      ytPlayerRef.current = player;
     });
     return () => {
       cancelled = true;
+      window.clearTimeout(fallbackTimer);
+      try {
+        player?.destroy?.();
+      } catch {
+        // iframe có thể đã bị React gỡ trước — bỏ qua.
+      }
+      ytPlayerRef.current = null;
     };
   }, [ytId, onPlay, onPause, onEnded]);
 
   // Khi slide này bị deactivate (khách chuyển sang slide khác) → dừng video ngay.
   useEffect(() => {
     if (active !== false) return;
-    ytPlayerRef.current?.pauseVideo?.();
+    try {
+      ytPlayerRef.current?.pauseVideo?.();
+    } catch {
+      // player có thể chưa sẵn sàng — bỏ qua.
+    }
     videoRef.current?.pause();
   }, [active]);
 
-  if (ytId) {
+  if (ytId && !ytFallback) {
+    return (
+      <div className="relative block h-full w-full bg-black [&_iframe]:absolute [&_iframe]:inset-0 [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:border-0">
+        {/* <div> này bị YouTube API thay bằng iframe của nó. */}
+        <div ref={ytHostRef} id={ytFrameId} />
+      </div>
+    );
+  }
+
+  if (ytId && ytFallback) {
     return (
       <iframe
-        ref={ytFrameRef}
-        id={ytFrameId}
         className="block w-full h-full border-none bg-black"
-        // enablejsapi=1 để IFrame API điều khiển/lắng nghe được; KHÔNG có autoplay=1
-        // nên video không tự phát, khách phải bấm.
         src={`https://www.youtube.com/embed/${ytId}?enablejsapi=1`}
         title={title}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
