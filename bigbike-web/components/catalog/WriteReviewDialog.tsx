@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -28,9 +29,13 @@ export function WriteReviewDialog({ productId }: { productId: string }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      {/* Desktop: thẻ căn giữa (kế thừa từ DialogContent). Mobile (<md): chiếm trọn
+          màn hình để form là trải nghiệm riêng, không lộ header trang / thanh CTA mờ
+          phía sau và không còn thẻ nổi sát mép. */}
+      <DialogContent className="max-md:left-0 max-md:top-0 max-md:h-[100dvh] max-md:max-h-[100dvh] max-md:w-screen max-md:max-w-none max-md:translate-x-0 max-md:translate-y-0 max-md:border-0">
         <DialogHeader>
           <DialogTitle>{t("formTitle")}</DialogTitle>
+          <DialogDescription>{t("formIntro")}</DialogDescription>
         </DialogHeader>
         {/* Mount mới mỗi lần mở để form luôn sạch (reset sao/ảnh/trạng thái đã gửi).
             onSuccess làm tươi danh sách đánh giá phía dưới ngay khi gửi xong. */}

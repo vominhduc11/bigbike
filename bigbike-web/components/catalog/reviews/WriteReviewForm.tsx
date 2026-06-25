@@ -152,7 +152,7 @@ export function WriteReviewForm({
   }
 
   return (
-    <div className={cn(isDialog ? "p-5" : "border border-border p-6")}>
+    <div className={cn(isDialog ? "px-5 pb-5 pt-4" : "border border-border p-6")}>
       {!isDialog && (
         <h3 className="m-0 mb-5 font-body text-ui-20 max-md:text-ui-18 font-semibold uppercase tracking-wide text-[var(--bb-text-primary)]">
           {t("formTitle")}

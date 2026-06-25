@@ -264,6 +264,7 @@
       "errorPhotoType": "Chỉ chấp nhận ảnh JPG, PNG hoặc WEBP",
       "errorPhotoUpload": "Tải ảnh lên thất bại, vui lòng thử lại",
       "formTitle": "Đánh giá của bạn",
+      "formIntro": "Chia sẻ cảm nhận của bạn về sản phẩm.",
       "formStars": "Số sao",
       "formName": "Tên của bạn",
       "formNamePlaceholder": "Nguyễn Văn A",

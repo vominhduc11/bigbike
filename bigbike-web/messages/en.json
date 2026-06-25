@@ -264,6 +264,7 @@
       "errorPhotoType": "Only JPG, PNG or WEBP images are allowed",
       "errorPhotoUpload": "Photo upload failed, please try again",
       "formTitle": "Your review",
+      "formIntro": "Share your thoughts about this product.",
       "formStars": "Stars",
       "formName": "Your name",
       "formNamePlaceholder": "John Doe",
