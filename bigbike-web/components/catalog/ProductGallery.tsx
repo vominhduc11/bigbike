@@ -276,12 +276,13 @@ export function ProductGallery({
             slidesPerView={1}
             speed={350}
             rewind
-            // Tự chuyển slide mỗi 3 giây, kể cả khi tới slide video (không tự dừng ở
-            // video). `disableOnInteraction: false` để vẫn chạy tiếp sau khi khách
-            // vuốt/bấm thumbnail. Việc DỪNG khi rê chuột (cả ảnh lẫn video) và khi
-            // BẤM PLAY video do `applyAutoplay` + các listener phía trên xử lý — không
-            // dùng `pauseOnMouseEnter` của Swiper vì nó nhả nhầm khi hover iframe video.
-            autoplay={count > 1 ? { delay: 3000, disableOnInteraction: false } : false}
+            // Tự chuyển slide mỗi 3 giây. `disableOnInteraction: true` (mặc định) để
+            // Swiper KHÔNG tự restart autoplay sau khi khách click vào video — nếu để
+            // `false`, Swiper restart đè lên lệnh stop() của applyAutoplay() và slide
+            // vẫn chạy dù video đang phát. `onSlideChangeTransitionEnd` gọi applyAutoplay
+            // để tự tay restart sau mỗi lần vuốt thủ công (khi video không chạy). Việc
+            // DỪNG khi rê chuột và khi BẤM PLAY do applyAutoplay + các listener xử lý.
+            autoplay={count > 1 ? { delay: 3000, disableOnInteraction: true } : false}
             keyboard={{ enabled: true }}
             thumbs={{ swiper: thumbsSwiper && !thumbsSwiper.destroyed ? thumbsSwiper : null }}
             className="w-full h-full"
@@ -289,7 +290,11 @@ export function ProductGallery({
               mainRef.current = s;
               setActiveIndex(s.activeIndex);
             }}
-            onSlideChange={(s) => setActiveIndex(s.activeIndex)}
+            onSlideChange={(s) => {
+              videoPlayingRef.current = false; // video cũ đã rời màn hình
+              setActiveIndex(s.activeIndex);
+            }}
+            onSlideChangeTransitionEnd={applyAutoplay}
           >
             {allItems.map((item, index) => (
               <SwiperSlide
@@ -299,6 +304,7 @@ export function ProductGallery({
                 {item.kind === "video" ? (
                   <VideoSlide
                     video={item.asset}
+                    active={index === activeIndex}
                     onPlay={handleVideoPlay}
                     onPause={handleVideoPause}
                     onEnded={handleVideoEnded}

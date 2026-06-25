@@ -8,7 +8,7 @@ import { facebookEmbedUrl, getTikTokId, getYouTubeId, isFacebookVideoUrl, tiktok
 // Nạp YouTube IFrame API một lần cho cả trang. Dùng để biết khi khách BẤM PLAY và
 // khi video XEM HẾT (YouTube nhúng iframe chéo miền nên không có sự kiện DOM trực
 // tiếp). Không hề tự phát — chỉ lắng nghe trạng thái người dùng thao tác.
-type YTPlayer = { destroy?: () => void };
+type YTPlayer = { destroy?: () => void; pauseVideo?: () => void };
 type YTNamespace = {
   Player: new (
     el: HTMLElement,
@@ -39,6 +39,8 @@ function loadYouTubeApi(): Promise<void> {
 
 type VideoSlideProps = {
   video: VideoAsset;
+  /** true khi slide này đang hiển thị; false khi khách chuyển sang slide khác → dừng video. */
+  active?: boolean;
   /** Gọi khi khách BẮT ĐẦU phát video → dừng tự chạy dải ảnh để khỏi cắt ngang clip. */
   onPlay?: () => void;
   /** Gọi khi video TẠM DỪNG → chạy lại dải ảnh ngay (không sang slide). */
@@ -50,7 +52,7 @@ type VideoSlideProps = {
 /** Slide video trong carousel ảnh chính: YouTube/TikTok/Facebook → iframe embed; video thư viện → thẻ <video controls>.
  *  Video KHÔNG tự phát — khách phải bấm mới chạy. `onPlay`/`onPause`/`onEnded` chỉ phản
  *  ánh thao tác của khách để điều khiển dải ảnh tự chạy. */
-export function VideoSlide({ video, onPlay, onPause, onEnded }: VideoSlideProps) {
+export function VideoSlide({ video, active, onPlay, onPause, onEnded }: VideoSlideProps) {
   const url = video.url ?? "";
   const ytId = getYouTubeId(url);
   const tiktokId = ytId ? null : getTikTokId(url);
@@ -63,6 +65,9 @@ export function VideoSlide({ video, onPlay, onPause, onEnded }: VideoSlideProps)
   // với React — khi React gỡ iframe thì player cũng theo đó mất.
   const ytFrameRef = useRef<HTMLIFrameElement | null>(null);
   const ytFrameId = `yt-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const ytPlayerRef = useRef<YTPlayer | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
   useEffect(() => {
     if (!ytId) return;
     let cancelled = false;
@@ -70,7 +75,7 @@ export function VideoSlide({ video, onPlay, onPause, onEnded }: VideoSlideProps)
       if (cancelled || !ytFrameRef.current) return;
       const YT = (window as unknown as YTWindow).YT;
       if (!YT?.Player) return;
-      new YT.Player(ytFrameRef.current, {
+      ytPlayerRef.current = new YT.Player(ytFrameRef.current, {
         events: {
           onStateChange: (e: { data: number }) => {
             if (e.data === YT.PlayerState.PLAYING) onPlay?.();
@@ -84,6 +89,13 @@ export function VideoSlide({ video, onPlay, onPause, onEnded }: VideoSlideProps)
       cancelled = true;
     };
   }, [ytId, onPlay, onPause, onEnded]);
+
+  // Khi slide này bị deactivate (khách chuyển sang slide khác) → dừng video ngay.
+  useEffect(() => {
+    if (active !== false) return;
+    ytPlayerRef.current?.pauseVideo?.();
+    videoRef.current?.pause();
+  }, [active]);
 
   if (ytId) {
     return (
@@ -127,6 +139,7 @@ export function VideoSlide({ video, onPlay, onPause, onEnded }: VideoSlideProps)
 
   return (
     <video
+      ref={videoRef}
       className="block w-full h-full object-contain bg-black"
       src={resolved}
       controls

@@ -342,6 +342,8 @@ body {
   font-size: var(--fs-body);
   line-height: var(--bb-line-body);
   font-weight: var(--bb-font-weight-regular);
+  /* Giữ chỗ thanh cuộn khi modal/dialog mở (overflow: hidden) để tránh layout shift. */
+  scrollbar-gutter: stable;
 }
 
 @layer base {
