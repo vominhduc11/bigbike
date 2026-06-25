@@ -4,9 +4,11 @@ import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
+  DialogGrabber,
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  dialogMobileBottomSheet,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -49,7 +51,8 @@ export function QuickBuyModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="rounded-none max-w-lg max-h-[90dvh] overflow-y-auto p-0 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-sm [&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground">
+      <DialogContent className={`rounded-none max-w-lg max-h-[90dvh] overflow-y-auto p-0 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-sm [&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground ${dialogMobileBottomSheet}`}>
+        <DialogGrabber />
         <DialogHeader className="px-6 pt-6 pb-0">
           <DialogTitle className="text-body font-bold uppercase tracking-wide">
             {tQb("title")}

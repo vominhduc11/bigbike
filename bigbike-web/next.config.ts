@@ -394,7 +394,10 @@ const nextConfig: NextConfig = {
       [
         "default-src 'self'",
         // Next.js inline scripts (nonces are ideal but require middleware; this is a pragmatic baseline)
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com",
+        // YouTube IFrame API (www.youtube.com/iframe_api + widget từ s.ytimg.com) để điều khiển
+        // play/pause/ended của video sản phẩm — KHÔNG có 2 origin này thì script bị CSP chặn,
+        // dải ảnh không biết video đang chạy nên vẫn tự nhảy slide. frame-src đã cho phép nhúng iframe.
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.youtube.com https://s.ytimg.com",
         "worker-src 'self' blob:",
         "style-src 'self' 'unsafe-inline'",
         `img-src 'self' data: blob: https:${MEDIA_ORIGIN ? " " + MEDIA_ORIGIN : ""}`,

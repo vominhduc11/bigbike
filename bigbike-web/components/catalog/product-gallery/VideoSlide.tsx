@@ -8,7 +8,7 @@ import { facebookEmbedUrl, getTikTokId, getYouTubeId, isFacebookVideoUrl, tiktok
 // Nạp YouTube IFrame API một lần cho cả trang. Dùng để biết khi khách BẤM PLAY và
 // khi video XEM HẾT (YouTube nhúng iframe chéo miền nên không có sự kiện DOM trực
 // tiếp). Không hề tự phát — chỉ lắng nghe trạng thái người dùng thao tác.
-type YTPlayer = { destroy?: () => void; pauseVideo?: () => void };
+type YTPlayer = { destroy?: () => void; pauseVideo?: () => void; getPlayerState?: () => number };
 type YTPlayerOptions = {
   width?: string | number;
   height?: string | number;
@@ -84,7 +84,7 @@ export function VideoSlide({ video, active, onPlay, onPause, onEnded }: VideoSli
     let player: YTPlayer | null = null;
     const fallbackTimer = window.setTimeout(() => {
       if (!cancelled) setYtFallback(true);
-    }, 4000);
+    }, 8000);
     loadYouTubeApi().then(() => {
       if (cancelled) return;
       const YT = (window as unknown as YTWindow).YT;
@@ -121,6 +121,25 @@ export function VideoSlide({ video, active, onPlay, onPause, onEnded }: VideoSli
       ytPlayerRef.current = null;
     };
   }, [ytId, onPlay, onPause, onEnded]);
+
+  // CHỐT CHẶN: một số trình duyệt/môi trường KHÔNG bắn `onStateChange` dù đã gắn API
+  // → web không biết video đang chạy → dải ảnh vẫn nhảy slide sau 3s. Vì vậy chủ động
+  // HỎI trạng thái player mỗi 300ms (chỉ khi slide đang active): đang chạy/đệm → khoá,
+  // tạm dừng → mở khoá, xem hết → mở khoá để sang slide kế. Idempotent với onStateChange.
+  // Trạng thái YouTube: -1 chưa bắt đầu, 0 hết, 1 đang chạy, 2 tạm dừng, 3 đang đệm, 5 đã nạp.
+  useEffect(() => {
+    if (!ytId || active === false) return;
+    let last = -1;
+    const id = window.setInterval(() => {
+      const st = ytPlayerRef.current?.getPlayerState?.();
+      if (typeof st !== "number" || st === last) return;
+      last = st;
+      if (st === 1 || st === 3) onPlay?.();
+      else if (st === 2) onPause?.();
+      else if (st === 0) onEnded?.();
+    }, 300);
+    return () => window.clearInterval(id);
+  }, [ytId, active, onPlay, onPause, onEnded]);
 
   // Khi slide này bị deactivate (khách chuyển sang slide khác) → dừng video ngay.
   useEffect(() => {

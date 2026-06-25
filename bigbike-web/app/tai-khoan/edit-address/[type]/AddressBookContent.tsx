@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { PaginationNav } from "@/components/ui/PaginationNav";
 import { cn } from "@/lib/utils";
 import { skelBase } from "@/lib/ui-classes";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogGrabber, DialogHeader, DialogTitle, dialogMobileBottomSheet } from "@/components/ui/dialog";
 import { FormNotice } from "@/components/ui/FormNotice";
 import { AddressForm } from "./address-book/AddressForm";
 
@@ -258,7 +258,8 @@ export function AddressBookContent() {
       )}
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-[920px] w-[calc(100%-32px)] p-0">
+        <DialogContent className={`max-w-[920px] w-[calc(100%-32px)] p-0 ${dialogMobileBottomSheet}`}>
+          <DialogGrabber />
           <DialogHeader className="p-6">
             <DialogTitle>{editing ? t("modalUpdate") : t("modalAdd")}</DialogTitle>
             <DialogDescription className="sr-only">{editing ? t("modalUpdate") : t("modalAdd")}</DialogDescription>

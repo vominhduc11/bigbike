@@ -37,7 +37,7 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-1/2 top-1/2 z-[var(--bb-z-modal)] w-full max-w-lg max-h-[90vh] overflow-y-auto -translate-x-1/2 -translate-y-1/2 bg-card border border-border shadow-[var(--bb-shadow-lg)] duration-[var(--bb-duration-normal)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+        "fixed left-1/2 top-1/2 z-[var(--bb-z-modal)] w-full max-w-lg max-h-[90vh] overflow-y-auto -translate-x-1/2 -translate-y-1/2 bg-card border border-border shadow-[var(--bb-shadow-lg)] rounded-lg! duration-[var(--bb-duration-normal)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
         className,
       )}
       {...props}
@@ -52,6 +52,21 @@ const DialogContent = React.forwardRef<
   );
 });
 DialogContent.displayName = DialogPrimitive.Content.displayName;
+
+// Trên mobile (<md) biến modal căn-giữa thành "bottom sheet": dock xuống đáy màn,
+// full-width, trượt lên từ dưới thay vì zoom giữa màn — ngón cái dễ với tới hơn.
+// Áp vào className của DialogContent; desktop giữ nguyên thẻ căn giữa.
+const dialogMobileBottomSheet =
+  "max-md:left-0 max-md:right-0 max-md:top-auto max-md:bottom-0 max-md:w-full max-md:max-w-none max-md:translate-x-0 max-md:translate-y-0 max-md:max-h-[88dvh] max-md:data-[state=open]:slide-in-from-bottom max-md:data-[state=closed]:slide-out-to-bottom max-md:data-[state=open]:zoom-in-100 max-md:data-[state=closed]:zoom-out-100";
+
+// Thanh "kéo" gợi ý vuốt — chỉ hiện ở mobile khi modal đang dock đáy như bottom sheet.
+const DialogGrabber = () => (
+  <div
+    className="hidden max-md:block mx-auto mt-3 h-1 w-10 flex-none rounded-full bg-border"
+    aria-hidden="true"
+  />
+);
+DialogGrabber.displayName = "DialogGrabber";
 
 const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn("flex flex-col gap-2 p-5 border-b border-border", className)} {...props} />
@@ -97,8 +112,10 @@ export {
   DialogTrigger,
   DialogClose,
   DialogContent,
+  DialogGrabber,
   DialogHeader,
   DialogFooter,
   DialogTitle,
   DialogDescription,
+  dialogMobileBottomSheet,
 };

@@ -1918,13 +1918,33 @@ html { scrollbar-gutter: stable; }
    space via scrollbar-gutter, so the extra margin creates a second 15px gap
    and makes the page jump when search/drawers open. */
 html body[data-scroll-locked] {
+  /* react-remove-scroll-bar tiêm `body[data-scroll-locked]{padding: …}` để khoá
+     cuộn + bù thanh cuộn, nhưng nó dựng lại padding từ INLINE-style của body
+     (rỗng) chứ không thấy `body{padding-top:80px}` của theme WP (CHỪA CHỖ cho
+     header cố định 80px). Hậu quả khi mở modal:
+       • padding-top bị zero-hoá → cả trang trượt LÊN 80px chui dưới header;
+       • padding-right += bề rộng thanh cuộn (~12px) → nội dung hẹp lại, cột ảnh
+         co làm cột thông tin xếp dưới (mobile/tablet) nhích lên.
+     Trang đã chừa sẵn rãnh cuộn bằng `scrollbar-gutter: stable` nên KHÔNG cần thư
+     viện bù thêm. Tái khẳng định đúng padding gốc của body (chỉ 80px ở trên). */
   margin-right: 0 !important;
+  padding-top: 80px !important;
+  padding-right: 0 !important;
+  /* react-remove-scroll còn đặt `body{overflow:hidden}` để khoá cuộn. Khi overflow
+     không còn `visible`, rãnh cuộn (scrollbar-gutter) bắt đầu áp dụng cho body →
+     nó CHỪA THÊM một rãnh ~10px, làm nội dung hẹp lại, cột ảnh vuông co và đẩy cột
+     thông tin xếp dưới (mobile/tablet) nhích lên. Trang đã chừa rãnh ở cấp <html>
+     rồi nên body KHÔNG cần rãnh riêng. */
+  scrollbar-gutter: auto !important;
 }
 
 /* Keep the reserved scrollbar gutter visually inside the modal overlay instead
-   of leaving a light strip at the right edge while a Radix modal is open. */
+   of leaving a light strip at the right edge while a Radix modal is open.
+   KHÔNG đặt `overflow-y: hidden` ở đây: thẻ <html> là phần tử cuộn gốc của trang,
+   ép overflow:hidden lên nó sẽ kẹp scrollTop về 0 → cả trang NHẢY LÊN ĐẦU khi mở
+   modal. react-remove-scroll (Radix Dialog) đã chặn cuộn nền bằng JS rồi; ở đây
+   chỉ cần đổi màu thanh cuộn cho hoà vào lớp phủ, KHÔNG khoá overflow. */
 html:has(body[data-scroll-locked]) {
-  overflow-y: hidden;
   scrollbar-color: color-mix(in srgb, var(--bb-text-inverse) 24%, transparent) var(--bb-overlay-modal);
 }
 
@@ -2621,6 +2641,11 @@ input[type="checkbox"] {
 
 .bb-theme :is(.bb-round, .bb-account-avatar, .swiper-pagination-bullet) {
   border-radius: 50%;
+}
+
+/* Radix Dialog/Sheet được phép tự kiểm soát border-radius qua Tailwind */
+.bb-theme [role="dialog"] {
+  border-radius: revert;
 }
 
 /* =========================================================

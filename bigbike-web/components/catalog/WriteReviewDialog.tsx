@@ -7,8 +7,10 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogGrabber,
   DialogHeader,
   DialogTitle,
+  dialogMobileBottomSheet,
 } from "@/components/ui/dialog";
 import { WriteReviewForm } from "@/components/catalog/ReviewsSection";
 import { WRITE_REVIEW_EVENT } from "@/components/catalog/writeReviewBus";
@@ -29,10 +31,11 @@ export function WriteReviewDialog({ productId }: { productId: string }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {/* Desktop: thẻ căn giữa (kế thừa từ DialogContent). Mobile (<md): chiếm trọn
-          màn hình để form là trải nghiệm riêng, không lộ header trang / thanh CTA mờ
-          phía sau và không còn thẻ nổi sát mép. */}
-      <DialogContent className="max-md:left-0 max-md:top-0 max-md:h-[100dvh] max-md:max-h-[100dvh] max-md:w-screen max-md:max-w-none max-md:translate-x-0 max-md:translate-y-0 max-md:border-0">
+      {/* Desktop: thẻ căn giữa (kế thừa từ DialogContent). Mobile (<md): bottom sheet
+          dock đáy, trượt lên từ dưới — ngón cái dễ thao tác, vẫn lộ một phần trang
+          phía trên để người dùng biết đang ở đâu. */}
+      <DialogContent className={dialogMobileBottomSheet}>
+        <DialogGrabber />
         <DialogHeader>
           <DialogTitle>{t("formTitle")}</DialogTitle>
           <DialogDescription>{t("formIntro")}</DialogDescription>
