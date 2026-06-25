@@ -26,13 +26,10 @@ export function MobileCard({ title, subtitle, status, meta = [], actions, onClic
     return 'mobile-card-meta-value'
   }
 
-  const Wrapper = onClick ? 'button' : 'div'
-  const wrapperProps = onClick
-    ? { type: 'button', onClick, className: 'mobile-card', style: { textAlign: 'left', width: '100%', font: 'inherit' } }
-    : { className: 'mobile-card' }
-
-  return (
-    <Wrapper {...wrapperProps}>
+  // Body = head + meta. Khi có onClick, chỉ bọc PHẦN BODY trong <button> để
+  // tránh nút lồng nút (actions chứa <button> riêng) — DOM hợp lệ + a11y đúng.
+  const body = (
+    <>
       {(title || status) && (
         <div className="mobile-card-head">
           <div>
@@ -52,7 +49,24 @@ export function MobileCard({ title, subtitle, status, meta = [], actions, onClic
           ))}
         </div>
       )}
+    </>
+  )
+
+  return (
+    <div className="mobile-card">
+      {onClick
+        ? (
+          <button
+            type="button"
+            onClick={onClick}
+            className="mobile-card-main"
+            style={{ textAlign: 'left', width: '100%', font: 'inherit', display: 'block', background: 'transparent', border: 0, padding: 0, cursor: 'pointer', color: 'inherit' }}
+          >
+            {body}
+          </button>
+        )
+        : body}
       {actions ? <div className="mobile-card-actions">{actions}</div> : null}
-    </Wrapper>
+    </div>
   )
 }

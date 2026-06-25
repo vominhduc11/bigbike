@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import type { HomeVideo } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
+import { facebookEmbedUrl, getTikTokId, isFacebookVideoUrl, tiktokEmbedUrl } from "@/components/catalog/product-gallery/media";
 
 export function VideoModal({
   videos,
@@ -24,11 +25,19 @@ export function VideoModal({
   const video = videos[activeIndex];
   const title = safeText(video.title, "");
   const ariaTitle = title || tA("watchVideoFallback");
+  // TikTok/Facebook video sản phẩm map sang HomeVideo với embedUrl=null → tự dựng embed từ videoUrl.
+  const fallbackUrl = !video.embedUrl && !video.youtubeId ? (video.videoUrl ?? "") : "";
+  const tiktokId = fallbackUrl ? getTikTokId(fallbackUrl) : null;
+  const isFacebook = fallbackUrl && !tiktokId && isFacebookVideoUrl(fallbackUrl);
   const embedSrc = video.embedUrl ??
     (video.youtubeId
       ? `https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&rel=0`
-      : null);
-  // Không phải YouTube/embed → phát file video tự lưu (MinIO) bằng thẻ <video>.
+      : tiktokId
+        ? tiktokEmbedUrl(tiktokId)
+        : isFacebook
+          ? facebookEmbedUrl(fallbackUrl)
+          : null);
+  // Không phải YouTube/TikTok/Facebook/embed → phát file video tự lưu (MinIO) bằng thẻ <video>.
   const rawVideoSrc = embedSrc ? null : (resolveMediaUrl(video.videoUrl?.trim()) ?? video.videoUrl ?? null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -6,6 +7,11 @@ import { formatParentOption, isValidCustomUrl } from './constants'
 
 // Radix Select cấm value rỗng, nên dùng sentinel cho lựa chọn "cấp gốc".
 const ROOT_VALUE = '__root__'
+
+// Dấu * đỏ cạnh nhãn trường bắt buộc (glyph + màu, không chỉ màu).
+function RequiredMark() {
+  return <span className="text-danger ml-0.5" aria-hidden="true">*</span>
+}
 
 function MenuParentSelect({ value, onChange, options, label, rootLabel }) {
   return (
@@ -28,18 +34,40 @@ function MenuParentSelect({ value, onChange, options, label, rootLabel }) {
 
 export function ItemForm({ value, onChange, parentOptions, isNew }) {
   const { t } = useTranslation()
+  const [labelTouched, setLabelTouched] = useState(false)
   const urlInvalid = value.url.trim() !== '' && !isValidCustomUrl(value.url)
+  const labelMissing = value.label.trim() === ''
+  const showLabelError = labelTouched && labelMissing
   return (
     <div className="form-grid">
+      {/* Chú thích trường bắt buộc */}
+      <p className="form-field-wide menu-form-hint">
+        <span className="text-danger" aria-hidden="true">*</span>{' '}
+        {t('menus.requiredLegend', { defaultValue: 'Bắt buộc' })}
+      </p>
+
       {/* Label — required (Vietnamese) */}
-      <label className="form-field form-field-wide">
-        {t('menus.itemLabel')}
+      <label className="form-field form-field-wide" htmlFor="menu-item-label">
+        <span>
+          {t('menus.itemLabel')}
+          <RequiredMark />
+        </span>
         <Input
+          id="menu-item-label"
           value={value.label}
           onChange={(e) => onChange({ label: e.target.value })}
+          onBlur={() => setLabelTouched(true)}
           placeholder={t('menus.itemLabelPlaceholder')}
           autoFocus={isNew}
+          aria-required="true"
+          aria-invalid={showLabelError || undefined}
+          aria-describedby={showLabelError ? 'menu-item-label-error' : undefined}
          />
+        {showLabelError && (
+          <small id="menu-item-label-error" className="menu-form-hint menu-form-hint--danger" role="alert">
+            {t('menus.itemLabelRequired', { defaultValue: 'Vui lòng nhập tên hiển thị.' })}
+          </small>
+        )}
       </label>
 
       {/* Label — English (optional) */}
@@ -55,12 +83,16 @@ export function ItemForm({ value, onChange, parentOptions, isNew }) {
 
       {/* URL */}
       <label className="form-field form-field-wide" htmlFor="menu-item-url">
-        {t('menus.itemUrlCustom')}
+        <span>
+          {t('menus.itemUrlCustom')}
+          <RequiredMark />
+        </span>
         <Input
           id="menu-item-url"
           value={value.url}
           onChange={(e) => onChange({ url: e.target.value })}
           placeholder="/danh-muc-san-pham/... hoặc https://..."
+          aria-required="true"
           aria-invalid={urlInvalid || undefined}
           aria-describedby="menu-item-url-hint"
          />

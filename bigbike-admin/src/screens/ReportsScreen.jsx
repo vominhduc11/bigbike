@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Calendar, Download, Info, TrendingUp, TrendingDown, Minus,
+  Calendar, Info, TrendingUp, TrendingDown, Minus,
   ChevronUp, ChevronDown, ChevronsUpDown,
   CircleDollarSign, Wallet, RotateCcw, PiggyBank, ShoppingBag, Receipt,
 } from 'lucide-react'
@@ -12,6 +12,7 @@ import {
 } from 'recharts'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { ExportButton } from '../components/ExportButton'
 import { fetchAnalytics, exportOrdersCsv, exportProductsCsv, exportCustomersCsv } from '../lib/adminApi'
 import { formatCurrencyVnd } from '../lib/formatters'
 
@@ -191,6 +192,7 @@ export function ReportsScreen() {
   const [preset, setPreset] = useState('30d')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
+  const [retryKey, setRetryKey] = useState(0)
   const [state, setState] = useState({ status: 'loading', data: null, prev: null, warning: '' })
 
   const resolvedDates = useCallback(() => {
@@ -235,7 +237,7 @@ export function ReportsScreen() {
         setState({ status: 'error', data: null, prev: null, warning: '', error: e.message })
       })
     return () => { active = false }
-  }, [resolvedDates, preset, t])
+  }, [resolvedDates, preset, t, retryKey])
 
   const { from: exportFrom, to: exportTo } = resolvedDates()
   const tickFmt = (v) => `${(v / 1000000).toFixed(0)}M`
@@ -249,11 +251,13 @@ export function ReportsScreen() {
     { key: 'custom', label: t('reports.presetCustom') },
   ]
 
-  // Tải file CSV xuống máy + báo lỗi/cảnh báo cắt dòng qua toast.
+  // Tải file CSV xuống máy + báo thành công/cảnh báo cắt dòng/lỗi qua toast.
+  // ExportButton (N6) tự lo disable + spinner trong lúc chờ; ở đây lo phản hồi kết quả.
   const runExport = async (exportFn) => {
     try {
       const r = await exportFn()
       if (r?.truncated) toast.warning(t('export.truncated', { max: r.maxRows }))
+      else toast.success(t('export.success'))
     } catch {
       toast.error(t('export.error'))
     }
@@ -359,29 +363,24 @@ export function ReportsScreen() {
               />
             </>
           )}
-          <button
-            type="button"
+          <ExportButton
             className="bb-btn bb-btn-primary"
-            onClick={() => runExport(() => exportOrdersCsv({ from: exportFrom, to: exportTo }))}
+            onExport={() => runExport(() => exportOrdersCsv({ from: exportFrom, to: exportTo }))}
           >
-            <Download size={14} />{t('reports.exportOrders')}
-          </button>
-          <button
-            type="button"
-            className="bb-btn bb-btn-secondary"
+            {t('reports.exportOrders')}
+          </ExportButton>
+          <ExportButton
             title={t('reports.exportAllHint')}
-            onClick={() => runExport(() => exportProductsCsv())}
+            onExport={() => runExport(() => exportProductsCsv())}
           >
-            <Download size={14} />{t('reports.exportProducts')}
-          </button>
-          <button
-            type="button"
-            className="bb-btn bb-btn-secondary"
+            {t('reports.exportProducts')}
+          </ExportButton>
+          <ExportButton
             title={t('reports.exportAllHint')}
-            onClick={() => runExport(() => exportCustomersCsv())}
+            onExport={() => runExport(() => exportCustomersCsv())}
           >
-            <Download size={14} />{t('reports.exportCustomers')}
-          </button>
+            {t('reports.exportCustomers')}
+          </ExportButton>
           {preset !== 'custom' && (
             <button type="button" className="bb-btn bb-btn-secondary" onClick={() => setPreset('custom')}>
               <Calendar size={14} />{t('reports.presetCustom')}
@@ -409,7 +408,13 @@ export function ReportsScreen() {
       )}
 
       {state.status === 'error' && (
-        <StatePanel tone="danger" title={t('reports.loadError')} description={state.error} />
+        <StatePanel
+          tone="danger"
+          title={t('reports.loadError')}
+          description={state.error}
+          actionLabel={t('common.retry')}
+          onAction={() => setRetryKey((k) => k + 1)}
+        />
       )}
 
       {state.status === 'success' && state.data && (
@@ -427,7 +432,6 @@ export function ReportsScreen() {
                         title={k.hint}
                         aria-label={k.hint}
                         role="img"
-                        tabIndex={0}
                         style={{ display: 'inline-flex', cursor: 'help', opacity: 0.65 }}
                       >
                         <Info size={13} aria-hidden="true" />

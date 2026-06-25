@@ -23,6 +23,7 @@ import { StatusBadge } from '../components/StatusBadge'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { FilterChips } from '../components/FilterChips'
 import { fetchCategories, fetchCategoryTree, updateCategory } from '../lib/adminApi'
+import { showConfirm } from '../lib/confirm'
 import { formatDateTime, formatText, stripHtml } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
 import { useContentLang } from '../lib/contentLang'
@@ -219,6 +220,17 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   // has visible children. Show has no such constraint, so any order works.
   async function runBulkVisibility(targetVisible) {
     if (!canUpdate || bulkProgress) return
+    // Hiding is destructive (categories disappear from the storefront) and has
+    // no per-row Undo on the bulk path, so gate it behind a confirm dialog.
+    // The show path is non-destructive and stays unconfirmed.
+    if (!targetVisible) {
+      const confirmed = await showConfirm(
+        t('categories.bulkHideConfirm', { count: selectedIds.size }),
+        t('categories.bulkHideConfirmTitle'),
+        { variant: 'danger' },
+      )
+      if (!confirmed) return
+    }
     const byId = new Map(allItems.map((c) => [c.id, c]))
     const depthOf = (id) => {
       let d = 0
@@ -511,11 +523,16 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                 </span>
               )}
             </div>
-            <button
-              type="button"
+            <a
+              href={`/admin/categories/${category.id}`}
               className="cat-name-link"
-              onClick={goToDetail}
               title={t('categories.openDetail')}
+              onClick={(e) => {
+                // Ctrl/Cmd-click hoặc chuột-giữa → để trình duyệt mở tab mới.
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return
+                e.preventDefault()
+                goToDetail()
+              }}
             >
               <strong>
                 {searchTerm ? highlightMatch(formatText(category.name), searchTerm) : formatText(category.name)}
@@ -526,7 +543,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               {!useTreeMode && category.parentId && (
                 <span className="cat-breadcrumb">{breadcrumb}</span>
               )}
-            </button>
+            </a>
           </div>
         </td>
 

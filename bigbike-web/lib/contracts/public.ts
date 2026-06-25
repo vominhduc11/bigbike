@@ -176,7 +176,7 @@ export type DescriptionBlock =
   | { type: "paragraph"; html?: string }
   | { type: "list"; style?: "bulleted" | "numbered"; items?: string[] }
   | { type: "image"; url?: string; alt?: string; caption?: string }
-  | { type: "video"; provider?: "youtube" | "upload"; url?: string; caption?: string }
+  | { type: "video"; provider?: "youtube" | "tiktok" | "facebook" | "upload"; url?: string; caption?: string }
   | { type: "callout"; variant?: "info" | "warning" | "note"; html?: string }
   | { type: "divider" }
   | {

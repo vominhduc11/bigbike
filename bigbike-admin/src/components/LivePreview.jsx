@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AlertCircle, Eye, Loader2, Monitor, Smartphone, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useDialogA11y } from '@/lib/useDialogA11y'
 
 /**
  * Khung xem trước "sống" dùng chung cho mọi loại nội dung (sản phẩm, bài viết…).
@@ -35,7 +36,11 @@ export function LivePreview({
   const readyRef = useRef(false)
   const dataRef = useRef(data)
   const frameHostRef = useRef(null)
+  const panelRef = useRef(null)
   const [hostSize, setHostSize] = useState({ width: 0, height: 0 })
+
+  // A3: Escape đóng + focus-trap + trả focus cho slide-over tự dựng (không qua Radix).
+  useDialogA11y(panelRef, { active: open, onClose })
 
   // Bắt tay: iframe báo "ready" khi mount → gửi ngay payload hiện tại (đọc qua ref
   // nên không stale, và không setState trong effect).
@@ -110,7 +115,7 @@ export function LivePreview({
       />
 
       {/* Panel phải */}
-      <aside className="flex h-full w-full max-w-[860px] flex-col border-l border-border bg-muted shadow-xl">
+      <aside ref={panelRef} tabIndex={-1} className="flex h-full w-full max-w-[860px] flex-col border-l border-border bg-muted shadow-xl outline-none">
         <header className="flex items-center gap-2 border-b border-border bg-card px-4 py-2">
           <Eye size={16} className="text-primary" />
           <span className="text-sm font-medium">{previewTitle}</span>

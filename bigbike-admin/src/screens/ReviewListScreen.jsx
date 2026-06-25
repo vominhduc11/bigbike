@@ -13,6 +13,7 @@ import { useContentLang } from '../lib/contentLang'
 import { formatDateTime, formatText } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
 import { useAdminList } from '../lib/useAdminList'
+import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { useQueryClient } from '@tanstack/react-query'
 import { Alert } from '@/components/ui/alert'
 import { PaginationControls } from '../components/PaginationControls'
@@ -50,8 +51,11 @@ export function ReviewListScreen({ navigate, canUpdate }) {
   const { t } = useTranslation()
   // Admin VI/EN switch: ở EN backend ẩn review của SP chưa dịch + trả productNameEn.
   const contentLang = useContentLang()
-  const [query, setQuery] = useState(INITIAL_QUERY)
-  const [searchInput, setSearchInput] = useState(INITIAL_QUERY.search)
+  const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
+  const [searchInput, setSearchInput] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('search') || INITIAL_QUERY.search
+  })
   const debouncedSearch = useDebounce(searchInput, 300)
   const isFirstSearchRender = useRef(true)
   const queryClient = useQueryClient()
@@ -64,6 +68,13 @@ export function ReviewListScreen({ navigate, canUpdate }) {
   // Chọn nhiều để duyệt/spam/xoá hàng loạt cho hàng chờ kiểm duyệt.
   const [selected, setSelected] = useState(() => new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
+  // Tiến trình xử lý hàng loạt: { done, total } khi đang chạy, null khi rảnh.
+  const [bulkProgress, setBulkProgress] = useState(null)
+
+  // Đồng bộ filter/trang vào URL để back/popstate khôi phục đúng trạng thái đã chọn.
+  useEffect(() => {
+    syncQueryToUrl(query, INITIAL_QUERY)
+  }, [query])
 
   useEffect(() => {
     if (isFirstSearchRender.current) {
@@ -78,16 +89,26 @@ export function ReviewListScreen({ navigate, canUpdate }) {
     if (pendingId) return
     setActionError('')
     setPendingId(review.id)
+    // Cập nhật lạc quan: đổi badge ngay trên trang đang xem, rollback nếu server lỗi.
+    const queryKey = ['reviews', query, contentLang]
+    await queryClient.cancelQueries({ queryKey })
+    const previous = queryClient.getQueryData(queryKey)
+    queryClient.setQueryData(queryKey, (old) => (
+      old?.items
+        ? { ...old, items: old.items.map((r) => (r.id === review.id ? { ...r, status: newStatus } : r)) }
+        : old
+    ))
     try {
       await updateReviewStatus(review.id, newStatus)
       toast.success(t('reviews.detail.statusUpdated'))
       queryClient.invalidateQueries({ queryKey: ['reviews'] })
     } catch (error) {
+      if (previous !== undefined) queryClient.setQueryData(queryKey, previous)
       setActionError(error.message || t('reviews.approveError'))
     } finally {
       setPendingId(null)
     }
-  }, [t, queryClient, pendingId])
+  }, [t, queryClient, pendingId, query, contentLang])
 
   const handleDelete = useCallback(async (reviewId) => {
     const confirmed = await showConfirm(t('reviews.deleteConfirm'), t('reviews.deleteConfirmTitle'))
@@ -109,6 +130,13 @@ export function ReviewListScreen({ navigate, canUpdate }) {
       return next
     })
   }
+
+  // Xoá toàn bộ bộ lọc (trạng thái + từ khoá) về mặc định trong một thao tác.
+  const resetFilters = useCallback(() => {
+    setSelected(new Set())
+    setSearchInput('')
+    setQuery(INITIAL_QUERY)
+  }, [])
 
   // Rating distribution + average — computed from the visible page so the
   // summary card always reflects real data, never a fabricated number.
@@ -151,21 +179,33 @@ export function ReviewListScreen({ navigate, canUpdate }) {
       )
       if (!confirmed) return
     }
+    const total = ids.length
     setActionError('')
     setBulkBusy(true)
+    setBulkProgress({ done: 0, total })
     let done = 0
     try {
       for (const id of ids) {
         if (kind === 'DELETE') await deleteReview(id)
         else await updateReviewStatus(id, kind)
         done += 1
+        setBulkProgress({ done, total })
       }
       toast.success(t('reviews.bulkDone', { count: done, defaultValue: `Đã xử lý ${done} đánh giá.` }))
       setSelected(new Set())
     } catch (error) {
-      setActionError(error.message || t('reviews.bulkError', { defaultValue: 'Một số đánh giá xử lý không thành công.' }))
+      // Báo rõ đã xử lý tới đâu + còn bao nhiêu chưa xong để người dùng biết phải làm lại phần nào.
+      const detail = error.message || t('reviews.bulkError', { defaultValue: 'Một số đánh giá xử lý không thành công.' })
+      setActionError(t('reviews.bulkErrorProgress', {
+        done,
+        total,
+        remaining: total - done,
+        detail,
+        defaultValue: `Đã xử lý ${done}/${total} đánh giá, còn ${total - done} chưa xong. ${detail}`,
+      }))
     } finally {
       setBulkBusy(false)
+      setBulkProgress(null)
       queryClient.invalidateQueries({ queryKey: ['reviews'] })
     }
   }, [bulkBusy, selected, t, queryClient])
@@ -273,11 +313,26 @@ export function ReviewListScreen({ navigate, canUpdate }) {
           value={query.pageSize}
           onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
         />
+        {isFiltered && (
+          <button
+            type="button"
+            className="bb-btn bb-btn-ghost bb-btn-sm"
+            onClick={resetFilters}
+          >
+            {t('common.resetFilters')}
+          </button>
+        )}
       </div>
 
       {canUpdate && (
         <BulkActionBar
-          selectedCount={selected.size}
+          selectedCount={bulkProgress
+            ? t('reviews.bulkProgress', {
+                done: bulkProgress.done,
+                total: bulkProgress.total,
+                defaultValue: `Đang xử lý ${bulkProgress.done}/${bulkProgress.total}…`,
+              })
+            : selected.size}
           onClear={() => setSelected(new Set())}
           actions={[
             {
@@ -317,7 +372,7 @@ export function ReviewListScreen({ navigate, canUpdate }) {
             title={t('reviews.empty')}
             description={t('reviews.emptyDesc')}
             actionLabel={t('common.resetFilters')}
-            onAction={() => { setSearchInput(''); setQuery(INITIAL_QUERY) }}
+            onAction={resetFilters}
           />
         ) : (
           <StatePanel
@@ -386,13 +441,18 @@ export function ReviewListScreen({ navigate, canUpdate }) {
                       <div className="bb-muted" style={{ fontSize: 12 }}>
                         {t('reviews.colProduct')}:{' '}
                         {r.productId ? (
-                          <button
-                            type="button"
-                            style={{ fontWeight: 600, color: 'var(--admin-color-text-primary)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-                            onClick={() => navigate(`/admin/products/${r.productId}`)}
+                          <a
+                            href={`/admin/products/${r.productId}`}
+                            style={{ fontWeight: 600, color: 'var(--admin-color-text-primary)', textDecoration: 'none', cursor: 'pointer' }}
+                            title={t('common.openInNewTab')}
+                            onClick={(e) => {
+                              if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return
+                              e.preventDefault()
+                              navigate(`/admin/products/${r.productId}`)
+                            }}
                           >
                             {formatText(contentLang === 'en' ? (r.productNameEn || r.productName) : r.productName, r.productId)}
-                          </button>
+                          </a>
                         ) : (
                           <span style={{ fontWeight: 600, color: 'var(--admin-color-text-primary)' }}>
                             {formatText(contentLang === 'en' ? (r.productNameEn || r.productName) : r.productName, t('reviews.unknownProduct'))}

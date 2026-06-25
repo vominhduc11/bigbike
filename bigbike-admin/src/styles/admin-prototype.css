@@ -387,10 +387,32 @@
 .bb-user-chip:focus-visible,
 .bb-nav-link:focus-visible,
 .bb-table th[role="button"]:focus-visible,
-.bb-table tr[role="button"]:focus-visible {
+.bb-table tr[role="button"]:focus-visible,
+.bb-kpi.clickable:focus-visible,
+.bb-attention-item:focus-visible {
   outline: 2px solid var(--bb-primary);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* A5: skip-to-content — ẩn ngoài viewport, trượt vào khi nhận focus bằng bàn phím */
+.bb-skip-link {
+  position: absolute;
+  left: 8px;
+  top: -48px;
+  z-index: 1000;
+  padding: 8px 14px;
+  background: var(--bb-primary);
+  color: #fff;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: top 0.15s ease;
+}
+.bb-skip-link:focus {
+  top: 8px;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }
 
 /* ─── Badges ────────────────────────────────────────────────────────────────── */
@@ -659,8 +681,11 @@
   border: 1px solid var(--bb-border);
   border-radius: 8px;
   /* responsive: was overflow:hidden which clipped wide tables on small screens;
-     overflow-x:auto lets them scroll sideways instead of cutting off columns. */
-  overflow-x: auto;
+     overflow:auto lets them scroll sideways; max-height biến vùng bảng thành khung
+     cuộn dọc riêng để dòng tiêu đề sticky (T6). Bảng ngắn (< max-height) không hiện
+     thanh cuộn nên giao diện không đổi. */
+  overflow: auto;
+  max-height: calc(100vh - 13rem);
 }
 .bb-table {
   width: 100%;
@@ -678,6 +703,12 @@
   background: var(--bb-surface-muted);
   border-bottom: 1px solid var(--bb-border);
   white-space: nowrap;
+}
+/* T6: giữ dòng tiêu đề khi cuộn dọc bảng dài (nền muted đục nên không bị lộ hàng). */
+.bb-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 .bb-table th.sortable { cursor: pointer; user-select: none; }
 .bb-table th.sortable:hover { color: var(--bb-text); }
@@ -850,6 +881,17 @@
   overflow: hidden;
 }
 .bb-product-thumb img { width: 100%; height: 100%; object-fit: cover; }
+/* Tên SP là link thật (mở tab mới được) nhưng trông như text thường của bảng */
+.bb-product-name-link {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.bb-product-name-link:hover { color: var(--bb-primary); text-decoration: underline; }
+/* Link bọc ô định danh trong AdminTable: display:contents giữ nguyên layout ô
+   (kể cả ô có avatar/logo + chữ) nhưng vẫn là <a> thật để mở tab mới được. */
+.bb-row-link { display: contents; color: inherit; text-decoration: none; cursor: pointer; }
+.bb-row-link:hover { color: var(--bb-primary); }
 
 /* Row action dropdown menu */
 .bb-row-menu {

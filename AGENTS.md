@@ -780,7 +780,7 @@ Dùng canonical: `image.url`, `gallery[]`, `videos[]`.
 
 Avoid reintroducing legacy drift: `imageUrl`, `images`, `videoUrl`. Fallback cho legacy data tạm thời OK, nhưng write mới phải canonical.
 
-**Mọi media (ảnh + video) của dữ liệu do admin quản lý phải nằm trong MinIO — không hotlink ra ngoài.** Xem rule đầy đủ tại Section 14.3.
+**Mọi ảnh của dữ liệu do admin quản lý phải nằm trong MinIO — không hotlink ra ngoài.** Riêng **video** được phép nhúng từ YouTube, TikTok hoặc Facebook (ngoài video tải lên MinIO). Xem rule đầy đủ tại Section 14.3.
 
 ### 8.2 Money
 
@@ -922,13 +922,20 @@ Validate: file type, file size, public URL, alt text (nếu public image), fallb
 **Toàn bộ dữ liệu do admin quản lý (product, category, brand, banner/hero, content/blog/policy page, contact/guide/warranty page builder, settings, media library, …) — nếu có ảnh hoặc video thì media đó BẮT BUỘC được upload và lưu trong MinIO của BigBike.** Mọi `image.url`, `gallery[]`, `videos[]`, banner, icon, menuIcon, thumbnail, og-image… phải trỏ về object trong MinIO (`/media/...`), không được là link gọi tài nguyên từ host bên ngoài.
 
 **Cấm:**
-- ❌ Lưu URL ảnh/video trỏ thẳng ra domain ngoài (CDN bên thứ ba, Google Drive, Imgur, link `/wp/...` legacy, YouTube/Vimeo embed làm nguồn ảnh, hotlink bất kỳ host nào không phải MinIO).
-- ❌ Cho admin nhập URL ngoài làm nguồn media thay vì upload — nếu cần nhập từ URL thì backend phải **fetch về và re-upload vào MinIO**, rồi lưu URL MinIO.
-- ❌ Để write mới giữ nguyên link `/wp/...` hoặc external (chỉ chấp nhận fallback đọc cho legacy data chưa migrate; write mới luôn phải là MinIO).
+- ❌ Lưu URL **ảnh** trỏ thẳng ra domain ngoài (CDN bên thứ ba, Google Drive, Imgur, link `/wp/...` legacy, hotlink bất kỳ host nào không phải MinIO). Ảnh KHÔNG có ngoại lệ — luôn phải nằm trong MinIO.
+- ❌ Cho admin nhập URL **ảnh** ngoài làm nguồn media thay vì upload — nếu cần nhập từ URL thì backend phải **fetch về và re-upload vào MinIO**, rồi lưu URL MinIO.
+- ❌ Để write mới giữ nguyên link `/wp/...` hoặc external cho ảnh (chỉ chấp nhận fallback đọc cho legacy data chưa migrate; write mới luôn phải là MinIO).
+
+**Ngoại lệ DUY NHẤT — video nhúng từ nền tảng được duyệt (YouTube + TikTok + Facebook):**
+- ✅ Với **video** (gallery video, "Video sản phẩm", video trang chủ, khối video trong bài viết), admin được phép **dán link YouTube, TikTok hoặc Facebook** làm nguồn — đây là embed/iframe của nền tảng, KHÔNG phải hotlink file ảnh. Đây là quyết định của owner (2026-06-25): coi YouTube + TikTok + Facebook là nguồn video hợp lệ bên cạnh video tải lên MinIO.
+- ✅ Provider video hợp lệ: `youtube` | `tiktok` | `facebook` | `upload`. `upload` BẮT BUỘC trỏ về MinIO. `youtube`/`tiktok`/`facebook` lưu link đầy đủ; web tự dựng iframe embed (`youtube-nocookie.com/embed/{id}`, `tiktok.com/embed/v2/{id}`, `facebook.com/plugins/video.php?href={url}`).
+- ✅ Host được duyệt cho video: YouTube (`youtube.com`, `youtu.be`, `youtube-nocookie.com`, `m.youtube.com`), TikTok (`tiktok.com`, `www.tiktok.com`, `m.tiktok.com`), Facebook (`facebook.com`, `www.facebook.com`, `m.facebook.com`, `web.facebook.com`). Link rút gọn (`vt.tiktok.com`, `vm.tiktok.com`, `fb.watch`) KHÔNG đọc được → reject, yêu cầu dán link đầy đủ.
+- ✅ Facebook nhúng bằng CẢ đường link gốc (không tách id) qua `plugins/video.php`; CHỈ video công khai mới render. TikTok/Facebook không có ảnh thumbnail công khai như YouTube → admin tự chọn ảnh đại diện (từ MinIO); nếu không có thì web hiển thị ô nhúng làm đại diện.
+- ❌ Các nền tảng video khác (Vimeo, Dailymotion, …) vẫn cấm — chỉ YouTube + TikTok + Facebook.
 
 **Yêu cầu:**
-- ✅ Mọi luồng upload/chọn media trong admin (`MediaPickerModal`, `VideoPickerModal`, `ImageUrlInput`, …) phải kết thúc bằng object nằm trong MinIO trước khi lưu xuống DB.
-- ✅ Media-URL whitelist của backend chỉ chấp nhận URL MinIO/`/media`; reject external host. Khi admin dán URL ngoài → import (fetch + re-upload) chứ không lưu nguyên link.
+- ✅ Mọi luồng upload/chọn media trong admin (`MediaPickerModal`, `VideoPickerModal`, `ImageUrlInput`, …) phải kết thúc bằng object nằm trong MinIO trước khi lưu xuống DB (trừ video provider `youtube`/`tiktok`/`facebook` ở trên).
+- ✅ Media-URL whitelist của backend chỉ chấp nhận URL MinIO/`/media` cho **ảnh**; reject external host. Riêng **video** chấp nhận thêm host YouTube/TikTok/Facebook đã duyệt (`YouTubeUrlParser`, `TikTokUrlParser`, `FacebookUrlParser`, `HomeVideoUrlPolicy`).
 
 Liên quan: Section 8.1 (canonical media fields), [INTEGRATION_GUIDE.md](docs/engineering/INTEGRATION_GUIDE.md) (MinIO), [DATA_CONTRACT.md](docs/engineering/DATA_CONTRACT.md) (media fields).
 

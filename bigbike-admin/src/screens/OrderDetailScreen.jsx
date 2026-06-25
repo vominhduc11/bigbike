@@ -214,7 +214,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   }
   if (status === 'error') {
     return <StatePanel tone="danger" title={t('orders.detail.loadError')} description={orderQuery.error?.message}
-      actionLabel={t('common.back')} onAction={() => navigate('/admin/orders')} />
+      actionLabel={t('common.retry')} onAction={() => orderQuery.refetch()} />
   }
   if (!order) {
     return <StatePanel tone="neutral" title={t('orders.detail.notFound')} description={`ID: ${orderId}`}
@@ -229,11 +229,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
     <div>
       <div className="bb-screen-header">
         <div className="bb-screen-title">
-          <p className="bb-screen-eyebrow">
-            <a onClick={(e) => { e.preventDefault(); navigate('/admin/orders') }} style={{ cursor: 'pointer' }}>
-              ← {t('orders.detail.backToList')}
-            </a>
-          </p>
           <h1 style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             {t('orders.detail.eyebrow')}{' '}
             <span className="mono" style={{ color: 'var(--bb-primary)' }}>
@@ -502,7 +497,12 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
               {auditQuery.isLoading ? (
                 <p className="bb-muted">{t('orders.audit.loading')}</p>
               ) : auditQuery.isError ? (
-                <p className="bb-muted">{t('orders.audit.error')}</p>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <p className="bb-muted" style={{ margin: 0 }}>{t('orders.audit.error')}</p>
+                  <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={() => auditQuery.refetch()}>
+                    {t('common.retry')}
+                  </button>
+                </div>
               ) : (auditQuery.data ?? []).length === 0 ? (
                 <p className="bb-muted">{t('orders.audit.empty')}</p>
               ) : (
@@ -619,6 +619,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                           placeholder={t('orders.detail.trackingPlaceholder')}
                           value={trackingNumber}
                           onChange={(e) => { setTrackingNumber(e.target.value); if (trackingError) setTrackingError('') }}
+                          onBlur={() => { if (!trackingNumber.trim()) setTrackingError(t('orders.detail.trackingRequiredError')) }}
                           disabled={fulfillmentSaving}
                           required
                           aria-invalid={trackingError ? true : undefined}

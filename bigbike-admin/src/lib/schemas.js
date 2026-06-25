@@ -87,7 +87,7 @@ export function createProductSchema(t, isCreate = false) {
       videos: z.array(z.object({
         url: z.string(),
         title: z.string(),
-        type: z.enum(['youtube', 'upload']).optional(),
+        type: z.enum(['youtube', 'tiktok', 'facebook', 'upload']).optional(),
       })).optional(),
       specifications: z.array(z.object({
         _key: z.string().optional(),
@@ -356,6 +356,20 @@ export function createProductSchema(t, isCreate = false) {
         if (v.type === 'upload') {
           if (!MEDIA_URL_REGEX.test(url)) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'URL video không hợp lệ.', path: ['videos', i, 'url'] })
+          }
+          return
+        }
+        if (v.type === 'tiktok') {
+          // Link đầy đủ TikTok (vt./vm. short link không có id số → reject).
+          if (!/(?:www\.|m\.)?tiktok\.com\/(?:@[\w.-]+\/video\/|video\/|v\/|embed\/v2\/|embed\/)\d{6,30}/.test(url)) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'URL TikTok không hợp lệ. Dán link đầy đủ dạng tiktok.com/@tên/video/… (không dùng link rút gọn vt.tiktok.com).', path: ['videos', i, 'url'] })
+          }
+          return
+        }
+        if (v.type === 'facebook') {
+          // Link video Facebook đầy đủ (fb.watch rút gọn → reject).
+          if (!/^https?:\/\/(?:www\.|m\.|web\.)?facebook\.com\/(?:[^?#]*\/videos\/|reel\/|watch\/?(?:\?|$)|[^?#]*video\.php)/i.test(url)) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'URL Facebook không hợp lệ. Dán link video Facebook đầy đủ (không dùng link rút gọn fb.watch); video phải công khai.', path: ['videos', i, 'url'] })
           }
           return
         }

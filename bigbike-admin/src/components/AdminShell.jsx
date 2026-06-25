@@ -186,6 +186,11 @@ export function AdminShell({
         ].filter(Boolean).join(' ')}
         data-screen-label="BigBike Admin"
       >
+        {/* A5: bỏ qua tới nội dung — ẩn ngoài màn hình, hiện khi focus bằng bàn phím */}
+        <a href="#bb-main-content" className="bb-skip-link">
+          {t('nav.skipToContent', { defaultValue: 'Bỏ qua tới nội dung' })}
+        </a>
+
         {/* Mobile sidebar overlay */}
         <div className="bb-sidebar-overlay" onClick={() => { setSidebarOpen(false); hamburgerRef.current?.focus() }} aria-hidden="true" />
 
@@ -341,7 +346,7 @@ export function AdminShell({
 
           <Breadcrumb activePath={activePath} navGroups={navGroups} navigate={navigate} t={t} />
 
-          <main className="bb-page-content">{children}</main>
+          <main id="bb-main-content" tabIndex={-1} className="bb-page-content">{children}</main>
         </div>
       </div>
 

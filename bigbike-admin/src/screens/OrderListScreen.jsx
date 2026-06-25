@@ -3,7 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQueryClient } from '@tanstack/react-query'
-import { Download, SlidersHorizontal } from 'lucide-react'
+import { SlidersHorizontal } from 'lucide-react'
+import { ExportButton } from '@/components/ExportButton'
+import { toast } from '@/lib/toast'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -169,15 +171,16 @@ export function OrderListScreen({ navigate }) {
           <p className="bb-muted">{t('orders.description')}</p>
         </div>
         <div className="bb-screen-actions">
-          <button
-            type="button"
-            className="bb-btn bb-btn-secondary"
-            onClick={() => exportOrdersCsv({
-              status: query.orderStatus !== 'ALL' ? query.orderStatus : undefined,
-            })}
+          <ExportButton
+            onExport={async () => {
+              await exportOrdersCsv({
+                status: query.orderStatus !== 'ALL' ? query.orderStatus : undefined,
+              })
+              toast.success(t('common.exportCsvDone', { defaultValue: 'Đã tải file CSV' }))
+            }}
           >
-            <Download size={14} />{t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
-          </button>
+            {t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
+          </ExportButton>
         </div>
       </div>
 
@@ -264,6 +267,7 @@ export function OrderListScreen({ navigate }) {
               loading={state.status === 'loading'}
               pageSize={query.pageSize}
               onRowClick={(order) => navigate(`/admin/orders/${order.id}`)}
+              rowHref={(order) => `/admin/orders/${order.id}`}
               mobileCard={mobileCard}
               sortKey={sortKey}
               sortDir={sortDir}

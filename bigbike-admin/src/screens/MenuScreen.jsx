@@ -94,7 +94,12 @@ export function MenuScreen({ canUpdate }) {
   const selectedMenuSummary = menuByLocation.get(selectedLocation) ?? null
   const selectedMenuId = selectedMenuSummary?.id ?? null
 
-  const { data: detailData, isLoading: detailLoading } = useQuery({
+  const {
+    data: detailData,
+    isLoading: detailLoading,
+    isError: detailIsError,
+    error: detailError,
+  } = useQuery({
     queryKey: ['menu-detail', selectedMenuId],
     queryFn: () => fetchMenuDetail(selectedMenuId),
     enabled: Boolean(selectedMenuId),
@@ -436,6 +441,16 @@ export function MenuScreen({ canUpdate }) {
         ) : detailLoading ? (
           <div className="p-6">
             <StatePanel tone="info" title={t('menus.loading')} description={t('common.pleaseWait')} />
+          </div>
+        ) : detailIsError ? (
+          <div className="p-6">
+            <StatePanel
+              tone="danger"
+              title={t('menus.loadError')}
+              description={detailError?.message}
+              actionLabel={t('common.retry')}
+              onAction={() => queryClient.invalidateQueries({ queryKey: ['menu-detail', selectedMenuId] })}
+            />
           </div>
         ) : menuDetail ? (
           <>

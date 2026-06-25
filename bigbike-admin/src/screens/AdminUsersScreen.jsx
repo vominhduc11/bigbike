@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
-import { AlertCircle, Eye, EyeOff, Mail, Pencil, UserPlus } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Eye, EyeOff, Mail, Pencil, UserPlus } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { AdminTable } from '../components/AdminTable'
 import { FormField } from '../components/layout/FormField'
@@ -78,7 +78,7 @@ function UserStatusBadge({ status, t }) {
   )
 }
 
-function PasswordField({ value, onChange, placeholder, label, hint, error }) {
+function PasswordField({ value, onChange, onBlur, placeholder, label, hint, error }) {
   const [show, setShow] = useState(false)
   const inputId = useId()
   const errorId = `${inputId}-error`
@@ -91,6 +91,7 @@ function PasswordField({ value, onChange, placeholder, label, hint, error }) {
           type={show ? 'text' : 'password'}
           value={value}
           onChange={onChange}
+          onBlur={onBlur}
           placeholder={placeholder}
           autoComplete="new-password"
           aria-invalid={error ? true : undefined}
@@ -231,6 +232,20 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
     return Object.keys(errs).length === 0
   }
 
+  // Validate một ô của drawer sửa khi rời ô (on-blur), không xoá lỗi ô khác.
+  function validateEditField(field) {
+    if (field === 'newPassword') {
+      const pwd = (editForm.newPassword || '').trim()
+      const err = pwd && pwd.length < PASSWORD_MIN_LENGTH
+        ? t('adminUsers.errPasswordTooShort', {
+            defaultValue: 'Mật khẩu phải có ít nhất {{min}} ký tự.',
+            min: PASSWORD_MIN_LENGTH,
+          })
+        : ''
+      setEditFieldErrors((p) => ({ ...p, newPassword: err || undefined }))
+    }
+  }
+
   // Submit edit — with confirmation for sensitive changes.
   async function requestEditSubmit() {
     setEditError('')
@@ -308,6 +323,26 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
     }
     setCreateFieldErrors(errs)
     return Object.keys(errs).length === 0
+  }
+
+  // Validate một ô của form tạo mới khi rời ô (on-blur), không xoá lỗi ô khác.
+  function validateCreateField(field) {
+    if (field === 'email') {
+      const email = createForm.email.trim()
+      let err = ''
+      if (!email) {
+        err = t('adminUsers.errEmailRequired', { defaultValue: 'Vui lòng nhập email.' })
+      } else if (!EMAIL_RE.test(email)) {
+        err = t('adminUsers.errEmailInvalid', { defaultValue: 'Email không hợp lệ.' })
+      }
+      setCreateFieldErrors((p) => ({ ...p, email: err || undefined }))
+    } else if (field === 'displayName') {
+      const displayName = createForm.displayName.trim()
+      const err = !displayName
+        ? t('adminUsers.errDisplayNameRequired', { defaultValue: 'Vui lòng nhập tên hiển thị.' })
+        : ''
+      setCreateFieldErrors((p) => ({ ...p, displayName: err || undefined }))
+    }
   }
 
   async function handleCreate(e) {
@@ -628,7 +663,10 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
               </p>
             )}
             {editSuccess && !editError && (
-              <p className="mb-4 text-sm text-success">{t('adminUsers.saveSuccess')}</p>
+              <p className="mb-4 flex items-center gap-1 text-sm text-success" role="status">
+                <CheckCircle2 size={14} aria-hidden="true" className="shrink-0" />
+                {t('adminUsers.saveSuccess')}
+              </p>
             )}
 
             <div className="au-drawer-section">
@@ -682,6 +720,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
               <PasswordField
                 value={editForm.newPassword}
                 onChange={(e) => setEditForm((p) => ({ ...p, newPassword: e.target.value }))}
+                onBlur={() => validateEditField('newPassword')}
                 placeholder={t('adminUsers.formPasswordHint')}
                 label={t('adminUsers.formPasswordNew')}
                 hint={t('adminUsers.formPasswordStrengthHint')}
@@ -715,11 +754,13 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
           )}
           <FormField label={t('adminUsers.formEmail')} required error={createFieldErrors.email}>
             <Input type="email" value={createForm.email}
-              onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))} required />
+              onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))}
+              onBlur={() => validateCreateField('email')} required />
           </FormField>
           <FormField label={t('adminUsers.formDisplayName')} required error={createFieldErrors.displayName}>
             <Input value={createForm.displayName}
-              onChange={(e) => setCreateForm((p) => ({ ...p, displayName: e.target.value }))} required />
+              onChange={(e) => setCreateForm((p) => ({ ...p, displayName: e.target.value }))}
+              onBlur={() => validateCreateField('displayName')} required />
           </FormField>
           <FormField label={t('adminUsers.formRole')}>
             <Select value={createForm.role} onValueChange={(val) => setCreateForm((p) => ({ ...p, role: val }))}>

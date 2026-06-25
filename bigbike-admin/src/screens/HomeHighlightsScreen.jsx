@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { AlertCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -12,8 +12,19 @@ import { Screen } from '../components/layout/Screen'
 import { ScreenHeader } from '../components/layout/ScreenHeader'
 import { Button } from '@/components/ui/button'
 import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
+import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 
 const SLOT_LABELS = { 1: 'Slot 1', 2: 'Slot 2', 3: 'Slot 3' }
+
+// Chữ ký so sánh dirty: chỉ phụ thuộc slot + productId đã chọn (thứ tự cố định 1-2-3).
+function slotsSignature(slots) {
+  return [1, 2, 3]
+    .map((n) => {
+      const s = slots.find((x) => x.slot === n)
+      return `${n}:${s?.product?.id ?? ''}`
+    })
+    .join('|')
+}
 
 function ProductPicker({ value, onChange, disabled }) {
   const { t } = useTranslation()
@@ -115,7 +126,7 @@ export function HomeHighlightsScreen({ canUpdate }) {
   ])
   const [initialized, setInitialized] = useState(false)
 
-  const { isLoading, isError, error, data: highlightsData } = useQuery({
+  const { isLoading, isError, error, data: highlightsData, refetch } = useQuery({
     queryKey: ['home-highlights', contentLang],
     queryFn: fetchHomeHighlights,
   })
@@ -156,6 +167,19 @@ export function HomeHighlightsScreen({ canUpdate }) {
     },
   })
 
+  // Baseline = trạng thái slot đã lưu (theo dữ liệu fetch về); dirty khi khác baseline.
+  const baselineSignature = useMemo(() => {
+    const loaded = [1, 2, 3].map((n) => {
+      const found = (highlightsData?.items ?? []).find((i) => i.slot === n)
+      return { slot: n, product: found ? { id: found.productId } : null }
+    })
+    return slotsSignature(loaded)
+  }, [highlightsData])
+
+  const isDirty = initialized && !saveMutation.isPending && slotsSignature(slots) !== baselineSignature
+
+  useUnsavedChanges(isDirty)
+
   function handleProductChange(slotNumber, product) {
     setSlots((prev) =>
       prev.map((s) => (s.slot === slotNumber ? { ...s, product } : s))
@@ -185,7 +209,13 @@ export function HomeHighlightsScreen({ canUpdate }) {
   if (isError) {
     return (
       <Screen>
-        <StatePanel tone="danger" title={t('common.errorLoading')} description={error?.message} />
+        <StatePanel
+          tone="danger"
+          title={t('common.errorLoading')}
+          description={error?.message}
+          actionLabel={t('common.retry')}
+          onAction={refetch}
+        />
       </Screen>
     )
   }
@@ -201,9 +231,10 @@ export function HomeHighlightsScreen({ canUpdate }) {
         actions={
           <Button
             onClick={handleSave}
-            disabled={!canUpdate || saveMutation.isPending || !hasFilledSlot}
+            loading={saveMutation.isPending}
+            disabled={!canUpdate || !hasFilledSlot}
           >
-            {saveMutation.isPending ? t('common.saving') : t('homeHighlights.saveButton')}
+            {t('homeHighlights.saveButton')}
           </Button>
         }
       />

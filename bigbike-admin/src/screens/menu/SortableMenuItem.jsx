@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 
 export function SortableMenuItem({ item, displayLabel, parentLabel, rootLabel, canUpdate, onEdit, onDelete, isDeleting }) {
   const isInactive = item.status === 'INACTIVE'
+  const itemName = displayLabel ?? item.label ?? ''
 
   return (
     <SortableRow id={item.id}>
@@ -19,6 +20,7 @@ export function SortableMenuItem({ item, displayLabel, parentLabel, rootLabel, c
             type="button"
             className="menu-grab-btn"
             title="Kéo để sắp xếp (cùng cấp)"
+            aria-label={`Kéo để sắp xếp mục ${itemName}`}
             {...sortable.handleProps}
           >
             <GripVertical size={15} />
@@ -45,10 +47,10 @@ export function SortableMenuItem({ item, displayLabel, parentLabel, rootLabel, c
       {canUpdate && (
         <td className="menu-item-actions-cell">
           <div className="menu-row-actions">
-            <Button variant="outline" size="icon" onClick={() => onEdit(item)} title="Chỉnh sửa mục này" disabled={isDeleting}>
+            <Button variant="outline" size="icon" onClick={() => onEdit(item)} title="Chỉnh sửa mục này" aria-label={`Sửa mục ${itemName}`} disabled={isDeleting}>
               <Pencil size={13} />
             </Button>
-            <Button variant="danger" size="icon" onClick={() => onDelete(item.id)} title="Xoá mục này" loading={isDeleting}>
+            <Button variant="danger" size="icon" onClick={() => onDelete(item.id)} title="Xoá mục này" aria-label={`Xoá mục ${itemName}`} loading={isDeleting}>
               <Trash2 size={13} />
             </Button>
           </div>

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Copy, Package, Pencil, Trash2, Undo2 } from 'lucide-react'
+import { Copy, ExternalLink, Package, Pencil, Trash2, Undo2 } from 'lucide-react'
 import { PublishStatusBadge } from '../../components/StatusBadge'
 import { MobileCard } from '../../components/layout/MobileCardList'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../../lib/formatters'
@@ -21,6 +21,7 @@ export function ProductMobileCard({
   const isTrashed = product.publishStatus === 'TRASH'
   const isBusy = isDeleting || isRestoring
   const block = product.homepageBlock
+  const detailPath = `/admin/products/${product.id}`
 
   return (
     <MobileCard
@@ -81,9 +82,17 @@ export function ProductMobileCard({
             type="button"
             className="bb-icon-btn"
             title={t('common.edit')}
-            onClick={() => navigate(`/admin/products/${product.id}`)}
+            onClick={() => navigate(detailPath)}
           >
             <Pencil size={14} />
+          </button>
+          <button
+            type="button"
+            className="bb-icon-btn"
+            title={t('common.openInNewTab')}
+            onClick={() => window.open(detailPath, '_blank', 'noopener')}
+          >
+            <ExternalLink size={14} />
           </button>
           {canUpdate && (
             <button
@@ -119,7 +128,7 @@ export function ProductMobileCard({
           )}
         </div>
       )}
-      onClick={() => navigate(`/admin/products/${product.id}`)}
+      onClick={() => navigate(detailPath)}
     />
   )
 }

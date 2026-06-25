@@ -67,7 +67,7 @@ public class AdminMediaService {
     private static final String SVG_MIME = "image/svg+xml";
     private static final Set<String> RASTER_IMAGE_TYPES = Set.of(
             "image/jpeg", "image/png", "image/gif");
-    private static final long MAX_UPLOAD_BYTES = 50L * 1024 * 1024; // 50 MB
+    private static final long MAX_UPLOAD_BYTES = 200L * 1024 * 1024; // 200 MB
     private static final String MINIO_PROVIDER = "MINIO";
     static final String MEDIA_PATH_PREFIX = "/media/";
 
@@ -90,7 +90,7 @@ public class AdminMediaService {
                 ? file.getContentType().toLowerCase(Locale.ROOT) : "";
         if (file.getSize() > MAX_UPLOAD_BYTES) {
             throw ValidationException.fromField("file", "FILE_TOO_LARGE",
-                    "File exceeds 50 MB limit.");
+                    "File exceeds 200 MB limit.");
         }
 
         // Read bytes once — reused for: MinIO upload, dimension extraction, variant generation
@@ -190,7 +190,7 @@ public class AdminMediaService {
         }
         if (file.getSize() > MAX_UPLOAD_BYTES) {
             throw ValidationException.fromField("file", "FILE_TOO_LARGE",
-                    "File exceeds 50 MB limit.");
+                    "File exceeds 200 MB limit.");
         }
 
         byte[] bytes;

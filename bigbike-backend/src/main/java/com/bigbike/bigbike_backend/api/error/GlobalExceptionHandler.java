@@ -18,6 +18,7 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -98,6 +99,15 @@ public class GlobalExceptionHandler {
                 "Malformed request body or invalid enum value."
         );
         return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Validation failed.", List.of(detail), request);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiErrorResponse> handleMaxUploadSizeExceeded(
+            MaxUploadSizeExceededException ex, HttpServletRequest request) {
+        log.warn("Upload too large [{}]: {}", request.getRequestURI(), ex.getMessage());
+        ApiErrorDetail detail = new ApiErrorDetail("file", "FILE_TOO_LARGE", "File exceeds 200 MB limit.");
+        return build(HttpStatus.PAYLOAD_TOO_LARGE, "FILE_TOO_LARGE",
+                "File exceeds 200 MB limit.", List.of(detail), request);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

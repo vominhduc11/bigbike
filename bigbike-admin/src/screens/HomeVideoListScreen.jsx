@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -30,8 +30,10 @@ import { StatePanel } from '../components/StatePanel'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { FormField } from '../components/layout/FormField'
 import { showConfirm } from '../lib/confirm'
+import { useDialogA11y } from '@/lib/useDialogA11y'
+import { useUrlSyncedState } from '@/lib/useUrlSyncedState'
 import { useContentLang } from '../lib/contentLang'
-import { extractAllowedYouTubeId, validateHomeVideoUrl } from '../lib/urlPolicies'
+import { extractAllowedYouTubeId, extractAllowedTikTokId, tiktokEmbedUrl, isAllowedFacebookVideoUrl, facebookEmbedUrl, validateHomeVideoUrl } from '../lib/urlPolicies'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -52,15 +54,16 @@ function VideoPreviewModal({ video, onClose }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
   const displayTitle = contentLang === 'en' ? (video.titleEn || video.title) : video.title
+  const tiktokId = video.youtubeId ? null : extractAllowedTikTokId(video.videoUrl)
   const embedUrl = video.youtubeId
     ? `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1`
-    : null
+    : tiktokId
+      ? tiktokEmbedUrl(tiktokId)
+      : (isAllowedFacebookVideoUrl(video.videoUrl) ? facebookEmbedUrl(video.videoUrl) : null)
 
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
+  // A3: hộp thoại tự dựng — focus-trap + Escape + trả focus về phần tử trigger khi đóng.
+  const dlgRef = useRef(null)
+  useDialogA11y(dlgRef, { active: true, onClose })
 
   useEffect(() => {
     const prev = document.body.style.overflow
@@ -74,8 +77,13 @@ function VideoPreviewModal({ video, onClose }) {
       className="fixed inset-0 z-modal flex items-center justify-center bg-black/80"
     >
       <div
+        ref={dlgRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label={displayTitle || t('homeVideos.previewTitle', { defaultValue: 'Xem trước video' })}
         onClick={(e) => e.stopPropagation()}
-        className="relative w-[90vw] max-w-[800px] overflow-hidden rounded-md bg-black"
+        className="relative w-[90vw] max-w-[800px] overflow-hidden rounded-md bg-black outline-none"
       >
         <button
           type="button"
@@ -220,12 +228,16 @@ export function HomeVideoListScreen({ canUpdate }) {
   const [previewVideo, setPreviewVideo] = useState(null)
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [isBulkBusy, setIsBulkBusy] = useState(false)
-  const [searchText, setSearchText] = useState('')
-  const [statusFilter, setStatusFilter] = useState('ALL')
+  // T9: lưu bộ lọc vào URL để khôi phục khi quay lại màn hình.
+  const [query, setQuery] = useUrlSyncedState({ q: '', status: 'ALL' })
+  const searchText = query.q
+  const statusFilter = query.status
+  const setSearchText = (value) => setQuery((prev) => ({ ...prev, q: value }))
+  const setStatusFilter = (value) => setQuery((prev) => ({ ...prev, status: value }))
 
   const sensors = useDragSensors()
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['home-videos'],
     queryFn: fetchHomeVideos,
   })
@@ -265,6 +277,27 @@ export function HomeVideoListScreen({ canUpdate }) {
     onError: (err) => toast.error(err.message || t('homeVideos.deleteError')),
   })
 
+  // N7: bật/ẩn 1 video phản hồi tức thì (lạc quan) + rollback nếu lỗi — pattern giống reorderMutation.
+  const toggleActiveMutation = useMutation({
+    mutationFn: ({ id, isActive }) => updateHomeVideo(id, { isActive }),
+    onMutate: async ({ id, isActive }) => {
+      await queryClient.cancelQueries({ queryKey: ['home-videos'] })
+      const previous = queryClient.getQueryData(['home-videos'])
+      const previousLocal = localItems
+      setLocalItems(items.map((video) => (video.id === id ? { ...video, isActive } : video)))
+      return { previous, previousLocal }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['home-videos'] })
+      setLocalItems(null)
+    },
+    onError: (err, _vars, context) => {
+      toast.error(err.message || t('homeVideos.updateError'))
+      if (context?.previous) queryClient.setQueryData(['home-videos'], context.previous)
+      setLocalItems(context?.previousLocal ?? null)
+    },
+  })
+
   const reorderMutation = useMutation({
     mutationFn: (reorderItems) => reorderHomeVideos(reorderItems),
     onMutate: async (reorderItems) => {
@@ -302,7 +335,11 @@ export function HomeVideoListScreen({ canUpdate }) {
     setForm({
       title: video.title,
       titleEn: video.titleEn || '',
-      videoType: video.youtubeId ? 'youtube' : 'upload',
+      videoType: video.youtubeId
+        ? 'youtube'
+        : extractAllowedTikTokId(video.videoUrl)
+          ? 'tiktok'
+          : (isAllowedFacebookVideoUrl(video.videoUrl) ? 'facebook' : 'upload'),
       videoUrl: video.videoUrl,
       thumbnailUrl: video.thumbnail?.url || '',
       thumbnailAlt: video.thumbnail?.alt || '',
@@ -319,10 +356,7 @@ export function HomeVideoListScreen({ canUpdate }) {
   }
 
   function handleToggleActive(video) {
-    updateMutation.mutate({
-      id: video.id,
-      input: { isActive: !video.isActive },
-    })
+    toggleActiveMutation.mutate({ id: video.id, isActive: !video.isActive })
   }
 
   // Kiểm tra hợp lệ trả về lỗi gắn theo từng ô để hiện ngay cạnh ô sai (tiêu chí 7.2/7.3).
@@ -332,12 +366,21 @@ export function HomeVideoListScreen({ canUpdate }) {
       errors.title = t('homeVideos.validationTitle')
     }
     const videoCheck = validateHomeVideoUrl(values.videoUrl)
+    const invalidMessage = values.videoType === 'youtube'
+      ? t('homeVideos.validationYoutube')
+      : values.videoType === 'tiktok'
+        ? t('homeVideos.validationTiktok')
+        : values.videoType === 'facebook'
+          ? t('homeVideos.validationFacebook')
+          : t('homeVideos.validationUpload')
     if (!videoCheck.valid) {
-      errors.videoUrl = values.videoType === 'youtube'
-        ? t('homeVideos.validationYoutube')
-        : t('homeVideos.validationUpload')
+      errors.videoUrl = invalidMessage
     } else if (values.videoType === 'youtube' && !extractAllowedYouTubeId(values.videoUrl)) {
       errors.videoUrl = t('homeVideos.validationYoutube')
+    } else if (values.videoType === 'tiktok' && !extractAllowedTikTokId(values.videoUrl)) {
+      errors.videoUrl = t('homeVideos.validationTiktok')
+    } else if (values.videoType === 'facebook' && !isAllowedFacebookVideoUrl(values.videoUrl)) {
+      errors.videoUrl = t('homeVideos.validationFacebook')
     } else if (values.videoType === 'upload' && videoCheck.source !== 'upload') {
       errors.videoUrl = t('homeVideos.validationUpload')
     }
@@ -447,14 +490,19 @@ export function HomeVideoListScreen({ canUpdate }) {
   }
 
   async function handleBulkSetActive(isActive) {
+    // N7: cập nhật lạc quan hàng loạt — đổi trạng thái UI ngay, rollback nếu lỗi.
+    const ids = new Set(selectedIds)
+    const previousLocal = localItems
     setIsBulkBusy(true)
+    setLocalItems(items.map((video) => (ids.has(video.id) ? { ...video, isActive } : video)))
     try {
-      await Promise.all([...selectedIds].map((id) => updateHomeVideo(id, { isActive })))
+      await Promise.all([...ids].map((id) => updateHomeVideo(id, { isActive })))
       queryClient.invalidateQueries({ queryKey: ['home-videos'] })
       setLocalItems(null)
       setSelectedIds(new Set())
-      toast.success(isActive ? t('homeVideos.bulkShowSuccess', { count: selectedIds.size }) : t('homeVideos.bulkHideSuccess', { count: selectedIds.size }))
+      toast.success(isActive ? t('homeVideos.bulkShowSuccess', { count: ids.size }) : t('homeVideos.bulkHideSuccess', { count: ids.size }))
     } catch {
+      setLocalItems(previousLocal)
       toast.error(t('homeVideos.bulkActionError'))
     } finally {
       setIsBulkBusy(false)
@@ -491,7 +539,7 @@ export function HomeVideoListScreen({ canUpdate }) {
       </div>
     )
   }
-  if (isError) return <StatePanel tone="danger" title={t('homeVideos.loadError')} description={error?.message} />
+  if (isError) return <StatePanel tone="danger" title={t('homeVideos.loadError')} description={error?.message} actionLabel={t('common.retry')} onAction={() => refetch()} />
 
   const listContent = items.length === 0 ? (
     <StatePanel
@@ -675,6 +723,14 @@ export function HomeVideoListScreen({ canUpdate }) {
                 {t('homeVideos.sourceYoutube')}
               </label>
               <label className="flex items-center gap-1.5 cursor-pointer">
+                <RadioGroupItem value="tiktok" />
+                {t('homeVideos.sourceTiktok')}
+              </label>
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <RadioGroupItem value="facebook" />
+                {t('homeVideos.sourceFacebook')}
+              </label>
+              <label className="flex items-center gap-1.5 cursor-pointer">
                 <RadioGroupItem value="upload" />
                 {t('homeVideos.sourceUpload')}
               </label>
@@ -705,6 +761,44 @@ export function HomeVideoListScreen({ canUpdate }) {
                   className="mt-1.5 w-full max-w-xs h-auto rounded-xs border border-border"
                 />
               )}
+            </div>
+          ) : form.videoType === 'tiktok' ? (
+            <div className="flex flex-col gap-1">
+              <FormField
+                label={t('homeVideos.formTiktokUrl')}
+                required
+                error={fieldErrors.videoUrl}
+                helper={t('homeVideos.tiktokHint')}
+              >
+                <Input
+                  required
+                  type="url"
+                  value={form.videoUrl}
+                  onChange={(event) => { setForm((prev) => ({ ...prev, videoUrl: event.target.value })); clearFieldError('videoUrl') }}
+                  onBlur={() => validateField('videoUrl')}
+                  placeholder="https://www.tiktok.com/@ten/video/..."
+                />
+              </FormField>
+              <p className="text-xs font-normal text-muted-foreground">{t('homeVideos.tiktokThumbHint')}</p>
+            </div>
+          ) : form.videoType === 'facebook' ? (
+            <div className="flex flex-col gap-1">
+              <FormField
+                label={t('homeVideos.formFacebookUrl')}
+                required
+                error={fieldErrors.videoUrl}
+                helper={t('homeVideos.facebookHint')}
+              >
+                <Input
+                  required
+                  type="url"
+                  value={form.videoUrl}
+                  onChange={(event) => { setForm((prev) => ({ ...prev, videoUrl: event.target.value })); clearFieldError('videoUrl') }}
+                  onBlur={() => validateField('videoUrl')}
+                  placeholder="https://www.facebook.com/.../videos/..."
+                />
+              </FormField>
+              <p className="text-xs font-normal text-muted-foreground">{t('homeVideos.facebookThumbHint')}</p>
             </div>
           ) : (
             <div className="flex flex-col gap-1 text-sm font-semibold">

@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
-import { Check, ChevronDown, ChevronsUpDown, ChevronUp, Download, Plus } from 'lucide-react'
+import { Check, ChevronDown, ChevronsUpDown, ChevronUp, Plus } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
+import { ExportButton } from '@/components/ExportButton'
 import { StatePanel } from '../components/StatePanel'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { FilterChips } from '../components/FilterChips'
@@ -309,20 +310,20 @@ export function ProductListScreen({ navigate, canUpdate }) {
           <p className="bb-muted">{t('products.description')}</p>
         </div>
         <div className="bb-screen-actions">
-          <button
-            type="button"
-            className="bb-btn bb-btn-secondary"
-            onClick={async () => {
+          <ExportButton
+            onExport={async () => {
+              let r
               try {
-                const r = await exportProductsCsv({ publishStatus: query.publishStatus !== 'ALL' ? query.publishStatus : undefined })
-                if (r?.truncated) toast.warning(t('export.truncated', { max: r.maxRows }))
+                r = await exportProductsCsv({ publishStatus: query.publishStatus !== 'ALL' ? query.publishStatus : undefined })
               } catch {
-                toast.error(t('export.error'))
+                throw new Error(t('export.error'))
               }
+              if (r?.truncated) toast.warning(t('export.truncated', { max: r.maxRows }))
+              else toast.success(t('export.success'))
             }}
           >
-            <Download size={14} />{t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
-          </button>
+            {t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
+          </ExportButton>
           <button
             type="button"
             className="bb-btn bb-btn-primary"

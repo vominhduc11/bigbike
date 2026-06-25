@@ -104,7 +104,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   const autosaveKey = getAutosaveKey(normalizedType, contentId, isCreate)
   const [draftRecovery, setDraftRecovery] = useState(null)
 
-  const { data: fetchResult, isLoading, isError, error: fetchError } = useQuery({
+  const { data: fetchResult, isLoading, isError, error: fetchError, refetch } = useQuery({
     queryKey: ['content', normalizedType, contentId],
     queryFn: () => fetchContentDetail(normalizedType, contentId),
     enabled: !isCreate,
@@ -215,6 +215,24 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     })
   }
 
+  // F3: validate ngay khi rời ô bắt buộc (tiêu đề/đường dẫn) thay vì chờ bấm Lưu.
+  // Chạy schema trên toàn form (như khi submit) rồi chỉ lấy lỗi của đúng field vừa
+  // rời — tái dùng nguồn lỗi/khóa giống handleSubmit nên không lệch nhau.
+  function validateFieldOnBlur(fieldKey) {
+    const schema = createContentSchema(t, isCreate, normalizedType)
+    const fieldError = zodErrors(schema.safeParse(form))[fieldKey]
+    setValidationErrors((previous) => {
+      if (fieldError) {
+        if (previous[fieldKey] === fieldError) return previous
+        return { ...previous, [fieldKey]: fieldError }
+      }
+      if (!previous[fieldKey]) return previous
+      const next = { ...previous }
+      delete next[fieldKey]
+      return next
+    })
+  }
+
   async function handleSubmit(event) {
     if (event && typeof event.preventDefault === 'function') event.preventDefault()
     if (!canUpdate) return
@@ -292,13 +310,22 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
   if (state.status === 'error') {
     return (
-      <StatePanel
-        tone="danger"
-        title={t('content.detail.loadError')}
-        description={state.error}
-        actionLabel={t('content.detail.backToList')}
-        onAction={() => navigate('/admin/content')}
-      />
+      <div className="flex flex-col items-center gap-3">
+        <StatePanel
+          tone="danger"
+          title={t('content.detail.loadError')}
+          description={state.error}
+          actionLabel={t('common.retry', { defaultValue: 'Thử lại' })}
+          onAction={() => refetch()}
+        />
+        <button
+          type="button"
+          onClick={() => navigate('/admin/content')}
+          className="text-sm font-medium underline hover:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--bb-primary)]"
+        >
+          {t('content.detail.backToList')}
+        </button>
+      </div>
     )
   }
 
@@ -476,6 +503,13 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
           ]}
         />
 
+        {/* F2: chú thích dấu * cho ô/thẻ bắt buộc — đặt đầu form, dùng token muted */}
+        <p className="text-xs text-muted-foreground">
+          <span className="text-[var(--admin-color-status-danger-text)]" aria-hidden="true">*</span>
+          {' '}
+          {t('common.requiredLegend', { defaultValue: 'Trường bắt buộc' })}
+        </p>
+
         <form
           ref={formRef}
           className="flex flex-col gap-6 pb-4"
@@ -498,6 +532,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                     <Input
                       value={isEnLang ? (form.translations?.en?.title ?? '') : form.title}
                       onChange={(e) => isEnLang ? (isArticle ? handleEnTitleChange(e.target.value) : updateTranslation('title', e.target.value)) : updateField('title', e.target.value)}
+                      onBlur={!isEnLang ? () => validateFieldOnBlur('title') : undefined}
                       disabled={isReadOnly}
                       placeholder={isEnLang ? t('content.detail.titlePlaceholderEn') : undefined}
                     />
@@ -515,6 +550,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       <Input
                         value={form.translations?.en?.slug ?? ''}
                         onChange={(e) => handleEnSlugChange(e.target.value)}
+                        onBlur={() => validateFieldOnBlur('translations.en.slug')}
                         disabled={isReadOnly}
                         placeholder={t('content.detail.slugPlaceholderEn', { defaultValue: 'english-url-slug' })}
                         className="font-mono"
@@ -525,6 +561,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       <Input
                         value={form.slug}
                         onChange={(e) => updateField('slug', e.target.value)}
+                        onBlur={() => validateFieldOnBlur('slug')}
                         disabled={isReadOnly}
                         className="font-mono"
                       />

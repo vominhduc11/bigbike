@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { fetchRoles, fetchPermissionCatalog, updateRolePermissions, createRole, deleteRole } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { Button } from '@/components/ui/button'
-import { Alert } from '@/components/ui/alert'
+import { StatePanel } from '@/components/StatePanel'
 import {
   BUILTIN_CATALOG,
   PERM_LABEL_KEY_MAP,
@@ -42,34 +42,32 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
   const [createSaving, setCreateSaving]   = useState(false)
   const [deletingRole, setDeletingRole]   = useState(null)
   const [deleteSaving, setDeleteSaving]   = useState(false)
+  // Tăng để buộc tải lại (nút "Thử lại" khi tải danh sách vai trò thất bại).
+  const [reloadKey, setReloadKey]         = useState(0)
 
   useEffect(() => {
     let cancelled = false
-    async function load() {
-      setLoading(true)
-      setLoadError(null)
-      try {
-        const [rolesResult, catalogResult] = await Promise.all([
-          fetchRoles(),
-          fetchPermissionCatalog(),
-        ])
-        if (!cancelled) {
-          setRoles(rolesResult.items)
-          if (rolesResult.items.length > 0) setSelectedId(rolesResult.items[0].id)
-          if (catalogResult) setCatalog(catalogResult)
-        }
-      } catch (e) {
-        if (!cancelled) setLoadError(e.message || t('roles.loadError'))
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-    load()
+    Promise.all([fetchRoles(), fetchPermissionCatalog()])
+      .then(([rolesResult, catalogResult]) => {
+        if (cancelled) return
+        setRoles(rolesResult.items)
+        if (rolesResult.items.length > 0) setSelectedId(rolesResult.items[0].id)
+        if (catalogResult) setCatalog(catalogResult)
+      })
+      .catch((e) => { if (!cancelled) setLoadError(e.message || t('roles.loadError')) })
+      .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [t])
+  }, [t, reloadKey])
+
+  function handleRetryLoad() {
+    setLoading(true)
+    setLoadError(null)
+    setReloadKey(k => k + 1)
+  }
 
   useEffect(() => {
-    if (!toast) return
+    // Chỉ tự ẩn toast thành công; toast lỗi giữ lại để người dùng đọc và tự đóng.
+    if (!toast || toast.kind === 'error') return
     const timer = setTimeout(() => setToast(null), 4000)
     return () => clearTimeout(timer)
   }, [toast])
@@ -221,7 +219,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
         </div>
       </div>
 
-      <Toast toast={toast} />
+      <Toast toast={toast} onClose={() => setToast(null)} />
 
       <ConfirmSensitiveDialog
         pending={pendingToggle}
@@ -276,9 +274,13 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
 
       {/* Error */}
       {!loading && loadError && (
-        <Alert tone="danger" className="p-6">
-          {loadError}
-        </Alert>
+        <StatePanel
+          tone="danger"
+          title={t('roles.loadError')}
+          description={loadError !== t('roles.loadError') ? loadError : undefined}
+          actionLabel={t('common.retry')}
+          onAction={handleRetryLoad}
+        />
       )}
 
       {/* Empty */}

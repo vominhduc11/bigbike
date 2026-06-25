@@ -12,7 +12,7 @@ import {
   KEY_LABELS_VI, KEY_HINTS_VI, KEY_RECO,
 } from './constants'
 
-export function SettingField({ setting, where, canUpdate, draft, draftEn, error, onChange, onChangeEn }) {
+export function SettingField({ setting, where, canUpdate, draft, draftEn, error, onChange, onChangeEn, onBlur }) {
   const { t } = useTranslation()
   const rawValue = displayValue(setting.value)
   const currentValue = draft !== undefined ? draft : rawValue
@@ -86,6 +86,7 @@ export function SettingField({ setting, where, canUpdate, draft, draftEn, error,
             value={currentValue}
             placeholder={placeholder || (rawValue ? '' : t('settings.empty'))}
             onChange={(e) => onChange(setting.key, e.target.value)}
+            onBlur={(e) => onBlur?.(setting.key, e.target.value)}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? errorId : undefined}
           />
@@ -109,6 +110,7 @@ export function SettingField({ setting, where, canUpdate, draft, draftEn, error,
             value={currentValue}
             placeholder={placeholder || (rawValue ? '' : t('settings.empty'))}
             onChange={(e) => onChange(setting.key, e.target.value)}
+            onBlur={(e) => onBlur?.(setting.key, e.target.value)}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? errorId : undefined}
           />

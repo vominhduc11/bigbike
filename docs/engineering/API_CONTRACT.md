@@ -668,7 +668,7 @@ Evidence: `UpsertProductRequest.java` (`relatedProductIds`), `AdminCatalogMutati
 
 `gallery` (sản phẩm) và `variants[].gallery` (biến thể) giờ là **media hỗn hợp**. Mỗi phần tử
 `GalleryImageRequest` nhận thêm: `mediaType` (`image`|`video`, mặc định `image`), `videoUrl`
-(link YouTube / URL MinIO khi là video), `videoProvider` (`youtube`|`upload`). Item ảnh dùng `url`/`alt`
+(link YouTube/TikTok/Facebook / URL MinIO khi là video), `videoProvider` (`youtube`|`tiktok`|`facebook`|`upload`). Item ảnh dùng `url`/`alt`
 như cũ; item video dùng `videoUrl`+`videoProvider`, còn `url`/`alt` (nếu có) là **thumbnail/poster**.
 Full-replace như trước; item rỗng (ảnh thiếu `url` HOẶC video thiếu `videoUrl`) bị bỏ. Ảnh bìa biến thể
 vẫn lấy ảnh ĐẦU TIÊN là **ảnh** (bỏ qua item video).

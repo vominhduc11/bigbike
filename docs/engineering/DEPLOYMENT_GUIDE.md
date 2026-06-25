@@ -51,7 +51,7 @@ When migrating from IP:port to a domain, swap the public values in `.env.vps` fo
 
 - **`BIGBIKE_TRUSTED_PROXIES`** — comma-separated list of reverse-proxy IPs / CIDR ranges trusted to set `X-Forwarded-For`. Per-IP rate limiting keys the bucket on the forwarded client IP only when the request comes from a trusted proxy. Default `127.0.0.1,::1`. When the backend runs behind nginx or inside Docker (where the proxy is reached as a bridge gateway IP), set this to the proxy IP or subnet — otherwise rate limiting collapses to a single shared bucket. `CONFIRMED_FROM_CONFIG`
 - **Actuator** — only `GET /actuator/health` is public. The nginx API config (`deploy/nginx/api.bigbike.vn.conf`) returns `403` for every other `/actuator/` path; Prometheus must scrape the backend over the private network, not the public host. `CONFIRMED_FROM_CONFIG`
-- **Media upload body size** — backend accepts media uploads up to 50 MB. The nginx API config sets `client_max_body_size 55m` on `^~ /api/v1/admin/media` and keeps `10m` for all other routes. `CONFIRMED_FROM_CONFIG`
+- **Media upload body size** — backend accepts media uploads up to 200 MB (raised from 50 MB to allow video uploads; enforced by `MAX_UPLOAD_BYTES` in `AdminMediaService` and `spring.servlet.multipart.max-file-size=200MB` / `max-request-size=210MB`). The nginx API config sets `client_max_body_size 210m` on `^~ /api/v1/admin/media` and keeps `10m` for all other routes. Exceeding the cap returns `413` with a `FILE_TOO_LARGE` JSON error. `CONFIRMED_FROM_CONFIG`
 - **Internal endpoints** — `/api/internal/**` require the `X-Internal-Token` header (matched in constant time) when `BIGBIKE_INTERNAL_TOKEN` is set; deny-by-default when unset. `CONFIRMED_FROM_CONFIG`
 
 ## Schema And Migration Notes

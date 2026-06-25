@@ -17,6 +17,8 @@ import {
   updateProduct,
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
+import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+import { clearNavGuard } from '@/lib/navigationGuard'
 import { formatDateTime } from '../lib/formatters'
 import { useContentLang, overlayEnNames } from '../lib/contentLang'
 import { createProductSchema, zodErrors, normalizeVariantToken, isColorAttributeName } from '../lib/schemas'
@@ -202,7 +204,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const [showDiscountHelper, setShowDiscountHelper] = useState(false)
   const [discountPct, setDiscountPct] = useState('')
 
-  const { data: fetchResult, isLoading, isError, error: fetchError } = useQuery({
+  const { data: fetchResult, isLoading, isError, error: fetchError, refetch } = useQuery({
     queryKey: ['product', productId],
     queryFn: () => fetchProductDetail(productId),
     enabled: !isCreate,
@@ -383,12 +385,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const formRef = useRef(null)
   const allowedPublishStatuses = getAllowedPublishStatuses(isCreate ? null : originalPublishStatus)
 
-  useEffect(() => {
-    if (!isDirty) return
-    const handler = (e) => { e.preventDefault(); e.returnValue = '' }
-    window.addEventListener('beforeunload', handler)
-    return () => window.removeEventListener('beforeunload', handler)
-  }, [isDirty])
+  // F6: cảnh báo khi rời trang lúc còn thay đổi chưa lưu — phủ CẢ điều hướng nội
+  // bộ (sidebar/breadcrumb qua navigationGuard) lẫn reload/đóng tab (beforeunload).
+  // Trước đây chỉ tự gắn beforeunload nên đi sidebar không hỏi.
+  useUnsavedChanges(isDirty, t('products.detail.unsavedChangesConfirm'))
 
   function updateField(field, value) {
     setForm((previous) => {
@@ -589,6 +589,26 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     if (sanitized !== value) updateTranslation('slug', sanitized)
   }
 
+  // F3: validate sớm 1 trường khi rời ô (on-blur). Chạy schema cho cả form rồi chỉ
+  // lấy lỗi của đúng khoá trường đang blur — hiện ngay dưới ô thay vì đợi bấm Lưu.
+  // Lỗi chỉ xuất hiện sau khi người dùng rời ô (đã "chạm"); khoá nào sạch thì xoá
+  // lỗi cũ của nó (tránh kẹt lỗi đã sửa xong).
+  function validateFieldOnBlur(fieldKey) {
+    const result = createProductSchema(t, isCreate).safeParse(form)
+    const fieldErrors = zodErrors(result)
+    setValidationErrors((prev) => {
+      const message = fieldErrors[fieldKey]
+      if (message) {
+        if (prev[fieldKey] === message) return prev
+        return { ...prev, [fieldKey]: message }
+      }
+      if (!prev[fieldKey]) return prev
+      const next = { ...prev }
+      delete next[fieldKey]
+      return next
+    })
+  }
+
   const saveMutation = useMutation({
     mutationFn: (payload) => isCreate ? createProduct(payload) : updateProduct(productId, payload),
     onSuccess: (response) => {
@@ -608,11 +628,26 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       // Briefly flash the "saved" dot in the TOC save bar.
       setSavedFlash(true)
       setTimeout(() => setSavedFlash(false), 1200)
-      if (isCreate && savedItem?.id) navigate(`/admin/products/${savedItem.id}`, { replace: true })
+      // Lưu xong rồi điều hướng (tạo mới -> trang chi tiết): gỡ nav guard trước khi
+      // navigate để không bị hỏi "rời trang?" nhầm (F6).
+      if (isCreate && savedItem?.id) {
+        clearNavGuard()
+        navigate(`/admin/products/${savedItem.id}`, { replace: true })
+      }
     },
     onError: (error) => {
-      setValidationErrors(mapValidationErrors(error))
-      toast.error(error.message || t('products.detail.errSaveFailed'))
+      const fieldErrors = mapValidationErrors(error)
+      setValidationErrors(fieldErrors)
+      // N2: lỗi lưu kèm nút "Thử lại" (lưu lại) — chỉ khi KHÔNG phải lỗi ràng buộc
+      // theo trường (lỗi field thì hiện ngay dưới ô, bấm lưu lại cũng vô ích cho tới
+      // khi sửa). Toast lỗi đã không tự tắt (facade toast đặt duration Infinity).
+      const hasFieldErrors = Object.keys(fieldErrors).length > 0
+      toast.error(
+        error.message || t('products.detail.errSaveFailed'),
+        hasFieldErrors
+          ? undefined
+          : { action: { label: t('common.retry', { defaultValue: 'Thử lại' }), onClick: () => handleSave() } },
+      )
       setIsSubmitting(false)
     },
   })
@@ -727,8 +762,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         tone="danger"
         title={t('products.detail.loadError')}
         description={state.error}
-        actionLabel={t('products.detail.backToList')}
-        onAction={() => navigate('/admin/products')}
+        actionLabel={t('common.retry', { defaultValue: 'Thử lại' })}
+        onAction={() => refetch()}
       />
     )
   }
@@ -935,6 +970,14 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             }
           }}
         >
+          {/* F2: chú thích dấu bắt buộc — chỉ hiện khi tạo mới (lúc các trường thật sự bắt buộc). */}
+          {isCreate && (
+            <p className="text-xs text-muted-foreground">
+              <span className="text-[var(--admin-color-status-danger-text)]">*</span>
+              {' '}
+              {t('products.detail.requiredLegend', { defaultValue: 'Bắt buộc' })}
+            </p>
+          )}
           {activeTab === 'product' && (
             <>
               <CollapsibleGroup
@@ -959,6 +1002,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   <Field
                     full
                     label={t('products.detail.name')}
+                    required={isCreate}
                     count={`${langValue('name').length} / 255`}
                     countWarn={langValue('name').length > 230}
                     error={validationErrors.name}
@@ -966,6 +1010,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     <Input
                       value={langValue('name')}
                       onChange={(e) => (isEnLang ? handleEnNameChange(e.target.value) : handleNameChange(e.target.value))}
+                      onBlur={() => { if (!isEnLang) validateFieldOnBlur('name') }}
                       disabled={isReadOnly}
                       maxLength={255}
                     />
@@ -974,6 +1019,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   <Field
                     full
                     label={t('products.detail.slug')}
+                    required={isCreate && !isEnLang}
                     error={isEnLang ? validationErrors['translations.en.slug'] : validationErrors.slug}
                     hint={isEnLang
                       ? t('products.detail.slugHintEn', { defaultValue: 'Đường dẫn tiếng Anh (tùy chọn) — để trống sẽ dùng đường dẫn tiếng Việt.' })
@@ -983,7 +1029,15 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                       value={isEnLang ? (form.translations?.en?.slug ?? '') : form.slug}
                       placeholder={isEnLang ? 'vd: fullface-helmet-agv-k1s' : 'vd: mu-bao-hiem-fullface-agv-k1s'}
                       onChange={(e) => (isEnLang ? handleEnSlugChange(e.target.value) : handleSlugChange(e.target.value))}
-                      onBlur={(e) => (isEnLang ? handleEnSlugBlur(e.target.value) : handleSlugBlur(e.target.value))}
+                      onBlur={(e) => {
+                        if (isEnLang) {
+                          handleEnSlugBlur(e.target.value)
+                          validateFieldOnBlur('translations.en.slug')
+                        } else {
+                          handleSlugBlur(e.target.value)
+                          validateFieldOnBlur('slug')
+                        }
+                      }}
                       disabled={isReadOnly}
                       maxLength={isEnLang ? 100 : 200}
                       className="font-mono"
@@ -1005,9 +1059,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     />
                   </Field>
 
-                  <Field label={t('products.detail.categoryId')} error={validationErrors.categoryId}>
+                  <Field label={t('products.detail.categoryId')} required={isCreate} error={validationErrors.categoryId}>
                     <Select value={form.categoryId} onValueChange={(val) => { if (val) updateField('categoryId', val) }} disabled={isReadOnly}>
-                      <SelectTrigger>
+                      <SelectTrigger onBlur={() => validateFieldOnBlur('categoryId')}>
                         <SelectValue placeholder={t('products.detail.categoryPlaceholder')}>{selectedCategoryLabel}</SelectValue>
                       </SelectTrigger>
                       <SelectContent>
@@ -1142,7 +1196,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </div>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field label={t('products.detail.retailPrice')} error={validationErrors.retailPrice}>
+                  <Field label={t('products.detail.retailPrice')} required={isCreate} error={validationErrors.retailPrice}>
                     <Input
                       type="text"
                       inputMode="numeric"
@@ -1150,6 +1204,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                       placeholder="vd: 5.900.000"
                       value={formatPrice(form.retailPrice)}
                       onChange={(e) => updateField('retailPrice', e.target.value.replace(/\D/g, ''))}
+                      onBlur={() => validateFieldOnBlur('retailPrice')}
                       disabled={isReadOnly}
                     />
                   </Field>
@@ -1374,7 +1429,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 <p className="text-xs text-muted-foreground mb-3">
                   {t('products.detail.descriptionBuilderHint', { defaultValue: 'Trình dựng khối Tính năng chi tiết (chữ, ảnh, ảnh + chữ). Kéo-thả để đổi thứ tự. "Phù hợp với ai" và "Bảng size" nhập ở 2 card riêng bên dưới.' })}
                 </p>
-                <Field full label={t('products.detail.description')} error={validationErrors.description}>
+                <Field full label={t('products.detail.description')} required={isCreate && !isEnLang} error={validationErrors.description}>
                   {isEnLang ? (
                     <BlockEditor
                       value={descBuilderBlocks(form.descriptionBlocksEn)}

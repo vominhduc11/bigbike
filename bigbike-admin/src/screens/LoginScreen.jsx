@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import { Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { StatePanel } from '../components/StatePanel'
 import { ApiClientError } from '../lib/adminApi'
@@ -11,6 +12,7 @@ export function LoginScreen() {
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [canRetry, setCanRetry] = useState(false)
   const [showForgot, setShowForgot] = useState(false)
 
   const emailId = useId()
@@ -19,17 +21,21 @@ export function LoginScreen() {
   const forgotId = useId()
 
   async function onSubmit(event) {
-    event.preventDefault()
+    event?.preventDefault()
     if (submitting) return
     setError('')
+    setCanRetry(false)
     setSubmitting(true)
     try {
       await login({ email: email.trim(), password })
     } catch (err) {
       if (err instanceof ApiClientError && err.status === 401) {
         setError(t('auth.invalidCredentials'))
+        setCanRetry(false)
       } else {
+        // Lỗi mạng/máy chủ — cho phép thử lại tường minh
         setError(err?.message || t('auth.loginFailed'))
+        setCanRetry(true)
       }
     } finally {
       setSubmitting(false)
@@ -71,20 +77,27 @@ export function LoginScreen() {
                 tone="danger"
                 title={t('auth.loginError')}
                 description={error}
+                actionLabel={canRetry ? t('common.retry') : undefined}
+                onAction={canRetry ? () => onSubmit() : undefined}
               />
             </div>
           ) : null}
 
           <form onSubmit={onSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <p style={{ fontSize: 12, color: 'var(--bb-text-muted)', margin: 0 }}>
+              <span aria-hidden="true" style={{ color: 'var(--bb-danger)' }}>*</span> {t('common.requiredLegend', 'Bắt buộc')}
+            </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <label htmlFor={emailId} style={{ fontSize: 13, fontWeight: 500, color: 'var(--bb-text)' }}>
                 {t('auth.email')}
+                <span aria-hidden="true" style={{ color: 'var(--bb-danger)' }}> *</span>
               </label>
               <input
                 id={emailId}
                 type="email"
                 autoComplete="email"
                 required
+                aria-required="true"
                 placeholder={t('auth.emailPlaceholder')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -99,6 +112,7 @@ export function LoginScreen() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <label htmlFor={passwordId} style={{ fontSize: 13, fontWeight: 500, color: 'var(--bb-text)' }}>
                   {t('auth.password')}
+                  <span aria-hidden="true" style={{ color: 'var(--bb-danger)' }}> *</span>
                 </label>
                 <button
                   type="button"
@@ -116,6 +130,7 @@ export function LoginScreen() {
                 type="password"
                 autoComplete="current-password"
                 required
+                aria-required="true"
                 minLength={1}
                 maxLength={128}
                 placeholder={t('auth.passwordPlaceholder')}
@@ -142,9 +157,17 @@ export function LoginScreen() {
               type="submit"
               className="bb-btn bb-btn-primary bb-btn-lg"
               disabled={submitting}
+              aria-busy={submitting || undefined}
               style={{ width: '100%' }}
             >
-              {submitting ? t('auth.loggingIn') : t('auth.login')}
+              {submitting ? (
+                <>
+                  <Loader2 className="animate-spin" size={16} aria-hidden="true" />
+                  {t('auth.loggingIn')}
+                </>
+              ) : (
+                t('auth.login')
+              )}
             </button>
           </form>
 

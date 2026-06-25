@@ -20,6 +20,7 @@ export function FormField({ label, required, helper, error, htmlFor, children })
     ? cloneElement(children, {
         id: children.props.id || fieldId,
         'aria-invalid': error ? true : children.props['aria-invalid'],
+        'aria-required': required ? true : children.props['aria-required'],
         'aria-describedby': cn(children.props['aria-describedby'], describedBy) || undefined,
       })
     : children

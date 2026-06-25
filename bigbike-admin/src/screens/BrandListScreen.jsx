@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
+import { showConfirm } from '../lib/confirm'
 import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
@@ -86,6 +87,17 @@ export function BrandListScreen({ navigate, canUpdate }) {
     const byId = new Map(items.map((b) => [b.id, b]))
     const ids = selectedIds.filter((id) => byId.has(id))
     if (ids.length === 0) return
+
+    // Ẩn hàng loạt là hành động làm thương hiệu biến mất khỏi web công khai
+    // (destructive) — bắt buộc xác nhận trước khi chạy các lệnh cập nhật.
+    if (targetVisible === false) {
+      const ok = await showConfirm(
+        t('brands.bulkHideConfirm', { count: ids.length, defaultValue: `Ẩn {{count}} thương hiệu đã chọn? Các trang /brands/{slug} tương ứng sẽ trả về 404 trên web. Có thể hiện lại sau.` }),
+        t('brands.bulkHideTitle', { defaultValue: 'Ẩn các thương hiệu đã chọn?' }),
+        { variant: 'danger' },
+      )
+      if (!ok) return
+    }
 
     setBulkProgress({ done: 0, total: ids.length })
     let success = 0
@@ -340,6 +352,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
               selectedIds={selectedIds}
               onSelectionChange={setSelectedIds}
               onRowClick={(brand) => navigate(`/admin/brands/${brand.id}`)}
+              rowHref={(brand) => `/admin/brands/${brand.id}`}
               mobileCard={mobileCard}
             />
           </div>

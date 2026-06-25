@@ -311,7 +311,7 @@ Eleven block types (8 gốc + 3 khối PDP chuyên biệt V246):
 | `paragraph` | `html` (≤ 50 000 chars; inline `<b><i><a><br>` only) | — |
 | `list` | `style` (`bulleted`\|`numbered`), `items` (1–200 strings, each ≤ 2 000 chars) | — |
 | `image` | `url` (≤ 2 000 chars) | `alt` (≤ 500), `caption` (≤ 500) |
-| `video` | `provider` (`youtube`\|`upload`), `url` (≤ 2 000 chars) | `caption` (≤ 500) |
+| `video` | `provider` (`youtube`\|`tiktok`\|`facebook`\|`upload`), `url` (≤ 2 000 chars) | `caption` (≤ 500) |
 | `callout` | `variant` (`info`\|`warning`\|`note`), `html` (≤ 10 000 chars) | — |
 | `divider` | — | — |
 | `feature` | `url` (≤ 2 000 chars) | `side` (`auto`\|`left`\|`right`, mặc định `auto`), `alt` (≤ 500), `caption` (≤ 500), `subheading` (≤ 500), `heading` (≤ 500), `html` (≤ 50 000), `listStyle` (`bulleted`\|`numbered`), `items` (≤ 200 strings, each ≤ 2 000 chars) |
@@ -530,7 +530,7 @@ video, render dưới embed và làm `description` cho schema.org `VideoObject`.
 
 Hai bảng gallery `product_gallery_images` và `product_variant_gallery_images` thêm 3 cột:
 `media_type VARCHAR(8) NOT NULL DEFAULT 'image'` (`image`|`video`), `video_url TEXT`,
-`video_provider VARCHAR(16)` (`youtube`|`upload`); cột `image_url` được **nới NULL** (item video
+`video_provider VARCHAR(16)` (`youtube`|`tiktok`|`facebook`|`upload`); cột `image_url` được **nới NULL** (item video
 có thể không có thumbnail). Một dòng gallery giờ là **ảnh** (mediaType=image, dùng `image_*`) hoặc
 **video** (mediaType=video, `video_url`+`video_provider`, `image_*` = thumbnail/poster tuỳ chọn).
 

@@ -6,6 +6,9 @@ import { toast } from '@/lib/toast'
 import { fetchHomepageBlocks, saveHomepageBlocks, fetchProducts } from '../lib/adminApi'
 import { useContentLang } from '../lib/contentLang'
 import { useDebounce } from '../lib/useDebounce'
+import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+import { clearNavGuard } from '@/lib/navigationGuard'
+import { showConfirm } from '../lib/confirm'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { SortableList } from '../components/Sortable'
@@ -108,27 +111,64 @@ export function FeaturedProductsScreen({ canUpdate }) {
   const queryClient = useQueryClient()
   const [items, setItems] = useState([])
   const [initialized, setInitialized] = useState(false)
+  // baseline = danh sách id đã lưu trên server, để so sánh phát hiện thay đổi chưa lưu.
+  const [baselineIds, setBaselineIds] = useState([])
 
-  const { isLoading, isError, error, data: blocksData } = useQuery({
+  const { isLoading, isError, error, data: blocksData, refetch } = useQuery({
     queryKey: ['homepage-blocks', contentLang],
     queryFn: fetchHomepageBlocks,
   })
 
+  // So sánh thứ tự id hiện tại với baseline để biết có thay đổi chưa lưu (F6).
+  const currentIds = items.map((p) => p.id)
+  const isDirty =
+    currentIds.length !== baselineIds.length ||
+    currentIds.some((id, i) => id !== baselineIds[i])
+
+  // Cảnh báo khi rời trang / reload / đóng tab lúc đang có thay đổi chưa lưu.
+  useUnsavedChanges(isDirty, t('featuredProducts.unsavedConfirm', {
+    defaultValue: 'Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?',
+  }))
+
   // Đổi ngôn ngữ nội dung → fetch lại theo lang mới, bỏ chốt để lấy lại tên đã dịch.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { setInitialized(false) }, [contentLang])
+  // Nếu đang có thay đổi chưa lưu thì hỏi trước khi ghi đè danh sách đã sửa.
+  useEffect(() => {
+    if (!initialized) return
+    let cancelled = false
+    async function maybeReset() {
+      if (isDirty) {
+        const ok = await showConfirm(
+          t('featuredProducts.langSwitchConfirm', {
+            defaultValue: 'Bạn có thay đổi chưa lưu. Đổi ngôn ngữ sẽ tải lại danh sách và mất các thay đổi này. Tiếp tục?',
+          }),
+          t('featuredProducts.unsavedTitle', { defaultValue: 'Có thay đổi chưa lưu' }),
+        )
+        if (cancelled || !ok) return
+      }
+      setInitialized(false)
+    }
+    maybeReset()
+    return () => { cancelled = true }
+    // Chỉ chạy khi contentLang đổi; isDirty/initialized đọc snapshot tại thời điểm đổi.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contentLang])
 
   useEffect(() => {
     if (blocksData && !initialized) {
+      const grid = blocksData.featuredGrid ?? []
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setItems(blocksData.featuredGrid ?? [])
+      setItems(grid)
+      setBaselineIds(grid.map((p) => p.id))
       setInitialized(true)
     }
   }, [blocksData, initialized])
 
   const saveMutation = useMutation({
     mutationFn: (featuredGrid) => saveHomepageBlocks(featuredGrid),
-    onSuccess() {
+    onSuccess(_data, featuredGrid) {
+      // Đã lưu → baseline = danh sách vừa lưu, gỡ cảnh báo trước khi refetch.
+      setBaselineIds(featuredGrid)
+      clearNavGuard()
       queryClient.invalidateQueries({ queryKey: ['homepage-blocks'] })
       toast.success(t('featuredProducts.savedSuccess'))
     },
@@ -208,7 +248,13 @@ export function FeaturedProductsScreen({ canUpdate }) {
   if (isError) {
     return (
       <Screen>
-        <StatePanel tone="danger" title={t('common.errorLoading')} description={error?.message} />
+        <StatePanel
+          tone="danger"
+          title={t('common.errorLoading')}
+          description={error?.message}
+          actionLabel={t('common.retry')}
+          onAction={refetch}
+        />
       </Screen>
     )
   }
@@ -224,9 +270,10 @@ export function FeaturedProductsScreen({ canUpdate }) {
         actions={
           <Button
             onClick={handleSave}
-            disabled={!canUpdate || saveMutation.isPending}
+            loading={saveMutation.isPending}
+            disabled={!canUpdate}
           >
-            {saveMutation.isPending ? t('common.saving') : t('featuredProducts.saveButton')}
+            {t('featuredProducts.saveButton')}
           </Button>
         }
       />

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
+import { FilterChips } from '../components/FilterChips'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -14,11 +15,12 @@ import {
 } from '../lib/adminApi'
 import { PaginationControls } from '../components/PaginationControls'
 import { AdminTable } from '../components/AdminTable'
-import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
+import { FormField } from '../components/layout/FormField'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
 import { useDebounce } from '../lib/useDebounce'
+import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { formatDateTime } from '../lib/formatters'
 import { Alert } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -65,12 +67,16 @@ export function RedirectListScreen({ canUpdate }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const isFirstSearchRender = useRef(true)
-  const [query, setQuery] = useState(INITIAL_QUERY)
-  const [searchInput, setSearchInput] = useState(INITIAL_QUERY.search)
+  const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
+  const [searchInput, setSearchInput] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('search') || INITIAL_QUERY.search
+  })
   const debouncedSearch = useDebounce(searchInput, 300)
   const [showForm, setShowForm] = useState(false)
   const [editingRedirect, setEditingRedirect] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
+  const [touched, setTouched] = useState({})
   const [formError, setFormError] = useState('')
 
   const queryKey = useMemo(
@@ -82,6 +88,10 @@ export function RedirectListScreen({ canUpdate }) {
     queryKey,
     queryFn: () => fetchRedirects(query),
   })
+
+  useEffect(() => {
+    syncQueryToUrl(query, INITIAL_QUERY)
+  }, [query])
 
   useEffect(() => {
     if (isFirstSearchRender.current) {
@@ -134,9 +144,21 @@ export function RedirectListScreen({ canUpdate }) {
   const items = data?.items ?? []
   const warning = ''
 
+  const sourceError = !form.sourcePattern.trim()
+    ? t('redirects.errorSourceRequired', { defaultValue: 'Source pattern is required.' })
+    : ''
+  const targetError = !form.targetUrl.trim()
+    ? t('redirects.errorTargetRequired', { defaultValue: 'Target URL is required.' })
+    : ''
+
+  function markTouched(field) {
+    setTouched((prev) => ({ ...prev, [field]: true }))
+  }
+
   function openCreateForm() {
     setEditingRedirect(null)
     setForm({ ...EMPTY_FORM, statusCode: '301', redirectType: 'PERMANENT' })
+    setTouched({})
     setFormError('')
     setShowForm(true)
   }
@@ -152,6 +174,7 @@ export function RedirectListScreen({ canUpdate }) {
       notes: redirect.notes || '',
       legacyId: redirect.legacyId !== null && redirect.legacyId !== undefined ? String(redirect.legacyId) : '',
     })
+    setTouched({})
     setFormError('')
     setShowForm(true)
   }
@@ -160,6 +183,7 @@ export function RedirectListScreen({ canUpdate }) {
     setShowForm(false)
     setEditingRedirect(null)
     setForm(EMPTY_FORM)
+    setTouched({})
     setFormError('')
   }
 
@@ -183,14 +207,16 @@ export function RedirectListScreen({ canUpdate }) {
     })
   }
 
+  function resetFilters() {
+    setSearchInput(INITIAL_QUERY.search)
+    setQuery(INITIAL_QUERY)
+  }
+
   function handleSubmit(event) {
     event.preventDefault()
-    if (!form.sourcePattern.trim()) {
-      setFormError(t('redirects.errorSourceRequired', { defaultValue: 'Source pattern is required.' }))
-      return
-    }
-    if (!form.targetUrl.trim()) {
-      setFormError(t('redirects.errorTargetRequired', { defaultValue: 'Target URL is required.' }))
+    if (sourceError || targetError) {
+      setTouched((prev) => ({ ...prev, sourcePattern: true, targetUrl: true }))
+      setFormError(sourceError || targetError)
       return
     }
     setFormError('')
@@ -198,6 +224,130 @@ export function RedirectListScreen({ canUpdate }) {
   }
 
   const pagination = data?.pagination
+
+  const activeFilterChips = []
+  if (query.search) {
+    activeFilterChips.push({
+      key: 'search',
+      label: t('redirects.filterChipSearch', { value: query.search, defaultValue: `Tìm: "{{value}}"` }),
+      removeLabel: t('redirects.removeFilter', { filter: t('common.search'), defaultValue: `Bỏ lọc {{filter}}` }),
+      onRemove: () => {
+        setSearchInput('')
+        updateQuery({ search: '' }, { resetPage: true })
+      },
+    })
+  }
+  if (query.enabled !== 'ALL') {
+    activeFilterChips.push({
+      key: 'enabled',
+      label: t('redirects.filterChipEnabled', {
+        value: query.enabled === 'true' ? t('common.on') : t('common.off'),
+        defaultValue: `Bật: {{value}}`,
+      }),
+      removeLabel: t('redirects.removeFilter', { filter: t('redirects.filterEnabled', { defaultValue: 'Bật' }), defaultValue: `Bỏ lọc {{filter}}` }),
+      onRemove: () => updateQuery({ enabled: 'ALL' }, { resetPage: true }),
+    })
+  }
+  if (query.statusCode !== 'ALL') {
+    activeFilterChips.push({
+      key: 'statusCode',
+      label: t('redirects.filterChipStatusCode', { value: query.statusCode, defaultValue: `Mã: {{value}}` }),
+      removeLabel: t('redirects.removeFilter', { filter: t('redirects.filterStatusCode', { defaultValue: 'Mã trạng thái' }), defaultValue: `Bỏ lọc {{filter}}` }),
+      onRemove: () => updateQuery({ statusCode: 'ALL' }, { resetPage: true }),
+    })
+  }
+
+  const enabledBadge = (redirect) => (
+    <span className={`bb-badge ${redirect.enabled !== false ? 'bb-badge-success' : 'bb-badge-neutral'}`}>
+      {redirect.enabled !== false ? t('common.on') : t('common.off')}
+    </span>
+  )
+
+  const rowActions = (redirect) => (
+    <>
+      <button
+        type="button"
+        className="bb-icon-btn"
+        title={t('common.edit')}
+        aria-label={t('common.edit')}
+        onClick={() => openEditForm(redirect)}
+      >
+        <Pencil size={14} />
+      </button>
+      <button
+        type="button"
+        className="bb-icon-btn"
+        title={t('common.delete')}
+        aria-label={t('common.delete')}
+        onClick={() => handleDelete(redirect)}
+      >
+        <Trash2 size={14} />
+      </button>
+    </>
+  )
+
+  const columns = [
+    {
+      key: 'sourcePattern',
+      label: t('redirects.colSource', { defaultValue: 'Nguồn' }),
+      render: (redirect) => <span className="mono" style={{ wordBreak: 'break-all' }}>{redirect.sourcePattern}</span>,
+    },
+    {
+      key: 'targetUrl',
+      label: t('redirects.colTarget', { defaultValue: 'Đích' }),
+      render: (redirect) => (
+        <span style={{ wordBreak: 'break-all' }}>
+          <ExternalLink size={12} style={{ display: 'inline', marginRight: 4, verticalAlign: 'text-bottom' }} />
+          {redirect.targetUrl}
+        </span>
+      ),
+    },
+    {
+      key: 'redirectType',
+      label: t('redirects.colType', { defaultValue: 'Loại' }),
+      render: (redirect) => normalizeRedirectTypeLabel(redirect.redirectType, t),
+    },
+    {
+      key: 'statusCode',
+      label: t('redirects.colStatusCode', { defaultValue: 'Trạng thái' }),
+      render: (redirect) => STATUS_CODE_LABELS[redirect.statusCode] || String(redirect.statusCode || ''),
+    },
+    {
+      key: 'enabled',
+      label: t('redirects.colEnabled', { defaultValue: 'Bật' }),
+      render: enabledBadge,
+    },
+    {
+      key: 'hitCount',
+      label: t('redirects.colHits', { defaultValue: 'Lượt' }),
+      align: 'right',
+      render: (redirect) => redirect.hitCount ?? 0,
+    },
+    {
+      key: 'updatedAt',
+      label: t('redirects.colUpdated', { defaultValue: 'Cập nhật' }),
+      render: (redirect) => <span className="bb-muted" style={{ fontSize: 12 }}>{formatDateTime(redirect.updatedAt)}</span>,
+    },
+    ...(canUpdate ? [{
+      key: 'actions',
+      label: '',
+      align: 'right',
+      render: (redirect) => <span className="col-actions">{rowActions(redirect)}</span>,
+    }] : []),
+  ]
+
+  const mobileCard = (redirect) => ({
+    title: <span className="mono" style={{ wordBreak: 'break-all' }}>{redirect.sourcePattern}</span>,
+    subtitle: redirect.targetUrl,
+    status: enabledBadge(redirect),
+    meta: [
+      { label: t('redirects.colType', { defaultValue: 'Loại' }), value: normalizeRedirectTypeLabel(redirect.redirectType, t) },
+      { label: t('redirects.colStatusCode', { defaultValue: 'Trạng thái' }), value: STATUS_CODE_LABELS[redirect.statusCode] || String(redirect.statusCode || '') },
+      { label: t('redirects.colHits', { defaultValue: 'Lượt' }), value: redirect.hitCount ?? 0 },
+      { label: t('redirects.colUpdated', { defaultValue: 'Cập nhật' }), value: formatDateTime(redirect.updatedAt) },
+    ],
+    actions: canUpdate ? rowActions(redirect) : undefined,
+  })
 
   return (
     <div>
@@ -231,14 +381,30 @@ export function RedirectListScreen({ canUpdate }) {
           <form onSubmit={handleSubmit} className="bb-card-body">
             {formError && <Alert tone="danger" size="sm" className="mb-3">{formError}</Alert>}
             <div className="bb-grid-2">
-              <label className="form-field">
-                <span>{t('redirects.formSource', { defaultValue: 'Mẫu nguồn' })}</span>
-                <Input value={form.sourcePattern} onChange={(e) => setForm((p) => ({ ...p, sourcePattern: e.target.value }))} placeholder="/old-url" />
-              </label>
-              <label className="form-field">
-                <span>{t('redirects.formTarget', { defaultValue: 'URL đích' })}</span>
-                <Input value={form.targetUrl} onChange={(e) => setForm((p) => ({ ...p, targetUrl: e.target.value }))} placeholder="/new-url" />
-              </label>
+              <FormField
+                label={t('redirects.formSource', { defaultValue: 'Mẫu nguồn' })}
+                required
+                error={touched.sourcePattern ? sourceError : ''}
+              >
+                <Input
+                  value={form.sourcePattern}
+                  onChange={(e) => setForm((p) => ({ ...p, sourcePattern: e.target.value }))}
+                  onBlur={() => markTouched('sourcePattern')}
+                  placeholder="/old-url"
+                />
+              </FormField>
+              <FormField
+                label={t('redirects.formTarget', { defaultValue: 'URL đích' })}
+                required
+                error={touched.targetUrl ? targetError : ''}
+              >
+                <Input
+                  value={form.targetUrl}
+                  onChange={(e) => setForm((p) => ({ ...p, targetUrl: e.target.value }))}
+                  onBlur={() => markTouched('targetUrl')}
+                  placeholder="/new-url"
+                />
+              </FormField>
               <label className="form-field">
                 <span>{t('redirects.formType', { defaultValue: 'Loại chuyển hướng' })}</span>
                 <Select value={form.redirectType} onValueChange={(val) => setForm((p) => ({ ...p, redirectType: val }))}>
@@ -279,6 +445,10 @@ export function RedirectListScreen({ canUpdate }) {
                   placeholder={t('redirects.notesPlaceholder', { defaultValue: 'Ghi chú tuỳ chọn.' })} />
               </label>
             </div>
+            <p className="text-xs text-muted-foreground mt-3">
+              <span className="text-danger" aria-hidden="true">*</span>{' '}
+              {t('common.requiredLegend', { defaultValue: 'Bắt buộc' })}
+            </p>
             <div className="mt-4 flex gap-2">
               <Button type="submit" loading={saveMutation.isPending}>{t('common.save')}</Button>
               <Button type="button" variant="outline" onClick={closeForm} disabled={saveMutation.isPending}>{t('common.cancel')}</Button>
@@ -322,6 +492,14 @@ export function RedirectListScreen({ canUpdate }) {
         />
       </div>
 
+      <FilterChips
+        chips={activeFilterChips}
+        onClearAll={resetFilters}
+        clearAllLabel={t('common.resetFilters')}
+        removeChipLabel={t('common.clear')}
+        ariaLabel={t('redirects.activeFiltersAria', { defaultValue: 'Bộ lọc đang áp dụng' })}
+      />
+
       {isError && (
         <StatePanel
           tone="danger"
@@ -338,98 +516,20 @@ export function RedirectListScreen({ canUpdate }) {
           title={t('redirects.emptyTitle', { defaultValue: 'Không có chuyển hướng' })}
           description={t('redirects.emptyDesc', { defaultValue: 'Đổi bộ lọc hoặc tạo chuyển hướng mới.' })}
           actionLabel={canUpdate ? t('redirects.createBtn', { defaultValue: 'Tạo chuyển hướng' }) : t('common.resetFilters')}
-          onAction={canUpdate ? openCreateForm : () => setQuery(INITIAL_QUERY)}
+          onAction={canUpdate ? openCreateForm : resetFilters}
         />
       )}
 
       {(isLoading || items.length > 0) && (
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
-            <div className="hide-on-mobile">
-            <div className="bb-table-wrap">
-              <table className="bb-table">
-                <thead>
-                  <tr>
-                    <th>{t('redirects.colSource', { defaultValue: 'Nguồn' })}</th>
-                    <th>{t('redirects.colTarget', { defaultValue: 'Đích' })}</th>
-                    <th>{t('redirects.colType', { defaultValue: 'Loại' })}</th>
-                    <th>{t('redirects.colStatusCode', { defaultValue: 'Trạng thái' })}</th>
-                    <th>{t('redirects.colEnabled', { defaultValue: 'Bật' })}</th>
-                    <th className="num">{t('redirects.colHits', { defaultValue: 'Lượt' })}</th>
-                    <th>{t('redirects.colUpdated', { defaultValue: 'Cập nhật' })}</th>
-                    {canUpdate && <th />}
-                  </tr>
-                </thead>
-                <tbody>
-                  {isLoading && items.length === 0 && (
-                    [...Array(6)].map((_, i) => (
-                      <tr key={`sk-${i}`}>
-                        <td colSpan={canUpdate ? 8 : 7}><div className="dash-skeleton-block" style={{ height: 28 }} /></td>
-                      </tr>
-                    ))
-                  )}
-                  {items.map((redirect) => (
-                    <tr key={redirect.id}>
-                      <td className="mono" style={{ wordBreak: 'break-all' }}>{redirect.sourcePattern}</td>
-                      <td style={{ wordBreak: 'break-all' }}>
-                        <ExternalLink size={12} style={{ display: 'inline', marginRight: 4, verticalAlign: 'text-bottom' }} />
-                        {redirect.targetUrl}
-                      </td>
-                      <td>{normalizeRedirectTypeLabel(redirect.redirectType, t)}</td>
-                      <td>{STATUS_CODE_LABELS[redirect.statusCode] || String(redirect.statusCode || '')}</td>
-                      <td>
-                        <span className={`bb-badge ${redirect.enabled !== false ? 'bb-badge-success' : 'bb-badge-neutral'}`}>
-                          {redirect.enabled !== false ? t('common.on') : t('common.off')}
-                        </span>
-                      </td>
-                      <td className="num">{redirect.hitCount ?? 0}</td>
-                      <td className="bb-muted" style={{ fontSize: 12 }}>{formatDateTime(redirect.updatedAt)}</td>
-                      {canUpdate && (
-                        <td className="col-actions">
-                          <button type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => openEditForm(redirect)}>
-                            <Pencil size={14} />
-                          </button>
-                          <button type="button" className="bb-icon-btn" title={t('common.delete')} onClick={() => handleDelete(redirect)}>
-                            <Trash2 size={14} />
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            </div>
-            <MobileCardList>
-              {items.map((redirect) => (
-                <MobileCard
-                  key={redirect.id}
-                  title={<span className="mono" style={{ wordBreak: 'break-all' }}>{redirect.sourcePattern}</span>}
-                  subtitle={redirect.targetUrl}
-                  status={(
-                    <span className={`bb-badge ${redirect.enabled !== false ? 'bb-badge-success' : 'bb-badge-neutral'}`}>
-                      {redirect.enabled !== false ? t('common.on') : t('common.off')}
-                    </span>
-                  )}
-                  meta={[
-                    { label: t('redirects.colType', { defaultValue: 'Loại' }), value: normalizeRedirectTypeLabel(redirect.redirectType, t) },
-                    { label: t('redirects.colStatusCode', { defaultValue: 'Trạng thái' }), value: STATUS_CODE_LABELS[redirect.statusCode] || String(redirect.statusCode || '') },
-                    { label: t('redirects.colHits', { defaultValue: 'Lượt' }), value: redirect.hitCount ?? 0 },
-                    { label: t('redirects.colUpdated', { defaultValue: 'Cập nhật' }), value: formatDateTime(redirect.updatedAt) },
-                  ]}
-                  actions={canUpdate ? (
-                    <>
-                      <button type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => openEditForm(redirect)}>
-                        <Pencil size={14} />
-                      </button>
-                      <button type="button" className="bb-icon-btn" title={t('common.delete')} onClick={() => handleDelete(redirect)}>
-                        <Trash2 size={14} />
-                      </button>
-                    </>
-                  ) : undefined}
-                />
-              ))}
-            </MobileCardList>
+            <AdminTable
+              columns={columns}
+              rows={items}
+              loading={isLoading && items.length === 0}
+              pageSize={query.pageSize}
+              mobileCard={mobileCard}
+            />
           </div>
           {pagination && (
             <PaginationControls

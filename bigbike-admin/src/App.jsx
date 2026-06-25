@@ -14,6 +14,7 @@ import { AuthProvider, useAuth } from './lib/auth'
 import { readTokens } from './lib/authStorage'
 import { connectAdminWs, disconnectAdminWs, setWsReconnectCallback } from './lib/adminWebSocket'
 import { queryClient } from './lib/queryClient'
+import { confirmNavigation } from './lib/navigationGuard'
 import { LoginScreen } from './screens/LoginScreen'
 import { AcceptInviteScreen } from './screens/AcceptInviteScreen'
 
@@ -232,6 +233,8 @@ function AdminApp() {
   const SCREEN_SUSPENSE_FALLBACK = <ScreenSkeleton />
 
   const navigate = useCallback((nextPath, options = {}) => {
+    // F6: chặn rời trang khi đang có thay đổi chưa lưu (hỏi xác nhận).
+    if (!confirmNavigation()) return
     const qIdx = nextPath.indexOf('?')
     const pathPart = qIdx === -1 ? nextPath : nextPath.slice(0, qIdx)
     const queryPart = qIdx === -1 ? '' : nextPath.slice(qIdx)

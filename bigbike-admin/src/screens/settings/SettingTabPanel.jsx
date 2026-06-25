@@ -1,9 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import { AlertCircle, ExternalLink, Lock } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { SettingField } from './SettingField'
 import { groupBySection, SECTION_GUIDE, STOREFRONT_BASE, KEY_GUIDE } from './constants'
 
-export function SettingTabPanel({ title, items, canUpdate, drafts, draftsEn, errors, onDraftChange, onDraftChangeEn, onSave, onDiscard, saving }) {
+export function SettingTabPanel({ title, items, canUpdate, drafts, draftsEn, errors, onDraftChange, onDraftChangeEn, onDraftBlur, onSave, onDiscard, saving }) {
   const { t } = useTranslation()
   const dirtyCount = items.filter(
     (s) => drafts[s.key] !== undefined || draftsEn[s.key] !== undefined
@@ -53,6 +54,7 @@ export function SettingTabPanel({ title, items, canUpdate, drafts, draftsEn, err
                   error={errors[setting.key]}
                   onChange={onDraftChange}
                   onChangeEn={onDraftChangeEn}
+                  onBlur={onDraftBlur}
                 />
               ))}
             </div>
@@ -67,12 +69,12 @@ export function SettingTabPanel({ title, items, canUpdate, drafts, draftsEn, err
             {t('settings.unsavedCount', { count: dirtyCount })}
           </span>
           <div className="flex gap-2">
-            <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={onDiscard} disabled={saving}>
+            <Button variant="secondary" size="sm" onClick={onDiscard} disabled={saving}>
               {t('common.cancel')}
-            </button>
-            <button type="button" className="bb-btn bb-btn-primary bb-btn-sm" onClick={onSave} disabled={saving || hasError}>
+            </Button>
+            <Button size="sm" loading={saving} disabled={hasError} onClick={onSave}>
               {t('settings.saveCount', { count: dirtyCount })}
-            </button>
+            </Button>
           </div>
         </div>
       )}

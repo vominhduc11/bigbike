@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Loader2 } from 'lucide-react'
 import { StatePanel } from '../components/StatePanel'
 import { acceptAdminInvite, validateAdminInvite } from '../lib/adminApi'
 
@@ -21,9 +22,13 @@ export function AcceptInviteScreen() {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [touched, setTouched] = useState({ password: false, confirm: false })
 
   const pwId = useId()
   const confirmId = useId()
+
+  const passwordError = password.length > 0 && password.length < 8 ? t('acceptInvite.passwordTooShort') : ''
+  const confirmError = confirm.length > 0 && confirm !== password ? t('acceptInvite.passwordMismatch') : ''
 
   useEffect(() => {
     let active = true
@@ -123,8 +128,9 @@ export function AcceptInviteScreen() {
               ) : null}
               <form onSubmit={onSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label htmlFor={pwId} style={{ fontSize: 13, fontWeight: 500, color: 'var(--bb-text)' }}>
+                  <label htmlFor={pwId} className="bb-label" style={{ fontSize: 13, fontWeight: 500, color: 'var(--bb-text)' }}>
                     {t('acceptInvite.passwordLabel')}
+                    <span className="req" aria-hidden="true"> *</span>
                   </label>
                   <input
                     id={pwId}
@@ -136,13 +142,22 @@ export function AcceptInviteScreen() {
                     placeholder={t('acceptInvite.passwordPlaceholder')}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
                     disabled={submitting}
+                    aria-invalid={touched.password && passwordError ? true : undefined}
+                    aria-describedby={touched.password && passwordError ? `${pwId}-error` : undefined}
                     className="bb-input"
                   />
+                  {touched.password && passwordError ? (
+                    <span id={`${pwId}-error`} role="alert" style={{ fontSize: 12, color: 'var(--bb-danger)' }}>
+                      {passwordError}
+                    </span>
+                  ) : null}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label htmlFor={confirmId} style={{ fontSize: 13, fontWeight: 500, color: 'var(--bb-text)' }}>
+                  <label htmlFor={confirmId} className="bb-label" style={{ fontSize: 13, fontWeight: 500, color: 'var(--bb-text)' }}>
                     {t('acceptInvite.confirmLabel')}
+                    <span className="req" aria-hidden="true"> *</span>
                   </label>
                   <input
                     id={confirmId}
@@ -154,12 +169,30 @@ export function AcceptInviteScreen() {
                     placeholder={t('acceptInvite.confirmPlaceholder')}
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
+                    onBlur={() => setTouched((prev) => ({ ...prev, confirm: true }))}
                     disabled={submitting}
+                    aria-invalid={touched.confirm && confirmError ? true : undefined}
+                    aria-describedby={touched.confirm && confirmError ? `${confirmId}-error` : undefined}
                     className="bb-input"
                   />
+                  {touched.confirm && confirmError ? (
+                    <span id={`${confirmId}-error`} role="alert" style={{ fontSize: 12, color: 'var(--bb-danger)' }}>
+                      {confirmError}
+                    </span>
+                  ) : null}
                 </div>
-                <button type="submit" className="bb-btn bb-btn-primary bb-btn-lg" disabled={submitting} style={{ width: '100%' }}>
-                  {submitting ? t('common.saving') : t('acceptInvite.submit')}
+                <p style={{ fontSize: 12, color: 'var(--bb-text-muted)', margin: 0 }}>
+                  <span aria-hidden="true" style={{ color: 'var(--bb-danger)' }}>*</span> {t('common.requiredLegend', { defaultValue: 'Bắt buộc' })}
+                </p>
+                <button type="submit" className="bb-btn bb-btn-primary bb-btn-lg" disabled={submitting} aria-busy={submitting || undefined} style={{ width: '100%' }}>
+                  {submitting ? (
+                    <>
+                      <Loader2 className="animate-spin" size={16} aria-hidden="true" />
+                      {t('common.saving')}
+                    </>
+                  ) : (
+                    t('acceptInvite.submit')
+                  )}
                 </button>
               </form>
             </>

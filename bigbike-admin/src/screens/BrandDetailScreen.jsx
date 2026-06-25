@@ -12,8 +12,11 @@ import {
 import { showConfirm } from '../lib/confirm'
 import { formatDateTime } from '../lib/formatters'
 import { useContentLang } from '../lib/contentLang'
+import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+import { clearNavGuard } from '@/lib/navigationGuard'
 import { createBrandSchema, zodErrors } from '../lib/schemas'
 import { StatePanel } from '../components/StatePanel'
+import { FormField } from '../components/layout/FormField'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { RichTextEditor } from '../components/RichTextEditor'
@@ -142,7 +145,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [enSlugManuallyEdited, setEnSlugManuallyEdited] = useState(false)
 
-  const { data: fetchResult, isLoading, isError, error: fetchError } = useQuery({
+  const { data: fetchResult, isLoading, isError, error: fetchError, refetch } = useQuery({
     queryKey: ['brand', brandId],
     queryFn: () => fetchBrandDetail(brandId),
     enabled: !isCreate,
@@ -178,12 +181,9 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
   const isDirty = useMemo(() => JSON.stringify(form) !== initialSnapshot, [form, initialSnapshot])
   const isReadOnly = !canUpdate || isSubmitting
 
-  useEffect(() => {
-    if (!isDirty) return
-    const handler = (e) => { e.preventDefault(); e.returnValue = '' }
-    window.addEventListener('beforeunload', handler)
-    return () => window.removeEventListener('beforeunload', handler)
-  }, [isDirty])
+  // F6: cảnh báo rời trang khi chưa lưu — chặn cả điều hướng nội bộ (nút quay lại,
+  // sidebar) qua navigationGuard lẫn reload/đóng tab qua beforeunload.
+  useUnsavedChanges(isDirty)
 
   const saveMutation = useMutation({
     mutationFn: (payload) => isCreate ? createBrand(payload) : updateBrand(brandId, payload),
@@ -197,7 +197,10 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
       if (!isCreate) queryClient.setQueryData(['brand', brandId], response)
       toast.success(isCreate ? t('brands.detail.successCreate') : t('brands.detail.successUpdate'))
       setIsSubmitting(false)
-      if (isCreate && savedItem?.id) navigate(`/admin/brands/${savedItem.id}`, { replace: true })
+      if (isCreate && savedItem?.id) {
+        clearNavGuard() // form vừa lưu khớp baseline, tránh hỏi nhầm khi điều hướng sang trang chi tiết
+        navigate(`/admin/brands/${savedItem.id}`, { replace: true })
+      }
     },
     onError: (error) => {
       setValidationErrors(mapValidationErrors(error))
@@ -211,6 +214,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     onSuccess: () => {
       toast.success(t('brands.detail.successDelete'))
       queryClient.invalidateQueries({ queryKey: ['brands'] })
+      clearNavGuard() // đã ẩn xong, không hỏi xác nhận khi rời trang
       navigate('/admin/brands')
     },
     onError: (error) => {
@@ -249,6 +253,19 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     })
   }
 
+  // F3: validate sớm một field khi rời ô (onBlur). Chạy toàn schema rồi chỉ lấy
+  // lỗi của field vừa rời (set nếu có, xoá nếu đã hợp lệ) để báo trước khi submit.
+  function handleFieldBlur(field) {
+    const result = createBrandSchema(t).safeParse(form)
+    const allErrors = zodErrors(result)
+    setValidationErrors((previous) => {
+      const next = { ...previous }
+      if (allErrors[field]) next[field] = allErrors[field]
+      else delete next[field]
+      return next
+    })
+  }
+
   function handleSubmit(event) {
     event.preventDefault()
     if (!canUpdate) return
@@ -282,8 +299,8 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
         tone="danger"
         title={t('brands.detail.loadError')}
         description={state.error}
-        actionLabel={t('brands.detail.backToList')}
-        onAction={() => navigate('/admin/brands')}
+        actionLabel={t('common.retry', { defaultValue: 'Thử lại' })}
+        onAction={() => refetch()}
       />
     )
   }
@@ -378,38 +395,46 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
             <h2>{t('brands.detail.sectionBasic')}</h2>
           </div>
           <div className="bb-card-body">
+            {!isEnLang ? (
+              <p className="text-xs text-muted-foreground mb-3">
+                <span className="text-danger" aria-hidden="true">*</span>{' '}
+                {t('common.requiredLegend', { defaultValue: 'Bắt buộc' })}
+              </p>
+            ) : null}
             <div className="bb-grid-2">
-              <label className="form-field" data-field={isEnLang ? 'translations.en.slug' : 'slug'}>
-                <span>
-                  {t('brands.detail.slug')}
+              <FormField
+                label={<>
+                  {t('brands.detail.slug').replace(/\s*\*\s*$/, '')}
                   {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 6 }}>{t('brands.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
-                </span>
+                </>}
+                required={!isEnLang}
+                helper={isEnLang ? t('brands.detail.slugHintEn', { defaultValue: 'Để trống sẽ dùng đường dẫn tiếng Việt cho bản tiếng Anh.' }) : undefined}
+                error={isEnLang ? validationErrors['translations.en.slug'] : validationErrors.slug}
+              >
                 <Input
                   value={isEnLang ? (form.translations?.en?.slug ?? '') : form.slug}
                   onChange={(e) => isEnLang ? handleEnSlugChange(e.target.value) : updateField('slug', e.target.value)}
+                  onBlur={() => handleFieldBlur(isEnLang ? 'translations.en.slug' : 'slug')}
                   disabled={isReadOnly}
                   placeholder={isEnLang ? t('brands.detail.slugPlaceholderEn', { defaultValue: 'english-url-slug' }) : undefined}
                   style={{ fontFamily: 'var(--admin-font-mono)' }} />
-                {isEnLang
-                  ? <span className="hint">{t('brands.detail.slugHintEn', { defaultValue: 'Để trống sẽ dùng đường dẫn tiếng Việt cho bản tiếng Anh.' })}</span>
-                  : null}
-                {isEnLang
-                  ? validationErrors['translations.en.slug'] && <span className="hint text-danger">{validationErrors['translations.en.slug']}</span>
-                  : validationErrors.slug && <span className="hint text-danger">{validationErrors.slug}</span>}
-              </label>
-              <label className="form-field">
-                <span>
-                  {t('brands.detail.name')}
+              </FormField>
+              <FormField
+                label={<>
+                  {t('brands.detail.name').replace(/\s*\*\s*$/, '')}
                   {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 6 }}>{t('brands.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
-                </span>
+                </>}
+                required={!isEnLang}
+                error={!isEnLang ? validationErrors.name : undefined}
+              >
                 <Input
                   value={isEnLang ? (form.translations?.en?.name ?? '') : form.name}
                   onChange={(e) => isEnLang ? handleEnNameChange(e.target.value) : updateField('name', e.target.value)}
+                  onBlur={() => { if (!isEnLang) handleFieldBlur('name') }}
                   disabled={isReadOnly}
                   placeholder={isEnLang ? t('brands.detail.namePlaceholderEn', { defaultValue: 'English name (optional)' }) : undefined}
                 />
-                {!isEnLang && validationErrors.name && <span className="hint text-danger">{validationErrors.name}</span>}
-              </label>
+              </FormField>
               <label
                 className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit"
                 style={{ gridColumn: '1 / -1' }}
@@ -417,17 +442,20 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                 <Checkbox checked={form.visible} onCheckedChange={(checked) => updateField('visible', checked)} disabled={isReadOnly} />
                 <span>{t('brands.detail.isVisible')}</span>
               </label>
-              <div className="form-field" style={{ gridColumn: '1 / -1' }}>
-                <span>{t('brands.detail.description')}</span>
-                <RichTextEditor
-                  key={`description-${contentLang}`}
-                  value={isEnLang ? (form.translations?.en?.description ?? '') : form.description}
-                  onChange={(html) => isEnLang ? updateTranslation('description', html) : updateField('description', html)}
-                  placeholder={t('brands.detail.descriptionPlaceholder', { defaultValue: 'Nhập mô tả thương hiệu...' })}
-                  disabled={isReadOnly}
-                  enableImagePicker
-                />
-                {!isEnLang && validationErrors.description && <span className="hint text-danger">{validationErrors.description}</span>}
+              <div style={{ gridColumn: '1 / -1' }}>
+                <FormField
+                  label={t('brands.detail.description')}
+                  error={!isEnLang ? validationErrors.description : undefined}
+                >
+                  <RichTextEditor
+                    key={`description-${contentLang}`}
+                    value={isEnLang ? (form.translations?.en?.description ?? '') : form.description}
+                    onChange={(html) => isEnLang ? updateTranslation('description', html) : updateField('description', html)}
+                    placeholder={t('brands.detail.descriptionPlaceholder', { defaultValue: 'Nhập mô tả thương hiệu...' })}
+                    disabled={isReadOnly}
+                    enableImagePicker
+                  />
+                </FormField>
               </div>
             </div>
           </div>
@@ -534,15 +562,19 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                   placeholder={t('brands.detail.seoDescriptionPlaceholder', { defaultValue: 'Mô tả ngắn hiển thị dưới tiêu đề trên Google' })}
                 />
               </div>
-              <div className="form-field" style={{ gridColumn: '1 / -1' }}>
-                <span>{t('brands.detail.seoCanonicalUrl', { defaultValue: 'Địa chỉ chuẩn (canonical URL)' })}</span>
-                <Input
-                  value={form.seoCanonicalUrl}
-                  onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
-                  disabled={isReadOnly}
-                  placeholder="https://bigbike.vn/..."
-                />
-                {validationErrors.seoCanonicalUrl && <span className="hint text-danger">{validationErrors.seoCanonicalUrl}</span>}
+              <div style={{ gridColumn: '1 / -1' }}>
+                <FormField
+                  label={t('brands.detail.seoCanonicalUrl', { defaultValue: 'Địa chỉ chuẩn (canonical URL)' })}
+                  error={validationErrors.seoCanonicalUrl}
+                >
+                  <Input
+                    value={form.seoCanonicalUrl}
+                    onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
+                    onBlur={() => handleFieldBlur('seoCanonicalUrl')}
+                    disabled={isReadOnly}
+                    placeholder="https://bigbike.vn/..."
+                  />
+                </FormField>
               </div>
               {/* Ảnh chia sẻ mạng xã hội (OG image) — dùng chung cho cả hai ngôn ngữ */}
               <div className="form-field" data-field="seoOgImageUrl" style={{ gridColumn: '1 / -1' }}>

@@ -110,7 +110,7 @@ export function DashboardScreen({ navigate }) {
     refetchOnWindowFocus: true,
   })
 
-  const { data: invSummary } = useQuery({
+  const { data: invSummary, isError: invIsError } = useQuery({
     queryKey: ['inventory-summary'],
     queryFn: fetchInventorySummary,
     staleTime: 60_000,
@@ -421,6 +421,12 @@ export function DashboardScreen({ navigate }) {
               </div>
             </div>
             <div className="bb-card-body">
+              {invIsError && (
+                <StatePanel
+                  tone="warning"
+                  description={t('dashboard.attention.inventoryWarn')}
+                />
+              )}
               {attentionItems.length === 0 ? (
                 <SectionEmpty
                   title={t('dashboard.attention.empty')}
@@ -432,26 +438,21 @@ export function DashboardScreen({ navigate }) {
                     <div
                       key={item.key}
                       className="bb-attention-item"
-                      onClick={item.onClick}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') item.onClick() }}
+                      {...clickableProps(
+                        item.onClick,
+                        `${SEVERITY_LABEL[item.severity]}: ${item.label} (${item.count})`,
+                      )}
                     >
                       <span className={`bb-attention-sev ${SEVERITY_TONE[item.severity]}`} aria-hidden="true" />
-                      <span className="sr-only">{SEVERITY_LABEL[item.severity]}</span>
                       <span className="bb-attention-icon" aria-hidden="true">{item.icon}</span>
                       <div className="bb-attention-body">
                         <div className="bb-attention-title">{item.label}</div>
                         <div className="bb-attention-desc">{item.hint}</div>
                       </div>
                       <span className="bb-attention-count">{item.count}</span>
-                      <button
-                        type="button"
-                        className="bb-btn bb-btn-ghost bb-btn-sm"
-                        onClick={(e) => { e.stopPropagation(); item.onClick() }}
-                      >
+                      <span className="bb-btn bb-btn-ghost bb-btn-sm" aria-hidden="true">
                         {item.cta} →
-                      </button>
+                      </span>
                     </div>
                   ))}
                 </div>

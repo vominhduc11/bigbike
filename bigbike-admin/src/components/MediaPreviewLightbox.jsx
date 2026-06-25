@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight, X as XIcon, Music, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useDialogA11y } from '@/lib/useDialogA11y'
 
 /**
  * Full-screen preview overlay for media items.
@@ -11,6 +12,9 @@ import { cn } from '@/lib/utils'
  */
 export function MediaPreviewLightbox({ media, items, index, onClose, onNavigate }) {
   const { t } = useTranslation()
+  const dialogRef = useRef(null)
+  // A3: focus-trap + đưa/trả focus cho overlay tự dựng (Escape đã có ở handler dưới).
+  useDialogA11y(dialogRef, { onClose })
 
   // Resolve current item: prefer items[index] if both provided
   const current = (Array.isArray(items) && typeof index === 'number') ? items[index] : media
@@ -40,8 +44,10 @@ export function MediaPreviewLightbox({ media, items, index, onClose, onNavigate 
 
   return (
     <div role="dialog" aria-modal="true" aria-label={filename}
+      ref={dialogRef}
+      tabIndex={-1}
       onClick={onClose}
-      className="fixed inset-0 z-[1000] bg-black/90 flex flex-col items-center justify-center p-8"
+      className="fixed inset-0 z-[1000] bg-black/90 flex flex-col items-center justify-center p-8 outline-none"
     >
       {/* Close button */}
       <button type="button" onClick={onClose} aria-label={t('common.close')}

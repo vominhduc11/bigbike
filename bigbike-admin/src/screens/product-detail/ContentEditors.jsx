@@ -89,6 +89,10 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
           <div className="flex gap-1 p-1 bg-muted w-fit">
             <Button type="button" variant={provider === 'youtube' ? 'default' : 'ghost'} size="sm"
               onClick={() => onUpdate('provider', 'youtube')} disabled={disabled}>YouTube</Button>
+            <Button type="button" variant={provider === 'tiktok' ? 'default' : 'ghost'} size="sm"
+              onClick={() => onUpdate('provider', 'tiktok')} disabled={disabled}>TikTok</Button>
+            <Button type="button" variant={provider === 'facebook' ? 'default' : 'ghost'} size="sm"
+              onClick={() => onUpdate('provider', 'facebook')} disabled={disabled}>Facebook</Button>
             <Button type="button" variant={provider === 'upload' ? 'default' : 'ghost'} size="sm"
               onClick={() => { onUpdate('provider', 'upload'); }} disabled={disabled}>
               {t('products.detail.gallery.videoUpload', { defaultValue: 'Tải lên' })}
@@ -99,6 +103,24 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
               type="text"
               className="gallery-card-alt-input"
               placeholder={t('products.detail.gallery.videoUrlPlaceholder', { defaultValue: 'Dán link YouTube' })}
+              value={item.videoUrl || ''}
+              onChange={(e) => onUpdate('videoUrl', e.target.value)}
+              disabled={disabled}
+            />
+          ) : provider === 'tiktok' ? (
+            <input
+              type="text"
+              className="gallery-card-alt-input"
+              placeholder={t('products.detail.gallery.tiktokUrlPlaceholder', { defaultValue: 'Dán link TikTok đầy đủ' })}
+              value={item.videoUrl || ''}
+              onChange={(e) => onUpdate('videoUrl', e.target.value)}
+              disabled={disabled}
+            />
+          ) : provider === 'facebook' ? (
+            <input
+              type="text"
+              className="gallery-card-alt-input"
+              placeholder={t('products.detail.gallery.facebookUrlPlaceholder', { defaultValue: 'Dán link video Facebook (công khai)' })}
               value={item.videoUrl || ''}
               onChange={(e) => onUpdate('videoUrl', e.target.value)}
               disabled={disabled}
@@ -307,6 +329,24 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
                 </Button>
                 <Button
                   type="button"
+                  variant={type === 'tiktok' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => updateItem(index, { type: 'tiktok', url: '', thumbnailUrl: '' })}
+                  disabled={disabled}
+                >
+                  TikTok
+                </Button>
+                <Button
+                  type="button"
+                  variant={type === 'facebook' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => updateItem(index, { type: 'facebook', url: '', thumbnailUrl: '' })}
+                  disabled={disabled}
+                >
+                  Facebook
+                </Button>
+                <Button
+                  type="button"
                   variant={type === 'upload' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => updateItem(index, { type: 'upload', url: '' })}
@@ -332,6 +372,28 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
                       className="mt-2 w-full max-w-60 h-auto rounded border border-border"
                     />
                   )}
+                </div>
+              ) : type === 'tiktok' ? (
+                <div>
+                  <Input className={urlError ? 'border-danger' : undefined}
+                    placeholder={t('products.detail.video.tiktokPlaceholder')}
+                    value={item.url}
+                    onChange={(e) => updateItem(index, { url: e.target.value })}
+                    disabled={disabled}
+                  />
+                  {urlError && <small className="field-error">{urlError}</small>}
+                  <p className="mt-1 text-xs text-muted-foreground">{t('products.detail.video.tiktokHint')}</p>
+                </div>
+              ) : type === 'facebook' ? (
+                <div>
+                  <Input className={urlError ? 'border-danger' : undefined}
+                    placeholder={t('products.detail.video.facebookPlaceholder')}
+                    value={item.url}
+                    onChange={(e) => updateItem(index, { url: e.target.value })}
+                    disabled={disabled}
+                  />
+                  {urlError && <small className="field-error">{urlError}</small>}
+                  <p className="mt-1 text-xs text-muted-foreground">{t('products.detail.video.facebookHint')}</p>
                 </div>
               ) : (
                 <div>

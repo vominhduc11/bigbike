@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Check, Copy, MoreHorizontal, Package, Pencil, Trash2, Undo2 } from 'lucide-react'
+import { Check, Copy, ExternalLink, MoreHorizontal, Package, Pencil, Trash2, Undo2 } from 'lucide-react'
 import { PublishStatusBadge } from '../../components/StatusBadge'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../../lib/formatters'
 import { StockCell } from './cells'
@@ -27,9 +27,19 @@ export function ProductRow({
   const isBusy = isDeleting || isRestoring
   const block = product.homepageBlock
   const catName = categoryLabel(product)
+  const detailPath = `/admin/products/${product.id}`
+
+  // Tên SP là <a> link thật để Ctrl/Cmd-click hoặc chuột-giữa mở tab mới (hành vi
+  // trình duyệt). Click trái thường vẫn điều hướng trong cùng tab qua SPA navigate.
+  const handleNameClick = (e) => {
+    e.stopPropagation() // chặn onClick của <tr> để không điều hướng kép
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return // để trình duyệt mở tab mới
+    e.preventDefault()
+    navigate(detailPath)
+  }
 
   return (
-    <tr className={checked ? 'selected' : ''} onClick={() => navigate(`/admin/products/${product.id}`)}>
+    <tr className={checked ? 'selected' : ''} onClick={() => navigate(detailPath)}>
       <td className="col-check" onClick={(e) => { e.stopPropagation(); onToggleSelect(product.id) }}>
         <span
           className={`bb-cb${checked ? ' checked' : ''}`}
@@ -63,7 +73,14 @@ export function ProductRow({
               <Package size={22} />
             )}
           </span>
-          <span>{formatText(product.name)}</span>
+          <a
+            href={detailPath}
+            className="bb-product-name-link"
+            onClick={handleNameClick}
+            title={t('common.openInNewTab')}
+          >
+            {formatText(product.name)}
+          </a>
         </div>
       </td>
       <td className="mono hidden lg:table-cell">{formatText(product.sku, 'SKU TBD')}</td>
@@ -115,8 +132,11 @@ export function ProductRow({
           </button>
           {isMenuOpen && (
             <div className="bb-row-menu">
-              <button type="button" onClick={() => { onCloseMenu(); navigate(`/admin/products/${product.id}`) }}>
+              <button type="button" onClick={() => { onCloseMenu(); navigate(detailPath) }}>
                 <Pencil size={13} />{t('common.edit')}
+              </button>
+              <button type="button" onClick={() => { onCloseMenu(); window.open(detailPath, '_blank', 'noopener') }}>
+                <ExternalLink size={13} />{t('common.openInNewTab')}
               </button>
               {canUpdate && (
                 <button type="button" onClick={() => { onCloseMenu(); onDuplicate(product) }}>

@@ -28,7 +28,7 @@ export function MobileFilterDrawer({ query, searchInput, onSearch, setSearchInpu
       <div className="audit-mobile-filter-sheet">
         <div className="audit-mobile-filter-header">
           <strong>{t('auditLog.mobileFilterLabel')}</strong>
-          <Button variant="outline" size="icon" onClick={onClose}>✕</Button>
+          <Button variant="outline" size="icon" onClick={onClose} aria-label={t('auditLog.drawerClose')}>✕</Button>
         </div>
         <div className="audit-mobile-filter-body">
           <label>

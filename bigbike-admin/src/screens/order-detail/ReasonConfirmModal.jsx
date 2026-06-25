@@ -30,11 +30,13 @@ export function ReasonConfirmModal({ targetStatus, onConfirm, onClose }) {
       <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
         <p className="text-sm text-muted-foreground">{description}</p>
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">{t('orders.detail.reasonLabel')} *</label>
+          <label htmlFor="reason-confirm-input" className="text-sm font-medium">{t('orders.detail.reasonLabel')} *</label>
           <Textarea
+            id="reason-confirm-input"
             rows={3}
             value={reason}
             onChange={(e) => { setReason(e.target.value); setError('') }}
+            onBlur={() => { if (!reason.trim()) setError(t('orders.detail.reasonRequired')) }}
             placeholder={t('orders.detail.reasonPlaceholder')}
             className="resize-y"
             autoFocus

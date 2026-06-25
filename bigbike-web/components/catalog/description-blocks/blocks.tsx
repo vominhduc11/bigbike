@@ -4,6 +4,7 @@ import { Check } from "lucide-react";
 import type { DescriptionBlock } from "@/lib/contracts/public";
 import { resolveMediaUrl } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
+import { facebookEmbedUrl, getTikTokId, isFacebookVideoUrl, tiktokEmbedUrl } from "../product-gallery/media";
 import type { FeatureBlockT, SizeGuideBlockT, SuitabilityBlockT } from "./grouping";
 
 function youTubeId(url: string): string | null {
@@ -34,6 +35,8 @@ export function MediaBlock({ block }: { block: DescriptionBlock }) {
     const raw = block.url?.trim() || "";
     if (!raw) return null;
     const id = block.provider === "upload" ? null : youTubeId(raw);
+    const tiktokId = id || block.provider === "upload" ? null : getTikTokId(raw);
+    const isFacebook = id || tiktokId || block.provider === "upload" ? false : isFacebookVideoUrl(raw);
     return (
       <figure className="m-0">
         <div className="relative w-full overflow-hidden border border-border [aspect-ratio:16/9]">
@@ -43,6 +46,22 @@ export function MediaBlock({ block }: { block: DescriptionBlock }) {
               title={block.caption || "Video"}
               className="absolute inset-0 h-full w-full border-0"
               allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+              loading="lazy"
+            />
+          ) : tiktokId ? (
+            <iframe
+              src={tiktokEmbedUrl(tiktokId)}
+              title={block.caption || "Video"}
+              className="absolute inset-0 h-full w-full border-0"
+              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+              loading="lazy"
+            />
+          ) : isFacebook ? (
+            <iframe
+              src={facebookEmbedUrl(raw)}
+              title={block.caption || "Video"}
+              className="absolute inset-0 h-full w-full border-0"
+              allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; fullscreen"
               loading="lazy"
             />
           ) : (

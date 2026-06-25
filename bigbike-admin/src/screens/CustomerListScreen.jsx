@@ -4,8 +4,10 @@ import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQuery } from '@tanstack/react-query'
-import { Crown, Download, UserCheck, UserPlus, Users } from 'lucide-react'
+import { Crown, UserCheck, UserPlus, Users } from 'lucide-react'
 import { toast } from '@/lib/toast'
+import { ExportButton } from '@/components/ExportButton'
+import { FilterChips } from '../components/FilterChips'
 import { PaginationControls } from '../components/PaginationControls'
 import { AdminTable } from '../components/AdminTable'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -23,7 +25,6 @@ const STATUS_BADGE = {
   BLOCKED: 'bb-badge-danger',
   UNKNOWN: 'bb-badge-neutral',
 }
-const AVATAR_VARIANTS = ['', 'b', 'c', 'd', 'e', 'f']
 
 const INITIAL_QUERY = { search: '', status: 'ALL', page: 1, pageSize: 20 }
 
@@ -73,9 +74,38 @@ export function CustomerListScreen({ navigate }) {
     })
   }
 
+  function resetFilters() {
+    setSearchInput('')
+    setQuery(INITIAL_QUERY)
+  }
+
   const items = state.items || []
   const pagination = state.pagination
   const isFiltered = !!query.search || query.status !== 'ALL'
+
+  const activeFilterChips = []
+  if (query.search) {
+    activeFilterChips.push({
+      key: 'search',
+      label: t('customers.filterChipSearch', { value: query.search, defaultValue: `Tìm: "{{value}}"` }),
+      removeLabel: t('customers.removeFilter', { filter: t('common.search'), defaultValue: `Bỏ bộ lọc {{filter}}` }),
+      onRemove: () => {
+        setSearchInput('')
+        updateQuery({ search: '' }, { resetPage: true })
+      },
+    })
+  }
+  if (query.status !== 'ALL') {
+    activeFilterChips.push({
+      key: 'status',
+      label: t('customers.filterChipStatus', {
+        value: t(`status.customer.${query.status}`, { defaultValue: query.status }),
+        defaultValue: `Trạng thái: {{value}}`,
+      }),
+      removeLabel: t('customers.removeFilter', { filter: t('customers.filterStatus'), defaultValue: `Bỏ bộ lọc {{filter}}` }),
+      onRemove: () => updateQuery({ status: 'ALL' }, { resetPage: true }),
+    })
+  }
 
   const columns = [
     {
@@ -123,20 +153,18 @@ export function CustomerListScreen({ navigate }) {
           <p className="bb-muted">{t('customers.description')}</p>
         </div>
         <div className="bb-screen-actions">
-          <button
-            type="button"
-            className="bb-btn bb-btn-secondary"
-            onClick={async () => {
+          <ExportButton
+            onExport={async () => {
               try {
                 const r = await exportCustomersCsv({ status: query.status !== 'ALL' ? query.status : undefined })
                 if (r?.truncated) toast.warning(t('export.truncated', { max: r.maxRows }))
               } catch {
-                toast.error(t('export.error'))
+                throw new Error(t('export.error'))
               }
             }}
           >
-            <Download size={14} />{t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
-          </button>
+            {t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
+          </ExportButton>
         </div>
       </div>
 
@@ -204,6 +232,15 @@ export function CustomerListScreen({ navigate }) {
         />
       </div>
 
+      {/* Filter chips — báo gọn đang lọc gì + gỡ từng filter / xoá tất cả. */}
+      <FilterChips
+        chips={activeFilterChips}
+        onClearAll={resetFilters}
+        clearAllLabel={t('common.resetFilters')}
+        removeChipLabel={t('common.clear')}
+        ariaLabel={t('customers.activeFiltersAria', { defaultValue: 'Bộ lọc đang áp dụng' })}
+      />
+
       {state.status === 'error' && (
         <StatePanel tone="danger" title={t('customers.loadError')} description={state.error}
           actionLabel={t('common.retry')} onAction={() => state.refetch()} />
@@ -213,7 +250,7 @@ export function CustomerListScreen({ navigate }) {
           title={isFiltered ? t('customers.emptyFiltered', { defaultValue: t('customers.empty') }) : t('customers.empty')}
           description={isFiltered ? t('customers.emptyFilteredDesc', { defaultValue: t('customers.emptyDesc') }) : t('customers.emptyDesc')}
           actionLabel={isFiltered ? t('common.resetFilters') : undefined}
-          onAction={isFiltered ? () => { setSearchInput(''); setQuery(INITIAL_QUERY) } : undefined} />
+          onAction={isFiltered ? resetFilters : undefined} />
       )}
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
@@ -225,6 +262,7 @@ export function CustomerListScreen({ navigate }) {
               loading={state.status === 'loading'}
               pageSize={query.pageSize}
               onRowClick={(c) => navigate(`/admin/customers/${c.id}`)}
+              rowHref={(c) => `/admin/customers/${c.id}`}
               mobileCard={mobileCard}
             />
           </div>

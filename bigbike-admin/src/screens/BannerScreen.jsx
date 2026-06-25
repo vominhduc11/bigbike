@@ -5,9 +5,12 @@ import { StatePanel } from '../components/StatePanel'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
-import { fetchSettings, batchUpdateSettings } from '../lib/adminApi'
+import { fetchSettings, batchUpdateSettings, mapValidationErrors } from '../lib/adminApi'
+import { showConfirm } from '../lib/confirm'
+import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { resolveDisplayUrl } from '@/lib/contracts'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
 // Storefront base — dùng để mở "Xem trên web" và để preview ảnh fallback cứng của theme
 // (các ảnh /wp-content/... chỉ tồn tại ở app web, không có trong admin).
@@ -89,33 +92,35 @@ function SourceBadge({ source, t }) {
 }
 
 // ── Một ô ảnh ───────────────────────────────────────────────────────────────
-function ImageField({ label, hint, value, onChange, recommend, disabled, badge }) {
+function ImageField({ label, hint, value, onChange, recommend, disabled, badge, error }) {
   return (
     <div className="form-field">
       <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {label}
         {badge}
       </span>
-      <ImageUrlInput value={value} onChange={onChange} recommend={recommend} disabled={disabled} />
+      <ImageUrlInput value={value} onChange={onChange} recommend={recommend} disabled={disabled} error={error} />
       {hint && <span className="hint">{hint}</span>}
     </div>
   )
 }
 
 // ── Một ô chữ (VI + EN) ─────────────────────────────────────────────────────
-function TextField({ label, value, valueEn, onChange, onChangeEn, disabled, t }) {
+function TextField({ label, value, valueEn, onChange, onChangeEn, disabled, t, error, errorEn }) {
   return (
     <div className="form-field">
       <span>{label}</span>
-      <Input value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} />
+      <Input value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} aria-invalid={error ? true : undefined} />
+      {error && <small className="field-error" role="alert">{error}</small>}
       <span className="hint" style={{ marginTop: 6 }}>{t('banners.englishLabel')}</span>
-      <Input value={valueEn} onChange={(e) => onChangeEn(e.target.value)} disabled={disabled} className="mt-1" />
+      <Input value={valueEn} onChange={(e) => onChangeEn(e.target.value)} disabled={disabled} className="mt-1" aria-invalid={errorEn ? true : undefined} />
+      {errorEn && <small className="field-error" role="alert">{errorEn}</small>}
     </div>
   )
 }
 
 // ── Thẻ một trang ────────────────────────────────────────────────────────────
-function PageBannerCard({ page, get, getEn, set, setEn, defaults, canUpdate, t }) {
+function PageBannerCard({ page, get, getEn, set, setEn, defaults, canUpdate, t, errors, errorsEn }) {
   const k = (suffix) => `${page.prefix}_${suffix}`
 
   const ownBg = get(k('image_url'))
@@ -158,6 +163,8 @@ function PageBannerCard({ page, get, getEn, set, setEn, defaults, canUpdate, t }
           onChangeEn={(v) => setEn(k('title'), v)}
           disabled={!canUpdate}
           t={t}
+          error={errors[k('title')]}
+          errorEn={errorsEn[k('title')]}
         />
 
         <div style={{ display: 'grid', gap: 16 }} className="md:grid-cols-2">
@@ -169,6 +176,7 @@ function PageBannerCard({ page, get, getEn, set, setEn, defaults, canUpdate, t }
             recommend={IMAGE_RECO.bannerWide}
             disabled={!canUpdate}
             badge={<SourceBadge source={bg.source} t={t} />}
+            error={errors[k('image_url')]}
           />
           <ImageField
             label={t('banners.fieldBgMobile')}
@@ -177,6 +185,7 @@ function PageBannerCard({ page, get, getEn, set, setEn, defaults, canUpdate, t }
             onChange={(url) => set(k('mobile_image_url'), url)}
             recommend={IMAGE_RECO.bannerMobile}
             disabled={!canUpdate}
+            error={errors[k('mobile_image_url')]}
           />
         </div>
 
@@ -189,6 +198,7 @@ function PageBannerCard({ page, get, getEn, set, setEn, defaults, canUpdate, t }
             recommend={IMAGE_RECO.illustration}
             disabled={!canUpdate}
             badge={<SourceBadge source={illustration.source} t={t} />}
+            error={errors[k('illustration_url')]}
           />
           <TextField
             label={t('banners.fieldAlt')}
@@ -198,6 +208,8 @@ function PageBannerCard({ page, get, getEn, set, setEn, defaults, canUpdate, t }
             onChangeEn={(v) => setEn(k('image_alt'), v)}
             disabled={!canUpdate}
             t={t}
+            error={errors[k('image_alt')]}
+            errorEn={errorsEn[k('image_alt')]}
           />
         </div>
       </div>
@@ -206,7 +218,7 @@ function PageBannerCard({ page, get, getEn, set, setEn, defaults, canUpdate, t }
 }
 
 // ── Thẻ ảnh mặc định chung ───────────────────────────────────────────────────
-function DefaultsCard({ get, set, canUpdate, t }) {
+function DefaultsCard({ get, set, canUpdate, t, errors }) {
   return (
     <div className="bb-card">
       <div className="bb-card-header"><h3>{t('banners.defaultsTitle')}</h3></div>
@@ -220,6 +232,7 @@ function DefaultsCard({ get, set, canUpdate, t }) {
             onChange={(url) => set('hero_default_bg_url', url)}
             recommend={IMAGE_RECO.bannerWide}
             disabled={!canUpdate}
+            error={errors['hero_default_bg_url']}
           />
           <ImageField
             label={t('banners.defaultIllustration')}
@@ -228,6 +241,7 @@ function DefaultsCard({ get, set, canUpdate, t }) {
             onChange={(url) => set('hero_default_illustration_url', url)}
             recommend={IMAGE_RECO.illustration}
             disabled={!canUpdate}
+            error={errors['hero_default_illustration_url']}
           />
         </div>
       </div>
@@ -282,6 +296,9 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false }) 
   const [saving, setSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [saveError, setSaveError] = useState('')
+  // Lỗi gắn theo từng field (key cài đặt) khi lưu thất bại do validate ở backend.
+  const [fieldErrors, setFieldErrors] = useState({})
+  const [fieldErrorsEn, setFieldErrorsEn] = useState({})
 
   useEffect(() => {
     let active = true
@@ -309,22 +326,44 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false }) 
     return [...keys]
   }, [drafts, draftsEn, byKey])
 
+  // F6: cảnh báo khi rời trang lúc còn thay đổi chưa lưu. Đăng ký nav guard nên
+  // mọi điều hướng nội bộ qua navigate() (gồm 2 nút trong CrossLinksCard) sẽ hỏi
+  // xác nhận, và beforeunload lo reload / đóng tab / điều hướng ra ngoài.
+  useUnsavedChanges(dirtyKeys.length > 0)
+
   const defaults = {
     bg: get('hero_default_bg_url'),
     illustration: get('hero_default_illustration_url'),
   }
 
-  const handleDiscard = useCallback(() => {
+  const clearDrafts = useCallback(() => {
     setDrafts({})
     setDraftsEn({})
     setSaveError('')
+    setFieldErrors({})
+    setFieldErrorsEn({})
   }, [])
+
+  // F5: huỷ là hành động phá huỷ (xoá mọi thay đổi chưa lưu, có thể nhiều field × 3
+  // trang) nên xác nhận trước khi xoá.
+  const handleDiscard = useCallback(async () => {
+    if (dirtyKeys.length > 0) {
+      const ok = await showConfirm(
+        t('banners.discardConfirm', { defaultValue: 'Huỷ mọi thay đổi chưa lưu? Các chỉnh sửa sẽ bị mất.' }),
+        t('banners.discardConfirmTitle', { defaultValue: 'Huỷ thay đổi banner' }),
+      )
+      if (!ok) return
+    }
+    clearDrafts()
+  }, [dirtyKeys, clearDrafts, t])
 
   const handleSave = useCallback(async () => {
     if (dirtyKeys.length === 0) return
     setSaving(true)
     setSaveSuccess(false)
     setSaveError('')
+    setFieldErrors({})
+    setFieldErrorsEn({})
     try {
       const updates = dirtyKeys.map((key) => {
         const u = { key }
@@ -342,6 +381,21 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false }) 
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 2500)
     } catch (e) {
+      // F1: backend validate theo từng update (updates.N.value / updates.N.valueEn).
+      // Gắn lỗi về đúng key cài đặt qua thứ tự dirtyKeys để hiện ngay dưới field.
+      const detailMap = mapValidationErrors(e)
+      const byKey = {}
+      const byKeyEn = {}
+      for (const [path, msg] of Object.entries(detailMap)) {
+        const m = /^updates\.(\d+)\.(value|valueEn)$/.exec(path)
+        if (!m) continue
+        const key = dirtyKeys[Number(m[1])]
+        if (!key) continue
+        if (m[2] === 'valueEn') byKeyEn[key] = msg
+        else byKey[key] = msg
+      }
+      setFieldErrors(byKey)
+      setFieldErrorsEn(byKeyEn)
       setSaveError(e.message || t('banners.saveError'))
     } finally {
       setSaving(false)
@@ -391,9 +445,11 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false }) 
             defaults={defaults}
             canUpdate={canUpdate}
             t={t}
+            errors={fieldErrors}
+            errorsEn={fieldErrorsEn}
           />
         ))}
-        <DefaultsCard get={get} set={set} canUpdate={canUpdate} t={t} />
+        <DefaultsCard get={get} set={set} canUpdate={canUpdate} t={t} errors={fieldErrors} />
         <CrossLinksCard navigate={navigate} t={t} />
       </div>
 
@@ -423,13 +479,13 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false }) 
           </span>
           <div className="flex gap-2">
             {dirtyKeys.length > 0 && (
-              <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={handleDiscard} disabled={saving}>
+              <Button variant="secondary" size="sm" onClick={handleDiscard} disabled={saving}>
                 {t('common.cancel')}
-              </button>
+              </Button>
             )}
-            <button type="button" className="bb-btn bb-btn-primary bb-btn-sm" onClick={handleSave} disabled={saving || dirtyKeys.length === 0}>
-              {saving ? t('common.saving') : t('common.save')}
-            </button>
+            <Button size="sm" onClick={handleSave} loading={saving} disabled={dirtyKeys.length === 0}>
+              {t('common.save')}
+            </Button>
           </div>
         </div>
       )}

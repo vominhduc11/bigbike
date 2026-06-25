@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AlertCircle } from 'lucide-react'
 import { toast } from '@/lib/toast'
+import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { DetailSection } from '../components/DetailSection'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -45,15 +46,33 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
   const [saving, setSaving] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [editForm, setEditForm] = useState({ displayName: '', phone: '' })
+  const [editBaseline, setEditBaseline] = useState(null)
   const [editSaving, setEditSaving] = useState(false)
+
+  // F6: form sửa hồ sơ đang mở và nội dung khác baseline → còn thay đổi chưa lưu.
+  const isDirty = editOpen && editBaseline != null &&
+    JSON.stringify(editForm) !== JSON.stringify(editBaseline)
+  useUnsavedChanges(isDirty)
+
+  // N2: tách hàm tải để nút "Thử lại" gọi lại được khi lỗi mạng/API.
+  // active flag: chỉ áp kết quả khi component còn mount / lần tải còn hiệu lực.
+  const fetchInto = useCallback((isActive) => {
+    fetchCustomerDetail(customerId)
+      .then((r) => { if (isActive()) setState({ status: 'success', customer: r.item, warning: '' }) })
+      .catch((e) => { if (isActive()) setState({ status: 'error', customer: null, warning: '', error: e.message }) })
+  }, [customerId])
 
   useEffect(() => {
     let active = true
-    fetchCustomerDetail(customerId)
-      .then((r) => { if (!active) return; setState({ status: 'success', customer: r.item, warning: '' }) })
-      .catch((e) => { if (!active) return; setState({ status: 'error', customer: null, warning: '', error: e.message }) })
+    fetchInto(() => active)
     return () => { active = false }
-  }, [customerId])
+  }, [fetchInto])
+
+  // Nút "Thử lại" khi lỗi: về trạng thái loading rồi tải lại.
+  function handleRetry() {
+    setState({ status: 'loading', customer: null, warning: '' })
+    fetchInto(() => true)
+  }
 
   async function handleStatusChange(value) {
     // Radix Select truyền thẳng value (chuỗi), không phải DOM event.
@@ -84,17 +103,20 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
   }
 
   function handleEditOpen(customer) {
-    setEditForm({
+    const initial = {
       displayName: customer.displayName || customer.fullName || '',
       firstName: customer.firstName || '',
       lastName: customer.lastName || '',
       phone: customer.phone || '',
-    })
+    }
+    setEditForm(initial)
+    setEditBaseline(initial)
     setEditOpen(true)
   }
 
   function handleEditCancel() {
     setEditOpen(false)
+    setEditBaseline(null)
   }
 
   async function handleEditSave(e) {
@@ -113,6 +135,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
       })
       setState((p) => ({ ...p, customer: r.item }))
       setEditOpen(false)
+      setEditBaseline(null)
       toast.success('Thông tin đã được cập nhật.')
     } catch (err) {
       toast.error(err.message || t('common.error'))
@@ -122,7 +145,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
   }
 
   if (state.status === 'loading') return <StatePanel tone="info" title={t('customers.detail.loading')} description={t('common.pleaseWait')} />
-  if (state.status === 'error') return <StatePanel tone="danger" title={t('customers.detail.error')} description={state.error} actionLabel={t('common.back')} onAction={() => navigate('/admin/customers')} />
+  if (state.status === 'error') return <StatePanel tone="danger" title={t('customers.detail.error')} description={state.error} actionLabel={t('common.retry', { defaultValue: 'Thử lại' })} onAction={handleRetry} />
   if (!state.customer) return <StatePanel tone="neutral" title={t('customers.detail.notFound')} description={`ID: ${customerId}`} actionLabel={t('common.back')} onAction={() => navigate('/admin/customers')} />
 
   const { customer } = state
@@ -268,8 +291,8 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
                 )}
               </label>
               <div className="flex gap-2">
-                <Button type="submit" disabled={editSaving || phoneError}>
-                  {editSaving ? 'Đang lưu...' : 'Lưu'}
+                <Button type="submit" loading={editSaving} disabled={phoneError}>
+                  Lưu
                 </Button>
                 <Button type="button" variant="outline" onClick={handleEditCancel} disabled={editSaving}>
                   Hủy

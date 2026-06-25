@@ -17,7 +17,37 @@
 
 Gates: **eslint ✓ · vite build ✓ · vitest 81/81 ✓**. Phát hiện thêm khi chạy thật: `/admin/products` cảnh báo DOM `<button>` lồng `<button>` trong `ProductMobileCard`/`MobileCard` — **có sẵn từ trước, không do Đợt 1** — đưa vào Đợt 2.
 
-**Đợt 2 — Major theo màn + A1–A4 — ⏳ chờ duyệt.** · **Đợt 3 — Minor — ⏸️ để sau (theo phạm vi đã chốt).**
+**Đợt 2 — Major theo màn + A1–A4 — ✅ HOÀN TẤT & đã xác minh app thật.**
+
+*Đợt 2A — hạ tầng dùng chung mới (sửa 1 lần, áp cho mọi màn):*
+
+| Hạ tầng mới | Phục vụ tiêu chí | Ghi chú |
+|---|---|---|
+| `lib/useUnsavedChanges.js` + `lib/navigationGuard.js` (chặn rời trang khi chưa lưu, hook vào `navigate` của App.jsx) | F6 | beforeunload + hỏi xác nhận điều hướng nội bộ |
+| `lib/useDialogA11y.js` (focus-trap + Escape + trả focus cho overlay tự dựng) | A3 | áp cho `LivePreview`, `MediaPreviewLightbox` + các dialog màn |
+| `components/ExportButton.jsx` (nút xuất có spinner/disable/aria-busy) | N6 | thay nút xuất CSV fire-and-forget |
+| Sticky header 2 bảng chung (`ui/table.jsx` + `.bb-table` + `.menu-table`) | T6 | dòng tiêu đề dính khi cuộn bảng dài |
+| `FormField` thêm `aria-required`; `MobileCard` bỏ nút-lồng-nút | F2/F3, DOM | sửa cả lỗi `<button>` lồng `<button>` phát hiện ở Đợt 1 |
+| Mở rộng focus-visible (`.bb-kpi.clickable`, `.bb-attention-item`, `.medialib-icon-btn*`) | A1 | ring focus thống nhất |
+
+*Đợt 2B — vá theo từng màn (workflow 38 agent, mỗi agent 1 màn, dùng hạ tầng 2A):*
+- **78 fix đã áp** trên 30 màn còn sống (N2 nút "Thử lại" + tách lỗi/rỗng, F3 validate on-blur, F7 nút Lưu loading, F8 toast thành công, A4 aria-label nút icon, A1 đổi link `<a>` → `<button>`, A3 chuyển 4 dialog Phân quyền sang Modal chung, N6 ExportButton…).
+- **36 finding bỏ qua vì màn đã bị gỡ** bởi các phiên dọn module song song: POS, Đổi/trả, Công nợ, Mã giảm giá, Serial, Trang Liên hệ/Hướng dẫn (page builder), Vận chuyển — các finding này không còn đối tượng.
+- **5 việc đụng file chung** đã tự xử lý: xoá CSS chết `.roles-confirm-*` (sau khi dialog chuyển sang Modal), sticky `.menu-table`, focus `.medialib-icon-btn`. (1 việc phụ — nút "Quay lại" thứ hai cho panel lỗi BrandDetail — bỏ qua vì đã có breadcrumb + nút Thử lại.)
+
+Gates: **eslint ✓ · vite build ✓ · vitest 75/75 ✓**. Xác minh runtime: lái **21 màn** (gồm Phân quyền đã chuyển Modal, ProductDetail, Cài đặt, Thư viện…) → **0 lỗi console/page/API**.
+
+**Đợt 3 — Minor — ✅ HOÀN TẤT & đã xác minh app thật.**
+
+- Shared: thêm link **"Bỏ qua tới nội dung"** (A5) ở `AdminShell` + CSS (Tab phím đầu tiên nhảy thẳng vào nội dung).
+- Per-screen (workflow 24 agent): **41 Minor đã vá** trên các màn còn sống — nút **"Xoá lọc"** khi đang lọc (T10), **cập nhật lạc quan** cho nút bật/tắt (N7, rollback nếu API lỗi), nút Lưu loading (F7), legend "* Bắt buộc" (F2), aria-label/focus nhỏ (A1/A4), tách lỗi/rỗng phụ (N2)…
+- **22 Minor bỏ qua** vì đã được vá ở Đợt 2 hoặc đã stale (phần tử bị refactor/gỡ).
+- T7 (ẩn/hiện cột) **defer**: là tính năng lớn, không tương xứng mức Minor.
+- 2 việc đụng file chung còn lại đều không cần thiết (StatePanel 1-action đã đủ với nút "Thử lại" + breadcrumb; key legend đã dùng `defaultValue`).
+
+Gates: **eslint ✓ · vite build ✓ · vitest 75/75 ✓**. Runtime: skip-link nhận focus phím Tab đầu tiên đúng; lái 10 màn → **0 lỗi**.
+
+> *Lưu ý: audit là ảnh chụp 2026-06-22; trong lúc sửa, các phiên khác đã gỡ nhiều module (POS/công nợ/coupon/serial/vận chuyển…) nên một phần finding theo màn không còn áp dụng.*
 
 ---
 

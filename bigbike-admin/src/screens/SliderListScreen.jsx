@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -14,6 +14,8 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
 import { showConfirm } from '../lib/confirm'
+import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+import { useUrlQuery } from '../lib/useUrlQuery'
 import { validateSafePublicLink } from '../lib/urlPolicies'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -21,6 +23,21 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 
 const LOCATIONS = ['home', 'category', 'category_sidebar', 'promotion']
+// Query-param mặc định cho bộ lọc Vị trí (T9 URL-sync, đồng bộ với các list screen khác).
+const INITIAL_QUERY = { location: 'home' }
+// Nhãn tiếng Việt thân thiện cho mã vị trí kỹ thuật (T2) — dùng cho bộ lọc, Select trong
+// form và hiển thị trên thẻ. defaultValue để fallback khi key i18n chưa có.
+const LOCATION_LABEL_KEYS = {
+  home: { key: 'sliders.locationHome', defaultValue: 'Trang chủ' },
+  category: { key: 'sliders.locationCategory', defaultValue: 'Trang danh mục' },
+  category_sidebar: { key: 'sliders.locationCategorySidebar', defaultValue: 'Cột bên danh mục' },
+  promotion: { key: 'sliders.locationPromotion', defaultValue: 'Khuyến mãi' },
+}
+// Đổi mã vị trí kỹ thuật sang nhãn tiếng Việt thân thiện (T2). Mã lạ → trả nguyên mã.
+function locationLabel(t, code) {
+  const entry = LOCATION_LABEL_KEYS[code]
+  return entry ? t(entry.key, { defaultValue: entry.defaultValue }) : code
+}
 const EMPTY_FORM = {
   location: 'home',
   sortOrder: '0',
@@ -38,8 +55,8 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sorta
   const { t } = useTranslation()
   const contentLang = useContentLang()
   const productLabel = contentLang === 'en'
-    ? (slider.productNameEn || slider.productName || slider.productId)
-    : (slider.productName || slider.productId)
+    ? (slider.productNameEn || slider.productName || t('sliders.productUnnamed', { defaultValue: 'Sản phẩm đã liên kết' }))
+    : (slider.productName || t('sliders.productUnnamed', { defaultValue: 'Sản phẩm đã liên kết' }))
   const dragOpacity = sortable?.isDragging ? 0.4 : 1
 
   return (
@@ -83,7 +100,7 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sorta
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="flex items-center gap-2 mb-2" style={{ flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 700, fontSize: 14 }}>#{slider.sortOrder} · {slider.location}</span>
+            <span style={{ fontWeight: 700, fontSize: 14 }}>#{slider.sortOrder} · {locationLabel(t, slider.location)}</span>
             <span className={`bb-badge ${slider.isActive !== false ? 'bb-badge-success' : 'bb-badge-neutral'}`}>
               <span className="dot" />
               {slider.isActive !== false ? t('sliders.statusActive') : t('sliders.statusInactive')}
@@ -110,9 +127,8 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sorta
               aria-busy={toggling}
               onClick={() => onToggleActive(slider)}
             >
-              {toggling
-                ? t('common.saving')
-                : (slider.isActive !== false ? t('common.disable') : t('common.enable'))}
+              {/* N7: nhãn phản ánh ngay trạng thái lạc quan (cache đã đổi); chỉ disable trong lúc chờ. */}
+              {slider.isActive !== false ? t('common.disable') : t('common.enable')}
             </button>
             <button
               type="button"
@@ -143,13 +159,20 @@ export function SliderListScreen({ canUpdate }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
   const queryClient = useQueryClient()
-  const [location, setLocation] = useState('home')
+  // Bộ lọc Vị trí đồng bộ vào query-param (T9) → reload / quay lại vẫn giữ vị trí đang xem.
+  const [query, setQuery] = useUrlQuery(INITIAL_QUERY)
+  const location = query.location
+  const setLocation = useCallback((v) => setQuery({ location: v }), [setQuery])
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState({ ...EMPTY_FORM, location: 'home' })
+  // Bản chụp form lúc mở (để biết có thay đổi chưa lưu — F6). null khi form đóng.
+  const [baseline, setBaseline] = useState(null)
   const [formError, setFormError] = useState('')
   // Lỗi inline cạnh nhóm link ngoài / product ID (tiêu chí 7.1/7.2).
   const [linkFieldError, setLinkFieldError] = useState('')
+  // Đánh dấu ô link ngoài đã rời focus → chỉ hiện lỗi validate khi đã touched (F3).
+  const [linkTouched, setLinkTouched] = useState(false)
   // ID banner đang gọi API bật/tắt hoặc xoá → disable đúng nút trên thẻ đó.
   const [togglingId, setTogglingId] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
@@ -222,12 +245,28 @@ export function SliderListScreen({ canUpdate }) {
 
   const toggleActiveMutation = useMutation({
     mutationFn: ({ id, isActive }) => updateSlider(id, { isActive }),
+    // Optimistic bật/tắt hiển thị (N7) — đổi trạng thái ngay trong cache, rollback nếu lỗi,
+    // theo đúng mẫu reorderMutation để trải nghiệm đồng nhất.
+    onMutate: async ({ id, isActive }) => {
+      await queryClient.cancelQueries({ queryKey: ['sliders', location] })
+      const previous = queryClient.getQueryData(['sliders', location])
+      queryClient.setQueryData(['sliders', location], (prev) => {
+        if (!prev?.items) return prev
+        return { ...prev, items: prev.items.map((s) => (s.id === id ? { ...s, isActive } : s)) }
+      })
+      return { previous }
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sliders', location] })
       toast.success(t('sliders.toggleSuccess', { defaultValue: 'Đã cập nhật trạng thái' }))
     },
-    onError: (e) => toast.error(e?.message || t('sliders.saveError', { defaultValue: 'Lỗi khi cập nhật trạng thái' })),
-    onSettled: () => setTogglingId(null),
+    onError: (e, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(['sliders', location], context.previous)
+      toast.error(e?.message || t('sliders.saveError', { defaultValue: 'Lỗi khi cập nhật trạng thái' }))
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['sliders', location] })
+      setTogglingId(null)
+    },
   })
 
   const deleteMutation = useMutation({
@@ -240,14 +279,43 @@ export function SliderListScreen({ canUpdate }) {
     onSettled: () => setDeletingId(null),
   })
 
+  // Form đang có thay đổi chưa lưu khi đang mở và khác bản chụp lúc mở (F6).
+  const isDirty = useMemo(() => {
+    if (!showForm || !baseline) return false
+    return JSON.stringify(form) !== JSON.stringify(baseline)
+  }, [showForm, baseline, form])
+
+  // Cảnh báo khi rời trang / reload / đóng tab lúc đang có thay đổi chưa lưu.
+  useUnsavedChanges(isDirty, t('sliders.unsavedConfirm', {
+    defaultValue: 'Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?',
+  }))
+
+  // Hỏi xác nhận trước khi bỏ form nếu đang có thay đổi chưa lưu, rồi đóng form.
+  async function confirmCloseForm() {
+    if (isDirty) {
+      const ok = await showConfirm(
+        t('sliders.unsavedConfirm', {
+          defaultValue: 'Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?',
+        }),
+        t('sliders.unsavedTitle', { defaultValue: 'Có thay đổi chưa lưu' }),
+      )
+      if (!ok) return false
+    }
+    closeForm()
+    return true
+  }
+
   function openAddForm() {
     setEditingId(null)
     const nextOrder = items.length > 0
       ? Math.max(...items.map((i) => Number(i.sortOrder ?? 0))) + 1
       : 0
-    setForm({ ...EMPTY_FORM, location, sortOrder: String(nextOrder) })
+    const next = { ...EMPTY_FORM, location, sortOrder: String(nextOrder) }
+    setForm(next)
+    setBaseline(next)
     setFormError('')
     setLinkFieldError('')
+    setLinkTouched(false)
     setProductSearch('')
     setProductPickerOpen(false)
     setShowForm(true)
@@ -255,7 +323,7 @@ export function SliderListScreen({ canUpdate }) {
 
   function handleEdit(slider) {
     setEditingId(slider.id)
-    setForm({
+    const next = {
       location: slider.location,
       sortOrder: String(slider.sortOrder),
       desktopImageUrl: slider.desktopImage?.url || '',
@@ -266,9 +334,12 @@ export function SliderListScreen({ canUpdate }) {
       productId: slider.productId || '',
       productName: slider.productName || slider.productNameEn || '',
       isActive: slider.isActive !== false,
-    })
+    }
+    setForm(next)
+    setBaseline(next)
     setFormError('')
     setLinkFieldError('')
+    setLinkTouched(false)
     setProductSearch('')
     setProductPickerOpen(false)
     setShowForm(true)
@@ -277,8 +348,10 @@ export function SliderListScreen({ canUpdate }) {
   function closeForm() {
     setShowForm(false)
     setEditingId(null)
+    setBaseline(null)
     setFormError('')
     setLinkFieldError('')
+    setLinkTouched(false)
     setProductSearch('')
     setProductPickerOpen(false)
   }
@@ -292,7 +365,10 @@ export function SliderListScreen({ canUpdate }) {
   }, [])
 
   function clearSelectedProduct() {
-    setForm((p) => ({ ...p, productId: '', productName: '' }))
+    const next = { ...form, productId: '', productName: '' }
+    setForm(next)
+    // Bỏ sản phẩm khi đã tương tác cụm liên kết → kiểm tra lại cặp link/sản phẩm (F3).
+    if (linkTouched) setLinkFieldError(validateLinkGroup(next))
   }
 
   async function handleDelete(sliderId) {
@@ -329,21 +405,38 @@ export function SliderListScreen({ canUpdate }) {
     return payload
   }
 
+  // Kiểm tra cặp link ngoài / sản phẩm. Trả message lỗi (chuỗi rỗng = hợp lệ)
+  // để dùng chung cho cả on-blur (F3) lẫn on-submit.
+  function validateLinkGroup(values) {
+    if (!values.externalLink.trim() && !values.productId.trim()) {
+      return t('sliders.formRequired')
+    }
+    if (values.externalLink.trim()) {
+      const linkValidation = validateSafePublicLink(values.externalLink)
+      if (!linkValidation.valid) {
+        return t('sliders.formExternalLinkInvalid')
+      }
+    }
+    return ''
+  }
+
+  // Validate ngay khi rời ô link ngoài / cụm liên kết (F3) — không đợi bấm Lưu.
+  function handleLinkBlur() {
+    setLinkTouched(true)
+    const msg = validateLinkGroup(form)
+    setLinkFieldError(msg)
+    if (msg) setFormError('')
+  }
+
   function handleSubmit(e) {
     e.preventDefault()
+    setLinkTouched(true)
     // Lỗi đích sát nhóm link ngoài / sản phẩm (tiêu chí 7.1/7.2) thay vì chỉ banner đầu form.
-    if (!form.externalLink.trim() && !form.productId.trim()) {
-      setLinkFieldError(t('sliders.formRequired'))
+    const linkError = validateLinkGroup(form)
+    if (linkError) {
+      setLinkFieldError(linkError)
       setFormError('')
       return
-    }
-    if (form.externalLink.trim()) {
-      const linkValidation = validateSafePublicLink(form.externalLink)
-      if (!linkValidation.valid) {
-        setLinkFieldError(t('sliders.formExternalLinkInvalid'))
-        setFormError('')
-        return
-      }
     }
     setFormError('')
     setLinkFieldError('')
@@ -388,7 +481,7 @@ export function SliderListScreen({ canUpdate }) {
             <button
               type="button"
               className="bb-btn bb-btn-primary"
-              onClick={() => { if (showForm && !editingId) { closeForm() } else { openAddForm() } }}
+              onClick={() => { if (showForm && !editingId) { confirmCloseForm() } else { openAddForm() } }}
             >
               <Plus size={14} />{showForm && !editingId ? t('common.cancel') : t('sliders.addBtn')}
             </button>
@@ -401,9 +494,14 @@ export function SliderListScreen({ canUpdate }) {
       <div className="bb-filter-bar">
         <FilterSelect
           value={location}
-          onValueChange={(v) => { setLocation(v); closeForm() }}
+          onValueChange={async (v) => {
+            // Form đang sửa dở → hỏi trước khi đổi vị trí (sẽ đóng form, mất dữ liệu).
+            if (showForm && !(await confirmCloseForm())) return
+            setLocation(v)
+            closeForm()
+          }}
           ariaLabel={t('sliders.filterLocation')}
-          options={LOCATIONS.map((loc) => ({ value: loc, label: loc }))}
+          options={LOCATIONS.map((loc) => ({ value: loc, label: locationLabel(t, loc) }))}
         />
       </div>
 
@@ -412,18 +510,27 @@ export function SliderListScreen({ canUpdate }) {
           <div className="bb-card-header"><h2>{editingId ? t('sliders.editFormTitle') : t('sliders.formTitle')}</h2></div>
           <form onSubmit={handleSubmit} className="bb-card-body">
             {formError && <p className="mb-3 text-danger">{formError}</p>}
+            <p className="bb-muted mb-3" style={{ fontSize: 12 }}>
+              <span className="text-danger" aria-hidden="true">*</span> {t('sliders.requiredLegend', { defaultValue: 'Bắt buộc' })}
+            </p>
             <div className="bb-grid-2">
               <label className="form-field">
-                <span>{t('sliders.formLocation')}</span>
+                <span>
+                  {t('sliders.formLocation')}
+                  <span className="text-danger ml-0.5" aria-hidden="true">*</span>
+                </span>
                 <Select value={form.location} onValueChange={(val) => setForm((p) => ({ ...p, location: val }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {LOCATIONS.map((loc) => <SelectItem key={loc} value={loc}>{loc}</SelectItem>)}
+                    {LOCATIONS.map((loc) => <SelectItem key={loc} value={loc}>{locationLabel(t, loc)}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </label>
               <label className="form-field">
-                <span>{t('sliders.formSortOrder')}</span>
+                <span>
+                  {t('sliders.formSortOrder')}
+                  <span className="text-danger ml-0.5" aria-hidden="true">*</span>
+                </span>
                 <Input type="number" value={form.sortOrder} onChange={(e) => setForm((p) => ({ ...p, sortOrder: e.target.value }))} />
               </label>
               <label
@@ -452,13 +559,18 @@ export function SliderListScreen({ canUpdate }) {
                 <Input value={form.mobileAlt} onChange={(e) => setForm((p) => ({ ...p, mobileAlt: e.target.value }))} />
               </label>
               <label className="form-field" style={{ gridColumn: '1 / -1' }}>
-                <span>{t('sliders.formExternalLink')}</span>
+                <span>
+                  {t('sliders.formExternalLink')}
+                  <span className="text-danger ml-0.5" aria-hidden="true">*</span>
+                </span>
                 <Input
                   placeholder="https://..."
                   value={form.externalLink}
                   aria-invalid={linkFieldError ? true : undefined}
                   onChange={(e) => { setForm((p) => ({ ...p, externalLink: e.target.value })); if (linkFieldError) setLinkFieldError('') }}
+                  onBlur={handleLinkBlur}
                 />
+                <span className="hint">{t('sliders.formExternalLinkRequiredHint', { defaultValue: 'Bắt buộc nhập link ngoài hoặc chọn sản phẩm liên kết bên dưới.' })}</span>
                 <span className="hint">{t('sliders.formExternalLinkHint')}</span>
               </label>
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
@@ -489,13 +601,13 @@ export function SliderListScreen({ canUpdate }) {
                 )}
                 <span className="hint">{t('sliders.formProductHint', { defaultValue: 'Chọn sản phẩm để banner trỏ tới trang sản phẩm đó. Có thể để trống nếu đã nhập link ngoài.' })}</span>
               </div>
-              {linkFieldError && (
+              {linkTouched && linkFieldError && (
                 <small className="field-error" style={{ gridColumn: '1 / -1' }} role="alert">{linkFieldError}</small>
               )}
             </div>
             <div className="mt-4 flex gap-2">
               <Button type="submit" loading={isSaving}>{editingId ? t('common.update') : t('sliders.saveBtn')}</Button>
-              <Button type="button" variant="outline" onClick={closeForm}>{t('common.cancel')}</Button>
+              <Button type="button" variant="outline" onClick={confirmCloseForm}>{t('common.cancel')}</Button>
             </div>
           </form>
         </div>
@@ -515,7 +627,7 @@ export function SliderListScreen({ canUpdate }) {
           <StatePanel
             tone="neutral"
             title={t('sliders.empty')}
-            description={t('sliders.emptyDesc', { location })}
+            description={t('sliders.emptyDesc', { location: locationLabel(t, location) })}
             actionLabel={canUpdate ? t('sliders.addBtn') : undefined}
             onAction={canUpdate ? openAddForm : undefined}
           />

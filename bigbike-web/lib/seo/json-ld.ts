@@ -426,8 +426,16 @@ export function buildVideoObjectsJsonLd(videos: VideoAsset[], product: Product):
 }
 
 function toVideoEmbedUrl(url: string): string | undefined {
-  const match = url.match(
+  const yt = url.match(
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/,
   );
-  return match ? `https://www.youtube.com/embed/${match[1]}` : undefined;
+  if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+  const tt = url.match(
+    /(?:www\.|m\.)?tiktok\.com\/(?:@[\w.-]+\/video\/|video\/|v\/|embed\/v2\/|embed\/)(\d{6,30})/,
+  );
+  if (tt) return `https://www.tiktok.com/embed/v2/${tt[1]}`;
+  if (/^https?:\/\/(?:www\.|m\.|web\.)?facebook\.com\/(?:[^?#]*\/videos\/|reel\/|watch\/?(?:\?|$)|[^?#]*video\.php)/i.test(url)) {
+    return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false`;
+  }
+  return undefined;
 }

@@ -519,8 +519,9 @@ function VariantCard({
               onChange={(e) => updateField('name', e.target.value)}
               disabled={disabled}
               placeholder={t('products.detail.variant.namePlaceholder')}
+              aria-invalid={fieldErrors.name ? true : undefined}
              />
-            {fieldErrors.name && <small className="field-error">{fieldErrors.name}</small>}
+            {fieldErrors.name && <small className="field-error" role="alert">{fieldErrors.name}</small>}
           </label>
 
           <label className="form-field">
@@ -531,7 +532,7 @@ function VariantCard({
               disabled={disabled}
               aria-invalid={fieldErrors.sku ? true : undefined}
              />
-            {fieldErrors.sku && <small className="field-error">{fieldErrors.sku}</small>}
+            {fieldErrors.sku && <small className="field-error" role="alert">{fieldErrors.sku}</small>}
           </label>
 
           {/* Variant price inputs removed: storefront, cart, and checkout use
@@ -558,7 +559,7 @@ function VariantCard({
               onChange={(opts) => updateField('options', opts)}
               disabled={disabled}
             />
-            {fieldErrors.options && <small className="field-error">{fieldErrors.options}</small>}
+            {fieldErrors.options && <small className="field-error" role="alert">{fieldErrors.options}</small>}
           </div>
 
           <div className="form-field form-field-wide">
@@ -572,7 +573,7 @@ function VariantCard({
                 ? t('products.detail.variant.colorGalleryHintWithColor')
                 : t('products.detail.variant.colorGalleryHintNoColor')}
             </p>
-            {fieldErrors.gallery && <small className="field-error">{fieldErrors.gallery}</small>}
+            {fieldErrors.gallery && <small className="field-error" role="alert">{fieldErrors.gallery}</small>}
             {hasColor && (
               <GalleryEditor
                 items={variant.gallery ?? []}

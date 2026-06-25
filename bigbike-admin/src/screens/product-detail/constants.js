@@ -36,9 +36,24 @@ export function extractYouTubeId(url) {
   return m ? m[1] : null
 }
 
+// Matches TikTok numeric video IDs (full links only; vt./vm. short links unsupported).
+export function extractTikTokId(url) {
+  if (!url || typeof url !== 'string') return null
+  const m = url.match(/(?:www\.|m\.)?tiktok\.com\/(?:@[\w.-]+\/video\/|video\/|v\/|embed\/v2\/|embed\/)(\d{6,30})/)
+  return m ? m[1] : null
+}
+
+// Facebook video: nhúng cả link gốc (fb.watch rút gọn không hỗ trợ).
+export function isFacebookVideoUrl(url) {
+  if (!url || typeof url !== 'string') return false
+  return /^https?:\/\/(?:www\.|m\.|web\.)?facebook\.com\/(?:[^?#]*\/videos\/|reel\/|watch\/?(?:\?|$)|[^?#]*video\.php)/i.test(url)
+}
+
 export function inferVideoType(url, provider) {
-  if (provider === 'youtube' || provider === 'upload') return provider
+  if (provider === 'youtube' || provider === 'tiktok' || provider === 'facebook' || provider === 'upload') return provider
   if (extractYouTubeId(url)) return 'youtube'
+  if (extractTikTokId(url)) return 'tiktok'
+  if (isFacebookVideoUrl(url)) return 'facebook'
   return url ? 'upload' : 'youtube'
 }
 
@@ -724,7 +739,7 @@ export function toPayload(form) {
       url: v.url.trim(),
       title: v.title.trim() || undefined,
       description: (v.description || '').trim() || undefined,
-      provider: v.type === 'upload' ? 'upload' : 'youtube',
+      provider: v.type === 'upload' ? 'upload' : v.type === 'tiktok' ? 'tiktok' : v.type === 'facebook' ? 'facebook' : 'youtube',
       thumbnailUrl: v.type === 'upload' ? (v.thumbnailUrl?.trim() || undefined) : undefined,
       sortOrder: i,
     }))

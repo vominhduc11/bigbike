@@ -345,6 +345,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
               loading={state.status === 'loading'}
               pageSize={query.pageSize}
               onRowClick={(item) => navigate(`/admin/content/${item.type.toLowerCase()}/${item.id}`)}
+              rowHref={(item) => `/admin/content/${item.type.toLowerCase()}/${item.id}`}
               mobileCard={mobileCard}
               sortKey={sortField}
               sortDir={sortDir}

@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils'
 
-export function Table({ className, ...props }) {
+export function Table({ className, containerClassName, ...props }) {
   return (
-    <div className="relative w-full overflow-auto">
+    <div className={cn('relative w-full overflow-auto', containerClassName)}>
       <table className={cn('w-full caption-bottom text-sm', className)} {...props} />
     </div>
   )
@@ -42,7 +42,7 @@ export function TableHead({ className, scope = 'col', ...props }) {
     <th
       scope={scope}
       className={cn(
-        'h-10 px-3 text-left align-middle text-xs font-semibold text-muted-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
+        'h-10 px-3 text-left align-middle text-xs font-semibold text-muted-foreground sticky top-0 z-10 bg-surface-muted [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
         className
       )}
       {...props}

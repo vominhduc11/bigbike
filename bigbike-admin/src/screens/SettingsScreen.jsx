@@ -5,6 +5,7 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { fetchSettings, batchUpdateSettings } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
+import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import {
   validateValue, TAB_ORDER, SENSITIVE_SETTING_TABS, HIDDEN_GROUPS, HIDDEN_KEYS,
   TAB_META, FALLBACK_META, tabLabel, BANNERS_TAB_ID,
@@ -95,6 +96,13 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
     setDraftsEn((p) => ({ ...p, [key]: value }))
   }, [])
 
+  // Validate khi rời ô (F3): báo lỗi email/URL/hotline/ngưỡng ngay khi blur,
+  // không bắt lỗi từng ký tự lúc đang gõ. handleSave vẫn validate lại lần cuối.
+  const handleDraftBlur = useCallback((key, value) => {
+    const err = validateValue(key, value)
+    setErrors((p) => ({ ...p, [key]: err ? t(err) : '' }))
+  }, [t])
+
   const handleDiscard = useCallback(() => {
     const keys = activeItems.map((s) => s.key)
     const dropKeys = (obj) => {
@@ -165,6 +173,12 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
       setSaving(false)
     }
   }, [activeItems, drafts, draftsEn, activeTab, t])
+
+  // F6: cảnh báo khi rời màn Cài đặt lúc còn thay đổi chưa lưu (chặn điều hướng
+  // nội bộ qua navigate + beforeunload reload/đóng tab). Đổi tab nội bộ KHÔNG mất
+  // draft (giữ ở state component) nên chỉ cần chặn khi thực sự rời màn.
+  const isDirty = Object.keys(drafts).length > 0 || Object.keys(draftsEn).length > 0
+  useUnsavedChanges(isDirty)
 
   if (state.status === 'loading') {
     return <StatePanel tone="info" title={t('settings.loading')} description={t('common.pleaseWait')} />
@@ -272,6 +286,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                 errors={errors}
                 onDraftChange={handleDraftChange}
                 onDraftChangeEn={handleDraftChangeEn}
+                onDraftBlur={handleDraftBlur}
                 onSave={handleSave}
                 onDiscard={handleDiscard}
                 saving={saving}

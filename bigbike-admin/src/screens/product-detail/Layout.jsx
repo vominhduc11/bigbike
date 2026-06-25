@@ -164,8 +164,9 @@ export function AssignmentBanner({ t }) {
 }
 
 // Field shell — pass `full` to span both grid columns.
+// `required` thêm dấu * đỏ sau nhãn + gắn aria-required vào control.
 // Liên kết label↔control và gắn aria-invalid + aria-describedby khi có lỗi.
-export function Field({ label, hint, error, count, countWarn, full, children }) {
+export function Field({ label, hint, error, count, countWarn, full, required, children }) {
   const fieldId = useId()
   const errorId = `${fieldId}-error`
   const hintId = `${fieldId}-hint`
@@ -175,6 +176,7 @@ export function Field({ label, hint, error, count, countWarn, full, children }) 
     ? cloneElement(children, {
         id: children.props.id || fieldId,
         'aria-invalid': error ? true : children.props['aria-invalid'],
+        'aria-required': required ? true : children.props['aria-required'],
         'aria-describedby': cn(children.props['aria-describedby'], describedBy) || undefined,
       })
     : children
@@ -183,7 +185,18 @@ export function Field({ label, hint, error, count, countWarn, full, children }) 
     <div className={cn('flex flex-col gap-1.5', full && 'md:col-span-2')}>
       {(label || count != null) && (
         <div className="flex justify-between items-baseline text-sm font-medium text-foreground/80">
-          {label && <label htmlFor={fieldId}>{label}</label>}
+          {label && (
+            <label htmlFor={fieldId}>
+              {label}
+              {required && (
+                <span
+                  className="ml-1 text-[var(--admin-color-status-danger-text)]"
+                  aria-label="bắt buộc"
+                  title="Bắt buộc"
+                >*</span>
+              )}
+            </label>
+          )}
           {count != null && (
             <span
               className={cn(

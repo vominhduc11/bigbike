@@ -37,6 +37,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
+import { Modal } from '@/components/layout/Modal'
 import {
   ALLOWED_MIME,
   MAX_FILE_SIZE,
@@ -439,7 +440,8 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
               className={searchInput ? 'pr-8' : 'pr-3'}  />
             {searchInput && (
               <button type="button" onClick={() => setSearchInput('')}
-                aria-label={t('common.clear')} className="medialib-search-clear">
+                aria-label={t('common.clear')}
+                className="medialib-search-clear focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--admin-color-primary)]">
                 <XIcon size={14} />
               </button>
             )}
@@ -526,12 +528,12 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           />
           <div className="medialib-view-switcher" role="tablist">
             <button type="button" onClick={() => updateQuery({ view: 'grid' }, { resetPage: false })}
-              className={query.view === 'grid' ? 'medialib-is-active' : ''}
+              className={`focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--admin-color-primary)] ${query.view === 'grid' ? 'medialib-is-active' : ''}`}
               title={t('media.viewGrid')} aria-label={t('media.viewGrid')}>
               <GridIcon size={14} />
             </button>
             <button type="button" onClick={() => updateQuery({ view: 'list' }, { resetPage: false })}
-              className={query.view === 'list' ? 'medialib-is-active' : ''}
+              className={`focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--admin-color-primary)] ${query.view === 'list' ? 'medialib-is-active' : ''}`}
               title={t('media.viewList')} aria-label={t('media.viewList')}>
               <ListIcon size={14} />
             </button>
@@ -556,33 +558,31 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
         />
       )}
 
-      {/* Bulk move popover */}
-      {bulkMoveOpen && (
-        <div onClick={() => setBulkMoveOpen(false)}
-          className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center">
-          <div onClick={(e) => e.stopPropagation()}
-            className="bg-surface border border-border rounded-md p-5 min-w-[320px] max-w-[90vw] shadow-xl">
-            <h3 className="m-0 mb-3 text-base">
-              {t('media.bulkMoveTitle', { count: selectedIds.size })}
-            </h3>
-            <div className="flex flex-col gap-1 max-h-80 overflow-y-auto">
-              <Button variant="outline" onClick={() => handleBulkMove(null)}
-                disabled={bulkBusy} className="justify-start text-left">
-                — {t('media.uncategorized')} —
-              </Button>
-              {folders.map((f) => (
-                <Button key={f.id} variant="outline" onClick={() => handleBulkMove(f.id)}
-                  disabled={bulkBusy} className="justify-start text-left">
-                  {f.name} <span className="ml-auto text-xs text-muted-foreground">{f.mediaCount}</span>
-                </Button>
-              ))}
-            </div>
-            <Button variant="outline" onClick={() => setBulkMoveOpen(false)} className="w-full mt-3">
-              {t('common.cancel')}
+      {/* Bulk move dialog */}
+      <Modal
+        open={bulkMoveOpen}
+        onClose={() => setBulkMoveOpen(false)}
+        title={t('media.bulkMoveTitle', { count: selectedIds.size })}
+        closeLabel={t('common.close')}
+        actions={
+          <Button variant="outline" onClick={() => setBulkMoveOpen(false)}>
+            {t('common.cancel')}
+          </Button>
+        }
+      >
+        <div className="flex flex-col gap-1">
+          <Button variant="outline" onClick={() => handleBulkMove(null)}
+            disabled={bulkBusy} className="justify-start text-left">
+            — {t('media.uncategorized')} —
+          </Button>
+          {folders.map((f) => (
+            <Button key={f.id} variant="outline" onClick={() => handleBulkMove(f.id)}
+              disabled={bulkBusy} className="justify-start text-left">
+              {f.name} <span className="ml-auto text-xs text-muted-foreground">{f.mediaCount}</span>
             </Button>
-          </div>
+          ))}
         </div>
-      )}
+      </Modal>
 
       {canUpdate && state.status === 'success' && state.items.length > 0 && (
         <div className="mb-2 text-xs">
@@ -607,7 +607,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
         <>
           {query.view === 'list' ? (
             <div className="medialib-list" ref={gridRef}>
-              <div className="medialib-list-header">
+              <div className="medialib-list-header sticky top-0 z-10">
                 <span></span><span></span>
                 <span>{t('media.colName')}</span>
                 <span>{t('media.colSize')}</span>

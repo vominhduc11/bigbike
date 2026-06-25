@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { STOREFRONT_BASE } from './constants'
 
-export function SeoCard({ form, isEnLang, isReadOnly, validationErrors, updateField, updateTranslation }) {
+export function SeoCard({ form, isEnLang, isReadOnly, validationErrors, updateField, updateTranslation, onFieldBlur }) {
   const { t } = useTranslation()
   const seoTitleVal = isEnLang ? (form.translations?.en?.seoTitle ?? '') : form.seoTitle
   const seoDescVal = isEnLang ? (form.translations?.en?.seoDescription ?? '') : form.seoDescription
@@ -45,6 +45,7 @@ export function SeoCard({ form, isEnLang, isReadOnly, validationErrors, updateFi
           <Input
             value={seoTitleVal}
             onChange={(e) => isEnLang ? updateTranslation('seoTitle', e.target.value) : updateField('seoTitle', e.target.value)}
+            onBlur={!isEnLang ? () => onFieldBlur?.('seoTitle') : undefined}
             disabled={isReadOnly}
             maxLength={255}
             placeholder={t('categories.detail.seoTitlePlaceholder', { defaultValue: 'Để trống sẽ tự dùng tên danh mục' })}
@@ -67,6 +68,7 @@ export function SeoCard({ form, isEnLang, isReadOnly, validationErrors, updateFi
             rows={3}
             value={seoDescVal}
             onChange={(e) => isEnLang ? updateTranslation('seoDescription', e.target.value) : updateField('seoDescription', e.target.value)}
+            onBlur={!isEnLang ? () => onFieldBlur?.('seoDescription') : undefined}
             disabled={isReadOnly}
             placeholder={t('categories.detail.seoDescriptionPlaceholder', { defaultValue: 'Mô tả ngắn hiển thị dưới tiêu đề trên Google' })}
           />
@@ -81,6 +83,7 @@ export function SeoCard({ form, isEnLang, isReadOnly, validationErrors, updateFi
           <Input
             value={form.seoCanonicalUrl}
             onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
+            onBlur={() => onFieldBlur?.('seoCanonicalUrl')}
             disabled={isReadOnly}
             placeholder="https://bigbike.vn/..."
           />

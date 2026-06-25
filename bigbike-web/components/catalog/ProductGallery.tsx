@@ -10,13 +10,14 @@ import "swiper/css";
 import "swiper/css/free-mode";
 import "swiper/css/thumbs";
 import { MediaImage } from "@/components/ui/MediaImage";
-import type { GalleryMedia, ImageAsset, VideoAsset } from "@/lib/contracts/public";
+import type { GalleryMedia, ImageAsset } from "@/lib/contracts/public";
 import { resolveMediaUrl } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
 import { useResponsiveValue } from "@/lib/hooks/useResponsiveValue";
 import {
   LENS_SIZE_PCT,
   ZOOM_FACTOR,
+  buildGalleryItems,
   clamp01,
   splitGalleryMedia,
   type GalleryItem,
@@ -44,44 +45,24 @@ export function ProductGallery({
   const tA = useTranslations("A11y");
   // V248: tách ảnh/video từ chính dải gallery (sản phẩm hoặc biến thể) — không còn nhận prop `videos`.
   // Video giờ thuộc về gallery của màu đang xem (chưa chọn màu → gallery sản phẩm).
-  const variantSplit = splitGalleryMedia(variantGallery);
-  const productSplit = splitGalleryMedia(gallery);
-  const hasVariantGallery = variantSplit.images.length > 0;
-  const stripBody: ImageAsset[] = hasVariantGallery ? variantSplit.images : productSplit.images;
-  const galleryVideos: VideoAsset[] = hasVariantGallery ? variantSplit.videos : productSplit.videos;
-  // Dải ảnh trên PDP = ĐÚNG bộ ảnh trong gallery (của sản phẩm, hoặc của màu đang
-  // xem), theo đúng thứ tự admin sắp. KHÔNG chèn thêm ảnh đại diện
-  // (product.image / variant.image) lên đầu nữa: admin có bao nhiêu ảnh trong
-  // gallery thì web hiện đúng bấy nhiêu. Ảnh đại diện chỉ làm ẢNH DỰ PHÒNG khi
-  // gallery rỗng (sản phẩm chưa có ảnh trong thư viện) để PDP không bị trống.
+  // Dải media trên PDP hiển thị ĐÚNG thứ tự admin sắp trong gallery (ảnh/video xen
+  // kẽ ra sao thì web giữ nguyên vậy) — KHÔNG còn dồn video lên đầu. Nếu màu đang
+  // xem có gallery riêng (có ảnh) thì dùng gallery màu đó, ngược lại gallery sản phẩm.
+  const hasVariantGallery = splitGalleryMedia(variantGallery).images.length > 0;
+  const activeGallery = hasVariantGallery ? variantGallery : gallery;
+  // Ảnh đại diện (product.image / variant.image) KHÔNG chèn lên đầu — admin có bao
+  // nhiêu media trong gallery thì web hiện đúng bấy nhiêu, đúng thứ tự. Ảnh đại diện
+  // chỉ làm ẢNH DỰ PHÒNG khi gallery chưa có ảnh nào để PDP không bị trống.
   const fallbackCover: ImageAsset | null = variantImage ?? mainImage ?? null;
-  // Khử trùng trong chính dải gallery (import WP có thể lặp ảnh). So khớp theo cả
-  // `id` lẫn `url`: trùng 1 trong 2 là cùng một ảnh.
-  const images: ImageAsset[] = (() => {
-    const source: ImageAsset[] =
-      stripBody.length > 0 ? stripBody : fallbackCover ? [fallbackCover] : [];
-    const seenIds = new Set<string>();
-    const seenUrls = new Set<string>();
-    const out: ImageAsset[] = [];
-    for (const img of source) {
-      if ((img.id && seenIds.has(img.id)) || (img.url && seenUrls.has(img.url))) {
-        continue;
-      }
-      if (img.id) seenIds.add(img.id);
-      if (img.url) seenUrls.add(img.url);
-      out.push(img);
+  // Dựng dải hiển thị giữ nguyên thứ tự admin (ảnh + video xen kẽ), khử ảnh trùng.
+  const allItems: GalleryItem[] = (() => {
+    const items = buildGalleryItems(activeGallery);
+    const hasImage = items.some((it) => it.kind === "image");
+    if (!hasImage && fallbackCover) {
+      return [{ kind: "image", asset: fallbackCover }, ...items];
     }
-    return out;
+    return items;
   })();
-
-  // Video lấy TỪ chính dải gallery đang xem (V248): chưa chọn màu → video của gallery sản phẩm;
-  // chọn màu → video của gallery màu đó. Chưa chọn màu: video đứng đầu (như cũ); đã chọn màu:
-  // ảnh của màu lên trước rồi dồn video xuống cuối.
-  const videoItems: GalleryItem[] = galleryVideos
-    .map((asset): GalleryItem => ({ kind: "video", asset }));
-  const imageItems: GalleryItem[] = images.map((asset): GalleryItem => ({ kind: "image", asset }));
-  const allItems: GalleryItem[] =
-    variantKey == null ? [...videoItems, ...imageItems] : [...imageItems, ...videoItems];
 
   const currentVariantKey = variantKey ?? "__no_variant__";
   // Main image + thumbnails are two linked Swiper instances (Thumbs module):

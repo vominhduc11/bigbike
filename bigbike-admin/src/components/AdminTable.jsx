@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
@@ -15,14 +16,21 @@ const ALIGN_CLASS = { right: 'text-right', center: 'text-center', left: 'text-le
  * When provided, narrow screens (<640px) render the rows as cards via
  * MobileCardList instead of a horizontally-scrolling table. When omitted,
  * the table renders exactly as before — existing screens are unaffected.
+ *
+ * `rowHref` (optional): `(row) => string`. Khi cung cấp, ô cột đầu (cột định danh)
+ * trở thành <a> link thật và cả dòng hỗ trợ Ctrl/Cmd-click + chuột-giữa để mở tab
+ * mới (hành vi trình duyệt). Click trái thường vẫn gọi onRowClick (cùng tab).
  */
 export function AdminTable({
   columns, rows, caption,
   loading = false, pageSize = 8,
   onSortChange, sortKey, sortDir,
   selectable = false, selectedIds = [], onSelectionChange,
-  onRowClick, rowClassName, mobileCard,
+  onRowClick, rowClassName, mobileCard, rowHref,
 }) {
+  const { t } = useTranslation()
+  const hrefOf = (row) => (typeof rowHref === 'function' ? rowHref(row) : undefined)
+  const openTab = (href) => { if (href) window.open(href, '_blank', 'noopener') }
   const allSelected = rows.length > 0 && rows.every((r) => selectedIds.includes(r.id))
   const someSelected = !allSelected && rows.some((r) => selectedIds.includes(r.id))
 
@@ -49,7 +57,7 @@ export function AdminTable({
   }
 
   const tableView = (
-    <Table>
+    <Table containerClassName="max-h-[calc(100vh-13rem)]">
       {caption ? <caption className="mb-2 text-sm text-muted-foreground text-left">{caption}</caption> : null}
       <TableHeader>
         <TableRow className="hover:bg-transparent">
@@ -116,14 +124,21 @@ export function AdminTable({
           : rows.map((row) => {
               const extraClass = typeof rowClassName === 'function' ? rowClassName(row) : rowClassName
               const clickable = typeof onRowClick === 'function'
+              const href = hrefOf(row)
+              const rowClickable = clickable || !!href
               return (
                 <TableRow
                   key={row.id}
-                  className={cn('h-11', extraClass, clickable && 'cursor-pointer')}
-                  onClick={clickable ? () => onRowClick(row) : undefined}
-                  tabIndex={clickable ? 0 : undefined}
-                  onKeyDown={clickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRowClick(row) } } : undefined}
-                  role={clickable ? 'button' : undefined}
+                  className={cn('h-11', extraClass, rowClickable && 'cursor-pointer')}
+                  onClick={rowClickable ? (e) => {
+                    // Ctrl/Cmd/Shift-click → mở tab mới; còn lại điều hướng cùng tab.
+                    if (href && (e.metaKey || e.ctrlKey || e.shiftKey)) { e.preventDefault(); openTab(href); return }
+                    if (clickable) onRowClick(row)
+                  } : undefined}
+                  onAuxClick={href ? (e) => { if (e.button === 1) { e.preventDefault(); openTab(href) } } : undefined}
+                  tabIndex={rowClickable ? 0 : undefined}
+                  onKeyDown={rowClickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (clickable) onRowClick(row) } } : undefined}
+                  role={rowClickable ? 'button' : undefined}
                 >
                   {selectable && (
                     <TableCell>
@@ -135,14 +150,34 @@ export function AdminTable({
                       />
                     </TableCell>
                   )}
-                  {columns.map((column) => (
-                    <TableCell
-                      key={`${row.id}:${column.key}`}
-                      className={ALIGN_CLASS[column.align]}
-                    >
-                      {column.render ? column.render(row) : (row[column.key] ?? '—')}
-                    </TableCell>
-                  ))}
+                  {columns.map((column, colIdx) => {
+                    const content = column.render ? column.render(row) : (row[column.key] ?? '—')
+                    // Bọc ô định danh (cột đầu) bằng link thật: chuột-phải "Mở ở tab mới",
+                    // Ctrl/Cmd-click, chuột-giữa đều hoạt động theo trình duyệt.
+                    const cell = href && colIdx === 0 ? (
+                      <a
+                        href={href}
+                        className="bb-row-link"
+                        title={t('common.openInNewTab')}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return
+                          e.preventDefault()
+                          if (clickable) onRowClick(row)
+                        }}
+                      >
+                        {content}
+                      </a>
+                    ) : content
+                    return (
+                      <TableCell
+                        key={`${row.id}:${column.key}`}
+                        className={ALIGN_CLASS[column.align]}
+                      >
+                        {cell}
+                      </TableCell>
+                    )
+                  })}
                 </TableRow>
               )
             })}

@@ -177,12 +177,30 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo }) {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="youtube">{t('products.detail.blocks.videoYouTube')}</SelectItem>
+          <SelectItem value="tiktok">{t('products.detail.blocks.videoTikTok')}</SelectItem>
+          <SelectItem value="facebook">{t('products.detail.blocks.videoFacebook')}</SelectItem>
           <SelectItem value="upload">{t('products.detail.blocks.videoUpload')}</SelectItem>
         </SelectContent>
       </Select>
       {block.provider === 'youtube' ? (
         <Input
           placeholder={t('products.detail.blocks.videoUrlPlaceholder')}
+          value={block.url || ''}
+          onChange={(e) => onChange({ url: e.target.value })}
+          disabled={disabled}
+          maxLength={2000}
+        />
+      ) : block.provider === 'tiktok' ? (
+        <Input
+          placeholder={t('products.detail.blocks.tiktokUrlPlaceholder')}
+          value={block.url || ''}
+          onChange={(e) => onChange({ url: e.target.value })}
+          disabled={disabled}
+          maxLength={2000}
+        />
+      ) : block.provider === 'facebook' ? (
+        <Input
+          placeholder={t('products.detail.blocks.facebookUrlPlaceholder')}
           value={block.url || ''}
           onChange={(e) => onChange({ url: e.target.value })}
           disabled={disabled}

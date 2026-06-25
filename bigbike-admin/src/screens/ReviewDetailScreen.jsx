@@ -30,6 +30,8 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
   const contentLang = useContentLang()
   const [state, setState] = useState({ status: 'loading', item: null, warning: '' })
   const [busy, setBusy] = useState(false)
+  // Theo dõi đúng nút đang chạy để chỉ nút được bấm hiện spinner (APPROVED/SPAM/DELETE).
+  const [pendingAction, setPendingAction] = useState(null)
   const [photoIndex, setPhotoIndex] = useState(null)
 
   const loadReview = useCallback(() => {
@@ -54,6 +56,7 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
 
   const handleStatusChange = useCallback(async (nextStatus) => {
     setBusy(true)
+    setPendingAction(nextStatus)
     try {
       const result = await updateReviewStatus(reviewId, nextStatus)
       setState((prev) => ({ ...prev, item: result.item }))
@@ -62,6 +65,7 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
       toast.error(error.message || t('reviews.approveError'))
     } finally {
       setBusy(false)
+      setPendingAction(null)
     }
   }, [reviewId, t])
 
@@ -70,6 +74,7 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
     if (!confirmed) return
 
     setBusy(true)
+    setPendingAction('DELETE')
     try {
       await deleteReview(reviewId)
       toast.success(t('reviews.detail.deleteSuccess'))
@@ -78,6 +83,7 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
       toast.error(error.message || t('reviews.deleteError'))
     } finally {
       setBusy(false)
+      setPendingAction(null)
     }
   }, [navigate, reviewId, t])
 
@@ -91,8 +97,8 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
         tone="danger"
         title={t('reviews.detail.error')}
         description={state.error}
-        actionLabel={t('common.back')}
-        onAction={() => navigate('/admin/reviews')}
+        actionLabel={t('common.retry')}
+        onAction={loadReview}
       />
     )
   }
@@ -182,9 +188,10 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
                   key={`${url}-${i}`}
                   type="button"
                   onClick={() => setPhotoIndex(i)}
+                  aria-label={t('reviews.detail.openPhoto', { index: i + 1 })}
                   className="block size-20 overflow-hidden rounded-sm border border-border bg-surface-muted p-0 cursor-pointer"
                 >
-                  <img src={resolveDisplayUrl(url)} alt="" loading="lazy" className="size-full object-cover" />
+                  <img src={resolveDisplayUrl(url)} alt={t('reviews.detail.photoAlt', { index: i + 1 })} loading="lazy" className="size-full object-cover" />
                 </button>
               ))}
             </div>
@@ -194,17 +201,17 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
         <DetailSection title={t('reviews.detail.sectionActions')}>
           <div className="flex gap-2 flex-wrap">
             {canUpdate && review.status !== 'APPROVED' ? (
-              <Button variant="secondary" type="button" disabled={busy} onClick={() => handleStatusChange('APPROVED')}>
+              <Button variant="secondary" type="button" disabled={busy} loading={pendingAction === 'APPROVED'} onClick={() => handleStatusChange('APPROVED')}>
                 {t('reviews.approve')}
               </Button>
             ) : null}
             {canUpdate && review.status !== 'SPAM' ? (
-              <Button variant="secondary" type="button" disabled={busy} onClick={() => handleStatusChange('SPAM')}>
+              <Button variant="secondary" type="button" disabled={busy} loading={pendingAction === 'SPAM'} onClick={() => handleStatusChange('SPAM')}>
                 {t('reviews.spam')}
               </Button>
             ) : null}
             {canUpdate ? (
-              <Button variant="danger" type="button" disabled={busy} onClick={handleDelete}>
+              <Button variant="danger" type="button" disabled={busy} loading={pendingAction === 'DELETE'} onClick={handleDelete}>
                 {t('common.delete')}
               </Button>
             ) : null}

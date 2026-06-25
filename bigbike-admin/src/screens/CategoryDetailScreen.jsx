@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
-import { AlertCircle, Check, Copy, ExternalLink, Hash, Package, X as XIcon } from 'lucide-react'
+import { AlertCircle, Check, Copy, ExternalLink, Hash, Loader2, Package, X as XIcon } from 'lucide-react'
 import {
   createCategory,
   fetchCategoryDetail,
@@ -54,7 +54,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     catch { return false }
   })
 
-  const { data: fetchResult, isLoading, isError, error: fetchError } = useQuery({
+  const { data: fetchResult, isLoading, isError, error: fetchError, refetch } = useQuery({
     queryKey: ['category', categoryId],
     queryFn: () => fetchCategoryDetail(categoryId),
     enabled: !isCreate,
@@ -181,6 +181,16 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   const isReadOnly = !canUpdate || isSubmitting
   const formRef = useRef(null)
 
+  // Dấu * đỏ (glyph, không chỉ màu) cho nhãn ô bắt buộc — giúp admin biết ô nào
+  // phải điền trước khi bấm Lưu, không cần đợi báo lỗi (tiêu chí F2).
+  const requiredMark = (
+    <span
+      className="ml-0.5 text-[var(--admin-color-status-danger-text)]"
+      aria-label={t('common.required', { defaultValue: 'bắt buộc' })}
+      title={t('common.required', { defaultValue: 'Bắt buộc' })}
+    >*</span>
+  )
+
   useEffect(() => {
     if (!isDirty) return
     const handler = (e) => { e.preventDefault(); e.returnValue = '' }
@@ -285,6 +295,20 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     })
   }
 
+  // Validate cục bộ MỘT ô khi rời (onBlur) — chạy lại schema trên form hiện tại rồi
+  // chỉ cập nhật lỗi của đúng field đó, để lỗi định dạng (slug có dấu cách/chữ hoa,
+  // URL sai, vượt độ dài SEO) hiện ngay tại chỗ thay vì đợi bấm Lưu (tiêu chí F3).
+  function validateFieldOnBlur(fieldKey) {
+    const result = createCategorySchema(t).safeParse(form)
+    const allErrors = zodErrors(result)
+    setValidationErrors((previous) => {
+      const next = { ...previous }
+      if (allErrors[fieldKey]) next[fieldKey] = allErrors[fieldKey]
+      else delete next[fieldKey]
+      return next
+    })
+  }
+
   function handleSubmit(event) {
     event.preventDefault()
     if (!canUpdate) return
@@ -370,13 +394,22 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
   if (state.status === 'error') {
     return (
-      <StatePanel
-        tone="danger"
-        title={t('categories.detail.loadError')}
-        description={state.error}
-        actionLabel={t('categories.detail.backToList')}
-        onAction={() => navigate('/admin/categories')}
-      />
+      <div className="flex flex-col items-center gap-3">
+        <StatePanel
+          tone="danger"
+          title={t('categories.detail.loadError')}
+          description={state.error}
+          actionLabel={t('common.retry', { defaultValue: 'Thử lại' })}
+          onAction={() => refetch()}
+        />
+        <button
+          type="button"
+          className="bb-btn bb-btn-ghost bb-btn-sm focus-visible:ring-2 focus-visible:ring-ring"
+          onClick={() => navigate('/admin/categories')}
+        >
+          {t('categories.detail.backToList')}
+        </button>
+      </div>
     )
   }
 
@@ -397,7 +430,12 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
       <div className="bb-screen-header">
         <div className="bb-screen-title">
           <p className="bb-screen-eyebrow">
-            <a onClick={(e) => { e.preventDefault(); navigate('/admin/categories') }} style={{ cursor: 'pointer' }}>
+            <a
+              href="/admin/categories"
+              onClick={(e) => { e.preventDefault(); navigate('/admin/categories') }}
+              className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--bb-primary)]"
+              style={{ cursor: 'pointer' }}
+            >
               ← {t('categories.detail.backToList')}
             </a>
           </p>
@@ -450,7 +488,8 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               {t('categories.detail.viewOnSite')}
             </a>
           )}
-          <button type="submit" form="category-form" className="bb-btn bb-btn-primary" disabled={isReadOnly || !isDirty}>
+          <button type="submit" form="category-form" className="bb-btn bb-btn-primary" disabled={isReadOnly || !isDirty} aria-busy={isSubmitting || undefined}>
+            {isSubmitting && <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
             {isSubmitting
               ? t('common.saving')
               : isCreate ? t('categories.detail.createBtn') : t('categories.detail.saveBtn')}
@@ -516,10 +555,17 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             </div>
           </div>
           <div className="bb-card-body">
+            {!isEnLang && (
+              <p className="hint mb-3">
+                <span className="text-[var(--admin-color-status-danger-text)]" aria-hidden="true">*</span>
+                {' '}{t('categories.detail.requiredLegend', { defaultValue: 'Bắt buộc' })}
+              </p>
+            )}
             <div className="bb-grid-2">
               <label className="form-field" data-field="name">
                 <span>
                   {t('categories.detail.name')}
+                  {!isEnLang && requiredMark}
                   {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 6 }}>{t('categories.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
                 </span>
                 <Input
@@ -654,12 +700,14 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             <label className="form-field" data-field={isEnLang ? 'translations.en.slug' : 'slug'}>
               <span>
                 {t('categories.detail.slug')}
+                {!isEnLang && requiredMark}
                 {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 6 }}>{t('categories.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
               </span>
               <Input
                 name={isEnLang ? 'translations.en.slug' : 'slug'}
                 value={isEnLang ? (form.translations?.en?.slug ?? '') : form.slug}
                 onChange={(e) => isEnLang ? handleEnSlugChange(e.target.value) : handleSlugChange(e.target.value)}
+                onBlur={() => validateFieldOnBlur(isEnLang ? 'translations.en.slug' : 'slug')}
                 disabled={isReadOnly}
                 placeholder={isEnLang ? t('categories.slugPlaceholderEn', { defaultValue: 'english-url-slug' }) : t('categories.slugPlaceholder')}
                 style={{ fontFamily: 'var(--admin-font-mono)' }}
@@ -688,6 +736,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
           validationErrors={validationErrors}
           updateField={updateField}
           updateTranslation={updateTranslation}
+          onFieldBlur={validateFieldOnBlur}
         />
 
         {/* Products in category */}
