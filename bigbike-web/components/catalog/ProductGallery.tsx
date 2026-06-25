@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import { useTranslations } from "next-intl";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { A11y, FreeMode, Keyboard, Thumbs } from "swiper/modules";
+import { A11y, Autoplay, FreeMode, Keyboard, Thumbs } from "swiper/modules";
 import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
 import "swiper/css/free-mode";
@@ -115,6 +115,81 @@ export function ProductGallery({
     setActiveIndex(0);
   }, [currentVariantKey]);
 
+  // ── Điều khiển dải ảnh tự chạy (3 giây/slide) ──────────────────────────────
+  // DỪNG khi: (a) rê chuột vào BẤT KỲ chỗ nào của ảnh chính — kể cả ô video —
+  // hoặc (b) khách BẤM PLAY video. CHẠY lại khi rời chuột và video không phát.
+  // Tự quản bằng 2 cờ + 1 hàm áp dụng thay vì dựa vào pause nội bộ của Swiper (vốn
+  // bị "nhả nhầm" khi con trỏ đè lên iframe video).
+  const hoveringRef = useRef(false);
+  const videoPlayingRef = useRef(false);
+
+  const applyAutoplay = useCallback(() => {
+    const sw = mainRef.current;
+    if (!sw || sw.destroyed || !sw.autoplay) return;
+    const shouldRun = count > 1 && !hoveringRef.current && !videoPlayingRef.current;
+    if (shouldRun && !sw.autoplay.running) sw.autoplay.start();
+    else if (!shouldRun && sw.autoplay.running) sw.autoplay.stop();
+  }, [count]);
+
+  // Khách bấm play video → dừng hẳn để khỏi cắt ngang clip.
+  const handleVideoPlay = useCallback(() => {
+    videoPlayingRef.current = true;
+    applyAutoplay();
+  }, [applyAutoplay]);
+
+  // Xem HẾT video → KHÔNG phát lại: sang slide kế rồi chạy tiếp (nếu không đang hover).
+  const handleVideoEnded = useCallback(() => {
+    videoPlayingRef.current = false;
+    const sw = mainRef.current;
+    if (sw && !sw.destroyed) sw.slideNext();
+    applyAutoplay();
+  }, [applyAutoplay]);
+
+  // Đổi biến thể (Swiper remount) → bỏ cờ "đang xem video" để dải ảnh mới chạy lại.
+  useEffect(() => {
+    videoPlayingRef.current = false;
+  }, [currentVariantKey]);
+
+  // Bắt rê chuột phủ TRỌN ảnh chính, kể cả khi con trỏ nằm trên iframe video. Khi
+  // con trỏ vào iframe, trình duyệt ngừng gửi sự kiện chuột cho trang cha → nghe
+  // mouseenter/leave trên hộp sẽ bị nhả nhầm và slide chạy tiếp lúc hover video.
+  // Thay vào đó nghe pointermove ở cấp tài liệu rồi đối chiếu toạ độ với khung ảnh:
+  // lần di chuyển cuối trước khi vào iframe đã đánh dấu "đang hover" và GIỮ nguyên
+  // (vì không còn sự kiện) → dừng slide suốt lúc rê trên video; rời khung mới chạy lại.
+  useEffect(() => {
+    if (count <= 1) return;
+    const onPointerMove = (e: PointerEvent) => {
+      if (e.pointerType && e.pointerType !== "mouse") return;
+      const box = mainBoxRef.current;
+      if (!box) return;
+      const r = box.getBoundingClientRect();
+      const inside =
+        e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+      if (inside !== hoveringRef.current) {
+        hoveringRef.current = inside;
+        applyAutoplay();
+      }
+    };
+    document.addEventListener("pointermove", onPointerMove, { passive: true });
+    return () => document.removeEventListener("pointermove", onPointerMove);
+  }, [count, applyAutoplay]);
+
+  // Video nhúng TikTok/Facebook không có sự kiện play để bắt → khi khách bấm vào
+  // iframe (cửa sổ mất focus, iframe thành phần tử focus) coi như đang xem, dừng
+  // slide. (YouTube đã bắt play/kết thúc chính xác qua IFrame API trong VideoSlide.)
+  useEffect(() => {
+    const onBlur = () => {
+      window.setTimeout(() => {
+        const el = document.activeElement;
+        if (el?.tagName === "IFRAME" && mainBoxRef.current?.contains(el)) {
+          handleVideoPlay();
+        }
+      }, 0);
+    };
+    window.addEventListener("blur", onBlur);
+    return () => window.removeEventListener("blur", onBlur);
+  }, [handleVideoPlay]);
+
   useEffect(() => {
     if (typeof window === "undefined" || !window.matchMedia) return;
     const mq = window.matchMedia(
@@ -169,10 +244,16 @@ export function ProductGallery({
         >
           <Swiper
             key={currentVariantKey}
-            modules={[Thumbs, A11y, Keyboard]}
+            modules={[Thumbs, A11y, Keyboard, Autoplay]}
             slidesPerView={1}
             speed={350}
             rewind
+            // Tự chuyển slide mỗi 3 giây, kể cả khi tới slide video (không tự dừng ở
+            // video). `disableOnInteraction: false` để vẫn chạy tiếp sau khi khách
+            // vuốt/bấm thumbnail. Việc DỪNG khi rê chuột (cả ảnh lẫn video) và khi
+            // BẤM PLAY video do `applyAutoplay` + các listener phía trên xử lý — không
+            // dùng `pauseOnMouseEnter` của Swiper vì nó nhả nhầm khi hover iframe video.
+            autoplay={count > 1 ? { delay: 3000, disableOnInteraction: false } : false}
             keyboard={{ enabled: true }}
             thumbs={{ swiper: thumbsSwiper && !thumbsSwiper.destroyed ? thumbsSwiper : null }}
             className="w-full h-full"
@@ -188,7 +269,11 @@ export function ProductGallery({
                 className="flex items-center justify-center bg-white"
               >
                 {item.kind === "video" ? (
-                  <VideoSlide video={item.asset} />
+                  <VideoSlide
+                    video={item.asset}
+                    onPlay={handleVideoPlay}
+                    onEnded={handleVideoEnded}
+                  />
                 ) : (
                   <MediaImage
                     image={item.asset}

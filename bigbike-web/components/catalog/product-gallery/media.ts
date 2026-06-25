@@ -59,8 +59,9 @@ export function videoThumbUrl(video: VideoAsset): string | null {
   if (explicit) return explicit;
   const ytId = getYouTubeId(video.url ?? "");
   // `mqdefault.jpg` giữ đúng tỉ lệ 16:9 gốc của video — KHÔNG có dải đen letterbox
-  // như `hqdefault.jpg` (vốn pad về khung 4:3). Ô thumbnail là hình vuông + object-cover
-  // nên ảnh 16:9 này được crop hai bên cho lấp đầy, không còn khoảng đen.
+  // như `hqdefault.jpg` (vốn pad về khung 4:3). Ô thumbnail vuông vẽ ảnh này bằng
+  // <div> nền bg-cover (xem VideoThumbPreview) nên ảnh 16:9 được crop cho lấp đầy ô,
+  // không còn khoảng đen.
   return ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : null;
 }
 

@@ -4583,6 +4583,16 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
     visibility: hidden;
   }
 
+  /* Same takeover logic for the PDP sticky purchase bar: when the off-canvas menu
+     is open it must slide out too, otherwise it floats over the drawer's contact
+     block at the bottom. Mirrors the .bb-bottom-nav rule above. */
+  body:has(header .navigation.active) .bb-pdp-sticky-cta {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(calc(100% + env(safe-area-inset-bottom)));
+    visibility: hidden;
+  }
+
   body:has(.bb-page--auth) .bb-floating-chat-anchor,
   body:has(.bb-account-layout) .bb-floating-chat-anchor {
     display: none !important;
