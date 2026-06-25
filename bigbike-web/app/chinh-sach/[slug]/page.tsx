@@ -1,21 +1,27 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import { WarrantyPolicyContent, type WarrantyContact } from "@/components/policy/WarrantyPolicyContent";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import type { WpStaticSidebarItem } from "@/components/wp/WpStaticSidebar";
 import { WpStaticSidebarLayout } from "@/components/wp/WpStaticSidebarLayout";
-import { getPublicMenu } from "@/lib/api/public-api";
+import { getPublicMenu, listPublicSettings } from "@/lib/api/public-api";
 import type { PublicMenu } from "@/lib/contracts/public";
 import { getStaticPage } from "@/lib/content/static-pages";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toHomePath } from "@/lib/utils/routes";
+import { pickSetting } from "@/lib/utils/settings";
 
 // Sidebar = menu vị trí "policy" (module Menu admin quản lý). Nội dung trang ĐÃ ĐÓNG CỨNG
 // (lib/content/static-pages) — không còn gọi backend pages. URL = /chinh-sach/{page-slug}.
 const POLICY_MENU_LOCATION = "policy";
 const POLICY_BASE_PATH = "/chinh-sach";
+
+// Trang Chính sách bảo hành có bố cục thiết kế riêng (bảng thời hạn theo thương hiệu, quy trình…)
+// nên render qua component thay vì HTML CMS. Số điện thoại / Zalo / địa chỉ / giờ lấy từ site_settings.
+const WARRANTY_SLUG = "chinh-sach-bao-hanh";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -73,6 +79,28 @@ export default async function PolicyPage({ params }: Props) {
   const pageTitle = safeText(page.title, t("policy.title"));
   const sidebarItems = buildSidebarItems(menuResult?.data ?? null, slug);
 
+  // Trang bảo hành: bố cục component (bảng theo thương hiệu + quy trình), liên hệ lấy từ site_settings.
+  let bodyNode: React.ReactNode;
+  if (slug === WARRANTY_SLUG) {
+    const settings = (await listPublicSettings(locale)).data ?? [];
+    const contact: WarrantyContact = {
+      hotline: pickSetting(settings, ["hotline"]),
+      zalo: pickSetting(settings, ["hotline_2"]),
+      zaloUrl: pickSetting(settings, ["zalo_url"]),
+      address: pickSetting(settings, ["contact_address"]),
+      hoursWeekday: pickSetting(settings, ["opening_hours_weekday"]),
+      hoursWeekend: pickSetting(settings, ["opening_hours_weekend"]),
+    };
+    bodyNode = <WarrantyPolicyContent locale={locale} contact={contact} />;
+  } else {
+    bodyNode = (
+      <div
+        className="static-page wyswyg"
+        dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
+      />
+    );
+  }
+
   // page-static.php: .page-title + #main-content > .container > .row
   // > [.col-md-3 sidebar] + [.col-md-9 > .static-page.wyswyg].
   return (
@@ -84,15 +112,7 @@ export default async function PolicyPage({ params }: Props) {
         { label: pageTitle },
       ]}
     >
-      <WpStaticSidebarLayout
-        sidebarItems={sidebarItems}
-        bodyNode={
-          <div
-            className="static-page wyswyg"
-            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
-          />
-        }
-      />
+      <WpStaticSidebarLayout sidebarItems={sidebarItems} bodyNode={bodyNode} />
     </WpStaticShell>
   );
 }

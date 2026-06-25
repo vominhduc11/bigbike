@@ -48,7 +48,7 @@ export function useCheckout() {
     setValue,
     formState: { errors: addressErrors },
   } = useForm<CheckoutAddressFormValues>({
-    resolver: zodResolver(createCheckoutAddressSchema(tValidation)),
+    resolver: zodResolver(createCheckoutAddressSchema(tValidation, true)),
     defaultValues: {
       fullName: "",
       phone: "",

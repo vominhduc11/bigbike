@@ -5,8 +5,8 @@ export const VN_PHONE_RE = /^(0[3-9][0-9]{8}|\+84[3-9][0-9]{8})$/;
 
 type CheckoutValidationT = (key: string) => string;
 
-export function createCheckoutAddressSchema(t: CheckoutValidationT) {
-  return z.object({
+export function createCheckoutAddressSchema(t: CheckoutValidationT, requireEmail = false) {
+  const base = z.object({
     fullName: z.string().min(1, t("fullNameRequired")),
     phone: z
       .string()
@@ -21,6 +21,15 @@ export function createCheckoutAddressSchema(t: CheckoutValidationT) {
     district: z.string().min(1, t("districtRequired")),
     ward: z.string().optional(),
     addressLine1: z.string().min(1, t("addressRequired")),
+  });
+
+  // Email là kênh gửi xác nhận đơn → bắt buộc cho địa chỉ thanh toán (billing). Dùng
+  // refine để giữ nguyên kiểu (email vẫn optional) mà vẫn báo lỗi khi để trống. Form
+  // "giao tới địa chỉ khác" không có ô email nên gọi với requireEmail = false.
+  if (!requireEmail) return base;
+  return base.refine((d) => Boolean(d.email && d.email.trim()), {
+    path: ["email"],
+    message: t("emailRequired"),
   });
 }
 

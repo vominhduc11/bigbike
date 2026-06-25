@@ -96,7 +96,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
       >
         <WpStaticSidebarLayout sidebarItems={sidebarItems} sidebarEmptyLabel={t("emptyMenu")}>
           {entries.length === 0 ? (
-            <p className="text-caption text-neutral-500">{t("emptyMenu")}</p>
+            <p className="text-ui-16 max-md:text-ui-14 text-neutral-500">{t("emptyMenu")}</p>
           ) : (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:gap-6">
               {entries.map((entry) => (
@@ -110,7 +110,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
                     {entry.title}
                   </h2>
                   {entry.description ? (
-                    <p className="m-0 text-caption leading-relaxed text-neutral-500">{entry.description}</p>
+                    <p className="m-0 text-ui-16 max-md:text-ui-14 leading-relaxed text-neutral-500">{entry.description}</p>
                   ) : null}
                 </Link>
               ))}

@@ -327,6 +327,9 @@ public class CheckoutService {
         Instant now = Instant.now();
         UUID reservationId = UUID.randomUUID();
 
+        // SAVEPOINT protects the outer transaction: if the INSERT fails (duplicate key), PostgreSQL
+        // would abort the whole transaction without it, making the subsequent SELECT impossible.
+        jdbcTemplate.execute("SAVEPOINT idempotency_sp");
         try {
             jdbcTemplate.update(
                     """
@@ -345,8 +348,11 @@ public class CheckoutService {
                     java.sql.Timestamp.from(now),
                     java.sql.Timestamp.from(now)
             );
+            jdbcTemplate.execute("RELEASE SAVEPOINT idempotency_sp");
             return new IdempotencyReservation(reservationId, null);
         } catch (DataIntegrityViolationException ex) {
+            jdbcTemplate.execute("ROLLBACK TO SAVEPOINT idempotency_sp");
+            jdbcTemplate.execute("RELEASE SAVEPOINT idempotency_sp");
             CheckoutIdempotencyKeyEntity existing = checkoutIdempotencyKeyRepo
                     .findByFlowTypeAndScopeKeyAndIdempotencyKey(flowType, scopeKey, idempotencyKey)
                     .orElseThrow(() -> new ConflictException(

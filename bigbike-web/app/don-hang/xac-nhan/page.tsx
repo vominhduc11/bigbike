@@ -118,7 +118,7 @@ function ThankYouHero({ message }: { message: string }) {
           <path d="M20 6 9 17l-5-5" />
         </svg>
       </span>
-      <p className="woocommerce-notice woocommerce-notice--success woocommerce-thankyou-order-received m-0 font-heading text-ui-24 font-semibold uppercase text-foreground">
+      <p className="woocommerce-notice woocommerce-notice--success woocommerce-thankyou-order-received m-0 font-heading text-ui-24 max-md:text-ui-22 font-semibold uppercase text-foreground">
         {message}
       </p>
     </div>
@@ -137,11 +137,11 @@ function OrderLoadFallback({
 }) {
   return (
     <div className="mx-auto max-w-[480px] text-center">
-      <p className="m-0 text-sm uppercase leading-6 text-muted-foreground">
+      <p className="m-0 text-ui-14 max-md:text-ui-12 uppercase leading-6 text-muted-foreground">
         {t("orderCode")}{" "}
         <strong className="block normal-case text-foreground">{orderNumber}</strong>
       </p>
-      <p className="mx-auto mt-3 max-w-[420px] text-sm leading-6 text-muted-foreground">
+      <p className="mx-auto mt-3 max-w-[420px] text-ui-18 max-md:text-ui-16 leading-6 text-muted-foreground">
         {t("loadFailed")}
       </p>
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
@@ -175,7 +175,7 @@ function OrderOverview({
   ];
 
   return (
-    <ul className="woocommerce-order-overview woocommerce-thankyou-order-details order_details m-0 flex list-none flex-wrap gap-y-4 border-0 p-0 text-sm text-muted-foreground">
+    <ul className="woocommerce-order-overview woocommerce-thankyou-order-details order_details m-0 flex list-none flex-wrap gap-y-4 border-0 p-0 text-ui-14 max-md:text-ui-12 text-muted-foreground">
       {overviewItems.map((item, index) => (
         <li
           key={item.className}
@@ -213,7 +213,7 @@ function OrderDetails({
         {t("orderDetailsTitle")}
       </h2>
       <div className="overflow-x-auto">
-        <table className="woocommerce-table woocommerce-table--order-details shop_table order_details w-full border-collapse border border-border text-left text-sm">
+        <table className="woocommerce-table woocommerce-table--order-details shop_table order_details w-full border-collapse border border-border text-left text-ui-18 max-md:text-ui-16">
           <thead>
             <tr>
               <th className="woocommerce-table__product-name product-name border border-border bg-muted px-4 py-3 font-semibold text-foreground">
@@ -282,7 +282,7 @@ function BankTransferInfo({
   return (
     <section className="woocommerce-bank-details">
       <h2 className={cn(sectionHeading, "m-0 mb-4")}>{t("bankTitle")}</h2>
-      <div className="border border-border p-4 text-sm leading-7 text-foreground">
+      <div className="border border-border p-4 text-ui-18 max-md:text-ui-16 leading-7 text-foreground">
         {configured ? (
           <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
             <dt className="text-muted-foreground">{t("bankHolder")}</dt>
@@ -356,11 +356,11 @@ function AddressColumn({ title, address }: { title: string; address: OrderAddres
   ].filter((line) => Boolean(line && line.trim())) as string[];
 
   return (
-    <div className="woocommerce-column woocommerce-column--1 woocommerce-column--billing-address col-1">
+    <div className="woocommerce-column woocommerce-column--1 woocommerce-column--billing-address">
       <h2 className={cn(sectionHeading, "woocommerce-column__title m-0 mb-4")}>
         {title}
       </h2>
-      <address className="m-0 border border-border p-4 not-italic leading-7 text-foreground">
+      <address className="m-0 border border-border p-4 not-italic text-ui-18 max-md:text-ui-16 leading-7 text-foreground">
         {lines.map((line) => (
           <span key={line} className="block">
             {line}

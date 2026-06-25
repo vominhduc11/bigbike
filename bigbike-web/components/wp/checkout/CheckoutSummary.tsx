@@ -32,7 +32,17 @@ export function CheckoutSummary({
       <div id="order_review">
         <div className="table mb-20">
           {cart.items.map((item) => (
-            <div key={item.id} className="summary--items flex items-start justify-between gap-3">
+            <div key={item.id} className="summary--items flex items-start gap-3">
+              {item.image?.url && (
+                // Ảnh nhỏ sản phẩm: dùng background-image vì theme WP có rule
+                // `body img{height:auto!important}` làm vỡ kích thước cố định của <img>.
+                <span
+                  role="img"
+                  aria-label={item.productName}
+                  className="block h-12 w-12 shrink-0 border border-border bg-cover bg-center"
+                  style={{ backgroundImage: `url("${item.image.url}")` }}
+                />
+              )}
               <p className="min-w-0 flex-1">
                 {item.productName}
                 {item.variantName ? ` - ${item.variantName}` : ""}{" "}
@@ -45,51 +55,54 @@ export function CheckoutSummary({
           ))}
         </div>
 
-        <div className="summary--items row">
-          <div className="summary--items-item col">
-            <p>{t("summarySubtotal")}</p>
-          </div>
-          <div className="summary--items-item col text-right">
-            <p>
-              <b>{formatVnd(cartSubtotal)}</b>
-            </p>
-          </div>
-        </div>
-
+        {/* Chỉ hiện "Tạm tính" + "Khuyến mãi" khi có giảm giá — nếu không, tạm tính
+            trùng tổng cộng (đơn online không tính phí ship) nên chỉ hiện 1 dòng. */}
         {cart.totals.discountAmount > 0 && (
-          <div className="summary--items row">
-            <div className="summary--items-item col">
-              <p>{t("summaryDiscount")}</p>
+          <>
+            <div className="summary--items flex items-center justify-between gap-3">
+              <p>{t("summarySubtotal")}</p>
+              <p className="text-right">
+                <b>{formatVnd(cartSubtotal)}</b>
+              </p>
             </div>
-            <div className="summary--items-item col text-right">
-              <p className="discount">
+
+            <div className="summary--items flex items-center justify-between gap-3">
+              <p>{t("summaryDiscount")}</p>
+              <p className="discount text-right">
                 <b>-{formatVnd(cart.totals.discountAmount)}</b>
               </p>
             </div>
-          </div>
+          </>
         )}
 
+        {/* Phí vận chuyển: đơn online miễn phí hoàn toàn cho khách (SHIP_RULE_001). */}
+        <div className="summary--items flex items-center justify-between gap-3">
+          <p>{t("summaryShipping")}</p>
+          <p className="text-right font-semibold uppercase">{t("shippingFree")}</p>
+        </div>
+
         <div className="total-summary summary">
-          <div className="summary--items row">
-            <div className="summary--items-item col">
-              <p>{t("summaryTotal")}</p>
-            </div>
-            <div className="summary--items-item col text-right">
-              <p className="total-price">
-                <b>{formatVnd(grandTotal)}</b>
-              </p>
-            </div>
+          <div className="summary--items flex items-center justify-between gap-3">
+            <p>{t("summaryTotal")}</p>
+            <p className="total-price text-right">
+              <b>{formatVnd(grandTotal)}</b>
+            </p>
           </div>
         </div>
 
         <div className="form-submit" style={{ marginTop: 20 }}>
           <button
             type="submit"
+            className="!text-[19px] !font-bold uppercase"
             disabled={submitting || cartLoading || !cart.items.length}
           >
             {submitting ? t("placingOrder") : t("placeOrder")}
           </button>
         </div>
+
+        {/* Đặt kỳ vọng cho khách: cách thanh toán + cam kết bảo mật, ngay cạnh nút mua. */}
+        <p className="mt-3 text-[13px] leading-snug text-muted-foreground">{t("paymentNote")}</p>
+        <p className="mt-1.5 text-[13px] leading-snug text-muted-foreground">{t("secureNote")}</p>
       </div>
     </div>
   );

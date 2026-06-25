@@ -71,7 +71,9 @@ export function CheckoutAddressFields({
       {includeEmail && (
         <div className="col-md-12">
           <div className="form-group">
-            <label htmlFor={`${idPrefix}_email`}>{t("email")}</label>
+            <label htmlFor={`${idPrefix}_email`}>
+              {t("email")} {reqMark}
+            </label>
             <input
               id={`${idPrefix}_email`}
               type="email"

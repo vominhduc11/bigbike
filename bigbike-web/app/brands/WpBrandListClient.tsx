@@ -117,7 +117,7 @@ export function WpBrandListClient({
                   <span className="text-2xl font-bold tracking-wide text-neutral-300">{initials}</span>
                 )}
               </span>
-              <span className="text-center text-sm font-semibold uppercase tracking-wide text-neutral-800">
+              <span className="text-center text-ui-14 font-semibold uppercase tracking-wide text-neutral-800">
                 {name}
               </span>
             </LocalizedLink>

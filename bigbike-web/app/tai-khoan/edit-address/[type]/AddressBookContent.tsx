@@ -155,15 +155,15 @@ export function AddressBookContent() {
                   className={`border bg-white p-5 ${addr.isDefault ? "border-brand-border" : "border-border"}`}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <b className="font-body text-body font-semibold text-foreground">
+                    <b className="font-body text-ui-18 max-md:text-ui-16 font-semibold text-foreground">
                       {addr.fullName ?? "—"}
                     </b>
-                    <span className="shrink-0 text-caption text-muted-foreground">
+                    <span className="shrink-0 text-ui-14 max-md:text-ui-12 text-muted-foreground">
                       {t("addressItem", { index: (currentAddressPage - 1) * ADDRESSES_PAGE_SIZE + idx + 1 })}
                     </span>
                   </div>
 
-                  <div className="mt-4 flex flex-col gap-[10px] text-caption text-muted-foreground">
+                  <div className="mt-4 flex flex-col gap-[10px] text-ui-16 max-md:text-ui-14 text-muted-foreground">
                     {addr.phone && (
                       <p className="m-0 flex items-center gap-2.5">
                         <Phone className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -188,7 +188,7 @@ export function AddressBookContent() {
 
                   <div className="mt-4 flex items-center justify-between border-t border-border pt-3.5">
                     {addr.isDefault ? (
-                      <span className="flex items-center gap-1.5 text-caption font-bold uppercase tracking-wide text-brand">
+                      <span className="flex items-center gap-1.5 text-ui-14 max-md:text-ui-12 font-bold uppercase tracking-wide text-brand">
                         <Check className="h-4 w-4" aria-hidden />
                         {t("defaultBadge")}
                       </span>
@@ -196,7 +196,7 @@ export function AddressBookContent() {
                       <button
                         type="button"
                         onClick={() => handleSetDefault(addr)}
-                        className="inline-flex min-h-11 items-center text-caption font-bold uppercase tracking-wide text-discount hover:underline"
+                        className="inline-flex min-h-11 items-center text-ui-14 max-md:text-ui-12 font-bold uppercase tracking-wide text-discount hover:underline"
                       >
                         {t("setDefaultButton")}
                       </button>
@@ -234,14 +234,14 @@ export function AddressBookContent() {
           <button
             type="button"
             onClick={openAdd}
-            className="mt-5 inline-flex min-h-11 items-center gap-2 text-caption font-bold uppercase tracking-wide text-brand hover:underline"
+            className="mt-5 inline-flex min-h-11 items-center gap-2 text-ui-14 max-md:text-ui-12 font-bold uppercase tracking-wide text-brand hover:underline"
           >
             <Plus className="h-4 w-4" aria-hidden />
             {t("addNew")}
           </button>
 
           {addresses.length === 0 && (
-            <p className="mt-3 text-caption text-muted-foreground">{t("empty")}</p>
+            <p className="mt-3 text-ui-16 max-md:text-ui-14 text-muted-foreground">{t("empty")}</p>
           )}
 
           {/* "Cập nhật" — closes out the address book (each card already saves

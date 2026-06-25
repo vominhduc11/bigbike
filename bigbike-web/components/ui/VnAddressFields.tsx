@@ -58,7 +58,7 @@ export function VnAddressFields({ value, onChange, required, labelClassName = "t
             onChange("ward", "");
           }}
         >
-          <SelectTrigger>
+          <SelectTrigger aria-label={"T\u1ec9nh / Th\u00e0nh ph\u1ed1"}>
             <SelectValue placeholder={"\u2014 Ch\u1ecdn t\u1ec9nh / th\u00e0nh ph\u1ed1 \u2014"} />
           </SelectTrigger>
           <SelectContent className={cn("max-h-72", selectContentClassName)}>
@@ -80,7 +80,7 @@ export function VnAddressFields({ value, onChange, required, labelClassName = "t
               onChange("ward", "");
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger aria-label={"Qu\u1eadn / Huy\u1ec7n"}>
               <SelectValue placeholder={"\u2014 Ch\u1ecdn qu\u1eadn / huy\u1ec7n \u2014"} />
             </SelectTrigger>
             <SelectContent className={cn("max-h-72", selectContentClassName)}>
@@ -102,7 +102,7 @@ export function VnAddressFields({ value, onChange, required, labelClassName = "t
             value={value.ward}
             onValueChange={(v) => onChange("ward", v)}
           >
-            <SelectTrigger>
+            <SelectTrigger aria-label={"Ph\u01b0\u1eddng / X\u00e3"}>
               <SelectValue placeholder={"\u2014 Ch\u1ecdn ph\u01b0\u1eddng / x\u00e3 \u2014"} />
             </SelectTrigger>
             <SelectContent className={cn("max-h-72", selectContentClassName)}>

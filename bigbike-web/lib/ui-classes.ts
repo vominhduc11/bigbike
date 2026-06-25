@@ -63,8 +63,10 @@ export const metaLabel = "text-caption uppercase tracking-display text-muted-for
 export const tableHeader = "font-body text-overline font-semibold uppercase tracking-wide";
 /** Detail value cell (was `.bb-detail-table-cell`). */
 export const detailTableCell = "mt-[3px] block text-caption font-bold normal-case tracking-wide text-foreground";
-/** Category badge text (was `.bb-category-badge`). */
-export const categoryBadge = "m-0 text-caption font-bold uppercase tracking-display text-brand";
+/** Category badge text (was `.bb-category-badge`). Fixed px (`text-ui-*`): the
+ * sole consumer (ArticleCard) renders on the WP background (html font-size:14px),
+ * where rem `text-caption` would shrink to ~12.25px. */
+export const categoryBadge = "m-0 text-ui-14 max-md:text-ui-12 font-bold uppercase tracking-display text-brand";
 
 /** Auth card heading (was `.bb-auth-heading`). On auth-wrap h1s the kept marker
  * rule `.bb-page--auth .bb-auth-wrap h1` overrides this (text-32/uppercase). */

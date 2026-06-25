@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { Checkbox } from "@/components/ui/checkbox";
 import { formatVnd } from "@/lib/utils/format";
-import { toCartPath } from "@/lib/utils/routes";
+import { toCartPath, toProductListPath } from "@/lib/utils/routes";
 import { CheckoutStepTitle } from "./checkout/atoms";
 import { CheckoutAddressFields } from "./checkout/CheckoutAddressFields";
 import { CheckoutSummary } from "./checkout/CheckoutSummary";
@@ -62,16 +63,25 @@ export function WpCheckoutClient() {
 
   if (!cart || cart.items.length === 0) {
     return (
-      <>
-        <p className="cart-empty woocommerce-info" role="status">
-          {tCart("emptyHeading")}
-        </p>
-        <p className="return-to-shop">
-          <Link className="button wc-backward" href={toCartPath()}>
+      <div className="py-10 text-center" role="status">
+        <p className="cart-empty woocommerce-info">{tCart("emptyHeading")}</p>
+        <p className="mb-6 text-muted-foreground">{t("emptyDescription")}</p>
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          {/* `!` để thắng rule WP unlayered `a{color:#007bff}` vốn nhuộm xanh mọi link. */}
+          <Link
+            href={toProductListPath()}
+            className="inline-flex items-center justify-center bg-brand! px-7 py-3 font-cta text-ui-18 max-md:text-ui-16 uppercase text-white! transition-opacity hover:opacity-90"
+          >
+            {t("continueShopping")}
+          </Link>
+          <Link
+            href={toCartPath()}
+            className="font-cta uppercase underline text-muted-foreground! hover:text-foreground!"
+          >
             {t("viewCart")}
           </Link>
-        </p>
-      </>
+        </div>
+      </div>
     );
   }
 
@@ -113,7 +123,7 @@ export function WpCheckoutClient() {
 
           <div className="check-out-form">
             <div className="check-out-step">
-              <CheckoutStepTitle step={1}>{t("step1Title")}</CheckoutStepTitle>
+              <CheckoutStepTitle>{t("step1Title")}</CheckoutStepTitle>
 
               <div className="row">
                 <CheckoutAddressFields
@@ -152,11 +162,10 @@ export function WpCheckoutClient() {
 
             <div className="check-out-step">
               <div className="form-group" style={{ marginBottom: shipToDifferent ? 16 : 0 }}>
-                <label className="inline-flex cursor-pointer items-center gap-2">
-                  <input
-                    type="checkbox"
+                <label className="inline-flex! cursor-pointer items-center gap-2">
+                  <Checkbox
                     checked={shipToDifferent}
-                    onChange={(e) => setShipToDifferent(e.target.checked)}
+                    onCheckedChange={(checked) => setShipToDifferent(checked === true)}
                   />
                   {t("shipToDifferent")}
                 </label>
@@ -164,7 +173,7 @@ export function WpCheckoutClient() {
 
               {shipToDifferent && (
                 <>
-                  <h3 className="mb-3 mt-1 font-cta text-base font-semibold uppercase">{t("shippingAddressTitle")}</h3>
+                  <h3 className="mb-3 mt-1 font-cta text-ui-18 max-md:text-ui-16 font-semibold uppercase">{t("shippingAddressTitle")}</h3>
                   <div className="row">
                     <CheckoutAddressFields
                       idPrefix="shipping"
@@ -186,8 +195,8 @@ export function WpCheckoutClient() {
           </div>
         </div>
 
-        {/* ===== Cột phải: thông tin đơn đặt hàng ===== */}
-        <div className="col-md-4">
+        {/* ===== Cột phải: thông tin đơn đặt hàng (dính khi cuộn ở desktop) ===== */}
+        <div className="col-md-4 md:sticky md:top-[96px] md:self-start">
           <CheckoutSummary
             cart={cart}
             cartSubtotal={cartSubtotal}

@@ -40,6 +40,10 @@ export function MobileBottomNav() {
   const pathname = usePathname();
   const { cartCount } = useCart();
 
+  // Ẩn thanh điều hướng khi đang thanh toán: giảm điểm thoát giữa chừng và tránh các
+  // nút nổi chồng nhau ở đáy màn hình điện thoại (checkout tập trung).
+  if (pathname.startsWith("/thanh-toan")) return null;
+
   const badge = cartCount != null && cartCount > 0 ? cartCount : null;
   const cartRouteActive = pathname.startsWith("/gio-hang");
   const homeActive = isHomePath(pathname);

@@ -115,7 +115,7 @@ public class GlobalExceptionHandler {
             DataIntegrityViolationException ex, HttpServletRequest request) {
         log.warn("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
         return build(HttpStatus.CONFLICT, "DATA_CONFLICT",
-                "Operation violates a data integrity constraint (e.g. duplicate serial number).",
+                "Operation violates a data integrity constraint. Please try again.",
                 List.of(), request);
     }
 

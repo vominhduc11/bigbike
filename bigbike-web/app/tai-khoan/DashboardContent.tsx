@@ -33,7 +33,7 @@ export function DashboardContent() {
       <WpAccountSectionHeading title={tNav("dashboard")} />
       {profile?.emailVerified === false && (
         <div className="mb-6 border border-[var(--bb-danger)]/30 bg-[var(--bb-danger)]/5 px-4 py-3">
-          <p className="m-0 text-caption font-semibold text-foreground">{t("emailNotVerified")}</p>
+          <p className="m-0 text-ui-16 max-md:text-ui-14 font-semibold text-foreground">{t("emailNotVerified")}</p>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <Button
               type="button"
@@ -45,7 +45,7 @@ export function DashboardContent() {
               {resendState === "sent" ? t("emailVerifySent") : t("emailVerifyResend")}
             </Button>
             {resendState === "error" && (
-              <span className="text-caption text-[var(--bb-danger)]">{t("emailVerifyError")}</span>
+              <span className="text-ui-16 max-md:text-ui-14 text-[var(--bb-danger)]">{t("emailVerifyError")}</span>
             )}
           </div>
         </div>

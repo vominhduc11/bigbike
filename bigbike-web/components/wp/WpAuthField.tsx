@@ -43,7 +43,7 @@ export function WpAuthField({
         aria-invalid={!!error}
         {...registration}
       />
-      {error && <p role="alert" className="mt-2 text-sm text-destructive">{error.message}</p>}
+      {error && <p role="alert" className="mt-2 text-ui-14 max-md:text-ui-12 text-destructive">{error.message}</p>}
     </div>
   );
 }
