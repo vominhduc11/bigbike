@@ -10,7 +10,7 @@ import type { LucideIcon } from "lucide-react";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import type { WpStaticSidebarItem } from "@/components/wp/WpStaticSidebar";
 import { WpStaticSidebarLayout } from "@/components/wp/WpStaticSidebarLayout";
-import { getGuideLayout, getStaticPage, type StaticGuideEntry } from "@/lib/content/static-pages";
+import { getGuideLayout, getStaticPage, type StaticGuideEntry, type StaticGuideLayout } from "@/lib/content/static-pages";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toHomePath } from "@/lib/utils/routes";
@@ -30,8 +30,8 @@ const ICONS: Record<string, LucideIcon> = {
 
 type GuidePageClientProps = {
   subSegments?: string[];
-  initialLayout: any;
-  initialEntries: any[];
+  initialLayout: StaticGuideLayout;
+  initialEntries: StaticGuideEntry[];
   initialPage: any;
 };
 
