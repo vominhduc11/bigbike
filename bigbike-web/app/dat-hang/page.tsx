@@ -19,8 +19,8 @@ export default function CheckoutPage() {
       title={TITLE}
       breadcrumb={BREADCRUMB}
       showHero={false}
-      mainClassName=""
-      cssHref=""
+      mainClassName="bb-checkout-page"
+      cssHref="/wp-content/themes/bigbike/css/wp-theme-checkout.css?v=4"
     >
       <div className="container">
         <WpCheckoutPageHeading title={<Tr ns="Checkout" k="title" />} />

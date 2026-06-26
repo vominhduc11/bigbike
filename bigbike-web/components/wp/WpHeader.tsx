@@ -3,8 +3,6 @@ import { ShoppingCart } from "lucide-react";
 import { getLocale } from "next-intl/server";
 import type { HeaderNavNode } from "@/components/layout/header-nav/shared";
 import { listPublicSettings } from "@/lib/api/public-api";
-import { normalizeMenuUrl } from "@/lib/utils/nav";
-import { submenuIcon } from "@/lib/ui-classes";
 import { Tr } from "@/components/i18n/Tr";
 import { WpSearchIcon } from "./WpSearchIcon";
 import { pickSetting } from "@/lib/utils/settings";
@@ -134,7 +132,6 @@ export async function WpHeader({ menuNodes }: { menuNodes: HeaderNavNode[] }) {
                     <div className="user-control--item user">
                       <WpHeaderUser variant="mobile" />
                     </div>
-                    <WpLangSwitch />
                   </div>
                 </div>
 

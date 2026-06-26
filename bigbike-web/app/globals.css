@@ -360,6 +360,7 @@ body {
   padding-top: var(--bb-header-stack);
   padding-bottom: 30px;
   transition: padding-top var(--bb-duration-normal) var(--bb-ease-standard);
+  flex-grow: 1;
 }
 
 .bb-main:has(.bb-home) {

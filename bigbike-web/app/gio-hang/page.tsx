@@ -20,7 +20,7 @@ export default function CartPage() {
       title={TITLE}
       breadcrumb={BREADCRUMB}
       showHero={false}
-      mainClassName=""
+      mainClassName="bb-cart-page"
       cssHref="/wp-content/themes/bigbike/css/wp-theme-cart.css?v=4"
     >
       <div className="container">
