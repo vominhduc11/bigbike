@@ -1,27 +1,29 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatVnd } from "@/lib/utils/format";
 import { toCartPath, toProductListPath } from "@/lib/utils/routes";
-import { CheckoutStepTitle } from "./checkout/atoms";
+import {
+  CheckoutStepTitle,
+  CheckoutConfirmRow,
+  CodPaymentBlock,
+  ZaloSupportBlock,
+} from "./checkout/atoms";
 import { CheckoutAddressFields } from "./checkout/CheckoutAddressFields";
 import { CheckoutSummary } from "./checkout/CheckoutSummary";
 import { useCheckout } from "./checkout/useCheckout";
 
 /**
- * Nội dung trang Thanh toán — port markup từ woocommerce/checkout/form-checkout.php
- * + review-order.php + payment.php (class .check-out-title / .check-out-form /
- * .check-out-step / .checkout-summary / .summary--items / .form-group / .form-submit).
- * GIỮ NGUYÊN logic/data thật của bigbike-web (xem hook useCheckout): react-hook-form +
- * zod validation, price-change, GTM begin_checkout, prefill từ profile/address. Đơn online
- * không tính phí vận chuyển. Cột phải (CheckoutSummary) dùng vocabulary summary của theme
- * vì bảng .shop_table mặc định của WooCommerce không nằm trong bundle CSS theme.
+ * Nội dung trang Thanh toán — được nâng cấp theo Mockup 1 (tiêu chuẩn UI/UX cao cấp).
+ * GIỮ NGUYÊN toàn bộ hook useCheckout + logic thật của bigbike-web.
  */
 export function WpCheckoutClient() {
   const t = useTranslations("Checkout");
   const tCart = useTranslations("Cart");
+  const [confirmedChecked, setConfirmedChecked] = useState(false);
 
   const {
     cart,
@@ -67,7 +69,6 @@ export function WpCheckoutClient() {
         <p className="cart-empty woocommerce-info">{tCart("emptyHeading")}</p>
         <p className="mb-6 text-muted-foreground">{t("emptyDescription")}</p>
         <div className="flex flex-wrap items-center justify-center gap-4">
-          {/* `!` để thắng rule WP unlayered `a{color:#007bff}` vốn nhuộm xanh mọi link. */}
           <Link
             href={toProductListPath()}
             className="inline-flex items-center justify-center bg-brand! px-7 py-3 font-cta text-ui-18 max-md:text-ui-16 uppercase text-white! transition-opacity hover:opacity-90"
@@ -114,89 +115,110 @@ export function WpCheckoutClient() {
         )}
       </div>
 
-      <div className="row">
-        {/* ===== Cột trái: thông tin giao hàng ===== */}
-        <div className="col-md-8">
-          <div className="check-out-title">
-            <h3>{t("title")}</h3>
-          </div>
+      <div className="bb-co-grid">
+        {/* ===== CỘT TRÁI: FORM ===== */}
+        <div className="space-y-4">
+          
+          {/* Card 1: Thông tin nhận hàng */}
+          <div className="bb-co-card">
+            <p className="bb-co-card-title">{t("step1Title")}</p>
 
-          <div className="check-out-form">
-            <div className="check-out-step">
-              <CheckoutStepTitle>{t("step1Title")}</CheckoutStepTitle>
+            <div className="row">
+              <CheckoutAddressFields
+                idPrefix="billing"
+                autoCompletePrefix=""
+                register={register}
+                errors={addressErrors}
+                includeEmail
+                vnValue={{
+                  province: formAddress.province ?? "",
+                  district: formAddress.district ?? "",
+                  ward: formAddress.ward ?? "",
+                }}
+                onVnChange={(field, val) => setValue(field, val, { shouldValidate: true })}
+              />
 
-              <div className="row">
-                <CheckoutAddressFields
-                  idPrefix="billing"
-                  autoCompletePrefix=""
-                  register={register}
-                  errors={addressErrors}
-                  includeEmail
-                  vnValue={{
-                    province: formAddress.province ?? "",
-                    district: formAddress.district ?? "",
-                    ward: formAddress.ward ?? "",
-                  }}
-                  onVnChange={(field, val) => setValue(field, val, { shouldValidate: true })}
-                />
-
-                <div className="col-md-12">
-                  <div className="form-group">
-                    <label htmlFor="order_comments">
-                      {t("noteLabel")} <span className="optional">{t("noteOptional")}</span>
-                    </label>
-                    <textarea
-                      id="order_comments"
-                      className="form-control"
-                      style={{ height: "auto", padding: "12px 20px" }}
-                      placeholder={t("notePlaceholder")}
-                      value={customerNote}
-                      onChange={(e) => setCustomerNote(e.target.value)}
-                      maxLength={1000}
-                      rows={4}
-                    />
-                  </div>
+              <div className="col-md-12">
+                <div className="bb-co-field">
+                  <label htmlFor="order_comments">
+                    {t("noteLabel")} <span className="optional">{t("noteOptional")}</span>
+                  </label>
+                  <textarea
+                    id="order_comments"
+                    className="form-control"
+                    placeholder={t("notePlaceholder")}
+                    value={customerNote}
+                    onChange={(e) => setCustomerNote(e.target.value)}
+                    maxLength={1000}
+                    rows={4}
+                  />
                 </div>
               </div>
             </div>
-
-            <div className="check-out-step">
-              <div className="form-group" style={{ marginBottom: shipToDifferent ? 16 : 0 }}>
-                <label className="inline-flex! cursor-pointer items-center gap-2">
-                  <Checkbox
-                    checked={shipToDifferent}
-                    onCheckedChange={(checked) => setShipToDifferent(checked === true)}
-                  />
-                  {t("shipToDifferent")}
-                </label>
-              </div>
-
-              {shipToDifferent && (
-                <>
-                  <h3 className="mb-3 mt-1 font-cta text-ui-18 max-md:text-ui-16 font-semibold uppercase">{t("shippingAddressTitle")}</h3>
-                  <div className="row">
-                    <CheckoutAddressFields
-                      idPrefix="shipping"
-                      autoCompletePrefix="shipping "
-                      register={registerShip}
-                      errors={shipErrors}
-                      includeEmail={false}
-                      vnValue={{
-                        province: formShip.province ?? "",
-                        district: formShip.district ?? "",
-                        ward: formShip.ward ?? "",
-                      }}
-                      onVnChange={(field, val) => setValueShip(field, val, { shouldValidate: true })}
-                    />
-                  </div>
-                </>
-              )}
-            </div>
           </div>
+
+          {/* Địa chỉ giao hàng khác (nếu cần) */}
+          <div className="bb-co-card">
+            <div className="form-group mb-0">
+              <label className="inline-flex! cursor-pointer items-center gap-2 font-bold select-none text-[15px]">
+                <Checkbox
+                  checked={shipToDifferent}
+                  onCheckedChange={(checked) => setShipToDifferent(checked === true)}
+                  className="border-black data-[state=checked]:bg-black data-[state=checked]:text-white rounded-none h-5 w-5"
+                />
+                {t("shipToDifferent")}
+              </label>
+            </div>
+
+            {shipToDifferent && (
+              <div className="mt-6">
+                <h3 className="mb-4 font-cta text-ui-18 max-md:text-ui-16 font-semibold uppercase">{t("shippingAddressTitle")}</h3>
+                <div className="row">
+                  <CheckoutAddressFields
+                    idPrefix="shipping"
+                    autoCompletePrefix="shipping "
+                    register={registerShip}
+                    errors={shipErrors}
+                    includeEmail={false}
+                    vnValue={{
+                      province: formShip.province ?? "",
+                      district: formShip.district ?? "",
+                      ward: formShip.ward ?? "",
+                    }}
+                    onVnChange={(field, val) => setValueShip(field, val, { shouldValidate: true })}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Card 2: Phương thức thanh toán */}
+          <div className="bb-co-card">
+            <p className="bb-co-card-title">Phương thức thanh toán</p>
+            
+            <CodPaymentBlock />
+
+            <CheckoutConfirmRow
+              checked={confirmedChecked}
+              onCheckedChange={setConfirmedChecked}
+            />
+
+            <button
+              type="submit"
+              className="bb-co-btn-order"
+              disabled={submitting || cartLoading || !cart.items.length || !confirmedChecked}
+            >
+              {submitting ? t("placingOrder") : "ĐẶT HÀNG — SHOP SẼ GỌI XÁC NHẬN"}
+            </button>
+            <p className="bb-co-btn-sub">
+              Shop xác nhận trong 1–2 giờ làm việc · Hotline: 0906902404
+            </p>
+          </div>
+
         </div>
 
-        {/* ===== Cột phải: thông tin đơn đặt hàng (dính khi cuộn ở desktop) ===== */}
-        <div className="col-md-4 md:sticky md:top-[96px] md:self-start">
+        {/* ===== CỘT PHẢI: TÓM TẮT ĐƠN HÀNG ===== */}
+        <div className="space-y-4 md:sticky md:top-[96px] md:self-start">
           <CheckoutSummary
             cart={cart}
             cartSubtotal={cartSubtotal}
@@ -204,6 +226,7 @@ export function WpCheckoutClient() {
             submitting={submitting}
             cartLoading={cartLoading}
           />
+          <ZaloSupportBlock />
         </div>
       </div>
     </form>

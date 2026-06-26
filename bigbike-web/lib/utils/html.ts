@@ -10,6 +10,7 @@ import DOMPurify from "isomorphic-dompurify";
 type SanitizeRichHtmlOptions = Readonly<{
   allowInlineStyles?: boolean;
   rewriteMediaUrls?: boolean;
+  allowStyleTags?: boolean;
 }>;
 
 export function sanitizeRichHtml(
@@ -27,11 +28,16 @@ export function sanitizeRichHtml(
     ? [...ALLOWED_ATTR, "style", "dir", "srcset", "sizes", "decoding", "fetchpriority"]
     : ALLOWED_ATTR;
 
+  const allowedTags = options.allowStyleTags
+    ? [...ALLOWED_TAGS, "style"]
+    : ALLOWED_TAGS;
+
   return DOMPurify.sanitize(withoutShortcodes, {
-    ALLOWED_TAGS,
+    ALLOWED_TAGS: allowedTags,
     ALLOWED_ATTR: allowedAttr,
     // Drop generic data-* attributes; `data-src` is allowlisted explicitly above.
     ALLOW_DATA_ATTR: false,
+    FORCE_BODY: true,
   })
     .replace(/<h1(\s[^>]*)?>/gi, "<h2$1>")
     .replace(/<\/h1>/gi, "</h2>");

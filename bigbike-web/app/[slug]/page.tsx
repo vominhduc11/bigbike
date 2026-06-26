@@ -79,7 +79,9 @@ export default async function StaticPageDetail({ params }: StaticPageDetailProps
           <div className="col-md-12">
             <div
               className="static-page wyswyg"
-              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
+              dangerouslySetInnerHTML={{
+                __html: sanitizeRichHtml(page.body, { allowInlineStyles: true, allowStyleTags: true }),
+              }}
             />
           </div>
         </div>

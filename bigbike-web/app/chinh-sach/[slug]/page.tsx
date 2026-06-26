@@ -24,10 +24,7 @@ const POLICY_BASE_PATH = "/chinh-sach";
 // nên render qua component thay vì HTML CMS. Số điện thoại / Zalo / địa chỉ / giờ lấy từ site_settings.
 const WARRANTY_SLUG = "chinh-sach-bao-hanh";
 
-// Trang Chính sách bảo vệ thông tin cá nhân cũng có bố cục thiết kế riêng (mục thu thập, công cụ đo
-// lường, chia sẻ bên thứ ba, quyền của khách…) nên render qua component. Số liên hệ ĐÓNG CỨNG trong
-// component theo yêu cầu owner (xem PrivacyPolicyContent + allowlist guard).
-const PRIVACY_SLUG = "chinh-sach-bao-ve-thong-tin-ca-nhan";
+const PRIVACY_SLUG = "chinh-sach-bao-mat-thong-tin";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -104,7 +101,9 @@ export default async function PolicyPage({ params }: Props) {
     bodyNode = (
       <div
         className="static-page wyswyg"
-        dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
+        dangerouslySetInnerHTML={{
+          __html: sanitizeRichHtml(page.body, { allowInlineStyles: true, allowStyleTags: true }),
+        }}
       />
     );
   }

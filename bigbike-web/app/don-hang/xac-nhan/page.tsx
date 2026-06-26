@@ -63,17 +63,51 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
       )}
 
       <OrderShell>
-        <ThankYouHero message={t("receivedNotice")} />
-
         {order ? (
           <>
-            <OrderOverview order={order} t={t} />
+            <SuccessBanner orderNumber={order.orderNumber} />
+            <NextSteps phone={findAddress(order.addresses, "BILLING")?.phone ?? "—"} />
             <BankTransferInfo order={order} settings={settings} t={t} />
             <OrderDetails order={order} t={t} />
             <CustomerDetails order={order} t={t} />
+            
+            {/* Hotline Bar */}
+            <div className="bb-oc-hotline-bar">
+              <span>Cần gấp? Gọi ngay:</span>
+              <span><strong>0906902404</strong></span>
+              <span>hoặc</span>
+              <span><strong>Zalo 0764640679</strong> (Mrs. Thư)</span>
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="space-y-3">
+              <a
+                href="https://zalo.me/0764640679"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bb-oc-btn-zalo"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="22" height="22" className="mr-2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                Nhắn Zalo nếu cần hỗ trợ gấp
+              </a>
+              <Link href="/" className="bb-oc-btn-continue">
+                ← Tiếp tục mua sắm
+              </Link>
+            </div>
+
+            {/* Footer note */}
+            <p className="text-[13px] text-muted-foreground text-center mt-6 leading-relaxed">
+              BigBike.vn · 79/30/52 Âu Cơ, Phường Hòa Bình, TP. Hồ Chí Minh<br />
+              Thứ 2–7: 9:00–21:00 · Chủ nhật: 9:00–18:00
+            </p>
           </>
         ) : (
-          <OrderLoadFallback orderNumber={orderNumber} t={t} />
+          <>
+            <ThankYouHero message={t("receivedNotice")} />
+            <OrderLoadFallback orderNumber={orderNumber} t={t} />
+          </>
         )}
       </OrderShell>
     </>
@@ -82,10 +116,8 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
 
 type OrderConfirmTranslations = Awaited<ReturnType<typeof getTranslations<"OrderConfirm">>>;
 
-// WP-parity: order-received là endpoint của trang checkout trong WooCommerce, nên
-// dùng đúng khung của page-checkout.php — WpHeader/WpFooter + bundle CSS checkout,
-// không hero, .container > [row: h1 + breadcrumb] — đồng bộ với /gio-hang và
-// /thanh-toan. Nội dung "cảm ơn + chi tiết đơn" render bên trong main-content.
+// WP-parity: order-received là endpoint của trang checkout trong WooCommerce.
+// Rút gọn khung trang tối đa (max-width 680px) để tập trung hiển thị hóa đơn.
 async function OrderShell({ children }: { children: React.ReactNode }) {
   const title = "Thanh toán";
   return (
@@ -96,15 +128,53 @@ async function OrderShell({ children }: { children: React.ReactNode }) {
       mainClassName=""
       cssHref="/wp-content/themes/bigbike/css/wp-theme-checkout.css?v=2"
     >
-      <div className="bb-order-confirm-page woocommerce">
-        <div className="container">
-          <WpCheckoutPageHeading title={<Tr ns="Checkout" k="title" />} />
-          <div className="woocommerce-order mt-10 grid gap-8 pb-24">
-            {children}
-          </div>
-        </div>
+      <div className="bb-oc-wrap">
+        {children}
       </div>
     </WpStaticShell>
+  );
+}
+
+// Banner thông báo đặt hàng thành công màu đen theo Mockup 2
+function SuccessBanner({ orderNumber }: { orderNumber: string }) {
+  return (
+    <div className="bb-oc-success-banner">
+      <div className="bb-oc-success-icon">
+        <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+      </div>
+      <h1 className="bb-oc-success-title">Đặt hàng thành công!</h1>
+      <p className="bb-oc-order-code">Mã đơn hàng: <strong>#{orderNumber}</strong></p>
+    </div>
+  );
+}
+
+// Khung hiển thị 3 bước tiếp theo của quy trình giao nhận
+function NextSteps({ phone }: { phone: string }) {
+  return (
+    <div className="bb-oc-next-step text-left">
+      <p className="bb-oc-next-step-title">Bước tiếp theo</p>
+      <div className="bb-oc-step-row">
+        <div className="bb-oc-step-num">1</div>
+        <div className="bb-oc-step-content">
+          <strong>Shop BigBike sẽ gọi xác nhận</strong>
+          Chúng tôi sẽ gọi số <strong>{phone}</strong> trong <strong>1–2 giờ làm việc</strong> để xác nhận size, màu sắc và sắp xếp giao hàng.
+        </div>
+      </div>
+      <div className="bb-oc-step-row">
+        <div className="bb-oc-step-num">2</div>
+        <div className="bb-oc-step-content">
+          <strong>Xác nhận và sắp xếp giao hàng</strong>
+          Sau khi xác nhận qua điện thoại, đơn hàng sẽ được đóng gói và giao trong 0–4 ngày tùy khu vực.
+        </div>
+      </div>
+      <div className="bb-oc-step-row">
+        <div className="bb-oc-step-num">3</div>
+        <div className="bb-oc-step-content">
+          <strong>Nhận hàng và thanh toán COD</strong>
+          Kiểm tra hàng trước khi thanh toán. Đồng kiểm với shipper — nếu sai sót shop chịu toàn bộ chi phí.
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -156,39 +226,7 @@ function OrderLoadFallback({
   );
 }
 
-function OrderOverview({
-  order,
-  t,
-}: {
-  order: OrderDetail;
-  t: OrderConfirmTranslations;
-}) {
-  const paymentMethod = order.payments[0]?.paymentMethod ?? "";
-  const overviewItems = [
-    { className: "woocommerce-order-overview__order order", label: t("orderNumberLabel"), value: order.orderNumber },
-    { className: "woocommerce-order-overview__date date", label: t("dateLabel"), value: <LocalDate value={order.placedAt} dateStyle="slashPad" fallback="—" /> },
-    ...(order.customerEmail ? [{ className: "woocommerce-order-overview__email email", label: t("emailLabel"), value: order.customerEmail }] : []),
-    { className: "woocommerce-order-overview__total total", label: t("totalLabel"), value: formatVnd(order.totalAmount) },
-    ...(paymentMethod
-      ? [{ className: "woocommerce-order-overview__payment-method method", label: t("paymentMethodLabel"), value: legacyPaymentMethodLabel(paymentMethod) }]
-      : []),
-  ];
-
-  return (
-    <ul className="woocommerce-order-overview woocommerce-thankyou-order-details order_details m-0 flex list-none flex-wrap gap-y-4 border-0 p-0 text-ui-14 max-md:text-ui-12 text-muted-foreground">
-      {overviewItems.map((item, index) => (
-        <li
-          key={item.className}
-          className={`${item.className} border-border pr-5 uppercase leading-6 md:mr-5 md:border-r ${index === overviewItems.length - 1 ? "md:mr-0 md:border-r-0" : ""}`}
-        >
-          {item.label}
-          <strong className="mt-1 block normal-case text-foreground">{item.value}</strong>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
+// Card chi tiết đơn hàng gồm danh sách sản phẩm và tổng giá
 function OrderDetails({
   order,
   t,
@@ -197,70 +235,74 @@ function OrderDetails({
   t: OrderConfirmTranslations;
 }) {
   const paymentMethod = order.payments[0]?.paymentMethod ?? "";
-  const totalRows = [
-    { key: "subtotal", label: t("subtotalLabel"), value: formatVnd(order.subtotalAmount) },
-    ...(order.discountAmount > 0 ? [{ key: "discount", label: t("discountLabel"), value: `-${formatVnd(order.discountAmount)}` }] : []),
-    { key: "shipping", label: t("shippingLabel"), value: formatVnd(order.shippingAmount) },
-    ...(order.feeAmount > 0 ? [{ key: "fee", label: t("feeLabel"), value: formatVnd(order.feeAmount) }] : []),
-    ...(order.taxAmount > 0 ? [{ key: "tax", label: t("taxLabel"), value: formatVnd(order.taxAmount) }] : []),
-    ...(paymentMethod ? [{ key: "payment", label: t("paymentMethodLabel"), value: legacyPaymentMethodLabel(paymentMethod) }] : []),
-    { key: "total", label: t("totalLabel"), value: formatVnd(order.totalAmount) },
-  ];
-
+  
   return (
-    <section className="woocommerce-order-details">
-      <h2 className={cn(sectionHeading, "woocommerce-order-details__title m-0 mb-5")}>
-        {t("orderDetailsTitle")}
-      </h2>
-      <div className="overflow-x-auto">
-        <table className="woocommerce-table woocommerce-table--order-details shop_table order_details w-full border-collapse border border-border text-left text-ui-18 max-md:text-ui-16">
-          <thead>
-            <tr>
-              <th className="woocommerce-table__product-name product-name border border-border bg-muted px-4 py-3 font-semibold text-foreground">
-                {t("productLabel")}
-              </th>
-              <th className="woocommerce-table__product-table product-total border border-border bg-muted px-4 py-3 text-right font-semibold text-foreground">
-                {t("totalLabel")}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {order.lineItems.map((item) => (
-              <tr key={item.id} className="woocommerce-table__line-item order_item">
-                <td className="woocommerce-table__product-name product-name border border-border px-4 py-3 align-top text-foreground">
-                  <span>{item.productName}</span>{" "}
-                  <strong className="product-quantity font-semibold">x {item.quantity}</strong>
-                  {item.variantName && (
-                    <ul className="wc-item-meta m-0 mt-2 list-none p-0 text-muted-foreground">
-                      <li className="m-0 p-0">{item.variantName}</li>
-                    </ul>
-                  )}
-                </td>
-                <td className="woocommerce-table__product-total product-total border border-border px-4 py-3 text-right align-top text-foreground">
-                  {formatVnd(item.lineTotal)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            {totalRows.map((row) => (
-              <tr key={row.key}>
-                <th scope="row" className="border border-border px-4 py-3 font-semibold text-foreground">
-                  {row.label}
-                </th>
-                <td className="border border-border px-4 py-3 text-right text-foreground">
-                  {row.value}
-                </td>
-              </tr>
-            ))}
-          </tfoot>
-        </table>
+    <div className="bb-co-card">
+      <p className="bb-co-card-title">{t("orderDetailsTitle")}</p>
+
+      <div className="space-y-4">
+        {order.lineItems.map((item) => (
+          <div key={item.id} className="summary-item text-left">
+            <div className="item-img">
+              {item.productThumbnailUrl ? (
+                <span
+                  role="img"
+                  aria-label={item.productName}
+                  className="block h-full w-full bg-cover bg-center"
+                  style={{ backgroundImage: `url("${item.productThumbnailUrl}")` }}
+                />
+              ) : (
+                <svg viewBox="0 0 24 24" className="w-[36px] h-[36px] fill-gray-300">
+                  <path d="M21 6.5C21 4.01 18.99 2 16.5 2h-9C5.01 2 3 4.01 3 6.5v11C3 19.99 5.01 22 7.5 22h9c2.49 0 4.5-2.01 4.5-4.5v-11z" />
+                </svg>
+              )}
+            </div>
+            <div className="item-info">
+              <p className="item-name">{item.productName}</p>
+              <p className="item-meta">
+                {item.variantName ? `${item.variantName} · ` : ""}SL: {item.quantity}
+              </p>
+              <p className="item-price">{formatVnd(item.lineTotal)}</p>
+            </div>
+          </div>
+        ))}
       </div>
-    </section>
+
+      <div className="mt-4 text-left">
+        <div className="price-row">
+          <span>Tạm tính</span>
+          <span>{formatVnd(order.subtotalAmount)}</span>
+        </div>
+
+        {order.discountAmount > 0 && (
+          <div className="price-row">
+            <span>Khuyến mãi</span>
+            <span className="text-brand font-semibold">-{formatVnd(order.discountAmount)}</span>
+          </div>
+        )}
+
+        <div className="price-row">
+          <span>Phí vận chuyển</span>
+          <span className="text-emerald-700 font-bold uppercase">{t("shippingFree")}</span>
+        </div>
+
+        {paymentMethod && (
+          <div className="price-row">
+            <span>Phương thức TT</span>
+            <span>{legacyPaymentMethodLabel(paymentMethod)}</span>
+          </div>
+        )}
+
+        <div className="price-row total">
+          <span>Tổng cộng</span>
+          <span className="val">{formatVnd(order.totalAmount)}</span>
+        </div>
+      </div>
+    </div>
   );
 }
 
-// Thông tin chuyển khoản cho đơn BACS. BigBike đối soát thủ công — số tài khoản do admin
+// Bác sĩ chuyển khoản cho đơn BACS. BigBike đối soát thủ công — số tài khoản do admin
 // tự nhập ở Cài đặt → Thanh toán (group "payment", public). Chưa cấu hình thì hiện fallback
 // hotline thay vì box trống.
 function BankTransferInfo({
@@ -307,7 +349,7 @@ function BankTransferInfo({
             <dd className="m-0 font-semibold">{transferNote}</dd>
           </dl>
         ) : (
-          <p className="m-0 text-muted-foreground">
+          <p className="m-0 text-muted-foreground text-left">
             {t.rich("bankHotlineFallback", {
               hotline,
               orderNumber: order.orderNumber,
@@ -321,6 +363,7 @@ function BankTransferInfo({
   );
 }
 
+// Bảng thông tin nhận hàng của khách
 function CustomerDetails({
   order,
   t,
@@ -329,44 +372,40 @@ function CustomerDetails({
   t: OrderConfirmTranslations;
 }) {
   const billingAddress = findAddress(order.addresses, "BILLING");
-  const shippingAddress = findAddress(order.addresses, "SHIPPING");
+  if (!billingAddress) return null;
 
-  if (!billingAddress && !shippingAddress) {
-    return null;
-  }
-
-  return (
-    <section className="woocommerce-customer-details">
-      <div className="woocommerce-columns woocommerce-columns--2 woocommerce-columns--addresses col2-set addresses grid gap-6 md:grid-cols-2 xl:gap-8">
-        {billingAddress && <AddressColumn title={t("billingAddressTitle")} address={billingAddress} />}
-        {shippingAddress && <AddressColumn title={t("shippingAddressTitle")} address={shippingAddress} />}
-      </div>
-    </section>
-  );
-}
-
-function AddressColumn({ title, address }: { title: string; address: OrderAddress }) {
-  const lines = [
-    address.fullName,
-    formatAddress([address.addressLine1, address.addressLine2]),
-    formatAddress([address.ward, address.district, address.province]),
-    address.country,
-    address.email,
-    address.phone,
-  ].filter((line) => Boolean(line && line.trim())) as string[];
+  const addressText = formatAddress([
+    billingAddress.addressLine1,
+    billingAddress.ward,
+    billingAddress.district,
+    billingAddress.province,
+  ]);
 
   return (
-    <div className="woocommerce-column woocommerce-column--1 woocommerce-column--billing-address">
-      <h2 className={cn(sectionHeading, "woocommerce-column__title m-0 mb-4")}>
-        {title}
-      </h2>
-      <address className="m-0 border border-border p-4 not-italic text-ui-18 max-md:text-ui-16 leading-7 text-foreground">
-        {lines.map((line) => (
-          <span key={line} className="block">
-            {line}
-          </span>
-        ))}
-      </address>
+    <div className="bb-co-card">
+      <p className="bb-co-card-title">Thông tin nhận hàng</p>
+      <table className="bb-oc-info-table text-left">
+        <tbody>
+          <tr>
+            <td>Người nhận</td>
+            <td>{billingAddress.fullName}</td>
+          </tr>
+          <tr>
+            <td>Số điện thoại</td>
+            <td>{billingAddress.phone}</td>
+          </tr>
+          <tr>
+            <td>Địa chỉ</td>
+            <td>{addressText}</td>
+          </tr>
+          {order.customerNote && (
+            <tr>
+              <td>Ghi chú</td>
+              <td className="font-normal text-muted-foreground italic">{order.customerNote}</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -378,7 +417,7 @@ function findAddress(addresses: OrderAddress[], type: string): OrderAddress | nu
 function legacyPaymentMethodLabel(method: string): string {
   switch (method.trim().toUpperCase()) {
     case "COD":
-      return "Trả tiền mặt khi nhận hàng";
+      return "Trả tiền mặt khi nhận hàng (COD)";
     case "BACS":
       return "Chuyển khoản ngân hàng";
     default:

@@ -283,9 +283,9 @@ async function extractPages(db: mysql.Connection) {
   const TARGET_SLUGS = [
     "gioi-thieu",
     "huong-dan-mua-hang",
-    "cach-do-size-gang-tay",
+    "cach-do-size-trang-phuc",
     "cach-do-size-dau",
-    "chinh-sach-bao-ve-thong-tin-ca-nhan",
+    "chinh-sach-bao-mat-thong-tin",
     "chinh-sach-bao-hanh",
     "chinh-sach-doi-tra-hang",
     "cac-dieu-kien-va-dieu-khoan",

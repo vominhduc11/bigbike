@@ -3,7 +3,7 @@ import { telHref } from "@/lib/utils/format";
 
 /**
  * Nội dung trang Chính sách bảo vệ thông tin cá nhân
- * (/chinh-sach/chinh-sach-bao-ve-thong-tin-ca-nhan) — TRANG TĨNH.
+ * (/chinh-sach/chinh-sach-bao-mat-thong-tin) — TRANG TĨNH.
  *
  * Toàn bộ nội dung chính sách (thông tin thu thập, mục đích, công cụ đo lường, chia sẻ bên thứ ba,
  * quyền của khách, bảo vệ dữ liệu) cố định trong code, song ngữ VI/EN — đây là cam kết hiển thị cho

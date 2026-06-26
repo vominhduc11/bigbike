@@ -5,7 +5,6 @@ import {
   BookOpen, FileText, Hand, HardHat, HelpCircle, Info, Ruler, ShieldCheck, ShoppingCart, Wrench,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { HelmetSizeGuideContent } from "@/components/guide/HelmetSizeGuideContent";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import type { WpStaticSidebarItem } from "@/components/wp/WpStaticSidebar";
 import { WpStaticSidebarLayout } from "@/components/wp/WpStaticSidebarLayout";
@@ -13,11 +12,8 @@ import { getGuideLayout, getStaticPage, type StaticGuideEntry } from "@/lib/cont
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toHomePath } from "@/lib/utils/routes";
-
-// Trang "Cách xác định size mũ bảo hiểm" có bố cục thiết kế riêng (các bước đo, bảng size, dấu hiệu
-// vừa/không vừa) nên render qua component thay vì HTML CMS. Trang TĨNH — toàn bộ nội dung và số liên
-// hệ đóng cứng trong component (không lấy từ site_settings).
-const HELMET_SIZE_GUIDE_SLUG = "cach-do-size-dau";
+import HelmetSizeTool from "@/components/guide/HelmetSizeTool";
+import ClothingSizeTool from "@/components/guide/ClothingSizeTool";
 
 /* eslint-disable @next/next/no-img-element */
 
@@ -142,18 +138,24 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
   const sidebarItems = buildSidebar(entries, currentPath);
   const pageTitle = safeText(page.title, entry.title);
 
-  // Trang size mũ: bố cục component riêng, trang tĩnh (nội dung + số liên hệ đóng cứng trong component).
-  let bodyNode: React.ReactNode;
-  if (entry.pageSlug === HELMET_SIZE_GUIDE_SLUG) {
-    bodyNode = <HelmetSizeGuideContent locale={locale} />;
-  } else {
-    bodyNode = (
+  let sizeTool = null;
+  if (entry.pathSegment === "size-mu") {
+    sizeTool = <HelmetSizeTool locale={locale} />;
+  } else if (entry.pathSegment === "size-trang-phuc") {
+    sizeTool = <ClothingSizeTool locale={locale} />;
+  }
+
+  const bodyNode = (
+    <div className="flex flex-col gap-8">
+      {sizeTool}
       <div
         className="static-page wyswyg"
-        dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
+        dangerouslySetInnerHTML={{
+          __html: sanitizeRichHtml(page.body, { allowInlineStyles: true, allowStyleTags: true }),
+        }}
       />
-    );
-  }
+    </div>
+  );
 
   return (
     <WpStaticShell
@@ -174,3 +176,4 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
     </WpStaticShell>
   );
 }
+

@@ -56,7 +56,7 @@ export function staticPageSlugs(): string[] {
   return Object.keys(PAGES);
 }
 
-// ── Trang Hướng dẫn (/huong-dan): bố cục lưới ô + 3 trang con, đóng cứng (trước ở guide_page_layout).
+// ── Trang Hướng dẫn (/huong-dan): bố cục lưới ô + 2 trang con, đóng cứng (trước ở guide_page_layout).
 export type StaticGuideEntry = {
   pathSegment: string;
   pageSlug: string;
@@ -66,18 +66,9 @@ export type StaticGuideEntry = {
 };
 
 const GUIDE = {
-  heroTitleVi: "Hướng dẫn mua hàng & sản phẩm",
-  heroTitleEn: "Buying and product guides",
+  heroTitleVi: "Hướng dẫn chọn size sản phẩm",
+  heroTitleEn: "Product sizing guides",
   entries: [
-    {
-      pathSegment: "mua-hang",
-      pageSlug: "huong-dan-mua-hang",
-      icon: "ShoppingCart",
-      titleVi: "Hướng dẫn mua hàng",
-      titleEn: "How to buy",
-      descriptionVi: "Hướng dẫn đặt hàng, thanh toán và nhận hàng tại BigBike.",
-      descriptionEn: "Guide to ordering, payment and delivery at BigBike.",
-    },
     {
       pathSegment: "size-mu",
       pageSlug: "cach-do-size-dau",
@@ -88,13 +79,13 @@ const GUIDE = {
       descriptionEn: "How to measure head circumference and choose the right helmet size.",
     },
     {
-      pathSegment: "size-gang-tay",
-      pageSlug: "cach-do-size-gang-tay",
-      icon: "Hand",
-      titleVi: "Cách đo size găng tay bảo hộ",
-      titleEn: "How to choose glove size",
-      descriptionVi: "Hướng dẫn đo bàn tay và chọn size găng tay bảo hộ moto.",
-      descriptionEn: "How to measure your hand and choose motorcycle protective glove size.",
+      pathSegment: "size-trang-phuc",
+      pageSlug: "cach-do-size-trang-phuc",
+      icon: "Ruler",
+      titleVi: "Cách đo size trang phục bảo hộ",
+      titleEn: "How to choose clothing size",
+      descriptionVi: "Hướng dẫn đo và chọn size găng tay, giày, áo giáp, quần giáp bảo hộ.",
+      descriptionEn: "How to measure and choose sizes for gloves, boots, jackets, and pants.",
     },
   ],
 } as const;

@@ -31,46 +31,46 @@ export function CheckoutAddressFields({
 
   return (
     <>
-      <div className="col-md-6">
-        <div className="form-group">
-          <label htmlFor={`${idPrefix}_full_name`}>
-            {t("fullName")} {reqMark}
-          </label>
-          <input
-            id={`${idPrefix}_full_name`}
-            className="form-control"
-            placeholder={t("fullNamePlaceholder")}
-            autoComplete={`${autoCompletePrefix}name`}
-            aria-invalid={!!errors.fullName}
-            {...register("fullName")}
-          />
-          <FieldError message={errors.fullName?.message} />
-        </div>
-      </div>
+      <div className="col-md-12">
+        <div className="bb-co-field-row">
+          <div className="bb-co-field">
+            <label htmlFor={`${idPrefix}_full_name`}>
+              {t("fullName")} {reqMark}
+            </label>
+            <input
+              id={`${idPrefix}_full_name`}
+              className="form-control"
+              placeholder={t("fullNamePlaceholder")}
+              autoComplete={`${autoCompletePrefix}name`}
+              aria-invalid={!!errors.fullName}
+              {...register("fullName")}
+            />
+            <FieldError message={errors.fullName?.message} />
+          </div>
 
-      <div className="col-md-6">
-        <div className="form-group">
-          <label htmlFor={`${idPrefix}_phone`}>
-            {t("phone")} {reqMark}
-          </label>
-          <input
-            id={`${idPrefix}_phone`}
-            type="tel"
-            inputMode="tel"
-            maxLength={12}
-            className="form-control"
-            placeholder={t("phonePlaceholder")}
-            autoComplete={`${autoCompletePrefix}tel`}
-            aria-invalid={!!errors.phone}
-            {...register("phone")}
-          />
-          <FieldError message={errors.phone?.message} />
+          <div className="bb-co-field">
+            <label htmlFor={`${idPrefix}_phone`}>
+              {t("phone")} {reqMark}
+            </label>
+            <input
+              id={`${idPrefix}_phone`}
+              type="tel"
+              inputMode="tel"
+              maxLength={12}
+              className="form-control"
+              placeholder={t("phonePlaceholder")}
+              autoComplete={`${autoCompletePrefix}tel`}
+              aria-invalid={!!errors.phone}
+              {...register("phone")}
+            />
+            <FieldError message={errors.phone?.message} />
+          </div>
         </div>
       </div>
 
       {includeEmail && (
         <div className="col-md-12">
-          <div className="form-group">
+          <div className="bb-co-field">
             <label htmlFor={`${idPrefix}_email`}>
               {t("email")} {reqMark}
             </label>
@@ -89,7 +89,7 @@ export function CheckoutAddressFields({
       )}
 
       <div className="col-md-12">
-        <div className="form-group">
+        <div className="bb-co-field">
           <label htmlFor={`${idPrefix}_address_1`}>
             {t("address")} {reqMark}
           </label>
@@ -101,16 +101,19 @@ export function CheckoutAddressFields({
             aria-invalid={!!errors.addressLine1}
             {...register("addressLine1")}
           />
+          {idPrefix === "billing" && (
+            <p className="hint">Ví dụ: 79/30/52 Âu Cơ, Phường Hòa Bình</p>
+          )}
           <FieldError message={errors.addressLine1?.message} />
         </div>
       </div>
 
-      <div className="col-md-12 space-y-[30px] mb-[30px]">
+      <div className="col-md-12 space-y-[16px] mb-[16px]">
         <VnAddressFields
           value={vnValue}
           onChange={onVnChange}
           required
-          labelClassName="block text-[14px] mb-2.5"
+          labelClassName="block text-[15px] font-bold text-foreground mb-1.5"
         />
         {(errors.province || errors.district) && (
           <FieldError message={errors.province?.message ?? errors.district?.message} />

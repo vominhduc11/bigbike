@@ -22,10 +22,9 @@ import {
 // Trang thông tin ĐÃ ĐÓNG CỨNG (lib/content/static-pages) — không còn fetch backend.
 // Chính sách phục vụ tại /chinh-sach/{slug-gốc} (khớp menu "policy" + canonical của trang).
 const POLICY_PAGE_SLUGS = [
-  "chinh-sach-bao-ve-thong-tin-ca-nhan",
+  "chinh-sach-bao-mat-thong-tin",
   "chinh-sach-bao-hanh",
   "chinh-sach-doi-tra-hang",
-  "cac-dieu-kien-va-dieu-khoan",
 ];
 
 // Single-file sitemap suitable for the cutover catalog (< 50k URLs).

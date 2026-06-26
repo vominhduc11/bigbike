@@ -67,4 +67,13 @@ describe("sanitizeRichHtml — WP shortcodes", () => {
     expect(output).toContain('/media/wp-uploads/2026/04/a.webp');
     expect(output).not.toContain("localhost:9000");
   });
+
+  it("preserves style tags only when explicitly requested", () => {
+    const input = '<style>.test { color: red; }</style><p>Text</p>';
+    expect(sanitizeRichHtml(input)).not.toContain("<style>");
+
+    const output = sanitizeRichHtml(input, { allowStyleTags: true });
+    expect(output).toContain("<style>");
+    expect(output).toContain(".test");
+  });
 });

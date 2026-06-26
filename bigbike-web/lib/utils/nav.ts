@@ -7,27 +7,40 @@ export function normalizeMenuUrl(url: string): string {
   if (DANGEROUS_SCHEMES.some((s) => lower.startsWith(s))) return "/";
 
   // Extract just the pathname from absolute URLs so active-state logic works correctly.
+  let path = trimmed;
   if (lower.startsWith("http://") || lower.startsWith("https://")) {
     try {
       const parsed = new URL(trimmed);
-      const path = parsed.pathname;
-      return path.endsWith("/") || path.includes("?") || path.includes("#")
-        ? path
-        : path + "/";
+      path = parsed.pathname;
     } catch {
       return "/";
     }
   }
 
-  if (
-    trimmed.startsWith("/") &&
-    !trimmed.endsWith("/") &&
-    !trimmed.includes("?") &&
-    !trimmed.includes("#")
-  ) {
-    return trimmed + "/";
+  // Chuẩn hóa và map các URL cũ sang URL tĩnh mới để tránh 404
+  let normalizedPath = path;
+  if (normalizedPath.startsWith("/")) {
+    // Loại bỏ trailing slash và .html để so khớp
+    const cleanPath = normalizedPath.replace(/\/$/, "").replace(/\.html$/, "");
+    
+    if (cleanPath === "/chinh-sach/bao-mat") {
+      normalizedPath = "/chinh-sach/chinh-sach-bao-mat-thong-tin/";
+    } else if (cleanPath === "/chinh-sach/bao-hanh") {
+      normalizedPath = "/chinh-sach/chinh-sach-bao-hanh/";
+    } else if (cleanPath === "/chinh-sach/doi-tra") {
+      normalizedPath = "/chinh-sach/chinh-sach-doi-tra-hang/";
+    }
   }
-  return trimmed;
+
+  if (
+    normalizedPath.startsWith("/") &&
+    !normalizedPath.endsWith("/") &&
+    !normalizedPath.includes("?") &&
+    !normalizedPath.includes("#")
+  ) {
+    return normalizedPath + "/";
+  }
+  return normalizedPath;
 }
 
 export function isActivePath(pathname: string | null, href: string): boolean {

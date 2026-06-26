@@ -6,6 +6,7 @@ import { listPublicSettings } from "@/lib/api/public-api";
 import { normalizeMenuUrl } from "@/lib/utils/nav";
 import { telHref } from "@/lib/utils/format";
 import { pickSetting } from "@/lib/utils/settings";
+import { getStaticPage, getGuideLayout } from "@/lib/content/static-pages";
 
 const T = "/wp-content/themes/bigbike";
 
@@ -81,6 +82,58 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
   const businessRegistration = pickSetting(settings, ["business_registration"]);
   const contactAddress = pickSetting(settings, ["contact_address"]);
 
+  // Load static pages and guide entries to ensure they are available in the footer
+  const returnPage = getStaticPage("chinh-sach-doi-tra-hang", locale);
+  const warrantyPage = getStaticPage("chinh-sach-bao-hanh", locale);
+  const privacyPage = getStaticPage("chinh-sach-bao-mat-thong-tin", locale);
+  
+  const guideLayout = getGuideLayout(locale);
+  const sizeMuEntry = guideLayout.entries.find((e) => e.pageSlug === "cach-do-size-dau");
+  const sizeTrangPhucEntry = guideLayout.entries.find((e) => e.pageSlug === "cach-do-size-trang-phuc");
+
+  const essentialItems = [
+    {
+      href: "/chinh-sach/chinh-sach-doi-tra-hang/",
+      label: returnPage?.title || (locale === "en" ? "Return Policy" : "Chính sách đổi trả hàng"),
+    },
+    {
+      href: "/chinh-sach/chinh-sach-bao-hanh/",
+      label: warrantyPage?.title || (locale === "en" ? "Warranty Policy" : "Chính sách bảo hành"),
+    },
+    {
+      href: "/chinh-sach/chinh-sach-bao-mat-thong-tin/",
+      label: privacyPage?.title || (locale === "en" ? "Privacy Policy" : "Chính sách bảo mật thông tin"),
+    },
+    {
+      href: "/huong-dan/size-mu/",
+      label: sizeMuEntry?.title || (locale === "en" ? "Helmet Sizing Guide" : "Cách xác định size mũ bảo hiểm"),
+    },
+    {
+      href: "/huong-dan/size-trang-phuc/",
+      label: sizeTrangPhucEntry?.title || (locale === "en" ? "Clothing Sizing Guide" : "Cách đo size trang phục bảo hộ"),
+    },
+  ];
+
+  // Merge essential items into footer menu nodes to guarantee they are on the UI, avoiding duplicates
+  const normalizedFooterHrefs = new Set(
+    footerNodes.map((node) => normalizeMenuUrl(node.url))
+  );
+
+  const additionalNodes = essentialItems
+    .filter((item) => !normalizedFooterHrefs.has(item.href))
+    .map((item, index) => ({
+      id: `essential-fallback-${index}`,
+      parentId: null,
+      label: item.label,
+      url: item.href,
+      sortOrder: 100 + index,
+      openInNewTab: false,
+      cssClass: null,
+      children: [],
+    }));
+
+  const mergedFooterNodes = [...footerNodes, ...additionalNodes];
+
   return (
     <footer data-bb-focus="general_brand">
       <div className="top">
@@ -137,7 +190,7 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
                         <Tr ns="Footer" k="infoHeading" /> <i className="fal fa-plus" />
                       </p>
                       <div className="toggle--item-body">
-                        <FooterMenu nodes={footerNodes} />
+                        <FooterMenu nodes={mergedFooterNodes} />
                       </div>
                     </div>
                   </div>
