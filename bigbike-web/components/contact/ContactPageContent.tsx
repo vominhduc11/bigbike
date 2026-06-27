@@ -109,7 +109,7 @@ function ColHeader({ icon, children }: { icon: ReactNode; children: ReactNode })
     >
       {icon}
       <h2
-        className="text-ui-16"
+        className="text-ui-22 max-md:text-ui-18"
         style={{
           margin: 0,
           fontWeight: 700,
@@ -215,11 +215,11 @@ function SocialLink({
         {icon}
       </span>
       <span style={{ minWidth: 0, flex: 1 }}>
-        <span className="text-ui-15" style={{ display: "block", fontWeight: 700, color: TEXT }}>
+        <span className="text-ui-16 max-md:text-ui-14" style={{ display: "block", fontWeight: 700, color: TEXT }}>
           {name}
         </span>
         {sub && (
-          <span className="text-ui-13" style={{ display: "block", color: FAINT, marginTop: 2 }}>
+          <span className="text-ui-14" style={{ display: "block", color: FAINT, marginTop: 2 }}>
             {sub}
           </span>
         )}
@@ -419,7 +419,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                 label={vi ? "Giờ làm việc" : "Opening hours"}
               >
                 <div
-                  className="text-ui-14"
+                  className="text-ui-16 max-md:text-ui-14"
                   style={{
                     display: "grid",
                     gridTemplateColumns: "auto 1fr",
@@ -488,13 +488,13 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                 label={vi ? "Địa chỉ" : "Address"}
               >
                 <div
-                  className="text-ui-15"
+                  className="text-ui-16 max-md:text-ui-14"
                   style={{ color: TEXT, fontWeight: 700, lineHeight: 1.4 }}
                 >
                   {mainAddr}
                 </div>
                 {subAddr && (
-                  <div className="text-ui-13" style={{ marginTop: 2, color: MUTED }}>
+                  <div className="text-ui-14" style={{ marginTop: 2, color: MUTED }}>
                     {subAddr}
                   </div>
                 )}
@@ -504,7 +504,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
             {/* Hotline */}
             {contact.hotline && (
               <InfoRow icon={<Phone size={16} color={RED} />} label="Hotline">
-                <div className="text-ui-16" style={{ color: TEXT, fontWeight: 700 }}>
+                <div className="text-ui-18 max-md:text-ui-16" style={{ color: TEXT, fontWeight: 700 }}>
                   <a href={telHref(contact.hotline)} style={{ color: TEXT, textDecoration: "none" }}>
                     {contact.hotline}
                   </a>
@@ -532,7 +532,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                   )}
                 </div>
                 {zaloPhone && contact.zaloUrl && (
-                  <div className="text-ui-13" style={{ marginTop: 4, color: MUTED }}>
+                  <div className="text-ui-14" style={{ marginTop: 4, color: MUTED }}>
                     {vi ? "Zalo: " : "Zalo: "}
                     <a
                       href={contact.zaloUrl}
