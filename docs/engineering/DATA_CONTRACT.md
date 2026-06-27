@@ -696,6 +696,10 @@ Bản tiếng Anh lưu trên các cột `_en` nullable cùng dòng trong bảng 
 
 Status: `CONFIRMED_FROM_CODE` — `CategoryEntity`, `CategoryTranslations` domain record, migration `V137`.
 
+### Category soft-delete — `deleted` (V293)
+
+Cột `deleted` (`BOOLEAN`, `NOT NULL`, mặc định `false`) trên bảng `categories` được sử dụng để quản lý trạng thái Xóa mềm (Thùng rác) của danh mục. Khi `deleted = true`, danh mục được coi là nằm trong Thùng rác và sẽ tự động bị ẩn khỏi toàn bộ luồng đọc công khai (storefront web/mobile). Các sản phẩm thuộc danh mục bị xóa mềm vẫn được giữ nguyên và bán bình thường.
+
 ### Category menu/sidebar line-icon — `menu_icon_url` (V213)
 
 Cột `menu_icon_url` (`TEXT`, nullable) trên `categories` lưu **icon line đơn sắc** của danh mục, dùng cho:

@@ -79,6 +79,7 @@ public class AdminCatalogReadService {
             String q,
             String search,
             String visibility,
+            Boolean deleted,
             String lang
     ) {
         SortSpec sortSpec = sortParser.parse(sort, "updatedAt", SortDirection.DESC, CATEGORY_SORT_FIELDS);
@@ -86,7 +87,7 @@ public class AdminCatalogReadService {
         boolean asc = sortSpec.direction() == SortDirection.ASC;
 
         var paged = catalogReadRepository.findCategoriesPaged(
-                query, visibility, sortSpec.field(), asc, page, size, normalizeLocale(lang)
+                query, visibility, deleted, sortSpec.field(), asc, page, size, normalizeLocale(lang)
         );
 
         long total = paged.totalItems();

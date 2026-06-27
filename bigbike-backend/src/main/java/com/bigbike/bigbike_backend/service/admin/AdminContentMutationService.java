@@ -168,6 +168,39 @@ public class AdminContentMutationService {
         return toAdminContentItem(article);
     }
 
+    @Transactional
+    public AdminContentItem restoreArticle(String articleId, UUID adminId) {
+        requireJpaPersistenceEnabled();
+        ArticleEntity entity = articleJpaRepository.findById(articleId)
+                .orElseThrow(() -> new NotFoundException("Content not found."));
+        if (entity.getPublishStatus() != PublishStatus.TRASH) {
+            Article article = contentReadRepository.findArticleById(entity.getId())
+                    .orElseThrow(() -> new NotFoundException("Content not found."));
+            return toAdminContentItem(article);
+        }
+        entity.setPublishStatus(PublishStatus.DRAFT);
+        entity.setUpdatedAt(Instant.now());
+        articleJpaRepository.save(entity);
+        auditLog("CONTENT_ARTICLE_RESTORED", "CONTENT", adminId, null, articleJson(entity));
+        revalidateArticle(entity, null);
+        Article article = contentReadRepository.findArticleById(entity.getId())
+                .orElseThrow(() -> new NotFoundException("Content not found."));
+        return toAdminContentItem(article);
+    }
+
+    @Transactional
+    public void hardDeleteArticle(String articleId, UUID adminId) {
+        requireJpaPersistenceEnabled();
+        ArticleEntity entity = articleJpaRepository.findById(articleId)
+                .orElseThrow(() -> new NotFoundException("Content not found."));
+        if (entity.getPublishStatus() != PublishStatus.TRASH) {
+            throw new com.bigbike.bigbike_backend.api.error.ConflictException("Only trashed content can be permanently deleted.");
+        }
+        auditLog("CONTENT_ARTICLE_HARD_DELETED", "CONTENT", adminId, articleJson(entity), null);
+        articleJpaRepository.delete(entity);
+        revalidateArticle(entity, null);
+    }
+
     private void requireJpaPersistenceEnabled() {
         if (articleJpaRepository == null
                 || contentCategoryJpaRepository == null) {

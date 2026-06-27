@@ -12,7 +12,7 @@ import { FilterSelect } from '../components/FilterSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { showConfirm } from '../lib/confirm'
-import { ApiClientError, exportProductsCsv, fetchBrands, fetchCategoryTree, fetchProductDetail, fetchProducts, restoreProduct, softDeleteProduct } from '../lib/adminApi'
+import { ApiClientError, exportProductsCsv, fetchBrands, fetchCategoryTree, fetchProductDetail, fetchProducts, restoreProduct, softDeleteProduct, permanentDeleteProduct } from '../lib/adminApi'
 import { useAdminList } from '../lib/useAdminList'
 import { useContentLang } from '../lib/contentLang'
 import { useDebounce } from '../lib/useDebounce'
@@ -131,6 +131,30 @@ export function ProductListScreen({ navigate, canUpdate }) {
       toast.error(message)
     } finally {
       setRestoringId(null)
+    }
+  }, [queryClient, t])
+
+  const handlePermanentDelete = useCallback(async (product) => {
+    const confirmed = await showConfirm(
+      t('products.permanentDeleteConfirm', { name: product.name, defaultValue: `Bạn có chắc chắn muốn xóa vĩnh viễn sản phẩm ${product.name}? Thao tác này không thể hoàn tác.` }),
+      t('products.permanentDeleteConfirmTitle', { defaultValue: 'Xác nhận xóa vĩnh viễn' }),
+      { confirmLabel: t('products.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' }), variant: 'danger' },
+    )
+    if (!confirmed) return
+
+    setDeletingId(product.id)
+    try {
+      await permanentDeleteProduct(product.id)
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['product', product.id] })
+      toast.success(t('products.permanentDeleteSuccess', { defaultValue: 'Xóa vĩnh viễn sản phẩm thành công.' }))
+    } catch (error) {
+      const message = error instanceof ApiClientError
+        ? error.message
+        : (error?.message || t('products.permanentDeleteError', { defaultValue: 'Không thể xóa vĩnh viễn sản phẩm.' }))
+      toast.error(message)
+    } finally {
+      setDeletingId(null)
     }
   }, [queryClient, t])
 
@@ -514,6 +538,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
                     onCloseMenu={() => setOpenMenu(null)}
                     onDuplicate={handleDuplicate}
                     onRestore={handleRestore}
+                    onPermanentDelete={handlePermanentDelete}
                     onDelete={handleDelete}
                   />
                 ))}
@@ -532,6 +557,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
                 isRestoring={restoringId === product.id}
                 onDuplicate={handleDuplicate}
                 onRestore={handleRestore}
+                onPermanentDelete={handlePermanentDelete}
                 onDelete={handleDelete}
               />
             ))}

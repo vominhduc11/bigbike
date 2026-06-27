@@ -173,6 +173,16 @@ public class AdminCatalogController extends AdminControllerSupport {
         return apiResponseFactory.data(adminCatalogMutationService.restoreProduct(id, resolveAdminId()), request);
     }
 
+    @DeleteMapping("/products/{id}/permanent")
+    public org.springframework.http.ResponseEntity<Void> permanentDeleteProduct(
+            @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "products.update");
+        adminCatalogMutationService.hardDeleteProduct(id, resolveAdminId());
+        return org.springframework.http.ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/products/homepage-blocks")
     public ApiDataResponse<List<Product>> setHomepageBlocks(
             @Valid @RequestBody SetHomepageBlocksRequest payload,
@@ -191,6 +201,7 @@ public class AdminCatalogController extends AdminControllerSupport {
             @RequestParam(required = false) @Size(max = 100) String q,
             @RequestParam(required = false) @Size(max = 100) String search,
             @RequestParam(required = false) @Pattern(regexp = VISIBILITY_REGEX, message = "Invalid visibility.") String visibility,
+            @RequestParam(required = false) Boolean deleted,
             @RequestParam(defaultValue = "vi") @Pattern(regexp = LANG_REGEX, message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
@@ -204,6 +215,7 @@ public class AdminCatalogController extends AdminControllerSupport {
                         q,
                         search,
                         visibility,
+                        deleted,
                         lang
                 ),
                 request
@@ -261,7 +273,25 @@ public class AdminCatalogController extends AdminControllerSupport {
      * category — products are never deleted as a side effect.
      */
     @DeleteMapping("/categories/{id}")
-    public org.springframework.http.ResponseEntity<Void> hardDeleteCategory(
+    public ApiDataResponse<Category> softDeleteCategory(
+            @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "catalog.update");
+        return apiResponseFactory.data(adminCatalogMutationService.softDeleteCategory(id, resolveAdminId()), request);
+    }
+
+    @PostMapping("/categories/{id}/restore")
+    public ApiDataResponse<Category> restoreCategory(
+            @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "catalog.update");
+        return apiResponseFactory.data(adminCatalogMutationService.restoreCategory(id, resolveAdminId()), request);
+    }
+
+    @DeleteMapping("/categories/{id}/permanent")
+    public org.springframework.http.ResponseEntity<Void> permanentDeleteCategory(
             @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
             HttpServletRequest request
     ) {
@@ -327,12 +357,31 @@ public class AdminCatalogController extends AdminControllerSupport {
     }
 
     @DeleteMapping("/brands/{id}")
-    public ApiDataResponse<Brand> deleteBrand(
+    public ApiDataResponse<Brand> softDeleteBrand(
             @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "catalog.update");
         return apiResponseFactory.data(adminCatalogMutationService.deleteBrand(id, resolveAdminId()), request);
+    }
+
+    @PostMapping("/brands/{id}/restore")
+    public ApiDataResponse<Brand> restoreBrand(
+            @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "catalog.update");
+        return apiResponseFactory.data(adminCatalogMutationService.restoreBrand(id, resolveAdminId()), request);
+    }
+
+    @DeleteMapping("/brands/{id}/permanent")
+    public org.springframework.http.ResponseEntity<Void> permanentDeleteBrand(
+            @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "catalog.update");
+        adminCatalogMutationService.hardDeleteBrand(id, resolveAdminId());
+        return org.springframework.http.ResponseEntity.noContent().build();
     }
 
     private static int resolveSize(Integer size, Integer pageSize) {

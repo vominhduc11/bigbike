@@ -20,6 +20,7 @@ export function ProductRow({
   onCloseMenu,
   onDuplicate,
   onRestore,
+  onPermanentDelete,
   onDelete,
 }) {
   const { t } = useTranslation()
@@ -144,9 +145,15 @@ export function ProductRow({
                 </button>
               )}
               {canUpdate && isTrashed && (
-                <button type="button" disabled={isBusy} onClick={() => { onCloseMenu(); onRestore(product) }}>
-                  <Undo2 size={13} />{isRestoring ? t('products.restoringLabel') : t('products.restore')}
-                </button>
+                <>
+                  <button type="button" disabled={isBusy} onClick={() => { onCloseMenu(); onRestore(product) }}>
+                    <Undo2 size={13} />{isRestoring ? t('products.restoringLabel') : t('products.restore')}
+                  </button>
+                  <hr />
+                  <button type="button" className="danger" disabled={isBusy} onClick={() => { onCloseMenu(); onPermanentDelete(product) }}>
+                    <Trash2 size={13} />{t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' })}
+                  </button>
+                </>
               )}
               {canUpdate && !isTrashed && (
                 <>

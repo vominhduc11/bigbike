@@ -1232,9 +1232,12 @@
       "hardDeleteBtn": "Xoá vĩnh viễn danh mục này",
       "hardDeleteConfirmTitle": "Xoá vĩnh viễn danh mục?",
       "hardDeleteConfirm": "Bạn sắp xoá vĩnh viễn danh mục \"{{name}}\".\n\nHành động này KHÔNG THỂ hoàn tác. Sau khi xoá, danh mục sẽ biến mất khỏi cả admin và website.\n\nNếu chỉ muốn tạm ẩn khỏi website, hãy dùng nút \"Ẩn\" thay vì xoá.",
-      "hardDeleteConfirmWithChildren": "Bạn sắp xoá vĩnh viễn danh mục \"{{name}}\".\n\n⚠️ Danh mục này đang chứa {{count}} danh mục con — tất cả cũng sẽ bị xoá theo.\n\nHành động này KHÔNG THỂ hoàn tác. Nếu chỉ muốn tạm ẩn, hãy dùng nút \"Ẩn\" thay vì xoá.",
+      "hardDeleteConfirmWithChildren": "Bạn sắp xoá vĩnh viễn danh mục \"{{name}}\".\n\n⚠️ Danh mục này đang chứa {{count}} danh mục con — tất cả cũng sẽ bị xoá theo. Mọi sản phẩm trong các danh mục này sẽ được chuyển sang \"Chưa phân loại\" (không bị xoá).\n\nHành động này KHÔNG THỂ hoàn tác. Nếu chỉ muốn tạm ẩn, hãy dùng nút \"Ẩn\" thay vì xoá.",
+      "hardDeleteConfirmWithProducts": "Bạn sắp xoá vĩnh viễn danh mục \"{{name}}\".\n\n⚠️ Danh mục này đang chứa {{count}} sản phẩm — các sản phẩm sẽ được chuyển sang \"Chưa phân loại\" (không bị xoá).\n\nHành động này KHÔNG THỂ hoàn tác. Nếu chỉ muốn tạm ẩn, hãy dùng nút \"Ẩn\" thay vì xoá.",
       "hardDeleteSuccess": "Đã xoá vĩnh viễn danh mục.",
-      "hardDeleteConflict": "Chưa thể xoá danh mục này vì vẫn còn sản phẩm đang được xếp vào đây (hoặc trong một danh mục con của nó). Hãy chuyển các sản phẩm sang danh mục khác trước, rồi thử lại.",
+      "hardDeleteConflict": "Không thể xoá danh mục này. Vui lòng thử lại hoặc liên hệ kỹ thuật.",
+      "systemCategoryTitle": "Danh mục hệ thống",
+      "systemCategoryDesc": "\"Chưa phân loại\" là danh mục hệ thống dùng để chứa sản phẩm khi danh mục gốc bị xoá. Không thể đổi tên hoặc xoá danh mục này.",
       "enFieldHint": "(tiếng Anh — tùy chọn)",
       "namePlaceholderEn": "Tên tiếng Anh (tùy chọn)"
     }

@@ -287,6 +287,58 @@ Admin detail reads (`AdminContentItem`) của Article bao gồm `translations: {
 
 Status: `CONFIRMED_FROM_CODE` — `AdminContentItem.translations` (kiểu `ArticleTranslations`, serialize thẳng `{ en: {...} }`), `AdminContentReadService.fromArticle`, `ContentFieldApplier.toAdminContentItem`. Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article bilingual content (V138)".
 
+## Administrative Deletion and Restore Contract (Trash Flow)
+
+Các endpoint dưới đây được sử dụng để quản lý trạng thái Xóa mềm (Trash), Khôi phục (Restore) và Xóa vĩnh viễn (Permanent Delete) của 5 module Nhóm A.
+
+### 1. Products (Sản phẩm)
+- **Xóa mềm**: `DELETE /api/v1/admin/products/{id}`
+  - Đưa sản phẩm vào Thùng rác bằng cách đặt `publishStatus = PublishStatus.TRASH`.
+- **Khôi phục**: `POST /api/v1/admin/products/{id}/restore`
+  - Đặt `publishStatus = PublishStatus.DRAFT`.
+- **Xóa vĩnh viễn**: `DELETE /api/v1/admin/products/{id}/permanent`
+  - Chặn lại bằng lỗi `409 Conflict` nếu trạng thái hiện tại khác `TRASH`.
+  - Thực hiện xóa cứng sản phẩm khỏi DB, tự động xóa liên đới các bảng liên quan (variants, specifications, v.v.) và xóa tham chiếu khỏi `home_category_highlights`, `wishlist_items`.
+
+### 2. Categories (Danh mục)
+- **Xóa mềm**: `DELETE /api/v1/admin/categories/{id}`
+  - Đặt `deleted = true` trên danh mục mục tiêu và toàn bộ cây con của nó. Không chuyển sản phẩm.
+- **Khôi phục**: `POST /api/v1/admin/categories/{id}/restore`
+  - Đặt `deleted = false` trên danh mục mục tiêu và toàn bộ cây con của nó.
+- **Xóa vĩnh viễn**: `DELETE /api/v1/admin/categories/{id}/permanent`
+  - Chặn lại bằng lỗi `409 Conflict` nếu danh mục chưa được xóa mềm (`deleted == false`).
+  - Tự động chuyển toàn bộ sản phẩm trong cây con sang danh mục hệ thống "Chưa phân loại" (`uncategorized`).
+  - Thực hiện xóa cứng danh mục và toàn bộ cây con.
+  - Chặn (409) mọi thao tác xóa (mềm/cứng) đối với danh mục hệ thống `uncategorized`.
+
+### 3. Brands (Thương hiệu)
+- **Xóa mềm (Ẩn)**: `DELETE /api/v1/admin/brands/{id}`
+  - Đặt `isVisible = false`.
+- **Khôi phục**: `POST /api/v1/admin/brands/{id}/restore`
+  - Đặt `isVisible = true`.
+- **Xóa vĩnh viễn**: `DELETE /api/v1/admin/brands/{id}/permanent`
+  - Chặn lại bằng lỗi `409 Conflict` nếu thương hiệu chưa được ẩn/xóa mềm (`isVisible == true`).
+  - Thực hiện xóa cứng thương hiệu khỏi DB, đặt null các tham chiếu thương hiệu của sản phẩm.
+
+### 4. News Articles (Bài viết / Tin tức)
+- **Xóa mềm**: `DELETE /api/v1/admin/content/articles/{id}` (chuyển qua `DELETE /api/v1/admin/content/{type}/{id}`)
+  - Đặt `publishStatus = PublishStatus.TRASH`.
+- **Khôi phục**: `POST /api/v1/admin/content/articles/{id}/restore`
+  - Đặt `publishStatus = PublishStatus.DRAFT`.
+- **Xóa vĩnh viễn**: `DELETE /api/v1/admin/content/articles/{id}/permanent`
+  - Chặn lại bằng lỗi `409 Conflict` nếu trạng thái hiện tại khác `TRASH`.
+  - Thực hiện xóa cứng bài viết khỏi DB.
+
+### 5. Thư viện ảnh (Media)
+- **Xóa mềm**: `DELETE /api/v1/admin/media/{id}`
+  - Đặt `status = "DELETED"`.
+- **Khôi phục**: `POST /api/v1/admin/media/{id}/restore`
+  - Đặt `status = "ACTIVE"`.
+- **Xóa vĩnh viễn**: `DELETE /api/v1/admin/media/{id}?permanent=true`
+  - Chặn lại bằng lỗi `409 Conflict` nếu trạng thái hiện tại khác `DELETED`.
+  - Chặn lại bằng lỗi `409 Conflict` nếu ảnh đang được dùng.
+  - Thực hiện xóa cứng khỏi DB và xóa tệp khỏi MinIO.
+
 ## Commerce Mutation Contracts
 
 | Endpoint | Current contract | Status | Evidence |

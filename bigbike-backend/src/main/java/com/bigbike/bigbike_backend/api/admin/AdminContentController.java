@@ -150,6 +150,25 @@ public class AdminContentController extends AdminControllerSupport {
         return apiResponseFactory.data(adminContentMutationService.deleteArticle(id, resolveAdminId()), request);
     }
 
+    @PostMapping("/articles/{id}/restore")
+    public ApiDataResponse<AdminContentItem> restoreArticle(
+            @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "content.update");
+        return apiResponseFactory.data(adminContentMutationService.restoreArticle(id, resolveAdminId()), request);
+    }
+
+    @DeleteMapping("/articles/{id}/permanent")
+    public org.springframework.http.ResponseEntity<Void> permanentDeleteArticle(
+            @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "content.update");
+        adminContentMutationService.hardDeleteArticle(id, resolveAdminId());
+        return org.springframework.http.ResponseEntity.noContent().build();
+    }
+
     /**
      * Resolves the authenticated admin's UUID from the security context.
      *

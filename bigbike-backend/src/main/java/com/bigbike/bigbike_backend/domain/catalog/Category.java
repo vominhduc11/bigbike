@@ -18,6 +18,7 @@ public record Category(
         ImageAsset mobileBannerImage,
         SeoMeta seo,
         boolean isVisible,
+        boolean deleted,
         Boolean showOnHomepage,
         Integer sortOrder,
         /** Khối giới thiệu hiển thị ở ĐẦU trang danh mục (cột intro_content, đổi từ content_bottom — V290). */

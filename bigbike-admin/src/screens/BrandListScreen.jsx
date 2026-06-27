@@ -6,7 +6,7 @@ import { showConfirm } from '../lib/confirm'
 import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
-import { Award, Pencil, Plus } from 'lucide-react'
+import { Award, Pencil, Plus, Trash2, Undo2 } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -14,7 +14,7 @@ import { StatusBadge } from '../components/StatusBadge'
 import { AdminTable } from '../components/AdminTable'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { FilterChips } from '../components/FilterChips'
-import { fetchBrands, updateBrand } from '../lib/adminApi'
+import { fetchBrands, updateBrand, deleteBrand, restoreBrand, permanentDeleteBrand } from '../lib/adminApi'
 import { formatDateTime, formatText, stripHtml } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
 import { useContentLang } from '../lib/contentLang'
@@ -126,6 +126,57 @@ export function BrandListScreen({ navigate, canUpdate }) {
     else toast.warning(summary)
   }
 
+  const handleSoftDelete = async (brand) => {
+    const confirmed = await showConfirm(
+      t('brands.deleteConfirm', { name: brand.name, defaultValue: `Bạn có chắc chắn muốn xóa thương hiệu ${brand.name}? Các sản phẩm của thương hiệu này sẽ bị hủy liên kết.` }),
+      t('brands.deleteConfirmTitle', { defaultValue: 'Xác nhận xóa' }),
+      { confirmLabel: t('common.delete'), variant: 'danger' }
+    )
+    if (!confirmed) return
+
+    try {
+      await deleteBrand(brand.id)
+      queryClient.invalidateQueries({ queryKey: ['brands'] })
+      toast.success(t('brands.deleteSuccess', { defaultValue: 'Đã chuyển thương hiệu vào Thùng rác.' }))
+    } catch (error) {
+      toast.error(error.message || t('common.error'))
+    }
+  }
+
+  const handleRestore = async (brand) => {
+    const confirmed = await showConfirm(
+      t('brands.restoreConfirm', { name: brand.name, defaultValue: `Bạn có chắc chắn muốn khôi phục thương hiệu ${brand.name}?` }),
+      t('brands.restoreConfirmTitle', { defaultValue: 'Xác nhận khôi phục' }),
+      { confirmLabel: t('products.restore'), variant: 'default' }
+    )
+    if (!confirmed) return
+
+    try {
+      await restoreBrand(brand.id)
+      queryClient.invalidateQueries({ queryKey: ['brands'] })
+      toast.success(t('brands.restoreSuccess', { defaultValue: 'Khôi phục thương hiệu thành công.' }))
+    } catch (error) {
+      toast.error(error.message || t('common.error'))
+    }
+  }
+
+  const handlePermanentDelete = async (brand) => {
+    const confirmed = await showConfirm(
+      t('brands.permanentDeleteConfirm', { name: brand.name, defaultValue: `Bạn có chắc chắn muốn xóa vĩnh viễn thương hiệu ${brand.name}? Thao tác này không thể hoàn tác.` }),
+      t('brands.permanentDeleteConfirmTitle', { defaultValue: 'Xác nhận xóa vĩnh viễn' }),
+      { confirmLabel: t('common.permanentDelete'), variant: 'danger' }
+    )
+    if (!confirmed) return
+
+    try {
+      await permanentDeleteBrand(brand.id)
+      queryClient.invalidateQueries({ queryKey: ['brands'] })
+      toast.success(t('brands.permanentDeleteSuccess', { defaultValue: 'Xóa vĩnh viễn thương hiệu thành công.' }))
+    } catch (error) {
+      toast.error(error.message || t('common.error'))
+    }
+  }
+
   const sortLabelKey = SORT_LABEL_KEY[query.sort] || 'newestUpdated'
 
   const activeFilterChips = []
@@ -207,17 +258,57 @@ export function BrandListScreen({ navigate, canUpdate }) {
       key: 'actions',
       label: '',
       align: 'right',
-      render: (brand) => (
-        <button
-          type="button"
-          className="bb-icon-btn"
-          title={t('common.edit')}
-          aria-label={t('common.edit')}
-          onClick={(e) => { e.stopPropagation(); navigate(`/admin/brands/${brand.id}`) }}
-        >
-          <Pencil size={14} />
-        </button>
-      ),
+      render: (brand) => {
+        const isTrashed = query.visibility === 'HIDDEN'
+        return (
+          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
+            {!isTrashed && (
+              <button
+                type="button"
+                className="bb-icon-btn"
+                title={t('common.edit')}
+                aria-label={t('common.edit')}
+                onClick={() => navigate(`/admin/brands/${brand.id}`)}
+              >
+                <Pencil size={14} />
+              </button>
+            )}
+            {canUpdate && !isTrashed && (
+              <button
+                type="button"
+                className="bb-icon-btn danger"
+                title={t('common.delete')}
+                aria-label={t('common.delete')}
+                onClick={() => handleSoftDelete(brand)}
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
+            {canUpdate && isTrashed && (
+              <>
+                <button
+                  type="button"
+                  className="bb-icon-btn"
+                  title={t('products.restore')}
+                  aria-label={t('products.restore')}
+                  onClick={() => handleRestore(brand)}
+                >
+                  <Undo2 size={14} />
+                </button>
+                <button
+                  type="button"
+                  className="bb-icon-btn danger"
+                  title={t('common.permanentDelete')}
+                  aria-label={t('common.permanentDelete')}
+                  onClick={() => handlePermanentDelete(brand)}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </>
+            )}
+          </div>
+        )
+      },
     },
   ]
 
@@ -265,9 +356,9 @@ export function BrandListScreen({ navigate, canUpdate }) {
           onValueChange={(v) => updateQuery({ visibility: v }, { resetPage: true })}
           ariaLabel={t('brands.filterVisibility')}
           options={[
-            { value: 'ALL', label: t('brands.filterVisibility') },
-            { value: 'VISIBLE', label: t('common.visible') },
-            { value: 'HIDDEN', label: t('common.hidden') },
+            { value: 'ALL', label: t('brands.filterVisibilityAll', { defaultValue: 'Tất cả trạng thái' }) },
+            { value: 'VISIBLE', label: t('common.visible', { defaultValue: 'Đang hiển thị' }) },
+            { value: 'HIDDEN', label: t('common.hidden', { defaultValue: 'Thùng rác' }) },
           ]}
         />
         <FilterSelect

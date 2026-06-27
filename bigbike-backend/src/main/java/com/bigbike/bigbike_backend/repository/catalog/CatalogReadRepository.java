@@ -74,6 +74,7 @@ public interface CatalogReadRepository {
     CategoryPage findCategoriesPaged(
             String query,
             String visibility,
+            Boolean deleted,
             String sortField,
             boolean sortAsc,
             int page,

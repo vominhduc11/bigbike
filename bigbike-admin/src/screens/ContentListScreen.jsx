@@ -5,7 +5,7 @@ import { toast } from '@/lib/toast'
 import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
-import { FileText, Plus } from 'lucide-react'
+import { FileText, Plus, Pencil, Trash2, Undo2 } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { AdminTable } from '../components/AdminTable'
 import { BulkActionBar } from '../components/BulkActionBar'
@@ -13,7 +13,7 @@ import { FilterChips } from '../components/FilterChips'
 import { PublishStatusBadge } from '../components/StatusBadge'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
-import { deleteContent, fetchContent, updateContent } from '../lib/adminApi'
+import { deleteContent, fetchContent, updateContent, restoreContent, permanentDeleteContent } from '../lib/adminApi'
 import { allowedPublishOptions } from '../lib/contentPublishTransitions'
 import { showConfirm } from '../lib/confirm'
 import { formatDateTime, formatText } from '../lib/formatters'
@@ -119,6 +119,57 @@ export function ContentListScreen({ navigate, canUpdate }) {
     }
   }
 
+  const handleSoftDelete = async (item) => {
+    const confirmed = await showConfirm(
+      t('content.deleteConfirm', { title: item.title, defaultValue: `Bạn có chắc chắn muốn xóa bài viết "${item.title}"?` }),
+      t('content.deleteConfirmTitle', { defaultValue: 'Xác nhận xóa' }),
+      { confirmLabel: t('common.delete'), variant: 'danger' }
+    )
+    if (!confirmed) return
+
+    try {
+      await deleteContent(item.type, item.id)
+      queryClient.invalidateQueries({ queryKey: ['content'] })
+      toast.success(t('content.deleteSuccess', { defaultValue: 'Đã chuyển bài viết vào Thùng rác.' }))
+    } catch (error) {
+      toast.error(error.message || t('common.error'))
+    }
+  }
+
+  const handleRestore = async (item) => {
+    const confirmed = await showConfirm(
+      t('content.restoreConfirm', { title: item.title, defaultValue: `Bạn có chắc chắn muốn khôi phục bài viết "${item.title}"?` }),
+      t('content.restoreConfirmTitle', { defaultValue: 'Xác nhận khôi phục' }),
+      { confirmLabel: t('products.restore'), variant: 'default' }
+    )
+    if (!confirmed) return
+
+    try {
+      await restoreContent(item.type, item.id)
+      queryClient.invalidateQueries({ queryKey: ['content'] })
+      toast.success(t('content.restoreSuccess', { defaultValue: 'Khôi phục bài viết thành công.' }))
+    } catch (error) {
+      toast.error(error.message || t('common.error'))
+    }
+  }
+
+  const handlePermanentDelete = async (item) => {
+    const confirmed = await showConfirm(
+      t('content.permanentDeleteConfirm', { title: item.title, defaultValue: `Bạn có chắc chắn muốn xóa vĩnh viễn bài viết "${item.title}"? Thao tác này không thể hoàn tác.` }),
+      t('content.permanentDeleteConfirmTitle', { defaultValue: 'Xác nhận xóa vĩnh viễn' }),
+      { confirmLabel: t('common.permanentDelete'), variant: 'danger' }
+    )
+    if (!confirmed) return
+
+    try {
+      await permanentDeleteContent(item.type, item.id)
+      queryClient.invalidateQueries({ queryKey: ['content'] })
+      toast.success(t('content.permanentDeleteSuccess', { defaultValue: 'Xóa vĩnh viễn bài viết thành công.' }))
+    } catch (error) {
+      toast.error(error.message || t('common.error'))
+    }
+  }
+
   function handleBulkTrash() {
     runBulk({
       confirmKey: 'content.bulkTrashConfirm',
@@ -126,6 +177,26 @@ export function ContentListScreen({ navigate, canUpdate }) {
       confirmLabel: 'content.bulkTrashConfirmCta',
       variant: 'danger',
       action: (row) => deleteContent(row.type, row.id),
+    })
+  }
+
+  function handleBulkRestore() {
+    runBulk({
+      confirmKey: 'content.bulkRestoreConfirm',
+      titleKey: 'content.bulkRestoreTitle',
+      confirmLabel: 'products.restore',
+      variant: 'default',
+      action: (row) => restoreContent(row.type, row.id),
+    })
+  }
+
+  function handleBulkHardDelete() {
+    runBulk({
+      confirmKey: 'content.bulkHardDeleteConfirm',
+      titleKey: 'content.bulkHardDeleteTitle',
+      confirmLabel: 'common.permanentDelete',
+      variant: 'danger',
+      action: (row) => permanentDeleteContent(row.type, row.id),
     })
   }
 
@@ -139,11 +210,19 @@ export function ContentListScreen({ navigate, canUpdate }) {
 
   const bulkActions = canUpdate
     ? (isTrashView
-        ? [{
-            label: t('content.bulkRestore', { defaultValue: 'Khôi phục' }),
-            onClick: () => handleBulkPublishStatus('DRAFT', 'content.bulkRestoreConfirm', 'content.bulkRestoreTitle', 'content.bulkRestoreCta'),
-            disabled: bulkBusy,
-          }]
+        ? [
+            {
+              label: t('content.bulkRestore', { defaultValue: 'Khôi phục' }),
+              onClick: handleBulkRestore,
+              disabled: bulkBusy,
+            },
+            {
+              label: t('content.bulkHardDelete', { defaultValue: 'Xóa vĩnh viễn' }),
+              tone: 'danger',
+              onClick: handleBulkHardDelete,
+              disabled: bulkBusy,
+            }
+          ]
         : [
             {
               label: t('content.bulkPublish', { defaultValue: 'Xuất bản' }),
@@ -230,17 +309,122 @@ export function ContentListScreen({ navigate, canUpdate }) {
       sortable: true,
       render: (item) => <span className="bb-muted" style={{ fontSize: 12 }}>{formatDateTime(item.updatedAt)}</span>,
     },
+    {
+      key: 'actions',
+      label: '',
+      align: 'right',
+      render: (item) => {
+        const isTrashed = query.publishStatus === 'TRASH'
+        return (
+          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
+            {!isTrashed && (
+              <button
+                type="button"
+                className="bb-icon-btn"
+                title={t('common.edit')}
+                aria-label={t('common.edit')}
+                onClick={() => navigate(`/admin/content/${item.type.toLowerCase()}/${item.id}`)}
+              >
+                <Pencil size={14} />
+              </button>
+            )}
+            {canUpdate && !isTrashed && (
+              <button
+                type="button"
+                className="bb-icon-btn danger"
+                title={t('common.delete')}
+                aria-label={t('common.delete')}
+                onClick={() => handleSoftDelete(item)}
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
+            {canUpdate && isTrashed && (
+              <>
+                <button
+                  type="button"
+                  className="bb-icon-btn"
+                  title={t('products.restore')}
+                  aria-label={t('products.restore')}
+                  onClick={() => handleRestore(item)}
+                >
+                  <Undo2 size={14} />
+                </button>
+                <button
+                  type="button"
+                  className="bb-icon-btn danger"
+                  title={t('common.permanentDelete')}
+                  aria-label={t('common.permanentDelete')}
+                  onClick={() => handlePermanentDelete(item)}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </>
+            )}
+          </div>
+        )
+      },
+    },
   ]
 
-  const mobileCard = (item) => ({
-    title: formatText(item.title),
-    subtitle: `/${item.slug}`,
-    status: <PublishStatusBadge value={item.publishStatus} />,
-    meta: [
-      { label: t('content.colUpdated'), value: formatDateTime(item.updatedAt) },
-    ],
-    onClick: () => navigate(`/admin/content/${item.type.toLowerCase()}/${item.id}`),
-  })
+  const mobileCard = (item) => {
+    const isTrashed = query.publishStatus === 'TRASH'
+    return {
+      title: formatText(item.title),
+      subtitle: `/${item.slug}`,
+      status: <PublishStatusBadge value={item.publishStatus} />,
+      meta: [
+        { label: t('content.colUpdated'), value: formatDateTime(item.updatedAt) },
+      ],
+      actions: (
+        <div style={{ display: 'flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
+          {!isTrashed && (
+            <button
+              type="button"
+              className="bb-icon-btn"
+              title={t('common.edit')}
+              onClick={() => navigate(`/admin/content/${item.type.toLowerCase()}/${item.id}`)}
+            >
+              <Pencil size={14} />
+            </button>
+          )}
+          {canUpdate && !isTrashed && (
+            <button
+              type="button"
+              className="bb-icon-btn danger"
+              title={t('common.delete')}
+              onClick={() => handleSoftDelete(item)}
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+          {canUpdate && isTrashed && (
+            <>
+              <button
+                type="button"
+                className="bb-icon-btn"
+                disabled={bulkBusy}
+                title={t('products.restore')}
+                onClick={() => handleRestore(item)}
+              >
+                <Undo2 size={14} />
+              </button>
+              <button
+                type="button"
+                className="bb-icon-btn danger"
+                disabled={bulkBusy}
+                title={t('common.permanentDelete')}
+                onClick={() => handlePermanentDelete(item)}
+              >
+                <Trash2 size={14} />
+              </button>
+            </>
+          )}
+        </div>
+      ),
+      onClick: () => navigate(`/admin/content/${item.type.toLowerCase()}/${item.id}`),
+    }
+  }
 
   return (
     <div>

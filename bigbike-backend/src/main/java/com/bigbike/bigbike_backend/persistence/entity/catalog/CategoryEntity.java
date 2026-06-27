@@ -115,6 +115,9 @@ public class CategoryEntity {
     @Column(nullable = false)
     private boolean isVisible;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean deleted = false;
+
     private Boolean showOnHomepage;
     private Integer sortOrder;
 

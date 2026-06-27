@@ -178,7 +178,10 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   }
 
   const isDirty = useMemo(() => JSON.stringify(form) !== initialSnapshot, [form, initialSnapshot])
-  const isReadOnly = !canUpdate || isSubmitting
+  // Danh mục hệ thống "Chưa phân loại" bị khoá: chứa sản phẩm khi danh mục gốc bị
+  // xoá, nên không cho sửa hay xoá (backend cũng chặn). Khoá form + ẩn nút xoá.
+  const isUncategorized = !isCreate && categoryId === 'uncategorized'
+  const isReadOnly = !canUpdate || isSubmitting || isUncategorized
   const formRef = useRef(null)
 
   // Dấu * đỏ (glyph, không chỉ màu) cho nhãn ô bắt buộc — giúp admin biết ô nào
@@ -229,7 +232,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     },
     onError: (error) => {
       const msg = error?.status === 409
-        ? t('categories.detail.hardDeleteConflict')
+        ? (error.message || t('categories.detail.hardDeleteConflict'))
         : (error.message || t('common.error'))
       toast.error(msg)
     },
@@ -239,9 +242,16 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     const name = form.name || categoryId
     const allCategories = categoriesResult?.items ?? []
     const descendantCount = countDescendants(categoryId, allCategories)
-    const message = descendantCount > 0
-      ? t('categories.detail.hardDeleteConfirmWithChildren', { name, count: descendantCount })
-      : t('categories.detail.hardDeleteConfirm', { name })
+    // Sản phẩm trong danh mục (và cây con) không bị xoá — chúng tự chuyển sang
+    // "Chưa phân loại". Cảnh báo rõ trong hộp xác nhận để admin biết trước.
+    let message
+    if (descendantCount > 0) {
+      message = t('categories.detail.hardDeleteConfirmWithChildren', { name, count: descendantCount })
+    } else if (productsTotal > 0) {
+      message = t('categories.detail.hardDeleteConfirmWithProducts', { name, count: productsTotal })
+    } else {
+      message = t('categories.detail.hardDeleteConfirm', { name })
+    }
     // Nút xác nhận phải nêu rõ hành động (Xoá vĩnh viễn) thay vì "Xác nhận"
     // chung chung, để người dùng biết chính xác việc sắp làm (tiêu chí 7.5).
     const confirmed = await showConfirm(message, t('categories.detail.hardDeleteConfirmTitle'), {
@@ -311,7 +321,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
   function handleSubmit(event) {
     event.preventDefault()
-    if (!canUpdate) return
+    if (!canUpdate || isUncategorized) return
 
     const schema = createCategorySchema(t)
     const result = schema.safeParse(form)
@@ -506,6 +516,14 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
           tone="warning"
           title={t('categories.detail.permissionDenied')}
           description={t('categories.detail.permissionDesc')}
+        />
+      ) : null}
+
+      {isUncategorized ? (
+        <StatePanel
+          tone="info"
+          title={t('categories.detail.systemCategoryTitle')}
+          description={t('categories.detail.systemCategoryDesc')}
         />
       ) : null}
 
@@ -749,7 +767,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
         )}
 
         {/* Danger zone */}
-        {!isCreate && canUpdate && (
+        {!isCreate && canUpdate && !isUncategorized && (
           <DangerZoneCard onHardDelete={handleHardDelete} pending={hardDeleteMutation.isPending} />
         )}
       </form>

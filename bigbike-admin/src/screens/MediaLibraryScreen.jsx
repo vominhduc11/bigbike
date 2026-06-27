@@ -362,7 +362,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     onEdit: canUpdate && !isTrash ? () => setEditingMedia(media) : null,
     onDelete: canUpdate && !isTrash ? () => handleDelete(media.id) : null,
     onRestore: canUpdate && isTrash ? () => handleRestore(media.id) : null,
-    onHardDelete: canHardDelete ? () => handleHardDelete(media) : null,
+    onHardDelete: canHardDelete && isTrash ? () => handleHardDelete(media) : null,
   })
 
   const panelOpen = !!editingMedia
@@ -553,7 +553,6 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           ] : [
             { label: t('media.bulkMove'), onClick: () => setBulkMoveOpen(true), disabled: bulkBusy },
             { label: t('media.bulkDelete'), onClick: handleBulkDelete, tone: 'danger', disabled: bulkBusy },
-            ...(canHardDelete ? [{ label: t('media.bulkHardDelete'), onClick: handleBulkHardDelete, tone: 'danger', disabled: bulkBusy }] : []),
           ]}
         />
       )}

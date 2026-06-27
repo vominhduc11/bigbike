@@ -8,6 +8,7 @@ export const INITIAL_QUERY = {
   search: '',
   visibility: 'ALL',
   sort: 'sortOrder:asc',
+  deleted: false,
   page: 1,
   pageSize: 20,
 }

@@ -154,59 +154,65 @@ Admin live preview (`POST /api/v1/admin/products/preview`) render nội dung nh�
 
 ### Purpose
 
-Category/Brand does not have a full enum state machine in audited evidence. They use visibility boolean to control public display.
+Category and Brand control their visibility and deletion lifecycles via boolean state flags: `deleted` (Category) and `isVisible` (Brand). Both support a soft-delete (Trash) mechanism, restore capability, and permanent hard-deletion.
 
 ### State Field
 
-- Category: `visible` / `isVisible`
-- Brand: `visible` / `isVisible`
+- Category: `deleted` (boolean, `true` is in Trash) and `isVisible` (boolean, controls storefront display)
+- Brand: `isVisible` (boolean, `false` means in Trash)
 
 ### States
 
-- `visible = true`
-- `visible = false`
+Category:
+- `deleted = false` (Active/Normal)
+- `deleted = true` (Trash)
+
+Brand:
+- `isVisible = true` (Active/Normal)
+- `isVisible = false` (Trash / Hidden)
 
 ### Initial State
 
-- Depends on create payload/default behavior; needs deeper DTO/entity audit.
+- Category: `deleted = false`
+- Brand: `isVisible = true`
 
 ### Allowed Transitions
 
 | Entity | From | To | Actor / Role | Preconditions | Side Effects | Enforcement | Evidence |
 |---|---|---|---|---|---|---|---|
-| Category | `true` | `false` | Admin / role có `catalog.update` | Category exists; no visible child categories. | Category hidden from public category list/detail. | `CONFIRMED_BACKEND_ENFORCED` | `AdminCatalogMutationService.java`, `CatalogReadService.java` |
-| Category | `false` | `true` | Admin / role có `catalog.update` | Category exists; normal PATCH flips visible back. | Category public-visible if read service returns it. | `INFERRED_FROM_STRUCTURE` | `AdminCatalogMutationService.java` comment and update path |
-| Brand | `true` | `false` | Admin / role có `catalog.update` | Brand exists. | Brand hidden from public brand list/detail. | `CONFIRMED_BACKEND_ENFORCED` | `AdminCatalogMutationService.java`, `CatalogReadService.java` |
-| Brand | `false` | `true` | Admin / role có `catalog.update` | Brand exists; normal update can set visible. | Brand public-visible. | `INFERRED_FROM_STRUCTURE` | `AdminCatalogMutationService.java` |
+| Category | `deleted = false` | `deleted = true` | Admin / role có `catalog.update` | Category exists; is not "Chưa phân loại" system category. | Category and all its descendants are marked `deleted = true` (Trash). Products in it are NOT reassigned yet. | `CONFIRMED_BACKEND_ENFORCED` | `AdminCatalogMutationService.java` |
+| Category | `deleted = true` | `deleted = false` | Admin / role có `catalog.update` | Category exists. | Category and all its descendants are restored to `deleted = false` (Active). | `CONFIRMED_BACKEND_ENFORCED` | `AdminCatalogMutationService.java` |
+| Category | `deleted = true` | `DELETED` (physical) | Admin / role có `catalog.update` | Category is in Trash (`deleted = true`); is not "Chưa phân loại". | Category and its descendants are physically deleted. All products in the subtree are reassigned to "Chưa phân loại" (`uncategorized`). | `CONFIRMED_BACKEND_ENFORCED` | `AdminCatalogMutationService.java` |
+| Brand | `isVisible = true` | `isVisible = false` | Admin / role có `catalog.update` | Brand exists. | Brand is soft-deleted (sent to Trash). Storefront hides it. | `CONFIRMED_BACKEND_ENFORCED` | `AdminCatalogMutationService.java` |
+| Brand | `isVisible = false` | `isVisible = true` | Admin / role có `catalog.update` | Brand exists. | Brand is restored. Storefront shows it. | `CONFIRMED_BACKEND_ENFORCED` | `AdminCatalogMutationService.java` |
+| Brand | `isVisible = false` | `DELETED` (physical) | Admin / role có `catalog.update` | Brand is in Trash (`isVisible = false`). | Brand is physically deleted. Product references are set to NULL. | `CONFIRMED_BACKEND_ENFORCED` | `AdminCatalogMutationService.java` |
 
 ### Forbidden Transitions
 
 | From | To | Reason | Enforcement | Evidence |
 |---|---|---|---|---|
-| Category `true` | `false` | Category has visible children. | Backend throws conflict. | `AdminCatalogMutationService.java` |
 | Category parentId | self/circular parent | Would corrupt tree. | Backend validation rejects. | `AdminCatalogMutationService.java` |
+| "Chưa phân loại" | `deleted = true` | System category cannot be soft-deleted. | Backend rejects (409). | `AdminCatalogMutationService.java` |
+| "Chưa phân loại" | `DELETED` (physical) | System category cannot be physically deleted. | Backend rejects (409). | `AdminCatalogMutationService.java` |
+| Category `deleted = false` | `DELETED` (physical) | Cannot permanently delete active category; must soft-delete first. | Backend rejects (409). | `AdminCatalogMutationService.java` |
+| Brand `isVisible = true` | `DELETED` (physical) | Cannot permanently delete active brand; must soft-delete first. | Backend rejects (409). | `AdminCatalogMutationService.java` |
 
 ### Frontend Behavior
 
-- Admin category/brand module exists.
-- UI behavior for disabled/hidden category/brand needs verification.
+- Admin UI list views support a "Thùng rác" filter and present appropriate soft-delete, restore, and permanent delete buttons based on active tab state.
 
 ### Backend Enforcement
 
-- Public category/brand list/detail filters `visible` in `CatalogReadService`.
-- Category hide with visible children is blocked in `AdminCatalogMutationService`.
-- Category **hard-delete** (`DELETE /admin/categories/{id}`) xoá danh mục **cùng toàn bộ cây con** (cascade). Chặn (409) nếu bất kỳ danh mục nào trong cây còn sản phẩm xếp làm danh mục chính; không xoá sản phẩm. Xem `BUSINESS_RULES.md` `CATEGORY_RULE_004`. `CONFIRMED_BACKEND_ENFORCED` — `AdminCatalogMutationService.hardDeleteCategory`.
+- Public reads in `CatalogReadService` filter out `deleted = true` categories and `isVisible = false` brands.
+- Mutation service validates system locks and trash states before allowing mutations.
 
 ### Test Coverage
 
-- Direct tests not found in targeted search.
 - Status: `MISSING_TEST_COVERAGE`.
 
 ### Needs Verification
 
-- Default visibility on create.
-- Whether hidden category can still be assigned to products.
-- Brand delete is visibility false; hard-delete not confirmed.
+- Automated tests coverage of the new soft-delete/restore/hard-delete lifecycle transitions.
 
 ## 6. Order State Machine
 

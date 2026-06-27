@@ -310,7 +310,7 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
               <RotateCcw size={14} /> {t('media.restore')}
             </Button>
           )}
-          {canHardDelete && onHardDelete && (
+          {canHardDelete && isTrash && onHardDelete && (
             <Button variant="danger" type="button" onClick={onHardDelete} className="text-xs">
               <AlertTriangle size={14} className="align-text-bottom" /> {t('media.hardDelete')}
             </Button>

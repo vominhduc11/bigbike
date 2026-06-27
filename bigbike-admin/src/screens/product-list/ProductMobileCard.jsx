@@ -15,6 +15,7 @@ export function ProductMobileCard({
   isRestoring,
   onDuplicate,
   onRestore,
+  onPermanentDelete,
   onDelete,
 }) {
   const { t } = useTranslation()
@@ -105,15 +106,26 @@ export function ProductMobileCard({
             </button>
           )}
           {canUpdate && isTrashed && (
-            <button
-              type="button"
-              className="bb-icon-btn"
-              disabled={isBusy}
-              title={isRestoring ? t('products.restoringLabel') : t('products.restore')}
-              onClick={() => onRestore(product)}
-            >
-              <Undo2 size={14} />
-            </button>
+            <>
+              <button
+                type="button"
+                className="bb-icon-btn"
+                disabled={isBusy}
+                title={isRestoring ? t('products.restoringLabel') : t('products.restore')}
+                onClick={() => onRestore(product)}
+              >
+                <Undo2 size={14} />
+              </button>
+              <button
+                type="button"
+                className="bb-icon-btn danger"
+                disabled={isBusy}
+                title={t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' })}
+                onClick={() => onPermanentDelete(product)}
+              >
+                <Trash2 size={14} />
+              </button>
+            </>
           )}
           {canUpdate && !isTrashed && (
             <button

@@ -3,14 +3,17 @@ package com.bigbike.bigbike_backend.persistence.repository.catalog;
 import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import jakarta.persistence.LockModeType;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.lang.Nullable;
@@ -26,6 +29,22 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Strin
     Optional<ProductEntity> findByLegacyId(String legacyId);
     long countByPublishStatus(PublishStatus publishStatus);
     long countByCategory_Id(String categoryId);
+
+    /** Ids of every product whose primary category is one of {@code categoryIds}. */
+    @Query("SELECT p.id FROM ProductEntity p WHERE p.category.id IN :categoryIds")
+    List<String> findIdsByCategory_IdIn(@Param("categoryIds") List<String> categoryIds);
+
+    /**
+     * Bulk-reassign every product currently in {@code sourceIds} categories to
+     * {@code target}. Used when a category is hard-deleted: its products fall
+     * back to the "uncategorized" bucket instead of being orphaned (see
+     * {@code AdminCatalogMutationService.hardDeleteCategory}). Returns rows moved.
+     */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE ProductEntity p SET p.category = :target, p.updatedAt = :now WHERE p.category.id IN :sourceIds")
+    int reassignCategory(@Param("target") CategoryEntity target,
+                         @Param("sourceIds") List<String> sourceIds,
+                         @Param("now") Instant now);
 
     /**
      * Products in a given publish status. The public catalog read path
@@ -165,4 +184,12 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Strin
     /** (id, imageUrl) pairs — used to resolve order line-item thumbnails read-time. */
     @Query("SELECT p.id, p.imageUrl FROM ProductEntity p WHERE p.id IN :ids")
     List<Object[]> findImageUrlsByIds(@Param("ids") List<String> ids);
+
+    @Modifying(flushAutomatically = true)
+    @Query(value = "DELETE FROM home_category_highlights WHERE product_id = :productId", nativeQuery = true)
+    void deleteHomeHighlightsByProductId(@Param("productId") String productId);
+
+    @Modifying(flushAutomatically = true)
+    @Query(value = "DELETE FROM wishlist_items WHERE product_id = :productId", nativeQuery = true)
+    void deleteWishlistByProductId(@Param("productId") String productId);
 }

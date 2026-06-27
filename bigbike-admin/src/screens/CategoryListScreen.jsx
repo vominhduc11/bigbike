@@ -22,7 +22,7 @@ import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { FilterChips } from '../components/FilterChips'
-import { fetchCategories, fetchCategoryTree, updateCategory } from '../lib/adminApi'
+import { fetchCategories, fetchCategoryTree, updateCategory, softDeleteCategory, restoreCategory, hardDeleteCategory } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { formatDateTime, formatText, stripHtml } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
@@ -106,8 +106,9 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   // search active, because we now keep the tree structure and just dim
   // non-matching rows. Only an explicit visibility/sort filter falls back
   // to flat-paginated mode.
-  const isTreeShape = !query.visibility || query.visibility === 'ALL'
+  const isTreeShape = (!query.visibility || query.visibility === 'ALL')
     && (query.sort === 'sortOrder:asc' || !query.sort)
+    && !query.deleted
 
   const treeRows = useMemo(() => {
     if (!isTreeShape) return []
@@ -369,6 +370,60 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     setExpandedIds(new Set())
   }
 
+  const handleSoftDelete = async (category) => {
+    const confirmed = await showConfirm(
+      t('categories.deleteConfirm', { name: category.name, defaultValue: `Bạn có chắc chắn muốn xóa danh mục ${category.name}? Các danh mục con cũng sẽ bị xóa mềm.` }),
+      t('categories.deleteConfirmTitle', { defaultValue: 'Xác nhận xóa' }),
+      { confirmLabel: t('common.delete'), variant: 'danger' }
+    )
+    if (!confirmed) return
+
+    try {
+      await softDeleteCategory(category.id)
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      queryClient.invalidateQueries({ queryKey: ['categories', 'tree'] })
+      toast.success(t('categories.deleteSuccess', { defaultValue: 'Đã chuyển danh mục vào Thùng rác.' }))
+    } catch (error) {
+      toast.error(error.message || t('common.error'))
+    }
+  }
+
+  const handleRestore = async (category) => {
+    const confirmed = await showConfirm(
+      t('categories.restoreConfirm', { name: category.name, defaultValue: `Bạn có chắc chắn muốn khôi phục danh mục ${category.name}? Các danh mục con cũng sẽ được khôi phục.` }),
+      t('categories.restoreConfirmTitle', { defaultValue: 'Xác nhận khôi phục' }),
+      { confirmLabel: t('products.restore'), variant: 'default' }
+    )
+    if (!confirmed) return
+
+    try {
+      await restoreCategory(category.id)
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      queryClient.invalidateQueries({ queryKey: ['categories', 'tree'] })
+      toast.success(t('categories.restoreSuccess', { defaultValue: 'Khôi phục danh mục thành công.' }))
+    } catch (error) {
+      toast.error(error.message || t('common.error'))
+    }
+  }
+
+  const handlePermanentDelete = async (category) => {
+    const confirmed = await showConfirm(
+      t('categories.permanentDeleteConfirm', { name: category.name, defaultValue: `Bạn có chắc chắn muốn xóa vĩnh viễn danh mục ${category.name} cùng toàn bộ danh mục con? Hành vi này không thể khôi phục.` }),
+      t('categories.permanentDeleteConfirmTitle', { defaultValue: 'Xác nhận xóa vĩnh viễn' }),
+      { confirmLabel: t('common.permanentDelete'), variant: 'danger' }
+    )
+    if (!confirmed) return
+
+    try {
+      await hardDeleteCategory(category.id)
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      queryClient.invalidateQueries({ queryKey: ['categories', 'tree'] })
+      toast.success(t('categories.permanentDeleteSuccess', { defaultValue: 'Xóa vĩnh viễn danh mục thành công.' }))
+    } catch (error) {
+      toast.error(error.message || t('common.error'))
+    }
+  }
+
   const useTreeMode = isTreeShape && treeRows.length > 0
 
   // In tree mode:
@@ -581,7 +636,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                 </a>
               </Button>
             )}
-            {canUpdate && (
+            {canUpdate && !query.deleted && (
               <Button
                 variant="outline"
                 size="sm"
@@ -596,6 +651,36 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                     ? t('categories.unpublishAction')
                     : t('categories.republishAction')}
               </Button>
+            )}
+            {canUpdate && category.id !== 'uncategorized' && !query.deleted && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-destructive hover:text-destructive"
+                onClick={() => handleSoftDelete(category)}
+              >
+                {t('common.delete')}
+              </Button>
+            )}
+            {canUpdate && query.deleted && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-success hover:text-success"
+                  onClick={() => handleRestore(category)}
+                >
+                  {t('products.restore')}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => handlePermanentDelete(category)}
+                >
+                  {t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' })}
+                </Button>
+              </>
             )}
           </div>
         </td>
@@ -686,6 +771,15 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           value={searchInput}
           onChange={setSearchInput}
           placeholder={t('categories.searchPlaceholder')}
+        />
+        <FilterSelect
+          value={query.deleted ? 'TRASH' : 'ACTIVE'}
+          onValueChange={(v) => updateQuery({ deleted: v === 'TRASH' }, { resetPage: true })}
+          ariaLabel={t('categories.filterTrash', { defaultValue: 'Trạng thái' })}
+          options={[
+            { value: 'ACTIVE', label: t('categories.filterActive', { defaultValue: 'Hoạt động' }) },
+            { value: 'TRASH', label: t('categories.filterTrashTab', { defaultValue: 'Thùng rác' }) },
+          ]}
         />
         <FilterSelect
           value={query.visibility}

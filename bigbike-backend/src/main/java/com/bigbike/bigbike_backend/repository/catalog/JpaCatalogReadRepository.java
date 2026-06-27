@@ -277,12 +277,16 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     @Override
     public List<Category> findAllCategories() {
-        return categoryJpaRepository.findAll().stream().map(this::toDomain).toList();
+        return categoryJpaRepository.findAll().stream()
+                .filter(entity -> !entity.isDeleted())
+                .map(this::toDomain)
+                .toList();
     }
 
     @Override
     public List<Category> findAllCategories(String locale) {
         return categoryJpaRepository.findAll().stream()
+                .filter(entity -> !entity.isDeleted())
                 .map(entity -> toDomain(entity, locale))
                 .toList();
     }
@@ -290,6 +294,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     @Override
     public List<Category> findAllCategories(String locale, boolean strictEnglish) {
         return categoryJpaRepository.findAll().stream()
+                .filter(entity -> !entity.isDeleted())
                 .map(entity -> toDomain(entity, locale))
                 .toList();
     }
@@ -298,6 +303,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     public CategoryPage findCategoriesPaged(
             String query,
             String visibility,
+            Boolean deleted,
             String sortField,
             boolean sortAsc,
             int page,
@@ -306,6 +312,11 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     ) {
         Specification<CategoryEntity> spec = (root, cq, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            if (deleted != null) {
+                predicates.add(cb.equal(root.get("deleted"), deleted));
+            } else {
+                predicates.add(cb.isFalse(root.get("deleted")));
+            }
             if (visibility != null && !visibility.isBlank()) {
                 if ("VISIBLE".equals(visibility)) {
                     predicates.add(cb.isTrue(root.get("isVisible")));
@@ -353,7 +364,9 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     @Override
     public Optional<Category> findCategoryBySlug(String slug) {
-        return categoryJpaRepository.findBySlug(slug).map(this::toDomain);
+        return categoryJpaRepository.findBySlug(slug)
+                .filter(entity -> !entity.isDeleted())
+                .map(this::toDomain);
     }
 
     @Override
@@ -361,6 +374,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         // vi slug first, then optional English slug (CATEGORY_RULE_003).
         return categoryJpaRepository.findBySlug(slug)
                 .or(() -> categoryJpaRepository.findBySlugEn(slug))
+                .filter(entity -> !entity.isDeleted())
                 .map(entity -> toDomain(entity, locale));
     }
 
@@ -563,6 +577,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getSeoOgImageMimeType()
                 ),
                 entity.isVisible(),
+                entity.isDeleted(),
                 entity.getShowOnHomepage(),
                 entity.getSortOrder(),
                 pick(entity.getIntroContent(), entity.getIntroContentEn(), locale),

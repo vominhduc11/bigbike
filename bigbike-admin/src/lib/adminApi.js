@@ -239,6 +239,7 @@ function buildCategoryQuery(query) {
     sort: query?.sort,
     q: query?.search,
     visibility: query?.visibility,
+    deleted: query?.deleted,
     lang: getContentLang(),
   }
 }
@@ -454,6 +455,10 @@ export async function restoreProduct(productId) {
   return parseDetailPayload(payload, normalizeProduct)
 }
 
+export async function permanentDeleteProduct(productId) {
+  await requestJson(`/admin/products/${productId}/permanent`, { method: 'DELETE' })
+}
+
 
 export async function fetchCategories(query) {
   try {
@@ -520,8 +525,17 @@ export async function updateCategory(categoryId, input) {
   return parseDetailPayload(payload, normalizeCategory)
 }
 
-export async function hardDeleteCategory(categoryId) {
+export async function softDeleteCategory(categoryId) {
   await requestJson(`/admin/categories/${categoryId}`, { method: 'DELETE' })
+}
+
+export async function restoreCategory(categoryId) {
+  const payload = await requestJson(`/admin/categories/${categoryId}/restore`, { method: 'POST' })
+  return parseDetailPayload(payload, normalizeCategory)
+}
+
+export async function hardDeleteCategory(categoryId) {
+  await requestJson(`/admin/categories/${categoryId}/permanent`, { method: 'DELETE' })
 }
 
 export async function fetchBrands(query) {
@@ -561,6 +575,15 @@ export async function updateBrand(brandId, input) {
 export async function deleteBrand(brandId) {
   const payload = await requestJson(`/admin/brands/${brandId}`, { method: 'DELETE' })
   return parseDetailPayload(payload, normalizeBrand)
+}
+
+export async function restoreBrand(brandId) {
+  const payload = await requestJson(`/admin/brands/${brandId}/restore`, { method: 'POST' })
+  return parseDetailPayload(payload, normalizeBrand)
+}
+
+export async function permanentDeleteBrand(brandId) {
+  await requestJson(`/admin/brands/${brandId}/permanent`, { method: 'DELETE' })
 }
 
 // Attribute management
@@ -644,6 +667,17 @@ export async function deleteContent(contentType, contentId) {
   const pathType = normalizeContentPathType(contentType)
   const payload = await requestJson(`/admin/content/${pathType}/${contentId}`, { method: 'DELETE' })
   return parseDetailPayload(payload, normalizeContentItem)
+}
+
+export async function restoreContent(contentType, contentId) {
+  const pathType = normalizeContentPathType(contentType)
+  const payload = await requestJson(`/admin/content/${pathType}/${contentId}/restore`, { method: 'POST' })
+  return parseDetailPayload(payload, normalizeContentItem)
+}
+
+export async function permanentDeleteContent(contentType, contentId) {
+  const pathType = normalizeContentPathType(contentType)
+  await requestJson(`/admin/content/${pathType}/${contentId}/permanent`, { method: 'DELETE' })
 }
 
 export async function previewArticle(input, lang) {

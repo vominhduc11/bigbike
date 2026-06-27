@@ -58,6 +58,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         false
                 ),
                 true,
+                false,
                 true,
                 1,
                 null,
@@ -93,6 +94,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         false
                 ),
                 true,
+                false,
                 true,
                 2,
                 null,
@@ -497,23 +499,24 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
 
     @Override
     public List<Category> findAllCategories() {
-        return categories;
+        return categories.stream().filter(c -> !c.deleted()).toList();
     }
 
     @Override
     public List<Category> findAllCategories(String locale) {
-        return categories;
+        return categories.stream().filter(c -> !c.deleted()).toList();
     }
 
     @Override
     public List<Category> findAllCategories(String locale, boolean strictEnglish) {
-        return categories;
+        return categories.stream().filter(c -> !c.deleted()).toList();
     }
 
     @Override
     public CategoryPage findCategoriesPaged(
             String query,
             String visibility,
+            Boolean deleted,
             String sortField,
             boolean sortAsc,
             int page,
@@ -521,6 +524,11 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
             String locale
     ) {
         var stream = categories.stream();
+        if (deleted != null) {
+            stream = stream.filter(c -> c.deleted() == deleted);
+        } else {
+            stream = stream.filter(c -> !c.deleted());
+        }
         if (visibility != null && !visibility.isBlank()) {
             boolean wantVisible = "VISIBLE".equals(visibility);
             stream = stream.filter(c -> c.isVisible() == wantVisible);
@@ -548,12 +556,12 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
 
     @Override
     public Optional<Category> findCategoryBySlug(String slug) {
-        return categories.stream().filter(category -> category.slug().equals(slug)).findFirst();
+        return categories.stream().filter(category -> category.slug().equals(slug) && !category.deleted()).findFirst();
     }
 
     @Override
     public Optional<Category> findCategoryBySlug(String slug, String locale) {
-        return categories.stream().filter(category -> category.slug().equals(slug)).findFirst();
+        return categories.stream().filter(category -> category.slug().equals(slug) && !category.deleted()).findFirst();
     }
 
     @Override

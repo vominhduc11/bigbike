@@ -66,6 +66,13 @@ public class AdminCatalogMutationService {
 
     private static final ObjectMapper AUDIT_MAPPER = new ObjectMapper();
 
+    /**
+     * Danh mục hệ thống "Chưa phân loại" — kho chứa sản phẩm khi danh mục gốc bị
+     * xoá (xem CATEGORY_RULE_004). Bị khoá: không cho sửa/xoá. Bảo đảm tồn tại qua
+     * Flyway V292.
+     */
+    private static final String UNCATEGORIZED_CATEGORY_ID = "uncategorized";
+
     private final ProductJpaRepository productJpaRepository;
     private final ProductVariantJpaRepository productVariantJpaRepository;
     private final CategoryJpaRepository categoryJpaRepository;
@@ -306,6 +313,25 @@ public class AdminCatalogMutationService {
     }
 
     @Transactional
+    public void hardDeleteProduct(String productId, UUID adminId) {
+        requireJpaPersistenceEnabled();
+
+        ProductEntity entity = productJpaRepository.findById(productId)
+                .orElseThrow(() -> new NotFoundException("Product not found."));
+
+        if (entity.getPublishStatus() != PublishStatus.TRASH) {
+            throw new com.bigbike.bigbike_backend.api.error.ConflictException("Only trashed products can be permanently deleted.");
+        }
+
+        productJpaRepository.deleteHomeHighlightsByProductId(productId);
+        productJpaRepository.deleteWishlistByProductId(productId);
+
+        auditLog("PRODUCT_HARD_DELETED", "PRODUCT", adminId, productJson(entity), null);
+        productJpaRepository.delete(entity);
+        revalidateProduct(entity, null);
+    }
+
+    @Transactional
     public Category createCategory(UpsertCategoryRequest request, UUID adminId) {
         requireJpaPersistenceEnabled();
 
@@ -334,6 +360,13 @@ public class AdminCatalogMutationService {
 
         CategoryEntity entity = categoryJpaRepository.findById(categoryId)
                 .orElseThrow(() -> new NotFoundException("Category not found."));
+
+        // Danh mục hệ thống "Chưa phân loại" bị khoá — không cho đổi tên/slug/ẩn.
+        if (UNCATEGORIZED_CATEGORY_ID.equals(entity.getId())) {
+            throw new ConflictException(
+                    "Không thể chỉnh sửa danh mục \"Chưa phân loại\" — đây là danh mục hệ thống được khoá.");
+        }
+
         String previousSlug = entity.getSlug();
         String previousSlugEn = entity.getSlugEn();
 
@@ -425,6 +458,37 @@ public class AdminCatalogMutationService {
         revalidateBrand(entity, null);
         return catalogReadRepository.findBrandById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Brand not found."));
+    }
+
+    @Transactional
+    public Brand restoreBrand(String brandId, UUID adminId) {
+        requireJpaPersistenceEnabled();
+        BrandEntity entity = brandJpaRepository.findById(brandId)
+                .orElseThrow(() -> new NotFoundException("Brand not found."));
+        if (entity.isVisible()) {
+            return catalogReadRepository.findBrandById(entity.getId())
+                    .orElseThrow(() -> new NotFoundException("Brand not found."));
+        }
+        entity.setVisible(true);
+        entity.setUpdatedAt(Instant.now());
+        brandJpaRepository.save(entity);
+        auditLog("BRAND_RESTORED", "BRAND", adminId, null, brandJson(entity));
+        revalidateBrand(entity, null);
+        return catalogReadRepository.findBrandById(entity.getId())
+                .orElseThrow(() -> new NotFoundException("Brand not found."));
+    }
+
+    @Transactional
+    public void hardDeleteBrand(String brandId, UUID adminId) {
+        requireJpaPersistenceEnabled();
+        BrandEntity entity = brandJpaRepository.findById(brandId)
+                .orElseThrow(() -> new NotFoundException("Brand not found."));
+        if (entity.isVisible()) {
+            throw new com.bigbike.bigbike_backend.api.error.ConflictException("Only trashed brands can be permanently deleted.");
+        }
+        auditLog("BRAND_HARD_DELETED", "BRAND", adminId, brandJson(entity), null);
+        brandJpaRepository.delete(entity);
+        revalidateBrand(entity, null);
     }
 
     private void requireJpaPersistenceEnabled() {
@@ -1143,15 +1207,61 @@ public class AdminCatalogMutationService {
         return prefix + "_" + UUID.randomUUID().toString().replace("-", "");
     }
 
+    @Transactional
+    public Category softDeleteCategory(String categoryId, UUID adminId) {
+        requireJpaPersistenceEnabled();
+
+        CategoryEntity entity = categoryJpaRepository.findById(categoryId)
+                .orElseThrow(() -> new NotFoundException("Category not found."));
+
+        if (UNCATEGORIZED_CATEGORY_ID.equals(entity.getId())) {
+            throw new ConflictException(
+                    "Không thể xoá danh mục \"Chưa phân loại\" — đây là danh mục hệ thống.");
+        }
+
+        List<CategoryEntity> subtree = collectCategorySubtree(entity);
+        for (CategoryEntity node : subtree) {
+            node.setDeleted(true);
+            node.setUpdatedAt(Instant.now());
+            categoryJpaRepository.save(node);
+            auditLog("CATEGORY_SOFT_DELETED", "CATEGORY", adminId, null, categoryJson(node));
+        }
+
+        revalidateCategory(entity, null);
+
+        return catalogReadRepository.findCategoryById(entity.getId())
+                .orElseThrow(() -> new NotFoundException("Category not found."));
+    }
+
+    @Transactional
+    public Category restoreCategory(String categoryId, UUID adminId) {
+        requireJpaPersistenceEnabled();
+
+        CategoryEntity entity = categoryJpaRepository.findById(categoryId)
+                .orElseThrow(() -> new NotFoundException("Category not found."));
+
+        List<CategoryEntity> subtree = collectCategorySubtree(entity);
+        for (CategoryEntity node : subtree) {
+            node.setDeleted(false);
+            node.setUpdatedAt(Instant.now());
+            categoryJpaRepository.save(node);
+            auditLog("CATEGORY_RESTORED", "CATEGORY", adminId, null, categoryJson(node));
+        }
+
+        revalidateCategory(entity, null);
+
+        return catalogReadRepository.findCategoryById(entity.getId())
+                .orElseThrow(() -> new NotFoundException("Category not found."));
+    }
+
     /**
      * Hard-delete a category together with its entire sub-tree (all descendant
      * categories), in a single transaction.
      *
-     * <p>Deletion is rejected when ANY category in the sub-tree (the root itself
-     * or any descendant) still has products assigned to it as their primary
-     * category. Products are never deleted as a side effect — the admin must
-     * reassign them to another category first. When the whole sub-tree is free
-     * of products, the root and every descendant category are removed.
+     * <p>Products in the deleted sub-tree are NOT deleted — they are reassigned
+     * to the protected "uncategorized" bucket so the storefront never ends up
+     * with a dangling product ({@code category_id} is NOT NULL). The bucket
+     * itself can never be deleted. See {@code BUSINESS_RULES.md CATEGORY_RULE_004}.
      */
     @Transactional
     public void hardDeleteCategory(String categoryId, UUID adminId) {
@@ -1160,20 +1270,30 @@ public class AdminCatalogMutationService {
         CategoryEntity entity = categoryJpaRepository.findById(categoryId)
                 .orElseThrow(() -> new NotFoundException("Category not found."));
 
+        // The "uncategorized" bucket is the fallback destination for products of
+        // deleted categories — it must never be deleted itself.
+        if (UNCATEGORIZED_CATEGORY_ID.equals(entity.getId())) {
+            throw new ConflictException(
+                    "Không thể xoá danh mục \"Chưa phân loại\" — đây là danh mục hệ thống chứa sản phẩm chưa được phân loại.");
+        }
+
+        if (!entity.isDeleted()) {
+            throw new ConflictException(
+                    "Chỉ có thể xoá vĩnh viễn các danh mục đã nằm trong Thùng rác (đã xoá mềm).");
+        }
+
         // Root-first ordering of the category and all of its descendants.
         List<CategoryEntity> subtree = collectCategorySubtree(entity);
+        List<String> subtreeIds = subtree.stream().map(CategoryEntity::getId).toList();
 
-        // Block if any category in the sub-tree still has products assigned —
-        // we do not orphan or delete products when removing a category.
-        for (CategoryEntity node : subtree) {
-            long productCount = productJpaRepository.countByCategory_Id(node.getId());
-            if (productCount > 0) {
-                throw new ConflictException(
-                        "Cannot delete: " + productCount +
-                        " product" + (productCount == 1 ? " uses" : "s use") +
-                        " category \"" + node.getName() + "\" as primary category. Reassign them first."
-                );
-            }
+        // Reassign every product in the sub-tree to the "uncategorized" bucket
+        // instead of blocking the delete — products are never orphaned or deleted.
+        List<String> movedProductIds = productJpaRepository.findIdsByCategory_IdIn(subtreeIds);
+        if (!movedProductIds.isEmpty()) {
+            CategoryEntity uncategorized = categoryJpaRepository.findById(UNCATEGORIZED_CATEGORY_ID)
+                    .orElseThrow(() -> new ConflictException(
+                            "Danh mục \"Chưa phân loại\" không tồn tại — không thể chuyển sản phẩm. Liên hệ kỹ thuật."));
+            productJpaRepository.reassignCategory(uncategorized, subtreeIds, Instant.now());
         }
 
         // Delete deepest-first so a child row is removed before its parent
@@ -1182,6 +1302,15 @@ public class AdminCatalogMutationService {
             CategoryEntity node = subtree.get(i);
             auditLog("CATEGORY_HARD_DELETED", "CATEGORY", adminId, categoryJson(node), null);
             categoryJpaRepository.delete(node);
+        }
+
+        // Refresh storefront caches: the removed category pages, the bucket page,
+        // and every product whose primary category just changed.
+        revalidateCategory(entity, null);
+        if (!movedProductIds.isEmpty()) {
+            webRevalidationService.revalidateProductsByIds(movedProductIds);
+            webRevalidationService.revalidate(
+                    "categories", "category:" + UNCATEGORIZED_CATEGORY_ID, "products", "menus");
         }
     }
 

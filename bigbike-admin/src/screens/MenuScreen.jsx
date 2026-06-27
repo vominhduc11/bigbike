@@ -124,7 +124,7 @@ export function MenuScreen({ canUpdate }) {
         (item.labelEn || '').toLowerCase().includes(q) ||
         item.url.toLowerCase().includes(q),
     )
-  }, [flatMenuItems, search, contentLang])
+  }, [flatMenuItems, search])
 
   // Parent options for "add item" form
   const parentOptions = flatMenuItems

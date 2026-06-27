@@ -1233,9 +1233,12 @@
       "hardDeleteBtn": "Permanently delete this category",
       "hardDeleteConfirmTitle": "Permanently delete category?",
       "hardDeleteConfirm": "You are about to permanently delete the category \"{{name}}\".\n\nThis action CANNOT be undone. Once deleted, the category will disappear from both admin and the website.\n\nIf you only want to temporarily hide it from the website, use the \"Hide\" button instead.",
-      "hardDeleteConfirmWithChildren": "You are about to permanently delete the category \"{{name}}\".\n\n⚠️ This category contains {{count}} sub-categories — all of them will be deleted too.\n\nThis action CANNOT be undone. If you only want to temporarily hide it, use the \"Hide\" button instead.",
+      "hardDeleteConfirmWithChildren": "You are about to permanently delete the category \"{{name}}\".\n\n⚠️ This category contains {{count}} sub-categories — all of them will be deleted too. Every product in these categories will be moved to \"Uncategorized\" (not deleted).\n\nThis action CANNOT be undone. If you only want to temporarily hide it, use the \"Hide\" button instead.",
+      "hardDeleteConfirmWithProducts": "You are about to permanently delete the category \"{{name}}\".\n\n⚠️ This category contains {{count}} products — they will be moved to \"Uncategorized\" (not deleted).\n\nThis action CANNOT be undone. If you only want to temporarily hide it, use the \"Hide\" button instead.",
       "hardDeleteSuccess": "Category permanently deleted.",
-      "hardDeleteConflict": "This category cannot be deleted yet because products are still assigned to it (or to one of its sub-categories). Please reassign those products to another category first, then try again.",
+      "hardDeleteConflict": "This category cannot be deleted. Please try again or contact support.",
+      "systemCategoryTitle": "System category",
+      "systemCategoryDesc": "\"Uncategorized\" is a system category that holds products when their original category is deleted. It cannot be renamed or deleted.",
       "enFieldHint": "(English — optional)",
       "namePlaceholderEn": "English name (optional)"
     }

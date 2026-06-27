@@ -215,7 +215,6 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
 
 export function HomeVideoListScreen({ canUpdate }) {
   const { t } = useTranslation()
-  const contentLang = useContentLang()
   const queryClient = useQueryClient()
   const [showForm, setShowForm] = useState(false)
   const [editingVideo, setEditingVideo] = useState(null)

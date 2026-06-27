@@ -559,6 +559,10 @@ public class AdminMediaService {
         MediaEntity media = mediaRepo.findById(mediaId)
                 .orElseThrow(() -> new NotFoundException("Media not found."));
 
+        if (!"DELETED".equals(media.getStatus())) {
+            throw new ConflictException("Only soft-deleted media (status=DELETED) can be permanently deleted.");
+        }
+
         if (mediaReferenceService.hasReferences(media)) {
             throw new ConflictException(
                     "Media is referenced by other content and cannot be permanently deleted.");
