@@ -220,6 +220,17 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      // Redirect legacy/existing checkout paths to new order path
+      {
+        source: "/thanh-toan/",
+        destination: "/dat-hang/",
+        permanent: true,
+      },
+      {
+        source: "/thanh-toan.html",
+        destination: "/dat-hang/",
+        permanent: true,
+      },
       // /home.html → / is a true redirect (home.html was the WP default page slug,
       // not a canonical we want to preserve).
       {
@@ -337,8 +348,8 @@ const nextConfig: NextConfig = {
           destination: "/gio-hang/",
         },
         {
-          source: "/thanh-toan.html",
-          destination: "/thanh-toan/",
+          source: "/dat-hang.html",
+          destination: "/dat-hang/",
         },
         {
           source: "/dang-nhap.html",

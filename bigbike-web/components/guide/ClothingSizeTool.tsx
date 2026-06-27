@@ -433,7 +433,7 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
 
           {aoResult && (
             <div className="border border-neutral-200 p-5 bg-neutral-50">
-              <div className="font-cta text-[48px] font-bold text-brand leading-none mb-1">
+              <div className="font-cta text-display font-bold text-brand leading-none mb-1">
                 {aoResult.size}
               </div>
               <div className="text-ui-14 text-neutral-500 mb-4 font-body">
@@ -516,7 +516,7 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
 
           {quanResult && (
             <div className="border border-neutral-200 p-5 bg-neutral-50">
-              <div className="font-cta text-[48px] font-bold text-brand leading-none mb-1">
+              <div className="font-cta text-display font-bold text-brand leading-none mb-1">
                 {quanResult.size}
               </div>
               <div className="text-ui-14 text-neutral-500 mb-4 font-body">
@@ -583,7 +583,7 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
 
           {gangResult && (
             <div className="border border-neutral-200 p-5 bg-neutral-50">
-              <div className="font-cta text-[48px] font-bold text-brand leading-none mb-1">
+              <div className="font-cta text-display font-bold text-brand leading-none mb-1">
                 {gangResult.size}
               </div>
               <div className="text-ui-14 text-neutral-500 mb-4 font-body">
@@ -650,7 +650,7 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
 
           {giayResult && (
             <div className="border border-neutral-200 p-5 bg-neutral-50">
-              <div className="font-cta text-[48px] font-bold text-brand leading-none mb-1">
+              <div className="font-cta text-display font-bold text-brand leading-none mb-1">
                 EU {giayResult.eu}
               </div>
               <div className="text-ui-14 text-neutral-500 mb-3 font-body">

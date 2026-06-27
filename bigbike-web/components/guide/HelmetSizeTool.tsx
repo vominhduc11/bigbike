@@ -187,7 +187,7 @@ export default function HelmetSizeTool({ locale }: HelmetSizeToolProps) {
 
       {result && (
         <div className="border border-neutral-200 p-5 bg-neutral-50">
-          <div className="font-cta text-[48px] font-bold text-brand leading-none mb-1">
+          <div className="font-cta text-display font-bold text-brand leading-none mb-1">
             {result.size}
           </div>
           <div className="text-ui-14 text-neutral-500 mb-4 font-body">

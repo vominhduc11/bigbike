@@ -53,7 +53,7 @@ const STATIC_ROUTES = [
   "/huong-dan/mua-hang",
   "/bao-hanh",
   "/gio-hang",
-  "/thanh-toan",
+  "/dat-hang",
   "/tim-kiem?q=ao",
   "/dang-nhap",
   "/dang-ky",
@@ -69,7 +69,7 @@ const STATIC_ROUTES = [
 // Routes that get full-page screenshots (subset) at SHOT_VIEWPORTS.
 const SHOT_ROUTE_HINTS = [
   "/", "/san-pham", "/danh-muc-san-pham", "/tin-tuc", "/dang-nhap",
-  "/gio-hang", "/thanh-toan", "/gioi-thieu", "/lien-he", "/brands",
+  "/gio-hang", "/dat-hang", "/gioi-thieu", "/lien-he", "/brands",
 ];
 const SHOT_VIEWPORTS = QUICK ? [[390, 844], [1280, 900]] : [[390, 844], [768, 1024], [1280, 900], [1920, 1080]];
 

@@ -12,7 +12,7 @@ export const WP_THEME_ROUTES = new Set<string>([
   "/brands",
   // Cụm giao dịch đã port theme WP.
   "/gio-hang",
-  "/thanh-toan",
+  "/dat-hang",
   // Trang xác nhận đơn (endpoint order-received của checkout) — dùng khung checkout.
   "/don-hang/xac-nhan",
   // Cụm tài khoản — toàn bộ route con đã port theme WP (xem WpAccountShell);

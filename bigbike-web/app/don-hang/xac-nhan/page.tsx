@@ -126,7 +126,7 @@ async function OrderShell({ children }: { children: React.ReactNode }) {
       breadcrumb={[{ label: "Bigbike.vn", href: "/" }, { label: title }]}
       showHero={false}
       mainClassName=""
-      cssHref="/wp-content/themes/bigbike/css/wp-theme-checkout.css?v=2"
+      cssHref=""
     >
       <div className="bb-oc-wrap">
         {children}

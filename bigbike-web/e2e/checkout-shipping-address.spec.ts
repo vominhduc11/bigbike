@@ -1,10 +1,10 @@
 import { test, expect } from "@playwright/test";
 
 /**
- * E2E cho luồng "Giao tới địa chỉ khác địa chỉ thanh toán" trên trang Thanh toán.
+ * E2E cho luồng "Giao tới địa chỉ khác địa chỉ thanh toán" trên trang Đặt hàng.
  *
  * Form checkout (WpCheckoutClient) render bất kể giỏ rỗng — không redirect khi giỏ
- * trống — nên test chỉ cần mở /thanh-toan rồi bật/tắt checkbox. Theo convention của
+ * trống — nên test chỉ cần mở /dat-hang/ rồi bật/tắt checkbox. Theo convention của
  * bộ e2e hiện có: nếu form không render (môi trường chưa dựng đủ stack) thì SKIP nhẹ
  * nhàng thay vì fail.
  *
@@ -16,7 +16,7 @@ const TOGGLE_RE = /Giao tới địa chỉ khác|Ship to a different address/i;
 
 test("checkout: ship-to-different-address toggle reveals and hides the shipping address form", async ({ page }) => {
   test.setTimeout(90000);
-  await page.goto("/thanh-toan/", { waitUntil: "load", timeout: 60000 });
+  await page.goto("/dat-hang/", { waitUntil: "load", timeout: 60000 });
 
   const toggle = page.getByRole("checkbox", { name: TOGGLE_RE });
   if ((await toggle.count()) === 0) {

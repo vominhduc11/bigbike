@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getLocale } from "next-intl/server";
 import { Tr } from "@/components/i18n/Tr";
 import type { HeaderNavNode } from "@/components/layout/header-nav/shared";
+import { WpMenuClient } from "./WpMenuClient";
 import { listPublicSettings } from "@/lib/api/public-api";
 import { normalizeMenuUrl } from "@/lib/utils/nav";
 import { telHref } from "@/lib/utils/format";
@@ -42,26 +43,24 @@ const titleStyle: React.CSSProperties = {
   margin: "0 0 2.286rem",
 };
 
-function FooterMenu({ nodes }: { nodes: HeaderNavNode[] }) {
-  return (
-    <ul className="menu">
-      {nodes.map((node) => {
-        const href = normalizeMenuUrl(node.url) || "/";
-        return (
-          <li key={node.id} className="menu-item">
-            <Link href={href} target={node.openInNewTab ? "_blank" : undefined}>
-              {node.label}
-            </Link>
-          </li>
-        );
-      })}
-    </ul>
-  );
+
+
+function filterMenuNodes(nodes: HeaderNavNode[]): HeaderNavNode[] {
+  return nodes
+    .filter((node) => {
+      const url = node.url || "";
+      return !url.includes("huong-dan-mua-hang") && !url.includes("cac-dieu-kien-va-dieu-khoan");
+    })
+    .map((node) => ({
+      ...node,
+      children: filterMenuNodes(node.children),
+    }));
 }
 
 /** Footer WordPress bigbike.vn — port 1:1 từ footer.php; menu + thông tin liên
  * hệ (SĐT / email / facebook) lấy từ settings công khai, KHÔNG hardcode. */
 export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }) {
+  const filteredFooterNodes = filterMenuNodes(footerNodes);
   const locale = await getLocale();
   const settings = (await listPublicSettings(locale)).data ?? [];
   const phones = [
@@ -116,7 +115,7 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
 
   // Merge essential items into footer menu nodes to guarantee they are on the UI, avoiding duplicates
   const normalizedFooterHrefs = new Set(
-    footerNodes.map((node) => normalizeMenuUrl(node.url))
+    filteredFooterNodes.map((node) => normalizeMenuUrl(node.url))
   );
 
   const additionalNodes = essentialItems
@@ -132,7 +131,7 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
       children: [],
     }));
 
-  const mergedFooterNodes = [...footerNodes, ...additionalNodes];
+  const mergedFooterNodes = [...filteredFooterNodes, ...additionalNodes];
 
   return (
     <footer data-bb-focus="general_brand">
@@ -190,7 +189,7 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
                         <Tr ns="Footer" k="infoHeading" /> <i className="fal fa-plus" />
                       </p>
                       <div className="toggle--item-body">
-                        <FooterMenu nodes={mergedFooterNodes} />
+                        <WpMenuClient initialNodes={mergedFooterNodes} location="footer" />
                       </div>
                     </div>
                   </div>

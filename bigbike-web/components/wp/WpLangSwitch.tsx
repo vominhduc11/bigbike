@@ -2,23 +2,44 @@
 
 import { useLocale } from "next-intl";
 import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { LOCALES, type Locale } from "@/i18n/locale";
 import { useSetLocale } from "@/components/providers/ClientIntlProvider";
+import { useAltSlug } from "@/components/i18n/AltSlugProvider";
+import { toProductPath, toCategoryPath, toBrandPath, toArticlePath } from "@/lib/utils/routes";
 
 /**
  * Đổi ngôn ngữ — control bigbike-web giữ lại nhưng style hợp theme WP
  * (cụm VI|EN nằm trong .user-control của header WP). Đổi ngôn ngữ ngay ở CLIENT
- * qua ClientIntlProvider (ghi cookie NEXT_LOCALE + swap message), KHÔNG router.refresh
- * — vì server render tĩnh locale `vi` để giữ kiến trúc ISR/SSG.
+ * qua ClientIntlProvider (ghi cookie NEXT_LOCALE + swap message). Khi ở các trang
+ * chi tiết có đăng ký Alt Slug, tự động điều hướng sang URL đúng ngôn ngữ (V213/214/215).
  */
 export function WpLangSwitch() {
   const locale = useLocale() as Locale;
   const setLocale = useSetLocale();
+  const altSlug = useAltSlug();
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   function selectLocale(next: Locale) {
     if (next === locale || isPending) return;
-    startTransition(() => setLocale(next));
+    startTransition(() => {
+      setLocale(next);
+      if (altSlug) {
+        const slug = next === "en" ? (altSlug.enSlug || altSlug.viSlug) : altSlug.viSlug;
+        let targetPath = "/";
+        if (altSlug.kind === "product") {
+          targetPath = toProductPath(slug);
+        } else if (altSlug.kind === "category") {
+          targetPath = toCategoryPath(slug);
+        } else if (altSlug.kind === "brand") {
+          targetPath = toBrandPath(slug);
+        } else if (altSlug.kind === "article") {
+          targetPath = toArticlePath(slug);
+        }
+        router.push(targetPath);
+      }
+    });
   }
 
   return (
@@ -40,3 +61,4 @@ export function WpLangSwitch() {
     </div>
   );
 }
+

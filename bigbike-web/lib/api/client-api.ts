@@ -11,7 +11,7 @@ import type {
   SaveAddressPayload,
   UpdateCustomerProfilePayload,
 } from "@/lib/contracts/commerce";
-import type { Article, Brand, Category, Product } from "@/lib/contracts/public";
+import type { Article, Brand, Category, Product, PublicMenu } from "@/lib/contracts/public";
 import { env } from "@/env";
 
 const API_BASE_URL = env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
@@ -86,6 +86,11 @@ export type PublicSetting = { settingKey: string; settingValue: string };
 export function fetchPublicSettings(lang?: string): Promise<PublicSetting[]> {
   const qs = lang ? `?lang=${encodeURIComponent(lang)}` : "";
   return clientRequest("GET", `/api/v1/settings/public${qs}`);
+}
+
+export function fetchPublicMenu(location: string, lang?: string): Promise<PublicMenu> {
+  const qs = lang ? `?lang=${encodeURIComponent(lang)}` : "";
+  return clientRequest("GET", `/api/v1/menus/${location}${qs}`);
 }
 
 // ── Catalog ───────────────────────────────────────────────────────────────────

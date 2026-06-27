@@ -123,7 +123,7 @@ export function WpCheckoutClient() {
           <div className="bb-co-card">
             <p className="bb-co-card-title">{t("step1Title")}</p>
 
-            <div className="row">
+            <div className="space-y-4">
               <CheckoutAddressFields
                 idPrefix="billing"
                 autoCompletePrefix=""
@@ -138,21 +138,19 @@ export function WpCheckoutClient() {
                 onVnChange={(field, val) => setValue(field, val, { shouldValidate: true })}
               />
 
-              <div className="col-md-12">
-                <div className="bb-co-field">
-                  <label htmlFor="order_comments">
-                    {t("noteLabel")} <span className="optional">{t("noteOptional")}</span>
-                  </label>
-                  <textarea
-                    id="order_comments"
-                    className="form-control"
-                    placeholder={t("notePlaceholder")}
-                    value={customerNote}
-                    onChange={(e) => setCustomerNote(e.target.value)}
-                    maxLength={1000}
-                    rows={4}
-                  />
-                </div>
+              <div className="bb-co-field">
+                <label htmlFor="order_comments">
+                  {t("noteLabel")} <span className="optional">{t("noteOptional")}</span>
+                </label>
+                <textarea
+                  id="order_comments"
+                  className="form-control"
+                  placeholder={t("notePlaceholder")}
+                  value={customerNote}
+                  onChange={(e) => setCustomerNote(e.target.value)}
+                  maxLength={1000}
+                  rows={4}
+                />
               </div>
             </div>
           </div>
@@ -173,7 +171,7 @@ export function WpCheckoutClient() {
             {shipToDifferent && (
               <div className="mt-6">
                 <h3 className="mb-4 font-cta text-ui-18 max-md:text-ui-16 font-semibold uppercase">{t("shippingAddressTitle")}</h3>
-                <div className="row">
+                <div className="space-y-4">
                   <CheckoutAddressFields
                     idPrefix="shipping"
                     autoCompletePrefix="shipping "

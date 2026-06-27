@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 
 export const metadata: Metadata = buildPublicMetadata({
-  title: "Thanh toán",
+  title: "Đặt hàng",
   description: "Hoàn tất đơn hàng đồ bảo hộ mô tô chính hãng tại BigBike.",
-  canonicalPath: "/thanh-toan/",
+  canonicalPath: "/dat-hang/",
   noIndex: true,
 });
 

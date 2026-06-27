@@ -12,6 +12,7 @@ import { toCartPath } from "@/lib/utils/routes";
 import { WpCartCount } from "./WpCartCount";
 import { WpHeaderUser } from "./WpHeaderUser";
 import { WpLangSwitch } from "./WpLangSwitch";
+import { WpMenuClient } from "./WpMenuClient";
 
 const T = "/wp-content/themes/bigbike";
 
@@ -77,56 +78,24 @@ function WpContactMe({
   );
 }
 
-function WpMenu({ nodes, top = false }: { nodes: HeaderNavNode[]; top?: boolean }) {
-  // Khớp DOM wp_nav_menu gốc: ul top = .header-nav, li top có .navigation--item;
-  // submenu = ul.sub-menu, li chỉ .menu-item. CSS theme tô màu nav qua các class này.
-  // Item có submenu ("Tất cả sản phẩm") = dropdown lồng giống bigbike.vn live:
-  // desktop hover hiện .sub-menu (CSS trong globals.css), mobile dùng off-canvas.
-  return (
-    <ul className={top ? "header-nav" : "sub-menu"}>
-      {nodes.map((node) => {
-        const href = normalizeMenuUrl(node.url) || "/";
-        const hasChildren = node.children.length > 0;
-        const target = node.openInNewTab ? "_blank" : undefined;
 
-        const liClass =
-          (top ? "navigation--item menu-item" : "menu-item") +
-          (hasChildren ? " menu-item-has-children" : "");
-        return (
-          <li key={node.id} className={liClass}>
-            <Link href={href} target={target} rel={target ? "noopener" : undefined}>
-              {/* Icon danh mục (mask đơn sắc, tô theo màu chữ → xám, đỏ khi hover)
-                  — chỉ ở trong dropdown/sub-menu, giống mega menu cũ + WP live. */}
-              {!top && node.iconUrl && (
-                <span
-                  className={`${submenuIcon} mr-2 align-middle`}
-                  style={{
-                    maskImage: `url(${node.iconUrl})`,
-                    WebkitMaskImage: `url(${node.iconUrl})`,
-                  }}
-                  aria-hidden="true"
-                />
-              )}
-              {node.label}
-            </Link>
-            {hasChildren && <WpMenu nodes={node.children} />}
-            {/* Nút mở/đóng submenu off-canvas mobile — WpThemeInteractions xử lý click
-                qua delegation (trước đây home.min.js append; nay render thẳng markup). */}
-            {hasChildren && (
-              <div className="arrow">
-                <i className="fal fa-chevron-down" />
-              </div>
-            )}
-          </li>
-        );
-      })}
-    </ul>
-  );
+
+function filterMenuNodes(nodes: HeaderNavNode[]): HeaderNavNode[] {
+  return nodes
+    .filter((node) => {
+      const url = node.url || "";
+      return !url.includes("huong-dan-mua-hang") && !url.includes("cac-dieu-kien-va-dieu-khoan");
+    })
+    .map((node) => ({
+      ...node,
+      children: filterMenuNodes(node.children),
+    }));
 }
 
 /** Header WordPress bigbike.vn — port 1:1 từ header.php; menu + thông tin liên hệ
  * (địa chỉ / SĐT) lấy từ settings công khai, KHÔNG hardcode. */
 export async function WpHeader({ menuNodes }: { menuNodes: HeaderNavNode[] }) {
+  const filteredMenuNodes = filterMenuNodes(menuNodes);
   const locale = await getLocale();
   const settings = (await listPublicSettings(locale)).data ?? [];
   const address = pickSetting(settings, ["contact_address"]);
@@ -165,10 +134,11 @@ export async function WpHeader({ menuNodes }: { menuNodes: HeaderNavNode[] }) {
                     <div className="user-control--item user">
                       <WpHeaderUser variant="mobile" />
                     </div>
+                    <WpLangSwitch />
                   </div>
                 </div>
 
-                <WpMenu nodes={menuNodes} top />
+                <WpMenuClient initialNodes={filteredMenuNodes} location="primary" top />
 
                 <div className="mobile-item">
                   <div className="information-slide">

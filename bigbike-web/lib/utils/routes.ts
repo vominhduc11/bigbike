@@ -62,7 +62,7 @@ export function toCartPath(): string {
 }
 
 export function toCheckoutPath(): string {
-  return "/thanh-toan/";
+  return "/dat-hang/";
 }
 
 export function toOrderConfirmPath(orderNumber: string, orderKey?: string): string {

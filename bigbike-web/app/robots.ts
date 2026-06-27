@@ -14,6 +14,8 @@ export default function robots(): MetadataRoute.Robots {
         "/gio-hang/",
         "/thanh-toan.html",
         "/thanh-toan/",
+        "/dat-hang.html",
+        "/dat-hang/",
         "/don-hang/",
         "/tai-khoan",
         "/dang-nhap",

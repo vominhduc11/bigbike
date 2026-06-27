@@ -48,6 +48,19 @@ function toTrimmedString(value) {
   return value.trim()
 }
 
+export function normalizeGender(value) {
+  const normalized = toTrimmedString(value)
+  if (!normalized) {
+    return undefined
+  }
+  const lower = normalized.toLowerCase()
+  if (lower === 'nam') return 'Nam'
+  if (lower === 'nu' || lower === 'nư' || lower === 'nữ') return 'Nữ'
+  if (lower === 'unisex') return 'Unisex'
+  return normalized
+}
+
+
 function toInteger(value, fallback = 0) {
   if (typeof value === 'number' && Number.isInteger(value)) {
     return value
@@ -395,7 +408,7 @@ export function normalizeProduct(input) {
     promotionContent: toTrimmedString(source.promotionContent) || undefined,
     // Template/trust fields (V175) — render trên PDP web. PHẢI surface ở đây, nếu không
     // form admin nạp undefined → mở SP hiện trống → bấm Lưu gửi null/[] → xoá mất dữ liệu.
-    gender: toTrimmedString(source.gender) || undefined,
+    gender: normalizeGender(source.gender),
     originBrandCountry: toTrimmedString(source.originBrandCountry) || undefined,
     sizeGuide: toTrimmedString(source.sizeGuide) || undefined,
     suitabilityAdvisory: toTrimmedString(source.suitabilityAdvisory) || undefined,

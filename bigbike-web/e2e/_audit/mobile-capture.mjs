@@ -149,7 +149,7 @@ async function run() {
     ["category-index", "/danh-muc-san-pham"],
     ["pdp", productUrl],
     ["cart", "/gio-hang"],
-    ["checkout", "/thanh-toan"],
+    ["checkout", "/dat-hang"],
     ["search-page", "/tim-kiem?s=ao"],
     ["brands", "/brands"],
     ["news", "/tin-tuc"],

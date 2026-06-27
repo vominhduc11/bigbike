@@ -36,11 +36,11 @@ function pruneExcept(keep: HTMLLinkElement) {
   }
 }
 
-export function WpThemeStylesheet({ href }: { href: string }) {
+export function WpThemeStylesheet({ href }: { href?: string }) {
   // SSR: phát thẻ link vào <head> đúng một lần cho lần tải đầu.
   const injected = useRef(false);
   useServerInsertedHTML(() => {
-    if (injected.current) return null;
+    if (!href || injected.current) return null;
     injected.current = true;
     return <link rel="stylesheet" href={href} data-wp-theme="" />;
   });
@@ -49,6 +49,14 @@ export function WpThemeStylesheet({ href }: { href: string }) {
   // trang MỚI làm (không dọn lúc unmount) để bản cũ còn giữ giao diện tới khi bản mới
   // tải xong → không chớp trắng.
   useIsomorphicLayoutEffect(() => {
+    if (!href) {
+      // Nếu không có href, dọn dẹp sạch sẽ toàn bộ stylesheet wp-theme cũ đang có trong head
+      for (const el of document.head.querySelectorAll(SELECTOR)) {
+        el.remove();
+      }
+      return;
+    }
+
     const head = document.head;
     const current = Array.from(head.querySelectorAll<HTMLLinkElement>(SELECTOR)).find(
       (el) => el.getAttribute("href") === href,

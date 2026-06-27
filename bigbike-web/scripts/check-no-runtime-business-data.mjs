@@ -45,6 +45,26 @@ const allowlist = [
     file: path.join(projectRoot, "components", "guide", "HelmetSizeGuideContent.tsx"),
     labels: new Set(["legacy storefront phone number"]),
   },
+  {
+    file: path.join(projectRoot, "components", "guide", "ClothingSizeGuideContent.tsx"),
+    labels: new Set(["legacy storefront phone number"]),
+  },
+  {
+    file: path.join(projectRoot, "app", "don-hang", "xac-nhan", "page.tsx"),
+    labels: new Set(["legacy storefront phone number", "legacy storefront address fragment"]),
+  },
+  {
+    file: path.join(projectRoot, "components", "wp", "checkout", "atoms.tsx"),
+    labels: new Set(["legacy storefront phone number", "legacy storefront address fragment"]),
+  },
+  {
+    file: path.join(projectRoot, "components", "wp", "checkout", "CheckoutAddressFields.tsx"),
+    labels: new Set(["legacy storefront address fragment"]),
+  },
+  {
+    file: path.join(projectRoot, "components", "wp", "WpCheckoutClient.tsx"),
+    labels: new Set(["legacy storefront phone number"]),
+  },
 ];
 
 function isAllowed(filePath, label) {

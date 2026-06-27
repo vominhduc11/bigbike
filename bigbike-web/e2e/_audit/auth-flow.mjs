@@ -1,7 +1,7 @@
 /**
  * Authenticated mobile purchase-flow capture.
  * Logs in with the provided customer test account, adds a product to cart, and
- * captures the cart-with-items states (bottom-sheet, /gio-hang page, /thanh-toan
+ * captures the cart-with-items states (bottom-sheet, /gio-hang page, /dat-hang
  * checkout) plus account — the parts a guest session can't reach.
  *
  * Usage: node e2e/_audit/auth-flow.mjs --tag=before
@@ -106,7 +106,7 @@ try {
   out.steps.cartPageLines = await page.$$eval("[class*='cart-line'], [class*='cart-item'], tr", (els) => els.length).catch(() => 0);
 
   // 5. Checkout page
-  await page.goto(BASE + "/thanh-toan", { waitUntil: "load", timeout: 45000 });
+  await page.goto(BASE + "/dat-hang", { waitUntil: "load", timeout: 45000 });
   await settle(page, 1500);
   await shot(page, "06-checkout", true);
   await shot(page, "06-checkout-viewport");
