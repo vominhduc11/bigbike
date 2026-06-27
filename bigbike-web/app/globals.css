@@ -5816,9 +5816,13 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
     color: var(--bb-text-primary);
   }
   .woocommerce-widget-layered-nav-list li a,
+  .woocommerce-widget-layered-nav-list li a span,
   .product-categories li a {
-    font-size: 15px !important;
+    font-size: 16px !important;
     color: var(--bb-text-secondary) !important;
+  }
+  .product-categories .children li a {
+    font-size: 15px !important;
   }
   .woocommerce-widget-layered-nav-list li.chosen a,
   .product-categories li.active a {
@@ -5826,7 +5830,7 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
     font-weight: bold;
   }
   .woocommerce-widget-layered-nav-list li .count {
-    font-size: 13px !important;
+    font-size: 14px !important;
     color: var(--bb-text-muted);
   }
   
@@ -5871,6 +5875,17 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
     }
     .product--item-price p.old {
       font-size: 13px !important;
+    }
+    .widget--title h3 {
+      font-size: 18px !important;
+    }
+    .woocommerce-widget-layered-nav-list li a,
+    .woocommerce-widget-layered-nav-list li a span,
+    .product-categories li a {
+      font-size: 15px !important;
+    }
+    .product-categories .children li a {
+      font-size: 14px !important;
     }
   }
 }
