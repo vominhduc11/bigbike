@@ -109,7 +109,7 @@ function ColHeader({ icon, children }: { icon: ReactNode; children: ReactNode })
     >
       {icon}
       <h2
-        className="text-ui-13"
+        className="text-ui-16"
         style={{
           margin: 0,
           fontWeight: 700,
@@ -152,7 +152,7 @@ function InfoRow({
       </div>
       <div style={{ minWidth: 0, flex: 1 }}>
         <div
-          className="text-ui-11"
+          className="text-ui-12"
           style={{
             marginBottom: 4,
             color: FAINT,
@@ -215,11 +215,11 @@ function SocialLink({
         {icon}
       </span>
       <span style={{ minWidth: 0, flex: 1 }}>
-        <span className="text-ui-13" style={{ display: "block", fontWeight: 700, color: TEXT }}>
+        <span className="text-ui-15" style={{ display: "block", fontWeight: 700, color: TEXT }}>
           {name}
         </span>
         {sub && (
-          <span className="text-ui-12" style={{ display: "block", color: FAINT, marginTop: 2 }}>
+          <span className="text-ui-13" style={{ display: "block", color: FAINT, marginTop: 2 }}>
             {sub}
           </span>
         )}
@@ -355,13 +355,13 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
               </span>
               <span>
                 <span
-                  className="text-ui-11"
+                  className="text-ui-12"
                   style={{ color: FAINT, display: "block", fontWeight: 600 }}
                 >
                   {vi ? "Cửa hàng chính" : "Main store"}
                 </span>
                 <strong
-                  className="text-ui-13"
+                  className="text-ui-14"
                   style={{ color: TEXT, display: "block", lineHeight: 1.4, fontWeight: 700 }}
                 >
                   {mainAddr}
@@ -376,7 +376,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={vi ? "Mở Google Maps" : "Open in Google Maps"}
-              className="text-ui-12"
+              className="text-ui-13"
               style={{
                 position: "absolute",
                 bottom: 16,
@@ -419,7 +419,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                 label={vi ? "Giờ làm việc" : "Opening hours"}
               >
                 <div
-                  className="text-ui-13"
+                  className="text-ui-14"
                   style={{
                     display: "grid",
                     gridTemplateColumns: "auto 1fr",
@@ -448,7 +448,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                 {/* Badge mở/đóng cửa — chỉ render sau mount (tránh hydration mismatch) */}
                 {mounted && (
                   <div
-                    className="text-ui-11"
+                    className="text-ui-12"
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
@@ -488,13 +488,13 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                 label={vi ? "Địa chỉ" : "Address"}
               >
                 <div
-                  className="text-ui-14"
+                  className="text-ui-15"
                   style={{ color: TEXT, fontWeight: 700, lineHeight: 1.4 }}
                 >
                   {mainAddr}
                 </div>
                 {subAddr && (
-                  <div className="text-ui-12" style={{ marginTop: 2, color: MUTED }}>
+                  <div className="text-ui-13" style={{ marginTop: 2, color: MUTED }}>
                     {subAddr}
                   </div>
                 )}
@@ -504,7 +504,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
             {/* Hotline */}
             {contact.hotline && (
               <InfoRow icon={<Phone size={16} color={RED} />} label="Hotline">
-                <div className="text-ui-14" style={{ color: TEXT, fontWeight: 700 }}>
+                <div className="text-ui-16" style={{ color: TEXT, fontWeight: 700 }}>
                   <a href={telHref(contact.hotline)} style={{ color: TEXT, textDecoration: "none" }}>
                     {contact.hotline}
                   </a>
@@ -532,7 +532,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                   )}
                 </div>
                 {zaloPhone && contact.zaloUrl && (
-                  <div className="text-ui-12" style={{ marginTop: 4, color: MUTED }}>
+                  <div className="text-ui-13" style={{ marginTop: 4, color: MUTED }}>
                     {vi ? "Zalo: " : "Zalo: "}
                     <a
                       href={contact.zaloUrl}
@@ -618,7 +618,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
         {stats.map((stat) => (
           <div key={stat.label} style={{ background: "#fff", padding: "16px 8px", textAlign: "center" }}>
             <div
-              className="text-ui-22 max-md:text-ui-20"
+              className="text-ui-24 max-md:text-ui-22"
               style={{
                 fontWeight: 700,
                 color: RED,
@@ -629,7 +629,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
               {stat.value}
             </div>
             <div
-              className="text-ui-11"
+              className="text-ui-12"
               style={{
                 marginTop: 3,
                 color: FAINT,
