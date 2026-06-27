@@ -41,7 +41,7 @@ public class AdminCatalogController extends AdminControllerSupport {
 
     private static final String ID_REGEX = "^[A-Za-z0-9_-]+$";
     private static final String PUBLISH_STATUS_REGEX =
-            "^(DRAFT|PUBLISHED|HIDDEN|TRASH)$";
+            "^(DRAFT|PUBLISHED|HIDDEN|TRASH|ALL_INCLUDING_TRASH)$";
     private static final String STOCK_STATE_REGEX = "^(IN_STOCK|OUT_OF_STOCK)$";
     private static final String VISIBILITY_REGEX = "^(VISIBLE|HIDDEN)$";
     private static final String HOMEPAGE_BLOCK_REGEX =

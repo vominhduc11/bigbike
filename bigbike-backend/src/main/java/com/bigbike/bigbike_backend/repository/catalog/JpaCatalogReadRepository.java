@@ -227,6 +227,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
             }
             if (publishStatus == null || publishStatus.isBlank() || "ALL".equalsIgnoreCase(publishStatus)) {
                 predicates.add(cb.notEqual(root.get("publishStatus"), PublishStatus.TRASH));
+            } else if ("ALL_INCLUDING_TRASH".equalsIgnoreCase(publishStatus)) {
+                // Do not filter by publishStatus at all (includes TRASH)
             } else {
                 predicates.add(cb.equal(root.get("publishStatus"), PublishStatus.valueOf(publishStatus)));
             }
