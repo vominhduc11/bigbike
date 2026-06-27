@@ -527,6 +527,8 @@ export function normalizeCategory(input) {
     slugEn: toTrimmedString(source.slugEn) || undefined,
     name: toTrimmedString(source.name) || 'Untitled category',
     description: toTrimmedString(source.description) || undefined,
+    // Khối giới thiệu hiển thị ở đầu trang danh mục (cột intro_content, đổi từ content_bottom — V290).
+    introContent: toTrimmedString(source.introContent) || undefined,
     parentId: toTrimmedString(source.parentId) || undefined,
     image: normalizeImageAsset(source.image),
     icon: normalizeImageAsset(source.icon),
@@ -542,6 +544,7 @@ export function normalizeCategory(input) {
       en: {
         name: toTrimmedString(source.translations?.en?.name) || undefined,
         description: toTrimmedString(source.translations?.en?.description) || undefined,
+        introContent: toTrimmedString(source.translations?.en?.introContent) || undefined,
         seoTitle: toTrimmedString(source.translations?.en?.seoTitle) || undefined,
         seoDescription: toTrimmedString(source.translations?.en?.seoDescription) || undefined,
       },

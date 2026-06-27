@@ -95,14 +95,14 @@ final class JpaCatalogReadSupport {
                 || isPresent(entity.getDescriptionEn())
                 || isPresent(entity.getSeoTitleEn())
                 || isPresent(entity.getSeoDescriptionEn())
-                || isPresent(entity.getContentBottomEn());
+                || isPresent(entity.getIntroContentEn());
         if (!anyEnglish) return null;
         return new CategoryTranslations(new CategoryTranslations.CategoryContent(
                 entity.getNameEn(),
                 entity.getDescriptionEn(),
                 entity.getSeoTitleEn(),
                 entity.getSeoDescriptionEn(),
-                entity.getContentBottomEn()
+                entity.getIntroContentEn()
         ));
     }
 

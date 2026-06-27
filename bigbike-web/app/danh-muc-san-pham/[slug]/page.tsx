@@ -125,8 +125,8 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
 
   const breadcrumbJsonLd = serializeJsonLd(buildCategoryBreadcrumbJsonLd(category, parentCategory));
   const categoryName = safeText(category.name, tCatalog("categoryFallback"));
-  const categoryContentBottomHtml = category.contentBottom?.trim()
-    ? sanitizeRichHtml(category.contentBottom, { rewriteMediaUrls: true })
+  const categoryIntroHtml = category.introContent?.trim()
+    ? sanitizeRichHtml(category.introContent, { rewriteMediaUrls: true })
     : null;
 
   const heroBreadcrumb: WpCategoryCrumb[] = [
@@ -167,10 +167,10 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
                 categories={filterCategories}
                 facets={facetsResult.data}
                 beforeGridNode={
-                  categoryContentBottomHtml ? (
+                  categoryIntroHtml ? (
                     <LHtml
-                      field="contentBottom"
-                      viHtml={categoryContentBottomHtml}
+                      field="introContent"
+                      viHtml={categoryIntroHtml}
                       rewriteMediaUrls
                     />
                   ) : undefined

@@ -20,8 +20,8 @@ public record Category(
         boolean isVisible,
         Boolean showOnHomepage,
         Integer sortOrder,
-        /** WP ACF "content_bottom" — SEO text block shown below the product grid. */
-        String contentBottom,
+        /** Khối giới thiệu hiển thị ở ĐẦU trang danh mục (cột intro_content, đổi từ content_bottom — V290). */
+        String introContent,
         /** Raw English content — non-null only on admin detail reads (V137). */
         CategoryTranslations translations,
         Instant createdAt,

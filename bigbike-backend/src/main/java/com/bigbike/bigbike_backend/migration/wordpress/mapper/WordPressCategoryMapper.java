@@ -26,8 +26,8 @@ public class WordPressCategoryMapper {
             Long thumbnailId,
             /** WP ACF field "image_left" — hero illustration shown on the right side of the category banner. */
             Long imageLeftId,
-            /** WP ACF field "content_bottom" — SEO text block shown below the product grid. */
-            String contentBottom,
+            /** WP ACF field "content_bottom" — nay là khối giới thiệu đầu trang danh mục (intro_content). */
+            String introContent,
             String expectedUrl,
             List<String> warnings
     ) {}
@@ -52,8 +52,8 @@ public class WordPressCategoryMapper {
         Integer sortOrder = parseInteger(readTermMeta(metas, "ordering"), "ordering", warnings);
         Long thumbnailId = parseLong(readTermMeta(metas, "thumbnail_id"), "thumbnail_id", warnings);
         Long imageLeftId = parseLong(readTermMeta(metas, "image_left"), "image_left", warnings);
-        String contentBottom = readTermMeta(metas, "content_bottom");
-        if (contentBottom != null && contentBottom.isBlank()) contentBottom = null;
+        String introContent = readTermMeta(metas, "content_bottom");
+        if (introContent != null && introContent.isBlank()) introContent = null;
 
         return new MappedCategory(
                 term.termId(),
@@ -67,7 +67,7 @@ public class WordPressCategoryMapper {
                 sortOrder,
                 thumbnailId,
                 imageLeftId,
-                contentBottom,
+                introContent,
                 expectedUrl,
                 warnings
         );

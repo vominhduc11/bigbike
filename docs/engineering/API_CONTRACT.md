@@ -826,6 +826,31 @@ Status: `CONFIRMED_FROM_CODE` — `AdminMenuService.resolveMenuIconUrl` (DB look
 (`menuIconUrl`), `CatalogController` `/categories`, `UpsertCategoryRequest.menuIcon` +
 `AdminCatalogMutationService.applyCategoryPatch` (ghi admin), migration `V213`.
 
+### Category `introContent` — khối giới thiệu ĐẦU trang danh mục (admin-editable)
+
+Field `introContent` (cột `intro_content` + `intro_content_en`; **đổi tên từ `content_bottom`/`contentBottom`
+qua `V290`** — tên cũ là di sản WP ACF khi nội dung nằm dưới lưới) là **khối giới thiệu hiển thị ở ĐẦU
+trang danh mục** (`bigbike-web` render `introContent` ở `beforeGridNode`, phía trên lưới sản phẩm — thay
+cho `description` trước đây). Field `description`/`description_en` **không còn render trên trang**, chỉ còn
+là nguồn fallback cho SEO meta description. (Khác hẳn `product.contentBottom` — field sản phẩm, vẫn render
+ở CUỐI PDP; không liên quan.)
+
+**Ghi (admin):** `POST/PATCH /api/v1/admin/categories` nhận thêm:
+- `introContent` (string, ≤50 000 ký tự, rich HTML) — bản tiếng Việt, ở root request.
+- `translations.en.introContent` (string, ≤50 000) — bản tiếng Anh → `intro_content_en`.
+
+Presence-flag như các field khác: bỏ khóa thì PATCH giữ nguyên; gửi `null`/blank để xoá. Admin sửa ở
+form danh mục (`CategoryDetailScreen`, field "Nội dung đầu trang danh mục").
+
+**Đọc (admin):** response danh mục đã trả `introContent` (root, theo locale) và `translations.en.introContent`
+(`CategoryTranslations.CategoryContent.introContent`) để editor nạp bản song ngữ.
+
+Status: `CONFIRMED_FROM_CODE` — `UpsertCategoryRequest.introContent`,
+`CategoryTranslationRequest.CategoryContentRequest.introContent`,
+`AdminCatalogMutationService.applyCategoryPatch` (ghi `introContent`/`introContentEn`),
+`CategoryEntity.introContent/introContentEn`, `JpaCatalogReadSupport.toCategoryTranslations`,
+migration `V289` (đổ nội dung) + `V290` (đổi tên cột).
+
 ### Menu location `policy` — sidebar trang chính sách (V226)
 
 `policy` là system menu slot thứ tư (cạnh `primary`/`footer`/`guide`). Nó cấp **danh

@@ -33,6 +33,7 @@ export function buildEmptyForm() {
     slug: '',
     name: '',
     description: '',
+    introContent: '',
     parentId: '',
     visible: true,
     showOnHomepage: false,
@@ -45,7 +46,7 @@ export function buildEmptyForm() {
     seoCanonicalUrl: '',
     seoOgImageUrl: '',
     seoOgImageAlt: '',
-    translations: { en: { slug: '', name: '', description: '', seoTitle: '', seoDescription: '' } },
+    translations: { en: { slug: '', name: '', description: '', introContent: '', seoTitle: '', seoDescription: '' } },
   }
 }
 
@@ -55,6 +56,7 @@ export function buildFormFromItem(item) {
     slug: item.slug || '',
     name: item.name || '',
     description: item.description || '',
+    introContent: item.introContent || '',
     parentId: item.parentId || '',
     visible: item.isVisible !== false,
     showOnHomepage: Boolean(item.showOnHomepage),
@@ -74,6 +76,7 @@ export function buildFormFromItem(item) {
         slug: item.slugEn || '',
         name: item.translations?.en?.name || '',
         description: item.translations?.en?.description || '',
+        introContent: item.translations?.en?.introContent || '',
         seoTitle: item.translations?.en?.seoTitle || '',
         seoDescription: item.translations?.en?.seoDescription || '',
       },
@@ -90,6 +93,7 @@ export function toPayload(form) {
     slug: form.slug.trim(),
     name: form.name.trim(),
     description: form.description.trim() || undefined,
+    introContent: form.introContent.trim() || undefined,
     parentId: form.parentId.trim(),
     visible: Boolean(form.visible),
     showOnHomepage: Boolean(form.showOnHomepage),
@@ -128,6 +132,7 @@ export function toPayload(form) {
       slug: form.translations?.en?.slug?.trim() || null,
       name: form.translations?.en?.name?.trim() || null,
       description: form.translations?.en?.description?.trim() || null,
+      introContent: form.translations?.en?.introContent?.trim() || null,
       seoTitle: form.translations?.en?.seoTitle?.trim() || null,
       seoDescription: form.translations?.en?.seoDescription?.trim() || null,
     },

@@ -40,6 +40,10 @@ public class CategoryTranslationRequest {
         @Size(max = 5000, message = "English description is too long.")
         private String description;
 
+        /** English bản của {@code introContent} — lưu vào {@code CategoryEntity.introContentEn} (cột intro_content_en). */
+        @Size(max = 50000, message = "English introContent is too long.")
+        private String introContent;
+
         @Size(max = 255, message = "English SEO title is too long.")
         private String seoTitle;
 

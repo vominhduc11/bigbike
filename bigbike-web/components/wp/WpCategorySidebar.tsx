@@ -194,7 +194,10 @@ export function WpCategorySidebar({
                                   kind="category"
                                   viSlug={child.slug}
                                   enSlug={child.slugEn}
-                                  className={child.menuIconUrl ? "relative block pl-[47px] before:!hidden" : undefined}
+                                  // pl-[47px]! (important): theme WP có rule `.product-categories .children li a{padding-left:0}`
+                                  // (specificity cao hơn) ép padding-left của link con về 0 → chữ trượt sát mép, đè lên
+                                  // icon đặt absolute left-0. Thêm important để chừa lại 47px cho icon, hết chồng chữ.
+                                  className={child.menuIconUrl ? "relative block pl-[47px]! before:!hidden" : undefined}
                                 >
                                   {child.menuIconUrl ? (
                                     <span

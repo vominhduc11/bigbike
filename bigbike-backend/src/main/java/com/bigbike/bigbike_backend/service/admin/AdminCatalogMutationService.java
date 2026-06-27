@@ -945,6 +945,9 @@ public class AdminCatalogMutationService {
         if (create || request.getDescription() != null) {
             entity.setDescription(AdminMutationValidators.trimToNull(request.getDescription()));
         }
+        if (create || request.getIntroContent() != null) {
+            entity.setIntroContent(AdminMutationValidators.trimToNull(request.getIntroContent()));
+        }
         if (create || request.getParentId() != null) {
             entity.setParent(normalizedParent);
         }
@@ -1017,12 +1020,14 @@ public class AdminCatalogMutationService {
             entity.setSlugEn(AdminMutationValidators.trimToNull(en.getSlug()));
             entity.setNameEn(AdminMutationValidators.trimToNull(en.getName()));
             entity.setDescriptionEn(AdminMutationValidators.trimToNull(en.getDescription()));
+            entity.setIntroContentEn(AdminMutationValidators.trimToNull(en.getIntroContent()));
             entity.setSeoTitleEn(AdminMutationValidators.trimToNull(en.getSeoTitle()));
             entity.setSeoDescriptionEn(AdminMutationValidators.trimToNull(en.getSeoDescription()));
         } else if (create) {
             entity.setSlugEn(null);
             entity.setNameEn(null);
             entity.setDescriptionEn(null);
+            entity.setIntroContentEn(null);
             entity.setSeoTitleEn(null);
             entity.setSeoDescriptionEn(null);
         }

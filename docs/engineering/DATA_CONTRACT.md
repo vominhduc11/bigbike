@@ -688,9 +688,9 @@ Bản tiếng Anh lưu trên các cột `_en` nullable cùng dòng trong bảng 
 | `description` | `description_en` | `TEXT` |
 | `seo_title` | `seo_title_en` | `VARCHAR(255)` |
 | `seo_description` | `seo_description_en` | `TEXT` |
-| `content_bottom` | `content_bottom_en` | `TEXT` |
+| `intro_content` | `intro_content_en` | `TEXT` |
 
-Fallback: giống `PRODUCT_RULE_002` — mỗi trường lùi về VI khi EN bị null/blank. Xem `CATEGORY_RULE_001/002`.
+`intro_content`/`intro_content_en` (đổi tên từ `content_bottom`/`content_bottom_en` qua `V290`; field domain `introContent`) = khối giới thiệu hiển thị ở ĐẦU trang danh mục (trên lưới sản phẩm). Fallback: giống `PRODUCT_RULE_002` — mỗi trường lùi về VI khi EN bị null/blank. Xem `CATEGORY_RULE_001/002`.
 
 **Slug tiếng Anh (`slug_en`, V213):** xem mục **"English URL slug"** bên dưới.
 

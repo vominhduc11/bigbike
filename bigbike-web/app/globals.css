@@ -916,23 +916,27 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
     display: block;
     line-height: 1.4;
   }
+  /* Vùng bấm chevron: nới rộng thành ~44px cao × ~42px rộng (chuẩn tap-target di
+     động) để dễ chạm, NHƯNG giữ glyph đúng vị trí cũ — bù `right`/`padding` ngược
+     với phần nới thêm nên mũi tên không xê dịch, chỉ vùng bấm trong suốt lớn lên.
+     `top` lùi lên để tâm ô vẫn trùng tâm dòng chữ. */
   header .navigation .header-nav > .navigation--item.menu-item-has-children > .arrow {
     /* !important để thắng rule trùng selector của theme nằm trong cùng @media
        (wp-theme-home.css load SAU globals nên thắng tie nếu chỉ dựa specificity). */
-    top: 26px !important;
-    right: 16px !important;
-    padding: 0 8px !important;
-    height: calc(1.143rem * 1.4) !important;
+    top: 15px !important;
+    right: 8px !important;
+    padding: 0 16px !important;
+    height: 44px !important;
     display: inline-flex !important;
     align-items: center;
     justify-content: center;
   }
   /* Cấp 2+ — link `.sub-menu li a` padding-top 15px, font 14px */
   header .navigation .sub-menu .menu-item-has-children > .arrow {
-    top: 15px !important;
-    right: 16px !important;
-    padding: 0 8px !important;
-    height: calc(14px * 1.4) !important;
+    top: 3px !important;
+    right: 8px !important;
+    padding: 0 16px !important;
+    height: 44px !important;
     display: inline-flex !important;
     align-items: center;
     justify-content: center;
@@ -1597,7 +1601,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 
 /* BLOCK A */
 .bb-ci-a {
-  padding: 16px;
+  padding: 14px 16px;
   background: var(--bb-bg-surface-raised);
   border: 1px solid var(--bb-border-subtle);
   border-radius: 8px 8px 0 0;
@@ -1614,14 +1618,14 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   font-size: 20px;
   font-weight: bold;
   color: var(--bb-text-primary) !important;
-  line-height: 1.35;
-  margin-bottom: 10px;
+  line-height: 1.3;
+  margin-bottom: 8px;
   font-family: var(--bb-font-body);
 }
 .bb-ci-body {
-  font-size: 16px;
+  font-size: 15px;
   color: var(--bb-text-secondary);
-  line-height: 1.75;
+  line-height: 1.6;
   margin-bottom: 0;
 }
 .bb-ci-pills {
@@ -1647,8 +1651,8 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   border-top: none;
 }
 .bb-ci-b-head {
-  padding: 12px 16px;
-  font-size: 14px;
+  padding: 10px 16px;
+  font-size: 13px;
   font-weight: bold;
   text-transform: uppercase;
   letter-spacing: .06em;
@@ -1657,7 +1661,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   display: block;
 }
 .bb-ci-faq {
-  padding: 13px 16px;
+  padding: 10px 16px;
   border-bottom: 1px solid var(--bb-border-subtle);
 }
 .bb-ci-faq:last-child {
@@ -1667,7 +1671,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   display: flex;
   gap: 8px;
   align-items: flex-start;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 .bb-ci-qbadge {
   width: 20px;
@@ -1688,12 +1692,12 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   font-size: 15px;
   font-weight: bold;
   color: var(--bb-text-primary) !important;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 .bb-ci-at {
   font-size: 14px;
   color: var(--bb-text-secondary);
-  line-height: 1.65;
+  line-height: 1.55;
   padding-left: 26px;
 }
 
@@ -1750,10 +1754,10 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
     font-size: 24px;
   }
   .bb-ci-qt {
-    font-size: 17px;
+    font-size: 16px;
   }
   .bb-ci-at {
-    font-size: 16px;
+    font-size: 15px;
     padding-left: 28px;
   }
   .bb-ci-c {
@@ -1766,16 +1770,16 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
     min-width: 200px;
   }
   .bb-ci-a {
-    padding: 20px 24px;
+    padding: 16px 24px;
   }
   .bb-ci-b-head {
-    padding: 12px 20px;
+    padding: 10px 20px;
   }
   .bb-ci-faq {
-    padding: 14px 20px;
+    padding: 11px 20px;
   }
   .bb-ci-c {
-    padding: 14px 20px;
+    padding: 12px 20px;
   }
 }
 

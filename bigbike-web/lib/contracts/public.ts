@@ -379,8 +379,9 @@ export type Category = {
   isVisible: boolean;
   showOnHomepage?: boolean | null;
   sortOrder?: number | null;
-  /** WP ACF "content_bottom" — SEO block shown below the product grid. */
-  contentBottom?: string | null;
+  /** Khối giới thiệu hiển thị ở ĐẦU trang danh mục (trên lưới sản phẩm).
+   *  Cột intro_content (đổi tên từ content_bottom — WP ACF cũ — qua V290). */
+  introContent?: string | null;
   createdAt: string;
   updatedAt: string;
 };

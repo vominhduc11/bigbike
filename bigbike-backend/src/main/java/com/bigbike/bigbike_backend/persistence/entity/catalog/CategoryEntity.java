@@ -66,11 +66,13 @@ public class CategoryEntity {
     @Column(columnDefinition = "text")
     private String menuIconUrl;
 
+    // Khối giới thiệu hiển thị ở ĐẦU trang danh mục (web render trên lưới sản phẩm).
+    // Cột intro_content (đổi tên từ content_bottom — WP ACF cũ — qua V290).
     @Column(columnDefinition = "text")
-    private String contentBottom;
+    private String introContent;
 
     @Column(columnDefinition = "text")
-    private String contentBottomEn;
+    private String introContentEn;
 
     @Column(columnDefinition = "text")
     private String bannerUrl;

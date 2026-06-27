@@ -20,7 +20,7 @@ import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
-import { RichTextEditor } from '../components/RichTextEditor'
+import { IntroContentField } from './category-detail/IntroContentField'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -602,17 +602,16 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                 )}
               </label>
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
-                <span>{t('categories.detail.description')}</span>
-                <RichTextEditor
-                  key={`description-${contentLang}`}
-                  value={isEnLang ? (form.translations?.en?.description ?? '') : form.description}
-                  onChange={(html) => isEnLang ? updateTranslation('description', html) : updateField('description', html)}
-                  placeholder={t('categories.descriptionPlaceholder')}
+                <span>{t('categories.detail.introContent')}</span>
+                <IntroContentField
+                  key={`introContent-${contentLang}`}
+                  value={isEnLang ? (form.translations?.en?.introContent ?? '') : form.introContent}
+                  onChange={(html) => isEnLang ? updateTranslation('introContent', html) : updateField('introContent', html)}
+                  lang={contentLang}
                   disabled={isReadOnly}
-                  enableImagePicker
                 />
-                <span className="hint">{t('categories.descriptionHint')}</span>
-                {!isEnLang && validationErrors.description && <span className="hint text-danger">{validationErrors.description}</span>}
+                <span className="hint">{t('categories.introContentHint')}</span>
+                {!isEnLang && validationErrors.introContent && <span className="hint text-danger">{validationErrors.introContent}</span>}
               </div>
               <div className="form-field" data-field="imageUrl" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('categories.detail.imageUrl')}</span>

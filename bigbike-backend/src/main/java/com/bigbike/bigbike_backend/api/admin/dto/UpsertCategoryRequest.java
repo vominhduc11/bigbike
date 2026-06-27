@@ -26,6 +26,14 @@ public class UpsertCategoryRequest {
     @Size(max = 5000, message = "description must be at most 5000 characters.")
     private String description;
 
+    /**
+     * Khối giới thiệu hiển thị ở ĐẦU trang danh mục (trên lưới sản phẩm) — rich HTML,
+     * lưu vào {@code CategoryEntity.introContent} (cột intro_content, đổi từ content_bottom — V290).
+     * Presence-flag: bỏ khóa thì PATCH giữ nguyên; gửi null/blank để xoá.
+     */
+    @Size(max = 50000, message = "introContent must be at most 50000 characters.")
+    private String introContent;
+
     private String parentId;
 
     private Boolean visible;

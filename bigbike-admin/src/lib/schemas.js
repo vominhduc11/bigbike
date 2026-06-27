@@ -429,6 +429,7 @@ export function createCategorySchema(t) {
       slug: z.string(),
       name: z.string().min(1, t('categories.detail.errNameRequired')),
       description: z.string().optional(),
+      introContent: z.string().optional(),
       imageUrl: z.string().optional(),
       bannerImageUrl: z.string().optional(),
       heroImageUrl: z.string().optional(),
@@ -444,6 +445,7 @@ export function createCategorySchema(t) {
           slug: z.string().optional(),
           name: z.string().optional(),
           description: z.string().optional(),
+          introContent: z.string().optional(),
           seoTitle: z.string().optional(),
           seoDescription: z.string().optional(),
         }).optional(),
@@ -462,8 +464,8 @@ export function createCategorySchema(t) {
       if ((data.name ?? '').trim().length > 255) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errNameTooLong'), path: ['name'] })
       }
-      if ((data.description ?? '').trim().length > 5000) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errDescriptionTooLong'), path: ['description'] })
+      if ((data.introContent ?? '').trim().length > 50000) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errIntroContentTooLong'), path: ['introContent'] })
       }
       if (data.imageUrl?.trim() && !MEDIA_URL_REGEX.test(data.imageUrl.trim())) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errImageUrl'), path: ['imageUrl'] })

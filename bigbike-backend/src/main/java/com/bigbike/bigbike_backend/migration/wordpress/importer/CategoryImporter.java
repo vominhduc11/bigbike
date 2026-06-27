@@ -115,7 +115,7 @@ public class CategoryImporter implements DomainImporter {
                     }
                 }
 
-                entity.setContentBottom(mc.contentBottom());
+                entity.setIntroContent(mc.introContent());
                 entity.setUpdatedAt(Instant.now());
                 warnings.addAll(mc.warnings());
 

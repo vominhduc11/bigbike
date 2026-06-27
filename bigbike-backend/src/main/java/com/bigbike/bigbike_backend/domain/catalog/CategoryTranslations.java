@@ -9,13 +9,13 @@ package com.bigbike.bigbike_backend.domain.catalog;
  */
 public record CategoryTranslations(CategoryContent en) {
 
-    /** English values of the four translatable category-level text fields. */
+    /** English values of the translatable category-level text fields. */
     public record CategoryContent(
             String name,
             String description,
             String seoTitle,
             String seoDescription,
-            String contentBottom
+            String introContent
     ) {
     }
 }
