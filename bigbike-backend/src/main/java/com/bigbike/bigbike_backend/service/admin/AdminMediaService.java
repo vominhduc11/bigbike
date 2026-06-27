@@ -347,7 +347,8 @@ public class AdminMediaService {
         long total = all.size();
         long activeCount = all.stream().filter(m -> "ACTIVE".equalsIgnoreCase(m.getStatus())).count();
         long deletedCount = all.stream().filter(m -> "DELETED".equalsIgnoreCase(m.getStatus())).count();
-        long totalSize = all.stream().mapToLong(m -> m.getFileSize() == null ? 0L : m.getFileSize()).sum();
+        long sizeKnownCount = all.stream().filter(m -> m.getFileSize() != null).count();
+        long totalSize = all.stream().filter(m -> m.getFileSize() != null).mapToLong(m -> m.getFileSize().longValue()).sum();
 
         Set<UUID> usedIds = mediaReferenceService.getUsedMediaIds(all);
         long used = all.stream().filter(m -> usedIds.contains(m.getId())).count();
@@ -358,7 +359,7 @@ public class AdminMediaService {
         byMime.put("video", all.stream().filter(m -> startsWith(m.getMimeType(), "video/")).count());
         byMime.put("audio", all.stream().filter(m -> startsWith(m.getMimeType(), "audio/")).count());
 
-        return new AdminMediaStatsResponse(total, used, unused, activeCount, deletedCount, byMime, totalSize);
+        return new AdminMediaStatsResponse(total, used, unused, activeCount, deletedCount, byMime, totalSize, sizeKnownCount);
     }
 
     private Specification<MediaEntity> buildBaseSpec(MediaListQuery query) {

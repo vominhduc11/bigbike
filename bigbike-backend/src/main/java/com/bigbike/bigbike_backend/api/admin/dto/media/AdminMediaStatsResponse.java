@@ -13,5 +13,6 @@ public record AdminMediaStatsResponse(
         long activeCount,
         long deletedCount,
         Map<String, Long> byMimeGroup,
-        long totalSizeBytes
+        long totalSizeBytes,
+        long sizeKnownCount
 ) {}

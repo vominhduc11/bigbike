@@ -23,6 +23,7 @@ export function MediaCard({
 }) {
   const { t } = useTranslation()
   const filename = formatText((media.filename ?? '').split('/').pop())
+  const displayName = media.title ? formatText(media.title) : filename
   const dimensions = media.width && media.height ? `${media.width}×${media.height}` : null
   const meta = [formatSize(media.fileSize), dimensions].filter(Boolean).join(' · ')
 
@@ -128,7 +129,7 @@ export function MediaCard({
       </div>
 
       <div className="medialib-card-body">
-        <p className="medialib-card-name" title={media.filename ?? ''}>{filename}</p>
+        <p className="medialib-card-name" title={media.filename ?? ''}>{displayName}</p>
         <p className="medialib-card-meta">{meta || '—'}</p>
         {media.usageCount > 0 ? (
           <span className="medialib-card-usage-badge medialib-is-used">
