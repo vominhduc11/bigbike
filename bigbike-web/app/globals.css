@@ -1619,7 +1619,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   font-family: var(--bb-font-body);
 }
 .bb-ci-body {
-  font-size: 14px;
+  font-size: 16px;
   color: var(--bb-text-secondary);
   line-height: 1.75;
   margin-bottom: 0;
@@ -1685,13 +1685,13 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   margin-top: 1px;
 }
 .bb-ci-qt {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: bold;
   color: var(--bb-text-primary) !important;
   line-height: 1.4;
 }
 .bb-ci-at {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--bb-text-secondary);
   line-height: 1.65;
   padding-left: 26px;
@@ -1709,7 +1709,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   gap: 10px;
 }
 .bb-ci-ct {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--bb-text-muted);
 }
 .bb-ci-btn {
@@ -1722,7 +1722,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   border: none;
   border-radius: 6px;
   padding: 11px 20px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: bold;
   width: 100%;
   text-decoration: none;
@@ -5734,7 +5734,133 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
   font-family: var(--bb-font-cta);
 }
 
+/* -- Category Archive Page overrides for PDP alignment ---- */
+.archive.tax-product_cat {
+  /* Banner title & breadcrumb */
+  .page-title h1 {
+    font-size: 32px !important;
+    line-height: 1.2;
+    font-weight: 600;
+  }
+  .page-title .breadcrumb {
+    font-size: 14px !important;
+  }
 
+  /* Category top description */
+  .desc {
+    padding: 30px;
+    background-color: #f8f8f8;
+    margin: 0 0 25px 0;
+    color: var(--bb-text-primary);
+  }
+  .desc p, .desc li {
+    font-size: 18px !important; /* §nội dung - PDP scale */
+    line-height: 1.65;
+    color: var(--bb-text-secondary);
+  }
+  .desc h2 {
+    font-size: 24px !important; /* §tiêu đề khối - PDP scale */
+    font-weight: 600;
+    color: var(--bb-text-primary);
+    margin-top: 20px;
+    margin-bottom: 10px;
+  }
+  .desc h3 {
+    font-size: 20px !important; /* §tiêu đề phụ - PDP scale */
+    font-weight: 600;
+    color: var(--bb-text-primary);
+    margin-top: 16px;
+    margin-bottom: 8px;
+  }
 
+  /* Product Grid Item */
+  .product--item-title {
+    font-size: 18px !important; /* matches PDP body text */
+    line-height: 1.35;
+  }
+  .product--item-title a {
+    font-size: 18px !important;
+    color: var(--bb-text-primary) !important;
+    font-weight: 600;
+  }
+  .product--item-price p {
+    font-size: 16px !important; /* matches PDP price standard */
+    font-weight: 600;
+    color: var(--bb-brand-primary) !important;
+  }
+  .product--item-price p.old {
+    font-size: 14px !important;
+    color: var(--bb-text-muted) !important;
+    text-decoration: line-through;
+    font-weight: normal;
+    margin-left: 8px;
+  }
+  .product--item-cart a {
+    font-size: 15px !important;
+  }
 
+  /* Sidebar widgets */
+  .widget--title h3 {
+    font-size: 20px !important; /* §tiêu đề phụ — tiêu đề widget sidebar */
+    font-weight: 600;
+    color: var(--bb-text-primary);
+  }
+  .woocommerce-widget-layered-nav-list li a,
+  .product-categories li a {
+    font-size: 15px !important;
+    color: var(--bb-text-secondary) !important;
+  }
+  .woocommerce-widget-layered-nav-list li.chosen a,
+  .product-categories li.active a {
+    color: var(--bb-brand-primary) !important;
+    font-weight: bold;
+  }
+  .woocommerce-widget-layered-nav-list li .count {
+    font-size: 13px !important;
+    color: var(--bb-text-muted);
+  }
+  
+  /* Sort and Count top bar */
+  .product-list-filter {
+    .result {
+      font-size: 15px !important;
+    }
+    .orderby {
+      font-size: 15px !important;
+    }
+  }
+  
+  /* Pagination */
+  .bb-pagination li a,
+  .bb-pagination li span {
+    font-size: 15px !important;
+  }
+}
 
+/* Mobile responsive adjustments */
+@media (max-width: 767px) {
+  .archive.tax-product_cat {
+    .page-title h1 {
+      font-size: 24px !important;
+    }
+    .desc p, .desc li {
+      font-size: 16px !important;
+    }
+    .desc h2 {
+      font-size: 20px !important;
+    }
+    .desc h3 {
+      font-size: 18px !important;
+    }
+    .product--item-title,
+    .product--item-title a {
+      font-size: 15px !important;
+    }
+    .product--item-price p {
+      font-size: 15px !important;
+    }
+    .product--item-price p.old {
+      font-size: 13px !important;
+    }
+  }
+}
