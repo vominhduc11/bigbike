@@ -10,8 +10,6 @@ import com.bigbike.bigbike_backend.service.common.PaginationService;
 import com.bigbike.bigbike_backend.service.common.SortDirection;
 import com.bigbike.bigbike_backend.service.common.SortParser;
 import com.bigbike.bigbike_backend.service.common.SortSpec;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +27,6 @@ public class AdminContentReadService {
 
     private final ContentReadRepository contentReadRepository;
     private final SortParser sortParser;
-    private final PaginationService paginationService;
 
     @Transactional(readOnly = true)
     public PageResult<AdminContentItem> listContent(
@@ -37,22 +34,7 @@ public class AdminContentReadService {
         SortSpec sortSpec = sortParser.parse(sort, "updatedAt", SortDirection.DESC, CONTENT_SORT_FIELDS);
         String query = coalesceSearch(q, search);
         PublishStatus statusFilter = parsePublishStatus(publishStatus);
-        String normalizedType = normalizeType(type);
         String locale = normalizeLocale(lang);
-        // Admin VI/EN switch (strict English): ở EN, repo đã lọc bỏ mục chưa có title_en
-        // qua findArticlesByFilter. DB pagination (listArticlesAdmin) không lọc theo
-        // title_en nên ở EN ta đi qua nhánh filter + phân trang trong Java (số lượng nhỏ)
-        // để đếm trang đúng sau khi ẩn mục chưa dịch.
-        boolean strictEnglish = "en".equals(locale);
-
-        // Content giờ chỉ còn Bài viết (Tin tức) — module Trang tĩnh đã gỡ. Tham số type
-        // được giữ tương thích nhưng mọi nhánh đều trả về bài viết.
-        if (strictEnglish) {
-            List<AdminContentItem> items = contentReadRepository.findArticlesByFilter(statusFilter, query, locale)
-                    .stream().map(AdminContentReadService::fromArticle)
-                    .sorted(contentComparator(sortSpec)).toList();
-            return paginationService.paginate(items, page, size);
-        }
         org.springframework.data.domain.Page<Article> ap = contentReadRepository
                 .listArticlesAdmin(statusFilter, query, toPageable(sortSpec, page, size), locale);
         return mapToPageResult(ap, AdminContentReadService::fromArticle);
@@ -144,18 +126,4 @@ public class AdminContentReadService {
         return PublishStatus.valueOf(raw.trim().toUpperCase(Locale.ROOT));
     }
 
-    private static Comparator<AdminContentItem> contentComparator(SortSpec sortSpec) {
-        Comparator<AdminContentItem> comparator = switch (sortSpec.field()) {
-            case "title" -> Comparator.comparing(AdminContentItem::title, String.CASE_INSENSITIVE_ORDER);
-            case "createdAt" -> Comparator.comparing(AdminContentItem::createdAt);
-            case "updatedAt" -> Comparator.comparing(AdminContentItem::updatedAt);
-            case "publishedAt" -> Comparator.comparing(
-                    content -> content.publishedAt() == null ? content.createdAt() : content.publishedAt());
-            case "type" -> Comparator.comparing(AdminContentItem::type);
-            case "publishStatus" -> Comparator.comparing(
-                    AdminContentItem::publishStatus, Comparator.nullsLast(Comparator.naturalOrder()));
-            default -> throw new IllegalStateException("Unsupported sort field.");
-        };
-        return sortSpec.direction() == SortDirection.DESC ? comparator.reversed() : comparator;
-    }
 }

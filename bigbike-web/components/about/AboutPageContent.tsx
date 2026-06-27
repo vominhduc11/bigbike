@@ -67,10 +67,11 @@ export function AboutPageContent({
           </div>
           <div className="col-md-5">
             <div className="block-text">
-              <p>{t("intro1")}</p>
-              <p>{t("intro2")}</p>
-              <p>{t("intro3")}</p>
-              <p>{t("intro4")}</p>
+              {[t("intro1"), t("intro2"), t("intro3"), t("intro4")]
+                .filter((para) => para.trim().length > 0)
+                .map((para, i) => (
+                  <p key={i}>{para}</p>
+                ))}
             </div>
           </div>
           <div className="col-md-3">

@@ -194,14 +194,8 @@ export function SliderListScreen({ canUpdate }) {
   })
 
   const items = [...(data?.items ?? [])].sort((a, b) => a.sortOrder - b.sortOrder)
-  // Admin VI/EN switch (strict English): ở EN ẩn banner liên kết tới SP chưa có tên
-  // tiếng Anh. Banner không gắn SP (chỉ ảnh/link ngoài) vẫn hiện vì không có nội dung để dịch.
-  const visibleItems = contentLang === 'en'
-    ? items.filter((s) => !s.productId || (s.productNameEn || '').trim() !== '')
-    : items
-  // Có banner ở vị trí này nhưng tất cả bị ẩn do lọc tiếng Anh (để phân biệt
-  // "trống thật" với "ẩn vì chưa có tên tiếng Anh" ở empty-state).
-  const filteredByLang = items.length > 0 && visibleItems.length === 0
+  const visibleItems = items
+  const filteredByLang = false
   const warning = ''
 
   const reorderMutation = useMutation({

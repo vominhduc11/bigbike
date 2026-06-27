@@ -36,10 +36,8 @@ public class AdminHomeHighlightsController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "home_highlights.read");
-        // Tên SP/danh mục trả về theo ngôn ngữ nội dung (nút VI/EN ở admin).
-        // Ở EN dùng chế độ strict: ẩn hẳn slot có SP chưa đặt tên tiếng Anh (không fallback).
         return apiResponseFactory.data(
-                homeHighlightsService.listHighlights(lang, "en".equalsIgnoreCase(lang)), request);
+                homeHighlightsService.listHighlights(lang, false), request);
     }
 
     @PutMapping

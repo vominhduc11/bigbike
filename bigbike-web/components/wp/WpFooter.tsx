@@ -49,7 +49,7 @@ function filterMenuNodes(nodes: HeaderNavNode[]): HeaderNavNode[] {
   return nodes
     .filter((node) => {
       const url = node.url || "";
-      return !url.includes("huong-dan-mua-hang") && !url.includes("cac-dieu-kien-va-dieu-khoan");
+      return !url.includes("huong-dan-mua-hang");
     })
     .map((node) => ({
       ...node,
@@ -73,6 +73,7 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
   const youtubeUrl = pickSetting(settings, ["youtube_url"]);
   const tiktokUrl = pickSetting(settings, ["tiktok_url"]);
   const instagramUrl = pickSetting(settings, ["instagram_url"]);
+  const shopeeUrl = pickSetting(settings, ["shopee_url"]);
   // Slogan / mô tả / link Bộ Công Thương / ĐKKD ưu tiên lấy từ settings (admin sửa được);
   // fallback về copy theme khi setting còn trống.
   const tagline = pickSetting(settings, ["footer_tagline"]);
@@ -226,6 +227,13 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
                               <li>
                                 <a rel="nofollow" href={instagramUrl}>
                                   <i className="fab fa-instagram" /> {socialLabel(instagramUrl, "ig", "Instagram")}
+                                </a>
+                              </li>
+                            ) : null}
+                            {shopeeUrl ? (
+                              <li>
+                                <a rel="nofollow" href={shopeeUrl}>
+                                  <i className="fal fa-shopping-bag" /> {socialLabel(shopeeUrl, "shopee", "Shopee")}
                                 </a>
                               </li>
                             ) : null}

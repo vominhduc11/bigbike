@@ -115,10 +115,7 @@ export function MenuScreen({ canUpdate }) {
 
   // Filtered items from search
   const filteredFlatItems = useMemo(() => {
-    // Admin VI/EN switch (strict English): ở EN chỉ hiện mục đã có nhãn tiếng Anh.
-    const base = contentLang === 'en'
-      ? flatMenuItems.filter((item) => (item.labelEn || '').trim() !== '')
-      : flatMenuItems
+    const base = flatMenuItems
     const q = search.trim().toLowerCase()
     if (!q) return base
     return base.filter(

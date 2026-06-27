@@ -216,8 +216,23 @@ export default async function HomePage() {
 
   const jsonLdOrg = serializeJsonLd(buildOrganizationJsonLd(siteName, HOME_ORG_LOGO));
   const jsonLdWeb = serializeJsonLd(buildWebSiteJsonLd(siteName));
+  // Hồ sơ chính thức (sameAs) lấy từ settings công khai — không hardcode.
+  const sameAsProfiles = [
+    pickSetting(settings, ["facebook_url"]),
+    pickSetting(settings, ["youtube_url"]),
+    pickSetting(settings, ["tiktok_url"]),
+    pickSetting(settings, ["instagram_url"]),
+    pickSetting(settings, ["shopee_url"]),
+    pickSetting(settings, ["zalo_url"]),
+  ].filter(Boolean);
   const jsonLdLocalBusiness = serializeJsonLd(
-    buildLocalBusinessJsonLd(siteName, HOME_ORG_LOGO, address, hotline),
+    buildLocalBusinessJsonLd(siteName, HOME_ORG_LOGO, address, hotline, {
+      email: pickSetting(settings, ["contact_email"]) || undefined,
+      sameAs: sameAsProfiles,
+      foundingDate: "2014",
+      areaServed: "Thành phố Hồ Chí Minh",
+      priceRange: "₫₫",
+    }),
   );
 
   return (

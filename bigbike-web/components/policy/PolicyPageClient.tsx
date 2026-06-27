@@ -46,7 +46,7 @@ function buildSidebarItems(menu: any, currentSlug: string): WpStaticSidebarItem[
     .filter((item: any) => {
       const slug = menuItemSlug(item.url);
       if (slug === null) return false;
-      return slug !== "cac-dieu-kien-va-dieu-khoan" && slug !== "huong-dan-mua-hang";
+      return slug !== "huong-dan-mua-hang";
     })
     .map((item: any) => ({
       label: item.label,

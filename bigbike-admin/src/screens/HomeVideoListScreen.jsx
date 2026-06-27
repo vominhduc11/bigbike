@@ -463,8 +463,6 @@ export function HomeVideoListScreen({ canUpdate }) {
 
   const isFiltering = searchText.trim() !== '' || statusFilter !== 'ALL'
   const filteredItems = items.filter((v) => {
-    // Admin VI/EN switch (strict English): ở EN chỉ hiện video đã có tiêu đề tiếng Anh.
-    if (contentLang === 'en' && !(v.titleEn || '').trim()) return false
     const q = searchText.trim().toLowerCase()
     const matchSearch = q === ''
       || v.title.toLowerCase().includes(q)

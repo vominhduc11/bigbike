@@ -32,38 +32,24 @@ export default async function ContactPage() {
   const contact: ContactInfo = {
     hotline: setting("hotline"),
     hotline2: setting("hotline_2"),
+    hotline3: setting("hotline_3"),
     address: setting("contact_address"),
     hoursWeekday: setting("opening_hours_weekday"),
     hoursWeekend: setting("opening_hours_weekend"),
     hoursHoliday: setting("opening_hours_holiday"),
     zaloUrl: setting("zalo_url"),
     facebookUrl: setting("facebook_url"),
+    youtubeUrl: setting("youtube_url"),
+    tiktokUrl: setting("tiktok_url"),
+    shopeeUrl: setting("shopee_url"),
+    instagramUrl: setting("instagram_url"),
+    email: setting("contact_email"),
   };
 
   const title = t("titleFallback");
-  // Bản đồ Google nhúng từ địa chỉ cửa hàng (dữ liệu chung); ẩn nếu chưa có địa chỉ.
-  const mapEmbedSrc = contact.address
-    ? `https://www.google.com/maps?q=${encodeURIComponent(contact.address)}&z=17&output=embed`
-    : "";
 
-  // page-contact.php layout — nay cố định trong code (không còn admin-managed blocks).
   return (
     <WpStaticShell title={title} breadcrumb={[]} showHero={false} mainClassName="pb-40 contact-page">
-      {mapEmbedSrc ? (
-        <div className="iframe">
-          <iframe
-            title={title}
-            src={mapEmbedSrc}
-            width="100%"
-            height="375"
-            style={{ border: 0 }}
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-            allowFullScreen
-          />
-        </div>
-      ) : null}
-
       <div className="container">
         <div className="row">
           <div className="col-md-12">

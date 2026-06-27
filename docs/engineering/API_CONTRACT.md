@@ -903,7 +903,8 @@ Status: `REMOVED`
 - `contact`:
   - `contact_email`, `contact_address`
   - `hotline`, `hotline_2`
-  - `facebook_url`, `messenger_url`, `zalo_url`, `youtube_url`, `tiktok_url`, `instagram_url`
+  - `facebook_url`, `messenger_url`, `zalo_url`, `youtube_url`, `tiktok_url`, `instagram_url`, `shopee_url`
+    - `shopee_url` — official Shopee storefront link, rendered in the footer social list and emitted in the homepage `LocalBusiness` JSON-LD `sameAs` (added V286).
   - `messenger_display`, `zalo_display` — display text for the Messenger/Zalo lines in the floating-chat popup (falls back to the URL slug when empty).
 - `public_home`:
   - `promo_title`, `promo_off`, `promo_href`, `promo_image_url` — homepage promo banner block.

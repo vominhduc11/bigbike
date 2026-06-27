@@ -300,7 +300,14 @@ export function buildLocalBusinessJsonLd(
   logo: string,
   address: string,
   phone: string,
-  email?: string,
+  opts: {
+    email?: string;
+    /** Hồ sơ mạng xã hội / sàn TMĐT chính thức (Facebook, YouTube, TikTok, Shopee…). */
+    sameAs?: string[];
+    foundingDate?: string;
+    areaServed?: string;
+    priceRange?: string;
+  } = {},
 ): JsonLdObject {
   const result: JsonLdObject = {
     "@context": "https://schema.org",
@@ -311,7 +318,14 @@ export function buildLocalBusinessJsonLd(
   };
   if (address) result.address = address;
   if (phone) result.telephone = phone;
-  if (email) result.email = email;
+  if (opts.email) result.email = opts.email;
+  const sameAs = (opts.sameAs ?? []).filter((u): u is string => Boolean(u && u.trim()));
+  if (sameAs.length > 0) result.sameAs = sameAs;
+  if (opts.foundingDate) result.foundingDate = opts.foundingDate;
+  if (opts.areaServed) result.areaServed = { "@type": "City", name: opts.areaServed };
+  if (opts.priceRange) result.priceRange = opts.priceRange;
+  // CỐ Ý không khai aggregateRating ở đây: shop chưa có review thật trên hệ thống,
+  // khai khống số sao vi phạm guideline Google. Chỉ thêm khi có dữ liệu thật.
   return result;
 }
 

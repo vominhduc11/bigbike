@@ -75,8 +75,7 @@ public class AdminReviewService {
         // Empty string (not null) keeps repository filter logic predictable for blank status values.
         String statusFilter = (status != null && !status.isBlank()) ? status.toUpperCase(Locale.ROOT) : "";
         String qFilter = (q != null && !q.isBlank()) ? q : "";
-        // Admin VI/EN switch: ở EN ẩn review của sản phẩm chưa có name_en (strict, không fallback).
-        boolean strictEnglish = "en".equalsIgnoreCase(lang);
+        boolean strictEnglish = false;
 
         PageRequest pageRequest = PageRequest.of(
                 normalizedPage - 1,

@@ -112,6 +112,9 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("instagram_url", "contact", SettingValueType.URL)
                         .publicAllowed()
                         .description("URL profile Instagram.").build(),
+                SettingDefinition.builder("shopee_url", "contact", SettingValueType.URL)
+                        .publicAllowed()
+                        .description("URL gian hàng Shopee.").build(),
                 SettingDefinition.builder("opening_hours_weekday", "contact", SettingValueType.STRING)
                         .publicAllowed()
                         .description("Giờ mở cửa thứ 2–thứ 6 (header + trang Liên hệ).").build(),

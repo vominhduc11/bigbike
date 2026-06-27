@@ -82,7 +82,7 @@ function filterMenuNodes(nodes: HeaderNavNode[]): HeaderNavNode[] {
   return nodes
     .filter((node) => {
       const url = node.url || "";
-      return !url.includes("huong-dan-mua-hang") && !url.includes("cac-dieu-kien-va-dieu-khoan");
+      return !url.includes("huong-dan-mua-hang");
     })
     .map((node) => ({
       ...node,

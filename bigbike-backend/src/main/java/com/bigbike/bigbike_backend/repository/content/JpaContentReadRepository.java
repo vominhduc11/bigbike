@@ -126,10 +126,8 @@ public class JpaContentReadRepository implements ContentReadRepository {
 
     @Override
     public List<Article> findArticlesByFilter(PublishStatus publishStatus, String q, String locale) {
-        // Admin VI/EN switch (strict English): ở EN chỉ giữ bài có title_en — ẩn bài chưa dịch.
         return articleJpaRepository.findByFilter(publishStatus, normalizeQuery(q))
                 .stream()
-                .filter(e -> !"en".equals(locale) || isPresent(e.getTitleEn()))
                 .map(e -> toDomain(e, locale, false)).toList();
     }
 

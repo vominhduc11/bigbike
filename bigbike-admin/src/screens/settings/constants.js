@@ -152,6 +152,7 @@ export const KEY_LABELS_VI = {
   contact_email: 'Email liên hệ công khai',
   contact_address: 'Địa chỉ cửa hàng',
   facebook_url: 'Link trang Facebook',
+  shopee_url: 'Link gian hàng Shopee',
   opening_hours_weekday: 'Giờ mở cửa (T2–T6)',
   opening_hours_weekend: 'Giờ mở cửa (T7/CN)',
   opening_hours_holiday: 'Lịch nghỉ (lễ/Tết)',
@@ -302,6 +303,7 @@ export const KEY_GUIDE = {
   youtube_url:           ['contact_social', 'link YouTube (footer)'],
   tiktok_url:            ['contact_social', 'link TikTok (footer)'],
   instagram_url:         ['contact_social', 'link Instagram (footer)'],
+  shopee_url:            ['contact_social', 'link Shopee (footer)'],
 
   bank_account_holder:   ['payment_bank', 'tên chủ tài khoản'],
   bank_account_number:   ['payment_bank', 'số tài khoản'],
