@@ -66,7 +66,6 @@ final class ProductFieldApplier {
             img.setVideoProvider(isVideo ? AdminMutationValidators.trimToNull(req.getVideoProvider()) : null);
             img.setImageUrl(url);
             img.setImageAlt(AdminMutationValidators.trimToNull(req.getAlt()));
-            img.setCaption(AdminMutationValidators.trimToNull(req.getCaption()));
             img.setImageWidth(req.getWidth());
             img.setImageHeight(req.getHeight());
             img.setImageMimeType(AdminMutationValidators.trimToNull(req.getMimeType()));
@@ -423,7 +422,6 @@ final class ProductFieldApplier {
             img.setVideoProvider(isVideo ? AdminMutationValidators.trimToNull(req.getVideoProvider()) : null);
             img.setImageUrl(url);
             img.setImageAlt(AdminMutationValidators.trimToNull(req.getAlt()));
-            img.setCaption(AdminMutationValidators.trimToNull(req.getCaption()));
             img.setImageWidth(req.getWidth());
             img.setImageHeight(req.getHeight());
             img.setImageMimeType(AdminMutationValidators.trimToNull(req.getMimeType()));

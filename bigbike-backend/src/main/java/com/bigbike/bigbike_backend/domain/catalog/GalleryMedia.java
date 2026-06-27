@@ -17,22 +17,13 @@ public record GalleryMedia(
         String mediaType,
         ImageAsset image,
         String videoUrl,
-        String videoProvider,
-        String caption
+        String videoProvider
 ) {
     public static GalleryMedia ofImage(ImageAsset image) {
-        return ofImage(image, null);
-    }
-
-    public static GalleryMedia ofImage(ImageAsset image, String caption) {
-        return new GalleryMedia("image", image, null, null, caption);
+        return new GalleryMedia("image", image, null, null);
     }
 
     public static GalleryMedia ofVideo(ImageAsset thumbnail, String videoUrl, String videoProvider) {
-        return ofVideo(thumbnail, videoUrl, videoProvider, null);
-    }
-
-    public static GalleryMedia ofVideo(ImageAsset thumbnail, String videoUrl, String videoProvider, String caption) {
-        return new GalleryMedia("video", thumbnail, videoUrl, videoProvider, caption);
+        return new GalleryMedia("video", thumbnail, videoUrl, videoProvider);
     }
 }

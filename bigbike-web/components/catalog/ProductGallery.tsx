@@ -105,7 +105,6 @@ export function ProductGallery({
 
   // Zoom only applies to image slides.
   const activeItem = allItems[activeIndex] ?? allItems[0] ?? null;
-  const activeCaption = activeItem?.caption?.trim() ?? "";
   const zoomImageUrl =
     activeItem?.kind === "image" ? resolveMediaUrl(activeItem.asset.url) ?? null : null;
   const zoomEnabled = canZoom && Boolean(zoomImageUrl);
@@ -350,12 +349,6 @@ export function ProductGallery({
           />
         )}
       </div>
-
-      {activeCaption ? (
-        <p className="m-0 px-1 text-ui-14 leading-relaxed text-muted-foreground max-md:text-ui-12">
-          {activeCaption}
-        </p>
-      ) : null}
 
       {count > 1 && (
         // Dải thumbnail nằm ngang ngay dưới ảnh chính. Mũi tên trái/phải chỉ render

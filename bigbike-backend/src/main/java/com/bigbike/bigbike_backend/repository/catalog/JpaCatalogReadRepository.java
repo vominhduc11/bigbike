@@ -640,7 +640,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 .sorted(GALLERY_ORDER)
                 .map(item -> toGalleryMedia(
                         item.getMediaType(), item.getVideoUrl(), item.getVideoProvider(),
-                        item.getImageId(), item.getImageUrl(), item.getImageAlt(), item.getCaption(),
+                        item.getImageId(), item.getImageUrl(), item.getImageAlt(),
                         item.getImageWidth(), item.getImageHeight(), item.getImageMimeType()
                 ))
                 .filter(m -> m != null)
@@ -650,19 +650,19 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     /** Map một dòng gallery (ảnh/video) → {@link GalleryMedia}. Null khi thiếu nội dung (ảnh rỗng / video thiếu url). */
     private GalleryMedia toGalleryMedia(
             String mediaType, String videoUrl, String videoProvider,
-            String imageId, String imageUrl, String imageAlt, String caption,
+            String imageId, String imageUrl, String imageAlt,
             Integer width, Integer height, String mimeType) {
         ImageAsset image = toImageAsset(imageId, imageUrl, imageAlt, width, height, mimeType);
         if ("video".equals(mediaType)) {
             if (videoUrl == null || videoUrl.isBlank()) {
                 return null;
             }
-            return GalleryMedia.ofVideo(image, videoUrl, videoProvider, caption);
+            return GalleryMedia.ofVideo(image, videoUrl, videoProvider);
         }
         if (image == null) {
             return null;
         }
-        return GalleryMedia.ofImage(image, caption);
+        return GalleryMedia.ofImage(image);
     }
 
     private List<VideoAsset> toVideos(ProductEntity entity) {
@@ -874,7 +874,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         .sorted(VARIANT_GALLERY_ORDER)
                         .map(item -> toGalleryMedia(
                                 item.getMediaType(), item.getVideoUrl(), item.getVideoProvider(),
-                                item.getImageId(), item.getImageUrl(), item.getImageAlt(), item.getCaption(),
+                                item.getImageId(), item.getImageUrl(), item.getImageAlt(),
                                 item.getImageWidth(), item.getImageHeight(), item.getImageMimeType()
                         ))
                         .filter(m -> m != null)
