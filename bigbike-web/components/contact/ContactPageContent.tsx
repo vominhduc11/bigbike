@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useLocale } from "next-intl";
-import { useSetLocale } from "@/components/providers/ClientIntlProvider";
 import { telHref } from "@/lib/utils/format";
 
 export type ContactInfo = {
@@ -69,7 +68,6 @@ function getZaloDisplayPhone(zaloUrl: string): string {
 
 export function ContactPageContent({ contact }: { contact: ContactInfo }) {
   const locale = useLocale();
-  const setLocale = useSetLocale();
   const [isOpenNow, setIsOpenNow] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -105,56 +103,23 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
 
   return (
     <div className="static-page">
-      {/* Language Toggle — nằm trong vùng nội dung, căn phải */}
-      <div
-        style={{ display: "flex", justifyContent: "flex-end", marginBottom: 18 }}
-        role="group"
-        aria-label="Language selector"
-      >
-        <button
-          style={{
-            border: "1px solid #cecece",
-            background: locale === "vi" ? "#ff0c09" : "transparent",
-            color: locale === "vi" ? "#fff" : "#6f6f6f",
-            fontWeight: 700,
-            fontSize: 12,
-            padding: "4px 14px",
-            cursor: "pointer",
-            borderRadius: 0,
-            transition: "all .2s",
-            letterSpacing: 1,
-          }}
-          onClick={() => setLocale("vi")}
-          aria-pressed={locale === "vi"}
-        >
-          VI
-        </button>
-        <button
-          style={{
-            border: "1px solid #cecece",
-            borderLeft: "none",
-            background: locale === "en" ? "#ff0c09" : "transparent",
-            color: locale === "en" ? "#fff" : "#6f6f6f",
-            fontWeight: 700,
-            fontSize: 12,
-            padding: "4px 14px",
-            cursor: "pointer",
-            borderRadius: 0,
-            transition: "all .2s",
-            letterSpacing: 1,
-          }}
-          onClick={() => setLocale("en")}
-          aria-pressed={locale === "en"}
-        >
-          EN
-        </button>
-      </div>
-
-      {/* Map — class .iframe như theme gốc page-contact.php */}
+      {/* Map — full-bleed (tràn 2 mép viewport + sát ngay dưới header), class .iframe
+          như theme gốc page-contact.php. Bộ chuyển VI/EN đã gỡ vì header đã có sẵn.
+          html/body đã `overflow-x: hidden/clip` nên 100vw không sinh thanh cuộn ngang. */}
       {mapUrl && (
         <div
           className="iframe"
-          style={{ position: "relative", marginBottom: 30, height: 300, overflow: "hidden" }}
+          style={{
+            position: "relative",
+            left: "50%",
+            right: "50%",
+            width: "100vw",
+            marginLeft: "-50vw",
+            marginRight: "-50vw",
+            marginBottom: 30,
+            height: 420,
+            overflow: "hidden",
+          }}
         >
           <iframe
             src={mapUrl}
@@ -173,8 +138,8 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
             <div
               style={{
                 position: "absolute",
-                bottom: 12,
-                left: 12,
+                bottom: 16,
+                left: 20,
                 background: "#fff",
                 border: "1px solid #dfdfdf",
                 padding: "8px 12px",
@@ -220,8 +185,8 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
               aria-label={locale === "vi" ? "Mở Google Maps" : "Open in Google Maps"}
               style={{
                 position: "absolute",
-                bottom: 12,
-                right: 12,
+                bottom: 16,
+                right: 20,
                 background: "#ff0c09",
                 color: "#fff",
                 padding: "6px 12px",
