@@ -45,6 +45,8 @@ public class ProductVariantGalleryImageEntity {
     private String imageUrl;
 
     private String imageAlt;
+    @Column(name = "caption", length = 500)
+    private String caption;
     private Integer imageWidth;
     private Integer imageHeight;
     private String imageMimeType;

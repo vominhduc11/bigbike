@@ -720,17 +720,20 @@ Evidence: `UpsertProductRequest.java` (`relatedProductIds`), `AdminCatalogMutati
 
 `gallery` (sản phẩm) và `variants[].gallery` (biến thể) giờ là **media hỗn hợp**. Mỗi phần tử
 `GalleryImageRequest` nhận thêm: `mediaType` (`image`|`video`, mặc định `image`), `videoUrl`
-(link YouTube/TikTok/Facebook / URL MinIO khi là video), `videoProvider` (`youtube`|`tiktok`|`facebook`|`upload`). Item ảnh dùng `url`/`alt`
-như cũ; item video dùng `videoUrl`+`videoProvider`, còn `url`/`alt` (nếu có) là **thumbnail/poster**.
+(link YouTube/TikTok/Facebook / URL MinIO khi là video), `videoProvider` (`youtube`|`tiktok`|`facebook`|`upload`), và
+`caption` (≤500 ký tự). Item ảnh dùng `url`/`alt` như cũ; item video dùng `videoUrl`+`videoProvider`,
+còn `url`/`alt` (nếu có) là **thumbnail/poster**.
 Full-replace như trước; item rỗng (ảnh thiếu `url` HOẶC video thiếu `videoUrl`) bị bỏ. Ảnh bìa biến thể
 vẫn lấy ảnh ĐẦU TIÊN là **ảnh** (bỏ qua item video).
 
 Read: `GET /api/v1/products/{slug}` + admin read trả `gallery`/`variants[].gallery` dạng
-`GalleryMedia[]` = `{ mediaType, image: ImageAsset|null, videoUrl, provider }`. **Tách biệt với `videos`**
+`GalleryMedia[]` = `{ mediaType, image: ImageAsset|null, videoUrl, provider, caption }`. `caption` là chú thích
+hiển thị dưới media đang chọn trong gallery đầu PDP; `image.alt` vẫn là text thay thế cho SEO/trợ năng.
+**Tách biệt với `videos`**
 (mục "Video" riêng dưới PDP — `product_videos`, không đổi): gallery video do admin đăng chung khu vực ảnh
 thumbnail, hiển thị trong dải media trên cùng.
 
-Status: `CONFIRMED_FROM_CODE` — `GalleryImageRequest` (3 field mới), `AdminCatalogMutationService.applyGallery`/`applyVariantGallery`, `GalleryMedia`, `JpaCatalogReadRepository.toGalleryMedia`, `V248__add_gallery_media_video.sql`.
+Status: `CONFIRMED_FROM_CODE` — `GalleryImageRequest` (media fields + `caption`), `AdminCatalogMutationService.applyGallery`/`applyVariantGallery`, `GalleryMedia`, `JpaCatalogReadRepository.toGalleryMedia`, `V248__add_gallery_media_video.sql`, `V294__add_gallery_captions.sql`.
 
 ### Product accessories — `accessoryProducts` / `accessoryProductIds` (V239)
 

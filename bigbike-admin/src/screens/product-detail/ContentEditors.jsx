@@ -133,15 +133,37 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
           <Button variant="outline" size="sm" onClick={() => setPickerOpen(true)} disabled={disabled} className="self-start">
             {trimmed ? t('products.detail.gallery.thumbChange', { defaultValue: 'Đổi ảnh đại diện' }) : t('products.detail.gallery.thumbPick', { defaultValue: 'Ảnh đại diện (tuỳ chọn)' })}
           </Button>
-          <input
-            type="text"
-            className="gallery-card-alt-input"
-            placeholder={t('products.detail.gallery.altPlaceholder')}
-            value={item.alt || ''}
-            onChange={(e) => onUpdate('alt', e.target.value)}
-            disabled={disabled}
-            aria-label={t('products.detail.gallery.altAriaLabel')}
-          />
+          <div className="mt-2">
+            <p className="text-xs font-medium mb-1">
+              {t('products.detail.gallery.captionLabel', { defaultValue: 'Chú thích' })}{' '}
+              <span className="font-normal text-muted-foreground">
+                {t('products.detail.gallery.captionLabelHint', { defaultValue: '(hiển thị dưới ảnh/video khi xem trên web)' })}
+              </span>
+            </p>
+            <Textarea
+              rows={2}
+              className="min-h-14 resize-y text-sm"
+              placeholder={t('products.detail.gallery.captionPlaceholder')}
+              value={item.caption || ''}
+              onChange={(e) => onUpdate('caption', e.target.value)}
+              disabled={disabled}
+              aria-label={t('products.detail.gallery.captionAriaLabel')}
+            />
+          </div>
+          <div className="mt-2">
+            <p className="text-xs text-muted-foreground mb-1">
+              {t('products.detail.gallery.altLabel', { defaultValue: 'Alt SEO (không hiển thị cho khách, dùng cho công cụ tìm kiếm)' })}
+            </p>
+            <input
+              type="text"
+              className="gallery-card-alt-input"
+              placeholder={t('products.detail.gallery.altPlaceholder')}
+              value={item.alt || ''}
+              onChange={(e) => onUpdate('alt', e.target.value)}
+              disabled={disabled}
+              aria-label={t('products.detail.gallery.altAriaLabel')}
+            />
+          </div>
           {urlError && <small className="field-error">{urlError}</small>}
         </div>
         {pickerOpen && (
@@ -213,17 +235,39 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
         >
           {trimmed ? t('products.detail.gallery.changeImage') : t('products.detail.gallery.pickImage')}
         </Button>
-        <input
-          type="text"
-          className="gallery-card-alt-input"
-          placeholder={t('products.detail.gallery.altPlaceholder')}
-          value={item.alt || ''}
-          onChange={(e) => onUpdate('alt', e.target.value)}
-          disabled={disabled}
-          aria-label={t('products.detail.gallery.altAriaLabel')}
-        />
-        {urlError && <small className="field-error">{urlError}</small>}
-        {trimmed && <MediaDimensionWarning url={item.url} recommend={IMAGE_RECO.productImage} kind="image" />}
+          <div className="mt-2">
+            <p className="text-xs font-medium mb-1">
+              {t('products.detail.gallery.captionLabel', { defaultValue: 'Chú thích' })}{' '}
+              <span className="font-normal text-muted-foreground">
+                {t('products.detail.gallery.captionLabelHint', { defaultValue: '(hiển thị dưới ảnh/video khi xem trên web)' })}
+              </span>
+            </p>
+            <Textarea
+              rows={2}
+              className="min-h-14 resize-y text-sm"
+              placeholder={t('products.detail.gallery.captionPlaceholder')}
+              value={item.caption || ''}
+              onChange={(e) => onUpdate('caption', e.target.value)}
+              disabled={disabled}
+              aria-label={t('products.detail.gallery.captionAriaLabel')}
+            />
+          </div>
+          <div className="mt-2">
+            <p className="text-xs text-muted-foreground mb-1">
+              {t('products.detail.gallery.altLabel', { defaultValue: 'Alt SEO (không hiển thị cho khách, dùng cho công cụ tìm kiếm)' })}
+            </p>
+            <input
+              type="text"
+              className="gallery-card-alt-input"
+              placeholder={t('products.detail.gallery.altPlaceholder')}
+              value={item.alt || ''}
+              onChange={(e) => onUpdate('alt', e.target.value)}
+              disabled={disabled}
+              aria-label={t('products.detail.gallery.altAriaLabel')}
+            />
+          </div>
+          {urlError && <small className="field-error">{urlError}</small>}
+          {trimmed && <MediaDimensionWarning url={item.url} recommend={IMAGE_RECO.productImage} kind="image" />}
       </div>
       {pickerOpen && (
         <MediaPickerModal
@@ -245,10 +289,10 @@ export function GalleryEditor({ items, onChange, disabled, validationErrors = {}
     onChange(items.filter((_, i) => i !== index))
   }
   function addItem() {
-    onChange([...items, { _key: generateId(), url: '', alt: '' }])
+    onChange([...items, { _key: generateId(), url: '', alt: '', caption: '' }])
   }
   function addVideoItem() {
-    onChange([...items, { _key: generateId(), mediaType: 'video', provider: 'youtube', videoUrl: '', url: '', alt: '' }])
+    onChange([...items, { _key: generateId(), mediaType: 'video', provider: 'youtube', videoUrl: '', url: '', alt: '', caption: '' }])
   }
 
   return (

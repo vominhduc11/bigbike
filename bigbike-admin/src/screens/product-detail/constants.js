@@ -369,7 +369,7 @@ export function buildFormFromItem(item) {
       value: o.value || '',
       attributeValueId: o.attributeValueId || null,
     })),
-    gallery: (v.gallery || []).map((img) => ({ _key: generateId(), mediaType: img.mediaType || 'image', url: img.rawUrl || img.url || '', alt: img.alt || '', videoUrl: img.videoUrl || '', provider: img.provider || 'youtube' })),
+    gallery: (v.gallery || []).map((img) => ({ _key: generateId(), mediaType: img.mediaType || 'image', url: img.rawUrl || img.url || '', alt: img.alt || '', caption: img.caption || '', videoUrl: img.videoUrl || '', provider: img.provider || 'youtube' })),
   })))
 
   const form = {
@@ -428,7 +428,7 @@ export function buildFormFromItem(item) {
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
     seoOgImageUrl: item.seo?.ogImage?.rawUrl || item.seo?.ogImage?.url || '',
     seoOgImageAlt: item.seo?.ogImage?.alt || '',
-    gallery: (item.gallery || []).map((img) => ({ _key: generateId(), mediaType: img.mediaType || 'image', url: img.rawUrl || img.url || '', alt: img.alt || '', videoUrl: img.videoUrl || '', provider: img.provider || 'youtube' })),
+    gallery: (item.gallery || []).map((img) => ({ _key: generateId(), mediaType: img.mediaType || 'image', url: img.rawUrl || img.url || '', alt: img.alt || '', caption: img.caption || '', videoUrl: img.videoUrl || '', provider: img.provider || 'youtube' })),
     videos: (item.videos || []).map((v) => ({
       url: v.url || '',
       title: v.title || '',
@@ -728,9 +728,10 @@ export function toPayload(form) {
             videoProvider: img.provider || 'youtube',
             url: (img.url || '').trim() || undefined,
             alt: img.alt?.trim() || undefined,
+            caption: img.caption?.trim() || undefined,
             sortOrder: i,
           }
-        : { mediaType: 'image', url: img.url.trim(), alt: img.alt?.trim() || undefined, sortOrder: i }
+        : { mediaType: 'image', url: img.url.trim(), alt: img.alt?.trim() || undefined, caption: img.caption?.trim() || undefined, sortOrder: i }
     ))
 
   payload.videos = form.videos
@@ -848,9 +849,10 @@ export function toPayload(form) {
               videoProvider: img.provider || 'youtube',
               url: (img.url || '').trim() || undefined,
               alt: img.alt?.trim() || undefined,
+              caption: img.caption?.trim() || undefined,
               sortOrder: j,
             }
-          : { mediaType: 'image', url: img.url.trim(), alt: img.alt?.trim() || undefined, sortOrder: j }
+          : { mediaType: 'image', url: img.url.trim(), alt: img.alt?.trim() || undefined, caption: img.caption?.trim() || undefined, sortOrder: j }
       ))
 
     const shouldSendGallery = Boolean(colorKey && gallery.length > 0 && !emittedGalleryColors.has(colorKey))

@@ -79,7 +79,7 @@ class VariantGalleryRoundtripTest {
         variant.setIsAvailable(true);
         variant.setOptions(List.of(option("Color", "Red"), option("Size", "M")));
         variant.setGallery(List.of(
-                galleryItem("https://cdn.example.com/red-front.jpg", "Red front", 0),
+                galleryItem("https://cdn.example.com/red-front.jpg", "Red front", "Ảnh mặt trước màu đỏ", 0),
                 galleryItem("https://cdn.example.com/red-side.jpg",  "Red side",  1),
                 galleryItem("https://cdn.example.com/red-back.jpg",  "Red back",  2)
         ));
@@ -100,6 +100,7 @@ class VariantGalleryRoundtripTest {
                 .as("gallery survives the roundtrip and is returned by the read repo")
                 .hasSize(3);
         assertThat(galleryFromRead.get(0).image().url()).isEqualTo("https://cdn.example.com/red-front.jpg");
+        assertThat(galleryFromRead.get(0).caption()).isEqualTo("Ảnh mặt trước màu đỏ");
         assertThat(galleryFromRead.get(2).image().url()).isEqualTo("https://cdn.example.com/red-back.jpg");
     }
 
@@ -588,9 +589,14 @@ class VariantGalleryRoundtripTest {
     }
 
     private GalleryImageRequest galleryItem(String url, String alt, int sortOrder) {
+        return galleryItem(url, alt, null, sortOrder);
+    }
+
+    private GalleryImageRequest galleryItem(String url, String alt, String caption, int sortOrder) {
         GalleryImageRequest g = new GalleryImageRequest();
         g.setUrl(url);
         g.setAlt(alt);
+        g.setCaption(caption);
         g.setSortOrder(sortOrder);
         return g;
     }

@@ -70,15 +70,19 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, err
       <ImagePreview url={value} />
       {hasImage && recommend && <MediaDimensionWarning url={value} recommend={recommend} kind="image" />}
       {hasImage && onAltChange !== undefined && (
-        <Input
-          type="text"
-          placeholder={t('imageInput.altPlaceholder')}
-          value={alt ?? ''}
-          onChange={(e) => onAltChange(e.target.value)}
-          disabled={disabled}
-          maxLength={255}
-          className="mt-2"
-         />
+        <div className="mt-2">
+          <p className="text-xs text-muted-foreground mb-1">
+            {t('imageInput.altLabel', { defaultValue: 'Alt SEO (không hiển thị cho khách, dùng cho công cụ tìm kiếm)' })}
+          </p>
+          <Input
+            type="text"
+            placeholder={t('imageInput.altPlaceholder')}
+            value={alt ?? ''}
+            onChange={(e) => onAltChange(e.target.value)}
+            disabled={disabled}
+            maxLength={255}
+          />
+        </div>
       )}
       {pickerOpen && (
         <MediaPickerModal

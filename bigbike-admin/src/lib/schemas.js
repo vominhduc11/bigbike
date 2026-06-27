@@ -83,7 +83,11 @@ export function createProductSchema(t, isCreate = false) {
       seoCanonicalUrl: z.string().optional(),
       seoOgImageUrl: z.string().optional(),
       seoOgImageAlt: z.string().optional(),
-      gallery: z.array(z.object({ url: z.string(), alt: z.string().optional() })).optional(),
+      gallery: z.array(z.object({
+        url: z.string(),
+        alt: z.string().optional(),
+        caption: z.string().max(500, 'Chú thích ảnh tối đa 500 ký tự.').optional(),
+      })).optional(),
       videos: z.array(z.object({
         url: z.string(),
         title: z.string(),
@@ -130,7 +134,11 @@ export function createProductSchema(t, isCreate = false) {
         sku: z.string().optional(),
         imageUrl: z.string().optional(),
         options: z.array(z.object({ name: z.string(), value: z.string() })).optional(),
-        gallery: z.array(z.object({ url: z.string(), alt: z.string().optional() })).optional(),
+        gallery: z.array(z.object({
+          url: z.string(),
+          alt: z.string().optional(),
+          caption: z.string().max(500, 'Chú thích ảnh tối đa 500 ký tự.').optional(),
+        })).optional(),
       })).optional(),
       relatedProductIds: z.array(z.string()).optional(),
       accessoryProductIds: z.array(z.string()).optional(),

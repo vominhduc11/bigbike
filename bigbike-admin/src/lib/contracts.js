@@ -140,7 +140,7 @@ export function normalizeImageAsset(input) {
 /**
  * Một mục gallery (V248) có thể là ẢNH hoặc VIDEO. Backend trả `{ mediaType, image:{...},
  * videoUrl, provider }`. Phẳng hoá về shape form admin dùng: `{ mediaType, url, rawUrl, alt,
- * videoUrl, provider }` (url/rawUrl/alt = ảnh hoặc thumbnail của video).
+ * caption, videoUrl, provider }` (url/rawUrl/alt = ảnh hoặc thumbnail của video).
  */
 export function normalizeGalleryMedia(input) {
   if (!input || typeof input !== 'object') return undefined
@@ -152,14 +152,15 @@ export function normalizeGalleryMedia(input) {
     return {
       mediaType: 'video',
       videoUrl,
-      provider: toTrimmedString(input.provider) || 'youtube',
+      provider: toTrimmedString(input.provider || input.videoProvider) || 'youtube',
       url: image?.url,
       rawUrl: image?.rawUrl,
       alt: image?.alt,
+      caption: toTrimmedString(input.caption) || undefined,
     }
   }
   if (!image) return undefined
-  return { mediaType: 'image', url: image.url, rawUrl: image.rawUrl, alt: image.alt }
+  return { mediaType: 'image', url: image.url, rawUrl: image.rawUrl, alt: image.alt, caption: toTrimmedString(input.caption) || undefined }
 }
 
 export function normalizeVideoAsset(input) {

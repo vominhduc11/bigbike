@@ -528,14 +528,16 @@ video, render dưới embed và làm `description` cho schema.org `VideoObject`.
 
 ### Gallery media hỗn hợp — ảnh + video trong gallery (V248)
 
-Hai bảng gallery `product_gallery_images` và `product_variant_gallery_images` thêm 3 cột:
+Hai bảng gallery `product_gallery_images` và `product_variant_gallery_images` thêm nhóm cột media:
 `media_type VARCHAR(8) NOT NULL DEFAULT 'image'` (`image`|`video`), `video_url TEXT`,
-`video_provider VARCHAR(16)` (`youtube`|`tiktok`|`facebook`|`upload`); cột `image_url` được **nới NULL** (item video
+`video_provider VARCHAR(16)` (`youtube`|`tiktok`|`facebook`|`upload`), và `caption VARCHAR(500)` (V294);
+cột `image_url` được **nới NULL** (item video
 có thể không có thumbnail). Một dòng gallery giờ là **ảnh** (mediaType=image, dùng `image_*`) hoặc
-**video** (mediaType=video, `video_url`+`video_provider`, `image_*` = thumbnail/poster tuỳ chọn).
+**video** (mediaType=video, `video_url`+`video_provider`, `image_*` = thumbnail/poster tuỳ chọn). `caption`
+là chú thích khách nhìn thấy dưới media đang chọn ở gallery đầu PDP; `image_alt` vẫn là text thay thế cho SEO/trợ năng.
 
 Domain: `Product.gallery` và `ProductVariant.gallery` đổi `List<ImageAsset>` → **`List<GalleryMedia>`**
-(`GalleryMedia(mediaType, image, videoUrl, videoProvider)`). Web contract: `gallery: GalleryMedia[]`
+(`GalleryMedia(mediaType, image, videoUrl, videoProvider, caption)`). Web contract: `gallery: GalleryMedia[]`
 trên Product + ProductVariant. Read mapper `JpaCatalogReadRepository.toGalleryMedia` dựng item theo loại.
 
 **Tách biệt với `product_videos`** (mục "Video" riêng dưới PDP): gallery video do admin đăng CHUNG khu
@@ -543,9 +545,9 @@ vực ảnh thumbnail (cùng `GalleryEditor` admin, cho cả sản phẩm lẫn 
 trên cùng (`ProductGallery` tự tách ảnh/video từ danh sách gallery); còn `product_videos` chỉ feed tab
 "Video". Tương thích ngược: gallery cũ (default `media_type='image'`) hiển thị y như cũ.
 
-Status: `CONFIRMED_FROM_CODE` — `V248__add_gallery_media_video.sql`, `ProductGalleryImageEntity`/
-`ProductVariantGalleryImageEntity` (3 field mới), `GalleryMedia`, `GalleryImageRequest`
-(`mediaType`/`videoUrl`/`videoProvider`), `AdminCatalogMutationService.applyGallery`/`applyVariantGallery`.
+Status: `CONFIRMED_FROM_CODE` — `V248__add_gallery_media_video.sql`, `V294__add_gallery_captions.sql`,
+`ProductGalleryImageEntity`/`ProductVariantGalleryImageEntity`, `GalleryMedia`, `GalleryImageRequest`
+(`mediaType`/`videoUrl`/`videoProvider`/`caption`), `AdminCatalogMutationService.applyGallery`/`applyVariantGallery`.
 
 ### Product related products — `product_related_product_map` (V135)
 
@@ -664,7 +666,7 @@ vẫn lùi về tiếng Việt. Bản tiếng Việt không bao giờ bị thi�
 
 **Slug tiếng Anh (`slug_en`, V214):** xem mục **"English URL slug"** bên dưới — `slug` tiếng Việt là canonical, `slug_en` là URL tiếng Anh tùy chọn.
 
-**Không dịch ở đợt này:** alt ảnh, tên video, tên biến thể, `seo_canonical_url`.
+**Không dịch ở đợt này:** alt ảnh, caption gallery, tên video, tên biến thể, `seo_canonical_url`.
 
 **Admin list reads:** danh sách admin (product/category/brand/content) nay cũng
 resolve **trường hiển thị** (`name` / `title`) theo `lang` qua cùng cơ chế

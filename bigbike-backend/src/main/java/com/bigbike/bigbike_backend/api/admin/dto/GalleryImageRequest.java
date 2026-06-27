@@ -31,6 +31,9 @@ public class GalleryImageRequest {
     @Size(max = 255, message = "Gallery image alt is too long.")
     private String alt;
 
+    @Size(max = 500, message = "Gallery caption is too long.")
+    private String caption;
+
     private Integer width;
     private Integer height;
 
