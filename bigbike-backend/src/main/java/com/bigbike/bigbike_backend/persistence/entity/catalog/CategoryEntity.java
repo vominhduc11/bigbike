@@ -70,6 +70,9 @@ public class CategoryEntity {
     private String contentBottom;
 
     @Column(columnDefinition = "text")
+    private String contentBottomEn;
+
+    @Column(columnDefinition = "text")
     private String bannerUrl;
 
     private String bannerAlt;

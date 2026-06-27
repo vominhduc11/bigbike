@@ -1,0 +1,568 @@
+<!--
+=================================================================
+BIGBIKE.VN — CATEGORY INTRO TEMPLATE
+=================================================================
+Mobile-first. Tested at 375px.
+Paste vào CMS field: "Nội dung đầu trang danh mục"
+Thay [CONTENT_*] bằng nội dung từng trang theo file _dot1.md
+=================================================================
+-->
+
+<!-- ① CSS — paste 1 lần duy nhất vào <head> hoặc theme CSS -->
+<style>
+.bb-cat-intro{font-family:Arial,Helvetica,sans-serif;width:100%;margin-bottom:24px}
+
+/* BLOCK A */
+.bb-ci-a{
+  padding:16px;
+  background:#f7f7f7;
+  border:1px solid #e8e8e8;
+  border-radius:8px 8px 0 0;
+}
+.bb-ci-eyebrow{
+  font-size:11px;color:#999;
+  text-transform:uppercase;letter-spacing:.06em;
+  margin-bottom:6px;display:block;
+}
+.bb-ci-h2{
+  font-size:16px;font-weight:bold;
+  color:#111111 !important;
+  line-height:1.35;margin-bottom:10px;
+  font-family:Arial,Helvetica,sans-serif;
+}
+.bb-ci-body{
+  font-size:14px;color:#555555;
+  line-height:1.75;margin-bottom:0;
+}
+.bb-ci-pills{
+  display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;
+}
+.bb-ci-pill{
+  font-size:11px;padding:3px 9px;border-radius:4px;
+  background:#ffffff;border:1px solid #dddddd;
+  color:#666666;display:inline-block;
+}
+
+/* BLOCK B */
+.bb-ci-b{
+  background:#ffffff;
+  border:1px solid #e8e8e8;border-top:none;
+}
+.bb-ci-b-head{
+  padding:10px 16px;
+  font-size:11px;font-weight:bold;
+  text-transform:uppercase;letter-spacing:.06em;color:#aaaaaa;
+  border-bottom:1px solid #eeeeee;
+  display:block;
+}
+.bb-ci-faq{
+  padding:13px 16px;
+  border-bottom:1px solid #eeeeee;
+}
+.bb-ci-faq:last-child{border-bottom:none}
+.bb-ci-q{
+  display:flex;gap:8px;align-items:flex-start;margin-bottom:6px;
+}
+.bb-ci-qbadge{
+  width:18px;height:18px;border-radius:50%;
+  background:#f5f5f5;border:1px solid #dddddd;
+  font-size:10px;font-weight:bold;
+  display:inline-flex;align-items:center;justify-content:center;
+  color:#999999;flex-shrink:0;margin-top:1px;
+}
+.bb-ci-qt{
+  font-size:13px;font-weight:bold;
+  color:#111111 !important;line-height:1.4;
+}
+.bb-ci-at{
+  font-size:13px;color:#666666;
+  line-height:1.65;padding-left:26px;
+}
+
+/* BLOCK C */
+.bb-ci-c{
+  padding:14px 16px;
+  background:#ffffff;
+  border:1px solid #e8e8e8;border-top:none;
+  border-radius:0 0 8px 8px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.bb-ci-ct{font-size:13px;color:#888888}
+.bb-ci-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  background:#F90606;color:#ffffff;
+  border:none;border-radius:6px;
+  padding:11px 20px;font-size:14px;font-weight:bold;
+  width:100%;text-decoration:none;
+  font-family:Arial,Helvetica,sans-serif;cursor:pointer;
+}
+.bb-ci-btn:hover{background:#cc0000;color:#ffffff}
+.bb-ci-btn svg{width:18px;height:18px;fill:#ffffff;flex-shrink:0}
+
+/* Desktop: CTA nằm ngang */
+@media(min-width:600px){
+  .bb-ci-c{flex-direction:row;align-items:center;justify-content:space-between}
+  .bb-ci-btn{width:auto;min-width:200px}
+  .bb-ci-a{padding:20px 24px}
+  .bb-ci-b-head{padding:12px 20px}
+  .bb-ci-faq{padding:14px 20px}
+  .bb-ci-c{padding:14px 20px}
+}
+</style>
+
+<!-- ② SCHEMA JSON-LD — paste vào <head>, thay nội dung theo từng trang -->
+<!-- Xem mẫu schema đầy đủ ở cuối file này -->
+
+<!-- ③ HTML TEMPLATE — copy block này cho mỗi trang danh mục -->
+<!-- Thay [CONTENT_*] theo nội dung trong file _dot1.md tương ứng -->
+
+<div class="bb-cat-intro" itemscope itemtype="https://schema.org/WebPage">
+
+  <!-- BLOCK A: INTRO -->
+  <div class="bb-ci-a">
+    <span class="bb-ci-eyebrow">[CONTENT_EYEBROW]</span>
+    <h2 class="bb-ci-h2">[CONTENT_H2]</h2>
+    <p class="bb-ci-body">[CONTENT_INTRO_TEXT]</p>
+    <div class="bb-ci-pills">
+      <!-- Lặp lại cho mỗi brand -->
+      <span class="bb-ci-pill">[BRAND_1]</span>
+      <span class="bb-ci-pill">[BRAND_2]</span>
+      <span class="bb-ci-pill">[BRAND_3]</span>
+    </div>
+  </div>
+
+  <!-- BLOCK B: FAQ -->
+  <div class="bb-ci-b" itemscope itemtype="https://schema.org/FAQPage">
+    <span class="bb-ci-b-head">3 câu hỏi thường gặp nhất</span>
+
+    <!-- FAQ 1 -->
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q">
+        <span class="bb-ci-qbadge" aria-hidden="true">Q</span>
+        <span class="bb-ci-qt" itemprop="name">[CONTENT_Q1]</span>
+      </div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+        <p class="bb-ci-at" itemprop="text">[CONTENT_A1]</p>
+      </div>
+    </div>
+
+    <!-- FAQ 2 -->
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q">
+        <span class="bb-ci-qbadge" aria-hidden="true">Q</span>
+        <span class="bb-ci-qt" itemprop="name">[CONTENT_Q2]</span>
+      </div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+        <p class="bb-ci-at" itemprop="text">[CONTENT_A2]</p>
+      </div>
+    </div>
+
+    <!-- FAQ 3 -->
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q">
+        <span class="bb-ci-qbadge" aria-hidden="true">Q</span>
+        <span class="bb-ci-qt" itemprop="name">[CONTENT_Q3]</span>
+      </div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+        <p class="bb-ci-at" itemprop="text">[CONTENT_A3]</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BLOCK C: CTA -->
+  <div class="bb-ci-c">
+    <span class="bb-ci-ct">[CONTENT_CTA_TEXT]</span>
+    <a class="bb-ci-btn" href="https://zalo.me/84764640679" target="_blank" rel="noopener" aria-label="Nhắn Zalo tư vấn">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.51 3.58 1.39 5.06L2 22l5.12-1.34C8.52 21.53 10.22 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.66 0-3.22-.46-4.56-1.26l-.32-.19-3.34.88.88-3.26-.21-.34A7.93 7.93 0 014 12c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8z"/></svg>
+      [CONTENT_CTA_BTN]
+    </a>
+  </div>
+
+</div>
+
+
+<!-- ================================================================
+     SCHEMA JSON-LD MẪU — PASTE VÀO <head> TỪNG TRANG
+     Thay nội dung [] theo từng danh mục
+     ================================================================ -->
+<!--
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "name": "[TÊN DANH MỤC]",
+  "url": "https://bigbike.vn/[URL-SLUG]",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "[CONTENT_Q1]",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "[CONTENT_A1]"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "[CONTENT_Q2]",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "[CONTENT_A2]"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "[CONTENT_Q3]",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "[CONTENT_A3]"
+      }
+    }
+  ]
+}
+</script>
+-->
+
+
+<!-- ================================================================
+     9 TRANG ĐỢT 1 — ĐÃ ĐIỀN SẴN NỘI DUNG
+     Copy block tương ứng vào CMS từng trang
+     ================================================================ -->
+
+
+<!-- ── TRANG 1: MŨ BẢO HIỂM (cha) ── -->
+<!-- URL: bigbike.vn/mu-bao-hiem -->
+<!-- SEO Title: Mũ bảo hiểm mô tô chính hãng — AGV, LS2, Caberg | Bigbike.vn -->
+<!-- Meta: Bigbike.vn phân phối chính hãng mũ bảo hiểm AGV, LS2, Caberg, HJC tại TP.HCM từ 2014. ECE 22.06 và DOT. Tư vấn thật — đổi size 7 ngày. Zalo 0764 640 679. -->
+
+<div class="bb-cat-intro">
+  <div class="bb-ci-a">
+    <span class="bb-ci-eyebrow">Danh mục · bigbike.vn/mu-bao-hiem</span>
+    <h2 class="bb-ci-h2">Mũ bảo hiểm mô tô chính hãng — AGV, LS2, Caberg, HJC</h2>
+    <p class="bb-ci-body">Mũ bảo hiểm là thứ đầu tiên cần chọn kỹ trước khi mua bất cứ đồ bảo hộ nào — vì đầu là thứ không thể thương lượng. Bigbike phân phối chính hãng từ AGV (Ý), Caberg (Ý), LS2 (Tây Ban Nha), HJC (Hàn Quốc), ILM và NIC. Tất cả đều có chứng nhận ECE 22.06 hoặc DOT, tem nhãn kiểm tra được — không có hàng không rõ nguồn gốc.</p>
+    <div class="bb-ci-pills">
+      <span class="bb-ci-pill">AGV</span><span class="bb-ci-pill">LS2</span><span class="bb-ci-pill">Caberg</span><span class="bb-ci-pill">HJC</span><span class="bb-ci-pill">ILM</span><span class="bb-ci-pill">NIC</span>
+    </div>
+  </div>
+  <div class="bb-ci-b" itemscope itemtype="https://schema.org/FAQPage">
+    <span class="bb-ci-b-head">3 câu hỏi thường gặp nhất</span>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Mũ fullface, lật hàm hay 3/4 — chọn loại nào?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">Phụ thuộc vào cách anh chạy. Đi xa tốc độ cao → fullface. Đi phố nhiều điểm dừng → lật hàm. Đi làm hằng ngày dưới 60km/h → 3/4 thoáng hơn.</p></div>
+    </div>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">ECE 22.06 và DOT khác nhau thế nào?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">ECE 22.06 là chuẩn châu Âu mới nhất, thử 18 điểm va đập. DOT là chuẩn Mỹ. Cả hai đều đạt yêu cầu an toàn — ECE 22.06 nghiêm ngặt hơn một bậc.</p></div>
+    </div>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Cách xác định size mũ đúng?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">Đo vòng đầu bằng thước dây, cách lông mày 2.5cm. S=55–56cm · M=57–58cm · L=59–60cm · XL=61–62cm. Mỗi hãng có bảng riêng — ghé shop đội thử là chắc nhất.</p></div>
+    </div>
+  </div>
+  <div class="bb-ci-c">
+    <span class="bb-ci-ct">Không chắc chọn loại nào?</span>
+    <a class="bb-ci-btn" href="https://zalo.me/84764640679" target="_blank" rel="noopener" aria-label="Nhắn Zalo tư vấn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.51 3.58 1.39 5.06L2 22l5.12-1.34C8.52 21.53 10.22 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.66 0-3.22-.46-4.56-1.26l-.32-.19-3.34.88.88-3.26-.21-.34A7.93 7.93 0 014 12c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8z"/></svg>Nhắn Zalo Mrs. Thư — tư vấn miễn phí</a>
+  </div>
+</div>
+
+
+<!-- ── TRANG 2: FULLFACE ── -->
+<!-- URL: bigbike.vn/mu-bao-hiem/fullface -->
+<!-- SEO Title: Mũ bảo hiểm fullface chính hãng — AGV, LS2, Caberg | Bigbike.vn -->
+<!-- Meta: Fullface bảo vệ toàn diện cho biker đi xa và tốc độ cao. AGV K1S, LS2 FF320, FF800, Caberg Drift Evo II. ECE 22.06. Bigbike.vn TP.HCM từ 2014. -->
+
+<div class="bb-cat-intro">
+  <div class="bb-ci-a">
+    <span class="bb-ci-eyebrow">Mũ bảo hiểm · Fullface · bigbike.vn/mu-bao-hiem/fullface</span>
+    <h2 class="bb-ci-h2">Mũ bảo hiểm fullface chính hãng — bảo vệ toàn diện cho biker nghiêm túc</h2>
+    <p class="bb-ci-body">Fullface che kín toàn bộ đầu và cằm — cấp bảo vệ cao nhất trong 4 loại mũ. Đây là lựa chọn mặc định cho biker đi tốc độ cao, đi phượt xa, hoặc đi đường đèo. Bigbike hiện có: AGV K1S · AGV K3 SV · Caberg Drift Evo II · LS2 FF320 · LS2 FF800 Storm · ILM fullface. Tất cả có chuẩn ECE 22.06 hoặc DOT.</p>
+    <div class="bb-ci-pills">
+      <span class="bb-ci-pill">AGV K1S</span><span class="bb-ci-pill">AGV K3 SV</span><span class="bb-ci-pill">Caberg Drift Evo II</span><span class="bb-ci-pill">LS2 FF320</span><span class="bb-ci-pill">LS2 FF800</span>
+    </div>
+  </div>
+  <div class="bb-ci-b" itemscope itemtype="https://schema.org/FAQPage">
+    <span class="bb-ci-b-head">3 câu hỏi thường gặp nhất</span>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">AGV K1S và LS2 FF320 — khác nhau điểm gì?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">AGV K1S (6.1tr) vỏ ABS cao cấp, kính lớn tầm nhìn rộng hơn, đệm tháo giặt được. LS2 FF320 (2.2tr) là entry-level tốt nhất tầm giá — đủ chuẩn, nhẹ, phù hợp biker mới.</p></div>
+    </div>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Mũ fullface đội mùa nóng có bí không?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">Bí hơn 3/4 — đó là thực tế. Nhưng các dòng hiện đại đều có hệ thống thông gió trước và sau. AGV K1S và LS2 FF800 thoáng tốt ở tốc độ trên 40km/h. Đứng yên thì vẫn nóng.</p></div>
+    </div>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Pinlock có bắt buộc không?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">Không bắt buộc — nhưng đi mùa mưa hoặc đi đèo buổi sáng sớm thì cần. Hơi thở đọng kính giữa đèo là nguy hiểm thật. Pinlock 400–900k tùy mũ.</p></div>
+    </div>
+  </div>
+  <div class="bb-ci-c">
+    <span class="bb-ci-ct">Cần tư vấn chọn model phù hợp tầm giá?</span>
+    <a class="bb-ci-btn" href="https://zalo.me/84764640679" target="_blank" rel="noopener" aria-label="Nhắn Zalo tư vấn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.51 3.58 1.39 5.06L2 22l5.12-1.34C8.52 21.53 10.22 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.66 0-3.22-.46-4.56-1.26l-.32-.19-3.34.88.88-3.26-.21-.34A7.93 7.93 0 014 12c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8z"/></svg>Nhắn Zalo Mrs. Thư</a>
+  </div>
+</div>
+
+
+<!-- ── TRANG 3: DUAL-SPORT ── -->
+<!-- URL: bigbike.vn/mu-bao-hiem/dual-sport -->
+<!-- SEO Title: Mũ dual-sport và cào cào chính hãng — LS2, Caberg, ILM | Bigbike.vn -->
+<!-- Meta: Mũ dual-sport vừa đường nhựa vừa địa hình. LS2 MX436, Caberg Tanami Carbon, ILM WS-902. Chính hãng, ECE chuẩn. Bigbike.vn TP.HCM — Zalo 0764 640 679. -->
+
+<div class="bb-cat-intro">
+  <div class="bb-ci-a">
+    <span class="bb-ci-eyebrow">Mũ bảo hiểm · Dual-sport · bigbike.vn/mu-bao-hiem/dual-sport</span>
+    <h2 class="bb-ci-h2">Mũ dual-sport và cào cào — cho biker vừa đường nhựa vừa địa hình</h2>
+    <p class="bb-ci-body">Mũ dual-sport (cào cào) có vành che nắng và kính lớn — vừa chạy đường nhựa tốt, vừa đủ bảo vệ khi vào địa hình. Phong cách ADV đặc trưng, thường nhẹ hơn fullface cùng tầm giá. Shop hiện có: LS2 MX436 Pioneer · Caberg Tanami Carbon · ILM WS-902. Phù hợp nhất cho biker chạy xe adventure hoặc naked đi cả hai loại đường.</p>
+    <div class="bb-ci-pills">
+      <span class="bb-ci-pill">LS2 MX436</span><span class="bb-ci-pill">Caberg Tanami Carbon</span><span class="bb-ci-pill">ILM WS-902</span>
+    </div>
+  </div>
+  <div class="bb-ci-b" itemscope itemtype="https://schema.org/FAQPage">
+    <span class="bb-ci-b-head">3 câu hỏi thường gặp nhất</span>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Dual-sport bảo vệ có kém fullface không?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">Kém hơn ở phần cằm vì không có thanh cằm cứng như fullface. Nhưng đủ chuẩn ECE — nhiều touring rider chọn dual-sport vì nhẹ hơn và tầm nhìn rộng hơn khi đi xa.</p></div>
+    </div>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Đi đường nhựa dài có hợp không?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">Hợp nếu anh đi tốc độ trung bình dưới 100km/h. Trên 100km/h liên tục thì tiếng ồn gió lớn hơn fullface — tai nghe Bluetooth sẽ giúp giảm ồn.</p></div>
+    </div>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Caberg Tanami Carbon giá 12tr có đáng không?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">Đáng nếu anh đi xa thường xuyên — carbon nhẹ hơn ABS khoảng 200–300g, đi cả ngày giảm mỏi cổ rõ. Không đáng nếu anh đi cuối tuần ngắn — LS2 MX436 đủ dùng và tiết kiệm hơn nhiều.</p></div>
+    </div>
+  </div>
+  <div class="bb-ci-c">
+    <span class="bb-ci-ct">Muốn thử đội trực tiếp?</span>
+    <a class="bb-ci-btn" href="https://zalo.me/84764640679" target="_blank" rel="noopener" aria-label="Nhắn Zalo tư vấn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.51 3.58 1.39 5.06L2 22l5.12-1.34C8.52 21.53 10.22 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.66 0-3.22-.46-4.56-1.26l-.32-.19-3.34.88.88-3.26-.21-.34A7.93 7.93 0 014 12c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8z"/></svg>Ghé 79/30/52 Âu Cơ · T2–T7: 9–21h</a>
+  </div>
+</div>
+
+
+<!-- ── TRANG 4: LẬT HÀM ── -->
+<!-- URL: bigbike.vn/mu-bao-hiem/lat-ham -->
+<!-- SEO Title: Mũ lật hàm chính hãng — LS2, HJC | Bigbike.vn TP.HCM -->
+<!-- Meta: Mũ lật hàm linh hoạt cho đi phố và đi xa. LS2 FF906, FF901 Advant X, HJC i90. Chuẩn ECE, cơ cấu lật bền. Bigbike.vn — tư vấn Zalo 0764 640 679. -->
+
+<div class="bb-cat-intro">
+  <div class="bb-ci-a">
+    <span class="bb-ci-eyebrow">Mũ bảo hiểm · Lật hàm · bigbike.vn/mu-bao-hiem/lat-ham</span>
+    <h2 class="bb-ci-h2">Mũ lật hàm chính hãng — linh hoạt cho biker đi phố và đi xa</h2>
+    <p class="bb-ci-body">Lật hàm cho anh cảm giác fullface khi đang chạy, và sự tiện lợi khi dừng — không cần tháo mũ để uống nước, đổ xăng, hay hỏi đường. Phần lật phải chắc, không rung ở tốc độ cao — đây là điểm cần kiểm tra kỹ. Shop có: LS2 FF906 · LS2 FF901 Advant X · HJC i90. Tất cả đều test cơ chế lật trước khi bán.</p>
+    <div class="bb-ci-pills">
+      <span class="bb-ci-pill">LS2 FF906</span><span class="bb-ci-pill">LS2 FF901 Advant X</span><span class="bb-ci-pill">HJC i90</span>
+    </div>
+  </div>
+  <div class="bb-ci-b" itemscope itemtype="https://schema.org/FAQPage">
+    <span class="bb-ci-b-head">3 câu hỏi thường gặp nhất</span>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Mũ lật hàm có an toàn bằng fullface không?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">Thấp hơn một chút ở phần cằm — đây là nhược điểm thực tế. Tuy nhiên LS2 FF901 và HJC i90 đều có chuẩn P/J (vừa lật vừa đóng đều pass test) nên đã được kiểm định nghiêm túc.</p></div>
+    </div>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Nặng hơn fullface bao nhiêu?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">Nặng hơn 200–400g tùy model — vì có thêm cơ cấu khớp lật. LS2 FF906 (1.6kg) nặng hơn FF320 fullface (1.35kg) khoảng 250g. Đi xa ngày dài thì cảm nhận được.</p></div>
+    </div>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">LS2 FF906 và FF901 Advant X khác gì?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">FF906 (2.8tr) là lật hàm cơ bản — đủ dùng, tốt tầm giá. FF901 Advant X (11.9tr) vỏ composite nhẹ hơn, có chuẩn P/J, kính sun visor tích hợp — dành cho biker đi xa nghiêm túc.</p></div>
+    </div>
+  </div>
+  <div class="bb-ci-c">
+    <span class="bb-ci-ct">Không chắc chọn model nào?</span>
+    <a class="bb-ci-btn" href="https://zalo.me/84764640679" target="_blank" rel="noopener" aria-label="Nhắn Zalo tư vấn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.51 3.58 1.39 5.06L2 22l5.12-1.34C8.52 21.53 10.22 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.66 0-3.22-.46-4.56-1.26l-.32-.19-3.34.88.88-3.26-.21-.34A7.93 7.93 0 014 12c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8z"/></svg>Nhắn Zalo Mrs. Thư</a>
+  </div>
+</div>
+
+
+<!-- ── TRANG 5: MŨ 3/4 & 1/2 ── -->
+<!-- URL: bigbike.vn/mu-bao-hiem/mu-34 -->
+<!-- SEO Title: Mũ bảo hiểm 3/4 chính hãng — LS2, HJC | Bigbike.vn TP.HCM -->
+<!-- Meta: Mũ 3/4 thoáng mát cho đi phố dưới 60km/h. LS2 OF600, HJC V31. Nhẹ, đẹp, đủ chuẩn ECE. Bigbike.vn TP.HCM từ 2014 — Zalo 0764 640 679. -->
+
+<div class="bb-cat-intro">
+  <div class="bb-ci-a">
+    <span class="bb-ci-eyebrow">Mũ bảo hiểm · 3/4 &amp; 1/2 · bigbike.vn/mu-bao-hiem/mu-34</span>
+    <h2 class="bb-ci-h2">Mũ 3/4 và mũ nửa đầu — thoáng mát cho đi phố hằng ngày</h2>
+    <p class="bb-ci-body">Mũ 3/4 che tai và gáy, để hở mặt — nhẹ và thoáng hơn fullface nhiều, phù hợp đi phố tốc độ dưới 60km/h. Mũ 1/2 nhẹ nhất nhưng bảo vệ tối thiểu — chỉ phù hợp đường nội khu, tốc độ thấp. Nếu anh chạy phố SG thường xuyên và không lên cao tốc, 3/4 là lựa chọn hợp lý về cân bằng giữa bảo hộ và sự thoải mái.</p>
+    <div class="bb-ci-pills">
+      <span class="bb-ci-pill">LS2 OF600</span><span class="bb-ci-pill">HJC V31</span>
+    </div>
+  </div>
+  <div class="bb-ci-b" itemscope itemtype="https://schema.org/FAQPage">
+    <span class="bb-ci-b-head">3 câu hỏi thường gặp nhất</span>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Mũ 3/4 có cần mua kính che mặt riêng không?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">Nên có nếu đi ban ngày nhiều — nắng SG và bụi đường làm mờ tầm nhìn. Kính rời gắn cùm tầm 200–400k. Một số mũ 3/4 đã có kính sun visor tích hợp — hỏi shop khi chọn.</p></div>
+    </div>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Mũ 1/2 có đủ tiêu chuẩn không?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">Có — các dòng shop bán đều có DOT hoặc ECE. Nhưng bảo vệ thấp hơn hẳn 3/4 và fullface ở phần gáy và tai. Không khuyến khích cho đường có xe lớn hoặc tốc độ trên 40km/h.</p></div>
+    </div>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Phụ nữ đội có hợp không, nặng không?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">Hợp — 3/4 là loại mũ nhiều chị em chọn nhất vì nhẹ (thường 800g–1.1kg) và không gây hấp hơi. LS2 OF600 có nhiều màu pastel, khóa dễ gài một tay.</p></div>
+    </div>
+  </div>
+  <div class="bb-ci-c">
+    <span class="bb-ci-ct">Xem thêm sản phẩm bên dưới hoặc</span>
+    <a class="bb-ci-btn" href="https://zalo.me/84764640679" target="_blank" rel="noopener" aria-label="Nhắn Zalo tư vấn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.51 3.58 1.39 5.06L2 22l5.12-1.34C8.52 21.53 10.22 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.66 0-3.22-.46-4.56-1.26l-.32-.19-3.34.88.88-3.26-.21-.34A7.93 7.93 0 014 12c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8z"/></svg>Nhắn Zalo hỏi size</a>
+  </div>
+</div>
+
+
+<!-- ── TRANG 6: ÁO QUẦN (cha) ── -->
+<!-- URL: bigbike.vn/ao-quan-moto-phuot -->
+<!-- SEO Title: Áo giáp bảo hộ mô tô — Komine, Taichi, Scoyco | Bigbike.vn -->
+<!-- Meta: Áo giáp CE Level 1 & 2 chính hãng tại TP.HCM. Komine, Taichi, Scoyco, Hevik. Mùa hè mesh thoáng, Touring 4 mùa, Adventure địa hình. Zalo 0764 640 679. -->
+
+<div class="bb-cat-intro">
+  <div class="bb-ci-a">
+    <span class="bb-ci-eyebrow">Danh mục · bigbike.vn/ao-quan-moto-phuot</span>
+    <h2 class="bb-ci-h2">Áo quần bảo hộ mô tô — Komine, Taichi, Scoyco, Hevik</h2>
+    <p class="bb-ci-body">Áo giáp bảo hộ là lớp bảo vệ thân thể quan trọng thứ hai sau mũ — vai, khuỷu tay, lưng và ngực là những vùng chấn thương nặng nhất khi ngã xe. Shop phân phối: Komine (Nhật), Taichi (Nhật), Scoyco, ILM, Hevik. Chia 3 sub theo nhu cầu: Mùa hè (mesh, thoáng), Touring (4 mùa, chống nước) và Adventure (địa hình). CE Level là chỉ số quan trọng nhất cần kiểm tra khi chọn.</p>
+    <div class="bb-ci-pills">
+      <span class="bb-ci-pill">Komine</span><span class="bb-ci-pill">Taichi</span><span class="bb-ci-pill">Scoyco</span><span class="bb-ci-pill">ILM</span><span class="bb-ci-pill">Hevik</span>
+    </div>
+  </div>
+  <div class="bb-ci-b" itemscope itemtype="https://schema.org/FAQPage">
+    <span class="bb-ci-b-head">3 câu hỏi thường gặp nhất</span>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">CE Level 1 và CE Level 2 khác gì?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">CE Level 2 chịu lực va đập cao hơn và được kiểm định nghiêm hơn. Đi phố ngắn thì Level 1 đủ dùng. Đi xa, tốc độ cao, đèo dốc — nên chọn giáp CE Level 2 ở vai và khuỷu.</p></div>
+    </div>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Mặc áo giáp SG có nóng không?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">Dòng mesh thì không — Scoyco JK44 và Komine JK-114 thiết kế lưới thoáng, gió đi qua khi chạy. Nóng hơn áo thường một chút nhưng không bức. Đứng yên ngoài nắng mới thực sự nóng.</p></div>
+    </div>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Komine và Taichi khác nhau thế nào?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">Komine thiết kế cho khí hậu châu Á — thoáng tốt hơn, nhiều size lớn hơn, giá phải chăng hơn. Taichi cao cấp hơn một bậc, vật liệu tốt hơn, giá cao hơn 20–30%. Đi phượt VN thì Komine phù hợp hơn về thực dụng.</p></div>
+    </div>
+  </div>
+  <div class="bb-ci-c">
+    <span class="bb-ci-ct">Cần tư vấn combo áo + quần theo ngân sách?</span>
+    <a class="bb-ci-btn" href="https://zalo.me/84764640679" target="_blank" rel="noopener" aria-label="Nhắn Zalo tư vấn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.51 3.58 1.39 5.06L2 22l5.12-1.34C8.52 21.53 10.22 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.66 0-3.22-.46-4.56-1.26l-.32-.19-3.34.88.88-3.26-.21-.34A7.93 7.93 0 014 12c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8z"/></svg>Nhắn Zalo Mrs. Thư</a>
+  </div>
+</div>
+
+
+<!-- ── TRANG 7: ÁO MÙA HÈ ── -->
+<!-- URL: bigbike.vn/ao-quan-moto-phuot/mua-he -->
+<!-- SEO Title: Áo giáp mùa hè mesh thoáng — Scoyco, Komine | Bigbike.vn TP.HCM -->
+<!-- Meta: Áo giáp mesh CE thoáng khí cho mùa nóng SG. Scoyco JK44, JK52, Komine JK-114. Nhẹ, gió đi qua khi chạy. Bigbike.vn — Zalo 0764 640 679. -->
+
+<div class="bb-cat-intro">
+  <div class="bb-ci-a">
+    <span class="bb-ci-eyebrow">Áo quần moto · Mùa hè · bigbike.vn/ao-quan-moto-phuot/mua-he</span>
+    <h2 class="bb-ci-h2">Áo giáp mùa hè — mesh thoáng khí cho biker đi phố Sài Gòn</h2>
+    <p class="bb-ci-body">Áo giáp mesh thiết kế riêng cho khí hậu nóng — lưới nhiều, gió đi qua khi chạy, nhẹ hơn đáng kể so với áo touring. Không chống thấm, không có lining nhiệt — đúng với mục đích đi phố mùa nóng. Shop có: Scoyco JK44 · Scoyco JK52 · Komine JK-114 mesh · Komine JK-127. Giáp CE Level 1 ở vai và khuỷu — đủ cho đi phố tốc độ vừa.</p>
+    <div class="bb-ci-pills">
+      <span class="bb-ci-pill">Scoyco JK44</span><span class="bb-ci-pill">Scoyco JK52</span><span class="bb-ci-pill">Komine JK-114</span><span class="bb-ci-pill">Komine JK-127</span>
+    </div>
+  </div>
+  <div class="bb-ci-b" itemscope itemtype="https://schema.org/FAQPage">
+    <span class="bb-ci-b-head">3 câu hỏi thường gặp nhất</span>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Scoyco JK44 và JK52 khác nhau gì?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">JK44 thoáng hơn, nhẹ hơn, giá thấp hơn (~1.5tr) — tốt cho đi phố hằng ngày. JK52 lưới dày hơn, bảo vệ tốt hơn một bậc, giá ~1.9tr. Cả hai đều phù hợp SG mùa hè.</p></div>
+    </div>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Áo mesh mặc đi phượt ngắn 1 ngày có được không?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">Được nếu không có mưa và đường nhựa. Nhưng nếu đi đèo, trời có thể mưa bất chợt thì nên đem thêm áo mưa rời — áo mesh không chống nước, ướt là ướt hết.</p></div>
+    </div>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Giặt áo giáp mesh như thế nào?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">Tháo giáp cứng ra trước, giặt tay hoặc máy chế độ nhẹ. Không sấy — để ráo tự nhiên. Komine và Scoyco đều có hướng dẫn giặt trên nhãn sản phẩm.</p></div>
+    </div>
+  </div>
+  <div class="bb-ci-c">
+    <span class="bb-ci-ct">Xem thêm sản phẩm bên dưới hoặc</span>
+    <a class="bb-ci-btn" href="https://zalo.me/84764640679" target="_blank" rel="noopener" aria-label="Nhắn Zalo tư vấn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.51 3.58 1.39 5.06L2 22l5.12-1.34C8.52 21.53 10.22 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.66 0-3.22-.46-4.56-1.26l-.32-.19-3.34.88.88-3.26-.21-.34A7.93 7.93 0 014 12c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8z"/></svg>Nhắn Zalo hỏi size</a>
+  </div>
+</div>
+
+
+<!-- ── TRANG 8: ÁO TOURING ── -->
+<!-- URL: bigbike.vn/ao-quan-moto-phuot/touring -->
+<!-- SEO Title: Áo giáp touring 4 mùa chống nước — Komine, Alpinestars | Bigbike.vn -->
+<!-- Meta: Áo touring CE Level 2, lining nhiệt tháo được, waterproof. Komine JK-593, Alpinestars Andes V3, Hevik. Đi phượt xa nhiều ngày. Bigbike.vn — Zalo 0764 640 679. -->
+
+<div class="bb-cat-intro">
+  <div class="bb-ci-a">
+    <span class="bb-ci-eyebrow">Áo quần moto · Touring · bigbike.vn/ao-quan-moto-phuot/touring</span>
+    <h2 class="bb-ci-h2">Áo giáp touring — đi xa nhiều ngày, 4 mùa, chống mưa bất chợt</h2>
+    <p class="bb-ci-body">Áo touring dành cho biker đi phượt nhiều ngày — có lớp lining nhiệt tháo được cho sáng lạnh, có waterproof cho mưa bất chợt, giáp CE Level 2 ở vai, khuỷu và lưng. Nặng và dày hơn áo mesh — đúng vì chức năng khác. Shop có: Komine JK-593 · Alpinestars Andes V3 · Hevik touring. Đây là loại áo quan trọng nhất cho chuyến Hà Giang, Tây Bắc, hay bất cứ hành trình nhiều ngày nào.</p>
+    <div class="bb-ci-pills">
+      <span class="bb-ci-pill">Komine JK-593</span><span class="bb-ci-pill">Alpinestars Andes V3</span><span class="bb-ci-pill">Hevik touring</span>
+    </div>
+  </div>
+  <div class="bb-ci-b" itemscope itemtype="https://schema.org/FAQPage">
+    <span class="bb-ci-b-head">3 câu hỏi thường gặp nhất</span>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Komine JK-593 có thực sự chống mưa không?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">Có — waterproof membrane tích hợp, mưa trung bình 1–2 tiếng không thấm. Mưa nặng kéo dài thì cần thêm áo mưa rời bên ngoài. Đây là thực tế chung của tất cả áo touring tầm giá này.</p></div>
+    </div>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Mặc đi SG mùa hè có chịu được không?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">Được nếu tháo lining nhiệt ra — chỉ còn lớp ngoài mesh lưới. Vẫn nóng hơn áo mesh thuần túy nhưng chịu được. Komine JK-593 thiết kế cho châu Á, thoáng tốt hơn các dòng touring Âu.</p></div>
+    </div>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Nên mua áo touring hay áo mesh + áo mưa riêng?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">Đi xa nhiều ngày → áo touring tiện hơn vì tích hợp sẵn. Đi SG là chính, thỉnh thoảng đi xa → áo mesh + áo mưa rời linh hoạt hơn và tổng chi phí thấp hơn.</p></div>
+    </div>
+  </div>
+  <div class="bb-ci-c">
+    <span class="bb-ci-ct">Lên chuyến phượt cần tư vấn set đồ hoàn chỉnh?</span>
+    <a class="bb-ci-btn" href="https://zalo.me/84764640679" target="_blank" rel="noopener" aria-label="Nhắn Zalo tư vấn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.51 3.58 1.39 5.06L2 22l5.12-1.34C8.52 21.53 10.22 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.66 0-3.22-.46-4.56-1.26l-.32-.19-3.34.88.88-3.26-.21-.34A7.93 7.93 0 014 12c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8z"/></svg>Nhắn Zalo Mrs. Thư</a>
+  </div>
+</div>
+
+
+<!-- ── TRANG 9: ÁO ADVENTURE ── -->
+<!-- URL: bigbike.vn/ao-quan-moto-phuot/adventure -->
+<!-- SEO Title: Áo giáp adventure off-road — Komine, Hevik | Bigbike.vn TP.HCM -->
+<!-- Meta: Áo adventure cho biker xe ADV đi địa hình. Komine JK-098 ADV, Hevik ADV. Giáp cứng nhiều điểm, CE Level 2. Bigbike.vn TP.HCM — Zalo 0764 640 679. -->
+
+<div class="bb-cat-intro">
+  <div class="bb-ci-a">
+    <span class="bb-ci-eyebrow">Áo quần moto · Adventure · bigbike.vn/ao-quan-moto-phuot/adventure</span>
+    <h2 class="bb-ci-h2">Áo giáp adventure — cho biker off-road và ADV touring địa hình</h2>
+    <p class="bb-ci-body">Áo adventure có form cứng hơn touring, giáp khớp nhiều điểm hơn, chịu được va đập khi ngã trên địa hình. Dành cho biker chạy xe adventure (Honda CB500X, Versys, Himalayan) đi cả đường nhựa lẫn địa hình. Không phải dòng bán chạy nhất — kén người dùng hơn, nên shop chọn lọc kỹ trước khi nhập. Hiện có: Komine JK-098 ADV · Hevik ADV. Nếu anh chỉ đi đường nhựa, dòng touring là đủ và thoải mái hơn.</p>
+    <div class="bb-ci-pills">
+      <span class="bb-ci-pill">Komine JK-098 ADV</span><span class="bb-ci-pill">Hevik ADV</span>
+    </div>
+  </div>
+  <div class="bb-ci-b" itemscope itemtype="https://schema.org/FAQPage">
+    <span class="bb-ci-b-head">3 câu hỏi thường gặp nhất</span>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Adventure khác touring ở điểm nào thực tế?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">Form cứng hơn, giáp cứng ở nhiều điểm hơn (thêm ngực, hông), chịu được ngã địa hình. Nhưng nặng hơn và ít thoải mái hơn khi ngồi xe lâu trên đường nhựa so với áo touring.</p></div>
+    </div>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Xe naked hay xe phân khối lớn đường nhựa cần ADV không?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">Không cần — áo touring đủ cho 100% đường nhựa dù tốc độ cao. ADV chỉ cần khi anh thực sự đi địa hình có nguy cơ ngã.</p></div>
+    </div>
+    <div class="bb-ci-faq" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <div class="bb-ci-q"><span class="bb-ci-qbadge" aria-hidden="true">Q</span><span class="bb-ci-qt" itemprop="name">Giá áo ADV cao hơn touring bao nhiêu?</span></div>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p class="bb-ci-at" itemprop="text">Thường cao hơn 30–50% cùng thương hiệu — vì cấu trúc phức tạp hơn, thêm điểm giáp. Komine JK-098 ADV tầm 6–7tr, trong khi JK-593 touring khoảng 4.5tr.</p></div>
+    </div>
+  </div>
+  <div class="bb-ci-c">
+    <span class="bb-ci-ct">Đi loại xe gì, cần tư vấn đúng hơn?</span>
+    <a class="bb-ci-btn" href="https://zalo.me/84764640679" target="_blank" rel="noopener" aria-label="Nhắn Zalo tư vấn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.51 3.58 1.39 5.06L2 22l5.12-1.34C8.52 21.53 10.22 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.66 0-3.22-.46-4.56-1.26l-.32-.19-3.34.88.88-3.26-.21-.34A7.93 7.93 0 014 12c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8z"/></svg>Nhắn Zalo kể xe anh đang chạy</a>
+  </div>
+</div>
+
+
+<!-- ================================================================
+     DEV CHECKLIST
+     ================================================================
+① CSS: paste <style>...</style> vào <head> theme 1 lần duy nhất
+② Mỗi trang: copy đúng block HTML tương ứng vào CMS field
+③ SEO Title + Meta: điền vào field SEO của từng trang (xem comment phía trên mỗi block)
+④ Schema JSON-LD: uncomment và paste vào <head> từng trang
+   → Validate tại: https://search.google.com/test/rich-results
+⑤ Test mobile: mở DevTools → 375px trước khi publish
+⑥ Language toggle: block này là bản VI — bản EN nằm trong file _dot1_EN.md
+   → Dev cần wrap từng block trong conditional render theo ngôn ngữ hiện tại
+================================================================ -->

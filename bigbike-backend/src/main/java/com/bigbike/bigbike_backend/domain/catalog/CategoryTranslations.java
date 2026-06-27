@@ -14,7 +14,8 @@ public record CategoryTranslations(CategoryContent en) {
             String name,
             String description,
             String seoTitle,
-            String seoDescription
+            String seoDescription,
+            String contentBottom
     ) {
     }
 }
