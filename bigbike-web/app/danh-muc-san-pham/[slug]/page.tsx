@@ -125,9 +125,6 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
 
   const breadcrumbJsonLd = serializeJsonLd(buildCategoryBreadcrumbJsonLd(category, parentCategory));
   const categoryName = safeText(category.name, tCatalog("categoryFallback"));
-  const categoryDescriptionHtml = category.description?.trim()
-    ? sanitizeRichHtml(category.description, { rewriteMediaUrls: true })
-    : null;
   const categoryContentBottomHtml = category.contentBottom?.trim()
     ? sanitizeRichHtml(category.contentBottom, { rewriteMediaUrls: true })
     : null;
@@ -170,11 +167,10 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
                 categories={filterCategories}
                 facets={facetsResult.data}
                 beforeGridNode={
-                  categoryDescriptionHtml ? (
+                  categoryContentBottomHtml ? (
                     <LHtml
-                      field="description"
-                      viHtml={categoryDescriptionHtml}
-                      className="desc"
+                      field="contentBottom"
+                      viHtml={categoryContentBottomHtml}
                       rewriteMediaUrls
                     />
                   ) : undefined
@@ -185,20 +181,6 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
               />
             </div>
           </div>
-
-          {categoryContentBottomHtml && (
-            <div className="block-text seo-block-content pt-50 pb-50">
-              <div className="container">
-                <div className="content-block">
-                  <LHtml
-                    field="contentBottom"
-                    viHtml={categoryContentBottomHtml}
-                    rewriteMediaUrls
-                  />
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </LocalizedContentProvider>
     </>
