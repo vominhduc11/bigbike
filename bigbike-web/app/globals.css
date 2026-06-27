@@ -1718,7 +1718,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   justify-content: center;
   gap: 8px;
   background: var(--bb-brand-primary);
-  color: var(--bb-text-inverse);
+  color: var(--bb-text-inverse) !important;
   border: none;
   border-radius: 6px;
   padding: 12px 24px;
@@ -1731,14 +1731,17 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   transition: background-color var(--bb-duration-fast) var(--bb-ease-standard);
 }
 .bb-ci-btn:hover {
-  background: var(--bb-brand-primary-hover);
-  color: var(--bb-text-inverse);
+  background: var(--bb-brand-primary-hover) !important;
+  color: var(--bb-text-inverse) !important;
 }
 .bb-ci-btn svg {
   width: 18px;
   height: 18px;
-  fill: var(--bb-text-inverse);
+  fill: var(--bb-text-inverse) !important;
   flex-shrink: 0;
+}
+.bb-ci-btn:hover svg {
+  fill: var(--bb-text-inverse) !important;
 }
 
 /* Desktop: CTA nằm ngang */
