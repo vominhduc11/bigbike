@@ -87,6 +87,29 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
     ],
     content: value || '',
     editable: !disabled,
+    // Khi paste từ Word: gỡ background-color (highlight Word) và thuộc tính mso-* (Word-specific)
+    // khỏi inline style trước khi TipTap parse — giữ lại color, font-weight và các style hợp lệ khác.
+    editorProps: {
+      transformPastedHTML(html) {
+        const div = document.createElement('div')
+        div.innerHTML = html
+        div.querySelectorAll('[style]').forEach((el) => {
+          const cleaned = el.getAttribute('style')
+            .split(';')
+            .filter((rule) => {
+              const prop = (rule.split(':')[0] || '').trim().toLowerCase()
+              if (!prop) return false
+              if (prop.startsWith('mso-')) return false
+              if (prop === 'background-color' || prop === 'background') return false
+              return true
+            })
+            .join(';')
+          if (cleaned.trim()) el.setAttribute('style', cleaned)
+          else el.removeAttribute('style')
+        })
+        return div.innerHTML
+      },
+    },
     onFocus: () => { userEditedRef.current = true },
     onUpdate: ({ editor }) => {
       if (!userEditedRef.current) return
