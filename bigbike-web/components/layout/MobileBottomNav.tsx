@@ -42,7 +42,7 @@ export function MobileBottomNav() {
 
   // Ẩn thanh điều hướng khi đang đặt hàng: giảm điểm thoát giữa chừng và tránh các
   // nút nổi chồng nhau ở đáy màn hình điện thoại (checkout tập trung).
-  if (pathname.startsWith("/dat-hang")) return null;
+  if (pathname.startsWith("/dat-hang") || pathname.startsWith("/don-hang")) return null;
 
   const badge = cartCount != null && cartCount > 0 ? cartCount : null;
   const cartRouteActive = pathname.startsWith("/gio-hang");

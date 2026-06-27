@@ -3900,6 +3900,10 @@ body:has(.bb-search-results-page) {
     padding-bottom: calc(var(--bb-mobile-nav-height) + env(safe-area-inset-bottom));
   }
 
+  body:has(.bb-checkout-page) > footer {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
   .bb-site-header {
     height: var(--bb-header-height);
     background: color-mix(in srgb, var(--bb-color-black) 94%, transparent);
