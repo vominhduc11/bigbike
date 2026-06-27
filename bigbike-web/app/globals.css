@@ -5823,9 +5823,13 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
   .product-categories li a {
     font-size: 16px !important;
     color: var(--bb-text-secondary) !important;
+    position: relative !important;
   }
   .product-categories .children li a {
     font-size: 15px !important;
+  }
+  .product-categories li a:has(.submenu-icon) {
+    padding-left: 47px !important;
   }
   .woocommerce-widget-layered-nav-list li.chosen a,
   .product-categories li.active a {
@@ -5835,6 +5839,14 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
   .woocommerce-widget-layered-nav-list li .count {
     font-size: 14px !important;
     color: var(--bb-text-muted);
+  }
+  .woocommerce-widget-layered-nav-list li,
+  .product-categories li {
+    margin-bottom: 12px !important;
+  }
+  .woocommerce-widget-layered-nav-list li:last-child,
+  .product-categories li:last-child {
+    margin-bottom: 0 !important;
   }
   
   /* Sort and Count top bar */
@@ -5886,9 +5898,21 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
     .woocommerce-widget-layered-nav-list li a span,
     .product-categories li a {
       font-size: 15px !important;
+      position: relative !important;
     }
     .product-categories .children li a {
       font-size: 14px !important;
+    }
+    .product-categories li a:has(.submenu-icon) {
+      padding-left: 47px !important;
+    }
+    .woocommerce-widget-layered-nav-list li,
+    .product-categories li {
+      margin-bottom: 10px !important;
+    }
+    .woocommerce-widget-layered-nav-list li:last-child,
+    .product-categories li:last-child {
+      margin-bottom: 0 !important;
     }
   }
 }
