@@ -1699,6 +1699,9 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   color: var(--bb-text-secondary);
   line-height: 1.55;
   padding-left: 26px;
+  /* Đáp án là <p>, mặc định dính margin-bottom của theme → cộng dồn vào padding
+     đáy của item làm hở dưới to hơn trên. Ép về 0 cho trên–dưới đều nhau. */
+  margin: 0;
 }
 
 /* BLOCK C */

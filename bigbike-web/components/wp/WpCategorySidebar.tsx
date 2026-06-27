@@ -159,13 +159,13 @@ export function WpCategorySidebar({
                     <li key={cat.id} className={liClass}>
                       {/* Icon line đơn sắc từ DB (cat.menuIconUrl, V213) — render qua mask-image,
                           theo currentColor nên tự đổi xám→đỏ như link. `before:!hidden` tắt icon
-                          WP cũ gắn theo slug (.{slug}>a::before) để không bị icon đôi; `pl-[47px]`
-                          chừa chỗ icon cho mọi danh mục, không phụ thuộc rule slug của theme. */}
+                          WP cũ gắn theo slug (.{slug}>a::before) để không bị icon đôi; `pl-[30px]`
+                          chừa chỗ icon (20px) + ~10px khoảng cách, không phụ thuộc rule slug của theme. */}
                       <LocalizedLink
                         kind="category"
                         viSlug={cat.slug}
                         enSlug={cat.slugEn}
-                        className={cat.menuIconUrl ? "relative block pl-[47px] before:!hidden" : undefined}
+                        className={cat.menuIconUrl ? "relative block pl-[30px] before:!hidden" : undefined}
                       >
                         {cat.menuIconUrl ? (
                           <span
@@ -194,10 +194,10 @@ export function WpCategorySidebar({
                                   kind="category"
                                   viSlug={child.slug}
                                   enSlug={child.slugEn}
-                                  // pl-[47px]! (important): theme WP có rule `.product-categories .children li a{padding-left:0}`
+                                  // pl-[30px]! (important): theme WP có rule `.product-categories .children li a{padding-left:0}`
                                   // (specificity cao hơn) ép padding-left của link con về 0 → chữ trượt sát mép, đè lên
-                                  // icon đặt absolute left-0. Thêm important để chừa lại 47px cho icon, hết chồng chữ.
-                                  className={child.menuIconUrl ? "relative block pl-[47px]! before:!hidden" : undefined}
+                                  // icon đặt absolute left-0. Thêm important để chừa lại 30px (icon 20px + ~10px), hết chồng chữ.
+                                  className={child.menuIconUrl ? "relative block pl-[30px]! before:!hidden" : undefined}
                                 >
                                   {child.menuIconUrl ? (
                                     <span
