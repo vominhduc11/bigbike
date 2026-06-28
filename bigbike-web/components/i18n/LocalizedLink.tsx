@@ -64,8 +64,8 @@ export function LocalizedLink({
   const locale = useLocale();
   const hydrated = useHydrated();
 
-  const useEn = hydrated && locale !== DEFAULT_LOCALE && Boolean(enSlug);
-  const href = PATH_FOR_KIND[kind](useEn ? (enSlug as string) : viSlug);
+  const useEn = hydrated && locale !== DEFAULT_LOCALE;
+  const href = PATH_FOR_KIND[kind](useEn ? (enSlug || viSlug) : viSlug);
 
   return <Link href={href} {...rest} />;
 }

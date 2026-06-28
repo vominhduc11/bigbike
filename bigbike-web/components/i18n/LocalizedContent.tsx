@@ -85,8 +85,9 @@ export function useLocalizedField<T = unknown>(field: string): T | undefined {
  */
 export function LText({ field, children }: { field: string; children: ReactNode }) {
   const value = useLocalizedField<unknown>(field);
-  if (typeof value === "string" && value.trim()) {
-    return <>{value}</>;
+  const locale = useLocale();
+  if (locale === "en") {
+    return <>{typeof value === "string" ? value : ""}</>;
   }
   return <>{children}</>;
 }
@@ -107,9 +108,12 @@ type LHtmlProps = {
  */
 export function LHtml({ field, viHtml, className, allowInlineStyles, rewriteMediaUrls }: LHtmlProps) {
   const value = useLocalizedField<unknown>(field);
+  const locale = useLocale();
   const html =
-    typeof value === "string" && value.trim()
-      ? sanitizeRichHtml(value, { allowInlineStyles, rewriteMediaUrls })
+    locale === "en"
+      ? typeof value === "string"
+        ? sanitizeRichHtml(value, { allowInlineStyles, rewriteMediaUrls })
+        : ""
       : viHtml;
   return <div className={className} dangerouslySetInnerHTML={{ __html: html }} />;
 }

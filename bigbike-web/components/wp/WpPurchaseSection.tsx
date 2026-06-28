@@ -172,7 +172,7 @@ export function WpPurchaseSection({
   // (render đầu khớp server, giữ ISR/SEO).
   const enName = useLocalizedField<string>("name");
   const name = safeText(
-    typeof enName === "string" && enName.trim() ? enName : product.name,
+    locale === "en" ? enName : product.name,
     "",
   );
 
@@ -180,9 +180,7 @@ export function WpPurchaseSection({
   // (cho phép CSS inline), bỏ qua dải badge có cấu trúc.
   const enTrustHtml = useLocalizedField<string>("trustBadgesHtml");
   const trustBadgesHtml =
-    typeof enTrustHtml === "string" && enTrustHtml.trim()
-      ? enTrustHtml
-      : product.trustBadgesHtml ?? "";
+    locale === "en" ? enTrustHtml ?? "" : product.trustBadgesHtml ?? "";
 
   // Mô tả ngắn nằm trong khối mua hàng (dưới đánh giá, trên phần chọn biến thể) — vị trí gốc.
   // Đổi ngôn ngữ qua LHtml (field "shortDescription"); trống → không render.

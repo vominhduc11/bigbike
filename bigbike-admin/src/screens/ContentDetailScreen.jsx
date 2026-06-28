@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
-import { AlertCircle, Check, Eye, Info, Loader2, Lock, Save, Search, Trash2, X } from 'lucide-react'
+import { AlertCircle, Check, Eye, Info, Loader2, Lock, Save, Search, Trash2, X, Languages } from 'lucide-react'
+import { translateContentForm } from '../lib/geminiTranslate'
+
 import {
   createContent,
   deleteContent,
@@ -249,14 +251,32 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
     setIsSubmitting(true)
     setValidationErrors({})
+
+    let formToSave = form
+    // Auto-translate if saving the Vietnamese version
+    const needsTranslate = !isEnLang
+    if (needsTranslate) {
+      const toastId = toast.loading('Đang tự động dịch sang tiếng Anh bằng Gemini AI...')
+      try {
+        const translatedForm = await translateContentForm(formToSave)
+        formToSave = translatedForm
+        setForm(translatedForm)
+        toast.success('Đã tự động dịch sang tiếng Anh!', { id: toastId })
+      } catch (err) {
+        console.error('Auto-translate error:', err)
+        toast.error('Tự động dịch tiếng Anh thất bại, vẫn tiến hành lưu...', { id: toastId })
+      }
+    }
+
     try {
-      await saveMutation.mutateAsync(toPayload(form, isCreate))
+      await saveMutation.mutateAsync(toPayload(formToSave, isCreate))
     } catch {
       // Lỗi đã được toast ở onError của mutation. Ở đây chỉ cần kết thúc trạng thái.
     } finally {
       setIsSubmitting(false)
     }
   }
+
 
   // ── Tab navigation state (replaces TOC sidebar) ───────────────────────────
   const [activeTab, setActiveTab] = useState('content')
@@ -834,8 +854,10 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
             </span>
           }
         >
+
           {isArticle && (
             <Button
+
               variant="outline"
               type="button"
               onClick={() => setPreviewOpen(true)}

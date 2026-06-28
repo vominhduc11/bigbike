@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useLocalizedField } from "@/components/i18n/LocalizedContent";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import type { ProductSpecStat } from "@/lib/contracts/public";
@@ -20,12 +21,13 @@ export function FeaturedSpecsBar({
   stats: ProductSpecStat[];
   viStatsHtml?: string;
 }) {
+  const locale = useLocale();
   const enStats = useLocalizedField<ProductSpecStat[]>("specStats");
   const enStatsHtml = useLocalizedField<string>("specStatsHtml");
 
   // "HTML thắng" (V256): có HTML (EN override khi đổi ngôn ngữ, hoặc bản vi) → render HTML đã
   // sanitize (cho phép CSS inline), bỏ qua lưới ô số liệu có cấu trúc.
-  const statsHtml = typeof enStatsHtml === "string" && enStatsHtml.trim() ? enStatsHtml : viStatsHtml;
+  const statsHtml = locale === "en" ? enStatsHtml : viStatsHtml;
   if (statsHtml && statsHtml.trim()) {
     const html = sanitizeRichHtml(statsHtml, { allowInlineStyles: true });
     if (!html) return null;
@@ -39,7 +41,7 @@ export function FeaturedSpecsBar({
     );
   }
 
-  const source = Array.isArray(enStats) && enStats.length > 0 ? enStats : stats;
+  const source = locale === "en" ? enStats : stats;
   const boxes = (source ?? []).filter((s) => s?.value?.trim() && s?.label?.trim()).slice(0, MAX);
 
   if (boxes.length === 0) return null;

@@ -14,6 +14,10 @@ import { formatDateTime } from '../lib/formatters'
 import { useContentLang } from '../lib/contentLang'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { clearNavGuard } from '@/lib/navigationGuard'
+import { Languages, Loader2 } from 'lucide-react'
+
+import { translateBrandForm } from '../lib/geminiTranslate'
+
 import { createBrandSchema, zodErrors } from '../lib/schemas'
 import { StatePanel } from '../components/StatePanel'
 import { FormField } from '../components/layout/FormField'
@@ -266,7 +270,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     })
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
     if (!canUpdate) return
 
@@ -280,8 +284,26 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
 
     setIsSubmitting(true)
     setValidationErrors({})
-    saveMutation.mutate(toPayload(form))
+
+    let formToSave = form
+    // Auto-translate if saving the Vietnamese version
+    const needsTranslate = !isEnLang
+    if (needsTranslate) {
+      const toastId = toast.loading('Đang tự động dịch sang tiếng Anh bằng Gemini AI...')
+      try {
+        const translatedForm = await translateBrandForm(formToSave)
+        formToSave = translatedForm
+        setForm(translatedForm)
+        toast.success('Đã tự động dịch sang tiếng Anh!', { id: toastId })
+      } catch (err) {
+        console.error('Auto-translate error:', err)
+        toast.error('Tự động dịch tiếng Anh thất bại, vẫn tiến hành lưu...', { id: toastId })
+      }
+    }
+
+    saveMutation.mutate(toPayload(formToSave))
   }
+
 
   if (state.status === 'loading') {
     return (
@@ -334,8 +356,10 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
         </div>
         <div className="bb-screen-actions">
           {!isCreate && canUpdate && (
+
             <button
               type="button"
+
               className="bb-btn bb-btn-secondary"
               style={{ color: 'var(--bb-danger)' }}
               disabled={isSubmitting}

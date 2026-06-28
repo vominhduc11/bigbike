@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
-import { AlertCircle, Check, Copy, ExternalLink, Hash, Loader2, Package, X as XIcon } from 'lucide-react'
+import { AlertCircle, Check, Copy, ExternalLink, Hash, Loader2, Package, X as XIcon, Languages } from 'lucide-react'
+import { translateCategoryForm } from '../lib/geminiTranslate'
+
 import {
   createCategory,
   fetchCategoryDetail,
@@ -319,7 +321,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     })
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
     if (!canUpdate || isUncategorized) return
 
@@ -347,8 +349,26 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
     setIsSubmitting(true)
     setValidationErrors({})
-    saveMutation.mutate(toPayload(form))
+
+    let formToSave = form
+    // Auto-translate if saving the Vietnamese version
+    const needsTranslate = !isEnLang
+    if (needsTranslate) {
+      const toastId = toast.loading('Đang tự động dịch sang tiếng Anh bằng Gemini AI...')
+      try {
+        const translatedForm = await translateCategoryForm(formToSave)
+        formToSave = translatedForm
+        setForm(translatedForm)
+        toast.success('Đã tự động dịch sang tiếng Anh!', { id: toastId })
+      } catch (err) {
+        console.error('Auto-translate error:', err)
+        toast.error('Tự động dịch tiếng Anh thất bại, vẫn tiến hành lưu...', { id: toastId })
+      }
+    }
+
+    saveMutation.mutate(toPayload(formToSave))
   }
+
 
   function handleDismissMenuNotice() {
     try { localStorage.setItem(MENU_NOTICE_DISMISSED_KEY, '1') } catch { /* storage may be unavailable */ }
@@ -487,8 +507,10 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
         </div>
         <div className="bb-screen-actions">
           {!isCreate && state.item?.slug && (
+
             <a
               className="bb-btn bb-btn-secondary"
+
               href={`${STOREFRONT_BASE}/${state.item.slug}`}
               target="_blank"
               rel="noopener noreferrer"

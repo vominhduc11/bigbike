@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Check, X } from "lucide-react";
 import { useLocalizedField } from "@/components/i18n/LocalizedContent";
 import { LHtml } from "@/components/i18n/LocalizedContent";
@@ -42,10 +42,11 @@ export function ProductProsCons({
   negativeNotes: ProductHighlight[];
 }) {
   const t = useTranslations("Product");
+  const locale = useLocale();
   const enPos = useLocalizedField<ProductHighlight[]>("positiveNotes");
   const enNeg = useLocalizedField<ProductHighlight[]>("negativeNotes");
-  const positive = highlightLines(Array.isArray(enPos) && enPos.length > 0 ? enPos : positiveNotes);
-  const negative = highlightLines(Array.isArray(enNeg) && enNeg.length > 0 ? enNeg : negativeNotes);
+  const positive = highlightLines(locale === "en" ? enPos : positiveNotes);
+  const negative = highlightLines(locale === "en" ? enNeg : negativeNotes);
   if (positive.length === 0 && negative.length === 0) return null;
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -87,13 +88,13 @@ export function ProductProsCons({
  *  V255: nếu có `specificationsHtml` ("Dán mã HTML"), render HTML đó THAY bảng dòng ("html thắng"). */
 export function ProductSpecsTable({ viSpecs, viSpecsHtml = "" }: { viSpecs: Spec[]; viSpecsHtml?: string }) {
   const t = useTranslations("Product");
+  const locale = useLocale();
   const enSpecs = useLocalizedField<Spec[]>("specifications");
   const enSpecsHtml = useLocalizedField<string>("specificationsHtml");
 
   // "HTML thắng": có HTML (EN override khi đổi ngôn ngữ, hoặc bản vi) → render HTML đã sanitize,
   // bỏ qua bảng dòng tên/giá trị.
-  const specsHtml =
-    typeof enSpecsHtml === "string" && enSpecsHtml.trim() ? enSpecsHtml : viSpecsHtml;
+  const specsHtml = locale === "en" ? enSpecsHtml : viSpecsHtml;
   if (specsHtml && specsHtml.trim()) {
     return (
       <div
@@ -103,7 +104,7 @@ export function ProductSpecsTable({ viSpecs, viSpecsHtml = "" }: { viSpecs: Spec
     );
   }
 
-  const specs = Array.isArray(enSpecs) && enSpecs.length > 0 ? enSpecs : viSpecs;
+  const specs = (locale === "en" ? enSpecs : viSpecs) ?? [];
 
   if (specs.length === 0) {
     return (
@@ -137,8 +138,9 @@ export function ProductSpecsTable({ viSpecs, viSpecsHtml = "" }: { viSpecs: Spec
 /** Tab "Câu hỏi thường gặp" — accordion FAQ, đổi theo ngôn ngữ. */
 export function ProductFaqs({ viFaqs }: { viFaqs: Faq[] }) {
   const t = useTranslations("Product");
+  const locale = useLocale();
   const enFaqs = useLocalizedField<Faq[]>("faqs");
-  const faqs = Array.isArray(enFaqs) && enFaqs.length > 0 ? enFaqs : viFaqs;
+  const faqs = (locale === "en" ? enFaqs : viFaqs) ?? [];
 
   if (faqs.length === 0) {
     return (
@@ -179,8 +181,11 @@ export function ProductFaqs({ viFaqs }: { viFaqs: Faq[] }) {
 export function ProductDescriptionTab({ viHtml }: { viHtml: string }) {
   const t = useTranslations("Product");
   const enHtml = useLocalizedField<unknown>("description");
-  const hasEn = typeof enHtml === "string" && enHtml.trim().length > 0;
-  if (!hasEn && viHtml.trim().length === 0) {
+  const locale = useLocale();
+  const hasContent = locale === "en"
+    ? typeof enHtml === "string" && enHtml.trim().length > 0
+    : viHtml.trim().length > 0;
+  if (!hasContent) {
     return (
       <div className="wyswyg">
         <p>{t("descriptionEmpty")}</p>

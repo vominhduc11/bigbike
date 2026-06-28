@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -33,7 +33,7 @@ export function ProductCardAddBar({ productId, hasVariants, slug, slugEn, stockS
 
     if (hasVariants) {
       // Click-time navigation (always post-mount) → safe to localize directly.
-      router.push(toProductPath(locale !== DEFAULT_LOCALE && slugEn ? slugEn : slug));
+      router.push(toProductPath(locale === "en" ? (slugEn || slug) : slug));
       return;
     }
 

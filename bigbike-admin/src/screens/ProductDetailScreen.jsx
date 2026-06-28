@@ -3,8 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
 import {
-  AlertCircle, Check, ChevronDown, Eye, Info, Loader2, Lock, Save, Search as PfSearch, X,
+  AlertCircle, Check, ChevronDown, Eye, Info, Loader2, Lock, Save, Search as PfSearch, X, Languages,
 } from 'lucide-react'
+import { translateProductForm } from '../lib/geminiTranslate'
+
 import {
   createProduct,
   fetchBrands,
@@ -673,10 +675,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     }))
   }
 
-  function handleSave(overridePublishStatus) {
+  async function handleSave(overridePublishStatus) {
     if (!canUpdate) return
 
-    const formToSave = overridePublishStatus
+    let formToSave = overridePublishStatus
       ? { ...form, publishStatus: overridePublishStatus }
       : form
 
@@ -713,19 +715,37 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       return
     }
 
+    setIsSubmitting(true)
+    setValidationErrors({})
+
+    // Auto-translate if saving the Vietnamese version
+    const needsTranslate = !isEnLang
+    if (needsTranslate) {
+      const toastId = toast.loading('Đang tự động dịch sang tiếng Anh bằng Gemini AI...')
+      try {
+        const translatedForm = await translateProductForm(formToSave)
+        formToSave = translatedForm
+        setForm(translatedForm)
+        toast.success('Đã tự động dịch sang tiếng Anh!', { id: toastId })
+      } catch (err) {
+        console.error('Auto-translate error:', err)
+        toast.error('Tự động dịch tiếng Anh thất bại, vẫn tiến hành lưu...', { id: toastId })
+      }
+    }
+
     // Show quality checklist whenever the resulting status would be PUBLISHED
     // but the saved-on-server status is not — covers both the "Save & Publish"
     // button path AND the dropdown-then-save path.
     if (originalPublishStatus !== 'PUBLISHED' && formToSave.publishStatus === 'PUBLISHED') {
       setPendingPublish({ formToSave, payload: toPayload(formToSave) })
       setShowPublishChecklist(true)
+      setIsSubmitting(false)
       return
     }
 
-    setIsSubmitting(true)
-    setValidationErrors({})
     saveMutation.mutate(toPayload(formToSave))
   }
+
 
   function confirmPublish() {
     if (!pendingPublish) return
@@ -735,6 +755,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     saveMutation.mutate(pendingPublish.payload)
     setPendingPublish(null)
   }
+
+
 
   // ── Tab navigation state (replaces the old TOC sidebar) ─────────────────────
   // Two tabs ("product" + "seo"). Inside the product tab, three collapsible groups that
@@ -1866,6 +1888,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             </span>
           }
         >
+
           <Button
             variant="outline"
             type="button"
@@ -1875,6 +1898,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             <Eye size={14} className="mr-1.5" />
             {t('products.detail.preview.open', { defaultValue: 'Xem trước' })}
           </Button>
+
 
           <Button
             variant="outline"
