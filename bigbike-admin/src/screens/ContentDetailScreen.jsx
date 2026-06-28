@@ -253,8 +253,8 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     setValidationErrors({})
 
     let formToSave = form
-    // Auto-translate if saving the Vietnamese version
-    const needsTranslate = !isEnLang
+    // Luôn auto-translate VI→EN trước khi lưu (kể cả khi đang ở chế độ EN).
+    const needsTranslate = true
     if (needsTranslate) {
       const toastId = toast.loading('Đang tự động dịch sang tiếng Anh bằng Gemini AI...')
       try {

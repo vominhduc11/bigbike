@@ -718,8 +718,11 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     setIsSubmitting(true)
     setValidationErrors({})
 
-    // Auto-translate if saving the Vietnamese version
-    const needsTranslate = !isEnLang
+    // Luôn auto-translate VI→EN trước khi lưu, kể cả khi admin đang ở chế độ EN.
+    // Lý do: VI là nguồn dữ liệu chính; lưu ở chế độ EN mà không translate khiến backend
+    // nhận empty string cho các trường VI (vd. name="") → "Validation failed." vì backend
+    // validate empty string (non-null) khác với null (skip validate).
+    const needsTranslate = true
     if (needsTranslate) {
       const toastId = toast.loading('Đang tự động dịch sang tiếng Anh bằng Gemini AI...')
       try {
