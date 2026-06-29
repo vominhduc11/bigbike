@@ -62,6 +62,7 @@ export function SortableRow({ id, disabled = false, children }) {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    zIndex: isDragging ? 10 : undefined,
   }
   return children({
     setNodeRef,

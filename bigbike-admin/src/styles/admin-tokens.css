@@ -114,7 +114,7 @@
 
   /* ─── Z-index layers ───────────────────────────────────────────────────── */
   --admin-z-sticky:  1;
-  --admin-z-header:  10;
+  --admin-z-header:  100;
   --admin-z-overlay: 200;
   --admin-z-modal:   201;
   --admin-z-popup:   300;  /* dropdowns / popovers inside modals */

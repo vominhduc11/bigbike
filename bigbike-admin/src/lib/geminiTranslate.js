@@ -61,7 +61,12 @@ export async function translateCategoryForm(form, overrides = []) {
 
   if (translated.name) {
     nextForm.translations.en.name = translated.name
-    if (!locked.has('slug')) nextForm.translations.en.slug = slugify(translated.name)
+    if (!locked.has('slug')) {
+      const enSlug = slugify(translated.name)
+      if (enSlug && enSlug !== (nextForm.slug || '')) {
+        nextForm.translations.en.slug = enSlug
+      }
+    }
   }
   if (translated.description) nextForm.translations.en.description = translated.description
   if (translated.introContent) nextForm.translations.en.introContent = translated.introContent
@@ -90,7 +95,12 @@ export async function translateBrandForm(form, overrides = []) {
 
   if (translated.name) {
     nextForm.translations.en.name = translated.name
-    if (!locked.has('slug')) nextForm.translations.en.slug = slugify(translated.name)
+    if (!locked.has('slug')) {
+      const enSlug = slugify(translated.name)
+      if (enSlug && enSlug !== (nextForm.slug || '')) {
+        nextForm.translations.en.slug = enSlug
+      }
+    }
   }
   if (translated.description) nextForm.translations.en.description = translated.description
   if (translated.seoTitle) nextForm.translations.en.seoTitle = translated.seoTitle
@@ -237,7 +247,13 @@ export async function translateProductForm(form, overrides = []) {
 
   if (translated.name) {
     nextForm.translations.en.name = translated.name
-    if (fieldOpen('slug')) nextForm.translations.en.slug = slugify(translated.name)
+    if (fieldOpen('slug')) {
+      const enSlug = slugify(translated.name)
+      // Skip if identical to VI slug — backend requires EN slug ≠ VI slug.
+      if (enSlug && enSlug !== (nextForm.slug || '')) {
+        nextForm.translations.en.slug = enSlug
+      }
+    }
   }
   if (translated.shortDescription) nextForm.translations.en.shortDescription = translated.shortDescription
   if (translated.description) nextForm.translations.en.description = translated.description

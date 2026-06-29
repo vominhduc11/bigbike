@@ -19,18 +19,18 @@ import { SPEC_STAT_MAX } from './constants'
 // Bộ icon dựng sẵn cho khối cam kết (V232) — key khớp COMMITMENT_ICON_MAP bên web.
 // labelKey trỏ tới i18n products.detail.commitments.icons.*; mặc định 'shield-check'.
 const COMMITMENT_ICON_OPTIONS = [
-  { value: 'truck', Icon: Truck, labelKey: 'truck' },
-  { value: 'refresh-cw', Icon: RefreshCw, labelKey: 'refreshCw' },
-  { value: 'shield-check', Icon: ShieldCheck, labelKey: 'shieldCheck' },
-  { value: 'badge-check', Icon: BadgeCheck, labelKey: 'badgeCheck' },
-  { value: 'credit-card', Icon: CreditCard, labelKey: 'creditCard' },
-  { value: 'headphones', Icon: Headphones, labelKey: 'headphones' },
-  { value: 'package', Icon: Package, labelKey: 'package' },
-  { value: 'gift', Icon: Gift, labelKey: 'gift' },
-  { value: 'clock', Icon: Clock, labelKey: 'clock' },
-  { value: 'map-pin', Icon: MapPin, labelKey: 'mapPin' },
-  { value: 'wrench', Icon: Wrench, labelKey: 'wrench' },
-  { value: 'award', Icon: Award, labelKey: 'award' },
+  { value: 'truck', Icon: Truck, labelKey: 'truck', labelEn: 'Delivery' },
+  { value: 'refresh-cw', Icon: RefreshCw, labelKey: 'refreshCw', labelEn: 'Returns' },
+  { value: 'shield-check', Icon: ShieldCheck, labelKey: 'shieldCheck', labelEn: 'Warranty' },
+  { value: 'badge-check', Icon: BadgeCheck, labelKey: 'badgeCheck', labelEn: 'Genuine' },
+  { value: 'credit-card', Icon: CreditCard, labelKey: 'creditCard', labelEn: 'Payment' },
+  { value: 'headphones', Icon: Headphones, labelKey: 'headphones', labelEn: 'Support' },
+  { value: 'package', Icon: Package, labelKey: 'package', labelEn: 'Packaging' },
+  { value: 'gift', Icon: Gift, labelKey: 'gift', labelEn: 'Gift' },
+  { value: 'clock', Icon: Clock, labelKey: 'clock', labelEn: 'Fast delivery' },
+  { value: 'map-pin', Icon: MapPin, labelKey: 'mapPin', labelEn: 'Store' },
+  { value: 'wrench', Icon: Wrench, labelKey: 'wrench', labelEn: 'Installation' },
+  { value: 'award', Icon: Award, labelKey: 'award', labelEn: 'Quality' },
 ]
 
 // Trình soạn khối "cam kết" theo từng sản phẩm (V232): thêm/bớt/đảo dòng tùy ý, mỗi
@@ -76,7 +76,7 @@ export function CommitmentEditor({ items, onChange, disabled, contentLang = 'vi'
                   <SelectItem key={opt.value} value={opt.value}>
                     <span className="flex items-center gap-2">
                       <opt.Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                      {t(`products.detail.commitments.icons.${opt.labelKey}`)}
+                      {isEn ? opt.labelEn : t(`products.detail.commitments.icons.${opt.labelKey}`)}
                     </span>
                   </SelectItem>
                 ))}
