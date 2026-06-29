@@ -1074,6 +1074,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     count={`${form.sku.length} / 100`}
                     countWarn={form.sku.length > 85}
                     hint={t('products.detail.skuHint')}
+                    required={isCreate}
+                    error={validationErrors.sku}
                   >
                     <Input
                       value={form.sku}
@@ -1102,7 +1104,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     </Select>
                   </Field>
 
-                  <Field label={t('products.detail.brandId')}>
+                  <Field label={t('products.detail.brandId')} required={isCreate} error={validationErrors.brandId}>
                     <Select value={form.brandId} onValueChange={(val) => { if (val) updateField('brandId', val) }} disabled={isReadOnly}>
                       <SelectTrigger>
                         <SelectValue placeholder={t('products.detail.brandPlaceholder')}>{selectedBrandLabel}</SelectValue>
@@ -1116,7 +1118,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     </Select>
                   </Field>
 
-                  <Field label={t('products.detail.gender', { defaultValue: 'Giới tính' })}>
+                  <Field label={t('products.detail.gender', { defaultValue: 'Giới tính' })} required={isCreate} error={validationErrors.gender}>
                     {/* Guard `if (val)`: Radix bắn onValueChange('') giả khi value đồng bộ lúc
                         mount — không guard sẽ xoá gender (hiện trống + lưu mất dữ liệu). Children
                         rõ ràng cho SelectValue để trigger hiện đúng giá trị. */}
@@ -1204,6 +1206,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 <p className="text-xs text-muted-foreground mb-2">
                   {t('products.detail.trustBadges.hint', { defaultValue: 'Các nhãn ngắn hiển thị NGAY TRÊN tên sản phẩm (vd "Chính hãng", "BH 2 năm", "Freeship"). Để trống → web ẩn dải. Mỗi sản phẩm tự nhập riêng.' })}
                 </p>
+                {validationErrors.trustBadges && (
+                  <p className="field-error text-xs text-[var(--admin-color-status-danger-text)] font-semibold mb-2 flex items-center gap-1" role="alert">
+                    <AlertCircle size={13} className="shrink-0" />
+                    {validationErrors.trustBadges}
+                  </p>
+                )}
                 <TrustBadgesEditor
                   key={`trustbadges-${contentLang}`}
                   disabled={isReadOnly}
@@ -1433,6 +1441,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 }
               >
                 <p className="text-xs text-muted-foreground mb-2">{t('products.detail.specStats.hint')}</p>
+                {validationErrors.specStats && (
+                  <p className="field-error text-xs text-[var(--admin-color-status-danger-text)] font-semibold mb-2 flex items-center gap-1" role="alert">
+                    <AlertCircle size={13} className="shrink-0" />
+                    {validationErrors.specStats}
+                  </p>
+                )}
                 <SpecStatEditor
                   key={`specstats-${contentLang}`}
                   disabled={isReadOnly}
@@ -1454,7 +1468,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 <p className="text-xs text-muted-foreground mb-3">
                   {t('products.detail.descriptionBuilderHint', { defaultValue: 'Trình dựng khối Tính năng chi tiết (chữ, ảnh, ảnh + chữ). Kéo-thả để đổi thứ tự. "Phù hợp với ai" và "Bảng size" nhập ở 2 card riêng bên dưới.' })}
                 </p>
-                <Field full label={t('products.detail.description')} required={isCreate && !isEnLang} error={validationErrors.description}>
+                <Field full label={t('products.detail.description')} error={validationErrors.description}>
                   {isEnLang ? (
                     <BlockEditor
                       value={descBuilderBlocks(form.descriptionBlocksEn)}
@@ -1642,6 +1656,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 }
               >
                 <p className="text-xs text-muted-foreground mb-2">{t('products.detail.faqs.hint')}</p>
+                {validationErrors.faqs && (
+                  <p className="field-error text-xs text-[var(--admin-color-status-danger-text)] font-semibold mb-2 flex items-center gap-1" role="alert">
+                    <AlertCircle size={13} className="shrink-0" />
+                    {validationErrors.faqs}
+                  </p>
+                )}
                 <FaqEditor
                   items={form.faqs}
                   onChange={(next) => updateField('faqs', next)}

@@ -212,7 +212,7 @@ export function Field({ label, hint, error, count, countWarn, full, required, ch
       {control}
       {error
         ? (
-          <span id={errorId} className="flex items-center gap-1 text-xs text-[var(--admin-color-status-danger-text)] font-semibold" role="alert">
+          <span id={errorId} className="field-error flex items-center gap-1 text-xs text-[var(--admin-color-status-danger-text)] font-semibold" role="alert">
             <AlertCircle size={13} aria-hidden="true" className="shrink-0" />
             {error}
           </span>

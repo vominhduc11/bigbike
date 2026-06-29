@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import { parseSpecStatsFromHtml } from './specStatsBlock'
+import { parseTrustBadgesFromHtml } from './trustBadgesBlock'
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const URL_REGEX = /^https?:\/\//
@@ -186,25 +188,6 @@ export function createProductSchema(t, isCreate = false) {
         req(data.brandId, t('products.detail.errBrandRequired', { defaultValue: 'Vui lòng chọn thương hiệu.' }), ['brandId'])
         req(data.gender, t('products.detail.errGenderRequired', { defaultValue: 'Vui lòng chọn đối tượng (giới tính).' }), ['gender'])
         req(data.imageUrl, t('products.detail.errImageRequired', { defaultValue: 'Vui lòng chọn ảnh đại diện.' }), ['imageUrl'])
-        req(data.shortDescription, t('products.detail.errShortDescRequired', { defaultValue: 'Vui lòng nhập mô tả ngắn.' }), ['shortDescription'])
-
-        // Mô tả chi tiết: hợp lệ khi có ≥1 khối (descriptionBlocks) hoặc có chữ (description).
-        const hasBlocks = Array.isArray(data.descriptionBlocks) && data.descriptionBlocks.length > 0
-        if (!hasBlocks && !String(data.description ?? '').trim()) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errDescRequired', { defaultValue: 'Vui lòng nhập mô tả chi tiết.' }), path: ['description'] })
-        }
-        // FAQ ≥1 cặp hỏi-đáp hoàn chỉnh.
-        if (!(data.faqs ?? []).some((f) => (f?.question ?? '').trim() && (f?.answer ?? '').trim())) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errFaqsRequired', { defaultValue: 'Vui lòng thêm ít nhất 1 câu hỏi thường gặp (đủ hỏi và đáp).' }), path: ['faqs'] })
-        }
-        // Ô số liệu nổi bật ≥1 ô có cả value + label.
-        if (!(data.specStats ?? []).some((s) => (s?.value ?? '').trim() && (s?.label ?? '').trim())) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errSpecStatsRequired', { defaultValue: 'Vui lòng thêm ít nhất 1 ô số liệu nổi bật (đủ số liệu và nhãn).' }), path: ['specStats'] })
-        }
-        // Dải tin cậy ≥1 nhãn có nội dung.
-        if (!(data.trustBadges ?? []).some((b) => (b?.content ?? '').trim())) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errTrustBadgesRequired', { defaultValue: 'Vui lòng thêm ít nhất 1 nhãn tin cậy.' }), path: ['trustBadges'] })
-        }
       }
 
       const retail = toInt(data.retailPrice)

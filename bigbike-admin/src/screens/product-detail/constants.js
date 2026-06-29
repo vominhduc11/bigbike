@@ -5,9 +5,9 @@
 import { createContext } from 'react'
 import { parseSizeGuide, emptySizeGuide } from '../../lib/sizeChart'
 import { serializeSuitabilityCards } from '../../lib/suitabilityCards'
-import { serializeSpecs } from '../../lib/specSheet'
-import { serializeSpecStats } from '../../lib/specStatsBlock'
-import { serializeTrustBadges } from '../../lib/trustBadgesBlock'
+import { serializeSpecs, parseSpecsFromHtml } from '../../lib/specSheet'
+import { serializeSpecStats, parseSpecStatsFromHtml } from '../../lib/specStatsBlock'
+import { serializeTrustBadges, parseTrustBadgesFromHtml } from '../../lib/trustBadgesBlock'
 import { normalizeVariantToken, isColorAttributeName } from '../../lib/schemas'
 import { generateId } from '@/lib/utils'
 
@@ -136,15 +136,15 @@ export function getPublishReadiness(form, t, isCreate = false) {
     { id: 'category',  label: t('products.detail.checklist.category'),  ok: Boolean(form.categoryId),                                               required: true  },
     { id: 'image',     label: t('products.detail.checklist.image'),     ok: Boolean(form.imageUrl?.trim()),                                         required: true  },
     { id: 'price',     label: t('products.detail.checklist.price'),     ok: Boolean(form.retailPrice?.trim()) && Number(form.retailPrice) > 0,      required: true  },
-    { id: 'shortDesc', label: t('products.detail.checklist.shortDesc'), ok: Boolean(form.shortDescription?.trim()),                                 required: true  },
-    { id: 'desc',      label: t('products.detail.checklist.desc'),      ok: (Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks.length > 0 : (form.description?.trim().length ?? 0) > 0),  required: true  },
+    { id: 'shortDesc', label: t('products.detail.checklist.shortDesc'), ok: Boolean(form.shortDescription?.trim()),                                 required: false },
+    { id: 'desc',      label: t('products.detail.checklist.desc'),      ok: (Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks.length > 0 : (form.description?.trim().length ?? 0) > 0),  required: false },
     // Bắt buộc khi tạo mới, nhắc nhở khi sửa.
     { id: 'sku',           label: t('products.detail.checklist.sku', { defaultValue: 'Mã SKU' }),          ok: Boolean(form.sku?.trim()),                required: isCreate },
     { id: 'slug',          label: t('products.detail.checklist.slug', { defaultValue: 'Đường dẫn (slug)' }),ok: Boolean(form.slug?.trim()),               required: isCreate },
     { id: 'gender',        label: t('products.detail.checklist.gender', { defaultValue: 'Đối tượng' }),     ok: Boolean(form.gender?.trim()),             required: isCreate },
-    { id: 'specStats',     label: t('products.detail.checklist.specStats'),     ok: (form.specStats || []).some((s) => s.value?.trim() && s.label?.trim()),                                    required: isCreate },
-    { id: 'faqs',          label: t('products.detail.checklist.faqs'),          ok: (form.faqs || []).some((f) => f.question?.trim() && f.answer?.trim()),                                     required: isCreate },
-    { id: 'trustBadges',   label: t('products.detail.checklist.trustBadges', { defaultValue: 'Dải tin cậy' }), ok: (form.trustBadges || []).some((b) => b.content?.trim()),                            required: isCreate },
+    { id: 'specStats',     label: t('products.detail.checklist.specStats'),     ok: (form.specStats || []).some((s) => s.value?.trim() && s.label?.trim()),                                    required: false },
+    { id: 'faqs',          label: t('products.detail.checklist.faqs'),          ok: (form.faqs || []).some((f) => f.question?.trim() && f.answer?.trim()),                                     required: false },
+    { id: 'trustBadges',   label: t('products.detail.checklist.trustBadges', { defaultValue: 'Dải tin cậy' }), ok: (form.trustBadges || []).some((b) => b.content?.trim()),                            required: false },
     // Nhắc nhở (không chặn đăng): các phần điền vào thì trang sản phẩm đầy đủ & đẹp hơn.
     // Điều kiện `ok` mirror đúng bộ lọc trong toPayload để khớp cái thực sự được lưu.
     { id: 'seoTitle',      label: t('products.detail.checklist.seoTitle'),      ok: Boolean(form.seoTitle?.trim()),           required: false },
@@ -745,8 +745,9 @@ export function toPayload(form) {
       sortOrder: i,
     }))
 
-  payload.specifications = form.specifications
-    .filter((s) => s.name.trim() && s.value.trim())
+  const specsList = form.specifications?.length ? form.specifications : parseSpecsFromHtml(form.specificationsHtml || '')
+  payload.specifications = specsList
+    .filter((s) => (s.name || '').trim() && (s.value || '').trim())
     .map((s, i) => ({
       name: s.name.trim(),
       value: s.value.trim(),
@@ -756,8 +757,9 @@ export function toPayload(form) {
     }))
 
   // "Specs Dashboard" — ô số liệu nổi bật dưới khu vực mua hàng (V235), tối đa 4.
-  payload.specStats = form.specStats
-    .filter((s) => s.value.trim() && s.label.trim())
+  const specStatsList = form.specStats?.length ? form.specStats : parseSpecStatsFromHtml(form.specStatsHtml || '')
+  payload.specStats = specStatsList
+    .filter((s) => (s.value || '').trim() && (s.label || '').trim())
     .slice(0, 4)
     .map((s, i) => ({
       value: s.value.trim(),
@@ -790,7 +792,8 @@ export function toPayload(form) {
     }))
 
   // Dải tin cậy trên tên sản phẩm (V233) — full-replace; badge content blank bị bỏ.
-  payload.trustBadges = form.trustBadges
+  const trustBadgesList = form.trustBadges?.length ? form.trustBadges : parseTrustBadgesFromHtml(form.trustBadgesHtml || '')
+  payload.trustBadges = trustBadgesList
     .filter((b) => (b.content || '').trim())
     .map((b, i) => ({
       content: b.content.trim(),
