@@ -7,7 +7,7 @@ import { useLocalizedField } from "@/components/i18n/LocalizedContent";
 import type { DescriptionBlock } from "@/lib/contracts/public";
 import { resolveMediaUrl } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
-import { groupBlocks, type Group, type SizeGuideBlockT, type SuitabilityBlockT } from "./description-blocks/grouping";
+import { groupBlocks, featureHasText, featureHasImage, type Group, type SizeGuideBlockT, type SuitabilityBlockT } from "./description-blocks/grouping";
 import {
   FeatureBody,
   MediaBlock,
@@ -43,7 +43,9 @@ export function DescriptionBlocksView({ blocks }: { blocks: DescriptionBlock[] }
   // Divider admin chèn thủ công không cần render riêng nữa — nó chỉ còn nhiệm vụ ngắt cụm chữ
   // trong groupBlocks; phần kẻ/giãn cách giữa các khối giờ tự động và đồng đều.
   const groups = groupBlocks(blocks).filter(
-    (g): g is Exclude<Group, { kind: "divider" }> => g.kind !== "divider",
+    (g): g is Exclude<Group, { kind: "divider" }> =>
+      g.kind !== "divider" &&
+      !(g.kind === "feature" && !featureHasText(g.block) && !featureHasImage(g.block)),
   );
   return (
     <div className="pdp-desc-rich flex flex-col">
@@ -67,30 +69,48 @@ export function DescriptionBlocksView({ blocks }: { blocks: DescriptionBlock[] }
             <SuitabilityBlockView block={g.block} />
           ) : g.kind === "sizeGuide" ? (
             <SizeGuideBlockView block={g.block} />
-          ) : (
-            // feature: 2 cột ảnh–chữ, xen kẽ trái/phải (chỉ desktop; mobile xếp dọc).
+          ) : featureHasText(g.block) && featureHasImage(g.block) ? (
+            // Đủ ảnh + chữ → 2 cột so le trái/phải (chỉ desktop; mobile xếp dọc).
             <div className="grid items-center gap-6 md:grid-cols-2 md:gap-10">
               <div className={cn(g.reverse && "md:order-2")}>
-                {g.block.url ? (
-                  <figure className="m-0">
-                    <img
-                      src={resolveMediaUrl(g.block.url) || ""}
-                      alt={g.block.alt || ""}
-                      loading="lazy"
-                      className="aspect-[4/3] w-full border border-border object-cover"
-                    />
-                    {g.block.caption ? (
-                      <figcaption className="mt-2 text-ui-14 max-md:text-ui-12 italic text-muted-foreground">
-                        {g.block.caption}
-                      </figcaption>
-                    ) : null}
-                  </figure>
-                ) : null}
+                <figure className="m-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={resolveMediaUrl(g.block.url) || ""}
+                    alt={g.block.alt || ""}
+                    loading="lazy"
+                    className="aspect-[4/3] w-full border border-border object-cover"
+                  />
+                  {g.block.caption ? (
+                    <figcaption className="mt-2 text-ui-14 max-md:text-ui-12 italic text-muted-foreground">
+                      {g.block.caption}
+                    </figcaption>
+                  ) : null}
+                </figure>
               </div>
               <div className={cn(g.reverse && "md:order-1")}>
                 <FeatureBody block={g.block} />
               </div>
             </div>
+          ) : featureHasText(g.block) ? (
+            // Chỉ có chữ → full width, không chừa nửa cột trống.
+            <FeatureBody block={g.block} />
+          ) : (
+            // Chỉ có ảnh → full width.
+            <figure className="m-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={resolveMediaUrl(g.block.url) || ""}
+                alt={g.block.alt || ""}
+                loading="lazy"
+                className="aspect-[4/3] w-full border border-border object-cover"
+              />
+              {g.block.caption ? (
+                <figcaption className="mt-2 text-ui-14 max-md:text-ui-12 italic text-muted-foreground">
+                  {g.block.caption}
+                </figcaption>
+              ) : null}
+            </figure>
           )}
         </section>
       ))}

@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.service.integration;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -58,9 +59,20 @@ public class GeminiTranslationService {
      * empty map when disabled / on any failure so callers can safely skip enrichment.
      */
     public Map<String, String> translate(Map<String, String> source) {
+        return translate(source, GenerationOptions.defaults());
+    }
+
+    /**
+     * Same contract as {@link #translate(Map)} but lets a caller cap output size and disable model
+     * "thinking". Needed by the one-off VI→EN backfill: long article bodies must not be truncated,
+     * and thinking tokens would otherwise eat the output budget. Passing
+     * {@link GenerationOptions#defaults()} reproduces the exact Phase-1 request.
+     */
+    public Map<String, String> translate(Map<String, String> source, GenerationOptions options) {
         if (!isEnabled() || source == null || source.isEmpty()) {
             return Map.of();
         }
+        GenerationOptions opts = options == null ? GenerationOptions.defaults() : options;
         try {
             String sourceJson = objectMapper.writeValueAsString(source);
             String prompt = "Translate the following JSON object's string values from Vietnamese to "
@@ -69,11 +81,32 @@ public class GeminiTranslationService {
                     + "inside. If a value is already in English, keep it as is. Do not include markdown "
                     + "code block formatting (i.e. return ONLY raw JSON).\n\nJSON to translate:\n" + sourceJson;
 
+            Map<String, Object> generationConfig = new LinkedHashMap<>();
+            generationConfig.put("responseMimeType", "application/json");
+            if (opts.maxOutputTokens() != null) {
+                generationConfig.put("maxOutputTokens", opts.maxOutputTokens());
+            }
+            if (opts.thinkingBudget() != null) {
+                generationConfig.put("thinkingConfig", Map.of("thinkingBudget", opts.thinkingBudget()));
+            }
+            if (opts.structuredStringSchema()) {
+                // Force valid, properly-escaped JSON: a string property per source key. Without this,
+                // long quote-heavy HTML bodies make the model emit unescaped quotes => invalid JSON.
+                Map<String, Object> properties = new LinkedHashMap<>();
+                for (String key : source.keySet()) {
+                    properties.put(key, Map.of("type", "string"));
+                }
+                Map<String, Object> responseSchema = new LinkedHashMap<>();
+                responseSchema.put("type", "object");
+                responseSchema.put("properties", properties);
+                responseSchema.put("required", new ArrayList<>(source.keySet()));
+                generationConfig.put("responseSchema", responseSchema);
+            }
             Map<String, Object> body = Map.of(
                     "contents", new Object[] {
                             Map.of("parts", new Object[] { Map.of("text", prompt) })
                     },
-                    "generationConfig", Map.of("responseMimeType", "application/json"));
+                    "generationConfig", generationConfig);
 
             String response = restClient.post()
                     .uri(String.format(ENDPOINT, model, apiKey))
@@ -100,6 +133,20 @@ public class GeminiTranslationService {
         } catch (Exception e) {
             log.error("Gemini translate failed ({}): {}", e.getClass().getSimpleName(), e.getMessage());
             return Map.of();
+        }
+    }
+
+    /**
+     * Optional generation tuning for {@link #translate(Map, GenerationOptions)}. A {@code null} field
+     * is omitted from the request, so {@link #defaults()} yields the exact Phase-1 behavior.
+     *
+     * @param maxOutputTokens cap on response tokens (raise for long bodies; null = model default)
+     * @param thinkingBudget  0 disables "thinking" on 2.5 models (null = model default)
+     */
+    public record GenerationOptions(Integer maxOutputTokens, Integer thinkingBudget,
+                                    boolean structuredStringSchema) {
+        public static GenerationOptions defaults() {
+            return new GenerationOptions(null, null, false);
         }
     }
 }

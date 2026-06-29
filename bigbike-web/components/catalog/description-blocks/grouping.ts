@@ -4,6 +4,20 @@ export type FeatureBlockT = Extract<DescriptionBlock, { type: "feature" }>;
 export type SuitabilityBlockT = Extract<DescriptionBlock, { type: "suitability" }>;
 export type SizeGuideBlockT = Extract<DescriptionBlock, { type: "sizeGuide" }>;
 
+/** Trả về true nếu khối feature có phần chữ (subheading, heading, html, hoặc ít nhất một mục danh sách không rỗng). */
+export function featureHasText(block: FeatureBlockT): boolean {
+  if (block.subheading?.trim()) return true;
+  if (block.heading?.trim()) return true;
+  if (block.html?.trim()) return true;
+  if ((block.items ?? []).some((it) => (it ?? "").trim())) return true;
+  return false;
+}
+
+/** Trả về true nếu khối feature có ảnh (url không rỗng). */
+export function featureHasImage(block: FeatureBlockT): boolean {
+  return Boolean(block.url?.trim());
+}
+
 /** Chữ KHÔNG phải tiêu đề — phần thân của một mục, gom liền sau tiêu đề cho tới tiêu đề kế tiếp. */
 const NON_HEADING_TEXT = new Set(["paragraph", "list", "callout"]);
 

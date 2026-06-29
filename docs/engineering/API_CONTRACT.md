@@ -301,6 +301,23 @@ Trường vô hướng = tên khoá; khối lặp = `"section:<tên>"`. Null/abs
 
 Status: `CONFIRMED_FROM_CODE` — `AdminTranslateController`, `GeminiTranslationService`, `EnOverridesCodec`, `Upsert*Request.enOverrides`, `*Translations.overrides`. Xem [BUSINESS_RULES.md](../business/BUSINESS_RULES.md) §"Bilingual / Auto-translation Rules", [DATA_CONTRACT.md](DATA_CONTRACT.md) §`en_overrides (V296)`.
 
+### VI→EN backfill (công cụ vận hành MỘT LẦN) — Phase 2
+
+**Backfill endpoint:** `POST /api/v1/admin/translate/backfill` — **chỉ SUPER_ADMIN** (yêu cầu quyền wildcard `*`; `ADMIN`/khác → 403). Công cụ **vận hành một lần** dịch bù tiếng Anh cho MỌI bản ghi còn thiếu, dùng lại `GeminiTranslationService` (giữ nguyên prompt Phase 1, thêm `thinkingBudget=0` + `maxOutputTokens` để nội dung dài không bị cụt).
+
+Query params:
+- `type` = `product|category|brand|article|all` (mặc định `all`).
+- `dryRun` = `true|false` (mặc định **`true`**). `true` → dịch một ít mẫu, **KHÔNG ghi DB**, trả `results[].samples` (before/after) + số liệu.
+- `limit` = số bản ghi xử lý mỗi lần khi `dryRun=false` (mặc định 20). Gọi lặp tới khi `totalRemaining=0` (resumable).
+- `sampleSize` = số mẫu trả về khi `dryRun=true` (mặc định 3).
+- `includeTrashed` = gồm sản phẩm `publish_status=TRASH` (mặc định `false`).
+
+Hành vi: chọn bản ghi còn THIẾU **bất kỳ** trường tiếng Anh nào (cột `_en` rỗng mà tiếng Việt có nội dung) — **chọn theo từng trường (field-level)**, KHÔNG chỉ theo `name_en`/`title_en` rỗng. → dịch bộ trường tiếng Anh (khớp admin `src/lib/geminiTranslate.js` + spec `group_name`: name, shortDescription, description, seo*, `*_html`, các bảng con specifications/specStats/faqs/commitments/trustBadges/highlights, `description_blocks_en`, suitability cards) → ghi **chỉ cột `_en`** (fill-if-empty, **không đụng tiếng Việt**, không đè bản EN có sẵn). `promotion_content`/`installation_guide` **không** dịch và **bị loại khỏi điều kiện chọn** (tránh re-pick vô hạn cho trường công cụ không lấp được). **Không** sinh `slug_en` (PRODUCT_RULE_003); `en_overrides` để **NULL** (toàn bộ là máy dịch, chưa khoá ô nào). Idempotent: chạy lại bỏ qua bản đã đủ EN ở **mọi** trường (không chỉ bản đã có `name_en`); `remainingAfter` là số bản ghi còn lỗ EN cấp-trường. Bản ghi đã có tên/tiêu đề nhưng còn lỗ trường con vẫn được dịch tiếp (mỏ neo động). Bản ghi Gemini trả rỗng/cụt → bỏ qua + ghi log để chạy lại (không ghi rác). Response `TranslationBackfillResponse`: `results[]` theo loại (`candidatesTotal`/`processed`/`translated`/`failed`/`remainingAfter`/`failedIds`) + `samples` (dry-run).
+
+Web **vẫn** fallback từng-trường về tiếng Việt (`PRODUCT/CATEGORY/BRAND/ARTICLE_RULE_002`) — Phase 2 chỉ phủ nội dung, **KHÔNG** gỡ fallback (đó là Phase 3, việc riêng).
+
+Status: `CONFIRMED_FROM_CODE` — `TranslationBackfillController`, `TranslationBackfillService`, `GeminiTranslationService.GenerationOptions`. Xem [BUSINESS_RULES.md](../business/BUSINESS_RULES.md) §"Bilingual / Auto-translation Rules" (`TRANSLATION_RULE_001`).
+
 ## Administrative Deletion and Restore Contract (Trash Flow)
 
 Các endpoint dưới đây được sử dụng để quản lý trạng thái Xóa mềm (Trash), Khôi phục (Restore) và Xóa vĩnh viễn (Permanent Delete) của 5 module Nhóm A.
