@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
 import { AlertCircle, Check, Eye, Info, Loader2, Lock, Save, Search, Trash2, X, Languages } from 'lucide-react'
-import { translateContentForm } from '../lib/geminiTranslate'
+import { translateContentForm, addOverride } from '../lib/geminiTranslate'
 
 import {
   createContent,
@@ -253,12 +253,11 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     setValidationErrors({})
 
     let formToSave = form
-    // Luôn auto-translate VI→EN trước khi lưu (kể cả khi đang ở chế độ EN).
-    const needsTranslate = true
-    if (needsTranslate) {
-      const toastId = toast.loading('Đang tự động dịch sang tiếng Anh bằng Gemini AI...')
+    // Tự dịch VI→EN cho ô CHƯA bị khoá; ô admin đã sửa tay giữ nguyên (V296).
+    {
+      const toastId = toast.loading('Đang tự động dịch sang tiếng Anh...')
       try {
-        const translatedForm = await translateContentForm(formToSave)
+        const translatedForm = await translateContentForm(formToSave, formToSave.enOverrides)
         formToSave = translatedForm
         setForm(translatedForm)
         toast.success('Đã tự động dịch sang tiếng Anh!', { id: toastId })
@@ -295,6 +294,8 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
         ...previous.translations,
         en: { ...previous.translations?.en, [field]: value },
       },
+      // Sửa tay ô tiếng Anh nào thì KHOÁ ô đó — lần lưu sau không tự dịch đè (V296).
+      enOverrides: addOverride(previous.enOverrides, field),
     }))
   }
 
@@ -303,7 +304,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     setForm((previous) => {
       const en = { ...(previous.translations?.en || {}), title: value }
       if (!enSlugManuallyEdited) en.slug = toSlug(value)
-      return { ...previous, translations: { ...previous.translations, en } }
+      return { ...previous, translations: { ...previous.translations, en }, enOverrides: addOverride(previous.enOverrides, 'title') }
     })
   }
 

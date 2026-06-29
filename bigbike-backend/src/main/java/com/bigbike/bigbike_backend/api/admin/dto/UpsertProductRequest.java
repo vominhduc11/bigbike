@@ -220,6 +220,19 @@ public class UpsertProductRequest {
     private List<ProductTabRequest> tabs;
     private boolean tabsPresent = false;
 
+    /**
+     * English fields/sections the admin edited by hand (translation lock, V296). Stored opaquely;
+     * the admin uses it to skip auto-translating those fields. Null = leave the stored lock unchanged.
+     */
+    @Size(max = 200, message = "enOverrides may not have more than 200 items.")
+    private List<String> enOverrides;
+    private boolean enOverridesPresent = false;
+
+    public void setEnOverrides(List<String> enOverrides) {
+        this.enOverrides = enOverrides;
+        this.enOverridesPresent = true;
+    }
+
     public void setSku(String sku) {
         this.sku = sku;
         this.skuPresent = true;

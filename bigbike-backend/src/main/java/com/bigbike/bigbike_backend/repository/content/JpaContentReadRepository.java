@@ -296,7 +296,8 @@ public class JpaContentReadRepository implements ContentReadRepository {
                         entity.getBodyEn(),
                         entity.getSeoTitleEn(),
                         entity.getSeoDescriptionEn()
-                )
+                ),
+                com.bigbike.bigbike_backend.service.admin.EnOverridesCodec.toList(entity.getEnOverrides())
         );
     }
 }

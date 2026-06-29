@@ -108,6 +108,7 @@ export function buildEmptyForm(contentType) {
     translations: {
       en: { slug: '', title: '', excerpt: '', body: '', seoTitle: '', seoDescription: '', heroTitle: '' },
     },
+    enOverrides: [],
   }
 }
 
@@ -154,6 +155,7 @@ export function buildFormFromItem(contentType, item) {
         heroTitle: item.translations?.en?.heroTitle || '',
       },
     },
+    enOverrides: Array.isArray(item.translations?.overrides) ? [...item.translations.overrides] : [],
   }
 }
 
@@ -291,6 +293,8 @@ export function toPayload(form, isCreate) {
       heroTitle: form.translations?.en?.heroTitle?.trim() || null,
     },
   }
+
+  payload.enOverrides = Array.isArray(form.enOverrides) ? form.enOverrides : []
 
   return payload
 }

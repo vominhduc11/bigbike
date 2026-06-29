@@ -16,7 +16,7 @@ import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { clearNavGuard } from '@/lib/navigationGuard'
 import { Languages, Loader2 } from 'lucide-react'
 
-import { translateBrandForm } from '../lib/geminiTranslate'
+import { translateBrandForm, addOverride } from '../lib/geminiTranslate'
 
 import { createBrandSchema, zodErrors } from '../lib/schemas'
 import { StatePanel } from '../components/StatePanel'
@@ -60,6 +60,7 @@ function buildEmptyForm() {
     seoOgImageUrl: '',
     seoOgImageAlt: '',
     translations: { en: { slug: '', name: '', description: '', seoTitle: '', seoDescription: '' } },
+    enOverrides: [],
   }
 }
 
@@ -89,6 +90,7 @@ function buildFormFromItem(item) {
         seoDescription: item.translations?.en?.seoDescription || '',
       },
     },
+    enOverrides: Array.isArray(item.translations?.overrides) ? [...item.translations.overrides] : [],
   }
 }
 
@@ -135,6 +137,8 @@ function toPayload(form) {
     },
   }
 
+  payload.enOverrides = Array.isArray(form.enOverrides) ? form.enOverrides : []
+
   return payload
 }
 
@@ -178,6 +182,8 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
         ...previous.translations,
         en: { ...(previous.translations?.en || {}), [field]: value },
       },
+      // Sửa tay ô tiếng Anh nào thì KHOÁ ô đó — lần lưu sau không tự dịch đè (V296).
+      enOverrides: addOverride(previous.enOverrides, field),
     }))
   }
 
@@ -242,7 +248,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     setForm((previous) => {
       const en = { ...(previous.translations?.en || {}), name: value }
       if (!enSlugManuallyEdited) en.slug = toSlug(value)
-      return { ...previous, translations: { ...previous.translations, en } }
+      return { ...previous, translations: { ...previous.translations, en }, enOverrides: addOverride(previous.enOverrides, 'name') }
     })
   }
 
@@ -286,12 +292,11 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     setValidationErrors({})
 
     let formToSave = form
-    // Luôn auto-translate VI→EN trước khi lưu (kể cả khi đang ở chế độ EN).
-    const needsTranslate = true
-    if (needsTranslate) {
-      const toastId = toast.loading('Đang tự động dịch sang tiếng Anh bằng Gemini AI...')
+    // Tự dịch VI→EN cho ô CHƯA bị khoá; ô admin đã sửa tay giữ nguyên (V296).
+    {
+      const toastId = toast.loading('Đang tự động dịch sang tiếng Anh...')
       try {
-        const translatedForm = await translateBrandForm(formToSave)
+        const translatedForm = await translateBrandForm(formToSave, formToSave.enOverrides)
         formToSave = translatedForm
         setForm(translatedForm)
         toast.success('Đã tự động dịch sang tiếng Anh!', { id: toastId })

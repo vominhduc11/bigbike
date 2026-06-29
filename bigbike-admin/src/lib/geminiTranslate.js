@@ -1,6 +1,8 @@
-import { toast } from '@/lib/toast'
+import { translateFields } from '@/lib/adminApi'
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY
+// VI→EN auto-translation. The Gemini call now runs on the BACKEND (server-side key) — the
+// admin only posts the fields it wants translated. Fields/sections the admin edited by hand
+// are "locked" (passed in `overrides`) and skipped, so manual English is never overwritten.
 
 export function slugify(text) {
   return String(text || '')
@@ -14,77 +16,44 @@ export function slugify(text) {
     .replace(/-+/g, '-')
 }
 
-async function callGeminiTranslate(sourceObject) {
-  if (!API_KEY) {
-    toast.error('Chưa cấu hình VITE_GEMINI_API_KEY trong file .env!')
-    return null
-  }
+/** Section override key, e.g. lockKeyFor('specifications') === 'section:specifications'. */
+export function sectionKey(name) {
+  return `section:${name}`
+}
 
-  // If there's nothing to translate, return empty object
-  if (Object.keys(sourceObject).length === 0) {
-    return {}
-  }
+/** Add an English field/section key to the manual-edit lock set (deduped, immutable). */
+export function addOverride(overrides, key) {
+  const list = Array.isArray(overrides) ? overrides : []
+  return list.includes(key) ? list : [...list, key]
+}
 
+function toLockSet(overrides) {
+  return new Set(Array.isArray(overrides) ? overrides : [])
+}
+
+async function callTranslate(sourceObject) {
+  if (!sourceObject || Object.keys(sourceObject).length === 0) return {}
   try {
-    const prompt = `Translate the following JSON object's string values from Vietnamese to English. Retain all keys. Translate the values to natural English. If a value is HTML, preserve all HTML tags and properties exactly and translate only the text inside. If a value is already in English, keep it as is. Do not include markdown code block formatting (i.e. return ONLY raw JSON).
-
-JSON to translate:
-${JSON.stringify(sourceObject)}`
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            responseMimeType: 'application/json',
-          },
-        }),
-      }
-    )
-
-    if (!response.ok) {
-      throw new Error(`Gemini API returned status ${response.status}`)
-    }
-
-    const data = await response.json()
-    const resultText = data?.candidates?.[0]?.content?.parts?.[0]?.text
-    if (!resultText) {
-      throw new Error('Invalid response structure from Gemini API')
-    }
-
-    return JSON.parse(resultText)
+    return await translateFields(sourceObject)
   } catch (error) {
-    console.error('Gemini translation error:', error)
-    toast.error('Lỗi khi tự động dịch bằng Gemini AI. Vui lòng kiểm tra lại cấu hình API key!')
-    return null
+    console.error('Auto-translate error:', error)
+    return {}
   }
 }
 
 // ── Category Translation ───────────────────────────────────────────────────
 
-export async function translateCategoryForm(form) {
+export async function translateCategoryForm(form, overrides = []) {
+  const locked = toLockSet(overrides)
   const toTranslate = {}
-  if (form.name?.trim()) toTranslate.name = form.name.trim()
-  if (form.description?.trim()) toTranslate.description = form.description.trim()
-  if (form.introContent?.trim()) toTranslate.introContent = form.introContent.trim()
-  if (form.seoTitle?.trim()) toTranslate.seoTitle = form.seoTitle.trim()
-  if (form.seoDescription?.trim()) toTranslate.seoDescription = form.seoDescription.trim()
+  if (!locked.has('name') && form.name?.trim()) toTranslate.name = form.name.trim()
+  if (!locked.has('description') && form.description?.trim()) toTranslate.description = form.description.trim()
+  if (!locked.has('introContent') && form.introContent?.trim()) toTranslate.introContent = form.introContent.trim()
+  if (!locked.has('seoTitle') && form.seoTitle?.trim()) toTranslate.seoTitle = form.seoTitle.trim()
+  if (!locked.has('seoDescription') && form.seoDescription?.trim()) toTranslate.seoDescription = form.seoDescription.trim()
 
-  const translated = await callGeminiTranslate(toTranslate)
-  if (!translated) return form
+  const translated = await callTranslate(toTranslate)
+  if (Object.keys(translated).length === 0) return form
 
   const nextForm = { ...form }
   if (!nextForm.translations) nextForm.translations = { en: {} }
@@ -92,7 +61,7 @@ export async function translateCategoryForm(form) {
 
   if (translated.name) {
     nextForm.translations.en.name = translated.name
-    nextForm.translations.en.slug = slugify(translated.name)
+    if (!locked.has('slug')) nextForm.translations.en.slug = slugify(translated.name)
   }
   if (translated.description) nextForm.translations.en.description = translated.description
   if (translated.introContent) nextForm.translations.en.introContent = translated.introContent
@@ -104,15 +73,16 @@ export async function translateCategoryForm(form) {
 
 // ── Brand Translation ──────────────────────────────────────────────────────
 
-export async function translateBrandForm(form) {
+export async function translateBrandForm(form, overrides = []) {
+  const locked = toLockSet(overrides)
   const toTranslate = {}
-  if (form.name?.trim()) toTranslate.name = form.name.trim()
-  if (form.description?.trim()) toTranslate.description = form.description.trim()
-  if (form.seoTitle?.trim()) toTranslate.seoTitle = form.seoTitle.trim()
-  if (form.seoDescription?.trim()) toTranslate.seoDescription = form.seoDescription.trim()
+  if (!locked.has('name') && form.name?.trim()) toTranslate.name = form.name.trim()
+  if (!locked.has('description') && form.description?.trim()) toTranslate.description = form.description.trim()
+  if (!locked.has('seoTitle') && form.seoTitle?.trim()) toTranslate.seoTitle = form.seoTitle.trim()
+  if (!locked.has('seoDescription') && form.seoDescription?.trim()) toTranslate.seoDescription = form.seoDescription.trim()
 
-  const translated = await callGeminiTranslate(toTranslate)
-  if (!translated) return form
+  const translated = await callTranslate(toTranslate)
+  if (Object.keys(translated).length === 0) return form
 
   const nextForm = { ...form }
   if (!nextForm.translations) nextForm.translations = { en: {} }
@@ -120,7 +90,7 @@ export async function translateBrandForm(form) {
 
   if (translated.name) {
     nextForm.translations.en.name = translated.name
-    nextForm.translations.en.slug = slugify(translated.name)
+    if (!locked.has('slug')) nextForm.translations.en.slug = slugify(translated.name)
   }
   if (translated.description) nextForm.translations.en.description = translated.description
   if (translated.seoTitle) nextForm.translations.en.seoTitle = translated.seoTitle
@@ -129,19 +99,20 @@ export async function translateBrandForm(form) {
   return nextForm
 }
 
-// ── Content (Article/Page) Translation ──────────────────────────────────────
+// ── Content (Article) Translation ───────────────────────────────────────────
 
-export async function translateContentForm(form) {
+export async function translateContentForm(form, overrides = []) {
+  const locked = toLockSet(overrides)
   const toTranslate = {}
-  if (form.title?.trim()) toTranslate.title = form.title.trim()
-  if (form.excerpt?.trim()) toTranslate.excerpt = form.excerpt.trim()
-  if (form.body?.trim()) toTranslate.body = form.body.trim()
-  if (form.seoTitle?.trim()) toTranslate.seoTitle = form.seoTitle.trim()
-  if (form.seoDescription?.trim()) toTranslate.seoDescription = form.seoDescription.trim()
-  if (form.heroTitle?.trim()) toTranslate.heroTitle = form.heroTitle.trim()
+  if (!locked.has('title') && form.title?.trim()) toTranslate.title = form.title.trim()
+  if (!locked.has('excerpt') && form.excerpt?.trim()) toTranslate.excerpt = form.excerpt.trim()
+  if (!locked.has('body') && form.body?.trim()) toTranslate.body = form.body.trim()
+  if (!locked.has('seoTitle') && form.seoTitle?.trim()) toTranslate.seoTitle = form.seoTitle.trim()
+  if (!locked.has('seoDescription') && form.seoDescription?.trim()) toTranslate.seoDescription = form.seoDescription.trim()
+  if (!locked.has('heroTitle') && form.heroTitle?.trim()) toTranslate.heroTitle = form.heroTitle.trim()
 
-  const translated = await callGeminiTranslate(toTranslate)
-  if (!translated) return form
+  const translated = await callTranslate(toTranslate)
+  if (Object.keys(translated).length === 0) return form
 
   const nextForm = { ...form }
   if (!nextForm.translations) nextForm.translations = { en: {} }
@@ -149,7 +120,7 @@ export async function translateContentForm(form) {
 
   if (translated.title) {
     nextForm.translations.en.title = translated.title
-    if (form.type === 'ARTICLE') {
+    if (form.type === 'ARTICLE' && !locked.has('slug')) {
       nextForm.translations.en.slug = slugify(translated.title)
     }
   }
@@ -164,60 +135,63 @@ export async function translateContentForm(form) {
 
 // ── Product Translation ───────────────────────────────────────────────────
 
-export async function translateProductForm(form) {
+export async function translateProductForm(form, overrides = []) {
+  const locked = toLockSet(overrides)
+  const fieldOpen = (key) => !locked.has(key)
+  const sectionOpen = (name) => !locked.has(sectionKey(name))
   const toTranslate = {}
 
   // Flat fields
-  if (form.name?.trim()) toTranslate.name = form.name.trim()
-  if (form.shortDescription?.trim()) toTranslate.shortDescription = form.shortDescription.trim()
-  if (form.description?.trim()) toTranslate.description = form.description.trim()
-  if (form.seoTitle?.trim()) toTranslate.seoTitle = form.seoTitle.trim()
-  if (form.seoDescription?.trim()) toTranslate.seoDescription = form.seoDescription.trim()
-  if (form.specificationsHtml?.trim()) toTranslate.specificationsHtml = form.specificationsHtml.trim()
-  if (form.specStatsHtml?.trim()) toTranslate.specStatsHtml = form.specStatsHtml.trim()
-  if (form.trustBadgesHtml?.trim()) toTranslate.trustBadgesHtml = form.trustBadgesHtml.trim()
+  if (fieldOpen('name') && form.name?.trim()) toTranslate.name = form.name.trim()
+  if (fieldOpen('shortDescription') && form.shortDescription?.trim()) toTranslate.shortDescription = form.shortDescription.trim()
+  if (fieldOpen('description') && form.description?.trim()) toTranslate.description = form.description.trim()
+  if (fieldOpen('seoTitle') && form.seoTitle?.trim()) toTranslate.seoTitle = form.seoTitle.trim()
+  if (fieldOpen('seoDescription') && form.seoDescription?.trim()) toTranslate.seoDescription = form.seoDescription.trim()
+  if (fieldOpen('specificationsHtml') && form.specificationsHtml?.trim()) toTranslate.specificationsHtml = form.specificationsHtml.trim()
+  if (fieldOpen('specStatsHtml') && form.specStatsHtml?.trim()) toTranslate.specStatsHtml = form.specStatsHtml.trim()
+  if (fieldOpen('trustBadgesHtml') && form.trustBadgesHtml?.trim()) toTranslate.trustBadgesHtml = form.trustBadgesHtml.trim()
 
-  // Arrays mapping to flat keys for batch translation
-  if (Array.isArray(form.specifications)) {
+  // Arrays mapping to flat keys for batch translation (skipped when the section is locked)
+  if (sectionOpen('specifications') && Array.isArray(form.specifications)) {
     form.specifications.forEach((s, i) => {
       if (s.name?.trim()) toTranslate[`spec_name_${i}`] = s.name.trim()
       if (s.value?.trim()) toTranslate[`spec_value_${i}`] = s.value.trim()
     })
   }
-  if (Array.isArray(form.specStats)) {
+  if (sectionOpen('specStats') && Array.isArray(form.specStats)) {
     form.specStats.forEach((s, i) => {
       if (s.value?.trim()) toTranslate[`specStats_value_${i}`] = s.value.trim()
       if (s.label?.trim()) toTranslate[`specStats_label_${i}`] = s.label.trim()
     })
   }
-  if (Array.isArray(form.faqs)) {
+  if (sectionOpen('faqs') && Array.isArray(form.faqs)) {
     form.faqs.forEach((f, i) => {
       if (f.question?.trim()) toTranslate[`faq_question_${i}`] = f.question.trim()
       if (f.answer?.trim()) toTranslate[`faq_answer_${i}`] = f.answer.trim()
     })
   }
-  if (Array.isArray(form.commitments)) {
+  if (sectionOpen('commitments') && Array.isArray(form.commitments)) {
     form.commitments.forEach((c, i) => {
       if (c.title?.trim()) toTranslate[`commitment_title_${i}`] = c.title.trim()
       if (c.subtitle?.trim()) toTranslate[`commitment_subtitle_${i}`] = c.subtitle.trim()
     })
   }
-  if (Array.isArray(form.trustBadges)) {
+  if (sectionOpen('trustBadges') && Array.isArray(form.trustBadges)) {
     form.trustBadges.forEach((b, i) => {
       if (b.content?.trim()) toTranslate[`trustBadge_content_${i}`] = b.content.trim()
     })
   }
-  if (Array.isArray(form.positiveNotes)) {
+  if (sectionOpen('positiveNotes') && Array.isArray(form.positiveNotes)) {
     form.positiveNotes.forEach((n, i) => {
       if (n.content?.trim()) toTranslate[`posNote_content_${i}`] = n.content.trim()
     })
   }
-  if (Array.isArray(form.negativeNotes)) {
+  if (sectionOpen('negativeNotes') && Array.isArray(form.negativeNotes)) {
     form.negativeNotes.forEach((n, i) => {
       if (n.content?.trim()) toTranslate[`negNote_content_${i}`] = n.content.trim()
     })
   }
-  if (Array.isArray(form.suitabilityCards)) {
+  if (sectionOpen('suitabilityCards') && Array.isArray(form.suitabilityCards)) {
     form.suitabilityCards.forEach((c, i) => {
       if (c.audience?.trim()) toTranslate[`suitability_audience_${i}`] = c.audience.trim()
       if (c.advice?.trim()) toTranslate[`suitability_advice_${i}`] = c.advice.trim()
@@ -226,7 +200,7 @@ export async function translateProductForm(form) {
   }
 
   // Description blocks translation keys
-  if (Array.isArray(form.descriptionBlocks)) {
+  if (sectionOpen('descriptionBlocks') && Array.isArray(form.descriptionBlocks)) {
     form.descriptionBlocks.forEach((b, i) => {
       if (b.type === 'heading' && b.text?.trim()) {
         toTranslate[`block_heading_text_${i}`] = b.text.trim()
@@ -254,8 +228,8 @@ export async function translateProductForm(form) {
     })
   }
 
-  const translated = await callGeminiTranslate(toTranslate)
-  if (!translated) return form
+  const translated = await callTranslate(toTranslate)
+  if (Object.keys(translated).length === 0) return form
 
   const nextForm = JSON.parse(JSON.stringify(form))
   if (!nextForm.translations) nextForm.translations = { en: {} }
@@ -263,7 +237,7 @@ export async function translateProductForm(form) {
 
   if (translated.name) {
     nextForm.translations.en.name = translated.name
-    nextForm.translations.en.slug = slugify(translated.name)
+    if (fieldOpen('slug')) nextForm.translations.en.slug = slugify(translated.name)
   }
   if (translated.shortDescription) nextForm.translations.en.shortDescription = translated.shortDescription
   if (translated.description) nextForm.translations.en.description = translated.description
@@ -273,54 +247,55 @@ export async function translateProductForm(form) {
   if (translated.specStatsHtml) nextForm.translations.en.specStatsHtml = translated.specStatsHtml
   if (translated.trustBadgesHtml) nextForm.translations.en.trustBadgesHtml = translated.trustBadgesHtml
 
-  // Array values mapping back
-  if (Array.isArray(nextForm.specifications)) {
+  // Array values mapping back — only for sections we actually translated (locked sections keep
+  // the admin's existing English untouched).
+  if (sectionOpen('specifications') && Array.isArray(nextForm.specifications)) {
     nextForm.specifications = nextForm.specifications.map((s, i) => ({
       ...s,
       nameEn: translated[`spec_name_${i}`] || s.nameEn || '',
       valueEn: translated[`spec_value_${i}`] || s.valueEn || '',
     }))
   }
-  if (Array.isArray(nextForm.specStats)) {
+  if (sectionOpen('specStats') && Array.isArray(nextForm.specStats)) {
     nextForm.specStats = nextForm.specStats.map((s, i) => ({
       ...s,
       valueEn: translated[`specStats_value_${i}`] || s.valueEn || '',
       labelEn: translated[`specStats_label_${i}`] || s.labelEn || '',
     }))
   }
-  if (Array.isArray(nextForm.faqs)) {
+  if (sectionOpen('faqs') && Array.isArray(nextForm.faqs)) {
     nextForm.faqs = nextForm.faqs.map((f, i) => ({
       ...f,
       questionEn: translated[`faq_question_${i}`] || f.questionEn || '',
       answerEn: translated[`faq_answer_${i}`] || f.answerEn || '',
     }))
   }
-  if (Array.isArray(nextForm.commitments)) {
+  if (sectionOpen('commitments') && Array.isArray(nextForm.commitments)) {
     nextForm.commitments = nextForm.commitments.map((c, i) => ({
       ...c,
       titleEn: translated[`commitment_title_${i}`] || c.titleEn || '',
       subtitleEn: translated[`commitment_subtitle_${i}`] || c.subtitleEn || '',
     }))
   }
-  if (Array.isArray(nextForm.trustBadges)) {
+  if (sectionOpen('trustBadges') && Array.isArray(nextForm.trustBadges)) {
     nextForm.trustBadges = nextForm.trustBadges.map((b, i) => ({
       ...b,
       contentEn: translated[`trustBadge_content_${i}`] || b.contentEn || '',
     }))
   }
-  if (Array.isArray(nextForm.positiveNotes)) {
+  if (sectionOpen('positiveNotes') && Array.isArray(nextForm.positiveNotes)) {
     nextForm.positiveNotes = nextForm.positiveNotes.map((n, i) => ({
       ...n,
       contentEn: translated[`posNote_content_${i}`] || n.contentEn || '',
     }))
   }
-  if (Array.isArray(nextForm.negativeNotes)) {
+  if (sectionOpen('negativeNotes') && Array.isArray(nextForm.negativeNotes)) {
     nextForm.negativeNotes = nextForm.negativeNotes.map((n, i) => ({
       ...n,
       contentEn: translated[`negNote_content_${i}`] || n.contentEn || '',
     }))
   }
-  if (Array.isArray(nextForm.suitabilityCards)) {
+  if (sectionOpen('suitabilityCards') && Array.isArray(nextForm.suitabilityCards)) {
     nextForm.suitabilityCards = nextForm.suitabilityCards.map((c, i) => ({
       ...c,
       audienceEn: translated[`suitability_audience_${i}`] || c.audienceEn || '',
@@ -329,8 +304,8 @@ export async function translateProductForm(form) {
     }))
   }
 
-  // Description blocks mapping back (clone and map VI blocks to EN blocks)
-  if (Array.isArray(nextForm.descriptionBlocks)) {
+  // Description blocks mapping back (clone and map VI blocks to EN blocks) — only when unlocked.
+  if (sectionOpen('descriptionBlocks') && Array.isArray(nextForm.descriptionBlocks)) {
     nextForm.descriptionBlocksEn = nextForm.descriptionBlocks.map((b, i) => {
       const blockEn = { ...b }
       if (blockEn.type === 'heading') {

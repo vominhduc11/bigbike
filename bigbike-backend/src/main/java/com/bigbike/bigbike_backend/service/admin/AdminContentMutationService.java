@@ -319,6 +319,12 @@ public class AdminContentMutationService {
             entity.setSeoTitleEn(null);
             entity.setSeoDescriptionEn(null);
         }
+
+        // Translation lock (V296). Null on PATCH = leave the stored lock unchanged.
+        if (create || request.getEnOverrides() != null) {
+            entity.setEnOverrides(
+                    com.bigbike.bigbike_backend.service.admin.EnOverridesCodec.toJson(request.getEnOverrides()));
+        }
     }
 
     private void revalidateArticle(ArticleEntity entity, String previousSlug) {

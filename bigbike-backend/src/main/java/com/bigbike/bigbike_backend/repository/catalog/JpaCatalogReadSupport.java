@@ -103,7 +103,7 @@ final class JpaCatalogReadSupport {
                 entity.getSeoTitleEn(),
                 entity.getSeoDescriptionEn(),
                 entity.getIntroContentEn()
-        ));
+        ), com.bigbike.bigbike_backend.service.admin.EnOverridesCodec.toList(entity.getEnOverrides()));
     }
 
     static BrandTranslations toBrandTranslations(BrandEntity entity) {
@@ -117,7 +117,7 @@ final class JpaCatalogReadSupport {
                 entity.getDescriptionEn(),
                 entity.getSeoTitleEn(),
                 entity.getSeoDescriptionEn()
-        ));
+        ), com.bigbike.bigbike_backend.service.admin.EnOverridesCodec.toList(entity.getEnOverrides()));
     }
 
     /**
@@ -155,7 +155,7 @@ final class JpaCatalogReadSupport {
                 entity.getSeoTitleEn(),
                 entity.getSeoDescriptionEn(),
                 descriptionBlocksEn
-        ));
+        ), com.bigbike.bigbike_backend.service.admin.EnOverridesCodec.toList(entity.getEnOverrides()));
     }
 
     static boolean isPresent(String value) {

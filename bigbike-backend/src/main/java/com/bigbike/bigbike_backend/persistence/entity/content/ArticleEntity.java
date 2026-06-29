@@ -41,6 +41,10 @@ public class ArticleEntity {
     @Column(name = "slug_en")
     private String slugEn;
 
+    /** JSON array of English fields/sections the admin edited by hand (translation lock, V296). */
+    @Column(name = "en_overrides", columnDefinition = "text")
+    private String enOverrides;
+
     @Column(nullable = false)
     private String title;
 

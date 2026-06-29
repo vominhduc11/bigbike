@@ -67,4 +67,11 @@ public class UpsertCategoryRequest {
 
     @Valid
     private CategoryTranslationRequest translations;
+
+    /**
+     * English fields/sections the admin edited by hand (translation lock, V296). The backend
+     * stores this opaquely; the admin uses it to skip auto-translating those fields. Null = unchanged.
+     */
+    @Size(max = 100, message = "enOverrides may not have more than 100 items.")
+    private java.util.List<String> enOverrides;
 }

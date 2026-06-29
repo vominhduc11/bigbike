@@ -10,6 +10,22 @@
 | Web revalidation | Backend can call Next.js revalidation endpoint with shared secret | `CONFIRMED_FROM_CONFIG` | `docker-compose.yaml` |
 | WebSocket/STOMP | Admin order push channel is live | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java`, `AdminOrderWsService.java` |
 | VN address data | Public backend address API and client-side address helpers are present | `CONFIRMED_FROM_CODE` | `VnAddressController.java`, `vn-address-data.ts`, mobile endpoints |
+| Gemini auto-translation | Server-side VI→EN translation for bilingual content; key stays server-side. Disabled when `GEMINI_API_KEY` is blank (saves still work) | `CONFIRMED_FROM_CODE` | `GeminiTranslationService.java`, `AdminTranslateController.java` |
+
+## Gemini Auto-translation (VI→EN)
+
+`GeminiTranslationService` calls the Google Gemini `generateContent` API to translate a flat
+`{ key: viText }` map to English. The admin no longer holds the key: it posts the fields it wants
+translated to `POST /api/v1/admin/translate` (any content-write permission), and the backend
+forwards them using the **server-side** key. Translation **never blocks a save** — a blank key or
+any API/parse error returns an empty map and the caller keeps existing English.
+
+Config (server-side, see `application.properties` + `.env.example` + `docker-compose.yaml`):
+`GEMINI_API_KEY` (blank = disabled), `GEMINI_MODEL` (default `gemini-2.5-flash`). Which fields are
+translated and which are kept is decided by the per-record `en_overrides` lock — see
+`BUSINESS_RULES.md` `TRANSLATION_RULE_001/002` and `DATA_CONTRACT.md` §`en_overrides (V296)`.
+
+> The old in-browser `VITE_GEMINI_API_KEY` is **removed** — it exposed the key in the admin bundle.
 
 ## Web Revalidation (ISR on-demand)
 

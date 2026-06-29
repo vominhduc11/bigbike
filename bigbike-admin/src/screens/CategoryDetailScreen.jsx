@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
 import { AlertCircle, Check, Copy, ExternalLink, Hash, Loader2, Package, X as XIcon, Languages } from 'lucide-react'
-import { translateCategoryForm } from '../lib/geminiTranslate'
+import { translateCategoryForm, addOverride } from '../lib/geminiTranslate'
 
 import {
   createCategory,
@@ -176,6 +176,8 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
         ...previous.translations,
         en: { ...(previous.translations?.en || {}), [field]: value },
       },
+      // Sửa tay ô tiếng Anh nào thì KHOÁ ô đó — lần lưu sau không tự dịch đè lên (V296).
+      enOverrides: addOverride(previous.enOverrides, field),
     }))
   }
 
@@ -292,7 +294,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     setForm((previous) => {
       const en = { ...(previous.translations?.en || {}), name: value }
       if (!enSlugManuallyEdited) en.slug = toSlug(value)
-      return { ...previous, translations: { ...previous.translations, en } }
+      return { ...previous, translations: { ...previous.translations, en }, enOverrides: addOverride(previous.enOverrides, 'name') }
     })
   }
 
@@ -351,12 +353,11 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     setValidationErrors({})
 
     let formToSave = form
-    // Luôn auto-translate VI→EN trước khi lưu (kể cả khi đang ở chế độ EN).
-    const needsTranslate = true
-    if (needsTranslate) {
-      const toastId = toast.loading('Đang tự động dịch sang tiếng Anh bằng Gemini AI...')
+    // Tự dịch VI→EN cho các ô CHƯA bị khoá (admin chưa sửa tay) — ô đã sửa tay giữ nguyên (V296).
+    {
+      const toastId = toast.loading('Đang tự động dịch sang tiếng Anh...')
       try {
-        const translatedForm = await translateCategoryForm(formToSave)
+        const translatedForm = await translateCategoryForm(formToSave, formToSave.enOverrides)
         formToSave = translatedForm
         setForm(translatedForm)
         toast.success('Đã tự động dịch sang tiếng Anh!', { id: toastId })

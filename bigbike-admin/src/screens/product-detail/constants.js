@@ -257,6 +257,8 @@ export function buildEmptyForm() {
     accessoryProductChips: [],
     // Optional English content (V136). Vietnamese above stays canonical.
     translations: { en: buildEmptyTranslation() },
+    // English fields/sections the admin locked by hand (translation lock, V296).
+    enOverrides: [],
   }
 }
 
@@ -512,6 +514,7 @@ export function buildFormFromItem(item) {
       })),
     // slug tiếng Anh nằm ở field top-level `slugEn` của response, không trong translations.en.
     translations: { en: { ...translationFormFromItem(item.translations?.en), slug: item.slugEn || '' } },
+    enOverrides: Array.isArray(item.translations?.overrides) ? [...item.translations.overrides] : [],
   }
 
   // Thông số kỹ thuật bản EN: backfill html từ bảng cấu trúc cũ (nameEn/valueEn) nếu chưa có html EN.
@@ -716,6 +719,9 @@ export function toPayload(form) {
     // the English columns; empty fields clear them. English is never required.
     translations: { en: { ...translationToPayload(form.translations?.en) } },
   }
+
+  // Translation lock (V296): English fields/sections the admin edited by hand.
+  payload.enOverrides = Array.isArray(form.enOverrides) ? form.enOverrides : []
 
   payload.gallery = form.gallery
     // V248: giữ item có ảnh HOẶC video (gallery hỗn hợp).

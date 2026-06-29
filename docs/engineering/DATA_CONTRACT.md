@@ -666,7 +666,16 @@ vẫn lùi về tiếng Việt. Bản tiếng Việt không bao giờ bị thi�
 
 **Slug tiếng Anh (`slug_en`, V214):** xem mục **"English URL slug"** bên dưới — `slug` tiếng Việt là canonical, `slug_en` là URL tiếng Anh tùy chọn.
 
-**Không dịch ở đợt này:** alt ảnh, caption gallery, tên video, tên biến thể, `seo_canonical_url`.
+**Translation lock — `en_overrides` (V296):** cột `TEXT` trên `products`, `categories`,
+`brands`, `articles`, lưu **JSON array** các khoá trường/khối tiếng Anh **admin đã
+sửa tay**. Trường vô hướng = tên khoá (`"name"`, `"description"`, `"seoTitle"`…); khối
+lặp = `"section:<tên>"` (`"section:specifications"`, `"section:descriptionBlocks"`…).
+Backend lưu **opaque** (qua `EnOverridesCodec`), trả về ở admin read trong
+`translations.overrides`. Admin dùng để **bỏ qua tự-dịch** các ô đã khoá (auto-translate
+VI→EN chỉ ghi đè trường KHÔNG nằm trong danh sách). Xem `BUSINESS_RULES.md`
+`TRANSLATION_RULE_001/002`. `NULL` = chưa khoá ô nào.
+
+**Không dịch:** alt ảnh, caption gallery, tên video, tên biến thể, `seo_canonical_url`.
 
 **Admin list reads:** danh sách admin (product/category/brand/content) nay cũng
 resolve **trường hiển thị** (`name` / `title`) theo `lang` qua cùng cơ chế

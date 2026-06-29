@@ -287,6 +287,20 @@ Admin detail reads (`AdminContentItem`) của Article bao gồm `translations: {
 
 Status: `CONFIRMED_FROM_CODE` — `AdminContentItem.translations` (kiểu `ArticleTranslations`, serialize thẳng `{ en: {...} }`), `AdminContentReadService.fromArticle`, `ContentFieldApplier.toAdminContentItem`. Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article bilingual content (V138)".
 
+### VI→EN auto-translation + translation lock (V296)
+
+**Translate proxy:** `POST /api/v1/admin/translate` — body `{ "texts": { "<key>": "<vi text>", ... } }`,
+trả `{ data: { "<key>": "<en text>", ... } }`. Server gọi Gemini bằng khoá **server-side**; khi khoá
+trống / lỗi → trả `{ data: {} }` (admin giữ nguyên bản EN cũ). Quyền: bất kỳ trong
+`products.update` / `catalog.update` / `content.update`.
+
+**`enOverrides` trên upsert:** `UpsertProductRequest` / `UpsertCategoryRequest` / `UpsertBrandRequest` /
+`UpsertArticleRequest` nhận thêm `enOverrides: string[]` — danh sách trường/khối tiếng Anh admin đã
+sửa tay (khoá khỏi tự-dịch). Trả về khi admin read trong `translations.overrides` (`string[]`).
+Trường vô hướng = tên khoá; khối lặp = `"section:<tên>"`. Null/absent = giữ nguyên lock cũ (PATCH).
+
+Status: `CONFIRMED_FROM_CODE` — `AdminTranslateController`, `GeminiTranslationService`, `EnOverridesCodec`, `Upsert*Request.enOverrides`, `*Translations.overrides`. Xem [BUSINESS_RULES.md](../business/BUSINESS_RULES.md) §"Bilingual / Auto-translation Rules", [DATA_CONTRACT.md](DATA_CONTRACT.md) §`en_overrides (V296)`.
+
 ## Administrative Deletion and Restore Contract (Trash Flow)
 
 Các endpoint dưới đây được sử dụng để quản lý trạng thái Xóa mềm (Trash), Khôi phục (Restore) và Xóa vĩnh viễn (Permanent Delete) của 5 module Nhóm A.

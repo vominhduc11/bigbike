@@ -116,9 +116,21 @@ Evidence:
 - `V262__inventory_availability_toggle.sql` (boolean availability; backfilled `is_available` + `stock_state` from prior quantities; quantity columns kept dormant — 2026-06-23. Note: `V261` was taken by the return/refund removal, so the inventory migration is `V262`.)
 - `bigbike-web/components/wp/WpPurchaseSection.tsx` (`STOCK_RULE_009` — PDP buy-box badge display)
 
+## Bilingual / Auto-translation Rules
+
+> Áp dụng cho **sản phẩm, danh mục, thương hiệu, bài viết** (mọi thực thể song ngữ). Bổ sung/điều chỉnh các `*_RULE_001`/`*_RULE_002` bên dưới.
+
+- `TRANSLATION_RULE_001`: **Lưu tiếng Việt → tự sinh bản tiếng Anh.** Khi admin lưu một thực thể song ngữ, hệ thống **tự dịch các trường tiếng Việt sang tiếng Anh** (Google Gemini) cho những trường **chưa bị khoá** (xem `TRANSLATION_RULE_002`). Việc dịch chạy **phía MÁY CHỦ** qua endpoint nội bộ `POST /api/v1/admin/translate` (khoá Gemini server-side, **không** lộ ra trình duyệt admin). Dịch **không bao giờ chặn lưu**: khi chưa cấu hình khoá / Gemini lỗi → endpoint trả map rỗng, admin **giữ nguyên** bản tiếng Anh hiện có (không xoá). `CONFIRMED_FROM_CODE`
+- `TRANSLATION_RULE_002`: **Khoá ô tiếng Anh admin sửa tay (manual override).** Mỗi thực thể lưu một danh sách `en_overrides` (JSON) = các trường/khối tiếng Anh **admin đã chỉnh tay**. Khi lưu: trường **có** trong danh sách → **giữ nguyên** bản tiếng Anh admin nhập; trường **không** có → **dịch lại từ tiếng Việt** (luôn bám tiếng Việt mới nhất). Độ chi tiết: **trường vô hướng** khoá theo từng ô (`name`, `description`, `seoTitle`…); **khối lặp** (`specifications`, `faqs`, `commitments`, `descriptionBlocks`…) khoá theo **cả khối** (`section:<tên>`). Sửa tiếng Việt sau này ở ô **chưa khoá** → bản tiếng Anh ô đó tự dịch lại; ô **đã khoá** đứng yên. `en_overrides` round-trip opaque qua admin (lưu DB, trả về khi mở form). `CONFIRMED_FROM_CODE`
+- `TRANSLATION_RULE_003`: **Sửa tiếng Anh KHÔNG ảnh hưởng tiếng Việt.** Tiếng Việt là canonical, lưu ở cột chính; tiếng Anh ở cột `*_en` riêng. Thao tác ở chế độ EN chỉ ghi cột tiếng Anh. `CONFIRMED_FROM_CODE`
+
+> **Lưu ý Phase 1 (2026-06-29):** web vẫn **fallback từng trường về tiếng Việt** khi tiếng Anh trống (`*_RULE_002` còn hiệu lực) — lưới an toàn cho dữ liệu cũ chưa có bản tiếng Anh. Việc **bỏ fallback ở web** là Phase 3, thực hiện **sau khi** đã dịch bù tiếng Anh cho toàn bộ dữ liệu cũ (Phase 2).
+>
+> Evidence: `service/integration/GeminiTranslationService.java`, `api/admin/AdminTranslateController.java`, `service/admin/EnOverridesCodec.java`, cột `en_overrides` (V296), admin `src/lib/geminiTranslate.js` + `src/lib/adminApi.js (translateFields)`.
+
 ## Product Catalog Rules
 
-- `PRODUCT_RULE_001`: Mỗi sản phẩm bắt buộc có **bản nội dung tiếng Việt** (canonical). **Bản tiếng Anh là tùy chọn** — admin có thể tạo/sửa sản phẩm mà không nhập bản tiếng Anh. `CONFIRMED_FROM_CODE`
+- `PRODUCT_RULE_001`: Mỗi sản phẩm bắt buộc có **bản nội dung tiếng Việt** (canonical). **Bản tiếng Anh tự sinh khi lưu** (Gemini, `TRANSLATION_RULE_001`) — admin không cần nhập tay; có thể sửa lại tuỳ ý và bản sửa tay được **giữ** (`TRANSLATION_RULE_002`). Khi Gemini chưa bật/ lỗi, tiếng Anh có thể trống và web fallback về tiếng Việt (`PRODUCT_RULE_002`). `CONFIRMED_FROM_CODE`
 - `PRODUCT_RULE_002`: Khi đọc nội dung sản phẩm bằng tiếng Anh (`lang=en`), mỗi trường text thiếu bản tiếng Anh sẽ **tự lùi về bản tiếng Việt theo từng trường** (`COALESCE`). Một sản phẩm có thể có tên tiếng Anh nhưng mô tả vẫn hiển thị tiếng Việt. `CONFIRMED_FROM_CODE`
 - `PRODUCT_RULE_003`: `slug` tiếng Việt là **canonical**; mỗi sản phẩm có thêm `slugEn` (slug tiếng Anh) **tùy chọn**. Khi xem bản tiếng Anh, URL dùng `slugEn`; **trống thì lùi về `slug` tiếng Việt**. Web tra cứu sản phẩm theo **vi HOẶC en** slug (cả hai URL mở cùng sản phẩm). `slugEn` phải **duy nhất** trong phạm vi sản phẩm và **không được trùng** bất kỳ `slug` tiếng Việt nào của sản phẩm khác (cross-column uniqueness — partial-unique index lo en-vs-en, vi-vs-en enforce ở tầng ứng dụng). Đổi/xoá `slugEn` **tự sinh redirect 301**. `CONFIRMED_FROM_CODE`
 - `PRODUCT_RULE_004`: **Phân biệt hành vi `lang=en` giữa WEB và ADMIN.** `PRODUCT_RULE_002` (fallback theo từng trường về tiếng Việt) áp dụng cho cả **web/public** lẫn **bigbike-admin**. Khi admin chuyển sang EN, các **danh sách** (sản phẩm, danh mục, thương hiệu, bài viết, menu, video trang chủ, Slider, Đánh giá, Highlights) **hiển thị đầy đủ toàn bộ bản ghi** — bản ghi chưa có trường tiếng Anh (`name_en`/`title_en`/`label_en` rỗng) **tự động hiển thị tên tiếng Việt làm dự phòng** (không bị ẩn). Hành vi này đồng nhất với `PRODUCT_RULE_002`: fallback từng trường, không ẩn bản ghi. Màn **chi tiết/form soạn thảo** và **ô chọn (selector) trong form** vẫn hiện đầy đủ song ngữ để nhập liệu. Giao diện admin (menu/nút/nhãn) luôn cố định tiếng Việt. `CONFIRMED_FROM_CODE`
@@ -162,7 +174,7 @@ Evidence:
 
 ## Category Catalog Rules
 
-- `CATEGORY_RULE_001`: Mỗi danh mục bắt buộc có **bản nội dung tiếng Việt** (canonical). **Bản tiếng Anh là tùy chọn**. `CONFIRMED_FROM_CODE`
+- `CATEGORY_RULE_001`: Mỗi danh mục bắt buộc có **bản nội dung tiếng Việt** (canonical). **Bản tiếng Anh tự sinh khi lưu** (Gemini, `TRANSLATION_RULE_001`); admin sửa lại tuỳ ý và bản sửa tay được giữ (`TRANSLATION_RULE_002`). `CONFIRMED_FROM_CODE`
 - `CATEGORY_RULE_002`: Khi đọc danh mục bằng tiếng Anh (`lang=en`), mỗi trường thiếu bản tiếng Anh sẽ **tự lùi về bản tiếng Việt theo từng trường**. `CONFIRMED_FROM_CODE`
 - `CATEGORY_RULE_003`: `slug` tiếng Việt là **canonical**; mỗi danh mục có thêm `slugEn` (slug tiếng Anh) **tùy chọn**. Khi xem bản tiếng Anh, URL dùng `slugEn`; **trống thì lùi về `slug` tiếng Việt**. Web tra cứu danh mục theo **vi HOẶC en** slug (cả hai URL mở cùng danh mục). `slugEn` phải **duy nhất** trong phạm vi danh mục và **không được trùng** bất kỳ `slug` tiếng Việt nào của danh mục khác (cross-column uniqueness — partial-unique index lo en-vs-en, vi-vs-en enforce ở tầng ứng dụng). Đổi/xoá `slugEn` **tự sinh redirect 301**. `CONFIRMED_FROM_CODE`
 - `CATEGORY_RULE_004`: **Xóa mềm danh mục** (đưa vào Thùng rác) đặt cột `deleted = true`. Khi xóa mềm, sản phẩm bên trong danh mục **giữ nguyên** (không bị dồn đi). Khi **Xóa vĩnh viễn danh mục** từ Thùng rác, xóa luôn toàn bộ cây danh mục con bên dưới nó. Mọi sản phẩm trong cả cây (gốc lẫn con) không bị xóa mà **tự động chuyển sang danh mục hệ thống "Chưa phân loại"** (`uncategorized`) trước khi thực sự xóa. Thao tác xóa vĩnh viễn từ Thùng rác không bị chặn vì lý do "còn sản phẩm". Admin (`bigbike-admin`) hiện hộp xác nhận nêu rõ số sản phẩm/danh mục con sẽ chuyển/xóa trước khi thực thi. `CONFIRMED_FROM_CODE` (2026-06-27)
@@ -182,7 +194,7 @@ Evidence:
 
 ## Brand Catalog Rules
 
-- `BRAND_RULE_001`: Mỗi thương hiệu bắt buộc có **bản nội dung tiếng Việt** (canonical). **Bản tiếng Anh là tùy chọn**. `CONFIRMED_FROM_CODE`
+- `BRAND_RULE_001`: Mỗi thương hiệu bắt buộc có **bản nội dung tiếng Việt** (canonical). **Bản tiếng Anh tự sinh khi lưu** (Gemini, `TRANSLATION_RULE_001`); admin sửa lại tuỳ ý và bản sửa tay được giữ (`TRANSLATION_RULE_002`). `CONFIRMED_FROM_CODE`
 - `BRAND_RULE_002`: Khi đọc thương hiệu bằng tiếng Anh (`lang=en`), mỗi trường thiếu bản tiếng Anh sẽ **tự lùi về bản tiếng Việt theo từng trường**. `CONFIRMED_FROM_CODE`
 - `BRAND_RULE_003`: `slug` tiếng Việt là **canonical**; mỗi thương hiệu có thêm `slugEn` (slug tiếng Anh) **tùy chọn**. Khi xem bản tiếng Anh, URL dùng `slugEn`; **trống thì lùi về `slug` tiếng Việt**. Web tra cứu thương hiệu theo **vi HOẶC en** slug (cả hai URL mở cùng thương hiệu). `slugEn` phải **duy nhất** trong phạm vi thương hiệu và **không được trùng** bất kỳ `slug` tiếng Việt nào của thương hiệu khác (cross-column uniqueness — partial-unique index lo en-vs-en, vi-vs-en enforce ở tầng ứng dụng). Đổi/xoá `slugEn` **tự sinh redirect 301**. `CONFIRMED_FROM_CODE`
 - `BRAND_RULE_004`: **Xóa mềm thương hiệu** (gộp với tính năng Ẩn) đặt cột `isVisible = false` (đưa vào Thùng rác). Khôi phục thương hiệu đặt lại `isVisible = true`. Chỉ được **Xóa vĩnh viễn thương hiệu** từ Thùng rác (`isVisible = false`), nếu đang hoạt động thì chặn lại (409). Khi xóa cứng thương hiệu, sản phẩm liên kết vẫn được giữ nguyên nhưng tham chiếu thương hiệu bị đặt về NULL. `CONFIRMED_FROM_CODE` (2026-06-27)
@@ -197,7 +209,7 @@ Evidence:
 
 ## Article (Blog) Rules
 
-- `ARTICLE_RULE_001`: Mỗi bài viết bắt buộc có **bản nội dung tiếng Việt** (canonical). **Bản tiếng Anh là tùy chọn**. `CONFIRMED_FROM_CODE`
+- `ARTICLE_RULE_001`: Mỗi bài viết bắt buộc có **bản nội dung tiếng Việt** (canonical). **Bản tiếng Anh tự sinh khi lưu** (Gemini, `TRANSLATION_RULE_001`); admin sửa lại tuỳ ý và bản sửa tay được giữ (`TRANSLATION_RULE_002`). `CONFIRMED_FROM_CODE`
 - `ARTICLE_RULE_002`: Khi đọc bài viết bằng tiếng Anh (`lang=en`), mỗi trường thiếu bản tiếng Anh sẽ **tự lùi về bản tiếng Việt theo từng trường** (title, excerpt, body, seoTitle, seoDescription). `CONFIRMED_FROM_CODE`
 - `ARTICLE_RULE_003`: `slug` tiếng Việt là **canonical**; mỗi bài viết có thêm `slugEn` (slug tiếng Anh) **tùy chọn**. Khi xem bản tiếng Anh, URL dùng `slugEn`; **trống thì lùi về `slug` tiếng Việt**. Web tra cứu bài viết theo **vi HOẶC en** slug (cả hai URL mở cùng bài viết). `slugEn` phải **duy nhất** trong phạm vi bài viết và **không được trùng** bất kỳ `slug` tiếng Việt nào của bài viết khác (cross-column uniqueness — partial-unique index lo en-vs-en, vi-vs-en enforce ở tầng ứng dụng). **Chỉ áp dụng cho bài viết** (slug cố định cho trang thông tin/chính sách nay nằm tĩnh ở web, xem "Static Page Rules — REMOVED" bên dưới). `CONFIRMED_FROM_CODE`
 - `ARTICLE_RULE_004`: Admin có thể đánh dấu một bài viết là **nổi bật** (`featured`). Web hiển thị các bài `featured` ở khu **"Tin nổi bật"**; nếu **không có bài nào** được đánh dấu nổi bật, web **fallback sang các bài viết mới nhất**. `featured` chỉ áp dụng cho bài viết. `CONFIRMED_FROM_CODE`

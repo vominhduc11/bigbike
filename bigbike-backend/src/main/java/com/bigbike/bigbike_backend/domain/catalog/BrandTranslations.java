@@ -7,7 +7,7 @@ package com.bigbike.bigbike_backend.domain.catalog;
  * <p>Vietnamese content stays on the main {@link Brand} fields (canonical).
  * English is optional per {@code BUSINESS_RULES.md BRAND_RULE_001}.
  */
-public record BrandTranslations(BrandContent en) {
+public record BrandTranslations(BrandContent en, java.util.List<String> overrides) {
 
     /** English values of the four translatable brand-level text fields. */
     public record BrandContent(

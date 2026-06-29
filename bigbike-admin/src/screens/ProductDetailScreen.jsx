@@ -5,7 +5,7 @@ import { toast } from '@/lib/toast'
 import {
   AlertCircle, Check, ChevronDown, Eye, Info, Loader2, Lock, Save, Search as PfSearch, X, Languages,
 } from 'lucide-react'
-import { translateProductForm } from '../lib/geminiTranslate'
+import { translateProductForm, addOverride } from '../lib/geminiTranslate'
 
 import {
   createProduct,
@@ -135,6 +135,26 @@ const upsertSpecialBlock = (all, block) => {
   const arr = Array.isArray(all) ? all : []
   const idx = arr.findIndex((b) => b.type === block.type)
   return idx === -1 ? [...arr, block] : arr.map((b, i) => (i === idx ? block : b))
+}
+
+// Khối lặp có nội dung tiếng Anh nhúng theo dòng → khoá theo CẢ khối khi admin sửa tay (V296).
+const EN_SECTION_LOCK = {
+  specifications: 'section:specifications',
+  specStats: 'section:specStats',
+  faqs: 'section:faqs',
+  commitments: 'section:commitments',
+  trustBadges: 'section:trustBadges',
+  positiveNotes: 'section:positiveNotes',
+  negativeNotes: 'section:negativeNotes',
+  suitabilityCards: 'section:suitabilityCards',
+}
+
+// Chữ ký các trường *En của một mảng dòng — để phát hiện admin sửa tiếng Anh ở bất kỳ chế độ nào.
+function enSignatureChanged(prev, next) {
+  const sig = (arr) => (Array.isArray(arr) ? JSON.stringify(arr.map((row) => (row && typeof row === 'object'
+    ? Object.fromEntries(Object.entries(row).filter(([k]) => k.endsWith('En')))
+    : null))) : '')
+  return sig(prev) !== sig(next)
 }
 
 // ── Main screen ────────────────────────────────────────────────────────────────
@@ -402,6 +422,15 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       if (field === 'seoTitle') {
         next.seoTitleManuallyEdited = true
       }
+      // Sửa tay nội dung tiếng Anh trong một KHỐI lặp → khoá cả khối đó (V296): lần lưu
+      // sau không tự dịch đè. So chữ ký các trường *En của khối để bắt thay đổi ở mọi chế độ.
+      const sectionLock = EN_SECTION_LOCK[field]
+      if (sectionLock && enSignatureChanged(previous[field], value)) {
+        next.enOverrides = addOverride(previous.enOverrides, sectionLock)
+      } else if (field === 'descriptionBlocksEn'
+          && JSON.stringify(previous.descriptionBlocksEn ?? null) !== JSON.stringify(value ?? null)) {
+        next.enOverrides = addOverride(previous.enOverrides, 'section:descriptionBlocks')
+      }
       return next
     })
     setIsDirty(true)
@@ -421,6 +450,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         ...previous.translations,
         en: { ...(previous.translations?.en || {}), [field]: value },
       },
+      // Sửa tay ô tiếng Anh nào thì KHOÁ ô đó — lần lưu sau không tự dịch đè (V296).
+      enOverrides: addOverride(previous.enOverrides, field),
     }))
     setIsDirty(true)
   }
@@ -570,7 +601,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     setForm((previous) => {
       const en = { ...(previous.translations?.en || {}), name: value }
       if (!enSlugEditedByUser.current) en.slug = slugify(value)
-      return { ...previous, translations: { ...previous.translations, en } }
+      return { ...previous, translations: { ...previous.translations, en }, enOverrides: addOverride(previous.enOverrides, 'name') }
     })
     setIsDirty(true)
   }
@@ -718,15 +749,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     setIsSubmitting(true)
     setValidationErrors({})
 
-    // Luôn auto-translate VI→EN trước khi lưu, kể cả khi admin đang ở chế độ EN.
-    // Lý do: VI là nguồn dữ liệu chính; lưu ở chế độ EN mà không translate khiến backend
-    // nhận empty string cho các trường VI (vd. name="") → "Validation failed." vì backend
-    // validate empty string (non-null) khác với null (skip validate).
-    const needsTranslate = true
-    if (needsTranslate) {
-      const toastId = toast.loading('Đang tự động dịch sang tiếng Anh bằng Gemini AI...')
+    // Tự dịch VI→EN cho các ô/khối CHƯA bị khoá (admin chưa sửa tay) — ô đã sửa tay giữ
+    // nguyên (V296). VI là nguồn chính nên vẫn luôn gửi sang để các ô EN bám theo VI mới nhất.
+    {
+      const toastId = toast.loading('Đang tự động dịch sang tiếng Anh...')
       try {
-        const translatedForm = await translateProductForm(formToSave)
+        const translatedForm = await translateProductForm(formToSave, formToSave.enOverrides)
         formToSave = translatedForm
         setForm(translatedForm)
         toast.success('Đã tự động dịch sang tiếng Anh!', { id: toastId })

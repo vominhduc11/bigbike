@@ -47,6 +47,7 @@ export function buildEmptyForm() {
     seoOgImageUrl: '',
     seoOgImageAlt: '',
     translations: { en: { slug: '', name: '', description: '', introContent: '', seoTitle: '', seoDescription: '' } },
+    enOverrides: [],
   }
 }
 
@@ -81,6 +82,8 @@ export function buildFormFromItem(item) {
         seoDescription: item.translations?.en?.seoDescription || '',
       },
     },
+    // English fields the admin locked by hand (translation lock, V296).
+    enOverrides: Array.isArray(item.translations?.overrides) ? [...item.translations.overrides] : [],
   }
 }
 
@@ -137,6 +140,8 @@ export function toPayload(form) {
       seoDescription: form.translations?.en?.seoDescription?.trim() || null,
     },
   }
+
+  payload.enOverrides = Array.isArray(form.enOverrides) ? form.enOverrides : []
 
   return payload
 }
