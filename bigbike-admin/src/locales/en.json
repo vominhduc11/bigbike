@@ -620,7 +620,8 @@
         "htmlPlaceholder": "Paste the specifications table HTML (e.g. AI-generated) here...",
         "htmlHint": "When you paste HTML, the web shows it INSTEAD of the row-based spec table. You may style it with inline CSS — match the product page's fonts, colors and spacing, and avoid odd backgrounds/shadows/colors that clash. Only unsafe code is filtered; the preview below is exactly what customers see. Switching back to \"Structured input\" clears the HTML so the row table takes effect.",
         "previewLabel": "Preview (as shown on the website)",
-        "previewEmpty": "Nothing to preview yet."
+        "previewEmpty": "Nothing to preview yet.",
+        "aiBriefPrompt": "Generate an HTML specifications table for a BigBike product detail page. Hard requirements:\n- Return plain HTML with inline CSS only (style=\"...\" attribute). NO <script>, NO <style> tag, no ids.\n- The table tag MUST have class=\"shop_attributes\" (required for the web to apply the correct table CSS — the only class allowed).\n- Structure: <table class=\"shop_attributes\"><tbody><tr><th scope=\"row\">Spec name</th><td>Value</td></tr>...</tbody></table>\n- Font: Arial, Helvetica, sans-serif. Font size 14–16px.\n- Colors: main text #111111; secondary #6f6f6f; border 1px solid #dddddd; header cell (th) background #f5f5f5.\n- Square corners (border-radius: 0). Spacing in multiples of 4px. NO dark backgrounds, box-shadow, gradients.\n\nSpec list (replace with actual product data):\n[Spec name]: [Value]\n..."
       },
       "sizeGuide": {
         "columnsLabel": "Column names",
@@ -640,7 +641,8 @@
         "htmlPlaceholder": "Paste size-chart HTML (e.g. AI-generated) here...",
         "htmlHint": "You may style it with inline CSS — match the product page's fonts, colors and spacing, and avoid odd backgrounds/shadows/colors that clash. Only unsafe code is filtered. The preview below is exactly what customers will see.",
         "previewLabel": "Preview (exactly as shown on the web)",
-        "previewEmpty": "Nothing to preview yet."
+        "previewEmpty": "Nothing to preview yet.",
+        "aiBriefPrompt": "Generate an HTML size chart for a BigBike product detail page. Hard requirements:\n- Return plain HTML with inline CSS only (style=\"...\" attribute). NO <script>, NO <style> tag, no classes, no ids.\n- The table MUST have both <thead> and <tbody> — missing either one breaks the structured-editing feature:\n  <table><thead><tr><th>Size</th><th>Head circ. (cm)</th></tr></thead><tbody><tr><td>M</td><td>57–58</td></tr>...</tbody></table>\n- Font: Arial, Helvetica, sans-serif. Body font size 14–18px; header cells (<th>) bold.\n- Colors: main text #111111; secondary #6f6f6f; border 1px solid #dddddd; header cell background #f5f5f5.\n- Square corners (border-radius: 0). Spacing in multiples of 4px. NO dark backgrounds, box-shadow, gradients.\n- If there is a measuring note, place it in <p style=\"font-size:14px;color:#6f6f6f;margin-top:8px\"> OUTSIDE the <table> tag.\n\nTable content (replace with actual product data):\n[Size / Head circ. / ...]\n[M / 57–58 / ...]\n..."
       },
       "suitability": {
         "modeStructured": "Structured input",
@@ -657,7 +659,8 @@
         "unitPlaceholder": "Unit / note (e.g. grams) — optional",
         "labelPlaceholder": "Metric name (e.g. Weight) *",
         "removeRow": "Remove box",
-        "addRow": "Add box"
+        "addRow": "Add box",
+        "aiBriefPrompt": "Generate HTML for the \"Highlight Stat Boxes\" block on a BigBike product detail page. Hard requirements:\n- Return plain HTML with inline CSS only (style=\"...\" attribute). NO <script>, NO <style> tag, no ids.\n- The outer wrapper MUST have class=\"bb-specstats\" (required for the system to parse it — the only class allowed).\n- Grid container: <div class=\"bb-specstats\" style=\"display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;border:1px solid #e5e7eb;background:#e5e7eb\">\n- Each box: <div style=\"display:flex;flex-direction:column;align-items:center;gap:4px;background:#ffffff;padding:24px 16px;text-align:center\">\n- Each box must contain exactly these spans in order:\n  1. Main figure: <span style=\"font-weight:700;font-size:24px;line-height:1;text-transform:uppercase;color:#e8281e\">1,350</span>\n  2. Unit (optional — OMIT this span if there is no unit): <span style=\"font-size:13px;font-weight:500;line-height:1.2;color:#6b7280\">grams</span>\n  3. Metric name: <span style=\"font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#6b7280;opacity:0.72\">Weight</span>\n- Maximum 4 boxes. NO dark backgrounds, box-shadow, or gradients.\n\nBox content (replace with actual product figures):\n[Box 1: figure / unit / metric name]\n[Box 2: ...]\n..."
       },
       "faqs": {
         "empty": "No questions yet. Click \"+ Add question\" to start.",
@@ -696,7 +699,8 @@
         "hint": "Short labels shown RIGHT ABOVE the product title (e.g. \"Genuine\", \"2-yr warranty\", \"Free shipping\"). Empty → the trust row is hidden. Entered per product.",
         "placeholder": "e.g. Genuine",
         "add": "Add badge",
-        "unit": "badges"
+        "unit": "badges",
+        "aiBriefPrompt": "Generate HTML for the \"Trust Badges\" strip on a BigBike product detail page — a horizontal row of 2–5 short labels (e.g. \"Genuine\", \"2-year warranty\"). Hard requirements:\n- Return plain HTML with inline CSS only (style=\"...\" attribute). NO <script>, NO <style> tag, no ids.\n- The outer wrapper MUST have class=\"bb-trust-badges\" (required for the system to parse it — the only class allowed).\n- Container: <div class=\"bb-trust-badges\" style=\"display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:14px;color:#6b7280\">\n- Each badge is one span containing a dot and text:\n  <span style=\"display:flex;align-items:center;gap:8px\"><span style=\"height:6px;width:6px;flex:none;background:#e8281e\"></span><span>Genuine</span></span>\n- Font: Arial, Helvetica, sans-serif. NO backgrounds, box-shadow, or gradients.\n\nBadge labels (replace with your content):\n[label 1]\n[label 2]\n..."
       },
       "highlights": {
         "sectionTitle": "Pros & Cons",

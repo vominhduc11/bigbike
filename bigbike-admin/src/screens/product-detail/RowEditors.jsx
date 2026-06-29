@@ -218,7 +218,7 @@ export function TrustBadgesEditor({ disabled, html = '', onHtmlChange }) {
           maxLength={50000}
         />
         <p className="text-xs text-muted-foreground">{t('products.detail.specs.htmlHint')}</p>
-        <AiHtmlBrief />
+        <AiHtmlBrief promptKey="products.detail.trustBadges.aiBriefPrompt" />
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {t('products.detail.specs.previewLabel')}
@@ -351,7 +351,7 @@ export function SpecStatEditor({ disabled, html = '', onHtmlChange }) {
           maxLength={50000}
         />
         <p className="text-xs text-muted-foreground">{t('products.detail.specs.htmlHint')}</p>
-        <AiHtmlBrief />
+        <AiHtmlBrief promptKey="products.detail.specStats.aiBriefPrompt" />
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {t('products.detail.specs.previewLabel')}

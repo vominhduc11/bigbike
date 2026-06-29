@@ -9,13 +9,15 @@ import { toast } from '@/lib/toast'
  * thuật / Bảng size / Phù hợp với ai…). Admin thường nhờ AI (ChatGPT/Claude) tạo
  * đoạn HTML rồi dán vào — nhưng AI không biết hệ thiết kế của trang sản phẩm.
  * Nút "Sao chép" đưa sẵn bản brief chứa font/màu/cỡ/khoảng cách thật của web để
- * admin dán kèm nội dung, giúp HTML sinh ra khớp giao diện. Brief là 1 chuỗi
- * locale dùng chung (products.detail.aiBrief.prompt) — what-you-see-is-what-you-copy.
+ * admin dán kèm nội dung, giúp HTML sinh ra khớp giao diện.
+ *
+ * `promptKey` trỏ tới locale key chứa nội dung brief — mặc định là key chung
+ * `products.detail.aiBrief.prompt`; truyền key khác để hiện brief riêng (vd specStats).
  */
-export default function AiHtmlBrief() {
+export default function AiHtmlBrief({ promptKey = 'products.detail.aiBrief.prompt' }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
-  const prompt = t('products.detail.aiBrief.prompt')
+  const prompt = t(promptKey)
 
   function handleCopy() {
     navigator.clipboard?.writeText(prompt)

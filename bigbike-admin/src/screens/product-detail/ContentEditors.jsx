@@ -601,7 +601,7 @@ export function SpecificationsEditor({ disabled, html = '', onHtmlChange }) {
           maxLength={50000}
         />
         <p className="text-xs text-muted-foreground">{t('products.detail.specs.htmlHint')}</p>
-        <AiHtmlBrief />
+        <AiHtmlBrief promptKey="products.detail.specs.aiBriefPrompt" />
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {t('products.detail.specs.previewLabel')}

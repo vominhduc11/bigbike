@@ -778,7 +778,7 @@ export function SizeGuideBlockEditor({ block, onChange, disabled }) {
             maxLength={20000}
           />
           <p className="text-xs text-muted-foreground">{t('products.detail.sizeGuide.htmlHint')}</p>
-          <AiHtmlBrief />
+          <AiHtmlBrief promptKey="products.detail.sizeGuide.aiBriefPrompt" />
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {t('products.detail.sizeGuide.previewLabel')}
