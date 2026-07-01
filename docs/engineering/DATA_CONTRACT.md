@@ -82,7 +82,16 @@ Evidence:
 - `JpaCatalogReadRepository.java` (admin vs `publicView ? null` cost), `AdminCatalogMutationService.java` (`applyProductPatch` / `applyVariants`)
 - `PosOrderService.resolveCost` / below-cost guard; `V195__add_cost_price.sql`
 
-### Address fields
+### Address fields — district (quận/huyện) is legacy-only (2025 administrative reform)
+
+From 01/07/2025 Vietnam abolished the district administrative tier nationwide (Nghị quyết
+202/2025/QH15 — 63→34 tỉnh/thành; Nghị quyết 1654-1687/NQ-UBTVQH15 — 10.035→3.321 phường/xã;
+mã theo Quyết định 19/2025/QĐ-TTg). The storefront (`bigbike-web`) and `VnAddressController`
+now only collect/serve **2 levels: province → ward**. `district` is no longer collected by new
+writes (web checkout, quick-buy, and the account address book all stop sending it), but the
+column/field is **kept, nullable, read-only** so historical customer addresses and orders placed
+before the reform keep displaying their original quận/huyện. No backfill/migration was run —
+existing rows are untouched.
 
 `CustomerAddressResponse` currently contains:
 
@@ -92,11 +101,21 @@ Evidence:
 - `phone`
 - `country`
 - `province`
-- `district`
+- `district` — legacy-only; `null` for addresses saved after this change
 - `ward`
 - `addressLine1`
 - `addressLine2`
 - `isDefault`
+
+`SaveCustomerAddressRequest.district` is optional (`@Size` only, no `@NotBlank`) — kept for
+backward compatibility with clients that still send it, but no longer required. `ward` is the
+required sub-province field going forward.
+
+`VN_PROVINCES` in `bigbike-web/lib/vn-address-data.ts` and `vn-address.json` (backend resource)
+share the same source dataset: 34 provinces, ~3.265 unique ward names (fetched from
+34tinhthanh.com and cross-checked against the official per-province ward counts from the
+Nghị quyết 1654-1687/NQ-UBTVQH15 series; ~56 literal duplicate rows in the raw source were
+deduped by name).
 
 Status: `CONFIRMED_FROM_CODE`
 
@@ -104,6 +123,8 @@ Evidence:
 
 - `CustomerAddressResponse.java`
 - `SaveCustomerAddressRequest.java`
+- `VnAddressService.java`, `VnAddressController.java`, `bigbike-backend/src/main/resources/vn-address.json`
+- `bigbike-web/lib/vn-address-data.ts`, `bigbike-web/components/ui/VnAddressFields.tsx`
 
 ### POS order snapshot fields — REMOVED (owner decision 2026-06-23, online-only)
 

@@ -18,8 +18,7 @@ export function createCheckoutAddressSchema(t: CheckoutValidationT, requireEmail
       .or(z.literal("")),
     country: z.string(),
     province: z.string().min(1, t("provinceRequired")),
-    district: z.string().min(1, t("districtRequired")),
-    ward: z.string().optional(),
+    ward: z.string().min(1, t("wardRequired")),
     addressLine1: z.string().min(1, t("addressRequired")),
   });
 
@@ -45,8 +44,7 @@ export const checkoutAddressSchema = z.object({
     .or(z.literal("")),
   country: z.string(),
   province: z.string().min(1, "Please select a province/city"),
-  district: z.string().min(1, "Please select a district"),
-  ward: z.string().optional(),
+  ward: z.string().min(1, "Please select a ward/commune"),
   addressLine1: z.string().min(1, "Please enter your detailed address"),
 });
 

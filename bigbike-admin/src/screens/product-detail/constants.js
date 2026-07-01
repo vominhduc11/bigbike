@@ -922,7 +922,10 @@ export const TAB_SECTIONS = {
 // mirror the storefront product-page flow (the owner's "thứ tự đầy đủ trang sản phẩm"
 // reference): `buyArea` = đầu trang (ảnh/giá/biến thể/cam kết/ô số liệu), `body` = thân
 // trang (mô tả → ưu-nhược → tương tự → phù hợp → bảng size → thông số → FAQ → video),
-// `closing` = cuối trang (Mua tại BigBike.vn → bán kèm → xuất xứ/hiển thị).
+// `closing` = cuối trang (bán kèm). Field originBrandCountry ("Thương hiệu (nước)") vẫn
+// hiển thị trong khối "Mua tại BigBike.vn" cuối trang PDP, nhưng NHẬP LIỆU admin đã
+// chuyển lên card "Thông tin cơ bản" (cạnh Thương hiệu) cho tiện gõ khi tạo SP mới —
+// form KHÔNG còn mirror 1:1 vị trí hiển thị của field này.
 // `buyArea` (required) opens by default; the two optional groups start collapsed.
 // Keys/order mirror the render order in ProductDetailScreen (canonical PDP order §0b).
 export const PRODUCT_GROUPS = {

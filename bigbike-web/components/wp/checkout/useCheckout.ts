@@ -55,7 +55,6 @@ export function useCheckout() {
       email: "",
       country: "VN",
       province: "",
-      district: "",
       ward: "",
       addressLine1: "",
     },
@@ -80,7 +79,6 @@ export function useCheckout() {
       email: "",
       country: "VN",
       province: "",
-      district: "",
       ward: "",
       addressLine1: "",
     },
@@ -110,7 +108,6 @@ export function useCheckout() {
       setValue("phone", addr.phone ?? profile.phone ?? "");
       setValue("email", addr.email ?? profile.email ?? "");
       setValue("province", addr.province ?? "");
-      setValue("district", addr.district ?? "");
       setValue("ward", addr.ward ?? "");
       setValue("addressLine1", addr.addressLine1 ?? "");
     } else {
@@ -127,7 +124,6 @@ export function useCheckout() {
       email: formAddress.email ?? "",
       country: formAddress.country || "VN",
       province: formAddress.province ?? "",
-      district: formAddress.district ?? "",
       ward: formAddress.ward ?? "",
       addressLine1: formAddress.addressLine1 ?? "",
     }),
@@ -141,7 +137,6 @@ export function useCheckout() {
       email: formShip.email ?? "",
       country: formShip.country || "VN",
       province: formShip.province ?? "",
-      district: formShip.district ?? "",
       ward: formShip.ward ?? "",
       addressLine1: formShip.addressLine1 ?? "",
     }),
@@ -182,7 +177,6 @@ export function useCheckout() {
             email: resolvedAddress.email,
             country: resolvedAddress.country,
             province: resolvedAddress.province,
-            district: resolvedAddress.district,
             ward: resolvedAddress.ward,
             addressLine1: resolvedAddress.addressLine1,
           },
@@ -193,7 +187,6 @@ export function useCheckout() {
                 email: resolvedShip.email,
                 country: resolvedShip.country,
                 province: resolvedShip.province,
-                district: resolvedShip.district,
                 ward: resolvedShip.ward,
                 addressLine1: resolvedShip.addressLine1,
               }

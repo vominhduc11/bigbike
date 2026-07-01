@@ -23,7 +23,7 @@ export function CheckoutAddressFields({
   register: UseFormRegister<CheckoutAddressFormValues>;
   errors: FieldErrors<CheckoutAddressFormValues>;
   includeEmail: boolean;
-  vnValue: { province: string; district: string; ward: string };
+  vnValue: { province: string; ward: string };
   onVnChange: (field: keyof CheckoutAddressFormValues, value: string) => void;
 }) {
   const t = useTranslations("Checkout");
@@ -109,8 +109,8 @@ export function CheckoutAddressFields({
           required
           labelClassName="block text-[15px] font-bold text-foreground mb-1.5"
         />
-        {(errors.province || errors.district) && (
-          <FieldError message={errors.province?.message ?? errors.district?.message} />
+        {(errors.province || errors.ward) && (
+          <FieldError message={errors.province?.message ?? errors.ward?.message} />
         )}
       </div>
     </>

@@ -584,7 +584,7 @@
       "emailInvalid": "Invalid email address",
       "emailRequired": "Please enter your email",
       "provinceRequired": "Please select a province/city",
-      "districtRequired": "Please select a district",
+      "wardRequired": "Please select a ward/commune",
       "addressRequired": "Please enter your detailed address"
     },
     "paymentMethod": {
@@ -809,7 +809,7 @@
       "errorGeneric": "Something went wrong, please try again.",
       "errorSetDefault": "Couldn't set the default address.",
       "errorDelete": "Couldn't delete the address.",
-      "errorRequiredAddress": "Please select province, district, and ward."
+      "errorRequiredAddress": "Please select a province/city and a ward/commune."
     },
     "edit": {
       "intro": "From the account area you can quickly see recent purchases and update your details. Pick a section below to view or edit.",

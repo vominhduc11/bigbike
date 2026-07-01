@@ -16,9 +16,10 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 /**
- * Read-only Vietnamese administrative divisions (province → district). Loaded from a JSON
- * resource at startup so storefront/mobile address pickers don't need a separate datastore.
- * Wards are not currently sourced; the wards endpoint returns an empty list to keep mobile happy.
+ * Read-only Vietnamese administrative divisions (province → ward), loaded from a JSON resource
+ * at startup so storefront/mobile address pickers don't need a separate datastore. Reflects the
+ * 2025 administrative reform (Nghị quyết 202/2025/QH15 + 1654-1687/NQ-UBTVQH15): the district
+ * tier was abolished nationwide from 01/07/2025, so this service only ever exposes 2 levels.
  */
 @Service
 @RequiredArgsConstructor
@@ -27,7 +28,7 @@ public class VnAddressService {
     private final ObjectMapper objectMapper;
 
     private List<VnAddressItem> provinces = List.of();
-    private Map<String, List<VnAddressItem>> districtsByProvince = Map.of();
+    private Map<String, List<VnAddressItem>> wardsByProvince = Map.of();
 
     @PostConstruct
     void load() throws IOException {
@@ -36,11 +37,11 @@ public class VnAddressService {
             this.provinces = raw.stream()
                     .map(p -> new VnAddressItem(p.code(), p.name()))
                     .toList();
-            this.districtsByProvince = raw.stream().collect(Collectors.toMap(
+            this.wardsByProvince = raw.stream().collect(Collectors.toMap(
                     RawProvince::code,
-                    p -> p.districts() == null ? List.of()
-                            : p.districts().stream()
-                                    .map(d -> new VnAddressItem(d.code(), d.name()))
+                    p -> p.wards() == null ? List.of()
+                            : p.wards().stream()
+                                    .map(w -> new VnAddressItem(w.code(), w.name()))
                                     .toList(),
                     (a, b) -> a,
                     LinkedHashMap::new
@@ -52,19 +53,14 @@ public class VnAddressService {
         return provinces;
     }
 
-    public List<VnAddressItem> listDistricts(String provinceCode) {
-        List<VnAddressItem> districts = districtsByProvince.get(provinceCode);
-        if (districts == null) {
+    public List<VnAddressItem> listWards(String provinceCode) {
+        List<VnAddressItem> wards = wardsByProvince.get(provinceCode);
+        if (wards == null) {
             throw new NotFoundException("Province not found: " + provinceCode);
         }
-        return districts;
+        return wards;
     }
 
-    public List<VnAddressItem> listWards(String districtCode) {
-        // Ward-level data is not stored; return empty list so mobile UI degrades gracefully.
-        return List.of();
-    }
-
-    private record RawProvince(String code, String name, List<RawDistrict> districts) {}
-    private record RawDistrict(String code, String name) {}
+    private record RawProvince(String code, String name, List<RawWard> wards) {}
+    private record RawWard(String code, String name) {}
 }

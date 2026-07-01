@@ -1146,6 +1146,16 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     </Select>
                   </Field>
 
+                  <Field label={t('products.detail.trust.originBrand', { defaultValue: 'Thương hiệu (nước)' })}>
+                    <Input
+                      placeholder="vd: Ý"
+                      value={form.originBrandCountry}
+                      onChange={(e) => updateField('originBrandCountry', e.target.value)}
+                      disabled={isReadOnly}
+                      maxLength={120}
+                    />
+                  </Field>
+
                   <Field label={t('products.detail.gender', { defaultValue: 'Giới tính' })} required={isCreate} error={validationErrors.gender}>
                     {/* Guard `if (val)`: Radix bắn onValueChange('') giả khi value đồng bộ lúc
                         mount — không guard sẽ xoá gender (hiện trống + lưu mất dữ liệu). Children
@@ -1791,22 +1801,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     )}
                   </>
                 )}
-              </SectionCard>
-
-              {/* ── Card: Xuất xứ ── */}
-              <SectionCard
-                title={t('products.detail.trust.sectionTitle', { defaultValue: 'Xuất xứ' })}
-                badge={<RoleBadge role="content" />}
-              >
-                <Field label={t('products.detail.trust.originBrand', { defaultValue: 'Thương hiệu (nước)' })}>
-                  <Input
-                    placeholder="vd: Ý"
-                    value={form.originBrandCountry}
-                    onChange={(e) => updateField('originBrandCountry', e.target.value)}
-                    disabled={isReadOnly}
-                    maxLength={120}
-                  />
-                </Field>
               </SectionCard>
               </CollapsibleGroup>
             </>

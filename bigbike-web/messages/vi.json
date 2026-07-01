@@ -584,7 +584,7 @@
       "emailInvalid": "Email không hợp lệ",
       "emailRequired": "Vui lòng nhập email",
       "provinceRequired": "Vui lòng chọn tỉnh/thành",
-      "districtRequired": "Vui lòng chọn quận/huyện",
+      "wardRequired": "Vui lòng chọn phường/xã",
       "addressRequired": "Vui lòng nhập địa chỉ chi tiết"
     },
     "paymentMethod": {
@@ -809,7 +809,7 @@
       "errorGeneric": "Có lỗi xảy ra, vui lòng thử lại.",
       "errorSetDefault": "Không đặt được địa chỉ mặc định.",
       "errorDelete": "Không xóa được địa chỉ.",
-      "errorRequiredAddress": "Vui lòng chọn đầy đủ tỉnh/thành, quận/huyện và phường/xã."
+      "errorRequiredAddress": "Vui lòng chọn đầy đủ tỉnh/thành và phường/xã."
     },
     "edit": {
       "intro": "Từ trang Tài khoản, bạn có thể xem nhanh hoạt động mua hàng gần đây và cập nhật thông tin cá nhân của mình. Chọn một mục bên dưới để xem hoặc chỉnh sửa.",

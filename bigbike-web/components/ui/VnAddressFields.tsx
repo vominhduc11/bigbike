@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import { VN_PROVINCES } from "@/lib/vn-address-data";
-import { VN_WARDS } from "@/lib/vn-wards-static";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -15,7 +14,6 @@ import { cn } from "@/lib/utils";
 
 type AddressState = {
   province: string;
-  district: string;
   ward: string;
 };
 
@@ -33,33 +31,24 @@ export function VnAddressFields({ value, onChange, required, labelClassName = "t
     [value.province],
   );
 
-  const selectedDistrict = useMemo(
-    () => selectedProvince?.districts.find((d) => d.name === value.district) ?? null,
-    [selectedProvince, value.district],
-  );
-
-  const wards = useMemo(
-    () => (selectedDistrict ? (VN_WARDS[selectedDistrict.code] ?? []) : []),
-    [selectedDistrict],
-  );
+  const wards = selectedProvince?.wards ?? [];
 
   return (
     <>
       <div className="flex flex-col gap-1.5">
         <label className={labelClassName}>
-          {"T\u1ec9nh / Th\u00e0nh ph\u1ed1"}{required && <span className="text-brand ml-[3px]">*</span>}
+          {"Tỉnh / Thành phố"}{required && <span className="text-brand ml-[3px]">*</span>}
         </label>
         <Select
           required={required}
           value={value.province}
           onValueChange={(v) => {
             onChange("province", v);
-            onChange("district", "");
             onChange("ward", "");
           }}
         >
-          <SelectTrigger aria-label={"T\u1ec9nh / Th\u00e0nh ph\u1ed1"}>
-            <SelectValue placeholder={"\u2014 Ch\u1ecdn t\u1ec9nh / th\u00e0nh ph\u1ed1 \u2014"} />
+          <SelectTrigger aria-label={"Tỉnh / Thành phố"}>
+            <SelectValue placeholder={"— Chọn tỉnh / thành phố —"} />
           </SelectTrigger>
           <SelectContent className={cn("max-h-72", selectContentClassName)}>
             {VN_PROVINCES.map((p) => (
@@ -70,40 +59,15 @@ export function VnAddressFields({ value, onChange, required, labelClassName = "t
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label className={labelClassName}>{"Qu\u1eadn / Huy\u1ec7n"}{required && <span className="text-brand ml-[3px]">*</span>}</label>
-        {selectedProvince ? (
-          <Select
-            required={required}
-            value={value.district}
-            onValueChange={(v) => {
-              onChange("district", v);
-              onChange("ward", "");
-            }}
-          >
-            <SelectTrigger aria-label={"Qu\u1eadn / Huy\u1ec7n"}>
-              <SelectValue placeholder={"\u2014 Ch\u1ecdn qu\u1eadn / huy\u1ec7n \u2014"} />
-            </SelectTrigger>
-            <SelectContent className={cn("max-h-72", selectContentClassName)}>
-              {selectedProvince.districts.map((d) => (
-                <SelectItem key={d.code} value={d.name}>{d.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <Input placeholder={"Ch\u1ecdn t\u1ec9nh/th\u00e0nh ph\u1ed1 tr\u01b0\u1edbc"} disabled />
-        )}
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <label className={labelClassName}>{"Ph\u01b0\u1eddng / X\u00e3"}{required && <span className="text-brand ml-[3px]">*</span>}</label>
-        {selectedDistrict && wards.length > 0 ? (
+        <label className={labelClassName}>{"Phường / Xã"}{required && <span className="text-brand ml-[3px]">*</span>}</label>
+        {selectedProvince && wards.length > 0 ? (
           <Select
             required={required}
             value={value.ward}
             onValueChange={(v) => onChange("ward", v)}
           >
-            <SelectTrigger aria-label={"Ph\u01b0\u1eddng / X\u00e3"}>
-              <SelectValue placeholder={"\u2014 Ch\u1ecdn ph\u01b0\u1eddng / x\u00e3 \u2014"} />
+            <SelectTrigger aria-label={"Phường / Xã"}>
+              <SelectValue placeholder={"— Chọn phường / xã —"} />
             </SelectTrigger>
             <SelectContent className={cn("max-h-72", selectContentClassName)}>
               {wards.map((w) => (
@@ -115,9 +79,9 @@ export function VnAddressFields({ value, onChange, required, labelClassName = "t
           <Input
             value={value.ward}
             onChange={(e) => onChange("ward", e.target.value)}
-            placeholder={selectedDistrict ? "T\u00ean ph\u01b0\u1eddng / x\u00e3..." : "Ch\u1ecdn qu\u1eadn/huy\u1ec7n tr\u01b0\u1edbc"}
-            disabled={!selectedDistrict}
-            autoComplete="address-level3"
+            placeholder={selectedProvince ? "Tên phường / xã..." : "Chọn tỉnh/thành phố trước"}
+            disabled={!selectedProvince}
+            autoComplete="address-level2"
           />
         )}
       </div>

@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class VnAddressController {
 
-    // Province/district/ward codes are short alphanumeric tokens (e.g. "01", "001", "00001").
+    // Province/ward codes are short alphanumeric tokens (e.g. "01", "00001").
     private static final String CODE_REGEX = "^[A-Za-z0-9]{1,16}$";
 
     private final VnAddressService addressService;
@@ -31,19 +31,11 @@ public class VnAddressController {
         return apiResponseFactory.data(addressService.listProvinces(), request);
     }
 
-    @GetMapping("/provinces/{provinceCode}/districts")
-    public ApiDataResponse<List<VnAddressItem>> listDistricts(
+    @GetMapping("/provinces/{provinceCode}/wards")
+    public ApiDataResponse<List<VnAddressItem>> listWards(
             @PathVariable @Pattern(regexp = CODE_REGEX, message = "Invalid province code.") String provinceCode,
             HttpServletRequest request
     ) {
-        return apiResponseFactory.data(addressService.listDistricts(provinceCode), request);
-    }
-
-    @GetMapping("/districts/{districtCode}/wards")
-    public ApiDataResponse<List<VnAddressItem>> listWards(
-            @PathVariable @Pattern(regexp = CODE_REGEX, message = "Invalid district code.") String districtCode,
-            HttpServletRequest request
-    ) {
-        return apiResponseFactory.data(addressService.listWards(districtCode), request);
+        return apiResponseFactory.data(addressService.listWards(provinceCode), request);
     }
 }

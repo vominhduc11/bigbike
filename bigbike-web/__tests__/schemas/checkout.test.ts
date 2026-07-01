@@ -6,7 +6,7 @@ const valid = {
   phone: "0901234567",
   country: "VN",
   province: "Hà Nội",
-  district: "Cầu Giấy",
+  ward: "Phường Cầu Giấy",
   addressLine1: "123 Đường ABC",
 };
 

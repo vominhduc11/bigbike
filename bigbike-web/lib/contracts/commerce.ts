@@ -38,7 +38,6 @@ export type CheckoutAddress = {
   phone: string
   country: string
   province: string
-  district: string
   ward: string
   addressLine1: string
   addressLine2?: string
@@ -241,7 +240,6 @@ export type SaveAddressPayload = {
   phone: string
   email?: string
   province: string
-  district: string
   ward: string
   addressLine1: string
   addressLine2?: string

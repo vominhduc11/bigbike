@@ -132,7 +132,6 @@ export function WpCheckoutClient() {
                 includeEmail
                 vnValue={{
                   province: formAddress.province ?? "",
-                  district: formAddress.district ?? "",
                   ward: formAddress.ward ?? "",
                 }}
                 onVnChange={(field, val) => setValue(field, val, { shouldValidate: true })}
@@ -180,7 +179,6 @@ export function WpCheckoutClient() {
                     includeEmail={false}
                     vnValue={{
                       province: formShip.province ?? "",
-                      district: formShip.district ?? "",
                       ward: formShip.ward ?? "",
                     }}
                     onVnChange={(field, val) => setValueShip(field, val, { shouldValidate: true })}

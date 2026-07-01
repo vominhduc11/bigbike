@@ -29,14 +29,13 @@ export function AddressForm({ editing, accountEmail, saving, error, onSubmit }: 
   const t = useTranslations("Account.addresses");
   const [vnAddress, setVnAddress] = useState({
     province: editing?.province ?? "",
-    district: editing?.district ?? "",
     ward: editing?.ward ?? "",
   });
   const [vnError, setVnError] = useState("");
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!vnAddress.province || !vnAddress.district || !vnAddress.ward) {
+    if (!vnAddress.province || !vnAddress.ward) {
       setVnError(t("errorRequiredAddress"));
       return;
     }
@@ -49,7 +48,6 @@ export function AddressForm({ editing, accountEmail, saving, error, onSubmit }: 
       phone: (fd.get("phone") as string).trim(),
       email: email || undefined,
       province: vnAddress.province,
-      district: vnAddress.district,
       ward: vnAddress.ward,
       addressLine1: (fd.get("addressLine1") as string).trim(),
       isDefault: fd.get("isDefault") === "on",

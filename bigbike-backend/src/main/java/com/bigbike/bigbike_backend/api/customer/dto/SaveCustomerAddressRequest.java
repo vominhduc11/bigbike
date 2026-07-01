@@ -26,7 +26,8 @@ public record SaveCustomerAddressRequest(
         @Size(max = 255, message = "Tỉnh/Thành phố không được vượt quá 255 ký tự.")
         String province,
 
-        @NotBlank(message = "Quận/Huyện không được để trống.")
+        // Cấp quận/huyện đã bị bãi bỏ từ 01/07/2025 (sáp nhập hành chính) — không còn thu thập
+        // ở form mới, nhưng vẫn nhận optional để không phá vỡ client cũ chưa cập nhật.
         @Size(max = 255, message = "Quận/Huyện không được vượt quá 255 ký tự.")
         String district,
 

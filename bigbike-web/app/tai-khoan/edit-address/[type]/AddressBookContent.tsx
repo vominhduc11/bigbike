@@ -90,7 +90,6 @@ export function AddressBookContent() {
         fullName: addr.fullName ?? "",
         phone: addr.phone ?? "",
         province: addr.province ?? "",
-        district: addr.district ?? "",
         ward: addr.ward ?? "",
         addressLine1: addr.addressLine1 ?? "",
         isDefault: true,

@@ -131,11 +131,10 @@ export function QuickBuyModal({
                   <VnAddressFields
                     value={{
                       province: form.watch("province"),
-                      district: form.watch("district"),
                       ward: form.watch("ward") ?? "",
                     }}
                     onChange={(field, value) => {
-                      form.setValue(field as "province" | "district" | "ward", value, { shouldValidate: true });
+                      form.setValue(field as "province" | "ward", value, { shouldValidate: true });
                     }}
                     required
                     labelClassName="text-caption font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
@@ -144,8 +143,8 @@ export function QuickBuyModal({
                   {form.formState.errors.province && (
                     <p className="text-caption font-medium text-destructive">{form.formState.errors.province.message}</p>
                   )}
-                  {form.formState.errors.district && (
-                    <p className="text-caption font-medium text-destructive">{form.formState.errors.district.message}</p>
+                  {form.formState.errors.ward && (
+                    <p className="text-caption font-medium text-destructive">{form.formState.errors.ward.message}</p>
                   )}
 
                   <FormField

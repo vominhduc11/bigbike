@@ -44,7 +44,6 @@ export function useQuickBuyForm({
       phone: "",
       email: "",
       province: "",
-      district: "",
       ward: "",
       addressLine1: "",
       quantity: 1,
@@ -65,7 +64,6 @@ export function useQuickBuyForm({
         const def = addresses.find((a) => a.isDefault) ?? addresses[0] ?? null;
         if (!def) return;
         if (def.province) form.setValue("province", def.province);
-        if (def.district) form.setValue("district", def.district);
         if (def.ward) form.setValue("ward", def.ward ?? "");
         if (def.addressLine1) form.setValue("addressLine1", def.addressLine1);
       })
@@ -94,7 +92,6 @@ export function useQuickBuyForm({
             email: values.email,
             country: "VN",
             province: values.province,
-            district: values.district,
             ward: values.ward ?? "",
             addressLine1: values.addressLine1,
           },
