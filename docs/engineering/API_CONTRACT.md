@@ -540,6 +540,18 @@ Status: `CONFIRMED_FROM_CODE`
 
 Evidence: `VariantRequest.java` (no `imageUrl`/`imageAlt`), `AdminCatalogMutationService.applyVariants` / `colorCoverImages` (cover = first colour-gallery image), `JpaCatalogReadRepository.withColorScopedVariantMedia` (colour-scopes the stored `image_*` columns on read), `VariantGalleryRoundtripTest.variantImage_isSharedByColorAcrossSizes`.
 
+### Variant display name — derived from attribute options (no separate input)
+
+The variant display name (`variants[].name`) is **always derived server-side from the variant's attribute option values** (e.g. `"Đen bóng - XL"`), joined in option order and preferring each option's dictionary label over its raw value. It is **not** entered separately by admins.
+
+- **Upsert request** (`POST` / `PATCH /api/v1/admin/products`): the request body **no longer accepts** `variants[].name`. The field was removed from `VariantRequest`. On save, the backend computes it from `variants[].options[]` after resolving each option's dictionary link — same precedence the read path uses to return the human label (`attributeValueId` resolution, see "Variant option — admin round-trip field" above).
+- **Response**: `variants[].name` still returns the computed string; re-saving always recomputes it from the current options, so it can never drift out of sync with them.
+- **Rationale**: a separately-typed name could diverge from the variant's actual attributes (stale after a color/size edit), which is exactly what motivated removing it — same pattern as the variant cover image below.
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence: `VariantRequest.java` (no `name` field), `AdminCatalogMutationService.applyVariants` / `deriveVariantName`, `V297__derive_variant_name_from_options.sql` (legacy backfill).
+
 ### Product upsert — `stockState` is read-only
 
 `POST /api/v1/admin/products` and `PATCH /api/v1/admin/products/{id}` do **not** accept `stockState` in the request body. The field mirrors the boolean availability and can only be mutated through the Inventory module availability endpoints (`/api/v1/admin/inventory/...`).

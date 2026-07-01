@@ -75,7 +75,6 @@ class VariantGalleryRoundtripTest {
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
         VariantRequest variant = new VariantRequest();
-        variant.setName("Äá» / M");
         variant.setIsAvailable(true);
         variant.setOptions(List.of(option("Color", "Red"), option("Size", "M")));
         variant.setGallery(List.of(
@@ -114,7 +113,6 @@ class VariantGalleryRoundtripTest {
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
         VariantRequest v1 = new VariantRequest();
-        v1.setName("Äen / L");
         v1.setIsAvailable(true);
         v1.setOptions(List.of(option("Color", "Black"), option("Size", "L")));
         v1.setGallery(List.of(
@@ -136,7 +134,6 @@ class VariantGalleryRoundtripTest {
 
         VariantRequest v2 = new VariantRequest();
         v2.setId(variantId);
-        v2.setName("Äen / L");
         v2.setIsAvailable(true);
         v2.setOptions(List.of(option("Color", "Black"), option("Size", "L")));
         v2.setGallery(List.of(
@@ -172,13 +169,13 @@ class VariantGalleryRoundtripTest {
         create.setRetailPrice(new BigDecimal("1000000"));
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
-        VariantRequest redS = variant("Red / S", "Red", "S");
-        VariantRequest redM = variant("Red / M", "Red", "M");
+        VariantRequest redS = variant("Red", "S");
+        VariantRequest redM = variant("Red", "M");
         redM.setGallery(List.of(
                 galleryItem("https://cdn.example.com/red-1.jpg", "Red 1", 0),
                 galleryItem("https://cdn.example.com/red-2.jpg", "Red 2", 1)
         ));
-        VariantRequest blueS = variant("Blue / S", "Blue", "S");
+        VariantRequest blueS = variant("Blue", "S");
         blueS.setGallery(List.of(galleryItem("https://cdn.example.com/blue-1.jpg", "Blue 1", 0)));
         create.setVariants(List.of(redS, redM, blueS));
 
@@ -204,10 +201,10 @@ class VariantGalleryRoundtripTest {
 
         // Cover image is derived from the FIRST image of the color gallery. Red-S
         // carries Red's gallery; Red-M does not — backend applies Red's cover to both.
-        VariantRequest redS = variant("Red / S", "Red", "S");
+        VariantRequest redS = variant("Red", "S");
         redS.setGallery(List.of(galleryItem("https://cdn.example.com/red-main.jpg", "Red main", 0)));
-        VariantRequest redM = variant("Red / M", "Red", "M");
-        VariantRequest blueL = variant("Blue / L", "Blue", "L");
+        VariantRequest redM = variant("Red", "M");
+        VariantRequest blueL = variant("Blue", "L");
         blueL.setGallery(List.of(galleryItem("https://cdn.example.com/blue-main.jpg", "Blue main", 0)));
         create.setVariants(List.of(redS, redM, blueL));
 
@@ -234,9 +231,9 @@ class VariantGalleryRoundtripTest {
         create.setRetailPrice(new BigDecimal("1000000"));
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
-        VariantRequest greenS = variant("Green / S", "Green", "S");
+        VariantRequest greenS = variant("Green", "S");
         greenS.setGallery(List.of(galleryItem("https://cdn.example.com/green-v1.jpg", "Green v1", 0)));
-        VariantRequest greenM = variant("Green / M", "Green", "M");
+        VariantRequest greenM = variant("Green", "M");
         create.setVariants(List.of(greenS, greenM));
 
         Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
@@ -251,9 +248,9 @@ class VariantGalleryRoundtripTest {
         update.setRetailPrice(new BigDecimal("1000000"));
         update.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
-        VariantRequest updatedS = variant("Green / S", "Green", "S");
+        VariantRequest updatedS = variant("Green", "S");
         updatedS.setId(idS);
-        VariantRequest updatedM = variant("Green / M", "Green", "M");
+        VariantRequest updatedM = variant("Green", "M");
         updatedM.setId(idM);
         updatedM.setGallery(List.of(galleryItem("https://cdn.example.com/green-v2.jpg", "Green v2", 0)));
         update.setVariants(List.of(updatedS, updatedM));
@@ -279,7 +276,6 @@ class VariantGalleryRoundtripTest {
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
         VariantRequest sizeOnly = new VariantRequest();
-        sizeOnly.setName("Size M");
         sizeOnly.setIsAvailable(true);
         sizeOnly.setOptions(List.of(option("Size", "M")));
         create.setVariants(List.of(sizeOnly));
@@ -308,9 +304,9 @@ class VariantGalleryRoundtripTest {
         create.setRetailPrice(new BigDecimal("1000000"));
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
-        VariantRequest yellowS = variant("Yellow / S", "Yellow", "S");
-        VariantRequest yellowM = variant("Yellow / M", "Yellow", "M");
-        VariantRequest yellowL = variant("Yellow / L", "Yellow", "L");
+        VariantRequest yellowS = variant("Yellow", "S");
+        VariantRequest yellowM = variant("Yellow", "M");
+        VariantRequest yellowL = variant("Yellow", "L");
         create.setVariants(List.of(yellowS, yellowM, yellowL));
 
         Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
@@ -360,7 +356,6 @@ class VariantGalleryRoundtripTest {
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
         VariantRequest sizeOnly = new VariantRequest();
-        sizeOnly.setName("Size XL");
         sizeOnly.setIsAvailable(true);
         sizeOnly.setOptions(List.of(option("Size", "XL")));
         create.setVariants(List.of(sizeOnly));
@@ -392,7 +387,6 @@ class VariantGalleryRoundtripTest {
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
         VariantRequest sizeOnly = new VariantRequest();
-        sizeOnly.setName("Size M");
         sizeOnly.setIsAvailable(true);
         sizeOnly.setOptions(List.of(option("Size", "M")));
         sizeOnly.setGallery(List.of(galleryItem("https://cdn.example.com/size-m.jpg", "Size M", 0)));
@@ -438,7 +432,6 @@ class VariantGalleryRoundtripTest {
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
         VariantRequest v1 = new VariantRequest();
-        v1.setName("Đen bóng");
         v1.setIsAvailable(true);
         v1.setOptions(List.of(option("test-color-mw", "den-bong")));
         create.setVariants(List.of(v1));
@@ -471,7 +464,6 @@ class VariantGalleryRoundtripTest {
 
         VariantRequest v2 = new VariantRequest();
         v2.setId(variantId);
-        v2.setName("Đen bóng");
         v2.setIsAvailable(true);
         v2.setOptions(List.of(option("test-color-mw", "Đen bóng")));
         update.setVariants(List.of(v2));
@@ -527,7 +519,6 @@ class VariantGalleryRoundtripTest {
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
         VariantRequest v1 = new VariantRequest();
-        v1.setName("Xám");
         v1.setIsAvailable(true);
         v1.setOptions(List.of(colorOption("test-color-dedup", "xam-2", "test-color-dedup-xam-2")));
         create.setVariants(List.of(v1));
@@ -551,7 +542,6 @@ class VariantGalleryRoundtripTest {
 
         VariantRequest v2 = new VariantRequest();
         v2.setId(variantId);
-        v2.setName("Xám");
         v2.setIsAvailable(true);
         v2.setOptions(List.of(colorOption("test-color-dedup", "Xám", roundTrippedId)));
         update.setVariants(List.of(v2));
@@ -572,9 +562,8 @@ class VariantGalleryRoundtripTest {
         return option;
     }
 
-    private VariantRequest variant(String name, String color, String size) {
+    private VariantRequest variant(String color, String size) {
         VariantRequest variant = new VariantRequest();
-        variant.setName(name);
         variant.setIsAvailable(true);
         variant.setOptions(List.of(option("Color", color), option("Size", size)));
         return variant;

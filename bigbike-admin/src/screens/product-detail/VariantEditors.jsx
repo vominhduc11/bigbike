@@ -35,6 +35,15 @@ function resolveAttr(attributes, optionName) {
   ) ?? null
 }
 
+// Variant display name is derived automatically from its attribute values
+// (Màu/Size/...) — no manual input. Joins in option order, e.g. "Cam - L".
+function deriveVariantName(options) {
+  return (options || [])
+    .filter((o) => (o.value || '').trim())
+    .map((o) => o.value.trim())
+    .join(' - ')
+}
+
 // Rename an attribute's display name. The code/key stays immutable (shown
 // read-only) so existing variant options that resolve via the code keep working.
 function AttributeRenameModal({ open, onClose, attribute }) {
@@ -513,18 +522,6 @@ function VariantCard({
       {expanded && (
         <div className="variant-card-body form-grid">
           <label className="form-field">
-            <span>{t('products.detail.variant.name')}</span>
-            <Input
-              value={variant.name}
-              onChange={(e) => updateField('name', e.target.value)}
-              disabled={disabled}
-              placeholder={t('products.detail.variant.namePlaceholder')}
-              aria-invalid={fieldErrors.name ? true : undefined}
-             />
-            {fieldErrors.name && <small className="field-error" role="alert">{fieldErrors.name}</small>}
-          </label>
-
-          <label className="form-field">
             <span>{t('products.detail.variant.sku')}</span>
             <Input
               value={variant.sku}
@@ -623,7 +620,10 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
     const current = items.find((v) => v._key === key)
     if (!current) return
 
-    const nextCurrent = { ...current, ...partial }
+    let nextCurrent = { ...current, ...partial }
+    if (Object.prototype.hasOwnProperty.call(partial, 'options')) {
+      nextCurrent = { ...nextCurrent, name: deriveVariantName(nextCurrent.options) }
+    }
 
     if (Object.prototype.hasOwnProperty.call(partial, 'gallery')) {
       const colorKey = getVariantColorKey(nextCurrent)
@@ -706,7 +706,7 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
       _key: generateId(),
       id: '',
       sku: makeCopySku(original.sku),
-      name: original.name ? t('products.detail.variant.copySuffixTemplate', { name: original.name }) : '',
+      name: deriveVariantName(original.options),
       options: original.options.map((o) => ({ ...o })),
       gallery: (original.gallery ?? []).map((img) => ({ ...img })),
     }
@@ -860,7 +860,7 @@ export function VariantMatrixWizard({ onGenerate, onClose }) {
       _key: generateId(),
       id: '',
       sku: '',
-      name: combo.map((o) => o.value).join(' - '),
+      name: deriveVariantName(combo),
       isAvailable: true,
       options: combo.map((o) => ({ name: o.name, value: o.value })),
       gallery: [],

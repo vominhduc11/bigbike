@@ -53,6 +53,21 @@ Evidence:
 - `CheckoutService.java` (line 723)
 - `V1__create_catalog_content_tables.sql` (lines 65, 166)
 
+### Variant display name (derived, not admin-entered)
+
+`product_variants.name varchar(255)` is **not admin-entered free text**. It is derived server-side on every save from the variant's own attribute option values, joined in option order (e.g. `"Đen bóng - XL"`) — preferring the linked `attribute_values.label` (the human dictionary label) over the raw `product_variant_options.option_value` text when the option resolves to a dictionary entry, same precedence as the read path's `preferLabel`. A variant with no resolvable option value falls back to a positional placeholder, `"Biến thể N"` (1-based within the product) — this path exists for completeness but has no known occurrence in current data (every variant currently carries at least one option).
+
+The admin upsert request no longer accepts a `name` field for a variant (`VariantRequest` has no `name` property); the admin editor no longer renders a name input — it derives and displays the same value client-side for the accordion label, purely as a UI preview of what the backend will compute on save. Legacy rows (WordPress-imported, historically free text like `"color: do, size: m"`) were backfilled once to the derived convention (`V297__derive_variant_name_from_options.sql`).
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence:
+
+- `VariantRequest.java` (no `name` field)
+- `AdminCatalogMutationService.java` (`applyVariants` / `deriveVariantName`)
+- `V297__derive_variant_name_from_options.sql`
+- `bigbike-admin/src/screens/product-detail/VariantEditors.jsx` (`deriveVariantName`, no name `<Input>` in `VariantCard`)
+
 ### Cost price (admin-only)
 
 `products.cost_price` and `product_variants.cost_price` (`numeric(19,2)`, nullable, `>= 0`; added in `V195`) store the purchase/cost price. (These columns formerly backed the POS below-cost guard, which was removed with the POS module 2026-06-23; cost price is retained for margin reporting.) Resolution mirrors selling price: **variant cost first, then product cost**; `NULL` means cost is unknown.

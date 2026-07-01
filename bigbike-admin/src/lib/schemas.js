@@ -379,7 +379,7 @@ export function createProductSchema(t, isCreate = false) {
 
       data.variants?.forEach((v, i) => {
         if (!v.name.trim()) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Tên biến thể là bắt buộc', path: ['variants', i, 'name'] })
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Biến thể cần ít nhất một thuộc tính (Màu sắc, Kích cỡ...) để tự tạo tên.', path: ['variants', i, 'options'] })
         }
 
         const colorValue = (v.options || [])

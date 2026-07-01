@@ -21,8 +21,10 @@ public class VariantRequest {
     @Size(max = 100, message = "Variant SKU is too long.")
     private String sku;
 
-    @Size(max = 255, message = "Variant name is too long.")
-    private String name;
+    // Variant display name is no longer admin-entered — it is always derived
+    // server-side from the variant's attribute options (see
+    // AdminCatalogMutationService.deriveVariantName). The former free-text
+    // `name` request field was removed; any value a client sends is ignored.
 
     private BigDecimal retailPrice;
     private boolean retailPricePresent = false;

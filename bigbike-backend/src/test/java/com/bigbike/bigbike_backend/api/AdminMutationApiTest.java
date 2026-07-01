@@ -432,7 +432,6 @@ class AdminMutationApiTest {
 
         VariantRequest variant = new VariantRequest();
         variant.setSku("VAR-" + suffix);
-        variant.setName("Black / M");
         variant.setRetailPrice(new BigDecimal("1800000"));
         variant.setCompareAtPrice(new BigDecimal("2100000"));
         variant.setSalePrice(new BigDecimal("1700000"));

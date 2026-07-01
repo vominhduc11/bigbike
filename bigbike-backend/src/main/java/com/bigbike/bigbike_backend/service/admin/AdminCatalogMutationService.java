@@ -840,8 +840,6 @@ public class AdminCatalogMutationService {
         for (int i = 0; i < requests.size(); i++) {
             VariantRequest req = requests.get(i);
             String colorKey = variantColorKey(req);
-            String name = AdminMutationValidators.trimToNull(req.getName());
-            if (name == null) name = "Biến thể " + (i + 1);
 
             String reqId = AdminMutationValidators.trimToNull(req.getId());
             ProductVariantEntity variant = (reqId != null) ? existingById.get(reqId) : null;
@@ -854,7 +852,6 @@ public class AdminCatalogMutationService {
             variant.setProduct(entity);
             variant.setSortOrder(req.getSortOrder() != null ? req.getSortOrder() : i);
             variant.setSku(AdminMutationValidators.trimToNull(req.getSku()));
-            variant.setName(name);
             if (createVariant || req.isRetailPricePresent()) {
                 variant.setRetailPrice(req.getRetailPrice());
             }
@@ -922,6 +919,7 @@ public class AdminCatalogMutationService {
                 existingOptions.clear();
             }
             existingOptions.addAll(options);
+            variant.setName(deriveVariantName(options, i));
             applyVariantGallery(
                     variant,
                     colorKey == null ? List.of() : galleryByColor.getOrDefault(colorKey, List.of())
@@ -931,6 +929,27 @@ public class AdminCatalogMutationService {
 
         existing.clear();
         existing.addAll(nextVariants);
+    }
+
+    /**
+     * Variant display name is no longer admin-entered — it is always derived from
+     * the variant's own attribute values (e.g. "Đen bóng - XL"), joined in option
+     * order. Prefers the linked {@link AttributeValueEntity}'s label (same
+     * precedence as the read path's {@code preferLabel}) so legacy slug-only
+     * option text ("den-bong") resolves to the human label when a dictionary
+     * link exists; falls back to the raw submitted value otherwise. A variant
+     * with no resolvable option values falls back to a positional placeholder.
+     */
+    private String deriveVariantName(List<ProductVariantOptionEntity> options, int index) {
+        List<String> parts = new ArrayList<>();
+        for (ProductVariantOptionEntity opt : options) {
+            AttributeValueEntity av = opt.getAttributeValue();
+            String display = (av != null && av.getLabel() != null && !av.getLabel().isBlank())
+                    ? av.getLabel()
+                    : opt.getOptionValue();
+            if (display != null && !display.isBlank()) parts.add(display);
+        }
+        return parts.isEmpty() ? "Biến thể " + (index + 1) : String.join(" - ", parts);
     }
 
     /**
