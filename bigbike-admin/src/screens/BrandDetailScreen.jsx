@@ -10,6 +10,7 @@ import {
   updateBrand,
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
+import { recordRecentItem } from '../lib/useRecentItems'
 import { formatDateTime } from '../lib/formatters'
 import { useContentLang } from '../lib/contentLang'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
@@ -167,6 +168,16 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     setInitialSnapshot(JSON.stringify(nextForm))
     setEnSlugManuallyEdited(Boolean(nextForm.translations?.en?.slug))
   }, [fetchResult])
+
+  // O9: ghi lại thương hiệu vừa xem để hiện trong widget "Vừa xem gần đây" ở danh sách.
+  useEffect(() => {
+    if (!isCreate && fetchResult?.item?.id) {
+      recordRecentItem('recent:brands', {
+        id: fetchResult.item.id,
+        label: fetchResult.item.name || fetchResult.item.slug || fetchResult.item.id,
+      })
+    }
+  }, [isCreate, fetchResult?.item?.id, fetchResult?.item?.name, fetchResult?.item?.slug])
 
   const state = {
     status: isCreate ? 'success' : isLoading ? 'loading' : isError ? 'error' : 'success',

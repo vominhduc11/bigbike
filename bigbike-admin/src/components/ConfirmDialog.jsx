@@ -40,10 +40,10 @@ export function ConfirmDialogProvider() {
         </DialogHeader>
         <DialogDescription className="px-6 pb-2 text-sm whitespace-pre-line">{dialog?.message}</DialogDescription>
         <DialogFooter>
-          <Button variant="secondary" onClick={() => handleClose(false)}>
+          <Button variant="secondary" onClick={() => handleClose(false)} autoFocus={dialog?.variant === 'danger'}>
             {dialog?.cancelLabel}
           </Button>
-          <Button variant={dialog?.variant} onClick={() => handleClose(true)} autoFocus>
+          <Button variant={dialog?.variant} onClick={() => handleClose(true)} autoFocus={dialog?.variant !== 'danger'}>
             {dialog?.confirmLabel}
           </Button>
         </DialogFooter>

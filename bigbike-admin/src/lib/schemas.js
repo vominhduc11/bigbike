@@ -543,6 +543,7 @@ export function createContentSchema(t, isCreate, normalizedType) {
     slug: z.string(),
     title: z.string(),
     body: z.string(),
+    bodyBlocks: z.array(z.any()).nullable().optional(),
     publishStatus: z.string(),
     // Công tắc bài viết — boolean optional, không có validation đặc biệt.
     featured: z.boolean().optional(),
@@ -579,8 +580,13 @@ export function createContentSchema(t, isCreate, normalizedType) {
     if (!data.title?.trim()) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('content.detail.errTitleRequired'), path: ['title'] })
     }
-    if (!data.body?.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('content.detail.errBodyRequired'), path: ['body'] })
+    // Nội dung VI nhập qua BlockEditor (bodyBlocks) — `body` HTML chỉ còn là fallback
+    // cho bài viết cũ import từ WordPress. Bắt buộc có 1 trong 2, không phải cả `body`
+    // (xem toPayload trong content-detail/constants.js — backend chấp nhận body HOẶC bodyBlocks).
+    const hasBody = Boolean(data.body?.trim())
+    const hasBlocks = Array.isArray(data.bodyBlocks) && data.bodyBlocks.length > 0
+    if (!hasBody && !hasBlocks) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('content.detail.errBodyRequired'), path: ['bodyBlocks'] })
     }
     if (!data.publishStatus) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('content.detail.errPublishRequired'), path: ['publishStatus'] })

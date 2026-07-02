@@ -1,5 +1,7 @@
 {
   "common": {
+    "columns": "Cột hiển thị",
+    "recentItems": "Vừa xem gần đây",
     "selectedCount": "{{count}} đã chọn",
     "selectAllMatching": "Chọn tất cả {{count}} kết quả khớp",
     "allMatchingSelected": "Đã chọn tất cả {{count}} kết quả",
@@ -51,6 +53,7 @@
     "uploading": "Đang upload...",
     "backToList": "← Danh sách",
     "required": "Bắt buộc",
+    "requiredLegend": "Bắt buộc",
     "visible": "Hiển thị",
     "hidden": "Ẩn",
     "rowsPerPage": "Số hàng/trang",
@@ -338,6 +341,13 @@
       "SUCCEEDED": "Thành công",
       "UNKNOWN": "Không rõ"
     },
+    "paymentMethod": {
+      "COD": "Thanh toán khi nhận hàng (COD)",
+      "BACS": "Chuyển khoản ngân hàng",
+      "CHECK": "Séc / chuyển khoản",
+      "CARD": "Thẻ ngân hàng",
+      "UNKNOWN": "Không rõ"
+    },
     "customer": {
       "ACTIVE": "Hoạt động",
       "PENDING": "Chờ duyệt",
@@ -423,6 +433,11 @@
     "bulkDeleteSuccess": "Đã chuyển {{count}} sản phẩm vào thùng rác",
     "bulkRestoreSuccess": "Đã khôi phục {{count}} sản phẩm",
     "bulkPartial": "{{ok}} thành công, {{fail}} thất bại",
+    "publishAction": "Xuất bản",
+    "unpublishAction": "Ẩn",
+    "publishToggleSuccess": "Đã đổi trạng thái xuất bản.",
+    "presetOutOfStock": "Hết hàng",
+    "presetDraft": "Chưa xuất bản",
     "detail": {
       "eyebrow": "Danh mục",
       "createTitle": "Tạo sản phẩm",
@@ -714,9 +729,12 @@
         "consPlaceholder": "vd: Không kèm Pinlock",
         "addPro": "Thêm ưu điểm",
         "addCon": "Thêm nhược điểm",
-        "remove": "Xóa mục"
+        "remove": "Xoá mục"
       },
       "dragToReorder": "Kéo để sắp xếp",
+      "removeRowConfirmTitle": "Xóa dòng",
+      "removeRowConfirmMessage": "Xóa dòng này? Nội dung đã nhập sẽ mất.",
+      "removeProductConfirmMessage": "Bỏ \"{{name}}\" khỏi danh sách?",
       "blocks": {
         "addBlock": "Thêm khối",
         "dragToReorder": "Kéo để sắp xếp",
@@ -967,6 +985,12 @@
     "empty": "Không có đơn hàng",
     "emptyDesc": "Chưa có đơn hàng nào khớp với điều kiện lọc.",
     "clearFilters": "Xoá lọc",
+    "viewStorefrontCta": "Xem trang web",
+    "bulkProcessingAction": "Chuyển sang Đang xử lý",
+    "bulkProcessingConfirm": "Chuyển {{count}} đơn đã chọn sang \"Đang xử lý\"?",
+    "bulkProcessingTitle": "Chuyển trạng thái hàng loạt",
+    "bulkProcessingProgress": "Đang xử lý {{done}}/{{total}}...",
+    "bulkProcessingResult": "Đã chuyển {{success}} đơn, {{failed}} lỗi.",
     "tableCaption": "Danh sách đơn hàng",
     "colOrder": "Đơn hàng",
     "colCustomer": "Khách hàng",
@@ -1062,6 +1086,7 @@
       "ffMarkShipped": "Đánh dấu đã giao vận chuyển",
       "ffMarkDelivered": "Đánh dấu đã giao tới khách",
       "ffConfirmShip": "Xác nhận giao vận chuyển",
+      "trackingLabel": "Mã vận đơn",
       "trackingPlaceholder": "Mã vận đơn *",
       "trackingHint": "Mã vận đơn là bắt buộc để chuyển sang trạng thái Đang giao.",
       "carrierPlaceholder": "Đơn vị vận chuyển — GHN, GHTK, ViettelPost…",
@@ -1115,6 +1140,10 @@
     "expand": "Mở",
     "collapse": "Thu gọn",
     "activeFiltersAria": "Bộ lọc đang áp dụng",
+    "viewModeAria": "Chế độ xem",
+    "viewModeTree": "Dạng cây",
+    "viewModeFlat": "Dạng danh sách",
+    "viewModeTreeUnavailableTrash": "Không khả dụng ở Thùng rác",
     "viewOnSite": "Xem trên website",
     "openDetail": "Mở để xem chi tiết và chỉnh sửa",
     "dragHandle": "Kéo để sắp xếp lại",
@@ -1293,7 +1322,7 @@
       "notFoundDesc": "Thương hiệu được chọn không tồn tại.",
       "loading": "Đang tải thương hiệu",
       "hideConfirm": "Ẩn thương hiệu này? Trang /brands/{slug} sẽ trả về 404. Các sản phẩm đang dùng thương hiệu này vẫn giữ tham chiếu — hãy gán lại trước nếu cần. Để khôi phục, vào form sửa và bật lại \"Hiển thị\".",
-      "hideConfirmTitle": "Ẩn brand",
+      "hideConfirmTitle": "Ẩn thương hiệu",
       "sectionBasic": "Thông tin cơ bản",
       "sectionMedia": "Media",
       "sectionSeo": "Hiển thị trên Google & mạng xã hội",
@@ -1322,7 +1351,7 @@
       "seoOgImageAlt": "Mô tả ảnh chia sẻ (cho trình đọc màn hình)",
       "createBtn": "Tạo thương hiệu",
       "saveBtn": "Lưu thay đổi",
-      "hideBtn": "Ẩn brand",
+      "hideBtn": "Ẩn thương hiệu",
       "hidingBtn": "Đang ẩn...",
       "loadingDesc": "Đang lấy thông tin thương hiệu...",
       "loadError": "Lỗi tải thương hiệu",
@@ -1368,7 +1397,7 @@
     "colUpdated": "Cập nhật",
     "colActions": "Thao tác",
     "detail": {
-      "eyebrow": "Content",
+      "eyebrow": "Tin tức",
       "createArticleTitle": "Tạo bài viết",
       "editArticleTitle": "Sửa bài viết",
       "createPageTitle": "Tạo trang",
@@ -1496,7 +1525,8 @@
       "new30d": "Khách mới (30 ngày)",
       "new30dHint": "Đăng ký trong 30 ngày qua",
       "active": "Đang hoạt động",
-      "activeHint": "Tài khoản ở trạng thái hoạt động"
+      "activeHint": "Tài khoản ở trạng thái hoạt động",
+      "activeFilterAria": "Đang hoạt động — lọc danh sách theo trạng thái Hoạt động"
     },
     "searchPlaceholder": "Tên, email, số điện thoại",
     "filterStatus": "Trạng thái",
@@ -1521,6 +1551,7 @@
       "sectionAccount": "Thông tin tài khoản",
       "sectionStats": "Thống kê mua hàng",
       "sectionStatus": "Trạng thái",
+      "sectionEditProfile": "Chỉnh sửa hồ sơ",
       "accountStatus": "Trạng thái tài khoản",
       "email": "Email:",
       "phone": "Điện thoại:",
@@ -1695,7 +1726,7 @@
     }
   },
   "menus": {
-    "eyebrow": "Content",
+    "eyebrow": "Nội dung",
     "title": "Menu",
     "description": "Quản lý 3 menu hệ thống mà website đang hiển thị: header, footer và hướng dẫn mua hàng.",
     "loading": "Đang tải menu",
@@ -1744,7 +1775,7 @@
     "saveMenu": "Lưu menu"
   },
   "sliders": {
-    "eyebrow": "Content",
+    "eyebrow": "Nội dung",
     "title": "Banner",
     "description": "Quản lý banner theo vị trí.",
     "addBtn": "Thêm banner",
@@ -2484,7 +2515,9 @@
     "saveButton": "Lưu thứ tự",
     "savedSuccess": "Đã lưu danh sách sản phẩm nổi bật.",
     "limitReached": "Đã đủ tối đa {{max}} sản phẩm.",
-    "emptyHint": "Chưa có sản phẩm nào. Dùng ô tìm kiếm bên dưới để thêm."
+    "emptyHint": "Chưa có sản phẩm nào. Dùng ô tìm kiếm bên dưới để thêm.",
+    "dragHandle": "Kéo để sắp xếp",
+    "removeItem": "Xóa khỏi danh sách"
   },
   "homeHighlights": {
     "eyebrow": "Nội dung",

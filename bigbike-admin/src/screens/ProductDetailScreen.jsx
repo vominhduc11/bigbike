@@ -21,6 +21,7 @@ import {
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { clearNavGuard } from '@/lib/navigationGuard'
+import { recordRecentItem } from '../lib/useRecentItems'
 import { formatDateTime } from '../lib/formatters'
 import { useContentLang, overlayEnNames } from '../lib/contentLang'
 import { createProductSchema, zodErrors, normalizeVariantToken, isColorAttributeName } from '../lib/schemas'
@@ -359,6 +360,16 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     }
   }, [autosaveKey, fetchResult, isCreate])
 
+  // O9: ghi lại sản phẩm vừa xem để hiện trong widget "Vừa xem gần đây" ở danh sách.
+  useEffect(() => {
+    if (!isCreate && fetchResult?.item?.id) {
+      recordRecentItem('recent:products', {
+        id: fetchResult.item.id,
+        label: fetchResult.item.name || t('products.detail.productFallbackName'),
+      })
+    }
+  }, [isCreate, fetchResult?.item?.id, fetchResult?.item?.name, t])
+
   // Check autosave on mount for create mode; also handle product duplicate payload
   useEffect(() => {
     if (!isCreate) return
@@ -512,7 +523,13 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     setRelatedSearchDebounced('')
   }
 
-  function removeRelatedProduct(removeId) {
+  async function removeRelatedProduct(removeId) {
+    const chip = form.relatedProductChips.find((c) => c.id === removeId)
+    const confirmed = await showConfirm(
+      t('products.detail.removeProductConfirmMessage', { name: chip?.name || '' }),
+      t('products.detail.removeRowConfirmTitle'),
+    )
+    if (!confirmed) return
     setForm((previous) => ({
       ...previous,
       relatedProductIds: previous.relatedProductIds.filter((id) => id !== removeId),
@@ -560,7 +577,13 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     setAccessorySearchDebounced('')
   }
 
-  function removeAccessoryProduct(removeId) {
+  async function removeAccessoryProduct(removeId) {
+    const chip = form.accessoryProductChips.find((c) => c.id === removeId)
+    const confirmed = await showConfirm(
+      t('products.detail.removeProductConfirmMessage', { name: chip?.name || '' }),
+      t('products.detail.removeRowConfirmTitle'),
+    )
+    if (!confirmed) return
     setForm((previous) => ({
       ...previous,
       accessoryProductIds: previous.accessoryProductIds.filter((id) => id !== removeId),

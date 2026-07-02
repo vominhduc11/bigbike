@@ -173,12 +173,6 @@
       "reviewsWithCount": "Đánh giá ({count})",
       "overview": "Tổng quan"
     },
-    "tabsShort": {
-      "promotion": "Ưu đãi",
-      "prosCons": "Ưu nhược",
-      "suitability": "Phù hợp",
-      "trust": "Cam kết"
-    },
     "tabsEmpty": {
       "descriptionTitle": "Chưa có mô tả",
       "descriptionDesc": "Sản phẩm này chưa có mô tả chi tiết.",

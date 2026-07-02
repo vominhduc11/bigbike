@@ -15,6 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { generateId } from '@/lib/utils'
+import { showConfirm } from '../../lib/confirm'
 import { parseSpecsFromHtml, mergeSpecsIntoHtml } from '../../lib/specSheet'
 import { resolveDisplayUrl } from '@/lib/contracts'
 import { extractYouTubeId } from './constants'
@@ -241,7 +242,13 @@ export function GalleryEditor({ items, onChange, disabled, validationErrors = {}
   function updateItem(index, field, value) {
     onChange(items.map((item, i) => i === index ? { ...item, [field]: value } : item))
   }
-  function removeItem(index) {
+  async function removeItem(index) {
+    const item = items[index]
+    const hasContent = Boolean((item?.url || item?.videoUrl || '').trim())
+    if (hasContent) {
+      const confirmed = await showConfirm(t('products.detail.removeRowConfirmMessage'), t('products.detail.removeRowConfirmTitle'))
+      if (!confirmed) return
+    }
     onChange(items.filter((_, i) => i !== index))
   }
   function addItem() {
@@ -304,7 +311,12 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
   function addItem() {
     onChange([...items, { url: '', title: '', description: '', type: 'youtube', thumbnailUrl: '' }])
   }
-  function removeItem(index) {
+  async function removeItem(index) {
+    const hasContent = Boolean((items[index]?.url || '').trim())
+    if (hasContent) {
+      const confirmed = await showConfirm(t('products.detail.removeRowConfirmMessage'), t('products.detail.removeRowConfirmTitle'))
+      if (!confirmed) return
+    }
     onChange(items.filter((_, i) => i !== index))
   }
 
@@ -632,7 +644,12 @@ export function HighlightsEditor({ items, onChange, disabled, contentLang = 'vi'
   function addItem() {
     onChange([...items, { _key: generateId(), content: '', contentEn: '' }])
   }
-  function removeItem(index) {
+  async function removeItem(index) {
+    const hasContent = Boolean((items[index]?.[fContent] || '').trim())
+    if (hasContent) {
+      const confirmed = await showConfirm(t('products.detail.removeRowConfirmMessage'), t('products.detail.removeRowConfirmTitle'))
+      if (!confirmed) return
+    }
     onChange(items.filter((_, i) => i !== index))
   }
 
@@ -688,7 +705,13 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
   function addItem() {
     onChange([...items, { _key: generateId(), question: '', answer: '', questionEn: '', answerEn: '' }])
   }
-  function removeItem(index) {
+  async function removeItem(index) {
+    const item = items[index]
+    const hasContent = Boolean((item?.[fQuestion] || item?.[fAnswer] || '').trim())
+    if (hasContent) {
+      const confirmed = await showConfirm(t('products.detail.removeRowConfirmMessage'), t('products.detail.removeRowConfirmTitle'))
+      if (!confirmed) return
+    }
     onChange(items.filter((_, i) => i !== index))
   }
 

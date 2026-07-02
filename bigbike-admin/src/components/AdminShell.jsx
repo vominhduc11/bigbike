@@ -152,6 +152,20 @@ export function AdminShell({
     closeSidebar()
   }
 
+  // L8 — ArrowUp/ArrowDown nhảy nhanh giữa các mục menu (xuyên nhóm), giữ
+  // nguyên Tab/Enter/click hiện có.
+  function handleSidebarKeyDown(e) {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
+    const links = Array.from(e.currentTarget.querySelectorAll('a.bb-nav-link'))
+    const currentIndex = links.indexOf(document.activeElement)
+    if (currentIndex === -1) return
+    e.preventDefault()
+    const nextIndex = e.key === 'ArrowDown'
+      ? Math.min(links.length - 1, currentIndex + 1)
+      : Math.max(0, currentIndex - 1)
+    links[nextIndex]?.focus()
+  }
+
   useEffect(() => {
     function handleClickOutside(e) {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
@@ -203,7 +217,7 @@ export function AdminShell({
             </div>
           </div>
 
-          <nav className="bb-sidebar-nav" aria-label={t('nav.mainNav')}>
+          <nav className="bb-sidebar-nav" aria-label={t('nav.mainNav')} onKeyDown={handleSidebarKeyDown}>
             <TooltipProvider delayDuration={400}>
               {navGroups.map((group) => (
                 <div key={group.groupKey} className="bb-nav-group">

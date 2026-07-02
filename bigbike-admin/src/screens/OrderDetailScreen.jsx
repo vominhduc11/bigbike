@@ -11,6 +11,8 @@ import { addOrderNote, fetchOrderAllowedTransitions, fetchOrderAuditTrail, fetch
 import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { showConfirm } from '../lib/confirm'
+import { useUnsavedChanges } from '../lib/useUnsavedChanges'
+import { recordRecentItem } from '../lib/useRecentItems'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
@@ -19,6 +21,49 @@ import {
   ORDER_STATUS_ACTION, getOrderStatusLabel, PAYMENT_ACTION_LABEL,
 } from './order-detail/constants'
 import { ReasonConfirmModal } from './order-detail/ReasonConfirmModal'
+
+// T9: đọc lại query string (filter/sort/trang) mà OrderListScreen đã lưu trước khi
+// điều hướng sang trang chi tiết, để nút "Quay lại danh sách" không làm mất bộ lọc.
+function readListQuery() {
+  try {
+    return sessionStorage.getItem('orders:listQuery') || ''
+  } catch {
+    return ''
+  }
+}
+
+// N5: khung skeleton phỏng theo bố cục thật (header + action panel + 2 cột card)
+// để tránh dịch chuyển layout (CLS) khi dữ liệu đơn hàng về — cùng cách làm với
+// DashboardScreen.jsx (SkeletonBlock).
+function SkeletonBlock({ height }) {
+  return <div className="bb-skeleton-block" style={{ height }} />
+}
+
+function OrderDetailSkeleton() {
+  return (
+    <div>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <SkeletonBlock height={28} />
+          <SkeletonBlock height={16} />
+        </div>
+      </div>
+      <div style={{ marginBottom: 16 }}><SkeletonBlock height={84} /></div>
+      <div className="bb-grid-2-1">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <SkeletonBlock height={220} />
+          <SkeletonBlock height={140} />
+          <SkeletonBlock height={140} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <SkeletonBlock height={180} />
+          <SkeletonBlock height={160} />
+          <SkeletonBlock height={140} />
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const { t } = useTranslation()
@@ -64,6 +109,16 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const [shippingCarrier, setShippingCarrier] = useState('')
   const [reasonModal, setReasonModal] = useState(null)
 
+  // F6: cảnh báo rời trang khi đang gõ dở ghi chú hoặc form giao hàng chưa lưu.
+  useUnsavedChanges(!!noteContent.trim() || showShipForm)
+
+  // O9: ghi lại đơn hàng vừa xem để hiện trong widget "Vừa xem gần đây".
+  useEffect(() => {
+    if (order?.id) {
+      recordRecentItem('recent:orders', { id: order.id, label: formatText(order.orderNumber, `#${order.id}`) })
+    }
+  }, [order?.id, order?.orderNumber])
+
   function applyOrderUpdate(updatedOrder) {
     queryClient.setQueryData(['order', orderId], (old) => ({ ...old, item: updatedOrder }))
     queryClient.invalidateQueries({ queryKey: ['orders'] })
@@ -98,8 +153,10 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       const isBACS = order.paymentMethod === 'BACS'
       const autoMarkedPaid = wasOnHold && isBACS && newStatus === 'PROCESSING' && updatedOrder.paymentStatus === 'PAID'
       toast.success(autoMarkedPaid ? t('orders.detail.autoMarkedPaidToast') : t('orders.detail.statusUpdated'))
+      return true
     } catch (err) {
       toast.error(err.message || t('orders.detail.updateStatusError'))
+      return false
     } finally {
       setSaving(false)
       setPendingAction(null)
@@ -210,7 +267,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   }
 
   if (status === 'loading') {
-    return <StatePanel tone="info" title={t('orders.detail.loading')} description={t('common.pleaseWait')} />
+    return <OrderDetailSkeleton />
   }
   if (status === 'error') {
     return <StatePanel tone="danger" title={t('orders.detail.loadError')} description={orderQuery.error?.message}
@@ -239,11 +296,11 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           </h1>
           <p className="bb-muted">
             {t('orders.detail.orderDate')} {formatDateTime(order.createdAt)}
-            {' · '}{t('orders.detail.paymentMethod')} <span className="mono">{formatText(order.paymentMethod)}</span>
+            {' · '}{t('orders.detail.paymentMethod')} <span className="mono">{t(`status.paymentMethod.${order.paymentMethod}`, { defaultValue: formatText(order.paymentMethod) })}</span>
           </p>
         </div>
         <div className="bb-screen-actions">
-          <button type="button" className="bb-btn bb-btn-secondary" onClick={() => navigate('/admin/orders')}>
+          <button type="button" className="bb-btn bb-btn-secondary" onClick={() => navigate(`/admin/orders${readListQuery()}`)}>
             {t('orders.detail.backToList')}
           </button>
         </div>
@@ -293,7 +350,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           {!['CANCELLED', 'FAILED', 'REFUNDED'].includes(order.orderStatus)
             && (PAYMENT_TRANSITIONS[order.paymentStatus] ?? []).length > 0 && (
             <div style={{
-              padding: '10px 16px',
+              padding: '12px 16px',
               borderTop: '1px solid var(--bb-border-faint)',
               background: 'var(--bb-surface-muted)',
               display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
@@ -373,7 +430,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                 </MobileCardList>
                 </>
               )}
-              <div style={{ padding: '14px 16px', borderTop: '1px solid var(--bb-border-faint)', background: 'var(--bb-surface-muted)' }}>
+              <div style={{ padding: '12px 16px', borderTop: '1px solid var(--bb-border-faint)', background: 'var(--bb-surface-muted)' }}>
                 <dl className="bb-info-grid" style={{ gridTemplateColumns: '1fr auto', maxWidth: 360, marginLeft: 'auto', gap: '4px 24px', fontSize: 13 }}>
                   <dt style={{ textTransform: 'none', fontSize: 13, letterSpacing: 0, fontWeight: 400 }}>{t('orders.detail.subtotal')}</dt>
                   <dd style={{ textAlign: 'right' }}>{formatCurrencyVnd(order.subtotal)}</dd>
@@ -417,7 +474,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     <tbody>
                       {(order.payments ?? []).map((p, i) => (
                         <tr key={p.id ?? i}>
-                          <td className="mono">{formatText(p.paymentMethod)}</td>
+                          <td className="mono">{t(`status.paymentMethod.${p.paymentMethod}`, { defaultValue: formatText(p.paymentMethod) })}</td>
                           <td>{t(`status.payment.${p.status}`, { defaultValue: p.status })}</td>
                           <td className="num">{formatCurrencyVnd(p.amount)}</td>
                           <td className="num bb-muted">{p.paidAt ? formatDateTime(p.paidAt) : '—'}</td>
@@ -431,7 +488,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                   {(order.payments ?? []).map((p, i) => (
                     <MobileCard
                       key={p.id ?? i}
-                      title={formatText(p.paymentMethod)}
+                      title={t(`status.paymentMethod.${p.paymentMethod}`, { defaultValue: formatText(p.paymentMethod) })}
                       subtitle={p.paidAt ? formatDateTime(p.paidAt) : undefined}
                       meta={[
                         { label: t('orders.detail.colAmount'), value: formatCurrencyVnd(p.amount), tone: 'strong' },
@@ -482,7 +539,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                       {t('orders.detail.noteCustomerVisible')}
                     </label>
                     <button type="submit" className="bb-btn bb-btn-primary bb-btn-sm" disabled={submittingNote || !noteContent.trim()}>
-                      {t('orders.detail.submitNote')}
+                      {submittingNote ? t('orders.detail.savingShort') : t('orders.detail.submitNote')}
                     </button>
                   </div>
                 </form>
@@ -614,17 +671,26 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                         style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}
                         onSubmit={(e) => { e.preventDefault(); handleFulfillmentUpdate('SHIPPED') }}
                       >
-                        <Input
-                          type="text"
-                          placeholder={t('orders.detail.trackingPlaceholder')}
-                          value={trackingNumber}
-                          onChange={(e) => { setTrackingNumber(e.target.value); if (trackingError) setTrackingError('') }}
-                          onBlur={() => { if (!trackingNumber.trim()) setTrackingError(t('orders.detail.trackingRequiredError')) }}
-                          disabled={fulfillmentSaving}
-                          required
-                          aria-invalid={trackingError ? true : undefined}
-                          aria-describedby={trackingError ? 'ship-tracking-error' : undefined}
-                        />
+                        <div className="flex flex-col gap-1">
+                          <label htmlFor="ship-tracking-input" className="text-sm font-medium">
+                            {t('orders.detail.trackingLabel')} *
+                          </label>
+                          <p className="text-xs text-muted-foreground">
+                            <span className="text-danger" aria-hidden="true">*</span> {t('common.requiredLegend', { defaultValue: 'Bắt buộc' })}
+                          </p>
+                          <Input
+                            id="ship-tracking-input"
+                            type="text"
+                            placeholder={t('orders.detail.trackingPlaceholder')}
+                            value={trackingNumber}
+                            onChange={(e) => { setTrackingNumber(e.target.value); if (trackingError) setTrackingError('') }}
+                            onBlur={() => { if (!trackingNumber.trim()) setTrackingError(t('orders.detail.trackingRequiredError')) }}
+                            disabled={fulfillmentSaving}
+                            required
+                            aria-invalid={trackingError ? true : undefined}
+                            aria-describedby={trackingError ? 'ship-tracking-error' : undefined}
+                          />
+                        </div>
                         {trackingError ? (
                           <p id="ship-tracking-error" role="alert" className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--bb-danger)' }}>
                             <AlertCircle size={13} aria-hidden="true" />
@@ -676,9 +742,10 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       {reasonModal && (
         <ReasonConfirmModal
           targetStatus={reasonModal.targetStatus}
-          onConfirm={(reason) => {
-            setReasonModal(null)
-            doStatusChange(reasonModal.targetStatus, reason)
+          loading={saving}
+          onConfirm={async (reason) => {
+            const ok = await doStatusChange(reasonModal.targetStatus, reason)
+            if (ok) setReasonModal(null)
           }}
           onClose={() => setReasonModal(null)}
         />

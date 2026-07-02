@@ -6,6 +6,7 @@ import { PageSizeSelect } from '../components/PageSizeSelect'
 import { Check, Eye, EyeOff, Image as ImageIcon, Loader2, MessageSquare } from 'lucide-react'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
+import { RecentItemsChips } from '../components/RecentItemsChips'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
 import { bulkDeleteReviews, bulkUpdateReviewStatus, deleteReview, fetchReviews, updateReviewStatus } from '../lib/adminApi'
@@ -13,6 +14,7 @@ import { useContentLang } from '../lib/contentLang'
 import { formatDateTime, formatText } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
 import { useAdminList } from '../lib/useAdminList'
+import { useRecentItems } from '../lib/useRecentItems'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { useQueryClient } from '@tanstack/react-query'
 import { Alert } from '@/components/ui/alert'
@@ -156,6 +158,8 @@ export function ReviewListScreen({ navigate, canUpdate }) {
   const { t } = useTranslation()
   // Admin VI/EN switch: ở EN backend ẩn review của SP chưa dịch + trả productNameEn.
   const contentLang = useContentLang()
+  // O9 — đánh giá admin vừa xem gần đây, cho phép quay lại nhanh.
+  const recentReviewItems = useRecentItems('recent:reviews')
   const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
   const [searchInput, setSearchInput] = useState(() => {
     const params = new URLSearchParams(window.location.search)
@@ -179,6 +183,9 @@ export function ReviewListScreen({ navigate, canUpdate }) {
   // Đồng bộ filter/trang vào URL để back/popstate khôi phục đúng trạng thái đã chọn.
   useEffect(() => {
     syncQueryToUrl(query, INITIAL_QUERY)
+    // T9: lưu lại query string đang áp dụng để nút "Quay lại danh sách" ở trang
+    // chi tiết không làm mất filter/trang.
+    try { sessionStorage.setItem('reviews:listQuery', window.location.search) } catch { /* ignore */ }
   }, [query])
 
   useEffect(() => {
@@ -323,6 +330,9 @@ export function ReviewListScreen({ navigate, canUpdate }) {
       ) : null}
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
+
+      {/* O9 — Vừa xem gần đây */}
+      <RecentItemsChips items={recentReviewItems} onSelect={(item) => navigate(`/admin/reviews/${item.id}`)} />
 
       {/* Summary + attention cards */}
       <div className="bb-grid-2-1 mb-4">

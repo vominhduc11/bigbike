@@ -11,16 +11,31 @@ import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { AdminTable } from '../components/AdminTable'
-import { exportOrdersCsv, fetchOrders } from '../lib/adminApi'
+import { BulkActionBar } from '../components/BulkActionBar'
+import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
+import { exportOrdersCsv, fetchOrders, updateOrderStatus } from '../lib/adminApi'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
+import { showConfirm } from '../lib/confirm'
 import { StatusBadge } from '../components/StatusBadge'
 import { useAdminList } from '../lib/useAdminList'
+import { useColumnVisibility } from '../lib/useColumnVisibility'
 import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 
 const ORDER_STATUS_KEYS = ['PENDING', 'PROCESSING', 'ON_HOLD', 'COMPLETED', 'CANCELLED', 'FAILED', 'REFUNDED']
 const PAYMENT_STATUS_KEYS = ['UNPAID', 'PAID', 'REFUNDED', 'CANCELLED']
+
+// T2 — CTA cho trạng thái "chưa từng có đơn nào" (không phải do lọc).
+const STOREFRONT_BASE = (import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn').replace(/\/$/, '')
+
+// O4 — các bước chuyển trạng thái không cần lý do/xác nhận, cho phép đổi ngay
+// trên danh sách (đúng ALLOWED_TRANSITIONS trong STATE_MACHINES.md: PENDING → PROCESSING/ON_HOLD,
+// ON_HOLD → PROCESSING).
+const INLINE_STATUS_TARGETS = {
+  PENDING: ['ON_HOLD', 'PROCESSING'],
+  ON_HOLD: ['PROCESSING'],
+}
 
 const INITIAL_QUERY = {
   search: '',
@@ -31,7 +46,7 @@ const INITIAL_QUERY = {
   pageSize: 20,
 }
 
-export function OrderListScreen({ navigate }) {
+export function OrderListScreen({ navigate, canUpdate }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
@@ -42,12 +57,22 @@ export function OrderListScreen({ navigate }) {
   const debouncedSearch = useDebounce(searchInput, 300)
   const isFirstSearchRender = useRef(true)
   const isFirstPage = query.page === 1 && query.orderStatus === 'ALL' && !query.search
+  const [selectedIds, setSelectedIds] = useState([])
+  const [bulkProgress, setBulkProgress] = useState(null) // {done,total} or null
+  const [inlineUpdating, setInlineUpdating] = useState({}) // { [orderId]: targetStatus }
 
   const fullQuery = { ...query }
   const state = useAdminList(['orders', fullQuery], () => fetchOrders(fullQuery))
 
   useEffect(() => {
     syncQueryToUrl(query, INITIAL_QUERY)
+    // T9: lưu lại query string đang áp dụng để nút "Quay lại danh sách" ở trang
+    // chi tiết không làm mất filter/sort/trang.
+    try { sessionStorage.setItem('orders:listQuery', window.location.search) } catch { /* ignore */ }
+    // Selections refer to ids that may leave the visible page after a filter
+    // or page change; clear so the bulk bar never shows hidden items.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelectedIds([])
   }, [query])
 
   useEffect(() => {
@@ -88,6 +113,68 @@ export function OrderListScreen({ navigate }) {
   const pagination = state.pagination
   const isFiltered = !!query.search || query.orderStatus !== 'ALL' || query.paymentStatus !== 'ALL'
 
+  // O4 — đổi trạng thái ngay trên 1 dòng (không cần lý do/xác nhận).
+  async function handleInlineStatusChange(order, newStatus) {
+    if (inlineUpdating[order.id]) return
+    setInlineUpdating((prev) => ({ ...prev, [order.id]: newStatus }))
+    try {
+      await updateOrderStatus(order.id, newStatus)
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
+      toast.success(t('orders.detail.statusUpdated'))
+    } catch (err) {
+      toast.error(err.message || t('orders.detail.updateStatusError'))
+    } finally {
+      setInlineUpdating((prev) => {
+        const next = { ...prev }
+        delete next[order.id]
+        return next
+      })
+    }
+  }
+
+  // O6 — chuyển hàng loạt các đơn đã chọn (đang PENDING/ON_HOLD) sang "Đang xử lý".
+  async function runBulkProcessing() {
+    if (!canUpdate || bulkProgress) return
+    const byId = new Map(items.map((o) => [o.id, o]))
+    const ids = selectedIds.filter((id) => INLINE_STATUS_TARGETS[byId.get(id)?.orderStatus]?.includes('PROCESSING'))
+    if (ids.length === 0) return
+
+    const ok = await showConfirm(
+      t('orders.bulkProcessingConfirm', { count: ids.length, defaultValue: `Chuyển {{count}} đơn đã chọn sang "Đang xử lý"?` }),
+      t('orders.bulkProcessingTitle', { defaultValue: 'Chuyển trạng thái hàng loạt' }),
+    )
+    if (!ok) return
+
+    setBulkProgress({ done: 0, total: ids.length })
+    let success = 0
+    let failed = 0
+    await Promise.allSettled(
+      ids.map((id) =>
+        updateOrderStatus(id, 'PROCESSING')
+          .then(() => { success += 1 })
+          .catch((err) => {
+            failed += 1
+            const order = byId.get(id)
+            toast.error(`${order?.orderNumber || id}: ${err.message || t('common.error')}`)
+          })
+          .finally(() => {
+            setBulkProgress((prev) => ({ done: (prev?.done ?? 0) + 1, total: ids.length }))
+          })
+      )
+    )
+    setBulkProgress(null)
+    setSelectedIds([])
+    queryClient.invalidateQueries({ queryKey: ['orders'] })
+    const summary = t('orders.bulkProcessingResult', {
+      success,
+      failed,
+      defaultValue: `Đã chuyển {{success}} đơn, {{failed}} lỗi.`,
+    })
+    if (failed === 0) toast.success(summary)
+    else if (success === 0) toast.error(summary)
+    else toast.warning(summary)
+  }
+
   // Sort hiện do FilterSelect quản (chuỗi "field:dir"). Cho phép bấm tiêu đề cột
   // Ngày/Tổng để đổi sort ngay trên lưới — backend chỉ sort được 2 trường này.
   const [sortKey, sortDir] = useMemo(() => {
@@ -104,7 +191,7 @@ export function OrderListScreen({ navigate }) {
       key: 'orderNumber',
       label: t('orders.colOrder'),
       render: (order) => (
-        <span className="mono" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span className="mono" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {formatText(order.orderNumber)}
         </span>
       ),
@@ -142,13 +229,35 @@ export function OrderListScreen({ navigate }) {
     {
       key: 'orderStatus',
       label: t('orders.colStatus'),
-      render: (order) => <StatusBadge type="order" status={order.orderStatus} />,
+      render: (order) => {
+        const inlineTargets = canUpdate ? (INLINE_STATUS_TARGETS[order.orderStatus] ?? []) : []
+        return (
+          <div className="flex items-center gap-2 flex-wrap">
+            <StatusBadge type="order" status={order.orderStatus} />
+            {inlineTargets.map((target) => (
+              <button
+                key={target}
+                type="button"
+                className="bb-btn bb-btn-ghost bb-btn-sm"
+                disabled={!!inlineUpdating[order.id]}
+                onClick={(e) => { e.stopPropagation(); handleInlineStatusChange(order, target) }}
+              >
+                {inlineUpdating[order.id] === target
+                  ? t('orders.detail.savingShort')
+                  : `→ ${target === 'PROCESSING' ? t('orders.detail.actionProcessing') : t('orders.detail.actionOnHold')}`}
+              </button>
+            ))}
+          </div>
+        )
+      },
     },
   ]
 
+  const { visibleColumns, hiddenKeys, toggle: toggleColumn, allColumns } = useColumnVisibility(columns, 'columns:orders')
+
   const mobileCard = (order) => ({
     title: (
-      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {formatText(order.orderNumber)}
       </span>
     ),
@@ -233,10 +342,28 @@ export function OrderListScreen({ navigate }) {
           value={query.pageSize}
           onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
         />
+        <ColumnVisibilityToggle allColumns={allColumns} hiddenKeys={hiddenKeys} onToggle={toggleColumn} />
         <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={resetFilters}>
           <SlidersHorizontal size={13} />{t('orders.clearFilters')}
         </button>
       </div>
+
+      {/* Thanh hành động hàng loạt — chuyển nhiều đơn PENDING/ON_HOLD sang Đang xử lý. */}
+      <BulkActionBar
+        selectedCount={canUpdate && selectedIds.length > 0
+          ? (bulkProgress
+            ? t('orders.bulkProcessingProgress', { done: bulkProgress.done, total: bulkProgress.total, defaultValue: `Đang xử lý {{done}}/{{total}}...` })
+            : selectedIds.length)
+          : null}
+        onClear={() => setSelectedIds([])}
+        actions={[
+          {
+            label: t('orders.bulkProcessingAction', { defaultValue: 'Chuyển sang Đang xử lý' }),
+            onClick: runBulkProcessing,
+            disabled: Boolean(bulkProgress),
+          },
+        ]}
+      />
 
       {state.status === 'error' && (
         <StatePanel tone="danger" title={t('orders.loadError')} description={state.error}
@@ -250,7 +377,9 @@ export function OrderListScreen({ navigate }) {
         ) : (
           <StatePanel tone="neutral"
             title={t('orders.emptyAll', { defaultValue: 'Chưa có đơn hàng nào' })}
-            description={t('orders.emptyAllDesc', { defaultValue: 'Khi có đơn đặt trên website, đơn sẽ hiện ở đây.' })} />
+            description={t('orders.emptyAllDesc', { defaultValue: 'Khi có đơn đặt trên website, đơn sẽ hiện ở đây.' })}
+            actionLabel={t('orders.viewStorefrontCta', { defaultValue: 'Xem trang web' })}
+            onAction={() => window.open(STOREFRONT_BASE, '_blank', 'noopener')} />
         )
       )}
 
@@ -262,10 +391,13 @@ export function OrderListScreen({ navigate }) {
             style={state.isFetching ? { opacity: 0.6, transition: 'opacity 0.15s' } : undefined}
           >
             <AdminTable
-              columns={columns}
+              columns={visibleColumns}
               rows={items}
               loading={state.status === 'loading'}
               pageSize={query.pageSize}
+              selectable={canUpdate}
+              selectedIds={selectedIds}
+              onSelectionChange={setSelectedIds}
               onRowClick={(order) => navigate(`/admin/orders/${order.id}`)}
               rowHref={(order) => `/admin/orders/${order.id}`}
               mobileCard={mobileCard}

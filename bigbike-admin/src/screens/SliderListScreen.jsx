@@ -607,7 +607,13 @@ export function SliderListScreen({ canUpdate }) {
         </div>
       )}
 
-      {isLoading && <StatePanel tone="info" title={t('sliders.loading')} description={t('common.pleaseWait')} />}
+      {isLoading && (
+        <div className="flex flex-col gap-2" aria-busy="true" aria-label={t('sliders.loading')}>
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="bb-skeleton-block" style={{ height: 96 }} />
+          ))}
+        </div>
+      )}
       {isError && <StatePanel tone="danger" title={t('sliders.error')} description={error?.message} actionLabel={t('common.retry')} onAction={() => queryClient.invalidateQueries({ queryKey: ['sliders', location] })} />}
       {!isLoading && !isError && visibleItems.length === 0 && (
         filteredByLang ? (

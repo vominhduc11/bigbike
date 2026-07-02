@@ -200,8 +200,12 @@ export function HomeHighlightsScreen({ canUpdate }) {
 
   if (isLoading) {
     return (
-      <Screen>
-        <StatePanel tone="info" title={t('common.loading')} description={t('common.pleaseWait')} />
+      <Screen maxWidth="720px">
+        <div className="flex flex-col gap-3" aria-busy="true" aria-label={t('common.loading')}>
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="bb-skeleton-block" style={{ height: 140 }} />
+          ))}
+        </div>
       </Screen>
     )
   }

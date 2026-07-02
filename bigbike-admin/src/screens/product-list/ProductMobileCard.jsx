@@ -27,7 +27,7 @@ export function ProductMobileCard({
   return (
     <MobileCard
       title={(
-        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span className="bb-product-thumb" style={{ width: 32, height: 32, flexShrink: 0 }}>
             {product.image?.url ? (
               <img
@@ -52,7 +52,7 @@ export function ProductMobileCard({
           value: product.price?.salePrice ? (
             <span>
               {formatCurrencyVnd(product.price?.retailPrice)}
-              <span style={{ textDecoration: 'line-through', marginLeft: 6 }}>
+              <span style={{ textDecoration: 'line-through', marginLeft: 8 }}>
                 {formatCurrencyVnd(product.price.salePrice)}
               </span>
             </span>

@@ -3,20 +3,30 @@ import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Crown, UserCheck, UserPlus, Users } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import { ExportButton } from '@/components/ExportButton'
+import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { FilterChips } from '../components/FilterChips'
 import { PaginationControls } from '../components/PaginationControls'
 import { AdminTable } from '../components/AdminTable'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
+import { RecentItemsChips } from '../components/RecentItemsChips'
 import { StatePanel } from '../components/StatePanel'
-import { exportCustomersCsv, fetchCustomers, fetchCustomerSummary } from '../lib/adminApi'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { exportCustomersCsv, fetchCustomers, fetchCustomerSummary, updateCustomerStatus } from '../lib/adminApi'
+import { showConfirm } from '../lib/confirm'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
+import { useColumnVisibility } from '../lib/useColumnVisibility'
 import { useDebounce } from '../lib/useDebounce'
+import { useRecentItems } from '../lib/useRecentItems'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
+
+// O4: tái dùng đúng danh sách trạng thái có thể set thủ công của CustomerDetailScreen
+// (giữ local thay vì import chéo giữa 2 screen — mỗi screen là 1 lazy chunk riêng).
+const CUSTOMER_STATUSES = ['ACTIVE', 'DISABLED', 'BLOCKED']
 
 const STATUS_BADGE = {
   ACTIVE: 'bb-badge-success',
@@ -27,6 +37,12 @@ const STATUS_BADGE = {
 }
 
 const INITIAL_QUERY = { search: '', status: 'ALL', page: 1, pageSize: 20 }
+
+// N5: khung skeleton cùng chiều cao 1 thẻ .bb-kpi thật, dự trữ không gian ngay từ lần
+// render đầu tiên (cùng cách DashboardScreen.jsx làm với khối bb-kpi-grid của nó).
+function SkeletonBlock({ height }) {
+  return <div className="bb-skeleton-block" style={{ height }} />
+}
 
 function CustomerStatusBadge({ value }) {
   const { t } = useTranslation()
@@ -39,8 +55,9 @@ function CustomerStatusBadge({ value }) {
   )
 }
 
-export function CustomerListScreen({ navigate }) {
+export function CustomerListScreen({ navigate, canUpdate }) {
   const { t, i18n } = useTranslation()
+  const queryClient = useQueryClient()
   const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
   const [searchInput, setSearchInput] = useState(() => {
     const params = new URLSearchParams(window.location.search)
@@ -48,6 +65,10 @@ export function CustomerListScreen({ navigate }) {
   })
   const debouncedSearch = useDebounce(searchInput, 300)
   const isFirstSearchRender = useRef(true)
+  // O4: id khách hàng đang đổi trạng thái ngay trên dòng — khoá Select + chặn double-submit.
+  const [statusSaving, setStatusSaving] = useState({})
+  // O9 — khách hàng admin vừa xem gần đây, cho phép quay lại nhanh.
+  const recentCustomerItems = useRecentItems('recent:customers')
 
   const state = useAdminList(['customers', query], () => fetchCustomers(query))
 
@@ -59,7 +80,43 @@ export function CustomerListScreen({ navigate }) {
 
   useEffect(() => {
     syncQueryToUrl(query, INITIAL_QUERY)
+    // T9: lưu lại query string đang áp dụng để nút "Quay lại danh sách" ở trang
+    // chi tiết không làm mất filter/trang.
+    try { sessionStorage.setItem('customers:listQuery', window.location.search) } catch { /* ignore */ }
   }, [query])
+
+  // O4: đổi trạng thái ngay trên 1 dòng — tái dùng CUSTOMER_STATUSES + xác nhận
+  // BLOCKED/DISABLED của CustomerDetailScreen, không cần rời danh sách.
+  async function handleStatusChange(customer, value) {
+    if (!value || value === customer.status || statusSaving[customer.id]) return
+    if (value === 'BLOCKED' || value === 'DISABLED') {
+      const label = t(`status.customer.${value}`, { defaultValue: value })
+      const ok = await showConfirm(
+        t('customers.detail.statusConfirmBody', {
+          status: label,
+          defaultValue: `Chuyển tài khoản sang "${label}" sẽ chặn khách hàng đăng nhập và mua hàng. Tiếp tục?`,
+        }),
+        t('customers.detail.statusConfirmTitle', { defaultValue: 'Đổi trạng thái tài khoản' }),
+        { confirmLabel: t('customers.detail.statusConfirmOk', { defaultValue: 'Đổi trạng thái' }) },
+      )
+      if (!ok) return
+    }
+    setStatusSaving((prev) => ({ ...prev, [customer.id]: true }))
+    try {
+      await updateCustomerStatus(customer.id, value)
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
+      queryClient.invalidateQueries({ queryKey: ['customer-summary'] })
+      toast.success(t('customers.detail.statusUpdated'))
+    } catch (err) {
+      toast.error(err.message || t('common.error'))
+    } finally {
+      setStatusSaving((prev) => {
+        const next = { ...prev }
+        delete next[customer.id]
+        return next
+      })
+    }
+  }
 
   useEffect(() => {
     if (isFirstSearchRender.current) { isFirstSearchRender.current = false; return }
@@ -125,11 +182,33 @@ export function CustomerListScreen({ navigate }) {
       },
     },
     { key: 'phone', label: t('customers.colPhone'), render: (c) => formatText(c.phone) },
-    { key: 'status', label: t('customers.colStatus'), render: (c) => <CustomerStatusBadge value={c.status} /> },
+    {
+      key: 'status',
+      label: t('customers.colStatus'),
+      render: (c) => canUpdate ? (
+        <Select
+          value={c.status}
+          onValueChange={(v) => handleStatusChange(c, v)}
+          disabled={!!statusSaving[c.id]}
+        >
+          <SelectTrigger className="h-8 w-auto" onClick={(e) => e.stopPropagation()}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent onClick={(e) => e.stopPropagation()}>
+            {CUSTOMER_STATUSES.map((s) => (
+              <SelectItem key={s} value={s}>{t(`status.customer.${s}`, { defaultValue: s })}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : <CustomerStatusBadge value={c.status} />,
+    },
     { key: 'orderCount', label: t('customers.colOrders'), align: 'right', render: (c) => c.orderCount },
     { key: 'totalSpent', label: t('customers.colSpent'), align: 'right', render: (c) => <span className="font-bold">{formatCurrencyVnd(c.totalSpent)}</span> },
     { key: 'createdAt', label: t('customers.colRegistered'), render: (c) => <span className="bb-muted text-xs">{formatDateTime(c.createdAt)}</span> },
   ]
+
+  // T7: cho phép ẩn/hiện cột trên bảng khách hàng, lưu lựa chọn theo trình duyệt.
+  const { visibleColumns, hiddenKeys, toggle: toggleColumn, allColumns } = useColumnVisibility(columns, 'columns:customers')
 
   const mobileCard = (c) => ({
     title: formatText(c.fullName),
@@ -168,8 +247,16 @@ export function CustomerListScreen({ navigate }) {
         </div>
       </div>
 
+      {/* O9 — Vừa xem gần đây */}
+      <RecentItemsChips items={recentCustomerItems} onSelect={(item) => navigate(`/admin/customers/${item.id}`)} />
+
+      {/* O5: chỉ thẻ "Đang hoạt động" click được ra filter — nó khớp 1-1 với
+          query.status=ACTIVE đã có. VIP/Mới 30 ngày tính theo phân khúc chi tiêu/ngày
+          đăng ký, API danh sách khách hàng hiện chưa có filter tương ứng (chỉ filter
+          theo status ACTIVE/PENDING/DISABLED/BLOCKED) nên chưa thể click-lọc đúng mà
+          không đổi API — để nguyên dạng số liệu tĩnh cho 2 thẻ đó. */}
       {summary ? (
-        <div className="bb-kpi-grid">
+        <div className="bb-kpi-grid bb-kpi-grid-4">
           <div className="bb-kpi">
             <div className="bb-kpi-head">
               <span className="bb-kpi-icon danger"><Users size={15} /></span>
@@ -194,7 +281,19 @@ export function CustomerListScreen({ navigate }) {
             <div className="bb-kpi-value">{summary.newLast30Days.toLocaleString(i18n.language)}</div>
             <div className="bb-kpi-foot"><span className="bb-kpi-foot-label">{t('customers.kpi.new30dHint')}</span></div>
           </div>
-          <div className="bb-kpi">
+          <div
+            className={`bb-kpi clickable${query.status === 'ACTIVE' ? ' active' : ''}`}
+            role="button"
+            tabIndex={0}
+            aria-label={t('customers.kpi.activeFilterAria', { defaultValue: 'Đang hoạt động — lọc danh sách theo trạng thái Hoạt động' })}
+            onClick={() => updateQuery({ status: query.status === 'ACTIVE' ? 'ALL' : 'ACTIVE' }, { resetPage: true })}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                updateQuery({ status: query.status === 'ACTIVE' ? 'ALL' : 'ACTIVE' }, { resetPage: true })
+              }
+            }}
+          >
             <div className="bb-kpi-head">
               <span className="bb-kpi-icon success"><UserCheck size={15} /></span>
               <span>{t('customers.kpi.active')}</span>
@@ -203,7 +302,13 @@ export function CustomerListScreen({ navigate }) {
             <div className="bb-kpi-foot"><span className="bb-kpi-foot-label">{t('customers.kpi.activeHint')}</span></div>
           </div>
         </div>
-      ) : null}
+      ) : (
+        <div className="bb-kpi-grid bb-kpi-grid-4">
+          {[...Array(4)].map((_, i) => (
+            <SkeletonBlock key={i} height={120} />
+          ))}
+        </div>
+      )}
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
@@ -230,6 +335,7 @@ export function CustomerListScreen({ navigate }) {
           value={query.pageSize}
           onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
         />
+        <ColumnVisibilityToggle allColumns={allColumns} hiddenKeys={hiddenKeys} onToggle={toggleColumn} />
       </div>
 
       {/* Filter chips — báo gọn đang lọc gì + gỡ từng filter / xoá tất cả. */}
@@ -257,7 +363,7 @@ export function CustomerListScreen({ navigate }) {
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
             <AdminTable
-              columns={columns}
+              columns={visibleColumns}
               rows={items}
               loading={state.status === 'loading'}
               pageSize={query.pageSize}

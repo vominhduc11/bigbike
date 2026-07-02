@@ -13,9 +13,11 @@ import {
 } from 'lucide-react'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
+import { RecentItemsChips } from '../components/RecentItemsChips'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { formatVndShort } from '../lib/formatters'
 import { useAuth } from '../lib/auth'
+import { useRecentItems } from '../lib/useRecentItems'
 import {
   fetchDashboardSummary,
   fetchInventorySummary,
@@ -85,6 +87,8 @@ export function DashboardScreen({ navigate }) {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
   const [period, setPeriod] = useState('30d')
+  // O9 — đơn hàng admin vừa xem gần đây, cho phép quay lại nhanh.
+  const recentOrderItems = useRecentItems('recent:orders')
 
   const now = new Date()
   const hour = now.getHours()
@@ -383,7 +387,7 @@ export function DashboardScreen({ navigate }) {
                     <Suspense fallback={<SkeletonBlock height={200} />}>
                       <OrderStatusPie pieDataWithTotal={pieDataWithTotal} />
                     </Suspense>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
                       {pieDataWithTotal.map((d) => (
                         <div
                           key={d.status}
@@ -459,6 +463,9 @@ export function DashboardScreen({ navigate }) {
               )}
             </div>
           </div>
+
+          {/* O9 — Vừa xem gần đây */}
+          <RecentItemsChips items={recentOrderItems} onSelect={(item) => navigate(`/admin/orders/${item.id}`)} />
 
           {/* Recent orders + top products */}
           <div className="bb-grid-2">

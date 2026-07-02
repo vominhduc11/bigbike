@@ -22,12 +22,16 @@ import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { FilterChips } from '../components/FilterChips'
+import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
+import { RecentItemsChips } from '../components/RecentItemsChips'
 import { fetchCategories, fetchCategoryTree, updateCategory, softDeleteCategory, restoreCategory, hardDeleteCategory } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { formatDateTime, formatText, stripHtml } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
+import { useColumnVisibility } from '../lib/useColumnVisibility'
 import { useContentLang } from '../lib/contentLang'
 import { useDebounce } from '../lib/useDebounce'
+import { useRecentItems } from '../lib/useRecentItems'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -97,6 +101,18 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   const [bulkProgress, setBulkProgress] = useState(null) // {done,total} or null
   const debouncedSearch = useDebounce(searchInput, 300)
   const isFirstSearchRender = useRef(true)
+
+  // O9: danh mục vừa mở gần đây (ghi lại từ CategoryDetailScreen khi mount).
+  const recentCategoryItems = useRecentItems('recent:categories')
+
+  // T7: cho phép ẩn/hiện cột Mô tả/Cập nhật trên bảng danh mục, lưu theo trình duyệt.
+  const { hiddenKeys: hiddenColumnKeys, toggle: toggleColumn, allColumns: allColumnDefs } = useColumnVisibility(
+    [
+      { key: 'description', label: t('categories.colDescription') },
+      { key: 'updatedAt', label: t('categories.colUpdated') },
+    ],
+    'columns:categories',
+  )
 
   const paginatedState = useAdminList(['categories', query, contentLang], () => fetchCategories(query))
 
@@ -188,6 +204,17 @@ export function CategoryListScreen({ navigate, canUpdate }) {
 
   const toggleVisibilityMutation = useMutation({
     mutationFn: ({ id, visible }) => updateCategory(id, { visible }),
+    // N7: cập nhật lạc quan — badge trạng thái đổi ngay khi bấm thay vì chỉ
+    // sau khi request thành công, rollback lại nếu request lỗi.
+    onMutate: async ({ id, visible }) => {
+      await queryClient.cancelQueries({ queryKey: ['categories'] })
+      const previousQueries = queryClient.getQueriesData({ queryKey: ['categories'] })
+      queryClient.setQueriesData({ queryKey: ['categories'] }, (old) => {
+        if (!old?.items) return old
+        return { ...old, items: old.items.map((c) => (c.id === id ? { ...c, isVisible: visible } : c)) }
+      })
+      return { previousQueries }
+    },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       // Surface an Undo affordance — the very next action a user might want
@@ -210,7 +237,8 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       }
       setTogglingId(null)
     },
-    onError: (err) => {
+    onError: (err, _variables, context) => {
+      context?.previousQueries?.forEach(([key, data]) => queryClient.setQueryData(key, data))
       toast.error(err.message || t('common.error'))
       setTogglingId(null)
     },
@@ -623,9 +651,11 @@ export function CategoryListScreen({ navigate, canUpdate }) {
         </td>
 
         {/* Description */}
-        <td className="cat-desc">
-          {descText ? descText : <span className="cell-empty">—</span>}
-        </td>
+        {!hiddenColumnKeys.includes('description') && (
+          <td className="cat-desc">
+            {descText ? descText : <span className="cell-empty">—</span>}
+          </td>
+        )}
 
         {/* Visibility badge */}
         <td>
@@ -638,7 +668,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
         )}
 
         {/* Updated */}
-        <td>{formatDateTime(category.updatedAt)}</td>
+        {!hiddenColumnKeys.includes('updatedAt') && <td>{formatDateTime(category.updatedAt)}</td>}
 
         {/* Actions */}
         <td className="align-right">
@@ -769,7 +799,43 @@ export function CategoryListScreen({ navigate, canUpdate }) {
         </div>
       </div>
 
+      {/* O9 — Vừa xem gần đây */}
+      <RecentItemsChips items={recentCategoryItems} onSelect={(item) => navigate(`/admin/categories/${item.id}`)} />
+
       {paginatedState.warning ? <ReadOnlyBanner warning={paginatedState.warning} /> : null}
+
+      {/* T3: chuyển đổi cây↔danh sách trước đây tự động theo filter Trạng thái
+          hiển thị/Sắp xếp, khiến phân trang xuất hiện/biến mất không rõ lý do.
+          Segmented control này biến việc đó thành lựa chọn tường minh: bấm
+          "Dạng danh sách" tự set sort sang updatedAt:desc (thoát khỏi điều
+          kiện cây), bấm "Dạng cây" reset lại visibility/sort mặc định. */}
+      <div
+        className="bb-seg"
+        role="tablist"
+        aria-label={t('categories.viewModeAria')}
+        style={{ marginBottom: 'var(--admin-space-3)' }}
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={useTreeMode}
+          disabled={query.deleted}
+          title={query.deleted ? t('categories.viewModeTreeUnavailableTrash') : undefined}
+          className={useTreeMode ? 'active' : undefined}
+          onClick={() => updateQuery({ visibility: 'ALL', sort: 'sortOrder:asc' }, { resetPage: true })}
+        >
+          {t('categories.viewModeTree')}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={!useTreeMode}
+          className={!useTreeMode ? 'active' : undefined}
+          onClick={() => updateQuery({ sort: 'updatedAt:desc' }, { resetPage: true })}
+        >
+          {t('categories.viewModeFlat')}
+        </button>
+      </div>
 
       <div className="bb-filter-bar">
         <FilterSearchInput
@@ -830,6 +896,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
             </div>
           </div>
         )}
+        <ColumnVisibilityToggle allColumns={allColumnDefs} hiddenKeys={hiddenColumnKeys} onToggle={toggleColumn} />
       </div>
 
       {/* Active filter chips. Visible only when at least one filter
@@ -877,11 +944,11 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           {allCatsResult == null ? (
             <div className="table-scroll-wrap">
               <table className="admin-table cat-tree-table cat-table-tree" aria-busy="true">
-                <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} />
+                <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenColumnKeys} />
                 <tbody>
                   {Array.from({ length: 8 }).map((_, i) => (
                     <tr key={i} className="skel-row">
-                      {Array.from({ length: canUpdate ? 6 : 5 }).map((__, j) => (
+                      {Array.from({ length: (canUpdate ? 6 : 5) - hiddenColumnKeys.length }).map((__, j) => (
                         <td key={j}><span className="bb-skel w-4/5 h-5" /></td>
                       ))}
                     </tr>
@@ -910,7 +977,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                 >
               <table className="admin-table cat-tree-table cat-table-tree">
                 <caption className="sr-only">{t('categories.tableCaption')}</caption>
-                <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} />
+                <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenColumnKeys} />
                 <tbody>
                   {visibleTreeRows.map((row) =>
                     canUpdate && !searchTerm
@@ -954,12 +1021,12 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               <div className="table-scroll-wrap">
                 <table className="admin-table cat-tree-table cat-table-flat">
                   <caption className="sr-only">{t('categories.tableCaption')}</caption>
-                  <CategoryFlatTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} />
+                  <CategoryFlatTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenColumnKeys} />
                   <tbody>
                     {flatModeStatus === 'loading'
                       ? Array.from({ length: query.pageSize }).map((_, i) => (
                           <tr key={i} className="skel-row">
-                            {Array.from({ length: canUpdate ? 7 : 6 }).map((__, j) => (
+                            {Array.from({ length: (canUpdate ? 7 : 6) - hiddenColumnKeys.length }).map((__, j) => (
                               <td key={j}><span className="bb-skel w-4/5 h-5" /></td>
                             ))}
                           </tr>

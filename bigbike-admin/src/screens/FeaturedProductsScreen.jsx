@@ -61,6 +61,7 @@ function ProductPicker({ onAdd, disabledIds, disabled }) {
 }
 
 function ProductRow({ product, canUpdate, onRemove, sortable }) {
+  const { t } = useTranslation()
   return (
     <div
       ref={sortable?.setNodeRef}
@@ -72,7 +73,7 @@ function ProductRow({ product, canUpdate, onRemove, sortable }) {
           type="button"
           {...sortable.handleProps}
           className="flex-shrink-0 text-muted-foreground hover:text-foreground cursor-grab touch-none"
-          aria-label="Kéo để sắp xếp"
+          aria-label={t('featuredProducts.dragHandle', { defaultValue: 'Kéo để sắp xếp' })}
         >
           <GripVertical size={16} />
         </button>
@@ -96,7 +97,7 @@ function ProductRow({ product, canUpdate, onRemove, sortable }) {
           type="button"
           className="flex-shrink-0 text-muted-foreground hover:text-foreground p-1"
           onClick={() => onRemove(product.id)}
-          aria-label="Xóa khỏi danh sách"
+          aria-label={t('featuredProducts.removeItem', { defaultValue: 'Xóa khỏi danh sách' })}
         >
           <X size={14} />
         </button>
@@ -278,7 +279,16 @@ export function FeaturedProductsScreen({ canUpdate }) {
         }
       />
 
-      <div className="flex flex-col gap-4">
+      <form
+        className="flex flex-col gap-4"
+        onSubmit={(e) => { e.preventDefault(); if (canUpdate && !saveMutation.isPending) handleSave() }}
+        onKeyDown={(e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && canUpdate && !saveMutation.isPending) {
+            e.preventDefault()
+            handleSave()
+          }
+        }}
+      >
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">
@@ -325,7 +335,7 @@ export function FeaturedProductsScreen({ canUpdate }) {
             </div>
           )}
         </div>
-      </div>
+      </form>
     </Screen>
   )
 }

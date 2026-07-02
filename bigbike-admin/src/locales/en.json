@@ -1,5 +1,7 @@
 {
   "common": {
+    "columns": "Columns",
+    "recentItems": "Recently viewed",
     "selectedCount": "{{count}} selected",
     "selectAllMatching": "Select all {{count}} matching results",
     "allMatchingSelected": "All {{count}} results selected",
@@ -51,6 +53,7 @@
     "uploading": "Uploading...",
     "backToList": "← Back to list",
     "required": "Required",
+    "requiredLegend": "Required",
     "visible": "Visible",
     "hidden": "Hidden",
     "rowsPerPage": "Rows per page",
@@ -338,6 +341,13 @@
       "SUCCEEDED": "Succeeded",
       "UNKNOWN": "Unknown"
     },
+    "paymentMethod": {
+      "COD": "Cash on delivery (COD)",
+      "BACS": "Bank transfer",
+      "CHECK": "Check / bank transfer",
+      "CARD": "Card payment",
+      "UNKNOWN": "Unknown"
+    },
     "customer": {
       "ACTIVE": "Active",
       "PENDING": "Pending",
@@ -423,6 +433,11 @@
     "bulkDeleteSuccess": "Moved {{count}} products to trash",
     "bulkRestoreSuccess": "Restored {{count}} products",
     "bulkPartial": "{{ok}} succeeded, {{fail}} failed",
+    "publishAction": "Publish",
+    "unpublishAction": "Hide",
+    "publishToggleSuccess": "Publish status updated.",
+    "presetOutOfStock": "Out of stock",
+    "presetDraft": "Unpublished",
     "detail": {
       "eyebrow": "Catalog",
       "createTitle": "Create product",
@@ -717,6 +732,9 @@
         "remove": "Remove item"
       },
       "dragToReorder": "Drag to reorder",
+      "removeRowConfirmTitle": "Remove row",
+      "removeRowConfirmMessage": "Remove this row? The content you entered will be lost.",
+      "removeProductConfirmMessage": "Remove \"{{name}}\" from the list?",
       "blocks": {
         "addBlock": "Add block",
         "dragToReorder": "Drag to reorder",
@@ -968,6 +986,12 @@
     "empty": "No orders",
     "emptyDesc": "No orders match the current filter conditions.",
     "clearFilters": "Clear filters",
+    "viewStorefrontCta": "View storefront",
+    "bulkProcessingAction": "Move to Processing",
+    "bulkProcessingConfirm": "Move {{count}} selected orders to \"Processing\"?",
+    "bulkProcessingTitle": "Bulk status change",
+    "bulkProcessingProgress": "Processing {{done}}/{{total}}...",
+    "bulkProcessingResult": "Moved {{success}} orders, {{failed}} failed.",
     "tableCaption": "Order list",
     "colOrder": "Order",
     "colCustomer": "Customer",
@@ -1063,6 +1087,7 @@
       "ffMarkShipped": "Mark as shipped",
       "ffMarkDelivered": "Mark as delivered to customer",
       "ffConfirmShip": "Confirm shipment",
+      "trackingLabel": "Tracking number",
       "trackingPlaceholder": "Tracking number *",
       "trackingHint": "Tracking number is required to move to the Shipping status.",
       "carrierPlaceholder": "Carrier — GHN, GHTK, ViettelPost…",
@@ -1116,6 +1141,10 @@
     "expand": "Expand",
     "collapse": "Collapse",
     "activeFiltersAria": "Active filters",
+    "viewModeAria": "View mode",
+    "viewModeTree": "Tree view",
+    "viewModeFlat": "List view",
+    "viewModeTreeUnavailableTrash": "Not available in Trash",
     "viewOnSite": "View on website",
     "openDetail": "Open to view details and edit",
     "dragHandle": "Drag to reorder",
@@ -1497,7 +1526,8 @@
       "new30d": "New (30 days)",
       "new30dHint": "Registered in the last 30 days",
       "active": "Active",
-      "activeHint": "Accounts in active status"
+      "activeHint": "Accounts in active status",
+      "activeFilterAria": "Active — filter the list by Active status"
     },
     "searchPlaceholder": "Name, email, phone number",
     "filterStatus": "Status",
@@ -1522,6 +1552,7 @@
       "sectionAccount": "Account information",
       "sectionStats": "Purchase statistics",
       "sectionStatus": "Status",
+      "sectionEditProfile": "Edit profile",
       "accountStatus": "Account status",
       "email": "Email:",
       "phone": "Phone:",
@@ -2485,7 +2516,9 @@
     "saveButton": "Save order",
     "savedSuccess": "Featured products saved.",
     "limitReached": "Maximum of {{max}} products reached.",
-    "emptyHint": "No products yet. Use the search field below to add some."
+    "emptyHint": "No products yet. Use the search field below to add some.",
+    "dragHandle": "Drag to reorder",
+    "removeItem": "Remove from list"
   },
   "homeHighlights": {
     "eyebrow": "Content",

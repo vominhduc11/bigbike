@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { PaginationNav } from "@/components/ui/PaginationNav";
 import { openWriteReviewDialog } from "@/components/catalog/writeReviewBus";
+import { PdpSectionHeading, PDP_SECTION_SEP } from "@/components/catalog/product-view/PdpSection";
 import { RatingSummary } from "./reviews/RatingSummary";
 import { ReviewCard } from "./reviews/ReviewCard";
 import { ReviewsLoading, ReviewsPlaceholder } from "./reviews/states";
@@ -27,12 +28,9 @@ export { WriteReviewForm } from "./reviews/WriteReviewForm";
 
 type ReviewsSectionProps = {
   productId: string;
-  // embedded = đang nằm trong panel tab sản phẩm: bỏ khung section riêng (viền
-  // trên, lề lớn, id #reviews, tiêu đề lặp) vì thanh tab / H2 panel đã là tiêu đề.
-  embedded?: boolean;
 };
 
-export function ReviewsSection({ productId, embedded = false }: ReviewsSectionProps) {
+export function ReviewsSection({ productId }: ReviewsSectionProps) {
   const t = useTranslations("Product.reviews");
   const sectionRef = useRef<HTMLElement>(null);
   const [ratingFilter, setRatingFilter] = useState<number | null>(null);
@@ -82,21 +80,10 @@ export function ReviewsSection({ productId, embedded = false }: ReviewsSectionPr
   return (
     <section
       ref={sectionRef}
-      id={embedded ? undefined : "reviews"}
-      className={cn(
-        "scroll-mt-[var(--bb-header-height)]",
-        !embedded && "mt-12 border-t border-border pt-12 max-md:mt-10 max-md:pt-10",
-      )}
+      id="reviews"
+      className={cn("scroll-mt-[var(--bb-header-height)]", PDP_SECTION_SEP)}
     >
-      {/* Tiêu đề DÙNG CHUNG kiểu `.pdp-section-head` với mọi section PDP khác (căn trái, 24/35px,
-          margin-bottom 20px) — thay tiêu đề căn-giữa line-height lớn cũ vốn lệch nhịp với khối trên/dưới. */}
-      {!embedded && (
-        <div className="pdp-section-head">
-          <h2 className="title">
-            {total > 0 ? t("titleWithCount", { count: total }) : t("title")}
-          </h2>
-        </div>
-      )}
+      <PdpSectionHeading title={total > 0 ? t("titleWithCount", { count: total }) : t("title")} />
 
       {/* Khối đánh giá CHỈ để XEM — form viết đánh giá đã chuyển sang modal
           (WriteReviewDialog). Các nút "Viết đánh giá" dưới đây chỉ mở modal đó. */}

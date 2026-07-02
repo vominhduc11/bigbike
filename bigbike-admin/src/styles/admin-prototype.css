@@ -512,10 +512,10 @@
   background: var(--bb-surface);
   border: 1px solid var(--bb-border);
   border-radius: 8px;
-  padding: 14px 16px;
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   text-align: left;
   cursor: default;
   transition: border-color 100ms ease, box-shadow 100ms ease;
@@ -1144,6 +1144,9 @@ dl.bb-info-grid dd { color: var(--bb-text); }
 
 @media (min-width: 1280px) {
   .bb-kpi-grid { grid-template-columns: repeat(6, 1fr); }
+  /* O10 — khối tổng hợp 4 thẻ (CustomerListScreen) không dùng override 6-cột
+     trên (dựng cho Reports/Dashboard); auto-fit để 4 thẻ luôn giãn lấp hết hàng. */
+  .bb-kpi-grid-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
 }
 
 /* ─── Responsive overflow fixes ──────────────────────────────────────────────

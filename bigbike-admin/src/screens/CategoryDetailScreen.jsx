@@ -15,6 +15,7 @@ import {
   updateCategory,
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
+import { recordRecentItem } from '../lib/useRecentItems'
 import { formatDateTime, formatRelativeTime } from '../lib/formatters'
 import { useContentLang, overlayEnNames } from '../lib/contentLang'
 import { createCategorySchema, zodErrors } from '../lib/schemas'
@@ -161,6 +162,16 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     })
     return () => { cancelled = true }
   }, [fetchResult])
+
+  // O9: ghi lại danh mục vừa xem để hiện trong widget "Vừa xem gần đây" ở danh sách.
+  useEffect(() => {
+    if (!isCreate && currentItem?.id) {
+      recordRecentItem('recent:categories', {
+        id: currentItem.id,
+        label: currentItem.name || currentItem.slug || currentItem.id,
+      })
+    }
+  }, [isCreate, currentItem?.id, currentItem?.name, currentItem?.slug])
 
   const state = {
     status: isCreate ? 'success' : isLoading ? 'loading' : isError ? 'error' : 'success',

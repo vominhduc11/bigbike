@@ -125,18 +125,10 @@ export function WpPurchaseSection({
   // (REVIEW_RULE_003 — gate theo ratingCount, dùng chung toàn app).
   const hasReviews = hasApprovedReviews(rating, ratingCount);
 
-  // Đánh giá giờ là một tab. Kích hoạt tab Đánh giá (desktop ẩn panel khi không
-  // active) rồi cuộn mượt tới — chờ một frame để panel hiện ra trước khi cuộn.
+  // Đánh giá là section flat luôn hiển thị (không còn là tab) — cuộn thẳng tới #reviews.
   function scrollToReviews(e: React.MouseEvent<HTMLAnchorElement>) {
     e.preventDefault();
-    window.dispatchEvent(new CustomEvent("bb:pdp-activate-tab", { detail: "reviews" }));
-    requestAnimationFrame(() => {
-      // Đánh giá hiện 2 bản theo breakpoint (desktop = khối riêng, mobile = trong tab) — cùng
-      // id="reviews". Cuộn tới bản đang HIỂN THỊ (offsetParent != null = không bị display:none).
-      const targets = Array.from(document.querySelectorAll<HTMLElement>('[id="reviews"]'));
-      const visible = targets.find((el) => el.offsetParent !== null) ?? targets[0];
-      visible?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+    document.getElementById("reviews")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   // Viết đánh giá: mở modal (WriteReviewDialog) thay vì cuộn xuống khối đánh giá.

@@ -363,11 +363,11 @@ function AdminApp() {
     case 'content-detail':
       screen = <ContentDetailScreen key={`content:${route.contentType}:${route.contentId}`} contentType={route.contentType} contentId={route.contentId} navigate={navigate} canUpdate={hasPermission('content.update')} />; break
     case 'orders-list':
-      screen = <OrderListScreen navigate={navigate} />; break
+      screen = <OrderListScreen navigate={navigate} canUpdate={hasPermission('orders.write')} />; break
     case 'order-detail':
       screen = <OrderDetailScreen key={route.orderId} orderId={route.orderId} navigate={navigate} canUpdate={hasPermission('orders.write')} />; break
     case 'customers-list':
-      screen = <CustomerListScreen navigate={navigate} />; break
+      screen = <CustomerListScreen navigate={navigate} canUpdate={hasPermission('customers.write')} />; break
     case 'customer-detail':
       screen = <CustomerDetailScreen key={route.customerId} customerId={route.customerId} navigate={navigate} canUpdate={hasPermission('customers.write')} />; break
     case 'media-library':

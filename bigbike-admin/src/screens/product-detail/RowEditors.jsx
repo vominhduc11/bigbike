@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { generateId } from '@/lib/utils'
+import { showConfirm } from '../../lib/confirm'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
 import AiHtmlBrief from '../../components/AiHtmlBrief'
 import { SortableList, DragHandle } from '../../components/Sortable'
@@ -47,7 +48,13 @@ export function CommitmentEditor({ items, onChange, disabled, contentLang = 'vi'
   function addItem() {
     onChange([...items, { _key: generateId(), icon: 'shield-check', title: '', subtitle: '', titleEn: '', subtitleEn: '' }])
   }
-  function removeItem(index) {
+  async function removeItem(index) {
+    const item = items[index]
+    const hasContent = Boolean((item?.[fTitle] || item?.[fSubtitle] || '').trim())
+    if (hasContent) {
+      const confirmed = await showConfirm(t('products.detail.removeRowConfirmMessage'), t('products.detail.removeRowConfirmTitle'))
+      if (!confirmed) return
+    }
     onChange(items.filter((_, i) => i !== index))
   }
 
@@ -156,7 +163,12 @@ export function TrustBadgesEditor({ disabled, html = '', onHtmlChange }) {
     commit(rows.map((r, i) => (i === index ? { ...r, content: value } : r)))
   }
   function addItem() { commit([...rows, newRow()]) }
-  function removeItem(index) {
+  async function removeItem(index) {
+    const hasContent = Boolean((rows[index]?.content || '').trim())
+    if (hasContent) {
+      const confirmed = await showConfirm(t('products.detail.removeRowConfirmMessage'), t('products.detail.removeRowConfirmTitle'))
+      if (!confirmed) return
+    }
     const next = rows.filter((_, i) => i !== index)
     commit(next.length === 0 ? [newRow()] : next)
   }
@@ -275,7 +287,13 @@ export function SpecStatEditor({ disabled, html = '', onHtmlChange }) {
     commit(rows.map((r, i) => (i === index ? { ...r, [field]: value } : r)))
   }
   function addItem() { commit([...rows, newRow()]) }
-  function removeItem(index) {
+  async function removeItem(index) {
+    const item = rows[index]
+    const hasContent = Boolean((item?.value || item?.unit || item?.label || '').trim())
+    if (hasContent) {
+      const confirmed = await showConfirm(t('products.detail.removeRowConfirmMessage'), t('products.detail.removeRowConfirmTitle'))
+      if (!confirmed) return
+    }
     const next = rows.filter((_, i) => i !== index)
     commit(next.length === 0 ? [newRow()] : next)
   }

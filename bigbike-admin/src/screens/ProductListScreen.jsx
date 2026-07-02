@@ -11,13 +11,18 @@ import { FilterChips } from '../components/FilterChips'
 import { FilterSelect } from '../components/FilterSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { PageSizeSelect } from '../components/PageSizeSelect'
+import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
+import { RecentItemsChips } from '../components/RecentItemsChips'
 import { showConfirm } from '../lib/confirm'
-import { ApiClientError, exportProductsCsv, fetchBrands, fetchCategoryTree, fetchProductDetail, fetchProducts, restoreProduct, softDeleteProduct, permanentDeleteProduct } from '../lib/adminApi'
+import { ApiClientError, exportProductsCsv, fetchBrands, fetchCategoryTree, fetchProductDetail, fetchProducts, publishProduct, restoreProduct, softDeleteProduct, permanentDeleteProduct } from '../lib/adminApi'
 import { useAdminList } from '../lib/useAdminList'
+import { useColumnVisibility } from '../lib/useColumnVisibility'
 import { useContentLang } from '../lib/contentLang'
 import { useDebounce } from '../lib/useDebounce'
+import { useRecentItems } from '../lib/useRecentItems'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { Alert } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
 import { PaginationControls } from '../components/PaginationControls'
 import { MobileCardList } from '../components/layout/MobileCardList'
 import { DUPLICATE_SESSION_KEY, HOMEPAGE_BLOCK_LABEL_KEYS, HOMEPAGE_BLOCK_LIMITS, INITIAL_QUERY } from './product-list/constants'
@@ -37,11 +42,27 @@ export function ProductListScreen({ navigate, canUpdate }) {
   const isFirstSearchRender = useRef(true)
   const [deletingId, setDeletingId] = useState(null)
   const [restoringId, setRestoringId] = useState(null)
+  const [togglingPublishId, setTogglingPublishId] = useState(null)
   const [openMenu, setOpenMenu] = useState(null)
   const [selected, setSelected] = useState(() => new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
 
   const state = useAdminList(['products', query, contentLang], () => fetchProducts(query))
+
+  // O9: sản phẩm vừa mở gần đây (ghi lại từ ProductDetailScreen khi mount).
+  const recentProductItems = useRecentItems('recent:products')
+
+  // T7: cho phép ẩn/hiện các cột phụ trên bảng sản phẩm, lưu lựa chọn theo trình duyệt.
+  const { hiddenKeys: hiddenColumnKeys, toggle: toggleColumn, allColumns: allColumnDefs } = useColumnVisibility(
+    [
+      { key: 'sku', label: 'SKU' },
+      { key: 'category', label: t('products.colCategory') },
+      { key: 'brand', label: t('products.colBrand') },
+      { key: 'homepage', label: t('products.colHomepage') },
+      { key: 'updatedAt', label: t('products.colUpdated') },
+    ],
+    'columns:products',
+  )
 
   // Bộ lọc trên màn duyệt = strict-EN theo PRODUCT_RULE_004 (ẩn mục chưa dịch để
   // biết cái nào còn thiếu bản tiếng Anh) — khác với selector trong form (full).
@@ -166,6 +187,27 @@ export function ProductListScreen({ navigate, canUpdate }) {
       setDeletingId(null)
     }
   }, [queryClient, t])
+
+  // O4: toggle nhanh Xuất bản/Ẩn ngay trên bảng, không cần mở trang chi tiết —
+  // cùng ý tưởng handleToggleVisibility đã có cho Danh mục (CategoryListScreen).
+  const handleTogglePublish = useCallback(async (product) => {
+    if (!canUpdate) return
+    const nextStatus = product.publishStatus === 'PUBLISHED' ? 'HIDDEN' : 'PUBLISHED'
+    setTogglingPublishId(product.id)
+    try {
+      await publishProduct(product.id, nextStatus)
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['product', product.id] })
+      toast.success(t('products.publishToggleSuccess', { defaultValue: 'Đã đổi trạng thái xuất bản.' }))
+    } catch (error) {
+      const message = error instanceof ApiClientError
+        ? error.message
+        : (error?.message || t('common.error'))
+      toast.error(message)
+    } finally {
+      setTogglingPublishId(null)
+    }
+  }, [canUpdate, queryClient, t])
 
   const emptyState = query.publishStatus === 'TRASH'
     ? {
@@ -369,7 +411,37 @@ export function ProductListScreen({ navigate, canUpdate }) {
         </div>
       </div>
 
+      {/* O9 — Vừa xem gần đây */}
+      <RecentItemsChips items={recentProductItems} onSelect={(item) => navigate(`/admin/products/${item.id}`)} />
+
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
+
+      {/* O5: preset lọc nhanh 1-click cho các view thường dùng nhất, thay vì phải
+          mở dropdown FilterSelect rồi chọn giá trị. */}
+      <div className="flex flex-wrap gap-2 mb-3">
+        <Button
+          type="button"
+          variant={query.stockState === 'OUT_OF_STOCK' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => updateQuery(
+            { stockState: query.stockState === 'OUT_OF_STOCK' ? 'ALL' : 'OUT_OF_STOCK' },
+            { resetPage: true },
+          )}
+        >
+          {t('products.presetOutOfStock', { defaultValue: 'Hết hàng' })}
+        </Button>
+        <Button
+          type="button"
+          variant={query.publishStatus === 'DRAFT' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => updateQuery(
+            { publishStatus: query.publishStatus === 'DRAFT' ? 'ALL' : 'DRAFT' },
+            { resetPage: true },
+          )}
+        >
+          {t('products.presetDraft', { defaultValue: 'Chưa xuất bản' })}
+        </Button>
+      </div>
 
       <div className="bb-filter-bar">
         <FilterSearchInput
@@ -434,6 +506,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
           value={query.pageSize}
           onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
         />
+        <ColumnVisibilityToggle allColumns={allColumnDefs} hiddenKeys={hiddenColumnKeys} onToggle={toggleColumn} />
       </div>
 
       <FilterChips
@@ -513,14 +586,14 @@ export function ProductListScreen({ navigate, canUpdate }) {
                     </span>
                   </th>
                   {sortableHeader('name', t('products.colProduct'))}
-                  <th scope="col" className="hidden lg:table-cell">SKU</th>
+                  {!hiddenColumnKeys.includes('sku') && <th scope="col" className="hidden lg:table-cell">SKU</th>}
                   {sortableHeader('price', t('products.colPrice'), 'num')}
                   <th scope="col">{t('products.colStock')}</th>
-                  <th scope="col" className="hidden xl:table-cell">{t('products.colCategory')}</th>
-                  <th scope="col" className="hidden 2xl:table-cell">{t('products.colBrand')}</th>
-                  <th scope="col" className="hidden xl:table-cell">{t('products.colHomepage')}</th>
+                  {!hiddenColumnKeys.includes('category') && <th scope="col" className="hidden xl:table-cell">{t('products.colCategory')}</th>}
+                  {!hiddenColumnKeys.includes('brand') && <th scope="col" className="hidden 2xl:table-cell">{t('products.colBrand')}</th>}
+                  {!hiddenColumnKeys.includes('homepage') && <th scope="col" className="hidden xl:table-cell">{t('products.colHomepage')}</th>}
                   <th scope="col">{t('products.colPublish')}</th>
-                  {sortableHeader('updatedAt', t('products.colUpdated'), 'hidden lg:table-cell')}
+                  {!hiddenColumnKeys.includes('updatedAt') && sortableHeader('updatedAt', t('products.colUpdated'), 'hidden lg:table-cell')}
                   <th scope="col" className="col-actions" />
                 </tr>
               </thead>
@@ -541,7 +614,9 @@ export function ProductListScreen({ navigate, canUpdate }) {
                     checked={selected.has(product.id)}
                     isDeleting={deletingId === product.id}
                     isRestoring={restoringId === product.id}
+                    isTogglingPublish={togglingPublishId === product.id}
                     isMenuOpen={openMenu === product.id}
+                    hiddenColumns={hiddenColumnKeys}
                     onToggleSelect={toggle}
                     onToggleMenu={handleToggleMenu}
                     onCloseMenu={handleCloseMenu}
@@ -549,6 +624,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
                     onRestore={handleRestore}
                     onPermanentDelete={handlePermanentDelete}
                     onDelete={handleDelete}
+                    onTogglePublish={handleTogglePublish}
                   />
                 ))}
               </tbody>

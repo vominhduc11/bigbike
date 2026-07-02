@@ -173,12 +173,6 @@
       "reviewsWithCount": "Reviews ({count})",
       "overview": "Overview"
     },
-    "tabsShort": {
-      "promotion": "Deals",
-      "prosCons": "Pros/Cons",
-      "suitability": "Best for",
-      "trust": "Why us"
-    },
     "tabsEmpty": {
       "descriptionTitle": "No description",
       "descriptionDesc": "This product has no detailed description yet.",

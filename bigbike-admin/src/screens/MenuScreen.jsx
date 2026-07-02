@@ -498,7 +498,7 @@ export function MenuScreen({ canUpdate }) {
                       type="button"
                       className="menu-search-clear"
                       onClick={() => setSearch('')}
-                      aria-label="Xóa tìm kiếm"
+                      aria-label="Xoá tìm kiếm"
                     >
                       <X size={13} />
                     </button>

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Check, Copy, ExternalLink, MoreHorizontal, Package, Pencil, Trash2, Undo2 } from 'lucide-react'
+import { Check, Copy, Eye, EyeOff, ExternalLink, MoreHorizontal, Package, Pencil, Trash2, Undo2 } from 'lucide-react'
 import { PublishStatusBadge } from '../../components/StatusBadge'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../../lib/formatters'
 import { StockCell } from './cells'
@@ -14,7 +14,9 @@ export function ProductRow({
   checked,
   isDeleting,
   isRestoring,
+  isTogglingPublish,
   isMenuOpen,
+  hiddenColumns = [],
   onToggleSelect,
   onToggleMenu,
   onCloseMenu,
@@ -22,6 +24,7 @@ export function ProductRow({
   onRestore,
   onPermanentDelete,
   onDelete,
+  onTogglePublish,
 }) {
   const { t } = useTranslation()
   const isTrashed = product.publishStatus === 'TRASH'
@@ -29,6 +32,8 @@ export function ProductRow({
   const block = product.homepageBlock
   const catName = categoryLabel(product)
   const detailPath = `/admin/products/${product.id}`
+  const isPublished = product.publishStatus === 'PUBLISHED'
+  const isColumnHidden = (key) => hiddenColumns.includes(key)
 
   // Tên SP là <a> link thật để Ctrl/Cmd-click hoặc chuột-giữa mở tab mới (hành vi
   // trình duyệt). Click trái thường vẫn điều hướng trong cùng tab qua SPA navigate.
@@ -84,7 +89,7 @@ export function ProductRow({
           </a>
         </div>
       </td>
-      <td className="mono hidden lg:table-cell">{formatText(product.sku, 'SKU TBD')}</td>
+      {!isColumnHidden('sku') && <td className="mono hidden lg:table-cell">{formatText(product.sku, 'SKU TBD')}</td>}
       <td className="num" style={{ fontWeight: 700 }}>
         {formatCurrencyVnd(product.price?.retailPrice)}
         {product.price?.salePrice ? (
@@ -94,24 +99,30 @@ export function ProductRow({
         ) : null}
       </td>
       <td><StockCell state={product.stockState} /></td>
-      <td className="hidden xl:table-cell">
-        {catName ? formatText(catName) : <span className="bb-muted">—</span>}
-      </td>
-      <td className="hidden 2xl:table-cell">
-        {product.brand?.name ? formatText(product.brand.name) : <span className="bb-muted">—</span>}
-      </td>
-      <td className="hidden xl:table-cell">
-        {!block || block === 'NONE' ? (
-          <span className="bb-muted">—</span>
-        ) : (
-          <span style={{ fontSize: 12.5, fontWeight: 600 }}>
-            {t('products.homepageFeatured')}
-            {Number.isFinite(product.homepageOrder) ? ` · #${product.homepageOrder}` : ''}
-          </span>
-        )}
-      </td>
+      {!isColumnHidden('category') && (
+        <td className="hidden xl:table-cell">
+          {catName ? formatText(catName) : <span className="bb-muted">—</span>}
+        </td>
+      )}
+      {!isColumnHidden('brand') && (
+        <td className="hidden 2xl:table-cell">
+          {product.brand?.name ? formatText(product.brand.name) : <span className="bb-muted">—</span>}
+        </td>
+      )}
+      {!isColumnHidden('homepage') && (
+        <td className="hidden xl:table-cell">
+          {!block || block === 'NONE' ? (
+            <span className="bb-muted">—</span>
+          ) : (
+            <span style={{ fontSize: 12.5, fontWeight: 600 }}>
+              {t('products.homepageFeatured')}
+              {Number.isFinite(product.homepageOrder) ? ` · #${product.homepageOrder}` : ''}
+            </span>
+          )}
+        </td>
+      )}
       <td><PublishStatusBadge value={product.publishStatus} /></td>
-      <td className="bb-muted hidden lg:table-cell">{formatDateTime(product.updatedAt)}</td>
+      {!isColumnHidden('updatedAt') && <td className="bb-muted hidden lg:table-cell">{formatDateTime(product.updatedAt)}</td>}
       <td className="col-actions" onClick={(e) => e.stopPropagation()}>
         <button
           type="button"
@@ -139,6 +150,12 @@ export function ProductRow({
               <button type="button" onClick={() => { onCloseMenu(); window.open(detailPath, '_blank', 'noopener') }}>
                 <ExternalLink size={13} />{t('common.openInNewTab')}
               </button>
+              {canUpdate && !isTrashed && (
+                <button type="button" disabled={isTogglingPublish} onClick={() => { onCloseMenu(); onTogglePublish(product) }}>
+                  {isPublished ? <EyeOff size={13} /> : <Eye size={13} />}
+                  {isPublished ? t('products.unpublishAction', { defaultValue: 'Ẩn' }) : t('products.publishAction', { defaultValue: 'Xuất bản' })}
+                </button>
+              )}
               {canUpdate && (
                 <button type="button" onClick={() => { onCloseMenu(); onDuplicate(product) }}>
                   <Copy size={13} />{t('products.duplicate')}

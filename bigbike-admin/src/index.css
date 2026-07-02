@@ -1772,10 +1772,14 @@ a {
 .cat-tree-table col.col-select { width: 40px; }
 
 /* #16: chỉ làm nhợt text/image/badge — không nhợt button + checkbox */
+/* A2: dùng màu chữ muted (contrast ~4.83:1, đạt AA) thay vì opacity trên màu đậm (opacity 0.55 chỉ ~3.96:1) */
 .cat-row--hidden .cat-name-link strong,
 .cat-row--hidden .cat-name-link .cat-slug,
 .cat-row--hidden .cat-name-link .cat-breadcrumb,
-.cat-row--hidden .cat-desc,
+.cat-row--hidden .cat-desc {
+  color: var(--admin-color-text-muted);
+}
+
 .cat-row--hidden .thumbnail-wrap--sm,
 .cat-row--hidden .cat-status-badge {
   opacity: 0.55;
@@ -1946,10 +1950,11 @@ a {
 .cat-row--matched td {
   background: color-mix(in srgb, var(--admin-color-status-info-bg) 50%, transparent);
 }
+/* A2: màu chữ muted thay vì opacity 0.5 (contrast ~1.97-3.38:1, dưới AA) */
 .cat-row--dimmed .cat-name-link strong,
 .cat-row--dimmed .cat-name-link .cat-slug,
 .cat-row--dimmed .cat-desc {
-  opacity: 0.5;
+  color: var(--admin-color-text-muted);
 }
 
 /* ── Hover thumbnail popover ────────────────────────────────────────── */
@@ -2058,6 +2063,11 @@ a {
 
 .table-scroll-wrap {
   overflow-x: auto;
+  /* T6: vùng cuộn dọc riêng cho bảng (giống .bb-table-wrap của ProductListScreen)
+     — cô lập khỏi cuộn trang để header sticky (z-index:2) không bị .bb-topbar
+     (z-index:100, cũng sticky top:0) đè lên khi cuộn danh sách danh mục dài. */
+  overflow-y: auto;
+  max-height: calc(100vh - 13rem);
   border: 1px solid var(--admin-color-border-subtle);
   border-radius: var(--admin-radius-md);
   background: var(--admin-color-surface-base);
@@ -2972,13 +2982,17 @@ a {
   .medialib-layout { flex-direction: column; }
 }
 
-/* Reserve room on the right when the detail panel is open so the grid doesn't slide under it */
+/* Reserve room on the right when the detail panel is open so the grid doesn't slide under it.
+   .mediadetail-panel (below) has no responsive override — it's always a fixed 420px right
+   rail up to the 1920px breakpoint required by L1, so this padding must stay reserved through
+   1280px/1440px too. Only drop it on genuinely narrow/mobile viewports, where the panel's own
+   `max-width: 100vw` already turns it into a near-fullscreen overlay that content can't sit beside. */
 .medialib-panel-open {
   padding-right: 432px;
   transition: padding-right 0.18s ease-out;
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 768px) {
   .medialib-panel-open { padding-right: 0; }
 }
 
@@ -3893,6 +3907,11 @@ a {
   background: var(--c-bg-subtle);
 }
 
+.mediafolder-item:focus-visible {
+  outline: 2px solid var(--admin-color-primary);
+  outline-offset: 2px;
+}
+
 .mediafolder-item-hover {
   display: flex;
   align-items: center;
@@ -3919,6 +3938,11 @@ a {
 
 .mediafolder-item-btn:hover {
   background: var(--c-bg-subtle);
+}
+
+.mediafolder-item-btn:focus-visible {
+  outline: 2px solid var(--admin-color-primary);
+  outline-offset: 2px;
 }
 
 .mediafolder-item-label {

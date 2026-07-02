@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
+import { recordRecentItem } from '@/lib/useRecentItems'
 import { DetailSection } from '../components/DetailSection'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -14,6 +15,16 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
 const STATUS_VARIANTS = { APPROVED: 'success', PENDING: 'warning', SPAM: 'muted', TRASH: 'muted' }
+
+// T9: đọc lại query string (filter/trang) mà ReviewListScreen đã lưu trước khi
+// điều hướng sang trang chi tiết, để nút "Quay lại danh sách" không làm mất bộ lọc.
+function readListQuery() {
+  try {
+    return sessionStorage.getItem('reviews:listQuery') || ''
+  } catch {
+    return ''
+  }
+}
 
 function ReviewStatusBadge({ review, t }) {
   return (
@@ -53,6 +64,16 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
   }, [reviewId])
 
   useEffect(() => loadReview(), [loadReview])
+
+  // O9: ghi lại đánh giá vừa xem để hiện trong widget "Vừa xem gần đây" ở danh sách.
+  useEffect(() => {
+    if (state.item?.id) {
+      recordRecentItem('recent:reviews', {
+        id: state.item.id,
+        label: formatText(state.item.authorName, `#${state.item.id}`),
+      })
+    }
+  }, [state.item?.id, state.item?.authorName])
 
   const handleStatusChange = useCallback(async (nextStatus) => {
     setBusy(true)
@@ -130,7 +151,7 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
           <p className="bb-muted">{formatText(reviewProductName, review.productId || t('reviews.unknownProduct'))}</p>
         </div>
         <div className="bb-screen-actions">
-          <Button variant="secondary" type="button" onClick={() => navigate('/admin/reviews')}>
+          <Button variant="secondary" type="button" onClick={() => navigate(`/admin/reviews${readListQuery()}`)}>
             {t('reviews.detail.backToList')}
           </Button>
         </div>

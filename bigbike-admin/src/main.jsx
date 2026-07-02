@@ -27,7 +27,8 @@ function ThemedToaster() {
   return (
     <Toaster
       theme={theme}
-      position="bottom-right"
+      position="top-right"
+      offset={{ top: '72px', right: '20px' }}
       toastOptions={{
         style: {
           fontFamily: 'Inter, system-ui, sans-serif',

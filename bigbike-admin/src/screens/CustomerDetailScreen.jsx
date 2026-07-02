@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { AlertCircle } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+import { recordRecentItem } from '@/lib/useRecentItems'
 import { DetailSection } from '../components/DetailSection'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -15,6 +16,16 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
 const CUSTOMER_STATUSES = ['ACTIVE', 'DISABLED', 'BLOCKED']
+
+// T9: đọc lại query string (filter/trang) mà CustomerListScreen đã lưu trước khi
+// điều hướng sang trang chi tiết, để nút "Quay lại danh sách" không làm mất bộ lọc.
+function readListQuery() {
+  try {
+    return sessionStorage.getItem('customers:listQuery') || ''
+  } catch {
+    return ''
+  }
+}
 
 // Kiểm tra tại form, cùng quy tắc backend (chỉ báo trước, backend vẫn là chốt chặn cuối).
 // Các ô đều tùy chọn: để trống là hợp lệ, chỉ chặn khi nhập giá trị sai.
@@ -68,6 +79,16 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
     return () => { active = false }
   }, [fetchInto])
 
+  // O9: ghi lại khách hàng vừa xem để hiện trong widget "Vừa xem gần đây" ở danh sách.
+  useEffect(() => {
+    if (state.customer?.id) {
+      recordRecentItem('recent:customers', {
+        id: state.customer.id,
+        label: formatText(state.customer.fullName, state.customer.email),
+      })
+    }
+  }, [state.customer?.id, state.customer?.fullName, state.customer?.email])
+
   // Nút "Thử lại" khi lỗi: về trạng thái loading rồi tải lại.
   function handleRetry() {
     setState({ status: 'loading', customer: null, warning: '' })
@@ -90,12 +111,23 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
       )
       if (!ok) return
     }
+    // N7: transition không phá huỷ (vd chuyển sang ACTIVE) — cập nhật lạc quan ngay
+    // trên UI, rollback về giá trị cũ nếu API lỗi (theo pattern optimistic đã có ở
+    // ReviewListScreen.handleStatusChange).
+    const previousStatus = state.customer?.status
+    const isOptimistic = value === 'ACTIVE'
+    if (isOptimistic) {
+      setState((p) => ({ ...p, customer: { ...p.customer, status: value } }))
+    }
     setSaving(true)
     try {
       const r = await updateCustomerStatus(customerId, value)
       setState((p) => ({ ...p, customer: r.item }))
       toast.success(t('customers.detail.statusUpdated'))
     } catch (err) {
+      if (isOptimistic) {
+        setState((p) => ({ ...p, customer: { ...p.customer, status: previousStatus } }))
+      }
       toast.error(err.message || t('common.error'))
     } finally {
       setSaving(false)
@@ -119,7 +151,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
     setEditBaseline(null)
   }
 
-  async function handleEditSave(e) {
+  const handleEditSave = useCallback(async (e) => {
     e.preventDefault()
     if (isPhoneInvalid(editForm.phone)) {
       toast.error('Số điện thoại không hợp lệ.')
@@ -142,7 +174,21 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
     } finally {
       setEditSaving(false)
     }
-  }
+  }, [customerId, editForm, t])
+
+  // O3: Ctrl/Cmd+S lưu form sửa hồ sơ khi đang mở, nhất quán với các phím tắt
+  // khác đã có trong admin (Ctrl+K của GlobalSearch, F11/Ctrl+\ của AdminShell).
+  useEffect(() => {
+    if (!editOpen) return
+    function onKeyDown(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault()
+        handleEditSave(e)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [editOpen, handleEditSave])
 
   if (state.status === 'loading') return <StatePanel tone="info" title={t('customers.detail.loading')} description={t('common.pleaseWait')} />
   if (state.status === 'error') return <StatePanel tone="danger" title={t('customers.detail.error')} description={state.error} actionLabel={t('common.retry', { defaultValue: 'Thử lại' })} onAction={handleRetry} />
@@ -161,7 +207,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
           <p className="bb-muted">{formatText(customer.email)}</p>
         </div>
         <div className="bb-screen-actions">
-          <Button variant="outline" onClick={() => navigate('/admin/customers')}>
+          <Button variant="outline" onClick={() => navigate(`/admin/customers${readListQuery()}`)}>
             {t('customers.detail.backToList')}
           </Button>
         </div>
@@ -223,10 +269,10 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
           </DetailSection>
         )}
 
-        <DetailSection title="Chỉnh sửa hồ sơ">
+        <DetailSection title={t('customers.detail.sectionEditProfile', { defaultValue: 'Chỉnh sửa hồ sơ' })}>
           {!editOpen ? (
             <Button variant="outline" onClick={() => handleEditOpen(customer)} disabled={!canUpdate}>
-              Chỉnh sửa
+              {t('common.edit')}
             </Button>
           ) : (
             <form onSubmit={handleEditSave} className="flex flex-col gap-3">
@@ -295,7 +341,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
                   Lưu
                 </Button>
                 <Button type="button" variant="outline" onClick={handleEditCancel} disabled={editSaving}>
-                  Hủy
+                  {t('common.cancel')}
                 </Button>
               </div>
             </form>

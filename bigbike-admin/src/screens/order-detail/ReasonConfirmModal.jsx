@@ -5,7 +5,7 @@ import { Modal } from '../../components/layout'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 
-export function ReasonConfirmModal({ targetStatus, onConfirm, onClose }) {
+export function ReasonConfirmModal({ targetStatus, onConfirm, onClose, loading = false }) {
   const { t } = useTranslation()
   const [reason, setReason] = useState('')
   const [error, setError] = useState('')
@@ -18,6 +18,7 @@ export function ReasonConfirmModal({ targetStatus, onConfirm, onClose }) {
 
   function handleSubmit(e) {
     e.preventDefault()
+    if (loading) return
     if (!reason.trim()) {
       setError(t('orders.detail.reasonRequired'))
       return
@@ -26,9 +27,12 @@ export function ReasonConfirmModal({ targetStatus, onConfirm, onClose }) {
   }
 
   return (
-    <Modal open title={title} onClose={onClose}>
+    <Modal open title={title} onClose={loading ? () => {} : onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
         <p className="text-sm text-muted-foreground">{description}</p>
+        <p className="text-xs text-muted-foreground">
+          <span className="text-danger" aria-hidden="true">*</span> {t('common.requiredLegend', { defaultValue: 'Bắt buộc' })}
+        </p>
         <div className="flex flex-col gap-1.5">
           <label htmlFor="reason-confirm-input" className="text-sm font-medium">{t('orders.detail.reasonLabel')} *</label>
           <Textarea
@@ -40,6 +44,7 @@ export function ReasonConfirmModal({ targetStatus, onConfirm, onClose }) {
             placeholder={t('orders.detail.reasonPlaceholder')}
             className="resize-y"
             autoFocus
+            disabled={loading}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? 'reason-confirm-error' : undefined}
           />
@@ -51,11 +56,11 @@ export function ReasonConfirmModal({ targetStatus, onConfirm, onClose }) {
           )}
         </div>
         <div className="flex gap-2 justify-end">
-          <Button type="button" variant="outline" size="sm" onClick={onClose}>
+          <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={loading}>
             {t('common.cancel')}
           </Button>
-          <Button type="submit" variant="danger" size="sm">
-            {title}
+          <Button type="submit" variant="danger" size="sm" disabled={loading}>
+            {loading ? t('orders.detail.savingShort') : title}
           </Button>
         </div>
       </form>

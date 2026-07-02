@@ -1,3 +1,4 @@
+import { AlertTriangle, CheckCircle2, Info, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const TONE_CLASSES = {
@@ -8,6 +9,14 @@ const TONE_CLASSES = {
   info:    'bg-info-bg text-info',
 }
 
+const TONE_ICONS = {
+  neutral: Info,
+  success: CheckCircle2,
+  warning: AlertTriangle,
+  danger:  XCircle,
+  info:    Info,
+}
+
 export function StatePanel({
   tone = 'neutral',
   title,
@@ -15,11 +24,13 @@ export function StatePanel({
   actionLabel,
   onAction,
 }) {
+  const ToneIcon = TONE_ICONS[tone] ?? TONE_ICONS.neutral
   return (
     <section
       className={`flex flex-col items-center justify-center gap-3 rounded-sm px-6 py-10 text-center ${TONE_CLASSES[tone] ?? TONE_CLASSES.neutral}`}
       role={tone === 'danger' ? 'alert' : 'status'}
     >
+      <ToneIcon className="h-6 w-6" aria-hidden="true" />
       <h2 className="text-base font-semibold font-body">{title}</h2>
       {description ? <p className="text-sm opacity-80">{description}</p> : null}
       {actionLabel && onAction ? (

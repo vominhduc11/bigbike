@@ -14,11 +14,15 @@ import { StatusBadge } from '../components/StatusBadge'
 import { AdminTable } from '../components/AdminTable'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { FilterChips } from '../components/FilterChips'
+import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
+import { RecentItemsChips } from '../components/RecentItemsChips'
 import { fetchBrands, updateBrand, deleteBrand, restoreBrand, permanentDeleteBrand } from '../lib/adminApi'
 import { formatDateTime, formatText, stripHtml } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
+import { useColumnVisibility } from '../lib/useColumnVisibility'
 import { useContentLang } from '../lib/contentLang'
 import { useDebounce } from '../lib/useDebounce'
+import { useRecentItems } from '../lib/useRecentItems'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 
 const INITIAL_QUERY = {
@@ -48,6 +52,9 @@ export function BrandListScreen({ navigate, canUpdate }) {
   const isFirstSearchRender = useRef(true)
   const [selectedIds, setSelectedIds] = useState([])
   const [bulkProgress, setBulkProgress] = useState(null) // {done,total} or null
+
+  // O9: thương hiệu vừa mở gần đây (ghi lại từ BrandDetailScreen khi mount).
+  const recentBrandItems = useRecentItems('recent:brands')
 
   const state = useAdminList(['brands', query, contentLang], () => fetchBrands(query))
 
@@ -266,7 +273,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
       render: (brand) => {
         const isTrashed = query.visibility === 'HIDDEN'
         return (
-          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
             {!isTrashed && (
               <button
                 type="button"
@@ -317,6 +324,9 @@ export function BrandListScreen({ navigate, canUpdate }) {
     },
   ]
 
+  // T7: cho phép ẩn/hiện cột Mô tả/Cập nhật trên bảng thương hiệu, lưu theo trình duyệt.
+  const { visibleColumns, hiddenKeys, toggle: toggleColumn, allColumns } = useColumnVisibility(columns, 'columns:brands')
+
   const mobileCard = (brand) => ({
     title: formatText(brand.name),
     subtitle: `/${brand.slug}`,
@@ -347,6 +357,9 @@ export function BrandListScreen({ navigate, canUpdate }) {
           </button>
         </div>
       </div>
+
+      {/* O9 — Vừa xem gần đây */}
+      <RecentItemsChips items={recentBrandItems} onSelect={(item) => navigate(`/admin/brands/${item.id}`)} />
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
@@ -380,6 +393,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
           value={query.pageSize}
           onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
         />
+        <ColumnVisibilityToggle allColumns={allColumns} hiddenKeys={hiddenKeys} onToggle={toggleColumn} />
       </div>
 
       {/* Filter chips — chỉ báo gọn đang lọc gì + gỡ từng filter. */}
@@ -439,7 +453,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
             <AdminTable
-              columns={columns}
+              columns={visibleColumns}
               rows={items}
               caption={t('brands.tableCaption')}
               loading={state.status === 'loading'}

@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
 
 /**
- * Tiêu đề khối nội dung PDP (desktop) — H2 in hoa, đậm, lớn. Thống nhất nhịp tiêu
- * đề mọi section (theo mockup PDP), dùng token/Arial — KHÔNG hardcode màu/font.
- * `id` để mobile-anchor/scroll trỏ tới.
+ * Tiêu đề khối nội dung PDP — H2 in hoa, đậm, lớn, kèm vạch đỏ brand bên trái (đồng bộ
+ * với `BlockTitle` của khối mô tả dạng block — xem description-blocks/blocks.tsx). Thống
+ * nhất nhịp + dấu hiệu nhận biết tiêu đề mục cho MỌI section PDP (theo mockup PDP), dùng
+ * token/Arial — KHÔNG hardcode màu/font. `id` để mobile-anchor/scroll trỏ tới.
  */
 export function PdpSectionHeading({
   title,
@@ -14,7 +15,10 @@ export function PdpSectionHeading({
 }) {
   return (
     <div id={id} className="pdp-section-head scroll-mt-[var(--bb-header-height)]">
-      <h2 className="title">{title}</h2>
+      <h2 className="title flex items-stretch gap-3">
+        <span className="w-1 shrink-0 self-stretch bg-brand" aria-hidden />
+        <span>{title}</span>
+      </h2>
     </div>
   );
 }
