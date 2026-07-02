@@ -115,14 +115,14 @@ function MobileTrustLine({ product }: { product: Product }) {
   if (trustBadgesHtml.trim()) {
     return (
       <div
-        className="md:hidden mb-11 bb-trust-badges-html"
+        className="md:hidden max-md:mt-4 mb-11 bb-trust-badges-html"
         dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(trustBadgesHtml, { allowInlineStyles: true }) }}
       />
     );
   }
   if (trustItems.length > 0) {
     return (
-      <div className="md:hidden mb-11 flex flex-wrap items-center gap-x-4 gap-y-2 text-ui-14 max-md:text-ui-12 text-muted-foreground">
+      <div className="md:hidden max-md:mt-4 mb-11 flex flex-wrap items-center gap-x-4 gap-y-2 text-ui-14 max-md:text-ui-12 text-muted-foreground">
         {trustItems.map((item, i) => (
           <span key={`${item}-${i}`} className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 shrink-0 bg-brand" aria-hidden />
