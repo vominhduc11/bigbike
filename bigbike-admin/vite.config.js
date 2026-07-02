@@ -3,6 +3,7 @@ import { defineConfig } from 'vite'
 import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -10,7 +11,9 @@ export default defineConfig({
     tailwindcss(),
     react(),
     babel({ presets: [reactCompilerPreset()] }),
-  ],
+    // ANALYZE=1 npm run analyze — opens dist/stats.html, a treemap of what's in each chunk.
+    process.env.ANALYZE && visualizer({ filename: 'dist/stats.html', gzipSize: true, brotliSize: true }),
+  ].filter(Boolean),
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -18,6 +21,20 @@ export default defineConfig({
   },
   build: {
     sourcemap: false,
+    // Vendor chunk: react/react-dom/react-query/i18next/... rarely change between deploys,
+    // but without this they were bundled into the same chunk as the app shell — every
+    // deploy invalidated the browser's cache for vendor code too, even when only app code
+    // changed. Rolldown (this project's bundler) uses output.codeSplitting.groups instead
+    // of classic Rollup manualChunks — see https://rolldown.rs/in-depth/manual-code-splitting.
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            { name: 'vendor', test: /node_modules/ },
+          ],
+        },
+      },
+    },
   },
   server: {
     port: 4000,

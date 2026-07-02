@@ -142,7 +142,7 @@ Query params (all optional):
 Response `data` shape:
 - `avgRating` (number, 1-decimal, **HALF_UP** — `PublicReviewService.roundAverage`), `totalReviews` (long) — **always global**, never affected by `rating`. Khi 0 review approved: `avgRating = 0.0` (không phải null) và `totalReviews = 0` — FE gate hiển thị sao bắt buộc bằng `totalReviews ≥ 1`, không bằng `avgRating > 0` (xem `BUSINESS_RULES.md` `REVIEW_RULE_003`).
 - `ratingBreakdown` — `{ "5": n, "4": n, "3": n, "2": n, "1": n }`, every key present, global counts.
-- `reviews` — `[{ id, authorName, rating, title, comment, photos, createdAt }]`, filtered + sorted per params. `title` is an optional short heading (string|null, ≤160). `photos` is an array of MinIO media URLs (`/media/reviews/...`, possibly empty) — customer-uploaded photos for that review. Both surface only for `APPROVED` reviews (moderated together with the review).
+- `reviews` — `[{ id, authorName, rating, comment, photos, createdAt }]`, filtered + sorted per params. `photos` is an array of MinIO media URLs (`/media/reviews/...`, possibly empty) — customer-uploaded photos for that review, surfacing only for `APPROVED` reviews (moderated together with the review).
 - `pagination` — `{ page, pageSize, totalItems, totalPages, hasNext, hasPrevious }`. `totalItems`/`totalPages`/`hasNext` follow the **filtered** list (so "load more" pages correctly within one star bucket); when `rating` is absent these equal the global approved count.
 
 Out-of-range `page`/`size`/`rating` → `400 VALIDATION_ERROR`. Unknown `productId` → `404`.
@@ -151,7 +151,7 @@ Out-of-range `page`/`size`/`rating` → `400 VALIDATION_ERROR`. Unknown `product
 
 Submits a review (`status = PENDING`, awaits admin moderation). Honeypot `website` field → accept-and-drop silently. Duplicate guard: same `productId` + normalized author + normalized body within 24h → `409`. See `SubmitReviewRequest`.
 
-Body fields: `authorName` (required, ≤80), `rating` (required, 1..5), `comment` (optional, ≤1000), `website` (honeypot), plus `title` (optional, ≤160) and `photos` (optional, `string[]`, ≤10). Each `photos[]` entry **must** be an internal MinIO media URL (`/media/...`) — external/hotlink URLs are rejected `400 VALIDATION_ERROR` (`photos/INVALID`); more than 10 entries → `photos/TOO_MANY`. Reuses `SafeMediaAssetUrlPolicy.validateImageUrlOrThrow`.
+Body fields: `authorName` (required, ≤80), `rating` (required, 1..5), `comment` (optional, ≤1000), `website` (honeypot), plus `photos` (optional, `string[]`, ≤10). Each `photos[]` entry **must** be an internal MinIO media URL (`/media/...`) — external/hotlink URLs are rejected `400 VALIDATION_ERROR` (`photos/INVALID`); more than 10 entries → `photos/TOO_MANY`. Reuses `SafeMediaAssetUrlPolicy.validateImageUrlOrThrow`.
 
 ### `POST /api/v1/products/{productId}/reviews/photos`
 

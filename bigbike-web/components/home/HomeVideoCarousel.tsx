@@ -2,13 +2,20 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
+import dynamic from "next/dynamic";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
 import type { HomeVideo } from "@/lib/contracts/public";
 import { ArrowButton } from "./video-carousel/ArrowButton";
 import { VideoCard } from "./video-carousel/VideoCard";
-import { VideoModal } from "./video-carousel/VideoModal";
+
+// Only mounted when a video is clicked (activeIndex !== null below) — dynamic import
+// keeps its code out of the initial homepage bundle instead of loading it upfront.
+const VideoModal = dynamic(
+  () => import("./video-carousel/VideoModal").then((mod) => mod.VideoModal),
+  { ssr: false },
+);
 
 // surface: nền nơi đặt carousel. "dark" (mặc định, trang chủ) → mũi tên/chấm trắng;
 // "light" (trang chi tiết sản phẩm nền trắng) → mũi tên/chấm tối để không bị tàng hình.

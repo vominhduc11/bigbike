@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { preload } from "react-dom";
 import { getLocale } from "next-intl/server";
 
 import { HomeAnalytics } from "@/components/home/HomeAnalytics";
@@ -18,9 +19,8 @@ import {
   HomeExperienceHeading,
 } from "@/components/home/HomeLocalizedSettings";
 import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
-import type { HomeSlider, Product } from "@/lib/contracts/public";
+import type { HomeSlider } from "@/lib/contracts/public";
 import {
-  getProductBySlug,
   listArticles,
   listBrands,
   listCategories,
@@ -82,21 +82,15 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-function sliderProductSlug(slider: HomeSlider): string | null {
-  const link = slider.productLink?.trim() ?? "";
-  const match = link.match(/\/sp\/(.+?)\.html$/) ?? link.match(/\/san-pham\/([^/?#]+)/);
-  return match ? match[1] : null;
-}
-
-function toHeroSlide(slider: HomeSlider, product: Product | null): HeroSlide | null {
+function toHeroSlide(slider: HomeSlider): HeroSlide | null {
   const desktopSrc = toLegacyWpMediaUrl(resolveMediaUrl(slider.desktopImage?.url?.trim()));
   if (!desktopSrc) return null;
 
   // Banner WP: desktop dùng ảnh nền, mobile (≤767px) dùng ảnh riêng nếu có,
   // fallback về ảnh desktop.
   const mobileSrc = toLegacyWpMediaUrl(resolveMediaUrl(slider.mobileImage?.url?.trim())) || desktopSrc;
-  const productName = product?.name?.trim() ?? "";
-  const categoryName = product?.category?.name?.trim() ?? "";
+  const productName = slider.productName?.trim() ?? "";
+  const categoryName = slider.categoryName?.trim() ?? "";
 
   return {
     id: slider.id,
@@ -109,7 +103,7 @@ function toHeroSlide(slider: HomeSlider, product: Product | null): HeroSlide | n
     ),
     productName,
     categoryName,
-    productCode: product?.sku?.trim() || "BIGBIKE",
+    productCode: slider.sku?.trim() || "BIGBIKE",
   };
 }
 
@@ -184,15 +178,17 @@ export default async function HomePage() {
   const videosTitle = pickSetting(settings, ["home_videos_title"]);
 
   const rawSliders = slidersResult.data ?? [];
-  const sliderProducts = await Promise.all(
-    rawSliders.map((slider) => {
-      const slug = sliderProductSlug(slider);
-      return slug ? getProductBySlug(slug, locale) : Promise.resolve(null);
-    }),
-  );
   const slides = rawSliders
-    .map((slider, index) => toHeroSlide(slider, sliderProducts[index]?.data ?? null))
+    .map((slider) => toHeroSlide(slider))
     .filter((s): s is NonNullable<typeof s> => s !== null);
+  // The hero banner is the page's LCP element, but React's automatic SSR image
+  // preload skips anything inside a <picture> (HeroSlider wraps its <img> in one
+  // for mobile/desktop art direction) — so without this it was the one image on
+  // the page that DIDN'T get preloaded while everything below the fold did.
+  // Explicit high-priority preload compensates.
+  if (slides[0]) {
+    preload(slides[0].desktopSrc, { as: "image", fetchPriority: "high" });
+  }
 
   const categories = categoriesResult.data ?? [];
   // Bài admin chọn tay được ưu tiên; nếu chưa chọn bài nào thì dùng 3 bài Reviews mới nhất.
@@ -317,7 +313,7 @@ export default async function HomePage() {
             <div className="col-md-12">
               <a href={promoHref ?? "#"} title={promoTitle || undefined}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="lazy" src={promoImageSrc} alt={promoAlt} />
+                <img className="lazy" src={promoImageSrc} alt={promoAlt} loading="lazy" />
               </a>
             </div>
           </div>

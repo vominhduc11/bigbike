@@ -4,7 +4,6 @@ export type Review = {
   id: number | string;
   authorName: string;
   rating: number;
-  title?: string;
   comment?: string;
   photos?: string[];
   createdAt: string;

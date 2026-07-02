@@ -31,7 +31,6 @@ export function WriteReviewForm({
   const [rating, setRating] = useState(0);
   const [authorName, setAuthorName] = useState("");
   const [authorEmail, setAuthorEmail] = useState("");
-  const [title, setTitle] = useState("");
   const [comment, setComment] = useState("");
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [photoError, setPhotoError] = useState("");
@@ -125,7 +124,6 @@ export function WriteReviewForm({
         body: JSON.stringify({
           authorName: authorName.trim(),
           rating,
-          title: title.trim(),
           comment: comment.trim(),
           photos: photoUrls,
           website,
@@ -216,24 +214,6 @@ export function WriteReviewForm({
               type="email"
               value={authorEmail}
               onChange={(event) => setAuthorEmail(event.target.value)}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <Label
-              htmlFor="review-title"
-              className="text-ui-14 max-md:text-ui-12 font-semibold text-[var(--bb-text-primary)]"
-            >
-              {t("formTitleField")}
-            </Label>
-            <Input
-              id="review-title"
-              name="title"
-              type="text"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder={t("formTitlePlaceholder")}
-              maxLength={160}
             />
           </div>
 

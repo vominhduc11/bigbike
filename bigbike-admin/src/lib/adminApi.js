@@ -1352,7 +1352,6 @@ function normalizeReview(input) {
     authorName: String(s.authorName || ''),
     authorEmail: String(s.authorEmail || ''),
     rating: Number(s.rating ?? 0),
-    title: String(s.title || ''),
     body: String(s.body || ''),
     photos: Array.isArray(s.photos) ? s.photos.map(String) : [],
     status: String(s.status || ''),
@@ -1391,6 +1390,24 @@ export async function updateReviewStatus(reviewId, status) {
 
 export async function deleteReview(reviewId) {
   await requestJson(`/admin/reviews/${reviewId}`, { method: 'DELETE' })
+}
+
+/** Bulk moderation — one request instead of N sequential PATCH calls (see ReviewListScreen runBulk). */
+export async function bulkUpdateReviewStatus(reviewIds, status) {
+  const payload = await requestJson('/admin/reviews/bulk-status', {
+    method: 'POST',
+    body: { ids: reviewIds, status },
+  })
+  return payload?.data?.affected ?? 0
+}
+
+/** Bulk counterpart of {@link deleteReview}. */
+export async function bulkDeleteReviews(reviewIds) {
+  const payload = await requestJson('/admin/reviews/bulk-delete', {
+    method: 'POST',
+    body: { ids: reviewIds },
+  })
+  return payload?.data?.affected ?? 0
 }
 
 // Audit Logs

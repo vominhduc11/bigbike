@@ -72,7 +72,7 @@ export function DescriptionBlocksView({ blocks }: { blocks: DescriptionBlock[] }
           ) : featureHasText(g.block) && featureHasImage(g.block) ? (
             // Đủ ảnh + chữ → 2 cột so le trái/phải (chỉ desktop; mobile xếp dọc).
             <div className="grid items-center gap-6 md:grid-cols-2 md:gap-10">
-              <div className={cn(g.reverse && "md:order-2")}>
+              <div className={cn("max-md:order-2", g.reverse && "md:order-2")}>
                 <figure className="m-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -88,7 +88,7 @@ export function DescriptionBlocksView({ blocks }: { blocks: DescriptionBlock[] }
                   ) : null}
                 </figure>
               </div>
-              <div className={cn(g.reverse && "md:order-1")}>
+              <div className={cn("max-md:order-1", g.reverse && "md:order-1")}>
                 <FeatureBody block={g.block} />
               </div>
             </div>

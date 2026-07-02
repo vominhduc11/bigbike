@@ -357,7 +357,8 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     {
       const toastId = toast.loading('Đang tự động dịch sang tiếng Anh...')
       try {
-        const translatedForm = await translateCategoryForm(formToSave, formToSave.enOverrides)
+        const original = isCreate ? null : JSON.parse(initialSnapshot)
+        const translatedForm = await translateCategoryForm(formToSave, formToSave.enOverrides, original)
         formToSave = translatedForm
         setForm(translatedForm)
         toast.success('Đã tự động dịch sang tiếng Anh!', { id: toastId })

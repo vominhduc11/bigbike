@@ -173,6 +173,11 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const [isSubmitting, setIsSubmitting] = useState(false)
   const slugEditedByUser = useRef(false)
   const enSlugEditedByUser = useRef(false)
+  // Snapshot of `form` right after load/save — used ONLY to decide which unlocked fields/sections
+  // actually changed before sending them to Gemini (see handleSave). A ref (not state) so it never
+  // triggers a re-render and never grows stale from every keystroke, matching the `isDirty` boolean
+  // strategy above (this screen dropped JSON.stringify(form)-per-render for perf on 100+ variants).
+  const originalFormRef = useRef(null)
   const [originalPublishStatus, setOriginalPublishStatus] = useState(null)
 
   // ── Live preview (xem trước storefront) ──────────────────────────────────────
@@ -343,6 +348,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     slugEditedByUser.current = Boolean(nextForm.slug)
     enSlugEditedByUser.current = Boolean(nextForm.translations?.en?.slug)
     setOriginalPublishStatus(nextForm.publishStatus)
+    originalFormRef.current = JSON.parse(JSON.stringify(nextForm))
 
     // Check autosave newer than server updatedAt
     if (!isCreate && item?.updatedAt) {
@@ -651,6 +657,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       setOriginalPublishStatus(nextForm.publishStatus)
       slugEditedByUser.current = Boolean(nextForm.slug)
       enSlugEditedByUser.current = Boolean(nextForm.translations?.en?.slug)
+      originalFormRef.current = JSON.parse(JSON.stringify(nextForm))
       setIsDirty(false)
       clearFormFromStorage(autosaveKey)
       setDraftRecovery(null)
@@ -754,7 +761,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     {
       const toastId = toast.loading('Đang tự động dịch sang tiếng Anh...')
       try {
-        const translatedForm = await translateProductForm(formToSave, formToSave.enOverrides)
+        const original = isCreate ? null : originalFormRef.current
+        const translatedForm = await translateProductForm(formToSave, formToSave.enOverrides, original)
         formToSave = translatedForm
         setForm(translatedForm)
         toast.success('Đã tự động dịch sang tiếng Anh!', { id: toastId })

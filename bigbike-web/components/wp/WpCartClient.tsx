@@ -4,8 +4,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { fetchCart, removeCartItem, updateCartItem } from "@/lib/api/client-api";
-import type { Cart } from "@/lib/contracts/commerce";
+import { useCartQuery, useRemoveCartItem, useUpdateCartItem } from "@/lib/query/hooks";
 import { pushDataLayer, toGtmCartItems } from "@/lib/analytics";
 import { toProductListPath } from "@/lib/utils/routes";
 import { cartToDrafts } from "./cart/helpers";
@@ -16,36 +15,42 @@ import { CartSkeleton } from "./cart/CartSkeleton";
 /**
  * Nội dung giỏ hàng — port 1:1 markup từ woocommerce/cart/cart.php + cart-totals.php
  * (class .cart-avalable / .table--items / .summary / .total-summary).
- * Giữ NGUYÊN toàn bộ data/logic thật của bigbike-web (fetchCart, update/remove item,
- * GTM view_cart) — chỉ reskin sang theme WP. WP gốc submit form
- * cho mọi thao tác; bản React drive trực tiếp nên các nút +/- và xoá cập nhật ngay.
+ * Đọc/ghi qua useCartQuery/useUpdateCartItem/useRemoveCartItem (lib/query/hooks) —
+ * cache React Query dùng chung với badge giỏ hàng ở header (WpCartCount qua
+ * lib/cart-context) và trang thanh toán, nên sửa/xoá ở đây cập nhật badge ngay,
+ * không cần fetch riêng. WP gốc submit form cho mọi thao tác; bản React drive
+ * trực tiếp nên các nút +/- và xoá cập nhật ngay.
  */
 export function WpCartClient() {
   const t = useTranslations("CartWp");
-  const [cart, setCart] = useState<Cart | null>(null);
+  const cartQuery = useCartQuery();
+  const updateItem = useUpdateCartItem();
+  const removeItem = useRemoveCartItem();
+  const cart = cartQuery.data ?? null;
   const [quantityDrafts, setQuantityDrafts] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
+  const [syncedCartId, setSyncedCartId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [mutating, setMutating] = useState<Record<string, boolean>>({});
 
-  const syncCart = useCallback((nextCart: Cart) => {
-    setCart(nextCart);
-    setQuantityDrafts(cartToDrafts(nextCart));
-  }, []);
+  // Seed drafts from the server once per cart load (React's "adjusting state during
+  // render" pattern — not an effect, so this can't cascade or clobber an in-progress
+  // edit on a refetch triggered by this component's own mutations). Per-item mutations
+  // below correct their own draft from the mutation's resolved cart on success.
+  if (cart && cart.id !== syncedCartId) {
+    setSyncedCartId(cart.id);
+    setQuantityDrafts(cartToDrafts(cart));
+  }
 
   useEffect(() => {
-    fetchCart()
-      .then((c) => {
-        syncCart(c);
-        pushDataLayer("view_cart", {
-          currency: c.currency ?? "VND",
-          value: c.totals.totalAmount,
-          items: toGtmCartItems(c.items),
-        });
-      })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [syncCart]);
+    if (!cart) return;
+    pushDataLayer("view_cart", {
+      currency: cart.currency ?? "VND",
+      value: cart.totals.totalAmount,
+      items: toGtmCartItems(cart.items),
+    });
+    // Fire once per cart load (item identity), not on every quantity tweak.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cart?.id]);
 
   const setItemMutating = useCallback((id: string, val: boolean) => {
     setMutating((p) => ({ ...p, [id]: val }));
@@ -64,15 +69,18 @@ export function WpCartClient() {
       setItemMutating(itemId, true);
       setError("");
       try {
-        const updated = await updateCartItem(itemId, nextQty);
-        syncCart(updated);
+        const updated = await updateItem.mutateAsync({ itemId, quantity: nextQty });
+        const serverQty = updated.items.find((i) => i.id === itemId)?.quantity;
+        if (serverQty != null && serverQty !== nextQty) {
+          setQuantityDrafts((p) => ({ ...p, [itemId]: serverQty }));
+        }
       } catch (e: unknown) {
         setError((e as Error).message);
       } finally {
         setItemMutating(itemId, false);
       }
     },
-    [quantityDrafts, setItemMutating, syncCart],
+    [quantityDrafts, setItemMutating, updateItem],
   );
 
   const handleQuantityBlur = useCallback(
@@ -82,15 +90,18 @@ export function WpCartClient() {
       setItemMutating(itemId, true);
       setError("");
       try {
-        const updated = await updateCartItem(itemId, nextQty);
-        syncCart(updated);
+        const updated = await updateItem.mutateAsync({ itemId, quantity: nextQty });
+        const serverQty = updated.items.find((i) => i.id === itemId)?.quantity;
+        if (serverQty != null && serverQty !== nextQty) {
+          setQuantityDrafts((p) => ({ ...p, [itemId]: serverQty }));
+        }
       } catch (e: unknown) {
         setError((e as Error).message);
       } finally {
         setItemMutating(itemId, false);
       }
     },
-    [quantityDrafts, setItemMutating, syncCart],
+    [quantityDrafts, setItemMutating, updateItem],
   );
 
   const handleRemove = useCallback(
@@ -98,20 +109,19 @@ export function WpCartClient() {
       setItemMutating(itemId, true);
       setError("");
       try {
-        const updated = await removeCartItem(itemId);
-        syncCart(updated);
+        await removeItem.mutateAsync(itemId);
       } catch (e: unknown) {
         setError((e as Error).message);
       } finally {
         setItemMutating(itemId, false);
       }
     },
-    [setItemMutating, syncCart],
+    [setItemMutating, removeItem],
   );
 
   const continueHref = toProductListPath();
 
-  if (loading) {
+  if (cartQuery.isLoading) {
     return <CartSkeleton label={t("loadingAria")} />;
   }
 
@@ -120,7 +130,7 @@ export function WpCartClient() {
       <>
         <div className="woocommerce-notices-wrapper">
           <div className="woocommerce-error" role="alert">
-            {error || t("loadFailed")}
+            {error || (cartQuery.error instanceof Error ? cartQuery.error.message : t("loadFailed"))}
           </div>
         </div>
         <p className="return-to-shop">

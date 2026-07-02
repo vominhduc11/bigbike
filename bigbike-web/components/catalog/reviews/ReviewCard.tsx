@@ -116,11 +116,6 @@ export function ReviewCard({ review }: { review: Review }) {
           </time>
         </div>
         <StarRow rating={review.rating} />
-        {review.title && (
-          <p className="mt-1.5 mb-0 text-ui-20 max-md:text-ui-18 font-semibold text-[var(--bb-text-primary)] [overflow-wrap:anywhere]">
-            {review.title}
-          </p>
-        )}
         {review.comment && <ReviewComment text={review.comment} />}
         {photos.length > 0 && <ReviewPhotos photos={photos} authorName={review.authorName} />}
       </div>

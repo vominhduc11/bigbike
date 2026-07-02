@@ -37,6 +37,7 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -467,17 +468,45 @@ public class CheckoutService {
     /**
      * Validate boolean availability (variant.isAvailable / product stock_state, owner decision
      * 2026-06-23) and re-sync prices from DB. Does NOT write any stock changes.
+     *
+     * <p>Locks every product/variant referenced by the cart in one round-trip each
+     * ({@code WHERE id IN (:ids)}) instead of one {@code SELECT ... FOR UPDATE} per cart
+     * line — carts are almost always 1 line today, but this removes N round-trips for the
+     * rare multi-line cart and avoids per-line lock-acquisition ordering issues as basket
+     * size grows.
      */
     private void syncPricesAndValidateStock(List<CartItemEntity> items,
             List<OrderSummaryResponse.PriceChange> priceChanges) {
+        // Resolve by varchar PK (product_pk / product_variant_pk): the UUID columns are null for
+        // migrated wp-* catalog, which previously made this whole pass skip those lines → no stock
+        // validation and (in applyStockForLineItems) no decrement → silent oversell. See V176.
+        List<String> productIds = items.stream()
+                .filter(item -> item.getProductPk() != null)
+                .map(CartItemEntity::getProductPk)
+                .distinct()
+                .toList();
+        if (productIds.isEmpty()) {
+            return;
+        }
+        Map<String, ProductEntity> productsById = productRepo.findAllByIdInForUpdate(productIds).stream()
+                .collect(Collectors.toMap(ProductEntity::getId, p -> p));
+
+        List<String> variantIds = items.stream()
+                .filter(item -> item.getProductPk() != null && item.getProductVariantPk() != null)
+                .map(CartItemEntity::getProductVariantPk)
+                .distinct()
+                .toList();
+        Map<String, ProductVariantEntity> variantsById = variantIds.isEmpty()
+                ? Map.of()
+                : variantRepo.findAllByIdInForUpdate(variantIds).stream()
+                        .collect(Collectors.toMap(ProductVariantEntity::getId, v -> v));
+
         for (CartItemEntity cartItem : items) {
-            // Resolve by varchar PK (product_pk / product_variant_pk): the UUID columns are null for
-            // migrated wp-* catalog, which previously made this whole pass skip those lines → no stock
-            // validation and (in applyStockForLineItems) no decrement → silent oversell. See V176.
             if (cartItem.getProductPk() == null) continue;
-            ProductEntity product = productRepo.findByIdForUpdate(cartItem.getProductPk())
-                    .orElseThrow(() -> new ConflictException(
-                            "Product no longer exists: " + cartItem.getProductName()));
+            ProductEntity product = productsById.get(cartItem.getProductPk());
+            if (product == null) {
+                throw new ConflictException("Product no longer exists: " + cartItem.getProductName());
+            }
             if (product.getPublishStatus() != PublishStatus.PUBLISHED) {
                 throw new ConflictException(
                         "Sản phẩm '" + cartItem.getProductName() + "' không còn được bán.");
@@ -485,10 +514,10 @@ public class CheckoutService {
 
             ProductVariantEntity variant = null;
             if (cartItem.getProductVariantPk() != null) {
-                variant = variantRepo
-                        .findByIdForUpdate(cartItem.getProductVariantPk())
-                        .orElseThrow(() -> new ConflictException(
-                                "Variant no longer exists for: " + cartItem.getProductName()));
+                variant = variantsById.get(cartItem.getProductVariantPk());
+                if (variant == null) {
+                    throw new ConflictException("Variant no longer exists for: " + cartItem.getProductName());
+                }
                 if (!variant.isAvailable()) {
                     throw new ConflictException(
                             "Sản phẩm '" + cartItem.getProductName() + "' hết hàng.");

@@ -2,7 +2,9 @@ package com.bigbike.bigbike_backend.repository.catalog;
 
 import com.bigbike.bigbike_backend.domain.catalog.Brand;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
+import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
+import com.bigbike.bigbike_backend.service.common.SortSpec;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +25,44 @@ public interface CatalogReadRepository {
     List<Product> findAllPublishedProducts(String locale);
 
     /**
+     * Same rows as {@link #findAllPublishedProducts(String)} but hydrated with the
+     * lighter "listing" projection: skips gallery, videos, specifications, faqs,
+     * commitments, specStats, trustBadges, highlights, related/accessory products
+     * and variant gallery — none of that survives {@code CatalogReadSupport.toListView()}
+     * anyway, so loading it just to discard it wastes a lazy-collection batch fetch per
+     * relation on every list/facets request. Keeps variant + options (needed for color
+     * filter/facets) and every field the list/facets endpoints actually read.
+     */
+    List<Product> findAllPublishedProductsForListing(String locale);
+
+    /**
+     * Real SQL LIMIT/OFFSET pagination for the storefront product list — filter/sort
+     * pushed to the database via {@link org.springframework.data.jpa.domain.Specification},
+     * only the current page's rows are hydrated (via the listing projection). Covers every
+     * {@code listProducts} filter except color: color matching needs per-variant-option
+     * Vietnamese-diacritic-aware normalization ({@code CatalogReadSupport.colorBaseSlug})
+     * that isn't SQL-pushable without a dedicated indexed/denormalized color column — callers
+     * fall back to {@link #findAllPublishedProductsForListing(String)} + in-memory filtering
+     * when a color filter is active. {@code sortField} "homepageOrder" also falls back (its
+     * nulls-last-pin + reversed-only-inside-pinned-section tie-break isn't a plain column sort).
+     */
+    ProductListingPage findPublishedProductsPaged(
+            String categorySlug,
+            String brandSlug,
+            String q,
+            String gender,
+            Long minPrice,
+            Long maxPrice,
+            HomepageBlock homepageBlock,
+            SortSpec sortSpec,
+            int page,
+            int size,
+            String locale
+    );
+
+    record ProductListingPage(List<Product> items, long totalItems) {}
+
+    /**
      * DB-level token-AND search against name + shortDescription.
      * Each token must match at least one field — "ba lo" → ["ba","lo"] finds "balo".
      */
@@ -40,6 +80,18 @@ public interface CatalogReadRepository {
     Optional<Product> findProductById(String id);
 
     Optional<Product> findProductByIdPublicView(String id, String locale);
+
+    /**
+     * Same row as {@link #findProductBySlug(String, String)} but hydrated with the lighter
+     * "listing" projection (see {@link #findAllPublishedProductsForListing(String)}) — used by
+     * the pricing/stock snapshot endpoint, which only ever reads price/stock/variant+options
+     * and has no business reading gallery/videos/specifications/faqs/commitments/specStats/
+     * trustBadges/highlights/related/accessory.
+     */
+    Optional<Product> findProductBySlugForListing(String slug, String locale);
+
+    /** Snapshot counterpart of {@link #findProductByIdPublicView(String, String)}. */
+    Optional<Product> findProductByIdPublicViewForListing(String id, String locale);
 
     /** Batch public-view lookup by id. Order of the result is not guaranteed; callers re-order. */
     List<Product> findProductsByIdsPublicView(List<String> ids, String locale);

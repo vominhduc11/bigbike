@@ -6,7 +6,6 @@ public record SubmitReviewRequest(
         String authorName,
         Integer rating,
         String comment,
-        String title,
         List<String> photos,
         String website
 ) {}

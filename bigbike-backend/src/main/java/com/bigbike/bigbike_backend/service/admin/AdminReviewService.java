@@ -153,6 +153,43 @@ public class AdminReviewService {
         return result;
     }
 
+    /**
+     * Bulk moderation — same per-item logic as {@link #updateStatus} but looped server-side
+     * in one request/transaction instead of the admin browser firing N sequential HTTP
+     * requests (see ReviewListScreen.jsx runBulk). Best-effort: a missing/invalid id is
+     * skipped rather than aborting the whole batch, mirroring AdminMediaService.bulkSoftDelete.
+     */
+    @Transactional
+    public int bulkUpdateStatus(UUID adminId, List<Long> ids, String status, String ipAddress, String userAgent) {
+        if (ids == null || ids.isEmpty()) return 0;
+        int count = 0;
+        for (Long id : ids) {
+            try {
+                updateStatus(adminId, id, status, ipAddress, userAgent);
+                count++;
+            } catch (NotFoundException ignored) {
+                // skip missing ones — caller asked for best-effort
+            }
+        }
+        return count;
+    }
+
+    /** Bulk counterpart of {@link #deleteReview}. See {@link #bulkUpdateStatus} for the pattern. */
+    @Transactional
+    public int bulkDelete(UUID adminId, List<Long> ids, String ipAddress, String userAgent) {
+        if (ids == null || ids.isEmpty()) return 0;
+        int count = 0;
+        for (Long id : ids) {
+            try {
+                deleteReview(adminId, id, ipAddress, userAgent);
+                count++;
+            } catch (NotFoundException ignored) {
+                // skip missing ones — caller asked for best-effort
+            }
+        }
+        return count;
+    }
+
     private void sendReviewApprovedEmail(ReviewEntity review, ProductReviewMetadata productMetadata) {
         Context ctx = new Context();
         ctx.setVariable("authorName", review.getAuthorName() != null ? review.getAuthorName() : "Khách hàng");
@@ -257,7 +294,6 @@ public class AdminReviewService {
         payload.put("authorName", review.getAuthorName() != null ? review.getAuthorName() : "");
         payload.put("authorEmail", review.getAuthorEmail() != null ? review.getAuthorEmail() : "");
         payload.put("rating", review.getRating());
-        payload.put("title", review.getTitle() != null ? review.getTitle() : "");
         payload.put("body", review.getBody() != null ? review.getBody() : "");
         payload.put("photos", review.getPhotos() != null ? review.getPhotos() : List.of());
         payload.put("status", review.getStatus());

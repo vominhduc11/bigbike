@@ -1204,6 +1204,7 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-left: var(--admin-space-2);
   background: var(--admin-color-surface-muted);
   user-select: none;
 }

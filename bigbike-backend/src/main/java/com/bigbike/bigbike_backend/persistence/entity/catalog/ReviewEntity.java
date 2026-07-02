@@ -42,10 +42,6 @@ public class ReviewEntity {
     @Column(columnDefinition = "text")
     private String body;
 
-    /** Optional review heading (V234). Null for legacy / WordPress-imported reviews. */
-    @Column(name = "title", length = 160)
-    private String title;
-
     /**
      * Customer-uploaded photo URLs in MinIO ({@code /media/reviews/...}), max 10 (V234, REVIEW_RULE_005).
      * Null/empty when the review has no photos. Stored as a JSON string array.

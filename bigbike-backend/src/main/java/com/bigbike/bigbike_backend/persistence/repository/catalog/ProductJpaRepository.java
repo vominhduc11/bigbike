@@ -59,6 +59,15 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Strin
     @Query("SELECT p FROM ProductEntity p WHERE p.id = :id")
     Optional<ProductEntity> findByIdForUpdate(@Param("id") String id);
 
+    /**
+     * Batch counterpart of {@link #findByIdForUpdate(String)} — locks every product in
+     * {@code ids} with one round-trip instead of one {@code SELECT ... FOR UPDATE} per cart
+     * line (see CheckoutService.syncPricesAndValidateStock).
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM ProductEntity p WHERE p.id IN :ids")
+    List<ProductEntity> findAllByIdInForUpdate(@Param("ids") Collection<String> ids);
+
     @Query("""
         SELECT p FROM ProductEntity p
         WHERE NOT EXISTS (SELECT 1 FROM ProductVariantEntity v WHERE v.product = p)

@@ -33,7 +33,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class PublicReviewController {
 
     private static final int MAX_PHOTOS = 10;
-    private static final int MAX_TITLE_LENGTH = 160;
 
     private final PublicReviewService publicReviewService;
     private final ApiResponseFactory apiResponseFactory;
@@ -67,7 +66,7 @@ public class PublicReviewController {
         }
         validate(body);
         publicReviewService.submitReview(
-                productId, body.authorName(), body.rating(), body.comment(), body.title(), body.photos());
+                productId, body.authorName(), body.rating(), body.comment(), body.photos());
         return apiResponseFactory.data(Map.of("success", true), request);
     }
 
@@ -100,12 +99,6 @@ public class PublicReviewController {
                     "comment",
                     "TOO_LONG",
                     "Nh\u1eadn x\u00e9t kh\u00f4ng \u0111\u01b0\u1ee3c v\u01b0\u1ee3t qu\u00e1 1000 k\u00fd t\u1ef1.");
-        }
-        if (body.title() != null && body.title().trim().length() > MAX_TITLE_LENGTH) {
-            throw ValidationException.fromField(
-                    "title",
-                    "TOO_LONG",
-                    "Ti\u00eau \u0111\u1ec1 kh\u00f4ng \u0111\u01b0\u1ee3c v\u01b0\u1ee3t qu\u00e1 160 k\u00fd t\u1ef1.");
         }
         validatePhotos(body.photos());
     }

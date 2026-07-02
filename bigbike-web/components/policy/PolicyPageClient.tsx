@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { DEFAULT_LOCALE } from "@/i18n/locale";
 import { fetchPublicMenu, fetchPublicSettings } from "@/lib/api/client-api";
+import { queryKeys } from "@/lib/query/keys";
 import { getStaticPage } from "@/lib/content/static-pages";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { pickSetting } from "@/lib/utils/settings";
@@ -74,9 +75,11 @@ export function PolicyPageClient({
     staleTime: 5 * 60 * 1000,
   });
 
-  // Refetch settings in client language if not vi (for warranty contact info)
+  // Refetch settings in client language if not vi (for warranty contact info).
+  // Shared queryKeys.publicSettings(locale) with HomeLocalizedSettings — React Query
+  // dedupes/reuses the cache instead of firing a second request for the same data.
   const { data: settingsData } = useQuery({
-    queryKey: ["policy-settings", locale],
+    queryKey: queryKeys.publicSettings(locale),
     queryFn: () => fetchPublicSettings(locale),
     enabled: isAlt && slug === WARRANTY_SLUG,
     staleTime: 5 * 60 * 1000,

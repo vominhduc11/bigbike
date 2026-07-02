@@ -42,7 +42,7 @@ export function HomeNewsList({ initialArticles }: { initialArticles: Article[] }
               <div className="news--item">
                 <div className="news--item-thumbnail">
                   <LocalizedLink kind="article" viSlug={a.slug} enSlug={a.slugEn} className="lazy">
-                    {img ? <img src={img} alt={title} className="lazy" /> : null}
+                    {img ? <img src={img} alt={title} className="lazy" loading="lazy" /> : null}
                   </LocalizedLink>
                 </div>
                 <div className="news--item-desc">

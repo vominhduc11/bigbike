@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
 const STORAGE_KEY = 'bigbike-admin-theme'
 
@@ -43,8 +43,10 @@ export function ThemeProvider({ children }) {
     setTheme(theme === 'dark' ? 'light' : 'dark')
   }, [theme, setTheme])
 
+  const value = useMemo(() => ({ theme, setTheme, toggleTheme }), [theme, setTheme, toggleTheme])
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   )

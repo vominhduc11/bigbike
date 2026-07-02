@@ -114,7 +114,6 @@ export async function POST(req: Request, { params }: ProductRouteParams) {
     authorName?: string;
     rating?: number;
     comment?: string;
-    title?: string;
     photos?: unknown;
     website?: string;
   };
@@ -124,16 +123,13 @@ export async function POST(req: Request, { params }: ProductRouteParams) {
     return NextResponse.json({ error: "Dữ liệu không hợp lệ." }, { status: 400 });
   }
 
-  const { authorName, rating, comment, title, photos, website } = body;
+  const { authorName, rating, comment, photos, website } = body;
 
   if (!authorName?.trim()) {
     return NextResponse.json({ error: "Vui lòng nhập tên." }, { status: 400 });
   }
   if (typeof rating !== "number" || rating < 1 || rating > 5) {
     return NextResponse.json({ error: "Đánh giá phải từ 1 đến 5 sao." }, { status: 400 });
-  }
-  if (typeof title === "string" && title.trim().length > 160) {
-    return NextResponse.json({ error: "Tiêu đề không được vượt quá 160 ký tự." }, { status: 400 });
   }
   // Keep only string photo URLs, cap at 10 — backend re-validates they are MinIO URLs.
   const photoUrls = Array.isArray(photos)
@@ -149,7 +145,6 @@ export async function POST(req: Request, { params }: ProductRouteParams) {
         authorName: authorName.trim(),
         rating,
         comment: comment?.trim() ?? "",
-        title: typeof title === "string" ? title.trim() : "",
         photos: photoUrls,
         website: website ?? "",
       }),

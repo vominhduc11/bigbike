@@ -99,20 +99,25 @@ export function BrandListScreen({ navigate, canUpdate }) {
       if (!ok) return
     }
 
+    // Runs in parallel (Promise.allSettled) — unlike categories, brands have no
+    // parent/child hide-order constraint, so there is no reason to serialize these.
     setBulkProgress({ done: 0, total: ids.length })
     let success = 0
     let failed = 0
-    for (let i = 0; i < ids.length; i++) {
-      try {
-        await updateBrand(ids[i], { visible: targetVisible })
-        success += 1
-      } catch (err) {
-        failed += 1
-        const brand = byId.get(ids[i])
-        toast.error(`${brand?.name || ids[i]}: ${err.message || t('common.error')}`)
-      }
-      setBulkProgress({ done: i + 1, total: ids.length })
-    }
+    await Promise.allSettled(
+      ids.map((id) =>
+        updateBrand(id, { visible: targetVisible })
+          .then(() => { success += 1 })
+          .catch((err) => {
+            failed += 1
+            const brand = byId.get(id)
+            toast.error(`${brand?.name || id}: ${err.message || t('common.error')}`)
+          })
+          .finally(() => {
+            setBulkProgress((prev) => ({ done: (prev?.done ?? 0) + 1, total: ids.length }))
+          })
+      )
+    )
     setBulkProgress(null)
     setSelectedIds([])
     queryClient.invalidateQueries({ queryKey: ['brands'] })

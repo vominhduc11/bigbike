@@ -1,17 +1,22 @@
-import { useMemo, useEffect, useState, useCallback } from 'react'
+import { useMemo, useEffect, useState, useCallback, Suspense } from 'react'
 import { CheckCircle2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { fetchSettings, batchUpdateSettings } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+import { lazyScreen } from '../lib/lazyScreen'
 import {
   validateValue, TAB_ORDER, SENSITIVE_SETTING_TABS, HIDDEN_GROUPS, HIDDEN_KEYS,
   TAB_META, FALLBACK_META, tabLabel, BANNERS_TAB_ID,
 } from './settings/constants'
 import { SettingTabPanel } from './settings/SettingTabPanel'
-import { BannerScreen } from './BannerScreen'
+
+// Lazy — Cài đặt mở mặc định ở tab chung, không phải tab Banner (496 dòng); tải sẵn tĩnh
+// trước đây kéo theo code Banner vào MỌI lần mở Cài đặt dù không xem tab đó.
+const BannerScreen = lazyScreen(() => import('./BannerScreen'), 'BannerScreen')
 
 // ── SettingsScreen ────────────────────────────────────────────────────────────
 
@@ -273,7 +278,9 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
             )}
 
             {activeTab === BANNERS_TAB_ID && (
-              <BannerScreen embedded canUpdate={canUpdate} navigate={navigate} />
+              <Suspense fallback={<ScreenSkeleton />}>
+                <BannerScreen embedded canUpdate={canUpdate} navigate={navigate} />
+              </Suspense>
             )}
 
             {activeTab && activeTab !== BANNERS_TAB_ID && (

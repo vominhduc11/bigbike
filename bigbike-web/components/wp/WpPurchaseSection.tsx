@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
-import type { GalleryMedia, Product, ProductCommitment, ProductPrice, ProductStockState, ProductVariant } from "@/lib/contracts/public";
+import type { BrandSummary, CategorySummary, GalleryMedia, Product, ProductCommitment, ProductPrice, ProductStockState, ProductVariant, TrustBadge } from "@/lib/contracts/public";
 import { useCart } from "@/lib/cart-context";
 import { derivePricing } from "@/lib/pricing";
 import { formatVndNumber, safeText } from "@/lib/utils/format";
@@ -190,18 +190,30 @@ export function WpPurchaseSection({
 
   // Eyebrow (danh mục / thương hiệu·xuất xứ) ngay trên tiêu đề — port mockup PDP. GIỮ design
   // system web (text-brand + font-heading uppercase), KHÔNG dùng đỏ/Barlow của mockup.
-  // Eyebrow lấy từ dữ liệu sản phẩm sẵn có.
+  // category.name/brand.name resolve theo locale ở backend (toCategorySummary/toBrandSummary) —
+  // đọc qua useLocalizedField như commitments/trustBadges ở trên. originBrandCountry KHÔNG có cột
+  // *_en (schema chỉ 1 cột) nên giữ nguyên bản vi ở mọi ngôn ngữ.
+  const enCategory = useLocalizedField<CategorySummary>("category");
+  const activeCategory = locale === "en" ? enCategory : product.category;
   const eyebrowCategory =
-    product.category?.slug === "chua-phan-loai" ? "" : safeText(product.category?.name, "");
-  const eyebrowBrand = safeText(product.originBrandCountry, "") || safeText(product.brand?.name, "");
+    activeCategory?.slug === "chua-phan-loai" ? "" : safeText(activeCategory?.name, "");
+  const enBrand = useLocalizedField<BrandSummary>("brand");
+  const activeBrand = locale === "en" ? enBrand : product.brand;
+  const eyebrowBrand = safeText(product.originBrandCountry, "") || safeText(activeBrand?.name, "");
   const eyebrow = [eyebrowCategory, eyebrowBrand].filter(Boolean).join(" / ");
 
   // Khối "cam kết" dưới nút mua (V232) — quản theo TỪNG sản phẩm; khối ngoài tab → rỗng thì ẩn cả khối.
-  const commitments: ProductCommitment[] = product.commitments ?? [];
+  // Đổi ngôn ngữ qua LocalizedContentProvider (như enName/enTrustHtml ở trên) — bản EN nếu có, không thì fallback bản vi.
+  const enCommitments = useLocalizedField<ProductCommitment[]>("commitments");
+  const commitments: ProductCommitment[] =
+    (locale === "en" ? enCommitments : product.commitments) ?? [];
 
   // Dải tín hiệu tin cậy trên tên sản phẩm (V233) — admin quản theo TỪNG sản phẩm; nội dung đã
   // resolve theo ngôn ngữ ở backend. Khối ngoài tab → rỗng thì ẩn dải.
-  const trustItems = (product.trustBadges ?? [])
+  const enTrustBadges = useLocalizedField<TrustBadge[]>("trustBadges");
+  const trustItems = (
+    (locale === "en" ? enTrustBadges : product.trustBadges) ?? []
+  )
     .map((b) => safeText(b.content, ""))
     .filter(Boolean);
 

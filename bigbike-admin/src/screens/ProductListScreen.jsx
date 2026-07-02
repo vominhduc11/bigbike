@@ -72,6 +72,15 @@ export function ProductListScreen({ navigate, canUpdate }) {
     return () => document.removeEventListener('click', onClick)
   }, [openMenu])
 
+  // Functional update (not reading `openMenu` from closure) + useCallback([]) so this
+  // handler's identity stays stable across renders — passing a fresh arrow function to
+  // every ProductRow on each openMenu change broke prop-identity memoization for rows
+  // that didn't change, forcing the whole visible list to re-render on any menu toggle.
+  const handleToggleMenu = useCallback((id) => {
+    setOpenMenu((prev) => (prev === id ? null : id))
+  }, [])
+  const handleCloseMenu = useCallback(() => setOpenMenu(null), [])
+
   const handleDuplicate = useCallback(async (product) => {
     try {
       const result = await fetchProductDetail(product.id)
@@ -534,8 +543,8 @@ export function ProductListScreen({ navigate, canUpdate }) {
                     isRestoring={restoringId === product.id}
                     isMenuOpen={openMenu === product.id}
                     onToggleSelect={toggle}
-                    onToggleMenu={(id) => setOpenMenu(openMenu === id ? null : id)}
-                    onCloseMenu={() => setOpenMenu(null)}
+                    onToggleMenu={handleToggleMenu}
+                    onCloseMenu={handleCloseMenu}
                     onDuplicate={handleDuplicate}
                     onRestore={handleRestore}
                     onPermanentDelete={handlePermanentDelete}

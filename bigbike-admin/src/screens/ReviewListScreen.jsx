@@ -8,7 +8,7 @@ import { BulkActionBar } from '../components/BulkActionBar'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
-import { deleteReview, fetchReviews, updateReviewStatus } from '../lib/adminApi'
+import { bulkDeleteReviews, bulkUpdateReviewStatus, deleteReview, fetchReviews, updateReviewStatus } from '../lib/adminApi'
 import { useContentLang } from '../lib/contentLang'
 import { formatDateTime, formatText } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
@@ -45,6 +45,111 @@ function Stars({ n, of = 5, label }) {
 
 function statusLabel(status, t) {
   return t(`reviews.status${status.charAt(0) + status.slice(1).toLowerCase()}`, { defaultValue: status })
+}
+
+// Extracted to its own component (module scope, mirrors ProductListScreen's ProductRow)
+// so approving/spamming/deleting one review only re-renders that card — previously every
+// card's JSX lived inline in ReviewListScreen's .map(), so any pendingId/selection change
+// anywhere in the list re-rendered the whole list.
+function ReviewCard({
+  review: r,
+  index: i,
+  isSelected,
+  isPending,
+  canUpdate,
+  contentLang,
+  navigate,
+  t,
+  onToggleSelect,
+  onStatusChange,
+  onDelete,
+}) {
+  const author = formatText(r.authorName) || t('reviews.unknownAuthor', { defaultValue: 'Khách hàng' })
+  return (
+    <div
+      className="bb-card"
+      style={isSelected ? { borderColor: 'var(--bb-primary)', boxShadow: '0 0 0 1px var(--bb-primary)' } : undefined}
+    >
+      <div className="bb-card-body">
+        <div className="flex items-center gap-3 mb-3">
+          {canUpdate && (
+            <span
+              className={`bb-cb${isSelected ? ' checked' : ''}`}
+              role="checkbox"
+              aria-checked={isSelected}
+              aria-label={t('reviews.selectOne', { defaultValue: 'Chọn đánh giá này' })}
+              tabIndex={0}
+              onClick={() => onToggleSelect(r.id)}
+              onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); onToggleSelect(r.id) } }}
+            >
+              {isSelected && <Check size={11} />}
+            </span>
+          )}
+          <span className={`inline-flex items-center justify-center size-8 rounded-full text-xs font-bold flex-shrink-0 ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
+            {author.charAt(0).toUpperCase()}
+          </span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700 }}>{author}</div>
+            <div className="bb-muted" style={{ fontSize: 12 }}>
+              {t('reviews.colProduct')}:{' '}
+              {r.productId ? (
+                <a
+                  href={`/admin/products/${r.productId}`}
+                  style={{ fontWeight: 600, color: 'var(--admin-color-text-primary)', textDecoration: 'none', cursor: 'pointer' }}
+                  title={t('common.openInNewTab')}
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return
+                    e.preventDefault()
+                    navigate(`/admin/products/${r.productId}`)
+                  }}
+                >
+                  {formatText(contentLang === 'en' ? (r.productNameEn || r.productName) : r.productName, r.productId)}
+                </a>
+              ) : (
+                <span style={{ fontWeight: 600, color: 'var(--admin-color-text-primary)' }}>
+                  {formatText(contentLang === 'en' ? (r.productNameEn || r.productName) : r.productName, t('reviews.unknownProduct'))}
+                </span>
+              )}
+              {' · '}{formatDateTime(r.createdAt)}
+            </div>
+          </div>
+          <Stars n={Math.round(r.rating)} />
+          <span className={`bb-badge ${STATUS_BADGE[r.status] || 'bb-badge-neutral'}`}>
+            {statusLabel(r.status, t)}
+          </span>
+        </div>
+        <p style={{ margin: 0, color: 'var(--admin-color-text-secondary)', fontSize: 14, lineHeight: 1.55 }}>
+          "{r.body?.slice(0, 400)}{r.body?.length > 400 ? '…' : ''}"
+        </p>
+        {r.photos?.length > 0 ? (
+          <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+            <ImageIcon size={13} />
+            {t('reviews.photoCount', { count: r.photos.length, defaultValue: `${r.photos.length} ảnh` })}
+          </div>
+        ) : null}
+        <div className="flex flex-wrap gap-2 mt-3">
+          <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={() => navigate(`/admin/reviews/${r.id}`)}>
+            <Eye size={13} />{t('reviews.view')}
+          </button>
+          {canUpdate && r.status !== 'APPROVED' && (
+            <button type="button" className="bb-btn bb-btn-primary bb-btn-sm" disabled={isPending} onClick={() => onStatusChange(r, 'APPROVED')}>
+              {isPending ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{t('reviews.approve')}
+            </button>
+          )}
+          {canUpdate && r.status !== 'SPAM' && (
+            <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" style={{ color: 'var(--bb-danger)' }} disabled={isPending} onClick={() => onStatusChange(r, 'SPAM')}>
+              {isPending ? <Loader2 size={13} className="animate-spin" /> : <EyeOff size={13} />}{t('reviews.spam')}
+            </button>
+          )}
+          {canUpdate && (
+            <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" style={{ color: 'var(--bb-danger)' }} disabled={isPending} onClick={() => onDelete(r.id)}>
+              {t('common.delete')}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export function ReviewListScreen({ navigate, canUpdate }) {
@@ -167,7 +272,9 @@ export function ReviewListScreen({ navigate, canUpdate }) {
     setSelected((prev) => (prev.size === items.length ? new Set() : new Set(items.map((r) => r.id))))
   }, [items])
 
-  // Áp dụng một hành động cho mọi review đang chọn (duyệt / spam / xoá hàng loạt).
+  // Áp dụng một hành động cho mọi review đang chọn (duyệt / spam / xoá hàng loạt) — 1 request
+  // bulk ở backend thay vì N request PATCH/DELETE tuần tự (mỗi request trước đây là 1 round-trip
+  // network riêng từ trình duyệt admin, xem AdminReviewController.bulkUpdateStatus/bulkDeleteReviews).
   const runBulk = useCallback(async (kind) => {
     if (bulkBusy) return
     const ids = Array.from(selected)
@@ -182,27 +289,16 @@ export function ReviewListScreen({ navigate, canUpdate }) {
     const total = ids.length
     setActionError('')
     setBulkBusy(true)
-    setBulkProgress({ done: 0, total })
-    let done = 0
+    setBulkProgress({ total })
     try {
-      for (const id of ids) {
-        if (kind === 'DELETE') await deleteReview(id)
-        else await updateReviewStatus(id, kind)
-        done += 1
-        setBulkProgress({ done, total })
-      }
-      toast.success(t('reviews.bulkDone', { count: done, defaultValue: `Đã xử lý ${done} đánh giá.` }))
+      const affected = kind === 'DELETE'
+        ? await bulkDeleteReviews(ids)
+        : await bulkUpdateReviewStatus(ids, kind)
+      toast.success(t('reviews.bulkDone', { count: affected, defaultValue: `Đã xử lý ${affected} đánh giá.` }))
       setSelected(new Set())
     } catch (error) {
-      // Báo rõ đã xử lý tới đâu + còn bao nhiêu chưa xong để người dùng biết phải làm lại phần nào.
       const detail = error.message || t('reviews.bulkError', { defaultValue: 'Một số đánh giá xử lý không thành công.' })
-      setActionError(t('reviews.bulkErrorProgress', {
-        done,
-        total,
-        remaining: total - done,
-        detail,
-        defaultValue: `Đã xử lý ${done}/${total} đánh giá, còn ${total - done} chưa xong. ${detail}`,
-      }))
+      setActionError(detail)
     } finally {
       setBulkBusy(false)
       setBulkProgress(null)
@@ -328,9 +424,8 @@ export function ReviewListScreen({ navigate, canUpdate }) {
         <BulkActionBar
           selectedCount={bulkProgress
             ? t('reviews.bulkProgress', {
-                done: bulkProgress.done,
                 total: bulkProgress.total,
-                defaultValue: `Đang xử lý ${bulkProgress.done}/${bulkProgress.total}…`,
+                defaultValue: `Đang xử lý ${bulkProgress.total} đánh giá…`,
               })
             : selected.size}
           onClear={() => setSelected(new Set())}
@@ -409,101 +504,22 @@ export function ReviewListScreen({ navigate, canUpdate }) {
               </div>
             ))
           )}
-          {items.map((r, i) => {
-            const author = formatText(r.authorName) || t('reviews.unknownAuthor', { defaultValue: 'Khách hàng' })
-            const isSelected = selected.has(r.id)
-            return (
-              <div
-                className="bb-card"
-                key={r.id}
-                style={isSelected ? { borderColor: 'var(--bb-primary)', boxShadow: '0 0 0 1px var(--bb-primary)' } : undefined}
-              >
-                <div className="bb-card-body">
-                  <div className="flex items-center gap-3 mb-3">
-                    {canUpdate && (
-                      <span
-                        className={`bb-cb${isSelected ? ' checked' : ''}`}
-                        role="checkbox"
-                        aria-checked={isSelected}
-                        aria-label={t('reviews.selectOne', { defaultValue: 'Chọn đánh giá này' })}
-                        tabIndex={0}
-                        onClick={() => toggleSelect(r.id)}
-                        onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleSelect(r.id) } }}
-                      >
-                        {isSelected && <Check size={11} />}
-                      </span>
-                    )}
-                    <span className={`inline-flex items-center justify-center size-8 rounded-full text-xs font-bold flex-shrink-0 ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
-                      {author.charAt(0).toUpperCase()}
-                    </span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700 }}>{author}</div>
-                      <div className="bb-muted" style={{ fontSize: 12 }}>
-                        {t('reviews.colProduct')}:{' '}
-                        {r.productId ? (
-                          <a
-                            href={`/admin/products/${r.productId}`}
-                            style={{ fontWeight: 600, color: 'var(--admin-color-text-primary)', textDecoration: 'none', cursor: 'pointer' }}
-                            title={t('common.openInNewTab')}
-                            onClick={(e) => {
-                              if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return
-                              e.preventDefault()
-                              navigate(`/admin/products/${r.productId}`)
-                            }}
-                          >
-                            {formatText(contentLang === 'en' ? (r.productNameEn || r.productName) : r.productName, r.productId)}
-                          </a>
-                        ) : (
-                          <span style={{ fontWeight: 600, color: 'var(--admin-color-text-primary)' }}>
-                            {formatText(contentLang === 'en' ? (r.productNameEn || r.productName) : r.productName, t('reviews.unknownProduct'))}
-                          </span>
-                        )}
-                        {' · '}{formatDateTime(r.createdAt)}
-                      </div>
-                    </div>
-                    <Stars n={Math.round(r.rating)} />
-                    <span className={`bb-badge ${STATUS_BADGE[r.status] || 'bb-badge-neutral'}`}>
-                      {statusLabel(r.status, t)}
-                    </span>
-                  </div>
-                  {r.title ? (
-                    <p style={{ margin: '0 0 4px', fontWeight: 600, color: 'var(--admin-color-text-primary)', fontSize: 14 }}>
-                      {r.title}
-                    </p>
-                  ) : null}
-                  <p style={{ margin: 0, color: 'var(--admin-color-text-secondary)', fontSize: 14, lineHeight: 1.55 }}>
-                    "{r.body?.slice(0, 400)}{r.body?.length > 400 ? '…' : ''}"
-                  </p>
-                  {r.photos?.length > 0 ? (
-                    <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                      <ImageIcon size={13} />
-                      {t('reviews.photoCount', { count: r.photos.length, defaultValue: `${r.photos.length} ảnh` })}
-                    </div>
-                  ) : null}
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={() => navigate(`/admin/reviews/${r.id}`)}>
-                      <Eye size={13} />{t('reviews.view')}
-                    </button>
-                    {canUpdate && r.status !== 'APPROVED' && (
-                      <button type="button" className="bb-btn bb-btn-primary bb-btn-sm" disabled={pendingId === r.id} onClick={() => handleStatusChange(r, 'APPROVED')}>
-                        {pendingId === r.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{t('reviews.approve')}
-                      </button>
-                    )}
-                    {canUpdate && r.status !== 'SPAM' && (
-                      <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" style={{ color: 'var(--bb-danger)' }} disabled={pendingId === r.id} onClick={() => handleStatusChange(r, 'SPAM')}>
-                        {pendingId === r.id ? <Loader2 size={13} className="animate-spin" /> : <EyeOff size={13} />}{t('reviews.spam')}
-                      </button>
-                    )}
-                    {canUpdate && (
-                      <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" style={{ color: 'var(--bb-danger)' }} disabled={pendingId === r.id} onClick={() => handleDelete(r.id)}>
-                        {t('common.delete')}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )
-          })}
+          {items.map((r, i) => (
+            <ReviewCard
+              key={r.id}
+              review={r}
+              index={i}
+              isSelected={selected.has(r.id)}
+              isPending={pendingId === r.id}
+              canUpdate={canUpdate}
+              contentLang={contentLang}
+              navigate={navigate}
+              t={t}
+              onToggleSelect={toggleSelect}
+              onStatusChange={handleStatusChange}
+              onDelete={handleDelete}
+            />
+          ))}
 
           {state.status === 'success' && state.pagination && (
             <div className="px-5 py-3 border-t border-border">

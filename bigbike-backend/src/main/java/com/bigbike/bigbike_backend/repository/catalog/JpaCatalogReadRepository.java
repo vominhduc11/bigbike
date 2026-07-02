@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.domain.catalog.BrandSummary;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.CategorySummary;
 import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
+import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.ProductCommitment;
@@ -111,6 +112,99 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    public List<Product> findAllPublishedProductsForListing(String locale) {
+        return productJpaRepository.findByPublishStatus(PublishStatus.PUBLISHED).stream()
+                .map(entity -> toDomainListing(entity, locale))
+                .toList();
+    }
+
+    @Override
+    public ProductListingPage findPublishedProductsPaged(
+            String categorySlug,
+            String brandSlug,
+            String q,
+            String gender,
+            Long minPrice,
+            Long maxPrice,
+            HomepageBlock homepageBlock,
+            com.bigbike.bigbike_backend.service.common.SortSpec sortSpec,
+            int page,
+            int size,
+            String locale
+    ) {
+        Specification<ProductEntity> spec = buildPublicListingSpec(
+                categorySlug, brandSlug, q, gender, minPrice, maxPrice, homepageBlock, sortSpec);
+        org.springframework.data.domain.PageRequest pageRequest =
+                org.springframework.data.domain.PageRequest.of(Math.max(0, page - 1), Math.max(1, size));
+        org.springframework.data.domain.Page<ProductEntity> result =
+                productJpaRepository.findAll(spec, pageRequest);
+        List<Product> items = result.getContent().stream()
+                .map(entity -> toDomainListing(entity, locale))
+                .toList();
+        return new ProductListingPage(items, result.getTotalElements());
+    }
+
+    private static Specification<ProductEntity> buildPublicListingSpec(
+            String categorySlug,
+            String brandSlug,
+            String q,
+            String gender,
+            Long minPrice,
+            Long maxPrice,
+            HomepageBlock homepageBlock,
+            com.bigbike.bigbike_backend.service.common.SortSpec sortSpec
+    ) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("publishStatus"), PublishStatus.PUBLISHED));
+            if (categorySlug != null && !categorySlug.isBlank()) {
+                predicates.add(cb.equal(root.join("category", JoinType.LEFT).get("slug"), categorySlug));
+            }
+            if (brandSlug != null && !brandSlug.isBlank()) {
+                predicates.add(cb.equal(root.join("brand", JoinType.LEFT).get("slug"), brandSlug));
+            }
+            if (q != null && !q.isBlank()) {
+                String like = "%" + q.toLowerCase(Locale.ROOT) + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("name")), like),
+                        cb.like(cb.lower(cb.coalesce(root.get("shortDescription"), "")), like)));
+            }
+            if (gender != null && !gender.isBlank()) {
+                predicates.add(cb.equal(cb.lower(root.get("gender")), gender.toLowerCase(Locale.ROOT)));
+            }
+            if (minPrice != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("retailPrice"), java.math.BigDecimal.valueOf(minPrice)));
+            }
+            if (maxPrice != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("retailPrice"), java.math.BigDecimal.valueOf(maxPrice)));
+            }
+            if (homepageBlock != null) {
+                predicates.add(cb.equal(root.get("homepageBlock"), homepageBlock));
+            }
+            // Guard against the count query (Long result type does not support orderBy) —
+            // same pattern as searchPublishedProducts() above.
+            if (!Long.class.equals(query.getResultType())) {
+                boolean desc = sortSpec.direction() == com.bigbike.bigbike_backend.service.common.SortDirection.DESC;
+                switch (sortSpec.field()) {
+                    case "name" -> {
+                        Expression<String> nameLower = cb.lower(root.get("name"));
+                        query.orderBy(desc ? cb.desc(nameLower) : cb.asc(nameLower));
+                    }
+                    case "price" -> {
+                        Expression<java.math.BigDecimal> price = root.get("retailPrice");
+                        query.orderBy(desc ? cb.desc(price) : cb.asc(price));
+                    }
+                    default -> {
+                        Expression<java.time.Instant> created = root.get("createdAt");
+                        query.orderBy(desc ? cb.desc(created) : cb.asc(created));
+                    }
+                }
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    @Override
     public List<Product> searchPublishedProducts(java.util.List<String> tokens, String locale, int limit) {
         Specification<ProductEntity> spec = (root, query, cb) -> {
             java.util.List<Predicate> preds = new ArrayList<>();
@@ -147,7 +241,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     private Product toDomainListItem(ProductEntity entity, String locale) {
-        CategorySummary primaryCategory = toCategorySummary(entity.getCategory());
+        CategorySummary primaryCategory = toCategorySummary(entity.getCategory(), locale);
         List<CategorySummary> categories = primaryCategory == null
                 ? List.of()
                 : List.of(primaryCategory);
@@ -159,7 +253,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 pick(entity.getName(), entity.getNameEn(), locale),
                 null,
                 null,
-                toBrandSummary(entity.getBrand()),
+                toBrandSummary(entity.getBrand(), locale),
                 primaryCategory,
                 categories,
                 toImageAsset(
@@ -216,6 +310,127 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         );
     }
 
+    /**
+     * Storefront list/facets projection: same shape as {@link #toDomainListItem} (no
+     * gallery/videos/specifications/faqs/commitments/specStats/trustBadges/highlights/
+     * related/accessory) but ALSO carries variant + options — {@code toListView()} strips
+     * options back out for the final list response, but facet computation (color/gender
+     * buckets) and color filtering need them on the way in. Variant gallery is skipped
+     * (list/facets never render variant media); see {@link #toVariantForListing}.
+     */
+    private Product toDomainListing(ProductEntity entity, String locale) {
+        CategorySummary primaryCategory = toCategorySummary(entity.getCategory(), locale);
+        List<CategorySummary> categories = primaryCategory == null
+                ? List.of()
+                : List.of(primaryCategory);
+        return new Product(
+                entity.getId(),
+                entity.getSku(),
+                entity.getSlug(),
+                entity.getSlugEn(),
+                pick(entity.getName(), entity.getNameEn(), locale),
+                pick(entity.getShortDescription(), entity.getShortDescriptionEn(), locale),
+                null,
+                toBrandSummary(entity.getBrand(), true, locale),
+                primaryCategory,
+                categories,
+                toImageAsset(
+                        entity.getImageId(),
+                        entity.getImageUrl(),
+                        entity.getImageAlt(),
+                        entity.getImageWidth(),
+                        entity.getImageHeight(),
+                        entity.getImageMimeType()
+                ),
+                List.of(),
+                List.of(),
+                new ProductPrice(
+                        entity.getRetailPrice(),
+                        entity.getCompareAtPrice(),
+                        entity.getSalePrice(),
+                        entity.getCurrency(),
+                        null // public: cost not needed
+                ),
+                toVariantsForListing(entity, locale),
+                List.of(),
+                entity.getStockState(),
+                null, // stockQuantity — public never sees a count
+                entity.getForceOutOfStock(),
+                entity.getPublishStatus(),
+                entity.getHomepageBlock(),
+                entity.getHomepageOrder(),
+                entity.getRating(),
+                entity.getRatingCount(),
+                null,                       // promotionContent — detail only
+                null,                       // installationGuide — detail only
+                List.of(),                  // faqs — detail only
+                List.of(),                  // commitments — detail only
+                List.of(),                  // specStats — detail only
+                List.of(),                  // trustBadges — detail only
+                List.of(),                  // positiveNotes — detail only
+                List.of(),                  // negativeNotes — detail only
+                null,                       // originBrandCountry — detail only
+                null,                       // sizeGuide — detail only
+                null,                       // suitabilityAdvisory — detail only
+                null,                       // specificationsHtml — detail only
+                null,                       // specStatsHtml — detail only
+                null,                       // trustBadgesHtml — detail only
+                entity.getGender(),
+                List.of(),                  // relatedProducts — detail only
+                List.of(),                  // accessoryProducts — detail only
+                null,                       // descriptionBlocks — detail only
+                null,                       // tabs — detail only
+                null,                       // sectionVisibility — detail only
+                null,                       // seo — detail only
+                null,                       // translations — admin detail read only
+                entity.getCreatedAt(),
+                entity.getUpdatedAt()
+        );
+    }
+
+    private List<ProductVariant> toVariantsForListing(ProductEntity entity, String locale) {
+        if (entity.getVariants() == null) {
+            return List.of();
+        }
+        return entity.getVariants().stream()
+                .sorted(VARIANT_ORDER)
+                .map(v -> toVariantForListing(v, locale))
+                .toList();
+    }
+
+    /** Same as {@link #toVariant} but skips gallery — list/facets never render variant media. */
+    private ProductVariant toVariantForListing(ProductVariantEntity entity, String locale) {
+        ProductPrice price = entity.getRetailPrice() == null
+                ? null
+                : new ProductPrice(
+                        entity.getRetailPrice(),
+                        entity.getCompareAtPrice(),
+                        entity.getSalePrice(),
+                        entity.getCurrency() == null ? "VND" : entity.getCurrency(),
+                        null // public: cost not needed
+                );
+
+        List<ProductVariantOption> options = entity.getOptions() == null
+                ? List.of()
+                : entity.getOptions().stream()
+                        .sorted(VARIANT_OPTION_ORDER)
+                        .map(option -> toVariantOption(option, true, locale))
+                        .toList();
+
+        return new ProductVariant(
+                entity.getId(),
+                entity.getSku(),
+                entity.getName(),
+                options,
+                price,
+                entity.getStockState(),
+                null, // stockQuantity — public never sees a count
+                null, // image — list/facets never render variant media
+                List.of(),
+                entity.isAvailable()
+        );
+    }
+
     private static Specification<ProductEntity> buildProductSpec(String query, String publishStatus, String stockState, String brandId, String categoryId, String locale) {
         return (root, criteriaQuery, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -263,6 +478,18 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     @Override
     public Optional<Product> findProductByIdPublicView(String id, String locale) {
         return productJpaRepository.findById(id).map(entity -> toDomainPublicView(entity, locale));
+    }
+
+    @Override
+    public Optional<Product> findProductBySlugForListing(String slug, String locale) {
+        return productJpaRepository.findBySlug(slug)
+                .or(() -> productJpaRepository.findBySlugEn(slug))
+                .map(entity -> toDomainListing(entity, locale));
+    }
+
+    @Override
+    public Optional<Product> findProductByIdPublicViewForListing(String id, String locale) {
+        return productJpaRepository.findById(id).map(entity -> toDomainListing(entity, locale));
     }
 
     @Override
@@ -445,7 +672,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     private Product toDomain(ProductEntity entity, boolean publicView, String locale) {
-        CategorySummary primaryCategory = toCategorySummary(entity.getCategory());
+        CategorySummary primaryCategory = toCategorySummary(entity.getCategory(), locale);
         List<CategorySummary> categories = primaryCategory == null
                 ? List.of()
                 : List.of(primaryCategory);
@@ -461,7 +688,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 pick(entity.getName(), entity.getNameEn(), locale),
                 pick(entity.getShortDescription(), entity.getShortDescriptionEn(), locale),
                 pick(entity.getDescription(), entity.getDescriptionEn(), locale),
-                toBrandSummary(entity.getBrand(), publicView),
+                toBrandSummary(entity.getBrand(), publicView, locale),
                 primaryCategory,
                 categories,
                 toImageAsset(
@@ -968,24 +1195,24 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         );
     }
 
-    private CategorySummary toCategorySummary(CategoryEntity entity) {
+    private CategorySummary toCategorySummary(CategoryEntity entity, String locale) {
         if (entity == null) {
             return null;
         }
-        return new CategorySummary(entity.getId(), entity.getSlug(), entity.getSlugEn(), entity.getName());
+        return new CategorySummary(entity.getId(), entity.getSlug(), entity.getSlugEn(), pick(entity.getName(), entity.getNameEn(), locale));
     }
 
-    private BrandSummary toBrandSummary(BrandEntity entity) {
-        return toBrandSummary(entity, false);
+    private BrandSummary toBrandSummary(BrandEntity entity, String locale) {
+        return toBrandSummary(entity, false, locale);
     }
 
-    private BrandSummary toBrandSummary(BrandEntity entity, boolean publicView) {
+    private BrandSummary toBrandSummary(BrandEntity entity, boolean publicView, String locale) {
         if (entity == null) {
             return null;
         }
         if (publicView && !entity.isVisible()) {
             return null;
         }
-        return new BrandSummary(entity.getId(), entity.getSlug(), entity.getSlugEn(), entity.getName());
+        return new BrandSummary(entity.getId(), entity.getSlug(), entity.getSlugEn(), pick(entity.getName(), entity.getNameEn(), locale));
     }
 }

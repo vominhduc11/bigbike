@@ -79,12 +79,47 @@ export function WpAccountNav({
     router.push("/");
   }
 
-  if (auth.status !== "authenticated") {
+  if (auth.status === "loading") {
+    // Auth check is still in flight (fetchMe() hasn't resolved yet) — render a
+    // skeleton shaped like the real sidebar+content layout instead of a single
+    // line of text, so the page doesn't visibly "pop" from empty to full content.
     return (
-      <div className="account-dashboard">
-        <p className="woocommerce-info">{t("loggingOut")}</p>
+      <div className="account-dashboard" aria-busy="true" aria-label={t("loadingAccount")}>
+        <div className="row">
+          <div className="col-md-3">
+            <div className="account-loggin">
+              <div className="infor animate-pulse">
+                <div className="h-5 w-2/3 rounded bg-black/10" />
+                <div className="mt-2 h-4 w-4/5 rounded bg-black/10" />
+              </div>
+            </div>
+            <div className="account-nav animate-pulse">
+              <ul>
+                {NAV.map((item) => (
+                  <li key={item.href}>
+                    <div className="my-2 h-4 w-1/2 rounded bg-black/10" />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <div className="col-md-9 my-account-sidebar">
+            <div className="woocommerce-MyAccount-content animate-pulse">
+              <div className="h-4 w-full rounded bg-black/10" />
+              <div className="mt-3 h-4 w-5/6 rounded bg-black/10" />
+              <div className="mt-3 h-4 w-2/3 rounded bg-black/10" />
+            </div>
+          </div>
+        </div>
       </div>
     );
+  }
+
+  if (auth.status !== "authenticated") {
+    // "anonymous" — the redirect effect above is about to send the browser to
+    // /dang-nhap/; render nothing rather than a flash of "logging out" copy that
+    // doesn't apply to a visitor who was never logged in.
+    return null;
   }
 
   const profile = auth.profile;

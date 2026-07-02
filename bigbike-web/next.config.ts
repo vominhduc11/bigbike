@@ -3,8 +3,15 @@ import path from "node:path";
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 import createNextIntlPlugin from "next-intl/plugin";
+import withBundleAnalyzerFactory from "@next/bundle-analyzer";
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
+// ANALYZE=true npm run analyze — opens an interactive treemap of the client/server
+// bundles after `next build`. No-op (identity wrap) when the env var is unset, so
+// normal dev/build/deploy are unaffected.
+const withBundleAnalyzer = withBundleAnalyzerFactory({
+  enabled: process.env.ANALYZE === "true",
+});
 
 type SeoRedirectRow = {
   sourcePattern: string;
@@ -116,6 +123,13 @@ const csvNoIndexHeaders = buildNoIndexHeaders(redirectRows);
 // BIGBIKE_LEGACY_UPLOADS_BASE — used for CSP img-src at build time (browser-visible origin).
 // In Docker Compose this is baked as http://localhost:9000/bigbike-media/wp-uploads so
 // the browser's CSP allows loading images from the host-mapped MinIO port.
+// The "https://cdn.bigbike.vn/uploads" fallback below only matters if the env var is
+// unset — cdn.bigbike.vn is NOT a real CDN, it's the old WordPress host (verified live:
+// no CDN response headers, plain nginx→MinIO passthrough). The real media domain is
+// media.bigbike.vn (BIGBIKE_MEDIA_PUBLIC_BASE_URL). This string is still meaningful as a
+// prefix match, though: LEGACY_CDN_PREFIX in lib/utils/format.ts / wp-media.ts rewrites
+// old cdn.bigbike.vn URLs still stored in migrated product/article content to the real
+// media host — do not delete without re-checking those still find matches.
 const LEGACY_UPLOADS_BASE = normalizeBaseUrl(
   process.env.BIGBIKE_LEGACY_UPLOADS_BASE,
   "https://cdn.bigbike.vn/uploads",
@@ -194,8 +208,12 @@ const nextConfig: NextConfig = {
   },
   images: {
     remotePatterns: [
-      // Production CDN — images proxied via /wp-content/uploads/ rewrite,
-      // but listed here so next/image can optimize any direct CDN URL.
+      // cdn.bigbike.vn is legacy (old WordPress host, not a real CDN — see
+      // LEGACY_UPLOADS_BASE comment above). Kept as an allowlist entry so next/image
+      // doesn't reject any migrated content that still embeds this old URL directly;
+      // most such URLs are rewritten to media.bigbike.vn before reaching next/image
+      // (LEGACY_CDN_PREFIX in lib/utils/format.ts / wp-media.ts), but this is a
+      // zero-cost fallback for anything that isn't.
       {
         protocol: "https",
         hostname: "cdn.bigbike.vn",
@@ -466,7 +484,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(withNextIntl(nextConfig), {
+export default withSentryConfig(withBundleAnalyzer(withNextIntl(nextConfig)), {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,

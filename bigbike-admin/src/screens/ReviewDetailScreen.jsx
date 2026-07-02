@@ -172,9 +172,6 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
         </DetailSection>
 
         <DetailSection title={t('reviews.detail.sectionContent')}>
-          {review.title ? (
-            <p className="m-0 mb-2 font-semibold">{review.title}</p>
-          ) : null}
           <p className="m-0 whitespace-pre-wrap leading-relaxed">
             {formatText(review.body, '(---)')}
           </p>

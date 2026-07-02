@@ -26,6 +26,15 @@ public interface ProductVariantJpaRepository extends JpaRepository<ProductVarian
     @Query("SELECT v FROM ProductVariantEntity v JOIN FETCH v.product WHERE v.id = :id")
     Optional<ProductVariantEntity> findByIdForUpdate(@Param("id") String id);
 
+    /**
+     * Batch counterpart of {@link #findByIdForUpdate(String)} — locks every variant in
+     * {@code ids} with one round-trip instead of one {@code SELECT ... FOR UPDATE} per cart
+     * line (see CheckoutService.syncPricesAndValidateStock).
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT v FROM ProductVariantEntity v JOIN FETCH v.product WHERE v.id IN :ids")
+    List<ProductVariantEntity> findAllByIdInForUpdate(@Param("ids") Collection<String> ids);
+
     // Caller passes empty string (not null) for q so Postgres can resolve lower(?) to text.
     // (Null params inside lower(...) make Postgres infer bytea — see AdminInventoryService.)
     @Query("""

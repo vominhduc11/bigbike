@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { DEFAULT_LOCALE } from "@/i18n/locale";
 import { fetchPublicSettings } from "@/lib/api/client-api";
+import { queryKeys } from "@/lib/query/keys";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 
 /**
@@ -17,14 +18,16 @@ import { sanitizeRichHtml } from "@/lib/utils/html";
  * nào admin chưa nhập bản EN sẽ tự hiển thị `vi`. Render đầu (locale `vi`) dùng prop server
  * → khớp HTML server, không hydration mismatch; chỉ swap sau khi khách chọn EN.
  *
- * Cả ba component dùng chung queryKey ["home-settings", locale] nên React Query gộp thành 1 request.
+ * Cả ba component dùng chung queryKeys.publicSettings(locale) nên React Query gộp thành 1
+ * request — key này cũng dùng chung với PolicyPageClient nên chuyển trang chủ ↔ trang chính
+ * sách trong cùng phiên không phải gọi lại API.
  */
 export function useEnSettingLookup(): (key: string) => string | undefined {
   const locale = useLocale();
   const isAlt = locale !== DEFAULT_LOCALE;
 
   const { data } = useQuery({
-    queryKey: ["home-settings", locale],
+    queryKey: queryKeys.publicSettings(locale),
     queryFn: () => fetchPublicSettings(locale),
     enabled: isAlt,
     staleTime: 5 * 60 * 1000,

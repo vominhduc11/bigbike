@@ -3,6 +3,13 @@ import { translateFields } from '@/lib/adminApi'
 // VI→EN auto-translation. The Gemini call now runs on the BACKEND (server-side key) — the
 // admin only posts the fields it wants translated. Fields/sections the admin edited by hand
 // are "locked" (passed in `overrides`) and skipped, so manual English is never overwritten.
+//
+// `original` (optional 3rd arg on every translate*Form below) is a snapshot of the form taken
+// when it was opened (or after the last save) — see each screen's `initialSnapshot`. An unlocked
+// field/section is only sent to Gemini when its Vietnamese content changed since that snapshot,
+// or its English counterpart is still blank (first translate, or a previous pass left it empty).
+// `original` is null on create (nothing to diff against yet) — every non-empty unlocked field is
+// sent, same as before this diffing was added.
 
 export function slugify(text) {
   return String(text || '')
@@ -31,6 +38,69 @@ function toLockSet(overrides) {
   return new Set(Array.isArray(overrides) ? overrides : [])
 }
 
+// ── Change/gap detection for the "only translate what actually changed" gate ────────────────
+
+/** True when `key` on `current` differs from the snapshot, or there is no snapshot to diff. */
+function isChanged(original, key, currentValue) {
+  if (!original) return true
+  return (original[key] ?? '') !== (currentValue ?? '')
+}
+
+/** Same as {@link isChanged} but for array/object fields (deep compare via JSON). */
+function isArrayChanged(original, key, currentValue) {
+  if (!original) return true
+  return JSON.stringify(original[key] ?? null) !== JSON.stringify(currentValue ?? null)
+}
+
+function isEnBlank(value) {
+  return !value || !String(value).trim()
+}
+
+/** True when any row has a non-blank VI value whose paired EN value is still blank. */
+function rowsHaveEnGap(rows, pairs) {
+  if (!Array.isArray(rows)) return false
+  return rows.some((r) => pairs.some(([viKey, enKey]) => r?.[viKey]?.trim() && isEnBlank(r?.[enKey])))
+}
+
+// Text-bearing fields per description-block type, used only for the EN-gap check below (mirrors
+// the field set the toTranslate-collection loop reads for each block type further down).
+const BLOCK_TEXT_FIELDS = {
+  heading: ['text'],
+  paragraph: ['html'],
+  callout: ['html'],
+  suitability: ['html'],
+  sizeGuide: ['title', 'html'],
+  feature: ['title', 'description'],
+}
+
+function blockHasText(block) {
+  if (!block) return false
+  const fields = BLOCK_TEXT_FIELDS[block.type] || []
+  if (fields.some((f) => block[f]?.trim())) return true
+  return Array.isArray(block.items) && block.items.some((i) => i?.trim())
+}
+
+/** True when the EN mirror block is missing (structurally, or type-mismatched) or a text field it
+ * carries is blank while the VI counterpart isn't. */
+function blockHasEnGap(viBlock, enBlock) {
+  if (!viBlock) return false
+  if (!enBlock || enBlock.type !== viBlock.type) return blockHasText(viBlock)
+  const fields = BLOCK_TEXT_FIELDS[viBlock.type] || []
+  if (fields.some((f) => viBlock[f]?.trim() && isEnBlank(enBlock[f]))) return true
+  if (Array.isArray(viBlock.items)) {
+    const enItems = Array.isArray(enBlock.items) ? enBlock.items : []
+    if (viBlock.items.some((item, j) => item?.trim() && isEnBlank(enItems[j]))) return true
+  }
+  if (viBlock.type === 'suitability' && Array.isArray(viBlock.cards)) {
+    const enCards = Array.isArray(enBlock.cards) ? enBlock.cards : []
+    if (viBlock.cards.some((c, j) =>
+      (c?.audience?.trim() && isEnBlank(enCards[j]?.audience)) || (c?.advice?.trim() && isEnBlank(enCards[j]?.advice)))) {
+      return true
+    }
+  }
+  return false
+}
+
 async function callTranslate(sourceObject) {
   if (!sourceObject || Object.keys(sourceObject).length === 0) return {}
   try {
@@ -43,14 +113,15 @@ async function callTranslate(sourceObject) {
 
 // ── Category Translation ───────────────────────────────────────────────────
 
-export async function translateCategoryForm(form, overrides = []) {
+export async function translateCategoryForm(form, overrides = [], original = null) {
   const locked = toLockSet(overrides)
+  const needsTranslate = (key) => isChanged(original, key, form[key]) || isEnBlank(form.translations?.en?.[key])
   const toTranslate = {}
-  if (!locked.has('name') && form.name?.trim()) toTranslate.name = form.name.trim()
-  if (!locked.has('description') && form.description?.trim()) toTranslate.description = form.description.trim()
-  if (!locked.has('introContent') && form.introContent?.trim()) toTranslate.introContent = form.introContent.trim()
-  if (!locked.has('seoTitle') && form.seoTitle?.trim()) toTranslate.seoTitle = form.seoTitle.trim()
-  if (!locked.has('seoDescription') && form.seoDescription?.trim()) toTranslate.seoDescription = form.seoDescription.trim()
+  if (!locked.has('name') && form.name?.trim() && needsTranslate('name')) toTranslate.name = form.name.trim()
+  if (!locked.has('description') && form.description?.trim() && needsTranslate('description')) toTranslate.description = form.description.trim()
+  if (!locked.has('introContent') && form.introContent?.trim() && needsTranslate('introContent')) toTranslate.introContent = form.introContent.trim()
+  if (!locked.has('seoTitle') && form.seoTitle?.trim() && needsTranslate('seoTitle')) toTranslate.seoTitle = form.seoTitle.trim()
+  if (!locked.has('seoDescription') && form.seoDescription?.trim() && needsTranslate('seoDescription')) toTranslate.seoDescription = form.seoDescription.trim()
 
   const translated = await callTranslate(toTranslate)
   if (Object.keys(translated).length === 0) return form
@@ -78,13 +149,14 @@ export async function translateCategoryForm(form, overrides = []) {
 
 // ── Brand Translation ──────────────────────────────────────────────────────
 
-export async function translateBrandForm(form, overrides = []) {
+export async function translateBrandForm(form, overrides = [], original = null) {
   const locked = toLockSet(overrides)
+  const needsTranslate = (key) => isChanged(original, key, form[key]) || isEnBlank(form.translations?.en?.[key])
   const toTranslate = {}
-  if (!locked.has('name') && form.name?.trim()) toTranslate.name = form.name.trim()
-  if (!locked.has('description') && form.description?.trim()) toTranslate.description = form.description.trim()
-  if (!locked.has('seoTitle') && form.seoTitle?.trim()) toTranslate.seoTitle = form.seoTitle.trim()
-  if (!locked.has('seoDescription') && form.seoDescription?.trim()) toTranslate.seoDescription = form.seoDescription.trim()
+  if (!locked.has('name') && form.name?.trim() && needsTranslate('name')) toTranslate.name = form.name.trim()
+  if (!locked.has('description') && form.description?.trim() && needsTranslate('description')) toTranslate.description = form.description.trim()
+  if (!locked.has('seoTitle') && form.seoTitle?.trim() && needsTranslate('seoTitle')) toTranslate.seoTitle = form.seoTitle.trim()
+  if (!locked.has('seoDescription') && form.seoDescription?.trim() && needsTranslate('seoDescription')) toTranslate.seoDescription = form.seoDescription.trim()
 
   const translated = await callTranslate(toTranslate)
   if (Object.keys(translated).length === 0) return form
@@ -111,15 +183,16 @@ export async function translateBrandForm(form, overrides = []) {
 
 // ── Content (Article) Translation ───────────────────────────────────────────
 
-export async function translateContentForm(form, overrides = []) {
+export async function translateContentForm(form, overrides = [], original = null) {
   const locked = toLockSet(overrides)
+  const needsTranslate = (key) => isChanged(original, key, form[key]) || isEnBlank(form.translations?.en?.[key])
   const toTranslate = {}
-  if (!locked.has('title') && form.title?.trim()) toTranslate.title = form.title.trim()
-  if (!locked.has('excerpt') && form.excerpt?.trim()) toTranslate.excerpt = form.excerpt.trim()
-  if (!locked.has('body') && form.body?.trim()) toTranslate.body = form.body.trim()
-  if (!locked.has('seoTitle') && form.seoTitle?.trim()) toTranslate.seoTitle = form.seoTitle.trim()
-  if (!locked.has('seoDescription') && form.seoDescription?.trim()) toTranslate.seoDescription = form.seoDescription.trim()
-  if (!locked.has('heroTitle') && form.heroTitle?.trim()) toTranslate.heroTitle = form.heroTitle.trim()
+  if (!locked.has('title') && form.title?.trim() && needsTranslate('title')) toTranslate.title = form.title.trim()
+  if (!locked.has('excerpt') && form.excerpt?.trim() && needsTranslate('excerpt')) toTranslate.excerpt = form.excerpt.trim()
+  if (!locked.has('body') && form.body?.trim() && needsTranslate('body')) toTranslate.body = form.body.trim()
+  if (!locked.has('seoTitle') && form.seoTitle?.trim() && needsTranslate('seoTitle')) toTranslate.seoTitle = form.seoTitle.trim()
+  if (!locked.has('seoDescription') && form.seoDescription?.trim() && needsTranslate('seoDescription')) toTranslate.seoDescription = form.seoDescription.trim()
+  if (!locked.has('heroTitle') && form.heroTitle?.trim() && needsTranslate('heroTitle')) toTranslate.heroTitle = form.heroTitle.trim()
 
   const translated = await callTranslate(toTranslate)
   if (Object.keys(translated).length === 0) return form
@@ -145,63 +218,76 @@ export async function translateContentForm(form, overrides = []) {
 
 // ── Product Translation ───────────────────────────────────────────────────
 
-export async function translateProductForm(form, overrides = []) {
+export async function translateProductForm(form, overrides = [], original = null) {
   const locked = toLockSet(overrides)
   const fieldOpen = (key) => !locked.has(key)
   const sectionOpen = (name) => !locked.has(sectionKey(name))
+  const needsTranslate = (key) => isChanged(original, key, form[key]) || isEnBlank(form.translations?.en?.[key])
+  // enGap: lazy — only computed when the section actually changed check is false, since it walks
+  // every row/block.
+  const sectionNeedsTranslate = (key, enGap) => isArrayChanged(original, key, form[key]) || enGap()
   const toTranslate = {}
 
   // Flat fields
-  if (fieldOpen('name') && form.name?.trim()) toTranslate.name = form.name.trim()
-  if (fieldOpen('shortDescription') && form.shortDescription?.trim()) toTranslate.shortDescription = form.shortDescription.trim()
-  if (fieldOpen('description') && form.description?.trim()) toTranslate.description = form.description.trim()
-  if (fieldOpen('seoTitle') && form.seoTitle?.trim()) toTranslate.seoTitle = form.seoTitle.trim()
-  if (fieldOpen('seoDescription') && form.seoDescription?.trim()) toTranslate.seoDescription = form.seoDescription.trim()
-  if (fieldOpen('specificationsHtml') && form.specificationsHtml?.trim()) toTranslate.specificationsHtml = form.specificationsHtml.trim()
-  if (fieldOpen('specStatsHtml') && form.specStatsHtml?.trim()) toTranslate.specStatsHtml = form.specStatsHtml.trim()
-  if (fieldOpen('trustBadgesHtml') && form.trustBadgesHtml?.trim()) toTranslate.trustBadgesHtml = form.trustBadgesHtml.trim()
+  if (fieldOpen('name') && form.name?.trim() && needsTranslate('name')) toTranslate.name = form.name.trim()
+  if (fieldOpen('shortDescription') && form.shortDescription?.trim() && needsTranslate('shortDescription')) toTranslate.shortDescription = form.shortDescription.trim()
+  if (fieldOpen('description') && form.description?.trim() && needsTranslate('description')) toTranslate.description = form.description.trim()
+  if (fieldOpen('seoTitle') && form.seoTitle?.trim() && needsTranslate('seoTitle')) toTranslate.seoTitle = form.seoTitle.trim()
+  if (fieldOpen('seoDescription') && form.seoDescription?.trim() && needsTranslate('seoDescription')) toTranslate.seoDescription = form.seoDescription.trim()
+  if (fieldOpen('specificationsHtml') && form.specificationsHtml?.trim() && needsTranslate('specificationsHtml')) toTranslate.specificationsHtml = form.specificationsHtml.trim()
+  if (fieldOpen('specStatsHtml') && form.specStatsHtml?.trim() && needsTranslate('specStatsHtml')) toTranslate.specStatsHtml = form.specStatsHtml.trim()
+  if (fieldOpen('trustBadgesHtml') && form.trustBadgesHtml?.trim() && needsTranslate('trustBadgesHtml')) toTranslate.trustBadgesHtml = form.trustBadgesHtml.trim()
 
-  // Arrays mapping to flat keys for batch translation (skipped when the section is locked)
-  if (sectionOpen('specifications') && Array.isArray(form.specifications)) {
+  // Arrays mapping to flat keys for batch translation (skipped when the section is locked, or when
+  // unchanged since the snapshot and already fully translated)
+  if (sectionOpen('specifications') && Array.isArray(form.specifications)
+      && sectionNeedsTranslate('specifications', () => rowsHaveEnGap(form.specifications, [['name', 'nameEn'], ['value', 'valueEn']]))) {
     form.specifications.forEach((s, i) => {
       if (s.name?.trim()) toTranslate[`spec_name_${i}`] = s.name.trim()
       if (s.value?.trim()) toTranslate[`spec_value_${i}`] = s.value.trim()
     })
   }
-  if (sectionOpen('specStats') && Array.isArray(form.specStats)) {
+  if (sectionOpen('specStats') && Array.isArray(form.specStats)
+      && sectionNeedsTranslate('specStats', () => rowsHaveEnGap(form.specStats, [['value', 'valueEn'], ['label', 'labelEn']]))) {
     form.specStats.forEach((s, i) => {
       if (s.value?.trim()) toTranslate[`specStats_value_${i}`] = s.value.trim()
       if (s.label?.trim()) toTranslate[`specStats_label_${i}`] = s.label.trim()
     })
   }
-  if (sectionOpen('faqs') && Array.isArray(form.faqs)) {
+  if (sectionOpen('faqs') && Array.isArray(form.faqs)
+      && sectionNeedsTranslate('faqs', () => rowsHaveEnGap(form.faqs, [['question', 'questionEn'], ['answer', 'answerEn']]))) {
     form.faqs.forEach((f, i) => {
       if (f.question?.trim()) toTranslate[`faq_question_${i}`] = f.question.trim()
       if (f.answer?.trim()) toTranslate[`faq_answer_${i}`] = f.answer.trim()
     })
   }
-  if (sectionOpen('commitments') && Array.isArray(form.commitments)) {
+  if (sectionOpen('commitments') && Array.isArray(form.commitments)
+      && sectionNeedsTranslate('commitments', () => rowsHaveEnGap(form.commitments, [['title', 'titleEn'], ['subtitle', 'subtitleEn']]))) {
     form.commitments.forEach((c, i) => {
       if (c.title?.trim()) toTranslate[`commitment_title_${i}`] = c.title.trim()
       if (c.subtitle?.trim()) toTranslate[`commitment_subtitle_${i}`] = c.subtitle.trim()
     })
   }
-  if (sectionOpen('trustBadges') && Array.isArray(form.trustBadges)) {
+  if (sectionOpen('trustBadges') && Array.isArray(form.trustBadges)
+      && sectionNeedsTranslate('trustBadges', () => rowsHaveEnGap(form.trustBadges, [['content', 'contentEn']]))) {
     form.trustBadges.forEach((b, i) => {
       if (b.content?.trim()) toTranslate[`trustBadge_content_${i}`] = b.content.trim()
     })
   }
-  if (sectionOpen('positiveNotes') && Array.isArray(form.positiveNotes)) {
+  if (sectionOpen('positiveNotes') && Array.isArray(form.positiveNotes)
+      && sectionNeedsTranslate('positiveNotes', () => rowsHaveEnGap(form.positiveNotes, [['content', 'contentEn']]))) {
     form.positiveNotes.forEach((n, i) => {
       if (n.content?.trim()) toTranslate[`posNote_content_${i}`] = n.content.trim()
     })
   }
-  if (sectionOpen('negativeNotes') && Array.isArray(form.negativeNotes)) {
+  if (sectionOpen('negativeNotes') && Array.isArray(form.negativeNotes)
+      && sectionNeedsTranslate('negativeNotes', () => rowsHaveEnGap(form.negativeNotes, [['content', 'contentEn']]))) {
     form.negativeNotes.forEach((n, i) => {
       if (n.content?.trim()) toTranslate[`negNote_content_${i}`] = n.content.trim()
     })
   }
-  if (sectionOpen('suitabilityCards') && Array.isArray(form.suitabilityCards)) {
+  if (sectionOpen('suitabilityCards') && Array.isArray(form.suitabilityCards)
+      && sectionNeedsTranslate('suitabilityCards', () => rowsHaveEnGap(form.suitabilityCards, [['audience', 'audienceEn'], ['advice', 'adviceEn'], ['linkLabel', 'linkLabelEn']]))) {
     form.suitabilityCards.forEach((c, i) => {
       if (c.audience?.trim()) toTranslate[`suitability_audience_${i}`] = c.audience.trim()
       if (c.advice?.trim()) toTranslate[`suitability_advice_${i}`] = c.advice.trim()
@@ -209,8 +295,17 @@ export async function translateProductForm(form, overrides = []) {
     })
   }
 
-  // Description blocks translation keys
-  if (sectionOpen('descriptionBlocks') && Array.isArray(form.descriptionBlocks)) {
+  // Description blocks translation keys. Captured in a flag (not just re-checked inline) because
+  // the mapping-back below clones the VI block and only overwrites translated fields — if that ran
+  // for a section we didn't actually send, untranslated fields would fall back to VI text and
+  // clobber the existing English, not preserve it (unlike the row-array sections above, whose
+  // mapping-back falls back to the row's OWN existing *En field).
+  const sendDescriptionBlocks = sectionOpen('descriptionBlocks') && Array.isArray(form.descriptionBlocks)
+      && sectionNeedsTranslate('descriptionBlocks', () => {
+        const enBlocks = Array.isArray(form.descriptionBlocksEn) ? form.descriptionBlocksEn : []
+        return form.descriptionBlocks.some((b, i) => blockHasEnGap(b, enBlocks[i]))
+      })
+  if (sendDescriptionBlocks) {
     form.descriptionBlocks.forEach((b, i) => {
       if (b.type === 'heading' && b.text?.trim()) {
         toTranslate[`block_heading_text_${i}`] = b.text.trim()
@@ -320,8 +415,9 @@ export async function translateProductForm(form, overrides = []) {
     }))
   }
 
-  // Description blocks mapping back (clone and map VI blocks to EN blocks) — only when unlocked.
-  if (sectionOpen('descriptionBlocks') && Array.isArray(nextForm.descriptionBlocks)) {
+  // Description blocks mapping back (clone and map VI blocks to EN blocks) — only when this
+  // section was actually sent above (see `sendDescriptionBlocks`), not merely unlocked.
+  if (sendDescriptionBlocks && Array.isArray(nextForm.descriptionBlocks)) {
     nextForm.descriptionBlocksEn = nextForm.descriptionBlocks.map((b, i) => {
       const blockEn = { ...b }
       if (blockEn.type === 'heading') {

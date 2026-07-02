@@ -45,7 +45,12 @@ public class SliderReadService {
 
         if (entity.getProduct() != null) {
             productId = entity.getProduct().getId();
-            product = catalogReadRepository.findProductById(productId).orElse(null);
+            // Listing projection — the slider only ever reads slug/name/category/sku for
+            // the link + caption, not the full 11-relation product-detail graph (gallery/
+            // videos/specs/faqs/commitments/specStats/trustBadges/highlights/related/
+            // accessory). "vi" matches the previous findProductById() behaviour, which
+            // had no locale param and always resolved Vietnamese-canonical content.
+            product = catalogReadRepository.findProductByIdPublicViewForListing(productId, "vi").orElse(null);
             if (product != null) {
                 productLink = "/sp/" + product.slug() + ".html";
             }

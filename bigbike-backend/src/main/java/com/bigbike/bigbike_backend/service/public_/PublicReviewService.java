@@ -102,13 +102,12 @@ public class PublicReviewService {
     @Transactional
     public void submitReview(
             String productId, String authorName, int rating, String comment,
-            String title, List<String> photos) {
+            List<String> photos) {
         productRepo.findById(productId)
                 .orElseThrow(() -> new NotFoundException("S\u1ea3n ph\u1ea9m kh\u00f4ng t\u1ed3n t\u1ea1i."));
 
         String normalizedName = authorName.trim();
         String normalizedComment = comment != null ? comment.trim() : "";
-        String normalizedTitle = (title != null && !title.isBlank()) ? title.trim() : null;
         List<String> normalizedPhotos = normalizePhotos(photos);
         Instant now = Instant.now();
 
@@ -135,7 +134,6 @@ public class PublicReviewService {
         entity.setAuthorName(normalizedName);
         entity.setRating((short) rating);
         entity.setBody(normalizedComment);
-        entity.setTitle(normalizedTitle);
         entity.setPhotos(normalizedPhotos.isEmpty() ? null : normalizedPhotos);
         entity.setStatus("PENDING");
         entity.setCreatedAt(now);
@@ -213,7 +211,6 @@ public class PublicReviewService {
                 review.getId(),
                 review.getAuthorName() != null ? review.getAuthorName() : "\u1ea8n danh",
                 review.getRating(),
-                review.getTitle(),
                 review.getBody() != null ? review.getBody() : "",
                 review.getPhotos() != null ? review.getPhotos() : List.of(),
                 review.getCreatedAt() != null ? review.getCreatedAt().toString() : "");

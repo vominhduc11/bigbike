@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { generateId } from '@/lib/utils'
+import { SortableList, DragHandle } from '../../components/Sortable'
 import {
   getVariantColorValue,
   getVariantColorKey,
@@ -465,6 +466,7 @@ function VariantCard({
   onDuplicate,
   disabled,
   fieldErrors = {},
+  sortable,
 }) {
   const { t } = useTranslation()
   function updateField(field, value) {
@@ -478,8 +480,17 @@ function VariantCard({
   const hasColor = Boolean(colorValue)
 
   return (
-    <div className={`variant-card${hasErrors ? ' variant-card--error' : ''}`}>
+    <div
+      ref={sortable?.setNodeRef}
+      style={{ ...sortable?.style, opacity: sortable?.isDragging ? 0.4 : undefined }}
+      className={`variant-card${hasErrors ? ' variant-card--error' : ''}`}
+    >
       <div className="variant-card-header">
+        <DragHandle
+          handleProps={sortable?.handleProps}
+          disabled={disabled}
+          label={t('products.detail.dragToReorder')}
+        />
         {/* Vùng click/Enter/Space để toggle — không bao bọc các nút action */}
         <button
           type="button"
@@ -784,28 +795,62 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
         )}
       </div>
 
-      {visible.map(({ v, originalIdx }) => {
-        const prefix = `variants.${originalIdx}.`
-        const fieldErrors = Object.fromEntries(
-          Object.entries(validationErrors)
-            .filter(([k]) => k.startsWith(prefix))
-            .map(([k, val]) => [k.slice(prefix.length), val])
-        )
-        return (
-          <VariantCard
-            key={v._key}
-            variant={v}
-            index={originalIdx}
-            expanded={effectiveExpandedKey === v._key}
-            onToggle={toggleExpanded}
-            onChange={updateVariant}
-            onRemove={removeVariant}
-            onDuplicate={duplicateVariant}
-            disabled={disabled}
-            fieldErrors={fieldErrors}
-          />
-        )
-      })}
+      {filterTerm ? (
+        // Đang lọc theo từ khoá: `visible` là tập con với originalIdx lệch khỏi
+        // vị trí thật trong `items` — không cho kéo-thả vì sẽ tính sai vị trí.
+        visible.map(({ v, originalIdx }) => {
+          const prefix = `variants.${originalIdx}.`
+          const fieldErrors = Object.fromEntries(
+            Object.entries(validationErrors)
+              .filter(([k]) => k.startsWith(prefix))
+              .map(([k, val]) => [k.slice(prefix.length), val])
+          )
+          return (
+            <VariantCard
+              key={v._key}
+              variant={v}
+              index={originalIdx}
+              expanded={effectiveExpandedKey === v._key}
+              onToggle={toggleExpanded}
+              onChange={updateVariant}
+              onRemove={removeVariant}
+              onDuplicate={duplicateVariant}
+              disabled={disabled}
+              fieldErrors={fieldErrors}
+            />
+          )
+        })
+      ) : (
+        <SortableList
+          items={items}
+          getId={(v) => v._key}
+          onReorder={(next) => onChange(next)}
+          disabled={disabled}
+          className="list-editor"
+          renderItem={(v, sortable, index) => {
+            const prefix = `variants.${index}.`
+            const fieldErrors = Object.fromEntries(
+              Object.entries(validationErrors)
+                .filter(([k]) => k.startsWith(prefix))
+                .map(([k, val]) => [k.slice(prefix.length), val])
+            )
+            return (
+              <VariantCard
+                variant={v}
+                index={index}
+                expanded={effectiveExpandedKey === v._key}
+                onToggle={toggleExpanded}
+                onChange={updateVariant}
+                onRemove={removeVariant}
+                onDuplicate={duplicateVariant}
+                disabled={disabled}
+                fieldErrors={fieldErrors}
+                sortable={sortable}
+              />
+            )
+          }}
+        />
+      )}
 
       {filterTerm && visible.length === 0 && (
         <p className="variants-empty">{t('products.detail.variant.filterEmpty', { filter })}</p>

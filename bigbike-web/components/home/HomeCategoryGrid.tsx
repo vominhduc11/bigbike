@@ -47,7 +47,7 @@ export function HomeCategoryGrid({ initialCategories }: { initialCategories: Cat
               >
                 <span className="col-12">
                   <span className="img">
-                    <img src={img} className="lazy mx-auto" alt="" width={1} height={1} />
+                    <img src={img} className="lazy mx-auto" alt="" width={1} height={1} loading="lazy" />
                   </span>
                   <span className="desc">{c.name}</span>
                   <i className="fal fa-chevron-circle-right" />

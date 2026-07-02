@@ -62,6 +62,26 @@ function highlightMatch(text, term) {
   )
 }
 
+// Sortable wrapper that injects dnd-kit ref/listeners into the row. Defined at module
+// scope (not inside CategoryListScreen) so its identity is stable across renders —
+// previously it was redefined on every render of the list screen, which made React treat
+// it as a brand-new component type each time and unmount+remount the entire tree (losing
+// dnd-kit's per-row useSortable state) on any state change, even a checkbox toggle.
+// renderCategoryRow is threaded through as a prop instead of a closure for the same reason.
+function SortableTreeRow({ category, depth, renderCategoryRow }) {
+  return (
+    <SortableRow id={category.id}>
+      {(sortable) => renderCategoryRow(category, depth, {
+        setNodeRef: sortable.setNodeRef,
+        attributes: sortable.attributes,
+        listeners: sortable.listeners,
+        isDragging: sortable.isDragging,
+        style: { ...sortable.style, zIndex: sortable.isDragging ? 2 : undefined },
+      })}
+    </SortableRow>
+  )
+}
+
 export function CategoryListScreen({ navigate, canUpdate }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
@@ -688,21 +708,6 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     )
   }
 
-  // Sortable wrapper that injects dnd-kit ref/listeners into the row.
-  function SortableTreeRow({ category, depth }) {
-    return (
-      <SortableRow id={category.id}>
-        {(sortable) => renderCategoryRow(category, depth, {
-          setNodeRef: sortable.setNodeRef,
-          attributes: sortable.attributes,
-          listeners: sortable.listeners,
-          isDragging: sortable.isDragging,
-          style: { ...sortable.style, zIndex: sortable.isDragging ? 2 : undefined },
-        })}
-      </SortableRow>
-    )
-  }
-
   const sortLabelKey = query.sort === 'updatedAt:desc'
     ? 'newestUpdated'
     : query.sort === 'updatedAt:asc'
@@ -909,7 +914,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                 <tbody>
                   {visibleTreeRows.map((row) =>
                     canUpdate && !searchTerm
-                      ? <SortableTreeRow key={row.id} category={row} depth={row._depth} />
+                      ? <SortableTreeRow key={row.id} category={row} depth={row._depth} renderCategoryRow={renderCategoryRow} />
                       : renderCategoryRow(row, row._depth)
                   )}
                 </tbody>

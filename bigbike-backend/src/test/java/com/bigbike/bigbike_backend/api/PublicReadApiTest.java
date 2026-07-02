@@ -365,11 +365,13 @@ class PublicReadApiTest {
                 .andExpect(jsonPath(node + ".slug").value(slug))
                 // price is kept on the list view (covered numerically elsewhere)
                 .andExpect(jsonPath(node + ".price.retailPrice").exists())
-                // detail-only payload must be absent / empty on the list
-                .andExpect(jsonPath(node + ".description").value((Object) null))
+                // detail-only payload must be absent / empty on the list — null-typed fields
+                // (description, seo, ...) are omitted entirely (Product @JsonInclude(NON_NULL)),
+                // not serialized as an explicit null key.
+                .andExpect(jsonPath(node + ".description").doesNotExist())
                 .andExpect(jsonPath(node + ".gallery.length()").value(0))
                 .andExpect(jsonPath(node + ".specifications.length()").value(0))
-                .andExpect(jsonPath(node + ".seo").value((Object) null))
+                .andExpect(jsonPath(node + ".seo").doesNotExist())
                 // variant kept as a stub: count is correct, internals stripped
                 .andExpect(jsonPath(node + ".variants.length()").value(1))
                 .andExpect(jsonPath(node + ".variants[0].options.length()").value(0))

@@ -53,11 +53,34 @@ public class CatalogReadService {
     ) {
         SortSpec sortSpec = sortParser.parse(sort, "createdAt", SortDirection.DESC, PRODUCT_SORT_FIELDS);
 
-        // findAllPublishedProducts() applies the PUBLISHED filter in SQL; the
-        // explicit predicate below is kept as a defensive guard and is a no-op.
-        // Filtering runs on the full domain object — matchesColor() needs the
-        // variant options, which the list-view projection below strips out.
-        List<Product> result = catalogReadRepository.findAllPublishedProducts(lang).stream()
+        // Real SQL LIMIT/OFFSET path: covers every filter except color (needs
+        // per-variant-option Vietnamese-diacritic normalization that isn't SQL-pushable
+        // without a dedicated indexed color column) and "homepageOrder" sort (pin +
+        // nulls-last + reversed-only-inside-pinned-section tie-break isn't a plain column
+        // sort). Only the current page's rows are hydrated — see
+        // CatalogReadRepository.findPublishedProductsPaged.
+        boolean sqlPaginationEligible = (filterColor == null || filterColor.isBlank())
+                && !"homepageOrder".equals(sortSpec.field());
+        if (sqlPaginationEligible) {
+            CatalogReadRepository.ProductListingPage sqlPage = catalogReadRepository.findPublishedProductsPaged(
+                    category, brand, q, filterGender, minPrice, maxPrice, homepageBlock, sortSpec, page, size, lang);
+            long totalItems = sqlPage.totalItems();
+            int totalPages = totalItems == 0 ? 0 : (int) Math.ceil((double) totalItems / size);
+            return new PageResult<>(
+                    sqlPage.items().stream().map(CatalogReadSupport::toListView).toList(),
+                    page,
+                    size,
+                    totalItems,
+                    totalPages
+            );
+        }
+
+        // In-memory fallback (color filter and/or homepageOrder pin-sort). Uses the
+        // lighter "listing" projection (skips gallery/video/specs/faqs/commitments/
+        // specStats/trustBadges/notes/related/accessory — none of that survives
+        // toListView() anyway, so loading it just to discard it wastes a lazy-collection
+        // batch fetch per relation on every request that lands on this path).
+        List<Product> result = catalogReadRepository.findAllPublishedProductsForListing(lang).stream()
                 .filter(product -> product.publishStatus() == PublishStatus.PUBLISHED)
                 .filter(product -> matchesCategory(product, category))
                 .filter(product -> matchesBrand(product, brand))
@@ -106,6 +129,19 @@ public class CatalogReadService {
     public Product getProductByIdOrSlug(String key, String lang) {
         return catalogReadRepository.findProductBySlug(key, lang)
                 .or(() -> catalogReadRepository.findProductByIdPublicView(key, lang))
+                .filter(item -> item.publishStatus() == PublishStatus.PUBLISHED)
+                .orElseThrow(() -> new NotFoundException("Product not found."));
+    }
+
+    /**
+     * Pricing/stock snapshot for the buy-box refresh (storefront/mobile poll on window
+     * focus). Uses the lighter "listing" projection — the snapshot only reads price/
+     * stock/variant+options and has no business paying for gallery/videos/specifications/
+     * faqs/commitments/specStats/trustBadges/highlights/related/accessory on every poll.
+     */
+    public Product getProductSnapshotByIdOrSlug(String key, String lang) {
+        return catalogReadRepository.findProductBySlugForListing(key, lang)
+                .or(() -> catalogReadRepository.findProductByIdPublicViewForListing(key, lang))
                 .filter(item -> item.publishStatus() == PublishStatus.PUBLISHED)
                 .orElseThrow(() -> new NotFoundException("Product not found."));
     }
@@ -179,11 +215,14 @@ public class CatalogReadService {
      */
     public CatalogFacets computeFacets(String categorySlug, String q, String lang) {
         String locale = "en".equalsIgnoreCase(lang) ? "en" : "vi";
-        // findAllPublishedProducts() applies the PUBLISHED filter in SQL; the
-        // explicit predicate below is kept as a defensive guard and is a no-op.
+        // findAllPublishedProductsForListing() applies the PUBLISHED filter in SQL and
+        // skips the 9 detail-only relations facets never read (gallery/video/specs/faqs/
+        // commitments/specStats/trustBadges/notes/related/accessory) — facets aggregate
+        // counts across the whole matching set so they can't be SQL-paginated, but color/
+        // gender bucket counting still needs full variant+option data, which this keeps.
         // Facet labels are localized to the storefront language: category/brand
         // names resolve via locale; color/price labels fall back to Vietnamese.
-        List<Product> publishedMatchingQuery = catalogReadRepository.findAllPublishedProducts(locale).stream()
+        List<Product> publishedMatchingQuery = catalogReadRepository.findAllPublishedProductsForListing(locale).stream()
                 .filter(product -> product.publishStatus() == PublishStatus.PUBLISHED)
                 .filter(product -> matchesQuery(product, q))
                 .toList();

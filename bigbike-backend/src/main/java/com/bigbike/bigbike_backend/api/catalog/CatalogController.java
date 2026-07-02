@@ -108,8 +108,10 @@ public class CatalogController {
     ) {
         // Pricing/stock have no translatable text, but the variant options carried in the
         // snapshot DO (attribute name + value, e.g. "Màu sắc"/"Đỏ"), so resolve them by lang
-        // — see API_CONTRACT.md "Product bilingual content — lang param".
-        Product product = catalogReadService.getProductByIdOrSlug(idOrSlug, lang);
+        // — see API_CONTRACT.md "Product bilingual content — lang param". Uses the lighter
+        // listing projection (not the full product-detail load) — see
+        // CatalogReadService.getProductSnapshotByIdOrSlug.
+        Product product = catalogReadService.getProductSnapshotByIdOrSlug(idOrSlug, lang);
         return apiResponseFactory.data(toSnapshot(product), request);
     }
 

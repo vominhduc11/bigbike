@@ -1,8 +1,20 @@
 package com.bigbike.bigbike_backend.domain.catalog;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.Instant;
 import java.util.List;
 
+/**
+ * {@code @JsonInclude(NON_NULL)}: list-view reads (see {@code CatalogReadSupport.toListView})
+ * null out ~14 detail-only scalar/object fields (description, promotionContent, seo,
+ * translations, ...) rather than fetching them — this keeps those keys out of every list
+ * item's JSON instead of shipping repeated {@code "field":null} noise. Detail-only LIST
+ * fields (gallery, specifications, ...) stay {@code List.of()} and are unaffected — NON_NULL
+ * only drops null, not empty collections. The web/admin TypeScript {@code Product} contract
+ * already declares these fields optional ({@code field?: T}), so an absent key and an
+ * explicit null are handled identically by every consumer.
+ */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record Product(
         String id,
         String sku,

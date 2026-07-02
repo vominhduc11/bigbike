@@ -8,6 +8,28 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-bigbike}
       POSTGRES_USER: ${POSTGRES_USER:-bigbike}
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set - see .env.example}"
+    # log_min_duration_statement: was off by default (no way to see which queries are slow
+    # without it — see BIGBIKE_PERFORMANCE_AUDIT_CHECKLIST.md). effective_cache_size/
+    # shared_buffers: sized for this container's 512m memory limit below instead of
+    # Postgres's out-of-the-box defaults (effective_cache_size defaults to 4GB, which
+    # assumes a much bigger host than this container actually gets).
+    command:
+      - postgres
+      - -c
+      - log_min_duration_statement=200
+      - -c
+      - log_line_prefix=%m [%p] %u@%d
+      - -c
+      - effective_cache_size=300MB
+      - -c
+      - shared_buffers=128MB
+    # Slow-query logging adds log volume that wasn't there before — cap it so it can't
+    # fill the disk (host is already tight on space; see project ops notes).
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
@@ -39,7 +61,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512m
+          memory: 768m
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 15s
@@ -63,7 +85,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 768m
+          memory: 1g
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       BIGBIKE_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-bigbike}

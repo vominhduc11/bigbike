@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { addCartItem, fetchCart } from "@/lib/api/client-api";
+import { useQueryClient } from "@tanstack/react-query";
+import { addCartItem } from "@/lib/api/client-api";
+import { useCartQuery } from "@/lib/query/hooks";
+import { queryKeys } from "@/lib/query/keys";
 import { useAuth } from "@/lib/auth/auth-store";
 import { toCartPath } from "@/lib/utils/routes";
 
@@ -25,30 +28,25 @@ const CartContext = createContext<CartContextValue | null>(null);
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
   const t = useTranslations("Cart");
-  const [cartCount, setCartCount] = useState<number | null>(null);
+  const qc = useQueryClient();
+  // Single shared cache for the whole app (queryKeys.cart()) — the same query
+  // WpCartClient, MobileCartSheet and useCheckout now all read/write. Sửa/xoá
+  // ở bất kỳ đâu (mutation gọi qc.setQueryData(queryKeys.cart(), ...)) tự động
+  // cập nhật số ở đây, không cần refreshCount() riêng của từng nơi nữa.
+  const cartQuery = useCartQuery();
   const [toasts, setToasts] = useState<Toast[]>([]);
   const nextId = useRef(0);
-  const fetchInFlight = useRef(false);
+
+  const cartCount = cartQuery.data
+    ? cartQuery.data.items.reduce((sum, item) => sum + item.quantity, 0)
+    : null;
 
   const refreshCount = useCallback(() => {
-    if (fetchInFlight.current) return;
-    fetchInFlight.current = true;
-    fetchCart()
-      .then((cart) => {
-        const total = cart.items.reduce((sum, item) => sum + item.quantity, 0);
-        setCartCount(total);
-      })
-      .catch(() => {})
-      .finally(() => {
-        fetchInFlight.current = false;
-      });
-  }, []);
+    qc.invalidateQueries({ queryKey: queryKeys.cart() });
+  }, [qc]);
 
-  useEffect(() => {
-    refreshCount();
-  }, [refreshCount]);
-
-  // Re-sync cart count when auth changes (e.g. after login, backend merges guest cart)
+  // Re-sync cart when auth changes (e.g. after login, backend merges guest cart).
+  // Initial load is handled by useCartQuery() itself — no separate mount-time fetch needed.
   useEffect(() => {
     if (auth.status === "loading") return;
     refreshCount();
@@ -64,11 +62,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addToCart = useCallback(
     async (productId: string, quantity: number, variantId?: string) => {
-      await addCartItem(productId, quantity, variantId);
-      refreshCount();
+      const updated = await addCartItem(productId, quantity, variantId);
+      qc.setQueryData(queryKeys.cart(), updated);
       showToast(t("toastAddedTitle"), t("toastAddedBody"));
     },
-    [refreshCount, showToast, t],
+    [qc, showToast, t],
   );
 
   return (

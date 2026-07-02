@@ -654,8 +654,7 @@ Cache denormalized của review **APPROVED**, phục vụ list/detail đọc nha
 - `products.rating` — `numeric(3,2)`, nullable, **không có default** (thêm ở `V18`, check constraint `ck_products_rating`: `NULL` hoặc `0..5`). Giá trị = trung bình cộng điểm review đã duyệt, làm tròn **1 decimal HALF_UP** (`AdminReviewService.toCachedRating`).
 - `products.rating_count` — `integer`, nullable, **không có default** (thêm ở `V43`). Giá trị = số review đã duyệt.
 - `reviews.rating` — `smallint NOT NULL`, check `1..5` (`V14`) — nên hễ có ≥ 1 review đã duyệt thì trung bình luôn ≥ 1.
-- `reviews.title` — `varchar(160)`, nullable (`V234`). Tiêu đề tuỳ chọn của review. Review cũ / WP-import = `NULL`.
-- `reviews.photos` — `jsonb`, nullable (`V234`). Mảng URL ảnh khách hàng trong MinIO (`/media/reviews/...`), tối đa 10. `NULL`/`[]` = không có ảnh. Map qua `@JdbcTypeCode(SqlTypes.JSON)` (mirror `products.product_tabs`). Chỉ phục vụ hiển thị khi review `APPROVED` (xem `BUSINESS_RULES.md` `REVIEW_RULE_005`).
+- `reviews.photos` — `jsonb`, nullable (`V234`). Mảng URL ảnh khách hàng trong MinIO (`/media/reviews/...`), tối đa 10. `NULL`/`[]` = không có ảnh. Map qua `@JdbcTypeCode(SqlTypes.JSON)` (mirror `products.product_tabs`). Chỉ phục vụ hiển thị khi review `APPROVED` (xem `BUSINESS_RULES.md` `REVIEW_RULE_005`). (Cột `reviews.title`, thêm cùng `V234`, đã bị **drop ở `V298`** — xem §"Review title — REMOVED (V298)".)
 
 **Recompute flow (đường duy nhất được ghi cache):** `AdminReviewService.recomputeProductReviewAggregate` chạy sau **mọi** chuyển trạng thái review (`updateStatus`, kể cả APPROVED → PENDING/SPAM/TRASH) và sau `deleteReview`. Khi 0 review approved: `rating = NULL` (không phải 0) và `rating_count = 0`. `PublicReviewService.submitReview` tạo review PENDING và **không** recompute (đúng — pending không được tính). Admin upsert product **không thể** set tay 2 field này (`UpsertProductRequest` cố ý không khai báo field; xem comment "Phase 2D" trong `AdminCatalogMutationService`).
 
@@ -668,6 +667,12 @@ Cache denormalized của review **APPROVED**, phục vụ list/detail đọc nha
 Status: `CONFIRMED_FROM_CODE` — `AdminReviewService.java`, `PublicReviewService.java`,
 `ReviewJpaRepository.java`, `ProductEntity.java`, `UpsertProductRequest.java`,
 `WordPressProductMapper.java`, `ProductImporter.java`, `ReviewImporter.java`, migrations `V14`, `V18`, `V43`, `V63`.
+
+### Review title — REMOVED (V298)
+
+The optional review "title" field (added alongside `reviews.photos` in `V234`) was removed entirely on 2026-07-01. `photos` (ảnh khách hàng) is unaffected and stays exactly as documented above. Migration `V298__drop_review_title.sql` drops `reviews.title`; `ReviewEntity.title`, `SubmitReviewRequest.title`, `PublicProductReviewsResponse.ReviewItem.title`, the `MAX_TITLE_LENGTH` validation in `PublicReviewController`, and the title handling in `PublicReviewService`/`AdminReviewService` are all deleted. The original `V234__add_review_title_photos.sql` file is left unchanged (Flyway is append-only).
+
+Status: `CONFIRMED_FROM_CODE` — removal verified; no remaining review-title references in runtime code.
 
 ### Product bilingual content — English columns (V136)
 
@@ -1261,7 +1266,7 @@ system web. Tất cả nullable / default an toàn → sản phẩm cũ giữ ng
 | `V229` | `products.description_blocks_en` | `JSONB` | `NULL` | Khối mô tả có cấu trúc bản tiếng Anh (song song `description_blocks` của V139). Render → `description_en` HTML lúc lưu (giống VI). NULL = English authored as legacy HTML hoặc chưa dịch → web fallback `description_en`. |
 | `V230` | `product_specifications.featured` | `BOOLEAN NOT NULL` | `false` | ~~"Đưa lên ô nổi bật"~~ **GỠ BỎ ở `V235`** — thay bằng bảng per-product `product_spec_stats` (ô số liệu nhập riêng, tách khỏi thông số kỹ thuật). Xem §"Product 'Specs Dashboard' stat boxes — `product_spec_stats` (V235)". |
 | `V231` | `products.product_tabs` | `JSONB` | `NULL` | Cấu hình tab PDP theo từng sản phẩm. NULL = dùng tab mặc định (Mô tả/Đánh giá/Thông số/Lắp đặt/FAQ). Mỗi tab: `{ id, type, enabled, sortOrder, label, labelEn, blocks, blocksEn }`; `type` ∈ description\|reviews\|specs\|installation\|faq\|custom. Lưu canonical: `label`/`blocks`=vi, `labelEn`/`blocksEn`=en. |
-| `V234` | `reviews.title` + `reviews.photos` | `varchar(160)` + `JSONB` | `NULL` | Tiêu đề tuỳ chọn + mảng URL ảnh khách hàng (MinIO `/media/reviews/...`, ≤10) cho đánh giá sản phẩm. Nullable, không backfill → review cũ giữ `NULL`. Xem `BUSINESS_RULES.md` `REVIEW_RULE_005`. |
+| `V234` | ~~`reviews.title`~~ + `reviews.photos` | ~~`varchar(160)`~~ + `JSONB` | `NULL` | Mảng URL ảnh khách hàng (MinIO `/media/reviews/...`, ≤10) cho đánh giá sản phẩm. Nullable, không backfill → review cũ giữ `NULL`. Xem `BUSINESS_RULES.md` `REVIEW_RULE_005`. `reviews.title` (tiêu đề tuỳ chọn) thêm cùng migration này **đã bị drop ở `V298`** — xem §"Review title — REMOVED (V298)". |
 | `V245` | `products.section_visibility` | `TEXT` | `NULL` | ~~"Hiển thị trên web": bật/tắt 5 section dạng tab~~ **CHỨC NĂNG GỠ khỏi admin+web (2026-06-22).** Cột giữ **ngủ yên** (không drop): backend còn truyền qua nhưng admin không ghi, web bỏ qua. Mọi khối PDP nay hiện **thuần theo nội dung**. Xem `BUSINESS_RULES.md` `PRODUCT_RULE_006` (đã đánh dấu gỡ). |
 
 **Localize đọc (public):** `description_blocks` resolve theo `lang` (en → `description_blocks_en`, fallback vi) qua

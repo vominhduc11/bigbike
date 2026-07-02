@@ -440,6 +440,45 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    public List<Product> findAllPublishedProductsForListing(String locale) {
+        // The mock fixture set is tiny (3 products) and already lightweight — no
+        // separate lite projection needed, unlike the JPA backend's real entity graph.
+        return findAllPublishedProducts(locale);
+    }
+
+    @Override
+    public ProductListingPage findPublishedProductsPaged(
+            String categorySlug,
+            String brandSlug,
+            String q,
+            String gender,
+            Long minPrice,
+            Long maxPrice,
+            com.bigbike.bigbike_backend.domain.catalog.HomepageBlock homepageBlock,
+            com.bigbike.bigbike_backend.service.common.SortSpec sortSpec,
+            int page,
+            int size,
+            String locale
+    ) {
+        // Stream-based fallback — the mock backend never needs real SQL pagination.
+        List<Product> filtered = products.stream()
+                .filter(p -> p.publishStatus() == PublishStatus.PUBLISHED)
+                .filter(p -> categorySlug == null || categorySlug.isBlank()
+                        || (p.category() != null && categorySlug.equals(p.category().slug())))
+                .filter(p -> brandSlug == null || brandSlug.isBlank()
+                        || (p.brand() != null && brandSlug.equals(p.brand().slug())))
+                .filter(p -> q == null || q.isBlank()
+                        || (p.name() != null && p.name().toLowerCase(java.util.Locale.ROOT).contains(q.toLowerCase(java.util.Locale.ROOT)))
+                        || (p.shortDescription() != null && p.shortDescription().toLowerCase(java.util.Locale.ROOT).contains(q.toLowerCase(java.util.Locale.ROOT))))
+                .filter(p -> gender == null || gender.isBlank() || gender.equalsIgnoreCase(p.gender()))
+                .filter(p -> homepageBlock == null || p.homepageBlock() == homepageBlock)
+                .toList();
+        int fromIndex = Math.min((Math.max(1, page) - 1) * size, filtered.size());
+        int toIndex = Math.min(fromIndex + size, filtered.size());
+        return new ProductListingPage(filtered.subList(fromIndex, toIndex), filtered.size());
+    }
+
+    @Override
     public List<Product> searchPublishedProducts(java.util.List<String> tokens, String locale, int limit) {
         return products.stream()
                 .filter(p -> p.publishStatus() == PublishStatus.PUBLISHED)
@@ -487,6 +526,17 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     @Override
     public Optional<Product> findProductByIdPublicView(String id, String locale) {
         return products.stream().filter(product -> product.id().equals(id)).findFirst();
+    }
+
+    @Override
+    public Optional<Product> findProductBySlugForListing(String slug, String locale) {
+        // Fixture set is already lightweight — no separate lite projection needed.
+        return findProductBySlug(slug, locale);
+    }
+
+    @Override
+    public Optional<Product> findProductByIdPublicViewForListing(String id, String locale) {
+        return findProductByIdPublicView(id, locale);
     }
 
     @Override

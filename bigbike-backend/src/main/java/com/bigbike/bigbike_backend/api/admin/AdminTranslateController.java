@@ -6,6 +6,7 @@ import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.api.error.ForbiddenException;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import com.bigbike.bigbike_backend.service.integration.GeminiTranslationService;
+import com.bigbike.bigbike_backend.service.integration.GeminiTranslationService.GenerationOptions;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -36,6 +37,13 @@ public class AdminTranslateController extends AdminControllerSupport {
     private static final List<String> TRANSLATE_PERMISSIONS =
             List.of("products.update", "catalog.update", "content.update");
 
+    // Interactive (per-save) translate: disable "thinking" like the backfill does — it burns output
+    // budget/latency for no quality gain on this prompt — and force the string schema so quote-heavy
+    // HTML fields don't break JSON parsing. Smaller cap than BACKFILL_OPTS's 65536: an interactive
+    // save now only sends fields that actually changed (see admin geminiTranslate.js), so the
+    // worst case (create / first translate) is a single record's fields, not a whole-catalog run.
+    private static final GenerationOptions INTERACTIVE_OPTS = new GenerationOptions(32768, 0, true);
+
     private final GeminiTranslationService geminiTranslationService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
@@ -45,7 +53,7 @@ public class AdminTranslateController extends AdminControllerSupport {
             @Valid @RequestBody TranslateRequest payload,
             HttpServletRequest request) {
         requireAnyContentWrite(request);
-        Map<String, String> result = geminiTranslationService.translate(payload.getTexts());
+        Map<String, String> result = geminiTranslationService.translate(payload.getTexts(), INTERACTIVE_OPTS);
         return apiResponseFactory.data(result, request);
     }
 

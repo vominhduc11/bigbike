@@ -80,6 +80,7 @@ export function WpProductSwipeItem({
                 src={img}
                 alt={name}
                 className="swiper-lazy -lazy"
+                loading="lazy"
                 style={
                   isGrid
                     ? {

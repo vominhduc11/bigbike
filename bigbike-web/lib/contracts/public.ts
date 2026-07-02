@@ -93,6 +93,12 @@ export type HomeSlider = {
    * via the admin API. Consumers should check this field first.
    */
   link?: string | null;
+  /** Linked product's display name — lets the caption render without a separate product-detail fetch. */
+  productName?: string | null;
+  /** Linked product's primary category name. */
+  categoryName?: string | null;
+  /** Linked product's SKU — rendered as the banner's "product code" caption. */
+  sku?: string | null;
   product?: unknown | null;
 };
 

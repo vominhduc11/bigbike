@@ -1,10 +1,12 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { MapPin, MessageCircle, ShoppingCart } from "lucide-react";
-import { zaloHref } from "@/lib/utils/format";
+import { safeText, zaloHref } from "@/lib/utils/format";
+import { useLocalizedField } from "@/components/i18n/LocalizedContent";
 
 type ProductContactCtaProps = {
+  /** Bản tiếng Việt (SSR/ISR) — dùng làm fallback khi đang ở vi hoặc khi bản EN chưa tải xong. */
   productName: string;
   siteName: string;
   address?: string;
@@ -64,6 +66,12 @@ export function ProductContactCta({
   zaloUrl,
 }: ProductContactCtaProps) {
   const t = useTranslations("Product.contact");
+  // Component này nằm trong LocalizedContentProvider (WpPurchaseSection/ProductView) nên đọc
+  // trực tiếp bản EN qua useLocalizedField; `productName` truyền vào chỉ là bản vi fallback
+  // (ProductView tính trước khi vào provider nên không tự đổi ngôn ngữ được).
+  const locale = useLocale();
+  const enName = useLocalizedField<string>("name");
+  const displayName = safeText(locale === "en" ? enName : productName, "");
 
   const zaloNumber = zaloUrl ? zaloDisplayNumber(zaloUrl) : "";
 
@@ -73,7 +81,7 @@ export function ProductContactCta({
         <div className="min-w-0 max-md:text-center">
           <h3 className="!m-0 font-cta text-ui-20 max-md:text-ui-18 leading-title text-foreground">
             {t.rich("headline", {
-              productName,
+              productName: displayName,
               siteName,
               brand: (chunks) => <span className="font-bold text-foreground">{chunks}</span>,
               site: (chunks) => <span className="font-bold text-foreground">{chunks}</span>,

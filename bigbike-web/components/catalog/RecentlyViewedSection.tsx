@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useState, useEffect, useMemo } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { type RecentProduct, getRecentProducts, saveRecentProduct } from "@/lib/recently-viewed";
-import type { Product } from "@/lib/contracts/public";
+import type { CategorySummary, Product } from "@/lib/contracts/public";
 import { ProductSwiper } from "@/components/catalog/ProductSwiper";
+import { useLocalizedField } from "@/components/i18n/LocalizedContent";
 
 type Props = {
   currentProductId: string;
@@ -38,12 +39,31 @@ export function RecentlyViewedSection({ currentProductId, currentProduct }: Prop
   const tRecent = useTranslations("Product.recentlyViewed");
   const [items, setItems] = useState<RecentProduct[]>([]);
 
+  // `currentProduct` truyền vào luôn là snapshot tiếng Việt (ProductView tính trước khi vào
+  // LocalizedContentProvider). Component này nằm TRONG provider nên tự đọc bản EN qua
+  // useLocalizedField, lưu đúng ngôn ngữ khách đang xem — tránh lưu cứng tên/danh mục tiếng
+  // Việt vào lịch sử "đã xem" dù khách đang duyệt web bản tiếng Anh.
+  const locale = useLocale();
+  const enName = useLocalizedField<string>("name");
+  const enCategory = useLocalizedField<CategorySummary>("category");
+  const localizedCurrentProduct: RecentProduct = useMemo(
+    () =>
+      locale === "en"
+        ? {
+            ...currentProduct,
+            name: enName ?? currentProduct.name,
+            categoryName: enCategory?.name ?? currentProduct.categoryName,
+          }
+        : currentProduct,
+    [locale, currentProduct, enName, enCategory],
+  );
+
   useEffect(() => {
-    saveRecentProduct(currentProduct);
+    saveRecentProduct(localizedCurrentProduct);
     const filtered = getRecentProducts().filter((p) => p.id !== currentProductId).slice(0, 6);
     const id = setTimeout(() => setItems(filtered), 0);
     return () => clearTimeout(id);
-  }, [currentProductId, currentProduct]);
+  }, [currentProductId, localizedCurrentProduct]);
 
   // Need at least 2 other products to make a row worth showing.
   if (items.length < 2) return null;

@@ -313,7 +313,7 @@ export function ProductGallery({
                   <MediaImage
                     image={item.asset}
                     altFallback={altFallback}
-                    priority={index === 0}
+                    preload={index === 0}
                     width={1200}
                     height={1200}
                     className="w-full h-full object-contain"

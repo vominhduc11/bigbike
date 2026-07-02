@@ -33,7 +33,7 @@ import { MobilePdpAnchorNav, type AnchorNavItem } from "@/components/catalog/Mob
 import { PdpSectionHeading, PDP_SECTION_SEP } from "@/components/catalog/product-view/PdpSection";
 import { buildTrustItems, ProductTrustCard } from "@/components/catalog/product-view/ProductTrustCard";
 import type { RecentProduct } from "@/lib/recently-viewed";
-import type { DescriptionBlock, Product, PublicSiteSetting } from "@/lib/contracts/public";
+import type { BrandSummary, CategorySummary, DescriptionBlock, Product, PublicSiteSetting } from "@/lib/contracts/public";
 import { safeArray, safeText } from "@/lib/utils/format";
 import { pickSetting } from "@/lib/utils/settings";
 import { sanitizeRichHtml } from "@/lib/utils/html";
@@ -53,6 +53,42 @@ type ProductViewProps = {
    */
   previewMode?: boolean;
 };
+
+/**
+ * `brand.name`/`category.name` resolve theo locale ở backend (JpaCatalogReadRepository
+ * toCategorySummary/toBrandSummary — cùng cơ chế pick() với các field khác). `ProductView`
+ * tạo ra `LocalizedContentProvider` bên dưới nên KHÔNG thể gọi `useLocalizedField` ngay
+ * trong thân hàm của chính nó (chạy trước khi provider tồn tại) — phải tách một component
+ * con thật sự nằm TRONG cây con của provider, giống cách `LText`/`WpPurchaseSection` làm.
+ */
+function LocalizedTaxonomyName({ field, viName }: { field: "brand" | "category"; viName: string }) {
+  const locale = useLocale();
+  const localized = useLocalizedField<CategorySummary | BrandSummary>(field);
+  return <>{locale === "en" ? safeText(localized?.name, "") : viName}</>;
+}
+
+/**
+ * "Sản phẩm tương tự"/"Phụ kiện" — mảng `relatedProducts`/`accessoryProducts` cũng resolve
+ * theo locale ở backend (`toDomainListItem`, cùng field mỗi sản phẩm con). Cùng lý do trên,
+ * phải đọc `useLocalizedField` trong một component con nằm trong provider, không phải ở
+ * thân `ProductView`.
+ */
+function LocalizedProductSwiper({
+  field,
+  viProducts,
+  currentProductId,
+}: {
+  field: "relatedProducts" | "accessoryProducts";
+  viProducts: Product[];
+  currentProductId: string;
+}) {
+  const locale = useLocale();
+  const enProducts = useLocalizedField<Product[]>(field);
+  const products = safeArray(locale === "en" ? enProducts : viProducts).filter(
+    (p) => p.id !== currentProductId,
+  );
+  return <ProductSwiper products={products} autoHeight />;
+}
 
 /**
  * Presentational body of the product detail page. Shared 1:1 by the public PDP
@@ -187,15 +223,11 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   // trên mobile. Tự bỏ mục khi section rỗng. Widget tab KHÔNG render thanh nav riêng nữa (hideAnchorNav).
   const anchorItems: AnchorNavItem[] = [];
   if (hasDescription) anchorItems.push({ id: "pdp-description", label: tTab("description") });
-  if (showProsCons || showRelated) anchorItems.push({ id: "pdp-proscons", label: tTabShort("prosCons") });
-  if (showSuitability) anchorItems.push({ id: "pdp-suitability", label: tTabShort("suitability") });
   if (showSizeGuide) anchorItems.push({ id: "pdp-sizeguide", label: tTab("size") });
   if (showSpecs) anchorItems.push({ id: "tab-more_infomation", label: tTab("specs") });
   if (showFaqs) anchorItems.push({ id: "tab-faq", label: tTab("faqs") });
   if (showVideos) anchorItems.push({ id: "tab-videos", label: tTab("videos") });
   if (showReviews) anchorItems.push({ id: "reviews", label: tTab("reviews") });
-  if (trustCard) anchorItems.push({ id: "pdp-trust", label: tTab("trust") });
-  if (showAccessories) anchorItems.push({ id: "pdp-accessories", label: tTab("accessories") });
 
   // MOBILE: gói cụm "Thông số" (Thông số kỹ thuật/FAQ/Video/Đánh giá) vào MỘT widget tab, đặt đúng vị trí
   // trong mạch trang (sau Bảng size). "Tính năng chi tiết" (Mô tả) nay là khối flat RIÊNG ở đầu trang —
@@ -282,7 +314,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
               ) : (
                 <PdpSectionHeading title={<Tr ns="Product" k="relatedTitle" />} />
               )}
-              <ProductSwiper products={related} autoHeight />
+              <LocalizedProductSwiper field="relatedProducts" viProducts={related} currentProductId={product.id} />
             </div>
           ) : null}
         </section>
@@ -385,7 +417,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
       <div key="accessories" id="pdp-accessories" className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}>
         <section>
           <PdpSectionHeading title={<Tr ns="Product" k="crossSellTitle" />} />
-          <ProductSwiper products={accessories} autoHeight />
+          <LocalizedProductSwiper field="accessoryProducts" viProducts={accessories} currentProductId={product.id} />
         </section>
       </div>
     );
@@ -407,13 +439,13 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
             {brand ? (
               <li>
                 <LocalizedLink kind="brand" viSlug={brand.slug} enSlug={brand.slugEn} className="taxonomy">
-                  <span property="name">{brand.name}</span>
+                  <span property="name"><LocalizedTaxonomyName field="brand" viName={brand.name} /></span>
                 </LocalizedLink>
               </li>
             ) : category ? (
               <li>
                 <LocalizedLink kind="category" viSlug={category.slug} enSlug={category.slugEn} className="taxonomy">
-                  <span property="name">{category.name}</span>
+                  <span property="name"><LocalizedTaxonomyName field="category" viName={category.name} /></span>
                 </LocalizedLink>
               </li>
             ) : null}

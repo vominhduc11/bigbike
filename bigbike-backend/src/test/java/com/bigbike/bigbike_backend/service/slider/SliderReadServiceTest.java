@@ -40,7 +40,7 @@ class SliderReadServiceTest {
         entity.setCreatedAt(Instant.now());
         entity.setUpdatedAt(Instant.now());
 
-        when(catalogReadRepository.findProductById("prod_ls2_ff800"))
+        when(catalogReadRepository.findProductByIdPublicViewForListing("prod_ls2_ff800", "vi"))
                 .thenReturn(Optional.of(new Product(
                         "prod_ls2_ff800",
                         "sku-1",

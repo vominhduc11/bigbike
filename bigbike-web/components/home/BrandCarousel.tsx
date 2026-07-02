@@ -58,7 +58,7 @@ export function BrandCarousel({ brands }: Props) {
                 <Link href={`/brands/${b.slug}`}>
                   {/* Logo tải trực tiếp — thiếu logo thì dùng placeholder dùng chung. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={logo ?? "/wp/logo-1.png"} alt={b.name} width={1} height={1} />
+                  <img src={logo ?? "/wp/logo-1.png"} alt={b.name} width={1} height={1} loading="lazy" />
                 </Link>
               </SwiperSlide>
             );
