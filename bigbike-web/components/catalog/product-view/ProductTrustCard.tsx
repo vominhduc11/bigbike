@@ -14,7 +14,7 @@ type BuildTrustItemsArgs = {
 };
 
 /**
- * Dựng danh sách ô của khối "Mua tại BigBike.vn" (#11): Giá/Kho THỜI GIAN THỰC ở đầu
+ * Dựng danh sách ô của khối "Mua tại BigBike.vn" (#12): Giá/Kho THỜI GIAN THỰC ở đầu
  * (cùng nguồn nút mua, có giảm giá + tắt-bán thủ công), Liên hệ (Hotline + Zalo) và Địa chỉ
  * từ site settings ở cuối (rỗng trong preview). Mỗi item có `labelKey` (i18n) HOẶC `label` (raw).
  * (V276) Đã gỡ các dòng admin tự thêm (purchaseLines) — khối giờ thuần tự động.

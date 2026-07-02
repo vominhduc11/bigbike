@@ -675,6 +675,9 @@ public class AdminCatalogMutationService {
         if (create || request.isTrustBadgesHtmlPresent()) {
             entity.setTrustBadgesHtml(AdminMutationValidators.trimToNull(request.getTrustBadgesHtml()));
         }
+        if (create || request.isQuickAnswerSummaryPresent()) {
+            entity.setQuickAnswerSummary(AdminMutationValidators.trimToNull(request.getQuickAnswerSummary()));
+        }
         if (create || request.isGenderPresent()) {
             entity.setGender(AdminMutationValidators.trimToNull(request.getGender()));
         }

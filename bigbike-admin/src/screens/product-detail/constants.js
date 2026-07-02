@@ -234,6 +234,8 @@ export function buildEmptyForm() {
     specStatsHtml: '',
     // "Dán mã HTML" cho khối Dải tin cậy (V257) — bản vi; bản en ở translations.en.
     trustBadgesHtml: '',
+    // "Quick Answer" (trả lời nhanh, V300) — bản vi; bản en ở translations.en.
+    quickAnswerSummary: '',
     // "Specs Dashboard" — ô số liệu nổi bật dưới khu vực mua hàng (V235).
     specStats: [],
     faqs: [],
@@ -275,6 +277,7 @@ export function buildEmptyTranslation() {
     specificationsHtml: '',
     specStatsHtml: '',
     trustBadgesHtml: '',
+    quickAnswerSummary: '',
     seoTitle: '',
     seoDescription: '',
   }
@@ -397,6 +400,8 @@ export function buildFormFromItem(item) {
       item.trustBadgesHtml
       || serializeTrustBadges((item.trustBadges || []).map((b) => ({ content: b.content })))
       || '',
+    // "Quick Answer" (trả lời nhanh, V300) — bản vi; bản en ở translations.en (auto qua translationFormFromItem).
+    quickAnswerSummary: item.quickAnswerSummary || '',
     description: item.description || '',
     // Nạp lại _key cho từng khối (đã bị strip khi lưu) — thiếu _key thì kéo-thả sắp xếp chết.
     descriptionBlocks: hydrateBlockKeys(item.descriptionBlocks),
@@ -686,6 +691,8 @@ export function toPayload(form) {
     specStatsHtml: form.specStatsHtml?.trim() || null,
     // V257: Dải tin cậy — html là nguồn render web; luôn gửi key (null khi rỗng).
     trustBadgesHtml: form.trustBadgesHtml?.trim() || null,
+    // V300: Quick Answer — presence-flag, luôn gửi key (null khi rỗng).
+    quickAnswerSummary: form.quickAnswerSummary?.trim() || null,
     description: Array.isArray(form.descriptionBlocks) ? undefined : (form.description.trim() || undefined),
     // Template SEO scalars (V175). Null khi cleared (presence-flag).
     originBrandCountry: form.originBrandCountry.trim() ? form.originBrandCountry.trim() : null,

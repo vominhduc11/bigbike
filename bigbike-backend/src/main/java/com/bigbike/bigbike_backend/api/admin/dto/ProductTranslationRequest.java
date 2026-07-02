@@ -65,6 +65,9 @@ public class ProductTranslationRequest {
         @Size(max = 50000, message = "English trust badges HTML is too long.")
         private String trustBadgesHtml;
 
+        @Size(max = 600, message = "English quick answer is too long.")
+        private String quickAnswerSummary;
+
         @Size(max = 255, message = "English SEO title is too long.")
         private String seoTitle;
 

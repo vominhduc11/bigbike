@@ -248,11 +248,6 @@ Status: `CONFIRMED_FROM_CODE`
 
 ### Product PDP content — `suitability_advisory` (V237)
 
-> **Đã gỡ (V250):** cặp cột `quick_answer_summary` / `quick_answer_summary_en`
-> ("Quick Answer" — blockquote AIO 40–60 từ, thêm ở V236) đã bị **drop hoàn toàn**.
-> Trường gỡ khỏi entity/DTO/domain, web PDP không còn render, ô nhập admin đã bỏ.
-> Dữ liệu cũ xoá vĩnh viễn qua `V253__drop_product_quick_answer_summary.sql`.
-
 Bilingual dual-column field cho khối "Phù hợp với ai" trên PDP. Follows the
 `shortDescription`/`sizeGuide` dual-text pattern: canonical (vi) column + `_en`
 column, `pick(vi, en, locale)` on read, raw English surfaced in `translations.en`
@@ -265,6 +260,30 @@ for the admin editor.
 It is detail-only (null in list responses), nullable, presence-flag on PATCH,
 empty/blank normalized to `NULL`. The PDP "Hoàn thiện bộ bảo hộ — Có thể bạn cũng
 cần" block reuses the existing `relatedProducts` (no new cross-sell column).
+
+Status: `CONFIRMED_FROM_CODE`
+
+### Product PDP content — `quick_answer_summary` (V300)
+
+Bilingual dual-column field cho khối "Quick Answer" trên PDP — đoạn tóm tắt AIO
+40–60 từ, render blockquote ngay sau Specs Dashboard, trước "Tính năng chi tiết"
+(canonical layout block #3, xem `PDP_CONTENT_GUIDE.md` §0b). Follows the
+`shortDescription`/`suitability_advisory` dual-text pattern: cột canonical (vi) +
+`_en`, `pick(vi, en, locale)` on read, raw English surfaced in `translations.en`
+for the admin editor.
+
+| Field | DB columns (added) | Type | PDP surface |
+|---|---|---|---|
+| `quickAnswerSummary` | `quick_answer_summary` + `quick_answer_summary_en` (`V300`) | `TEXT`, max 600 | "Quick Answer" — đoạn văn bản thường (không định dạng), câu đầu nói thẳng sản phẩm là gì + cho ai + nổi bật điều gì. Hidden when empty — không có công tắc bật/tắt riêng (cơ chế `section_visibility` đã gỡ 2026-06-22). |
+
+It is detail-only (null in list responses), nullable, presence-flag on PATCH,
+empty/blank normalized to `NULL`.
+
+> **Lịch sử:** field độc lập này từng tồn tại ở V236, bị drop hoàn toàn ở
+> `V253__drop_product_quick_answer_summary.sql` (2026-06-20), và được thêm lại ở
+> `V300__add_product_quick_answer_summary.sql` (2026-07-02) theo yêu cầu chủ shop —
+> hành vi tương tự bản cũ nhưng KHÔNG khôi phục cơ chế `section_visibility` (đã gỡ
+> sau đó, mọi khối PDP giờ tự hiện theo nội dung).
 
 Status: `CONFIRMED_FROM_CODE`
 

@@ -360,6 +360,8 @@ function normalizeProductTranslations(input) {
     specificationsHtml: toTrimmedString(source.specificationsHtml) || undefined,
     specStatsHtml: toTrimmedString(source.specStatsHtml) || undefined,
     trustBadgesHtml: toTrimmedString(source.trustBadgesHtml) || undefined,
+    // "Quick Answer" bản EN (V300).
+    quickAnswerSummary: toTrimmedString(source.quickAnswerSummary) || undefined,
     seoTitle: toTrimmedString(source.seoTitle) || undefined,
     seoDescription: toTrimmedString(source.seoDescription) || undefined,
     // Khối mô tả tiếng Anh (V229) — giữ nguyên mảng để admin BlockEditor (EN) hydrate.
@@ -470,6 +472,8 @@ export function normalizeProduct(input) {
     specificationsHtml: toTrimmedString(source.specificationsHtml) || undefined,
     specStatsHtml: toTrimmedString(source.specStatsHtml) || undefined,
     trustBadgesHtml: toTrimmedString(source.trustBadgesHtml) || undefined,
+    // "Quick Answer" (trả lời nhanh, V300) — bản vi; bản en ở translations.en.
+    quickAnswerSummary: toTrimmedString(source.quickAnswerSummary) || undefined,
     // Admin-curated related products — list-view refs used to render product
     // chips in the editor and to power the PDP "Sản phẩm liên quan" section.
     relatedProducts: Array.isArray(source.relatedProducts)

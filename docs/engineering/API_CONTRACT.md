@@ -624,7 +624,7 @@ Evidence: `UpsertProductRequest.java` (`promotionContent`/`installationGuide` + 
 
 ### Product PDP content — `suitabilityAdvisory` (V237)
 
-> **Đã gỡ (V250):** trường `quickAnswerSummary` ("Quick Answer" — blockquote AIO 40–60 từ) đã bị **bỏ hoàn toàn** khỏi web PDP, ô nhập admin và API; 2 cột `quick_answer_summary` / `_en` (V236) đã drop. Không còn nhận/trả ở bất kỳ endpoint nào.
+> **Lịch sử `quickAnswerSummary`:** field độc lập "Quick Answer" (không liên quan `suitabilityAdvisory`) từng có ở V236, bị gỡ hoàn toàn ở V253 (2026-06-20), và được **làm lại ở V300** (2026-07-02) — xem mục `quickAnswerSummary (V300)` ngay dưới đây.
 
 `POST /api/v1/admin/products` and `PATCH /api/v1/admin/products/{id}` accept the bilingual field:
 
@@ -637,6 +637,20 @@ It is returned by `GET /api/v1/products/{slug}` (locale-resolved via `pick`, wit
 Status: `CONFIRMED_FROM_CODE`
 
 Evidence: `UpsertProductRequest.java` (`suitabilityAdvisory` + presence flag), `ProductTranslationRequest.ProductContentRequest`, `AdminCatalogMutationService.applyProductPatch`/`applyTranslations`, `Product.java` + `ProductTranslations.java`, `JpaCatalogReadRepository` (detail mapper `pick`s it; list mapper passes `null`), `V237__add_product_suitability_advisory.sql`, `V240__convert_suitability_advisory_to_cards.sql`, `V253__drop_product_quick_answer_summary.sql`.
+
+### Product PDP content — `quickAnswerSummary` (V300)
+
+`POST /api/v1/admin/products` and `PATCH /api/v1/admin/products/{id}` accept the bilingual field:
+
+- **`quickAnswerSummary`** — optional string, max 600 chars (presence-flag). "Quick Answer" block: a plain-text AIO summary (~40–60 words) whose first sentence states plainly what the product is, who it is for, and its standout feature — no formatting. The web renders it as a blockquote right after the "Specs Dashboard" and right before "Tính năng chi tiết" (canonical layout block #3 — see `PDP_CONTENT_GUIDE.md` §0b).
+
+It is bilingual: the vi value goes to the canonical column, English to `_en`. On `PATCH`, sending no key leaves the field untouched; sending `null`/blank clears it. English is written via the `translations.en` object (`ProductContentRequest.quickAnswerSummary`).
+
+It is returned by `GET /api/v1/products/{slug}` (locale-resolved via `pick`, with vi fallback) and the admin product read (`GET /api/v1/admin/products/{id}` carries vi + raw English in `translations.en`). **Not** included in product *list* responses. It renders as its own PDP section; the section is hidden when the field is empty — **no `sectionVisibility` gating** (that toggle mechanism was removed 2026-06-22; every PDP block now shows purely based on content, same as `suitabilityAdvisory` and the other detail-only text fields).
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence: `UpsertProductRequest.java` (`quickAnswerSummary` + presence flag), `ProductTranslationRequest.ProductContentRequest`, `AdminCatalogMutationService.applyProductPatch`, `ProductFieldApplier.applyTranslations`, `Product.java` + `ProductTranslations.java`, `JpaCatalogReadRepository`/`JpaCatalogReadSupport` (detail mapper `pick`s it; list mapper passes `null`), `V300__add_product_quick_answer_summary.sql`. Web render: `components/catalog/ProductView.tsx` (`quickAnswer` blockquote after `FeaturedSpecsBar`). Admin editor: `ProductDetailScreen.jsx` SectionCard "Quick Answer".
 
 ### Product specs HTML override — `specificationsHtml` (V255)
 

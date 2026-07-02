@@ -1509,7 +1509,31 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 onToggle={() => toggleGroup('body')}
                 errorCount={groupCounts.body}
               >
-              {/* ── Card: Mô tả chi tiết — trình dựng khối Tính năng (#3). "Phù hợp với ai"/"Bảng size" có card riêng bên dưới ── */}
+              {/* ── Card: Quick Answer (V300) — đoạn tóm tắt AIO, hiện blockquote #3 ngay trước Tính năng chi tiết ── */}
+              <SectionCard
+                title={t('products.detail.quickAnswer.sectionTitle', { defaultValue: 'Quick Answer (trả lời nhanh)' })}
+                badge={<RoleBadge role="content" />}
+              >
+                <p className="text-xs text-muted-foreground mb-2">
+                  {t('products.detail.quickAnswer.hint', { defaultValue: 'Đoạn tóm tắt 40–60 từ, đặt trước phần mô tả để Google/AI trích dẫn. Câu đầu nói thẳng: sản phẩm là gì + cho ai + nổi bật điều gì. Văn bản thường, không định dạng.' })}
+                </p>
+                <Textarea
+                  value={langValue('quickAnswerSummary')}
+                  onChange={(e) => langChange('quickAnswerSummary', e.target.value)}
+                  disabled={isReadOnly}
+                  maxLength={600}
+                  rows={4}
+                  placeholder={t('products.detail.quickAnswer.placeholder', { defaultValue: 'Ví dụ: Mũ fullface AGV K6 vỏ sợi carbon nặng 1.250g, kính chống tia UV, đạt chuẩn ECE 22.06...' })}
+                  className={validationErrors.quickAnswerSummary ? 'border-danger' : undefined}
+                />
+                {validationErrors.quickAnswerSummary && (
+                  <span className="text-xs text-[var(--admin-color-status-danger-text)] font-semibold mt-2 block">
+                    {validationErrors.quickAnswerSummary}
+                  </span>
+                )}
+              </SectionCard>
+
+              {/* ── Card: Mô tả chi tiết — trình dựng khối Tính năng (#4). "Phù hợp với ai"/"Bảng size" có card riêng bên dưới ── */}
               <SectionCard title={t('products.detail.sectionDescription', { defaultValue: 'Mô tả chi tiết' })} required badge={<RoleBadge role="content" />}>
                 <p className="text-xs text-muted-foreground mb-3">
                   {t('products.detail.descriptionBuilderHint', { defaultValue: 'Trình dựng khối Tính năng chi tiết (chữ, ảnh, ảnh + chữ). Kéo-thả để đổi thứ tự. "Phù hợp với ai" và "Bảng size" nhập ở 2 card riêng bên dưới.' })}
@@ -1571,7 +1595,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 </div>
               </SectionCard>
 
-              {/* ── Card: Sản phẩm tương tự — "Xem thêm lựa chọn" (#5) — ngay sau Ưu/Nhược, trước Phù hợp với ai ── */}
+              {/* ── Card: Sản phẩm tương tự — "Xem thêm lựa chọn" (#6) — ngay sau Ưu/Nhược, trước Phù hợp với ai ── */}
               <SectionCard
                 title={t('products.detail.sectionRelated')}
                 badge={
@@ -1637,7 +1661,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 )}
               </SectionCard>
 
-              {/* ── Card: Phù hợp với ai (#6) — tách RA khỏi trình dựng mô tả; lưu dạng khối suitability trong descriptionBlocks ── */}
+              {/* ── Card: Phù hợp với ai (#7) — tách RA khỏi trình dựng mô tả; lưu dạng khối suitability trong descriptionBlocks ── */}
               <SectionCard
                 title={t('products.detail.blocks.blockTypeSuitability')}
                 badge={<RoleBadge role="content" />}
@@ -1653,7 +1677,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 />
               </SectionCard>
 
-              {/* ── Card: Bảng size (#7) — tách RA khỏi trình dựng mô tả; lưu dạng khối sizeGuide trong descriptionBlocks ── */}
+              {/* ── Card: Bảng size (#8) — tách RA khỏi trình dựng mô tả; lưu dạng khối sizeGuide trong descriptionBlocks ── */}
               <SectionCard
                 title={t('products.detail.blocks.blockTypeSizeGuide')}
                 badge={<RoleBadge role="content" />}

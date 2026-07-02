@@ -155,9 +155,9 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   // product, không còn lấy từ settings.
   const gallery = safeArray(product.gallery);
   const descriptionBlocks = safeArray(product.descriptionBlocks) as DescriptionBlock[];
-  // Canonical layout (PDP_CONTENT_GUIDE §0b): "Phù hợp với ai" (#6) và "Bảng size" (#7) là SECTION RIÊNG,
+  // Canonical layout (PDP_CONTENT_GUIDE §0b): "Phù hợp với ai" (#7) và "Bảng size" (#8) là SECTION RIÊNG,
   // thứ tự CỐ ĐỊNH ngay sau Ưu/Nhược điểm + Sản phẩm liên quan — KHÔNG để admin chèn lẫn giữa mô tả. Tách
-  // 2 loại khối này RA khỏi luồng mô tả; phần còn lại (chữ/feature/ảnh/video) là "Mô tả / Tính năng" (#3).
+  // 2 loại khối này RA khỏi luồng mô tả; phần còn lại (chữ/feature/ảnh/video) là "Mô tả / Tính năng" (#4).
   const suitabilityBlocks = descriptionBlocks.filter((b) => b.type === "suitability");
   const sizeGuideBlocks = descriptionBlocks.filter((b) => b.type === "sizeGuide");
   const descBlocks = descriptionBlocks.filter(
@@ -178,8 +178,10 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
 
   const descriptionHtml = product.description ? sanitizeRichHtml(product.description) : "";
   const contentBottomHtml = product.contentBottom ? sanitizeRichHtml(product.contentBottom) : "";
+  // "Quick Answer" (trả lời nhanh, V300) — đoạn tóm tắt AIO, blockquote #3 ngay sau Specs Dashboard.
+  const quickAnswer = safeText(product.quickAnswerSummary, "");
 
-  // "Mô tả / Tính năng" (#3) chỉ gồm phần mô tả thuần (đã tách Phù hợp với ai · Bảng size ra khối riêng).
+  // "Mô tả / Tính năng" (#4) chỉ gồm phần mô tả thuần (đã tách Phù hợp với ai · Bảng size ra khối riêng).
   const hasDescription = descBlocks.length > 0 || Boolean(descriptionHtml);
 
   // Ưu/Nhược điểm (V251): tách RA khỏi mô tả — KHỐI RIÊNG cố định ngay dưới mô tả, NGOÀI tab (nguồn
@@ -212,7 +214,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   const showSuitability = suitabilityBlocks.length > 0;
   const showSizeGuide = sizeGuideBlocks.length > 0;
 
-  // Trust block "Mua tại BigBike.vn" (#11) — lưới ô số liệu thương mại (xem product-view/ProductTrustCard).
+  // Trust block "Mua tại BigBike.vn" (#12) — lưới ô số liệu thương mại (xem product-view/ProductTrustCard).
   // Tự ẩn khi rỗng; tiêu đề mục đặt NGOÀI thẻ qua <PdpSectionHeading> (xem bodyNodes.trust).
   const trustItems = buildTrustItems({ product, previewMode, hotline, zaloDisplay, contactAddress });
   const trustCard = trustItems.length > 0 ? <ProductTrustCard items={trustItems} /> : null;
@@ -275,7 +277,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   // Các section body desktop — render theo thứ tự admin đã cấu hình.
   const bodyNodes: Record<string, ReactNode> = {};
 
-  // "Tính năng chi tiết" (#3) — khối flat hiển thị CẢ desktop lẫn mobile (đã tách khỏi widget tab).
+  // "Tính năng chi tiết" (#4) — khối flat hiển thị CẢ desktop lẫn mobile (đã tách khỏi widget tab).
   if (hasDescription) {
     bodyNodes.description = (
       <div key="description" id="pdp-description" className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}>
@@ -322,7 +324,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
     );
   }
 
-  // "Phù hợp với ai" (#6) — SECTION riêng ngay sau cụm Ưu/Nhược + Sản phẩm liên quan. Hiện cả desktop lẫn
+  // "Phù hợp với ai" (#7) — SECTION riêng ngay sau cụm Ưu/Nhược + Sản phẩm liên quan. Hiện cả desktop lẫn
   // mobile (NGOÀI widget tab, như prosConsRelated). Tiêu đề lấy từ chính khối (admin nhập).
   if (showSuitability) {
     bodyNodes.suitability = (
@@ -334,7 +336,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
     );
   }
 
-  // "Bảng size" (#7) — SECTION riêng ngay sau "Phù hợp với ai".
+  // "Bảng size" (#8) — SECTION riêng ngay sau "Phù hợp với ai".
   if (showSizeGuide) {
     bodyNodes.sizeGuide = (
       <div key="sizeGuide" id="pdp-sizeguide" className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}>
@@ -478,6 +480,16 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
         {/* #2 Specs Dashboard (V235) — tối đa 4 ô số liệu nổi bật ngay dưới khu vực mua hàng.
             "Đòn chốt" bán hàng. Khối ngoài tab → tự ẩn khi không có ô nào (không gate visibility). */}
         <FeaturedSpecsBar stats={specStats} viStatsHtml={specStatsHtml} />
+
+        {/* #3 Quick Answer (V300) — đoạn tóm tắt AIO 40–60 từ để Google/AI trích dẫn. Blockquote ngay
+            sau Specs Dashboard, trước "Tính năng chi tiết". Tự ẩn khi rỗng, không gate visibility. */}
+        {quickAnswer ? (
+          <section className="my-10">
+            <blockquote className="border-l-4 border-brand bg-brand-soft px-5 py-4 text-18 leading-relaxed text-foreground">
+              <LText field="quickAnswerSummary">{quickAnswer}</LText>
+            </blockquote>
+          </section>
+        ) : null}
 
         {/* Thanh nhảy-mục MOBILE (anchor nav tổng) — nổi vào sau khi khu mua hàng (#pdp-overview) cuộn khỏi
             tầm nhìn, phủ TOÀN BỘ section theo đúng thứ tự trang. Tự ẩn trên desktop (component có md:!hidden).

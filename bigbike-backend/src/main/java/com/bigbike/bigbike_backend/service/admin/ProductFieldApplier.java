@@ -104,7 +104,7 @@ final class ProductFieldApplier {
     }
 
     /**
-     * Full-replace the eight optional English product-level columns (V136).
+     * Full-replace the optional English product-level columns (V136).
      * A {@code null} translations object — or a missing {@code en} block —
      * clears every column; English is optional (PRODUCT_RULE_001).
      */
@@ -121,6 +121,7 @@ final class ProductFieldApplier {
         entity.setSpecificationsHtmlEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSpecificationsHtml()));
         entity.setSpecStatsHtmlEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSpecStatsHtml()));
         entity.setTrustBadgesHtmlEn(en == null ? null : AdminMutationValidators.trimToNull(en.getTrustBadgesHtml()));
+        entity.setQuickAnswerSummaryEn(en == null ? null : AdminMutationValidators.trimToNull(en.getQuickAnswerSummary()));
         entity.setSeoTitleEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSeoTitle()));
         entity.setSeoDescriptionEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSeoDescription()));
     }

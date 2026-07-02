@@ -297,6 +297,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 null,                       // specificationsHtml — detail only
                 null,                       // specStatsHtml — detail only
                 null,                       // trustBadgesHtml — detail only
+                null,                       // quickAnswerSummary — detail only
                 entity.getGender(),
                 List.of(),                  // relatedProducts — detail only
                 List.of(),                  // accessoryProducts — detail only
@@ -375,6 +376,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 null,                       // specificationsHtml — detail only
                 null,                       // specStatsHtml — detail only
                 null,                       // trustBadgesHtml — detail only
+                null,                       // quickAnswerSummary — detail only
                 entity.getGender(),
                 List.of(),                  // relatedProducts — detail only
                 List.of(),                  // accessoryProducts — detail only
@@ -732,6 +734,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 pick(entity.getSpecificationsHtml(), entity.getSpecificationsHtmlEn(), locale),
                 pick(entity.getSpecStatsHtml(), entity.getSpecStatsHtmlEn(), locale),
                 pick(entity.getTrustBadgesHtml(), entity.getTrustBadgesHtmlEn(), locale),
+                pick(entity.getQuickAnswerSummary(), entity.getQuickAnswerSummaryEn(), locale),
                 entity.getGender(),
                 toRelatedProducts(entity, publicView, locale),
                 toAccessoryProducts(entity, publicView, locale),

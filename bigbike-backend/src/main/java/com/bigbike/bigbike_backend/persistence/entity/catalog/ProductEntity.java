@@ -189,6 +189,12 @@ public class ProductEntity {
     @Column(name = "trust_badges_html", columnDefinition = "text")
     private String trustBadgesHtml;
 
+    // "Quick Answer" (trả lời nhanh, V300) — đoạn tóm tắt AIO 40-60 từ, blockquote ngay sau
+    // Specs Dashboard, trước "Tính năng chi tiết". Bilingual dual-text (vi canonical + _en);
+    // detail-only, max 600 ký tự.
+    @Column(name = "quick_answer_summary", columnDefinition = "text")
+    private String quickAnswerSummary;
+
     @Column(name = "gender", length = 20)
     private String gender;
 
@@ -269,6 +275,9 @@ public class ProductEntity {
 
     @Column(name = "trust_badges_html_en", columnDefinition = "text")
     private String trustBadgesHtmlEn;
+
+    @Column(name = "quick_answer_summary_en", columnDefinition = "text")
+    private String quickAnswerSummaryEn;
 
     @Column(nullable = false)
     private Instant createdAt;

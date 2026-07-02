@@ -702,6 +702,11 @@
         "unit": "badges",
         "aiBriefPrompt": "Generate HTML for the \"Trust Badges\" strip on a BigBike product detail page — a horizontal row of 2–5 short labels (e.g. \"Genuine\", \"2-year warranty\"). Hard requirements:\n- Return plain HTML with inline CSS only (style=\"...\" attribute). NO <script>, NO <style> tag, no ids.\n- The outer wrapper MUST have class=\"bb-trust-badges\" (required for the system to parse it — the only class allowed).\n- Container: <div class=\"bb-trust-badges\" style=\"display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:14px;color:#6b7280\">\n- Each badge is one span containing a dot and text:\n  <span style=\"display:flex;align-items:center;gap:8px\"><span style=\"height:6px;width:6px;flex:none;background:#cc0906\"></span><span>Genuine</span></span>\n- Font: Arial, Helvetica, sans-serif. NO backgrounds, box-shadow, or gradients.\n\nBadge labels (replace with your content):\n[label 1]\n[label 2]\n..."
       },
+      "quickAnswer": {
+        "sectionTitle": "Quick Answer",
+        "hint": "A 40-60 word summary placed before the description for Google/AI to quote. First sentence states plainly: what the product is + who it's for + its standout feature. Plain text, no formatting.",
+        "placeholder": "e.g. AGV K6 fullface helmet, carbon fiber shell weighing 1,250g, UV-protective visor, ECE 22.06 certified..."
+      },
       "highlights": {
         "sectionTitle": "Pros & Cons",
         "hint": "Real pros/cons bullet points — shown as their own block right below the description (outside tabs) and fed into structured data. Optional; leave empty → the block is hidden.",

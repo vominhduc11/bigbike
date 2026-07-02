@@ -139,7 +139,7 @@ export function ProductDescriptionBlocks({
 }
 
 /**
- * Khối "Phù hợp với ai" (#6) và "Bảng size" (#7) — TÁCH RA khỏi luồng mô tả tự do để render thành
+ * Khối "Phù hợp với ai" (#7) và "Bảng size" (#8) — TÁCH RA khỏi luồng mô tả tự do để render thành
  * SECTION RIÊNG ở vị trí cố định theo canonical layout (PDP_CONTENT_GUIDE §0b), thay vì để admin chèn
  * lẫn vào giữa mô tả. Dùng chung bộ render khối (Suitability/SizeGuideBlockView) và cùng cơ chế đổi
  * ngôn ngữ: bản EN lấy qua `useLocalizedField("descriptionBlocks")` rồi LỌC theo type; chưa có EN

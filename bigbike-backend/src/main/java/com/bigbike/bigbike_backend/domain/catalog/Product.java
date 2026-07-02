@@ -79,6 +79,9 @@ public record Product(
         /** "Dán mã HTML" cho khối "Dải tin cậy" (trustBadges, V257). Khi non-blank, web render HTML
          *  này THAY cho dải {@code trustBadges} có cấu trúc. Detail-only; null in list. */
         String trustBadgesHtml,
+        /** "Quick Answer" (trả lời nhanh, V300) — đoạn tóm tắt AIO 40-60 từ, blockquote ngay sau
+         *  Specs Dashboard, trước "Tính năng chi tiết". Max 600 ký tự. Detail-only; null in list. */
+        String quickAnswerSummary,
         /** Giới tính mục tiêu: "Nam" | "Nữ" | "Unisex". Null = chưa gắn. */
         String gender,
         /**

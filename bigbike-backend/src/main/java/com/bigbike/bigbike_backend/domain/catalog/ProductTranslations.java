@@ -26,6 +26,8 @@ public record ProductTranslations(ProductContent en, java.util.List<String> over
             String specStatsHtml,
             /** English "Dải tin cậy" HTML (V257); nguồn render khi non-blank. */
             String trustBadgesHtml,
+            /** English "Quick Answer" summary (V300), max 600 ký tự. */
+            String quickAnswerSummary,
             String seoTitle,
             String seoDescription,
             /** English structured description blocks (V229); null when authored as legacy HTML. */

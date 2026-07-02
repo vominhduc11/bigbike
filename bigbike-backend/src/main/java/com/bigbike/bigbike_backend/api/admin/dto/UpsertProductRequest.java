@@ -116,6 +116,12 @@ public class UpsertProductRequest {
     private String trustBadgesHtml;
     private boolean trustBadgesHtmlPresent = false;
 
+    // "Quick Answer" (trả lời nhanh, V300) — đoạn tóm tắt AIO 40-60 từ, blockquote ngay sau
+    // Specs Dashboard, trước "Tính năng chi tiết". Presence-flag như suitabilityAdvisory.
+    @Size(max = 600, message = "Quick answer is too long.")
+    private String quickAnswerSummary;
+    private boolean quickAnswerSummaryPresent = false;
+
     @Size(max = 20, message = "Gender is too long.")
     private String gender;
     private boolean genderPresent = false;
@@ -311,6 +317,11 @@ public class UpsertProductRequest {
     public void setTrustBadgesHtml(String trustBadgesHtml) {
         this.trustBadgesHtml = trustBadgesHtml;
         this.trustBadgesHtmlPresent = true;
+    }
+
+    public void setQuickAnswerSummary(String quickAnswerSummary) {
+        this.quickAnswerSummary = quickAnswerSummary;
+        this.quickAnswerSummaryPresent = true;
     }
 
     public void setGender(String gender) {

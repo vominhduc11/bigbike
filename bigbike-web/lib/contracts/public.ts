@@ -348,6 +348,9 @@ export type Product = {
   /** Chế độ "Dán mã HTML" cho khối "Dải tin cậy" (trustBadges, V257). Khi non-blank, render HTML
    *  này (sanitizeRichHtml, cho phép CSS inline) THAY cho dải badge có cấu trúc. Detail-only. */
   trustBadgesHtml?: string | null;
+  /** "Quick Answer" (trả lời nhanh, V300) — đoạn tóm tắt AIO 40–60 từ, hiển thị blockquote ngay
+   *  sau Specs Dashboard, trước "Tính năng chi tiết". Max 600 ký tự. Locale-resolved. Detail-only. */
+  quickAnswerSummary?: string | null;
   /** Giới tính mục tiêu: "Nam" | "Nữ" | "Unisex". Null = chưa gắn. */
   gender?: string | null;
   /**

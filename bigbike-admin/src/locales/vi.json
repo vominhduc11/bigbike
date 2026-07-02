@@ -702,6 +702,11 @@
         "unit": "nhãn",
         "aiBriefPrompt": "Tạo HTML \"Dải tin cậy\" trên trang chi tiết sản phẩm BigBike — dải chạy ngang gồm 2–5 nhãn ngắn (vd: \"Chính hãng\", \"Bảo hành 2 năm\"). Yêu cầu bắt buộc:\n- Trả về HTML thuần kèm CSS inline (style=\"...\"). KHÔNG <script>, KHÔNG <style>, KHÔNG id.\n- Thẻ bao ngoài PHẢI có class=\"bb-trust-badges\" (bắt buộc để hệ thống đọc được — ngoại lệ duy nhất dùng class).\n- Container: <div class=\"bb-trust-badges\" style=\"display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:14px;color:#6b7280\">\n- Mỗi nhãn là 1 span gồm chấm tròn + chữ:\n  <span style=\"display:flex;align-items:center;gap:8px\"><span style=\"height:6px;width:6px;flex:none;background:#cc0906\"></span><span>Chính hãng</span></span>\n- Phông chữ: Arial, Helvetica, sans-serif. KHÔNG nền, đổ bóng, gradient.\n\nDanh sách nhãn (thay bằng nội dung của bạn):\n[nhãn 1]\n[nhãn 2]\n..."
       },
+      "quickAnswer": {
+        "sectionTitle": "Quick Answer (trả lời nhanh)",
+        "hint": "Đoạn tóm tắt 40–60 từ, đặt trước phần mô tả để Google/AI trích dẫn. Câu đầu nói thẳng: sản phẩm là gì + cho ai + nổi bật điều gì. Văn bản thường, không định dạng.",
+        "placeholder": "Ví dụ: Mũ fullface AGV K6 vỏ sợi carbon nặng 1.250g, kính chống tia UV, đạt chuẩn ECE 22.06..."
+      },
       "highlights": {
         "sectionTitle": "Ưu điểm & Nhược điểm",
         "hint": "Các gạch đầu dòng ưu/nhược điểm thật của sản phẩm — hiện thành khối riêng ngay dưới mô tả (ngoài tab) và đưa vào dữ liệu có cấu trúc. Không bắt buộc; để trống → web ẩn khối.",
