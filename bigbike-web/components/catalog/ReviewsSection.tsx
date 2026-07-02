@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,7 +40,7 @@ export function ReviewsSection({ productId, embedded = false }: ReviewsSectionPr
   const [page, setPage] = useState(1);
   const queryKey = ["product-reviews", productId, ratingFilter, sort, page] as const;
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isFetching, isError, refetch } = useQuery({
     queryKey,
     queryFn: () => fetchReviewsPage(productId, page, ratingFilter, sort, t("errorLoad")),
     // Keep the previous page visible while the next one loads so the list and
@@ -48,6 +49,10 @@ export function ReviewsSection({ productId, embedded = false }: ReviewsSectionPr
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });
+  // placeholderData keeps `isLoading` false once the first page has loaded, so a
+  // page/filter/sort switch only flips `isFetching` — dim the list instead of
+  // leaving it looking frozen while the next page comes in.
+  const isRefetching = isFetching && !isLoading;
 
   // Each page REPLACES the list (numbered pagination) so the section height
   // stays constant no matter how many reviews the product has.
@@ -154,21 +159,37 @@ export function ReviewsSection({ productId, embedded = false }: ReviewsSectionPr
                 </div>
               </div>
 
-              {reviews.length > 0 ? (
-                <ol className="m-0 mt-4 list-none p-0">
-                  {reviews.map((review) => (
-                    <ReviewCard key={review.id} review={review} />
-                  ))}
-                </ol>
-              ) : (
-                <div className="mt-4">
-                  <ReviewsPlaceholder
-                    title={ratingFilter !== null ? t("noReviewsForFilter", { count: ratingFilter }) : t("noReviews")}
-                  />
-                </div>
-              )}
+              <div className="relative">
+                <div
+                  className={cn("transition-opacity duration-200", isRefetching && "opacity-50")}
+                  aria-busy={isRefetching || undefined}
+                >
+                  {reviews.length > 0 ? (
+                    <ol className="m-0 mt-4 list-none p-0">
+                      {reviews.map((review) => (
+                        <ReviewCard key={review.id} review={review} />
+                      ))}
+                    </ol>
+                  ) : (
+                    <div className="mt-4">
+                      <ReviewsPlaceholder
+                        title={ratingFilter !== null ? t("noReviewsForFilter", { count: ratingFilter }) : t("noReviews")}
+                      />
+                    </div>
+                  )}
 
-              <PaginationNav page={page} totalPages={totalPages} onPageChange={goToPage} />
+                  <PaginationNav page={page} totalPages={totalPages} onPageChange={goToPage} />
+                </div>
+                {isRefetching ? (
+                  <div
+                    className="pointer-events-none absolute inset-0 flex items-start justify-center pt-10"
+                    role="status"
+                  >
+                    <Loader2 className="h-7 w-7 animate-spin text-brand" aria-hidden="true" />
+                    <span className="sr-only">{t("updating")}</span>
+                  </div>
+                ) : null}
+              </div>
             </>
           ) : (
             <ReviewsPlaceholder

@@ -6,9 +6,11 @@ import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
+import { Loader2 } from "lucide-react";
 import { WpCategoryPagination } from "@/components/wp/WpCategoryPagination";
 import { LocalDate } from "@/components/i18n/LocalDate";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { fetchPublicArticleList, type PublicArticleListResult } from "@/lib/api/client-api";
 import type { Article, ContentCategoryWithCount } from "@/lib/contracts/public";
 import { safeText } from "@/lib/utils/format";
@@ -56,7 +58,7 @@ export function WpArticleListClient({
   const initialData =
     isDefaultView && initialArticles ? { data: initialArticles, pagination: initialPagination } : undefined;
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ["public-articles", { page, size, category, q, lang: locale }],
     queryFn: () => fetchPublicArticleList({ page, size, category, q, lang: locale }),
     staleTime: 60 * 1000,
@@ -69,6 +71,9 @@ export function WpArticleListClient({
   const pagination = data?.pagination ?? null;
   const showCategoryIntro = !category && !q;
   const firstLoading = isLoading && articles.length === 0;
+  // Đã có bài viết (trang/lọc cũ) hiển thị nhưng đang fetch bản mới — làm mờ + báo hiệu
+  // thay vì im lặng đợi rồi tự đổi (giống lưới sản phẩm).
+  const isRefetching = isFetching && !firstLoading;
 
   const makeListHref = (overrides: { category?: string; size?: number }) => {
     const nextSize = overrides.size && overrides.size !== DEFAULT_PAGE_SIZE ? overrides.size : undefined;
@@ -119,14 +124,28 @@ export function WpArticleListClient({
             <p className="woocommerce-info">{emptyNotice}</p>
           ) : (
             <>
-              <div className="news-list">
-                <div className="row">
-                  {articles.map((article) => (
-                    <div className="col-md-4 col-sm-6 col-12" key={article.id}>
-                      <WpBlogGridItem article={article} />
-                    </div>
-                  ))}
+              <div className="relative">
+                <div
+                  className={cn("news-list transition-opacity duration-200", isRefetching && "opacity-50")}
+                  aria-busy={isRefetching || undefined}
+                >
+                  <div className="row">
+                    {articles.map((article) => (
+                      <div className="col-md-4 col-sm-6 col-12" key={article.id}>
+                        <WpBlogGridItem article={article} />
+                      </div>
+                    ))}
+                  </div>
                 </div>
+                {isRefetching ? (
+                  <div
+                    className="pointer-events-none absolute inset-0 flex items-start justify-center pt-16"
+                    role="status"
+                  >
+                    <Loader2 className="h-8 w-8 animate-spin text-brand" aria-hidden="true" />
+                    <span className="sr-only">{t("listLoading")}</span>
+                  </div>
+                ) : null}
               </div>
 
               {pagination ? (

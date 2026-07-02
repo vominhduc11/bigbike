@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Checkbox } from "@/components/ui/checkbox";
+import { CheckoutSkeleton } from "@/components/ui/Skeletons";
 import { formatVnd } from "@/lib/utils/format";
 import { toCartPath, toProductListPath } from "@/lib/utils/routes";
 import {
@@ -52,7 +53,9 @@ export function WpCheckoutClient() {
   } = useCheckout();
 
   if (cartLoading && !cart) {
-    return <p className="woocommerce-info">{t("loading")}</p>;
+    // Cùng khung skeleton mà app/dat-hang/loading.tsx dùng cho lần điều hướng đầu —
+    // tái dùng ở đây cho lần giỏ hàng còn đang tải phía client (không phải điều hướng).
+    return <CheckoutSkeleton />;
   }
 
   if (cartError) {

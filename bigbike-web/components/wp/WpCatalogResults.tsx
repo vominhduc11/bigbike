@@ -1,23 +1,14 @@
 import { Fragment, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
+import { Loader2 } from "lucide-react";
 import type { Product } from "@/lib/contracts/public";
 import type { WpOrderbyValue } from "@/lib/utils/catalog-sort";
-import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { ProductCardSkel } from "@/components/ui/skeleton/primitives";
 import { WpCategorySort } from "./WpCategorySort";
 import { WpMobileFilterTrigger } from "./WpMobileFilterTrigger";
 import { WpCategoryPagination } from "./WpCategoryPagination";
 import { WpProductSwipeItem } from "./WpProductSwipeItem";
-
-/** Placeholder 1 thẻ sản phẩm khi lưới CSR đang tải lần đầu — giữ chiều cao, tránh layout shift. */
-function ProductCardSkeleton() {
-  return (
-    <div className="mb-6">
-      <Skeleton className="aspect-square w-full rounded-none" />
-      <Skeleton className="mt-3 h-4 w-4/5" />
-      <Skeleton className="mt-2 h-4 w-2/5" />
-    </div>
-  );
-}
 
 type CatalogPagination = {
   page: number;
@@ -36,6 +27,8 @@ export type WpCatalogResultsProps = {
   paginationBaseHref: string;
   /** Lưới CSR đang tải lần đầu (chưa có data) → hiện skeleton thay vì notice. */
   isLoading?: boolean;
+  /** Đã có data (cũ) hiển thị nhưng đang fetch bản mới (đổi filter/sort/trang) → làm mờ lưới + báo hiệu, không im lặng. */
+  isRefetching?: boolean;
 };
 
 /**
@@ -52,6 +45,7 @@ export function WpCatalogResults({
   beforeGrid,
   paginationBaseHref,
   isLoading = false,
+  isRefetching = false,
 }: WpCatalogResultsProps) {
   const t = useTranslations("Catalog");
   return (
@@ -89,21 +83,35 @@ export function WpCatalogResults({
               <div className="row">
                 {Array.from({ length: 8 }).map((_, i) => (
                   <div className="col-md-3 col-6" key={i}>
-                    <ProductCardSkeleton />
+                    <ProductCardSkel />
                   </div>
                 ))}
               </div>
             ) : notice != null ? (
               <p className="woocommerce-info">{notice}</p>
             ) : (
-              <div className="row">
-                {products.map((product) => (
-                  <WpProductSwipeItem
-                    key={product.id}
-                    product={product}
-                    wrapperClassName="col-md-3 col-6"
-                  />
-                ))}
+              <div className="relative">
+                <div
+                  className={cn("row transition-opacity duration-200", isRefetching && "opacity-50")}
+                  aria-busy={isRefetching || undefined}
+                >
+                  {products.map((product) => (
+                    <WpProductSwipeItem
+                      key={product.id}
+                      product={product}
+                      wrapperClassName="col-md-3 col-6"
+                    />
+                  ))}
+                </div>
+                {isRefetching ? (
+                  <div
+                    className="pointer-events-none absolute inset-0 flex items-start justify-center pt-16"
+                    role="status"
+                  >
+                    <Loader2 className="h-8 w-8 animate-spin text-brand" aria-hidden="true" />
+                    <span className="sr-only">{t("updating")}</span>
+                  </div>
+                ) : null}
               </div>
             )}
           </div>

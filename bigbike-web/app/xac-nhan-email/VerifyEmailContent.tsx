@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { Loader2 } from "lucide-react";
 import { resendEmailVerification, verifyEmail } from "@/lib/api/client-api";
 import { useAuth } from "@/lib/auth/auth-store";
 
@@ -58,7 +59,8 @@ export function VerifyEmailContent() {
         <div className="login">
           <div className="user-activity-content text-center">
             {status === "loading" && (
-              <div className="user-activity-content-title">
+              <div className="user-activity-content-title" role="status">
+                <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-brand" aria-hidden="true" />
                 <h1 className="mb-2">{t("loadingTitle")}</h1>
                 <p className="m-0">{t("loadingMessage")}</p>
               </div>

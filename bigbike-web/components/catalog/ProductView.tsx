@@ -2,11 +2,11 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import { WpPurchaseSection } from "@/components/wp/WpPurchaseSection";
 import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
-import { LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
+import { LText, LocalizedContentProvider, useLocalizedField } from "@/components/i18n/LocalizedContent";
 import { Tr } from "@/components/i18n/Tr";
 import {
   ProductContentBottom,
@@ -61,6 +61,43 @@ type ProductViewProps = {
  * customers see. SEO concerns (metadata, JSON-LD) stay in the server page; this
  * component owns only the visible body.
  */
+
+/**
+ * Dòng tin cậy MOBILE thay chỗ breadcrumb (breadcrumb ẩn <768px) — logic y hệt bản gốc trên
+ * tên sản phẩm (WpPurchaseSection). Tách thành component riêng (không gọi hook thẳng trong
+ * ProductView) vì `useLocalizedField` cần đứng DƯỚI LocalizedContentProvider trong cây React
+ * để đọc đúng context bản EN — ProductView là cha của Provider nên gọi hook ở đó luôn ra rỗng.
+ */
+function MobileTrustLine({ product }: { product: Product }) {
+  const locale = useLocale();
+  const enTrustHtml = useLocalizedField<string>("trustBadgesHtml");
+  const trustBadgesHtml = locale === "en" ? enTrustHtml ?? "" : product.trustBadgesHtml ?? "";
+  const trustItems = (product.trustBadges ?? [])
+    .map((b) => safeText(b.content, ""))
+    .filter(Boolean);
+
+  if (trustBadgesHtml.trim()) {
+    return (
+      <div
+        className="md:hidden mb-11 bb-trust-badges-html"
+        dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(trustBadgesHtml, { allowInlineStyles: true }) }}
+      />
+    );
+  }
+  if (trustItems.length > 0) {
+    return (
+      <div className="md:hidden mb-11 flex flex-wrap items-center gap-x-4 gap-y-2 text-ui-14 max-md:text-ui-12 text-muted-foreground">
+        {trustItems.map((item, i) => (
+          <span key={`${item}-${i}`} className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 shrink-0 bg-brand" aria-hidden />
+            <span>{item}</span>
+          </span>
+        ))}
+      </div>
+    );
+  }
+  return null;
+}
 
 export function ProductView({ product, settings, previewMode = false }: ProductViewProps) {
   const name = safeText(product.name, "Sản phẩm");
@@ -360,7 +397,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
           không ảnh hưởng; đặt đầu khối cho dễ thấy. */}
       <ReadingProgressBar />
       <div className="container">
-        <div className="breadcrumb">
+        <div className="breadcrumb max-md:hidden">
           <ul>
             <li>
               <Link href="/" className="home">
@@ -387,6 +424,8 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
             </li>
           </ul>
         </div>
+
+        <MobileTrustLine product={product} />
 
         <div id="pdp-overview" className="product-detail product sidebar">
           <WpPurchaseSection

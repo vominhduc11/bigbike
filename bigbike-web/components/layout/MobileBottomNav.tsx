@@ -4,9 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Home, ShoppingCart, User } from "lucide-react";
+import { useHeaderUi } from "@/components/layout/HeaderUiContext";
 import { useCart } from "@/lib/cart-context";
 import { cn } from "@/lib/utils";
-import { isAuthRoute, toAccountPath, toCartPath, toHomePath } from "@/lib/utils/routes";
+import { isAuthRoute, toAccountPath, toHomePath } from "@/lib/utils/routes";
 
 function isHomePath(pathname: string) {
   return pathname === "/" || pathname === "";
@@ -39,12 +40,17 @@ export function MobileBottomNav() {
   const t = useTranslations("Header");
   const pathname = usePathname();
   const { cartCount } = useCart();
+  const { openPanel, isPanelOpen } = useHeaderUi();
 
   // Ẩn thanh điều hướng khi đang đặt hàng: giảm điểm thoát giữa chừng và tránh các
   // nút nổi chồng nhau ở đáy màn hình điện thoại (checkout tập trung).
   if (pathname.startsWith("/dat-hang") || pathname.startsWith("/don-hang")) return null;
 
   const badge = cartCount != null && cartCount > 0 ? cartCount : null;
+  // Tab Giỏ hàng mở khung xem nhanh (MobileCartSheet) thay vì sang thẳng trang —
+  // sáng đèn khi khung đang mở HOẶC khách đã ở thẳng trang Giỏ hàng (vd bấm "Xem
+  // giỏ hàng" trong khung, hoặc vào thẳng URL /gio-hang).
+  const cartActive = isPanelOpen("cart");
   const cartRouteActive = pathname.startsWith("/gio-hang");
   const homeActive = isHomePath(pathname);
   // Khi chưa đăng nhập, bấm Tài khoản sẽ bị đẩy sang /dang-nhap (WpAccountNav). Từ thanh
@@ -75,12 +81,13 @@ export function MobileBottomNav() {
           </span>
         </Link>
 
-        <Link
-          href={toCartPath()}
-          className={tabClass(cartRouteActive)}
-          aria-current={cartRouteActive ? "page" : undefined}
+        <button
+          type="button"
+          onClick={() => openPanel("cart")}
+          className={tabClass(cartActive || cartRouteActive)}
+          aria-pressed={cartActive}
         >
-          {cartRouteActive && <ActiveBar />}
+          {(cartActive || cartRouteActive) && <ActiveBar />}
           <div className="relative">
             <ShoppingCart size={22} aria-hidden />
             {badge != null && (
@@ -89,10 +96,10 @@ export function MobileBottomNav() {
               </span>
             )}
           </div>
-          <span className={cn(labelCls,cartRouteActive ? "font-semibold" : "font-medium")}>
+          <span className={cn(labelCls, cartActive || cartRouteActive ? "font-semibold" : "font-medium")}>
             {t("mobileCartLink")}
           </span>
-        </Link>
+        </button>
 
         <Link
           href={toAccountPath()}

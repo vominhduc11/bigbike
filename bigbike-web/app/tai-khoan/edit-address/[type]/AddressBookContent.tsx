@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Check, Mail, MapPin, Phone, Plus, SquarePen, Trash2 } from "lucide-react";
+import { Check, Loader2, Mail, MapPin, Phone, Plus, SquarePen, Trash2 } from "lucide-react";
 import { WpAccountSectionHeading, useWpAccount } from "@/components/wp/WpAccountNav";
 import { createAddress, deleteAddress, fetchMyAddresses, updateAddress } from "@/lib/api/client-api";
 import type { CustomerAddress, SaveAddressPayload } from "@/lib/contracts/commerce";
@@ -36,6 +36,18 @@ export function AddressBookContent() {
   const [editing, setEditing] = useState<CustomerAddress | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+  // Địa chỉ đang gọi API (đặt mặc định / xoá) — theo Set để 2 dòng có thể xử lý
+  // độc lập cùng lúc mà không đè trạng thái pending của nhau.
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
+
+  function markPending(id: string, pending: boolean) {
+    setPendingIds((prev) => {
+      const next = new Set(prev);
+      if (pending) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
 
   useEffect(() => {
     let ignore = false;
@@ -84,6 +96,8 @@ export function AddressBookContent() {
   }
 
   async function handleSetDefault(addr: CustomerAddress) {
+    if (pendingIds.has(addr.id)) return;
+    markPending(addr.id, true);
     try {
       await updateAddress(addr.id, {
         type: addr.type,
@@ -99,17 +113,23 @@ export function AddressBookContent() {
       setNotice(t("noticeDefault"));
     } catch (err: unknown) {
       setListError(err instanceof Error ? err.message : t("errorSetDefault"));
+    } finally {
+      markPending(addr.id, false);
     }
   }
 
   async function handleDelete(addr: CustomerAddress) {
+    if (pendingIds.has(addr.id)) return;
     if (!window.confirm(t("confirmDelete"))) return;
+    markPending(addr.id, true);
     try {
       await deleteAddress(addr.id);
       setAddresses((prev) => prev.filter((a) => a.id !== addr.id));
       setNotice(t("noticeDeleted"));
     } catch (err: unknown) {
       setListError(err instanceof Error ? err.message : t("errorDelete"));
+    } finally {
+      markPending(addr.id, false);
     }
   }
 
@@ -148,7 +168,9 @@ export function AddressBookContent() {
         <>
           {addresses.length > 0 && (
             <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 xl:gap-6">
-              {pagedAddresses.map((addr, idx) => (
+              {pagedAddresses.map((addr, idx) => {
+                const isPending = pendingIds.has(addr.id);
+                return (
                 <div
                   key={addr.id}
                   className={`border bg-white p-5 ${addr.isDefault ? "border-brand-border" : "border-border"}`}
@@ -195,8 +217,10 @@ export function AddressBookContent() {
                       <button
                         type="button"
                         onClick={() => handleSetDefault(addr)}
-                        className="inline-flex min-h-11 items-center text-ui-14 max-md:text-ui-12 font-bold uppercase tracking-wide text-discount hover:underline"
+                        disabled={isPending}
+                        className="inline-flex min-h-11 items-center gap-1.5 text-ui-14 max-md:text-ui-12 font-bold uppercase tracking-wide text-discount hover:underline disabled:pointer-events-none disabled:opacity-50"
                       >
+                        {isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />}
                         {t("setDefaultButton")}
                       </button>
                     )}
@@ -205,7 +229,8 @@ export function AddressBookContent() {
                         type="button"
                         onClick={() => openEdit(addr)}
                         aria-label={t("editAria")}
-                        className="flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-brand"
+                        disabled={isPending}
+                        className="flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-brand disabled:pointer-events-none disabled:opacity-50"
                       >
                         <SquarePen className="h-[18px] w-[18px]" aria-hidden />
                       </button>
@@ -213,14 +238,20 @@ export function AddressBookContent() {
                         type="button"
                         onClick={() => handleDelete(addr)}
                         aria-label={t("deleteAria")}
-                        className="flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-brand"
+                        disabled={isPending}
+                        className="flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-brand disabled:pointer-events-none disabled:opacity-50"
                       >
-                        <Trash2 className="h-[18px] w-[18px]" aria-hidden />
+                        {isPending ? (
+                          <Loader2 className="h-[18px] w-[18px] animate-spin" aria-hidden />
+                        ) : (
+                          <Trash2 className="h-[18px] w-[18px]" aria-hidden />
+                        )}
                       </button>
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
 

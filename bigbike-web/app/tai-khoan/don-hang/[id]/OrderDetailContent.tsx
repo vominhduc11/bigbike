@@ -10,7 +10,8 @@ import { isCustomerCancellable } from "@/lib/utils/orders";
 import { useLocalDate } from "@/components/i18n/LocalDate";
 import { toOrderHistoryPath } from "@/lib/utils/routes";
 import { cn } from "@/lib/utils";
-import { bbLink, sectionSubheading } from "@/lib/ui-classes";
+import { bbLink, sectionSubheading, skelStack } from "@/lib/ui-classes";
+import { SkelBlock } from "@/components/ui/skeleton/primitives";
 
 export function OrderDetailContent({ orderId }: { orderId: string }) {
   const t = useTranslations("Account.orders");
@@ -38,7 +39,14 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
     return (
       <>
         <WpAccountSectionHeading title={t("detailHeading")} />
-        <p className="m-0 text-ui-16 max-md:text-ui-14 text-muted-foreground">{t("loading")}</p>
+        {/* Cùng hình khối (200/160/140px) mà OrderDetailSkeleton dùng cho lần điều
+            hướng đầu — bỏ khối tiêu đề của nó vì tiêu đề thật đã render ở trên. */}
+        <div className={skelStack} role="status" aria-busy="true">
+          <span className="sr-only">{t("loading")}</span>
+          <SkelBlock w="100%" h={200} />
+          <SkelBlock w="100%" h={160} />
+          <SkelBlock w="100%" h={140} />
+        </div>
       </>
     );
   }

@@ -63,9 +63,12 @@ export function useQuickBuyForm({
       .then((addresses) => {
         const def = addresses.find((a) => a.isDefault) ?? addresses[0] ?? null;
         if (!def) return;
-        if (def.province) form.setValue("province", def.province);
-        if (def.ward) form.setValue("ward", def.ward ?? "");
-        if (def.addressLine1) form.setValue("addressLine1", def.addressLine1);
+        // Round-trip is async — skip any field the customer has already started
+        // typing into so the prefill can't silently overwrite it mid-keystroke.
+        const dirty = form.formState.dirtyFields;
+        if (def.province && !dirty.province) form.setValue("province", def.province);
+        if (def.ward && !dirty.ward) form.setValue("ward", def.ward ?? "");
+        if (def.addressLine1 && !dirty.addressLine1) form.setValue("addressLine1", def.addressLine1);
       })
       .catch(() => { /* ignore — prefill is best-effort */ });
   }, [open, auth]); // eslint-disable-line react-hooks/exhaustive-deps

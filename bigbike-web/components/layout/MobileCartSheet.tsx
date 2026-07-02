@@ -124,8 +124,22 @@ export function MobileCartSheet() {
 
         <div className="flex-1 min-h-0 overflow-y-auto px-[18px] py-[14px] [-webkit-overflow-scrolling:touch]">
           {loading ? (
-            <div className="py-11 px-[18px] text-center text-[var(--bb-text-inverse-muted)]" role="status">
-              {t("loading")}
+            <div className="grid gap-[10px]" role="status">
+              <span className="sr-only">{t("loading")}</span>
+              {[0, 1].map((i) => (
+                <div
+                  key={i}
+                  aria-hidden="true"
+                  className="flex gap-3 border border-[var(--bb-mobile-shell-border)] bg-[var(--bb-mobile-shell-surface)] p-[10px]"
+                >
+                  <div className="h-[72px] w-[72px] flex-none animate-pulse bg-[var(--bb-mobile-shell-border-strong)]" />
+                  <div className="min-w-0 flex-1 py-1">
+                    <div className="h-3 w-3/5 animate-pulse bg-[var(--bb-mobile-shell-border-strong)]" />
+                    <div className="mt-2 h-3 w-2/5 animate-pulse bg-[var(--bb-mobile-shell-border-strong)]" />
+                    <div className="mt-3 h-7 w-24 animate-pulse bg-[var(--bb-mobile-shell-border-strong)]" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : queryError || errorMessage ? (
             <div

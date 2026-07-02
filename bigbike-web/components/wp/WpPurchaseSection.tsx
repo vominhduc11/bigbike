@@ -231,11 +231,11 @@ export function WpPurchaseSection({
               dấu đầu dòng của theme WP; chấm phân cách tự vẽ, chỉ chen GIỮA các mục. */}
           {trustBadgesHtml.trim() ? (
             <div
-              className="mb-11 bb-trust-badges-html"
+              className="max-md:hidden mb-11 bb-trust-badges-html"
               dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(trustBadgesHtml, { allowInlineStyles: true }) }}
             />
           ) : trustItems.length > 0 ? (
-            <div className="mb-11 flex flex-wrap items-center gap-x-4 gap-y-2 text-ui-14 max-md:text-ui-12 text-muted-foreground">
+            <div className="max-md:hidden mb-11 flex flex-wrap items-center gap-x-4 gap-y-2 text-ui-14 max-md:text-ui-12 text-muted-foreground">
               {trustItems.map((item, i) => (
                 <span key={`${item}-${i}`} className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 shrink-0 bg-brand" aria-hidden />

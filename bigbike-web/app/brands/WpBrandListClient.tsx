@@ -5,8 +5,10 @@ import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
+import { Loader2 } from "lucide-react";
 import { WpCategoryPagination } from "@/components/wp/WpCategoryPagination";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { fetchPublicBrandList, type PublicBrandListResult } from "@/lib/api/client-api";
 import type { Brand } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
@@ -49,7 +51,7 @@ export function WpBrandListClient({
   const initialData =
     isDefaultView && initialBrands ? { data: initialBrands, pagination: initialPagination } : undefined;
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ["public-brands", { page, size, sort, lang: locale }],
     queryFn: () => fetchPublicBrandList({ page, size, sort, lang: locale }),
     staleTime: 5 * 60 * 1000,
@@ -60,13 +62,17 @@ export function WpBrandListClient({
 
   const brands = data?.data ?? [];
   const pagination = data?.pagination ?? null;
+  const firstLoading = isLoading && brands.length === 0;
+  // Đã có thương hiệu (trang cũ) hiển thị nhưng đang fetch trang/sắp xếp mới — làm mờ +
+  // báo hiệu thay vì im lặng đợi rồi tự đổi (giống lưới sản phẩm).
+  const isRefetching = isFetching && !firstLoading;
 
   const paginationBaseHref = `${toBrandListPath()}${buildQueryString({
     size: size !== DEFAULT_PAGE_SIZE ? size : undefined,
     sort: sort !== DEFAULT_SORT ? sort : undefined,
   })}`;
 
-  if (isLoading && brands.length === 0) {
+  if (firstLoading) {
     // Skeleton lần tải đầu — giữ lưới, tránh layout shift.
     return (
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-7">
@@ -91,38 +97,52 @@ export function WpBrandListClient({
     <>
       {/* Lưới card đồng đều: ô bằng nhau, logo căn giữa trong khung cố định 64px
           (object-contain), tên hãng dưới đáy. */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-7">
-        {brands.map((brand) => {
-          const name = safeText(brand.name, "Thương hiệu");
-          // Logo từ MinIO (same-origin), không hotlink web cũ (AGENTS.md §14.3).
-          const logoUrl = resolveMediaUrl(brand.logo?.url?.trim());
-          const initials = name.replace(/[^A-Za-zÀ-ỹ]/g, "").slice(0, 2).toUpperCase();
-          return (
-            <LocalizedLink
-              key={brand.id}
-              kind="brand"
-              viSlug={brand.slug}
-              enSlug={brand.slugEn}
-              title={name}
-              className="group flex h-full flex-col items-center justify-between gap-4 border border-neutral-200 bg-white p-5 no-underline transition-colors hover:border-neutral-900"
-            >
-              <span className="flex h-16 w-full items-center justify-center">
-                {logoUrl ? (
-                  <img
-                    src={logoUrl}
-                    alt={brand.logo?.alt ?? name}
-                    className="max-h-16 w-auto max-w-full object-contain transition-transform duration-200 group-hover:scale-105"
-                  />
-                ) : (
-                  <span className="text-2xl font-bold tracking-wide text-neutral-300">{initials}</span>
-                )}
-              </span>
-              <span className="text-center text-ui-14 font-semibold uppercase tracking-wide text-neutral-800">
-                {name}
-              </span>
-            </LocalizedLink>
-          );
-        })}
+      <div className="relative">
+        <div
+          className={cn(
+            "grid grid-cols-2 gap-3 transition-opacity duration-200 sm:grid-cols-3 lg:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-7",
+            isRefetching && "opacity-50",
+          )}
+          aria-busy={isRefetching || undefined}
+        >
+          {brands.map((brand) => {
+            const name = safeText(brand.name, "Thương hiệu");
+            // Logo từ MinIO (same-origin), không hotlink web cũ (AGENTS.md §14.3).
+            const logoUrl = resolveMediaUrl(brand.logo?.url?.trim());
+            const initials = name.replace(/[^A-Za-zÀ-ỹ]/g, "").slice(0, 2).toUpperCase();
+            return (
+              <LocalizedLink
+                key={brand.id}
+                kind="brand"
+                viSlug={brand.slug}
+                enSlug={brand.slugEn}
+                title={name}
+                className="group flex h-full flex-col items-center justify-between gap-4 border border-neutral-200 bg-white p-5 no-underline transition-colors hover:border-neutral-900"
+              >
+                <span className="flex h-16 w-full items-center justify-center">
+                  {logoUrl ? (
+                    <img
+                      src={logoUrl}
+                      alt={brand.logo?.alt ?? name}
+                      className="max-h-16 w-auto max-w-full object-contain transition-transform duration-200 group-hover:scale-105"
+                    />
+                  ) : (
+                    <span className="text-2xl font-bold tracking-wide text-neutral-300">{initials}</span>
+                  )}
+                </span>
+                <span className="text-center text-ui-14 font-semibold uppercase tracking-wide text-neutral-800">
+                  {name}
+                </span>
+              </LocalizedLink>
+            );
+          })}
+        </div>
+        {isRefetching ? (
+          <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-16" role="status">
+            <Loader2 className="h-8 w-8 animate-spin text-brand" aria-hidden="true" />
+            <span className="sr-only">{t("updating")}</span>
+          </div>
+        ) : null}
       </div>
       {pagination ? (
         <WpCategoryPagination

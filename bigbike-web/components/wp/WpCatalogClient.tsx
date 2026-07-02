@@ -123,7 +123,7 @@ export function WpCatalogClient({
   const initialData =
     isDefaultView && initialProducts ? { data: initialProducts, pagination: initialPagination } : undefined;
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ["catalog-products", productQuery],
     queryFn: () => fetchPublicProductList(productQuery),
     enabled: !hasValidationErrors && !blockedByEmptyQuery,
@@ -141,6 +141,9 @@ export function WpCatalogClient({
   // không hiện notice "Đang tải". Các lần đổi filter/trang giữ data cũ (placeholderData)
   // nên không bị nháy.
   const firstLoading = isLoading && !hasValidationErrors && !blockedByEmptyQuery;
+  // Đã có data cũ hiển thị (placeholderData) nhưng vẫn đang fetch bản mới sau khi
+  // đổi filter/sort/trang → báo hiệu "đang cập nhật" thay vì im lặng đợi rồi tự đổi.
+  const isRefetching = isFetching && !firstLoading;
   const notice = hasValidationErrors
     ? catalog.validationErrors.join(" ")
     : blockedByEmptyQuery
@@ -180,6 +183,7 @@ export function WpCatalogClient({
         products={products}
         notice={notice}
         isLoading={firstLoading}
+        isRefetching={isRefetching}
         beforeGrid={
           beforeGridNode ??
           (beforeGridHtml ? <div className="desc" dangerouslySetInnerHTML={{ __html: beforeGridHtml }} /> : null)
