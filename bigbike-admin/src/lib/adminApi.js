@@ -619,6 +619,18 @@ export async function updateAttribute(attributeId, { name, nameEn }) {
   return payload?.data ?? payload
 }
 
+export async function createAttribute({ name, nameEn } = {}) {
+  const payload = await requestJson('/admin/attributes', {
+    method: 'POST',
+    body: { name, nameEn },
+  })
+  return payload?.data ?? payload
+}
+
+export async function deleteAttribute(attributeId) {
+  await requestJson(`/admin/attributes/${attributeId}`, { method: 'DELETE' })
+}
+
 export async function createAttributeValue(attributeId, { label, labelEn, slug } = {}) {
   const payload = await requestJson(`/admin/attributes/${attributeId}/values`, {
     method: 'POST',
@@ -633,6 +645,10 @@ export async function updateAttributeValueLabel(valueId, { label, labelEn }) {
     body: { label, labelEn },
   })
   return payload?.data ?? payload
+}
+
+export async function deleteAttributeValue(valueId) {
+  await requestJson(`/admin/attribute-values/${valueId}`, { method: 'DELETE' })
 }
 
 export async function fetchContent(query) {

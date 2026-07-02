@@ -74,7 +74,7 @@ function IconPencil() {
 export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = false, onClose }) {
   const { t } = useTranslation()
   const hasPermission = useHasPermission()
-  // media.write gates both uploading new files and editing metadata (alt/title/caption).
+  // media.write gates both uploading new files and editing metadata (alt/title).
   const canWrite = hasPermission('media.write')
   const modalRef = useRef(null)
   const previousFocusRef = useRef(null)
@@ -89,7 +89,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
   const [uploadError, setUploadError] = useState('')
   const [isDragOver, setIsDragOver] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
-  // Inline metadata editor (alt/title/caption) without leaving the picker.
+  // Inline metadata editor (alt/title) without leaving the picker.
   const [detailMedia, setDetailMedia] = useState(null)
   const detailOpenRef = useRef(false)
   const fileInputRef = useRef(null)

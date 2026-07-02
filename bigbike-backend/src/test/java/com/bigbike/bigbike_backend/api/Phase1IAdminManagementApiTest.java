@@ -262,19 +262,18 @@ class Phase1IAdminManagementApiTest {
                 .andExpect(jsonPath("$.data.storageProvider").exists());
     }
 
-    // 13. Update metadata — altText, title, caption
+    // 13. Update metadata — altText, title
     @Test
-    void updateMedia_updatesAltTitleCaption() throws Exception {
+    void updateMedia_updatesAltTitle() throws Exception {
         UUID mediaId = createTestMedia("image/webp", "ACTIVE");
 
         mockMvc.perform(patch("/api/v1/admin/media/" + mediaId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"altText\":\"Mũ bảo hiểm AGV\",\"title\":\"AGV K1\",\"caption\":\"Ảnh sản phẩm\"}")
+                        .content("{\"altText\":\"Mũ bảo hiểm AGV\",\"title\":\"AGV K1\"}")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.altText").value("Mũ bảo hiểm AGV"))
-                .andExpect(jsonPath("$.data.title").value("AGV K1"))
-                .andExpect(jsonPath("$.data.caption").value("Ảnh sản phẩm"));
+                .andExpect(jsonPath("$.data.title").value("AGV K1"));
     }
 
     // 14. Delete marks status=DELETED (logical delete)

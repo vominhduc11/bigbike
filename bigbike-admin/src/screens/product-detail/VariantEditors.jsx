@@ -2,9 +2,12 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
-import { Pencil, Plus } from 'lucide-react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
 import {
+  createAttribute,
   createAttributeValue,
+  deleteAttribute,
+  deleteAttributeValue,
   fetchAttributes,
   fetchAttributeValues,
   updateAttribute,
@@ -28,6 +31,10 @@ import {
 } from './constants'
 import { IconChevronDown, IconChevronUp, GalleryEditor } from './ContentEditors'
 
+// Sentinel value for the "+ Tạo loại thuộc tính mới…" entry appended to the
+// attribute-name Select — kept distinct from any real attribute name/code.
+const CREATE_NEW_ATTRIBUTE_VALUE = '__create_new_attribute__'
+
 // Resolve an attribute from the catalog by matching option name against code or name
 function resolveAttr(attributes, optionName) {
   const norm = normalizeVariantToken(optionName)
@@ -47,7 +54,9 @@ function deriveVariantName(options) {
 
 // Rename an attribute's display name. The code/key stays immutable (shown
 // read-only) so existing variant options that resolve via the code keep working.
-function AttributeRenameModal({ open, onClose, attribute }) {
+// `onDeleted` fires after a successful delete so the caller can clear the row
+// that was pointing at this (now-gone) attribute.
+function AttributeRenameModal({ open, onClose, attribute, onDeleted }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   // Mounted only while open (see caller), so initialising from the current name
@@ -66,9 +75,33 @@ function AttributeRenameModal({ open, onClose, attribute }) {
       toast.error(err?.message || t('products.detail.variant.attrSaveError', { defaultValue: 'Không lưu được thuộc tính.' })),
   })
 
+  const deleteMut = useMutation({
+    mutationFn: () => deleteAttribute(attribute.id),
+    onSuccess: () => {
+      toast.success(t('products.detail.variant.attrDeleted', { defaultValue: 'Đã xóa loại thuộc tính.' }))
+      queryClient.invalidateQueries({ queryKey: ['attributes'] })
+      onDeleted?.()
+      onClose()
+    },
+    onError: (err) =>
+      toast.error(err?.message || t('products.detail.variant.attrDeleteError', { defaultValue: 'Không xóa được thuộc tính.' })),
+  })
+
   const trimmed = name.trim()
   const dirty = trimmed && (trimmed !== attribute?.name || nameEn.trim() !== (attribute?.nameEn ?? ''))
   const saveRename = () => renameMut.mutate({ name: trimmed, nameEn: nameEn.trim() })
+  const busy = renameMut.isPending || deleteMut.isPending
+
+  const handleDelete = async () => {
+    const confirmed = await showConfirm(
+      t('products.detail.variant.attrDeleteConfirm', {
+        name: attribute?.name,
+        defaultValue: `Xóa hẳn loại thuộc tính "${attribute?.name}" khỏi hệ thống? Không thể hoàn tác.`,
+      }),
+      t('products.detail.variant.attrDeleteTitle', { defaultValue: 'Xóa loại thuộc tính' }),
+    )
+    if (confirmed) deleteMut.mutate()
+  }
 
   return (
     <Modal
@@ -77,8 +110,16 @@ function AttributeRenameModal({ open, onClose, attribute }) {
       title={t('products.detail.variant.attrRenameTitle', { defaultValue: 'Đổi tên thuộc tính' })}
       actions={(
         <>
-          <Button variant="outline" onClick={onClose}>{t('common.close', { defaultValue: 'Đóng' })}</Button>
-          <Button onClick={saveRename} disabled={renameMut.isPending || !dirty}>
+          <Button
+            variant="outline"
+            className="text-destructive hover:text-destructive mr-auto"
+            onClick={handleDelete}
+            disabled={busy}
+          >
+            <Trash2 size={15} /> {t('common.delete', { defaultValue: 'Xóa' })}
+          </Button>
+          <Button variant="outline" onClick={onClose} disabled={busy}>{t('common.close', { defaultValue: 'Đóng' })}</Button>
+          <Button onClick={saveRename} disabled={busy || !dirty}>
             {t('common.save', { defaultValue: 'Lưu' })}
           </Button>
         </>
@@ -90,8 +131,8 @@ function AttributeRenameModal({ open, onClose, attribute }) {
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            disabled={renameMut.isPending}
-            onKeyDown={(e) => { if (e.key === 'Enter' && dirty && !renameMut.isPending) saveRename() }}
+            disabled={busy}
+            onKeyDown={(e) => { if (e.key === 'Enter' && dirty && !busy) saveRename() }}
           />
         </div>
         <div className="flex flex-col gap-1.5">
@@ -99,9 +140,9 @@ function AttributeRenameModal({ open, onClose, attribute }) {
           <Input
             value={nameEn}
             onChange={(e) => setNameEn(e.target.value)}
-            disabled={renameMut.isPending}
+            disabled={busy}
             placeholder={t('products.detail.variant.attrEnPlaceholder', { defaultValue: 'Để trống sẽ dùng tên tiếng Việt' })}
-            onKeyDown={(e) => { if (e.key === 'Enter' && dirty && !renameMut.isPending) saveRename() }}
+            onKeyDown={(e) => { if (e.key === 'Enter' && dirty && !busy) saveRename() }}
           />
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -113,13 +154,78 @@ function AttributeRenameModal({ open, onClose, attribute }) {
   )
 }
 
-// One editable row in the colour manager: rename an existing value's label.
+// Create a brand-new attribute type (e.g. "Chất liệu") that doesn't exist yet
+// in the shared catalog. Auto-selects the created attribute back into the row.
+function CreateAttributeModal({ open, onClose, onCreated }) {
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  const [name, setName] = useState('')
+  const [nameEn, setNameEn] = useState('')
+
+  const createMut = useMutation({
+    mutationFn: (vars) => createAttribute(vars),
+    onSuccess: (created) => {
+      toast.success(t('products.detail.variant.attrCreated', { defaultValue: 'Đã tạo loại thuộc tính mới.' }))
+      queryClient.invalidateQueries({ queryKey: ['attributes'] })
+      onCreated?.(created)
+    },
+    onError: (err) =>
+      toast.error(err?.message || t('products.detail.variant.attrSaveError', { defaultValue: 'Không lưu được thuộc tính.' })),
+  })
+
+  const trimmed = name.trim()
+  const submit = () => createMut.mutate({ name: trimmed, nameEn: nameEn.trim() })
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={t('products.detail.variant.attrCreateTitle', { defaultValue: 'Tạo loại thuộc tính mới' })}
+      actions={(
+        <>
+          <Button variant="outline" onClick={onClose} disabled={createMut.isPending}>{t('common.close', { defaultValue: 'Đóng' })}</Button>
+          <Button onClick={submit} disabled={createMut.isPending || !trimmed}>
+            {t('common.create', { defaultValue: 'Tạo' })}
+          </Button>
+        </>
+      )}
+    >
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium">{t('products.detail.variant.attrNameLabel', { defaultValue: 'Tên hiển thị' })}</span>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t('products.detail.variant.attrCreatePlaceholder', { defaultValue: 'Ví dụ: Chất liệu' })}
+            disabled={createMut.isPending}
+            autoFocus
+            onKeyDown={(e) => { if (e.key === 'Enter' && trimmed && !createMut.isPending) submit() }}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium">{t('products.detail.variant.attrNameEnLabel', { defaultValue: 'Tên hiển thị (Tiếng Anh)' })}</span>
+          <Input
+            value={nameEn}
+            onChange={(e) => setNameEn(e.target.value)}
+            disabled={createMut.isPending}
+            placeholder={t('products.detail.variant.attrEnPlaceholder', { defaultValue: 'Để trống sẽ dùng tên tiếng Việt' })}
+            onKeyDown={(e) => { if (e.key === 'Enter' && trimmed && !createMut.isPending) submit() }}
+          />
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+// One editable row in the colour manager: rename an existing value's label,
+// or delete it outright (blocked server-side while any variant uses it).
 // The slug (shown read-only) stays fixed so variant references keep working.
-function AttributeValueEditRow({ value, onSave, saving }) {
+function AttributeValueEditRow({ value, onSave, onDelete, saving, deleting }) {
   const { t } = useTranslation()
   const [label, setLabel] = useState(value.label)
   const [labelEn, setLabelEn] = useState(value.labelEn ?? '')
   const dirty = label.trim() && (label.trim() !== value.label || labelEn.trim() !== (value.labelEn ?? ''))
+  const busy = saving || deleting
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center gap-2">
@@ -127,7 +233,7 @@ function AttributeValueEditRow({ value, onSave, saving }) {
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           className="flex-1"
-          disabled={saving}
+          disabled={busy}
         />
         <span className="font-mono text-xs text-muted-foreground w-28 shrink-0 truncate" title={value.slug}>
           {value.slug}
@@ -136,24 +242,37 @@ function AttributeValueEditRow({ value, onSave, saving }) {
           variant="outline"
           size="sm"
           onClick={() => onSave({ label: label.trim(), labelEn: labelEn.trim() })}
-          disabled={saving || !dirty}
+          disabled={busy || !dirty}
         >
           {t('common.save', { defaultValue: 'Lưu' })}
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-destructive hover:text-destructive shrink-0"
+          onClick={onDelete}
+          disabled={busy}
+          aria-label={t('common.delete', { defaultValue: 'Xóa' })}
+          title={t('common.delete', { defaultValue: 'Xóa' })}
+        >
+          <Trash2 size={15} />
         </Button>
       </div>
       <Input
         value={labelEn}
         onChange={(e) => setLabelEn(e.target.value)}
-        disabled={saving}
+        disabled={busy}
         placeholder={t('products.detail.variant.valueEnPlaceholder', { defaultValue: 'Tên tiếng Anh (tùy chọn)' })}
       />
     </div>
   )
 }
 
-// Modal to add a new colour to the catalog and rename existing ones. Scoped to
-// one attribute; on add it auto-selects the new value back into the variant row.
-function AttributeValueManagerModal({ open, onClose, attribute, values, onPicked }) {
+// Modal to add a new colour to the catalog, rename existing ones, or delete
+// one outright. Scoped to one attribute; on add it auto-selects the new value
+// back into the variant row. `onValueDeleted` lets the caller clear the row's
+// current selection if the deleted value was the one in use there.
+function AttributeValueManagerModal({ open, onClose, attribute, values, onPicked, onValueDeleted }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [newLabel, setNewLabel] = useState('')
@@ -184,6 +303,28 @@ function AttributeValueManagerModal({ open, onClose, attribute, values, onPicked
     onError: (err) =>
       toast.error(err?.message || t('products.detail.variant.colorSaveError', { defaultValue: 'Không lưu được màu.' })),
   })
+
+  const deleteMut = useMutation({
+    mutationFn: (id) => deleteAttributeValue(id),
+    onSuccess: (_, id) => {
+      toast.success(t('products.detail.variant.colorDeleted', { defaultValue: 'Đã xóa màu.' }))
+      invalidate()
+      onValueDeleted?.(id)
+    },
+    onError: (err) =>
+      toast.error(err?.message || t('products.detail.variant.colorDeleteError', { defaultValue: 'Không xóa được màu.' })),
+  })
+
+  const handleDelete = async (v) => {
+    const confirmed = await showConfirm(
+      t('products.detail.variant.colorDeleteConfirm', {
+        label: v.label,
+        defaultValue: `Xóa hẳn màu "${v.label}" khỏi hệ thống? Không thể hoàn tác.`,
+      }),
+      t('products.detail.variant.colorDeleteTitle', { defaultValue: 'Xóa màu' }),
+    )
+    if (confirmed) deleteMut.mutate(v.id)
+  }
 
   return (
     <Modal
@@ -228,7 +369,9 @@ function AttributeValueManagerModal({ open, onClose, attribute, values, onPicked
                   key={v.id}
                   value={v}
                   saving={renameMut.isPending}
+                  deleting={deleteMut.isPending && deleteMut.variables === v.id}
                   onSave={(vals) => renameMut.mutate({ id: v.id, ...vals })}
+                  onDelete={() => handleDelete(v)}
                 />
               ))
             )}
@@ -247,6 +390,7 @@ function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled }) {
   const isColor = Boolean(attr?.kind === 'color' || isColorAttributeName(opt.name))
   const [managerOpen, setManagerOpen] = useState(false)
   const [renameAttrOpen, setRenameAttrOpen] = useState(false)
+  const [createAttrOpen, setCreateAttrOpen] = useState(false)
 
   // Catalog values for the selected color attribute (e.g. Đen / Đỏ / Xanh lá).
   const { data: attrValues = [] } = useQuery({
@@ -276,13 +420,17 @@ function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled }) {
         {attributes.length > 0 ? (
           <Select
             value={opt.name}
-            onValueChange={(val) =>
+            onValueChange={(val) => {
+              if (val === CREATE_NEW_ATTRIBUTE_VALUE) {
+                setCreateAttrOpen(true)
+                return
+              }
               onUpdate({
                 name: val,
                 value: '',
                 attributeValueId: null,
               })
-            }
+            }}
             disabled={disabled}
           >
             <SelectTrigger>
@@ -295,6 +443,9 @@ function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled }) {
               {attributes.map((a) => (
                 <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>
               ))}
+              <SelectItem value={CREATE_NEW_ATTRIBUTE_VALUE}>
+                + {t('products.detail.variant.attrCreateTitle', { defaultValue: 'Tạo loại thuộc tính mới' })}
+              </SelectItem>
             </SelectContent>
           </Select>
         ) : (
@@ -331,6 +482,17 @@ function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled }) {
             open
             onClose={() => setRenameAttrOpen(false)}
             attribute={attr}
+            onDeleted={() => onUpdate({ name: '', value: '', attributeValueId: null })}
+          />
+        )}
+        {createAttrOpen && (
+          <CreateAttributeModal
+            open
+            onClose={() => setCreateAttrOpen(false)}
+            onCreated={(created) => {
+              onUpdate({ name: created.name, value: '', attributeValueId: null })
+              setCreateAttrOpen(false)
+            }}
           />
         )}
       </div>
@@ -388,6 +550,9 @@ function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled }) {
                 attribute={attr}
                 values={attrValues}
                 onPicked={(created) => onUpdate({ value: created.slug, attributeValueId: created.id })}
+                onValueDeleted={(deletedId) => {
+                  if (deletedId === matchedValue?.id) onUpdate({ value: '', attributeValueId: null })
+                }}
               />
             )}
           </>

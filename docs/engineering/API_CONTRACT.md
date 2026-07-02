@@ -517,13 +517,18 @@ The colour/value dictionary for variant attributes is read and curated through `
 |---|---|---|---|
 | `GET /attributes` | — | **bare array** of `{ id, code, name, kind, valueCount }` | Not wrapped in the `{data}` envelope. |
 | `GET /attributes/{attributeId}/values` | — | **bare array** of `{ id, attributeId, slug, label, sortOrder }` | Not wrapped. |
+| `POST /attributes` | `{ name, nameEn? }` | `{ data: AttributeSummaryResponse }` | Creates a brand-new attribute type (e.g. "Chất liệu"). `code` (the immutable machine key) is auto-derived from `name` via the same diacritic-insensitive kebab-case rule as attribute values; `kind` is always `"select"`, `is_variation` always `true`. A name whose derived code collides with an existing attribute → `409 CONFLICT`; a name that yields an empty code → `400 VALIDATION_ERROR`. Requires `products.update`. |
 | `PATCH /attributes/{id}` | `{ name }` | `{ data: AttributeSummaryResponse }` | Renames an attribute's display name. **Only `name` changes; `code` is immutable** (variant options resolve to their attribute via the code). Requires `products.update`. |
+| `DELETE /attributes/{id}` | — | `204 No Content` | Deletes an attribute type. **Blocked with `409 CONFLICT`** when any `product_variant_options` row still resolves to it (see `ATTRIBUTE_RULE_001`). Deleting an unused attribute cascades its (also-unused) values at the DB level (`fk_attribute_values_attribute_id ... on delete cascade`). Requires `products.update`. |
 | `POST /attributes/{attributeId}/values` | `{ label, slug? }` | `{ data: AttributeValueResponse }` | Adds a new value. `slug` defaults to a diacritic-insensitive kebab-case form of `label` (same rule as product slugs, matching storefront colour-filter keys). Duplicate slug within the same attribute → `409 CONFLICT`; a label that yields an empty slug → `400 VALIDATION_ERROR`. Requires `products.update`. |
 | `PATCH /attribute-values/{id}` | `{ label }` | `{ data: AttributeValueResponse }` | Renames an existing value. **Only `label` changes; `slug` is immutable** so variant options that reference it keep working (colour-scoped galleries and web filters key off the slug). Requires `products.update`. |
+| `DELETE /attribute-values/{id}` | — | `204 No Content` | Deletes a single value (e.g. one colour). **Blocked with `409 CONFLICT`** when any `product_variant_options` row still resolves to it (`ATTRIBUTE_RULE_001`). Requires `products.update`. |
 
-The two `GET` endpoints return bare arrays (legacy shape); the admin client (`fetchAttributes` / `fetchAttributeValues`) tolerates both bare arrays and `{data}`. The new `POST`/`PATCH` use the standard `ApiResponseFactory` envelope.
+The two `GET` endpoints return bare arrays (legacy shape); the admin client (`fetchAttributes` / `fetchAttributeValues`) tolerates both bare arrays and `{data}`. The `POST`/`PATCH`/`DELETE` endpoints use the standard `ApiResponseFactory` envelope (`DELETE` returns an empty `204` body).
 
 Status: `CONFIRMED_FROM_CODE`
+
+Evidence: `AdminAttributeController.java` (`createAttribute`, `deleteAttribute`, `deleteAttributeValue`), `AdminAttributeService.java` (`createAttribute`, `deleteAttribute`, `deleteAttributeValue`), `ProductVariantOptionJpaRepository.java` (`countByAttribute_Id`, `countByAttributeValue_Id`), `CreateAttributeRequest.java`, `bigbike-admin/src/lib/adminApi.js` (`createAttribute`, `deleteAttribute`, `deleteAttributeValue`), `bigbike-admin/src/screens/product-detail/VariantEditors.jsx` (`CreateAttributeModal`, delete actions in `AttributeRenameModal` / `AttributeValueManagerModal`).
 
 Evidence: `AdminAttributeController.java` (`listAttributes`, `listAttributeValues`, `updateAttribute`, `createAttributeValue`, `updateAttributeValue`), `AdminAttributeService.java` (`updateAttributeName` name-only, `createValue` slug derivation via `ProductSlugGenerator.toSlug` + dedup, `updateValueLabel` label-only), `adminApi.js` (`fetchAttributes`/`fetchAttributeValues` tolerant readers, `updateAttribute`, `createAttributeValue`/`updateAttributeValueLabel`), `ProductDetailScreen.jsx` (`AttributeRenameModal`, `AttributeValueManagerModal`).
 
@@ -776,20 +781,20 @@ Evidence: `UpsertProductRequest.java` (`relatedProductIds`), `AdminCatalogMutati
 
 `gallery` (sản phẩm) và `variants[].gallery` (biến thể) giờ là **media hỗn hợp**. Mỗi phần tử
 `GalleryImageRequest` nhận thêm: `mediaType` (`image`|`video`, mặc định `image`), `videoUrl`
-(link YouTube/TikTok/Facebook / URL MinIO khi là video), `videoProvider` (`youtube`|`tiktok`|`facebook`|`upload`), và
-`caption` (≤500 ký tự). Item ảnh dùng `url`/`alt` như cũ; item video dùng `videoUrl`+`videoProvider`,
+(link YouTube/TikTok/Facebook / URL MinIO khi là video), `videoProvider` (`youtube`|`tiktok`|`facebook`|`upload`).
+Item ảnh dùng `url`/`alt` như cũ; item video dùng `videoUrl`+`videoProvider`,
 còn `url`/`alt` (nếu có) là **thumbnail/poster**.
 Full-replace như trước; item rỗng (ảnh thiếu `url` HOẶC video thiếu `videoUrl`) bị bỏ. Ảnh bìa biến thể
 vẫn lấy ảnh ĐẦU TIÊN là **ảnh** (bỏ qua item video).
 
 Read: `GET /api/v1/products/{slug}` + admin read trả `gallery`/`variants[].gallery` dạng
-`GalleryMedia[]` = `{ mediaType, image: ImageAsset|null, videoUrl, provider, caption }`. `caption` là chú thích
-hiển thị dưới media đang chọn trong gallery đầu PDP; `image.alt` vẫn là text thay thế cho SEO/trợ năng.
+`GalleryMedia[]` = `{ mediaType, image: ImageAsset|null, videoUrl, provider }`; `image.alt` vẫn là text
+thay thế cho SEO/trợ năng. (Từng có thêm `caption` — V294 — nhưng đã bỏ ở V295, không còn trong contract.)
 **Tách biệt với `videos`**
 (mục "Video" riêng dưới PDP — `product_videos`, không đổi): gallery video do admin đăng chung khu vực ảnh
 thumbnail, hiển thị trong dải media trên cùng.
 
-Status: `CONFIRMED_FROM_CODE` — `GalleryImageRequest` (media fields + `caption`), `AdminCatalogMutationService.applyGallery`/`applyVariantGallery`, `GalleryMedia`, `JpaCatalogReadRepository.toGalleryMedia`, `V248__add_gallery_media_video.sql`, `V294__add_gallery_captions.sql`.
+Status: `CONFIRMED_FROM_CODE` — `GalleryImageRequest`, `AdminCatalogMutationService.applyGallery`/`applyVariantGallery`, `GalleryMedia`, `JpaCatalogReadRepository.toGalleryMedia`, `V248__add_gallery_media_video.sql`, `V295__drop_gallery_caption_columns.sql`.
 
 ### Product accessories — `accessoryProducts` / `accessoryProductIds` (V239)
 

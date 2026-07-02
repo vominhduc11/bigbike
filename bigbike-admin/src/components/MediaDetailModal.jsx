@@ -4,7 +4,6 @@ import { updateMedia } from '../lib/adminApi'
 import { useMediaReferences } from '../lib/useMediaReferences'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 
 function IconClose() {
   return (
@@ -30,7 +29,7 @@ const REFERENCE_TYPE_KEYS = {
 }
 
 /**
- * Modal for editing altText / title / caption of a media item,
+ * Modal for editing altText / title of a media item,
  * and displaying all places where this file is currently in use.
  */
 export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
@@ -39,7 +38,6 @@ export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
   const previousFocusRef = useRef(null)
   const [altText, setAltText] = useState(media.altText ?? '')
   const [title, setTitle] = useState(media.title ?? '')
-  const [caption, setCaption] = useState(media.caption ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -91,7 +89,7 @@ export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
     setSaving(true)
     setError('')
     try {
-      const result = await updateMedia(media.id, { altText, title, caption })
+      const result = await updateMedia(media.id, { altText, title })
       onSave(result.item)
     } catch (err) {
       setError(err.message || t('media.saveError'))
@@ -157,10 +155,6 @@ export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
               <label className="flex flex-col gap-1">
                 <span className="text-xs font-semibold">{t('media.fieldTitle')}</span>
                 <Input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('media.fieldTitlePlaceholder')} />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-xs font-semibold">{t('media.fieldCaption')}</span>
-                <Textarea rows={2} value={caption} onChange={(e) => setCaption(e.target.value)} placeholder={t('media.fieldCaptionPlaceholder')} className="resize-y" />
               </label>
               {error && <p className="text-danger text-xs m-0">{error}</p>}
             </form>

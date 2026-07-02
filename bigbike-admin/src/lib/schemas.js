@@ -90,7 +90,6 @@ export function createProductSchema(t, isCreate = false) {
       gallery: z.array(z.object({
         url: z.string(),
         alt: z.string().optional(),
-        caption: z.string().max(500, 'Chú thích ảnh tối đa 500 ký tự.').optional(),
       })).max(50, 'Thư viện ảnh tối đa 50 ảnh.').optional(),
       videos: z.array(z.object({
         url: z.string(),
@@ -141,7 +140,6 @@ export function createProductSchema(t, isCreate = false) {
         gallery: z.array(z.object({
           url: z.string(),
           alt: z.string().optional(),
-          caption: z.string().max(500, 'Chú thích ảnh tối đa 500 ký tự.').optional(),
         })).optional(),
       })).max(200, 'Biến thể tối đa 200 mục.').optional(),
       relatedProductIds: z.array(z.string()).max(24, 'Sản phẩm liên quan tối đa 24 mục.').optional(),

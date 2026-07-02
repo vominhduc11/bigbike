@@ -245,10 +245,10 @@ export function GalleryEditor({ items, onChange, disabled, validationErrors = {}
     onChange(items.filter((_, i) => i !== index))
   }
   function addItem() {
-    onChange([...items, { _key: generateId(), url: '', alt: '', caption: '' }])
+    onChange([...items, { _key: generateId(), url: '', alt: '' }])
   }
   function addVideoItem() {
-    onChange([...items, { _key: generateId(), mediaType: 'video', provider: 'youtube', videoUrl: '', url: '', alt: '', caption: '' }])
+    onChange([...items, { _key: generateId(), mediaType: 'video', provider: 'youtube', videoUrl: '', url: '', alt: '' }])
   }
 
   return (

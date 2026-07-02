@@ -16,7 +16,6 @@ public record AdminMediaDetailResponse(
         Integer height,
         String altText,
         String title,
-        String caption,
         String sizes,
         String status,
         Instant createdAt,

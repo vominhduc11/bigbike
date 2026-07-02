@@ -37,7 +37,7 @@ export function SortableMenuItem({ item, displayLabel, parentLabel, rootLabel, c
         </div>
       </td>
       <td>
-        <span className="menu-item-parent-cell">
+        <span className="menu-item-parent-cell" title={parentLabel || rootLabel}>
           {parentLabel || <span className="text-muted-foreground">{rootLabel}</span>}
         </span>
       </td>

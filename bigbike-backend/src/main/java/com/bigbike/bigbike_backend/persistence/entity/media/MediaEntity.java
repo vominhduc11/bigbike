@@ -53,9 +53,6 @@ public class MediaEntity {
     private String title;
 
     @Column(columnDefinition = "text")
-    private String caption;
-
-    @Column(columnDefinition = "text")
     private String metadata;
 
     @Column(columnDefinition = "text")

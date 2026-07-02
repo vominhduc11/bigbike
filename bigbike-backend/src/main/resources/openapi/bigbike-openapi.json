@@ -7184,9 +7184,6 @@
           "title": {
             "type": "string"
           },
-          "caption": {
-            "type": "string"
-          },
           "status": {
             "type": "string"
           }

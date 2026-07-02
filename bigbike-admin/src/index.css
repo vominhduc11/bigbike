@@ -992,6 +992,7 @@ a {
 }
 
 .menu-item-parent-cell {
+  display: block;
   font-size: var(--admin-text-xs);
   color: var(--admin-color-text-secondary);
   white-space: nowrap;
@@ -1001,6 +1002,7 @@ a {
 }
 
 .menu-item-url-cell {
+  display: block;
   font-size: var(--admin-text-xs);
   color: var(--admin-color-text-secondary);
   font-family: var(--admin-font-mono);

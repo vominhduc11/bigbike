@@ -59,7 +59,7 @@ export function ProductGallery({
     const items = buildGalleryItems(activeGallery);
     const hasImage = items.some((it) => it.kind === "image");
     if (!hasImage && fallbackCover) {
-      return [{ kind: "image", asset: fallbackCover, caption: null }, ...items];
+      return [{ kind: "image", asset: fallbackCover }, ...items];
     }
     return items;
   })();

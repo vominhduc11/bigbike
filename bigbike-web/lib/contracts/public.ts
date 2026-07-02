@@ -61,7 +61,6 @@ export type GalleryMedia = {
   videoUrl?: string | null;
   provider?: string | null;
   videoProvider?: string | null;
-  caption?: string | null;
 };
 
 export type SliderImage = {

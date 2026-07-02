@@ -371,7 +371,12 @@ public class AdminMediaService {
         }
 
         if (query.q() != null && !query.q().isBlank()) {
-            spec = spec.and(MediaSpecifications.matchesSearch(query.q()));
+            Specification<MediaEntity> searchSpec = MediaSpecifications.matchesSearch(query.q());
+            Set<UUID> tagMatchIds = tagRepo.mediaIdsWithTagContaining(query.q());
+            if (!tagMatchIds.isEmpty()) {
+                searchSpec = searchSpec.or(MediaSpecifications.idIn(tagMatchIds));
+            }
+            spec = spec.and(searchSpec);
         }
         if (query.mimeType() != null && !query.mimeType().isBlank()) {
             spec = spec.and(MediaSpecifications.withMimeTypePrefix(query.mimeType()));
@@ -445,7 +450,6 @@ public class AdminMediaService {
         }
         if (req.altText() != null) media.setAltText(req.altText());
         if (req.title() != null) media.setTitle(req.title());
-        if (req.caption() != null) media.setCaption(req.caption());
 
         // Folder: clearFolder=true takes precedence over folderId
         if (Boolean.TRUE.equals(req.clearFolder())) {
@@ -616,7 +620,7 @@ public class AdminMediaService {
                 m.getId(), m.getLegacyId(), m.getFilePath(), m.getPublicUrl(),
                 m.getStorageProvider(),
                 m.getMimeType(), m.getFileSize(), m.getWidth(), m.getHeight(),
-                m.getAltText(), m.getTitle(), m.getCaption(),
+                m.getAltText(), m.getTitle(),
                 m.getStatus(), m.getCreatedAt(), m.getUpdatedAt(),
                 usageCount, m.getFolderId(), tags);
     }
@@ -628,7 +632,7 @@ public class AdminMediaService {
                 m.getId(), m.getLegacyId(), m.getFilePath(), m.getPublicUrl(),
                 m.getStorageProvider(),
                 m.getMimeType(), m.getFileSize(), m.getWidth(), m.getHeight(),
-                m.getAltText(), m.getTitle(), m.getCaption(),
+                m.getAltText(), m.getTitle(),
                 m.getSizes(), m.getStatus(), m.getCreatedAt(), m.getUpdatedAt(),
                 refs.size(), refs, m.getFolderId(), tags);
     }
@@ -653,7 +657,6 @@ public class AdminMediaService {
         return toJson(Map.of(
                 "altText", nvl(m.getAltText()),
                 "title", nvl(m.getTitle()),
-                "caption", nvl(m.getCaption()),
                 "status", nvl(m.getStatus())));
     }
 

@@ -88,8 +88,8 @@ export function splitGalleryMedia(items: GalleryMedia[] | undefined): { images: 
 
 // --- Gallery item union type ---
 
-export type ImageItem = { kind: "image"; asset: ImageAsset; caption?: string | null };
-export type VideoItem = { kind: "video"; asset: VideoAsset; caption?: string | null };
+export type ImageItem = { kind: "image"; asset: ImageAsset };
+export type VideoItem = { kind: "video"; asset: VideoAsset };
 export type GalleryItem = ImageItem | VideoItem;
 
 // Dựng danh sách hiển thị (ảnh + video) GIỮ NGUYÊN thứ tự admin sắp trong gallery —
@@ -107,13 +107,13 @@ export function buildGalleryItems(items: GalleryMedia[] | undefined): GalleryIte
         thumbnail: m.image ?? null,
         title: m.image?.alt ?? undefined,
       };
-      if (isSupportedVideo(v)) out.push({ kind: "video", asset: v, caption: m.caption ?? null });
+      if (isSupportedVideo(v)) out.push({ kind: "video", asset: v });
     } else if (m?.image) {
       const img = m.image;
       if ((img.id && seenIds.has(img.id)) || (img.url && seenUrls.has(img.url))) continue;
       if (img.id) seenIds.add(img.id);
       if (img.url) seenUrls.add(img.url);
-      out.push({ kind: "image", asset: img, caption: m.caption ?? null });
+      out.push({ kind: "image", asset: img });
     }
   }
   return out;

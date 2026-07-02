@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.AttributeSummaryResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.AttributeValueResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.CreateAttributeRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.CreateAttributeValueRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpdateAttributeRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpdateAttributeValueRequest;
@@ -13,6 +14,7 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeValueEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeValueJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantOptionJpaRepository;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ public class AdminAttributeService {
 
     private final AttributeJpaRepository attributeRepo;
     private final AttributeValueJpaRepository valueRepo;
+    private final ProductVariantOptionJpaRepository variantOptionRepo;
 
     @Transactional(readOnly = true)
     public List<AttributeSummaryResponse> listAttributes() {
@@ -71,6 +74,79 @@ public class AdminAttributeService {
                 saved.getKind(),
                 saved.getValues().size()
         );
+    }
+
+    /**
+     * Create a brand-new attribute type (e.g. "Chất liệu"). {@code code} is
+     * derived from the name using the same diacritic-insensitive kebab-case rule
+     * as attribute values; a name that collides with an existing code is rejected
+     * (the code is the machine key variant options resolve through).
+     */
+    @Transactional
+    public AttributeSummaryResponse createAttribute(CreateAttributeRequest request) {
+        String name = request.name().trim();
+        String code = ProductSlugGenerator.toSlug(name);
+        if (code.isBlank()) {
+            throw ValidationException.fromField("name", "INVALID_CODE",
+                    "Tên không tạo được mã hợp lệ. Vui lòng dùng chữ hoặc số.");
+        }
+        attributeRepo.findByCode(code).ifPresent(existing -> {
+            throw new ConflictException("Loại thuộc tính đã tồn tại: " + code);
+        });
+
+        AttributeEntity entity = new AttributeEntity();
+        entity.setId("attr-" + UUID.randomUUID());
+        entity.setCode(code);
+        entity.setName(name);
+        entity.setNameEn(normalizeOptional(request.nameEn()));
+        entity.setKind("select");
+        entity.setVariation(true);
+        AttributeEntity saved = attributeRepo.save(entity);
+        return new AttributeSummaryResponse(
+                saved.getId(),
+                saved.getCode(),
+                saved.getName(),
+                saved.getNameEn(),
+                saved.getKind(),
+                0
+        );
+    }
+
+    /**
+     * Delete an attribute type. Blocked when any variant option still resolves
+     * to it — deleting it would silently strip that attribute off live product
+     * variants. Deleting an unused attribute cascades its (also unused) values
+     * at the database level ({@code fk_attribute_values_attribute_id ... on delete cascade}).
+     */
+    @Transactional
+    public void deleteAttribute(String attributeId) {
+        AttributeEntity attribute = attributeRepo.findById(attributeId)
+                .orElseThrow(() -> new NotFoundException("Attribute not found: " + attributeId));
+        long usageCount = variantOptionRepo.countByAttribute_Id(attributeId);
+        if (usageCount > 0) {
+            throw new ConflictException(
+                    "Thuộc tính \"" + attribute.getName() + "\" đang được " + usageCount
+                            + " biến thể sử dụng, không thể xóa.");
+        }
+        attributeRepo.delete(attribute);
+    }
+
+    /**
+     * Delete a single attribute value (e.g. one colour). Blocked when any
+     * variant option still resolves to it, for the same reason as attribute
+     * deletion above.
+     */
+    @Transactional
+    public void deleteAttributeValue(String valueId) {
+        AttributeValueEntity value = valueRepo.findById(valueId)
+                .orElseThrow(() -> new NotFoundException("Attribute value not found: " + valueId));
+        long usageCount = variantOptionRepo.countByAttributeValue_Id(valueId);
+        if (usageCount > 0) {
+            throw new ConflictException(
+                    "Giá trị \"" + value.getLabel() + "\" đang được " + usageCount
+                            + " biến thể sử dụng, không thể xóa.");
+        }
+        valueRepo.delete(value);
     }
 
     /**

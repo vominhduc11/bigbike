@@ -16,7 +16,6 @@ public record AdminMediaListItemResponse(
         Integer height,
         String altText,
         String title,
-        String caption,
         String status,
         Instant createdAt,
         Instant updatedAt,

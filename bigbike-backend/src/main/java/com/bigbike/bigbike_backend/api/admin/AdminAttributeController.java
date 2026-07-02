@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.api.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.AttributeSummaryResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.AttributeValueResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.CreateAttributeRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.CreateAttributeValueRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpdateAttributeRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpdateAttributeValueRequest;
@@ -14,13 +15,16 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @Validated
@@ -39,6 +43,32 @@ public class AdminAttributeController extends AdminControllerSupport {
     public List<AttributeSummaryResponse> listAttributes(HttpServletRequest request) {
         devAdminAuthService.requirePermission(request, "products.read");
         return adminAttributeService.listAttributes();
+    }
+
+    @PostMapping("/attributes")
+    public ApiDataResponse<AttributeSummaryResponse> createAttribute(
+            @Valid @RequestBody CreateAttributeRequest payload,
+            HttpServletRequest request) {
+        devAdminAuthService.requirePermission(request, "products.update");
+        return apiResponseFactory.data(adminAttributeService.createAttribute(payload), request);
+    }
+
+    @DeleteMapping("/attributes/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteAttribute(
+            @PathVariable @Pattern(regexp = ID_REGEX) String id,
+            HttpServletRequest request) {
+        devAdminAuthService.requirePermission(request, "products.update");
+        adminAttributeService.deleteAttribute(id);
+    }
+
+    @DeleteMapping("/attribute-values/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteAttributeValue(
+            @PathVariable @Pattern(regexp = ID_REGEX) String id,
+            HttpServletRequest request) {
+        devAdminAuthService.requirePermission(request, "products.update");
+        adminAttributeService.deleteAttributeValue(id);
     }
 
     @GetMapping("/attributes/{attributeId}/values")

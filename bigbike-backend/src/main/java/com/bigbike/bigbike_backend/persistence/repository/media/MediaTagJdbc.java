@@ -107,6 +107,16 @@ public class MediaTagJdbc {
         return ids;
     }
 
+    /** Returns media IDs whose tag contains {@code q} (for free-text search). */
+    public Set<UUID> mediaIdsWithTagContaining(String q) {
+        if (q == null || q.isBlank()) return Set.of();
+        Set<UUID> ids = new HashSet<>();
+        jdbc.query("SELECT media_id FROM media_tags WHERE tag LIKE ?",
+                rs -> { ids.add((UUID) rs.getObject(1)); },
+                "%" + q.toLowerCase() + "%");
+        return ids;
+    }
+
     /** Bulk fetch tags for multiple media at once (avoids N+1 in list view). */
     public Map<UUID, List<String>> tagsForMany(Collection<UUID> mediaIds) {
         if (mediaIds == null || mediaIds.isEmpty()) return java.util.Map.of();

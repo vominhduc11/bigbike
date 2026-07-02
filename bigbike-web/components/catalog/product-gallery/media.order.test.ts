@@ -8,12 +8,6 @@ const img = (id: string): GalleryMedia => ({
   image: { id, url: `/media/${id}.jpg`, alt: id, width: 1200, height: 1200, mimeType: "image/jpeg" },
 }) as unknown as GalleryMedia;
 
-const imgWithCaption = (id: string, caption: string): GalleryMedia => ({
-  mediaType: "image",
-  image: { id, url: `/media/${id}.jpg`, alt: id, width: 1200, height: 1200, mimeType: "image/jpeg" },
-  caption,
-}) as unknown as GalleryMedia;
-
 const ytVideo: GalleryMedia = {
   mediaType: "video",
   provider: "youtube",
@@ -35,10 +29,5 @@ describe("buildGalleryItems giữ nguyên thứ tự admin", () => {
   it("khử ảnh trùng id/url nhưng giữ thứ tự", () => {
     const items = buildGalleryItems([img("a"), img("a"), img("b")]);
     expect(items.map((i) => i.kind)).toEqual(["image", "image"]);
-  });
-
-  it("giữ chú thích theo đúng ảnh", () => {
-    const items = buildGalleryItems([imgWithCaption("a", "Cận cảnh nút điều khiển")]);
-    expect(items[0]?.caption).toBe("Cận cảnh nút điều khiển");
   });
 });

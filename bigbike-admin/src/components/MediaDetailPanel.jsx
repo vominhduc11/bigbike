@@ -7,7 +7,6 @@ import { useMediaReferences } from '../lib/useMediaReferences'
 import { TagInput } from './TagInput'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 
 const REFERENCE_TYPE_KEYS = {
@@ -47,7 +46,6 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
   const { t } = useTranslation()
   const [altText, setAltText] = useState(media.altText ?? '')
   const [title, setTitle] = useState(media.title ?? '')
-  const [caption, setCaption] = useState(media.caption ?? '')
   const [folderId, setFolderId] = useState(media.folderId ?? '')
   const [tags, setTags] = useState(Array.isArray(media.tags) ? media.tags : [])
   // Use folders from parent prop when provided (kept fresh by parent screen),
@@ -71,7 +69,6 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setAltText(media.altText ?? '')
     setTitle(media.title ?? '')
-    setCaption(media.caption ?? '')
     setFolderId(media.folderId ?? '')
     setTags(Array.isArray(media.tags) ? media.tags : [])
     setError('')
@@ -96,7 +93,7 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
     setSaving(true)
     setError('')
     try {
-      const payload = { altText, title, caption, tags }
+      const payload = { altText, title, tags }
       if (folderId === '') { payload.clearFolder = true } else { payload.folderId = folderId }
       const result = await updateMedia(media.id, payload)
       onSaved(result.item)
@@ -134,7 +131,6 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
   const dirty =
     altText !== (media.altText ?? '') ||
     title !== (media.title ?? '') ||
-    caption !== (media.caption ?? '') ||
     folderId !== (media.folderId ?? '') ||
     JSON.stringify(tags) !== JSON.stringify(Array.isArray(media.tags) ? media.tags : [])
 
@@ -208,12 +204,6 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
               <Input type="text" value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={t('media.fieldTitlePlaceholder')}  />
-            </label>
-            <label className="mediadetail-field">
-              <span>{t('media.fieldCaption')}</span>
-              <Textarea rows={2} value={caption}
-                onChange={(e) => setCaption(e.target.value)}
-                placeholder={t('media.fieldCaptionPlaceholder')} className="resize-y"  />
             </label>
             <label className="mediadetail-field">
               <span>{t('media.folder')}</span>

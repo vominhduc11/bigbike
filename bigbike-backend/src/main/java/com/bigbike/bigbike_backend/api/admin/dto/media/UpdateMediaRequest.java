@@ -9,8 +9,6 @@ public record UpdateMediaRequest(
         String altText,
         @Size(max = 255)
         String title,
-        @Size(max = 2000)
-        String caption,
         @Size(max = 32)
         String status,
         UUID folderId,
