@@ -3,6 +3,11 @@
 // fast-refresh only sees components in the .jsx files.
 
 import { normalizeMenu } from '../../lib/contracts'
+import { buildCategoryTreeOrder } from '../product-detail/constants'
+
+export { buildCategoryTreeOrder }
+
+const CATEGORY_URL_PREFIX = '/danh-muc-san-pham/'
 
 export function safeMenuDetailCache(data) {
   if (!data) return data
@@ -53,6 +58,8 @@ export const EMPTY_ITEM = {
   openInNewTab: false,
   cssClass: '',
   status: 'ACTIVE',
+  targetType: 'CUSTOM',
+  targetId: '',
 }
 
 export function normalizeParentId(parentId) {
@@ -130,6 +137,17 @@ export function collectDescendantIds(items, itemId) {
 
 export function formatParentOption(item) {
   return `${'── '.repeat(item.depth)}${item.label}`
+}
+
+export function formatCategoryOption(item) {
+  return `${'── '.repeat(item.depth)}${item.name}`
+}
+
+// URL hiển thị mặc định (bản tiếng Việt) khi admin chọn danh mục từ picker.
+// Bản tiếng Anh được backend tự resolve theo `slugEn` lúc đọc public — xem
+// AdminMenuService.resolveDisplayUrl.
+export function buildCategoryMenuUrl(category) {
+  return `${CATEGORY_URL_PREFIX}${category.slug}`
 }
 
 export function isValidCustomUrl(url) {

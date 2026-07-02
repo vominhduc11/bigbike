@@ -16,6 +16,7 @@ import { toast } from '@/lib/toast'
 import {
   createMenuItem,
   deleteMenuItem,
+  fetchCategoryTree,
   fetchMenuDetail,
   fetchMenus,
   reorderMenuItems,
@@ -37,6 +38,7 @@ import {
   sortMenuItems,
   buildMenuTree,
   flattenMenuTree,
+  buildCategoryTreeOrder,
   collectDescendantIds,
   isItemFormValid,
 } from './menu/constants'
@@ -104,6 +106,18 @@ export function MenuScreen({ canUpdate }) {
     queryFn: () => fetchMenuDetail(selectedMenuId),
     enabled: Boolean(selectedMenuId),
   })
+
+  // Danh mục có sẵn cho picker "Chọn danh mục có sẵn" trong ItemForm. Luôn dùng
+  // cây 'vi' (giống ô "Mục cha") để không mất option khi UI content-lang đang EN.
+  const { data: categoriesResult } = useQuery({
+    queryKey: ['categories', 'tree', 'vi'],
+    queryFn: () => fetchCategoryTree('vi'),
+    staleTime: 5 * 60 * 1000,
+  })
+  const categoryTreeOptions = useMemo(
+    () => buildCategoryTreeOrder(categoriesResult?.items ?? []),
+    [categoriesResult],
+  )
   const menuDetail = detailData?.item ?? null
   const menuItems = useMemo(
     () => sortMenuItems((menuDetail?.items ?? []).filter((item) => item?.id && item.id !== 'unknown')),
@@ -168,8 +182,8 @@ export function MenuScreen({ canUpdate }) {
         label: data.label,
         labelEn: data.labelEn,
         url: data.url,
-        targetType: 'CUSTOM',
-        targetId: null,
+        targetType: data.targetType || 'CUSTOM',
+        targetId: data.targetType === 'CATEGORY' ? (data.targetId || null) : null,
         sortOrder: data.sortOrder,
         openInNewTab: data.openInNewTab,
         cssClass: null,
@@ -250,8 +264,8 @@ export function MenuScreen({ canUpdate }) {
       label: newItem.label.trim(),
       labelEn: newItem.labelEn.trim(),
       url: newItem.url.trim(),
-      targetType: 'CUSTOM',
-      targetId: null,
+      targetType: newItem.targetType || 'CUSTOM',
+      targetId: newItem.targetType === 'CATEGORY' ? (newItem.targetId || null) : null,
       parentId: newItem.parentId || null,
       sortOrder: Number(newItem.sortOrder),
       openInNewTab: newItem.openInNewTab,
@@ -292,8 +306,8 @@ export function MenuScreen({ canUpdate }) {
         label: editItemForm.label.trim(),
         labelEn: editItemForm.labelEn.trim(),
         url: editItemForm.url.trim(),
-        targetType: 'CUSTOM',
-        targetId: null,
+        targetType: editItemForm.targetType || 'CUSTOM',
+        targetId: editItemForm.targetType === 'CATEGORY' ? (editItemForm.targetId || null) : null,
         parentId: nextParentId,
         sortOrder: Number(editItemForm.sortOrder),
         openInNewTab: editItemForm.openInNewTab,
@@ -314,6 +328,8 @@ export function MenuScreen({ canUpdate }) {
       openInNewTab: item.openInNewTab === true,
       cssClass: '',
       status: item.status || 'ACTIVE',
+      targetType: item.targetType || 'CUSTOM',
+      targetId: item.targetId || '',
     })
     setEditItemError('')
   }
@@ -594,6 +610,7 @@ export function MenuScreen({ canUpdate }) {
               value={newItem}
               onChange={(patch) => setNewItem((p) => ({ ...p, ...patch }))}
               parentOptions={parentOptions}
+              categoryOptions={categoryTreeOptions}
               isNew
             />
           </form>
@@ -626,6 +643,7 @@ export function MenuScreen({ canUpdate }) {
               value={editItemForm}
               onChange={(patch) => setEditItemForm((p) => ({ ...p, ...patch }))}
               parentOptions={editParentOptions}
+              categoryOptions={categoryTreeOptions}
               isNew={false}
             />
           </form>

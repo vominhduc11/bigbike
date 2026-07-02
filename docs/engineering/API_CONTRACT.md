@@ -922,6 +922,32 @@ Status: `CONFIRMED_FROM_CODE` — `PublicMenuController` (`lang` param),
 `CreateMenuItemRequest` / `UpdateMenuItemRequest` / `AdminMenuItemResponse`,
 migration `V160`.
 
+### Menu item URL tự resolve theo danh mục — `targetType=CATEGORY`
+
+Mục menu có thể **liên kết thẳng tới một danh mục** thay vì lưu URL tĩnh: đặt
+`targetType="CATEGORY"` + `targetId=<category id>` (2 cột đã có sẵn trên
+`menu_items` từ trước, trước bản này chưa được diễn giải). Khi liên kết còn
+hiệu lực, `url` trả về ở `GET /api/v1/menus/{location}?lang=` **được tính lại
+tại thời điểm đọc** theo `lang` — dùng `CategoryEntity.slug` (vi) hoặc
+`slugEn` (en, lùi về `slug` khi rỗng) thay vì cột `url` đã lưu trong DB.
+
+Cột `url` đã lưu vẫn được giữ làm giá trị hiển thị VI mặc định trong bảng
+danh sách admin và làm **fallback**: nếu danh mục bị xóa sau khi liên kết,
+public read trả lại nguyên `url` đã lưu (không lỗi, không mất mục menu).
+
+Mục `targetType="CUSTOM"` (mặc định, link ngoài/trang tĩnh/tel/mailto/#)
+**không đổi hành vi** — vẫn trả nguyên `url` đã lưu bất kể `lang`.
+
+**Ghi admin:** `POST/PATCH /api/v1/admin/menus/{menuId}/items` nhận
+`targetType`/`targetId` như cũ; khi `targetType="CATEGORY"`, `targetId` bắt
+buộc phải trỏ tới một danh mục tồn tại — sai → `400 VALIDATION_ERROR`
+(field `targetId`, code `CATEGORY_NOT_FOUND`).
+
+Status: `CONFIRMED_FROM_CODE` — `AdminMenuService.validateCategoryTarget`,
+`AdminMenuService.resolveDisplayUrl`, `MenuItemEntity.targetType/targetId`
+(cột có sẵn, không migration mới), `CategoryEntity.slug/slugEn`,
+`AdminMenuServiceTest`.
+
 ### Menu/category line-icon — DB-driven (V213)
 
 `GET /api/v1/menus/{location}` trả mỗi mục menu kèm `iconUrl` (icon line đơn sắc, null cho mục không phải

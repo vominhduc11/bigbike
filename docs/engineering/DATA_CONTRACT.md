@@ -937,8 +937,10 @@ Anh** (tùy chọn). Bản tiếng Anh lưu trên cột `_en` nullable cùng dò
 
 Fallback: giống `PRODUCT_RULE_002` — `label` lùi về VI khi `label_en` null/blank.
 Đọc public (`GET /api/v1/menus/{location}?lang=`) trả `label` đã resolve; đọc admin
-(`GET /api/v1/admin/menus/...`) trả thêm `labelEn` thô để editor sửa song ngữ. Các
-cột khác (url, target, cssClass, status) không dịch.
+(`GET /api/v1/admin/menus/...`) trả thêm `labelEn` thô để editor sửa song ngữ. Cột
+`cssClass`/`status` không dịch. Cột `url` **không có bản `_en` riêng** nhưng có thể
+được **resolve động** theo `lang` khi mục liên kết danh mục (`target_type=CATEGORY`)
+— xem §"Menu item URL tự resolve theo danh mục" trong `API_CONTRACT.md`.
 
 Status: `CONFIRMED_FROM_CODE` — `MenuItemEntity.labelEn`, `AdminMenuService` (pick
 locale + `getPublicMenuByLocation(location, lang)`), migration `V160`.

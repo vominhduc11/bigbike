@@ -69,6 +69,29 @@ public class AdminMenuService {
                 .orElse(null);
     }
 
+    // A menu item can link straight to a category (targetType=CATEGORY, targetId=category id)
+    // instead of a hand-typed URL. Public read resolves the locale-appropriate slug at request
+    // time — see resolveDisplayUrl().
+    private void validateCategoryTarget(String targetType, UUID targetId) {
+        if (!"CATEGORY".equalsIgnoreCase(targetType)) return;
+        if (targetId == null || categoryRepo.findById(targetId.toString()).isEmpty()) {
+            throw ValidationException.fromField("targetId", "CATEGORY_NOT_FOUND",
+                    "targetId must reference an existing category when targetType is CATEGORY.");
+        }
+    }
+
+    // Category-linked items resolve their URL dynamically per lang (VI slug vs EN slug) instead
+    // of using the stored url column. Falls back to the stored url if the linked category was
+    // since deleted, so a stale link never breaks the menu.
+    private String resolveDisplayUrl(MenuItemEntity item, String lang) {
+        if ("CATEGORY".equalsIgnoreCase(item.getTargetType()) && item.getTargetId() != null) {
+            return categoryRepo.findById(item.getTargetId().toString())
+                    .map(cat -> CATEGORY_URL_PREFIX + pick(cat.getSlug(), cat.getSlugEn(), lang))
+                    .orElse(item.getUrl());
+        }
+        return item.getUrl();
+    }
+
     private final MenuJpaRepository menuRepo;
     private final MenuItemJpaRepository menuItemRepo;
     private final AuditLogWriter auditLogWriter;
@@ -236,6 +259,8 @@ public class AdminMenuService {
             // No cycle possible for a new item (it has no ID yet)
         }
 
+        validateCategoryTarget(req.targetType(), req.targetId());
+
         Instant now = Instant.now();
         MenuItemEntity item = new MenuItemEntity();
         item.setMenu(menu);
@@ -302,6 +327,9 @@ public class AdminMenuService {
         }
         if (req.targetId() != null) {
             item.setTargetId(req.targetId());
+        }
+        if (req.targetType() != null || req.targetId() != null) {
+            validateCategoryTarget(item.getTargetType(), item.getTargetId());
         }
         if (req.sortOrder() != null) {
             item.setSortOrder(req.sortOrder());
@@ -439,7 +467,8 @@ public class AdminMenuService {
                 .filter(i -> isAncestorChainActive(i, activeById))
                 .sorted(Comparator.comparingInt(MenuItemEntity::getSortOrder))
                 .map(i -> new PublicMenuItemResponse(
-                        i.getId(), i.getParentId(), pick(i.getLabel(), i.getLabelEn(), lang), i.getUrl(),
+                        i.getId(), i.getParentId(), pick(i.getLabel(), i.getLabelEn(), lang),
+                        resolveDisplayUrl(i, lang),
                         i.getSortOrder(), i.isOpenInNewTab(), i.getCssClass(),
                         resolveMenuIconUrl(i.getUrl())))
                 .toList();
