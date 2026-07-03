@@ -87,7 +87,7 @@ export function LoginScreen() {
             <p style={{ fontSize: 12, color: 'var(--bb-text-muted)', margin: 0 }}>
               <span aria-hidden="true" style={{ color: 'var(--bb-danger)' }}>*</span> {t('common.requiredLegend', 'Bắt buộc')}
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <label htmlFor={emailId} style={{ fontSize: 13, fontWeight: 500, color: 'var(--bb-text)' }}>
                 {t('auth.email')}
                 <span aria-hidden="true" style={{ color: 'var(--bb-danger)' }}> *</span>
@@ -108,7 +108,7 @@ export function LoginScreen() {
               />
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <label htmlFor={passwordId} style={{ fontSize: 13, fontWeight: 500, color: 'var(--bb-text)' }}>
                   {t('auth.password')}

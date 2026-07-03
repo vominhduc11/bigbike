@@ -15,7 +15,7 @@ import { formatDateTime } from '../lib/formatters'
 import { useContentLang } from '../lib/contentLang'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { clearNavGuard } from '@/lib/navigationGuard'
-import { Languages, Loader2 } from 'lucide-react'
+import { Languages, Loader2, Save } from 'lucide-react'
 
 import { translateBrandForm, addOverride } from '../lib/geminiTranslate'
 
@@ -143,6 +143,38 @@ function toPayload(form) {
   return payload
 }
 
+// ── Autosave utilities (F9) ──────────────────────────────────────────────────
+// Mirrors product-detail/constants.js + content-detail/constants.js — same
+// localStorage draft mechanism, own key namespace for brands.
+const AUTOSAVE_TTL_MS = 60 * 60 * 1000
+
+function getAutosaveKey(brandId, isCreate) {
+  return `brand-autosave:${isCreate ? 'new' : brandId}`
+}
+
+function saveFormToStorage(key, form) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ form, ts: Date.now() }))
+  } catch { /* quota */ }
+}
+
+function loadFormFromStorage(key) {
+  try {
+    const raw = localStorage.getItem(key)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed?.ts || Date.now() - parsed.ts > AUTOSAVE_TTL_MS) {
+      localStorage.removeItem(key)
+      return null
+    }
+    return parsed
+  } catch { return null }
+}
+
+function clearFormFromStorage(key) {
+  try { localStorage.removeItem(key) } catch { /* ignore */ }
+}
+
 export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpdate }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
@@ -153,6 +185,10 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
   const [validationErrors, setValidationErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [enSlugManuallyEdited, setEnSlugManuallyEdited] = useState(false)
+
+  // F9: autosave / khôi phục bản nháp — cùng cơ chế localStorage với Sản phẩm/Nội dung.
+  const autosaveKey = getAutosaveKey(brandId, isCreate)
+  const [draftRecovery, setDraftRecovery] = useState(null)
 
   const { data: fetchResult, isLoading, isError, error: fetchError, refetch } = useQuery({
     queryKey: ['brand', brandId],
@@ -167,7 +203,14 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     setForm(nextForm)
     setInitialSnapshot(JSON.stringify(nextForm))
     setEnSlugManuallyEdited(Boolean(nextForm.translations?.en?.slug))
-  }, [fetchResult])
+    // F9: bản nháp autosave mới hơn lần lưu gần nhất trên server → gợi ý khôi phục.
+    if (fetchResult.item?.updatedAt) {
+      const draft = loadFormFromStorage(autosaveKey)
+      if (draft?.form && draft.ts > new Date(fetchResult.item.updatedAt).getTime()) {
+        setDraftRecovery(draft)
+      }
+    }
+  }, [autosaveKey, fetchResult])
 
   // F11: Nhân bản thương hiệu — nạp bản nháp BrandListScreen ghi vào sessionStorage
   // khi bấm "Sao chép", rồi điều hướng sang màn tạo mới (cùng cơ chế duplicate của
@@ -176,21 +219,27 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     if (!isCreate) return
     try {
       const raw = sessionStorage.getItem('brand-duplicate-payload')
-      if (!raw) return
-      sessionStorage.removeItem('brand-duplicate-payload')
-      const item = JSON.parse(raw)
-      const base = buildFormFromItem(item)
-      const duplicated = {
-        ...base,
-        slug: '',
-        translations: { ...base.translations, en: { ...(base.translations?.en || {}), slug: '' } },
+      if (raw) {
+        sessionStorage.removeItem('brand-duplicate-payload')
+        const item = JSON.parse(raw)
+        const base = buildFormFromItem(item)
+        const duplicated = {
+          ...base,
+          slug: '',
+          translations: { ...base.translations, en: { ...(base.translations?.en || {}), slug: '' } },
+        }
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setForm(duplicated)
+        setEnSlugManuallyEdited(false)
+        toast.success(t('brands.detail.duplicateSuccess', { name: item.name || item.slug || '' }))
+        return
       }
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setForm(duplicated)
-      setEnSlugManuallyEdited(false)
-      toast.success(t('brands.detail.duplicateSuccess', { name: item.name || item.slug || '' }))
     } catch { /* ignore parse errors */ }
-  }, [isCreate, t])
+
+    // F9: chưa có bản sao chép — kiểm tra bản nháp autosave dở dang từ phiên trước.
+    const draft = loadFormFromStorage(autosaveKey)
+    if (draft?.form) setDraftRecovery(draft)
+  }, [autosaveKey, isCreate, t])
 
   // O9: ghi lại thương hiệu vừa xem để hiện trong widget "Vừa xem gần đây" ở danh sách.
   useEffect(() => {
@@ -229,6 +278,13 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
   // sidebar) qua navigationGuard lẫn reload/đóng tab qua beforeunload.
   useUnsavedChanges(isDirty)
 
+  // F9: autosave — lưu bản nháp vào localStorage sau 10s không thao tác khi form dirty.
+  useEffect(() => {
+    if (!isDirty) return
+    const timer = setTimeout(() => saveFormToStorage(autosaveKey, form), 10_000)
+    return () => clearTimeout(timer)
+  }, [form, isDirty, autosaveKey])
+
   const saveMutation = useMutation({
     mutationFn: (payload) => isCreate ? createBrand(payload) : updateBrand(brandId, payload),
     onSuccess: (response) => {
@@ -237,6 +293,8 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
       setForm(nextForm)
       setInitialSnapshot(JSON.stringify(nextForm))
       setEnSlugManuallyEdited(Boolean(nextForm.translations?.en?.slug))
+      clearFormFromStorage(autosaveKey)
+      setDraftRecovery(null)
       queryClient.invalidateQueries({ queryKey: ['brands'] })
       if (!isCreate) queryClient.setQueryData(['brand', brandId], response)
       toast.success(isCreate ? t('brands.detail.successCreate') : t('brands.detail.successUpdate'))
@@ -258,6 +316,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     onSuccess: () => {
       toast.success(t('brands.detail.successDelete'))
       queryClient.invalidateQueries({ queryKey: ['brands'] })
+      clearFormFromStorage(autosaveKey)
       clearNavGuard() // đã ẩn xong, không hỏi xác nhận khi rời trang
       navigate('/admin/brands')
     },
@@ -346,12 +405,48 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
 
 
   if (state.status === 'loading') {
+    // N5: khung xương thay cho StatePanel căn giữa — tránh giật bố cục (CLS) khi dữ liệu
+    // về, vì trang thật có header + 3 bb-card (thông tin cơ bản, hình ảnh, SEO) chứ không
+    // phải một panel nhỏ. Cùng kiểu dựng animate-pulse như ProductDetailScreen.
     return (
-      <StatePanel
-        tone="info"
-        title={t('brands.detail.loading')}
-        description={t('brands.detail.loadingDesc')}
-      />
+      <div className="animate-pulse" aria-hidden="true">
+        <div className="bb-screen-header">
+          <div className="bb-screen-title flex flex-col gap-2">
+            <div className="h-3 w-28 rounded-xs bg-surface-muted" />
+            <div className="h-7 w-56 max-w-full rounded-xs bg-surface-muted" />
+            <div className="h-3 w-64 max-w-full rounded-xs bg-surface-muted" />
+          </div>
+          <div className="bb-screen-actions">
+            <div className="h-9 w-28 rounded-sm bg-surface-muted" />
+          </div>
+        </div>
+
+        <div className="bb-card mb-4">
+          <div className="h-10 border-b border-border bg-surface-muted/60" />
+          <div className="bb-card-body flex flex-col gap-3">
+            <div className="h-4 w-1/3 rounded-xs bg-surface-muted" />
+            <div className="h-9 w-full rounded-sm bg-surface-muted" />
+            <div className="h-9 w-2/3 rounded-sm bg-surface-muted" />
+            <div className="h-24 w-full rounded-sm bg-surface-muted" />
+          </div>
+        </div>
+        <div className="bb-card mb-4">
+          <div className="h-10 border-b border-border bg-surface-muted/60" />
+          <div className="bb-card-body flex flex-col gap-3">
+            <div className="h-4 w-1/4 rounded-xs bg-surface-muted" />
+            <div className="h-9 w-full rounded-sm bg-surface-muted" />
+            <div className="h-9 w-full rounded-sm bg-surface-muted" />
+          </div>
+        </div>
+        <div className="bb-card">
+          <div className="h-10 border-b border-border bg-surface-muted/60" />
+          <div className="bb-card-body flex flex-col gap-3">
+            <div className="h-20 w-full rounded-sm bg-surface-muted" />
+            <div className="h-9 w-full rounded-sm bg-surface-muted" />
+            <div className="h-16 w-full rounded-sm bg-surface-muted" />
+          </div>
+        </div>
+      </div>
     )
   }
 
@@ -378,6 +473,11 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
       />
     )
   }
+
+  // F13: tiến độ điền các mục bắt buộc (đường dẫn URL, tên) — chỉ có ý nghĩa ở bản
+  // tiếng Việt, vì bản tiếng Anh không có mục nào bắt buộc (xem required={!isEnLang} ở dưới).
+  const requiredFieldsTotal = 2
+  const requiredFieldsFilled = [form.slug, form.name].filter((v) => Boolean(v?.trim())).length
 
   return (
     <div>
@@ -417,18 +517,53 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
               {t('brands.detail.hideBtn')}
             </button>
           )}
+          {!isEnLang && (
+            <span className="bb-muted text-xs">
+              {t('brands.detail.formProgress', { filled: requiredFieldsFilled, total: requiredFieldsTotal })}
+            </span>
+          )}
           <button
             type="submit"
             form="brand-form"
             className="bb-btn bb-btn-primary"
             disabled={isReadOnly || !isDirty}
+            aria-busy={isSubmitting || undefined}
           >
+            {isSubmitting && <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
             {isSubmitting
               ? t('common.saving')
               : isCreate ? t('brands.detail.createBtn') : t('brands.detail.saveBtn')}
           </button>
         </div>
       </div>
+
+      {draftRecovery && (
+        <div className="flex flex-wrap items-center gap-2 px-3 py-1.5 mb-4 bg-[var(--admin-color-status-info-bg)] border border-[var(--admin-color-status-info-border)] text-[var(--admin-color-status-info-text)] text-xs">
+          <Save size={14} className="shrink-0" />
+          <span className="flex-1 truncate">
+            <strong>{t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}</strong>
+            {' · '}{formatDateTime(new Date(draftRecovery.ts).toISOString())}
+          </span>
+          <button
+            type="button"
+            className="text-xs font-semibold underline hover:no-underline"
+            onClick={() => {
+              setForm(draftRecovery.form)
+              setDraftRecovery(null)
+              setEnSlugManuallyEdited(Boolean(draftRecovery.form?.translations?.en?.slug))
+            }}
+          >
+            {t('products.detail.draftRestore', { defaultValue: 'Khôi phục' })}
+          </button>
+          <button
+            type="button"
+            className="text-xs underline hover:no-underline"
+            onClick={() => { clearFormFromStorage(autosaveKey); setDraftRecovery(null) }}
+          >
+            {t('products.detail.draftDiscard', { defaultValue: 'Bỏ qua' })}
+          </button>
+        </div>
+      )}
 
       {state.warning ? (
         <StatePanel tone="warning" title={t('readOnly.prefix')} description={state.warning} />
@@ -469,7 +604,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
               <FormField
                 label={<>
                   {t('brands.detail.slug').replace(/\s*\*\s*$/, '')}
-                  {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 6 }}>{t('brands.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
+                  {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 8 }}>{t('brands.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
                 </>}
                 required={!isEnLang}
                 helper={isEnLang ? t('brands.detail.slugHintEn', { defaultValue: 'Để trống sẽ dùng đường dẫn tiếng Việt cho bản tiếng Anh.' }) : undefined}
@@ -486,7 +621,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
               <FormField
                 label={<>
                   {t('brands.detail.name').replace(/\s*\*\s*$/, '')}
-                  {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 6 }}>{t('brands.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
+                  {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 8 }}>{t('brands.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
                 </>}
                 required={!isEnLang}
                 error={!isEnLang ? validationErrors.name : undefined}
@@ -500,7 +635,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                 />
               </FormField>
               <label
-                className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit"
+                className="flex items-center gap-2 p-2 border border-border text-sm cursor-pointer hover:bg-muted w-fit"
                 style={{ gridColumn: '1 / -1' }}
               >
                 <Checkbox checked={form.visible} onCheckedChange={(checked) => updateField('visible', checked)} disabled={isReadOnly} />
@@ -598,7 +733,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                 <span className="flex items-center justify-between">
                   <span>
                     {t('brands.detail.seoTitle', { defaultValue: 'Tiêu đề khi xuất hiện trên Google' })}
-                    {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 6 }}>{t('brands.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
+                    {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 8 }}>{t('brands.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
                   </span>
                   <span className={`hint ${seoTitleVal.length > 60 ? 'text-danger' : ''}`}>{seoTitleVal.length} / 60</span>
                 </span>
@@ -614,7 +749,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                 <span className="flex items-center justify-between">
                   <span>
                     {t('brands.detail.seoDescription', { defaultValue: 'Mô tả khi xuất hiện trên Google' })}
-                    {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 6 }}>{t('brands.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
+                    {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 8 }}>{t('brands.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
                   </span>
                   <span className={`hint ${seoDescVal.length > 160 ? 'text-danger' : ''}`}>{seoDescVal.length} / 160</span>
                 </span>

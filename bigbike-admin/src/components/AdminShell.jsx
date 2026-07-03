@@ -96,6 +96,7 @@ export function AdminShell({
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const userMenuRef = useRef(null)
+  const userChipRef = useRef(null)
   const hamburgerRef = useRef(null)
   const sidebarRef = useRef(null)
 
@@ -174,6 +175,17 @@ export function AdminShell({
     }
     if (userMenuOpen) document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [userMenuOpen])
+
+  // A3 — user dropdown: đóng bằng Escape + trả focus về nút trigger (.bb-user-chip)
+  // khi đóng, cùng pattern với mobile drawer (đóng bằng Escape + trả focus ở trên).
+  useEffect(() => {
+    if (!userMenuOpen) return undefined
+    const onKey = (e) => {
+      if (e.key === 'Escape') { setUserMenuOpen(false); userChipRef.current?.focus() }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
   }, [userMenuOpen])
 
   const isLive = authMode === 'live'
@@ -319,6 +331,7 @@ export function AdminShell({
             {/* User dropdown */}
             <div ref={userMenuRef} style={{ position: 'relative' }}>
               <button
+                ref={userChipRef}
                 type="button"
                 className="bb-user-chip"
                 onClick={() => setUserMenuOpen((v) => !v)}

@@ -1,8 +1,13 @@
 import { GripVertical, Pencil, Trash2 } from 'lucide-react'
 import { SortableRow } from '../../components/Sortable'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
 
-export function SortableMenuItem({ item, displayLabel, parentLabel, rootLabel, canUpdate, onEdit, onDelete, isDeleting }) {
+export function SortableMenuItem({
+  item, displayLabel, parentLabel, rootLabel, canUpdate, onEdit, onDelete, isDeleting,
+  selected, onToggleSelect, onToggleStatus, isToggling,
+}) {
   const isInactive = item.status === 'INACTIVE'
   const itemName = displayLabel ?? item.label ?? ''
 
@@ -14,6 +19,15 @@ export function SortableMenuItem({ item, displayLabel, parentLabel, rootLabel, c
       style={{ ...sortable.style, opacity: sortable.isDragging ? 0.4 : 1 }}
       className={isInactive ? 'is-inactive' : ''}
     >
+      {canUpdate && onToggleSelect && (
+        <td className="menu-grip-cell">
+          <Checkbox
+            checked={Boolean(selected)}
+            onCheckedChange={onToggleSelect}
+            aria-label={`Chọn mục ${itemName}`}
+          />
+        </td>
+      )}
       <td className="menu-grip-cell">
         {canUpdate && (
           <button
@@ -27,13 +41,24 @@ export function SortableMenuItem({ item, displayLabel, parentLabel, rootLabel, c
           </button>
         )}
       </td>
-      <td style={{ paddingLeft: `${8 + item.depth * 18}px` }}>
+      <td style={{ paddingLeft: `${8 + item.depth * 16}px` }}>
         <div className="menu-item-label-cell">
           {item.depth > 0 && (
             <span className="menu-item-depth">L{item.depth + 1}</span>
           )}
           <span className="menu-item-name">{displayLabel ?? item.label}</span>
-          {isInactive && <span className="menu-item-badge-inactive">Ẩn</span>}
+          {canUpdate && onToggleStatus ? (
+            <Switch
+              checked={!isInactive}
+              onCheckedChange={() => onToggleStatus(item)}
+              disabled={isToggling}
+              title={isInactive ? 'Bật hiển thị mục này' : 'Ẩn mục này'}
+              aria-label={isInactive ? `Bật hiển thị mục ${itemName}` : `Ẩn mục ${itemName}`}
+              className="shrink-0"
+            />
+          ) : (
+            isInactive && <span className="menu-item-badge-inactive">Ẩn</span>
+          )}
         </div>
       </td>
       <td>

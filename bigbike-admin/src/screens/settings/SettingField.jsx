@@ -35,7 +35,7 @@ export function SettingField({ setting, where, canUpdate, draft, draftEn, error,
 
   return (
     <div className="form-field">
-      <label id={labelId} htmlFor={controlId} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <label id={labelId} htmlFor={controlId} style={{ display: 'flex', alignItems: 'center', gap: 'var(--admin-space-2)' }}>
         {label}
         {isDirty && (
           <span

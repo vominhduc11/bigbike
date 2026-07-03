@@ -3,7 +3,7 @@ import { Package } from 'lucide-react'
 import { PublishStatusBadge } from '../../components/StatusBadge'
 import { MobileCardList, MobileCard } from '../../components/layout/MobileCardList'
 
-export function ProductsInCategoryCard({ item, productsList, productsTotal, navigate }) {
+export function ProductsInCategoryCard({ item, productsList, productsTotal, navigate, isLoading = false }) {
   const { t } = useTranslation()
   return (
     <div className="bb-card mb-4">
@@ -23,8 +23,25 @@ export function ProductsInCategoryCard({ item, productsList, productsTotal, navi
         )}
       </div>
       <div className="bb-card-body bb-card-body--flush">
-        {productsList.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '24px 16px', color: 'var(--bb-text-muted)' }}><p>{t('categories.detail.productsEmpty')}</p></div>
+        {isLoading ? (
+          // T1: khung xương thay vì rơi vào nhánh rỗng trong lúc tải — tránh chớp
+          // nhầm "Chưa có sản phẩm" rồi mới hiện danh sách thật.
+          <div className="animate-pulse flex flex-col gap-2 p-4" aria-hidden="true">
+            <div className="h-10 w-full rounded-sm bg-surface-muted" />
+            <div className="h-10 w-full rounded-sm bg-surface-muted" />
+            <div className="h-10 w-2/3 rounded-sm bg-surface-muted" />
+          </div>
+        ) : productsList.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '24px 16px', color: 'var(--bb-text-muted)' }}>
+            <p>{t('categories.detail.productsEmpty')}</p>
+            <button
+              type="button"
+              className="bb-btn bb-btn-ghost bb-btn-sm mt-2"
+              onClick={() => navigate(`/admin/products?categoryId=${item.id}`)}
+            >
+              {t('categories.detail.productsEmptyAddLink')}
+            </button>
+          </div>
         ) : (
           <>
             <div className="hide-on-mobile">

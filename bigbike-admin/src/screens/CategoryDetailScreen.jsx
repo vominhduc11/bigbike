@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
-import { AlertCircle, Check, Copy, ExternalLink, Hash, Loader2, Package, X as XIcon, Languages } from 'lucide-react'
+import { AlertCircle, Check, Copy, ExternalLink, Hash, Loader2, Package, Save, X as XIcon, Languages } from 'lucide-react'
 import { translateCategoryForm, addOverride } from '../lib/geminiTranslate'
 
 import {
@@ -15,6 +15,8 @@ import {
   updateCategory,
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
+import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+import { clearNavGuard } from '@/lib/navigationGuard'
 import { recordRecentItem } from '../lib/useRecentItems'
 import { formatDateTime, formatRelativeTime } from '../lib/formatters'
 import { useContentLang, overlayEnNames } from '../lib/contentLang'
@@ -35,6 +37,10 @@ import {
   buildEmptyForm,
   buildFormFromItem,
   toPayload,
+  getAutosaveKey,
+  saveFormToStorage,
+  loadFormFromStorage,
+  clearFormFromStorage,
 } from './category-detail/constants'
 import { SeoCard } from './category-detail/SeoCard'
 import { ProductsInCategoryCard } from './category-detail/ProductsInCategoryCard'
@@ -56,6 +62,10 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     try { return localStorage.getItem(MENU_NOTICE_DISMISSED_KEY) === '1' }
     catch { return false }
   })
+
+  // F9: autosave / khôi phục bản nháp — cùng cơ chế localStorage với Sản phẩm/Nội dung.
+  const autosaveKey = getAutosaveKey(categoryId, isCreate)
+  const [draftRecovery, setDraftRecovery] = useState(null)
 
   const { data: fetchResult, isLoading, isError, error: fetchError, refetch } = useQuery({
     queryKey: ['category', categoryId],
@@ -86,7 +96,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
   // Top products in this category — surfaced in a sidebar so editors know
   // who depends on the category before they hide / re-parent it.
-  const { data: productsInCat } = useQuery({
+  const { data: productsInCat, isLoading: isProductsInCatLoading } = useQuery({
     queryKey: ['products', 'by-category', categoryId, 'top5', 'ALL_INCLUDING_TRASH', contentLang],
     queryFn: () => fetchProducts({ categoryId, pageSize: 5, page: 1, sort: 'updatedAt:desc', publishStatus: 'ALL_INCLUDING_TRASH' }),
     enabled: !isCreate && Boolean(categoryId),
@@ -159,9 +169,16 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
       // Danh mục đã có slug tiếng Anh → coi như đã chỉnh tay, không auto-ghi đè khi sửa tên EN;
       // chưa có → để auto-gợi ý từ tên tiếng Anh.
       setEnSlugManuallyEdited(Boolean(nextForm.translations?.en?.slug))
+      // F9: bản nháp autosave mới hơn lần lưu gần nhất trên server → gợi ý khôi phục.
+      if (item?.updatedAt) {
+        const draft = loadFormFromStorage(autosaveKey)
+        if (draft?.form && draft.ts > new Date(item.updatedAt).getTime()) {
+          setDraftRecovery(draft)
+        }
+      }
     })
     return () => { cancelled = true }
-  }, [fetchResult])
+  }, [autosaveKey, fetchResult])
 
   // F11: Nhân bản danh mục — nạp bản nháp CategoryListScreen ghi vào sessionStorage
   // khi bấm "Sao chép", rồi điều hướng sang màn tạo mới (cùng cơ chế duplicate của
@@ -170,22 +187,28 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     if (!isCreate) return
     try {
       const raw = sessionStorage.getItem('category-duplicate-payload')
-      if (!raw) return
-      sessionStorage.removeItem('category-duplicate-payload')
-      const item = JSON.parse(raw)
-      const base = buildFormFromItem(item)
-      const duplicated = {
-        ...base,
-        slug: '',
-        translations: { ...base.translations, en: { ...(base.translations?.en || {}), slug: '' } },
+      if (raw) {
+        sessionStorage.removeItem('category-duplicate-payload')
+        const item = JSON.parse(raw)
+        const base = buildFormFromItem(item)
+        const duplicated = {
+          ...base,
+          slug: '',
+          translations: { ...base.translations, en: { ...(base.translations?.en || {}), slug: '' } },
+        }
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setForm(duplicated)
+        setSlugManuallyEdited(false)
+        setEnSlugManuallyEdited(false)
+        toast.success(t('categories.detail.duplicateSuccess', { name: item.name || item.slug || '' }))
+        return
       }
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setForm(duplicated)
-      setSlugManuallyEdited(false)
-      setEnSlugManuallyEdited(false)
-      toast.success(t('categories.detail.duplicateSuccess', { name: item.name || item.slug || '' }))
     } catch { /* ignore parse errors */ }
-  }, [isCreate, t])
+
+    // F9: chưa có bản sao chép — kiểm tra bản nháp autosave dở dang từ phiên trước.
+    const draft = loadFormFromStorage(autosaveKey)
+    if (draft?.form) setDraftRecovery(draft)
+  }, [autosaveKey, isCreate, t])
 
   // O9: ghi lại danh mục vừa xem để hiện trong widget "Vừa xem gần đây" ở danh sách.
   useEffect(() => {
@@ -233,12 +256,16 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     >*</span>
   )
 
+  // F6: cảnh báo rời trang khi chưa lưu — chặn cả điều hướng nội bộ (sidebar/breadcrumb)
+  // qua navigationGuard lẫn reload/đóng tab qua beforeunload (hook tự gắn cả hai).
+  useUnsavedChanges(isDirty)
+
+  // F9: autosave — lưu bản nháp vào localStorage sau 10s không thao tác khi form dirty.
   useEffect(() => {
     if (!isDirty) return
-    const handler = (e) => { e.preventDefault(); e.returnValue = '' }
-    window.addEventListener('beforeunload', handler)
-    return () => window.removeEventListener('beforeunload', handler)
-  }, [isDirty])
+    const timer = setTimeout(() => saveFormToStorage(autosaveKey, form), 10_000)
+    return () => clearTimeout(timer)
+  }, [form, isDirty, autosaveKey])
 
   const saveMutation = useMutation({
     mutationFn: (payload) => isCreate ? createCategory(payload) : updateCategory(categoryId, payload),
@@ -248,11 +275,16 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
       setForm(nextForm)
       setInitialSnapshot(JSON.stringify(nextForm))
       setEnSlugManuallyEdited(Boolean(nextForm.translations?.en?.slug))
+      clearFormFromStorage(autosaveKey)
+      setDraftRecovery(null)
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       if (!isCreate) queryClient.setQueryData(['category', categoryId], response)
       toast.success(isCreate ? t('categories.detail.successCreate') : t('categories.detail.successUpdate'))
       setIsSubmitting(false)
-      if (isCreate && savedItem?.id) navigate(`/admin/categories/${savedItem.id}`, { replace: true })
+      if (isCreate && savedItem?.id) {
+        clearNavGuard() // form vừa lưu khớp baseline, tránh hỏi nhầm khi điều hướng sang trang chi tiết
+        navigate(`/admin/categories/${savedItem.id}`, { replace: true })
+      }
     },
     onError: (error) => {
       const errs = mapValidationErrors(error)
@@ -267,6 +299,8 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       toast.success(t('categories.detail.hardDeleteSuccess'))
+      clearFormFromStorage(autosaveKey)
+      clearNavGuard() // đã xoá xong, không hỏi xác nhận khi rời trang
       navigate('/admin/categories')
     },
     onError: (error) => {
@@ -442,6 +476,9 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
           t('categories.detail.discardConfirmTitle'),
         )
         if (!ok) return
+        // F6: đã xác nhận bỏ thay đổi qua hộp thoại riêng ở trên — bỏ qua lời nhắc
+        // trùng lặp của navigationGuard (useUnsavedChanges) khi navigate() chạy dưới đây.
+        clearNavGuard()
       }
       navigate('/admin/categories')
     }
@@ -450,12 +487,54 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   }, [isDirty, isSubmitting, navigate, t])
 
   if (state.status === 'loading') {
+    // N5: khung xương thay cho StatePanel căn giữa — tránh giật bố cục (CLS) khi dữ liệu
+    // về, vì trang thật có header + nhiều bb-card (thông tin cơ bản, slug, SEO, sản phẩm)
+    // chứ không phải một panel nhỏ. Cùng kiểu dựng animate-pulse như ProductDetailScreen.
     return (
-      <StatePanel
-        tone="info"
-        title={t('categories.detail.loading')}
-        description={t('categories.detail.loadingDesc')}
-      />
+      <div className="animate-pulse" aria-hidden="true">
+        <div className="bb-screen-header">
+          <div className="bb-screen-title flex flex-col gap-2">
+            <div className="h-3 w-32 rounded-xs bg-surface-muted" />
+            <div className="h-7 w-64 max-w-full rounded-xs bg-surface-muted" />
+            <div className="h-3 w-48 max-w-full rounded-xs bg-surface-muted" />
+          </div>
+          <div className="bb-screen-actions">
+            <div className="h-9 w-32 rounded-sm bg-surface-muted" />
+          </div>
+        </div>
+
+        <div className="bb-card mb-4">
+          <div className="h-10 border-b border-border bg-surface-muted/60" />
+          <div className="bb-card-body flex flex-col gap-3">
+            <div className="h-4 w-1/3 rounded-xs bg-surface-muted" />
+            <div className="h-9 w-full rounded-sm bg-surface-muted" />
+            <div className="h-9 w-2/3 rounded-sm bg-surface-muted" />
+            <div className="h-24 w-full rounded-sm bg-surface-muted" />
+          </div>
+        </div>
+        <div className="bb-card mb-4">
+          <div className="h-10 border-b border-border bg-surface-muted/60" />
+          <div className="bb-card-body flex flex-col gap-3">
+            <div className="h-4 w-1/4 rounded-xs bg-surface-muted" />
+            <div className="h-9 w-full rounded-sm bg-surface-muted" />
+          </div>
+        </div>
+        <div className="bb-card mb-4">
+          <div className="h-10 border-b border-border bg-surface-muted/60" />
+          <div className="bb-card-body flex flex-col gap-3">
+            <div className="h-4 w-1/3 rounded-xs bg-surface-muted" />
+            <div className="h-9 w-full rounded-sm bg-surface-muted" />
+            <div className="h-16 w-full rounded-sm bg-surface-muted" />
+          </div>
+        </div>
+        <div className="bb-card">
+          <div className="h-10 border-b border-border bg-surface-muted/60" />
+          <div className="bb-card-body flex flex-col gap-3">
+            <div className="h-10 w-full rounded-sm bg-surface-muted" />
+            <div className="h-10 w-full rounded-sm bg-surface-muted" />
+          </div>
+        </div>
+      </div>
     )
   }
 
@@ -491,6 +570,11 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
       />
     )
   }
+
+  // F13: tiến độ điền các mục bắt buộc (tên, đường dẫn URL) — chỉ có ý nghĩa ở bản
+  // tiếng Việt, vì bản tiếng Anh không có mục nào bắt buộc (xem requiredMark ở trên).
+  const requiredFieldsTotal = 2
+  const requiredFieldsFilled = [form.name, form.slug].filter((v) => Boolean(v?.trim())).length
 
   return (
     <div>
@@ -557,6 +641,11 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               {t('categories.detail.viewOnSite')}
             </a>
           )}
+          {!isEnLang && (
+            <span className="bb-muted text-xs">
+              {t('categories.detail.formProgress', { filled: requiredFieldsFilled, total: requiredFieldsTotal })}
+            </span>
+          )}
           <button type="submit" form="category-form" className="bb-btn bb-btn-primary" disabled={isReadOnly || !isDirty} aria-busy={isSubmitting || undefined}>
             {isSubmitting && <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
             {isSubmitting
@@ -565,6 +654,35 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
           </button>
         </div>
       </div>
+
+      {draftRecovery && (
+        <div className="flex flex-wrap items-center gap-2 px-3 py-1.5 mb-4 bg-[var(--admin-color-status-info-bg)] border border-[var(--admin-color-status-info-border)] text-[var(--admin-color-status-info-text)] text-xs">
+          <Save size={14} className="shrink-0" />
+          <span className="flex-1 truncate">
+            <strong>{t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}</strong>
+            {' · '}{formatDateTime(new Date(draftRecovery.ts).toISOString())}
+          </span>
+          <button
+            type="button"
+            className="text-xs font-semibold underline hover:no-underline"
+            onClick={() => {
+              setForm(draftRecovery.form)
+              setDraftRecovery(null)
+              setSlugManuallyEdited(true)
+              setEnSlugManuallyEdited(Boolean(draftRecovery.form?.translations?.en?.slug))
+            }}
+          >
+            {t('products.detail.draftRestore', { defaultValue: 'Khôi phục' })}
+          </button>
+          <button
+            type="button"
+            className="text-xs underline hover:no-underline"
+            onClick={() => { clearFormFromStorage(autosaveKey); setDraftRecovery(null) }}
+          >
+            {t('products.detail.draftDiscard', { defaultValue: 'Bỏ qua' })}
+          </button>
+        </div>
+      )}
 
       {state.warning ? (
         <StatePanel tone="warning" title={t('readOnly.prefix')} description={state.warning} />
@@ -643,12 +761,13 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                 <span>
                   {t('categories.detail.name')}
                   {!isEnLang && requiredMark}
-                  {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 6 }}>{t('categories.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
+                  {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 8 }}>{t('categories.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
                 </span>
                 <Input
                   name="name"
                   value={isEnLang ? (form.translations?.en?.name ?? '') : form.name}
                   onChange={(e) => isEnLang ? handleEnNameChange(e.target.value) : handleNameChange(e.target.value)}
+                  onBlur={() => { if (!isEnLang) validateFieldOnBlur('name') }}
                   disabled={isReadOnly}
                   placeholder={isEnLang ? t('categories.detail.namePlaceholderEn', { defaultValue: 'English name (optional)' }) : undefined}
                 />
@@ -732,7 +851,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                 />
                 <span className="hint">{t('categories.detail.menuIconUrlHint')}</span>
               </div>
-              <label className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
+              <label className="flex items-center gap-2 p-2 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
                 <Checkbox
                   checked={form.visible}
                   onCheckedChange={(checked) => {
@@ -748,7 +867,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                 <span>{t('categories.detail.isVisible')}</span>
               </label>
               <label
-                className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit"
+                className="flex items-center gap-2 p-2 border border-border text-sm cursor-pointer hover:bg-muted w-fit"
                 style={{ opacity: form.visible ? 1 : 0.5 }}
               >
                 <Checkbox
@@ -777,7 +896,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               <span>
                 {t('categories.detail.slug')}
                 {!isEnLang && requiredMark}
-                {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 6 }}>{t('categories.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
+                {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 8 }}>{t('categories.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
               </span>
               <Input
                 name={isEnLang ? 'translations.en.slug' : 'slug'}
@@ -822,6 +941,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             productsList={productsList}
             productsTotal={productsTotal}
             navigate={navigate}
+            isLoading={isProductsInCatLoading}
           />
         )}
 

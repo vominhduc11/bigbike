@@ -6,6 +6,8 @@ import { FilterSearchInput } from '../components/FilterSearchInput'
 import { AlertCircle, CheckCircle2, Eye, EyeOff, Mail, Pencil, UserPlus } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { AdminTable } from '../components/AdminTable'
+import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
+import { FilterChips } from '../components/FilterChips'
 import { FormField } from '../components/layout/FormField'
 import { Modal } from '../components/layout'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -14,6 +16,7 @@ import { createAdminUser, fetchAdminUsers, fetchRoles, resendAdminInvite, update
 import { formatDateTime } from '../lib/formatters'
 import { showConfirm } from '../lib/confirm'
 import { useDebounce } from '../lib/useDebounce'
+import { useColumnVisibility } from '../lib/useColumnVisibility'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -218,6 +221,15 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
     setQuery((p) => ({ ...p, role: next.role, status: next.status, page: 1 }))
   }
 
+  // T10: xoá toàn bộ bộ lọc đang áp dụng — dùng chung cho nút trong thanh lọc,
+  // chip lọc và trạng thái rỗng do lọc.
+  function resetFilters() {
+    setSearchInput('')
+    setRoleFilter('')
+    setStatusFilter('')
+    setQuery(INITIAL_QUERY)
+  }
+
   // Kiểm tra hợp lệ phía client cho drawer sửa — trả về true nếu hợp lệ.
   function validateEditForm() {
     const errs = {}
@@ -386,6 +398,33 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
   const hasFilters = searchInput.trim() !== '' || roleFilter !== '' || statusFilter !== ''
   const isEmptyResult = listState.status === 'success' && listState.items.length === 0
 
+  // T10: chip lọc — một chip cho mỗi bộ lọc đang bật, gỡ được từng cái riêng.
+  const activeFilterChips = []
+  if (searchInput.trim()) {
+    const term = searchInput.trim()
+    activeFilterChips.push({
+      key: 'search',
+      label: t('adminUsers.chipSearch', { term, defaultValue: `Tìm: "${term}"` }),
+      onRemove: () => setSearchInput(''),
+    })
+  }
+  if (roleFilter) {
+    const roleLabel = ROLE_META[roleFilter] ? t(ROLE_META[roleFilter].labelKey) : roleFilter
+    activeFilterChips.push({
+      key: 'role',
+      label: t('adminUsers.chipRole', { value: roleLabel, defaultValue: `Vai trò: ${roleLabel}` }),
+      onRemove: () => handleFilterChange('role', ''),
+    })
+  }
+  if (statusFilter) {
+    const statusLabel = STATUS_META[statusFilter] ? t(STATUS_META[statusFilter].labelKey) : statusFilter
+    activeFilterChips.push({
+      key: 'status',
+      label: t('adminUsers.chipStatus', { value: statusLabel, defaultValue: `Trạng thái: ${statusLabel}` }),
+      onRemove: () => handleFilterChange('status', ''),
+    })
+  }
+
   // Sắp xếp phía client theo cột đang chọn (chỉ trên trang hiện tại).
   // Gắn _idx để màu avatar giữ ổn định theo thứ tự hiển thị.
   const items = useMemo(() => {
@@ -483,6 +522,9 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
       : []),
   ]
 
+  // T7: cho phép ẩn/hiện cột trên bảng quản trị viên, lưu lựa chọn theo trình duyệt.
+  const { visibleColumns, hiddenKeys, toggle: toggleColumn, allColumns } = useColumnVisibility(columns, 'columns:admin-users')
+
   const mobileCard = (u) => {
     const name = u.displayName || u.email
     return {
@@ -551,7 +593,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
                   </div>
                 )}
           </div>
-          <button type="button" className="bb-icon-btn" title={t('common.close')} onClick={() => setInviteInfo(null)}>×</button>
+          <button type="button" className="bb-icon-btn" title={t('common.close')} aria-label={t('common.close')} onClick={() => setInviteInfo(null)}>×</button>
         </div>
       )}
 
@@ -583,7 +625,17 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
           value={query.pageSize}
           onChange={(n) => setQuery((p) => ({ ...p, pageSize: n, page: 1 }))}
         />
+        <ColumnVisibilityToggle allColumns={allColumns} hiddenKeys={hiddenKeys} onToggle={toggleColumn} />
       </div>
+
+      {/* T10: chip lọc đang áp dụng + nút xoá tất cả — hiện cả khi vẫn còn kết quả. */}
+      <FilterChips
+        chips={activeFilterChips}
+        onClearAll={resetFilters}
+        clearAllLabel={t('common.resetFilters')}
+        removeChipLabel={t('common.clear')}
+        ariaLabel={t('adminUsers.activeFiltersAria', { defaultValue: 'Bộ lọc đang áp dụng' })}
+      />
 
       {listState.status === 'error' && (
         <StatePanel
@@ -605,12 +657,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
           title={t('adminUsers.emptySearch')}
           description={t('adminUsers.emptySearchDesc')}
           actionLabel={t('common.resetFilters')}
-          onAction={() => {
-            setSearchInput('')
-            setRoleFilter('')
-            setStatusFilter('')
-            setQuery(INITIAL_QUERY)
-          }}
+          onAction={resetFilters}
         />
       )}
 
@@ -618,7 +665,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
             <AdminTable
-              columns={columns}
+              columns={visibleColumns}
               rows={items}
               loading={isLoading}
               pageSize={query.pageSize}

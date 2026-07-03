@@ -87,6 +87,39 @@ export function buildFormFromItem(item) {
   }
 }
 
+// ── Autosave utilities (F9) ──────────────────────────────────────────────────
+// Mirrors product-detail/constants.js + content-detail/constants.js — same
+// localStorage draft mechanism, own key namespace per screen.
+
+export const AUTOSAVE_TTL_MS = 60 * 60 * 1000
+
+export function getAutosaveKey(categoryId, isCreate) {
+  return `category-autosave:${isCreate ? 'new' : categoryId}`
+}
+
+export function saveFormToStorage(key, form) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ form, ts: Date.now() }))
+  } catch { /* quota */ }
+}
+
+export function loadFormFromStorage(key) {
+  try {
+    const raw = localStorage.getItem(key)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed?.ts || Date.now() - parsed.ts > AUTOSAVE_TTL_MS) {
+      localStorage.removeItem(key)
+      return null
+    }
+    return parsed
+  } catch { return null }
+}
+
+export function clearFormFromStorage(key) {
+  try { localStorage.removeItem(key) } catch { /* ignore */ }
+}
+
 export function toPayload(form) {
   // sortOrder is intentionally omitted: category ordering is owned solely by the
   // drag-reorder on CategoryListScreen. The backend update preserves the existing

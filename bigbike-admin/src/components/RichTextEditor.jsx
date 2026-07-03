@@ -29,7 +29,7 @@ function ToolbarButton({ onClick, active, disabled, title, children }) {
       disabled={disabled}
       title={title}
       className={cn(
-        'inline-flex items-center justify-center w-[30px] h-[30px] rounded-xs border-none transition-colors',
+        'inline-flex items-center justify-center h-8 w-8 rounded-xs border-none transition-colors',
         active
           ? 'bg-primary/10 text-primary'
           : disabled
@@ -44,7 +44,7 @@ function ToolbarButton({ onClick, active, disabled, title, children }) {
 
 function Divider() {
   return (
-    <span className="inline-block w-px h-[18px] bg-border mx-1 shrink-0" />
+    <span className="inline-block w-px h-5 bg-border mx-1 shrink-0" />
   )
 }
 
@@ -242,7 +242,7 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
 
         {/* Màu chữ / tô nền */}
         <Divider />
-        <span className="inline-flex h-[30px] items-center gap-1 px-1" title={t('richEditor.textColor', { defaultValue: 'Màu chữ' })}>
+        <span className="inline-flex h-8 items-center gap-1 px-1" title={t('richEditor.textColor', { defaultValue: 'Màu chữ' })}>
           <Baseline size={14} className="text-muted-foreground" />
           <input
             type="color"
@@ -253,7 +253,7 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
             disabled={disabled}
           />
         </span>
-        <span className="inline-flex h-[30px] items-center gap-1 px-1" title={t('richEditor.bgColor', { defaultValue: 'Tô nền chữ' })}>
+        <span className="inline-flex h-8 items-center gap-1 px-1" title={t('richEditor.bgColor', { defaultValue: 'Tô nền chữ' })}>
           <Highlighter size={14} className="text-muted-foreground" />
           <input
             type="color"

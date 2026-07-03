@@ -256,8 +256,8 @@ function CrossLinksCard({ navigate, t }) {
       <div className="bb-card-header"><h3>{t('banners.elsewhereTitle')}</h3></div>
       <div className="bb-card-body" style={{ display: 'grid', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <FolderTree size={18} style={{ marginTop: 2, color: 'var(--bb-text-muted)' }} />
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+            <FolderTree size={18} style={{ marginTop: 4, color: 'var(--bb-text-muted)' }} />
             <div>
               <div style={{ fontWeight: 600, fontSize: 13 }}>{t('banners.categoryLinkTitle')}</div>
               <div className="bb-muted" style={{ fontSize: 12 }}>{t('banners.categoryLinkDesc')}</div>
@@ -268,8 +268,8 @@ function CrossLinksCard({ navigate, t }) {
           </button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <FileText size={18} style={{ marginTop: 2, color: 'var(--bb-text-muted)' }} />
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+            <FileText size={18} style={{ marginTop: 4, color: 'var(--bb-text-muted)' }} />
             <div>
               <div style={{ fontWeight: 600, fontSize: 13 }}>{t('banners.contentLinkTitle')}</div>
               <div className="bb-muted" style={{ fontSize: 12 }}>{t('banners.contentLinkDesc')}</div>

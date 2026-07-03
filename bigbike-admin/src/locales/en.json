@@ -131,6 +131,8 @@
     "missingToken": "The invite link is missing its token.",
     "invalidToken": "Invite is invalid or has expired.",
     "invalidTitle": "Invalid link",
+    "networkErrorTitle": "Could not connect to server",
+    "networkError": "Could not connect to the server. Please check your network connection and try again.",
     "doneTitle": "Activated successfully",
     "doneDesc": "Your password has been set. You can sign in now.",
     "goToLogin": "Go to sign in"
@@ -1261,6 +1263,7 @@
       "productsSectionDesc": "Products currently placed in this category, most recently updated first.",
       "productsViewAll": "View all {{count}} products →",
       "productsEmpty": "No products are placed in this category yet.",
+      "productsEmptyAddLink": "Add products to this category →",
       "seoPreviewLabel": "Google search preview",
       "seoPreviewFallbackTitle": "Category title",
       "seoPreviewFallbackDesc": "Once you fill in \"Description shown on Google\" below, that text will appear here — exactly as customers see it in search results.",
@@ -1295,7 +1298,8 @@
       "systemCategoryDesc": "\"Uncategorized\" is a system category that holds products when their original category is deleted. It cannot be renamed or deleted.",
       "enFieldHint": "(English — optional)",
       "namePlaceholderEn": "English name (optional)",
-      "duplicateSuccess": "Copied from \"{{name}}\". Please provide a new URL path."
+      "duplicateSuccess": "Copied from \"{{name}}\". Please provide a new URL path.",
+      "formProgress": "{{filled}}/{{total}} fields filled"
     }
   },
   "brands": {
@@ -1388,7 +1392,8 @@
       "contentLanguageAriaLabel": "Content language",
       "enFieldHint": "(English — optional)",
       "namePlaceholderEn": "English name (optional)",
-      "duplicateSuccess": "Copied from \"{{name}}\". Please provide a new URL path."
+      "duplicateSuccess": "Copied from \"{{name}}\". Please provide a new URL path.",
+      "formProgress": "{{filled}}/{{total}} fields filled"
     }
   },
   "content": {
@@ -1740,7 +1745,10 @@
       "CONTENT_SEO_OG": "Content (SEO OG)",
       "SLIDER_DESKTOP": "Desktop banner",
       "SLIDER_MOBILE": "Mobile banner"
-    }
+    },
+    "emptyLibraryDesc": "The library has no files yet. Upload a file to get started.",
+    "discardConfirm": "You have unsaved changes. Closing will discard them. Continue?",
+    "discardConfirmTitle": "Discard changes?"
   },
   "menus": {
     "eyebrow": "Content",
@@ -1789,7 +1797,18 @@
     "itemLabelRequired": "Please enter a display name.",
     "requiredLegend": "Required",
     "urlHint": "Examples: /danh-muc-san-pham/xe-may, /tin-tuc/meo-chon-xe, or https://example.com",
-    "saveMenu": "Save menu"
+    "saveMenu": "Save menu",
+    "deleteItemSuccess": "Menu item deleted.",
+    "discardConfirm": "You have unsaved changes. Closing this window will discard them. Continue?",
+    "discardConfirmTitle": "Discard changes?",
+    "statusActivatedToast": "Menu item is now visible.",
+    "statusDeactivatedToast": "Menu item is now hidden.",
+    "selectAllAria": "Select all visible items",
+    "bulkDelete": "Delete selected",
+    "bulkDeleteBlocked": "{{count}} item(s) cannot be deleted because they still have child items — remove or move the child items out first.",
+    "bulkDeleteConfirm": "Delete {{count}} selected menu item(s)? They will no longer appear on the site.",
+    "bulkDeleteConfirmTitle": "Delete multiple menu items",
+    "bulkDeleteSuccess": "Deleted {{count}} menu item(s)."
   },
   "sliders": {
     "eyebrow": "Content",
@@ -1840,7 +1859,9 @@
     "locationHome": "Homepage",
     "locationCategory": "Category page",
     "locationCategorySidebar": "Category sidebar",
-    "locationPromotion": "Promotion"
+    "locationPromotion": "Promotion",
+    "hideAction": "Hide",
+    "showAction": "Show"
   },
   "reviews": {
     "eyebrow": "Catalog",
@@ -2320,6 +2341,9 @@
     "createRoleIdCustomize": "Customize",
     "createRoleDescLabel": "Description (optional)",
     "createRoleDescPlaceholder": "Short description of this role",
+    "createRoleCloneLabel": "Clone permissions from an existing role (optional)",
+    "createRoleCloneNone": "None — start empty",
+    "createRoleCloneHint": "Pick a role to copy all of its permissions as a starting point.",
     "createRoleErrorName": "Role name is required.",
     "createRoleErrorId": "Technical ID is required.",
     "createRoleSuccess": "Role \"{{name}}\" created successfully.",
@@ -2451,6 +2475,10 @@
     "validationUpload": "Uploaded video must use an allowed internal media URL.",
     "bulkShowSuccess": "Showed {{count}} video(s)",
     "bulkHideSuccess": "Hidden {{count}} video(s)",
+    "bulkShowConfirm": "Show {{count}} selected video(s) on the homepage?",
+    "bulkHideConfirm": "Hide {{count}} selected video(s) from the homepage?",
+    "bulkShowConfirmTitle": "Bulk show videos",
+    "bulkHideConfirmTitle": "Bulk hide videos",
     "bulkActionError": "An error occurred, please try again",
     "bulkDeleteConfirm": "Delete {{count}} selected video(s)? This cannot be undone.",
     "bulkDeleteConfirmTitle": "Bulk delete",
@@ -2584,6 +2612,8 @@
     "colStatusCode": "Status",
     "colEnabled": "Enabled",
     "colHits": "Hits",
-    "colUpdated": "Updated"
+    "colUpdated": "Updated",
+    "statusOn": "On",
+    "statusOff": "Off"
   }
 }

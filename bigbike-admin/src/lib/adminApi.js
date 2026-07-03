@@ -155,26 +155,18 @@ async function requestJson(endpoint, options = {}) {
 // Admin auth API
 
 export async function loginAdmin({ email, password }) {
-  // credentials: 'include' so the server can set the httpOnly refresh cookie
-  const response = await fetch(`${API_BASE}/auth/login`, {
+  // skipAuth: no access token exists yet, and we don't want the 401-refresh interceptor
+  // kicking in on a failed login attempt. API_BASE is always same-origin (dev proxy / prod
+  // nginx), so fetch's default same-origin credentials mode still lets the server set its
+  // httpOnly refresh cookie — no explicit credentials: 'include' needed here.
+  const payload = await requestJson('/auth/login', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ email, password }),
+    body: { email, password },
+    skipAuth: true,
   })
-  let payload = null
-  try { payload = await response.json() } catch { /* ignore */ }
-  if (!response.ok) {
-    const error = payload?.error || {}
-    throw new ApiClientError(
-      error.message || `Login failed with status ${response.status}`,
-      response.status,
-      error.code || 'LOGIN_FAILED',
-    )
-  }
   const data = payload?.data
   if (!data?.accessToken) {
-    throw new ApiClientError('Login response missing access token.', 500, 'INVALID_LOGIN_RESPONSE')
+    throw new ApiClientError('Phản hồi đăng nhập từ máy chủ thiếu access token.', 500, 'INVALID_LOGIN_RESPONSE')
   }
   // Store both tokens in memory; refresh token is also set as httpOnly cookie by the server.
   writeTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken })

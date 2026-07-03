@@ -131,6 +131,8 @@
     "missingToken": "Thiếu mã lời mời trong liên kết.",
     "invalidToken": "Lời mời không hợp lệ hoặc đã hết hạn.",
     "invalidTitle": "Liên kết không hợp lệ",
+    "networkErrorTitle": "Không thể kết nối máy chủ",
+    "networkError": "Không thể kết nối tới máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.",
     "doneTitle": "Kích hoạt thành công",
     "doneDesc": "Mật khẩu đã được đặt. Bạn có thể đăng nhập ngay.",
     "goToLogin": "Tới trang đăng nhập"
@@ -1255,6 +1257,7 @@
       "productsSectionDesc": "Danh sách sản phẩm đã được xếp vào danh mục này, sắp theo thứ tự cập nhật mới nhất trước.",
       "productsViewAll": "Xem tất cả {{count}} sản phẩm →",
       "productsEmpty": "Chưa có sản phẩm nào thuộc danh mục này.",
+      "productsEmptyAddLink": "Thêm sản phẩm vào danh mục này →",
       "seoPreviewLabel": "Xem thử trên Google",
       "seoPreviewFallbackTitle": "Tiêu đề danh mục",
       "seoPreviewFallbackDesc": "Khi bạn nhập \"Mô tả khi xuất hiện trên Google\" ở dưới, đoạn đó sẽ hiện ở đây — đúng như khách thấy trên kết quả tìm kiếm.",
@@ -1294,7 +1297,8 @@
       "systemCategoryDesc": "\"Chưa phân loại\" là danh mục hệ thống dùng để chứa sản phẩm khi danh mục gốc bị xoá. Không thể đổi tên hoặc xoá danh mục này.",
       "enFieldHint": "(tiếng Anh — tùy chọn)",
       "namePlaceholderEn": "Tên tiếng Anh (tùy chọn)",
-      "duplicateSuccess": "Đã sao chép từ \"{{name}}\". Vui lòng đặt đường dẫn URL mới."
+      "duplicateSuccess": "Đã sao chép từ \"{{name}}\". Vui lòng đặt đường dẫn URL mới.",
+      "formProgress": "{{filled}}/{{total}} mục đã điền"
     }
   },
   "brands": {
@@ -1387,7 +1391,8 @@
       "contentLanguageAriaLabel": "Ngôn ngữ nội dung",
       "enFieldHint": "(tiếng Anh — tùy chọn)",
       "namePlaceholderEn": "Tên tiếng Anh (tùy chọn)",
-      "duplicateSuccess": "Đã sao chép từ \"{{name}}\". Vui lòng đặt đường dẫn URL mới."
+      "duplicateSuccess": "Đã sao chép từ \"{{name}}\". Vui lòng đặt đường dẫn URL mới.",
+      "formProgress": "{{filled}}/{{total}} mục đã điền"
     }
   },
   "content": {
@@ -1739,7 +1744,10 @@
       "CONTENT_SEO_OG": "Bài viết (SEO OG)",
       "SLIDER_DESKTOP": "Banner desktop",
       "SLIDER_MOBILE": "Banner mobile"
-    }
+    },
+    "emptyLibraryDesc": "Thư viện chưa có file nào. Tải file lên để bắt đầu.",
+    "discardConfirm": "Bạn đang có thay đổi chưa lưu. Đóng sẽ mất các thay đổi đó. Tiếp tục?",
+    "discardConfirmTitle": "Huỷ thay đổi?"
   },
   "menus": {
     "eyebrow": "Nội dung",
@@ -1788,7 +1796,18 @@
     "itemLabelRequired": "Vui lòng nhập tên hiển thị.",
     "requiredLegend": "Bắt buộc",
     "urlHint": "Ví dụ: /danh-muc-san-pham/xe-may, /tin-tuc/meo-chon-xe, hoặc https://example.com",
-    "saveMenu": "Lưu menu"
+    "saveMenu": "Lưu menu",
+    "deleteItemSuccess": "Đã xoá mục menu.",
+    "discardConfirm": "Bạn đang có thay đổi chưa lưu. Đóng cửa sổ này sẽ mất các thay đổi đó. Tiếp tục?",
+    "discardConfirmTitle": "Huỷ thay đổi?",
+    "statusActivatedToast": "Đã bật hiển thị mục menu.",
+    "statusDeactivatedToast": "Đã ẩn mục menu.",
+    "selectAllAria": "Chọn tất cả mục đang hiển thị",
+    "bulkDelete": "Xoá đã chọn",
+    "bulkDeleteBlocked": "{{count}} mục không thể xoá vì còn mục con — hãy xoá hoặc di chuyển mục con ra trước.",
+    "bulkDeleteConfirm": "Xoá {{count}} mục menu đã chọn? Khách sẽ không còn thấy các mục này trên menu.",
+    "bulkDeleteConfirmTitle": "Xoá nhiều mục menu",
+    "bulkDeleteSuccess": "Đã xoá {{count}} mục menu."
   },
   "sliders": {
     "eyebrow": "Nội dung",
@@ -1839,7 +1858,9 @@
     "locationHome": "Trang chủ",
     "locationCategory": "Trang danh mục",
     "locationCategorySidebar": "Cột bên danh mục",
-    "locationPromotion": "Khuyến mãi"
+    "locationPromotion": "Khuyến mãi",
+    "hideAction": "Ẩn",
+    "showAction": "Hiện"
   },
   "reviews": {
     "eyebrow": "Danh mục",
@@ -2319,6 +2340,9 @@
     "createRoleIdCustomize": "Tuỳ chỉnh",
     "createRoleDescLabel": "Mô tả (tuỳ chọn)",
     "createRoleDescPlaceholder": "Mô tả ngắn về vai trò này",
+    "createRoleCloneLabel": "Nhân bản quyền từ vai trò có sẵn (tuỳ chọn)",
+    "createRoleCloneNone": "Không nhân bản — bắt đầu trống",
+    "createRoleCloneHint": "Chọn một vai trò để sao chép toàn bộ quyền của vai trò đó làm điểm khởi đầu.",
     "createRoleErrorName": "Tên vai trò là bắt buộc.",
     "createRoleErrorId": "Mã định danh là bắt buộc.",
     "createRoleSuccess": "Đã tạo vai trò \"{{name}}\" thành công.",
@@ -2450,6 +2474,10 @@
     "validationUpload": "Video upload phải là đường dẫn media nội bộ hợp lệ.",
     "bulkShowSuccess": "Đã hiện {{count}} video",
     "bulkHideSuccess": "Đã ẩn {{count}} video",
+    "bulkShowConfirm": "Hiện {{count}} video đã chọn trên trang chủ?",
+    "bulkHideConfirm": "Ẩn {{count}} video đã chọn khỏi trang chủ?",
+    "bulkShowConfirmTitle": "Hiện video hàng loạt",
+    "bulkHideConfirmTitle": "Ẩn video hàng loạt",
     "bulkActionError": "Có lỗi xảy ra, vui lòng thử lại",
     "bulkDeleteConfirm": "Xoá {{count}} video đã chọn? Thao tác này không thể hoàn tác.",
     "bulkDeleteConfirmTitle": "Xoá hàng loạt",
@@ -2583,6 +2611,8 @@
     "colStatusCode": "Trạng thái",
     "colEnabled": "Bật",
     "colHits": "Lượt",
-    "colUpdated": "Cập nhật"
+    "colUpdated": "Cập nhật",
+    "statusOn": "Bật",
+    "statusOff": "Tắt"
   }
 }

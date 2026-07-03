@@ -365,3 +365,38 @@ export function groupBySection(items) {
   const idx = (s) => { const i = SECTION_ORDER.indexOf(s); return i === -1 ? 999 : i }
   return [...map.keys()].sort((a, b) => idx(a) - idx(b)).map((sec) => ({ sec, fields: map.get(sec) }))
 }
+
+// ── Autosave utilities (F9) ──────────────────────────────────────────────────
+// Mirrors product-detail/constants.js + category-detail/constants.js — same
+// localStorage draft mechanism. Cài đặt là màn đơn (không có id/isCreate riêng
+// từng bản ghi) nên key cố định, gộp chung drafts VI + EN của MỌI tab vào một
+// bản nháp duy nhất (đổi tab nội bộ không mất draft, nên autosave cũng không
+// cần tách theo tab).
+export const AUTOSAVE_TTL_MS = 60 * 60 * 1000
+
+export function getAutosaveKey() {
+  return 'settings-autosave'
+}
+
+export function saveFormToStorage(key, form) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ form, ts: Date.now() }))
+  } catch { /* quota */ }
+}
+
+export function loadFormFromStorage(key) {
+  try {
+    const raw = localStorage.getItem(key)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed?.ts || Date.now() - parsed.ts > AUTOSAVE_TTL_MS) {
+      localStorage.removeItem(key)
+      return null
+    }
+    return parsed
+  } catch { return null }
+}
+
+export function clearFormFromStorage(key) {
+  try { localStorage.removeItem(key) } catch { /* ignore */ }
+}

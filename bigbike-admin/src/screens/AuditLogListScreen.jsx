@@ -2,11 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Download } from 'lucide-react'
 import { AdminTable } from '../components/AdminTable'
+import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { fetchAuditLogs } from '../lib/adminApi'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
+import { useColumnVisibility } from '../lib/useColumnVisibility'
 import { formatDateTimeWithSeconds } from '../lib/formatters'
 import { FilterChips } from '../components/FilterChips'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -106,6 +108,9 @@ export function AuditLogListScreen() {
       render: (r) => <ResourceCell log={r} />,
     },
   ], [t])
+
+  // T7: cho phép ẩn/hiện cột trên bảng nhật ký, lưu lựa chọn theo trình duyệt.
+  const { visibleColumns, hiddenKeys, toggle: toggleColumn, allColumns } = useColumnVisibility(columns, 'columns:audit-logs')
 
   const updateQuery = useCallback((partial, options = { resetPage: false }) => {
     setState((p) => ({ ...p, status: 'loading' }))
@@ -302,6 +307,9 @@ export function AuditLogListScreen() {
               {[20, 50, 100].map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
             </SelectContent></Select>
           </label>
+
+          {/* T7: ẩn/hiện cột trên bảng nhật ký */}
+          <ColumnVisibilityToggle allColumns={allColumns} hiddenKeys={hiddenKeys} onToggle={toggleColumn} />
         </div>
 
         {/* Row 2: date presets + date pickers + clear */}
@@ -418,7 +426,7 @@ export function AuditLogListScreen() {
           <div className="audit-table-wrapper">
             <AdminTable
               caption={t('auditLog.tableCaption')}
-              columns={columns}
+              columns={visibleColumns}
               rows={sortedItems}
               loading={state.status === 'loading'}
               pageSize={query.pageSize}

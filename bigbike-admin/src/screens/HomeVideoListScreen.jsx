@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -31,6 +31,8 @@ import { BulkActionBar } from '../components/BulkActionBar'
 import { FormField } from '../components/layout/FormField'
 import { showConfirm } from '../lib/confirm'
 import { useDialogA11y } from '@/lib/useDialogA11y'
+import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+import { useSaveShortcut } from '@/lib/useSaveShortcut'
 import { useUrlSyncedState } from '@/lib/useUrlSyncedState'
 import { useContentLang } from '../lib/contentLang'
 import { extractAllowedYouTubeId, extractAllowedTikTokId, tiktokEmbedUrl, isAllowedFacebookVideoUrl, facebookEmbedUrl, validateHomeVideoUrl } from '../lib/urlPolicies'
@@ -219,6 +221,8 @@ export function HomeVideoListScreen({ canUpdate }) {
   const [showForm, setShowForm] = useState(false)
   const [editingVideo, setEditingVideo] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
+  // F6: bản chụp form lúc mở, dùng để biết có thay đổi chưa lưu — mirror SliderListScreen.
+  const [baseline, setBaseline] = useState(null)
   // Lỗi gắn theo từng ô (title/videoUrl) + lỗi chung của form (vd lỗi lưu từ server).
   const [fieldErrors, setFieldErrors] = useState({})
   const [localItems, setLocalItems] = useState(null)
@@ -322,16 +326,39 @@ export function HomeVideoListScreen({ canUpdate }) {
     },
   })
 
+  // F6: cảnh báo khi rời trang lúc form đang có thay đổi chưa lưu (mirror SliderListScreen).
+  const isDirty = useMemo(() => {
+    if (!showForm || !baseline) return false
+    return JSON.stringify(form) !== JSON.stringify(baseline)
+  }, [showForm, baseline, form])
+
+  useUnsavedChanges(isDirty, t('homeVideos.unsavedConfirm', {
+    defaultValue: 'Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?',
+  }))
+
+  // O3: Ctrl/Cmd+S lưu form video khi đang mở.
+  useSaveShortcut(showForm && canUpdate, handleSubmit)
+
   function resetForm() {
     setShowForm(false)
     setEditingVideo(null)
     setForm(EMPTY_FORM)
+    setBaseline(null)
+    setFieldErrors({})
+  }
+
+  // F6: mở form tạo mới — dùng chung cho nút "Thêm video" và hành động trên StatePanel rỗng.
+  function openCreateForm() {
+    setShowForm(true)
+    setEditingVideo(null)
+    setForm(EMPTY_FORM)
+    setBaseline(EMPTY_FORM)
     setFieldErrors({})
   }
 
   function openEdit(video) {
     setEditingVideo(video)
-    setForm({
+    const next = {
       title: video.title,
       titleEn: video.titleEn || '',
       videoType: video.youtubeId
@@ -343,7 +370,9 @@ export function HomeVideoListScreen({ canUpdate }) {
       thumbnailUrl: video.thumbnail?.url || '',
       thumbnailAlt: video.thumbnail?.alt || '',
       isActive: video.isActive,
-    })
+    }
+    setForm(next)
+    setBaseline(next)
     setFieldErrors({})
     setShowForm(true)
   }
@@ -487,6 +516,15 @@ export function HomeVideoListScreen({ canUpdate }) {
   }
 
   async function handleBulkSetActive(isActive) {
+    // F5: hỏi xác nhận trước khi bật/ẩn hàng loạt, đồng nhất với handleBulkDelete ngay bên dưới.
+    const count = selectedIds.size
+    const confirmed = await showConfirm(
+      isActive
+        ? t('homeVideos.bulkShowConfirm', { count })
+        : t('homeVideos.bulkHideConfirm', { count }),
+      isActive ? t('homeVideos.bulkShowConfirmTitle') : t('homeVideos.bulkHideConfirmTitle'),
+    )
+    if (!confirmed) return
     // N7: cập nhật lạc quan hàng loạt — đổi trạng thái UI ngay, rollback nếu lỗi.
     const ids = new Set(selectedIds)
     const previousLocal = localItems
@@ -544,7 +582,7 @@ export function HomeVideoListScreen({ canUpdate }) {
       title={t('homeVideos.empty')}
       description={t('homeVideos.emptyDescription')}
       actionLabel={canUpdate ? t('homeVideos.addButton') : undefined}
-      onAction={canUpdate ? () => { setShowForm(true); setEditingVideo(null); setForm(EMPTY_FORM); setFieldErrors({}) } : undefined}
+      onAction={canUpdate ? openCreateForm : undefined}
     />
   ) : (
     <div className="flex flex-col gap-2.5">
@@ -660,7 +698,7 @@ export function HomeVideoListScreen({ canUpdate }) {
             <button
               type="button"
               className="bb-btn bb-btn-primary"
-              onClick={() => { setShowForm(true); setEditingVideo(null); setForm(EMPTY_FORM); setFieldErrors({}) }}
+              onClick={openCreateForm}
             >
               <Plus size={14} />{t('homeVideos.addButton')}
             </button>

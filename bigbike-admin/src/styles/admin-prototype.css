@@ -776,6 +776,10 @@
 }
 .bb-bulk-bar .bulk-btn:hover { background: rgba(255,255,255,0.08); }
 .bb-bulk-bar .bulk-btn.danger { color: #ff8a85; border-color: rgba(255,138,133,0.4); }
+/* F7: nút hành động hàng loạt thiếu trạng thái :disabled — không có phản hồi
+   thị giác khi đang xử lý (bulkBusy). */
+.bb-bulk-bar .bulk-btn:disabled { opacity: .5; cursor: not-allowed; }
+.bb-bulk-bar .bulk-btn:disabled:hover { background: transparent; }
 .bb-bulk-bar .ml-auto { margin-left: auto; }
 
 /* ─── Empty / loading / error states ───────────────────────────────────────── */

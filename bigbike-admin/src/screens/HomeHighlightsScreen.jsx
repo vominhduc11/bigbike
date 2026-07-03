@@ -13,6 +13,7 @@ import { ScreenHeader } from '../components/layout/ScreenHeader'
 import { Button } from '@/components/ui/button'
 import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+import { useSaveShortcut } from '@/lib/useSaveShortcut'
 
 const SLOT_LABELS = { 1: 'Slot 1', 2: 'Slot 2', 3: 'Slot 3' }
 
@@ -179,6 +180,9 @@ export function HomeHighlightsScreen({ canUpdate }) {
   const isDirty = initialized && !saveMutation.isPending && slotsSignature(slots) !== baselineSignature
 
   useUnsavedChanges(isDirty)
+
+  // O3: Ctrl/Cmd+S lưu 3 slot nổi bật; handleSave tự báo lỗi nếu chưa chọn sản phẩm nào.
+  useSaveShortcut(canUpdate, handleSave)
 
   function handleProductChange(slotNumber, product) {
     setSlots((prev) =>

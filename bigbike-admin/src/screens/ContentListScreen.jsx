@@ -12,6 +12,7 @@ import { BulkActionBar } from '../components/BulkActionBar'
 import { FilterChips } from '../components/FilterChips'
 import { PublishStatusBadge } from '../components/StatusBadge'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
+import { RecentItemsChips } from '../components/RecentItemsChips'
 import { StatePanel } from '../components/StatePanel'
 import { deleteContent, fetchContent, updateContent, restoreContent, permanentDeleteContent } from '../lib/adminApi'
 import { allowedPublishOptions } from '../lib/contentPublishTransitions'
@@ -20,6 +21,7 @@ import { formatDateTime, formatText } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
 import { useContentLang } from '../lib/contentLang'
 import { useDebounce } from '../lib/useDebounce'
+import { useRecentItems } from '../lib/useRecentItems'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 
 // Module chỉ còn quản lý BÀI VIẾT (Tin tức). Trang thông tin tĩnh (chính sách, hướng dẫn…)
@@ -48,6 +50,8 @@ export function ContentListScreen({ navigate, canUpdate }) {
   const isFirstSearchRender = useRef(true)
   const [selected, setSelected] = useState([])
   const [bulkBusy, setBulkBusy] = useState(false)
+  // O9: "Vừa xem/sửa" — bài viết vừa mở ở ContentDetailScreen (ghi qua recordRecentItem).
+  const recentContentItems = useRecentItems('recent:content')
 
   const state = useAdminList(['content', query, contentLang], () => fetchContent(query))
 
@@ -446,6 +450,9 @@ export function ContentListScreen({ navigate, canUpdate }) {
           </button>
         </div>
       </div>
+
+      {/* O9 — Vừa xem/sửa */}
+      <RecentItemsChips items={recentContentItems} onSelect={(item) => navigate(`/admin/content/article/${item.id}`)} />
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 

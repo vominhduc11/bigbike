@@ -1,7 +1,7 @@
 export function MediaCardSkeleton() {
   return (
     <div className="border border-border rounded-md overflow-hidden bg-surface">
-      <div className="skeleton-shimmer h-[120px] bg-surface-muted" />
+      <div className="skeleton-shimmer aspect-[4/3] bg-surface-muted" />
       <div className="p-2">
         <div className="skeleton-shimmer h-3 w-[85%] bg-surface-muted rounded-sm mb-1.5" />
         <div className="skeleton-shimmer h-2.5 w-[40%] bg-surface-muted rounded-sm" />

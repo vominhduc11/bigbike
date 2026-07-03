@@ -15,6 +15,7 @@ import { StatePanel } from '../components/StatePanel'
 import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+import { useSaveShortcut } from '@/lib/useSaveShortcut'
 import { useUrlQuery } from '../lib/useUrlQuery'
 import { validateSafePublicLink } from '../lib/urlPolicies'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -128,7 +129,8 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sorta
               onClick={() => onToggleActive(slider)}
             >
               {/* N7: nhãn phản ánh ngay trạng thái lạc quan (cache đã đổi); chỉ disable trong lúc chờ. */}
-              {slider.isActive !== false ? t('common.disable') : t('common.enable')}
+              {/* V5: nhãn "Ẩn/Hiện" đồng nhất với HomeVideoListScreen (homeVideos.hideAction/showAction) thay vì common.enable/disable chung chung. */}
+              {slider.isActive !== false ? t('sliders.hideAction', { defaultValue: 'Ẩn' }) : t('sliders.showAction', { defaultValue: 'Hiện' })}
             </button>
             <button
               type="button"
@@ -283,6 +285,9 @@ export function SliderListScreen({ canUpdate }) {
   useUnsavedChanges(isDirty, t('sliders.unsavedConfirm', {
     defaultValue: 'Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?',
   }))
+
+  // O3: Ctrl/Cmd+S lưu form banner khi đang mở.
+  useSaveShortcut(showForm && canUpdate, handleSubmit)
 
   // Hỏi xác nhận trước khi bỏ form nếu đang có thay đổi chưa lưu, rồi đóng form.
   async function confirmCloseForm() {
@@ -508,6 +513,10 @@ export function SliderListScreen({ canUpdate }) {
               <span className="text-danger" aria-hidden="true">*</span> {t('sliders.requiredLegend', { defaultValue: 'Bắt buộc' })}
             </p>
             <div className="bb-grid-2">
+              {/* F10: nhóm 9 trường thành 4 khối có tiêu đề thay vì 1 lưới phẳng. */}
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground" style={{ gridColumn: '1 / -1' }}>
+                {t('sliders.sectionPosition', { defaultValue: 'Vị trí & thứ tự' })}
+              </div>
               <label className="form-field">
                 <span>
                   {t('sliders.formLocation')}
@@ -527,13 +536,18 @@ export function SliderListScreen({ canUpdate }) {
                 </span>
                 <Input type="number" value={form.sortOrder} onChange={(e) => setForm((p) => ({ ...p, sortOrder: e.target.value }))} />
               </label>
+              {/* V2: bỏ marginTop:22 canh thủ công — checkbox giờ đứng riêng 1 hàng full-width, không cần canh theo ô cạnh bên. */}
               <label
                 className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit"
-                style={{ marginTop: 22 }}
+                style={{ gridColumn: '1 / -1' }}
               >
                 <Checkbox checked={form.isActive} onCheckedChange={(checked) => setForm((p) => ({ ...p, isActive: checked === true }))} />
                 <span>{t('sliders.formIsActive')}</span>
               </label>
+
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground border-t border-border pt-3 mt-1" style={{ gridColumn: '1 / -1' }}>
+                {t('sliders.sectionDesktopImage', { defaultValue: 'Ảnh desktop' })}
+              </div>
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('sliders.formDesktopUrl')}</span>
                 <ImageUrlInput value={form.desktopImageUrl} onChange={(url) => setForm((p) => ({ ...p, desktopImageUrl: url }))} recommend={IMAGE_RECO.sliderDesktop} />
@@ -543,6 +557,10 @@ export function SliderListScreen({ canUpdate }) {
                 <span>{t('sliders.formDesktopAlt')}</span>
                 <Input value={form.desktopAlt} onChange={(e) => setForm((p) => ({ ...p, desktopAlt: e.target.value }))} />
               </label>
+
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground border-t border-border pt-3 mt-1" style={{ gridColumn: '1 / -1' }}>
+                {t('sliders.sectionMobileImage', { defaultValue: 'Ảnh mobile' })}
+              </div>
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('sliders.formMobileUrl')}</span>
                 <ImageUrlInput value={form.mobileImageUrl} onChange={(url) => setForm((p) => ({ ...p, mobileImageUrl: url }))} recommend={IMAGE_RECO.bannerMobile} />
@@ -552,6 +570,10 @@ export function SliderListScreen({ canUpdate }) {
                 <span>{t('sliders.formMobileAlt')}</span>
                 <Input value={form.mobileAlt} onChange={(e) => setForm((p) => ({ ...p, mobileAlt: e.target.value }))} />
               </label>
+
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground border-t border-border pt-3 mt-1" style={{ gridColumn: '1 / -1' }}>
+                {t('sliders.sectionLink', { defaultValue: 'Liên kết' })}
+              </div>
               <label className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>
                   {t('sliders.formExternalLink')}

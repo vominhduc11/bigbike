@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -25,9 +25,12 @@ import {
 import { useContentLang } from '../lib/contentLang'
 import { showConfirm } from '../lib/confirm'
 import { formatText } from '../lib/formatters'
+import { useSaveShortcut } from '@/lib/useSaveShortcut'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { BulkActionBar } from '../components/BulkActionBar'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   SYSTEM_SLOTS,
   EMPTY_ITEM,
@@ -74,6 +77,15 @@ export function MenuScreen({ canUpdate }) {
 
   // Per-row delete tracking
   const [deletingItemId, setDeletingItemId] = useState(null)
+  // Per-row status-toggle tracking (O4)
+  const [togglingItemId, setTogglingItemId] = useState(null)
+
+  // Bulk selection (O6)
+  const [selectedItemIds, setSelectedItemIds] = useState(() => new Set())
+  const [bulkDeleting, setBulkDeleting] = useState(false)
+
+  // Snapshot of the edit form taken at open time, to detect unsaved changes (F6)
+  const editItemSnapshotRef = useRef(EMPTY_ITEM)
 
   // ── Queries ────────────────────────────────────────────────────────────────
   // Pull the full menu list once so we can map location → menuId without
@@ -142,6 +154,11 @@ export function MenuScreen({ canUpdate }) {
 
   // Parent options for "add item" form
   const parentOptions = flatMenuItems
+
+  // Bulk selection helpers (O6) — scoped to currently visible/filtered rows
+  const visibleItemIds = useMemo(() => filteredFlatItems.map((i) => i.id), [filteredFlatItems])
+  const allVisibleSelected = visibleItemIds.length > 0 && visibleItemIds.every((id) => selectedItemIds.has(id))
+  const someVisibleSelected = !allVisibleSelected && visibleItemIds.some((id) => selectedItemIds.has(id))
 
   // Parent options for "edit item" form — exclude self and all descendants
   const editParentOptions = useMemo(() => {
@@ -212,9 +229,39 @@ export function MenuScreen({ canUpdate }) {
   const deleteItemMutation = useMutation({
     mutationFn: (itemId) => deleteMenuItem(selectedMenuId, itemId),
     onMutate: (itemId) => setDeletingItemId(itemId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['menu-detail', selectedMenuId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['menu-detail', selectedMenuId] })
+      toast.success(t('menus.deleteItemSuccess', { defaultValue: 'Đã xoá mục menu.' }))
+    },
     onError: (e) => toast.error(e?.status === 409 ? t('menus.deleteItemConflict') : (e.message || t('common.error'))),
     onSettled: () => setDeletingItemId(null),
+  })
+
+  // O4 — bật/tắt hiển thị mục ngay trên dòng, không cần mở modal sửa. Gửi lại
+  // nguyên payload PATCH (giống submit form sửa) vì backend không hỗ trợ patch
+  // từng phần một cách đáng tin cậy.
+  const toggleStatusMutation = useMutation({
+    mutationFn: ({ item, nextStatus }) => updateMenuItem(selectedMenuId, item.id, {
+      label: item.label,
+      labelEn: item.labelEn,
+      url: item.url,
+      targetType: item.targetType || 'CUSTOM',
+      targetId: item.targetType === 'CATEGORY' ? (item.targetId || null) : null,
+      sortOrder: item.sortOrder,
+      openInNewTab: item.openInNewTab,
+      cssClass: null,
+      status: nextStatus,
+      parentId: item.parentId || null,
+    }),
+    onMutate: ({ item }) => setTogglingItemId(item.id),
+    onSuccess: (_data, { nextStatus }) => {
+      queryClient.invalidateQueries({ queryKey: ['menu-detail', selectedMenuId] })
+      toast.success(nextStatus === 'ACTIVE'
+        ? t('menus.statusActivatedToast', { defaultValue: 'Đã bật hiển thị mục menu.' })
+        : t('menus.statusDeactivatedToast', { defaultValue: 'Đã ẩn mục menu.' }))
+    },
+    onError: (e) => toast.error(e.message || t('common.error')),
+    onSettled: () => setTogglingItemId(null),
   })
 
   // ── Handlers ───────────────────────────────────────────────────────────────
@@ -293,6 +340,76 @@ export function MenuScreen({ canUpdate }) {
     deleteItemMutation.mutate(itemId)
   }
 
+  // O4 — bật/tắt hiển thị trực tiếp trên dòng
+  function handleToggleItemStatus(item) {
+    const nextStatus = item.status === 'INACTIVE' ? 'ACTIVE' : 'INACTIVE'
+    toggleStatusMutation.mutate({ item, nextStatus })
+  }
+
+  // O6 — chọn/bỏ chọn theo dòng và theo toàn bộ danh sách đang hiển thị
+  function toggleItemSelected(itemId) {
+    setSelectedItemIds((prev) => {
+      const next = new Set(prev)
+      next.has(itemId) ? next.delete(itemId) : next.add(itemId)
+      return next
+    })
+  }
+
+  function toggleSelectAllVisible() {
+    setSelectedItemIds((prev) => {
+      const next = new Set(prev)
+      if (allVisibleSelected) {
+        visibleItemIds.forEach((id) => next.delete(id))
+      } else {
+        visibleItemIds.forEach((id) => next.add(id))
+      }
+      return next
+    })
+  }
+
+  function clearItemSelection() {
+    setSelectedItemIds(new Set())
+  }
+
+  async function handleBulkDeleteItems() {
+    if (selectedItemIds.size === 0) return
+    const ids = [...selectedItemIds]
+    const blocked = ids.filter((id) => menuItems.filter((i) => sameParent(i.parentId, id)).length > 0)
+    const deletable = ids.filter((id) => !blocked.includes(id))
+    if (blocked.length > 0) {
+      toast.error(t('menus.bulkDeleteBlocked', {
+        count: blocked.length,
+        defaultValue: '{{count}} mục không thể xoá vì còn mục con — hãy xoá hoặc di chuyển mục con ra trước.',
+      }))
+    }
+    if (deletable.length === 0) return
+    const confirmed = await showConfirm(
+      t('menus.bulkDeleteConfirm', {
+        count: deletable.length,
+        defaultValue: 'Xoá {{count}} mục menu đã chọn? Khách sẽ không còn thấy các mục này trên menu.',
+      }),
+      t('menus.bulkDeleteConfirmTitle', { defaultValue: 'Xoá nhiều mục menu' }),
+      { variant: 'danger', confirmLabel: t('common.delete') },
+    )
+    if (!confirmed) return
+    setBulkDeleting(true)
+    try {
+      const results = await Promise.allSettled(deletable.map((id) => deleteMenuItem(selectedMenuId, id)))
+      const succeeded = results.filter((r) => r.status === 'fulfilled').length
+      queryClient.invalidateQueries({ queryKey: ['menu-detail', selectedMenuId] })
+      setSelectedItemIds(new Set())
+      if (succeeded > 0) {
+        toast.success(t('menus.bulkDeleteSuccess', {
+          count: succeeded,
+          defaultValue: 'Đã xoá {{count}} mục menu.',
+        }))
+      }
+      if (succeeded < deletable.length) toast.error(t('common.error'))
+    } finally {
+      setBulkDeleting(false)
+    }
+  }
+
   function handleEditItem(e) {
     e.preventDefault()
     if (!editItem) return
@@ -318,8 +435,7 @@ export function MenuScreen({ canUpdate }) {
   }
 
   function openEditItem(item) {
-    setEditItem(item)
-    setEditItemForm({
+    const form = {
       label: item.label || '',
       labelEn: item.labelEn || '',
       url: item.url || '',
@@ -330,7 +446,10 @@ export function MenuScreen({ canUpdate }) {
       status: item.status || 'ACTIVE',
       targetType: item.targetType || 'CUSTOM',
       targetId: item.targetId || '',
-    })
+    }
+    setEditItem(item)
+    setEditItemForm(form)
+    editItemSnapshotRef.current = form
     setEditItemError('')
   }
 
@@ -338,6 +457,37 @@ export function MenuScreen({ canUpdate }) {
     setNewItem(EMPTY_ITEM)
     setItemError('')
     setShowItemModal(true)
+  }
+
+  // F6 — đóng modal Thêm mục: hỏi xác nhận nếu form đang khác EMPTY_ITEM (còn
+  // thay đổi chưa lưu). Dùng chung cho nút X / Esc / click ra ngoài (đều đi qua
+  // onClose của Modal) và nút Huỷ ở footer.
+  async function closeAddModal() {
+    const dirty = JSON.stringify(newItem) !== JSON.stringify(EMPTY_ITEM)
+    if (dirty) {
+      const confirmed = await showConfirm(
+        t('menus.discardConfirm', { defaultValue: 'Bạn đang có thay đổi chưa lưu. Đóng cửa sổ này sẽ mất các thay đổi đó. Tiếp tục?' }),
+        t('menus.discardConfirmTitle', { defaultValue: 'Huỷ thay đổi?' }),
+      )
+      if (!confirmed) return
+    }
+    setShowItemModal(false)
+    setNewItem(EMPTY_ITEM)
+    setItemError('')
+  }
+
+  // F6 — đóng modal Sửa mục: so với snapshot lấy lúc mở modal thay vì EMPTY_ITEM.
+  async function closeEditModal() {
+    const dirty = JSON.stringify(editItemForm) !== JSON.stringify(editItemSnapshotRef.current)
+    if (dirty) {
+      const confirmed = await showConfirm(
+        t('menus.discardConfirm', { defaultValue: 'Bạn đang có thay đổi chưa lưu. Đóng cửa sổ này sẽ mất các thay đổi đó. Tiếp tục?' }),
+        t('menus.discardConfirmTitle', { defaultValue: 'Huỷ thay đổi?' }),
+      )
+      if (!confirmed) return
+    }
+    setEditItem(null)
+    setEditItemError('')
   }
 
   function selectSlot(location) {
@@ -348,6 +498,7 @@ export function MenuScreen({ canUpdate }) {
     setEditItem(null)
     setEditItemError('')
     setSearch('')
+    setSelectedItemIds(new Set())
   }
 
   // Điều hướng tab bằng phím mũi tên / Home / End theo chuẩn ARIA tablist.
@@ -368,6 +519,14 @@ export function MenuScreen({ canUpdate }) {
     selectSlot(nextSlot.location)
     document.getElementById(`menu-slot-tab-${nextSlot.location}`)?.focus()
   }
+
+  // O3 — Ctrl/Cmd+S để lưu ngay trong modal Thêm/Sửa mục, không bắt buộc bấm nút.
+  useSaveShortcut(showItemModal, () => {
+    if (isItemFormValid(newItem)) document.getElementById('add-item-form')?.requestSubmit()
+  })
+  useSaveShortcut(Boolean(editItem), () => {
+    if (isItemFormValid(editItemForm)) document.getElementById('edit-item-form')?.requestSubmit()
+  })
 
   // ── Render ─────────────────────────────────────────────────────────────────
   if (isLoading) return <StatePanel tone="info" title={t('menus.loading')} description={t('common.pleaseWait')} />
@@ -507,6 +666,23 @@ export function MenuScreen({ canUpdate }) {
               </div>
             )}
 
+            {/* O6 — bulk action bar (chỉ hiện khi đã chọn ít nhất 1 mục) */}
+            {canUpdate && selectedItemIds.size > 0 && (
+              <BulkActionBar
+                selectedCount={selectedItemIds.size}
+                onClear={clearItemSelection}
+                closeLabel={t('common.deselect', { defaultValue: 'Bỏ chọn' })}
+                actions={[
+                  {
+                    label: t('menus.bulkDelete', { defaultValue: 'Xoá đã chọn' }),
+                    tone: 'danger',
+                    onClick: handleBulkDeleteItems,
+                    disabled: bulkDeleting,
+                  },
+                ]}
+              />
+            )}
+
             {/* Items table */}
             {menuItems.length === 0 ? (
               <div className="px-5 py-8 text-center">
@@ -537,11 +713,25 @@ export function MenuScreen({ canUpdate }) {
                   <div className="menu-table-wrap">
                     <table className="menu-table">
                       <colgroup>
-                        <col /><col /><col /><col />
-                        {canUpdate && <col />}
+                        {canUpdate && <col className="menu-col-check" />}
+                        <col className="menu-col-grip" />
+                        <col className="menu-col-label" />
+                        <col className="menu-col-parent" />
+                        <col className="menu-col-url" />
+                        {canUpdate && <col className="menu-col-actions" />}
                       </colgroup>
                       <thead>
                         <tr>
+                          {canUpdate && (
+                            <th className="menu-grip-cell" scope="col">
+                              <Checkbox
+                                checked={allVisibleSelected ? true : someVisibleSelected ? 'indeterminate' : false}
+                                onCheckedChange={toggleSelectAllVisible}
+                                disabled={bulkDeleting || visibleItemIds.length === 0}
+                                aria-label={t('menus.selectAllAria', { defaultValue: 'Chọn tất cả mục đang hiển thị' })}
+                              />
+                            </th>
+                          )}
                           <th className="menu-grip-cell" scope="col">
                             <span className="sr-only">{t('menus.itemReorder', { defaultValue: 'Sắp xếp' })}</span>
                           </th>
@@ -567,6 +757,10 @@ export function MenuScreen({ canUpdate }) {
                             onEdit={openEditItem}
                             onDelete={handleDeleteItem}
                             isDeleting={deletingItemId === item.id}
+                            selected={selectedItemIds.has(item.id)}
+                            onToggleSelect={() => toggleItemSelected(item.id)}
+                            onToggleStatus={handleToggleItemStatus}
+                            isToggling={togglingItemId === item.id}
                           />
                         ))}
                       </tbody>
@@ -583,10 +777,10 @@ export function MenuScreen({ canUpdate }) {
       {showItemModal && (
         <Modal
           title={`${t('menus.addItem')} — ${formatText(menuDetail?.name ?? '')}`}
-          onClose={() => { setShowItemModal(false); setNewItem(EMPTY_ITEM); setItemError('') }}
+          onClose={closeAddModal}
           footer={
             <>
-              <Button variant="outline" onClick={() => { setShowItemModal(false); setNewItem(EMPTY_ITEM); setItemError('') }}>
+              <Button variant="outline" onClick={closeAddModal}>
                 {t('common.cancel')}
               </Button>
               <Button type="submit" form="add-item-form" loading={addItemMutation.isPending} disabled={!isItemFormValid(newItem)}>
@@ -621,10 +815,10 @@ export function MenuScreen({ canUpdate }) {
       {editItem && (
         <Modal
           title={`${t('common.edit')}: ${pickLabel(editItem)}`}
-          onClose={() => { setEditItem(null); setEditItemError('') }}
+          onClose={closeEditModal}
           footer={
             <>
-              <Button variant="outline" onClick={() => { setEditItem(null); setEditItemError('') }}>
+              <Button variant="outline" onClick={closeEditModal}>
                 {t('common.cancel')}
               </Button>
               <Button type="submit" form="edit-item-form" loading={updateItemMutation.isPending} disabled={!isItemFormValid(editItemForm)}>

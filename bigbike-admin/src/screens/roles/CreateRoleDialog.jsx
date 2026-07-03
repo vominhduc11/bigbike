@@ -5,8 +5,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FormField } from '@/components/layout/FormField'
 import { Modal } from '@/components/layout/Modal'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { getRoleDisplayName } from './constants'
 
-export function CreateRoleDialog({ onConfirm, onCancel, saving }) {
+// F11 — sentinel cho lựa chọn "không nhân bản" trong Select (Radix không cho value rỗng).
+const CLONE_NONE = '__none__'
+
+export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [] }) {
   const { t } = useTranslation()
   const [name, setName] = useState('')
   const [id, setId]   = useState('')
@@ -14,6 +19,8 @@ export function CreateRoleDialog({ onConfirm, onCancel, saving }) {
   const [idManual, setIdManual] = useState(false)
   const [showId, setShowId] = useState(false)
   const [touched, setTouched] = useState({})
+  // F11 — nhân bản quyền từ một vai trò có sẵn thay vì luôn bắt đầu trống.
+  const [cloneFromId, setCloneFromId] = useState(CLONE_NONE)
 
   const nameError = !name.trim() ? t('roles.createRoleErrorName') : ''
   const idError   = showId && !id.trim() ? t('roles.createRoleErrorId') : ''
@@ -36,7 +43,9 @@ export function CreateRoleDialog({ onConfirm, onCancel, saving }) {
       setTouched({ name: true, id: true })
       return
     }
-    onConfirm({ id: id.trim(), name: name.trim(), description: desc.trim(), permissions: [] })
+    const sourceRole = cloneFromId !== CLONE_NONE ? roles.find((r) => r.id === cloneFromId) : null
+    const permissions = sourceRole ? [...sourceRole.permissions] : []
+    onConfirm({ id: id.trim(), name: name.trim(), description: desc.trim(), permissions })
   }
 
   return (
@@ -122,6 +131,25 @@ export function CreateRoleDialog({ onConfirm, onCancel, saving }) {
             placeholder={t('roles.createRoleDescPlaceholder')}
           />
         </FormField>
+
+        {/* F11 — nhân bản quyền từ vai trò có sẵn thay vì luôn bắt đầu trống. */}
+        {roles.length > 0 && (
+          <FormField
+            label={t('roles.createRoleCloneLabel')}
+            htmlFor="create-role-clone"
+            helper={t('roles.createRoleCloneHint')}
+          >
+            <Select value={cloneFromId} onValueChange={setCloneFromId}>
+              <SelectTrigger id="create-role-clone"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={CLONE_NONE}>{t('roles.createRoleCloneNone')}</SelectItem>
+                {roles.map((r) => (
+                  <SelectItem key={r.id} value={r.id}>{getRoleDisplayName(r, t)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+        )}
 
         <p className="m-0 text-xs text-muted-foreground">
           <span className="text-danger">*</span> {t('common.required', { defaultValue: 'Bắt buộc' })}

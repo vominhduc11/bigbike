@@ -24,7 +24,7 @@ export function SettingTabPanel({ title, items, canUpdate, drafts, draftsEn, err
               <div
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  gap: 8, margin: '18px 0 12px', paddingBottom: 6,
+                  gap: 8, margin: '16px 0 12px', paddingBottom: 8,
                   borderBottom: '1px solid var(--bb-border)',
                 }}
               >

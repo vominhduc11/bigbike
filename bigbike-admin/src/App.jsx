@@ -17,8 +17,8 @@ import { queryClient } from './lib/queryClient'
 import { confirmNavigation } from './lib/navigationGuard'
 import { lazyScreen } from './lib/lazyScreen'
 import { LoginScreen } from './screens/LoginScreen'
-import { AcceptInviteScreen } from './screens/AcceptInviteScreen'
 
+const AcceptInviteScreen = lazyScreen(() => import('./screens/AcceptInviteScreen'), 'AcceptInviteScreen')
 const DashboardScreen    = lazyScreen(() => import('./screens/DashboardScreen'),    'DashboardScreen')
 const BrandDetailScreen  = lazyScreen(() => import('./screens/BrandDetailScreen'),  'BrandDetailScreen')
 const BrandListScreen    = lazyScreen(() => import('./screens/BrandListScreen'),    'BrandListScreen')
@@ -232,6 +232,18 @@ function AdminApp() {
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
+  // L3: /admin/banners chỉ là lối tắt cũ (Banner trang nay là một tab trong Cài đặt),
+  // không có mục nav riêng trong NAV_GROUP_DEFS → đổi URL thật sang /admin/settings
+  // ngay khi vào route này, để sidebar/breadcrumb có trạng thái active đúng thay vì
+  // chỉ đổi nội dung màn hình mà giữ nguyên URL không khớp mục nav nào.
+  useEffect(() => {
+    const segments = normalizePath(pathname).split('/').filter(Boolean)
+    if (segments[0] === 'admin' && segments[1] === 'banners') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      navigate('/admin/settings', { replace: true })
+    }
+  }, [pathname, navigate])
+
   useEffect(() => {
     if (authState.status !== 'authenticated') return
     connectAdminWs(() => readTokens().accessToken)
@@ -290,7 +302,11 @@ function AdminApp() {
 
   // Public, token-gated invite acceptance — rendered regardless of auth state.
   if (pathname === '/accept-invite') {
-    return <AcceptInviteScreen />
+    return (
+      <Suspense fallback={SCREEN_SUSPENSE_FALLBACK}>
+        <AcceptInviteScreen />
+      </Suspense>
+    )
   }
 
   if (authState.status === 'initializing') {

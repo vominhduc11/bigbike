@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { AlertCircle } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+import { useSaveShortcut } from '@/lib/useSaveShortcut'
 import { recordRecentItem } from '@/lib/useRecentItems'
 import { DetailSection } from '../components/DetailSection'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -199,19 +200,8 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
     }
   }, [customerId, editForm, t])
 
-  // O3: Ctrl/Cmd+S lưu form sửa hồ sơ khi đang mở, nhất quán với các phím tắt
-  // khác đã có trong admin (Ctrl+K của GlobalSearch, F11/Ctrl+\ của AdminShell).
-  useEffect(() => {
-    if (!editOpen) return
-    function onKeyDown(e) {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
-        e.preventDefault()
-        handleEditSave(e)
-      }
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [editOpen, handleEditSave])
+  // O3: Ctrl/Cmd+S lưu form sửa hồ sơ khi đang mở.
+  useSaveShortcut(editOpen, handleEditSave)
 
   if (state.status === 'loading') return <StatePanel tone="info" title={t('customers.detail.loading')} description={t('common.pleaseWait')} />
   if (state.status === 'error') return <StatePanel tone="danger" title={t('customers.detail.error')} description={state.error} actionLabel={t('common.retry', { defaultValue: 'Thử lại' })} onAction={handleRetry} />

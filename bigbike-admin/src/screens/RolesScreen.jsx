@@ -244,6 +244,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
           onConfirm={handleCreateRole}
           onCancel={() => setShowCreateDialog(false)}
           saving={createSaving}
+          roles={roles}
         />
       )}
 

@@ -872,12 +872,15 @@ a {
   table-layout: fixed;
 }
 
-.menu-table colgroup col:nth-child(1) { width: 36px; }   /* grip */
-.menu-table colgroup col:nth-child(2) { width: 30%; }    /* label */
-.menu-table colgroup col:nth-child(3) { width: 18%; }    /* parent */
-.menu-table colgroup col:nth-child(4) { width: auto; }   /* url */
-.menu-table colgroup col:nth-child(5) { width: 90px; }   /* link type */
-.menu-table colgroup col:nth-child(6) { width: 72px; }   /* actions */
+/* O6: nth-child bị lệch khi cột checkbox chọn-hàng-loạt xuất hiện có điều kiện
+   (chỉ khi canUpdate) — chuyển sang chọn theo class để không phụ thuộc thứ tự/số
+   lượng cột render thực tế. */
+.menu-table .menu-col-check   { width: 32px; }  /* checkbox chọn hàng loạt */
+.menu-table .menu-col-grip    { width: 36px; }  /* kéo sắp xếp */
+.menu-table .menu-col-label   { width: 30%; }
+.menu-table .menu-col-parent  { width: 18%; }
+.menu-table .menu-col-url     { width: auto; }
+.menu-table .menu-col-actions { width: 90px; }  /* sửa/xoá */
 
 .menu-table thead tr {
   border-bottom: 2px solid var(--admin-color-border-default);

@@ -15,8 +15,11 @@ import {
   updateContent,
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
+import { useUnsavedChanges } from '../lib/useUnsavedChanges'
+import { clearNavGuard } from '../lib/navigationGuard'
 import { formatDateTime } from '../lib/formatters'
 import { useContentLang } from '../lib/contentLang'
+import { recordRecentItem } from '../lib/useRecentItems'
 import { createContentSchema, zodErrors } from '../lib/schemas'
 import { allowedPublishOptions } from '../lib/contentPublishTransitions'
 import { RichTextEditor } from '../components/RichTextEditor'
@@ -67,6 +70,8 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   const [isSubmitting, setIsSubmitting] = useState(false)
   // BÀI VIẾT: gõ tiêu đề EN tự gợi ý slug EN khi chưa sửa tay; xoá để sửa tự do.
   const [enSlugManuallyEdited, setEnSlugManuallyEdited] = useState(false)
+  // F12: BÀI VIẾT MỚI, tiếng Việt: gõ tiêu đề tự gợi ý đường dẫn khi chưa sửa tay.
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
 
   // ── Live preview (xem trước storefront — chỉ bài viết) ───────────────────────
   // Pane nhúng iframe bigbike-web /preview/article; debounce form rồi gọi dry-run
@@ -127,6 +132,16 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     }
   }, [autosaveKey, fetchResult, isCreate, normalizedType])
 
+  // O9: ghi lại bài viết vừa xem để hiện trong widget "Vừa xem/sửa" ở danh sách.
+  useEffect(() => {
+    if (!isCreate && fetchResult?.item?.id) {
+      recordRecentItem('recent:content', {
+        id: fetchResult.item.id,
+        label: fetchResult.item.title || t('content.articleFallbackTitle', { defaultValue: 'Bài viết' }),
+      })
+    }
+  }, [isCreate, fetchResult?.item?.id, fetchResult?.item?.title, t])
+
   const state = {
     status: isCreate ? 'success' : isLoading ? 'loading' : isError ? 'error' : 'success',
     item: fetchResult?.item ?? null,
@@ -144,12 +159,10 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   )
   const formRef = useRef(null)
 
-  useEffect(() => {
-    if (!isDirty) return
-    const handler = (e) => { e.preventDefault(); e.returnValue = '' }
-    window.addEventListener('beforeunload', handler)
-    return () => window.removeEventListener('beforeunload', handler)
-  }, [isDirty])
+  // F6: cảnh báo khi rời trang lúc còn thay đổi chưa lưu — phủ CẢ điều hướng nội bộ
+  // (sidebar/breadcrumb qua navigationGuard) lẫn reload/đóng tab (beforeunload); trước đây
+  // chỉ tự gắn beforeunload nên đi sidebar không hỏi. Message giống hộp thoại của handleClose.
+  useUnsavedChanges(isDirty, t('products.detail.unsavedChangesConfirm', { defaultValue: 'Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?' }))
 
   useEffect(() => {
     if (!isCreate) return
@@ -185,7 +198,12 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
       setIsSubmitting(false)
       setSavedFlash(true)
       setTimeout(() => setSavedFlash(false), 1200)
-      if (isCreate && savedItem?.id) navigate(`/admin/content/${mutationPath(normalizedType)}/${savedItem.id}`, { replace: true })
+      // Lưu xong rồi điều hướng (tạo mới -> trang chi tiết): gỡ nav guard trước khi
+      // navigate để không bị hỏi "rời trang?" nhầm (F6) — form vừa lưu khớp baseline.
+      if (isCreate && savedItem?.id) {
+        clearNavGuard()
+        navigate(`/admin/content/${mutationPath(normalizedType)}/${savedItem.id}`, { replace: true })
+      }
     },
     onError: (error) => {
       setValidationErrors(mapValidationErrors(error))
@@ -300,6 +318,20 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     }))
   }
 
+  // F12: BÀI VIẾT MỚI, tiếng Việt: gõ tiêu đề tự gợi ý đường dẫn (khi chưa sửa tay). Chỉ áp
+  // dụng lúc TẠO MỚI — bài đã có không tự đổi slug theo tiêu đề (tránh vỡ URL đang chạy).
+  function handleTitleChange(value) {
+    updateField('title', value)
+    if (isCreate && !slugManuallyEdited) {
+      updateField('slug', toSlug(value))
+    }
+  }
+
+  function handleSlugChange(value) {
+    setSlugManuallyEdited(true)
+    updateField('slug', value)
+  }
+
   // BÀI VIẾT, chế độ tiếng Anh: gõ tiêu đề EN tự gợi ý slug EN (khi chưa sửa tay).
   function handleEnTitleChange(value) {
     setForm((previous) => {
@@ -321,12 +353,58 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   }
 
   if (state.status === 'loading') {
+    // N5: khung xương thay cho StatePanel căn giữa — tránh giật bố cục (CLS) khi dữ liệu về,
+    // vì trang thật có header + tab (Nội dung/SEO & xuất bản) + nhiều SectionCard (Thông tin
+    // chính, Nội dung chính, Hình ảnh) chứ không phải một panel nhỏ. Cùng kiểu dựng
+    // animate-pulse như ProductDetailScreen/CategoryDetailScreen, khớp bố cục riêng của màn này.
     return (
-      <StatePanel
-        tone="info"
-        title={t('content.detail.loading')}
-        description={t('content.detail.loadingDesc')}
-      />
+      <div className="bb-proto">
+        <Screen maxWidth="1200px">
+          <div className="animate-pulse" aria-hidden="true">
+            <header className="bb-screen-header">
+              <div className="bb-screen-title flex flex-col gap-2">
+                <div className="h-3 w-28 rounded-xs bg-surface-muted" />
+                <div className="h-7 w-72 max-w-full rounded-xs bg-surface-muted" />
+                <div className="h-3 w-56 max-w-full rounded-xs bg-surface-muted" />
+              </div>
+              <div className="bb-screen-actions">
+                <div className="h-9 w-9 rounded-sm bg-surface-muted" />
+              </div>
+            </header>
+
+            <div className="mb-4 flex flex-wrap gap-2">
+              <div className="h-9 w-28 rounded-sm bg-surface-muted" />
+              <div className="h-9 w-24 rounded-sm bg-surface-muted" />
+            </div>
+
+            <div className="flex flex-col gap-6">
+              <div className="bb-card">
+                <div className="h-10 border-b border-border bg-surface-muted/60" />
+                <div className="bb-card-body flex flex-col gap-3">
+                  <div className="h-4 w-1/3 rounded-xs bg-surface-muted" />
+                  <div className="h-9 w-full rounded-sm bg-surface-muted" />
+                  <div className="h-9 w-full rounded-sm bg-surface-muted" />
+                </div>
+              </div>
+              <div className="bb-card">
+                <div className="h-10 border-b border-border bg-surface-muted/60" />
+                <div className="bb-card-body flex flex-col gap-3">
+                  <div className="h-4 w-1/4 rounded-xs bg-surface-muted" />
+                  <div className="h-60 w-full rounded-sm bg-surface-muted" />
+                </div>
+              </div>
+              <div className="bb-card">
+                <div className="h-10 border-b border-border bg-surface-muted/60" />
+                <div className="bb-card-body flex flex-col gap-3">
+                  <div className="h-4 w-1/3 rounded-xs bg-surface-muted" />
+                  <div className="h-9 w-full rounded-sm bg-surface-muted" />
+                  <div className="h-9 w-full rounded-sm bg-surface-muted" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </Screen>
+      </div>
     )
   }
 
@@ -420,6 +498,9 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
         t('products.detail.unsavedChangesTitle', { defaultValue: 'Có thay đổi chưa lưu' }),
       )
       if (!confirmed) return
+      // F6: đã xác nhận qua hộp thoại riêng ở trên — bỏ qua lời nhắc trùng lặp của
+      // navigationGuard (useUnsavedChanges) khi navigate() chạy dưới đây.
+      clearNavGuard()
     }
     navigate('/admin/content')
   }
@@ -553,7 +634,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                   <Field full label={isEnLang ? t('content.detail.title') : requiredLabel(t('content.detail.title'))} error={!isEnLang ? validationErrors.title : undefined} hint={isEnLang ? t('content.detail.enFieldHint') : undefined}>
                     <Input
                       value={isEnLang ? (form.translations?.en?.title ?? '') : form.title}
-                      onChange={(e) => isEnLang ? (isArticle ? handleEnTitleChange(e.target.value) : updateTranslation('title', e.target.value)) : updateField('title', e.target.value)}
+                      onChange={(e) => isEnLang ? (isArticle ? handleEnTitleChange(e.target.value) : updateTranslation('title', e.target.value)) : handleTitleChange(e.target.value)}
                       onBlur={!isEnLang ? () => validateFieldOnBlur('title') : undefined}
                       disabled={isReadOnly}
                       placeholder={isEnLang ? t('content.detail.titlePlaceholderEn') : undefined}
@@ -582,7 +663,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                     <Field full label={requiredLabel(t('content.detail.slug'))} error={validationErrors.slug}>
                       <Input
                         value={form.slug}
-                        onChange={(e) => updateField('slug', e.target.value)}
+                        onChange={(e) => handleSlugChange(e.target.value)}
                         onBlur={() => validateFieldOnBlur('slug')}
                         disabled={isReadOnly}
                         className="font-mono"
@@ -734,6 +815,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                     <Input
                       value={form.seoCanonicalUrl}
                       onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
+                      onBlur={() => validateFieldOnBlur('seoCanonicalUrl')}
                       disabled={isReadOnly}
                       placeholder="https://bigbike.vn/..."
                       className={validationErrors.seoCanonicalUrl ? 'border-danger' : undefined}

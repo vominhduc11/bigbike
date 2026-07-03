@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState, useCallback, Suspense } from 'react'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, Save } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -7,10 +7,13 @@ import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { fetchSettings, batchUpdateSettings } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+import { useSaveShortcut } from '@/lib/useSaveShortcut'
+import { formatDateTime } from '../lib/formatters'
 import { lazyScreen } from '../lib/lazyScreen'
 import {
   validateValue, TAB_ORDER, SENSITIVE_SETTING_TABS, HIDDEN_GROUPS, HIDDEN_KEYS,
   TAB_META, FALLBACK_META, tabLabel, BANNERS_TAB_ID,
+  getAutosaveKey, saveFormToStorage, loadFormFromStorage, clearFormFromStorage,
 } from './settings/constants'
 import { SettingTabPanel } from './settings/SettingTabPanel'
 
@@ -31,19 +34,31 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
   const [saving, setSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
 
+  // F9: autosave / khôi phục bản nháp — cùng cơ chế localStorage với Sản phẩm/
+  // Danh mục/Nội dung. Cài đặt là màn đơn nên key cố định, gộp mọi tab.
+  const autosaveKey = getAutosaveKey()
+  const [draftRecovery, setDraftRecovery] = useState(null)
+
   useEffect(() => {
     let active = true
     fetchSettings()
       .then((r) => {
         if (!active) return
         setState({ status: 'success', items: r.items, warning: '' })
+        // Bản nháp autosave còn dở từ phiên trước → gợi ý khôi phục.
+        const draft = loadFormFromStorage(autosaveKey)
+        const hasDraftValues = draft?.form && (
+          Object.keys(draft.form.drafts || {}).length > 0 ||
+          Object.keys(draft.form.draftsEn || {}).length > 0
+        )
+        if (hasDraftValues) setDraftRecovery(draft)
       })
       .catch((e) => {
         if (!active) return
         setState({ status: 'error', items: [], warning: '', error: e.message })
       })
     return () => { active = false }
-  }, [fetchKey])
+  }, [fetchKey, autosaveKey])
 
   const groups = useMemo(() => {
     const map = new Map()
@@ -123,6 +138,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
   const handleSave = useCallback(async () => {
     // Validate all dirty fields in this tab (VI values only; EN is free text)
     const dirty = activeItems.filter((s) => drafts[s.key] !== undefined || draftsEn[s.key] !== undefined)
+    if (dirty.length === 0) return
     const newErrors = {}
     for (const s of dirty) {
       if (drafts[s.key] === undefined) continue
@@ -170,6 +186,16 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
       setErrors(dropSaved)
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 2500)
+      // F9: đã lưu — cập nhật bản nháp autosave (xoá hẳn nếu mọi tab hết dirty,
+      // ghi lại phần còn dở của các tab khác nếu còn).
+      const remainingDrafts = dropSaved(drafts)
+      const remainingDraftsEn = dropSaved(draftsEn)
+      if (Object.keys(remainingDrafts).length === 0 && Object.keys(remainingDraftsEn).length === 0) {
+        clearFormFromStorage(autosaveKey)
+      } else {
+        saveFormToStorage(autosaveKey, { drafts: remainingDrafts, draftsEn: remainingDraftsEn })
+      }
+      setDraftRecovery(null)
     } catch (e) {
       // Show error on all dirty fields — batch is all-or-nothing so mark all dirty fields
       const errMsg = e.message || t('settings.saveError')
@@ -177,13 +203,26 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
     } finally {
       setSaving(false)
     }
-  }, [activeItems, drafts, draftsEn, activeTab, t])
+  }, [activeItems, drafts, draftsEn, activeTab, autosaveKey, t])
 
   // F6: cảnh báo khi rời màn Cài đặt lúc còn thay đổi chưa lưu (chặn điều hướng
   // nội bộ qua navigate + beforeunload reload/đóng tab). Đổi tab nội bộ KHÔNG mất
   // draft (giữ ở state component) nên chỉ cần chặn khi thực sự rời màn.
   const isDirty = Object.keys(drafts).length > 0 || Object.keys(draftsEn).length > 0
   useUnsavedChanges(isDirty)
+
+  // F9: autosave — lưu bản nháp vào localStorage sau 10s không thao tác khi có
+  // thay đổi chưa lưu (mọi tab, không chỉ tab đang xem).
+  useEffect(() => {
+    if (!isDirty) return
+    const timer = setTimeout(() => saveFormToStorage(autosaveKey, { drafts, draftsEn }), 10_000)
+    return () => clearTimeout(timer)
+  }, [drafts, draftsEn, isDirty, autosaveKey])
+
+  // O3: Ctrl/Cmd+S lưu tab đang xem — chỉ bật khi có quyền sửa, không ở tab Banner
+  // (tab đó có luồng lưu riêng của BannerScreen) và tab hiện tại có thay đổi chưa lưu.
+  const activeDirtyCount = activeItems.filter((s) => drafts[s.key] !== undefined || draftsEn[s.key] !== undefined).length
+  useSaveShortcut(canUpdate && activeTab !== BANNERS_TAB_ID && activeDirtyCount > 0, handleSave)
 
   if (state.status === 'loading') {
     return <StatePanel tone="info" title={t('settings.loading')} description={t('common.pleaseWait')} />
@@ -211,6 +250,42 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
       </div>
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
+
+      {draftRecovery && (
+        <div className="flex flex-wrap items-center gap-2 px-3 py-1.5 mb-4 bg-[var(--admin-color-status-info-bg)] border border-[var(--admin-color-status-info-border)] text-[var(--admin-color-status-info-text)] text-xs">
+          <Save size={14} className="shrink-0" />
+          <span className="flex-1 truncate">
+            <strong>{t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}</strong>
+            {' · '}{formatDateTime(new Date(draftRecovery.ts).toISOString())}
+          </span>
+          <button
+            type="button"
+            className="text-xs font-semibold underline hover:no-underline"
+            onClick={() => {
+              const restoredDrafts = draftRecovery.form?.drafts || {}
+              const restoredDraftsEn = draftRecovery.form?.draftsEn || {}
+              setDrafts((p) => ({ ...p, ...restoredDrafts }))
+              setDraftsEn((p) => ({ ...p, ...restoredDraftsEn }))
+              // Nhảy sang tab đầu tiên có field vừa khôi phục để admin thấy ngay,
+              // không phải tự dò từng tab theo huy hiệu số thay đổi.
+              const targetGroup = [...groups.entries()].find(([, items]) =>
+                items.some((s) => restoredDrafts[s.key] !== undefined || restoredDraftsEn[s.key] !== undefined)
+              )
+              if (targetGroup) setActiveTabOverride(targetGroup[0])
+              setDraftRecovery(null)
+            }}
+          >
+            {t('products.detail.draftRestore', { defaultValue: 'Khôi phục' })}
+          </button>
+          <button
+            type="button"
+            className="text-xs underline hover:no-underline"
+            onClick={() => { clearFormFromStorage(autosaveKey); setDraftRecovery(null) }}
+          >
+            {t('products.detail.draftDiscard', { defaultValue: 'Bỏ qua' })}
+          </button>
+        </div>
+      )}
 
       {state.items.length === 0 ? (
         <StatePanel tone="neutral" title={t('settings.noSettings')} description={t('settings.noSettingsDesc')} />

@@ -38,7 +38,7 @@ export function SeoCard({ form, isEnLang, isReadOnly, validationErrors, updateFi
           <span className="flex items-center justify-between">
             <span>
               {t('categories.detail.seoTitle', { defaultValue: 'Tiêu đề khi xuất hiện trên Google' })}
-              {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 6 }}>{t('categories.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
+              {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 8 }}>{t('categories.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
             </span>
             <span className={`hint ${seoTitleVal.length > 60 ? 'text-danger' : ''}`}>{seoTitleVal.length} / 60</span>
           </span>
@@ -60,7 +60,7 @@ export function SeoCard({ form, isEnLang, isReadOnly, validationErrors, updateFi
           <span className="flex items-center justify-between">
             <span>
               {t('categories.detail.seoDescription', { defaultValue: 'Mô tả khi xuất hiện trên Google' })}
-              {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 6 }}>{t('categories.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
+              {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 8 }}>{t('categories.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
             </span>
             <span className={`hint ${seoDescVal.length > 160 ? 'text-danger' : ''}`}>{seoDescVal.length} / 160</span>
           </span>

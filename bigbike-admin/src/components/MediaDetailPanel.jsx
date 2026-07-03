@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import { X as XIcon, Copy, Maximize2, Pencil, Trash2, RotateCcw, AlertTriangle, Music, FileText, RefreshCw } from 'lucide-react'
 import { fetchMediaFolders, replaceMediaFile, updateMedia } from '../lib/adminApi'
 import { useMediaReferences } from '../lib/useMediaReferences'
+import { showConfirm } from '../lib/confirm'
+import { useSaveShortcut } from '@/lib/useSaveShortcut'
 import { TagInput } from './TagInput'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -64,6 +66,26 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
   const isTrash = media.status === 'DELETED'
   const filename = (media.filename ?? media.publicUrl ?? '').split('/').pop()
 
+  const dirty =
+    altText !== (media.altText ?? '') ||
+    title !== (media.title ?? '') ||
+    folderId !== (media.folderId ?? '') ||
+    JSON.stringify(tags) !== JSON.stringify(Array.isArray(media.tags) ? media.tags : [])
+
+  // F6 — nút Đóng (header) / Esc / nút Huỷ (footer) đều đóng ngay lập tức mà
+  // không hỏi khi còn thay đổi chưa lưu (dirty). Hỏi xác nhận trước khi đóng,
+  // giống điều kiện disable của nút Lưu.
+  const attemptClose = useCallback(async () => {
+    if (dirty) {
+      const confirmed = await showConfirm(
+        t('media.discardConfirm', { defaultValue: 'Bạn đang có thay đổi chưa lưu. Đóng sẽ mất các thay đổi đó. Tiếp tục?' }),
+        t('media.discardConfirmTitle', { defaultValue: 'Huỷ thay đổi?' }),
+      )
+      if (!confirmed) return
+    }
+    onClose()
+  }, [dirty, onClose, t])
+
   // Reset form fields when switching media
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -81,12 +103,18 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
       .catch((e) => setError(e.message || t('common.error')))
   }, [foldersProp, t])
 
-  // ESC to close
+  // ESC to close — cùng đường xác nhận với nút Đóng/Huỷ (attemptClose)
   useEffect(() => {
-    function onKey(e) { if (e.key === 'Escape') onClose() }
+    function onKey(e) { if (e.key === 'Escape') attemptClose() }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [attemptClose])
+
+  // O3 — Ctrl/Cmd+S để lưu, chỉ khi đang có thay đổi để lưu (khớp điều kiện
+  // disable của nút Lưu).
+  useSaveShortcut(canUpdate && !isTrash && dirty, () => {
+    document.getElementById('media-detail-panel-form')?.requestSubmit()
+  })
 
   async function handleSave(e) {
     e.preventDefault()
@@ -128,17 +156,11 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
     } finally { setReplacing(false) }
   }
 
-  const dirty =
-    altText !== (media.altText ?? '') ||
-    title !== (media.title ?? '') ||
-    folderId !== (media.folderId ?? '') ||
-    JSON.stringify(tags) !== JSON.stringify(Array.isArray(media.tags) ? media.tags : [])
-
   return (
     <aside className="mediadetail-panel" role="complementary" aria-label={t('media.editTitle')}>
       <header className="mediadetail-header">
         <h3 className="mediadetail-heading">{t('media.editTitle')}</h3>
-        <button type="button" onClick={onClose} aria-label={t('common.close')} className="mediadetail-close-btn">
+        <button type="button" onClick={attemptClose} aria-label={t('common.close')} className="mediadetail-close-btn">
           <XIcon size={18} />
         </button>
       </header>
@@ -307,7 +329,7 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
           )}
         </div>
         <div className="mediadetail-save-actions">
-          <Button variant="outline" onClick={onClose} disabled={saving}>
+          <Button variant="outline" onClick={attemptClose} disabled={saving}>
             {t('common.cancel')}
           </Button>
           {canUpdate && !isTrash && (

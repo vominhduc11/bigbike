@@ -1,8 +1,8 @@
-import { useEffect, useId, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Loader2 } from 'lucide-react'
 import { StatePanel } from '../components/StatePanel'
-import { acceptAdminInvite, validateAdminInvite } from '../lib/adminApi'
+import { ApiClientError, acceptAdminInvite, validateAdminInvite } from '../lib/adminApi'
 
 function readToken() {
   try {
@@ -16,7 +16,7 @@ export function AcceptInviteScreen() {
   const { t } = useTranslation()
   const token = readToken()
 
-  const [phase, setPhase] = useState('validating') // validating | valid | invalid | done
+  const [phase, setPhase] = useState('validating') // validating | valid | invalid | network-error | done
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [password, setPassword] = useState('')
@@ -30,27 +30,44 @@ export function AcceptInviteScreen() {
   const passwordError = password.length > 0 && password.length < 8 ? t('acceptInvite.passwordTooShort') : ''
   const confirmError = confirm.length > 0 && confirm !== password ? t('acceptInvite.passwordMismatch') : ''
 
+  // Tracks whether the screen is still mounted so a late-resolving validate/retry call
+  // doesn't setState after unmount (e.g. user navigates away before the request settles).
+  const mountedRef = useRef(true)
+  useEffect(() => () => { mountedRef.current = false }, [])
+
+  const runValidate = useCallback(() => {
+    setPhase('validating')
+    setError('')
+    validateAdminInvite(token)
+      .then((info) => {
+        if (!mountedRef.current) return
+        setEmail(info.email)
+        setPhase('valid')
+      })
+      .catch((err) => {
+        if (!mountedRef.current) return
+        if (err instanceof ApiClientError) {
+          // Real HTTP response (4xx from the backend) — token genuinely invalid/expired.
+          setError(err?.message || t('acceptInvite.invalidToken'))
+          setPhase('invalid')
+        } else {
+          // Thrown before any HTTP response (offline, DNS, CORS, server down) — distinct
+          // from a broken/expired token, and worth a retry instead of a dead end.
+          setError(t('acceptInvite.networkError'))
+          setPhase('network-error')
+        }
+      })
+  }, [token, t])
+
   useEffect(() => {
-    let active = true
     if (!token) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setPhase('invalid')
       setError(t('acceptInvite.missingToken'))
       return
     }
-    validateAdminInvite(token)
-      .then((info) => {
-        if (!active) return
-        setEmail(info.email)
-        setPhase('valid')
-      })
-      .catch((err) => {
-        if (!active) return
-        setError(err?.message || t('acceptInvite.invalidToken'))
-        setPhase('invalid')
-      })
-    return () => { active = false }
-  }, [token, t])
+    runValidate()
+  }, [token, t, runValidate])
 
   async function onSubmit(event) {
     event.preventDefault()
@@ -109,6 +126,21 @@ export function AcceptInviteScreen() {
             </div>
           )}
 
+          {phase === 'network-error' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <StatePanel
+                tone="danger"
+                title={t('acceptInvite.networkErrorTitle')}
+                description={error}
+                actionLabel={t('common.retry')}
+                onAction={runValidate}
+              />
+              <a href="/" className="bb-btn bb-btn-secondary bb-btn-lg" style={{ width: '100%', textAlign: 'center' }}>
+                {t('acceptInvite.goToLogin')}
+              </a>
+            </div>
+          )}
+
           {phase === 'done' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <StatePanel tone="success" title={t('acceptInvite.doneTitle')} description={t('acceptInvite.doneDesc')} />
@@ -127,7 +159,7 @@ export function AcceptInviteScreen() {
                 </div>
               ) : null}
               <form onSubmit={onSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <label htmlFor={pwId} className="bb-label" style={{ fontSize: 13, fontWeight: 500, color: 'var(--bb-text)' }}>
                     {t('acceptInvite.passwordLabel')}
                     <span className="req" aria-hidden="true"> *</span>
@@ -154,7 +186,7 @@ export function AcceptInviteScreen() {
                     </span>
                   ) : null}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <label htmlFor={confirmId} className="bb-label" style={{ fontSize: 13, fontWeight: 500, color: 'var(--bb-text)' }}>
                     {t('acceptInvite.confirmLabel')}
                     <span className="req" aria-hidden="true"> *</span>
@@ -194,6 +226,9 @@ export function AcceptInviteScreen() {
                     t('acceptInvite.submit')
                   )}
                 </button>
+                <a href="/" className="bb-btn bb-btn-secondary bb-btn-lg" style={{ width: '100%', textAlign: 'center' }}>
+                  {t('acceptInvite.goToLogin')}
+                </a>
               </form>
             </>
           )}

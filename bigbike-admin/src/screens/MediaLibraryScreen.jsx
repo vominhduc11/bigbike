@@ -14,7 +14,9 @@ import { BulkActionBar } from '../components/BulkActionBar'
 import { MediaGridSkeleton } from '../components/MediaCardSkeleton'
 import { MediaCard } from '../components/MediaCard'
 import { MediaListRow } from '../components/MediaListRow'
+import { RecentItemsChips } from '../components/RecentItemsChips'
 import { showConfirm } from '../lib/confirm'
+import { recordRecentItem, useRecentItems } from '../lib/useRecentItems'
 import {
   bulkDeleteMedia,
   bulkHardDeleteMedia,
@@ -68,6 +70,18 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
   const [bulkBusy, setBulkBusy] = useState(false)
   const [bulkMoveOpen, setBulkMoveOpen] = useState(false)
   const [folders, setFolders] = useState([])
+
+  // O9: file vừa mở gần đây (ghi lại mỗi khi mở panel chi tiết — màn này không có
+  // route riêng theo id nên "mở chi tiết" đóng vai trò tương đương màn chi tiết).
+  const recentMediaItems = useRecentItems('recent:media')
+  useEffect(() => {
+    if (editingMedia?.id) {
+      recordRecentItem('recent:media', {
+        id: editingMedia.id,
+        label: (editingMedia.title || editingMedia.filename || editingMedia.publicUrl || '').split('/').pop() || editingMedia.id,
+      })
+    }
+  }, [editingMedia])
 
   // Sidebar refresh signal — bumped when folder list might have changed (after bulk move, etc.)
   const [folderRefreshKey, setFolderRefreshKey] = useState(0)
@@ -408,6 +422,14 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
         </div>
       </div>
 
+      {/* O9 — Vừa xem gần đây */}
+      <RecentItemsChips items={recentMediaItems} onSelect={(item) => {
+        const found = state.items.find((m) => m.id === item.id)
+        if (found) { setEditingMedia(found); return }
+        // Không còn trên trang hiện tại (đổi trang/bộ lọc) — tìm lại theo tên file.
+        setSearchInput(item.label)
+      }} />
+
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
       {/* Gợi ý kích thước — kho dùng chung, nhắc admin chọn đúng kích thước theo mục đích */}
@@ -599,9 +621,18 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
       {state.status === 'loading' && <MediaGridSkeleton count={Math.min(query.pageSize, 24)} />}
       {state.status === 'error' && <StatePanel tone="danger" title={t('media.loadError')} description={state.error}
         actionLabel={t('common.retry')} onAction={() => setQuery((p) => ({ ...p }))} />}
+      {/* T2 — chỉ hiện CTA "Xoá bộ lọc" khi thực sự có bộ lọc đang áp dụng; kho
+          thật sự trống (chưa từng upload) thì mời admin tải file lên thay vì gợi
+          ý xoá một bộ lọc không tồn tại. */}
       {state.status === 'success' && state.items.length === 0 && (
-        <StatePanel tone="neutral" title={t('media.empty')} description={t('media.emptyDesc')}
-          actionLabel={t('common.resetFilters')} onAction={resetFilters} />
+        activeChips.length > 0 ? (
+          <StatePanel tone="neutral" title={t('media.empty')} description={t('media.emptyDesc')}
+            actionLabel={t('common.resetFilters')} onAction={resetFilters} />
+        ) : (
+          <StatePanel tone="neutral" title={t('media.empty')} description={t('media.emptyLibraryDesc', { defaultValue: 'Thư viện chưa có file nào. Tải file lên để bắt đầu.' })}
+            actionLabel={canUpdate ? t('common.upload') : undefined}
+            onAction={canUpdate ? () => fileInputRef.current?.click() : undefined} />
+        )
       )}
 
       {state.status === 'success' && state.items.length > 0 && (
