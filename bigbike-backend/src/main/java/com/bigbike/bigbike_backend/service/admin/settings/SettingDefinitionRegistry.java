@@ -257,13 +257,8 @@ public class SettingDefinitionRegistry {
                         .publicAllowed()
                         .description("Block HTML SEO ở cuối trang chủ.").build(),
 
-                // ── STORE ──
-                SettingDefinition.builder("store_currency", "STORE", SettingValueType.ENUM)
-                        .publicAllowed().required()
-                        .allowedValues("VND", "USD")
-                        .description("Mã tiền tệ mặc định.").build(),
-                SettingDefinition.builder("store_timezone", "STORE", SettingValueType.STRING)
-                        .description("Múi giờ dùng cho timestamp đơn hàng và scheduled job.").build(),
+                // ── STORE: gỡ hẳn V310 — store_currency/store_timezone không có code nào đọc lại
+                // (VND + giờ Việt Nam đã hardcode thẳng nơi khác); tab admin cũng đã ẩn từ trước.
 
                 // ── PRODUCT_ASSIGN ── (text phân công đội ngũ trên màn tạo/sửa sản phẩm; chỉ SUPER_ADMIN sửa)
                 SettingDefinition.builder("product_assign_title", "product_assign", SettingValueType.STRING)

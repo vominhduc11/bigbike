@@ -3,7 +3,7 @@
 // and to keep fast-refresh happy (non-component exports live in .js).
 import {
   Store, Phone, Globe, Settings,
-  Home, Building2, Image as ImageIcon, Users,
+  Home, Image as ImageIcon, Users,
   Landmark,
 } from 'lucide-react'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
@@ -103,13 +103,14 @@ export function isTranslatableSetting(setting) {
 export const BANNERS_TAB_ID = '__banners__'
 
 export const TAB_ORDER = [
-  'GENERAL', 'CONTACT', 'PAYMENT', 'PUBLIC_HOME', 'PUBLIC_HERO', 'SEO', 'STORE',
+  'GENERAL', 'CONTACT', 'PAYMENT', 'PUBLIC_HOME', 'PUBLIC_HERO', 'SEO',
   'PRODUCT_ASSIGN',
 ]
 
 // Tabs whose values directly affect pricing / checkout / operations — saving
-// these requires an explicit confirmation.
-export const SENSITIVE_SETTING_TABS = new Set(['STORE'])
+// these requires an explicit confirmation. (Trống từ V310 — nhóm STORE duy nhất
+// từng nằm ở đây đã gỡ hẳn vì không điều khiển gì; giữ cơ chế cho tab tương lai.)
+export const SENSITIVE_SETTING_TABS = new Set()
 
 // Group/key bị ẩn vì không thuộc trách nhiệm của admin shop:
 // - PUBLIC_HERO: ảnh banner đầu trang render bằng trình riêng (BannerScreen) có preview ráp sẵn,
@@ -120,13 +121,16 @@ export const SENSITIVE_SETTING_TABS = new Set(['STORE'])
 //   là TRANG TĨNH, không còn trình dựng — không màn admin nào sửa nhóm này (cố định theo yêu cầu owner).
 //   Bản ghi vẫn ở site_settings để web/header/footer đọc; muốn cho sửa lại thì bỏ 'CONTACT' khỏi
 //   HIDDEN_GROUPS để hiện lại tab Cài đặt › Liên hệ.
+// - PAYMENT: bỏ tab theo yêu cầu owner (2026-07-03). Nhóm chứa số TK nhận chuyển khoản
+//   (bank_account_holder/number/name/branch) — web vẫn đọc từ site_settings để hiện ở trang xác
+//   nhận đơn BACS (xem bigbike-web/lib/utils/orders.ts resolveBankTransfer), nên KHÔNG xoá dữ liệu/
+//   setting definition, chỉ ẩn khỏi admin. Đổi số TK sau này cần sửa thẳng site_settings (DB) hoặc
+//   bỏ 'PAYMENT' khỏi HIDDEN_GROUPS để hiện lại tab.
 // (PUBLIC_ABOUT đã gỡ hẳn V274 — trang Giới thiệu là trang tĩnh, không còn nhóm settings.)
-export const HIDDEN_GROUPS = new Set(['PUBLIC_HERO', 'CONTACT'])
+export const HIDDEN_GROUPS = new Set(['PUBLIC_HERO', 'CONTACT', 'PAYMENT'])
 
-// Field cụ thể bị ẩn vì giá trị mặc định luôn đúng cho shop VN, đổi gây rủi ro:
-// - store_currency: luôn VND
-// - store_timezone: luôn Asia/Ho_Chi_Minh
-export const HIDDEN_KEYS = new Set(['store_currency', 'store_timezone'])
+// Field cụ thể bị ẩn — hiện không còn field nào (nhóm STORE duy nhất từng ở đây đã gỡ hẳn V310).
+export const HIDDEN_KEYS = new Set()
 
 export const TAB_META = {
   GENERAL:     { icon: Store,      labelKey: 'settings.group_general' },
@@ -135,7 +139,6 @@ export const TAB_META = {
   PUBLIC_HOME: { icon: Home,       labelKey: 'settings.group_public_home' },
   PUBLIC_HERO: { icon: ImageIcon,  labelKey: 'settings.group_public_hero' },
   SEO:         { icon: Globe,      labelKey: 'settings.group_seo' },
-  STORE:       { icon: Building2,  labelKey: 'settings.group_store' },
   PRODUCT_ASSIGN: { icon: Users,   labelKey: 'settings.group_product_assign' },
 }
 
