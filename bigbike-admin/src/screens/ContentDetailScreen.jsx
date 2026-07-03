@@ -2,8 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
-import { AlertCircle, Check, Eye, Info, Loader2, Lock, Save, Search, Trash2, X, Languages } from 'lucide-react'
-import { translateContentForm, addOverride } from '../lib/geminiTranslate'
+import { AlertCircle, Check, Eye, Info, Loader2, Lock, Save, Search, Trash2, X } from 'lucide-react'
 
 import {
   createContent,
@@ -270,24 +269,8 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     setIsSubmitting(true)
     setValidationErrors({})
 
-    let formToSave = form
-    // Tự dịch VI→EN cho ô CHƯA bị khoá; ô admin đã sửa tay giữ nguyên (V296).
-    {
-      const toastId = toast.loading('Đang tự động dịch sang tiếng Anh...')
-      try {
-        const original = isCreate ? null : JSON.parse(initialSnapshot)
-        const translatedForm = await translateContentForm(formToSave, formToSave.enOverrides, original)
-        formToSave = translatedForm
-        setForm(translatedForm)
-        toast.success('Đã tự động dịch sang tiếng Anh!', { id: toastId })
-      } catch (err) {
-        console.error('Auto-translate error:', err)
-        toast.error('Tự động dịch tiếng Anh thất bại, vẫn tiến hành lưu...', { id: toastId })
-      }
-    }
-
     try {
-      await saveMutation.mutateAsync(toPayload(formToSave, isCreate))
+      await saveMutation.mutateAsync(toPayload(form, isCreate))
     } catch {
       // Lỗi đã được toast ở onError của mutation. Ở đây chỉ cần kết thúc trạng thái.
     } finally {
@@ -313,8 +296,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
         ...previous.translations,
         en: { ...previous.translations?.en, [field]: value },
       },
-      // Sửa tay ô tiếng Anh nào thì KHOÁ ô đó — lần lưu sau không tự dịch đè (V296).
-      enOverrides: addOverride(previous.enOverrides, field),
     }))
   }
 
@@ -337,7 +318,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     setForm((previous) => {
       const en = { ...(previous.translations?.en || {}), title: value }
       if (!enSlugManuallyEdited) en.slug = toSlug(value)
-      return { ...previous, translations: { ...previous.translations, en }, enOverrides: addOverride(previous.enOverrides, 'title') }
+      return { ...previous, translations: { ...previous.translations, en } }
     })
   }
 
@@ -631,11 +612,11 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                 required
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field full label={isEnLang ? t('content.detail.title') : requiredLabel(t('content.detail.title'))} error={!isEnLang ? validationErrors.title : undefined} hint={isEnLang ? t('content.detail.enFieldHint') : undefined}>
+                  <Field full label={requiredLabel(t('content.detail.title'))} error={isEnLang ? validationErrors['translations.en.title'] : validationErrors.title}>
                     <Input
                       value={isEnLang ? (form.translations?.en?.title ?? '') : form.title}
                       onChange={(e) => isEnLang ? (isArticle ? handleEnTitleChange(e.target.value) : updateTranslation('title', e.target.value)) : handleTitleChange(e.target.value)}
-                      onBlur={!isEnLang ? () => validateFieldOnBlur('title') : undefined}
+                      onBlur={() => validateFieldOnBlur(isEnLang ? 'translations.en.title' : 'title')}
                       disabled={isReadOnly}
                       placeholder={isEnLang ? t('content.detail.titlePlaceholderEn') : undefined}
                     />

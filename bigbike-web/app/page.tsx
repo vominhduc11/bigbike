@@ -39,7 +39,6 @@ import {
 } from "@/lib/seo/json-ld";
 import {
   isSafeHomeVideoUrl,
-  isSafePublicHref,
   resolveMediaUrl,
   toLegacyWpMediaUrl,
   toSafePublicHref,
@@ -60,6 +59,44 @@ import type { HomeVideo } from "@/lib/contracts/public";
 const T = "/wp-content/themes/bigbike";
 const HOME_ORG_LOGO = "/wp/logo.png";
 const DEFAULT_SITE_NAME = "BigBike";
+
+// Nội dung 4 khối tĩnh trang chủ (nhóm setting `public_home`, gỡ khỏi Cài đặt admin
+// 2026-07-03 — xem DATA_CONTRACT.md "public_home keys — removed"). Giá trị VI/EN giữ
+// nguyên bản cuối cùng đã lưu trong DB trước khi gỡ; sửa sau này cần sửa thẳng code.
+const PROMO_TITLE = "LS2 DUAL SPORT MX436 PIONEER";
+const PROMO_OFF = "20% OFF";
+const PROMO_HREF = "/san-pham";
+const PROMO_IMAGE_SRC = `${T}/images/banner-ads.jpg`;
+const PROMO_ALT = `${PROMO_TITLE} — ${PROMO_OFF}`;
+
+const EXP_SUBTITLE_VI = "GÓC TRẢI NGHIỆM CÙNG BIGBIKE";
+const EXP_SUBTITLE_EN = "EXPERIENCE CORNER WITH BIGBIKE";
+const EXP_TITLE_VI = "PHỤ KIỆN ĐI PHƯỢT MOTO CAO CẤP";
+const EXP_TITLE_EN = "PREMIUM MOTORCYCLE TOURING GEAR";
+const EXP_DESC_VI =
+  "Tại shop bán đồ phượt moto Bigbike, các sản phẩm đồ bảo hộ moto và phụ kiện phượt rất đa dạng về mẫu mã và kiểu dáng với giá cả vô cùng phải chăng. Ngoài ra, đội ngũ nhân viên của cửa hàng rất am hiểu sản phẩm, sẵn sàng tư vấn và chăm sóc khách hàng khi cần thiết.";
+const EXP_DESC_EN =
+  "At Bigbike, our motorcycle protective gear and touring accessories come in a wide variety of styles and designs at remarkably affordable prices. Our staff know the products inside out and are always ready to advise and take care of customers whenever needed.";
+
+const ABOUT_TITLE_VI = "SHOP BẢO HỘ MOTO UY TÍN";
+const ABOUT_TITLE_EN = "TRUSTED MOTORCYCLE GEAR SHOP";
+const ABOUT_SUBTITLE_VI = "BIGBIKE";
+const ABOUT_SUBTITLE_EN = "";
+const ABOUT_HTML_VI =
+  '<p><span style="font-weight: 400;">Bigbike tự hào là một trong những shop chuyên bán đồ phượt, đồ bảo hộ moto đáng tin cậy tại TP HCM được nhiều anh em biker tin tưởng lựa chọn. Chúng tôi chuyên cung cấp đa dạng các dòng sản phẩm đồ phượt moto, phụ kiện phượt, đồ bảo hộ chính hãng từ nhiều thương hiệu nổi tiếng trên thế giới.</span></p>';
+const ABOUT_HTML_EN =
+  '<p><span style="font-weight: 400;">Bigbike is proud to be one of the most trusted shops for touring and motorcycle protective gear in Ho Chi Minh City, chosen by countless riders. We specialize in a wide range of motorcycle touring gear, riding accessories and genuine protective equipment from leading brands around the world.</span></p>';
+
+const FEATURED_KICKER_VI = "SẢN PHẨM NỔI BẬT";
+const FEATURED_KICKER_EN = "FEATURED PRODUCTS";
+const FEATURED_TITLE_VI = "SẢN PHẨM NỔI BẬT TẠI BIGBIKE";
+const FEATURED_TITLE_EN = "FEATURED PRODUCTS AT BIGBIKE";
+const NEWS_KICKER_VI = "TIN TỨC MỚI UPDATE";
+const NEWS_KICKER_EN = "LATEST NEWS";
+const NEWS_TITLE_VI = "CẬP NHẬT XU HƯỚNG CÙNG BIGBIKE";
+const NEWS_TITLE_EN = "STAY UPDATED WITH BIGBIKE";
+const VIDEOS_TITLE_VI = "TRẢI NGHIỆM SẢN PHẨM CÙNG BIGBIKE.VN";
+const VIDEOS_TITLE_EN = "EXPERIENCE OUR PRODUCTS WITH BIGBIKE.VN";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
@@ -156,26 +193,7 @@ export default async function HomePage() {
   const siteName = pickSetting(settings, ["site_name"]) || DEFAULT_SITE_NAME;
   const hotline = pickSetting(settings, ["hotline", "phone"]);
   const address = pickSetting(settings, ["contact_address", "address"]);
-  const aboutTitle = pickSetting(settings, ["about_title"]);
-  const aboutSubtitle = pickSetting(settings, ["about_subtitle", "site_name"]);
-  const aboutHtml = pickSetting(settings, ["about_content_html"]);
   const homeContentBottomHtml = pickSetting(settings, ["home_content_bottom_html"]);
-  const expSubtitle = pickSetting(settings, ["home_exp_subtitle"]);
-  const expTitle = pickSetting(settings, ["home_exp_title"]);
-  const expDesc = pickSetting(settings, ["home_exp_desc"]);
-  const promoHrefValue = pickSetting(settings, ["promo_href"]);
-  const promoImageValue = pickSetting(settings, ["promo_image_url"]);
-  // promo_title / promo_off do admin sửa được — dùng làm alt + tooltip ảnh banner
-  // (ảnh banner đã chứa chữ khuyến mãi, nên không overlay để tránh trùng/vỡ thiết kế).
-  const promoTitle = pickSetting(settings, ["promo_title"]);
-  const promoOff = pickSetting(settings, ["promo_off"]);
-  const promoAlt = [promoTitle, promoOff].filter(Boolean).join(" — ") || "banner khuyến mãi";
-  // Tiêu đề các khu trang chủ (admin sửa được), fallback copy theme khi trống.
-  const featuredKicker = pickSetting(settings, ["home_featured_kicker"]);
-  const featuredTitle = pickSetting(settings, ["home_featured_title"]);
-  const newsKicker = pickSetting(settings, ["home_news_kicker"]);
-  const newsTitle = pickSetting(settings, ["home_news_title"]);
-  const videosTitle = pickSetting(settings, ["home_videos_title"]);
 
   const rawSliders = slidersResult.data ?? [];
   const slides = rawSliders
@@ -200,15 +218,11 @@ export default async function HomePage() {
   const homeHighlights = homeHighlightsResult.data ?? [];
   const homeVideos = (homeVideosResult.data ?? []).filter(isRenderableHomeVideo);
 
-  const aboutMarkup = aboutHtml
-    ? sanitizeRichHtml(aboutHtml, { allowInlineStyles: true, rewriteMediaUrls: true })
-    : "";
+  const aboutMarkupVi = sanitizeRichHtml(ABOUT_HTML_VI, { allowInlineStyles: true, rewriteMediaUrls: true });
+  const aboutMarkupEn = sanitizeRichHtml(ABOUT_HTML_EN, { allowInlineStyles: true, rewriteMediaUrls: true });
   const homeContentBottomMarkup = homeContentBottomHtml
     ? sanitizeRichHtml(homeContentBottomHtml, { allowInlineStyles: true, rewriteMediaUrls: true })
     : "";
-  const promoImageSrc =
-    toLegacyWpMediaUrl(resolveMediaUrl(promoImageValue)) || `${T}/images/banner-ads.jpg`;
-  const promoHref = isSafePublicHref(promoHrefValue) ? promoHrefValue.trim() : null;
 
   const jsonLdOrg = serializeJsonLd(buildOrganizationJsonLd(siteName, HOME_ORG_LOGO));
   const jsonLdWeb = serializeJsonLd(buildWebSiteJsonLd(siteName));
@@ -284,21 +298,24 @@ export default async function HomePage() {
       )}
 
       {/* ===== 3. About bigbike (client localizer: swap EN settings sau khi đổi ngôn ngữ) ===== */}
-      <div data-bb-focus="home_about">
-        <HomeAboutSection subtitle={aboutSubtitle} title={aboutTitle} viHtml={aboutMarkup} />
-      </div>
+      <HomeAboutSection
+        subtitle={ABOUT_SUBTITLE_VI}
+        subtitleEn={ABOUT_SUBTITLE_EN}
+        title={ABOUT_TITLE_VI}
+        titleEn={ABOUT_TITLE_EN}
+        viHtml={aboutMarkupVi}
+        enHtml={aboutMarkupEn}
+      />
 
       {/* ===== 4. Product list + category grid ===== */}
-      <div className="product-list pt-40 pb-40" data-bb-focus="home_featured">
+      <div className="product-list pt-40 pb-40">
         <div className="container">
           <HomeBlockHeading
             className="block-title text-center mb-40"
-            kickerSettingKey="home_featured_kicker"
-            titleSettingKey="home_featured_title"
-            kicker={featuredKicker}
-            title={featuredTitle}
-            fallbackKickerKey="featuredKicker"
-            fallbackTitleKey="featuredTitle"
+            kicker={FEATURED_KICKER_VI}
+            kickerEn={FEATURED_KICKER_EN}
+            title={FEATURED_TITLE_VI}
+            titleEn={FEATURED_TITLE_EN}
           />
           <HomeFeaturedProducts initialProducts={carouselProducts} />
 
@@ -307,13 +324,13 @@ export default async function HomePage() {
       </div>
 
       {/* ===== 5. Banner ads ===== */}
-      <div className="banner-ads pt-60" data-bb-focus="home_promo">
+      <div className="banner-ads pt-60">
         <div className="container">
           <div className="row">
             <div className="col-md-12">
-              <a href={promoHref ?? "#"} title={promoTitle || undefined}>
+              <a href={PROMO_HREF} title={PROMO_TITLE}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="lazy" src={promoImageSrc} alt={promoAlt} loading="lazy" />
+                <img className="lazy" src={PROMO_IMAGE_SRC} alt={PROMO_ALT} loading="lazy" />
               </a>
             </div>
           </div>
@@ -322,8 +339,15 @@ export default async function HomePage() {
 
       {/* ===== 6. Content carousel (trải nghiệm/review) ===== */}
       {expArticles.length > 0 && (
-        <div className="content-carousel pt-100" data-bb-focus="home_exp">
-          <HomeExperienceHeading subtitle={expSubtitle} title={expTitle} desc={expDesc} />
+        <div className="content-carousel pt-100">
+          <HomeExperienceHeading
+            subtitle={EXP_SUBTITLE_VI}
+            subtitleEn={EXP_SUBTITLE_EN}
+            title={EXP_TITLE_VI}
+            titleEn={EXP_TITLE_EN}
+            desc={EXP_DESC_VI}
+            descEn={EXP_DESC_EN}
+          />
           <div className="container mw-1920">
             <ExperienceCarousel articles={expArticles} />
           </div>
@@ -332,16 +356,14 @@ export default async function HomePage() {
 
       {/* ===== 7. News ===== */}
       {newsArticles.length > 0 && (
-        <div className="news bb-home-news-parity pt-60 pb-60" data-bb-focus="home_news">
+        <div className="news bb-home-news-parity pt-60 pb-60">
           <div className="container">
             <HomeBlockHeading
               className="block-title text-center pb-40"
-              kickerSettingKey="home_news_kicker"
-              titleSettingKey="home_news_title"
-              kicker={newsKicker}
-              title={newsTitle}
-              fallbackKickerKey="newsKicker"
-              fallbackTitleKey="newsTitle"
+              kicker={NEWS_KICKER_VI}
+              kickerEn={NEWS_KICKER_EN}
+              title={NEWS_TITLE_VI}
+              titleEn={NEWS_TITLE_EN}
             />
             <HomeNewsList initialArticles={newsArticles} />
           </div>
@@ -350,7 +372,7 @@ export default async function HomePage() {
 
       {/* ===== 8. Videos slide ===== */}
       {homeVideos.length > 0 && (
-        <section className="relative overflow-hidden bg-[#111] py-[90px] max-md:py-[60px]" data-bb-focus="home_videos">
+        <section className="relative overflow-hidden bg-[#111] py-[90px] max-md:py-[60px]">
           <div
             aria-hidden
             className="absolute inset-0 bg-cover bg-center bg-no-repeat [background-image:url('/wp/video-bg.jpg')] [filter:brightness(1.2)]"
@@ -358,9 +380,8 @@ export default async function HomePage() {
           <div className="relative z-[1] mx-auto w-full max-w-[var(--bb-container-xl)] px-4 md:px-6">
             <HomeBlockHeading
               className="block-title text-center white pb-40"
-              titleSettingKey="home_videos_title"
-              title={videosTitle}
-              fallbackTitleKey="videosTitle"
+              title={VIDEOS_TITLE_VI}
+              titleEn={VIDEOS_TITLE_EN}
             />
             <HomeVideoCarousel videos={homeVideos} />
           </div>

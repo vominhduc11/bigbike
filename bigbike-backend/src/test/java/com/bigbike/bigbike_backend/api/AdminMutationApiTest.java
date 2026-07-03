@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.bigbike.bigbike_backend.api.admin.dto.ProductTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantOptionRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantRequest;
@@ -91,6 +92,9 @@ class AdminMutationApiTest {
                   "currency": "VND",
                   "stockState": "IN_STOCK",
                   "publishStatus": "DRAFT",
+                  "translations": {
+                    "en": { "name": "Phase 4G Product EN %s" }
+                  },
                   "seo": {
                     "title": "Phase 4G SEO title %s",
                     "description": "Phase 4G SEO description %s",
@@ -101,7 +105,7 @@ class AdminMutationApiTest {
                     "alt": "Phase 4G Product"
                   }
                 }
-                """.formatted(slug, suffix, suffix, suffix, slug, MEDIA_PUBLIC_BASE_URL, slug);
+                """.formatted(slug, suffix, suffix, suffix, suffix, slug, MEDIA_PUBLIC_BASE_URL, slug);
 
         mockMvc.perform(post("/api/v1/admin/products")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -119,9 +123,12 @@ class AdminMutationApiTest {
         String updatePayload = """
                 {
                   "name": "Phase 4G Product Updated %s",
-                  "salePrice": 2200000
+                  "salePrice": 2200000,
+                  "translations": {
+                    "en": { "name": "Phase 4G Product Updated EN %s" }
+                  }
                 }
-                """.formatted(suffix);
+                """.formatted(suffix, suffix);
 
         mockMvc.perform(patch("/api/v1/admin/products/{id}", created.getId())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -201,7 +208,10 @@ class AdminMutationApiTest {
                   "categoryId": "cat_helmet",
                   "retailPrice": 1990000,
                   "currency": "VND",
-                  "publishStatus": "PUBLISHED"
+                  "publishStatus": "PUBLISHED",
+                  "translations": {
+                    "en": { "name": "Preview Existing Slug Product EN" }
+                  }
                 }
                 """.formatted(slug);
 
@@ -312,6 +322,9 @@ class AdminMutationApiTest {
                   "retailPrice": 2500000,
                   "stockState": "IN_STOCK",
                   "publishStatus": "DRAFT",
+                  "translations": {
+                    "en": { "name": "Phase 3 SEO Content Product EN %s" }
+                  },
                   "seo": {
                     "title": "Phase 3 SEO title %s",
                     "description": "Phase 3 SEO description %s",
@@ -328,6 +341,7 @@ class AdminMutationApiTest {
                 }
                 """.formatted(
                 slug,
+                suffix,
                 suffix,
                 suffix,
                 suffix,
@@ -359,6 +373,9 @@ class AdminMutationApiTest {
         String updatePayload = """
                 {
                   "name": "Phase 3 SEO Content Product Updated %s",
+                  "translations": {
+                    "en": { "name": "Phase 3 SEO Content Product Updated EN %s" }
+                  },
                   "seo": {
                     "title": "Phase 3 SEO title updated %s",
                     "description": "Phase 3 SEO description updated %s",
@@ -370,6 +387,7 @@ class AdminMutationApiTest {
                   }
                 }
                 """.formatted(
+                suffix,
                 suffix,
                 suffix,
                 suffix,
@@ -402,7 +420,10 @@ class AdminMutationApiTest {
                         .header("X-Admin-Permissions", "products.update")
                         .content("""
                                 {
-                                  "seo": null
+                                  "seo": null,
+                                  "translations": {
+                                    "en": { "name": "Phase 3 SEO Content Product Cleared EN" }
+                                  }
                                 }
                                 """))
                 .andExpect(status().isOk());
@@ -429,6 +450,10 @@ class AdminMutationApiTest {
         create.setSalePrice(new BigDecimal("2300000"));
         create.setCurrency("VND");
         create.setPublishStatus(PublishStatus.DRAFT);
+        create.setTranslations(new ProductTranslationRequest(
+                ProductTranslationRequest.ProductContentRequest.builder()
+                        .name("Phase 1 Variant Price Product EN " + suffix)
+                        .build()));
 
         VariantRequest variant = new VariantRequest();
         variant.setSku("VAR-" + suffix);
@@ -455,6 +480,9 @@ class AdminMutationApiTest {
                   "currency": "VND",
                   "stockState": "IN_STOCK",
                   "publishStatus": "DRAFT",
+                  "translations": {
+                    "en": { "name": "Phase 1 Variant Price Product Updated EN %s" }
+                  },
                   "variants": [
                     {
                       "id": "%s",
@@ -471,7 +499,7 @@ class AdminMutationApiTest {
                     }
                   ]
                 }
-                """.formatted(suffix, variantId, suffix);
+                """.formatted(suffix, suffix, variantId, suffix);
 
         mockMvc.perform(patch("/api/v1/admin/products/{id}", productId)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -501,12 +529,15 @@ class AdminMutationApiTest {
                     "retailPrice": 1250000,
                     "stockState": "IN_STOCK",
                     "publishStatus": "DRAFT",
+                    "translations": {
+                      "en": { "name": "Phase 2 Trash Product EN %s" }
+                    },
                     "image": {
                       "url": "%s/wp-uploads/products/%s.jpg",
                       "alt": "Phase 2 Trash Product"
                     }
                   }
-                  """.formatted(slug, suffix, MEDIA_PUBLIC_BASE_URL, slug);
+                  """.formatted(slug, suffix, suffix, MEDIA_PUBLIC_BASE_URL, slug);
 
         mockMvc.perform(post("/api/v1/admin/products")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -549,12 +580,15 @@ class AdminMutationApiTest {
                     "retailPrice": 1250000,
                     "stockState": "IN_STOCK",
                     "publishStatus": "DRAFT",
+                    "translations": {
+                      "en": { "name": "Phase 2 Restore Permission Product EN %s" }
+                    },
                     "image": {
                       "url": "%s/wp-uploads/products/%s.jpg",
                       "alt": "Phase 2 Restore Permission Product"
                     }
                   }
-                  """.formatted(slug, suffix, MEDIA_PUBLIC_BASE_URL, slug);
+                  """.formatted(slug, suffix, suffix, MEDIA_PUBLIC_BASE_URL, slug);
 
         mockMvc.perform(post("/api/v1/admin/products")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -592,9 +626,12 @@ class AdminMutationApiTest {
                                   "slug": "%s",
                                   "name": "Phase 4G Category %s",
                                   "description": "Category from mutation test",
-                                  "visible": true
+                                  "visible": true,
+                                  "translations": {
+                                    "en": { "name": "Phase 4G Category EN %s" }
+                                  }
                                 }
-                                """.formatted(categorySlug, suffix)))
+                                """.formatted(categorySlug, suffix, suffix)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.slug").value(categorySlug));
 
@@ -607,9 +644,12 @@ class AdminMutationApiTest {
                         .content("""
                                 {
                                   "name": "Phase 4G Category Updated %s",
-                                  "visible": false
+                                  "visible": false,
+                                  "translations": {
+                                    "en": { "name": "Phase 4G Category Updated EN %s" }
+                                  }
                                 }
-                                """.formatted(suffix)))
+                                """.formatted(suffix, suffix)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.isVisible").value(false));
 
@@ -622,9 +662,12 @@ class AdminMutationApiTest {
                                   "slug": "%s",
                                   "name": "Phase 4G Brand %s",
                                   "description": "Brand from mutation test",
-                                  "visible": true
+                                  "visible": true,
+                                  "translations": {
+                                    "en": { "name": "Phase 4G Brand EN %s" }
+                                  }
                                 }
-                                """.formatted(brandSlug, suffix)))
+                                """.formatted(brandSlug, suffix, suffix)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.slug").value(brandSlug));
 
@@ -637,9 +680,12 @@ class AdminMutationApiTest {
                         .content("""
                                 {
                                   "name": "Phase 4G Brand Updated %s",
-                                  "visible": false
+                                  "visible": false,
+                                  "translations": {
+                                    "en": { "name": "Phase 4G Brand Updated EN %s" }
+                                  }
                                 }
-                                """.formatted(suffix)))
+                                """.formatted(suffix, suffix)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.isVisible").value(false));
 
@@ -653,9 +699,12 @@ class AdminMutationApiTest {
                                   "title": "Phase 4G Article %s",
                                   "excerpt": "Mutation test article",
                                   "body": "<p>Article body</p>",
-                                  "publishStatus": "DRAFT"
+                                  "publishStatus": "DRAFT",
+                                  "translations": {
+                                    "en": { "title": "Phase 4G Article EN %s" }
+                                  }
                                 }
-                                """.formatted(articleSlug, suffix)))
+                                """.formatted(articleSlug, suffix, suffix)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.type").value("ARTICLE"))
                 .andExpect(jsonPath("$.data.slug").value(articleSlug));
@@ -669,9 +718,12 @@ class AdminMutationApiTest {
                         .content("""
                                 {
                                   "title": "Phase 4G Article Updated %s",
-                                  "publishStatus": "PUBLISHED"
+                                  "publishStatus": "PUBLISHED",
+                                  "translations": {
+                                    "en": { "title": "Phase 4G Article Updated EN %s" }
+                                  }
                                 }
-                                """.formatted(suffix)))
+                                """.formatted(suffix, suffix)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.publishStatus").value("PUBLISHED"));
     }
@@ -709,8 +761,8 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Cascade Del Parent %s","visible":true}
-                                """.formatted(parentSlug, suffix)))
+                                {"slug":"%s","name":"Cascade Del Parent %s","visible":true,"translations":{"en":{"name":"Cascade Del Parent EN %s"}}}
+                                """.formatted(parentSlug, suffix, suffix)))
                 .andExpect(status().isOk());
 
         CategoryEntity parent = categoryJpaRepository.findBySlug(parentSlug)
@@ -720,8 +772,8 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Cascade Del Child %s","parentId":"%s","visible":true}
-                                """.formatted(childSlug, suffix, parent.getId())))
+                                {"slug":"%s","name":"Cascade Del Child %s","parentId":"%s","visible":true,"translations":{"en":{"name":"Cascade Del Child EN %s"}}}
+                                """.formatted(childSlug, suffix, parent.getId(), suffix)))
                 .andExpect(status().isOk());
 
         CategoryEntity child = categoryJpaRepository.findBySlug(childSlug)
@@ -748,8 +800,8 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"ProdBlock Del Parent %s","visible":true}
-                                """.formatted(parentSlug, suffix)))
+                                {"slug":"%s","name":"ProdBlock Del Parent %s","visible":true,"translations":{"en":{"name":"ProdBlock Del Parent EN %s"}}}
+                                """.formatted(parentSlug, suffix, suffix)))
                 .andExpect(status().isOk());
 
         CategoryEntity parent = categoryJpaRepository.findBySlug(parentSlug)
@@ -759,8 +811,8 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"ProdBlock Del Child %s","parentId":"%s","visible":true}
-                                """.formatted(childSlug, suffix, parent.getId())))
+                                {"slug":"%s","name":"ProdBlock Del Child %s","parentId":"%s","visible":true,"translations":{"en":{"name":"ProdBlock Del Child EN %s"}}}
+                                """.formatted(childSlug, suffix, parent.getId(), suffix)))
                 .andExpect(status().isOk());
 
         CategoryEntity child = categoryJpaRepository.findBySlug(childSlug)
@@ -779,9 +831,10 @@ class AdminMutationApiTest {
                                   "retailPrice": 1000000,
                                   "stockState": "IN_STOCK",
                                   "publishStatus": "DRAFT",
+                                  "translations": { "en": { "name": "ProdBlock Del Product EN %s" } },
                                   "image": { "url": "%s/wp-uploads/products/%s.jpg", "alt": "p" }
                                 }
-                                """.formatted(productSlug, suffix, child.getId(), MEDIA_PUBLIC_BASE_URL, productSlug)))
+                                """.formatted(productSlug, suffix, child.getId(), suffix, MEDIA_PUBLIC_BASE_URL, productSlug)))
                 .andExpect(status().isOk());
 
         // Deleting the PARENT must be blocked because a descendant has a product.
@@ -804,8 +857,8 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Hide Guard Patch Parent %s","visible":true}
-                                """.formatted(parentSlug, suffix)))
+                                {"slug":"%s","name":"Hide Guard Patch Parent %s","visible":true,"translations":{"en":{"name":"Hide Guard Patch Parent EN %s"}}}
+                                """.formatted(parentSlug, suffix, suffix)))
                 .andExpect(status().isOk());
 
         CategoryEntity parent = categoryJpaRepository.findBySlug(parentSlug)
@@ -815,16 +868,16 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Hide Guard Patch Child %s","parentId":"%s","visible":true}
-                                """.formatted(childSlug, suffix, parent.getId())))
+                                {"slug":"%s","name":"Hide Guard Patch Child %s","parentId":"%s","visible":true,"translations":{"en":{"name":"Hide Guard Patch Child EN %s"}}}
+                                """.formatted(childSlug, suffix, parent.getId(), suffix)))
                 .andExpect(status().isOk());
 
         mockMvc.perform(patch("/api/v1/admin/categories/{id}", parent.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"visible":false}
-                                """))
+                                {"visible":false,"translations":{"en":{"name":"Hide Guard Patch Parent EN %s"}}}
+                                """.formatted(suffix)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("CONFLICT"));
 
@@ -842,8 +895,8 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Hide Guard No Child %s","visible":true}
-                                """.formatted(parentSlug, suffix)))
+                                {"slug":"%s","name":"Hide Guard No Child %s","visible":true,"translations":{"en":{"name":"Hide Guard No Child EN %s"}}}
+                                """.formatted(parentSlug, suffix, suffix)))
                 .andExpect(status().isOk());
 
         CategoryEntity parent = categoryJpaRepository.findBySlug(parentSlug)
@@ -853,8 +906,8 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"visible":false}
-                                """))
+                                {"visible":false,"translations":{"en":{"name":"Hide Guard No Child EN %s"}}}
+                                """.formatted(suffix)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.isVisible").value(false));
 
@@ -872,8 +925,8 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Hide Guard Restore %s","visible":true}
-                                """.formatted(slug, suffix)))
+                                {"slug":"%s","name":"Hide Guard Restore %s","visible":true,"translations":{"en":{"name":"Hide Guard Restore EN %s"}}}
+                                """.formatted(slug, suffix, suffix)))
                 .andExpect(status().isOk());
 
         CategoryEntity category = categoryJpaRepository.findBySlug(slug)
@@ -883,8 +936,8 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"visible":false}
-                                """))
+                                {"visible":false,"translations":{"en":{"name":"Hide Guard Restore EN %s"}}}
+                                """.formatted(suffix)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.isVisible").value(false));
 
@@ -892,8 +945,8 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"visible":true}
-                                """))
+                                {"visible":true,"translations":{"en":{"name":"Hide Guard Restore EN %s"}}}
+                                """.formatted(suffix)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.isVisible").value(true));
 
@@ -912,8 +965,8 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Hide Guard Hidden Child Parent %s","visible":true}
-                                """.formatted(parentSlug, suffix)))
+                                {"slug":"%s","name":"Hide Guard Hidden Child Parent %s","visible":true,"translations":{"en":{"name":"Hide Guard Hidden Child Parent EN %s"}}}
+                                """.formatted(parentSlug, suffix, suffix)))
                 .andExpect(status().isOk());
 
         CategoryEntity parent = categoryJpaRepository.findBySlug(parentSlug)
@@ -923,16 +976,16 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Hide Guard Hidden Child %s","parentId":"%s","visible":false}
-                                """.formatted(childSlug, suffix, parent.getId())))
+                                {"slug":"%s","name":"Hide Guard Hidden Child %s","parentId":"%s","visible":false,"translations":{"en":{"name":"Hide Guard Hidden Child EN %s"}}}
+                                """.formatted(childSlug, suffix, parent.getId(), suffix)))
                 .andExpect(status().isOk());
 
         mockMvc.perform(patch("/api/v1/admin/categories/{id}", parent.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"visible":false}
-                                """))
+                                {"visible":false,"translations":{"en":{"name":"Hide Guard Hidden Child Parent EN %s"}}}
+                                """.formatted(suffix)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.isVisible").value(false));
 
@@ -951,8 +1004,8 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Hide Guard Name Only Parent %s","visible":true}
-                                """.formatted(parentSlug, suffix)))
+                                {"slug":"%s","name":"Hide Guard Name Only Parent %s","visible":true,"translations":{"en":{"name":"Hide Guard Name Only Parent EN %s"}}}
+                                """.formatted(parentSlug, suffix, suffix)))
                 .andExpect(status().isOk());
 
         CategoryEntity parent = categoryJpaRepository.findBySlug(parentSlug)
@@ -962,16 +1015,16 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Hide Guard Name Only Child %s","parentId":"%s","visible":true}
-                                """.formatted(childSlug, suffix, parent.getId())))
+                                {"slug":"%s","name":"Hide Guard Name Only Child %s","parentId":"%s","visible":true,"translations":{"en":{"name":"Hide Guard Name Only Child EN %s"}}}
+                                """.formatted(childSlug, suffix, parent.getId(), suffix)))
                 .andExpect(status().isOk());
 
         mockMvc.perform(patch("/api/v1/admin/categories/{id}", parent.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"name":"Hide Guard Name Only Parent Updated %s"}
-                                """.formatted(suffix)))
+                                {"name":"Hide Guard Name Only Parent Updated %s","translations":{"en":{"name":"Hide Guard Name Only Parent Updated EN %s"}}}
+                                """.formatted(suffix, suffix)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.isVisible").value(true));
 
@@ -996,6 +1049,7 @@ class AdminMutationApiTest {
                                   "slug":"%s",
                                   "name":"Category SEO OG %s",
                                   "visible":true,
+                                  "translations":{"en":{"name":"Category SEO OG EN %s"}},
                                   "seo":{
                                     "title":"Cat SEO title %s",
                                     "description":"Cat SEO desc %s",
@@ -1003,7 +1057,7 @@ class AdminMutationApiTest {
                                     "ogImage":{"url":"%s","alt":"Cat OG alt %s"}
                                   }
                                 }
-                                """.formatted(slug, suffix, suffix, suffix, slug, ogUrl, suffix)))
+                                """.formatted(slug, suffix, suffix, suffix, suffix, slug, ogUrl, suffix)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.seo.title").value("Cat SEO title " + suffix))
                 .andExpect(jsonPath("$.data.seo.ogImage.url").value(ogUrl))
@@ -1028,8 +1082,8 @@ class AdminMutationApiTest {
                         .characterEncoding(StandardCharsets.UTF_8)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"seo":{"ogImage":null}}
-                                """))
+                                {"seo":{"ogImage":null},"translations":{"en":{"name":"Category SEO OG EN %s"}}}
+                                """.formatted(suffix)))
                 .andExpect(status().isOk());
 
         CategoryEntity cleared = categoryJpaRepository.findById(created.getId())
@@ -1090,8 +1144,8 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Dup Brand First %s"}
-                                """.formatted(slug, suffix)))
+                                {"slug":"%s","name":"Dup Brand First %s","translations":{"en":{"name":"Dup Brand First EN %s"}}}
+                                """.formatted(slug, suffix, suffix)))
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/api/v1/admin/brands")
@@ -1115,8 +1169,8 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Soft Del Brand %s","visible":true}
-                                """.formatted(slug, suffix)))
+                                {"slug":"%s","name":"Soft Del Brand %s","visible":true,"translations":{"en":{"name":"Soft Del Brand EN %s"}}}
+                                """.formatted(slug, suffix, suffix)))
                 .andExpect(status().isOk());
 
         BrandEntity brand = brandJpaRepository.findBySlug(slug)
@@ -1162,8 +1216,8 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Idempotent Brand %s","visible":true}
-                                """.formatted(slug, suffix)))
+                                {"slug":"%s","name":"Idempotent Brand %s","visible":true,"translations":{"en":{"name":"Idempotent Brand EN %s"}}}
+                                """.formatted(slug, suffix, suffix)))
                 .andExpect(status().isOk());
 
         BrandEntity brand = brandJpaRepository.findBySlug(slug)
@@ -1202,16 +1256,16 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Filter Brand Visible %s","visible":true}
-                                """.formatted(visibleSlug, suffix)))
+                                {"slug":"%s","name":"Filter Brand Visible %s","visible":true,"translations":{"en":{"name":"Filter Brand Visible EN %s"}}}
+                                """.formatted(visibleSlug, suffix, suffix)))
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/api/v1/admin/brands")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Filter Brand Hidden %s","visible":false}
-                                """.formatted(hiddenSlug, suffix)))
+                                {"slug":"%s","name":"Filter Brand Hidden %s","visible":false,"translations":{"en":{"name":"Filter Brand Hidden EN %s"}}}
+                                """.formatted(hiddenSlug, suffix, suffix)))
                 .andExpect(status().isOk());
 
         // VISIBLE filter → only visible brand in results
@@ -1254,8 +1308,8 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Hidden Brand Product %s","visible":true}
-                                """.formatted(brandSlug, suffix)))
+                                {"slug":"%s","name":"Hidden Brand Product %s","visible":true,"translations":{"en":{"name":"Hidden Brand Product EN %s"}}}
+                                """.formatted(brandSlug, suffix, suffix)))
                 .andExpect(status().isOk());
 
         BrandEntity brand = brandJpaRepository.findBySlug(brandSlug)
@@ -1273,9 +1327,10 @@ class AdminMutationApiTest {
                                   "brandId":"%s",
                                   "retailPrice":1500000,
                                   "stockState":"IN_STOCK",
-                                  "publishStatus":"PUBLISHED"
+                                  "publishStatus":"PUBLISHED",
+                                  "translations":{"en":{"name":"Product Hidden Brand EN %s"}}
                                 }
-                                """.formatted(productSlug, suffix, brand.getId())))
+                                """.formatted(productSlug, suffix, brand.getId(), suffix)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.brand.slug").value(brandSlug));
 

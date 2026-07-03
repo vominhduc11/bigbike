@@ -3,7 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { DEFAULT_LOCALE } from "@/i18n/locale";
-import { fetchPublicMenu, fetchPublicSettings } from "@/lib/api/client-api";
+import { fetchPublicSettings } from "@/lib/api/client-api";
 import { queryKeys } from "@/lib/query/keys";
 import { getStaticPage } from "@/lib/content/static-pages";
 import { sanitizeRichHtml } from "@/lib/utils/html";
@@ -15,8 +15,6 @@ import { PrivacyPolicyContent } from "./PrivacyPolicyContent";
 import { WarrantyPolicyContent, type WarrantyContact } from "./WarrantyPolicyContent";
 import type { WpStaticSidebarItem } from "@/components/wp/WpStaticSidebar";
 
-const POLICY_MENU_LOCATION = "policy";
-const POLICY_BASE_PATH = "/chinh-sach";
 const WARRANTY_SLUG = "chinh-sach-bao-hanh";
 const PRIVACY_SLUG = "chinh-sach-bao-mat-thong-tin";
 
@@ -31,49 +29,43 @@ type PolicyPageClientProps = {
     seoDescription: string | null;
     seoCanonicalUrl: string | null;
   };
-  initialMenu: any;
   initialSettings: any[];
 };
 
-function menuItemSlug(url: string): string | null {
-  const prefix = `${POLICY_BASE_PATH}/`;
-  if (!url.startsWith(prefix)) return null;
-  return url.slice(prefix.length).replace(/\/+$/, "") || null;
-}
+function buildStaticSidebarItems(locale: string, currentSlug: string): WpStaticSidebarItem[] {
+  const privacyPage = getStaticPage("chinh-sach-bao-mat-thong-tin", locale);
+  const warrantyPage = getStaticPage("chinh-sach-bao-hanh", locale);
+  const returnPage = getStaticPage("chinh-sach-doi-tra-hang", locale);
+  const isEn = locale === "en";
 
-function buildSidebarItems(menu: any, currentSlug: string): WpStaticSidebarItem[] {
-  if (!menu || !menu.items) return [];
-  return menu.items
-    .filter((item: any) => {
-      const slug = menuItemSlug(item.url);
-      if (slug === null) return false;
-      return slug !== "huong-dan-mua-hang";
-    })
-    .map((item: any) => ({
-      label: item.label,
-      href: item.url,
-      current: menuItemSlug(item.url) === currentSlug,
-    }));
+  return [
+    {
+      label: privacyPage?.title || (isEn ? "Privacy Policy" : "Chính sách bảo mật thông tin"),
+      href: "/chinh-sach/chinh-sach-bao-mat-thong-tin/",
+      current: currentSlug === "chinh-sach-bao-mat-thong-tin",
+    },
+    {
+      label: warrantyPage?.title || (isEn ? "Warranty Policy" : "Chính sách bảo hành"),
+      href: "/chinh-sach/chinh-sach-bao-hanh/",
+      current: currentSlug === "chinh-sach-bao-hanh",
+    },
+    {
+      label: returnPage?.title || (isEn ? "Return Policy" : "Chính sách đổi trả hàng"),
+      href: "/chinh-sach/chinh-sach-doi-tra-hang/",
+      current: currentSlug === "chinh-sach-doi-tra-hang",
+    },
+  ];
 }
 
 export function PolicyPageClient({
   slug,
   initialPage,
-  initialMenu,
   initialSettings,
 }: PolicyPageClientProps) {
   const locale = useLocale();
   const isAlt = locale !== DEFAULT_LOCALE;
   const t = useTranslations("StaticPage");
   const tBreadcrumb = useTranslations("Breadcrumb");
-
-  // Refetch policy menu in client language if not vi
-  const { data: menuData } = useQuery({
-    queryKey: ["policy-menu", locale],
-    queryFn: () => fetchPublicMenu(POLICY_MENU_LOCATION, locale),
-    enabled: isAlt,
-    staleTime: 5 * 60 * 1000,
-  });
 
   // Refetch settings in client language if not vi (for warranty contact info).
   // Shared queryKeys.publicSettings(locale) with HomeLocalizedSettings — React Query
@@ -88,8 +80,7 @@ export function PolicyPageClient({
   const page = isAlt ? (getStaticPage(slug, locale) || initialPage) : initialPage;
   const pageTitle = page.title || t("policy.title");
 
-  const menu = isAlt && menuData ? menuData : initialMenu;
-  const sidebarItems = buildSidebarItems(menu, slug);
+  const sidebarItems = buildStaticSidebarItems(locale, slug);
 
   const settings = isAlt && settingsData ? settingsData : initialSettings;
 

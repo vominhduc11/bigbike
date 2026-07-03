@@ -1,6 +1,4 @@
 import { z } from 'zod'
-import { parseSpecStatsFromHtml } from './specStatsBlock'
-import { parseTrustBadgesFromHtml } from './trustBadgesBlock'
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const URL_REGEX = /^https?:\/\//
@@ -140,6 +138,8 @@ export function createProductSchema(t, isCreate = false) {
         gallery: z.array(z.object({
           url: z.string(),
           alt: z.string().optional(),
+          videoUrl: z.string().optional(),
+          isCover: z.boolean().optional(),
         })).optional(),
       })).max(200, 'Biến thể tối đa 200 mục.').optional(),
       relatedProductIds: z.array(z.string()).max(24, 'Sản phẩm liên quan tối đa 24 mục.').optional(),
@@ -189,6 +189,15 @@ export function createProductSchema(t, isCreate = false) {
         req(data.brandId, t('products.detail.errBrandRequired', { defaultValue: 'Vui lòng chọn thương hiệu.' }), ['brandId'])
         req(data.gender, t('products.detail.errGenderRequired', { defaultValue: 'Vui lòng chọn đối tượng (giới tính).' }), ['gender'])
         req(data.imageUrl, t('products.detail.errImageRequired', { defaultValue: 'Vui lòng chọn ảnh đại diện.' }), ['imageUrl'])
+        req(data.shortDescription, t('products.detail.errShortDescRequired', { defaultValue: 'Vui lòng nhập mô tả ngắn.' }), ['shortDescription'])
+        // PRODUCT_RULE_005/007 — mô tả chi tiết bắt buộc; "có nội dung" mirror đúng logic
+        // `desc.ok` trong getPublishReadiness (block editor rich content HOẶC plain text).
+        const hasDescription = Array.isArray(data.descriptionBlocks)
+          ? data.descriptionBlocks.length > 0
+          : (data.description?.trim().length ?? 0) > 0
+        if (!hasDescription) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errDescRequired', { defaultValue: 'Vui lòng nhập mô tả chi tiết.' }), path: ['description'] })
+        }
       }
 
       const retail = toInt(data.retailPrice)
@@ -287,9 +296,18 @@ export function createProductSchema(t, isCreate = false) {
         })
       }
 
-      // English content (V136): optional, length-checked only. Plain inputs are
-      // already capped by maxLength; this guards the rich-text fields.
+      // English content (V136). TRANSLATION_RULE_002: `name` (EN) is required because
+      // `name` (VI) is required — applies to CREATE and EDIT alike (not gated by isCreate),
+      // mirroring CatalogRequestValidator on the backend. Every other field stays optional,
+      // length-checked only.
       const en = data.translations?.en ?? {}
+      if (!String(en.name ?? '').trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t('products.detail.errNameRequiredEn', { defaultValue: 'Vui lòng nhập tên sản phẩm bằng tiếng Anh.' }),
+          path: ['translations', 'en', 'name'],
+        })
+      }
       const enLimits = [
         ['name', 255], ['shortDescription', 2000], ['description', 20000],
         ['contentBottom', 50000], ['specificationsHtml', 50000], ['specStatsHtml', 50000], ['trustBadgesHtml', 50000],
@@ -405,6 +423,17 @@ export function createProductSchema(t, isCreate = false) {
             path: ['variants', i, 'gallery'],
           })
         }
+        // Cover chọn tay theo màu (owner 2026-07-03): bắt buộc chọn 1 ảnh đại diện khi
+        // màu có ≥1 ảnh — không còn tự động lấy ảnh đầu tiên theo thứ tự gallery.
+        const hasImageContent = v.gallery?.some((img) => img.url.trim() && !(img.videoUrl || '').trim()) ?? false
+        const hasCoverSelected = v.gallery?.some((img) => img.isCover) ?? false
+        if (hasImageContent && !hasCoverSelected) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Chọn 1 ảnh làm đại diện (bấm biểu tượng ngôi sao) cho màu này.',
+            path: ['variants', i, 'gallery'],
+          })
+        }
         v.gallery?.forEach((img, j) => {
           if (img.url.trim() && !MEDIA_URL_REGEX.test(img.url.trim())) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errImageUrl'), path: ['variants', i, 'gallery', j, 'url'] })
@@ -432,7 +461,8 @@ export function createCategorySchema(t) {
       seoCanonicalUrl: z.string().optional(),
       seoOgImageUrl: z.string().optional(),
       seoOgImageAlt: z.string().optional(),
-      // Optional English content (V137 + V213 slug) — never required, validated for format/length only.
+      // English content (V137 + V213 slug). TRANSLATION_RULE_002: `name` is required
+      // (mirrors VI `name`); every other field is optional, validated for format/length only.
       translations: z.object({
         en: z.object({
           slug: z.string().optional(),
@@ -446,6 +476,13 @@ export function createCategorySchema(t) {
     })
     .superRefine((data, ctx) => {
       validateEnSlug(t, data.translations?.en?.slug, ctx)
+      if (!String(data.translations?.en?.name ?? '').trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t('categories.detail.errNameRequiredEn', { defaultValue: 'Vui lòng nhập tên danh mục bằng tiếng Anh.' }),
+          path: ['translations', 'en', 'name'],
+        })
+      }
       const s = String(data.slug || '').trim()
       if (!s) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSlugRequired'), path: ['slug'] })
@@ -500,7 +537,8 @@ export function createBrandSchema(t) {
     logoUrl: z.string().optional(),
     seoCanonicalUrl: z.string().optional(),
     seoOgImageUrl: z.string().optional(),
-    // Optional English content (V137 + V215 slug) — validated for format/length only.
+    // English content (V137 + V215 slug). TRANSLATION_RULE_002: `name` is required
+    // (mirrors VI `name`); every other field is optional, validated for format/length only.
     translations: z.object({
       en: z.object({
         slug: z.string().optional(),
@@ -512,6 +550,13 @@ export function createBrandSchema(t) {
     }).optional(),
   }).superRefine((data, ctx) => {
     validateEnSlug(t, data.translations?.en?.slug, ctx)
+    if (!String(data.translations?.en?.name ?? '').trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: t('brands.detail.errNameRequiredEn', { defaultValue: 'Vui lòng nhập tên thương hiệu bằng tiếng Anh.' }),
+        path: ['translations', 'en', 'name'],
+      })
+    }
     const s = String(data.slug || '').trim()
     if (!s) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('brands.detail.errSlugRequired'), path: ['slug'] })
@@ -555,7 +600,10 @@ export function createContentSchema(t, isCreate, normalizedType) {
     accessoryProductIds: z.array(z.string()).optional(),
     seoCanonicalUrl: z.string().optional(),
     seoOgImageUrl: z.string().optional(),
-    // Optional English content (V138 + V216 slug) — never required; slug chỉ áp dụng cho BÀI VIẾT.
+    // English content (V138 + V216 slug). TRANSLATION_RULE_002: `title` is required
+    // (mirrors VI `title`); `body`/`bodyBlocks` stay optional in EN even though VI body is
+    // required (business exception — treated like a long-form content block, not a core
+    // identity field). Slug chỉ áp dụng cho BÀI VIẾT.
     translations: z.object({
       en: z.object({
         slug: z.string().optional(),
@@ -570,6 +618,13 @@ export function createContentSchema(t, isCreate, normalizedType) {
     // English URL slug chỉ có ở bài viết (ARTICLE_RULE_003); trang tĩnh giữ PAGE_RULE_003.
     if (normalizedType === 'ARTICLE') {
       validateEnSlug(t, data.translations?.en?.slug, ctx)
+    }
+    if (!String(data.translations?.en?.title ?? '').trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: t('content.detail.errTitleRequiredEn', { defaultValue: 'Vui lòng nhập tiêu đề bài viết bằng tiếng Anh.' }),
+        path: ['translations', 'en', 'title'],
+      })
     }
     const s = String(data.slug || '').trim()
     if (!s) {

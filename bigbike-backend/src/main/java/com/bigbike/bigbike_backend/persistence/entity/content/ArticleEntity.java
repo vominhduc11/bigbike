@@ -25,6 +25,7 @@ import org.hibernate.type.SqlTypes;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import jakarta.persistence.Version;
 
 @Entity
 @Table(name = "articles")
@@ -35,15 +36,14 @@ public class ArticleEntity {
     @Id
     private String id;
 
+    @Version
+    private Integer version;
+
     @Column(nullable = false, unique = true)
     private String slug;
 
     @Column(name = "slug_en")
     private String slugEn;
-
-    /** JSON array of English fields/sections the admin edited by hand (translation lock, V296). */
-    @Column(name = "en_overrides", columnDefinition = "text")
-    private String enOverrides;
 
     @Column(nullable = false)
     private String title;

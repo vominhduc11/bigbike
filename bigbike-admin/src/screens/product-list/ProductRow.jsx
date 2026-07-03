@@ -34,6 +34,7 @@ export function ProductRow({
   const detailPath = `/admin/products/${product.id}`
   const isPublished = product.publishStatus === 'PUBLISHED'
   const isColumnHidden = (key) => hiddenColumns.includes(key)
+  const sale = product.price?.salePrice
 
   // Tên SP là <a> link thật để Ctrl/Cmd-click hoặc chuột-giữa mở tab mới (hành vi
   // trình duyệt). Click trái thường vẫn điều hướng trong cùng tab qua SPA navigate.
@@ -91,12 +92,16 @@ export function ProductRow({
       </td>
       {!isColumnHidden('sku') && <td className="mono hidden lg:table-cell">{formatText(product.sku, 'SKU TBD')}</td>}
       <td className="num" style={{ fontWeight: 700 }}>
-        {formatCurrencyVnd(product.price?.retailPrice)}
-        {product.price?.salePrice ? (
-          <div className="bb-cell-sub" style={{ textDecoration: 'line-through' }}>
-            {formatCurrencyVnd(product.price.salePrice)}
-          </div>
-        ) : null}
+        {sale > 0 ? (
+          <>
+            {formatCurrencyVnd(sale)}
+            <div className="bb-cell-sub" style={{ textDecoration: 'line-through' }}>
+              {formatCurrencyVnd(product.price.retailPrice)}
+            </div>
+          </>
+        ) : (
+          formatCurrencyVnd(product.price?.retailPrice)
+        )}
       </td>
       <td><StockCell state={product.stockState} /></td>
       {!isColumnHidden('category') && (

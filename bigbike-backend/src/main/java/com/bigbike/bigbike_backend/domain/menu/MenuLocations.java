@@ -21,12 +21,9 @@ import java.util.Set;
 public final class MenuLocations {
 
     public static final String PRIMARY = "primary";
-    public static final String FOOTER = "footer";
-    public static final String GUIDE = "guide";
-    public static final String POLICY = "policy";
 
     public static final Set<String> SYSTEM_LOCATIONS =
-            Set.copyOf(new LinkedHashSet<>(Set.of(PRIMARY, FOOTER, GUIDE, POLICY)));
+            Set.copyOf(new LinkedHashSet<>(Set.of(PRIMARY)));
 
     private MenuLocations() {}
 

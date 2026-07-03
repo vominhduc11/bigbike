@@ -122,8 +122,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
     public ResponseEntity<ApiErrorResponse> handleOptimisticLock(
             ObjectOptimisticLockingFailureException ex, HttpServletRequest request) {
-        return build(HttpStatus.CONFLICT, "CONCURRENT_MODIFICATION",
-                "This record was modified by another request. Please retry.", List.of(), request);
+        String message = "This record was modified by another request. Please retry.";
+        if (ex.getPersistentClassName() != null && ex.getPersistentClassName().contains("Article")) {
+            message = "Bài viết đã được người khác cập nhật, vui lòng tải lại trang.";
+        }
+        return build(HttpStatus.CONFLICT, "CONCURRENT_MODIFICATION", message, List.of(), request);
     }
 
     @ExceptionHandler(Exception.class)

@@ -87,37 +87,6 @@ final class ContentFieldApplier {
         entity.setSeoOgImageMimeType(null);
     }
 
-    public static AdminContentItem toAdminContentItem(Article article) {
-        return new AdminContentItem(
-                article.id(),
-                "ARTICLE",
-                article.slug(),
-                article.slugEn(),
-                article.title(),
-                article.excerpt(),
-                article.body(),
-                article.coverImage(),
-                article.productImage(),
-                article.publishStatus(),
-                article.featured(),
-                article.homeExperience(),
-                article.seo(),
-                article.publishedAt(),
-                article.createdAt(),
-                article.updatedAt(),
-                article.category(),
-                article.category() != null ? article.category().id() : null,
-                article.categories(),
-                null,
-                null,
-                null,
-                null,
-                null,
-                article.bodyBlocks(),
-                article.translations()
-        );
-    }
-
     public static void addSlugTag(LinkedHashSet<String> tags, String prefix, String slug) {
         String normalized = AdminMutationValidators.trimToNull(slug);
         if (normalized != null) {

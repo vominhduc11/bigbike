@@ -3,7 +3,7 @@
 // and to keep fast-refresh happy (non-component exports live in .js).
 import {
   Store, Phone, Globe, Settings,
-  Home, Image as ImageIcon, Users,
+  Image as ImageIcon, Users,
   Landmark,
 } from 'lucide-react'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
@@ -81,7 +81,7 @@ export function validateValue(key, value) {
 
 // Groups whose display text is shown on the storefront and can carry an English
 // translation. Config / contact / store / tax keys stay Vietnamese-only.
-const TRANSLATABLE_GROUPS = new Set(['GENERAL', 'PUBLIC_HOME', 'PUBLIC_HERO', 'SEO'])
+const TRANSLATABLE_GROUPS = new Set(['GENERAL', 'PUBLIC_HERO', 'SEO'])
 
 // A setting is English-translatable when it lives in a translatable group AND renders
 // as text (rich-text, long-text, or a plain text input) — never images/URLs/numbers/phones.
@@ -95,6 +95,11 @@ export function isTranslatableSetting(setting) {
   return inputTypeFor(setting.key) === 'text'
 }
 
+// Setting keys required in Vietnamese (mirrors `.required()` in the backend
+// SettingDefinitionRegistry — currently only `site_name`). TRANSLATION_RULE_002: the
+// English value is required too for keys that are BOTH required AND translatable.
+export const REQUIRED_SETTING_KEYS = new Set(['site_name'])
+
 // ── Tab config ────────────────────────────────────────────────────────────────
 
 // Tab "Banner trang" KHÔNG phải một settingGroup thật — nó nhúng trình sửa banner
@@ -103,7 +108,7 @@ export function isTranslatableSetting(setting) {
 export const BANNERS_TAB_ID = '__banners__'
 
 export const TAB_ORDER = [
-  'GENERAL', 'CONTACT', 'PAYMENT', 'PUBLIC_HOME', 'PUBLIC_HERO', 'SEO',
+  'GENERAL', 'CONTACT', 'PAYMENT', 'PUBLIC_HERO', 'SEO',
   'PRODUCT_ASSIGN',
 ]
 
@@ -117,10 +122,11 @@ export const SENSITIVE_SETTING_TABS = new Set()
 //   nay nhúng làm tab "Banner trang" NGAY TRONG màn Cài đặt (xem BANNERS_TAB_ID) — ẩn khỏi danh
 //   sách tab generic để không hiện 2 lần / sửa 2 nơi.
 // - CONTACT: thông tin liên hệ (hotline/địa chỉ/giờ/mạng xã hội, gồm cả zalo_display/messenger_display)
-//   là dữ liệu CHUNG cho header/footer + trang Liên hệ (tĩnh) + trang Giới thiệu. Trang Liên hệ nay
-//   là TRANG TĨNH, không còn trình dựng — không màn admin nào sửa nhóm này (cố định theo yêu cầu owner).
-//   Bản ghi vẫn ở site_settings để web/header/footer đọc; muốn cho sửa lại thì bỏ 'CONTACT' khỏi
-//   HIDDEN_GROUPS để hiện lại tab Cài đặt › Liên hệ.
+//   là dữ liệu CHUNG cho header + trang Liên hệ (tĩnh) + trang Giới thiệu + trang chủ/sản phẩm/khung
+//   chat nổi (footer đã hardcode riêng từ 2026-07-03, không còn đọc nhóm này — xem WpFooter.tsx).
+//   Trang Liên hệ nay là TRANG TĨNH, không còn trình dựng — không màn admin nào sửa nhóm này (cố định
+//   theo yêu cầu owner). Bản ghi vẫn ở site_settings để web/header đọc; muốn cho sửa lại thì bỏ
+//   'CONTACT' khỏi HIDDEN_GROUPS để hiện lại tab Cài đặt › Liên hệ.
 // - PAYMENT: bỏ tab theo yêu cầu owner (2026-07-03). Nhóm chứa số TK nhận chuyển khoản
 //   (bank_account_holder/number/name/branch) — web vẫn đọc từ site_settings để hiện ở trang xác
 //   nhận đơn BACS (xem bigbike-web/lib/utils/orders.ts resolveBankTransfer), nên KHÔNG xoá dữ liệu/
@@ -136,7 +142,6 @@ export const TAB_META = {
   GENERAL:     { icon: Store,      labelKey: 'settings.group_general' },
   CONTACT:     { icon: Phone,      labelKey: 'settings.group_contact' },
   PAYMENT:     { icon: Landmark,   labelKey: 'settings.group_payment' },
-  PUBLIC_HOME: { icon: Home,       labelKey: 'settings.group_public_home' },
   PUBLIC_HERO: { icon: ImageIcon,  labelKey: 'settings.group_public_hero' },
   SEO:         { icon: Globe,      labelKey: 'settings.group_seo' },
   PRODUCT_ASSIGN: { icon: Users,   labelKey: 'settings.group_product_assign' },
@@ -145,11 +150,12 @@ export const TAB_META = {
 // Bản dịch tiếng Việt cho từng setting key (admin shop motor đọc dễ hiểu hơn description English từ migrations)
 export const KEY_LABELS_VI = {
   // general
-  site_name: 'Tên website (hiển thị header & footer)',
+  site_name: 'Tên shop (SEO trang chủ/bài viết, khối liên hệ trang sản phẩm)',
   // footer_tagline/bct_url/business_registration: gỡ V308 — footer đã hardcode, không còn tác dụng.
   footer_description: 'Mô tả ngắn (panel thông tin shop trên header mobile)',
   // contact
   hotline_2: 'Hotline phụ',
+  hotline_3: 'Hotline thứ ba',
   contact_email: 'Email liên hệ công khai',
   contact_address: 'Địa chỉ cửa hàng',
   facebook_url: 'Link trang Facebook',
@@ -164,25 +170,12 @@ export const KEY_LABELS_VI = {
   bank_branch: 'Chi nhánh ngân hàng (không bắt buộc)',
   messenger_url: 'Link Messenger (popup chat)',
   messenger_display: 'Chữ hiển thị Messenger (popup chat)',
-  // public_home (homepage)
+  // contact (hotline/zalo hiển thị nổi bật — 4 khối trang chủ dùng nhóm public_home đã gỡ
+  // hẳn V311: banner promo, trải nghiệm, giới thiệu, kicker/tiêu đề Sản phẩm nổi bật/Tin
+  // tức/Video hardcode thẳng bigbike-web, quyết định chủ shop 2026-07-03)
   hotline: 'Hotline chính (hiển thị nổi bật)',
   zalo_url: 'Link Zalo (popup liên hệ)',
   zalo_display: 'Chữ hiển thị Zalo (popup liên hệ)',
-  promo_title: 'Tiêu đề banner khuyến mãi trang chủ',
-  promo_off: 'Nhãn % giảm trên banner (vd: 20% OFF)',
-  promo_href: 'URL khi khách click banner khuyến mãi',
-  promo_image_url: 'Ảnh banner khuyến mãi',
-  home_exp_subtitle: 'Khu trải nghiệm — kicker phụ đề',
-  home_exp_title: 'Khu trải nghiệm — tiêu đề chính',
-  home_exp_desc: 'Khu trải nghiệm — đoạn mô tả',
-  about_title: 'Khu giới thiệu — tiêu đề chính',
-  about_subtitle: 'Khu giới thiệu — kicker phụ đề',
-  about_content_html: 'Khu giới thiệu — nội dung (rich-text)',
-  home_featured_kicker: 'Khu Sản phẩm nổi bật — kicker',
-  home_featured_title: 'Khu Sản phẩm nổi bật — tiêu đề',
-  home_news_kicker: 'Khu Tin tức — kicker',
-  home_news_title: 'Khu Tin tức — tiêu đề',
-  home_videos_title: 'Khu Video — tiêu đề',
   // public_product — toàn bộ nội dung PDP giờ quản theo TỪNG sản phẩm (trang sửa sản phẩm):
   // khối "cam kết" dưới nút mua (V232) + dải "tin cậy" trên tên sản phẩm (V233). Không còn setting chung.
   // seo
@@ -219,7 +212,6 @@ export const KEY_LABELS_VI = {
 }
 
 export const KEY_HINTS_VI = {
-  promo_image_url:          'Ảnh nằm ngang, ví dụ 1200×400px.',
   og_image_url:             '1200×630px (chuẩn mạng xã hội).',
   hero_products_image_url:         'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
   hero_products_mobile_image_url:  'Ảnh dọc cho điện thoại, ví dụ 750×1125px. Bỏ trống sẽ dùng ảnh desktop.',
@@ -234,7 +226,6 @@ export const KEY_HINTS_VI = {
 // Chuẩn kích thước khuyến nghị theo từng cấu hình ảnh (so khớp với KEY_HINTS_VI).
 // Key không liệt kê sẽ dùng spec chung (chỉ nhắc khi quá nhỏ, không khóa tỉ lệ).
 export const KEY_RECO = {
-  promo_image_url:                 IMAGE_RECO.promo,
   og_image_url:                    IMAGE_RECO.cover,
   hero_products_image_url:         IMAGE_RECO.bannerWide,
   hero_products_mobile_image_url:  IMAGE_RECO.heroMobile,
@@ -261,16 +252,10 @@ export const STOREFRONT_BASE = (import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'htt
 
 // Khối hiển thị → tiêu đề + đường dẫn storefront (path = null nghĩa là không hiển thị cho khách).
 export const SECTION_GUIDE = {
-  general_brand:   { title: 'Header & Footer — mọi trang', path: '/' },
-  contact_main:    { title: 'Trang Liên hệ + Header/Footer', path: '/lien-he' },
-  contact_social:  { title: 'Mạng xã hội — chat nổi + Footer', path: '/lien-he' },
+  general_brand:   { title: 'SEO & thông tin shop — mọi trang', path: '/' },
+  contact_main:    { title: 'Trang Liên hệ + Header', path: '/lien-he' },
+  contact_social:  { title: 'Mạng xã hội — chat nổi + trang Liên hệ', path: '/lien-he' },
   payment_bank:    { title: 'Hiện khi khách đặt đơn & chọn chuyển khoản', path: null },
-  home_promo:      { title: 'Trang chủ › Banner khuyến mãi', path: '/' },
-  home_exp:        { title: 'Trang chủ › Khối trải nghiệm', path: '/' },
-  home_about:      { title: 'Trang chủ › Khối giới thiệu', path: '/' },
-  home_featured:   { title: 'Trang chủ › Khối Sản phẩm nổi bật', path: '/' },
-  home_news:       { title: 'Trang chủ › Khối Tin tức', path: '/' },
-  home_videos:     { title: 'Trang chủ › Khối Video', path: '/' },
   hero_products:   { title: 'Banner đầu trang Tất cả sản phẩm', path: '/san-pham' },
   hero_brands:     { title: 'Banner đầu trang Thương hiệu', path: '/brands' },
   hero_news:       { title: 'Banner đầu trang Tin tức', path: '/tin-tuc' },
@@ -282,7 +267,7 @@ export const SECTION_ORDER = Object.keys(SECTION_GUIDE)
 
 // Mỗi ô → [id khối, vị trí cụ thể]. Dòng "📍 vị trí" hiện dưới nhãn để admin biết ô render ở đâu.
 export const KEY_GUIDE = {
-  site_name:             ['general_brand', 'tên shop'],
+  site_name:             ['general_brand', 'tên hiển thị — SEO trang chủ/bài viết + khối liên hệ trang sản phẩm'],
   // footer_tagline/bct_url/business_registration: gỡ V308 — footer đã hardcode.
   footer_description:    ['general_brand', 'đoạn mô tả — panel thông tin shop trên header mobile'],
 
@@ -308,22 +293,6 @@ export const KEY_GUIDE = {
   bank_account_number:   ['payment_bank', 'số tài khoản'],
   bank_name:             ['payment_bank', 'tên ngân hàng'],
   bank_branch:           ['payment_bank', 'chi nhánh'],
-
-  promo_title:           ['home_promo', 'tiêu đề banner'],
-  promo_off:             ['home_promo', 'nhãn % giảm giá'],
-  promo_href:            ['home_promo', 'link khi bấm banner'],
-  promo_image_url:       ['home_promo', 'ảnh banner'],
-  home_exp_subtitle:     ['home_exp', 'dòng chữ nhỏ phía trên'],
-  home_exp_title:        ['home_exp', 'tiêu đề'],
-  home_exp_desc:         ['home_exp', 'đoạn mô tả'],
-  about_title:           ['home_about', 'tiêu đề'],
-  about_subtitle:        ['home_about', 'dòng phụ'],
-  about_content_html:    ['home_about', 'nội dung'],
-  home_featured_kicker:  ['home_featured', 'dòng chữ nhỏ phía trên'],
-  home_featured_title:   ['home_featured', 'tiêu đề'],
-  home_news_kicker:      ['home_news', 'dòng chữ nhỏ phía trên'],
-  home_news_title:       ['home_news', 'tiêu đề'],
-  home_videos_title:     ['home_videos', 'tiêu đề'],
 
   hero_products_image_url:        ['hero_products', 'ảnh nền banner (desktop)'],
   hero_products_mobile_image_url: ['hero_products', 'ảnh nền banner (điện thoại)'],

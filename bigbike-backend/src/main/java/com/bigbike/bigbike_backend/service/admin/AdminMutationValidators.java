@@ -274,15 +274,6 @@ final class AdminMutationValidators {
         if (entity.getRetailPrice() == null || entity.getRetailPrice().compareTo(BigDecimal.ZERO) <= 0) {
             errors.add(new ApiErrorDetail("retailPrice", REQUIRED, "Retail price must be greater than 0 to publish."));
         }
-        if (trimToNull(entity.getSeoTitle()) == null) {
-            errors.add(new ApiErrorDetail("seoTitle", REQUIRED, "SEO title is required to publish."));
-        }
-        if (trimToNull(entity.getSeoDescription()) == null) {
-            errors.add(new ApiErrorDetail("seoDescription", REQUIRED, "SEO description is required to publish."));
-        }
-        if (trimToNull(entity.getSeoCanonicalUrl()) == null) {
-            errors.add(new ApiErrorDetail("seoCanonicalUrl", REQUIRED, "SEO canonical URL is required to publish."));
-        }
     }
 
     static void throwIfPublishErrors(List<ApiErrorDetail> errors) {

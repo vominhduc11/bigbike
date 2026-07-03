@@ -169,7 +169,7 @@ No query params. Response shape: `ApiListResponse<ContentCategoryWithCount>`:
 
 **Counting semantics:** an article counts toward a category when that category is its primary `category` **or** appears in its many-to-many `categories` list — the same membership rule as the `category` filter of `GET /api/v1/articles`. Every content category is returned (including `articleCount = 0`), ordered by `name`. Status: `CONFIRMED_FROM_CODE` — `ContentController.listContentCategories`, `ContentReadService.listContentCategories`.
 
-**Admin reference list** (`content.read`): `GET /api/v1/admin/content/reference/categories` → `ApiListResponse<ContentCategoryItem>` (`{ id, slug, name }`), ordered by `name`. Feeds the article editor's category picker so an article can be assigned to existing categories. Status: `CONFIRMED_FROM_CODE` — `AdminContentController.listCategories`, `AdminContentReferenceService.listCategories`, `adminApi.fetchContentCategories`.
+**Admin reference list** (`content.read`): `GET /api/v1/admin/content/reference/categories` → `ApiListResponse<ContentCategoryItem>` (`{ id, slug, name }`), ordered by `name`. Feeds the article editor's category picker so an article can be assigned to existing categories. Status: `ORPHAN` — *(Note: After V275, this endpoint is orphan/unused because the category picker has been removed from the admin form; all articles are automatically mapped to the default 'tin-tuc' category).* `AdminContentController.listCategories`, `AdminContentReferenceService.listCategories`, `adminApi.fetchContentCategories`.
 
 **No admin CRUD.** There is no create/update/delete endpoint for content categories — the admin "Quản lý danh mục bài viết" screen was removed (the inventory of categories is fixed/seed-managed). Articles can only be assigned to categories that already exist; the public list and the article-editor picker both read from the same `content_categories` table.
 
@@ -286,42 +286,37 @@ Admin detail reads (`AdminContentItem`) của Article bao gồm `translations: {
 
 Status: `CONFIRMED_FROM_CODE` — `AdminContentItem.translations` (kiểu `ArticleTranslations`, serialize thẳng `{ en: {...} }`), `AdminContentReadService.fromArticle`, `ContentFieldApplier.toAdminContentItem`. Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article bilingual content (V138)".
 
-### VI→EN auto-translation + translation lock (V296)
+### Bilingual content — nhập tay, không còn tự động dịch (V312)
 
-**Translate proxy:** `POST /api/v1/admin/translate` — body `{ "texts": { "<key>": "<vi text>", ... } }`,
-trả `{ data: { "<key>": "<en text>", ... } }`. Server gọi Gemini bằng khoá **server-side**; khi khoá
-trống / lỗi → trả `{ data: {} }` (admin giữ nguyên bản EN cũ). Quyền: bất kỳ trong
-`products.update` / `catalog.update` / `content.update` / `settings.write` (thêm ở **V309** để màn Cài đặt gọi được endpoint dùng chung này).
+Từ 2026-07-03, tính năng tự động dịch VI→EN (Google Gemini) đã bị **gỡ bỏ hoàn toàn**: không còn
+endpoint `POST /api/v1/admin/translate` hay `POST /api/v1/admin/translate/backfill`, không còn cơ chế
+khoá `enOverrides`/`enLocked` (cột `en_overrides`/`en_locked` đã drop khỏi DB — V312). Admin **tự nhập**
+tiếng Anh qua `translations.en.*` (Product/Category/Brand/Article) hoặc `valueEn` (site settings), đổi
+qua nút VI/EN (`contentLang`) trên form — không đổi hình dạng payload upsert, chỉ bỏ field
+`enOverrides`/`enLocked`.
 
-**`enOverrides` trên upsert:** `UpsertProductRequest` / `UpsertCategoryRequest` / `UpsertBrandRequest` /
-`UpsertArticleRequest` nhận thêm `enOverrides: string[]` — danh sách trường/khối tiếng Anh admin đã
-sửa tay (khoá khỏi tự-dịch). Trả về khi admin read trong `translations.overrides` (`string[]`).
-Trường vô hướng = tên khoá; khối lặp = `"section:<tên>"`. Null/absent = giữ nguyên lock cũ (PATCH).
+**Validate EN bắt buộc (mới):** tiếng Anh chỉ bắt buộc khi trường tiếng Việt tương ứng đang bắt buộc —
+`UpsertProductRequest.translations.en.name`, `UpsertCategoryRequest.translations.en.name`,
+`UpsertBrandRequest.translations.en.name`, `UpsertArticleRequest.translations.en.title` bắt buộc
+non-blank (áp dụng cho cả tạo mới lẫn sửa bản ghi cũ, kể cả bản ghi cũ đang thiếu EN ở field này).
+Thiếu → `400 VALIDATION_ERROR` (field `translations.en.name`/`translations.en.title`, code `REQUIRED`).
+Các field/khối còn lại (mô tả, specifications, faqs, slug, body/bodyBlocks…) vẫn tùy chọn ở EN — không
+chặn lưu khi trống. `UpdateSiteSettingRequest.valueEn` / `BatchUpdateSettingsRequest.BatchSettingUpdate.valueEn`
+bắt buộc khi setting vừa translatable vừa `.required()` ở VI (hiện chỉ `site_name`) — thiếu → `400
+VALIDATION_ERROR` (field `valueEn`, code `REQUIRED`).
 
-**`enLocked` trên Cài đặt (V309):** khác với 4 thực thể trên (mảng JSON `enOverrides`), mỗi
-`site_settings` row đã là 1 cặp key/value phẳng nên khoá bằng **1 cột boolean `enLocked`** thay vì
-mảng. `UpdateSiteSettingRequest` / `BatchUpdateSettingsRequest.BatchSettingUpdate` nhận thêm
-`enLocked: boolean | null` (null = giữ nguyên khoá cũ, cùng ngữ nghĩa presence-flag như `value`/`valueEn`).
-`AdminSiteSettingResponse` trả về `enLocked` hiện tại. Xem §"Admin Settings Contract" bên dưới.
+Status: `CONFIRMED_FROM_CODE`. Xem [BUSINESS_RULES.md](../business/BUSINESS_RULES.md) §"Bilingual /
+Auto-translation Rules" (`TRANSLATION_RULE_001/002`) + §"Site Settings Rules" (`SETTINGS_RULE_001`),
+[DATA_CONTRACT.md](DATA_CONTRACT.md) §"Product bilingual content — English columns (V136)".
 
-Status: `CONFIRMED_FROM_CODE` — `AdminTranslateController`, `GeminiTranslationService`, `EnOverridesCodec`, `Upsert*Request.enOverrides`, `*Translations.overrides`, `SiteSettingEntity.enLocked` (V309). Xem [BUSINESS_RULES.md](../business/BUSINESS_RULES.md) §"Bilingual / Auto-translation Rules" + §"Site Settings Rules", [DATA_CONTRACT.md](DATA_CONTRACT.md) §`en_overrides (V296)` + §"Site Settings — `en_locked` (V309)".
-
-### VI→EN backfill (công cụ vận hành MỘT LẦN) — Phase 2
-
-**Backfill endpoint:** `POST /api/v1/admin/translate/backfill` — **chỉ SUPER_ADMIN** (yêu cầu quyền wildcard `*`; `ADMIN`/khác → 403). Công cụ **vận hành một lần** dịch bù tiếng Anh cho MỌI bản ghi còn thiếu, dùng lại `GeminiTranslationService` (giữ nguyên prompt Phase 1, thêm `thinkingBudget=0` + `maxOutputTokens` để nội dung dài không bị cụt).
-
-Query params:
-- `type` = `product|category|brand|article|all` (mặc định `all`).
-- `dryRun` = `true|false` (mặc định **`true`**). `true` → dịch một ít mẫu, **KHÔNG ghi DB**, trả `results[].samples` (before/after) + số liệu.
-- `limit` = số bản ghi xử lý mỗi lần khi `dryRun=false` (mặc định 20). Gọi lặp tới khi `totalRemaining=0` (resumable).
-- `sampleSize` = số mẫu trả về khi `dryRun=true` (mặc định 3).
-- `includeTrashed` = gồm sản phẩm `publish_status=TRASH` (mặc định `false`).
-
-Hành vi: chọn bản ghi còn THIẾU **bất kỳ** trường tiếng Anh nào (cột `_en` rỗng mà tiếng Việt có nội dung) — **chọn theo từng trường (field-level)**, KHÔNG chỉ theo `name_en`/`title_en` rỗng. → dịch bộ trường tiếng Anh (khớp admin `src/lib/geminiTranslate.js` + spec `group_name`: name, shortDescription, description, seo*, `*_html`, các bảng con specifications/specStats/faqs/commitments/trustBadges/highlights, `description_blocks_en`, suitability cards) → ghi **chỉ cột `_en`** (fill-if-empty, **không đụng tiếng Việt**, không đè bản EN có sẵn). `promotion_content`/`installation_guide` **không** dịch và **bị loại khỏi điều kiện chọn** (tránh re-pick vô hạn cho trường công cụ không lấp được). **Không** sinh `slug_en` (PRODUCT_RULE_003); `en_overrides` để **NULL** (toàn bộ là máy dịch, chưa khoá ô nào). Idempotent: chạy lại bỏ qua bản đã đủ EN ở **mọi** trường (không chỉ bản đã có `name_en`); `remainingAfter` là số bản ghi còn lỗ EN cấp-trường. Bản ghi đã có tên/tiêu đề nhưng còn lỗ trường con vẫn được dịch tiếp (mỏ neo động). Bản ghi Gemini trả rỗng/cụt → bỏ qua + ghi log để chạy lại (không ghi rác). Response `TranslationBackfillResponse`: `results[]` theo loại (`candidatesTotal`/`processed`/`translated`/`failed`/`remainingAfter`/`failedIds`) + `samples` (dry-run).
-
-Web **vẫn** fallback từng-trường về tiếng Việt (`PRODUCT/CATEGORY/BRAND/ARTICLE_RULE_002`) — Phase 2 chỉ phủ nội dung, **KHÔNG** gỡ fallback (đó là Phase 3, việc riêng).
-
-Status: `CONFIRMED_FROM_CODE` — `TranslationBackfillController`, `TranslationBackfillService`, `GeminiTranslationService.GenerationOptions`. Xem [BUSINESS_RULES.md](../business/BUSINESS_RULES.md) §"Bilingual / Auto-translation Rules" (`TRANSLATION_RULE_001`).
+**Báo cáo record thiếu EN bắt buộc (V312):** `GET /api/v1/admin/translations/missing-required` — quyền
+bất kỳ trong `products.read` / `catalog.read` / `content.read` / `settings.read`. Liệt kê record đang
+**còn hoạt động** (bỏ qua Thùng rác/ẩn) thiếu tiếng Anh ở field bắt buộc: sản phẩm/danh mục/thương hiệu
+thiếu `nameEn`, bài viết thiếu `titleEn`, và các setting key vừa translatable vừa `.required()` (hiện
+chỉ `site_name`) thiếu `valueEn`. Trả `MissingRequiredEnglishResponse { products, categories, brands,
+articles: Item[] (id, slug, name), settingKeys: string[] }`. Dùng để admin chủ động biết cần bổ sung gì
+trước khi bị chặn lưu — không tự sửa dữ liệu. Status: `CONFIRMED_FROM_CODE` —
+`AdminTranslationCompletenessController`, `TranslationCompletenessService`.
 
 ## Administrative Deletion and Restore Contract (Trash Flow)
 
@@ -550,17 +545,20 @@ Evidence: `AdminAttributeController.java` (`createAttribute`, `deleteAttribute`,
 
 Evidence: `AdminAttributeController.java` (`listAttributes`, `listAttributeValues`, `updateAttribute`, `createAttributeValue`, `updateAttributeValue`), `AdminAttributeService.java` (`updateAttributeName` name-only, `createValue` slug derivation via `ProductSlugGenerator.toSlug` + dedup, `updateValueLabel` label-only), `adminApi.js` (`fetchAttributes`/`fetchAttributeValues` tolerant readers, `updateAttribute`, `createAttributeValue`/`updateAttributeValueLabel`), `ProductDetailScreen.jsx` (`AttributeRenameModal`, `AttributeValueManagerModal`).
 
-### Variant cover image — derived from the first gallery image (no separate input)
+### Variant cover image — admin picks one gallery image per colour (2026-07-03)
 
-The variant cover image (`variants[].image`) is **always the first image of the variant's colour gallery** (`variants[].gallery[0]`). It is **not** entered separately by admins.
+The variant cover image (`variants[].image`) is **admin-picked per colour**: one image in the colour's gallery is explicitly marked as the cover, independent of gallery order. Admins no longer reorder the gallery to change the cover — they mark it directly on the desired thumbnail (star toggle in `GalleryEditor`).
 
-- **Upsert request** (`POST` / `PATCH /api/v1/admin/products`): the request body **no longer accepts** `variants[].imageUrl` / `variants[].imageAlt`. Both fields were removed from `VariantRequest`. On save, the backend mirrors the colour gallery's first image into the variant's `image_url` / `image_alt` / `image_width` / `image_height` / `image_mime_type` columns (colour-scoped, so every same-colour size shares it); a colour with no gallery, or a variant with no Colour option, gets a `null` cover.
-- **Response**: `variants[].image` still returns the cover `ImageAsset` (now equal to `gallery[0]`). The read path keeps colour-scoping the stored `image_*` columns, so legacy rows where the cover diverged from `gallery[0]` are normalised on read and re-synced on the next save.
-- **Rationale**: a separately-stored cover could diverge from the gallery (different URL or stale row), which surfaced as **duplicate thumbnails** on the PDP. Deriving the cover from `gallery[0]` removes the divergence at the source. To change the cover, reorder the gallery so the desired image is first.
+- **Upsert request** (`POST` / `PATCH /api/v1/admin/products`): `variants[].gallery[]` items gained a `cover: boolean` field (`GalleryImageRequest.cover`, default `false`). Exactly one image per colour should carry `cover: true`. `variants[].imageUrl` / `variants[].imageAlt` are still **not** accepted directly — the cover is still selected through the gallery, not a standalone field.
+- **Resolution** (`AdminCatalogMutationService.applyVariants` / `ProductFieldApplier.colorCoverImages`): for each colour, the backend picks the first gallery item with `cover: true` (skipping video items — a video can never be the cover). **Fallback**: if no item in that colour's gallery is marked, the backend falls back to the first image (`gallery[0]`), exactly like the pre-2026-07-03 behaviour — this keeps legacy admin clients and any data saved before this change working without a backfill. The resolved cover is mirrored into the variant's `image_url` / `image_alt` / `image_width` / `image_height` / `image_mime_type` columns (colour-scoped, so every same-colour size shares it); a colour with no gallery, or a variant with no Colour option, gets a `null` cover.
+- **No DB migration**: the `cover` flag is a write-time-only signal used to resolve which URL becomes the mirrored cover above — it is **not** persisted as its own column on `product_variant_gallery_images`. The mirrored `image_url` on the variant IS the durable record of "which image is the cover".
+- **Response**: `variants[].image` returns the resolved cover `ImageAsset` (explicit pick, or `gallery[0]` fallback). Each entry in `variants[].gallery[]` now also carries `isCover: boolean` (`GalleryMedia.isCover`) — **derived on every read**, not stored: `JpaCatalogReadSupport.withColorScopedVariantMedia` marks whichever gallery item's image URL equals the colour's resolved `image.url` as `isCover: true`. This is how the admin edit screen pre-selects the currently-active cover (including for legacy rows that never had an explicit pick) without needing a backfill. Product-level gallery (`gallery[].isCover`) is always `false` — this concept only applies to variant colour galleries.
+- **Admin-side mandatory selection**: the admin form (`lib/schemas.js` superRefine) blocks Save when a colour's gallery has ≥1 image but none is marked `isCover` — this is a **client-side-only** rule (nudges the admin to make an explicit choice); the backend API itself never rejects a missing `cover` flag, it just falls back to `gallery[0]` (see Resolution above), so direct API/script writes keep working unchanged.
+- **Rationale**: reordering the gallery to control the cover conflated two independent concerns (display order vs. "main" image) — an admin who wanted images B, A, C displayed in that order but with A as the cover had no way to express it. Decoupling the two lets admins pick a cover without touching sort order.
 
 Status: `CONFIRMED_FROM_CODE`
 
-Evidence: `VariantRequest.java` (no `imageUrl`/`imageAlt`), `AdminCatalogMutationService.applyVariants` / `colorCoverImages` (cover = first colour-gallery image), `JpaCatalogReadRepository.withColorScopedVariantMedia` (colour-scopes the stored `image_*` columns on read), `VariantGalleryRoundtripTest.variantImage_isSharedByColorAcrossSizes`.
+Evidence: `GalleryImageRequest.java` (`cover` field), `GalleryMedia.java` (`isCover` component), `AdminCatalogMutationService.applyVariants` / `ProductFieldApplier.colorCoverImages` (explicit pick wins, falls back to first colour-gallery image), `JpaCatalogReadSupport.withColorScopedVariantMedia` (derives `isCover` on read via URL match, colour-scopes the stored `image_*` columns), `bigbike-admin/src/screens/product-detail/ContentEditors.jsx` (`GalleryEditor` star toggle, `showCover` prop), `bigbike-admin/src/lib/schemas.js` (mandatory-cover superRefine check), `VariantGalleryRoundtripTest`.
 
 ### Variant display name — derived from attribute options (no separate input)
 
@@ -1011,25 +1009,17 @@ Status: `CONFIRMED_FROM_CODE` — `UpsertCategoryRequest.introContent`,
 `CategoryEntity.introContent/introContentEn`, `JpaCatalogReadSupport.toCategoryTranslations`,
 migration `V289` (đổ nội dung) + `V290` (đổi tên cột).
 
-### Menu location `policy` — sidebar trang chính sách (V226)
+### Menu location `policy` — sidebar trang chính sách (Đã gỡ bỏ khỏi Admin, chuyển sang tĩnh ở Web từ 2026-07-03)
 
-`policy` là system menu slot thứ tư (cạnh `primary`/`footer`/`guide`). Nó cấp **danh
-sách + thứ tự** các trang trong thanh bên `/chinh-sach/{slug}` của storefront — admin
-quản lý qua trình quản lý Menu như các slot khác (thêm/bớt/sắp xếp/bật-tắt mục).
+Quy trình quản lý menu `policy` qua admin đã bị loại bỏ. Thanh bên chính sách `/chinh-sach/{slug}` trên storefront nay hiển thị danh sách tĩnh các trang chính sách kế thừa từ DB cũ:
+1. Chính sách bảo mật thông tin (`/chinh-sach/chinh-sach-bao-mat-thong-tin`)
+2. Chính sách bảo hành (`/chinh-sach/chinh-sach-bao-hanh`)
+3. Chính sách đổi trả hàng (`/chinh-sach/chinh-sach-doi-tra-hang`)
 
-**Đọc public:** `GET /api/v1/menus/policy?lang=vi|en` — shape `PublicMenu` chuẩn. Mỗi
-mục trỏ tới `/chinh-sach/{page-slug}`; web khớp `current` khi `page-slug` bằng slug đang
-xem. **Thân bài từng trang nay là nội dung tĩnh trong `bigbike-web`** (nguồn `static-pages.json`,
-module pages đã gỡ 2026-06-24 — không còn `GET /api/v1/pages/{slug}`); slug không khớp trang
-tĩnh nào → 404. Menu `policy` chỉ cấp danh sách/thứ tự mục cho sidebar.
+**Đọc public:** `GET /api/v1/menus/policy` không còn được sử dụng ở storefront. Storefront tự dựng danh sách này tĩnh thông qua hàm `buildStaticSidebarItems` và so khớp `current` dựa trên `slug` hiện tại.
+**Ghi (admin):** Slot `policy` đã bị gỡ khỏi danh sách system slots và constants. Lớp `MenuLocations` không còn coi `policy` là system menu slot.
 
-**Ghi (admin):** dùng chung `POST/PATCH/DELETE /api/v1/admin/menus/{menuId}/items` như
-mọi menu. Container `policy` là system slot → không tạo/xóa được (chỉ quản lý mục bên
-trong). V226 seed sẵn 4 mục: bảo mật, bảo hành, đổi trả, điều khoản.
-
-Status: `CONFIRMED_FROM_CODE` — `MenuLocations.POLICY`, `AdminMenuService`,
-`PublicMenuController`, `V226__seed_policy_menu_slot.sql`,
-`bigbike-web/app/chinh-sach/[slug]/page.tsx`, `bigbike-admin/src/screens/MenuScreen.jsx`.
+Status: `CONFIRMED_FROM_CODE` — `MenuLocations.PRIMARY` duy nhất, `bigbike-web/components/policy/PolicyPageClient.tsx`.
 
 ### Thứ tự danh sách danh mục công khai — `GET /api/v1/categories`
 
@@ -1069,12 +1059,12 @@ Status: `REMOVED`
 |---|---|---|---|---|
 | `GET /api/v1/admin/settings` | `settings.read` | Paginated list with optional filters: `q` (key/description substring), `group`, `isPublic`. Sensitive keys return `settingValue="********"` with `sensitive=true, masked=true`. | `CONFIRMED_FROM_CODE` | `AdminSettingsController.java`, `AdminSettingsService.java` |
 | `GET /api/v1/admin/settings/{key}` | `settings.read` | Single setting by key. Sensitive values masked. | `CONFIRMED_FROM_CODE` | `AdminSettingsController.java` |
-| `PATCH /api/v1/admin/settings/{key}` | `settings.write` | Update single setting (value, group, isPublic, description, **enLocked** — V309, translation-lock boolean, presence-flag: null = unchanged). Validates type/range per `SettingDefinitionRegistry`. Sensitive keys cannot be made public. **Keys flagged `superAdminOnly` (group `product_assign`) reject the write with 403 unless the caller holds wildcard `*` (`SUPER_ADMIN`)** — `ADMIN` is blocked despite having `settings.write`. | `CONFIRMED_FROM_CODE` | `AdminSettingsController.java` |
-| `PATCH /api/v1/admin/settings` | `settings.write` | **Batch update** — atomically update multiple settings in one transaction. Body: `{"updates":[{"key":"…","value":"…","valueEn":"…","enLocked":true}]}` (`valueEn`/`enLocked` optional, null = unchanged). All validations run before any mutation; if any item is invalid the whole request fails with 400 and no settings are changed. Same `superAdminOnly` 403 gate as the single-update path. | `CONFIRMED_FROM_CODE` | `AdminSettingsController.java`, `AdminSettingsService.batchUpdateSettings` |
+| `PATCH /api/v1/admin/settings/{key}` | `settings.write` | Update single setting (value, valueEn, group, isPublic, description). Validates type/range per `SettingDefinitionRegistry`; **translatable + `.required()` keys (currently only `site_name`) also require non-blank `valueEn`** — `400 VALIDATION_ERROR` (field `valueEn`, code `REQUIRED`) if blank. Sensitive keys cannot be made public. **Keys flagged `superAdminOnly` (group `product_assign`) reject the write with 403 unless the caller holds wildcard `*` (`SUPER_ADMIN`)** — `ADMIN` is blocked despite having `settings.write`. | `CONFIRMED_FROM_CODE` | `AdminSettingsController.java` |
+| `PATCH /api/v1/admin/settings` | `settings.write` | **Batch update** — atomically update multiple settings in one transaction. Body: `{"updates":[{"key":"…","value":"…","valueEn":"…"}]}` (`valueEn` optional, null = unchanged; same required-`valueEn`-for-translatable-required-keys rule as the single-update path). All validations run before any mutation; if any item is invalid the whole request fails with 400 and no settings are changed. Same `superAdminOnly` 403 gate as the single-update path. | `CONFIRMED_FROM_CODE` | `AdminSettingsController.java`, `AdminSettingsService.batchUpdateSettings` |
 | `GET /api/v1/admin/product-assignment` | `products.read` | Returns the editable "Phân công" guide text (7 fields: title + 3 role labels + 3 task lists) for the product create/edit banner. Read uses `products.read` (not `settings.read`) so `SHOP_MANAGER`/`EDITOR` who edit products can render the banner. Write is via the `superAdminOnly` settings keys above. | `CONFIRMED_FROM_CODE` | `AdminProductAssignmentController.java` |
 | `GET /api/v1/settings/public` | public | List settings marked `isPublic=true` that are on the registry public allowlist. Sensitive keys are never exposed regardless of DB flag. | `CONFIRMED_FROM_CODE` | `PublicSettingsController.java` |
 
-**Batch update response shape:** `ApiDataResponse<List<AdminSiteSettingResponse>>` — items in same order as request `updates` array. `AdminSiteSettingResponse` includes `enLocked` (V309) — true when an admin manually edited that row's English value; the bigbike-admin Settings screen auto-translate-on-save skips rows where `enLocked=true` (mirrors `enOverrides` on Product/Category/Brand/Article, see `en_overrides (V296)` above).
+**Batch update response shape:** `ApiDataResponse<List<AdminSiteSettingResponse>>` — items in same order as request `updates` array. `AdminSiteSettingResponse` no longer includes `enLocked` (dropped V312 with the Gemini auto-translation removal) — English values are entered manually, no lock/skip state to track.
 
 **Sensitive key masking:** Any key whose name contains `secret`, `password`, `token`, `api_key`, `privatekey`, etc. always returns `settingValue="********"` in admin responses and in audit log `before_data`/`after_data`.
 
@@ -1092,10 +1082,7 @@ Status: `REMOVED`
   - `messenger_display`, `zalo_display` — display text for the Messenger/Zalo lines in the floating-chat popup (falls back to the URL slug when empty).
 
 **Footer hardcoded 2026-07-03 (shop owner decision):** `WpFooter.tsx` no longer reads `footer_description` or the `contact` group (`hotline`/`hotline_2`/`hotline_3`, `contact_email`, `contact_address`, `facebook_url`/`youtube_url`/`tiktok_url`/`instagram_url`/`shopee_url`) — values are fixed constants in the component, frozen at what was live on that date. The footer link list is hardcoded too: it no longer merges with `GET /api/v1/menus/footer` (that endpoint call was removed from `app/layout.tsx`; `WpMenuClient` no longer has a `"footer"` mode). These settings/the menu endpoint are unchanged and still live for every other consumer — editing them in Admin Settings/Menu still updates the header (`footer_description` + full `contact` group), homepage, product page, `/lien-he`, `/gioi-thieu`, the floating-chat widget, and the order-confirmation page; it just no longer reaches the footer. `footer_tagline`, `bct_url`, and `business_registration` had **no other consumer**, so they were deleted outright (`SettingDefinitionRegistry`, admin `constants.js`, `site_settings` rows via `V308__remove_footer_only_settings.sql`) rather than left orphaned — same pattern as the `public_about` removal (V274) below.
-- `public_home`:
-  - `promo_title`, `promo_off`, `promo_href`, `promo_image_url` — homepage promo banner block.
-  - `home_exp_subtitle`, `home_exp_title`, `home_exp_desc` — homepage experience/news teaser section copy.
-  - `about_title`, `about_subtitle`, `about_content_html` — homepage about block copy.
+- `public_home`: **removed 2026-07-03 (V311).** See `DATA_CONTRACT.md` "`public_home` keys — removed" for the full list (promo banner, experience section, about section, featured/news/videos kicker+title) — all 15 keys are now hardcoded in `bigbike-web` (`app/page.tsx`), not read from `site_settings`.
 - `public_about`: **removed 2026-06-24 (V274).** Was the editable copy for the **About page** (`/gioi-thieu`, added in `V223`, re-seeded `V269`). The About page is **fully static** — copy from the i18n `About` namespace, 5 service tiles from theme assets (`AboutPageContent.tsx`); the web never consumed these settings. All 28 `about_page_*` keys were dropped from the DB, from `SettingDefinitionRegistry`, and the runtime `AboutServiceMediaSeeder` was deleted. The store/hotline/Facebook cards on the page still read the shared `contact` keys; brand logos still load from the brand taxonomy.
 - `public_product`: **no shared settings.** All product-detail content is per-product: commitment rows under the buy buttons (`product.commitments`, V232) and the trust-badge row above the title (`product.trustBadges`, V233). The former `product_commitment_*` (V228) and `product_trust_*` keys were removed in V232/V233.
 - `seo`:

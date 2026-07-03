@@ -46,8 +46,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminContentController extends AdminControllerSupport {
 
     private static final String ID_REGEX = "^[A-Za-z0-9_-]+$";
-    private static final String CONTENT_TYPE_REGEX = "^(?i)(ARTICLE|PAGE)$";
-    private static final String CONTENT_PATH_TYPE_REGEX = "^(?i)(article|page)$";
+    private static final String CONTENT_TYPE_REGEX = "^(?i)(ARTICLE)$";
+    private static final String CONTENT_PATH_TYPE_REGEX = "^(?i)(article)$";
     private static final String PUBLISH_STATUS_REGEX = "^(DRAFT|PUBLISHED|HIDDEN|TRASH)$";
     private static final String LANG_REGEX = "^(vi|en)$";
 

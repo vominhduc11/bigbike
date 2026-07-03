@@ -7,7 +7,7 @@ package com.bigbike.bigbike_backend.domain.catalog;
  * <p>Vietnamese content stays on the main {@link Category} fields (canonical).
  * English is optional per {@code BUSINESS_RULES.md CATEGORY_RULE_001}.
  */
-public record CategoryTranslations(CategoryContent en, java.util.List<String> overrides) {
+public record CategoryTranslations(CategoryContent en) {
 
     /** English values of the translatable category-level text fields. */
     public record CategoryContent(

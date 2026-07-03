@@ -127,6 +127,14 @@ public class AdminSettingsService {
             valueValidator.validate(settingKey, req.value(), defOpt.get());
         }
 
+        // English required when the setting is translatable + required in VI (TRANSLATION_RULE_002).
+        if (defOpt.isPresent()) {
+            String effectiveValueEn = req.valueEn() != null
+                    ? (req.valueEn().isBlank() ? null : req.valueEn())
+                    : entity.getSettingValueEn();
+            valueValidator.validateRequiredEn(settingKey, effectiveValueEn, defOpt.get());
+        }
+
         String before = snapshot(entity, definitionRegistry.isSensitive(settingKey));
 
         if (req.value() != null) {
@@ -145,9 +153,6 @@ public class AdminSettingsService {
         if (req.description() != null) {
             entity.setDescription(req.description().isBlank() ? null : req.description());
         }
-        if (req.enLocked() != null) {
-            entity.setEnLocked(req.enLocked());
-        }
         entity.setUpdatedAt(Instant.now());
         settingRepo.save(entity);
 
@@ -160,7 +165,7 @@ public class AdminSettingsService {
 
     // ── Batch update ─────────────────────────────────────────────────────────
 
-    private record PendingUpdate(SiteSettingEntity entity, String newValue, String newValueEn, Boolean newEnLocked) {}
+    private record PendingUpdate(SiteSettingEntity entity, String newValue, String newValueEn) {}
 
     @Transactional
     public List<AdminSiteSettingResponse> batchUpdateSettings(
@@ -196,7 +201,15 @@ public class AdminSettingsService {
                 valueValidator.validate(upd.key(), upd.value(), defOpt.get());
             }
 
-            pending.add(new PendingUpdate(entity, upd.value(), upd.valueEn(), upd.enLocked()));
+            // English required when the setting is translatable + required in VI (TRANSLATION_RULE_002).
+            if (defOpt.isPresent()) {
+                String effectiveValueEn = upd.valueEn() != null
+                        ? (upd.valueEn().isBlank() ? null : upd.valueEn())
+                        : entity.getSettingValueEn();
+                valueValidator.validateRequiredEn(upd.key(), effectiveValueEn, defOpt.get());
+            }
+
+            pending.add(new PendingUpdate(entity, upd.value(), upd.valueEn()));
         }
 
         // Phase 2: apply mutations — all validation has passed
@@ -211,9 +224,6 @@ public class AdminSettingsService {
             }
             if (p.newValueEn() != null) {
                 entity.setSettingValueEn(p.newValueEn().isBlank() ? null : p.newValueEn());
-            }
-            if (p.newEnLocked() != null) {
-                entity.setEnLocked(p.newEnLocked());
             }
             entity.setUpdatedAt(Instant.now());
             settingRepo.save(entity);
@@ -308,7 +318,7 @@ public class AdminSettingsService {
                 masked ? null : s.getSettingValueEn(),
                 s.getSettingGroup(), s.isPublic(), s.getDescription(),
                 s.getCreatedAt(), s.getUpdatedAt(),
-                valueType, sensitive, masked, superAdminOnly, s.isEnLocked()
+                valueType, sensitive, masked, superAdminOnly
         );
     }
 

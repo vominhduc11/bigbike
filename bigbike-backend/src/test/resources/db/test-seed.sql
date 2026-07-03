@@ -84,22 +84,6 @@ SELECT '00000000-0000-0000-0000-000000000108', 'hotline', '"1900 6835"', 'contac
 WHERE NOT EXISTS (SELECT 1 FROM site_settings WHERE setting_key = 'hotline');
 
 INSERT INTO site_settings (id, setting_key, setting_value, setting_group, is_public, description, created_at, updated_at)
-SELECT '00000000-0000-0000-0000-000000000109', 'promo_title', '"Sieu sale thang 4"', 'promo', true, 'Promo title', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-WHERE NOT EXISTS (SELECT 1 FROM site_settings WHERE setting_key = 'promo_title');
-
-INSERT INTO site_settings (id, setting_key, setting_value, setting_group, is_public, description, created_at, updated_at)
-SELECT '00000000-0000-0000-0000-000000000110', 'promo_off', '"Giam 30%"', 'promo', true, 'Promo off text', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-WHERE NOT EXISTS (SELECT 1 FROM site_settings WHERE setting_key = 'promo_off');
-
-INSERT INTO site_settings (id, setting_key, setting_value, setting_group, is_public, description, created_at, updated_at)
-SELECT '00000000-0000-0000-0000-000000000111', 'promo_href', '"/sale"', 'promo', true, 'Promo link', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-WHERE NOT EXISTS (SELECT 1 FROM site_settings WHERE setting_key = 'promo_href');
-
-INSERT INTO site_settings (id, setting_key, setting_value, setting_group, is_public, description, created_at, updated_at)
-SELECT '00000000-0000-0000-0000-000000000112', 'promo_image_url', '"https://cdn.bigbike.local/promo.jpg"', 'promo', true, 'Promo image', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-WHERE NOT EXISTS (SELECT 1 FROM site_settings WHERE setting_key = 'promo_image_url');
-
-INSERT INTO site_settings (id, setting_key, setting_value, setting_group, is_public, description, created_at, updated_at)
 SELECT '00000000-0000-0000-0000-000000000113', 'seo_home_title', '"BigBike - Do bao ho xe may"', 'seo', true, 'Home SEO title', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM site_settings WHERE setting_key = 'seo_home_title');
 

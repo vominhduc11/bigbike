@@ -9,10 +9,11 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Optional English content for a category upsert (V137).
+ * English content for a category upsert (V137), entered manually by the admin (no auto-translation).
  *
- * <p>English is optional per {@code BUSINESS_RULES.md CATEGORY_RULE_001}: every
- * field may be left blank and the category still saves. Only length is validated.
+ * <p>Per {@code BUSINESS_RULES.md CATEGORY_RULE_001/TRANSLATION_RULE_002}: {@code name} is required
+ * (validated in {@code CatalogRequestValidator}, mirroring the Vietnamese {@code name} field being
+ * required) — every other field is optional and may be left blank. Only length is validated.
  */
 @Getter
 @Setter

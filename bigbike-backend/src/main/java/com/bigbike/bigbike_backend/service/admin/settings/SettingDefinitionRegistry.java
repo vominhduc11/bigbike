@@ -58,7 +58,7 @@ public class SettingDefinitionRegistry {
                 // ── GENERAL ──
                 SettingDefinition.builder("site_name", "general", SettingValueType.STRING)
                         .publicAllowed().required()
-                        .description("Tên hiển thị của site (header, footer).").build(),
+                        .description("Tên hiển thị của site — dùng cho SEO (trang chủ/bài viết) và khối liên hệ trang sản phẩm.").build(),
                 // footer_tagline / bct_url / business_registration: gỡ V308 — footer hardcode
                 // trong WpFooter.tsx (quyết định chủ shop 2026-07-03), 3 key này không còn tác dụng.
                 SettingDefinition.builder("footer_description", "general", SettingValueType.LONG_TEXT)
@@ -74,13 +74,13 @@ public class SettingDefinitionRegistry {
                         .description("Địa chỉ cửa hàng công khai.").build(),
                 SettingDefinition.builder("hotline", "contact", SettingValueType.PHONE)
                         .publicAllowed()
-                        .description("Hotline chính hiển thị trên header và footer.").build(),
+                        .description("Hotline chính hiển thị trên header (footer đã hardcode riêng, không còn đọc key này).").build(),
                 SettingDefinition.builder("hotline_2", "contact", SettingValueType.PHONE)
                         .publicAllowed()
-                        .description("Hotline phụ hiển thị trên footer.").build(),
+                        .description("Hotline phụ hiển thị trên header (footer đã hardcode riêng, không còn đọc key này).").build(),
                 SettingDefinition.builder("hotline_3", "contact", SettingValueType.PHONE)
                         .publicAllowed()
-                        .description("Hotline thứ ba hiển thị trên footer.").build(),
+                        .description("Hotline thứ ba hiển thị trên header (footer đã hardcode riêng, không còn đọc key này).").build(),
                 SettingDefinition.builder("facebook_url", "contact", SettingValueType.URL)
                         .publicAllowed()
                         .description("URL Facebook page.").build(),
@@ -133,52 +133,13 @@ public class SettingDefinitionRegistry {
                         .publicAllowed()
                         .description("Chi nhánh ngân hàng (không bắt buộc).").build(),
 
-                // ── PUBLIC_HOME ──
-                SettingDefinition.builder("promo_title", "public_home", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Tiêu đề banner promo trên trang chủ.").build(),
-                SettingDefinition.builder("promo_off", "public_home", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Nhãn % giảm giá trên banner promo.").build(),
-                SettingDefinition.builder("promo_href", "public_home", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("URL đích của banner promo (path tương đối được phép).").build(),
-                SettingDefinition.builder("promo_image_url", "public_home", SettingValueType.IMAGE_URL)
-                        .publicAllowed()
-                        .description("URL ảnh banner promo trang chủ.").build(),
-                SettingDefinition.builder("home_exp_subtitle", "public_home", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Subtitle/kicker section trải nghiệm trên trang chủ.").build(),
-                SettingDefinition.builder("home_exp_title", "public_home", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Tiêu đề section trải nghiệm trên trang chủ.").build(),
-                SettingDefinition.builder("home_exp_desc", "public_home", SettingValueType.LONG_TEXT)
-                        .publicAllowed()
-                        .description("Mô tả section trải nghiệm trên trang chủ.").build(),
-                SettingDefinition.builder("about_title", "public_home", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Tiêu đề section giới thiệu trên trang chủ.").build(),
-                SettingDefinition.builder("about_subtitle", "public_home", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Sub-heading section giới thiệu trên trang chủ.").build(),
-                SettingDefinition.builder("about_content_html", "public_home", SettingValueType.HTML)
-                        .publicAllowed()
-                        .description("Nội dung HTML section giới thiệu trên trang chủ.").build(),
-                SettingDefinition.builder("home_featured_kicker", "public_home", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Kicker (chữ nhỏ phía trên) khu Sản phẩm nổi bật trên trang chủ.").build(),
-                SettingDefinition.builder("home_featured_title", "public_home", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Tiêu đề khu Sản phẩm nổi bật trên trang chủ.").build(),
-                SettingDefinition.builder("home_news_kicker", "public_home", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Kicker khu Tin tức trên trang chủ.").build(),
-                SettingDefinition.builder("home_news_title", "public_home", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Tiêu đề khu Tin tức trên trang chủ.").build(),
-                SettingDefinition.builder("home_videos_title", "public_home", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Tiêu đề khu Video trải nghiệm trên trang chủ.").build(),
+                // ── PUBLIC_HOME: gỡ hẳn V311 — 4 khối (banner promo, trải nghiệm, giới thiệu,
+                // kicker/tiêu đề Sản phẩm nổi bật/Tin tức/Video) đã hardcode thẳng trong
+                // bigbike-web (quyết định chủ shop 2026-07-03); các 15 key trước đây ở đây
+                // (promo_title/promo_off/promo_href/promo_image_url, home_exp_subtitle/title/desc,
+                // about_title/subtitle/content_html, home_featured_kicker/title,
+                // home_news_kicker/title, home_videos_title) không còn tab admin, không còn row
+                // site_settings (V311__remove_public_home_settings.sql).
 
                 // ── PUBLIC_PRODUCT ── (KHÔNG còn setting chung nào.)
                 // Mọi nội dung trang chi tiết sản phẩm giờ quản theo TỪNG sản phẩm:

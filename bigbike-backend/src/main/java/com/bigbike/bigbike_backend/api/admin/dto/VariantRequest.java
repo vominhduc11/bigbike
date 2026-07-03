@@ -37,9 +37,10 @@ public class VariantRequest {
 
     // stockState is a derived field (computed from quantityOnHand). Removed from input — backend ignores it.
 
-    // The variant cover image is no longer entered separately — it is always the
-    // first image of the color gallery (see AdminCatalogMutationService.applyVariants
-    // / colorCoverImages). The former imageUrl/imageAlt request fields were removed.
+    // The variant cover image is not a standalone field — it is picked per colour via
+    // GalleryImageRequest.cover on one of the color gallery's images (see
+    // AdminCatalogMutationService.applyVariants / colorCoverImages). The former
+    // imageUrl/imageAlt request fields were removed.
 
     private Boolean isAvailable;
 

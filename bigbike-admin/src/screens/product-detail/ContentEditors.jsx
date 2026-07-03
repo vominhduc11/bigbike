@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { GripVertical } from 'lucide-react'
+import { GripVertical, Star } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { MediaPickerModal } from '../../components/MediaPickerModal'
 import { VideoPickerModal } from '../../components/VideoPickerModal'
 import { MediaRequirementHint } from '../../components/MediaRequirementHint'
@@ -37,11 +38,11 @@ export function IconChevronUp() {
   )
 }
 
-export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sortable }) {
+export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sortable, showCover, isCover, onSetCover }) {
   const { t } = useTranslation()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [videoPickerOpen, setVideoPickerOpen] = useState(false)
-  const { pickAlt, flushAltSync } = useMediaAltSync()
+  const { pickAlt } = useMediaAltSync()
   const isVideo = item.mediaType === 'video'
   const trimmed = (item.url || '').trim()
   const displayUrl = resolveDisplayUrl(trimmed)
@@ -91,13 +92,13 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
         <div className="gallery-card-body flex flex-col gap-2">
           <div className="flex gap-1 p-1 bg-muted w-fit">
             <Button type="button" variant={provider === 'youtube' ? 'default' : 'ghost'} size="sm"
-              onClick={() => onUpdate('provider', 'youtube')} disabled={disabled}>YouTube</Button>
+              onClick={() => onUpdate({ provider: 'youtube' })} disabled={disabled}>YouTube</Button>
             <Button type="button" variant={provider === 'tiktok' ? 'default' : 'ghost'} size="sm"
-              onClick={() => onUpdate('provider', 'tiktok')} disabled={disabled}>TikTok</Button>
+              onClick={() => onUpdate({ provider: 'tiktok' })} disabled={disabled}>TikTok</Button>
             <Button type="button" variant={provider === 'facebook' ? 'default' : 'ghost'} size="sm"
-              onClick={() => onUpdate('provider', 'facebook')} disabled={disabled}>Facebook</Button>
+              onClick={() => onUpdate({ provider: 'facebook' })} disabled={disabled}>Facebook</Button>
             <Button type="button" variant={provider === 'upload' ? 'default' : 'ghost'} size="sm"
-              onClick={() => { onUpdate('provider', 'upload'); }} disabled={disabled}>
+              onClick={() => { onUpdate({ provider: 'upload' }); }} disabled={disabled}>
               {t('products.detail.gallery.videoUpload', { defaultValue: 'Tải lên' })}
             </Button>
           </div>
@@ -107,7 +108,7 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
               className="gallery-card-alt-input"
               placeholder={t('products.detail.gallery.videoUrlPlaceholder', { defaultValue: 'Dán link YouTube' })}
               value={item.videoUrl || ''}
-              onChange={(e) => onUpdate('videoUrl', e.target.value)}
+              onChange={(e) => onUpdate({ videoUrl: e.target.value })}
               disabled={disabled}
             />
           ) : provider === 'tiktok' ? (
@@ -116,7 +117,7 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
               className="gallery-card-alt-input"
               placeholder={t('products.detail.gallery.tiktokUrlPlaceholder', { defaultValue: 'Dán link TikTok đầy đủ' })}
               value={item.videoUrl || ''}
-              onChange={(e) => onUpdate('videoUrl', e.target.value)}
+              onChange={(e) => onUpdate({ videoUrl: e.target.value })}
               disabled={disabled}
             />
           ) : provider === 'facebook' ? (
@@ -125,7 +126,7 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
               className="gallery-card-alt-input"
               placeholder={t('products.detail.gallery.facebookUrlPlaceholder', { defaultValue: 'Dán link video Facebook (công khai)' })}
               value={item.videoUrl || ''}
-              onChange={(e) => onUpdate('videoUrl', e.target.value)}
+              onChange={(e) => onUpdate({ videoUrl: e.target.value })}
               disabled={disabled}
             />
           ) : (
@@ -136,16 +137,6 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
           <Button variant="outline" size="sm" onClick={() => setPickerOpen(true)} disabled={disabled} className="self-start">
             {trimmed ? t('products.detail.gallery.thumbChange', { defaultValue: 'Đổi ảnh đại diện' }) : t('products.detail.gallery.thumbPick', { defaultValue: 'Ảnh đại diện (tuỳ chọn)' })}
           </Button>
-          <input
-            type="text"
-            className="gallery-card-alt-input"
-            placeholder={t('products.detail.gallery.altPlaceholder')}
-            value={item.alt || ''}
-            onChange={(e) => onUpdate('alt', e.target.value)}
-            onBlur={(e) => flushAltSync(e.target.value)}
-            disabled={disabled}
-            aria-label={t('products.detail.gallery.altAriaLabel')}
-          />
           {urlError && <small className="field-error">{urlError}</small>}
         </div>
         {pickerOpen && (
@@ -153,8 +144,7 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
             recommend={IMAGE_RECO.productImage}
             kind="image"
             onSelect={(url, media) => {
-              onUpdate('url', url)
-              onUpdate('alt', pickAlt(item.alt, media))
+              onUpdate({ url, alt: pickAlt(item.alt, media) })
               setPickerOpen(false)
             }}
             onClose={() => setPickerOpen(false)}
@@ -162,7 +152,7 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
         )}
         {videoPickerOpen && (
           <VideoPickerModal
-            onSelect={(url) => { onUpdate('videoUrl', url); onUpdate('provider', 'upload'); setVideoPickerOpen(false) }}
+            onSelect={(url) => { onUpdate({ videoUrl: url, provider: 'upload' }); setVideoPickerOpen(false) }}
             onClose={() => setVideoPickerOpen(false)}
           />
         )}
@@ -212,6 +202,23 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
             ✕
           </button>
         )}
+        {showCover && trimmed && (
+          <button
+            type="button"
+            className={cn(
+              'absolute bottom-1 right-1 z-10 inline-flex items-center justify-center w-6 h-6 rounded-sm',
+              isCover ? 'bg-warning-bg text-warning' : 'bg-black/55 text-white',
+              disabled && 'cursor-not-allowed',
+            )}
+            onClick={(e) => { e.stopPropagation(); if (!disabled) onSetCover() }}
+            disabled={disabled}
+            aria-pressed={isCover}
+            title={isCover ? t('products.detail.gallery.isCoverImage') : t('products.detail.gallery.setCoverImage')}
+            aria-label={isCover ? t('products.detail.gallery.isCoverImage') : t('products.detail.gallery.setCoverImage')}
+          >
+            <Star size={14} fill={isCover ? 'currentColor' : 'none'} />
+          </button>
+        )}
       </div>
       <div className="gallery-card-body">
         <Button
@@ -223,25 +230,14 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
         >
           {trimmed ? t('products.detail.gallery.changeImage') : t('products.detail.gallery.pickImage')}
         </Button>
-          <input
-            type="text"
-            className="gallery-card-alt-input"
-            placeholder={t('products.detail.gallery.altPlaceholder')}
-            value={item.alt || ''}
-            onChange={(e) => onUpdate('alt', e.target.value)}
-            onBlur={(e) => flushAltSync(e.target.value)}
-            disabled={disabled}
-            aria-label={t('products.detail.gallery.altAriaLabel')}
-          />
-          {urlError && <small className="field-error">{urlError}</small>}
+        {urlError && <small className="field-error">{urlError}</small>}
       </div>
       {pickerOpen && (
         <MediaPickerModal
           recommend={IMAGE_RECO.productImage}
           kind="image"
           onSelect={(url, media) => {
-            onUpdate('url', url)
-            onUpdate('alt', pickAlt(item.alt, media))
+            onUpdate({ url, alt: pickAlt(item.alt, media) })
             setPickerOpen(false)
           }}
           onClose={() => setPickerOpen(false)}
@@ -251,11 +247,11 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
   )
 }
 
-export function GalleryEditor({ items, onChange, disabled, validationErrors = {}, allowVideo = true }) {
+export function GalleryEditor({ items, onChange, disabled, validationErrors = {}, allowVideo = true, showCover = false }) {
   const { t } = useTranslation()
 
-  function updateItem(index, field, value) {
-    onChange(items.map((item, i) => i === index ? { ...item, [field]: value } : item))
+  function updateItem(index, patch) {
+    onChange(items.map((item, i) => i === index ? { ...item, ...patch } : item))
   }
   async function removeItem(index) {
     const item = items[index]
@@ -267,10 +263,17 @@ export function GalleryEditor({ items, onChange, disabled, validationErrors = {}
     onChange(items.filter((_, i) => i !== index))
   }
   function addItem() {
-    onChange([...items, { _key: generateId(), url: '', alt: '' }])
+    // Ảnh đầu tiên của một gallery màu chưa từng chọn cover: tự đặt luôn làm đại
+    // diện (không cần bấm sao) — chỉ khi thêm ảnh THỨ HAI trở đi mới thật sự cần
+    // admin chọn tay (bắt buộc, xem lib/schemas.js superRefine).
+    const autoCover = showCover && items.length === 0
+    onChange([...items, { _key: generateId(), url: '', alt: '', isCover: autoCover }])
   }
   function addVideoItem() {
     onChange([...items, { _key: generateId(), mediaType: 'video', provider: 'youtube', videoUrl: '', url: '', alt: '' }])
+  }
+  function setCover(index) {
+    onChange(items.map((item, i) => ({ ...item, isCover: i === index })))
   }
 
   return (
@@ -287,10 +290,13 @@ export function GalleryEditor({ items, onChange, disabled, validationErrors = {}
           <GalleryCard
             sortable={sortable}
             item={item}
-            onUpdate={(field, value) => updateItem(index, field, value)}
+            onUpdate={(patch) => updateItem(index, patch)}
             onRemove={() => removeItem(index)}
             disabled={disabled}
             urlError={validationErrors[`gallery.${index}.url`]}
+            showCover={showCover}
+            isCover={Boolean(item.isCover)}
+            onSetCover={() => setCover(index)}
           />
         )}
         footer={!disabled && (

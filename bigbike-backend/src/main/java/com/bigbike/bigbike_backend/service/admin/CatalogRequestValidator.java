@@ -7,12 +7,15 @@ import com.bigbike.bigbike_backend.api.admin.dto.UpsertBrandRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertCategoryRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.GalleryImageRequest;
 import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.config.MediaUrlProperties;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
@@ -92,6 +95,74 @@ public class CatalogRequestValidator {
                 mediaUrlProperties.getPublicBaseUrl(),
                 errors
         );
+
+        if (!preview) {
+            Set<String> existingGalleryUrls = new HashSet<>();
+            if (current != null) {
+                if (current.getGallery() != null) {
+                    for (ProductGalleryImageEntity img : current.getGallery()) {
+                        if (!"video".equalsIgnoreCase(img.getMediaType())) {
+                            String u = AdminMutationValidators.trimToNull(img.getImageUrl());
+                            if (u != null) {
+                                existingGalleryUrls.add(u);
+                            }
+                        }
+                    }
+                }
+                if (current.getVariants() != null) {
+                    for (ProductVariantEntity variant : current.getVariants()) {
+                        if (variant.getGallery() != null) {
+                            for (ProductVariantGalleryImageEntity img : variant.getGallery()) {
+                                if (!"video".equalsIgnoreCase(img.getMediaType())) {
+                                    String u = AdminMutationValidators.trimToNull(img.getImageUrl());
+                                    if (u != null) {
+                                        existingGalleryUrls.add(u);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (request.getGallery() != null) {
+                for (int i = 0; i < request.getGallery().size(); i++) {
+                    GalleryImageRequest imgReq = request.getGallery().get(i);
+                    if (imgReq != null && !"video".equalsIgnoreCase(imgReq.getMediaType())) {
+                        String url = AdminMutationValidators.trimToNull(imgReq.getUrl());
+                        if (url != null && !existingGalleryUrls.contains(url)) {
+                            AdminMutationValidators.validateWhitelistedMediaUrl(
+                                    url,
+                                    "gallery[" + i + "].url",
+                                    mediaUrlProperties.getPublicBaseUrl(),
+                                    errors
+                            );
+                        }
+                    }
+                }
+            }
+            if (request.getVariants() != null) {
+                for (int i = 0; i < request.getVariants().size(); i++) {
+                    VariantRequest v = request.getVariants().get(i);
+                    if (v != null && v.getGallery() != null) {
+                        for (int j = 0; j < v.getGallery().size(); j++) {
+                            GalleryImageRequest imgReq = v.getGallery().get(j);
+                            if (imgReq != null && !"video".equalsIgnoreCase(imgReq.getMediaType())) {
+                                String url = AdminMutationValidators.trimToNull(imgReq.getUrl());
+                                if (url != null && !existingGalleryUrls.contains(url)) {
+                                    AdminMutationValidators.validateWhitelistedMediaUrl(
+                                            url,
+                                            "variants[" + i + "].gallery[" + j + "].url",
+                                            mediaUrlProperties.getPublicBaseUrl(),
+                                            errors
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         BigDecimal mergedRetail = request.isRetailPricePresent()
                 ? request.getRetailPrice()
@@ -182,6 +253,13 @@ public class CatalogRequestValidator {
                     s -> productJpaRepository.findBySlugEn(s).map(ProductEntity::getId),
                     errors
             );
+            // Tiếng Anh chỉ bắt buộc khi tiếng Việt tương ứng đang bắt buộc (TRANSLATION_RULE_002).
+            // `name` là field cốt lõi bắt buộc ở VI → `translations.en.name` cũng bắt buộc, áp
+            // dụng cho cả tạo mới lẫn sửa bản ghi cũ (không chỉ khi request đổi tên).
+            ProductTranslationRequest.ProductContentRequest en =
+                    request.getTranslations() == null ? null : request.getTranslations().getEn();
+            AdminMutationValidators.validateRequiredText(
+                    en == null ? null : en.getName(), "translations.en.name", "English name", errors);
         }
 
         return slug;
@@ -389,6 +467,14 @@ public class CatalogRequestValidator {
                 errors
         );
 
+        // Tiếng Anh chỉ bắt buộc khi tiếng Việt tương ứng đang bắt buộc (TRANSLATION_RULE_002).
+        // `name` là field cốt lõi bắt buộc ở VI → `translations.en.name` cũng bắt buộc, áp
+        // dụng cho cả tạo mới lẫn sửa bản ghi cũ (không chỉ khi request đổi tên).
+        CategoryTranslationRequest.CategoryContentRequest categoryEn =
+                request.getTranslations() == null ? null : request.getTranslations().getEn();
+        AdminMutationValidators.validateRequiredText(
+                categoryEn == null ? null : categoryEn.getName(), "translations.en.name", "English name", errors);
+
         return slug;
     }
 
@@ -485,6 +571,14 @@ public class CatalogRequestValidator {
                 s -> brandJpaRepository.findBySlugEn(s).map(BrandEntity::getId),
                 errors
         );
+
+        // Tiếng Anh chỉ bắt buộc khi tiếng Việt tương ứng đang bắt buộc (TRANSLATION_RULE_002).
+        // `name` là field cốt lõi bắt buộc ở VI → `translations.en.name` cũng bắt buộc, áp
+        // dụng cho cả tạo mới lẫn sửa bản ghi cũ (không chỉ khi request đổi tên).
+        BrandTranslationRequest.BrandContentRequest brandEn =
+                request.getTranslations() == null ? null : request.getTranslations().getEn();
+        AdminMutationValidators.validateRequiredText(
+                brandEn == null ? null : brandEn.getName(), "translations.en.name", "English name", errors);
 
         return slug;
     }

@@ -33,6 +33,28 @@ public class SettingValueValidator {
         }
         if (rawValue.isBlank()) return;
 
+        validateByType(key, rawValue, def);
+    }
+
+    /**
+     * Tiếng Anh chỉ bắt buộc khi setting vừa dịch-được (kiểu chữ tự do) vừa bắt buộc ở VI
+     * (TRANSLATION_RULE_002). {@code effectiveValueEn} phải là giá trị SAU KHI áp dụng patch
+     * (giữ nguyên giá trị cũ nếu request không gửi {@code valueEn}), không phải raw request field.
+     */
+    public void validateRequiredEn(String key, String effectiveValueEn, SettingDefinition def) {
+        if (!def.required() || !isFreeTextType(def.type())) return;
+        if (effectiveValueEn == null || effectiveValueEn.isBlank()) {
+            throw ValidationException.fromField("valueEn", "REQUIRED",
+                    "Setting English value must not be blank. (key=" + key + ")");
+        }
+    }
+
+    private static boolean isFreeTextType(SettingValueType type) {
+        return type == SettingValueType.STRING || type == SettingValueType.HTML || type == SettingValueType.LONG_TEXT;
+    }
+
+    private void validateByType(String key, String rawValue, SettingDefinition def) {
+
         switch (def.type()) {
             case STRING -> validateLength(key, rawValue, MAX_STRING_LENGTH);
             case LONG_TEXT -> validateLength(key, rawValue, MAX_LONG_TEXT_LENGTH);

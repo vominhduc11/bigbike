@@ -103,7 +103,7 @@ final class JpaCatalogReadSupport {
                 entity.getSeoTitleEn(),
                 entity.getSeoDescriptionEn(),
                 entity.getIntroContentEn()
-        ), com.bigbike.bigbike_backend.service.admin.EnOverridesCodec.toList(entity.getEnOverrides()));
+        ));
     }
 
     static BrandTranslations toBrandTranslations(BrandEntity entity) {
@@ -117,7 +117,7 @@ final class JpaCatalogReadSupport {
                 entity.getDescriptionEn(),
                 entity.getSeoTitleEn(),
                 entity.getSeoDescriptionEn()
-        ), com.bigbike.bigbike_backend.service.admin.EnOverridesCodec.toList(entity.getEnOverrides()));
+        ));
     }
 
     /**
@@ -157,7 +157,7 @@ final class JpaCatalogReadSupport {
                 entity.getSeoTitleEn(),
                 entity.getSeoDescriptionEn(),
                 descriptionBlocksEn
-        ), com.bigbike.bigbike_backend.service.admin.EnOverridesCodec.toList(entity.getEnOverrides()));
+        ));
     }
 
     static boolean isPresent(String value) {
@@ -211,10 +211,28 @@ final class JpaCatalogReadSupport {
                             variant.stockState(),
                             variant.stockQuantity(),
                             image,
-                            gallery,
+                            markCoverImage(gallery, image),
                             variant.isAvailable()
                     );
                 })
+                .toList();
+    }
+
+    /**
+     * Flags whichever gallery entry matches the color's resolved cover so the
+     * admin edit screen can pre-select the currently-active cover — covers both
+     * an explicit admin pick and the legacy first-image fallback (see
+     * ProductFieldApplier.colorCoverImages), since either way the resolved
+     * {@code cover}'s URL always equals one of the gallery items' URLs.
+     */
+    static List<GalleryMedia> markCoverImage(List<GalleryMedia> gallery, ImageAsset cover) {
+        if (cover == null || cover.url() == null || gallery.isEmpty()) {
+            return gallery;
+        }
+        return gallery.stream()
+                .map(item -> item.image() != null && cover.url().equals(item.image().url())
+                        ? new GalleryMedia(item.mediaType(), item.image(), item.videoUrl(), item.videoProvider(), true)
+                        : item)
                 .toList();
     }
 

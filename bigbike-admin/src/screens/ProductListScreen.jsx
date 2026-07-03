@@ -25,7 +25,7 @@ import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { PaginationControls } from '../components/PaginationControls'
 import { MobileCardList } from '../components/layout/MobileCardList'
-import { DUPLICATE_SESSION_KEY, HOMEPAGE_BLOCK_LABEL_KEYS, HOMEPAGE_BLOCK_LIMITS, INITIAL_QUERY, buildCategoryTreeOrder } from './product-list/constants'
+import { DUPLICATE_SESSION_KEY, HOMEPAGE_BLOCK_LABEL_KEYS, HOMEPAGE_BLOCK_LIMITS, INITIAL_QUERY, buildCategoryTreeOrder, categoryLabel } from './product-list/constants'
 import { ProductRow } from './product-list/ProductRow'
 import { ProductMobileCard } from './product-list/ProductMobileCard'
 
@@ -226,9 +226,23 @@ export function ProductListScreen({ navigate, canUpdate }) {
   const handleTogglePublish = useCallback((product) => {
     if (!canUpdate) return
     const nextStatus = product.publishStatus === 'PUBLISHED' ? 'HIDDEN' : 'PUBLISHED'
+    if (nextStatus === 'PUBLISHED') {
+      const hasName = !!product.name
+      const hasBrand = !!product.brand?.name
+      const hasCategory = !!categoryLabel(product)
+      const hasImage = !!product.image?.url
+      const hasPrice = product.price?.retailPrice > 0
+
+      if (!hasName || !hasBrand || !hasCategory || !hasImage || !hasPrice) {
+        toast.error(t('products.publishMissingFields', {
+          defaultValue: 'Cần đủ Tên/Thương hiệu/Danh mục/Ảnh/Giá trước khi đăng. Mở trang chi tiết để bổ sung.'
+        }))
+        return
+      }
+    }
     setTogglingPublishId(product.id)
     togglePublishMutation.mutate({ id: product.id, nextStatus })
-  }, [canUpdate, togglePublishMutation])
+  }, [canUpdate, togglePublishMutation, t])
 
   const emptyState = query.publishStatus === 'TRASH'
     ? {

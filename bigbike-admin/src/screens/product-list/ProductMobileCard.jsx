@@ -23,6 +23,7 @@ export function ProductMobileCard({
   const isBusy = isDeleting || isRestoring
   const block = product.homepageBlock
   const detailPath = `/admin/products/${product.id}`
+  const sale = product.price?.salePrice
 
   return (
     <MobileCard
@@ -49,11 +50,11 @@ export function ProductMobileCard({
       meta={[
         {
           label: t('products.colPrice'),
-          value: product.price?.salePrice ? (
+          value: sale > 0 ? (
             <span>
-              {formatCurrencyVnd(product.price?.retailPrice)}
+              {formatCurrencyVnd(sale)}
               <span style={{ textDecoration: 'line-through', marginLeft: 8 }}>
-                {formatCurrencyVnd(product.price.salePrice)}
+                {formatCurrencyVnd(product.price.retailPrice)}
               </span>
             </span>
           ) : (

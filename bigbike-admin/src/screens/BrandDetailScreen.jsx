@@ -15,9 +15,7 @@ import { formatDateTime } from '../lib/formatters'
 import { useContentLang } from '../lib/contentLang'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { clearNavGuard } from '@/lib/navigationGuard'
-import { Languages, Loader2, Save } from 'lucide-react'
-
-import { translateBrandForm, addOverride } from '../lib/geminiTranslate'
+import { Loader2, Save } from 'lucide-react'
 
 import { createBrandSchema, zodErrors } from '../lib/schemas'
 import { StatePanel } from '../components/StatePanel'
@@ -61,7 +59,6 @@ function buildEmptyForm() {
     seoOgImageUrl: '',
     seoOgImageAlt: '',
     translations: { en: { slug: '', name: '', description: '', seoTitle: '', seoDescription: '' } },
-    enOverrides: [],
   }
 }
 
@@ -91,7 +88,6 @@ function buildFormFromItem(item) {
         seoDescription: item.translations?.en?.seoDescription || '',
       },
     },
-    enOverrides: Array.isArray(item.translations?.overrides) ? [...item.translations.overrides] : [],
   }
 }
 
@@ -137,8 +133,6 @@ function toPayload(form) {
       seoDescription: form.translations?.en?.seoDescription?.trim() || null,
     },
   }
-
-  payload.enOverrides = Array.isArray(form.enOverrides) ? form.enOverrides : []
 
   return payload
 }
@@ -265,8 +259,6 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
         ...previous.translations,
         en: { ...(previous.translations?.en || {}), [field]: value },
       },
-      // Sửa tay ô tiếng Anh nào thì KHOÁ ô đó — lần lưu sau không tự dịch đè (V296).
-      enOverrides: addOverride(previous.enOverrides, field),
     }))
   }
 
@@ -341,7 +333,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     setForm((previous) => {
       const en = { ...(previous.translations?.en || {}), name: value }
       if (!enSlugManuallyEdited) en.slug = toSlug(value)
-      return { ...previous, translations: { ...previous.translations, en }, enOverrides: addOverride(previous.enOverrides, 'name') }
+      return { ...previous, translations: { ...previous.translations, en } }
     })
   }
 
@@ -384,23 +376,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     setIsSubmitting(true)
     setValidationErrors({})
 
-    let formToSave = form
-    // Tự dịch VI→EN cho ô CHƯA bị khoá; ô admin đã sửa tay giữ nguyên (V296).
-    {
-      const toastId = toast.loading('Đang tự động dịch sang tiếng Anh...')
-      try {
-        const original = isCreate ? null : JSON.parse(initialSnapshot)
-        const translatedForm = await translateBrandForm(formToSave, formToSave.enOverrides, original)
-        formToSave = translatedForm
-        setForm(translatedForm)
-        toast.success('Đã tự động dịch sang tiếng Anh!', { id: toastId })
-      } catch (err) {
-        console.error('Auto-translate error:', err)
-        toast.error('Tự động dịch tiếng Anh thất bại, vẫn tiến hành lưu...', { id: toastId })
-      }
-    }
-
-    saveMutation.mutate(toPayload(formToSave))
+    saveMutation.mutate(toPayload(form))
   }
 
 
@@ -619,19 +595,16 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                   style={{ fontFamily: 'var(--admin-font-mono)' }} />
               </FormField>
               <FormField
-                label={<>
-                  {t('brands.detail.name').replace(/\s*\*\s*$/, '')}
-                  {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 8 }}>{t('brands.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
-                </>}
-                required={!isEnLang}
-                error={!isEnLang ? validationErrors.name : undefined}
+                label={t('brands.detail.name').replace(/\s*\*\s*$/, '')}
+                required
+                error={isEnLang ? validationErrors['translations.en.name'] : validationErrors.name}
               >
                 <Input
                   value={isEnLang ? (form.translations?.en?.name ?? '') : form.name}
                   onChange={(e) => isEnLang ? handleEnNameChange(e.target.value) : updateField('name', e.target.value)}
-                  onBlur={() => { if (!isEnLang) handleFieldBlur('name') }}
+                  onBlur={() => handleFieldBlur(isEnLang ? 'translations.en.name' : 'name')}
                   disabled={isReadOnly}
-                  placeholder={isEnLang ? t('brands.detail.namePlaceholderEn', { defaultValue: 'English name (optional)' }) : undefined}
+                  placeholder={isEnLang ? t('brands.detail.namePlaceholderEn', { defaultValue: 'English name' }) : undefined}
                 />
               </FormField>
               <label

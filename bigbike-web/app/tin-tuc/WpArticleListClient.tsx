@@ -74,6 +74,7 @@ export function WpArticleListClient({
   // Đã có bài viết (trang/lọc cũ) hiển thị nhưng đang fetch bản mới — làm mờ + báo hiệu
   // thay vì im lặng đợi rồi tự đổi (giống lưới sản phẩm).
   const isRefetching = isFetching && !firstLoading;
+  const hasMultipleCategories = categories.length > 1;
 
   const makeListHref = (overrides: { category?: string; size?: number }) => {
     const nextSize = overrides.size && overrides.size !== DEFAULT_PAGE_SIZE ? overrides.size : undefined;
@@ -98,11 +99,13 @@ export function WpArticleListClient({
       ) : null}
 
       <div className="row">
-        <div className="col-md-3">
-          <WpNewsCategoryWidget categories={categories} activeSlug={category} />
-        </div>
+        {hasMultipleCategories ? (
+          <div className="col-md-3">
+            <WpNewsCategoryWidget categories={categories} activeSlug={category} />
+          </div>
+        ) : null}
 
-        <div className="col-md-9 bb-blog-listing-parity">
+        <div className={hasMultipleCategories ? "col-md-9 bb-blog-listing-parity" : "col-md-12 bb-blog-listing-parity"}>
           {firstLoading ? (
             <div className="news-list">
               <div className="row">
@@ -179,7 +182,7 @@ function WpNewsCategoryWidget({
   activeSlug?: string;
 }) {
   const t = useTranslations("Blog");
-  if (categories.length === 0) {
+  if (categories.length <= 1) {
     return null;
   }
 

@@ -127,17 +127,18 @@ export function clearFormFromStorage(key) {
 // ── Publish readiness checklist ────────────────────────────────────────────────
 
 export function getPublishReadiness(form, t, isCreate = false) {
-  // Publish gate. Khi TẠO MỚI siết hơn: bắt buộc thêm SKU/đường dẫn/đối tượng và các khối
-  // nội dung (FAQ, ô số liệu, dải tin cậy) — khớp createProductSchema.
-  // Khi SỬA sản phẩm cũ, các mục này chỉ là nhắc nhở (required:false) để không chặn lưu.
+  // Publish gate (PRODUCT_RULE_005): name/brand/category/image/price/shortDesc/desc bắt buộc
+  // ở mọi lần đăng (tạo mới lẫn sửa). Khi TẠO MỚI siết hơn: bắt buộc thêm SKU/đường dẫn/đối
+  // tượng — khớp createProductSchema (PRODUCT_RULE_007). FAQ/ô số liệu/dải tin cậy chỉ là
+  // nhắc nhở (required:false) ở mọi luồng, không chặn lưu.
   const items = [
     { id: 'name',      label: t('products.detail.checklist.name'),      ok: Boolean(form.name?.trim()),                                             required: true  },
     { id: 'brand',     label: t('products.detail.checklist.brand'),     ok: Boolean(form.brandId),                                                  required: true  },
     { id: 'category',  label: t('products.detail.checklist.category'),  ok: Boolean(form.categoryId),                                               required: true  },
     { id: 'image',     label: t('products.detail.checklist.image'),     ok: Boolean(form.imageUrl?.trim()),                                         required: true  },
     { id: 'price',     label: t('products.detail.checklist.price'),     ok: Boolean(form.retailPrice?.trim()) && Number(form.retailPrice) > 0,      required: true  },
-    { id: 'shortDesc', label: t('products.detail.checklist.shortDesc'), ok: Boolean(form.shortDescription?.trim()),                                 required: false },
-    { id: 'desc',      label: t('products.detail.checklist.desc'),      ok: (Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks.length > 0 : (form.description?.trim().length ?? 0) > 0),  required: false },
+    { id: 'shortDesc', label: t('products.detail.checklist.shortDesc'), ok: Boolean(form.shortDescription?.trim()),                                 required: true  },
+    { id: 'desc',      label: t('products.detail.checklist.desc'),      ok: (Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks.length > 0 : (form.description?.trim().length ?? 0) > 0),  required: true  },
     // Bắt buộc khi tạo mới, nhắc nhở khi sửa.
     { id: 'sku',           label: t('products.detail.checklist.sku', { defaultValue: 'Mã SKU' }),          ok: Boolean(form.sku?.trim()),                required: isCreate },
     { id: 'slug',          label: t('products.detail.checklist.slug', { defaultValue: 'Đường dẫn (slug)' }),ok: Boolean(form.slug?.trim()),               required: isCreate },
@@ -191,8 +192,9 @@ export function withColorScopedMedia(variants = []) {
     }
   })
 
-  // The variant cover image is derived backend-side from the first gallery image
-  // (no separate cover field), so the editor only scopes the gallery by color.
+  // The variant cover image is picked per-color on one of the gallery images
+  // (GalleryEditor's `isCover` flag, cloned along with the rest of the item by
+  // cloneGallery), so this only needs to scope the gallery array itself by color.
   return variants.map((variant) => {
     const colorKey = getVariantColorKey(variant)
     const gallery = colorKey ? galleryByColor.get(colorKey) || [] : []
@@ -257,10 +259,8 @@ export function buildEmptyForm() {
     relatedProductChips: [],
     accessoryProductIds: [],
     accessoryProductChips: [],
-    // Optional English content (V136). Vietnamese above stays canonical.
+    // English content (V136), entered manually. Vietnamese above stays canonical.
     translations: { en: buildEmptyTranslation() },
-    // English fields/sections the admin locked by hand (translation lock, V296).
-    enOverrides: [],
   }
 }
 
@@ -370,11 +370,12 @@ export function buildFormFromItem(item) {
     name: v.name || '',
     isAvailable: v.isAvailable !== false,
     options: (v.options || []).map((o) => ({
+      _key: generateId(),
       name: o.name || '',
       value: o.value || '',
       attributeValueId: o.attributeValueId || null,
     })),
-    gallery: (v.gallery || []).map((img) => ({ _key: generateId(), mediaType: img.mediaType || 'image', url: img.rawUrl || img.url || '', alt: img.alt || '', videoUrl: img.videoUrl || '', provider: img.provider || 'youtube' })),
+    gallery: (v.gallery || []).map((img) => ({ _key: generateId(), mediaType: img.mediaType || 'image', url: img.rawUrl || img.url || '', alt: img.alt || '', videoUrl: img.videoUrl || '', provider: img.provider || 'youtube', isCover: Boolean(img.isCover) })),
   })))
 
   const form = {
@@ -519,7 +520,6 @@ export function buildFormFromItem(item) {
       })),
     // slug tiếng Anh nằm ở field top-level `slugEn` của response, không trong translations.en.
     translations: { en: { ...translationFormFromItem(item.translations?.en), slug: item.slugEn || '' } },
-    enOverrides: Array.isArray(item.translations?.overrides) ? [...item.translations.overrides] : [],
   }
 
   // Thông số kỹ thuật bản EN: backfill html từ bảng cấu trúc cũ (nameEn/valueEn) nếu chưa có html EN.
@@ -722,13 +722,11 @@ export function toPayload(form) {
     image: form.imageUrl.trim()
       ? { url: form.imageUrl.trim(), alt: form.imageAlt.trim() || undefined }
       : null,
-    // Optional English content (V136). Always sent so the backend full-replaces
-    // the English columns; empty fields clear them. English is never required.
+    // English content (V136), entered manually. Always sent so the backend full-replaces
+    // the English columns; empty fields clear them — except `name`, which is required
+    // (TRANSLATION_RULE_002, validated client-side by createProductSchema too).
     translations: { en: { ...translationToPayload(form.translations?.en) } },
   }
-
-  // Translation lock (V296): English fields/sections the admin edited by hand.
-  payload.enOverrides = Array.isArray(form.enOverrides) ? form.enOverrides : []
 
   payload.gallery = form.gallery
     // V248: giữ item có ảnh HOẶC video (gallery hỗn hợp).
@@ -866,7 +864,7 @@ export function toPayload(form) {
               alt: img.alt?.trim() || undefined,
               sortOrder: j,
             }
-          : { mediaType: 'image', url: img.url.trim(), alt: img.alt?.trim() || undefined, sortOrder: j }
+          : { mediaType: 'image', url: img.url.trim(), alt: img.alt?.trim() || undefined, sortOrder: j, cover: Boolean(img.isCover) }
       ))
 
     const shouldSendGallery = Boolean(colorKey && gallery.length > 0 && !emittedGalleryColors.has(colorKey))
@@ -878,8 +876,8 @@ export function toPayload(form) {
       name: v.name.trim(),
       // Variant price fields intentionally omitted — see ProductDetailScreen
       // variant form section. Cart/checkout always use product price.
-      // Cover image is derived backend-side from the first gallery image; no
-      // separate variant image field is sent.
+      // Cover image isn't a separate variant field — the admin-picked image is
+      // marked via `cover: true` on one item in `gallery` above (per colour).
       isAvailable: Boolean(v.isAvailable),
       sortOrder: i,
       options: v.options

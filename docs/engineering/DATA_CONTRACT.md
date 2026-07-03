@@ -434,6 +434,10 @@ Eleven block types (8 gốc + 3 khối PDP chuyên biệt V246):
 
 Status: `CONFIRMED_FROM_CODE` — `DescriptionBlock.java` (sealed interface, `FeatureBlock` có `subheading`), `DescriptionBlocksConverter`, `ProductEntity.descriptionBlocks`, `DescriptionBlockRenderer` (gồm `renderFeature` render eyebrow), `AdminCatalogMutationService.applyProductPatch`, migration `V139` + `V238` (gộp sản phẩm về 4 khối) + `V251` (gỡ khối `prosCons`). Admin `BlockEditor` chạy `productMode` hiện 6 khối (4 + 2 khối PDP `suitability`/`sizeGuide`); Content giữ đủ khối. `DescriptionBlockRenderer` render các khối ra HTML SEO; `JpaCatalogReadRepository.toHighlights` đọc `positiveNotes`/`negativeNotes` từ bảng con `product_highlights` (V251 — không còn suy ra từ khối). Subtype `ProsConsBlock` giữ lại dormant trong sealed interface để deserialize an toàn dữ liệu cũ.
 
+**Phân biệt Block Menu (CONTENT_MENU vs PRODUCT_MENU):**
+- **Menu bài viết (`CONTENT_MENU`):** Phục vụ biên soạn tin tức/bài viết, bao gồm các khối: `heading`, `paragraph`, `image`, `quote`, `list`, `youtube`, `facebook`, `tiktok`.
+- **Menu sản phẩm (`PRODUCT_MENU`):** Phục vụ trang chi tiết sản phẩm (PDP), có thêm các khối chuyên biệt so với bài viết: `FeatureBlock`, `SpecBlock`, `TrustBlock`, `ComparisonBlock`, `FaqBlock`.
+
 ### Product FAQ entries — `product_faqs` (V133)
 
 Per-product list of question/answer pairs rendered in the PDP "Câu hỏi
@@ -647,9 +651,25 @@ vực ảnh thumbnail (cùng `GalleryEditor` admin, cho cả sản phẩm lẫn 
 trên cùng (`ProductGallery` tự tách ảnh/video từ danh sách gallery); còn `product_videos` chỉ feed tab
 "Video". Tương thích ngược: gallery cũ (default `media_type='image'`) hiển thị y như cũ.
 
+**Quy tắc Whitelist ảnh (Write-time)**: Backend thực hiện siết chặt bảo mật ảnh trong gallery. Với mỗi ảnh mới hoặc thay đổi (không nằm trong danh sách URL đã lưu trước đó của sản phẩm hoặc các biến thể), URL ảnh (khi `mediaType` không phải `video`) bắt buộc phải thuộc whitelist MinIO thông qua phương thức `CatalogRequestValidator.validateProductRequest` gọi `AdminMutationValidators.validateWhitelistedMediaUrl`. Dữ liệu ảnh cũ (legacy) không đổi vẫn được chấp nhận để đảm bảo khả năng tương thích ngược.
+
 Status: `CONFIRMED_FROM_CODE` — `V248__add_gallery_media_video.sql`, `V295__drop_gallery_caption_columns.sql`,
 `ProductGalleryImageEntity`/`ProductVariantGalleryImageEntity`, `GalleryMedia`, `GalleryImageRequest`
 (`mediaType`/`videoUrl`/`videoProvider`), `AdminCatalogMutationService.applyGallery`/`applyVariantGallery`.
+
+### Variant gallery cover flag — write-time signal, not a stored column (2026-07-03)
+
+`GalleryImageRequest` (write) gained `cover: boolean` and `GalleryMedia` (read domain) gained
+`isCover: boolean` — **no new column** on `product_variant_gallery_images` or `product_gallery_images`.
+`cover` on the request tells `ProductFieldApplier.colorCoverImages` which gallery image to mirror into
+the variant's existing `image_url`/`image_alt`/... columns (see API_CONTRACT.md "Variant cover image");
+that mirrored `image_url` is the only durable record of the choice. `isCover` on the read side is
+recomputed on every read (`JpaCatalogReadSupport.withColorScopedVariantMedia`) by matching each gallery
+item's image URL against the colour's resolved cover — so it always agrees with `variants[].image`,
+including for rows saved before this change (no backfill needed). Only variant colour galleries carry a
+meaningful `isCover`; product-level `gallery[].isCover` is always `false`.
+
+Status: `CONFIRMED_FROM_CODE` — `GalleryImageRequest.java`, `GalleryMedia.java`, `ProductFieldApplier.colorCoverImages`, `JpaCatalogReadSupport.withColorScopedVariantMedia`.
 
 ### Product related products — `product_related_product_map` (V135)
 
@@ -773,15 +793,12 @@ vẫn lùi về tiếng Việt. Bản tiếng Việt không bao giờ bị thi�
 
 **Slug tiếng Anh (`slug_en`, V214):** xem mục **"English URL slug"** bên dưới — `slug` tiếng Việt là canonical, `slug_en` là URL tiếng Anh tùy chọn.
 
-**Translation lock — `en_overrides` (V296):** cột `TEXT` trên `products`, `categories`,
-`brands`, `articles`, lưu **JSON array** các khoá trường/khối tiếng Anh **admin đã
-sửa tay**. Trường vô hướng = tên khoá (`"name"`, `"description"`, `"seoTitle"`…); khối
-lặp = `"section:<tên>"` (`"section:specifications"`, `"section:descriptionBlocks"`…).
-Backend lưu **opaque** (qua `EnOverridesCodec`), trả về ở admin read trong
-`translations.overrides`. Admin dùng để **bỏ qua tự-dịch** các ô đã khoá (auto-translate
-VI→EN chỉ ghi đè trường KHÔNG nằm trong danh sách). Xem `BUSINESS_RULES.md`
-`TRANSLATION_RULE_001/002`. `NULL` = chưa khoá ô nào. **Site settings dùng cơ chế tương
-đương nhưng khác hình dạng lưu trữ** — xem §"Site Settings — `en_locked` (V309)" bên dưới.
+**`en_overrides` — ĐÃ GỠ BỎ (V312).** Cột `TEXT` này từng tồn tại trên `products`, `categories`,
+`brands`, `articles`, lưu JSON array các trường/khối tiếng Anh admin khoá khỏi tự-dịch. Cùng với việc
+gỡ bỏ tính năng tự động dịch VI→EN (Gemini), cột này (và `EnOverridesCodec`) đã bị **drop khỏi DB**
+ở migration `V312__remove_gemini_translation_lock.sql` — không còn round-trip qua admin
+(`translations.overrides` không còn tồn tại trong response). Tiếng Anh nay **nhập tay 100%**; xem
+`BUSINESS_RULES.md` `TRANSLATION_RULE_001/002` cho quy tắc field nào bắt buộc EN.
 
 **Không dịch:** alt ảnh, tên video, tên biến thể, `seo_canonical_url`.
 
@@ -1264,12 +1281,12 @@ Evidence: `AdminAnalyticsResponse.java`, `AdminReportService.java`, `OrderJpaRep
 |---|---|---|
 | `general` | Site name, footer description. `site_name` drives header/SEO; `footer_description` drives the header's mobile shop-info panel (**no longer read by the web footer since 2026-07-03** — see `API_CONTRACT.md` "Footer hardcoded" note). `footer_tagline`/`bct_url`/`business_registration` **removed 2026-07-03 (V308)** — see §"`footer_tagline`/`bct_url`/`business_registration` keys — removed" below. | Cài đặt chung |
 | `contact` | Hotline/email/address, opening hours, social links — **shared site data** for the header + the static `/lien-he` and `/gioi-thieu` pages + homepage, product page, floating-chat widget, order-confirmation page. Since 2026-06-23 both the contact page builder and the Settings "Liên hệ" tab are gone; the group has **no admin UI** (hidden via `HIDDEN_GROUPS`). Rows stay in the DB and feed the web read-only; unhide `CONTACT` to allow editing again. **Footer stopped consuming this group 2026-07-03** (hardcoded in `WpFooter.tsx`) — editing these rows updates every surface above except the footer. | (ẩn — dữ liệu chung, không UI) |
-| `public_home` | Homepage hotline, promo banner, experience/about blocks | Trang chủ |
+| `public_home` | **Removed 2026-07-03 (V311).** Was: homepage promo banner, experience/about blocks, featured/news/videos kicker+title (15 keys). All hardcoded in `bigbike-web` now — see §"`public_home` keys — removed" below. | (đã gỡ) |
 | `payment` | Bank-transfer account shown to customers at checkout — holder, number, bank, branch (4 keys) | Thanh toán |
 | `public_about` | **Removed 2026-06-24 (V274).** The About page (`/gioi-thieu`) is **fully static** — copy from i18n `About`, the 5 service tiles from theme assets; the web never read these keys (`AboutPageContent.tsx`). The 28 rows (seeded V223, re-seeded V269), the `SettingDefinitionRegistry` defs, and `AboutServiceMediaSeeder` were all dropped. | (đã gỡ) |
 | `public_product` | **No shared settings.** All product-detail content is per-product now: the commitment-rows block under the buy buttons (`product.commitments`, child table `product_commitments`, V232) and the trust-badge row above the title (`product.trustBadges`, child table `product_trust_badges`, V233). The former `product_commitment_*` (V228) and `product_trust_*` keys were removed in V232/V233. | (không có tab — nhóm trống) |
 | `public_hero` | Hero banners for listing pages (`/san-pham`, `/brands`, `/tin-tuc`) — 17 keys (5 per page incl. per-page `illustration_url` + 2 global fallbacks). Managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`), not the generic settings screen. | Banner trang |
-| `promo` | **No rows.** The promo-banner keys live in the `public_home` group (`promo_title`/`promo_off`/`promo_href`/`promo_image_url`), not a separate `promo` group — no `promo` group exists in the DB. | (không có tab — nhóm trống) |
+| `promo` | **No rows.** The promo-banner keys (`promo_title`/`promo_off`/`promo_href`/`promo_image_url`) used to live in the `public_home` group — that group was removed entirely in V311 (hardcoded in `bigbike-web`); no `promo` group ever existed in the DB. | (không có tab — nhóm trống) |
 | `seo` | Homepage SEO title/description, OG image, bottom HTML block | SEO website |
 | `store` | Operational: low-stock threshold | Cửa hàng |
 | `inventory` | **No rows.** The `default_warranty_months` key was removed in V266 (warranty module dropped); `reservation_ttl_minutes` and `serial_inventory_only` in V259 (serial tracking dropped). No `inventory` group remains in the DB. | (không có tab — nhóm trống) |
@@ -1281,6 +1298,19 @@ Evidence: `AdminAnalyticsResponse.java`, `AdminReportService.java`, `OrderJpaRep
 ### `footer_tagline`/`bct_url`/`business_registration` keys — removed (2026-07-03, V308)
 
 > **Removed (2026-07-03, V308).** Shop-owner decision: the web footer (`bigbike-web/components/wp/WpFooter.tsx`) was hardcoded — it no longer reads any `site_settings` row or the `GET /api/v1/menus/footer` menu for its content (contact info, social links, tagline, description, BCT badge, ĐKKD line, and footer link list are now fixed constants/JSX in the component, frozen at what was live that day). Of the settings it used to read, three had **no other consumer**: `footer_tagline` (group `general`), `bct_url` (`general`), `business_registration` (`general`) — these were dropped outright rather than left orphaned. Removed together: the `site_settings` rows (`V308__remove_footer_only_settings.sql`), the 3 `SettingDefinitionRegistry` definitions, and their `KEY_LABELS_VI`/`KEY_GUIDE` entries in `bigbike-admin/src/screens/settings/constants.js`. `footer_description` (also `general`) was **kept** — it still feeds the header's mobile shop-info panel (`WpHeader.tsx`) — but is likewise no longer read by the footer. The `contact` group (hotline/email/address/social URLs) is **unchanged and still live** for the header, homepage, product page, `/lien-he`, `/gioi-thieu`, floating chat, and order-confirmation — only the footer stopped consuming it (see `API_CONTRACT.md` "Footer hardcoded" note for the full list). Same pattern as the `public_about` removal (V274) just below.
+
+### `public_home` keys — removed (2026-07-03, V311)
+
+> **Removed (2026-07-03, V311).** Shop-owner decision: the entire `public_home` setting group (15 keys) was **dropped** and its 4 homepage content blocks hardcoded straight into `bigbike-web` (`app/page.tsx` + `components/home/HomeLocalizedSettings.tsx`), value-for-value from the last content live in the DB — no copy changed. Removed together: the 15 `site_settings` rows (`V311__remove_public_home_settings.sql`), the 15 `SettingDefinitionRegistry` definitions, the "Trang chủ" admin tab (`TAB_ORDER`/`TAB_META`/`TRANSLATABLE_GROUPS` in `bigbike-admin/src/screens/settings/constants.js`) plus their `KEY_LABELS_VI`/`KEY_GUIDE`/`KEY_HINTS_VI`/`KEY_RECO`/`SECTION_GUIDE` entries, the now-unused `IMAGE_RECO.promo` preset (`bigbike-admin/src/lib/imageRecommendations.js`), the `group_public_home` locale string (admin `vi.json`/`en.json`), and the orphaned `Home.featuredKicker`/`featuredTitle`/`newsKicker`/`newsTitle`/`videosTitle` fallback strings in `bigbike-web/messages/{vi,en}.json` (were only used as the removed settings' empty-value fallback). The 4 blocks and their 15 keys:
+>
+> | Block | Keys |
+> |---|---|
+> | Banner khuyến mãi | `promo_title`, `promo_off`, `promo_href`, `promo_image_url` |
+> | Khối trải nghiệm | `home_exp_subtitle`, `home_exp_title`, `home_exp_desc` |
+> | Khối giới thiệu | `about_title`, `about_subtitle`, `about_content_html` |
+> | Sản phẩm nổi bật / Tin tức / Video | `home_featured_kicker`, `home_featured_title`, `home_news_kicker`, `home_news_title`, `home_videos_title` |
+>
+> The EN swap for these blocks (client-side, `useLocale()`) now picks between hardcoded VI/EN string constants instead of refetching `GET /api/v1/settings/public` by key — `HomeContentBottom`/`home_content_bottom_html` (group `seo`) is unaffected and still admin-editable. `promo_image_url`'s external hotlink (`https://bigbike.vn/wp-content/themes/bigbike/images/banner-ads.jpg`) was replaced with the already-vendored local asset `bigbike-web/public/wp-content/themes/bigbike/images/banner-ads.jpg` (byte-identical, confirmed by checksum) — no new file added, no more external image host per the MinIO/no-hotlink rule. Same pattern as the `public_about` removal (V274) and `footer_tagline`/`bct_url`/`business_registration` removal (V308) above.
 
 ### `public_about` keys — removed (2026-06-24, V274)
 
@@ -1323,37 +1353,29 @@ Migration `V132__cleanup_sepay_and_normalize_inventory_settings.sql`:
 Status: `CONFIRMED_FROM_CODE`
 
 Evidence:
-- `SettingDefinitionRegistry.java` — registers keys for `general`/`contact`/`payment`/`public_home`/`public_hero`/`seo`/`store`/`product_assign` (the `promo`/`tax`/`inventory`/`public_product`/`security`/`public_about` groups have **no** registered keys)
+- `SettingDefinitionRegistry.java` — registers keys for `general`/`contact`/`payment`/`public_hero`/`seo`/`store`/`product_assign` (the `promo`/`tax`/`inventory`/`public_product`/`security`/`public_about`/`public_home` groups have **no** registered keys)
 - `V157__seed_product_assignment_settings.sql` — seeds the 7 `product_assign_*` rows
 - `AdminProductAssignmentController.java` — `GET /api/v1/admin/product-assignment` (read for the banner, `products.read`)
 - `SettingsScreen.jsx` — `TAB_ORDER` / `TAB_META` (tab rendering), `HIDDEN_GROUPS` (`public_hero`, `contact`), super-admin filter for `superAdminOnly` keys
 - `V59__remove_sepay_payment_artifacts.sql`, `V132__cleanup_sepay_and_normalize_inventory_settings.sql`
 
-### Site Settings — `en_locked` (V309)
+### Site Settings — `en_locked` — ĐÃ GỠ BỎ (V312)
 
-`site_settings.en_locked` — `boolean NOT NULL DEFAULT false`. Translation-lock flag for the bigbike-admin
-Settings screen's VI/EN single-input toggle (mirrors `en_overrides` on `products`/`categories`/`brands`/`articles`,
-V296 — see §"Translation lock — `en_overrides` (V296)" above), but shaped differently: each `site_settings`
-row is already its own flat key/value pair (unlike Product's nested fields/repeating sections), so **one boolean
-per row** is enough — no JSON array of keys needed.
+`site_settings.en_locked` (`boolean NOT NULL DEFAULT false`, thêm ở V309) từng là cờ khoá dịch cho ô
+VI/EN của màn Cài đặt, mirror `en_overrides` của Product/Category/Brand/Article. Cùng với việc gỡ bỏ
+tính năng tự động dịch VI→EN (Gemini), cột này đã bị **drop khỏi DB** ở migration
+`V312__remove_gemini_translation_lock.sql`; `AdminSiteSettingResponse`/`UpdateSiteSettingRequest`/
+`BatchUpdateSettingsRequest.BatchSettingUpdate` không còn field `enLocked`.
 
-`true` = admin manually edited that row's `setting_value_en` while viewing the admin in English mode; the
-auto-translate-on-save step (`TRANSLATION_RULE_001`) skips rows where `en_locked=true` and leaves the
-existing English value untouched. `false` (default) = the row's English tracks the Vietnamese value on every
-save that changes it. There is no "unlock" action — once set, a row stays locked until the admin edits it again
-in a way the UI clears (currently: never automatically; matches Product's `enOverrides`, which is also
-append-only from the UI's perspective).
+Tiếng Anh cho setting nay **nhập tay 100%** qua `valueEn`. Setting nào **vừa dịch-được
+(`isTranslatableSetting()`) vừa `.required()` ở VI** (hiện chỉ `site_name`) thì `valueEn` cũng bắt
+buộc non-blank khi lưu — xem `BUSINESS_RULES.md` §"Site Settings Rules" (`SETTINGS_RULE_001`) và
+`TRANSLATION_RULE_002`.
 
-`AdminSiteSettingResponse.enLocked` exposes the current value; `UpdateSiteSettingRequest.enLocked` /
-`BatchUpdateSettingsRequest.BatchSettingUpdate.enLocked` are `Boolean` (boxed) — `null` on a PATCH means
-"leave the stored lock unchanged," same presence-flag convention as `value`/`valueEn` on these DTOs.
-`AdminSettingsService.updateSetting`/`batchUpdateSettings` only call `entity.setEnLocked(...)` when the
-request field is non-null.
-
-Status: `CONFIRMED_FROM_CODE` — `SiteSettingEntity.enLocked`, `V309__add_en_locked_to_site_settings.sql`,
-`AdminSettingsService.java`, `AdminSiteSettingResponse.java`, `UpdateSiteSettingRequest.java`,
-`BatchUpdateSettingsRequest.java`. Xem `BUSINESS_RULES.md` §"Site Settings Rules" `SETTINGS_RULE_001`,
-`API_CONTRACT.md` §"VI→EN auto-translation + translation lock (V296)".
+Status: `CONFIRMED_FROM_CODE` — `SiteSettingEntity.java`, `AdminSettingsService.java`,
+`AdminSiteSettingResponse.java`, `UpdateSiteSettingRequest.java`, `BatchUpdateSettingsRequest.java`,
+`V312__remove_gemini_translation_lock.sql`. Xem `API_CONTRACT.md` §"Bilingual content — nhập tay,
+không còn tự động dịch (V312)".
 
 ### PDP mockup port — bilingual description blocks, featured specs, per-product tabs (V229–V231)
 

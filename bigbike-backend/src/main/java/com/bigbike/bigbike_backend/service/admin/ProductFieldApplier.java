@@ -381,21 +381,32 @@ final class ProductFieldApplier {
     }
 
     /**
-     * The variant cover image is no longer entered separately by admins — it is
-     * always the FIRST image of the variant's color gallery. This derives, per
-     * color, that leading gallery image (the cover) so every same-color variant
-     * shares it. Returns the first gallery entry with a non-blank URL per color.
+     * Resolves each color's cover image: the admin-picked image ({@code
+     * GalleryImageRequest.cover == true}) wins; if no image in that color's
+     * gallery is marked, falls back to the first image (skipping video items),
+     * matching the pre-2026-07-03 behavior so legacy clients / unmigrated data
+     * keep working without a backfill.
      */
     public static Map<String, GalleryImageRequest> colorCoverImages(
             Map<String, List<GalleryImageRequest>> galleryByColor) {
         Map<String, GalleryImageRequest> coverByColor = new HashMap<>();
         for (Map.Entry<String, List<GalleryImageRequest>> entry : galleryByColor.entrySet()) {
+            GalleryImageRequest firstImage = null;
+            GalleryImageRequest explicitCover = null;
             for (GalleryImageRequest img : entry.getValue()) {
-                // Ảnh bìa = ảnh ĐẦU TIÊN (bỏ qua item video) có url — V248.
-                if (!isVideoGalleryItem(img) && AdminMutationValidators.trimToNull(img.getUrl()) != null) {
-                    coverByColor.put(entry.getKey(), img);
-                    break;
+                if (isVideoGalleryItem(img) || AdminMutationValidators.trimToNull(img.getUrl()) == null) {
+                    continue;
                 }
+                if (firstImage == null) {
+                    firstImage = img;
+                }
+                if (explicitCover == null && img.isCover()) {
+                    explicitCover = img;
+                }
+            }
+            GalleryImageRequest cover = explicitCover != null ? explicitCover : firstImage;
+            if (cover != null) {
+                coverByColor.put(entry.getKey(), cover);
             }
         }
         return coverByColor;

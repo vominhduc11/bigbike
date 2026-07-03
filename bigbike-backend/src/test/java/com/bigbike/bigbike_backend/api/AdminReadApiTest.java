@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bigbike.bigbike_backend.api.admin.dto.ImageAssetRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.ProductTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SeoMetaRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
@@ -88,6 +89,10 @@ class AdminReadApiTest {
         create.setCategoryId("cat_helmet");
         create.setRetailPrice(new BigDecimal("2500000"));
         create.setPublishStatus(PublishStatus.DRAFT);
+        create.setTranslations(new ProductTranslationRequest(
+                ProductTranslationRequest.ProductContentRequest.builder()
+                        .name("Phase 3 Read SEO Product EN " + suffix)
+                        .build()));
         SeoMetaRequest seo = new SeoMetaRequest();
         seo.setTitle("Phase 3 read SEO title " + suffix);
         seo.setDescription("Phase 3 read SEO description " + suffix);
@@ -123,6 +128,10 @@ class AdminReadApiTest {
         create.setCategoryId("cat_helmet");
         create.setRetailPrice(new BigDecimal("1250000"));
         create.setPublishStatus(PublishStatus.DRAFT);
+        create.setTranslations(new ProductTranslationRequest(
+                ProductTranslationRequest.ProductContentRequest.builder()
+                        .name("Trash List Product EN " + suffix)
+                        .build()));
 
         Product created = adminCatalogMutationService.createProduct(create, DEV_ADMIN_ID);
         adminCatalogMutationService.softDeleteProduct(created.id(), DEV_ADMIN_ID);

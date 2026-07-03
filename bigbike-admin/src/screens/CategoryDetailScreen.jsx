@@ -2,8 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
-import { AlertCircle, Check, Copy, ExternalLink, Hash, Loader2, Package, Save, X as XIcon, Languages } from 'lucide-react'
-import { translateCategoryForm, addOverride } from '../lib/geminiTranslate'
+import { AlertCircle, Check, Copy, ExternalLink, Hash, Loader2, Package, Save, X as XIcon } from 'lucide-react'
 
 import {
   createCategory,
@@ -222,8 +221,6 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
         ...previous.translations,
         en: { ...(previous.translations?.en || {}), [field]: value },
       },
-      // Sửa tay ô tiếng Anh nào thì KHOÁ ô đó — lần lưu sau không tự dịch đè lên (V296).
-      enOverrides: addOverride(previous.enOverrides, field),
     }))
   }
 
@@ -351,7 +348,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     setForm((previous) => {
       const en = { ...(previous.translations?.en || {}), name: value }
       if (!enSlugManuallyEdited) en.slug = toSlug(value)
-      return { ...previous, translations: { ...previous.translations, en }, enOverrides: addOverride(previous.enOverrides, 'name') }
+      return { ...previous, translations: { ...previous.translations, en } }
     })
   }
 
@@ -409,23 +406,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     setIsSubmitting(true)
     setValidationErrors({})
 
-    let formToSave = form
-    // Tự dịch VI→EN cho các ô CHƯA bị khoá (admin chưa sửa tay) — ô đã sửa tay giữ nguyên (V296).
-    {
-      const toastId = toast.loading('Đang tự động dịch sang tiếng Anh...')
-      try {
-        const original = isCreate ? null : JSON.parse(initialSnapshot)
-        const translatedForm = await translateCategoryForm(formToSave, formToSave.enOverrides, original)
-        formToSave = translatedForm
-        setForm(translatedForm)
-        toast.success('Đã tự động dịch sang tiếng Anh!', { id: toastId })
-      } catch (err) {
-        console.error('Auto-translate error:', err)
-        toast.error('Tự động dịch tiếng Anh thất bại, vẫn tiến hành lưu...', { id: toastId })
-      }
-    }
-
-    saveMutation.mutate(toPayload(formToSave))
+    saveMutation.mutate(toPayload(form))
   }
 
 
@@ -745,23 +726,22 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               </p>
             )}
             <div className="bb-grid-2">
-              <label className="form-field" data-field="name">
+              <label className="form-field" data-field={isEnLang ? 'translations.en.name' : 'name'}>
                 <span>
                   {t('categories.detail.name')}
-                  {!isEnLang && requiredMark}
-                  {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 8 }}>{t('categories.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
+                  {requiredMark}
                 </span>
                 <Input
-                  name="name"
+                  name={isEnLang ? 'translations.en.name' : 'name'}
                   value={isEnLang ? (form.translations?.en?.name ?? '') : form.name}
                   onChange={(e) => isEnLang ? handleEnNameChange(e.target.value) : handleNameChange(e.target.value)}
-                  onBlur={() => { if (!isEnLang) validateFieldOnBlur('name') }}
+                  onBlur={() => validateFieldOnBlur(isEnLang ? 'translations.en.name' : 'name')}
                   disabled={isReadOnly}
-                  placeholder={isEnLang ? t('categories.detail.namePlaceholderEn', { defaultValue: 'English name (optional)' }) : undefined}
+                  placeholder={isEnLang ? t('categories.detail.namePlaceholderEn', { defaultValue: 'English name' }) : undefined}
                 />
-                {!isEnLang && validationErrors.name && (
+                {(isEnLang ? validationErrors['translations.en.name'] : validationErrors.name) && (
                   <span className="hint text-danger flex items-center gap-1">
-                    <AlertCircle size={13} aria-hidden="true" />{validationErrors.name}
+                    <AlertCircle size={13} aria-hidden="true" />{isEnLang ? validationErrors['translations.en.name'] : validationErrors.name}
                   </span>
                 )}
               </label>

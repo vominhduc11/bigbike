@@ -3,9 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
 import {
-  AlertCircle, Check, ChevronDown, Eye, Info, Loader2, Lock, Save, Search as PfSearch, X, Languages,
+  AlertCircle, Check, ChevronDown, Eye, Info, Loader2, Lock, Save, Search as PfSearch, X,
 } from 'lucide-react'
-import { translateProductForm, addOverride } from '../lib/geminiTranslate'
 
 import {
   createProduct,
@@ -131,31 +130,13 @@ const mergeBuilderBlocks = (builderBlocks, all) => [
   ...(Array.isArray(all) ? all.filter(isSpecialDescBlock) : []),
 ]
 const findSpecialBlock = (all, type) => (Array.isArray(all) ? all.find((b) => b.type === type) : undefined)
+// Nhãn hiển thị cho giới tính khi contentLang='en' — value lưu DB vẫn luôn "Nam"/"Nữ" (DATA_CONTRACT.md).
+const GENDER_LABEL_EN = { Nam: 'Male', 'Nữ': 'Female' }
 // Upsert 1 khối đặc biệt theo type (sửa tại chỗ nếu có, thêm vào cuối nếu chưa) — giữ các khối khác.
 const upsertSpecialBlock = (all, block) => {
   const arr = Array.isArray(all) ? all : []
   const idx = arr.findIndex((b) => b.type === block.type)
   return idx === -1 ? [...arr, block] : arr.map((b, i) => (i === idx ? block : b))
-}
-
-// Khối lặp có nội dung tiếng Anh nhúng theo dòng → khoá theo CẢ khối khi admin sửa tay (V296).
-const EN_SECTION_LOCK = {
-  specifications: 'section:specifications',
-  specStats: 'section:specStats',
-  faqs: 'section:faqs',
-  commitments: 'section:commitments',
-  trustBadges: 'section:trustBadges',
-  positiveNotes: 'section:positiveNotes',
-  negativeNotes: 'section:negativeNotes',
-  suitabilityCards: 'section:suitabilityCards',
-}
-
-// Chữ ký các trường *En của một mảng dòng — để phát hiện admin sửa tiếng Anh ở bất kỳ chế độ nào.
-function enSignatureChanged(prev, next) {
-  const sig = (arr) => (Array.isArray(arr) ? JSON.stringify(arr.map((row) => (row && typeof row === 'object'
-    ? Object.fromEntries(Object.entries(row).filter(([k]) => k.endsWith('En')))
-    : null))) : '')
-  return sig(prev) !== sig(next)
 }
 
 // ── Main screen ────────────────────────────────────────────────────────────────
@@ -174,11 +155,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const [isSubmitting, setIsSubmitting] = useState(false)
   const slugEditedByUser = useRef(false)
   const enSlugEditedByUser = useRef(false)
-  // Snapshot of `form` right after load/save — used ONLY to decide which unlocked fields/sections
-  // actually changed before sending them to Gemini (see handleSave). A ref (not state) so it never
-  // triggers a re-render and never grows stale from every keystroke, matching the `isDirty` boolean
-  // strategy above (this screen dropped JSON.stringify(form)-per-render for perf on 100+ variants).
-  const originalFormRef = useRef(null)
   const [originalPublishStatus, setOriginalPublishStatus] = useState(null)
 
   // ── Live preview (xem trước storefront) ──────────────────────────────────────
@@ -349,7 +325,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     slugEditedByUser.current = Boolean(nextForm.slug)
     enSlugEditedByUser.current = Boolean(nextForm.translations?.en?.slug)
     setOriginalPublishStatus(nextForm.publishStatus)
-    originalFormRef.current = JSON.parse(JSON.stringify(nextForm))
 
     // Check autosave newer than server updatedAt
     if (!isCreate && item?.updatedAt) {
@@ -439,15 +414,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       if (field === 'seoTitle') {
         next.seoTitleManuallyEdited = true
       }
-      // Sửa tay nội dung tiếng Anh trong một KHỐI lặp → khoá cả khối đó (V296): lần lưu
-      // sau không tự dịch đè. So chữ ký các trường *En của khối để bắt thay đổi ở mọi chế độ.
-      const sectionLock = EN_SECTION_LOCK[field]
-      if (sectionLock && enSignatureChanged(previous[field], value)) {
-        next.enOverrides = addOverride(previous.enOverrides, sectionLock)
-      } else if (field === 'descriptionBlocksEn'
-          && JSON.stringify(previous.descriptionBlocksEn ?? null) !== JSON.stringify(value ?? null)) {
-        next.enOverrides = addOverride(previous.enOverrides, 'section:descriptionBlocks')
-      }
       return next
     })
     setIsDirty(true)
@@ -467,8 +433,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         ...previous.translations,
         en: { ...(previous.translations?.en || {}), [field]: value },
       },
-      // Sửa tay ô tiếng Anh nào thì KHOÁ ô đó — lần lưu sau không tự dịch đè (V296).
-      enOverrides: addOverride(previous.enOverrides, field),
     }))
     setIsDirty(true)
   }
@@ -630,7 +594,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     setForm((previous) => {
       const en = { ...(previous.translations?.en || {}), name: value }
       if (!enSlugEditedByUser.current) en.slug = slugify(value)
-      return { ...previous, translations: { ...previous.translations, en }, enOverrides: addOverride(previous.enOverrides, 'name') }
+      return { ...previous, translations: { ...previous.translations, en } }
     })
     setIsDirty(true)
   }
@@ -680,7 +644,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       setOriginalPublishStatus(nextForm.publishStatus)
       slugEditedByUser.current = Boolean(nextForm.slug)
       enSlugEditedByUser.current = Boolean(nextForm.translations?.en?.slug)
-      originalFormRef.current = JSON.parse(JSON.stringify(nextForm))
       setIsDirty(false)
       clearFormFromStorage(autosaveKey)
       setDraftRecovery(null)
@@ -778,26 +741,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
     setIsSubmitting(true)
     setValidationErrors({})
-
-    // Tự dịch VI→EN cho các ô/khối CHƯA bị khoá (admin chưa sửa tay) — ô đã sửa tay giữ
-    // nguyên (V296). VI là nguồn chính nên vẫn luôn gửi sang để các ô EN bám theo VI mới nhất.
-    {
-      const toastId = toast.loading('Đang tự động dịch sang tiếng Anh...')
-      try {
-        const original = isCreate ? null : originalFormRef.current
-        const translatedForm = await translateProductForm(formToSave, formToSave.enOverrides, original)
-        if (translatedForm !== formToSave) {
-          formToSave = translatedForm
-          setForm(translatedForm)
-          toast.success('Đã tự động dịch sang tiếng Anh!', { id: toastId })
-        } else {
-          toast.dismiss(toastId)
-        }
-      } catch (err) {
-        console.error('Auto-translate error:', err)
-        toast.error('Tự động dịch tiếng Anh thất bại, vẫn tiến hành lưu...', { id: toastId })
-      }
-    }
 
     // Show quality checklist whenever the resulting status would be PUBLISHED
     // but the saved-on-server status is not — covers both the "Save & Publish"
@@ -1130,15 +1073,15 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   <Field
                     full
                     label={t('products.detail.name')}
-                    required={isCreate}
+                    required={isEnLang || isCreate}
                     count={`${langValue('name').length} / 255`}
                     countWarn={langValue('name').length > 230}
-                    error={validationErrors.name}
+                    error={isEnLang ? validationErrors['translations.en.name'] : validationErrors.name}
                   >
                     <Input
                       value={langValue('name')}
                       onChange={(e) => (isEnLang ? handleEnNameChange(e.target.value) : handleNameChange(e.target.value))}
-                      onBlur={() => { if (!isEnLang) validateFieldOnBlur('name') }}
+                      onBlur={() => validateFieldOnBlur(isEnLang ? 'translations.en.name' : 'name')}
                       disabled={isReadOnly}
                       maxLength={255}
                     />
@@ -1238,14 +1181,15 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     <Select value={form.gender || 'NONE'} onValueChange={(val) => { if (val) updateField('gender', val === 'NONE' ? '' : val) }} disabled={isReadOnly}>
                       <SelectTrigger>
                         <SelectValue placeholder={t('products.detail.genderPlaceholder', { defaultValue: 'Không chọn' })}>
-                          {form.gender || undefined}
+                          {form.gender ? (GENDER_LABEL_EN[form.gender] && isEn ? GENDER_LABEL_EN[form.gender] : form.gender) : undefined}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        {/* Radix Select cấm value="" — dùng sentinel 'NONE', map về '' khi lưu */}
+                        {/* Radix Select cấm value="" — dùng sentinel 'NONE', map về '' khi lưu. Value lưu DB
+                            luôn là "Nam"/"Nữ"/"Unisex" (DATA_CONTRACT.md) — chỉ nhãn hiển thị đổi theo contentLang. */}
                         <SelectItem value="NONE">{t('products.detail.genderPlaceholder', { defaultValue: 'Không chọn' })}</SelectItem>
-                        <SelectItem value="Nam">Nam</SelectItem>
-                        <SelectItem value="Nữ">Nữ</SelectItem>
+                        <SelectItem value="Nam">{isEn ? 'Male' : 'Nam'}</SelectItem>
+                        <SelectItem value="Nữ">{isEn ? 'Female' : 'Nữ'}</SelectItem>
                         <SelectItem value="Unisex">Unisex</SelectItem>
                       </SelectContent>
                     </Select>
@@ -1517,6 +1461,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   disabled={isReadOnly}
                   validationErrors={validationErrors}
                   onOpenMatrixWizard={() => setShowMatrixWizard(true)}
+                  contentLang={contentLang}
                 />
               </SectionCard>
 

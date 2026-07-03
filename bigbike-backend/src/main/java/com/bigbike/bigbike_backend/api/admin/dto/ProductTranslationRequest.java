@@ -10,11 +10,12 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Optional English content for a product upsert (V136).
+ * English content for a product upsert (V136), entered manually by the admin (no auto-translation).
  *
- * <p>English is optional per {@code BUSINESS_RULES.md PRODUCT_RULE_001}: every
- * field may be left blank and the product still saves. Only length is validated;
- * limits mirror the Vietnamese fields on {@link UpsertProductRequest}.
+ * <p>Per {@code BUSINESS_RULES.md PRODUCT_RULE_001/TRANSLATION_RULE_002}: {@code name} is required
+ * (validated in {@code CatalogRequestValidator}, mirroring the Vietnamese {@code name} field being
+ * required) — every other field is optional and may be left blank. Length limits mirror the
+ * Vietnamese fields on {@link UpsertProductRequest}.
  */
 @Getter
 @Setter

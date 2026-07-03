@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.bigbike.bigbike_backend.api.admin.dto.GalleryImageRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.ProductTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantOptionRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantRequest;
@@ -73,6 +74,7 @@ class VariantGalleryRoundtripTest {
         create.setCategoryId(category.getId());
         create.setRetailPrice(new BigDecimal("1000000"));
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        create.setTranslations(englishName("VGallery Product 1 EN"));
 
         VariantRequest variant = new VariantRequest();
         variant.setIsAvailable(true);
@@ -111,6 +113,7 @@ class VariantGalleryRoundtripTest {
         create.setCategoryId(category.getId());
         create.setRetailPrice(new BigDecimal("1000000"));
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        create.setTranslations(englishName("VGallery Product 2 EN"));
 
         VariantRequest v1 = new VariantRequest();
         v1.setIsAvailable(true);
@@ -131,6 +134,7 @@ class VariantGalleryRoundtripTest {
         update.setCategoryId(category.getId());
         update.setRetailPrice(new BigDecimal("1000000"));
         update.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        update.setTranslations(englishName("VGallery Product 2 EN"));
 
         VariantRequest v2 = new VariantRequest();
         v2.setId(variantId);
@@ -168,6 +172,7 @@ class VariantGalleryRoundtripTest {
         create.setCategoryId(category.getId());
         create.setRetailPrice(new BigDecimal("1000000"));
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        create.setTranslations(englishName("VGallery Product Color Scope EN"));
 
         VariantRequest redS = variant("Red", "S");
         VariantRequest redM = variant("Red", "M");
@@ -198,6 +203,7 @@ class VariantGalleryRoundtripTest {
         create.setCategoryId(category.getId());
         create.setRetailPrice(new BigDecimal("1000000"));
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        create.setTranslations(englishName("VImage Product Color Scope EN"));
 
         // Cover image is derived from the FIRST image of the color gallery. Red-S
         // carries Red's gallery; Red-M does not — backend applies Red's cover to both.
@@ -230,6 +236,7 @@ class VariantGalleryRoundtripTest {
         create.setCategoryId(category.getId());
         create.setRetailPrice(new BigDecimal("1000000"));
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        create.setTranslations(englishName("VImage Product Update EN"));
 
         VariantRequest greenS = variant("Green", "S");
         greenS.setGallery(List.of(galleryItem("https://cdn.example.com/green-v1.jpg", "Green v1", 0)));
@@ -247,6 +254,7 @@ class VariantGalleryRoundtripTest {
         update.setCategoryId(category.getId());
         update.setRetailPrice(new BigDecimal("1000000"));
         update.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        update.setTranslations(englishName("VImage Product Update EN"));
 
         VariantRequest updatedS = variant("Green", "S");
         updatedS.setId(idS);
@@ -274,6 +282,7 @@ class VariantGalleryRoundtripTest {
         create.setCategoryId(category.getId());
         create.setRetailPrice(new BigDecimal("1000000"));
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        create.setTranslations(englishName("VImage Product No Color EN"));
 
         VariantRequest sizeOnly = new VariantRequest();
         sizeOnly.setIsAvailable(true);
@@ -303,6 +312,7 @@ class VariantGalleryRoundtripTest {
         create.setCategoryId(category.getId());
         create.setRetailPrice(new BigDecimal("1000000"));
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        create.setTranslations(englishName("VImage Legacy Inconsistent EN"));
 
         VariantRequest yellowS = variant("Yellow", "S");
         VariantRequest yellowM = variant("Yellow", "M");
@@ -354,6 +364,7 @@ class VariantGalleryRoundtripTest {
         create.setCategoryId(category.getId());
         create.setRetailPrice(new BigDecimal("1000000"));
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        create.setTranslations(englishName("VImage No Color Read EN"));
 
         VariantRequest sizeOnly = new VariantRequest();
         sizeOnly.setIsAvailable(true);
@@ -430,6 +441,7 @@ class VariantGalleryRoundtripTest {
         create.setCategoryId(category.getId());
         create.setRetailPrice(new BigDecimal("1000000"));
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        create.setTranslations(englishName("MW Color Product EN"));
 
         VariantRequest v1 = new VariantRequest();
         v1.setIsAvailable(true);
@@ -461,6 +473,7 @@ class VariantGalleryRoundtripTest {
         update.setCategoryId(category.getId());
         update.setRetailPrice(new BigDecimal("1000000"));
         update.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        update.setTranslations(englishName("MW Color Product EN"));
 
         VariantRequest v2 = new VariantRequest();
         v2.setId(variantId);
@@ -517,6 +530,7 @@ class VariantGalleryRoundtripTest {
         create.setCategoryId(category.getId());
         create.setRetailPrice(new BigDecimal("1000000"));
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        create.setTranslations(englishName("Dedup Color Product EN"));
 
         VariantRequest v1 = new VariantRequest();
         v1.setIsAvailable(true);
@@ -539,6 +553,7 @@ class VariantGalleryRoundtripTest {
         update.setCategoryId(category.getId());
         update.setRetailPrice(new BigDecimal("1000000"));
         update.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        update.setTranslations(englishName("Dedup Color Product EN"));
 
         VariantRequest v2 = new VariantRequest();
         v2.setId(variantId);
@@ -582,5 +597,80 @@ class VariantGalleryRoundtripTest {
         g.setAlt(alt);
         g.setSortOrder(sortOrder);
         return g;
+    }
+
+    private GalleryImageRequest galleryItem(String url, String alt, int sortOrder, boolean cover) {
+        GalleryImageRequest g = galleryItem(url, alt, sortOrder);
+        g.setCover(cover);
+        return g;
+    }
+
+    // TRANSLATION_RULE_002 requires translations.en.name on every product create/update
+    // (not specific to this feature) — every product save in this file sets it via this
+    // helper so the roundtrip logic under test actually runs instead of 400-ing first.
+    private ProductTranslationRequest englishName(String name) {
+        return new ProductTranslationRequest(
+                ProductTranslationRequest.ProductContentRequest.builder().name(name).build());
+    }
+
+    @Test
+    void variantImage_usesExplicitCoverPick_notFirstImage() {
+        UpsertProductRequest create = new UpsertProductRequest();
+        create.setSlug("vimage-explicit-cover");
+        create.setName("VImage Explicit Cover");
+        create.setCategoryId(category.getId());
+        create.setRetailPrice(new BigDecimal("1000000"));
+        create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        create.setTranslations(englishName("VImage Explicit Cover EN"));
+
+        VariantRequest redS = variant("Red", "S");
+        // Second image explicitly marked as cover — must win over gallery[0].
+        redS.setGallery(List.of(
+                galleryItem("https://cdn.example.com/red-front.jpg", "Red front", 0),
+                galleryItem("https://cdn.example.com/red-side.jpg", "Red side", 1, true)
+        ));
+        create.setVariants(List.of(redS));
+
+        Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
+
+        assertThat(saved.variants().get(0).image().url())
+                .as("explicit cover pick wins over the first gallery image")
+                .isEqualTo("https://cdn.example.com/red-side.jpg");
+
+        Product reread = readRepository.findProductById(saved.id()).orElseThrow();
+        var gallery = reread.variants().get(0).gallery();
+        assertThat(gallery.stream().filter(g -> g.image().url().equals("https://cdn.example.com/red-side.jpg")).findFirst().orElseThrow().isCover())
+                .as("read path flags the explicitly picked image as cover")
+                .isTrue();
+        assertThat(gallery.stream().filter(g -> g.image().url().equals("https://cdn.example.com/red-front.jpg")).findFirst().orElseThrow().isCover())
+                .as("the non-cover image must not be flagged")
+                .isFalse();
+    }
+
+    @Test
+    void variantGallery_readPath_flagsFirstImageAsCover_whenNoneExplicitlyPicked() {
+        UpsertProductRequest create = new UpsertProductRequest();
+        create.setSlug("vimage-fallback-cover-flag");
+        create.setName("VImage Fallback Cover Flag");
+        create.setCategoryId(category.getId());
+        create.setRetailPrice(new BigDecimal("1000000"));
+        create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        create.setTranslations(englishName("VImage Fallback Cover Flag EN"));
+
+        VariantRequest greenS = variant("Green", "S");
+        greenS.setGallery(List.of(
+                galleryItem("https://cdn.example.com/green-1.jpg", "Green 1", 0),
+                galleryItem("https://cdn.example.com/green-2.jpg", "Green 2", 1)
+        ));
+        create.setVariants(List.of(greenS));
+
+        Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
+
+        Product reread = readRepository.findProductById(saved.id()).orElseThrow();
+        var gallery = reread.variants().get(0).gallery();
+        assertThat(gallery.get(0).isCover())
+                .as("no explicit pick — legacy fallback flags the first image as cover")
+                .isTrue();
+        assertThat(gallery.get(1).isCover()).isFalse();
     }
 }

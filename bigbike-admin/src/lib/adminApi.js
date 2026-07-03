@@ -193,17 +193,6 @@ export function hasStoredAccessToken() {
   return hasAccessToken()
 }
 
-/**
- * VI→EN auto-translation via the backend proxy (server-side Gemini key). Takes a flat
- * { key: viText } map, returns { key: enText }. Empty map when translation is disabled or
- * fails server-side — callers then keep existing English instead of wiping it.
- */
-export async function translateFields(texts) {
-  if (!texts || Object.keys(texts).length === 0) return {}
-  const payload = await requestJson('/admin/translate', { method: 'POST', body: { texts } })
-  return payload?.data ?? {}
-}
-
 function withLiveData(data) {
   return {
     ...data,

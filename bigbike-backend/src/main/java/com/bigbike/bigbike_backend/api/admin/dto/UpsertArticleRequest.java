@@ -71,16 +71,14 @@ public class UpsertArticleRequest {
 
     public void setBodyBlocks(List<DescriptionBlock> bodyBlocks) {
         this.bodyBlocks = bodyBlocks;
-        this.bodyBlocksPresent = true;
+        if (bodyBlocks != null) {
+            this.bodyBlocksPresent = true;
+        }
     }
 
     @JsonIgnore
     public boolean isBodyBlocksPresent() {
         return bodyBlocksPresent;
     }
-
-    /** English fields the admin edited by hand (translation lock, V296). Null = unchanged. */
-    @Size(max = 100, message = "enOverrides may not have more than 100 items.")
-    private List<String> enOverrides;
 }
 

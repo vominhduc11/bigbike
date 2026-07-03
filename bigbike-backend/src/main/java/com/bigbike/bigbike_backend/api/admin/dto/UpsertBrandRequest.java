@@ -43,8 +43,4 @@ public class UpsertBrandRequest {
 
     @Valid
     private BrandTranslationRequest translations;
-
-    /** English fields the admin edited by hand (translation lock, V296). Null = unchanged. */
-    @Size(max = 100, message = "enOverrides may not have more than 100 items.")
-    private java.util.List<String> enOverrides;
 }

@@ -57,7 +57,7 @@ function deriveVariantName(options) {
 // read-only) so existing variant options that resolve via the code keep working.
 // `onDeleted` fires after a successful delete so the caller can clear the row
 // that was pointing at this (now-gone) attribute.
-function AttributeRenameModal({ open, onClose, attribute, onDeleted }) {
+function AttributeRenameModal({ open, onClose, attribute, onDeleted, contentLang }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   // Mounted only while open (see caller), so initialising from the current name
@@ -94,10 +94,11 @@ function AttributeRenameModal({ open, onClose, attribute, onDeleted }) {
   const busy = renameMut.isPending || deleteMut.isPending
 
   const handleDelete = async () => {
+    const displayName = contentLang === 'en' ? attribute?.nameEn || attribute?.name : attribute?.name
     const confirmed = await showConfirm(
       t('products.detail.variant.attrDeleteConfirm', {
-        name: attribute?.name,
-        defaultValue: `Xóa hẳn loại thuộc tính "${attribute?.name}" khỏi hệ thống? Không thể hoàn tác.`,
+        name: displayName,
+        defaultValue: `Xóa hẳn loại thuộc tính "${displayName}" khỏi hệ thống? Không thể hoàn tác.`,
       }),
       t('products.detail.variant.attrDeleteTitle', { defaultValue: 'Xóa loại thuộc tính' }),
     )
@@ -273,7 +274,7 @@ function AttributeValueEditRow({ value, onSave, onDelete, saving, deleting }) {
 // one outright. Scoped to one attribute; on add it auto-selects the new value
 // back into the variant row. `onValueDeleted` lets the caller clear the row's
 // current selection if the deleted value was the one in use there.
-function AttributeValueManagerModal({ open, onClose, attribute, values, onPicked, onValueDeleted }) {
+function AttributeValueManagerModal({ open, onClose, attribute, values, onPicked, onValueDeleted, contentLang }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [newLabel, setNewLabel] = useState('')
@@ -317,10 +318,11 @@ function AttributeValueManagerModal({ open, onClose, attribute, values, onPicked
   })
 
   const handleDelete = async (v) => {
+    const displayLabel = contentLang === 'en' ? v.labelEn || v.label : v.label
     const confirmed = await showConfirm(
       t('products.detail.variant.colorDeleteConfirm', {
-        label: v.label,
-        defaultValue: `Xóa hẳn màu "${v.label}" khỏi hệ thống? Không thể hoàn tác.`,
+        label: displayLabel,
+        defaultValue: `Xóa hẳn màu "${displayLabel}" khỏi hệ thống? Không thể hoàn tác.`,
       }),
       t('products.detail.variant.colorDeleteTitle', { defaultValue: 'Xóa màu' }),
     )
@@ -385,7 +387,7 @@ function AttributeValueManagerModal({ open, onClose, attribute, values, onPicked
 
 // One variant-attribute row. Extracted so color rows can fetch the attribute's
 // catalog values via a hook (hooks can't run inside the parent's .map()).
-function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled }) {
+function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled, contentLang }) {
   const { t } = useTranslation()
   const attr = resolveAttr(attributes, opt.name)
   const isColor = Boolean(attr?.kind === 'color' || isColorAttributeName(opt.name))
@@ -439,10 +441,10 @@ function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled }) {
             </SelectTrigger>
             <SelectContent>
               {opt.name && !attributes.some((a) => a.name === opt.name) && (
-                <SelectItem value={opt.name}>{opt.name}</SelectItem>
+                <SelectItem value={opt.name}>{contentLang === 'en' ? opt.nameEn || opt.name : opt.name}</SelectItem>
               )}
               {attributes.map((a) => (
-                <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>
+                <SelectItem key={a.id} value={a.name}>{contentLang === 'en' ? a.nameEn || a.name : a.name}</SelectItem>
               ))}
               <SelectItem value={CREATE_NEW_ATTRIBUTE_VALUE}>
                 + {t('products.detail.variant.attrCreateTitle', { defaultValue: 'Tạo loại thuộc tính mới' })}
@@ -484,6 +486,7 @@ function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled }) {
             onClose={() => setRenameAttrOpen(false)}
             attribute={attr}
             onDeleted={() => onUpdate({ name: '', value: '', attributeValueId: null })}
+            contentLang={contentLang}
           />
         )}
         {createAttrOpen && (
@@ -521,10 +524,10 @@ function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled }) {
                   </SelectTrigger>
                   <SelectContent>
                     {selectValue && !attrValues.some((v) => v.slug === selectValue) && (
-                      <SelectItem value={selectValue}>{opt.value}</SelectItem>
+                      <SelectItem value={selectValue}>{contentLang === 'en' ? opt.valueEn || opt.value : opt.value}</SelectItem>
                     )}
                     {attrValues.map((v) => (
-                      <SelectItem key={v.id} value={v.slug}>{v.label}</SelectItem>
+                      <SelectItem key={v.id} value={v.slug}>{contentLang === 'en' ? v.labelEn || v.label : v.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -554,6 +557,7 @@ function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled }) {
                 onValueDeleted={(deletedId) => {
                   if (deletedId === matchedValue?.id) onUpdate({ value: '', attributeValueId: null })
                 }}
+                contentLang={contentLang}
               />
             )}
           </>
@@ -582,7 +586,7 @@ function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled }) {
   )
 }
 
-function VariantOptionsEditor({ options, onChange, disabled }) {
+function VariantOptionsEditor({ options, onChange, disabled, contentLang }) {
   const { t } = useTranslation()
 
   const { data: attributes = [] } = useQuery({
@@ -596,7 +600,7 @@ function VariantOptionsEditor({ options, onChange, disabled }) {
   }
 
   function addOption() {
-    onChange([...options, { name: '', value: '', attributeValueId: null }])
+    onChange([...options, { _key: generateId(), name: '', value: '', attributeValueId: null }])
   }
 
   function removeOption(i) {
@@ -607,12 +611,13 @@ function VariantOptionsEditor({ options, onChange, disabled }) {
     <div className="variant-options-editor">
       {options.map((opt, i) => (
         <VariantOptionRow
-          key={i}
+          key={opt._key ?? i}
           opt={opt}
           attributes={attributes}
           onUpdate={(updates) => updateOptionFields(i, updates)}
           onRemove={() => removeOption(i)}
           disabled={disabled}
+          contentLang={contentLang}
         />
       ))}
       <Button variant="outline" size="sm" onClick={addOption} disabled={disabled}>
@@ -633,6 +638,7 @@ function VariantCard({
   disabled,
   fieldErrors = {},
   sortable,
+  contentLang,
 }) {
   const { t } = useTranslation()
   function updateField(field, value) {
@@ -732,6 +738,7 @@ function VariantCard({
               options={variant.options}
               onChange={(opts) => updateField('options', opts)}
               disabled={disabled}
+              contentLang={contentLang}
             />
             {fieldErrors.options && <small className="field-error" role="alert">{fieldErrors.options}</small>}
           </div>
@@ -755,6 +762,7 @@ function VariantCard({
                 disabled={disabled}
                 validationErrors={fieldErrors}
                 allowVideo={false}
+                showCover
               />
             )}
           </div>
@@ -764,7 +772,7 @@ function VariantCard({
   )
 }
 
-export function VariantsEditor({ items, onChange, disabled, validationErrors = {}, onOpenMatrixWizard }) {
+export function VariantsEditor({ items, onChange, disabled, validationErrors = {}, onOpenMatrixWizard, contentLang }) {
   const { t } = useTranslation()
   // Single-open accordion: only one card body is expanded at a time. With
   // 50–500 biến thể, having all open at once produces unmanageable scroll.
@@ -1005,6 +1013,7 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
               onDuplicate={duplicateVariant}
               disabled={disabled}
               fieldErrors={fieldErrors}
+              contentLang={contentLang}
             />
           )
         })
@@ -1036,6 +1045,7 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
                 disabled={disabled}
                 fieldErrors={fieldErrors}
                 sortable={sortable}
+                contentLang={contentLang}
               />
             )
           }}

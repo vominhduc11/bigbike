@@ -92,6 +92,29 @@ class AdminMutationValidatorsTest {
         assertThat(errors.get(0).field()).isEqualTo("image.url");
     }
 
+    @Test
+    void validatePublishTransition_allowsValidTransitions() {
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        AdminMutationValidators.validatePublishTransition(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.DRAFT, com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED, "publishStatus", errors);
+        assertThat(errors).isEmpty();
+    }
+
+    @Test
+    void validatePublishTransition_rejectsInvalidTransitions() {
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        AdminMutationValidators.validatePublishTransition(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED, com.bigbike.bigbike_backend.domain.catalog.PublishStatus.DRAFT, "publishStatus", errors);
+        assertThat(errors).hasSize(1);
+        assertThat(errors.get(0).code()).isEqualTo("INVALID_STATE_TRANSITION");
+    }
+
+    @Test
+    void validatePublishTransition_rejectsReservedStatuses() {
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        AdminMutationValidators.validatePublishTransition(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.DRAFT, com.bigbike.bigbike_backend.domain.catalog.PublishStatus.ARCHIVED, "publishStatus", errors);
+        assertThat(errors).hasSize(1);
+        assertThat(errors.get(0).code()).isEqualTo("RESERVED_PUBLISH_STATUS");
+    }
+
     private static ImageAssetRequest image(String url) {
         ImageAssetRequest request = new ImageAssetRequest();
         request.setUrl(url);

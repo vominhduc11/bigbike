@@ -112,9 +112,6 @@ services:
       BIGBIKE_COOKIES_SECURE: "${BIGBIKE_COOKIES_SECURE:-true}"
       WEB_REVALIDATE_URL: "${WEB_REVALIDATE_URL:-http://bigbike-web:3000/api/revalidate/}"
       WEB_REVALIDATE_SECRET: "${WEB_REVALIDATE_SECRET:-dev-revalidate-secret}"
-      # VI→EN auto-translation (server-side Gemini). Blank disables it; saves still work.
-      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
-      GEMINI_MODEL: "${GEMINI_MODEL:-gemini-2.5-flash}"
       # Transactional email (optional — empty BIGBIKE_MAIL_HOST disables sending).
       BIGBIKE_MAIL_HOST: "${BIGBIKE_MAIL_HOST:-}"
       BIGBIKE_MAIL_PORT: "${BIGBIKE_MAIL_PORT:-587}"

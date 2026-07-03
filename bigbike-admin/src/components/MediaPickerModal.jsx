@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { fetchMedia, uploadMedia } from '../lib/adminApi'
 import { useDebounce } from '../lib/useDebounce'
 import { useHasPermission } from '../lib/auth'
+import { resolveDisplayUrl } from '../lib/contracts'
 import { MediaDetailModal } from './MediaDetailModal'
 import { MediaRequirementHint, MediaValidationError } from './MediaRequirementHint'
 import { useMediaValidation } from '../lib/useMediaDimensions'
@@ -463,7 +464,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
                     >
                       {url ? (
                         <img
-                          src={url}
+                          src={resolveDisplayUrl(url)}
                           alt={media.altText ?? ''}
                           className="mpicker-thumb"
                           loading="lazy"

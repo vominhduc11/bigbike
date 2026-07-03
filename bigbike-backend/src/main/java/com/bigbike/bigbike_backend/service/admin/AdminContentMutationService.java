@@ -8,15 +8,20 @@ import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.service.catalog.DescriptionBlockRenderer;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.content.AdminContentItem;
 import com.bigbike.bigbike_backend.domain.content.Article;
 import com.bigbike.bigbike_backend.persistence.entity.content.ArticleEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.ContentCategoryEntity;
-
 import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.ContentCategoryJpaRepository;
 import com.bigbike.bigbike_backend.repository.content.ContentReadRepository;
 import com.bigbike.bigbike_backend.repository.content.JpaContentReadRepository;
+import com.bigbike.bigbike_backend.mapper.ArticleMapper;
+import com.bigbike.bigbike_backend.config.MinioProperties;
+import com.bigbike.bigbike_backend.service.admin.ImageVariantService;
+import io.minio.MinioClient;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -38,7 +43,6 @@ import static com.bigbike.bigbike_backend.service.admin.ContentFieldApplier.clea
 import static com.bigbike.bigbike_backend.service.admin.ContentFieldApplier.clearProductImage;
 import static com.bigbike.bigbike_backend.service.admin.ContentFieldApplier.clearSeo;
 import static com.bigbike.bigbike_backend.service.admin.ContentFieldApplier.generateId;
-import static com.bigbike.bigbike_backend.service.admin.ContentFieldApplier.toAdminContentItem;
 
 @Service
 public class AdminContentMutationService {
@@ -51,6 +55,10 @@ public class AdminContentMutationService {
     private final AuditLogWriter auditLogWriter;
     private final DescriptionBlockRenderer descriptionBlockRenderer;
     private final ContentRequestValidator contentRequestValidator;
+    private final ArticleMapper articleMapper;
+    private final MinioClient minioClient;
+    private final MinioProperties minioProperties;
+    private final ImageVariantService imageVariantService;
 
     public AdminContentMutationService(
             ObjectProvider<ArticleJpaRepository> articleJpaRepositoryProvider,
@@ -60,7 +68,11 @@ public class AdminContentMutationService {
             WebRevalidationService webRevalidationService,
             AuditLogWriter auditLogWriter,
             DescriptionBlockRenderer descriptionBlockRenderer,
-            ContentRequestValidator contentRequestValidator
+            ContentRequestValidator contentRequestValidator,
+            ArticleMapper articleMapper,
+            MinioClient minioClient,
+            MinioProperties minioProperties,
+            ImageVariantService imageVariantService
     ) {
         this.articleJpaRepository = articleJpaRepositoryProvider.getIfAvailable();
         this.contentCategoryJpaRepository = contentCategoryJpaRepositoryProvider.getIfAvailable();
@@ -70,6 +82,10 @@ public class AdminContentMutationService {
         this.auditLogWriter = auditLogWriter;
         this.descriptionBlockRenderer = descriptionBlockRenderer;
         this.contentRequestValidator = contentRequestValidator;
+        this.articleMapper = articleMapper;
+        this.minioClient = minioClient;
+        this.minioProperties = minioProperties;
+        this.imageVariantService = imageVariantService;
     }
 
     @Transactional
@@ -79,6 +95,8 @@ public class AdminContentMutationService {
         List<ApiErrorDetail> errors = new ArrayList<>();
         String slug = contentRequestValidator.validateArticleRequest(request, null, true, false, errors);
         ContentCategoryEntity category = contentRequestValidator.resolveCategory(request.getCategoryId(), errors);
+        PublishStatus nextStatus = request.getPublishStatus() == null ? PublishStatus.DRAFT : request.getPublishStatus();
+        AdminMutationValidators.validatePublishTransition(PublishStatus.DRAFT, nextStatus, "publishStatus", errors);
         AdminMutationValidators.throwIfErrors(errors);
 
         Instant now = Instant.now();
@@ -94,7 +112,7 @@ public class AdminContentMutationService {
 
         Article article = contentReadRepository.findArticleById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Content not found."));
-        return toAdminContentItem(article);
+        return articleMapper.toAdminContentItem(article);
     }
 
     /**
@@ -112,6 +130,8 @@ public class AdminContentMutationService {
         List<ApiErrorDetail> errors = new ArrayList<>();
         String slug = contentRequestValidator.validateArticleRequest(request, null, true, true, errors);
         ContentCategoryEntity category = contentRequestValidator.resolveCategory(request.getCategoryId(), errors);
+        PublishStatus nextStatus = request.getPublishStatus() == null ? PublishStatus.DRAFT : request.getPublishStatus();
+        AdminMutationValidators.validatePublishTransition(PublishStatus.DRAFT, nextStatus, "publishStatus", errors);
         AdminMutationValidators.throwIfErrors(errors);
 
         Instant now = Instant.now();
@@ -150,7 +170,7 @@ public class AdminContentMutationService {
 
         Article article = contentReadRepository.findArticleById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Content not found."));
-        return toAdminContentItem(article);
+        return articleMapper.toAdminContentItem(article);
     }
 
     @Transactional
@@ -159,13 +179,21 @@ public class AdminContentMutationService {
         ArticleEntity entity = articleJpaRepository.findById(articleId)
                 .orElseThrow(() -> new NotFoundException("Content not found."));
         entity.setPublishStatus(PublishStatus.TRASH);
+        
+        // A6: Rename slug when soft-deleted to free up the original slug
+        String prevSlug = entity.getSlug();
+        entity.setSlug(entity.getSlug() + "-deleted-" + entity.getId());
+        if (entity.getSlugEn() != null) {
+            entity.setSlugEn(entity.getSlugEn() + "-deleted-" + entity.getId());
+        }
+        
         entity.setUpdatedAt(Instant.now());
         articleJpaRepository.save(entity);
         auditLog("CONTENT_ARTICLE_DELETED", "CONTENT", adminId, null, articleJson(entity));
-        revalidateArticle(entity, null);
+        revalidateArticle(entity, prevSlug);
         Article article = contentReadRepository.findArticleById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Content not found."));
-        return toAdminContentItem(article);
+        return articleMapper.toAdminContentItem(article);
     }
 
     @Transactional
@@ -176,8 +204,32 @@ public class AdminContentMutationService {
         if (entity.getPublishStatus() != PublishStatus.TRASH) {
             Article article = contentReadRepository.findArticleById(entity.getId())
                     .orElseThrow(() -> new NotFoundException("Content not found."));
-            return toAdminContentItem(article);
+            return articleMapper.toAdminContentItem(article);
         }
+        
+        // Khôi phục slug gốc và validate trùng
+        String originalSlug = entity.getSlug().replace("-deleted-" + entity.getId(), "");
+        String originalSlugEn = entity.getSlugEn() != null 
+                ? entity.getSlugEn().replace("-deleted-" + entity.getId(), "") 
+                : null;
+        
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        ArticleEntity existingBySlug = articleJpaRepository.findBySlug(originalSlug).orElse(null);
+        if (existingBySlug != null && !existingBySlug.getId().equals(entity.getId()) 
+                && existingBySlug.getPublishStatus() != PublishStatus.TRASH) {
+            errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Cannot restore: slug '" + originalSlug + "' is already in use."));
+        }
+        if (originalSlugEn != null) {
+            ArticleEntity existingBySlugEn = articleJpaRepository.findBySlugEn(originalSlugEn).orElse(null);
+            if (existingBySlugEn != null && !existingBySlugEn.getId().equals(entity.getId()) 
+                    && existingBySlugEn.getPublishStatus() != PublishStatus.TRASH) {
+                errors.add(new ApiErrorDetail("translations.en.slug", "DUPLICATE", "Cannot restore: English slug is already in use."));
+            }
+        }
+        AdminMutationValidators.throwIfErrors(errors);
+        
+        entity.setSlug(originalSlug);
+        entity.setSlugEn(originalSlugEn);
         entity.setPublishStatus(PublishStatus.DRAFT);
         entity.setUpdatedAt(Instant.now());
         articleJpaRepository.save(entity);
@@ -185,7 +237,7 @@ public class AdminContentMutationService {
         revalidateArticle(entity, null);
         Article article = contentReadRepository.findArticleById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Content not found."));
-        return toAdminContentItem(article);
+        return articleMapper.toAdminContentItem(article);
     }
 
     @Transactional
@@ -196,9 +248,57 @@ public class AdminContentMutationService {
         if (entity.getPublishStatus() != PublishStatus.TRASH) {
             throw new com.bigbike.bigbike_backend.api.error.ConflictException("Only trashed content can be permanently deleted.");
         }
+        
+        // A9: Dọn dẹp object MinIO liên quan
+        deleteMinioObject(entity.getCoverImageUrl());
+        deleteMinioObject(entity.getSeoOgImageUrl());
+        if (entity.getBodyBlocks() != null) {
+            for (DescriptionBlock block : entity.getBodyBlocks()) {
+                if (block instanceof DescriptionBlock.ImageBlock img) {
+                    deleteMinioObject(img.getUrl());
+                } else if (block instanceof DescriptionBlock.FeatureBlock feat) {
+                    deleteMinioObject(feat.getUrl());
+                }
+            }
+        }
+        
         auditLog("CONTENT_ARTICLE_HARD_DELETED", "CONTENT", adminId, articleJson(entity), null);
         articleJpaRepository.delete(entity);
         revalidateArticle(entity, null);
+    }
+
+    private void deleteMinioObject(String url) {
+        if (url == null) return;
+        String objectKey = extractObjectKey(url);
+        if (objectKey == null) return;
+        try {
+            minioClient.removeObject(
+                    io.minio.RemoveObjectArgs.builder()
+                            .bucket(minioProperties.getBucket())
+                            .object(objectKey)
+                            .build()
+            );
+            imageVariantService.deleteVariants(objectKey);
+        } catch (Exception e) {
+            // best-effort
+        }
+    }
+
+    private String extractObjectKey(String url) {
+        if (url == null) return null;
+        String prefix = "/media/";
+        if (url.startsWith(prefix)) {
+            return url.substring(prefix.length());
+        }
+        prefix = "/media-proxy/";
+        if (url.startsWith(prefix)) {
+            return url.substring(prefix.length());
+        }
+        int idx = url.indexOf("/media/");
+        if (idx != -1) {
+            return url.substring(idx + "/media/".length());
+        }
+        return null;
     }
 
     private void requireJpaPersistenceEnabled() {
@@ -245,7 +345,9 @@ public class AdminContentMutationService {
                     : "";
             entity.setBody(rendered);
         } else if (create || request.getBody() != null) {
-            entity.setBody(AdminMutationValidators.trimToNull(request.getBody()));
+            // A2: Sanitize body
+            String sanitizedBody = descriptionBlockRenderer.sanitizeHtml(AdminMutationValidators.trimToNull(request.getBody()));
+            entity.setBody(sanitizedBody);
         }
         if (create || request.getPublishStatus() != null) {
             PublishStatus nextStatus = request.getPublishStatus() == null ? PublishStatus.DRAFT : request.getPublishStatus();
@@ -308,7 +410,11 @@ public class AdminContentMutationService {
             entity.setSlugEn(AdminMutationValidators.trimToNull(en.getSlug()));
             entity.setTitleEn(AdminMutationValidators.trimToNull(en.getTitle()));
             entity.setExcerptEn(AdminMutationValidators.trimToNull(en.getExcerpt()));
-            entity.setBodyEn(AdminMutationValidators.trimToNull(en.getBody()));
+            
+            // A3: Sanitize en.body
+            String sanitizedBodyEn = descriptionBlockRenderer.sanitizeHtml(AdminMutationValidators.trimToNull(en.getBody()));
+            entity.setBodyEn(sanitizedBodyEn);
+            
             entity.setSeoTitleEn(AdminMutationValidators.trimToNull(en.getSeoTitle()));
             entity.setSeoDescriptionEn(AdminMutationValidators.trimToNull(en.getSeoDescription()));
         } else if (create) {
@@ -318,12 +424,6 @@ public class AdminContentMutationService {
             entity.setBodyEn(null);
             entity.setSeoTitleEn(null);
             entity.setSeoDescriptionEn(null);
-        }
-
-        // Translation lock (V296). Null on PATCH = leave the stored lock unchanged.
-        if (create || request.getEnOverrides() != null) {
-            entity.setEnOverrides(
-                    com.bigbike.bigbike_backend.service.admin.EnOverridesCodec.toJson(request.getEnOverrides()));
         }
     }
 

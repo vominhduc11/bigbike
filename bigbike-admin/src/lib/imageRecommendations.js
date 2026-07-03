@@ -37,9 +37,6 @@ export const IMAGE_RECO = {
   // bigbike-web (chỉ nằm trong thẻ <meta og:image>, Facebook/Zalo tự crop) — không áp công thức
   // 2× nội bộ, dùng thẳng chuẩn 1200×630 khuyến nghị của Open Graph (đã đủ nét ở mọi nơi hiển thị).
   cover: { idealW: 1200, idealH: 630, minW: 1200, minH: 630, ratio: [40, 21], ratioTolerance: 0.15 },
-  // Banner khuyến mãi trang chủ (promo_image_url): container rộng 1600px (≥1920px viewport),
-  // height tự do theo ảnh (không crop) → chỉ ép sàn theo bề rộng, tỉ lệ để tự do.
-  promo: { idealW: 3200, idealH: 1050, minW: 3200, minH: 1050, ratio: null },
   // Ảnh PNG nền trong chồng carousel "Góc trải nghiệm" trang chủ (ExperienceCarousel.tsx overlay):
   // rộng tối đa ~266px (desktop), không ép chiều cao (giữ nguyên tỉ lệ file PNG cắt sẵn).
   squareMedium: { idealW: 600, idealH: 600, minW: 600, minH: 600, ratio: null },

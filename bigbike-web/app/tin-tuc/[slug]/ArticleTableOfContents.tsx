@@ -2,12 +2,15 @@
 
 import { useEffect } from "react";
 import { useTranslations } from "next-intl";
+import { useLocalizedField } from "@/components/i18n/LocalizedContent";
 
 export function ArticleTableOfContents() {
   const t = useTranslations("Blog");
   const tocHeading = t("tocHeading");
   const tocShow = t("tocShow");
   const tocHide = t("tocHide");
+  const localizedBody = useLocalizedField<string>("body");
+
   useEffect(() => {
     const toc = document.getElementById("table-of-content");
     // The legacy ".blog" wrapper was migrated to inline Tailwind (commit a7e6bf21),
@@ -113,7 +116,7 @@ export function ArticleTableOfContents() {
       toc.classList.remove("expanded");
       toc.style.display = "";
     };
-  }, [tocHeading, tocShow, tocHide]);
+  }, [tocHeading, tocShow, tocHide, localizedBody]);
 
   return <div id="table-of-content" />;
 }

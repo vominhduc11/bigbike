@@ -45,6 +45,11 @@ public class DescriptionBlockRenderer {
         return Jsoup.clean(sb.toString(), "", SAFELIST);
     }
 
+    public String sanitizeHtml(String html) {
+        if (html == null) return null;
+        return Jsoup.clean(html, "", SAFELIST);
+    }
+
     private String renderBlock(DescriptionBlock block) {
         if (block instanceof DescriptionBlock.HeadingBlock b)   return renderHeading(b);
         if (block instanceof DescriptionBlock.ParagraphBlock b) return renderParagraph(b);

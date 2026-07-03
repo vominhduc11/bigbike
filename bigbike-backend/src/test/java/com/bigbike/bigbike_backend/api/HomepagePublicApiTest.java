@@ -113,10 +113,6 @@ class HomepagePublicApiTest {
                 .andExpect(jsonPath("$.data[*].settingKey", hasItems(
                         "zalo_url",
                         "hotline",
-                        "promo_title",
-                        "promo_off",
-                        "promo_href",
-                        "promo_image_url",
                         "seo_home_title",
                         "seo_home_description",
                         "og_image_url"

@@ -759,11 +759,6 @@ public class AdminCatalogMutationService {
             applyTranslations(entity, request.getTranslations());
         }
 
-        // Translation lock (V296): which English fields the admin edited by hand. Stored opaquely.
-        if (create || request.isEnOverridesPresent()) {
-            entity.setEnOverrides(EnOverridesCodec.toJson(request.getEnOverrides()));
-        }
-
         // descriptionBlocksEn presence flag (V229): mirror the Vietnamese pipeline. Runs AFTER
         // applyTranslations so the rendered English HTML overrides description_en (which
         // applyTranslations set from translations.en.description). Omitting the key leaves the
@@ -1170,11 +1165,6 @@ public class AdminCatalogMutationService {
             entity.setSeoTitleEn(null);
             entity.setSeoDescriptionEn(null);
         }
-
-        // Translation lock (V296). Null on PATCH = leave the stored lock unchanged.
-        if (create || request.getEnOverrides() != null) {
-            entity.setEnOverrides(EnOverridesCodec.toJson(request.getEnOverrides()));
-        }
     }
 
     private void applyBrandPatch(
@@ -1235,11 +1225,6 @@ public class AdminCatalogMutationService {
             entity.setDescriptionEn(null);
             entity.setSeoTitleEn(null);
             entity.setSeoDescriptionEn(null);
-        }
-
-        // Translation lock (V296). Null on PATCH = leave the stored lock unchanged.
-        if (create || request.getEnOverrides() != null) {
-            entity.setEnOverrides(EnOverridesCodec.toJson(request.getEnOverrides()));
         }
     }
     private void revalidateProduct(ProductEntity entity, String previousSlug) {

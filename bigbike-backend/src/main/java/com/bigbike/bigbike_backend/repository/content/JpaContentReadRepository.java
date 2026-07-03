@@ -36,6 +36,7 @@ public class JpaContentReadRepository implements ContentReadRepository {
 
     private final ArticleJpaRepository articleJpaRepository;
     private final ContentCategoryJpaRepository contentCategoryJpaRepository;
+    private final com.bigbike.bigbike_backend.mapper.ArticleMapper articleMapper;
 
     // --- Single-entity lookups ---
 
@@ -172,6 +173,10 @@ public class JpaContentReadRepository implements ContentReadRepository {
         return toDomain(entity, locale, false);
     }
 
+    private Article toDomain(ArticleEntity entity, String locale, boolean includeTranslations) {
+        return articleMapper.toDomain(entity, locale, includeTranslations);
+    }
+
     /**
      * Map an in-memory (transient, unsaved) article entity to the public {@link Article}
      * shape — used by the admin live-preview dry-run. Same mapper as the storefront blog
@@ -181,123 +186,7 @@ public class JpaContentReadRepository implements ContentReadRepository {
         return toDomain(entity, locale, false);
     }
 
-    private Article toDomain(ArticleEntity entity, String locale, boolean includeTranslations) {
-        return new Article(
-                entity.getId(),
-                entity.getSlug(),
-                entity.getSlugEn(),
-                pick(entity.getTitle(), entity.getTitleEn(), locale),
-                pick(entity.getExcerpt(), entity.getExcerptEn(), locale),
-                pick(entity.getBody(), entity.getBodyEn(), locale),
-                toImageAsset(
-                        entity.getCoverImageId(),
-                        entity.getCoverImageUrl(),
-                        entity.getCoverImageAlt(),
-                        entity.getCoverImageWidth(),
-                        entity.getCoverImageHeight(),
-                        entity.getCoverImageMimeType()
-                ),
-                toImageAsset(null, entity.getProductImageUrl(), entity.getProductImageAlt(), null, null, null),
-                toCategorySummary(entity),
-                toCategorySummaries(entity),
-                entity.getPublishStatus(),
-                entity.isFeatured(),
-                entity.isHomeExperience(),
-                toSeoMeta(
-                        pick(entity.getSeoTitle(), entity.getSeoTitleEn(), locale),
-                        pick(entity.getSeoDescription(), entity.getSeoDescriptionEn(), locale),
-                        entity.getSeoCanonicalUrl(),
-                        entity.getSeoOgImageId(),
-                        entity.getSeoOgImageUrl(),
-                        entity.getSeoOgImageAlt(),
-                        entity.getSeoOgImageWidth(),
-                        entity.getSeoOgImageHeight(),
-                        entity.getSeoOgImageMimeType(),
-                        entity.isSeoNoIndex()
-                ),
-                includeTranslations ? toArticleTranslations(entity) : null,
-                entity.getPublishedAt(),
-                entity.getCreatedAt(),
-                entity.getUpdatedAt(),
-                includeTranslations ? entity.getBodyBlocks() : null
-        );
-    }
-
-    private ContentCategorySummary toCategorySummary(ContentCategoryEntity entity) {
-        if (entity == null) {
-            return null;
-        }
-        return new ContentCategorySummary(entity.getId(), entity.getSlug(), entity.getName());
-    }
-
-    private ContentCategorySummary toCategorySummary(ArticleEntity entity) {
-        if (entity.getCategory() != null) {
-            return toCategorySummary(entity.getCategory());
-        }
-        if (entity.getCategories() != null && !entity.getCategories().isEmpty()) {
-            return toCategorySummary(entity.getCategories().get(0));
-        }
-        return null;
-    }
-
-    private List<ContentCategorySummary> toCategorySummaries(ArticleEntity entity) {
-        if (entity.getCategories() == null || entity.getCategories().isEmpty()) {
-            ContentCategorySummary primary = toCategorySummary(entity.getCategory());
-            return primary == null ? List.of() : List.of(primary);
-        }
-        return entity.getCategories().stream()
-                .filter(Objects::nonNull)
-                .map(this::toCategorySummary)
-                .filter(Objects::nonNull)
-                .toList();
-    }
-
-    private static ImageAsset toImageAsset(
-            String id, String url, String alt, Integer width, Integer height, String mimeType) {
-        if (url == null || url.isBlank()) {
-            return null;
-        }
-        return new ImageAsset(id, url, alt, width, height, mimeType);
-    }
-
-    private static SeoMeta toSeoMeta(
-            String title, String description, String canonicalUrl,
-            String ogImageId, String ogImageUrl, String ogImageAlt,
-            Integer ogImageWidth, Integer ogImageHeight, String ogImageMimeType,
-            boolean noIndex) {
-        // noIndex is a meaningful SEO directive on its own — keep the seo block so the
-        // public contract (seo.noIndex) survives even when no other SEO field is set.
-        if (!noIndex
-                && (title == null || title.isBlank())
-                && (description == null || description.isBlank())
-                && (canonicalUrl == null || canonicalUrl.isBlank())
-                && (ogImageUrl == null || ogImageUrl.isBlank())) {
-            return null;
-        }
-        return new SeoMeta(
-                title, description, canonicalUrl,
-                toImageAsset(ogImageId, ogImageUrl, ogImageAlt, ogImageWidth, ogImageHeight, ogImageMimeType),
-                noIndex);
-    }
-
     private static String normalizeQuery(String q) {
         return (q != null && !q.isBlank()) ? q.trim() : null;
-    }
-
-    private static String pick(String base, String en, String locale) {
-        return "en".equals(locale) && en != null && !en.isBlank() ? en : base;
-    }
-
-    private static ArticleTranslations toArticleTranslations(ArticleEntity entity) {
-        return new ArticleTranslations(
-                new ArticleTranslations.ArticleContent(
-                        entity.getTitleEn(),
-                        entity.getExcerptEn(),
-                        entity.getBodyEn(),
-                        entity.getSeoTitleEn(),
-                        entity.getSeoDescriptionEn()
-                ),
-                com.bigbike.bigbike_backend.service.admin.EnOverridesCodec.toList(entity.getEnOverrides())
-        );
     }
 }

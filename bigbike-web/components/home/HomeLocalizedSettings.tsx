@@ -1,6 +1,6 @@
 "use client";
 
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { DEFAULT_LOCALE } from "@/i18n/locale";
 import { fetchPublicSettings } from "@/lib/api/client-api";
@@ -8,19 +8,24 @@ import { queryKeys } from "@/lib/query/keys";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 
 /**
- * Các khối marketing trang chủ lấy chữ từ `site_settings` (about_*, home_exp_*,
- * home_content_bottom_html). Server luôn render tĩnh `vi` (ISR/SEO, xem `i18n/request.ts`)
- * nên các khối này cũng là `vi`; việc đổi sang EN chỉ xảy ra ở CLIENT (ClientIntlProvider
- * đọc cookie NEXT_LOCALE, không round-trip server). Vì thế ba khối dưới đây refetch settings
+ * Khối SEO cuối trang chủ (`home_content_bottom_html`) lấy chữ từ `site_settings` — admin
+ * còn sửa được (nhóm `seo`). Server luôn render tĩnh `vi` (ISR/SEO, xem `i18n/request.ts`)
+ * nên khối này cũng là `vi`; việc đổi sang EN chỉ xảy ra ở CLIENT (ClientIntlProvider đọc
+ * cookie NEXT_LOCALE, không round-trip server). Vì thế `HomeContentBottom` refetch settings
  * theo `lang` rồi swap sang bản EN — cùng pattern với `HomeFeaturedProducts` / `LocalizedContent`.
  *
  * Backend trả EN-với-fallback-`vi` field-by-field (BUSINESS_RULES PRODUCT_RULE_002), nên key
  * nào admin chưa nhập bản EN sẽ tự hiển thị `vi`. Render đầu (locale `vi`) dùng prop server
  * → khớp HTML server, không hydration mismatch; chỉ swap sau khi khách chọn EN.
  *
- * Cả ba component dùng chung queryKeys.publicSettings(locale) nên React Query gộp thành 1
- * request — key này cũng dùng chung với PolicyPageClient nên chuyển trang chủ ↔ trang chính
- * sách trong cùng phiên không phải gọi lại API.
+ * `HomeBlockHeading`/`HomeAboutSection`/`HomeExperienceHeading` KHÔNG còn dùng cơ chế này —
+ * nội dung của chúng đã hardcode (nhóm setting `public_home`, gỡ khỏi Cài đặt admin 2026-07-03,
+ * xem DATA_CONTRACT.md "public_home keys — removed"); bản EN truyền thẳng qua prop `*En` và
+ * chọn theo `useLocale()`, không gọi API.
+ *
+ * `HomeContentBottom` dùng `queryKeys.publicSettings(locale)` — key này cũng dùng chung với
+ * `PolicyPageClient` nên chuyển trang chủ ↔ trang chính sách trong cùng phiên không phải gọi
+ * lại API.
  */
 export function useEnSettingLookup(): (key: string) => string | undefined {
   const locale = useLocale();
@@ -42,37 +47,33 @@ export function useEnSettingLookup(): (key: string) => string | undefined {
 
 const RICH_HTML_OPTS = { allowInlineStyles: true, rewriteMediaUrls: true } as const;
 
+/** Chọn bản EN khi locale khác `vi`; giữ nguyên bản `vi` (khớp HTML server) khi không. */
+function useLocalizedText(vi: string, en: string): string {
+  const locale = useLocale();
+  return locale !== DEFAULT_LOCALE && en ? en : vi;
+}
+
 /**
- * Tiêu đề khối trang chủ ("Sản phẩm nổi bật", "Tin tức", "Videos"…) — kicker + title lấy từ
- * `site_settings` (admin sửa được). Cùng vấn đề như các khối marketing: server render `vi`,
- * phải swap EN ở client. Ưu tiên: bản EN admin nhập → bản `vi` server (prop) → nhãn dịch sẵn
- * (`Home.*`). Khi locale `vi` hoặc admin chưa nhập EN thì giữ nguyên prop server → khớp HTML
- * server, không hydration mismatch. `kickerSettingKey` bỏ trống cho khối chỉ có title (Videos).
+ * Tiêu đề khối trang chủ ("Sản phẩm nổi bật", "Tin tức", "Videos"…) — kicker + title đã
+ * hardcode (nhóm setting `public_home`, gỡ khỏi Cài đặt admin 2026-07-03). VI render ở server
+ * (khớp HTML đầu, không hydration mismatch); EN chỉ swap ở client theo locale hiện tại.
+ * `kicker`/`kickerEn` bỏ trống cho khối chỉ có title (Videos).
  */
 export function HomeBlockHeading({
   className,
-  kickerSettingKey,
-  titleSettingKey,
   kicker,
+  kickerEn,
   title,
-  fallbackKickerKey,
-  fallbackTitleKey,
+  titleEn,
 }: {
   className: string;
-  kickerSettingKey?: string;
-  titleSettingKey: string;
   kicker?: string;
-  title?: string;
-  fallbackKickerKey?: string;
-  fallbackTitleKey: string;
+  kickerEn?: string;
+  title: string;
+  titleEn: string;
 }) {
-  const pick = useEnSettingLookup();
-  const t = useTranslations("Home");
-
-  const sub = kickerSettingKey
-    ? (pick(kickerSettingKey) ?? (kicker || (fallbackKickerKey ? t(fallbackKickerKey) : "")))
-    : "";
-  const heading = pick(titleSettingKey) ?? (title || t(fallbackTitleKey));
+  const sub = useLocalizedText(kicker ?? "", kickerEn ?? "");
+  const heading = useLocalizedText(title, titleEn);
 
   return (
     <div className={className}>
@@ -82,24 +83,26 @@ export function HomeBlockHeading({
   );
 }
 
-/** Khối "Giới thiệu BigBike" — tiêu đề phụ + tiêu đề + nội dung HTML. */
+/** Khối "Giới thiệu BigBike" — tiêu đề phụ + tiêu đề + nội dung HTML (hardcode, xem HomePage). */
 export function HomeAboutSection({
   subtitle,
+  subtitleEn,
   title,
+  titleEn,
   viHtml,
+  enHtml,
 }: {
   subtitle: string;
+  subtitleEn: string;
   title: string;
-  /** HTML bản `vi` ĐÃ sanitize ở server — fallback + render đầu khớp server. */
+  titleEn: string;
+  /** HTML ĐÃ sanitize ở server (server render `vi` đầu tiên — khớp HTML, không hydration mismatch). */
   viHtml: string;
+  enHtml: string;
 }) {
-  const pick = useEnSettingLookup();
-  if (!subtitle && !title && !viHtml) return null;
-
-  const heading = pick("about_title") ?? title;
-  const sub = pick("about_subtitle") ?? subtitle;
-  const enHtml = pick("about_content_html");
-  const html = enHtml ? sanitizeRichHtml(enHtml, RICH_HTML_OPTS) : viHtml;
+  const sub = useLocalizedText(subtitle, subtitleEn);
+  const heading = useLocalizedText(title, titleEn);
+  const html = useLocalizedText(viHtml, enHtml);
 
   return (
     <div className="about-bigbike">
@@ -116,22 +119,25 @@ export function HomeAboutSection({
   );
 }
 
-/** Tiêu đề khối "Góc trải nghiệm" — tiêu đề phụ + tiêu đề + mô tả. */
+/** Tiêu đề khối "Góc trải nghiệm" — tiêu đề phụ + tiêu đề + mô tả (hardcode, xem HomePage). */
 export function HomeExperienceHeading({
   subtitle,
+  subtitleEn,
   title,
+  titleEn,
   desc,
+  descEn,
 }: {
   subtitle: string;
+  subtitleEn: string;
   title: string;
+  titleEn: string;
   desc: string;
+  descEn: string;
 }) {
-  const pick = useEnSettingLookup();
-  if (!subtitle && !title && !desc) return null;
-
-  const sub = pick("home_exp_subtitle") ?? subtitle;
-  const heading = pick("home_exp_title") ?? title;
-  const body = pick("home_exp_desc") ?? desc;
+  const sub = useLocalizedText(subtitle, subtitleEn);
+  const heading = useLocalizedText(title, titleEn);
+  const body = useLocalizedText(desc, descEn);
 
   return (
     <div className="container">

@@ -1,11 +1,13 @@
 package com.bigbike.bigbike_backend.service.admin;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.bigbike.bigbike_backend.api.admin.dto.FaqRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.ProductTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SpecificationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
+import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
@@ -22,9 +24,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Save -> read roundtrip for bilingual product content (V136): English is
- * optional, Vietnamese is canonical, and English reads fall back to Vietnamese
- * field-by-field. See BUSINESS_RULES.md PRODUCT_RULE_001 / PRODUCT_RULE_002.
+ * Save -> read roundtrip for bilingual product content (V136): Vietnamese is
+ * canonical and English reads fall back to Vietnamese field-by-field. Per
+ * TRANSLATION_RULE_002, {@code translations.en.name} is required on every
+ * create/update (mirroring the Vietnamese {@code name} field being required)
+ * — every other English field remains optional.
+ * See BUSINESS_RULES.md PRODUCT_RULE_001 / PRODUCT_RULE_002 / TRANSLATION_RULE_002.
  */
 @SpringBootTest
 @Transactional
@@ -132,20 +137,47 @@ class ProductBilingualRoundtripTest {
     }
 
     @Test
-    void englishContent_isOptional() {
+    void englishContent_isOptional_exceptName() {
+        // TRANSLATION_RULE_002: `name` is required in English (mirrors VI `name` being
+        // required — see englishName_isRequired_onCreate below), but every other English
+        // field stays fully optional; the product still saves fine with just an EN name.
         UpsertProductRequest create = baseProduct("bilingual-none", "Găng tay da");
         create.setDescription("Mô tả găng tay");
-        // No translations at all — the product still saves.
+
+        ProductTranslationRequest.ProductContentRequest en =
+                ProductTranslationRequest.ProductContentRequest.builder()
+                        .name("Leather gloves")
+                        .build();
+        create.setTranslations(new ProductTranslationRequest(en));
 
         Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
 
         Product enView = readRepository.findProductBySlug(saved.slug(), "en").orElseThrow();
-        assertThat(enView.name()).isEqualTo("Găng tay da");
+        assertThat(enView.name()).isEqualTo("Leather gloves");
+        // No English description — falls back to Vietnamese.
         assertThat(enView.description()).isEqualTo("Mô tả găng tay");
 
         Product admin = readRepository.findProductById(saved.id()).orElseThrow();
         assertThat(admin.translations())
-                .as("no English content -> translations block is null")
-                .isNull();
+                .as("EN name present -> translations block is not null")
+                .isNotNull();
+        assertThat(admin.translations().en().name()).isEqualTo("Leather gloves");
+    }
+
+    @Test
+    void englishName_isRequired_onCreate() {
+        // TRANSLATION_RULE_002: `name` is a required VI field, so translations.en.name
+        // is required too — omitting it (or the whole translations block) must reject
+        // the create with a field-level validation error rather than silently saving.
+        UpsertProductRequest create = baseProduct("bilingual-missing-en-name", "Bao tay da");
+        create.setDescription("Mô tả bao tay");
+        // No translations at all.
+
+        assertThatThrownBy(() -> mutationService.createProduct(create, DEV_ADMIN_ID))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Validation failed")
+                .satisfies(ex -> assertThat(((ValidationException) ex).details())
+                        .anyMatch(detail -> "translations.en.name".equals(detail.field())
+                                && "REQUIRED".equals(detail.code())));
     }
 }

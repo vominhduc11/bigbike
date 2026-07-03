@@ -413,11 +413,33 @@ a {
   from { transform: translateY(10px) scale(0.98); opacity: 0; }
   to   { transform: translateY(0)    scale(1);    opacity: 1; }
 }
-/* ─── Rich text editor (TipTap) ──────────────────────────────────────────────*/
+/* ─── Rich text editor (TipTap) ──────────────────────────────────────────────
+   Canvas (.tiptap) cố định SÁNG, không ăn theo [data-theme="dark"] của admin.
+   Lý do: nội dung soạn ở đây luôn hiển thị trên nền trắng ở bigbike-web
+   (STYLEGUIDE.md: "nền trang #ffffff, chữ đen"), kể cả khi admin bật dark mode.
+   Nếu để canvas ăn theo token admin: (1) WYSIWYG sai lệch với giao diện thật,
+   (2) span có màu chữ cố định (WP import cũ, hoặc do người dùng chọn màu chữ)
+   mất tương phản khi nền canvas đổi sang tối — đây chính là bug báo cáo.
+   Toolbar/khung ngoài/thanh đếm ký tự vẫn ăn theo theme admin bình thường vì
+   không chứa nội dung có màu cố định. */
+:root {
+  --rte-canvas-bg:             #ffffff;
+  --rte-canvas-surface-muted:  #f8f9fa;
+  --rte-canvas-text:           #111827;
+  --rte-canvas-text-secondary: #374151;
+  --rte-canvas-placeholder:    #adb5bd;
+  --rte-canvas-border-subtle:  #e8eaed;
+  --rte-canvas-border-default: #d1d5db;
+  --rte-canvas-primary:        #cc4a08;
+  --rte-canvas-primary-hover:  #ac3e08;
+}
+
 .rich-editor-content .tiptap {
   outline: none;
   min-height: 200px;
   padding: 12px 16px;
+  background: var(--rte-canvas-bg);
+  color: var(--rte-canvas-text);
 }
 
 .rich-editor-content .tiptap p {
@@ -462,16 +484,16 @@ a {
 }
 
 .rich-editor-content .tiptap blockquote {
-  border-left: 3px solid var(--admin-color-primary);
+  border-left: 3px solid var(--rte-canvas-primary);
   padding-left: 1em;
-  color: var(--admin-color-text-secondary);
+  color: var(--rte-canvas-text-secondary);
   margin: 0.75em 0;
   font-style: italic;
 }
 
 .rich-editor-content .tiptap code {
-  background: var(--admin-color-surface-muted);
-  border: 1px solid var(--admin-color-border-subtle);
+  background: var(--rte-canvas-surface-muted);
+  border: 1px solid var(--rte-canvas-border-subtle);
   border-radius: var(--admin-radius-xs);
   padding: 0.1em 0.35em;
   font-size: 0.875em;
@@ -479,8 +501,8 @@ a {
 }
 
 .rich-editor-content .tiptap pre {
-  background: var(--admin-color-surface-muted);
-  border: 1px solid var(--admin-color-border-subtle);
+  background: var(--rte-canvas-surface-muted);
+  border: 1px solid var(--rte-canvas-border-subtle);
   border-radius: var(--admin-radius-sm);
   padding: var(--admin-space-4);
   overflow-x: auto;
@@ -496,7 +518,7 @@ a {
 
 .rich-editor-content .tiptap hr {
   border: none;
-  border-top: 1.5px solid var(--admin-color-border-default);
+  border-top: 1.5px solid var(--rte-canvas-border-default);
   margin: 1.5em 0;
 }
 
@@ -510,7 +532,7 @@ a {
 }
 .rich-editor-content .tiptap th,
 .rich-editor-content .tiptap td {
-  border: 1px solid var(--admin-color-border-default);
+  border: 1px solid var(--rte-canvas-border-default);
   padding: 6px 8px;
   vertical-align: top;
   box-sizing: border-box;
@@ -518,7 +540,7 @@ a {
   min-width: 2em;
 }
 .rich-editor-content .tiptap th {
-  background: var(--admin-color-surface-muted);
+  background: var(--rte-canvas-surface-muted);
   font-weight: 600;
   text-align: left;
 }
@@ -526,7 +548,7 @@ a {
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--admin-color-primary);
+  background: var(--rte-canvas-primary);
   opacity: 0.12;
   pointer-events: none;
 }
@@ -536,7 +558,7 @@ a {
   top: 0;
   bottom: 0;
   width: 4px;
-  background: var(--admin-color-primary);
+  background: var(--rte-canvas-primary);
   cursor: col-resize;
 }
 .rich-editor-content .tiptap.resize-cursor {
@@ -545,20 +567,20 @@ a {
 
 .rich-editor-content .tiptap p.is-empty:first-child::before {
   content: attr(data-placeholder);
-  color: var(--admin-color-text-placeholder);
+  color: var(--rte-canvas-placeholder);
   pointer-events: none;
   float: left;
   height: 0;
 }
 
 .rich-editor-content .tiptap a {
-  color: var(--admin-color-primary);
+  color: var(--rte-canvas-primary);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
 .rich-editor-content .tiptap a:hover {
-  color: var(--admin-color-primary-hover);
+  color: var(--rte-canvas-primary-hover);
 }
 
 .rich-editor-content .tiptap u {
@@ -578,7 +600,7 @@ a {
 }
 
 .rich-editor-content .tiptap .rte-image.ProseMirror-selectednode {
-  border-color: var(--admin-color-primary);
+  border-color: var(--rte-canvas-primary);
   outline: none;
 }
 
@@ -639,95 +661,7 @@ a {
    surface exposes them as fixed tabs and never lets admins create or delete
    the container itself. */
 
-.menu-slot-tabs {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 18px;
-}
 
-.menu-slot-tab {
-  text-align: left;
-  background: var(--admin-color-surface-base);
-  border: 1.5px solid var(--admin-color-border-subtle);
-  border-radius: var(--admin-radius-md);
-  padding: 12px 14px;
-  cursor: pointer;
-  transition: border-color var(--admin-transition-fast),
-              background-color var(--admin-transition-fast),
-              box-shadow var(--admin-transition-fast);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-
-.menu-slot-tab:hover {
-  background: var(--admin-color-surface-hover);
-  border-color: var(--admin-color-border-default);
-}
-
-.menu-slot-tab.is-active {
-  border-color: var(--admin-color-primary);
-  background: var(--admin-color-primary-subtle);
-  box-shadow: var(--admin-shadow-xs);
-}
-
-.menu-slot-tab.is-active .menu-slot-tab-title {
-  color: var(--admin-color-primary);
-}
-
-.menu-slot-tab-title {
-  font-size: var(--admin-text-sm);
-  font-weight: 700;
-  color: var(--admin-color-text-primary);
-  line-height: 1.3;
-}
-
-.menu-slot-tab-meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.menu-slot-tab-loc {
-  display: inline-block;
-  font-family: var(--admin-font-mono, ui-monospace, SFMono-Regular, monospace);
-  font-size: var(--admin-text-xs);
-  font-weight: 600;
-  color: var(--admin-color-text-secondary);
-  background: var(--admin-color-surface-muted);
-  border: 1px solid var(--admin-color-border-subtle);
-  border-radius: var(--admin-radius-sm);
-  padding: 1px 7px;
-  letter-spacing: 0.02em;
-}
-
-.menu-slot-tab-flag {
-  font-size: var(--admin-text-xs);
-  font-weight: 600;
-  border-radius: var(--admin-radius-sm);
-  padding: 1px 7px;
-}
-
-.menu-slot-tab-flag.is-missing {
-  color: var(--admin-color-status-danger-text);
-  background: var(--admin-color-status-danger-bg, #fef2f2);
-  border: 1px solid var(--admin-color-status-danger-border, #fecaca);
-}
-
-.menu-slot-tab-flag.is-inactive {
-  color: var(--admin-color-status-warning-text);
-  background: var(--admin-color-status-warning-bg);
-  border: 1px solid var(--admin-color-status-warning-border);
-}
-
-.menu-slot-tab-desc {
-  font-size: var(--admin-text-xs);
-  color: var(--admin-color-text-muted);
-  line-height: 1.4;
-}
 
 .menu-slot-missing {
   display: flex;
@@ -1058,16 +992,7 @@ a {
 
 
 /* ── Responsive ─────────────────────────────────────────────────────────── */
-@media (max-width: 1024px) {
-  .menu-slot-tabs {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
 @media (max-width: 640px) {
-  .menu-slot-tabs {
-    grid-template-columns: 1fr;
-  }
   .menu-panel-head {
     gap: 8px;
   }

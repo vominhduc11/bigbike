@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { getStaticPage, staticPageSlugs } from "@/lib/content/static-pages";
-import { getPublicMenu, listPublicSettings } from "@/lib/api/public-api";
+import { listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { PolicyPageClient } from "@/components/policy/PolicyPageClient";
 
@@ -43,16 +43,12 @@ export default async function PolicyPage({ params }: Props) {
     notFound();
   }
 
-  const [menuResult, settingsResult] = await Promise.all([
-    getPublicMenu("policy", locale),
-    listPublicSettings(locale),
-  ]);
+  const settingsResult = await listPublicSettings(locale);
 
   return (
     <PolicyPageClient
       slug={slug}
       initialPage={page}
-      initialMenu={menuResult?.data ?? null}
       initialSettings={settingsResult?.data ?? []}
     />
   );

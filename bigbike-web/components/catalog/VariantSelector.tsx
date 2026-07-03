@@ -89,7 +89,9 @@ function hasSwatch(info: SwatchInfo): boolean {
 function buildOptionGroups(variants: ProductVariant[], attributeFallback: string) {
   const groups = new Map<string, Map<string, SwatchInfo>>();
   for (const variant of variants) {
-    const variantImg = variant.gallery?.[0]?.image?.url ?? variant.image?.url ?? null;
+    // Prefer the admin-picked cover (variant.image) — gallery[0] is only a
+    // last-resort fallback for legacy variants that never resolved a cover.
+    const variantImg = variant.image?.url ?? variant.gallery?.[0]?.image?.url ?? null;
     for (const opt of variant.options ?? []) {
       const name = safeText(opt.name, attributeFallback).trim();
       const value = safeText(opt.value, "").trim();

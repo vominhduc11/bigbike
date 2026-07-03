@@ -76,23 +76,54 @@ public class ContentRequestValidator {
                 errors
         );
 
+        if (request.isBodyBlocksPresent() && request.getBodyBlocks() != null) {
+            int index = 0;
+            for (com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock block : request.getBodyBlocks()) {
+                if (block instanceof com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock.ImageBlock imageBlock) {
+                    AdminMutationValidators.validateWhitelistedMediaUrl(
+                            imageBlock.getUrl(),
+                            "bodyBlocks[" + index + "].url",
+                            mediaUrlProperties.getPublicBaseUrl(),
+                            errors
+                    );
+                } else if (block instanceof com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock.FeatureBlock featureBlock) {
+                    AdminMutationValidators.validateWhitelistedMediaUrl(
+                            featureBlock.getUrl(),
+                            "bodyBlocks[" + index + "].url",
+                            mediaUrlProperties.getPublicBaseUrl(),
+                            errors
+                    );
+                }
+                index++;
+            }
+        }
+
         // Slug uniqueness is a persistence concern — skip it for the live-preview
         // dry-run, else previewing an EXISTING article (current is always null here)
         // would flag its own saved slug as a duplicate and always 400.
         if (!preview && slug != null) {
             ArticleEntity existingBySlug = articleJpaRepository.findBySlug(slug).orElse(null);
-            if (existingBySlug != null && (current == null || !existingBySlug.getId().equals(current.getId()))) {
+            if (existingBySlug != null && existingBySlug.getPublishStatus() != com.bigbike.bigbike_backend.domain.catalog.PublishStatus.TRASH
+                    && (current == null || !existingBySlug.getId().equals(current.getId()))) {
                 errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use."));
             }
             // A new vi slug must not collide with any article's English slug either.
             ArticleEntity existingBySlugEn = articleJpaRepository.findBySlugEn(slug).orElse(null);
-            if (existingBySlugEn != null && (current == null || !existingBySlugEn.getId().equals(current.getId()))) {
+            if (existingBySlugEn != null && existingBySlugEn.getPublishStatus() != com.bigbike.bigbike_backend.domain.catalog.PublishStatus.TRASH
+                    && (current == null || !existingBySlugEn.getId().equals(current.getId()))) {
                 errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use (English slug)."));
             }
         }
 
         if (!preview) {
             validateArticleEnglishSlug(request, slug, current, errors);
+            // Tiếng Anh chỉ bắt buộc khi tiếng Việt tương ứng đang bắt buộc (TRANSLATION_RULE_002).
+            // `title` là field cốt lõi bắt buộc ở VI → `translations.en.title` cũng bắt buộc, áp
+            // dụng cho cả tạo mới lẫn sửa bản ghi cũ (không chỉ khi request đổi tiêu đề).
+            ArticleTranslationRequest.ArticleContentRequest en =
+                    request.getTranslations() == null ? null : request.getTranslations().getEn();
+            AdminMutationValidators.validateRequiredText(
+                    en == null ? null : en.getTitle(), "translations.en.title", "English title", errors);
         }
 
         return slug;
@@ -119,12 +150,14 @@ public class ContentRequestValidator {
             return;
         }
         ArticleEntity byViSlug = articleJpaRepository.findBySlug(slugEn).orElse(null);
-        if (byViSlug != null && (currentId == null || !byViSlug.getId().equals(currentId))) {
+        if (byViSlug != null && byViSlug.getPublishStatus() != com.bigbike.bigbike_backend.domain.catalog.PublishStatus.TRASH
+                && (currentId == null || !byViSlug.getId().equals(currentId))) {
             errors.add(new ApiErrorDetail("translations.en.slug", "DUPLICATE", "English slug is already in use."));
             return;
         }
         ArticleEntity byEnSlug = articleJpaRepository.findBySlugEn(slugEn).orElse(null);
-        if (byEnSlug != null && (currentId == null || !byEnSlug.getId().equals(currentId))) {
+        if (byEnSlug != null && byEnSlug.getPublishStatus() != com.bigbike.bigbike_backend.domain.catalog.PublishStatus.TRASH
+                && (currentId == null || !byEnSlug.getId().equals(currentId))) {
             errors.add(new ApiErrorDetail("translations.en.slug", "DUPLICATE", "English slug is already in use."));
         }
     }
@@ -136,9 +169,13 @@ public class ContentRequestValidator {
         String categoryId = AdminMutationValidators.trimToNull(categoryIdRaw);
         if (categoryId == null) {
             // Không gửi categoryId (form bỏ ô danh mục) → tự gán nhóm "Tin tức" để bài không bị mất nhóm.
-            return contentCategoryJpaRepository == null
+            ContentCategoryEntity defaultCategory = contentCategoryJpaRepository == null
                     ? null
                     : contentCategoryJpaRepository.findBySlug(DEFAULT_CATEGORY_SLUG).orElse(null);
+            if (defaultCategory == null) {
+                errors.add(new ApiErrorDetail("categoryId", "NOT_FOUND", "Default category 'tin-tuc' not found."));
+            }
+            return defaultCategory;
         }
         ContentCategoryEntity category = contentCategoryJpaRepository.findById(categoryId).orElse(null);
         if (category == null) {

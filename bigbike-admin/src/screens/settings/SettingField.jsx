@@ -14,7 +14,7 @@ import {
 } from './constants'
 
 export function SettingField({
-  setting, where, canUpdate, draft, draftEn, error, onChange, onChangeEn, onBlur, enLocked, onLockField,
+  setting, where, canUpdate, draft, draftEn, error, onChange, onChangeEn, onBlur,
 }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
@@ -45,13 +45,11 @@ export function SettingField({
   const errorId = `err-${setting.key}`
 
   // Ô DUY NHẤT đổi theo nút VI/EN ở header admin (mirror ProductDetailScreen langValue/langChange).
-  // Gõ tay lúc đang xem EN → khoá field đó, lần lưu sau không tự dịch đè (V309).
   const activeValue = isEnLang ? currentValueEn : currentValue
   const activeRawValue = isEnLang ? rawValueEn : rawValue
   function handleActiveChange(value) {
     if (isEnLang) {
       onChangeEn(setting.key, value)
-      onLockField?.(setting.key)
     } else {
       onChange(setting.key, value)
     }
@@ -157,10 +155,6 @@ export function SettingField({
         >
           {activeRawValue || <em className="muted">{t('settings.valueEmpty')}</em>}
         </div>
-      )}
-
-      {isEnLang && enLocked && (
-        <span className="hint" style={{ display: 'block', marginTop: 4 }}>{t('settings.englishLocked')}</span>
       )}
 
       {error && (

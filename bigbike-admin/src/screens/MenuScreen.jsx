@@ -59,8 +59,8 @@ export function MenuScreen({ canUpdate }) {
   const pickLabel = (item) => (contentLang === 'en' ? (item?.labelEn || item?.label || '') : (item?.label || ''))
   const queryClient = useQueryClient()
 
-  // Tab selection (always one of SYSTEM_SLOTS.location)
-  const [selectedLocation, setSelectedLocation] = useState(SYSTEM_SLOTS[0].location)
+  // Tab selection (always primary)
+  const selectedLocation = 'primary'
 
   // Modals
   const [showItemModal, setShowItemModal] = useState(false)
@@ -490,35 +490,6 @@ export function MenuScreen({ canUpdate }) {
     setEditItemError('')
   }
 
-  function selectSlot(location) {
-    setSelectedLocation(location)
-    setShowItemModal(false)
-    setNewItem(EMPTY_ITEM)
-    setItemError('')
-    setEditItem(null)
-    setEditItemError('')
-    setSearch('')
-    setSelectedItemIds(new Set())
-  }
-
-  // Điều hướng tab bằng phím mũi tên / Home / End theo chuẩn ARIA tablist.
-  function handleTabKeyDown(e, index) {
-    let nextIndex = null
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-      nextIndex = (index + 1) % SYSTEM_SLOTS.length
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-      nextIndex = (index - 1 + SYSTEM_SLOTS.length) % SYSTEM_SLOTS.length
-    } else if (e.key === 'Home') {
-      nextIndex = 0
-    } else if (e.key === 'End') {
-      nextIndex = SYSTEM_SLOTS.length - 1
-    }
-    if (nextIndex === null) return
-    e.preventDefault()
-    const nextSlot = SYSTEM_SLOTS[nextIndex]
-    selectSlot(nextSlot.location)
-    document.getElementById(`menu-slot-tab-${nextSlot.location}`)?.focus()
-  }
 
   // O3 — Ctrl/Cmd+S để lưu ngay trong modal Thêm/Sửa mục, không bắt buộc bấm nút.
   useSaveShortcut(showItemModal, () => {
@@ -540,7 +511,7 @@ export function MenuScreen({ canUpdate }) {
     />
   )
 
-  const selectedSlot = SYSTEM_SLOTS.find((s) => s.location === selectedLocation) ?? SYSTEM_SLOTS[0]
+  const selectedSlot = SYSTEM_SLOTS[0]
   const slotMissing = !selectedMenuSummary
 
   return (
@@ -556,51 +527,11 @@ export function MenuScreen({ canUpdate }) {
 
       {warning && <ReadOnlyBanner warning={warning} />}
 
-      {/* ── Slot tabs ── */}
-      <div className="menu-slot-tabs" role="tablist" aria-label={t('menus.selectMenu')}>
-        {SYSTEM_SLOTS.map((slot, slotIndex) => {
-          const summary = menuByLocation.get(slot.location)
-          const isActive = slot.location === selectedLocation
-          const missing = !summary
-          const inactive = summary && summary.status !== 'ACTIVE'
-          return (
-            <button
-              key={slot.location}
-              id={`menu-slot-tab-${slot.location}`}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              aria-controls="menu-panel"
-              tabIndex={isActive ? 0 : -1}
-              className={`menu-slot-tab${isActive ? ' is-active' : ''}${missing ? ' is-missing' : ''}`}
-              onClick={() => selectSlot(slot.location)}
-              onKeyDown={(e) => handleTabKeyDown(e, slotIndex)}
-            >
-              <span className="menu-slot-tab-title">
-                {summary?.name?.trim() ? formatText(summary.name) : t(slot.titleKey)}
-              </span>
-              <span className="menu-slot-tab-meta">
-                <span className="menu-slot-tab-loc">{slot.location}</span>
-                {missing && (
-                  <span className="menu-slot-tab-flag is-missing">{t('menus.slotMissingBadge')}</span>
-                )}
-                {inactive && (
-                  <span className="menu-slot-tab-flag is-inactive">{t('menus.slotInactiveBadge')}</span>
-                )}
-              </span>
-              <span className="menu-slot-tab-desc">{t(slot.descKey)}</span>
-            </button>
-          )
-        })}
-      </div>
-
       {/* ── Panel: items for the selected slot ── */}
       <main
         className="menu-panel"
         id="menu-panel"
-        role="tabpanel"
         tabIndex={0}
-        aria-labelledby={`menu-slot-tab-${selectedLocation}`}
       >
         {slotMissing ? (
           <div className="menu-slot-missing">

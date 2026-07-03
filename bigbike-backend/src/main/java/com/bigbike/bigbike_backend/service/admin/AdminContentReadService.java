@@ -27,6 +27,7 @@ public class AdminContentReadService {
 
     private final ContentReadRepository contentReadRepository;
     private final SortParser sortParser;
+    private final com.bigbike.bigbike_backend.mapper.ArticleMapper articleMapper;
 
     @Transactional(readOnly = true)
     public PageResult<AdminContentItem> listContent(
@@ -37,7 +38,7 @@ public class AdminContentReadService {
         String locale = normalizeLocale(lang);
         org.springframework.data.domain.Page<Article> ap = contentReadRepository
                 .listArticlesAdmin(statusFilter, query, toPageable(sortSpec, page, size), locale);
-        return mapToPageResult(ap, AdminContentReadService::fromArticle);
+        return mapToPageResult(ap, articleMapper::toAdminContentItem);
     }
 
     @Transactional(readOnly = true)
@@ -45,41 +46,10 @@ public class AdminContentReadService {
         String normalizedType = normalizeType(type);
         return switch (normalizedType) {
             case "ARTICLE" -> contentReadRepository.findArticleById(id)
-                    .map(AdminContentReadService::fromArticle)
+                    .map(articleMapper::toAdminContentItem)
                     .orElseThrow(() -> new NotFoundException("Content not found."));
             default -> throw new NotFoundException("Content not found.");
         };
-    }
-
-    static AdminContentItem fromArticle(Article article) {
-        return new AdminContentItem(
-                article.id(),
-                "ARTICLE",
-                article.slug(),
-                article.slugEn(),
-                article.title(),
-                article.excerpt(),
-                article.body(),
-                article.coverImage(),
-                article.productImage(),
-                article.publishStatus(),
-                article.featured(),
-                article.homeExperience(),
-                article.seo(),
-                article.publishedAt(),
-                article.createdAt(),
-                article.updatedAt(),
-                article.category(),
-                article.category() != null ? article.category().id() : null,
-                article.categories(),
-                null,
-                null,
-                null,
-                null,
-                null,
-                article.bodyBlocks(),
-                article.translations()
-        );
     }
 
     // --- Helpers ---

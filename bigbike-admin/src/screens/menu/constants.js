@@ -27,24 +27,6 @@ export const SYSTEM_SLOTS = [
     descKey: 'menus.slotPrimaryDesc',
     fallbackName: 'Header Menu',
   },
-  {
-    location: 'footer',
-    titleKey: 'menus.slotFooterTitle',
-    descKey: 'menus.slotFooterDesc',
-    fallbackName: 'Footer Navigation',
-  },
-  {
-    location: 'guide',
-    titleKey: 'menus.slotGuideTitle',
-    descKey: 'menus.slotGuideDesc',
-    fallbackName: 'Buying Guide Menu',
-  },
-  {
-    location: 'policy',
-    titleKey: 'menus.slotPolicyTitle',
-    descKey: 'menus.slotPolicyDesc',
-    fallbackName: 'Policy Pages Menu',
-  },
 ]
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -164,7 +146,4 @@ export function isItemFormValid(data) {
 
 export const SLOT_CONTEXT_NOTES = {
   primary: 'Mục này sẽ xuất hiện trên thanh điều hướng đầu trang website. Chỉ mục đang bật và có mục cha đang bật mới hiển thị.',
-  footer:  'Mục này sẽ xuất hiện ở menu footer (cuối trang). Chỉ mục đang bật và có mục cha đang bật mới hiển thị.',
-  guide:   'Mục này sẽ xuất hiện trong widget Hướng dẫn mua hàng ở footer. Chỉ mục đang bật và có mục cha đang bật mới hiển thị.',
-  policy:  'Mục này sẽ xuất hiện ở thanh bên trang Chính sách (/chinh-sach). Mỗi mục trỏ tới một Trang nội dung, ví dụ /chinh-sach/chinh-sach-bao-hanh. Chỉ mục đang bật mới hiển thị.',
 }

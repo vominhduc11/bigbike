@@ -10,36 +10,14 @@
 | Web revalidation | Backend can call Next.js revalidation endpoint with shared secret | `CONFIRMED_FROM_CONFIG` | `docker-compose.yaml` |
 | WebSocket/STOMP | Admin order push channel is live | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java`, `AdminOrderWsService.java` |
 | VN address data | Public backend address API and client-side address helpers are present | `CONFIRMED_FROM_CODE` | `VnAddressController.java`, `vn-address-data.ts`, mobile endpoints |
-| Gemini auto-translation | Server-side VI→EN translation for bilingual content; key stays server-side. Disabled when `GEMINI_API_KEY` is blank (saves still work) | `CONFIRMED_FROM_CODE` | `GeminiTranslationService.java`, `AdminTranslateController.java` |
 
-## Gemini Auto-translation (VI→EN)
-
-`GeminiTranslationService` calls the Google Gemini `generateContent` API to translate a flat
-`{ key: viText }` map to English. The admin no longer holds the key: it posts the fields it wants
-translated to `POST /api/v1/admin/translate` (any content-write permission), and the backend
-forwards them using the **server-side** key. Translation **never blocks a save** — a blank key or
-any API/parse error returns an empty map and the caller keeps existing English.
-
-**Interactive save cost/latency (2026-07):** the admin (`src/lib/geminiTranslate.js`) only puts an
-unlocked field/section in the request payload when its Vietnamese content changed since the
-snapshot taken when the form was opened (or after the last save), or its English counterpart is
-still blank — see `BUSINESS_RULES.md` `TRANSLATION_RULE_001`. A save that touches no translatable
-text (price, stock, publish status, a checkbox…) now sends **zero** requests to `/admin/translate`.
-`AdminTranslateController` also passes `GenerationOptions(32768, thinkingBudget=0,
-structuredStringSchema=true)` for this interactive path — same idea as `BACKFILL_OPTS` in
-`TranslationBackfillService`, just a smaller `maxOutputTokens` cap since an interactive save now
-only carries the fields that actually changed, not a whole record. The save button itself still
-awaits this call before submitting (no async decouple) — measured end-to-end at roughly 0.7–1s
-when nothing needs translating and ~3–4s for a single changed field, which was judged fast enough
-that decoupling save from translate (queue a background retranslate + silent follow-up save) was
-not worth the added complexity/race risk. Revisit if real-world saves still feel slow.
-
-Config (server-side, see `application.properties` + `.env.example` + `docker-compose.yaml`):
-`GEMINI_API_KEY` (blank = disabled), `GEMINI_MODEL` (default `gemini-2.5-flash`). Which fields are
-translated and which are kept is decided by the per-record `en_overrides` lock — see
-`BUSINESS_RULES.md` `TRANSLATION_RULE_001/002` and `DATA_CONTRACT.md` §`en_overrides (V296)`.
-
-> The old in-browser `VITE_GEMINI_API_KEY` is **removed** — it exposed the key in the admin bundle.
+> **Gemini auto-translation — REMOVED (2026-07-03).** The VI→EN auto-translation integration (Google
+> Gemini `generateContent` API, `GeminiTranslationService`, `AdminTranslateController`,
+> `TranslationBackfillService`) has been fully removed from the codebase. Bilingual content is now
+> entered manually by the admin — see `BUSINESS_RULES.md` §"Bilingual / Auto-translation Rules"
+> (`TRANSLATION_RULE_001/002`) and `API_CONTRACT.md` §"Bilingual content — nhập tay, không còn tự
+> động dịch (V312)". This section is kept only as historical context; do not reintroduce
+> `GEMINI_API_KEY`/`GEMINI_MODEL` config or re-add a translate endpoint without a new decision.
 
 ## Web Revalidation (ISR on-demand)
 

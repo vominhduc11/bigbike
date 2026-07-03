@@ -9,7 +9,7 @@ import java.util.List;
  * <p>Vietnamese content stays on the main {@link Product} fields (canonical).
  * English is optional per {@code BUSINESS_RULES.md PRODUCT_RULE_001}.
  */
-public record ProductTranslations(ProductContent en, java.util.List<String> overrides) {
+public record ProductTranslations(ProductContent en) {
 
     /** English values of the translatable product-level fields. */
     public record ProductContent(

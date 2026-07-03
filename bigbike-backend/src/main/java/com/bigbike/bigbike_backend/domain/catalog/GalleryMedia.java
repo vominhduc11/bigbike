@@ -17,13 +17,21 @@ public record GalleryMedia(
         String mediaType,
         ImageAsset image,
         String videoUrl,
-        String videoProvider
+        String videoProvider,
+        /**
+         * Variant colour gallery only: true when this is the colour's admin-picked
+         * (or first-image-fallback) cover. Derived on every read by URL-matching
+         * against the resolved variant cover — never persisted as its own column
+         * (see JpaCatalogReadSupport.withColorScopedVariantMedia). Always false for
+         * product-level gallery and for video items.
+         */
+        boolean isCover
 ) {
     public static GalleryMedia ofImage(ImageAsset image) {
-        return new GalleryMedia("image", image, null, null);
+        return new GalleryMedia("image", image, null, null, false);
     }
 
     public static GalleryMedia ofVideo(ImageAsset thumbnail, String videoUrl, String videoProvider) {
-        return new GalleryMedia("video", thumbnail, videoUrl, videoProvider);
+        return new GalleryMedia("video", thumbnail, videoUrl, videoProvider, false);
     }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, type ReactNode, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale } from "next-intl";
 import { DEFAULT_LOCALE } from "@/i18n/locale";
@@ -86,8 +86,8 @@ export function useLocalizedField<T = unknown>(field: string): T | undefined {
 export function LText({ field, children }: { field: string; children: ReactNode }) {
   const value = useLocalizedField<unknown>(field);
   const locale = useLocale();
-  if (locale === "en") {
-    return <>{typeof value === "string" ? value : ""}</>;
+  if (locale === "en" && typeof value === "string" && value.trim() !== "") {
+    return <>{value}</>;
   }
   return <>{children}</>;
 }
@@ -102,6 +102,9 @@ type LHtmlProps = {
   rewriteMediaUrls?: boolean;
 };
 
+const TRANSPARENT_THUMBNAIL =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='169' viewBox='0 0 300 169'%3E%3C/svg%3E";
+
 /**
  * Khối HTML rich-text dịch được. Bản `vi` dùng `viHtml` (đã sanitize ở server) nguyên văn để
  * render đầu khớp server; chỉ khi có bản EN mới sanitize lại ở client và thay vào.
@@ -110,10 +113,31 @@ export function LHtml({ field, viHtml, className, allowInlineStyles, rewriteMedi
   const value = useLocalizedField<unknown>(field);
   const locale = useLocale();
   const html =
-    locale === "en"
-      ? typeof value === "string"
-        ? sanitizeRichHtml(value, { allowInlineStyles, rewriteMediaUrls })
-        : ""
+    locale === "en" && typeof value === "string" && value.trim() !== ""
+      ? sanitizeRichHtml(value, { allowInlineStyles, rewriteMediaUrls })
       : viHtml;
-  return <div className={className} dangerouslySetInnerHTML={{ __html: html }} />;
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleError = (event: Event) => {
+      const target = event.target;
+      if (target instanceof HTMLImageElement) {
+        if (target.dataset.fallbackApplied) return;
+        target.dataset.fallbackApplied = "true";
+        target.src = TRANSPARENT_THUMBNAIL;
+        target.classList.add("bb-news-img-placeholder");
+      }
+    };
+
+    container.addEventListener("error", handleError, true);
+    return () => {
+      container.removeEventListener("error", handleError, true);
+    };
+  }, [html]);
+
+  return <div ref={containerRef} className={className} dangerouslySetInnerHTML={{ __html: html }} />;
 }
