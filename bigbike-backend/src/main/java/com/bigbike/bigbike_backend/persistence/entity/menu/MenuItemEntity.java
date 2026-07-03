@@ -44,8 +44,8 @@ public class MenuItemEntity {
     @Column(name = "target_type", length = 50)
     private String targetType;
 
-    @Column(name = "target_id")
-    private UUID targetId;
+    @Column(name = "target_id", length = 64)
+    private String targetId;
 
     @Column(name = "sort_order", nullable = false)
     private int sortOrder = 0;

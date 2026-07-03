@@ -761,6 +761,8 @@
         "moveDown": "Xuống",
         "duplicate": "Sao chép",
         "remove": "Xoá",
+        "removeConfirmTitle": "Xoá khối",
+        "removeConfirmMessage": "Xoá khối này? Nội dung đã nhập sẽ mất.",
         "headingLevelLabel": "Cấp",
         "headingLevel2": "Tiêu đề 2 (H2)",
         "headingLevel3": "Tiêu đề 3 (H3)",
@@ -850,6 +852,7 @@
         "generateMatrixTitle": "Tạo tự động tất cả tổ hợp Size × Màu × ...",
         "generateMatrix": "Tạo nhanh biến thể",
         "filterEmpty": "Không có biến thể nào khớp với “{{filter}}”.",
+        "showMore": "Hiện thêm {{count}} biến thể còn lại",
         "addVariant": "Thêm biến thể",
         "changeColorConfirm": "Biến thể này đang có ảnh và gallery riêng. Đổi màu sẽ xoá toàn bộ ảnh hiện tại. Tiếp tục?",
         "changeColorTitle": "Đổi màu biến thể",
@@ -991,6 +994,7 @@
     "bulkProcessingTitle": "Chuyển trạng thái hàng loạt",
     "bulkProcessingProgress": "Đang xử lý {{done}}/{{total}}...",
     "bulkProcessingResult": "Đã chuyển {{success}} đơn, {{failed}} lỗi.",
+    "bulkNoEligible": "Không có đơn nào đủ điều kiện chuyển \"Đang xử lý\" trong lựa chọn.",
     "tableCaption": "Danh sách đơn hàng",
     "colOrder": "Đơn hàng",
     "colCustomer": "Khách hàng",
@@ -1018,6 +1022,7 @@
       "paymentStatus": "Trạng thái thanh toán",
       "paymentMethod": "Phương thức:",
       "noTransition": "Trạng thái hiện tại không thể chuyển tiếp.",
+      "selectActionHint": "Chọn một hành động để chuyển trạng thái đơn.",
       "items": "Sản phẩm trong đơn",
       "noItems": "Không có sản phẩm",
       "colProduct": "Sản phẩm",
@@ -1173,6 +1178,9 @@
     "bulkResult": "Hoàn tất: {{success}} thành công, {{failed}} thất bại.",
     "bulkHideConfirmTitle": "Ẩn các danh mục đã chọn?",
     "bulkHideConfirm": "Bạn sắp ẩn {{count}} danh mục khỏi trang web. Khách hàng sẽ không còn thấy các danh mục này. Bạn có chắc chắn không?",
+    "duplicate": "Sao chép",
+    "dupLoadError": "Không thể tải dữ liệu danh mục để sao chép.",
+    "treeLoadError": "Không tải được cây danh mục.",
     "detail": {
       "createTitle": "Thêm danh mục mới",
       "editTitle": "Chỉnh sửa danh mục",
@@ -1285,7 +1293,8 @@
       "systemCategoryTitle": "Danh mục hệ thống",
       "systemCategoryDesc": "\"Chưa phân loại\" là danh mục hệ thống dùng để chứa sản phẩm khi danh mục gốc bị xoá. Không thể đổi tên hoặc xoá danh mục này.",
       "enFieldHint": "(tiếng Anh — tùy chọn)",
-      "namePlaceholderEn": "Tên tiếng Anh (tùy chọn)"
+      "namePlaceholderEn": "Tên tiếng Anh (tùy chọn)",
+      "duplicateSuccess": "Đã sao chép từ \"{{name}}\". Vui lòng đặt đường dẫn URL mới."
     }
   },
   "brands": {
@@ -1309,6 +1318,12 @@
     "colActions": "Thao tác",
     "bulkHideTitle": "Ẩn các thương hiệu đã chọn?",
     "bulkHideConfirm": "Ẩn {{count}} thương hiệu đã chọn? Các trang /brands/{slug} tương ứng sẽ trả về 404 trên web. Có thể hiện lại sau.",
+    "duplicate": "Sao chép",
+    "dupLoadError": "Không thể tải dữ liệu thương hiệu để sao chép.",
+    "hideAction": "Ẩn khỏi website",
+    "showAction": "Hiện lại trên website",
+    "toggleSuccess": "Đã đổi trạng thái hiển thị.",
+    "filterTrash": "Thùng rác",
     "detail": {
       "eyebrow": "Danh mục",
       "createTitle": "Tạo thương hiệu",
@@ -1371,7 +1386,8 @@
       "errDeleteFailed": "Không thể xoá thương hiệu.",
       "contentLanguageAriaLabel": "Ngôn ngữ nội dung",
       "enFieldHint": "(tiếng Anh — tùy chọn)",
-      "namePlaceholderEn": "Tên tiếng Anh (tùy chọn)"
+      "namePlaceholderEn": "Tên tiếng Anh (tùy chọn)",
+      "duplicateSuccess": "Đã sao chép từ \"{{name}}\". Vui lòng đặt đường dẫn URL mới."
     }
   },
   "content": {

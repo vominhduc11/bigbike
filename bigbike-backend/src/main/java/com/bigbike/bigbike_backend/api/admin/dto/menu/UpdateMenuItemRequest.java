@@ -15,7 +15,8 @@ public record UpdateMenuItemRequest(
         String url,
         @Size(max = 64)
         String targetType,
-        UUID targetId,
+        @Size(max = 64)
+        String targetId,
         @Min(0)
         Integer sortOrder,
         Boolean openInNewTab,

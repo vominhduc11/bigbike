@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Download, Loader2 } from 'lucide-react'
 import { toast } from '@/lib/toast'
 
@@ -12,6 +13,7 @@ import { toast } from '@/lib/toast'
  * @param {{ onExport: () => Promise<any>, children: any, className?: string, icon?: boolean, title?: string }} props
  */
 export function ExportButton({ onExport, children, className = 'bb-btn bb-btn-secondary', icon = true, title }) {
+  const { t } = useTranslation()
   const [busy, setBusy] = useState(false)
 
   async function handleClick() {
@@ -31,7 +33,7 @@ export function ExportButton({ onExport, children, className = 'bb-btn bb-btn-se
       {busy
         ? <Loader2 size={14} className="animate-spin" aria-hidden="true" />
         : (icon ? <Download size={14} aria-hidden="true" /> : null)}
-      {children}
+      {busy ? t('export.exporting') : children}
     </button>
   )
 }

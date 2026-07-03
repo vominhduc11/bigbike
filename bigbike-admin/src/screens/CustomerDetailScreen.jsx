@@ -8,7 +8,7 @@ import { DetailSection } from '../components/DetailSection'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
-import { fetchCustomerDetail, updateCustomer, updateCustomerStatus } from '../lib/adminApi'
+import { fetchCustomerDetail, mapValidationErrors, updateCustomer, updateCustomerStatus } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -51,6 +51,18 @@ function SegmentBadge({ segment }) {
   )
 }
 
+// F1: cùng pattern hiển thị lỗi của phoneError (icon AlertCircle + chữ đỏ) — dùng
+// chung cho lỗi field-level backend trả về khi lưu form sửa hồ sơ.
+function FieldError({ message }) {
+  if (!message) return null
+  return (
+    <span className="mt-1 flex items-center gap-1 text-xs text-danger font-semibold" role="alert">
+      <AlertCircle size={13} aria-hidden="true" className="shrink-0" />
+      {message}
+    </span>
+  )
+}
+
 export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
   const { t } = useTranslation()
   const [state, setState] = useState({ status: 'loading', customer: null, warning: '' })
@@ -59,6 +71,8 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
   const [editForm, setEditForm] = useState({ displayName: '', phone: '' })
   const [editBaseline, setEditBaseline] = useState(null)
   const [editSaving, setEditSaving] = useState(false)
+  // F1: lỗi validate backend gắn theo từng ô (vd SĐT trùng), tách khỏi toast.
+  const [fieldErrors, setFieldErrors] = useState({})
 
   // F6: form sửa hồ sơ đang mở và nội dung khác baseline → còn thay đổi chưa lưu.
   const isDirty = editOpen && editBaseline != null &&
@@ -143,12 +157,14 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
     }
     setEditForm(initial)
     setEditBaseline(initial)
+    setFieldErrors({})
     setEditOpen(true)
   }
 
   function handleEditCancel() {
     setEditOpen(false)
     setEditBaseline(null)
+    setFieldErrors({})
   }
 
   const handleEditSave = useCallback(async (e) => {
@@ -158,6 +174,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
       return
     }
     setEditSaving(true)
+    setFieldErrors({})
     try {
       const r = await updateCustomer(customerId, {
         displayName: editForm.displayName,
@@ -170,6 +187,12 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
       setEditBaseline(null)
       toast.success('Thông tin đã được cập nhật.')
     } catch (err) {
+      // F1: gắn thêm lỗi vào đúng ô (vd SĐT trùng) khi backend trả field-level detail,
+      // bên cạnh toast — không tự bịa field nếu backend không xác định được.
+      const fieldErrs = mapValidationErrors(err)
+      if (Object.keys(fieldErrs).length > 0) {
+        setFieldErrors(fieldErrs)
+      }
       toast.error(err.message || t('common.error'))
     } finally {
       setEditSaving(false)
@@ -281,9 +304,14 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
                 <Input
                   type="text"
                   value={editForm.displayName}
-                  onChange={(e) => setEditForm((p) => ({ ...p, displayName: e.target.value }))}
+                  onChange={(e) => {
+                    setEditForm((p) => ({ ...p, displayName: e.target.value }))
+                    if (fieldErrors.displayName) setFieldErrors((p) => ({ ...p, displayName: undefined }))
+                  }}
                   disabled={editSaving}
+                  aria-invalid={fieldErrors.displayName ? true : undefined}
                  />
+                <FieldError message={fieldErrors.displayName} />
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <label>
@@ -291,18 +319,28 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
                   <Input
                     type="text"
                     value={editForm.firstName}
-                    onChange={(e) => setEditForm((p) => ({ ...p, firstName: e.target.value }))}
+                    onChange={(e) => {
+                      setEditForm((p) => ({ ...p, firstName: e.target.value }))
+                      if (fieldErrors.firstName) setFieldErrors((p) => ({ ...p, firstName: undefined }))
+                    }}
                     disabled={editSaving}
+                    aria-invalid={fieldErrors.firstName ? true : undefined}
                    />
+                  <FieldError message={fieldErrors.firstName} />
                 </label>
                 <label>
                   Họ
                   <Input
                     type="text"
                     value={editForm.lastName}
-                    onChange={(e) => setEditForm((p) => ({ ...p, lastName: e.target.value }))}
+                    onChange={(e) => {
+                      setEditForm((p) => ({ ...p, lastName: e.target.value }))
+                      if (fieldErrors.lastName) setFieldErrors((p) => ({ ...p, lastName: undefined }))
+                    }}
                     disabled={editSaving}
+                    aria-invalid={fieldErrors.lastName ? true : undefined}
                    />
+                  <FieldError message={fieldErrors.lastName} />
                 </label>
               </div>
               <label>
@@ -321,15 +359,20 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
                   type="text"
                   inputMode="tel"
                   value={editForm.phone}
-                  onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
+                  onChange={(e) => {
+                    setEditForm((p) => ({ ...p, phone: e.target.value }))
+                    if (fieldErrors.phone) setFieldErrors((p) => ({ ...p, phone: undefined }))
+                  }}
                   disabled={editSaving}
-                  aria-invalid={phoneError || undefined}
+                  aria-invalid={(phoneError || !!fieldErrors.phone) || undefined}
                  />
                 {phoneError ? (
                   <span className="mt-1 flex items-center gap-1 text-xs text-danger font-semibold" role="alert">
                     <AlertCircle size={13} aria-hidden="true" className="shrink-0" />
                     Số điện thoại phải gồm 8–15 chữ số (có thể bắt đầu bằng dấu +).
                   </span>
+                ) : fieldErrors.phone ? (
+                  <FieldError message={fieldErrors.phone} />
                 ) : (
                   <span className="mt-1 block text-xs text-muted-foreground">
                     Để trống nếu chưa có. VD: 0901234567
@@ -352,19 +395,19 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
         <DetailSection title={t('customers.detail.sectionStats')}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6">
             <div>
-              <p className="text-xs text-muted-foreground mb-0.5">
+              <p className="text-xs text-muted-foreground mb-1">
                 {t('customers.detail.orderCount', { defaultValue: 'Tổng đơn hàng' })}
               </p>
               <p className="text-xl font-bold leading-none">{customer.orderCount}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground mb-0.5">
+              <p className="text-xs text-muted-foreground mb-1">
                 {t('customers.detail.totalSpent', { defaultValue: 'Tổng chi tiêu (LTV)' })}
               </p>
               <p className="text-xl font-bold leading-none">{formatCurrencyVnd(customer.totalSpent)}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground mb-0.5">
+              <p className="text-xs text-muted-foreground mb-1">
                 {t('customers.detail.avgOrderValue', { defaultValue: 'Giá trị đơn TB (AOV)' })}
               </p>
               <p className="text-lg font-semibold leading-none">{formatCurrencyVnd(customer.avgOrderValue)}</p>
@@ -377,7 +420,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
             </div>
             {customer.firstOrderAt && (
               <div>
-                <p className="text-xs text-muted-foreground mb-0.5">
+                <p className="text-xs text-muted-foreground mb-1">
                   {t('customers.detail.firstOrder', { defaultValue: 'Đơn đầu tiên' })}
                 </p>
                 <p className="text-sm">{formatDateTime(customer.firstOrderAt)}</p>
@@ -385,7 +428,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
             )}
             {customer.lastOrderAt && (
               <div>
-                <p className="text-xs text-muted-foreground mb-0.5">
+                <p className="text-xs text-muted-foreground mb-1">
                   {t('customers.detail.lastOrder', { defaultValue: 'Đơn gần nhất' })}
                 </p>
                 <p className="text-sm">{formatDateTime(customer.lastOrderAt)}</p>

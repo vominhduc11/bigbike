@@ -163,6 +163,30 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     return () => { cancelled = true }
   }, [fetchResult])
 
+  // F11: Nhân bản danh mục — nạp bản nháp CategoryListScreen ghi vào sessionStorage
+  // khi bấm "Sao chép", rồi điều hướng sang màn tạo mới (cùng cơ chế duplicate của
+  // Sản phẩm). Chỉ giữ lại slug/đường dẫn EN trống — admin phải đặt giá trị mới.
+  useEffect(() => {
+    if (!isCreate) return
+    try {
+      const raw = sessionStorage.getItem('category-duplicate-payload')
+      if (!raw) return
+      sessionStorage.removeItem('category-duplicate-payload')
+      const item = JSON.parse(raw)
+      const base = buildFormFromItem(item)
+      const duplicated = {
+        ...base,
+        slug: '',
+        translations: { ...base.translations, en: { ...(base.translations?.en || {}), slug: '' } },
+      }
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setForm(duplicated)
+      setSlugManuallyEdited(false)
+      setEnSlugManuallyEdited(false)
+      toast.success(t('categories.detail.duplicateSuccess', { name: item.name || item.slug || '' }))
+    } catch { /* ignore parse errors */ }
+  }, [isCreate, t])
+
   // O9: ghi lại danh mục vừa xem để hiện trong widget "Vừa xem gần đây" ở danh sách.
   useEffect(() => {
     if (!isCreate && currentItem?.id) {

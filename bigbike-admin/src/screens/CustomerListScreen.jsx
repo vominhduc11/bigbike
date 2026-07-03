@@ -102,12 +102,24 @@ export function CustomerListScreen({ navigate, canUpdate }) {
       if (!ok) return
     }
     setStatusSaving((prev) => ({ ...prev, [customer.id]: true }))
+    // N7: cập nhật lạc quan ngay trên dòng đang xem, rollback nếu API lỗi — cùng
+    // pattern optimistic đã có ở ReviewListScreen.handleStatusChange /
+    // CustomerDetailScreen.handleStatusChange, thay vì đợi round-trip mới đổi Select.
+    const queryKey = ['customers', query]
+    await queryClient.cancelQueries({ queryKey })
+    const previous = queryClient.getQueryData(queryKey)
+    queryClient.setQueryData(queryKey, (old) => (
+      old?.items
+        ? { ...old, items: old.items.map((c) => (c.id === customer.id ? { ...c, status: value } : c)) }
+        : old
+    ))
     try {
       await updateCustomerStatus(customer.id, value)
       queryClient.invalidateQueries({ queryKey: ['customers'] })
       queryClient.invalidateQueries({ queryKey: ['customer-summary'] })
       toast.success(t('customers.detail.statusUpdated'))
     } catch (err) {
+      if (previous !== undefined) queryClient.setQueryData(queryKey, previous)
       toast.error(err.message || t('common.error'))
     } finally {
       setStatusSaving((prev) => {

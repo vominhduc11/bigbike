@@ -1039,3 +1039,9 @@ export const RELATED_PRODUCTS_MAX = 24
 export const SPEC_STAT_MAX = 4
 
 export const VARIANTS_FILTER_THRESHOLD = 6
+
+// Ngưỡng render ban đầu + kích thước mỗi lô "Hiện thêm" cho danh sách biến thể (A7).
+// Một số sản phẩm thật có 100+ biến thể — render hết toàn bộ thẻ (kể cả nhánh đã lọc)
+// cùng lúc làm DOM nặng dù accordion đã đóng bớt (mỗi thẻ vẫn có input/select ẩn bên
+// trong). Chỉ render N dòng đầu; phần còn lại mở dần theo lô khi bấm "Hiện thêm".
+export const VARIANTS_RENDER_CAP = 50

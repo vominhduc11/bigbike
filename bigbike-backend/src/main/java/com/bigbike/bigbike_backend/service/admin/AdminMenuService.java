@@ -72,9 +72,9 @@ public class AdminMenuService {
     // A menu item can link straight to a category (targetType=CATEGORY, targetId=category id)
     // instead of a hand-typed URL. Public read resolves the locale-appropriate slug at request
     // time — see resolveDisplayUrl().
-    private void validateCategoryTarget(String targetType, UUID targetId) {
+    private void validateCategoryTarget(String targetType, String targetId) {
         if (!"CATEGORY".equalsIgnoreCase(targetType)) return;
-        if (targetId == null || categoryRepo.findById(targetId.toString()).isEmpty()) {
+        if (targetId == null || categoryRepo.findById(targetId).isEmpty()) {
             throw ValidationException.fromField("targetId", "CATEGORY_NOT_FOUND",
                     "targetId must reference an existing category when targetType is CATEGORY.");
         }
@@ -85,7 +85,7 @@ public class AdminMenuService {
     // since deleted, so a stale link never breaks the menu.
     private String resolveDisplayUrl(MenuItemEntity item, String lang) {
         if ("CATEGORY".equalsIgnoreCase(item.getTargetType()) && item.getTargetId() != null) {
-            return categoryRepo.findById(item.getTargetId().toString())
+            return categoryRepo.findById(item.getTargetId())
                     .map(cat -> CATEGORY_URL_PREFIX + pick(cat.getSlug(), cat.getSlugEn(), lang))
                     .orElse(item.getUrl());
         }

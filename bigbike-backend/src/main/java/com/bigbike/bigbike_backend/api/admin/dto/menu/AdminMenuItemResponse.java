@@ -12,7 +12,7 @@ public record AdminMenuItemResponse(
         String labelEn,
         String url,
         String targetType,
-        UUID targetId,
+        String targetId,
         int sortOrder,
         boolean openInNewTab,
         String cssClass,

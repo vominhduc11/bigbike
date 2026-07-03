@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
 import { Check, ChevronDown, ChevronsUpDown, ChevronUp, Plus } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -188,26 +188,44 @@ export function ProductListScreen({ navigate, canUpdate }) {
     }
   }, [queryClient, t])
 
-  // O4: toggle nhanh Xuất bản/Ẩn ngay trên bảng, không cần mở trang chi tiết —
+  // O4/N7: toggle nhanh Xuất bản/Ẩn ngay trên bảng, không cần mở trang chi tiết —
   // cùng ý tưởng handleToggleVisibility đã có cho Danh mục (CategoryListScreen).
-  const handleTogglePublish = useCallback(async (product) => {
-    if (!canUpdate) return
-    const nextStatus = product.publishStatus === 'PUBLISHED' ? 'HIDDEN' : 'PUBLISHED'
-    setTogglingPublishId(product.id)
-    try {
-      await publishProduct(product.id, nextStatus)
+  // N7: cập nhật lạc quan (onMutate + rollback) — badge đổi ngay khi bấm thay vì
+  // chỉ sau khi request thành công, mượn đúng mẫu của toggleVisibilityMutation
+  // bên CategoryListScreen thay vì await xong mới invalidate như trước.
+  const togglePublishMutation = useMutation({
+    mutationFn: ({ id, nextStatus }) => publishProduct(id, nextStatus),
+    onMutate: async ({ id, nextStatus }) => {
+      await queryClient.cancelQueries({ queryKey: ['products'] })
+      const previousQueries = queryClient.getQueriesData({ queryKey: ['products'] })
+      queryClient.setQueriesData({ queryKey: ['products'] }, (old) => {
+        if (!old?.items) return old
+        return { ...old, items: old.items.map((p) => (p.id === id ? { ...p, publishStatus: nextStatus } : p)) }
+      })
+      return { previousQueries }
+    },
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
-      queryClient.invalidateQueries({ queryKey: ['product', product.id] })
+      queryClient.invalidateQueries({ queryKey: ['product', variables.id] })
       toast.success(t('products.publishToggleSuccess', { defaultValue: 'Đã đổi trạng thái xuất bản.' }))
-    } catch (error) {
+      setTogglingPublishId(null)
+    },
+    onError: (error, _variables, context) => {
+      context?.previousQueries?.forEach(([key, data]) => queryClient.setQueryData(key, data))
       const message = error instanceof ApiClientError
         ? error.message
         : (error?.message || t('common.error'))
       toast.error(message)
-    } finally {
       setTogglingPublishId(null)
-    }
-  }, [canUpdate, queryClient, t])
+    },
+  })
+
+  const handleTogglePublish = useCallback((product) => {
+    if (!canUpdate) return
+    const nextStatus = product.publishStatus === 'PUBLISHED' ? 'HIDDEN' : 'PUBLISHED'
+    setTogglingPublishId(product.id)
+    togglePublishMutation.mutate({ id: product.id, nextStatus })
+  }, [canUpdate, togglePublishMutation])
 
   const emptyState = query.publishStatus === 'TRASH'
     ? {

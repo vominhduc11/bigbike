@@ -17,7 +17,9 @@ import type { ProductCommitment } from "@/lib/contracts/public";
 
 // Bộ icon dựng sẵn cho khối cam kết (V232) — admin chọn theo key, web map ra lucide.
 // Web KHÔNG nạp Font Awesome (fa-* vô hình) nên phải dùng lucide. Key lạ → ShieldCheck.
-const COMMITMENT_ICON_MAP: Record<string, LucideIcon> = {
+// Exported để ProductTrustCard (khối "Mua tại BigBike.vn") dùng CHUNG map — cùng icon cho
+// cùng key ở cả 2 nơi hiển thị commitments trên trang.
+export const COMMITMENT_ICON_MAP: Record<string, LucideIcon> = {
   truck: Truck,
   "refresh-cw": RefreshCw,
   "shield-check": ShieldCheck,

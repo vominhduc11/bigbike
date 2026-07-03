@@ -137,7 +137,10 @@ export function OrderListScreen({ navigate, canUpdate }) {
     if (!canUpdate || bulkProgress) return
     const byId = new Map(items.map((o) => [o.id, o]))
     const ids = selectedIds.filter((id) => INLINE_STATUS_TARGETS[byId.get(id)?.orderStatus]?.includes('PROCESSING'))
-    if (ids.length === 0) return
+    if (ids.length === 0) {
+      toast.error(t('orders.bulkNoEligible', { defaultValue: 'Không có đơn nào đủ điều kiện chuyển "Đang xử lý" trong lựa chọn.' }))
+      return
+    }
 
     const ok = await showConfirm(
       t('orders.bulkProcessingConfirm', { count: ids.length, defaultValue: `Chuyển {{count}} đơn đã chọn sang "Đang xử lý"?` }),

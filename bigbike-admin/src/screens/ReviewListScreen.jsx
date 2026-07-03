@@ -506,10 +506,12 @@ export function ReviewListScreen({ navigate, canUpdate }) {
             </label>
           )}
           {state.status === 'loading' && items.length === 0 && (
+            // N5: chiều cao khớp thẻ ReviewCard thật (avatar+tên+SP+ngày, sao, badge, nội
+            // dung, dải ảnh, nút hành động ~190-230px) để tránh giật layout khi data về.
             [...Array(3)].map((_, i) => (
               <div className="bb-card" key={`sk-${i}`}>
                 <div className="bb-card-body">
-                  <div className="dash-skeleton-block" style={{ height: 72 }} />
+                  <div className="dash-skeleton-block" style={{ height: 200 }} />
                 </div>
               </div>
             ))

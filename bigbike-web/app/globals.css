@@ -96,6 +96,7 @@
   --color-zalo: var(--bb-color-zalo);
   --color-zalo-hover: var(--bb-color-zalo-hover);
   --color-zalo-soft: var(--bb-color-zalo-soft);
+  --color-success: var(--bb-color-success);
 
   --font-body: var(--bb-font-body);
   --font-cta: var(--bb-font-cta);

@@ -10,6 +10,26 @@ import { SortableList } from './Sortable'
 import { cn, generateId } from '@/lib/utils'
 import { CONTENT_MENU, PRODUCT_MENU, createBlock } from './block-editor/constants'
 import { BlockCard } from './block-editor/blocks'
+import { showConfirm } from '@/lib/confirm'
+
+const BLOCK_META_KEYS = new Set(['_key', 'type', 'level', 'style', 'side', 'variant', 'provider'])
+
+function blockHasContent(block) {
+  return Object.entries(block || {}).some(([key, value]) => {
+    if (BLOCK_META_KEYS.has(key)) return false
+    if (typeof value === 'string') return value.trim().length > 0
+    if (Array.isArray(value)) {
+      return value.some((item) => {
+        if (typeof item === 'string') return item.trim().length > 0
+        if (item && typeof item === 'object') {
+          return Object.values(item).some((v) => typeof v === 'string' && v.trim().length > 0)
+        }
+        return Boolean(item)
+      })
+    }
+    return false
+  })
+}
 
 /**
  * BlockEditor — Notion-style block list editor for product descriptions.
@@ -38,7 +58,11 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
     onChange(blocks.map((b, i) => i === index ? { ...b, ...patch } : b))
   }
 
-  function removeBlock(index) {
+  async function removeBlock(index) {
+    if (blockHasContent(blocks[index])) {
+      const confirmed = await showConfirm(t('products.detail.blocks.removeConfirmMessage'), t('products.detail.blocks.removeConfirmTitle'))
+      if (!confirmed) return
+    }
     onChange(blocks.filter((_, i) => i !== index))
   }
 

@@ -761,6 +761,8 @@
         "moveDown": "Move down",
         "duplicate": "Duplicate",
         "remove": "Remove",
+        "removeConfirmTitle": "Remove block",
+        "removeConfirmMessage": "Remove this block? Entered content will be lost.",
         "headingLevelLabel": "Level",
         "headingLevel2": "Heading 2 (H2)",
         "headingLevel3": "Heading 3 (H3)",
@@ -850,6 +852,7 @@
         "generateMatrixTitle": "Automatically generate all combinations (Size × Color × ...)",
         "generateMatrix": "Generate matrix",
         "filterEmpty": "No variants match “{{filter}}”.",
+        "showMore": "Show {{count}} more variants",
         "addVariant": "Add variant",
         "changeColorConfirm": "This variant currently has its own image and gallery. Changing color will remove them. Continue?",
         "changeColorTitle": "Change variant color",
@@ -992,6 +995,7 @@
     "bulkProcessingTitle": "Bulk status change",
     "bulkProcessingProgress": "Processing {{done}}/{{total}}...",
     "bulkProcessingResult": "Moved {{success}} orders, {{failed}} failed.",
+    "bulkNoEligible": "No selected order is eligible to move to \"Processing\".",
     "tableCaption": "Order list",
     "colOrder": "Order",
     "colCustomer": "Customer",
@@ -1019,6 +1023,7 @@
       "paymentStatus": "Payment status",
       "paymentMethod": "Method:",
       "noTransition": "Current status cannot be transitioned.",
+      "selectActionHint": "Choose an action to change the order status.",
       "items": "Order items",
       "noItems": "No items",
       "colProduct": "Product",
@@ -1174,6 +1179,9 @@
     "bulkResult": "Done: {{success}} succeeded, {{failed}} failed.",
     "bulkHideConfirmTitle": "Hide selected categories?",
     "bulkHideConfirm": "You are about to hide {{count}} categories from the storefront. Customers will no longer see these categories. Are you sure?",
+    "duplicate": "Duplicate",
+    "dupLoadError": "Could not load category data to copy.",
+    "treeLoadError": "Could not load the category tree.",
     "detail": {
       "createTitle": "Add new category",
       "editTitle": "Edit category",
@@ -1286,7 +1294,8 @@
       "systemCategoryTitle": "System category",
       "systemCategoryDesc": "\"Uncategorized\" is a system category that holds products when their original category is deleted. It cannot be renamed or deleted.",
       "enFieldHint": "(English — optional)",
-      "namePlaceholderEn": "English name (optional)"
+      "namePlaceholderEn": "English name (optional)",
+      "duplicateSuccess": "Copied from \"{{name}}\". Please provide a new URL path."
     }
   },
   "brands": {
@@ -1310,6 +1319,12 @@
     "colActions": "Actions",
     "bulkHideTitle": "Hide selected brands?",
     "bulkHideConfirm": "Hide {{count}} selected brands? Their /brands/{slug} pages will return 404 on the web. You can show them again later.",
+    "duplicate": "Duplicate",
+    "dupLoadError": "Could not load brand data to copy.",
+    "hideAction": "Hide from website",
+    "showAction": "Show again on website",
+    "toggleSuccess": "Display status updated.",
+    "filterTrash": "Trash",
     "detail": {
       "eyebrow": "Catalog",
       "createTitle": "Create brand",
@@ -1372,7 +1387,8 @@
       "errDeleteFailed": "Failed to delete brand.",
       "contentLanguageAriaLabel": "Content language",
       "enFieldHint": "(English — optional)",
-      "namePlaceholderEn": "English name (optional)"
+      "namePlaceholderEn": "English name (optional)",
+      "duplicateSuccess": "Copied from \"{{name}}\". Please provide a new URL path."
     }
   },
   "content": {

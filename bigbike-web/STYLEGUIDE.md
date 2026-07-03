@@ -68,6 +68,7 @@ State colors:
 - Warning: `#FCB900`
 - Info: `#007BFF`
 - Chat: `#00BFFF`
+- Success: `#2E7D32` (token `--bb-color-success` / Tailwind `text-success`) — ngoại lệ chức năng duy nhất dùng xanh lá (VD: "Còn hàng", huy hiệu "Chính hãng"). KHÔNG dùng cho logo, CTA hay bất kỳ phần tử thương hiệu nào khác.
 
 Accessibility mappings:
 

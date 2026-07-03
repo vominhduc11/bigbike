@@ -533,7 +533,13 @@ export function SpecificationsEditor({ disabled, html = '', onHtmlChange }) {
     commit(rows.map((r, i) => (i === index ? { ...r, [field]: value } : r)))
   }
   function addRow() { commit([...rows, newRow()]) }
-  function removeRow(index) {
+  async function removeRow(index) {
+    const row = rows[index]
+    const hasContent = Boolean((row?.name || row?.value || '').trim())
+    if (hasContent) {
+      const confirmed = await showConfirm(t('products.detail.removeRowConfirmMessage'), t('products.detail.removeRowConfirmTitle'))
+      if (!confirmed) return
+    }
     const next = rows.filter((_, i) => i !== index)
     commit(next.length === 0 ? [newRow()] : next)
   }

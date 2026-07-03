@@ -4,6 +4,10 @@
 
 export const STOREFRONT_BASE = `${import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn'}/danh-muc-san-pham`
 
+// F11: khoá sessionStorage dùng để chuyển bản nháp "Nhân bản" sang màn tạo mới
+// (CategoryDetailScreen đọc — cùng cơ chế DUPLICATE_SESSION_KEY của Sản phẩm).
+export const DUPLICATE_SESSION_KEY = 'category-duplicate-payload'
+
 export const INITIAL_QUERY = {
   search: '',
   visibility: 'ALL',

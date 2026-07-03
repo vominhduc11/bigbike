@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
 import { showConfirm } from '../lib/confirm'
 import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
-import { Award, Pencil, Plus, Trash2, Undo2 } from 'lucide-react'
+import { Award, Copy, Eye, EyeOff, Pencil, Plus, Trash2, Undo2 } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -16,7 +16,7 @@ import { BulkActionBar } from '../components/BulkActionBar'
 import { FilterChips } from '../components/FilterChips'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { RecentItemsChips } from '../components/RecentItemsChips'
-import { fetchBrands, updateBrand, deleteBrand, restoreBrand, permanentDeleteBrand } from '../lib/adminApi'
+import { fetchBrandDetail, fetchBrands, updateBrand, deleteBrand, restoreBrand, permanentDeleteBrand } from '../lib/adminApi'
 import { formatDateTime, formatText, stripHtml } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
 import { useColumnVisibility } from '../lib/useColumnVisibility'
@@ -32,6 +32,10 @@ const INITIAL_QUERY = {
   page: 1,
   pageSize: 20,
 }
+
+// F11: khoá sessionStorage dùng để chuyển bản nháp "Nhân bản" sang màn tạo mới
+// (BrandDetailScreen đọc — cùng cơ chế DUPLICATE_SESSION_KEY của Sản phẩm/Danh mục).
+const DUPLICATE_SESSION_KEY = 'brand-duplicate-payload'
 
 const SORT_LABEL_KEY = {
   'updatedAt:desc': 'newestUpdated',
@@ -52,6 +56,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
   const isFirstSearchRender = useRef(true)
   const [selectedIds, setSelectedIds] = useState([])
   const [bulkProgress, setBulkProgress] = useState(null) // {done,total} or null
+  const [togglingVisibilityId, setTogglingVisibilityId] = useState(null)
 
   // O9: thương hiệu vừa mở gần đây (ghi lại từ BrandDetailScreen khi mount).
   const recentBrandItems = useRecentItems('recent:brands')
@@ -87,6 +92,55 @@ export function BrandListScreen({ navigate, canUpdate }) {
   const items = state.items || []
   const pagination = state.pagination
   const isFiltered = !!query.search || query.visibility !== 'ALL' || query.sort !== INITIAL_QUERY.sort
+
+  // O4: toggle nhanh Hiển thị/Ẩn ngay trên bảng — mượn đúng mẫu cập nhật lạc
+  // quan (onMutate + rollback) đã dùng cho Danh mục (CategoryListScreen),
+  // thay vì await xong mới invalidate như trước.
+  const toggleVisibilityMutation = useMutation({
+    mutationFn: ({ id, visible }) => updateBrand(id, { visible }),
+    onMutate: async ({ id, visible }) => {
+      await queryClient.cancelQueries({ queryKey: ['brands'] })
+      const previousQueries = queryClient.getQueriesData({ queryKey: ['brands'] })
+      queryClient.setQueriesData({ queryKey: ['brands'] }, (old) => {
+        if (!old?.items) return old
+        return { ...old, items: old.items.map((b) => (b.id === id ? { ...b, isVisible: visible } : b)) }
+      })
+      return { previousQueries }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['brands'] })
+      toast.success(t('brands.toggleSuccess', { defaultValue: 'Đã đổi trạng thái hiển thị.' }))
+      setTogglingVisibilityId(null)
+    },
+    onError: (err, _variables, context) => {
+      context?.previousQueries?.forEach(([key, data]) => queryClient.setQueryData(key, data))
+      toast.error(err.message || t('common.error'))
+      setTogglingVisibilityId(null)
+    },
+  })
+
+  function handleToggleVisibility(brand) {
+    if (!canUpdate || toggleVisibilityMutation.isPending || bulkProgress) return
+    setTogglingVisibilityId(brand.id)
+    toggleVisibilityMutation.mutate({ id: brand.id, visible: !brand.isVisible })
+  }
+
+  // F11: Nhân bản thương hiệu — tải chi tiết đầy đủ, ghi tạm vào sessionStorage
+  // rồi điều hướng sang màn tạo mới; BrandDetailScreen đọc bản nháp đó khi mount
+  // (cùng cơ chế "Sao chép" đã có ở Sản phẩm/Danh mục).
+  const handleDuplicate = async (brand) => {
+    try {
+      const result = await fetchBrandDetail(brand.id)
+      const item = result?.item
+      if (!item) return
+      try {
+        sessionStorage.setItem(DUPLICATE_SESSION_KEY, JSON.stringify(item))
+      } catch { /* quota */ }
+      navigate('/admin/brands/new')
+    } catch {
+      toast.error(t('brands.dupLoadError', { defaultValue: 'Không thể tải dữ liệu thương hiệu để sao chép.' }))
+    }
+  }
 
   // ── Bulk hiển thị/ẩn nhiều thương hiệu ──────────────────────────────
   async function runBulkVisibility(targetVisible) {
@@ -285,6 +339,31 @@ export function BrandListScreen({ navigate, canUpdate }) {
                 <Pencil size={14} />
               </button>
             )}
+            {/* F11: Nhân bản — song song với nút tương tự trên Sản phẩm/Danh mục. */}
+            {canUpdate && !isTrashed && (
+              <button
+                type="button"
+                className="bb-icon-btn"
+                title={t('brands.duplicate')}
+                aria-label={t('brands.duplicate')}
+                onClick={() => handleDuplicate(brand)}
+              >
+                <Copy size={14} />
+              </button>
+            )}
+            {/* O4: toggle nhanh Hiển thị/Ẩn ngay trên bảng, không cần mở trang chi tiết. */}
+            {canUpdate && !isTrashed && (
+              <button
+                type="button"
+                className="bb-icon-btn"
+                title={brand.isVisible ? t('brands.hideAction') : t('brands.showAction')}
+                aria-label={brand.isVisible ? t('brands.hideAction') : t('brands.showAction')}
+                disabled={toggleVisibilityMutation.isPending && togglingVisibilityId === brand.id}
+                onClick={() => handleToggleVisibility(brand)}
+              >
+                {brand.isVisible ? <EyeOff size={14} /> : <Eye size={14} />}
+              </button>
+            )}
             {canUpdate && !isTrashed && (
               <button
                 type="button"
@@ -376,7 +455,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
           options={[
             { value: 'ALL', label: t('brands.filterVisibilityAll', { defaultValue: 'Tất cả trạng thái' }) },
             { value: 'VISIBLE', label: t('common.visible', { defaultValue: 'Đang hiển thị' }) },
-            { value: 'HIDDEN', label: t('common.hidden', { defaultValue: 'Thùng rác' }) },
+            { value: 'HIDDEN', label: t('brands.filterTrash') },
           ]}
         />
         <FilterSelect

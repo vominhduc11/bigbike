@@ -65,5 +65,11 @@ export function TrustLiveStock({ product, previewMode = false }: { product: Prod
 
   const isOut = force || state === "OUT_OF_STOCK";
   const key: ProductStockState = isOut ? "OUT_OF_STOCK" : "IN_STOCK";
-  return <Tr ns="Product" k={`stockState.${key}`} />;
+  // "Còn hàng" xanh success (ngoại lệ chức năng — xem STYLEGUIDE.md State colors); "Hết hàng"
+  // giữ màu chữ mặc định, không dùng đỏ brand để tránh giành sự chú ý với giá/CTA.
+  return (
+    <span className={isOut ? undefined : "text-success"}>
+      <Tr ns="Product" k={`stockState.${key}`} />
+    </span>
+  );
 }

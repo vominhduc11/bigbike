@@ -148,6 +148,8 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   const hotline = pickSetting(settings, ["hotline", "phone"]);
   const zaloUrl = pickSetting(settings, ["zalo_url"]);
   const zaloDisplay = pickSetting(settings, ["zalo_display"]);
+  const hoursWeekday = pickSetting(settings, ["opening_hours_weekday"]);
+  const hoursWeekend = pickSetting(settings, ["opening_hours_weekend"]);
   // Khối cam kết dưới nút mua hàng (V232) + dải tin cậy trên tên sản phẩm (V233) giờ quản theo
   // TỪNG sản phẩm (product.commitments / product.trustBadges) — WpPurchaseSection tự đọc thẳng từ
   // product, không còn lấy từ settings.
@@ -212,10 +214,26 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   const showSuitability = suitabilityBlocks.length > 0;
   const showSizeGuide = sizeGuideBlocks.length > 0;
 
-  // Trust block "Mua tại BigBike.vn" (#12) — lưới ô số liệu thương mại (xem product-view/ProductTrustCard).
-  // Tự ẩn khi rỗng; tiêu đề mục đặt NGOÀI thẻ qua <PdpSectionHeading> (xem bodyNodes.trust).
-  const trustItems = buildTrustItems({ product, previewMode, hotline, zaloDisplay, contactAddress });
-  const trustCard = trustItems.length > 0 ? <ProductTrustCard items={trustItems} /> : null;
+  // Trust block "Mua tại BigBike.vn" (#12) — lưới Giá/Kho realtime + Cam kết (cùng nguồn
+  // product.commitments với khối dưới nút mua) + footer liên hệ (xem product-view/ProductTrustCard).
+  // Tự ẩn khi rỗng cả ba. Thẻ tự vẽ tiêu đề riêng (icon + huy hiệu "Chính hãng" trong header) —
+  // KHÔNG bọc <PdpSectionHeading> chung như các section khác (xem bodyNodes.trust).
+  const trustItems = buildTrustItems({ product, previewMode });
+  const hasTrustContact = Boolean(hotline || contactAddress);
+  const hasTrustCommitments = safeArray(product.commitments).some((c) => c.title);
+  const trustCard =
+    trustItems.length > 0 || hasTrustContact || hasTrustCommitments ? (
+      <ProductTrustCard
+        items={trustItems}
+        viCommitments={safeArray(product.commitments)}
+        hotline={hotline}
+        zaloDisplay={zaloDisplay}
+        zaloUrl={zaloUrl}
+        contactAddress={contactAddress}
+        hoursWeekday={hoursWeekday}
+        hoursWeekend={hoursWeekend}
+      />
+    ) : null;
 
   // Thanh nhảy-mục MOBILE (anchor nav tổng) — đặt ở đầu phần nội dung, phủ TOÀN BỘ section theo đúng thứ
   // tự trang (PDP_CONTENT_GUIDE §0b). Mỗi mục cuộn tới id tương ứng — mọi khối đều flat (id "pdp-*" /
@@ -355,10 +373,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   if (trustCard) {
     bodyNodes.trust = (
       <div key="trust" id="pdp-trust" className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}>
-        <section>
-          <PdpSectionHeading title={<Tr ns="Product" k="trustBlockTitle" />} />
-          {trustCard}
-        </section>
+        <section>{trustCard}</section>
       </div>
     );
   }

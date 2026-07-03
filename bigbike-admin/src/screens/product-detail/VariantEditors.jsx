@@ -28,6 +28,7 @@ import {
   cloneGallery,
   hasGalleryImages,
   VARIANTS_FILTER_THRESHOLD,
+  VARIANTS_RENDER_CAP,
 } from './constants'
 import { IconChevronDown, IconChevronUp, GalleryEditor } from './ContentEditors'
 
@@ -770,6 +771,15 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
   const [expandedKey, setExpandedKey] = useState(() => items[0]?._key ?? null)
   const [filter, setFilter] = useState('')
 
+  // ── Render-count cap (A7) ──────────────────────────────────────────────
+  // Chỉ render N dòng đầu (tiền tố items[0..revealCount)) — dù đang lọc hay không.
+  // Vì luôn là một tiền tố liên tục, index hiển thị khớp đúng index gốc trong `items`
+  // nên kéo-thả (SortableList) và việc map lỗi validate theo `variants.{index}.` không lệch.
+  const [revealCount, setRevealCount] = useState(VARIANTS_RENDER_CAP)
+  function ensureRevealed(minCount) {
+    setRevealCount((prev) => (prev < minCount ? minCount : prev))
+  }
+
   // ── Auto-expand the card whose validation key surfaces ───────────────
   // Adjusts state during render (not in an Effect) per
   // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
@@ -782,8 +792,11 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
     if (errKey) {
       const m = errKey.match(/^variants\.(\d+)\./)
       if (m) {
-        const offending = items[Number(m[1])]
+        const idx = Number(m[1])
+        const offending = items[idx]
         if (offending?._key) setExpandedKey(offending._key)
+        // Dòng lỗi nằm sau ngưỡng cap hiện tại — mở rộng cap để nó thật sự render ra.
+        ensureRevealed(idx + 1)
       }
     }
   }
@@ -858,6 +871,8 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
     const created = buildEmptyVariant()
     onChange([...items, created])
     setExpandedKey(created._key)
+    // Biến thể mới luôn ở cuối danh sách — mở rộng cap để thẻ vừa mở thật sự render ra.
+    ensureRevealed(items.length + 1)
   }
 
   function duplicateVariant(key) {
@@ -889,6 +904,8 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
     const next = [...items.slice(0, idx + 1), copy, ...items.slice(idx + 1)]
     onChange(next)
     setExpandedKey(copy._key)
+    // Bản sao chèn ngay sau bản gốc (vị trí idx+1) — mở rộng cap vừa đủ để nó render ra.
+    ensureRevealed(idx + 2)
   }
 
   async function removeVariant(key) {
@@ -930,6 +947,11 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
 
   const showFilter = items.length >= VARIANTS_FILTER_THRESHOLD
 
+  // Tổng số dòng đang "đủ điều kiện hiển thị" theo nhánh hiện tại (đã lọc hay chưa) và
+  // số dòng còn ẩn sau ngưỡng cap — dùng để hiện/ẩn nút "Hiện thêm".
+  const activeTotal = filterTerm ? visible.length : items.length
+  const remainingCount = Math.max(0, activeTotal - revealCount)
+
   return (
     <div className="variants-editor">
       <div className="variants-editor-toolbar">
@@ -963,7 +985,8 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
       {filterTerm ? (
         // Đang lọc theo từ khoá: `visible` là tập con với originalIdx lệch khỏi
         // vị trí thật trong `items` — không cho kéo-thả vì sẽ tính sai vị trí.
-        visible.map(({ v, originalIdx }) => {
+        // Chỉ render N dòng đầu của kết quả lọc (xem revealCount ở trên).
+        visible.slice(0, revealCount).map(({ v, originalIdx }) => {
           const prefix = `variants.${originalIdx}.`
           const fieldErrors = Object.fromEntries(
             Object.entries(validationErrors)
@@ -986,10 +1009,12 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
           )
         })
       ) : (
+        // Chỉ render N dòng đầu (tiền tố liên tục) — kéo-thả chỉ sắp xếp trong phần
+        // đã render, ghép lại với phần đuôi chưa hiện để không mất dữ liệu.
         <SortableList
-          items={items}
+          items={items.slice(0, revealCount)}
           getId={(v) => v._key}
-          onReorder={(next) => onChange(next)}
+          onReorder={(next) => onChange([...next, ...items.slice(revealCount)])}
           disabled={disabled}
           className="list-editor"
           renderItem={(v, sortable, index) => {
@@ -1019,6 +1044,16 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
 
       {filterTerm && visible.length === 0 && (
         <p className="variants-empty">{t('products.detail.variant.filterEmpty', { filter })}</p>
+      )}
+
+      {remainingCount > 0 && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setRevealCount((c) => c + VARIANTS_RENDER_CAP)}
+        >
+          {t('products.detail.variant.showMore', { count: remainingCount })}
+        </Button>
       )}
 
       <Button variant="outline" size="sm" onClick={addVariant} disabled={disabled}>

@@ -27,6 +27,10 @@ import org.junit.jupiter.api.Test;
 
 class AdminMenuServiceTest {
 
+    // Category ids are legacy WP-import strings (e.g. "wp-cat-318"), not UUIDs —
+    // see CategoryEntity.id (VARCHAR) vs MenuItemEntity.targetId (VARCHAR, V302).
+    private static final String CATEGORY_ID = "wp-cat-318";
+
     private final MenuJpaRepository menuRepo = mock(MenuJpaRepository.class);
     private final MenuItemJpaRepository menuItemRepo = mock(MenuItemJpaRepository.class);
     private final AuditLogWriter auditLogWriter = mock(AuditLogWriter.class);
@@ -59,45 +63,43 @@ class AdminMenuServiceTest {
     @Test
     void createMenuItem_categoryTarget_succeedsWhenCategoryExists() {
         UUID menuId = UUID.randomUUID();
-        UUID categoryId = UUID.randomUUID();
         when(menuRepo.findById(menuId)).thenReturn(Optional.of(menu(menuId, "primary")));
-        when(categoryRepo.findById(categoryId.toString()))
-                .thenReturn(Optional.of(category(categoryId.toString(), "mu-bao-hiem", "helmets")));
+        when(categoryRepo.findById(CATEGORY_ID))
+                .thenReturn(Optional.of(category(CATEGORY_ID, "mu-bao-hiem", "helmets")));
         when(menuItemRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         CreateMenuItemRequest req = new CreateMenuItemRequest(
                 null, "Mũ bảo hiểm", null, "/danh-muc-san-pham/mu-bao-hiem",
-                "CATEGORY", categoryId, 0, false, null, "ACTIVE");
+                "CATEGORY", CATEGORY_ID, 0, false, null, "ACTIVE");
 
         AdminMenuItemResponse response = service.createMenuItem(menuId, UUID.randomUUID(), req);
 
         assertThat(response.targetType()).isEqualTo("CATEGORY");
-        assertThat(response.targetId()).isEqualTo(categoryId);
+        assertThat(response.targetId()).isEqualTo(CATEGORY_ID);
     }
 
     @Test
     void createMenuItem_categoryTarget_throwsWhenCategoryMissing() {
         UUID menuId = UUID.randomUUID();
-        UUID categoryId = UUID.randomUUID();
         when(menuRepo.findById(menuId)).thenReturn(Optional.of(menu(menuId, "primary")));
-        when(categoryRepo.findById(categoryId.toString())).thenReturn(Optional.empty());
+        when(categoryRepo.findById(CATEGORY_ID)).thenReturn(Optional.empty());
 
         CreateMenuItemRequest req = new CreateMenuItemRequest(
                 null, "Mũ bảo hiểm", null, "/danh-muc-san-pham/mu-bao-hiem",
-                "CATEGORY", categoryId, 0, false, null, "ACTIVE");
+                "CATEGORY", CATEGORY_ID, 0, false, null, "ACTIVE");
 
         assertThrows(ValidationException.class,
                 () -> service.createMenuItem(menuId, UUID.randomUUID(), req));
     }
 
-    private MenuItemEntity categoryLinkedItem(UUID menuId, UUID categoryId, MenuEntity menuEntity) {
+    private MenuItemEntity categoryLinkedItem(MenuEntity menuEntity) {
         MenuItemEntity item = new MenuItemEntity();
         item.setId(UUID.randomUUID());
         item.setMenu(menuEntity);
         item.setLabel("Mũ bảo hiểm");
         item.setUrl("/danh-muc-san-pham/mu-bao-hiem"); // stored VI fallback
         item.setTargetType("CATEGORY");
-        item.setTargetId(categoryId);
+        item.setTargetId(CATEGORY_ID);
         item.setSortOrder(0);
         item.setStatus("ACTIVE");
         item.setCreatedAt(Instant.now());
@@ -108,13 +110,12 @@ class AdminMenuServiceTest {
     @Test
     void getPublicMenuByLocation_lang_en_usesSlugEnWhenPresent() {
         UUID menuId = UUID.randomUUID();
-        UUID categoryId = UUID.randomUUID();
         MenuEntity menuEntity = menu(menuId, "primary");
         when(menuRepo.findByLocation("primary")).thenReturn(Optional.of(menuEntity));
         when(menuItemRepo.findByMenuIdOrderBySortOrderAsc(menuId))
-                .thenReturn(List.of(categoryLinkedItem(menuId, categoryId, menuEntity)));
-        when(categoryRepo.findById(categoryId.toString()))
-                .thenReturn(Optional.of(category(categoryId.toString(), "mu-bao-hiem", "helmets")));
+                .thenReturn(List.of(categoryLinkedItem(menuEntity)));
+        when(categoryRepo.findById(CATEGORY_ID))
+                .thenReturn(Optional.of(category(CATEGORY_ID, "mu-bao-hiem", "helmets")));
 
         PublicMenuResponse response = service.getPublicMenuByLocation("primary", "en");
 
@@ -125,13 +126,12 @@ class AdminMenuServiceTest {
     @Test
     void getPublicMenuByLocation_lang_en_fallsBackToSlugWhenSlugEnBlank() {
         UUID menuId = UUID.randomUUID();
-        UUID categoryId = UUID.randomUUID();
         MenuEntity menuEntity = menu(menuId, "primary");
         when(menuRepo.findByLocation("primary")).thenReturn(Optional.of(menuEntity));
         when(menuItemRepo.findByMenuIdOrderBySortOrderAsc(menuId))
-                .thenReturn(List.of(categoryLinkedItem(menuId, categoryId, menuEntity)));
-        when(categoryRepo.findById(categoryId.toString()))
-                .thenReturn(Optional.of(category(categoryId.toString(), "mu-bao-hiem", null)));
+                .thenReturn(List.of(categoryLinkedItem(menuEntity)));
+        when(categoryRepo.findById(CATEGORY_ID))
+                .thenReturn(Optional.of(category(CATEGORY_ID, "mu-bao-hiem", null)));
 
         PublicMenuResponse response = service.getPublicMenuByLocation("primary", "en");
 
@@ -141,12 +141,11 @@ class AdminMenuServiceTest {
     @Test
     void getPublicMenuByLocation_categoryDeleted_fallsBackToStoredUrl() {
         UUID menuId = UUID.randomUUID();
-        UUID categoryId = UUID.randomUUID();
         MenuEntity menuEntity = menu(menuId, "primary");
         when(menuRepo.findByLocation("primary")).thenReturn(Optional.of(menuEntity));
         when(menuItemRepo.findByMenuIdOrderBySortOrderAsc(menuId))
-                .thenReturn(List.of(categoryLinkedItem(menuId, categoryId, menuEntity)));
-        when(categoryRepo.findById(categoryId.toString())).thenReturn(Optional.empty());
+                .thenReturn(List.of(categoryLinkedItem(menuEntity)));
+        when(categoryRepo.findById(CATEGORY_ID)).thenReturn(Optional.empty());
 
         PublicMenuResponse response = service.getPublicMenuByLocation("primary", "en");
 

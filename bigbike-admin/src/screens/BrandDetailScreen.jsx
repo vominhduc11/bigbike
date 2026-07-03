@@ -169,6 +169,29 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     setEnSlugManuallyEdited(Boolean(nextForm.translations?.en?.slug))
   }, [fetchResult])
 
+  // F11: Nhân bản thương hiệu — nạp bản nháp BrandListScreen ghi vào sessionStorage
+  // khi bấm "Sao chép", rồi điều hướng sang màn tạo mới (cùng cơ chế duplicate của
+  // Sản phẩm/Danh mục). Chỉ giữ lại slug/đường dẫn EN trống — admin phải đặt giá trị mới.
+  useEffect(() => {
+    if (!isCreate) return
+    try {
+      const raw = sessionStorage.getItem('brand-duplicate-payload')
+      if (!raw) return
+      sessionStorage.removeItem('brand-duplicate-payload')
+      const item = JSON.parse(raw)
+      const base = buildFormFromItem(item)
+      const duplicated = {
+        ...base,
+        slug: '',
+        translations: { ...base.translations, en: { ...(base.translations?.en || {}), slug: '' } },
+      }
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setForm(duplicated)
+      setEnSlugManuallyEdited(false)
+      toast.success(t('brands.detail.duplicateSuccess', { name: item.name || item.slug || '' }))
+    } catch { /* ignore parse errors */ }
+  }, [isCreate, t])
+
   // O9: ghi lại thương hiệu vừa xem để hiện trong widget "Vừa xem gần đây" ở danh sách.
   useEffect(() => {
     if (!isCreate && fetchResult?.item?.id) {

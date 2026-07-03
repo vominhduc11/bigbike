@@ -16,6 +16,7 @@ import { parseSuitabilityCards, mergeSuitabilityIntoHtml, emptySuitabilityCard }
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
 import AiHtmlBrief from '../AiHtmlBrief'
 import { SortableList, DragHandle } from '../Sortable'
+import { showConfirm } from '../../lib/confirm'
 
 export function BlockControls({ disabled, onDuplicate, onRemove }) {
   const { t } = useTranslation()
@@ -83,7 +84,11 @@ export function ListBlockEditor({ block, onChange, disabled }) {
   function addItem() {
     onChange({ items: [...items, ''] })
   }
-  function removeItem(i) {
+  async function removeItem(i) {
+    if ((items[i] || '').trim()) {
+      const confirmed = await showConfirm(t('products.detail.blocks.removeConfirmMessage'), t('products.detail.blocks.removeConfirmTitle'))
+      if (!confirmed) return
+    }
     const next = items.filter((_, idx) => idx !== i)
     onChange({ items: next.length === 0 ? [''] : next })
   }
@@ -409,7 +414,11 @@ export function StringListEditor({ items, onChange, disabled, placeholder, addLa
   const list = items && items.length ? items : ['']
   function updateItem(i, value) { onChange(list.map((it, idx) => (idx === i ? value : it))) }
   function addItem() { onChange([...list, '']) }
-  function removeItem(i) {
+  async function removeItem(i) {
+    if ((list[i] || '').trim()) {
+      const confirmed = await showConfirm(t('products.detail.blocks.removeConfirmMessage'), t('products.detail.blocks.removeConfirmTitle'))
+      if (!confirmed) return
+    }
     const next = list.filter((_, idx) => idx !== i)
     onChange(next.length === 0 ? [''] : next)
   }
@@ -482,7 +491,13 @@ export function SuitabilityBlockEditor({ block, onChange, disabled }) {
   }
   function updateCard(i, patch) { commit(cards.map((c, idx) => (idx === i ? { ...c, ...patch } : c))) }
   function addCard() { commit([...cards, emptySuitabilityCard()]) }
-  function removeCard(i) {
+  async function removeCard(i) {
+    const card = cards[i]
+    const hasContent = Boolean((card?.audience || card?.advice || card?.linkLabel || card?.linkUrl || '').trim())
+    if (hasContent) {
+      const confirmed = await showConfirm(t('products.detail.blocks.removeConfirmMessage'), t('products.detail.blocks.removeConfirmTitle'))
+      if (!confirmed) return
+    }
     const next = cards.filter((_, idx) => idx !== i)
     commit(next.length === 0 ? [emptySuitabilityCard()] : next)
   }
@@ -634,12 +649,18 @@ export function SizeGuideBlockEditor({ block, onChange, disabled }) {
       columns: [...model.columns, { _key: generateId(), label: '' }],
       rows: model.rows.map((r) => ({ ...r, cells: [...r.cells, ''] })),
     })
-  const removeColumn = (ci) =>
+  const removeColumn = async (ci) => {
+    const hasContent = Boolean(model.columns[ci]?.label?.trim()) || model.rows.some((r) => (r.cells[ci] || '').trim())
+    if (hasContent) {
+      const confirmed = await showConfirm(t('products.detail.blocks.removeConfirmMessage'), t('products.detail.blocks.removeConfirmTitle'))
+      if (!confirmed) return
+    }
     commit({
       ...model,
       columns: model.columns.filter((_, idx) => idx !== ci),
       rows: model.rows.map((r) => ({ ...r, cells: r.cells.filter((_, idx) => idx !== ci) })),
     })
+  }
   const updateCell = (ri, ci, value) =>
     commit({
       ...model,
@@ -649,7 +670,14 @@ export function SizeGuideBlockEditor({ block, onChange, disabled }) {
     })
   const addRow = () =>
     commit({ ...model, rows: [...model.rows, { _key: generateId(), cells: model.columns.map(() => '') }] })
-  const removeRow = (ri) => commit({ ...model, rows: model.rows.filter((_, idx) => idx !== ri) })
+  const removeRow = async (ri) => {
+    const hasContent = (model.rows[ri]?.cells || []).some((c) => (c || '').trim())
+    if (hasContent) {
+      const confirmed = await showConfirm(t('products.detail.blocks.removeConfirmMessage'), t('products.detail.blocks.removeConfirmTitle'))
+      if (!confirmed) return
+    }
+    commit({ ...model, rows: model.rows.filter((_, idx) => idx !== ri) })
+  }
 
   const colCount = model.columns.length
   const gridStyle = { gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }

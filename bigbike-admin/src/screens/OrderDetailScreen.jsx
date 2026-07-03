@@ -313,13 +313,13 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
         <div className="bb-card" style={{ marginBottom: 16, borderLeft: '3px solid var(--bb-primary)' }}>
           <div className="bb-card-body" style={{ display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
             <div style={{ flex: '1 1 auto', minWidth: 240 }}>
-              <div style={{ fontWeight: 700, marginBottom: 6 }}>{t('orders.detail.orderStatus')}</div>
+              <div style={{ fontWeight: 700, marginBottom: 8 }}>{t('orders.detail.orderStatus')}</div>
               <div className="bb-muted" style={{ fontSize: 12.5 }}>
                 {transitionsError
                   ? t('orders.detail.transitionsLoadError')
                   : allowedTransitions.length === 0
                     ? t('orders.detail.noTransition')
-                    : t('orders.detail.eyebrow')}
+                    : t('orders.detail.selectActionHint')}
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
@@ -572,7 +572,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                         </span>
                         <span className="bb-muted">{entry.createdAt ? formatDateTime(entry.createdAt) : ''}</span>
                       </div>
-                      <div className="bb-muted" style={{ marginTop: 2 }}>
+                      <div className="bb-muted" style={{ marginTop: 4 }}>
                         {entry.actorType}{entry.ipAddress ? ` · ${entry.ipAddress}` : ''}
                       </div>
                     </li>

@@ -5,7 +5,7 @@ import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
-import { ChevronRight, ExternalLink, GripVertical, ImageOff, Plus } from 'lucide-react'
+import { ChevronRight, Copy, ExternalLink, GripVertical, ImageOff, Plus } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -24,7 +24,7 @@ import { BulkActionBar } from '../components/BulkActionBar'
 import { FilterChips } from '../components/FilterChips'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { RecentItemsChips } from '../components/RecentItemsChips'
-import { fetchCategories, fetchCategoryTree, updateCategory, softDeleteCategory, restoreCategory, hardDeleteCategory } from '../lib/adminApi'
+import { fetchCategories, fetchCategoryDetail, fetchCategoryTree, updateCategory, softDeleteCategory, restoreCategory, hardDeleteCategory } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { formatDateTime, formatText, stripHtml } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
@@ -37,7 +37,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
+import { Alert } from '@/components/ui/alert'
 import {
+  DUPLICATE_SESSION_KEY,
   EMPTY_ITEMS,
   INITIAL_QUERY,
   STOREFRONT_BASE,
@@ -116,7 +118,16 @@ export function CategoryListScreen({ navigate, canUpdate }) {
 
   const paginatedState = useAdminList(['categories', query, contentLang], () => fetchCategories(query))
 
-  const { data: allCatsResult } = useQuery({
+  // N2: đọc thêm isError/error/refetch riêng của query cây — trước đây lỗi ở
+  // đây bị nuốt im lặng, buộc màn hình rơi vĩnh viễn về "Dạng danh sách" mà
+  // không có cách báo lỗi hay thử lại thật (bấm lại tab "Dạng cây" chỉ đổi
+  // filter, không refetch query này).
+  const {
+    data: allCatsResult,
+    isError: isTreeError,
+    error: treeError,
+    refetch: refetchTree,
+  } = useQuery({
     queryKey: ['categories', 'tree', contentLang],
     queryFn: () => fetchCategoryTree(),
   })
@@ -418,6 +429,23 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     setExpandedIds(new Set())
   }
 
+  // F11: Nhân bản danh mục — tải chi tiết đầy đủ, ghi tạm vào sessionStorage rồi
+  // điều hướng sang màn tạo mới; CategoryDetailScreen đọc bản nháp đó khi mount
+  // (cùng cơ chế "Sao chép" đã có ở Sản phẩm).
+  const handleDuplicate = async (category) => {
+    try {
+      const result = await fetchCategoryDetail(category.id)
+      const item = result?.item
+      if (!item) return
+      try {
+        sessionStorage.setItem(DUPLICATE_SESSION_KEY, JSON.stringify(item))
+      } catch { /* quota */ }
+      navigate('/admin/categories/new')
+    } catch {
+      toast.error(t('categories.dupLoadError', { defaultValue: 'Không thể tải dữ liệu danh mục để sao chép.' }))
+    }
+  }
+
   const handleSoftDelete = async (category) => {
     const confirmed = await showConfirm(
       t('categories.deleteConfirm', { name: category.name, defaultValue: `Bạn có chắc chắn muốn xóa danh mục ${category.name}? Các danh mục con cũng sẽ bị xóa mềm.` }),
@@ -686,6 +714,18 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                 </a>
               </Button>
             )}
+            {/* F11: Nhân bản — song song với nút tương tự trên Sản phẩm. */}
+            {canUpdate && !query.deleted && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDuplicate(category)}
+                title={t('categories.duplicate')}
+                aria-label={t('categories.duplicate')}
+              >
+                <Copy size={14} aria-hidden="true" />
+              </Button>
+            )}
             {canUpdate && !query.deleted && (
               <Button
                 variant="outline"
@@ -836,6 +876,24 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           {t('categories.viewModeFlat')}
         </button>
       </div>
+
+      {/* N2: query cây lỗi trước đây bị nuốt im lặng — rơi vĩnh viễn về "Dạng
+          danh sách" không cảnh báo, và bấm lại tab "Dạng cây" không refetch.
+          Hiện rõ lỗi + nút "Thử lại" gọi đúng refetch của query cây (không
+          nhầm với paginatedState.refetch() của chế độ danh sách phẳng). */}
+      {isTreeError && (
+        <Alert tone="danger" size="sm" className="mb-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <span>
+              {t('categories.treeLoadError', { defaultValue: 'Không tải được cây danh mục.' })}
+              {treeError?.message ? ` ${treeError.message}` : ''}
+            </span>
+            <Button type="button" variant="outline" size="sm" onClick={() => refetchTree()}>
+              {t('common.retry')}
+            </Button>
+          </div>
+        </Alert>
+      )}
 
       <div className="bb-filter-bar">
         <FilterSearchInput

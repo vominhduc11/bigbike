@@ -118,6 +118,10 @@
   --bb-color-zalo: #0068ff;
   --bb-color-zalo-hover: #0056d6;
   --bb-color-zalo-soft: rgba(0, 104, 255, 0.08);
+  /* Success / trạng thái tích cực (Còn hàng, Chính hãng…) — ngoại lệ chức năng
+     duy nhất dùng xanh lá, KHÔNG dùng cho logo/CTA. Chưa có trong palette gốc;
+     thêm làm token riêng thay vì hardcode hex rải rác (V300 trust block redesign). */
+  --bb-color-success: #2e7d32;
 
   /* Typography — source of truth: docs/TYPOGRAPHY.md
      Chỉ 2 font thực: Arial (body/UI) và Barlow Condensed (CTA/nav desktop).

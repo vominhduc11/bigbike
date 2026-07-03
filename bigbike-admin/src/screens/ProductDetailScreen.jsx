@@ -831,12 +831,52 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const [savedFlash, setSavedFlash] = useState(false)
 
   if (state.status === 'loading') {
+    // N5: khung xương thay cho StatePanel căn giữa — tránh giật bố cục (CLS) khi dữ liệu
+    // về, vì trang thật có header + tabs + nhiều SectionCard chứ không phải một panel nhỏ.
+    // ScreenSkeleton.jsx (dùng cho Suspense route-level) có hình dạng bảng/danh sách, không
+    // khớp trang chi tiết có tab — nên dựng khung riêng bằng div thuần + animate-pulse.
     return (
-      <StatePanel
-        tone="info"
-        title={t('products.detail.loading')}
-        description={t('products.detail.loadingDesc')}
-      />
+      <Screen maxWidth="1440px">
+        <div className="animate-pulse" aria-hidden="true">
+          <header className="bb-screen-header">
+            <div className="bb-screen-title flex flex-col gap-2">
+              <div className="h-3 w-28 rounded-xs bg-surface-muted" />
+              <div className="h-7 w-72 max-w-full rounded-xs bg-surface-muted" />
+              <div className="h-3 w-56 max-w-full rounded-xs bg-surface-muted" />
+            </div>
+          </header>
+
+          <div className="mb-4 flex flex-wrap gap-2">
+            <div className="h-9 w-28 rounded-sm bg-surface-muted" />
+            <div className="h-9 w-20 rounded-sm bg-surface-muted" />
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <div className="bb-card">
+              <div className="h-10 border-b border-border bg-surface-muted/60" />
+              <div className="bb-card-body flex flex-col gap-3">
+                <div className="h-4 w-1/3 rounded-xs bg-surface-muted" />
+                <div className="h-9 w-full rounded-sm bg-surface-muted" />
+                <div className="h-9 w-2/3 rounded-sm bg-surface-muted" />
+              </div>
+            </div>
+            <div className="bb-card">
+              <div className="h-10 border-b border-border bg-surface-muted/60" />
+              <div className="bb-card-body flex flex-col gap-3">
+                <div className="h-4 w-1/4 rounded-xs bg-surface-muted" />
+                <div className="h-32 w-full rounded-sm bg-surface-muted" />
+              </div>
+            </div>
+            <div className="bb-card">
+              <div className="h-10 border-b border-border bg-surface-muted/60" />
+              <div className="bb-card-body flex flex-col gap-3">
+                <div className="h-4 w-1/3 rounded-xs bg-surface-muted" />
+                <div className="h-20 w-full rounded-sm bg-surface-muted" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </Screen>
     )
   }
 
@@ -1022,7 +1062,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             </button>
             <button
               type="button"
-              className="text-xs opacity-70 hover:opacity-100"
+              className="text-xs underline hover:no-underline"
               onClick={() => { clearFormFromStorage(autosaveKey); setDraftRecovery(null) }}
             >
               {t('products.detail.draftDiscard', { defaultValue: 'Bỏ qua' })}
