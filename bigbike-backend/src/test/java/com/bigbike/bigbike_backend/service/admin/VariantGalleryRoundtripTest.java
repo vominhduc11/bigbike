@@ -616,7 +616,7 @@ class VariantGalleryRoundtripTest {
     @Test
     void variantImage_usesExplicitImageUrl() {
         UpsertProductRequest create = new UpsertProductRequest();
-        create.setSlug("vimage-explicit-imageUrl");
+        create.setSlug("vimage-explicit-image-url");
         create.setName("VImage Explicit ImageUrl");
         create.setCategoryId(category.getId());
         create.setRetailPrice(new BigDecimal("1000000"));
