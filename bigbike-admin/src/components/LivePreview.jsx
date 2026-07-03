@@ -105,7 +105,7 @@ export function LivePreview({
   const scale = availWidth > 0 ? Math.min(1, availWidth / targetWidth) : 1
 
   return (
-    <div className="fixed inset-0 z-[60] flex">
+    <div className="fixed inset-0 z-[var(--admin-z-overlay)] flex">
       {/* Lớp phủ mờ — bấm để đóng */}
       <button
         type="button"
