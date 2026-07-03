@@ -59,18 +59,11 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("site_name", "general", SettingValueType.STRING)
                         .publicAllowed().required()
                         .description("Tên hiển thị của site (header, footer).").build(),
-                SettingDefinition.builder("footer_tagline", "general", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Tagline hiển thị trong cột brand của footer.").build(),
+                // footer_tagline / bct_url / business_registration: gỡ V308 — footer hardcode
+                // trong WpFooter.tsx (quyết định chủ shop 2026-07-03), 3 key này không còn tác dụng.
                 SettingDefinition.builder("footer_description", "general", SettingValueType.LONG_TEXT)
                         .publicAllowed()
-                        .description("Đoạn mô tả ngắn dưới tagline trong footer.").build(),
-                SettingDefinition.builder("bct_url", "general", SettingValueType.URL)
-                        .publicAllowed()
-                        .description("URL trang đăng ký Bộ Công Thương cho badge BCT.").build(),
-                SettingDefinition.builder("business_registration", "general", SettingValueType.LONG_TEXT)
-                        .publicAllowed()
-                        .description("Dòng giấy chứng nhận đăng ký kinh doanh hiển thị ở footer (số GP, ngày cấp, nơi cấp).").build(),
+                        .description("Đoạn mô tả ngắn hiển thị trong panel thông tin shop trên header mobile (footer đã hardcode, không còn đọc key này).").build(),
 
                 // ── CONTACT ──
                 SettingDefinition.builder("contact_email", "contact", SettingValueType.EMAIL)

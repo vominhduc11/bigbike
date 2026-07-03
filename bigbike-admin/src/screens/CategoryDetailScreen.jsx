@@ -26,6 +26,7 @@ import { StatusBadge } from '../components/StatusBadge'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { IntroContentField } from './category-detail/IntroContentField'
+import { buildCategoryTreeOrder } from './product-detail/constants'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -135,25 +136,12 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
       }
       findDescendants(categoryId)
     }
+    // Loại chính nó + toàn bộ cháu con trước khi build cây, tránh chọn cha thành vòng lặp.
     const eligible = items.filter((c) => c.id !== categoryId && !descendants.has(c.id))
-    const map = new Map(eligible.map((c) => [c.id, { ...c, children: [] }]))
-    const roots = []
-    eligible.forEach((c) => {
-      if (c.parentId && map.has(c.parentId)) {
-        map.get(c.parentId).children.push(map.get(c.id))
-      } else {
-        roots.push(map.get(c.id))
-      }
-    })
-    const flattened = []
-    const flatten = (nodes, depth) => {
-      nodes.forEach((node) => {
-        flattened.push({ id: node.id, label: (depth > 0 ? '— '.repeat(depth) : '') + node.name })
-        flatten(node.children, depth + 1)
-      })
-    }
-    flatten(roots, 0)
-    return flattened
+    return buildCategoryTreeOrder(eligible).map((c) => ({
+      id: c.id,
+      label: <span style={{ paddingInlineStart: `${c.depth * 16}px` }}>{c.name}</span>,
+    }))
   }, [categoriesResult, categoryId])
 
   useEffect(() => {

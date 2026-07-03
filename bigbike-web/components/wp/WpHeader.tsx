@@ -135,7 +135,7 @@ export async function WpHeader({ menuNodes }: { menuNodes: HeaderNavNode[] }) {
                   </div>
                 </div>
 
-                <WpMenuClient initialNodes={filteredMenuNodes} location="primary" top />
+                <WpMenuClient initialNodes={filteredMenuNodes} top />
 
                 <div className="mobile-item">
                   <div className="information-slide">

@@ -987,7 +987,7 @@ Status: `CONFIRMED_FROM_CODE` — `ArticleEntity.bodyBlocks`, `Article.bodyBlock
 
 ### Contact page layout — đã gỡ (`contact_page_layout`, V224 → drop V270)
 
-Trang `/lien-he` nay là **trang tĩnh**: bố cục cố định trong code web, không còn bảng layout do admin quản lý. Bảng singleton `contact_page_layout` (V224) đã bị **drop ở `V270`**; toàn bộ Java mapping (entity/repository/converter/service/controllers) đã gỡ. Thông tin liên hệ (hotline/địa chỉ/giờ/URL mạng xã hội) vẫn ở `site_settings` nhóm `contact` (single source dùng chung header/footer/web) — xem §"Site settings groups".
+Trang `/lien-he` nay là **trang tĩnh**: bố cục cố định trong code web, không còn bảng layout do admin quản lý. Bảng singleton `contact_page_layout` (V224) đã bị **drop ở `V270`**; toàn bộ Java mapping (entity/repository/converter/service/controllers) đã gỡ. Thông tin liên hệ (hotline/địa chỉ/giờ/URL mạng xã hội) vẫn ở `site_settings` nhóm `contact` (single source dùng chung header/trang chủ/trang sản phẩm/`/lien-he`/`/gioi-thieu`/khung chat/trang xác nhận đơn hàng) — xem §"Site settings groups". **Không còn dùng chung với footer từ 2026-07-03**: `WpFooter.tsx` hardcode riêng bản sao của các giá trị này (quyết định chủ shop) — sửa nhóm `contact` ở Cài đặt không còn cập nhật footer.
 
 Status: `CONFIRMED_FROM_CODE` — `bigbike-web/app/lien-he/page.tsx`, `bigbike-web/components/contact/ContactPageContent.tsx`, migration `V270__drop_contact_page_layout.sql`.
 
@@ -1214,8 +1214,8 @@ Evidence: `AdminAnalyticsResponse.java`, `AdminReportService.java`, `OrderJpaRep
 
 | `setting_group` | Purpose | Admin tab |
 |---|---|---|
-| `general` | Site name, footer text, BCT registration URL | Cài đặt chung |
-| `contact` | Hotline/email/address, opening hours, social links — **shared site data** for the header/footer + the static `/lien-he` and `/gioi-thieu` pages. Since 2026-06-23 both the contact page builder and the Settings "Liên hệ" tab are gone; the group has **no admin UI** (hidden via `HIDDEN_GROUPS`). Rows stay in the DB and feed the web read-only; unhide `CONTACT` to allow editing again. | (ẩn — dữ liệu chung, không UI) |
+| `general` | Site name, footer description. `site_name` drives header/SEO; `footer_description` drives the header's mobile shop-info panel (**no longer read by the web footer since 2026-07-03** — see `API_CONTRACT.md` "Footer hardcoded" note). `footer_tagline`/`bct_url`/`business_registration` **removed 2026-07-03 (V308)** — see §"`footer_tagline`/`bct_url`/`business_registration` keys — removed" below. | Cài đặt chung |
+| `contact` | Hotline/email/address, opening hours, social links — **shared site data** for the header + the static `/lien-he` and `/gioi-thieu` pages + homepage, product page, floating-chat widget, order-confirmation page. Since 2026-06-23 both the contact page builder and the Settings "Liên hệ" tab are gone; the group has **no admin UI** (hidden via `HIDDEN_GROUPS`). Rows stay in the DB and feed the web read-only; unhide `CONTACT` to allow editing again. **Footer stopped consuming this group 2026-07-03** (hardcoded in `WpFooter.tsx`) — editing these rows updates every surface above except the footer. | (ẩn — dữ liệu chung, không UI) |
 | `public_home` | Homepage hotline, promo banner, experience/about blocks | Trang chủ |
 | `payment` | Bank-transfer account shown to customers at checkout — holder, number, bank, branch (4 keys) | Thanh toán |
 | `public_about` | **Removed 2026-06-24 (V274).** The About page (`/gioi-thieu`) is **fully static** — copy from i18n `About`, the 5 service tiles from theme assets; the web never read these keys (`AboutPageContent.tsx`). The 28 rows (seeded V223, re-seeded V269), the `SettingDefinitionRegistry` defs, and `AboutServiceMediaSeeder` were all dropped. | (đã gỡ) |
@@ -1229,6 +1229,10 @@ Evidence: `AdminAnalyticsResponse.java`, `AdminReportService.java`, `OrderJpaRep
 | `security` | **Removed 2026-06-24 (V273).** `login_max_attempts` + `session_timeout_minutes` were seeded (V29) but **never enforced** by any auth/session code (no account lockout, no idle-timeout); dropped from the DB and from `SettingDefinitionRegistry`. | (đã gỡ) |
 
 **Removed:** `payment_sepay` — the SePay payment gateway was removed in V59; any leftover `payment_sepay` rows are deleted by V132.
+
+### `footer_tagline`/`bct_url`/`business_registration` keys — removed (2026-07-03, V308)
+
+> **Removed (2026-07-03, V308).** Shop-owner decision: the web footer (`bigbike-web/components/wp/WpFooter.tsx`) was hardcoded — it no longer reads any `site_settings` row or the `GET /api/v1/menus/footer` menu for its content (contact info, social links, tagline, description, BCT badge, ĐKKD line, and footer link list are now fixed constants/JSX in the component, frozen at what was live that day). Of the settings it used to read, three had **no other consumer**: `footer_tagline` (group `general`), `bct_url` (`general`), `business_registration` (`general`) — these were dropped outright rather than left orphaned. Removed together: the `site_settings` rows (`V308__remove_footer_only_settings.sql`), the 3 `SettingDefinitionRegistry` definitions, and their `KEY_LABELS_VI`/`KEY_GUIDE` entries in `bigbike-admin/src/screens/settings/constants.js`. `footer_description` (also `general`) was **kept** — it still feeds the header's mobile shop-info panel (`WpHeader.tsx`) — but is likewise no longer read by the footer. The `contact` group (hotline/email/address/social URLs) is **unchanged and still live** for the header, homepage, product page, `/lien-he`, `/gioi-thieu`, floating chat, and order-confirmation — only the footer stopped consuming it (see `API_CONTRACT.md` "Footer hardcoded" note for the full list). Same pattern as the `public_about` removal (V274) just below.
 
 ### `public_about` keys — removed (2026-06-24, V274)
 

@@ -80,17 +80,11 @@ export default async function RootLayout({
   // Toàn bộ storefront dùng shell theme WP (mọi route đã port — xem lib/wp-theme-routes).
   // Shell render MỘT LẦN ở layout, KHÔNG đọc pathname/cookie ở server (giữ layout tĩnh để
   // route đạt ISR/SSG). Menu nạp bằng locale canonical `vi` (ISR theo tag "menus").
+  // Footer không còn nạp menu động — nội dung hardcode trong WpFooter (2026-07-03).
   let wpPrimaryNodes: HeaderNavNode[] = [];
-  let wpFooterNodes: HeaderNavNode[] = [];
-  const [primaryMenuResult, footerMenuResult] = await Promise.all([
-    getPublicMenu("primary", DEFAULT_LOCALE),
-    getPublicMenu("footer", DEFAULT_LOCALE),
-  ]);
+  const primaryMenuResult = await getPublicMenu("primary", DEFAULT_LOCALE);
   wpPrimaryNodes = primaryMenuResult.data?.items?.length
     ? buildPublicMenuTree(primaryMenuResult.data.items)
-    : [];
-  wpFooterNodes = footerMenuResult.data?.items?.length
-    ? buildPublicMenuTree(footerMenuResult.data.items)
     : [];
   return (
     <html lang={DEFAULT_LOCALE} className={`h-full antialiased ${fontBarlowCondensed.variable} ${fontBarlow.variable}`} suppressHydrationWarning>
@@ -135,7 +129,7 @@ export default async function RootLayout({
                     <SearchToggle renderTrigger={false} />
                   </Suspense>
                   <MobileCartSheet />
-                  <WpFooter footerNodes={wpFooterNodes} />
+                  <WpFooter />
                   {/* React thay jQuery/home.min.js: hamburger/drawer/headroom/scrollToTop/accordion. */}
                   <WpThemeInteractions />
                   <WpMobileMenuController />

@@ -1075,15 +1075,16 @@ Status: `REMOVED`
 
 - `general`:
   - `site_name` — public site/display name used by header/footer/SEO helpers.
-  - `footer_tagline` — footer hero/tagline heading text.
-  - `footer_description` — footer descriptive paragraph.
-  - `bct_url` — public Bộ Công Thương registration URL for the footer badge.
+  - `footer_description` — descriptive paragraph. **Web footer stopped consuming this 2026-07-03** (hardcoded, see note below); still read by the header's mobile shop-info panel (`WpHeader.tsx`).
+  - `footer_tagline`, `bct_url`, `business_registration`: **removed 2026-07-03 (V308)** — see note below.
 - `contact`:
   - `contact_email`, `contact_address`
   - `hotline`, `hotline_2`
   - `facebook_url`, `messenger_url`, `zalo_url`, `youtube_url`, `tiktok_url`, `instagram_url`, `shopee_url`
-    - `shopee_url` — official Shopee storefront link, rendered in the footer social list and emitted in the homepage `LocalBusiness` JSON-LD `sameAs` (added V286).
+    - `shopee_url` — official Shopee storefront link, rendered on `/lien-he` and emitted in the homepage `LocalBusiness` JSON-LD `sameAs` (added V286). No longer rendered in the footer social list (footer hardcoded 2026-07-03, see below).
   - `messenger_display`, `zalo_display` — display text for the Messenger/Zalo lines in the floating-chat popup (falls back to the URL slug when empty).
+
+**Footer hardcoded 2026-07-03 (shop owner decision):** `WpFooter.tsx` no longer reads `footer_description` or the `contact` group (`hotline`/`hotline_2`/`hotline_3`, `contact_email`, `contact_address`, `facebook_url`/`youtube_url`/`tiktok_url`/`instagram_url`/`shopee_url`) — values are fixed constants in the component, frozen at what was live on that date. The footer link list is hardcoded too: it no longer merges with `GET /api/v1/menus/footer` (that endpoint call was removed from `app/layout.tsx`; `WpMenuClient` no longer has a `"footer"` mode). These settings/the menu endpoint are unchanged and still live for every other consumer — editing them in Admin Settings/Menu still updates the header (`footer_description` + full `contact` group), homepage, product page, `/lien-he`, `/gioi-thieu`, the floating-chat widget, and the order-confirmation page; it just no longer reaches the footer. `footer_tagline`, `bct_url`, and `business_registration` had **no other consumer**, so they were deleted outright (`SettingDefinitionRegistry`, admin `constants.js`, `site_settings` rows via `V308__remove_footer_only_settings.sql`) rather than left orphaned — same pattern as the `public_about` removal (V274) below.
 - `public_home`:
   - `promo_title`, `promo_off`, `promo_href`, `promo_image_url` — homepage promo banner block.
   - `home_exp_subtitle`, `home_exp_title`, `home_exp_desc` — homepage experience/news teaser section copy.

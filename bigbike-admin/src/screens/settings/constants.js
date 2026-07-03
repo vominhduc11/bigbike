@@ -143,10 +143,8 @@ export const TAB_META = {
 export const KEY_LABELS_VI = {
   // general
   site_name: 'Tên website (hiển thị header & footer)',
-  footer_tagline: 'Slogan footer',
-  footer_description: 'Mô tả ngắn ở footer',
-  bct_url: 'URL đăng ký Bộ Công Thương (online.gov.vn)',
-  business_registration: 'Giấy chứng nhận ĐKKD (dòng dưới footer)',
+  // footer_tagline/bct_url/business_registration: gỡ V308 — footer đã hardcode, không còn tác dụng.
+  footer_description: 'Mô tả ngắn (panel thông tin shop trên header mobile)',
   // contact
   hotline_2: 'Hotline phụ',
   contact_email: 'Email liên hệ công khai',
@@ -282,28 +280,26 @@ export const SECTION_ORDER = Object.keys(SECTION_GUIDE)
 // Mỗi ô → [id khối, vị trí cụ thể]. Dòng "📍 vị trí" hiện dưới nhãn để admin biết ô render ở đâu.
 export const KEY_GUIDE = {
   site_name:             ['general_brand', 'tên shop'],
-  footer_tagline:        ['general_brand', 'slogan ở chân trang'],
-  footer_description:    ['general_brand', 'đoạn mô tả chân trang'],
-  bct_url:               ['general_brand', 'badge Bộ Công Thương'],
-  business_registration: ['general_brand', 'dòng giấy phép kinh doanh'],
+  // footer_tagline/bct_url/business_registration: gỡ V308 — footer đã hardcode.
+  footer_description:    ['general_brand', 'đoạn mô tả — panel thông tin shop trên header mobile'],
 
   contact_email:         ['contact_main', 'email liên hệ'],
   contact_address:       ['contact_main', 'địa chỉ + bản đồ trang Liên hệ'],
-  hotline:               ['contact_main', 'hotline chính (header + footer)'],
+  hotline:               ['contact_main', 'hotline chính (header — footer đã hardcode riêng)'],
   hotline_2:             ['contact_main', 'hotline phụ'],
   hotline_3:             ['contact_main', 'hotline thứ ba'],
   opening_hours_weekday: ['contact_main', 'giờ mở cửa T2–T6 (header)'],
   opening_hours_weekend: ['contact_main', 'giờ mở cửa T7/CN'],
   opening_hours_holiday: ['contact_main', 'lịch nghỉ lễ/Tết'],
-  facebook_url:          ['contact_social', 'link Facebook'],
+  facebook_url:          ['contact_social', 'link Facebook (trang Liên hệ — footer đã hardcode riêng)'],
   messenger_url:         ['contact_social', 'nút Messenger (chat nổi)'],
   messenger_display:     ['contact_social', 'chữ hiển thị dòng Messenger'],
   zalo_url:              ['contact_social', 'nút Zalo (chat nổi)'],
   zalo_display:          ['contact_social', 'chữ hiển thị dòng Zalo'],
-  youtube_url:           ['contact_social', 'link YouTube (footer)'],
-  tiktok_url:            ['contact_social', 'link TikTok (footer)'],
-  instagram_url:         ['contact_social', 'link Instagram (footer)'],
-  shopee_url:            ['contact_social', 'link Shopee (footer)'],
+  youtube_url:           ['contact_social', 'link YouTube (trang Liên hệ — footer đã hardcode riêng)'],
+  tiktok_url:            ['contact_social', 'link TikTok (trang Liên hệ — footer đã hardcode riêng)'],
+  instagram_url:         ['contact_social', 'link Instagram (trang Liên hệ — footer đã hardcode riêng)'],
+  shopee_url:            ['contact_social', 'link Shopee (trang Liên hệ — footer đã hardcode riêng)'],
 
   bank_account_holder:   ['payment_bank', 'tên chủ tài khoản'],
   bank_account_number:   ['payment_bank', 'số tài khoản'],

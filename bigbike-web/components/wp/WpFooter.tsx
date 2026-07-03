@@ -1,17 +1,51 @@
-import Link from "next/link";
 import { getLocale } from "next-intl/server";
 import { Tr } from "@/components/i18n/Tr";
-import type { HeaderNavNode } from "@/components/layout/header-nav/shared";
-import { WpMenuClient } from "./WpMenuClient";
-import { listPublicSettings } from "@/lib/api/public-api";
-import { normalizeMenuUrl } from "@/lib/utils/nav";
 import { telHref } from "@/lib/utils/format";
-import { pickSetting } from "@/lib/utils/settings";
-import { getStaticPage, getGuideLayout } from "@/lib/content/static-pages";
+import { WpFooterMenuLinks } from "./WpFooterMenuLinks";
 
 const T = "/wp-content/themes/bigbike";
 
-const BCT_FALLBACK_URL = "http://online.gov.vn/Home/WebDetails/27044";
+/**
+ * Nội dung liên hệ/thương hiệu/menu chân trang — HARDCODE theo yêu cầu chủ shop
+ * (2026-07-03), không còn đọc từ Cài đặt (site_settings) hay Menu trong trang
+ * Quản trị. Muốn đổi SĐT/email/địa chỉ/mạng xã hội/slogan/mô tả/ĐKKD/link chân
+ * trang phải sửa trực tiếp các hằng số dưới đây, không sửa được từ Quản trị nữa.
+ *
+ * hotline/email/địa chỉ/mạng xã hội vẫn là các key site_settings dùng CHUNG cho
+ * header, trang chủ, trang sản phẩm, Liên hệ, Giới thiệu, khung chat nổi... —
+ * đổi ở Cài đặt sẽ cập nhật các nơi đó nhưng KHÔNG còn cập nhật footer.
+ *
+ * vi/en: `i18n/request.ts` cố định locale server là "vi" (route tĩnh ISR, không đọc
+ * cookie) nên `isEn` dưới đây LUÔN false trong production hiện tại — nhánh `.en` giữ
+ * lại để tự chạy đúng nếu sau này đổi cơ chế đọc locale theo request. 5 link menu
+ * (`WpFooterMenuLinks`) là ngoại lệ: client component, đổi ngôn ngữ được ngay khi bấm
+ * nút chuyển vi/en (cùng cơ chế menu header) vì đọc `useLocale()` phía client.
+ */
+const FOOTER_HOTLINES = ["0906 902 404", "0764 640 679 - Mrs. Thư / Zalo"];
+const FOOTER_EMAIL = "bigbikevnshop@gmail.com";
+const FOOTER_ADDRESS = {
+  vi: "79/30/52 Âu Cơ, Phường Hoà Bình, TP. Hồ Chí Minh",
+  en: "79/30/52 Au Co, Ward 14, District 11, Ho Chi Minh City",
+};
+const FOOTER_TAGLINE = {
+  vi: "BIGBIKE MONG ĐƯỢC LẮNG NGHE VÀ THẤU HIỂU BẠN HƠN",
+  en: "BIGBIKE WANTS TO LISTEN AND UNDERSTAND YOU BETTER",
+};
+const FOOTER_DESCRIPTION = {
+  vi: "Shop Bảo Hộ Bigbike.vn hoạt động từ 2014 tại 79/30/52 Âu Cơ, Phường Hòa Bình, TP. Hồ Chí Minh. Chuyên phân phối chính hãng mũ bảo hiểm, áo giáp, găng tay, giày bảo hộ và phụ kiện mô tô từ AGV, LS2, Komine, Taichi, Scoyco, Caberg, HJC, ILM — phục vụ cộng đồng biker TP.HCM và giao hàng toàn quốc.",
+  en: "Bigbike.vn Protective Gear Shop has been operating since 2014 at 79/30/52 Âu Cơ, Hòa Bình Ward, Ho Chi Minh City. Authorized retailer of helmets, jackets, gloves, boots and motorcycle accessories from AGV, LS2, Komine, Taichi, Scoyco, Caberg, HJC, ILM — serving the Ho Chi Minh City biker community with nationwide delivery.",
+};
+const FOOTER_BCT_URL = "http://online.gov.vn/Home/WebDetails/27044";
+const FOOTER_BUSINESS_REGISTRATION = {
+  vi: "Giấy chứng nhận đăng ký kinh doanh số: 41K8017383 | Ngày cấp 8 tháng 3 năm 2016 | Nơi cấp: Ủy Ban Nhân Dân Quận 11",
+  en: "Business Registration Certificate No.: 41K8017383 | Issued on March 8, 2016 | Issued by: People's Committee of District 11",
+};
+const FOOTER_SOCIAL_LINKS = {
+  facebook: "https://www.facebook.com/bigbikegear",
+  youtube: "https://www.youtube.com/@bigbike-shop",
+  tiktok: "https://www.tiktok.com/@bigbike.vn",
+  shopee: "https://shopee.vn/shopbaohobigbike",
+};
 
 /** Rút nhãn hiển thị gọn từ URL Facebook (vd https://facebook.com/bigbike.vn → fb/bigbike.vn). */
 function facebookLabel(url: string): string {
@@ -72,96 +106,15 @@ const titleStyle: React.CSSProperties = {
   margin: "0 0 2.286rem",
 };
 
-
-
-function filterMenuNodes(nodes: HeaderNavNode[]): HeaderNavNode[] {
-  return nodes
-    .filter((node) => {
-      const url = node.url || "";
-      return !url.includes("huong-dan-mua-hang");
-    })
-    .map((node) => ({
-      ...node,
-      children: filterMenuNodes(node.children),
-    }));
-}
-
-/** Footer WordPress bigbike.vn — port 1:1 từ footer.php; menu + thông tin liên
- * hệ (SĐT / email / facebook) lấy từ settings công khai, KHÔNG hardcode. */
-export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }) {
-  const filteredFooterNodes = filterMenuNodes(footerNodes);
+/** Footer WordPress bigbike.vn — port 1:1 từ footer.php. */
+export async function WpFooter() {
   const locale = await getLocale();
-  const settings = (await listPublicSettings(locale)).data ?? [];
-  const phones = [
-    pickSetting(settings, ["hotline"]),
-    pickSetting(settings, ["hotline_2"]),
-    pickSetting(settings, ["hotline_3"]),
-  ].filter(Boolean);
-  const email = pickSetting(settings, ["contact_email"]);
-  const facebookUrl = pickSetting(settings, ["facebook_url"]);
-  const youtubeUrl = pickSetting(settings, ["youtube_url"]);
-  const tiktokUrl = pickSetting(settings, ["tiktok_url"]);
-  const instagramUrl = pickSetting(settings, ["instagram_url"]);
-  const shopeeUrl = pickSetting(settings, ["shopee_url"]);
-  // Slogan / mô tả / link Bộ Công Thương / ĐKKD ưu tiên lấy từ settings (admin sửa được);
-  // fallback về copy theme khi setting còn trống.
-  const tagline = pickSetting(settings, ["footer_tagline"]);
-  const shopDescription = pickSetting(settings, ["footer_description"]);
-  const bctUrl = pickSetting(settings, ["bct_url"]) || BCT_FALLBACK_URL;
-  const businessRegistration = pickSetting(settings, ["business_registration"]);
-  const contactAddress = pickSetting(settings, ["contact_address"]);
+  const isEn = locale === "en";
 
-  // Load static pages and guide entries to ensure they are available in the footer
-  const returnPage = getStaticPage("chinh-sach-doi-tra-hang", locale);
-  const warrantyPage = getStaticPage("chinh-sach-bao-hanh", locale);
-  const privacyPage = getStaticPage("chinh-sach-bao-mat-thong-tin", locale);
-  
-  const guideLayout = getGuideLayout(locale);
-  const sizeMuEntry = guideLayout.entries.find((e) => e.pageSlug === "cach-do-size-dau");
-  const sizeTrangPhucEntry = guideLayout.entries.find((e) => e.pageSlug === "cach-do-size-trang-phuc");
-
-  const essentialItems = [
-    {
-      href: "/chinh-sach/chinh-sach-doi-tra-hang/",
-      label: returnPage?.title || (locale === "en" ? "Return Policy" : "Chính sách đổi trả hàng"),
-    },
-    {
-      href: "/chinh-sach/chinh-sach-bao-hanh/",
-      label: warrantyPage?.title || (locale === "en" ? "Warranty Policy" : "Chính sách bảo hành"),
-    },
-    {
-      href: "/chinh-sach/chinh-sach-bao-mat-thong-tin/",
-      label: privacyPage?.title || (locale === "en" ? "Privacy Policy" : "Chính sách bảo mật thông tin"),
-    },
-    {
-      href: "/huong-dan/size-mu/",
-      label: sizeMuEntry?.title || (locale === "en" ? "Helmet Sizing Guide" : "Cách xác định size mũ bảo hiểm"),
-    },
-    {
-      href: "/huong-dan/size-trang-phuc/",
-      label: sizeTrangPhucEntry?.title || (locale === "en" ? "Clothing Sizing Guide" : "Cách đo size trang phục bảo hộ"),
-    },
-  ];
-
-  // Merge essential items into footer menu nodes to guarantee they are on the UI, avoiding duplicates
-  const normalizedFooterHrefs = new Set(
-    filteredFooterNodes.map((node) => normalizeMenuUrl(node.url))
-  );
-
-  const additionalNodes = essentialItems
-    .filter((item) => !normalizedFooterHrefs.has(item.href))
-    .map((item, index) => ({
-      id: `essential-fallback-${index}`,
-      parentId: null,
-      label: item.label,
-      url: item.href,
-      sortOrder: 100 + index,
-      openInNewTab: false,
-      cssClass: null,
-      children: [],
-    }));
-
-  const mergedFooterNodes = [...filteredFooterNodes, ...additionalNodes];
+  const tagline = isEn ? FOOTER_TAGLINE.en : FOOTER_TAGLINE.vi;
+  const shopDescription = isEn ? FOOTER_DESCRIPTION.en : FOOTER_DESCRIPTION.vi;
+  const contactAddress = isEn ? FOOTER_ADDRESS.en : FOOTER_ADDRESS.vi;
+  const businessRegistration = isEn ? FOOTER_BUSINESS_REGISTRATION.en : FOOTER_BUSINESS_REGISTRATION.vi;
 
   return (
     <footer data-bb-focus="general_brand">
@@ -171,36 +124,23 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
             <div className="col-md-7">
               <div className="newletters">
                 <form action="">
-                  <h2 className="slogan-bigbike">
-                    {tagline ? (
-                      tagline
-                    ) : (
-                      <>
-                        <Tr ns="Footer" k="wpSloganLine1" /> <br />
-                        <Tr ns="Footer" k="wpSloganLine2" />
-                      </>
-                    )}
-                  </h2>
+                  <h2 className="slogan-bigbike">{tagline}</h2>
                 </form>
                 <div className="contact-infor">
                   <div className="contact-infor--item">
-                    {phones.map((phone) => (
+                    {FOOTER_HOTLINES.map((phone) => (
                       <p key={phone}>
                         <i className="fal fa-phone-square-alt" /> <a href={telHref(phone)}>{phone}</a>
                       </p>
                     ))}
-                    {email ? (
-                      <p>
-                        <a href={`mailto:${email}`}>
-                          <i className="fal fa-envelope-open" /> {email}
-                        </a>
-                      </p>
-                    ) : null}
-                    {contactAddress ? (
-                      <p>
-                        <i className="fal fa-map-marker-alt" /> {contactAddress}
-                      </p>
-                    ) : null}
+                    <p>
+                      <a href={`mailto:${FOOTER_EMAIL}`}>
+                        <i className="fal fa-envelope-open" /> {FOOTER_EMAIL}
+                      </a>
+                    </p>
+                    <p>
+                      <i className="fal fa-map-marker-alt" /> {contactAddress}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -208,9 +148,7 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
             <div className="col-md-5">
               <div className="information">
                 <div className="information--item">
-                  <p>
-                    {shopDescription ? shopDescription : <Tr ns="Footer" k="wpShopDescription" />}
-                  </p>
+                  <p>{shopDescription}</p>
                 </div>
                 <div className="row">
                   <div className="col-md-7">
@@ -219,7 +157,7 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
                         <Tr ns="Footer" k="infoHeading" /> <i className="fal fa-plus" />
                       </p>
                       <div className="toggle--item-body">
-                        <WpMenuClient initialNodes={mergedFooterNodes} location="footer" />
+                        <WpFooterMenuLinks />
                       </div>
                     </div>
                   </div>
@@ -231,41 +169,29 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
                       <div className="toggle--item-body">
                         <div className="social-list">
                           <ul>
-                            {facebookUrl ? (
-                              <li>
-                                <a rel="nofollow" href={facebookUrl}>
-                                  <i className="fab fa-facebook-f" /> {facebookLabel(facebookUrl)}
-                                </a>
-                              </li>
-                            ) : null}
-                            {youtubeUrl ? (
-                              <li>
-                                <a rel="nofollow" href={youtubeUrl}>
-                                  <SocialSvgIcon name="youtube" label="YouTube" /> {socialLabel(youtubeUrl, "yt", "YouTube")}
-                                </a>
-                              </li>
-                            ) : null}
-                            {tiktokUrl ? (
-                              <li>
-                                <a rel="nofollow" href={tiktokUrl}>
-                                  <SocialSvgIcon name="tiktok" label="TikTok" /> {socialLabel(tiktokUrl, "tiktok", "TikTok")}
-                                </a>
-                              </li>
-                            ) : null}
-                            {instagramUrl ? (
-                              <li>
-                                <a rel="nofollow" href={instagramUrl}>
-                                  <i className="fab fa-instagram" /> {socialLabel(instagramUrl, "ig", "Instagram")}
-                                </a>
-                              </li>
-                            ) : null}
-                            {shopeeUrl ? (
-                              <li>
-                                <a rel="nofollow" href={shopeeUrl}>
-                                  <SocialSvgIcon name="shopee" label="Shopee" /> {socialLabel(shopeeUrl, "shopee", "Shopee")}
-                                </a>
-                              </li>
-                            ) : null}
+                            <li>
+                              <a rel="nofollow" href={FOOTER_SOCIAL_LINKS.facebook}>
+                                <i className="fab fa-facebook-f" /> {facebookLabel(FOOTER_SOCIAL_LINKS.facebook)}
+                              </a>
+                            </li>
+                            <li>
+                              <a rel="nofollow" href={FOOTER_SOCIAL_LINKS.youtube}>
+                                <SocialSvgIcon name="youtube" label="YouTube" />{" "}
+                                {socialLabel(FOOTER_SOCIAL_LINKS.youtube, "yt", "YouTube")}
+                              </a>
+                            </li>
+                            <li>
+                              <a rel="nofollow" href={FOOTER_SOCIAL_LINKS.tiktok}>
+                                <SocialSvgIcon name="tiktok" label="TikTok" />{" "}
+                                {socialLabel(FOOTER_SOCIAL_LINKS.tiktok, "tiktok", "TikTok")}
+                              </a>
+                            </li>
+                            <li>
+                              <a rel="nofollow" href={FOOTER_SOCIAL_LINKS.shopee}>
+                                <SocialSvgIcon name="shopee" label="Shopee" />{" "}
+                                {socialLabel(FOOTER_SOCIAL_LINKS.shopee, "shopee", "Shopee")}
+                              </a>
+                            </li>
                           </ul>
                         </div>
                       </div>
@@ -298,13 +224,11 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
             </div>
             <div className="col-md-6">
               <div className="license">
-                <a href={bctUrl}>
+                <a href={FOOTER_BCT_URL}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={`${T}/images/license.png`} alt="logo-bigbike" />
                 </a>
-                <p>
-                  {businessRegistration ? businessRegistration : <Tr ns="Footer" k="businessReg" />}
-                </p>
+                <p>{businessRegistration}</p>
               </div>
             </div>
           </div>
