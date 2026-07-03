@@ -38,10 +38,4 @@ public class GalleryImageRequest {
     private String mimeType;
 
     private Integer sortOrder;
-
-    // Variant colour gallery only (ProductFieldApplier.colorCoverImages): marks this
-    // image as the colour's cover, independent of gallery order. Not persisted as its
-    // own column — the chosen URL is mirrored onto the variant's image_* columns.
-    // Unmarked colours fall back to the first gallery image (legacy behaviour).
-    private boolean cover;
 }

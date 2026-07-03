@@ -37,10 +37,17 @@ public class VariantRequest {
 
     // stockState is a derived field (computed from quantityOnHand). Removed from input — backend ignores it.
 
-    // The variant cover image is not a standalone field — it is picked per colour via
-    // GalleryImageRequest.cover on one of the color gallery's images (see
-    // AdminCatalogMutationService.applyVariants / colorCoverImages). The former
-    // imageUrl/imageAlt request fields were removed.
+    @Size(max = 2048, message = "Variant image URL is too long.")
+    private String imageUrl;
+
+    @Size(max = 500, message = "Variant image alt is too long.")
+    private String imageAlt;
+
+    private Integer imageWidth;
+    private Integer imageHeight;
+
+    @Size(max = 100, message = "Variant image mimeType is too long.")
+    private String imageMimeType;
 
     private Boolean isAvailable;
 

@@ -597,9 +597,7 @@
         "altPlaceholder": "Mô tả ảnh cho SEO/trợ năng (không hiện thành chữ)",
         "altAriaLabel": "Mô tả ảnh cho SEO và trợ năng",
         "addImage": "Thêm ảnh",
-        "dragToReorder": "Kéo để sắp xếp thứ tự hiển thị",
-        "setCoverImage": "Đặt làm ảnh đại diện cho màu này",
-        "isCoverImage": "Ảnh đại diện của màu này"
+        "dragToReorder": "Kéo để sắp xếp thứ tự hiển thị"
       },
       "video": {
         "fromLibrary": "Từ thư viện",
@@ -848,8 +846,10 @@
         "optionsLabel": "Thuộc tính biến thể",
         "colorGalleryLabelWithValue": "Gallery theo màu: {{color}}",
         "colorGalleryLabel": "Gallery theo màu",
-        "colorGalleryHintWithColor": "Gallery này dùng chung cho mọi size/biến thể có cùng màu. Ảnh đầu tiên trong danh sách chính là ảnh đại diện của màu — không cần đăng riêng. Đổi size trong cùng màu sẽ không đổi danh sách ảnh.",
+        "colorGalleryHintWithColor": "Gallery này dùng chung cho mọi size/biến thể có cùng màu (dùng làm danh sách thumbnail dưới carousel ảnh chính ngoài web).",
         "colorGalleryHintNoColor": "Thêm thuộc tính Màu/Color cho biến thể để cấu hình gallery riêng theo màu. Nếu để trống, storefront sẽ dùng gallery chung của sản phẩm.",
+        "colorRepresentationImageLabel": "Ảnh đại diện màu",
+        "colorRepresentationImageHint": "Ảnh đại diện dùng để hiển thị ô swatch màu khi chọn thuộc tính trên trang chi tiết sản phẩm. Ảnh được dùng chung cho các biến thể cùng màu. Nếu để trống, web tự lấy ảnh đầu tiên của dải ảnh làm fallback.",
         "removeConfirm": "Xoá biến thể \"{{label}}\"? Thao tác này không thể hoàn tác.",
         "filterPlaceholder": "Lọc theo tên / SKU / thuộc tính ({{count}} biến thể)",
         "filterAria": "Lọc biến thể",

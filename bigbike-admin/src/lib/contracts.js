@@ -139,9 +139,8 @@ export function normalizeImageAsset(input) {
 
 /**
  * Một mục gallery (V248) có thể là ẢNH hoặc VIDEO. Backend trả `{ mediaType, image:{...},
- * videoUrl, provider, isCover }`. Phẳng hoá về shape form admin dùng: `{ mediaType, url, rawUrl,
- * alt, videoUrl, provider, isCover }` (url/rawUrl/alt = ảnh hoặc thumbnail của video; isCover chỉ
- * có ý nghĩa trên gallery biến thể theo màu — xem GalleryEditor `showCover`).
+ * videoUrl, provider }`. Phẳng hoá về shape form admin dùng: `{ mediaType, url, rawUrl,
+ * alt, videoUrl, provider }` (url/rawUrl/alt = ảnh hoặc thumbnail của video).
  */
 export function normalizeGalleryMedia(input) {
   if (!input || typeof input !== 'object') return undefined
@@ -160,7 +159,7 @@ export function normalizeGalleryMedia(input) {
     }
   }
   if (!image) return undefined
-  return { mediaType: 'image', url: image.url, rawUrl: image.rawUrl, alt: image.alt, isCover: Boolean(input.isCover) }
+  return { mediaType: 'image', url: image.url, rawUrl: image.rawUrl, alt: image.alt }
 }
 
 export function normalizeVideoAsset(input) {

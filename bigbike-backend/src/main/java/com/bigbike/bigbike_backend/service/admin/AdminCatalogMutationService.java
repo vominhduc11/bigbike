@@ -881,7 +881,16 @@ public class AdminCatalogMutationService {
         }
 
         Map<String, List<GalleryImageRequest>> galleryByColor = colorGalleryRequests(requests);
-        Map<String, GalleryImageRequest> coverByColor = colorCoverImages(galleryByColor);
+        Map<String, VariantRequest> coverByColor = new HashMap<>();
+        for (VariantRequest req : requests) {
+            String colorKey = variantColorKey(req);
+            if (colorKey != null) {
+                String imgUrl = AdminMutationValidators.trimToNull(req.getImageUrl());
+                if (imgUrl != null && !coverByColor.containsKey(colorKey)) {
+                    coverByColor.put(colorKey, req);
+                }
+            }
+        }
         List<ProductVariantEntity> nextVariants = new ArrayList<>();
         for (int i = 0; i < requests.size(); i++) {
             VariantRequest req = requests.get(i);
@@ -911,17 +920,16 @@ public class AdminCatalogMutationService {
                 variant.setCostPrice(req.getCostPrice());
             }
             variant.setCurrency("VND");
-            // Cover image = first image of the color gallery (admins no longer
-            // enter it separately). Mirror every media field so the read path and
-            // cart snapshot get a complete ImageAsset; clear them when the color
-            // has no gallery, or the variant has no color.
-            GalleryImageRequest cover = colorKey != null ? coverByColor.get(colorKey) : null;
-            if (cover != null) {
-                variant.setImageUrl(AdminMutationValidators.trimToNull(cover.getUrl()));
-                variant.setImageAlt(AdminMutationValidators.trimToNull(cover.getAlt()));
-                variant.setImageWidth(cover.getWidth());
-                variant.setImageHeight(cover.getHeight());
-                variant.setImageMimeType(AdminMutationValidators.trimToNull(cover.getMimeType()));
+            // Cover image = explicit imageUrl from variant request of same color (color-scoped).
+            // Mirror every media field so the read path and cart snapshot get a complete ImageAsset;
+            // clear them when the color has no imageUrl.
+            VariantRequest coverReq = colorKey != null ? coverByColor.get(colorKey) : null;
+            if (coverReq != null) {
+                variant.setImageUrl(AdminMutationValidators.trimToNull(coverReq.getImageUrl()));
+                variant.setImageAlt(AdminMutationValidators.trimToNull(coverReq.getImageAlt()));
+                variant.setImageWidth(coverReq.getImageWidth());
+                variant.setImageHeight(coverReq.getImageHeight());
+                variant.setImageMimeType(AdminMutationValidators.trimToNull(coverReq.getImageMimeType()));
             } else {
                 variant.setImageUrl(null);
                 variant.setImageAlt(null);

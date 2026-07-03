@@ -597,9 +597,7 @@
         "altPlaceholder": "Image description for SEO/accessibility (not visible text)",
         "altAriaLabel": "Image description for SEO and accessibility",
         "addImage": "Add image",
-        "dragToReorder": "Drag to reorder display order",
-        "setCoverImage": "Set as the cover image for this colour",
-        "isCoverImage": "This colour's cover image"
+        "dragToReorder": "Drag to reorder display order"
       },
       "video": {
         "fromLibrary": "From library",
@@ -848,8 +846,10 @@
         "optionsLabel": "Variant attributes",
         "colorGalleryLabelWithValue": "Color gallery: {{color}}",
         "colorGalleryLabel": "Color gallery",
-        "colorGalleryHintWithColor": "This gallery is shared across all sizes/variants with the same color. The first image in the list is the color's cover image — no separate upload needed. Switching size within this color keeps the same gallery.",
+        "colorGalleryHintWithColor": "This gallery is shared across all sizes/variants with the same color (used as thumbnails under the main image carousel on the web).",
         "colorGalleryHintNoColor": "Add a Color attribute to configure a color-scoped gallery. If empty, storefront falls back to the product gallery.",
+        "colorRepresentationImageLabel": "Color representation image",
+        "colorRepresentationImageHint": "The image used to show the color swatch when selecting attributes on the product detail page. It is shared across variants of the same color. If left empty, the storefront will fallback to the first gallery image.",
         "removeConfirm": "Remove variant \"{{label}}\"? This action cannot be undone.",
         "filterPlaceholder": "Filter by name / SKU / attribute ({{count}} variants)",
         "filterAria": "Filter variants",

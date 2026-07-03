@@ -183,6 +183,7 @@ export function hasGalleryImages(gallery = []) {
 
 export function withColorScopedMedia(variants = []) {
   const galleryByColor = new Map()
+  const imageByColor = new Map()
 
   variants.forEach((variant) => {
     const colorKey = getVariantColorKey(variant)
@@ -190,15 +191,28 @@ export function withColorScopedMedia(variants = []) {
     if (hasGalleryImages(variant.gallery) && !galleryByColor.has(colorKey)) {
       galleryByColor.set(colorKey, cloneGallery(variant.gallery))
     }
+    if (variant.imageUrl && !imageByColor.has(colorKey)) {
+      imageByColor.set(colorKey, {
+        imageUrl: variant.imageUrl,
+        imageAlt: variant.imageAlt,
+        imageWidth: variant.imageWidth,
+        imageHeight: variant.imageHeight,
+        imageMimeType: variant.imageMimeType,
+      })
+    }
   })
 
-  // The variant cover image is picked per-color on one of the gallery images
-  // (GalleryEditor's `isCover` flag, cloned along with the rest of the item by
-  // cloneGallery), so this only needs to scope the gallery array itself by color.
   return variants.map((variant) => {
     const colorKey = getVariantColorKey(variant)
     const gallery = colorKey ? galleryByColor.get(colorKey) || [] : []
-    return { ...variant, gallery: cloneGallery(gallery) }
+    const imageFields = (colorKey && imageByColor.get(colorKey)) || {
+      imageUrl: '',
+      imageAlt: '',
+      imageWidth: null,
+      imageHeight: null,
+      imageMimeType: null,
+    }
+    return { ...variant, gallery: cloneGallery(gallery), ...imageFields }
   })
 }
 
@@ -375,7 +389,12 @@ export function buildFormFromItem(item) {
       value: o.value || '',
       attributeValueId: o.attributeValueId || null,
     })),
-    gallery: (v.gallery || []).map((img) => ({ _key: generateId(), mediaType: img.mediaType || 'image', url: img.rawUrl || img.url || '', alt: img.alt || '', videoUrl: img.videoUrl || '', provider: img.provider || 'youtube', isCover: Boolean(img.isCover) })),
+    gallery: (v.gallery || []).map((img) => ({ _key: generateId(), mediaType: img.mediaType || 'image', url: img.rawUrl || img.url || '', alt: img.alt || '', videoUrl: img.videoUrl || '', provider: img.provider || 'youtube' })),
+    imageUrl: v.image?.url || '',
+    imageAlt: v.image?.alt || '',
+    imageWidth: v.image?.width || null,
+    imageHeight: v.image?.height || null,
+    imageMimeType: v.image?.mimeType || null,
   })))
 
   const form = {
@@ -864,7 +883,7 @@ export function toPayload(form) {
               alt: img.alt?.trim() || undefined,
               sortOrder: j,
             }
-          : { mediaType: 'image', url: img.url.trim(), alt: img.alt?.trim() || undefined, sortOrder: j, cover: Boolean(img.isCover) }
+          : { mediaType: 'image', url: img.url.trim(), alt: img.alt?.trim() || undefined, sortOrder: j }
       ))
 
     const shouldSendGallery = Boolean(colorKey && gallery.length > 0 && !emittedGalleryColors.has(colorKey))
@@ -876,8 +895,12 @@ export function toPayload(form) {
       name: v.name.trim(),
       // Variant price fields intentionally omitted — see ProductDetailScreen
       // variant form section. Cart/checkout always use product price.
-      // Cover image isn't a separate variant field — the admin-picked image is
-      // marked via `cover: true` on one item in `gallery` above (per colour).
+      // Representation image (ảnh đại diện màu) is a separate variant field, scoped per-color.
+      imageUrl: v.imageUrl?.trim() || undefined,
+      imageAlt: v.imageAlt?.trim() || undefined,
+      imageWidth: v.imageWidth ?? undefined,
+      imageHeight: v.imageHeight ?? undefined,
+      imageMimeType: v.imageMimeType ?? undefined,
       isAvailable: Boolean(v.isAvailable),
       sortOrder: i,
       options: v.options

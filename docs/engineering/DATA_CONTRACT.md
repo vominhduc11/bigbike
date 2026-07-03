@@ -657,19 +657,15 @@ Status: `CONFIRMED_FROM_CODE` — `V248__add_gallery_media_video.sql`, `V295__dr
 `ProductGalleryImageEntity`/`ProductVariantGalleryImageEntity`, `GalleryMedia`, `GalleryImageRequest`
 (`mediaType`/`videoUrl`/`videoProvider`), `AdminCatalogMutationService.applyGallery`/`applyVariantGallery`.
 
-### Variant gallery cover flag — write-time signal, not a stored column (2026-07-03)
+### Variant color representation image (2026-07-03)
 
-`GalleryImageRequest` (write) gained `cover: boolean` and `GalleryMedia` (read domain) gained
-`isCover: boolean` — **no new column** on `product_variant_gallery_images` or `product_gallery_images`.
-`cover` on the request tells `ProductFieldApplier.colorCoverImages` which gallery image to mirror into
-the variant's existing `image_url`/`image_alt`/... columns (see API_CONTRACT.md "Variant cover image");
-that mirrored `image_url` is the only durable record of the choice. `isCover` on the read side is
-recomputed on every read (`JpaCatalogReadSupport.withColorScopedVariantMedia`) by matching each gallery
-item's image URL against the colour's resolved cover — so it always agrees with `variants[].image`,
-including for rows saved before this change (no backfill needed). Only variant colour galleries carry a
-meaningful `isCover`; product-level `gallery[].isCover` is always `false`.
+The variant color representation image (ảnh đại diện màu) is decoupled from the variant gallery. Admins select a single image via the media picker per color, and this choice is sent directly via `imageUrl` / `imageAlt` on `VariantRequest`.
+- **Lưu trữ**: Lưu trong các cột `image_url`, `image_alt`, v.v. của bảng `product_variants`.
+- **Color-scoped**: Ảnh đại diện màu được đồng bộ cho tất cả các biến thể có cùng `colorKey` (ví dụ: Đỏ - S, Đỏ - M, Đỏ - L chia sẻ chung một ảnh đại diện).
+- **Fallback**: Nếu ảnh đại diện màu bị bỏ trống (null/rỗng), web/storefront tự động lấy ảnh đầu tiên của dải ảnh (`gallery[0]`) làm fallback.
+- **Không dùng cơ chế đánh sao**: Trường `cover` trên `GalleryImageRequest` (write) và `isCover` trên `GalleryMedia` (read) bị loại bỏ hoàn toàn.
 
-Status: `CONFIRMED_FROM_CODE` — `GalleryImageRequest.java`, `GalleryMedia.java`, `ProductFieldApplier.colorCoverImages`, `JpaCatalogReadSupport.withColorScopedVariantMedia`.
+Status: `CONFIRMED_FROM_CODE` — `VariantRequest.java` (`imageUrl`/`imageAlt` field), `AdminCatalogMutationService.applyVariants`.
 
 ### Product related products — `product_related_product_map` (V135)
 

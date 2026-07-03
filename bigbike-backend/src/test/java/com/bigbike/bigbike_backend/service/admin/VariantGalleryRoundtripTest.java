@@ -80,9 +80,9 @@ class VariantGalleryRoundtripTest {
         variant.setIsAvailable(true);
         variant.setOptions(List.of(option("Color", "Red"), option("Size", "M")));
         variant.setGallery(List.of(
-                galleryItem("https://cdn.example.com/red-front.jpg", "Red front", 0),
-                galleryItem("https://cdn.example.com/red-side.jpg",  "Red side",  1),
-                galleryItem("https://cdn.example.com/red-back.jpg",  "Red back",  2)
+                galleryItem("/media/red-front.jpg", "Red front", 0),
+                galleryItem("/media/red-side.jpg",  "Red side",  1),
+                galleryItem("/media/red-back.jpg",  "Red back",  2)
         ));
         create.setVariants(List.of(variant));
 
@@ -100,8 +100,8 @@ class VariantGalleryRoundtripTest {
         assertThat(galleryFromRead)
                 .as("gallery survives the roundtrip and is returned by the read repo")
                 .hasSize(3);
-        assertThat(galleryFromRead.get(0).image().url()).isEqualTo("https://cdn.example.com/red-front.jpg");
-        assertThat(galleryFromRead.get(2).image().url()).isEqualTo("https://cdn.example.com/red-back.jpg");
+        assertThat(galleryFromRead.get(0).image().url()).isEqualTo("/media/red-front.jpg");
+        assertThat(galleryFromRead.get(2).image().url()).isEqualTo("/media/red-back.jpg");
     }
 
     @Test
@@ -119,8 +119,8 @@ class VariantGalleryRoundtripTest {
         v1.setIsAvailable(true);
         v1.setOptions(List.of(option("Color", "Black"), option("Size", "L")));
         v1.setGallery(List.of(
-                galleryItem("https://cdn.example.com/black-1.jpg", "Black 1", 0),
-                galleryItem("https://cdn.example.com/black-2.jpg", "Black 2", 1)
+                galleryItem("/media/black-1.jpg", "Black 1", 0),
+                galleryItem("/media/black-2.jpg", "Black 2", 1)
         ));
         create.setVariants(List.of(v1));
 
@@ -141,10 +141,10 @@ class VariantGalleryRoundtripTest {
         v2.setIsAvailable(true);
         v2.setOptions(List.of(option("Color", "Black"), option("Size", "L")));
         v2.setGallery(List.of(
-                galleryItem("https://cdn.example.com/black-A.jpg", "Black A", 0),
-                galleryItem("https://cdn.example.com/black-B.jpg", "Black B", 1),
-                galleryItem("https://cdn.example.com/black-C.jpg", "Black C", 2),
-                galleryItem("https://cdn.example.com/black-D.jpg", "Black D", 3)
+                galleryItem("/media/black-A.jpg", "Black A", 0),
+                galleryItem("/media/black-B.jpg", "Black B", 1),
+                galleryItem("/media/black-C.jpg", "Black C", 2),
+                galleryItem("/media/black-D.jpg", "Black D", 3)
         ));
         update.setVariants(List.of(v2));
 
@@ -157,10 +157,10 @@ class VariantGalleryRoundtripTest {
                 .hasSize(4);
         assertThat(gallery.stream().map(g -> g.image().url()).toList())
                 .containsExactly(
-                        "https://cdn.example.com/black-A.jpg",
-                        "https://cdn.example.com/black-B.jpg",
-                        "https://cdn.example.com/black-C.jpg",
-                        "https://cdn.example.com/black-D.jpg"
+                        "/media/black-A.jpg",
+                        "/media/black-B.jpg",
+                        "/media/black-C.jpg",
+                        "/media/black-D.jpg"
                 );
     }
 
@@ -177,22 +177,22 @@ class VariantGalleryRoundtripTest {
         VariantRequest redS = variant("Red", "S");
         VariantRequest redM = variant("Red", "M");
         redM.setGallery(List.of(
-                galleryItem("https://cdn.example.com/red-1.jpg", "Red 1", 0),
-                galleryItem("https://cdn.example.com/red-2.jpg", "Red 2", 1)
+                galleryItem("/media/red-1.jpg", "Red 1", 0),
+                galleryItem("/media/red-2.jpg", "Red 2", 1)
         ));
         VariantRequest blueS = variant("Blue", "S");
-        blueS.setGallery(List.of(galleryItem("https://cdn.example.com/blue-1.jpg", "Blue 1", 0)));
+        blueS.setGallery(List.of(galleryItem("/media/blue-1.jpg", "Blue 1", 0)));
         create.setVariants(List.of(redS, redM, blueS));
 
         Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
 
         assertThat(saved.variants()).hasSize(3);
         assertThat(saved.variants().get(0).gallery().stream().map(g -> g.image().url()).toList())
-                .containsExactly("https://cdn.example.com/red-1.jpg", "https://cdn.example.com/red-2.jpg");
+                .containsExactly("/media/red-1.jpg", "/media/red-2.jpg");
         assertThat(saved.variants().get(1).gallery().stream().map(g -> g.image().url()).toList())
-                .containsExactly("https://cdn.example.com/red-1.jpg", "https://cdn.example.com/red-2.jpg");
+                .containsExactly("/media/red-1.jpg", "/media/red-2.jpg");
         assertThat(saved.variants().get(2).gallery().stream().map(g -> g.image().url()).toList())
-                .containsExactly("https://cdn.example.com/blue-1.jpg");
+                .containsExactly("/media/blue-1.jpg");
     }
 
     @Test
@@ -205,27 +205,29 @@ class VariantGalleryRoundtripTest {
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
         create.setTranslations(englishName("VImage Product Color Scope EN"));
 
-        // Cover image is derived from the FIRST image of the color gallery. Red-S
-        // carries Red's gallery; Red-M does not — backend applies Red's cover to both.
+        // Cover image is explicit imageUrl from variant request of same color. Red-S
+        // carries Red's imageUrl; Red-M does not — backend applies Red's cover to both.
         VariantRequest redS = variant("Red", "S");
-        redS.setGallery(List.of(galleryItem("https://cdn.example.com/red-main.jpg", "Red main", 0)));
+        redS.setImageUrl("/media/red-main.jpg");
+        redS.setImageAlt("Red main");
         VariantRequest redM = variant("Red", "M");
         VariantRequest blueL = variant("Blue", "L");
-        blueL.setGallery(List.of(galleryItem("https://cdn.example.com/blue-main.jpg", "Blue main", 0)));
+        blueL.setImageUrl("/media/blue-main.jpg");
+        blueL.setImageAlt("Blue main");
         create.setVariants(List.of(redS, redM, blueL));
 
         Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
 
         assertThat(saved.variants()).hasSize(3);
         assertThat(saved.variants().get(0).image().url())
-                .as("Red/S cover = first image of Red gallery")
-                .isEqualTo("https://cdn.example.com/red-main.jpg");
+                .as("Red/S cover = explicit imageUrl of Red variant")
+                .isEqualTo("/media/red-main.jpg");
         assertThat(saved.variants().get(1).image().url())
-                .as("Red/M inherits Red color cover (first gallery image)")
-                .isEqualTo("https://cdn.example.com/red-main.jpg");
+                .as("Red/M inherits Red color cover")
+                .isEqualTo("/media/red-main.jpg");
         assertThat(saved.variants().get(2).image().url())
-                .as("Blue/L cover = first image of Blue gallery")
-                .isEqualTo("https://cdn.example.com/blue-main.jpg");
+                .as("Blue/L cover = explicit imageUrl of Blue variant")
+                .isEqualTo("/media/blue-main.jpg");
     }
 
     @Test
@@ -239,7 +241,8 @@ class VariantGalleryRoundtripTest {
         create.setTranslations(englishName("VImage Product Update EN"));
 
         VariantRequest greenS = variant("Green", "S");
-        greenS.setGallery(List.of(galleryItem("https://cdn.example.com/green-v1.jpg", "Green v1", 0)));
+        greenS.setImageUrl("/media/green-v1.jpg");
+        greenS.setImageAlt("Green v1");
         VariantRequest greenM = variant("Green", "M");
         create.setVariants(List.of(greenS, greenM));
 
@@ -260,18 +263,19 @@ class VariantGalleryRoundtripTest {
         updatedS.setId(idS);
         VariantRequest updatedM = variant("Green", "M");
         updatedM.setId(idM);
-        updatedM.setGallery(List.of(galleryItem("https://cdn.example.com/green-v2.jpg", "Green v2", 0)));
+        updatedM.setImageUrl("/media/green-v2.jpg");
+        updatedM.setImageAlt("Green v2");
         update.setVariants(List.of(updatedS, updatedM));
 
         mutationService.updateProduct(saved.id(), update, DEV_ADMIN_ID);
 
         Product reread = readRepository.findProductById(saved.id()).orElseThrow();
         assertThat(reread.variants().get(0).image().url())
-                .as("Green/S cover updated from Green/M's new first gallery image")
-                .isEqualTo("https://cdn.example.com/green-v2.jpg");
+                .as("Green/S cover updated from Green/M's new imageUrl")
+                .isEqualTo("/media/green-v2.jpg");
         assertThat(reread.variants().get(1).image().url())
-                .as("Green/M cover = its own updated first gallery image")
-                .isEqualTo("https://cdn.example.com/green-v2.jpg");
+                .as("Green/M cover = Green/M's updated imageUrl")
+                .isEqualTo("/media/green-v2.jpg");
     }
 
     @Test
@@ -328,13 +332,13 @@ class VariantGalleryRoundtripTest {
         // landed in the DB through the WP migration importer (or any other
         // write path that bypasses AdminCatalogMutationService.applyVariants).
         ProductVariantEntity variantS = variantRepo.findById(idS).orElseThrow();
-        variantS.setImageUrl("https://cdn.example.com/yellow-S-divergent.jpg");
+        variantS.setImageUrl("/media/yellow-S-divergent.jpg");
         variantRepo.save(variantS);
         ProductVariantEntity variantM = variantRepo.findById(idM).orElseThrow();
-        variantM.setImageUrl("https://cdn.example.com/yellow-M-divergent.jpg");
+        variantM.setImageUrl("/media/yellow-M-divergent.jpg");
         variantRepo.save(variantM);
         ProductVariantEntity variantL = variantRepo.findById(idL).orElseThrow();
-        variantL.setImageUrl("https://cdn.example.com/yellow-L-divergent.jpg");
+        variantL.setImageUrl("/media/yellow-L-divergent.jpg");
         variantRepo.save(variantL);
         // Force the inconsistent state into the DB and drop the cached entities
         // so the read repository hits a fresh load (otherwise the surrounding
@@ -347,7 +351,7 @@ class VariantGalleryRoundtripTest {
         String scopedUrl = reread.variants().get(0).image().url();
         assertThat(scopedUrl)
                 .as("scoped image must come from the first non-null variant of the color group (Yellow/S by sortOrder)")
-                .isEqualTo("https://cdn.example.com/yellow-S-divergent.jpg");
+                .isEqualTo("/media/yellow-S-divergent.jpg");
         assertThat(reread.variants().get(1).image().url())
                 .as("Yellow/M must read back the same color-scoped image as Yellow/S")
                 .isEqualTo(scopedUrl);
@@ -377,7 +381,7 @@ class VariantGalleryRoundtripTest {
         // Plant a stray imageUrl on a no-color variant (e.g., from a legacy
         // import). Read path must mirror the write path and ignore it.
         ProductVariantEntity v = variantRepo.findById(variantId).orElseThrow();
-        v.setImageUrl("https://cdn.example.com/stray-no-color.jpg");
+        v.setImageUrl("/media/stray-no-color.jpg");
         variantRepo.save(v);
         entityManager.flush();
         entityManager.clear();
@@ -400,7 +404,7 @@ class VariantGalleryRoundtripTest {
         VariantRequest sizeOnly = new VariantRequest();
         sizeOnly.setIsAvailable(true);
         sizeOnly.setOptions(List.of(option("Size", "M")));
-        sizeOnly.setGallery(List.of(galleryItem("https://cdn.example.com/size-m.jpg", "Size M", 0)));
+        sizeOnly.setGallery(List.of(galleryItem("/media/size-m.jpg", "Size M", 0)));
         create.setVariants(List.of(sizeOnly));
 
         assertThatThrownBy(() -> mutationService.createProduct(create, DEV_ADMIN_ID))
@@ -599,11 +603,7 @@ class VariantGalleryRoundtripTest {
         return g;
     }
 
-    private GalleryImageRequest galleryItem(String url, String alt, int sortOrder, boolean cover) {
-        GalleryImageRequest g = galleryItem(url, alt, sortOrder);
-        g.setCover(cover);
-        return g;
-    }
+
 
     // TRANSLATION_RULE_002 requires translations.en.name on every product create/update
     // (not specific to this feature) — every product save in this file sets it via this
@@ -614,63 +614,48 @@ class VariantGalleryRoundtripTest {
     }
 
     @Test
-    void variantImage_usesExplicitCoverPick_notFirstImage() {
+    void variantImage_usesExplicitImageUrl() {
         UpsertProductRequest create = new UpsertProductRequest();
-        create.setSlug("vimage-explicit-cover");
-        create.setName("VImage Explicit Cover");
+        create.setSlug("vimage-explicit-imageUrl");
+        create.setName("VImage Explicit ImageUrl");
         create.setCategoryId(category.getId());
         create.setRetailPrice(new BigDecimal("1000000"));
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
-        create.setTranslations(englishName("VImage Explicit Cover EN"));
+        create.setTranslations(englishName("VImage Explicit ImageUrl EN"));
 
         VariantRequest redS = variant("Red", "S");
-        // Second image explicitly marked as cover — must win over gallery[0].
-        redS.setGallery(List.of(
-                galleryItem("https://cdn.example.com/red-front.jpg", "Red front", 0),
-                galleryItem("https://cdn.example.com/red-side.jpg", "Red side", 1, true)
-        ));
+        redS.setImageUrl("/media/red-side.jpg");
+        redS.setImageAlt("Red side");
         create.setVariants(List.of(redS));
 
         Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
 
         assertThat(saved.variants().get(0).image().url())
-                .as("explicit cover pick wins over the first gallery image")
-                .isEqualTo("https://cdn.example.com/red-side.jpg");
-
-        Product reread = readRepository.findProductById(saved.id()).orElseThrow();
-        var gallery = reread.variants().get(0).gallery();
-        assertThat(gallery.stream().filter(g -> g.image().url().equals("https://cdn.example.com/red-side.jpg")).findFirst().orElseThrow().isCover())
-                .as("read path flags the explicitly picked image as cover")
-                .isTrue();
-        assertThat(gallery.stream().filter(g -> g.image().url().equals("https://cdn.example.com/red-front.jpg")).findFirst().orElseThrow().isCover())
-                .as("the non-cover image must not be flagged")
-                .isFalse();
+                .as("explicit imageUrl is returned in variant image")
+                .isEqualTo("/media/red-side.jpg");
     }
 
     @Test
-    void variantGallery_readPath_flagsFirstImageAsCover_whenNoneExplicitlyPicked() {
+    void variantGallery_readPath_noImage_whenNoneSet() {
         UpsertProductRequest create = new UpsertProductRequest();
-        create.setSlug("vimage-fallback-cover-flag");
-        create.setName("VImage Fallback Cover Flag");
+        create.setSlug("vimage-no-image-when-none-set");
+        create.setName("VImage No Image When None Set");
         create.setCategoryId(category.getId());
         create.setRetailPrice(new BigDecimal("1000000"));
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
-        create.setTranslations(englishName("VImage Fallback Cover Flag EN"));
+        create.setTranslations(englishName("VImage No Image When None Set EN"));
 
         VariantRequest greenS = variant("Green", "S");
         greenS.setGallery(List.of(
-                galleryItem("https://cdn.example.com/green-1.jpg", "Green 1", 0),
-                galleryItem("https://cdn.example.com/green-2.jpg", "Green 2", 1)
+                galleryItem("/media/green-1.jpg", "Green 1", 0),
+                galleryItem("/media/green-2.jpg", "Green 2", 1)
         ));
         create.setVariants(List.of(greenS));
 
         Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
 
         Product reread = readRepository.findProductById(saved.id()).orElseThrow();
-        var gallery = reread.variants().get(0).gallery();
-        assertThat(gallery.get(0).isCover())
-                .as("no explicit pick — legacy fallback flags the first image as cover")
-                .isTrue();
-        assertThat(gallery.get(1).isCover()).isFalse();
+        assertThat(reread.variants().get(0).image()).isNull();
+        assertThat(reread.variants().get(0).gallery()).hasSize(2);
     }
 }

@@ -139,7 +139,6 @@ export function createProductSchema(t, isCreate = false) {
           url: z.string(),
           alt: z.string().optional(),
           videoUrl: z.string().optional(),
-          isCover: z.boolean().optional(),
         })).optional(),
       })).max(200, 'Biến thể tối đa 200 mục.').optional(),
       relatedProductIds: z.array(z.string()).max(24, 'Sản phẩm liên quan tối đa 24 mục.').optional(),
@@ -423,17 +422,7 @@ export function createProductSchema(t, isCreate = false) {
             path: ['variants', i, 'gallery'],
           })
         }
-        // Cover chọn tay theo màu (owner 2026-07-03): bắt buộc chọn 1 ảnh đại diện khi
-        // màu có ≥1 ảnh — không còn tự động lấy ảnh đầu tiên theo thứ tự gallery.
-        const hasImageContent = v.gallery?.some((img) => img.url.trim() && !(img.videoUrl || '').trim()) ?? false
-        const hasCoverSelected = v.gallery?.some((img) => img.isCover) ?? false
-        if (hasImageContent && !hasCoverSelected) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: 'Chọn 1 ảnh làm đại diện (bấm biểu tượng ngôi sao) cho màu này.',
-            path: ['variants', i, 'gallery'],
-          })
-        }
+
         v.gallery?.forEach((img, j) => {
           if (img.url.trim() && !MEDIA_URL_REGEX.test(img.url.trim())) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errImageUrl'), path: ['variants', i, 'gallery', j, 'url'] })

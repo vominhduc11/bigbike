@@ -211,28 +211,10 @@ final class JpaCatalogReadSupport {
                             variant.stockState(),
                             variant.stockQuantity(),
                             image,
-                            markCoverImage(gallery, image),
+                            gallery,
                             variant.isAvailable()
                     );
                 })
-                .toList();
-    }
-
-    /**
-     * Flags whichever gallery entry matches the color's resolved cover so the
-     * admin edit screen can pre-select the currently-active cover — covers both
-     * an explicit admin pick and the legacy first-image fallback (see
-     * ProductFieldApplier.colorCoverImages), since either way the resolved
-     * {@code cover}'s URL always equals one of the gallery items' URLs.
-     */
-    static List<GalleryMedia> markCoverImage(List<GalleryMedia> gallery, ImageAsset cover) {
-        if (cover == null || cover.url() == null || gallery.isEmpty()) {
-            return gallery;
-        }
-        return gallery.stream()
-                .map(item -> item.image() != null && cover.url().equals(item.image().url())
-                        ? new GalleryMedia(item.mediaType(), item.image(), item.videoUrl(), item.videoProvider(), true)
-                        : item)
                 .toList();
     }
 

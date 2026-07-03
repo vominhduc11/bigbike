@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { GripVertical, Star } from 'lucide-react'
+import { GripVertical } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { MediaPickerModal } from '../../components/MediaPickerModal'
 import { VideoPickerModal } from '../../components/VideoPickerModal'
@@ -38,7 +38,7 @@ export function IconChevronUp() {
   )
 }
 
-export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sortable, showCover, isCover, onSetCover }) {
+export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sortable }) {
   const { t } = useTranslation()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [videoPickerOpen, setVideoPickerOpen] = useState(false)
@@ -202,23 +202,7 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
             ✕
           </button>
         )}
-        {showCover && trimmed && (
-          <button
-            type="button"
-            className={cn(
-              'absolute bottom-1 right-1 z-10 inline-flex items-center justify-center w-6 h-6 rounded-sm',
-              isCover ? 'bg-warning-bg text-warning' : 'bg-black/55 text-white',
-              disabled && 'cursor-not-allowed',
-            )}
-            onClick={(e) => { e.stopPropagation(); if (!disabled) onSetCover() }}
-            disabled={disabled}
-            aria-pressed={isCover}
-            title={isCover ? t('products.detail.gallery.isCoverImage') : t('products.detail.gallery.setCoverImage')}
-            aria-label={isCover ? t('products.detail.gallery.isCoverImage') : t('products.detail.gallery.setCoverImage')}
-          >
-            <Star size={14} fill={isCover ? 'currentColor' : 'none'} />
-          </button>
-        )}
+
       </div>
       <div className="gallery-card-body">
         <Button
@@ -247,7 +231,7 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
   )
 }
 
-export function GalleryEditor({ items, onChange, disabled, validationErrors = {}, allowVideo = true, showCover = false }) {
+export function GalleryEditor({ items, onChange, disabled, validationErrors = {}, allowVideo = true }) {
   const { t } = useTranslation()
 
   function updateItem(index, patch) {
@@ -263,18 +247,12 @@ export function GalleryEditor({ items, onChange, disabled, validationErrors = {}
     onChange(items.filter((_, i) => i !== index))
   }
   function addItem() {
-    // Ảnh đầu tiên của một gallery màu chưa từng chọn cover: tự đặt luôn làm đại
-    // diện (không cần bấm sao) — chỉ khi thêm ảnh THỨ HAI trở đi mới thật sự cần
-    // admin chọn tay (bắt buộc, xem lib/schemas.js superRefine).
-    const autoCover = showCover && items.length === 0
-    onChange([...items, { _key: generateId(), url: '', alt: '', isCover: autoCover }])
+    onChange([...items, { _key: generateId(), url: '', alt: '' }])
   }
   function addVideoItem() {
     onChange([...items, { _key: generateId(), mediaType: 'video', provider: 'youtube', videoUrl: '', url: '', alt: '' }])
   }
-  function setCover(index) {
-    onChange(items.map((item, i) => ({ ...item, isCover: i === index })))
-  }
+
 
   return (
     <div className="gallery-editor">
@@ -294,9 +272,6 @@ export function GalleryEditor({ items, onChange, disabled, validationErrors = {}
             onRemove={() => removeItem(index)}
             disabled={disabled}
             urlError={validationErrors[`gallery.${index}.url`]}
-            showCover={showCover}
-            isCover={Boolean(item.isCover)}
-            onSetCover={() => setCover(index)}
           />
         )}
         footer={!disabled && (

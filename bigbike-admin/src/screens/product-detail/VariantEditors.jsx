@@ -31,6 +31,9 @@ import {
   VARIANTS_RENDER_CAP,
 } from './constants'
 import { IconChevronDown, IconChevronUp, GalleryEditor } from './ContentEditors'
+import { MediaPickerModal } from '../../components/MediaPickerModal'
+import { IMAGE_RECO } from '../../lib/imageRecommendations'
+import { useMediaAltSync } from '@/lib/useMediaAltSync'
 
 // Sentinel value for the "+ Tạo loại thuộc tính mới…" entry appended to the
 // attribute-name Select — kept distinct from any real attribute name/code.
@@ -641,6 +644,8 @@ function VariantCard({
   contentLang,
 }) {
   const { t } = useTranslation()
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const { pickAlt, flushAltSync } = useMediaAltSync()
   function updateField(field, value) {
     onChange(variant._key, { [field]: value })
   }
@@ -762,10 +767,80 @@ function VariantCard({
                 disabled={disabled}
                 validationErrors={fieldErrors}
                 allowVideo={false}
-                showCover
               />
             )}
           </div>
+
+          {hasColor && (
+            <div className="form-field form-field-wide">
+              <span className="form-field-label">{t('products.detail.variant.colorRepresentationImageLabel', { defaultValue: 'Ảnh đại diện màu' })}</span>
+              <p className="detail-section-desc mt-0 mb-2">
+                {t('products.detail.variant.colorRepresentationImageHint', { defaultValue: 'Chọn ảnh đại diện cho màu này (được dùng để hiển thị ô swatch màu ngoài web).' })}
+              </p>
+              <div className="image-url-input">
+                <div className="image-url-input-row">
+                  <Button variant="secondary" size="sm" className="image-url-pick-btn"
+                    type="button"
+                    onClick={() => setPickerOpen(true)}
+                    disabled={disabled}
+                  >
+                    {variant.imageUrl ? t('imageInput.changeImage', { defaultValue: 'Đổi ảnh' }) : t('imageInput.pickFromLibrary', { defaultValue: 'Chọn ảnh từ thư viện' })}
+                  </Button>
+                  {variant.imageUrl && (
+                    <Button variant="ghost" size="icon" className="text-danger hover:bg-danger-bg"
+                      type="button"
+                      onClick={() => {
+                        onChange(variant._key, {
+                          imageUrl: '',
+                          imageAlt: '',
+                          imageWidth: null,
+                          imageHeight: null,
+                          imageMimeType: null
+                        })
+                      }}
+                      disabled={disabled}
+                      aria-label={t('imageInput.removeImage', { defaultValue: 'Xoá ảnh' })}
+                    >
+                      ✕
+                    </Button>
+                  )}
+                </div>
+                {fieldErrors.imageUrl && <small className="field-error">{fieldErrors.imageUrl}</small>}
+                {variant.imageUrl && (
+                  <div className="mt-2">
+                    <img src={variant.imageUrl} alt={variant.imageAlt || ''} className="img-preview max-h-40 object-contain" />
+                    <Input
+                      type="text"
+                      placeholder={t('imageInput.altPlaceholder', { defaultValue: 'Nhập alt cho ảnh' })}
+                      value={variant.imageAlt ?? ''}
+                      onChange={(e) => updateField('imageAlt', e.target.value)}
+                      onBlur={(e) => flushAltSync(e.target.value)}
+                      disabled={disabled}
+                      maxLength={255}
+                      className="mt-2"
+                    />
+                  </div>
+                )}
+              </div>
+              {pickerOpen && (
+                <MediaPickerModal
+                  recommend={IMAGE_RECO.productImage}
+                  kind="image"
+                  onSelect={(url, media) => {
+                    onChange(variant._key, {
+                      imageUrl: url,
+                      imageAlt: pickAlt(variant.imageAlt, media),
+                      imageWidth: media.width,
+                      imageHeight: media.height,
+                      imageMimeType: media.mimeType
+                    })
+                    setPickerOpen(false)
+                  }}
+                  onClose={() => setPickerOpen(false)}
+                />
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -822,6 +897,23 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
       nextCurrent = { ...nextCurrent, name: deriveVariantName(nextCurrent.options) }
     }
 
+    const isImageUpdate = ['imageUrl', 'imageAlt', 'imageWidth', 'imageHeight', 'imageMimeType'].some(
+      (k) => Object.prototype.hasOwnProperty.call(partial, k)
+    )
+    if (isImageUpdate) {
+      const colorKey = getVariantColorKey(nextCurrent)
+      onChange(items.map((v) => {
+        if (v._key === key || (colorKey && getVariantColorKey(v) === colorKey)) {
+          return {
+            ...v,
+            ...partial
+          }
+        }
+        return v
+      }))
+      return
+    }
+
     if (Object.prototype.hasOwnProperty.call(partial, 'gallery')) {
       const colorKey = getVariantColorKey(nextCurrent)
       const gallery = colorKey ? cloneGallery(partial.gallery) : []
@@ -841,13 +933,36 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
           const existingColorGallery = nextColorKey
             ? items.find((v) => v._key !== key && getVariantColorKey(v) === nextColorKey && hasGalleryImages(v.gallery))?.gallery
             : []
+          const existingColorVariant = nextColorKey
+            ? items.find((v) => v._key !== key && getVariantColorKey(v) === nextColorKey && v.imageUrl)
+            : null
+          const existingColorImage = existingColorVariant
+            ? {
+                imageUrl: existingColorVariant.imageUrl,
+                imageAlt: existingColorVariant.imageAlt,
+                imageWidth: existingColorVariant.imageWidth,
+                imageHeight: existingColorVariant.imageHeight,
+                imageMimeType: existingColorVariant.imageMimeType
+              }
+            : {
+                imageUrl: '',
+                imageAlt: '',
+                imageWidth: null,
+                imageHeight: null,
+                imageMimeType: null
+              }
+
           onChange(items.map((v) => (
             v._key === key
-              ? { ...nextCurrent, gallery: cloneGallery(existingColorGallery || []) }
+              ? {
+                  ...nextCurrent,
+                  gallery: cloneGallery(existingColorGallery || []),
+                  ...existingColorImage
+                }
               : v
           )))
         }
-        const hasData = hasGalleryImages(current.gallery)
+        const hasData = hasGalleryImages(current.gallery) || Boolean(current.imageUrl)
         if (hasData) {
           showConfirm(
             t('products.detail.variant.changeColorConfirm'),
@@ -872,6 +987,11 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
       isAvailable: true,
       options: [],
       gallery: [],
+      imageUrl: '',
+      imageAlt: '',
+      imageWidth: null,
+      imageHeight: null,
+      imageMimeType: null,
     }
   }
 
