@@ -595,7 +595,6 @@
         "altPlaceholder": "Mô tả ảnh cho SEO/trợ năng (không hiện thành chữ)",
         "altAriaLabel": "Mô tả ảnh cho SEO và trợ năng",
         "addImage": "Thêm ảnh",
-        "sizeHint": "Nên dùng ảnh vuông, tối thiểu 1000×1000px (lý tưởng 1200×1200px). Ảnh không vuông sẽ bị viền trắng, ảnh nhỏ sẽ mờ khi khách phóng to trên web.",
         "dragToReorder": "Kéo để sắp xếp (ảnh đầu tiên là ảnh bìa)"
       },
       "video": {
@@ -885,8 +884,18 @@
       },
       "duplicateSuccess": "Đã sao chép từ \"{{name}}\". Vui lòng đặt tên và slug mới.",
       "productFallbackName": "sản phẩm",
-      "previewTitle": "Xem trước trang sản phẩm (tab mới)",
-      "preview": "Xem trước",
+      "preview": {
+        "open": "Xem trước",
+        "title": "Xem trước trang sản phẩm",
+        "invalid": "Chưa xem trước được — kiểm tra lại các thông tin bắt buộc (ví dụ: danh mục, đường dẫn).",
+        "desktop": "Máy tính",
+        "mobile": "Điện thoại"
+      },
+      "serpPreview": "Xem trước trên Google",
+      "serpTitleFallback": "Tiêu đề sản phẩm trên Google",
+      "serpDescFallback": "Mô tả ngắn về sản phẩm sẽ hiển thị ở đây.",
+      "seoChecklist": "Checklist SEO",
+      "seoCheckTitle": "SEO title 30–60 ký tự",
       "slugHint": "Chỉ chữ thường a–z, số 0–9 và dấu gạch ngang. Tự điền từ tên sản phẩm.",
       "slugHintEn": "Đường dẫn tiếng Anh (tùy chọn) — để trống sẽ dùng đường dẫn tiếng Việt.",
       "contentLanguage": "Ngôn ngữ nội dung",
@@ -1473,13 +1482,6 @@
       "seoOgImageUrlHint": "Ảnh chia sẻ MXH, 1200×630px.",
       "seoOgImageAlt": "Alt text OG image",
       "serpPreview": "Xem trước trên Google",
-      "preview": {
-        "open": "Xem trước",
-        "title": "Xem trước trang sản phẩm",
-        "invalid": "Chưa xem trước được — kiểm tra lại các thông tin bắt buộc (ví dụ: danh mục, đường dẫn).",
-        "desktop": "Máy tính",
-        "mobile": "Điện thoại"
-      },
       "serpTitleFallback": "Tiêu đề trên Google",
       "serpDescFallback": "Mô tả ngắn sẽ hiển thị ở đây.",
       "seoChecklist": "Checklist SEO",
@@ -1710,7 +1712,7 @@
       "dialogLabel": "Chọn ảnh từ thư viện",
       "dropToUpload": "Thả ảnh để tải lên",
       "title": "Thư viện ảnh",
-      "sizeHint": "Tùy vị trí dùng: ảnh sản phẩm nên vuông ≥ 1000px, banner ngang ≥ 1920px, logo nền trong ~400px. Ảnh quá nhỏ hoặc sai tỉ lệ sẽ bị mờ/méo trên web.",
+      "sizeHint": "Chưa rõ vị trí dùng — hãy mở ô upload ở đúng màn để thấy kích thước tối thiểu yêu cầu.",
       "multiMode": "Chọn nhiều",
       "editInfo": "Sửa thông tin ảnh",
       "uploadTitle": "Kéo thả ảnh vào cửa sổ này hoặc click để chọn file",
@@ -1985,8 +1987,8 @@
     "boolOn": "Bật",
     "boolOff": "Tắt",
     "valueEmpty": "Chưa có giá trị",
-    "englishLabel": "Tiếng Anh (tùy chọn)",
     "englishPlaceholder": "Để trống sẽ tự dùng bản tiếng Việt khi khách xem bằng tiếng Anh",
+    "englishLocked": "Đã khoá — admin sửa tay, lần lưu sau sẽ không tự động dịch đè lên ô này.",
     "unsavedCount": "{{count}} thay đổi chưa lưu",
     "saveCount": "Lưu ({{count}})",
     "confirmSaveTitle": "Xác nhận lưu cài đặt",
@@ -2502,7 +2504,6 @@
       "next": "Sau →",
       "pageInfo": "Trang {{page}} / {{totalPages}}",
       "selectHint": "Chọn một video để sử dụng",
-      "sizeHint": "Nên dùng video tỉ lệ 16:9, tối thiểu 1280×720px",
       "confirm": "Chọn video này"
     }
   },
@@ -2516,11 +2517,13 @@
     "previewAlt": "Xem trước ảnh"
   },
   "mediaReco": {
-    "tooSmall": "Ảnh hơi nhỏ ({{w}}×{{h}}px) — nên dùng ảnh khoảng {{rw}}×{{rh}}px trở lên để không bị mờ trên web.",
-    "wrongRatio": "Ảnh chưa đúng tỉ lệ khung hiển thị ({{w}}×{{h}}px) — nên khoảng {{rw}}×{{rh}}px, nếu không web có thể cắt xén hoặc thêm viền.",
-    "videoTooSmall": "Video hơi nhỏ ({{w}}×{{h}}px) — nên dùng khoảng {{rw}}×{{rh}}px trở lên để hình rõ trên web.",
-    "videoWrongRatio": "Video chưa đúng tỉ lệ ({{w}}×{{h}}px) — nên dùng tỉ lệ 16:9 (ví dụ {{rw}}×{{rh}}px) để không bị viền đen.",
-    "uploadGuide": "Lưu ý kích thước theo mục đích dùng: ảnh sản phẩm nên vuông ≥ 1000×1000px; banner ngang ≥ 1920×600px; logo nền trong ~400×200px; video 16:9 ≥ 1280×720px. Ảnh quá nhỏ hoặc sai tỉ lệ sẽ bị mờ/méo trên web."
+    "requirementSize": "Yêu cầu tối thiểu {{w}}×{{h}}px",
+    "requirementRatio": " (tỉ lệ {{rw}}:{{rh}})",
+    "tooSmall": "Ảnh {{w}}×{{h}}px nhỏ hơn kích thước tối thiểu {{rw}}×{{rh}}px — không thể chọn, vui lòng dùng ảnh lớn hơn.",
+    "wrongRatio": "Ảnh {{w}}×{{h}}px sai tỉ lệ khung hiển thị (cần khoảng {{rw}}×{{rh}}px) — không thể chọn, web sẽ cắt xén hoặc thêm viền.",
+    "videoTooSmall": "Video {{w}}×{{h}}px nhỏ hơn kích thước tối thiểu {{rw}}×{{rh}}px — không thể chọn, vui lòng dùng video lớn hơn.",
+    "videoWrongRatio": "Video {{w}}×{{h}}px sai tỉ lệ khung hiển thị (cần khoảng {{rw}}×{{rh}}px) — không thể chọn.",
+    "uploadGuide": "Kích thước tối thiểu khác nhau theo từng vị trí (ảnh sản phẩm, banner, logo, video...) — ô upload ở mỗi màn sẽ hiện đúng yêu cầu. Ảnh/video không đạt sẽ bị từ chối, không lưu được."
   },
   "guideBuilder": {
     "description": "Quản lý trang tổng /huong-dan: sửa hero, thêm/bớt ô hướng dẫn, đổi icon, tiêu đề, mô tả, sắp xếp và ẩn/hiện. Nội dung chi tiết của từng ô vẫn sửa ở Nội dung → Trang.",

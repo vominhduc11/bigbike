@@ -4,7 +4,10 @@ import { Button } from '@/components/ui/button'
 import { SettingField } from './SettingField'
 import { groupBySection, SECTION_GUIDE, STOREFRONT_BASE, KEY_GUIDE } from './constants'
 
-export function SettingTabPanel({ title, items, canUpdate, drafts, draftsEn, errors, onDraftChange, onDraftChangeEn, onDraftBlur, onSave, onDiscard, saving }) {
+export function SettingTabPanel({
+  title, items, canUpdate, drafts, draftsEn, errors, enLocked, onDraftChange, onDraftChangeEn,
+  onDraftBlur, onLockField, onSave, onDiscard, saving,
+}) {
   const { t } = useTranslation()
   const dirtyCount = items.filter(
     (s) => drafts[s.key] !== undefined || draftsEn[s.key] !== undefined
@@ -52,9 +55,11 @@ export function SettingTabPanel({ title, items, canUpdate, drafts, draftsEn, err
                   draft={drafts[setting.key]}
                   draftEn={draftsEn[setting.key]}
                   error={errors[setting.key]}
+                  enLocked={Boolean(enLocked?.[setting.key])}
                   onChange={onDraftChange}
                   onChangeEn={onDraftChangeEn}
                   onBlur={onDraftBlur}
+                  onLockField={onLockField}
                 />
               ))}
             </div>

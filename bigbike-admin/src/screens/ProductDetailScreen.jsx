@@ -786,9 +786,13 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       try {
         const original = isCreate ? null : originalFormRef.current
         const translatedForm = await translateProductForm(formToSave, formToSave.enOverrides, original)
-        formToSave = translatedForm
-        setForm(translatedForm)
-        toast.success('Đã tự động dịch sang tiếng Anh!', { id: toastId })
+        if (translatedForm !== formToSave) {
+          formToSave = translatedForm
+          setForm(translatedForm)
+          toast.success('Đã tự động dịch sang tiếng Anh!', { id: toastId })
+        } else {
+          toast.dismiss(toastId)
+        }
       } catch (err) {
         console.error('Auto-translate error:', err)
         toast.error('Tự động dịch tiếng Anh thất bại, vẫn tiến hành lưu...', { id: toastId })
@@ -2053,7 +2057,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           <div className="flex">
             <Button
               type="button"
-              disabled={isReadOnly || isSubmitting}
+              disabled={isReadOnly || isSubmitting || !isDirty}
               className="rounded-r-none"
               onClick={() => handleSave(isPublished ? undefined : 'PUBLISHED')}
             >
@@ -2064,7 +2068,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <DropdownMenuTrigger asChild>
                 <Button
                   type="button"
-                  disabled={isReadOnly || isSubmitting}
+                  disabled={isReadOnly || isSubmitting || !isDirty}
                   className="rounded-l-none border-l border-white/20 px-2"
                   aria-label={t('products.detail.moreSaveOptions', { defaultValue: 'Thêm tuỳ chọn lưu' })}
                 >

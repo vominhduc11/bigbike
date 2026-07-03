@@ -6,10 +6,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { GripVertical } from 'lucide-react'
-import { MediaDimensionWarning } from '../MediaDimensionWarning'
 import { RichTextEditor } from '../RichTextEditor'
 import { RichTextEditorWithSource } from '../RichTextEditorWithSource'
-import { IMAGE_RECO } from '../../lib/imageRecommendations'
 import { generateId } from '@/lib/utils'
 import { parseSizeGuide, serializeSizeGuide, mergeSizeGuideIntoHtml } from '../../lib/sizeChart'
 import { parseSuitabilityCards, mergeSuitabilityIntoHtml, emptySuitabilityCard } from '../../lib/suitabilityCards'
@@ -131,7 +129,7 @@ export function ListBlockEditor({ block, onChange, disabled }) {
   )
 }
 
-export function ImageBlockEditor({ block, onChange, disabled, onPickImage }) {
+export function ImageBlockEditor({ block, onChange, disabled, onPickImage, onAltBlur }) {
   const { t } = useTranslation()
   return (
     <div className="flex-1 flex flex-col gap-2">
@@ -155,6 +153,7 @@ export function ImageBlockEditor({ block, onChange, disabled, onPickImage }) {
             placeholder={t('products.detail.blocks.imageAltPlaceholder')}
             value={block.alt || ''}
             onChange={(e) => onChange({ alt: e.target.value })}
+            onBlur={(e) => onAltBlur?.(e.target.value)}
             disabled={disabled}
             maxLength={500}
           />
@@ -167,7 +166,6 @@ export function ImageBlockEditor({ block, onChange, disabled, onPickImage }) {
           />
         </div>
       </div>
-      {block.url && <MediaDimensionWarning url={block.url} recommend={IMAGE_RECO.general} kind="image" />}
     </div>
   )
 }
@@ -233,9 +231,6 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo }) {
         disabled={disabled}
         maxLength={500}
       />
-      {block.provider === 'upload' && block.url && (
-        <MediaDimensionWarning url={block.url} recommend={IMAGE_RECO.video} kind="video" />
-      )}
     </div>
   )
 }
@@ -265,7 +260,7 @@ export function CalloutBlockEditor({ block, onChange, disabled }) {
   )
 }
 
-export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, productMode }) {
+export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, onAltBlur, productMode }) {
   const { t } = useTranslation()
   const items = block.items || ['']
 
@@ -321,6 +316,7 @@ export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, pro
             placeholder={t('products.detail.blocks.imageAltPlaceholder')}
             value={block.alt || ''}
             onChange={(e) => onChange({ alt: e.target.value })}
+            onBlur={(e) => onAltBlur?.(e.target.value)}
             disabled={disabled}
             maxLength={500}
           />
@@ -333,8 +329,6 @@ export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, pro
           />
         </div>
       </div>
-      {block.url && <MediaDimensionWarning url={block.url} recommend={IMAGE_RECO.general} kind="image" />}
-
       {/* Tiêu đề phụ (eyebrow) */}
       <Input
         className="text-xs uppercase tracking-wide text-primary"
@@ -836,7 +830,7 @@ export function BlockTypeLabel({ type }) {
   )
 }
 
-export function BlockCard({ block, disabled, sortable, onUpdate, onRemove, onDuplicate, onPickImage, onPickVideo, productMode }) {
+export function BlockCard({ block, disabled, sortable, onUpdate, onRemove, onDuplicate, onPickImage, onPickVideo, onAltBlur, productMode }) {
   const { t } = useTranslation()
   return (
     <div
@@ -860,10 +854,10 @@ export function BlockCard({ block, disabled, sortable, onUpdate, onRemove, onDup
         {block.type === 'heading'   && <HeadingBlockEditor   block={block} onChange={onUpdate} disabled={disabled} />}
         {block.type === 'paragraph' && <ParagraphBlockEditor block={block} onChange={onUpdate} disabled={disabled} productMode={productMode} />}
         {block.type === 'list'      && <ListBlockEditor      block={block} onChange={onUpdate} disabled={disabled} />}
-        {block.type === 'image'     && <ImageBlockEditor     block={block} onChange={onUpdate} disabled={disabled} onPickImage={onPickImage} />}
+        {block.type === 'image'     && <ImageBlockEditor     block={block} onChange={onUpdate} disabled={disabled} onPickImage={onPickImage} onAltBlur={onAltBlur} />}
         {block.type === 'video'     && <VideoBlockEditor     block={block} onChange={onUpdate} disabled={disabled} onPickVideo={onPickVideo} />}
         {block.type === 'callout'   && <CalloutBlockEditor   block={block} onChange={onUpdate} disabled={disabled} />}
-        {block.type === 'feature'   && <FeatureBlockEditor   block={block} onChange={onUpdate} disabled={disabled} onPickImage={onPickImage} productMode={productMode} />}
+        {block.type === 'feature'   && <FeatureBlockEditor   block={block} onChange={onUpdate} disabled={disabled} onPickImage={onPickImage} onAltBlur={onAltBlur} productMode={productMode} />}
         {block.type === 'suitability' && <SuitabilityBlockEditor block={block} onChange={onUpdate} disabled={disabled} />}
         {block.type === 'sizeGuide'   && <SizeGuideBlockEditor   block={block} onChange={onUpdate} disabled={disabled} />}
         {block.type === 'divider'   && <DividerBlockEditor />}

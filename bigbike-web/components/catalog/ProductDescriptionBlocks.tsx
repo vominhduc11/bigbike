@@ -128,7 +128,11 @@ export function ProductDescriptionBlocks({
   fallback: ReactNode;
 }) {
   // Đổi sang EN: lấy khối bản EN từ payload localized; rỗng → dùng khối VI (prop).
-  const enBlocks = useLocalizedField<DescriptionBlock[]>("descriptionBlocks");
+  // Lọc bỏ suitability/sizeGuide (đã tách thành section riêng, xem ProductSuitabilitySection/
+  // ProductSizeGuideSection bên dưới) — nếu không, EN sẽ render các khối này 2 lần vì payload EN
+  // là mảng đầy đủ chưa lọc, khác với `blocks` (VI) đã được ProductView lọc sẵn trước khi truyền vào.
+  const enBlocksRaw = useLocalizedField<DescriptionBlock[]>("descriptionBlocks");
+  const enBlocks = enBlocksRaw?.filter((b) => b.type !== "suitability" && b.type !== "sizeGuide");
   const locale = useLocale();
   const active = locale === "en" ? enBlocks : blocks;
 

@@ -181,6 +181,31 @@ export async function translateBrandForm(form, overrides = [], original = null) 
   return nextForm
 }
 
+// ── Settings Translation ────────────────────────────────────────────────────
+// Settings has no fixed field set (each row is a dynamic setting_key) and locks per-row with a
+// plain boolean instead of an `overrides` array (V309), so the caller (SettingsScreen) pre-filters
+// to translatable+unlocked candidates and passes their VI/EN state directly, rather than this
+// function reaching into a `form`/`overrides` shape like the entity-based helpers above.
+
+/**
+ * Auto-translate dirty site settings VI→EN on save.
+ * `candidates`: [{ key, viValue, enValue, viChanged }] — already filtered by the caller to
+ * translatable, unlocked settings being saved. Returns { [key]: translatedEnText } for entries
+ * actually sent to Gemini (unchanged VI with a non-blank EN are skipped, same cost-saving gate
+ * as translateCategoryForm/translateBrandForm).
+ */
+export async function translateSettingsForm(candidates = []) {
+  const toTranslate = {}
+  for (const c of candidates) {
+    const vi = (c.viValue ?? '').trim()
+    if (!vi) continue
+    if (c.viChanged || isEnBlank(c.enValue)) {
+      toTranslate[c.key] = vi
+    }
+  }
+  return callTranslate(toTranslate)
+}
+
 // ── Content (Article) Translation ───────────────────────────────────────────
 
 export async function translateContentForm(form, overrides = [], original = null) {

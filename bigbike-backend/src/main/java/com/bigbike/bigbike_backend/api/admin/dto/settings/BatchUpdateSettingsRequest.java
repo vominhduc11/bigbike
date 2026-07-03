@@ -12,6 +12,8 @@ public record BatchUpdateSettingsRequest(
     public record BatchSettingUpdate(
             @NotBlank @Size(max = 191) String key,
             @Size(max = 50000) String value,
-            @Size(max = 50000) String valueEn
+            @Size(max = 50000) String valueEn,
+            /** Null = leave the stored lock unchanged (V309, mirrors products.enOverrides presence-flag). */
+            Boolean enLocked
     ) {}
 }

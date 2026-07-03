@@ -23,7 +23,7 @@ import {
 } from '../lib/adminApi'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { VideoPickerModal } from '../components/VideoPickerModal'
-import { MediaDimensionWarning } from '../components/MediaDimensionWarning'
+import { useMediaAltSync } from '@/lib/useMediaAltSync'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -228,6 +228,7 @@ export function HomeVideoListScreen({ canUpdate }) {
   const [localItems, setLocalItems] = useState(null)
   const [activeId, setActiveId] = useState(null)
   const [videoPickerOpen, setVideoPickerOpen] = useState(false)
+  const videoAltSync = useMediaAltSync()
   const [previewVideo, setPreviewVideo] = useState(null)
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [isBulkBusy, setIsBulkBusy] = useState(false)
@@ -731,7 +732,7 @@ export function HomeVideoListScreen({ canUpdate }) {
               required
               value={form.title}
               onChange={(event) => { setForm((prev) => ({ ...prev, title: event.target.value })); clearFieldError('title') }}
-              onBlur={() => validateField('title')}
+              onBlur={() => { validateField('title'); videoAltSync.flushAltSync(form.title) }}
               placeholder={t('homeVideos.formTitlePlaceholder')}
             />
           </FormField>
@@ -934,7 +935,11 @@ export function HomeVideoListScreen({ canUpdate }) {
 
       {videoPickerOpen && canUpdate && (
         <VideoPickerModal
-          onSelect={(url) => { setForm((prev) => ({ ...prev, videoUrl: url })); clearFieldError('videoUrl'); setVideoPickerOpen(false) }}
+          onSelect={(url, media) => {
+            setForm((prev) => ({ ...prev, videoUrl: url, title: videoAltSync.pickAlt(prev.title, media) }))
+            clearFieldError('videoUrl')
+            setVideoPickerOpen(false)
+          }}
           onClose={() => setVideoPickerOpen(false)}
         />
       )}

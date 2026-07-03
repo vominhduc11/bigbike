@@ -145,6 +145,9 @@ public class AdminSettingsService {
         if (req.description() != null) {
             entity.setDescription(req.description().isBlank() ? null : req.description());
         }
+        if (req.enLocked() != null) {
+            entity.setEnLocked(req.enLocked());
+        }
         entity.setUpdatedAt(Instant.now());
         settingRepo.save(entity);
 
@@ -157,7 +160,7 @@ public class AdminSettingsService {
 
     // ── Batch update ─────────────────────────────────────────────────────────
 
-    private record PendingUpdate(SiteSettingEntity entity, String newValue, String newValueEn) {}
+    private record PendingUpdate(SiteSettingEntity entity, String newValue, String newValueEn, Boolean newEnLocked) {}
 
     @Transactional
     public List<AdminSiteSettingResponse> batchUpdateSettings(
@@ -193,7 +196,7 @@ public class AdminSettingsService {
                 valueValidator.validate(upd.key(), upd.value(), defOpt.get());
             }
 
-            pending.add(new PendingUpdate(entity, upd.value(), upd.valueEn()));
+            pending.add(new PendingUpdate(entity, upd.value(), upd.valueEn(), upd.enLocked()));
         }
 
         // Phase 2: apply mutations — all validation has passed
@@ -208,6 +211,9 @@ public class AdminSettingsService {
             }
             if (p.newValueEn() != null) {
                 entity.setSettingValueEn(p.newValueEn().isBlank() ? null : p.newValueEn());
+            }
+            if (p.newEnLocked() != null) {
+                entity.setEnLocked(p.newEnLocked());
             }
             entity.setUpdatedAt(Instant.now());
             settingRepo.save(entity);
@@ -302,7 +308,7 @@ public class AdminSettingsService {
                 masked ? null : s.getSettingValueEn(),
                 s.getSettingGroup(), s.isPublic(), s.getDescription(),
                 s.getCreatedAt(), s.getUpdatedAt(),
-                valueType, sensitive, masked, superAdminOnly
+                valueType, sensitive, masked, superAdminOnly, s.isEnLocked()
         );
     }
 

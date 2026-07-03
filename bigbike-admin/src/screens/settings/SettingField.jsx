@@ -4,6 +4,7 @@ import { RichTextEditor } from '../../components/RichTextEditor'
 import { ImageUrlInput } from '../../components/ImageUrlInput'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
+import { useContentLang } from '../../lib/contentLang'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -12,13 +13,21 @@ import {
   KEY_LABELS_VI, KEY_HINTS_VI, KEY_RECO,
 } from './constants'
 
-export function SettingField({ setting, where, canUpdate, draft, draftEn, error, onChange, onChangeEn, onBlur }) {
+export function SettingField({
+  setting, where, canUpdate, draft, draftEn, error, onChange, onChangeEn, onBlur, enLocked, onLockField,
+}) {
   const { t } = useTranslation()
+  const contentLang = useContentLang()
+  const translatable = isTranslatableSetting(setting)
+  // Non-translatable settings (image/number/phone/boolean/bank…) always show their one Vietnamese
+  // value regardless of the admin topbar VI/EN toggle — same as Product's price/SKU fields, which
+  // have no translation at all.
+  const isEnLang = translatable && contentLang === 'en'
+
   const rawValue = displayValue(setting.value)
   const currentValue = draft !== undefined ? draft : rawValue
   const rawValueEn = displayValue(setting.valueEn)
   const currentValueEn = draftEn !== undefined ? draftEn : rawValueEn
-  const translatable = isTranslatableSetting(setting)
   const isDirty = (draft !== undefined && draft !== rawValue) || (draftEn !== undefined && draftEn !== rawValueEn)
   const isHtml = setting.valueType === 'HTML'
   const isImage = setting.valueType === 'IMAGE_URL'
@@ -26,12 +35,30 @@ export function SettingField({ setting, where, canUpdate, draft, draftEn, error,
   const isBoolean = setting.valueType === 'BOOLEAN'
   const isNumber = setting.valueType === 'INTEGER' || setting.valueType === 'DECIMAL' || setting.valueType === 'MONEY'
   const type = isNumber ? 'number' : inputTypeFor(setting.key)
-  const placeholder = placeholderFor(setting.key)
+  const placeholder = isEnLang
+    ? t('settings.englishPlaceholder')
+    : (placeholderFor(setting.key) || (rawValue ? '' : t('settings.empty')))
   const label = KEY_LABELS_VI[setting.key] || setting.description || setting.key
   // Id ổn định để liên kết nhãn ↔ ô nhập (click nhãn focus ô, screen reader đọc tên nhãn).
   const controlId = `setting-${setting.key}`
   const labelId = `label-${setting.key}`
   const errorId = `err-${setting.key}`
+
+  // Ô DUY NHẤT đổi theo nút VI/EN ở header admin (mirror ProductDetailScreen langValue/langChange).
+  // Gõ tay lúc đang xem EN → khoá field đó, lần lưu sau không tự dịch đè (V309).
+  const activeValue = isEnLang ? currentValueEn : currentValue
+  const activeRawValue = isEnLang ? rawValueEn : rawValue
+  function handleActiveChange(value) {
+    if (isEnLang) {
+      onChangeEn(setting.key, value)
+      onLockField?.(setting.key)
+    } else {
+      onChange(setting.key, value)
+    }
+  }
+  function handleActiveBlur(value) {
+    if (!isEnLang) onBlur?.(setting.key, value)
+  }
 
   return (
     <div className="form-field">
@@ -60,9 +87,9 @@ export function SettingField({ setting, where, canUpdate, draft, draftEn, error,
       {canUpdate ? (
         isHtml ? (
           <RichTextEditor
-            value={currentValue}
-            onChange={(html) => onChange(setting.key, html)}
-            placeholder={t('settings.htmlPlaceholder')}
+            value={activeValue}
+            onChange={(html) => handleActiveChange(html)}
+            placeholder={isEnLang ? t('settings.englishPlaceholder') : t('settings.htmlPlaceholder')}
             hasError={Boolean(error)}
             enableImagePicker
           />
@@ -83,10 +110,10 @@ export function SettingField({ setting, where, canUpdate, draft, draftEn, error,
             id={controlId}
             className={error ? 'border-danger' : undefined}
             rows={3}
-            value={currentValue}
-            placeholder={placeholder || (rawValue ? '' : t('settings.empty'))}
-            onChange={(e) => onChange(setting.key, e.target.value)}
-            onBlur={(e) => onBlur?.(setting.key, e.target.value)}
+            value={activeValue}
+            placeholder={placeholder}
+            onChange={(e) => handleActiveChange(e.target.value)}
+            onBlur={(e) => handleActiveBlur(e.target.value)}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? errorId : undefined}
           />
@@ -107,10 +134,10 @@ export function SettingField({ setting, where, canUpdate, draft, draftEn, error,
             type={type}
             inputMode={type === 'number' ? 'numeric' : undefined}
             step={setting.valueType === 'DECIMAL' ? 'any' : undefined}
-            value={currentValue}
-            placeholder={placeholder || (rawValue ? '' : t('settings.empty'))}
-            onChange={(e) => onChange(setting.key, e.target.value)}
-            onBlur={(e) => onBlur?.(setting.key, e.target.value)}
+            value={activeValue}
+            placeholder={placeholder}
+            onChange={(e) => handleActiveChange(e.target.value)}
+            onBlur={(e) => handleActiveBlur(e.target.value)}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? errorId : undefined}
           />
@@ -119,7 +146,7 @@ export function SettingField({ setting, where, canUpdate, draft, draftEn, error,
         <div
           className="text-sm"
           style={{ padding: '8px 12px', background: 'var(--admin-color-surface-muted)', borderRadius: 7 }}
-          dangerouslySetInnerHTML={{ __html: sanitizeHtml(rawValue) || `<em>${t('settings.htmlEmpty')}</em>` }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(activeRawValue) || `<em>${t('settings.htmlEmpty')}</em>` }}
         />
       ) : isImage && rawValue ? (
         <img src={rawValue} alt="" style={{ maxWidth: 240, borderRadius: 8 }} loading="lazy" />
@@ -128,35 +155,12 @@ export function SettingField({ setting, where, canUpdate, draft, draftEn, error,
           className="text-sm"
           style={{ padding: '8px 12px', background: 'var(--admin-color-surface-muted)', borderRadius: 7 }}
         >
-          {rawValue || <em className="muted">{t('settings.valueEmpty')}</em>}
+          {activeRawValue || <em className="muted">{t('settings.valueEmpty')}</em>}
         </div>
       )}
 
-      {canUpdate && translatable && (
-        <div style={{ marginTop: 8 }}>
-          <span className="hint" style={{ display: 'block', marginBottom: 4 }}>{t('settings.englishLabel')}</span>
-          {isHtml ? (
-            <RichTextEditor
-              value={currentValueEn}
-              onChange={(html) => onChangeEn(setting.key, html)}
-              placeholder={t('settings.englishPlaceholder')}
-              enableImagePicker
-            />
-          ) : isLongText ? (
-            <Textarea
-              rows={3}
-              value={currentValueEn}
-              placeholder={t('settings.englishPlaceholder')}
-              onChange={(e) => onChangeEn(setting.key, e.target.value)}
-            />
-          ) : (
-            <Input
-              value={currentValueEn}
-              placeholder={t('settings.englishPlaceholder')}
-              onChange={(e) => onChangeEn(setting.key, e.target.value)}
-            />
-          )}
-        </div>
+      {isEnLang && enLocked && (
+        <span className="hint" style={{ display: 'block', marginTop: 4 }}>{t('settings.englishLocked')}</span>
       )}
 
       {error && (

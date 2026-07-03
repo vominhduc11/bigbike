@@ -186,7 +186,9 @@ public class AdminCatalogReadService {
 
     private static boolean matchesVisibility(boolean isVisible, String visibilityRaw) {
         if (visibilityRaw == null || visibilityRaw.isBlank()) {
-            return true;
+            // No explicit filter: default list excludes soft-deleted/hidden brands,
+            // mirroring Category's `deleted = false` default and Product's `!= TRASH` default.
+            return isVisible;
         }
         if ("VISIBLE".equals(visibilityRaw)) {
             return isVisible;

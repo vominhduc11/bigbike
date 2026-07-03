@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { resolveDisplayUrl } from '@/lib/contracts'
+import { evaluateImageDimensions } from '@/lib/imageRecommendations'
 
 const IDLE = { status: 'idle', width: 0, height: 0 }
 
@@ -53,4 +54,20 @@ export function useVideoDimensions(url) {
   }, [trimmed])
 
   return dims
+}
+
+// Đo kích thước thật của một ảnh/video rồi so với spec khuyến nghị (imageRecommendations.js).
+// Dùng để CHẶN chọn/lưu ở picker — không chỉ cảnh báo. `status` là trạng thái đo kích thước
+// ('idle'|'loading'|'loaded'|'error'); `blocked` chỉ có ý nghĩa khi status === 'loaded'.
+export function useMediaValidation(kind, url, recommend) {
+  const shouldCheck = Boolean(recommend && url)
+  const imageDims = useImageDimensions(kind !== 'video' && shouldCheck ? url : '')
+  const videoDims = useVideoDimensions(kind === 'video' && shouldCheck ? url : '')
+  const dims = kind === 'video' ? videoDims : imageDims
+
+  if (!shouldCheck) return { status: 'idle', blocked: false, reasons: null, width: 0, height: 0 }
+  if (dims.status !== 'loaded') return { ...dims, blocked: false, reasons: null }
+
+  const reasons = evaluateImageDimensions(dims.width, dims.height, recommend)
+  return { status: 'loaded', blocked: Boolean(reasons), reasons, width: dims.width, height: dims.height }
 }

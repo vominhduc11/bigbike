@@ -7,10 +7,12 @@ import {
 import { MediaPickerModal } from './MediaPickerModal'
 import { VideoPickerModal } from './VideoPickerModal'
 import { SortableList } from './Sortable'
+import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { cn, generateId } from '@/lib/utils'
 import { CONTENT_MENU, PRODUCT_MENU, createBlock } from './block-editor/constants'
 import { BlockCard } from './block-editor/blocks'
 import { showConfirm } from '@/lib/confirm'
+import { useMediaAltSyncList } from '@/lib/useMediaAltSync'
 
 const BLOCK_META_KEYS = new Set(['_key', 'type', 'level', 'style', 'side', 'variant', 'provider'])
 
@@ -49,6 +51,7 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
 
   const [mediaPickerIndex, setMediaPickerIndex] = useState(null)
   const [videoPickerIndex, setVideoPickerIndex] = useState(null)
+  const getMediaAltSync = useMediaAltSyncList()
 
   function addBlock(type, preset) {
     onChange([...blocks, createBlock(type, preset)])
@@ -111,6 +114,7 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
             onDuplicate={() => duplicateBlock(index)}
             onPickImage={() => setMediaPickerIndex(index)}
             onPickVideo={() => setVideoPickerIndex(index)}
+            onAltBlur={(value) => getMediaAltSync(index).flushAltSync(value)}
           />
         )}
       />
@@ -132,8 +136,11 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
 
       {mediaPickerIndex !== null && (
         <MediaPickerModal
-          onSelect={(url) => {
-            updateBlock(mediaPickerIndex, { url })
+          recommend={blocks[mediaPickerIndex]?.type === 'feature' ? IMAGE_RECO.featureImage : IMAGE_RECO.general}
+          kind="image"
+          onSelect={(url, media) => {
+            const alt = getMediaAltSync(mediaPickerIndex).pickAlt(blocks[mediaPickerIndex]?.alt, media)
+            updateBlock(mediaPickerIndex, { url, alt })
             setMediaPickerIndex(null)
           }}
           onClose={() => setMediaPickerIndex(null)}
@@ -142,6 +149,7 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
 
       {videoPickerIndex !== null && (
         <VideoPickerModal
+          recommend={IMAGE_RECO.contentVideo}
           onSelect={(url) => {
             updateBlock(videoPickerIndex, { url, provider: 'upload' })
             setVideoPickerIndex(null)

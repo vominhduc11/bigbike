@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { GripVertical } from 'lucide-react'
 import { MediaPickerModal } from '../../components/MediaPickerModal'
 import { VideoPickerModal } from '../../components/VideoPickerModal'
-import { MediaDimensionWarning } from '../../components/MediaDimensionWarning'
+import { MediaRequirementHint } from '../../components/MediaRequirementHint'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
 import { RichTextEditor } from '../../components/RichTextEditor'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
@@ -19,6 +19,7 @@ import { showConfirm } from '../../lib/confirm'
 import { parseSpecsFromHtml, mergeSpecsIntoHtml } from '../../lib/specSheet'
 import { resolveDisplayUrl } from '@/lib/contracts'
 import { extractYouTubeId } from './constants'
+import { useMediaAltSync, useMediaAltSyncList } from '@/lib/useMediaAltSync'
 
 export function IconChevronDown() {
   return (
@@ -40,6 +41,7 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
   const { t } = useTranslation()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [videoPickerOpen, setVideoPickerOpen] = useState(false)
+  const { pickAlt, flushAltSync } = useMediaAltSync()
   const isVideo = item.mediaType === 'video'
   const trimmed = (item.url || '').trim()
   const displayUrl = resolveDisplayUrl(trimmed)
@@ -140,6 +142,7 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
             placeholder={t('products.detail.gallery.altPlaceholder')}
             value={item.alt || ''}
             onChange={(e) => onUpdate('alt', e.target.value)}
+            onBlur={(e) => flushAltSync(e.target.value)}
             disabled={disabled}
             aria-label={t('products.detail.gallery.altAriaLabel')}
           />
@@ -147,7 +150,13 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
         </div>
         {pickerOpen && (
           <MediaPickerModal
-            onSelect={(url) => { onUpdate('url', url); setPickerOpen(false) }}
+            recommend={IMAGE_RECO.productImage}
+            kind="image"
+            onSelect={(url, media) => {
+              onUpdate('url', url)
+              onUpdate('alt', pickAlt(item.alt, media))
+              setPickerOpen(false)
+            }}
             onClose={() => setPickerOpen(false)}
           />
         )}
@@ -220,15 +229,21 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
             placeholder={t('products.detail.gallery.altPlaceholder')}
             value={item.alt || ''}
             onChange={(e) => onUpdate('alt', e.target.value)}
+            onBlur={(e) => flushAltSync(e.target.value)}
             disabled={disabled}
             aria-label={t('products.detail.gallery.altAriaLabel')}
           />
           {urlError && <small className="field-error">{urlError}</small>}
-          {trimmed && <MediaDimensionWarning url={item.url} recommend={IMAGE_RECO.productImage} kind="image" />}
       </div>
       {pickerOpen && (
         <MediaPickerModal
-          onSelect={(url) => { onUpdate('url', url); setPickerOpen(false) }}
+          recommend={IMAGE_RECO.productImage}
+          kind="image"
+          onSelect={(url, media) => {
+            onUpdate('url', url)
+            onUpdate('alt', pickAlt(item.alt, media))
+            setPickerOpen(false)
+          }}
           onClose={() => setPickerOpen(false)}
         />
       )}
@@ -260,7 +275,7 @@ export function GalleryEditor({ items, onChange, disabled, validationErrors = {}
 
   return (
     <div className="gallery-editor">
-      <p className="text-xs text-muted-foreground mb-2">{t('products.detail.gallery.sizeHint')}</p>
+      <MediaRequirementHint recommend={IMAGE_RECO.productImage} className="mb-2" />
       <SortableList
         items={items}
         getId={(it) => it._key}
@@ -304,6 +319,7 @@ export function GalleryEditor({ items, onChange, disabled, validationErrors = {}
 export function VideoEditor({ items, onChange, disabled, validationErrors = {} }) {
   const { t } = useTranslation()
   const [pickerOpenIndex, setPickerOpenIndex] = useState(null)
+  const getMediaAltSync = useMediaAltSyncList()
 
   function updateItem(index, patch) {
     onChange(items.map((item, i) => i === index ? { ...item, ...patch } : item))
@@ -452,6 +468,7 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
                 placeholder={t('products.detail.video.titlePlaceholder')}
                 value={item.title || ''}
                 onChange={(e) => updateItem(index, { title: e.target.value })}
+                onBlur={(e) => getMediaAltSync(index).flushAltSync(e.target.value)}
                 disabled={disabled}
               />
               <Input
@@ -479,8 +496,9 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
       </Button>
       {pickerOpenIndex !== null && (
         <VideoPickerModal
-          onSelect={(url) => {
-            updateItem(pickerOpenIndex, { url, type: 'upload' })
+          onSelect={(url, media) => {
+            const title = getMediaAltSync(pickerOpenIndex).pickAlt(items[pickerOpenIndex]?.title, media)
+            updateItem(pickerOpenIndex, { url, type: 'upload', title })
             setPickerOpenIndex(null)
           }}
           onClose={() => setPickerOpenIndex(null)}

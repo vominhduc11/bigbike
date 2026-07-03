@@ -595,7 +595,6 @@
         "altPlaceholder": "Image description for SEO/accessibility (not visible text)",
         "altAriaLabel": "Image description for SEO and accessibility",
         "addImage": "Add image",
-        "sizeHint": "Use square images, at least 1000×1000px (ideally 1200×1200px). Non-square images get white bars, and small images look blurry when customers zoom in on the website.",
         "dragToReorder": "Drag to reorder (the first image becomes the cover)"
       },
       "video": {
@@ -885,8 +884,18 @@
       },
       "duplicateSuccess": "Copied from \"{{name}}\". Please provide a new name and slug.",
       "productFallbackName": "product",
-      "previewTitle": "Preview product page (new tab)",
-      "preview": "Preview",
+      "preview": {
+        "open": "Preview",
+        "title": "Product page preview",
+        "invalid": "Can't preview yet — check the required fields (e.g. category, slug).",
+        "desktop": "Desktop",
+        "mobile": "Mobile"
+      },
+      "serpPreview": "Google search preview",
+      "serpTitleFallback": "Product title on Google",
+      "serpDescFallback": "Short product description will appear here.",
+      "seoChecklist": "SEO checklist",
+      "seoCheckTitle": "SEO title 30–60 characters",
       "slugHint": "Lowercase letters a-z, digits 0-9, and hyphens only. Auto-generated from product name.",
       "slugHintEn": "English URL slug (optional) — leave empty to use the Vietnamese URL.",
       "contentLanguage": "Content language",
@@ -1474,13 +1483,6 @@
       "seoOgImageUrlHint": "Social share image, 1200×630px.",
       "seoOgImageAlt": "OG image alt text",
       "serpPreview": "Google search preview",
-      "preview": {
-        "open": "Preview",
-        "title": "Product page preview",
-        "invalid": "Can't preview yet — check the required fields (e.g. category, slug).",
-        "desktop": "Desktop",
-        "mobile": "Mobile"
-      },
       "serpTitleFallback": "Page title on Google",
       "serpDescFallback": "Short description will appear here.",
       "seoChecklist": "SEO checklist",
@@ -1711,7 +1713,7 @@
       "dialogLabel": "Select image from library",
       "dropToUpload": "Drop images to upload",
       "title": "Image library",
-      "sizeHint": "Depends on where it's used: product images should be square ≥ 1000px, wide banners ≥ 1920px, logos on transparent PNG ~400px. Images too small or wrong-ratio look blurry/distorted on the website.",
+      "sizeHint": "Destination unknown here — open the upload field on the actual screen to see the minimum size required.",
       "multiMode": "Multi-select",
       "editInfo": "Edit image info",
       "uploadTitle": "Drag and drop images here or click to choose files",
@@ -1986,8 +1988,8 @@
     "boolOn": "On",
     "boolOff": "Off",
     "valueEmpty": "No value yet",
-    "englishLabel": "English (optional)",
     "englishPlaceholder": "Leave blank to fall back to the Vietnamese value when viewing in English",
+    "englishLocked": "Locked — manually edited by an admin; auto-translate will no longer overwrite this field.",
     "unsavedCount": "{{count}} unsaved changes",
     "saveCount": "Save ({{count}})",
     "confirmSaveTitle": "Confirm saving settings",
@@ -2503,7 +2505,6 @@
       "next": "Next ?",
       "pageInfo": "Page {{page}} / {{totalPages}}",
       "selectHint": "Choose a video to use",
-      "sizeHint": "Use 16:9 videos, at least 1280×720px",
       "confirm": "Use this video"
     }
   },
@@ -2517,11 +2518,13 @@
     "previewAlt": "Image preview"
   },
   "mediaReco": {
-    "tooSmall": "Image is a bit small ({{w}}×{{h}}px) — use around {{rw}}×{{rh}}px or larger so it isn't blurry on the website.",
-    "wrongRatio": "Image ratio doesn't match the display frame ({{w}}×{{h}}px) — aim for around {{rw}}×{{rh}}px, otherwise the website may crop it or add bars.",
-    "videoTooSmall": "Video is a bit small ({{w}}×{{h}}px) — use around {{rw}}×{{rh}}px or larger for a sharp result on the website.",
-    "videoWrongRatio": "Video ratio is off ({{w}}×{{h}}px) — use 16:9 (e.g. {{rw}}×{{rh}}px) to avoid black bars.",
-    "uploadGuide": "Mind the size per use: product images should be square ≥ 1000×1000px; wide banners ≥ 1920×600px; logos on transparent PNG ~400×200px; videos 16:9 ≥ 1280×720px. Images that are too small or wrong-ratio look blurry/distorted on the website."
+    "requirementSize": "Minimum required: {{w}}×{{h}}px",
+    "requirementRatio": " (ratio {{rw}}:{{rh}})",
+    "tooSmall": "This image ({{w}}×{{h}}px) is smaller than the required minimum {{rw}}×{{rh}}px — it can't be selected, please use a larger image.",
+    "wrongRatio": "This image ({{w}}×{{h}}px) doesn't match the required ratio (need around {{rw}}×{{rh}}px) — it can't be selected, the website would crop it or add bars.",
+    "videoTooSmall": "This video ({{w}}×{{h}}px) is smaller than the required minimum {{rw}}×{{rh}}px — it can't be selected, please use a larger video.",
+    "videoWrongRatio": "This video ({{w}}×{{h}}px) doesn't match the required ratio (need around {{rw}}×{{rh}}px) — it can't be selected.",
+    "uploadGuide": "The minimum size differs per location (product image, banner, logo, video...) — each upload field shows its own requirement. Images/videos that don't meet it are rejected and won't save."
   },
   "guideBuilder": {
     "description": "Manage the /huong-dan landing page: edit the hero, add or remove guide cards, change icons, titles and descriptions, reorder and show/hide. The detailed body of each card is still edited in Content → Pages.",

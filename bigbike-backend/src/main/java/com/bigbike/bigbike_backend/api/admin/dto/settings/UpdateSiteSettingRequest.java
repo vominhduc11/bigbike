@@ -11,5 +11,7 @@ public record UpdateSiteSettingRequest(
         String group,
         Boolean isPublic,
         @Size(max = 1000)
-        String description
+        String description,
+        /** Null = leave the stored lock unchanged (V309, mirrors products.enOverrides presence-flag). */
+        Boolean enLocked
 ) {}

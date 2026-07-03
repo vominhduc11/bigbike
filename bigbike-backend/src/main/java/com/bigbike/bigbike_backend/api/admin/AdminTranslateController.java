@@ -23,9 +23,9 @@ import org.springframework.web.bind.annotation.RestController;
  * key baked into the browser bundle (exposed to anyone). Now the admin posts the fields it
  * wants translated here, and the backend forwards them to Gemini using a SERVER-SIDE key.
  *
- * <p>Used by every bilingual editor (products, categories, brands, articles), so it accepts
- * any content-write permission. A blank/failed translation returns an empty map — the admin
- * then keeps the existing English rather than wiping it.
+ * <p>Used by every bilingual editor (products, categories, brands, articles, settings), so it
+ * accepts any content-write permission. A blank/failed translation returns an empty map — the
+ * admin then keeps the existing English rather than wiping it.
  */
 @Validated
 @RestController
@@ -35,7 +35,7 @@ public class AdminTranslateController extends AdminControllerSupport {
 
     /** Any of these write permissions may use the shared translation utility. */
     private static final List<String> TRANSLATE_PERMISSIONS =
-            List.of("products.update", "catalog.update", "content.update");
+            List.of("products.update", "catalog.update", "content.update", "settings.write");
 
     // Interactive (per-save) translate: disable "thinking" like the backfill does — it burns output
     // budget/latency for no quality gain on this prompt — and force the string schema so quote-heavy

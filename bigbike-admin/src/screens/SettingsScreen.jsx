@@ -6,12 +6,14 @@ import { StatePanel } from '../components/StatePanel'
 import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { fetchSettings, batchUpdateSettings } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
+import { toast } from '../lib/toast'
+import { translateSettingsForm } from '../lib/geminiTranslate'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { useSaveShortcut } from '@/lib/useSaveShortcut'
 import { formatDateTime } from '../lib/formatters'
 import { lazyScreen } from '../lib/lazyScreen'
 import {
-  validateValue, TAB_ORDER, SENSITIVE_SETTING_TABS, HIDDEN_GROUPS, HIDDEN_KEYS,
+  validateValue, isTranslatableSetting, TAB_ORDER, SENSITIVE_SETTING_TABS, HIDDEN_GROUPS, HIDDEN_KEYS,
   TAB_META, FALLBACK_META, tabLabel, BANNERS_TAB_ID,
   getAutosaveKey, saveFormToStorage, loadFormFromStorage, clearFormFromStorage,
 } from './settings/constants'
@@ -31,6 +33,9 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
   const [drafts, setDrafts] = useState({})
   const [draftsEn, setDraftsEn] = useState({})
   const [errors, setErrors] = useState({})
+  // Khoá dịch tay theo từng setting key (V309) — nạp từ server lúc tải, cộng dồn khoá mới
+  // trong phiên khi admin gõ tay vào ô tiếng Anh (xem SettingField.onLockField).
+  const [enLocked, setEnLocked] = useState({})
   const [saving, setSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
 
@@ -45,6 +50,14 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
       .then((r) => {
         if (!active) return
         setState({ status: 'success', items: r.items, warning: '' })
+        // Nạp khoá dịch tay từ server; giữ nguyên khoá mới bật trong phiên (nếu fetch lại do retry).
+        setEnLocked((prev) => {
+          const next = { ...prev }
+          for (const item of r.items) {
+            if (!(item.key in next)) next[item.key] = Boolean(item.enLocked)
+          }
+          return next
+        })
         // Bản nháp autosave còn dở từ phiên trước → gợi ý khôi phục.
         const draft = loadFormFromStorage(autosaveKey)
         const hasDraftValues = draft?.form && (
@@ -123,6 +136,11 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
     setErrors((p) => ({ ...p, [key]: err ? t(err) : '' }))
   }, [t])
 
+  // Gõ tay vào ô tiếng Anh (đang xem EN) → khoá field đó, lần lưu sau không tự dịch đè (V309).
+  const handleLockField = useCallback((key) => {
+    setEnLocked((p) => (p[key] ? p : { ...p, [key]: true }))
+  }, [])
+
   const handleDiscard = useCallback(() => {
     const keys = activeItems.map((s) => s.key)
     const dropKeys = (obj) => {
@@ -133,6 +151,12 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
     setDrafts(dropKeys)
     setDraftsEn(dropKeys)
     setErrors(dropKeys)
+    // Huỷ thao tác — khoá chưa lưu cũng trả về đúng trạng thái server.
+    setEnLocked((p) => {
+      const n = { ...p }
+      activeItems.forEach((s) => { n[s.key] = Boolean(s.enLocked) })
+      return n
+    })
   }, [activeItems])
 
   const handleSave = useCallback(async () => {
@@ -160,12 +184,39 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
 
     setSaving(true)
     setSaveSuccess(false)
+
+    // Tự động dịch VI→EN ngầm cho các setting dịch-được CHƯA bị khoá tay trước khi lưu
+    // (TRANSLATION_RULE_001, mirror ProductDetailScreen.handleSave) — ô đã khoá (V309) giữ
+    // nguyên bản tiếng Anh admin đã sửa.
+    let effectiveDraftsEn = draftsEn
+    const translatableDirty = dirty.filter((s) => isTranslatableSetting(s) && !enLocked[s.key])
+    if (translatableDirty.length > 0) {
+      const toastId = toast.loading('Đang tự động dịch sang tiếng Anh...')
+      try {
+        const candidates = translatableDirty.map((s) => ({
+          key: s.key,
+          viValue: drafts[s.key] !== undefined ? drafts[s.key] : s.value,
+          enValue: draftsEn[s.key] !== undefined ? draftsEn[s.key] : s.valueEn,
+          viChanged: drafts[s.key] !== undefined && drafts[s.key] !== (s.value ?? ''),
+        }))
+        const translated = await translateSettingsForm(candidates)
+        if (Object.keys(translated).length > 0) {
+          effectiveDraftsEn = { ...draftsEn, ...translated }
+          setDraftsEn(effectiveDraftsEn)
+        }
+        toast.success('Đã tự động dịch sang tiếng Anh!', { id: toastId })
+      } catch (err) {
+        console.error('Auto-translate error:', err)
+        toast.error('Tự động dịch tiếng Anh thất bại, vẫn tiến hành lưu...', { id: toastId })
+      }
+    }
+
     try {
       const result = await batchUpdateSettings(
         dirty.map((s) => {
-          const u = { key: s.key }
+          const u = { key: s.key, enLocked: Boolean(enLocked[s.key]) }
           if (drafts[s.key] !== undefined) u.value = drafts[s.key]
-          if (draftsEn[s.key] !== undefined) u.valueEn = draftsEn[s.key]
+          if (effectiveDraftsEn[s.key] !== undefined) u.valueEn = effectiveDraftsEn[s.key]
           return u
         })
       )
@@ -189,7 +240,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
       // F9: đã lưu — cập nhật bản nháp autosave (xoá hẳn nếu mọi tab hết dirty,
       // ghi lại phần còn dở của các tab khác nếu còn).
       const remainingDrafts = dropSaved(drafts)
-      const remainingDraftsEn = dropSaved(draftsEn)
+      const remainingDraftsEn = dropSaved(effectiveDraftsEn)
       if (Object.keys(remainingDrafts).length === 0 && Object.keys(remainingDraftsEn).length === 0) {
         clearFormFromStorage(autosaveKey)
       } else {
@@ -203,7 +254,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
     } finally {
       setSaving(false)
     }
-  }, [activeItems, drafts, draftsEn, activeTab, autosaveKey, t])
+  }, [activeItems, drafts, draftsEn, enLocked, activeTab, autosaveKey, t])
 
   // F6: cảnh báo khi rời màn Cài đặt lúc còn thay đổi chưa lưu (chặn điều hướng
   // nội bộ qua navigate + beforeunload reload/đóng tab). Đổi tab nội bộ KHÔNG mất
@@ -366,9 +417,11 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                 drafts={drafts}
                 draftsEn={draftsEn}
                 errors={errors}
+                enLocked={enLocked}
                 onDraftChange={handleDraftChange}
                 onDraftChangeEn={handleDraftChangeEn}
                 onDraftBlur={handleDraftBlur}
+                onLockField={handleLockField}
                 onSave={handleSave}
                 onDiscard={handleDiscard}
                 saving={saving}

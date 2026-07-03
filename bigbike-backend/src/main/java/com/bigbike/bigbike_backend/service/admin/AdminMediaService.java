@@ -70,6 +70,13 @@ public class AdminMediaService {
     private static final long MAX_UPLOAD_BYTES = 200L * 1024 * 1024; // 200 MB
     private static final String MINIO_PROVIDER = "MINIO";
     static final String MEDIA_PATH_PREFIX = "/media/";
+    // Sàn kích thước tối thiểu áp dụng cho MỌI ảnh raster upload — phòng vệ server-side, không
+    // thay cho validate theo từng vị trí (xem bigbike-admin/src/lib/imageRecommendations.js).
+    // = giá trị minW/minH NHỎ NHẤT trong toàn bộ bảng IMAGE_RECO (categoryImage 520, videoThumb
+    // 500 theo chiều rộng; logo 400 theo chiều cao) — không chặn nhầm ảnh hợp lệ cho bất kỳ vị trí
+    // nào, chỉ chặn ảnh quá nhỏ cho MỌI vị trí (upload trực tiếp qua API, bỏ qua UI admin).
+    private static final int MIN_UPLOAD_WIDTH = 500;
+    private static final int MIN_UPLOAD_HEIGHT = 400;
 
     private final MediaJpaRepository mediaRepo;
     private final AuditLogWriter auditLogWriter;
@@ -105,6 +112,29 @@ public class AdminMediaService {
             bytes = SvgSanitizer.sanitize(bytes);
         }
 
+        // Extract + reject too-small raster images BEFORE writing to MinIO — a rejected upload
+        // must not leave an orphaned object in storage. SVG (vector) and WEBP (unsupported by the
+        // JDK's built-in ImageIO plugins) can't be measured here and skip this floor; per-field
+        // precision (exact size + ratio) is enforced client-side in bigbike-admin instead.
+        Integer width = null;
+        Integer height = null;
+        if (RASTER_IMAGE_TYPES.contains(mimeType)) {
+            try {
+                BufferedImage img = ImageIO.read(new java.io.ByteArrayInputStream(bytes));
+                if (img != null) {
+                    width = img.getWidth();
+                    height = img.getHeight();
+                }
+            } catch (IOException e) {
+                log.warn("Could not extract image dimensions for {}: {}", file.getOriginalFilename(), e.getMessage());
+            }
+            if (width != null && height != null && (width < MIN_UPLOAD_WIDTH || height < MIN_UPLOAD_HEIGHT)) {
+                throw ValidationException.fromField("file", "IMAGE_TOO_SMALL",
+                        "Image is too small (" + width + "x" + height + "px). Minimum is "
+                                + MIN_UPLOAD_WIDTH + "x" + MIN_UPLOAD_HEIGHT + "px.");
+            }
+        }
+
         String safeFilename = sanitizeFilename(file.getOriginalFilename());
         String objectKey = "uploads/" + UUID.randomUUID() + "/" + safeFilename;
         String bucket = minioProperties.getBucket();
@@ -123,21 +153,6 @@ public class AdminMediaService {
 
         // Relative public URL — clients rewrite via /media/* proxy
         String publicUrl = MEDIA_PATH_PREFIX + objectKey;
-
-        // Extract image dimensions for raster types
-        Integer width = null;
-        Integer height = null;
-        if (RASTER_IMAGE_TYPES.contains(mimeType)) {
-            try {
-                BufferedImage img = ImageIO.read(new java.io.ByteArrayInputStream(bytes));
-                if (img != null) {
-                    width = img.getWidth();
-                    height = img.getHeight();
-                }
-            } catch (IOException e) {
-                log.warn("Could not extract image dimensions for {}: {}", safeFilename, e.getMessage());
-            }
-        }
 
         // Generate responsive variants (thumb/medium/large) and store paths in `sizes` JSON
         Map<String, String> variants = imageVariantService.generateAndUpload(bytes, objectKey, mimeType);
@@ -204,6 +219,21 @@ public class AdminMediaService {
             bytes = SvgSanitizer.sanitize(bytes);
         }
 
+        // Extract + reject too-small raster images BEFORE overwriting storage (same floor as
+        // uploadMedia — see MIN_UPLOAD_WIDTH/HEIGHT).
+        Integer width = null, height = null;
+        if (RASTER_IMAGE_TYPES.contains(newMime)) {
+            try {
+                BufferedImage img = ImageIO.read(new java.io.ByteArrayInputStream(bytes));
+                if (img != null) { width = img.getWidth(); height = img.getHeight(); }
+            } catch (IOException ignored) {}
+            if (width != null && height != null && (width < MIN_UPLOAD_WIDTH || height < MIN_UPLOAD_HEIGHT)) {
+                throw ValidationException.fromField("file", "IMAGE_TOO_SMALL",
+                        "Image is too small (" + width + "x" + height + "px). Minimum is "
+                                + MIN_UPLOAD_WIDTH + "x" + MIN_UPLOAD_HEIGHT + "px.");
+            }
+        }
+
         String before = snapshot(media);
         String objectKey = media.getFilePath();
         String bucket = media.getBucket() != null ? media.getBucket() : minioProperties.getBucket();
@@ -219,15 +249,6 @@ public class AdminMediaService {
                             .build());
         } catch (Exception e) {
             throw new IllegalStateException("Failed to overwrite file in storage: " + e.getMessage(), e);
-        }
-
-        // Re-extract dimensions for raster types
-        Integer width = null, height = null;
-        if (RASTER_IMAGE_TYPES.contains(newMime)) {
-            try {
-                BufferedImage img = ImageIO.read(new java.io.ByteArrayInputStream(bytes));
-                if (img != null) { width = img.getWidth(); height = img.getHeight(); }
-            } catch (IOException ignored) {}
         }
 
         // Old variants are stale — remove them, then regenerate

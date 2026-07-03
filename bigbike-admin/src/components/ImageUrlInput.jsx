@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MediaPickerModal } from './MediaPickerModal'
-import { MediaDimensionWarning } from './MediaDimensionWarning'
+import { MediaRequirementHint } from './MediaRequirementHint'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { resolveDisplayUrl } from '@/lib/contracts'
+import { useMediaAltSync } from '@/lib/useMediaAltSync'
 
 function IconLibrary() {
   return (
@@ -43,6 +44,7 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, err
   const { t } = useTranslation()
   const [pickerOpen, setPickerOpen] = useState(false)
   const hasImage = Boolean(value?.trim())
+  const { pickAlt, flushAltSync } = useMediaAltSync()
 
   return (
     <div className="image-url-input">
@@ -67,14 +69,15 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, err
         )}
       </div>
       {error && <small className="field-error">{error}</small>}
+      <MediaRequirementHint recommend={recommend} className="mt-1 text-xs text-muted-foreground" />
       <ImagePreview url={value} />
-      {hasImage && recommend && <MediaDimensionWarning url={value} recommend={recommend} kind="image" />}
       {hasImage && onAltChange !== undefined && (
         <Input
           type="text"
           placeholder={t('imageInput.altPlaceholder')}
           value={alt ?? ''}
           onChange={(e) => onAltChange(e.target.value)}
+          onBlur={(e) => flushAltSync(e.target.value)}
           disabled={disabled}
           maxLength={255}
           className="mt-2"
@@ -82,7 +85,15 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, err
       )}
       {pickerOpen && (
         <MediaPickerModal
-          onSelect={(url) => { onChange(url); setPickerOpen(false) }}
+          recommend={recommend}
+          kind="image"
+          onSelect={(url, media) => {
+            // 2nd arg forwarded so callers with their own decoupled alt field
+            // (no onAltChange/no built-in alt UI here) can still prefill/sync it.
+            onChange(url, media)
+            if (onAltChange !== undefined) onAltChange(pickAlt(alt, media))
+            setPickerOpen(false)
+          }}
           onClose={() => setPickerOpen(false)}
         />
       )}

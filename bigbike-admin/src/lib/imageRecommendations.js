@@ -1,46 +1,75 @@
-// Khuyến nghị kích thước ảnh/video cho từng vị trí hiển thị trên web.
+// Khuyến nghị + NGƯỠNG CHẶN kích thước ảnh/video cho từng vị trí hiển thị trên bigbike-web.
 //
-// Số liệu lấy từ cách bigbike-web render thật (ví dụ ảnh sản phẩm = khung vuông
-// 1:1, tải ở 1200px, có zoom 2.5×) và từ các gợi ý kích thước đã có sẵn trong
-// hệ thống admin (banner 1920×600, logo 400×200, bìa bài viết 1200×630…).
+// Phương pháp (audit 2026-07-03, xem docs/engineering/DATA_CONTRACT.md § Media Dimension Rules):
+//   1. Đo khung hiển thị THẬT (CSS px, màn hình thường/1×) bằng cách đọc trực tiếp component +
+//      CSS của bigbike-web (không suy đoán) — desktop tham chiếu 1920×1080, mobile 390×844.
+//   2. idealW/idealH = minW/minH = 2 × khung hiển thị thật đó (hệ số retina 2×).
+//   3. Vị trí dùng chung 1 field cho nhiều ngữ cảnh hiển thị (vd banner vừa làm nền desktop vừa
+//      làm nền mobile qua background-size:cover) → lấy ngữ cảnh ĐÒI HỎI độ phân giải cao nhất.
 //
 // Ý nghĩa các trường:
-//   idealW / idealH  — kích thước nên dùng, hiển thị trong gợi ý.
-//   minW   / minH    — ngưỡng sàn; nhỏ hơn sẽ cảnh báo "có thể bị mờ".
-//   ratio  = [w, h]  — tỉ lệ khung hiển thị mong muốn; lệch quá ratioTolerance
-//                      sẽ cảnh báo "sai tỉ lệ" (web cắt xén hoặc thêm viền).
-//   ratio  = null    — không ràng buộc tỉ lệ (logo, ảnh tự do, ảnh dọc).
-
+//   idealW / idealH  — kích thước khuyến nghị hiển thị cho admin NGAY TẠI ô upload (đã ở mức 2×).
+//   minW   / minH    — ngưỡng sàn để CHẶN LƯU (bước 1) + chặn ở server (bước 2); bằng idealW/idealH.
+//   ratio  = [w, h]  — tỉ lệ khung hiển thị thật; lệch quá ratioTolerance → chặn lưu (wrongRatio).
+//   ratio  = null    — khung không ép tỉ lệ cố định (ảnh tự do / native-render) — chỉ chặn theo size.
 export const IMAGE_RECO = {
-  // Ảnh sản phẩm: web để khung vuông 1:1, tải 1200px, có zoom 2.5× → cần vuông & lớn.
-  productImage: { idealW: 1200, idealH: 1200, minW: 800, minH: 800, ratio: [1, 1], ratioTolerance: 0.12 },
-  // Ảnh danh mục: vuông ~400×400.
-  categoryImage: { idealW: 400, idealH: 400, minW: 300, minH: 300, ratio: [1, 1], ratioTolerance: 0.15 },
-  // Banner ngang rộng (hãng/danh mục/hero): ~1920×600.
-  bannerWide: { idealW: 1920, idealH: 600, minW: 1280, minH: 360, ratio: [16, 5], ratioTolerance: 0.2 },
-  // Banner mobile: ảnh dọc ~750×1125 (2:3) — khớp tỉ lệ 75vh trên mobile — không khóa tỉ lệ.
-  bannerMobile: { idealW: 750, idealH: 1125, minW: 600, minH: 900, ratio: null },
-  // Slider trang chủ desktop: ~1920×880 (calc(100vh-200px) tại 1080p).
-  sliderDesktop: { idealW: 1920, idealH: 880, minW: 1280, minH: 550, ratio: [12, 5], ratioTolerance: 0.2 },
-  // Logo: tỉ lệ tự do (vuông hoặc ngang), nên dùng PNG nền trong ~400×200.
-  logo: { idealW: 400, idealH: 200, minW: 200, minH: 100, ratio: null },
-  // Ảnh bìa bài viết / OG mạng xã hội: ~1200×630 (tỉ lệ 1.91:1).
-  cover: { idealW: 1200, idealH: 630, minW: 800, minH: 420, ratio: [1200, 630], ratioTolerance: 0.15 },
-  // Ảnh khuyến mãi ngang: ~1200×400.
-  promo: { idealW: 1200, idealH: 400, minW: 800, minH: 260, ratio: [3, 1], ratioTolerance: 0.2 },
-  // Ảnh vuông/dọc cỡ trung (ảnh sản phẩm trong bài viết): ~800×800, tỉ lệ tự do.
-  squareMedium: { idealW: 800, idealH: 800, minW: 500, minH: 500, ratio: null },
-  // Ảnh minh hoạ nền trong (hero illustration): ~700×600, tỉ lệ tự do.
-  illustration: { idealW: 700, idealH: 600, minW: 400, minH: 360, ratio: null },
-  // Ảnh thu nhỏ video: 16:9, ~1280×720.
-  videoThumb: { idealW: 1280, idealH: 720, minW: 854, minH: 480, ratio: [16, 9], ratioTolerance: 0.1 },
-  // File video: 16:9, ~1280×720 trở lên.
-  video: { idealW: 1280, idealH: 720, minW: 854, minH: 480, ratio: [16, 9], ratioTolerance: 0.12 },
-  // Ảnh chèn vào nội dung / ảnh chung chưa rõ vị trí: chỉ nhắc ngưỡng tối thiểu, tỉ lệ tự do.
-  general: { idealW: 1200, idealH: 800, minW: 600, minH: 400, ratio: null },
+  // Ảnh sản phẩm (PDP + gallery): khung vuông tối đa 903×903 (desktop ≥1920px, ProductGallery.tsx) —
+  // kính lúp zoom 2.5× cần nguồn ≥1300×1300 nhưng đã nằm trong ngưỡng 2×903 nên không cần cộng thêm.
+  productImage: { idealW: 1800, idealH: 1800, minW: 1800, minH: 1800, ratio: [1, 1], ratioTolerance: 0.12 },
+  // Ảnh danh mục (lưới danh mục trang chủ, HomeCategoryGrid.tsx): cột ~255×255 (desktop 1200-1919px),
+  // không ép aspect-ratio bằng CSS nhưng giữ vuông để lưới thẳng hàng.
+  categoryImage: { idealW: 520, idealH: 520, minW: 520, minH: 520, ratio: [1, 1], ratioTolerance: 0.15 },
+  // Banner ngang full-bleed (category/brand hero bg, banner trang listing san-pham/brands/tin-tuc,
+  // hero mặc định): WpCategoryHero .page-title — full viewport × 450px (desktop 1920×450, background-cover).
+  bannerWide: { idealW: 3840, idealH: 900, minW: 3840, minH: 900, ratio: [64, 15], ratioTolerance: 0.2 },
+  // Banner mobile của các trang listing (hero_*_mobile_image_url) — cùng WpCategoryHero, dải nền
+  // ngang cố định cao 250px, KHÔNG phải ảnh dọc (390×250, background-cover).
+  heroMobile: { idealW: 780, idealH: 500, minW: 780, minH: 500, ratio: [39, 25], ratioTolerance: 0.2 },
+  // Slide trang chủ desktop (HeroSlider.tsx): w-full h-[max(40vw,300px)] → 1920×768 ở 1920px viewport.
+  sliderDesktop: { idealW: 3840, idealH: 1536, minW: 3840, minH: 1536, ratio: [5, 2], ratioTolerance: 0.2 },
+  // Slide trang chủ mobile (HeroSlider.tsx): aspect-[411/548] đúng 3:4 → 390×520 ở mobile 390px.
+  sliderMobile: { idealW: 780, idealH: 1040, minW: 780, minH: 1040, ratio: [3, 4], ratioTolerance: 0.12 },
+  // Logo hãng: vừa hiển thị cao tối đa 64px trong lưới hãng (object-contain, không ép tỉ lệ),
+  // vừa dùng làm minh hoạ hero trang chi tiết hãng (native-render, giống illustration) — ngữ cảnh
+  // sau đòi hỏi cao hơn: giữ khung 400×200 hiện có × 2.
+  logo: { idealW: 800, idealH: 400, minW: 800, minH: 400, ratio: null },
+  // Ảnh OG/chia sẻ mạng xã hội (og_image_url, seoOgImageUrl): KHÔNG có khung hiển thị trên
+  // bigbike-web (chỉ nằm trong thẻ <meta og:image>, Facebook/Zalo tự crop) — không áp công thức
+  // 2× nội bộ, dùng thẳng chuẩn 1200×630 khuyến nghị của Open Graph (đã đủ nét ở mọi nơi hiển thị).
+  cover: { idealW: 1200, idealH: 630, minW: 1200, minH: 630, ratio: [40, 21], ratioTolerance: 0.15 },
+  // Banner khuyến mãi trang chủ (promo_image_url): container rộng 1600px (≥1920px viewport),
+  // height tự do theo ảnh (không crop) → chỉ ép sàn theo bề rộng, tỉ lệ để tự do.
+  promo: { idealW: 3200, idealH: 1050, minW: 3200, minH: 1050, ratio: null },
+  // Ảnh PNG nền trong chồng carousel "Góc trải nghiệm" trang chủ (ExperienceCarousel.tsx overlay):
+  // rộng tối đa ~266px (desktop), không ép chiều cao (giữ nguyên tỉ lệ file PNG cắt sẵn).
+  squareMedium: { idealW: 600, idealH: 600, minW: 600, minH: 600, ratio: null },
+  // Ảnh minh hoạ hero (WpCategoryHero .img — category heroImageUrl, brand-detail logo-as-hero,
+  // hero_default/hero_*_illustration_url): render ở KÍCH THƯỚC GỐC (không CSS resize), ảnh mặc định
+  // hệ thống mu-bao-hiem.png là 451×400 — đây chính là khung 1× tham chiếu.
+  illustration: { idealW: 900, idealH: 800, minW: 900, minH: 800, ratio: null },
+  // Ảnh thu nhỏ carousel Video (trang chủ + "Video sản phẩm" PDP, VideoCard.tsx): thẻ DỌC
+  // aspect-ratio 9/16, rộng tối đa ~242px ở desktop 1920px — KHÔNG phải 16:9 ngang.
+  videoThumb: { idealW: 500, idealH: 900, minW: 500, minH: 900, ratio: [9, 16], ratioTolerance: 0.12 },
+  // File video tải lên carousel Video (VideoModal.tsx, player DỌC): khung tối đa 420×747 (desktop) —
+  // cùng carousel dọc 9/16 ở trên nên video gốc cũng phải quay dọc, KHÔNG phải 16:9 ngang.
+  video: { idealW: 850, idealH: 1500, minW: 850, minH: 1500, ratio: [9, 16], ratioTolerance: 0.12 },
+  // Video nhúng trong khối nội dung (block "video", mô tả sản phẩm/bài viết): khung NGANG 16:9
+  // rộng bằng cột nội dung (~1170px desktop, product description container).
+  contentVideo: { idealW: 2340, idealH: 1320, minW: 2340, minH: 1320, ratio: [16, 9], ratioTolerance: 0.12 },
+  // Ảnh chèn khối "image" trong nội dung (mô tả sản phẩm/bài viết) + ảnh chèn rich-text chung
+  // (FAQ, callout, mô tả hãng...): lấy ngữ cảnh rộng nhất — full cột nội dung ~1170px desktop.
+  general: { idealW: 2340, idealH: 1560, minW: 2340, minH: 1560, ratio: null },
+  // Ảnh khối "feature" (ảnh cạnh chữ) trong nội dung: nửa cột nội dung, ÉP tỉ lệ 4:3
+  // (ProductDescriptionBlocks.tsx aspect-[4/3] object-cover) → ~565×424 desktop.
+  featureImage: { idealW: 1130, idealH: 850, minW: 1130, minH: 850, ratio: [4, 3], ratioTolerance: 0.1 },
 }
 
-// So kích thước thực tế của ảnh với spec khuyến nghị.
+// menuIconUrl (icon danh mục trong mega-menu + bộ lọc): icon 1 màu, khuyến nghị SVG, hiển thị
+// cố định 20×16px qua CSS mask — KHÔNG kiểm tra kích thước (SVG là vector, không có khái niệm
+// "mờ vì thiếu pixel"; PNG thay thế cũng chỉ hiển thị 20×16px nên mọi file hợp lệ đều đủ nét).
+// Không thêm field vào IMAGE_RECO cho vị trí này — ImageUrlInput không nhận `recommend` sẽ tự bỏ qua.
+
+// So kích thước thực tế của ảnh/video với spec khuyến nghị.
 // Trả về null nếu đạt; hoặc mảng lý do: 'tooSmall' | 'wrongRatio'.
 export function evaluateImageDimensions(width, height, spec) {
   if (!width || !height || !spec) return null

@@ -29,6 +29,53 @@ Evidence:
 - `AdminMediaService.java`
 - product/content DTO mappings in repo
 
+### Media dimension validation — minimum upload size per display location (2026-07-03 audit)
+
+Business rule: mọi ảnh/video admin gán vào một vị trí hiển thị cụ thể phải đạt kích thước tối
+thiểu VÀ (nếu vị trí đó ép khung) đúng tỉ lệ — không đạt thì **bị từ chối, không lưu được**
+(trước đây chỉ cảnh báo, không chặn).
+
+**Phương pháp:** đo khung hiển thị THẬT bằng cách đọc trực tiếp component + CSS của
+`bigbike-web` (desktop tham chiếu 1920×1080, mobile 390×844) — không suy đoán. Ngưỡng chặn
+(`minW`/`minH`) = **2 × khung hiển thị thật** (hệ số retina). Vị trí dùng chung 1 ảnh cho nhiều
+ngữ cảnh (vd banner vừa làm nền desktop vừa mobile qua `background-size:cover`) → lấy ngữ cảnh
+đòi hỏi độ phân giải cao nhất. Nguồn chuẩn duy nhất (single source of truth) là
+`bigbike-admin/src/lib/imageRecommendations.js` (`IMAGE_RECO`) — bảng dưới đây là ảnh chụp lúc
+audit, sửa code thì sửa cả bảng này.
+
+| Spec key (`IMAGE_RECO`) | Vị trí dùng | Khung hiển thị thật (1×, evidence) | Ngưỡng chặn (2×) | Tỉ lệ ép |
+|---|---|---|---|---|
+| `productImage` | Ảnh đại diện + gallery sản phẩm (PDP) | Khung vuông tối đa 903×903px (desktop ≥1920px) — kính lúp zoom 2.5× cần nguồn ≥1300×1300 nhưng đã nằm trong 2×903 | 1800×1800 | 1:1 |
+| `categoryImage` | Ảnh danh mục (lưới danh mục trang chủ) | Cột lưới ~255-290px (`HomeCategoryGrid.tsx`, không ép aspect-ratio bằng CSS) | 520×520 | 1:1 (quy ước để lưới thẳng hàng, không phải CSS ép) |
+| `bannerWide` | Nền banner hero danh mục/hãng, banner đầu trang Tất cả sản phẩm/Thương hiệu/Tin tức, banner mặc định | Full-bleed edge-to-edge × 450px cao cố định (`WpCategoryHero.tsx`, desktop 1920×450) | 3840×900 | 64:15 (≈4.27:1) |
+| `heroMobile` | Bản mobile của các banner hero listing trên (`hero_*_mobile_image_url`) | Dải nền ngang cố định cao 250px, full viewport width (390×250) — **không phải ảnh dọc** | 780×500 | 39:25 (≈1.56:1) |
+| `sliderDesktop` | Slide trang chủ (desktop) | `w-full h-[max(40vw,300px)]` → 1920×768 ở viewport 1920px (KHÔNG phải 1920×880 như giả định cũ) | 3840×1536 | 5:2 |
+| `sliderMobile` | Slide trang chủ (mobile) | `aspect-[411/548]` đúng 3:4 → 390×520 | 780×1040 | 3:4 |
+| `logo` | Logo hãng (lưới hãng + minh hoạ hero trang chi tiết hãng) | Lưới: cao tối đa 64px, object-contain; trang chi tiết hãng: native-render trong khung hero (giống `illustration`) — ngữ cảnh sau đòi hỏi cao hơn | 800×400 | tự do |
+| `cover` | Ảnh OG/chia sẻ mạng xã hội (sản phẩm/danh mục/hãng/bài viết) | **Không có khung hiển thị trên bigbike-web** — chỉ nằm trong `<meta og:image>`, Facebook/Zalo tự crop → dùng thẳng chuẩn Open Graph, không áp công thức 2× nội bộ | 1200×630 | 40:21 |
+| `promo` | Banner khuyến mãi trang chủ | Container rộng tối đa 1600px (≥1920px viewport), cao tự do theo ảnh (không crop) | 3200×1050 (chiều cao chỉ là gợi ý theo tỉ lệ 3:1, không ép) | tự do |
+| `squareMedium` | Ảnh PNG nền trong chồng carousel "Góc trải nghiệm" trang chủ | Rộng tối đa ~266px (desktop, `ExperienceCarousel.tsx`), không ép cao | 600×600 | tự do |
+| `illustration` | Ảnh minh hoạ hero (category `heroImageUrl`, brand-detail logo-as-hero, `hero_default/hero_*_illustration_url`) | Render ở **kích thước gốc** (không CSS resize) — ảnh mặc định hệ thống `mu-bao-hiem.png` = 451×400, đây là khung 1× tham chiếu | 900×800 | tự do |
+| `videoThumb` | Ảnh thumbnail carousel Video (trang chủ + "Video sản phẩm" PDP) | Thẻ **DỌC** `aspect-ratio 9/16`, rộng tối đa ~242px (desktop 1920px) — KHÔNG phải 16:9 ngang như giả định cũ | 500×900 | 9:16 |
+| `video` | File video tải lên carousel Video ở trên | Khung player modal tối đa 420×747 (desktop) — cùng carousel dọc nên video gốc phải quay DỌC | 850×1500 | 9:16 |
+| `contentVideo` | Video nhúng khối "video" trong mô tả sản phẩm/bài viết | Khung **NGANG** 16:9 rộng bằng cột nội dung (~1170px desktop) — khác hẳn `video` ở trên dù cùng là "video tải lên" | 2340×1320 | 16:9 |
+| `general` | Ảnh chèn khối "image" trong nội dung + ảnh chèn rich-text chung (FAQ, callout, mô tả hãng, `about_content_html`...) | Ngữ cảnh rộng nhất trong nhóm này: full cột nội dung ~1170px desktop | 2340×1560 | tự do |
+| `featureImage` | Ảnh khối "feature" (ảnh cạnh chữ) trong nội dung | Nửa cột nội dung, ÉP 4:3 (`aspect-[4/3] object-cover`) → ~565×424 desktop | 1130×850 | 4:3 |
+| *(không có key)* | `menuIconUrl` — icon danh mục trong mega-menu + bộ lọc | Icon 1 màu, khuyến nghị SVG, hiển thị cố định 20×16px qua CSS mask | **Không kiểm tra kích thước** — SVG là vector (không có khái niệm "mờ vì thiếu pixel"); PNG thay thế cũng chỉ hiển thị 20×16px | — |
+
+**Chặn ở đâu:**
+
+1. **Client (bigbike-admin, chặn chính xác theo từng vị trí):** `MediaPickerModal`/`VideoPickerModal` nhận prop `recommend` (spec ở trên) — đo kích thước ảnh/video vừa chọn (`useMediaValidation`), disable nút xác nhận + báo lỗi nếu không đạt (`tooSmall` và/hoặc `wrongRatio` đều chặn, không còn cơ chế cảnh báo-rồi-cho-qua). Ô upload luôn hiện dòng "Yêu cầu tối thiểu WxHpx" kể cả khi chưa chọn ảnh.
+2. **Server (`AdminMediaService.java`, phòng vệ chung):** từ chối MỌI ảnh raster (jpeg/png/gif — SVG và WEBP không đo được kích thước do giới hạn `ImageIO`) nhỏ hơn **500×400px** (= giá trị `minW`/`minH` NHỎ NHẤT trong toàn bảng trên, không chặn nhầm vị trí hợp lệ nào) — chặn TRƯỚC khi ghi vào MinIO để không để lại file rác. Không enforce tỉ lệ ở server (chỉ client biết ảnh dùng cho vị trí nào).
+
+Status: `CONFIRMED_FROM_CODE` (đo trực tiếp component bigbike-web, xem evidence)
+
+Evidence:
+
+- `bigbike-web/components/catalog/ProductGallery.tsx`, `components/wp/WpCategoryHero.tsx`, `components/home/HeroSlider.tsx`, `components/home/video-carousel/VideoCard.tsx`, `components/home/video-carousel/VideoModal.tsx`, `components/home/ExperienceCarousel.tsx`, `components/catalog/description-blocks/blocks.tsx`, `app/page.tsx`, `app/globals.css` (container width tiers)
+- `bigbike-admin/src/lib/imageRecommendations.js`, `lib/useMediaDimensions.js`, `components/MediaPickerModal.jsx`, `components/VideoPickerModal.jsx`, `components/MediaRequirementHint.jsx`
+- `bigbike-backend/.../service/admin/AdminMediaService.java` (`MIN_UPLOAD_WIDTH`/`MIN_UPLOAD_HEIGHT`)
+
 ### SKU fields
 
 `product.sku` and `variant.sku` are two different things despite sharing a name.
@@ -733,7 +780,8 @@ lặp = `"section:<tên>"` (`"section:specifications"`, `"section:descriptionBlo
 Backend lưu **opaque** (qua `EnOverridesCodec`), trả về ở admin read trong
 `translations.overrides`. Admin dùng để **bỏ qua tự-dịch** các ô đã khoá (auto-translate
 VI→EN chỉ ghi đè trường KHÔNG nằm trong danh sách). Xem `BUSINESS_RULES.md`
-`TRANSLATION_RULE_001/002`. `NULL` = chưa khoá ô nào.
+`TRANSLATION_RULE_001/002`. `NULL` = chưa khoá ô nào. **Site settings dùng cơ chế tương
+đương nhưng khác hình dạng lưu trữ** — xem §"Site Settings — `en_locked` (V309)" bên dưới.
 
 **Không dịch:** alt ảnh, tên video, tên biến thể, `seo_canonical_url`.
 
@@ -1280,6 +1328,32 @@ Evidence:
 - `AdminProductAssignmentController.java` — `GET /api/v1/admin/product-assignment` (read for the banner, `products.read`)
 - `SettingsScreen.jsx` — `TAB_ORDER` / `TAB_META` (tab rendering), `HIDDEN_GROUPS` (`public_hero`, `contact`), super-admin filter for `superAdminOnly` keys
 - `V59__remove_sepay_payment_artifacts.sql`, `V132__cleanup_sepay_and_normalize_inventory_settings.sql`
+
+### Site Settings — `en_locked` (V309)
+
+`site_settings.en_locked` — `boolean NOT NULL DEFAULT false`. Translation-lock flag for the bigbike-admin
+Settings screen's VI/EN single-input toggle (mirrors `en_overrides` on `products`/`categories`/`brands`/`articles`,
+V296 — see §"Translation lock — `en_overrides` (V296)" above), but shaped differently: each `site_settings`
+row is already its own flat key/value pair (unlike Product's nested fields/repeating sections), so **one boolean
+per row** is enough — no JSON array of keys needed.
+
+`true` = admin manually edited that row's `setting_value_en` while viewing the admin in English mode; the
+auto-translate-on-save step (`TRANSLATION_RULE_001`) skips rows where `en_locked=true` and leaves the
+existing English value untouched. `false` (default) = the row's English tracks the Vietnamese value on every
+save that changes it. There is no "unlock" action — once set, a row stays locked until the admin edits it again
+in a way the UI clears (currently: never automatically; matches Product's `enOverrides`, which is also
+append-only from the UI's perspective).
+
+`AdminSiteSettingResponse.enLocked` exposes the current value; `UpdateSiteSettingRequest.enLocked` /
+`BatchUpdateSettingsRequest.BatchSettingUpdate.enLocked` are `Boolean` (boxed) — `null` on a PATCH means
+"leave the stored lock unchanged," same presence-flag convention as `value`/`valueEn` on these DTOs.
+`AdminSettingsService.updateSetting`/`batchUpdateSettings` only call `entity.setEnLocked(...)` when the
+request field is non-null.
+
+Status: `CONFIRMED_FROM_CODE` — `SiteSettingEntity.enLocked`, `V309__add_en_locked_to_site_settings.sql`,
+`AdminSettingsService.java`, `AdminSiteSettingResponse.java`, `UpdateSiteSettingRequest.java`,
+`BatchUpdateSettingsRequest.java`. Xem `BUSINESS_RULES.md` §"Site Settings Rules" `SETTINGS_RULE_001`,
+`API_CONTRACT.md` §"VI→EN auto-translation + translation lock (V296)".
 
 ### PDP mockup port — bilingual description blocks, featured specs, per-product tabs (V229–V231)
 

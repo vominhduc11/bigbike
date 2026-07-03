@@ -291,14 +291,20 @@ Status: `CONFIRMED_FROM_CODE` — `AdminContentItem.translations` (kiểu `Artic
 **Translate proxy:** `POST /api/v1/admin/translate` — body `{ "texts": { "<key>": "<vi text>", ... } }`,
 trả `{ data: { "<key>": "<en text>", ... } }`. Server gọi Gemini bằng khoá **server-side**; khi khoá
 trống / lỗi → trả `{ data: {} }` (admin giữ nguyên bản EN cũ). Quyền: bất kỳ trong
-`products.update` / `catalog.update` / `content.update`.
+`products.update` / `catalog.update` / `content.update` / `settings.write` (thêm ở **V309** để màn Cài đặt gọi được endpoint dùng chung này).
 
 **`enOverrides` trên upsert:** `UpsertProductRequest` / `UpsertCategoryRequest` / `UpsertBrandRequest` /
 `UpsertArticleRequest` nhận thêm `enOverrides: string[]` — danh sách trường/khối tiếng Anh admin đã
 sửa tay (khoá khỏi tự-dịch). Trả về khi admin read trong `translations.overrides` (`string[]`).
 Trường vô hướng = tên khoá; khối lặp = `"section:<tên>"`. Null/absent = giữ nguyên lock cũ (PATCH).
 
-Status: `CONFIRMED_FROM_CODE` — `AdminTranslateController`, `GeminiTranslationService`, `EnOverridesCodec`, `Upsert*Request.enOverrides`, `*Translations.overrides`. Xem [BUSINESS_RULES.md](../business/BUSINESS_RULES.md) §"Bilingual / Auto-translation Rules", [DATA_CONTRACT.md](DATA_CONTRACT.md) §`en_overrides (V296)`.
+**`enLocked` trên Cài đặt (V309):** khác với 4 thực thể trên (mảng JSON `enOverrides`), mỗi
+`site_settings` row đã là 1 cặp key/value phẳng nên khoá bằng **1 cột boolean `enLocked`** thay vì
+mảng. `UpdateSiteSettingRequest` / `BatchUpdateSettingsRequest.BatchSettingUpdate` nhận thêm
+`enLocked: boolean | null` (null = giữ nguyên khoá cũ, cùng ngữ nghĩa presence-flag như `value`/`valueEn`).
+`AdminSiteSettingResponse` trả về `enLocked` hiện tại. Xem §"Admin Settings Contract" bên dưới.
+
+Status: `CONFIRMED_FROM_CODE` — `AdminTranslateController`, `GeminiTranslationService`, `EnOverridesCodec`, `Upsert*Request.enOverrides`, `*Translations.overrides`, `SiteSettingEntity.enLocked` (V309). Xem [BUSINESS_RULES.md](../business/BUSINESS_RULES.md) §"Bilingual / Auto-translation Rules" + §"Site Settings Rules", [DATA_CONTRACT.md](DATA_CONTRACT.md) §`en_overrides (V296)` + §"Site Settings — `en_locked` (V309)".
 
 ### VI→EN backfill (công cụ vận hành MỘT LẦN) — Phase 2
 
@@ -352,6 +358,7 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
   - Thực hiện xóa cứng thương hiệu khỏi DB.
   - Response: `200 OK` với `{ data: { reassignedProductCount: number } }` (thay vì `204 No Content`) — số sản phẩm vừa được chuyển, để admin hiển thị thông báo.
   - Chặn (409) mọi thao tác sửa/xóa/khôi phục đối với thương hiệu hệ thống `uncategorized-brand`; thương hiệu này luôn ẩn (`isVisible = false`) và bị loại khỏi kết quả `GET /admin/brands`.
+  - `GET /admin/brands` khi không truyền query param `visibility` (danh sách mặc định) chỉ trả về thương hiệu `isVisible = true` — thương hiệu đã Ẩn/Xóa mềm (`isVisible = false`) bị loại trừ, mirror hành vi mặc định của Category (`deleted = false`) và Product (`publishStatus != TRASH`). Truyền `visibility=VISIBLE` cho kết quả tương đương; `visibility=HIDDEN` trả đúng các thương hiệu `isVisible = false` (view "Thùng rác").
 
 ### 4. News Articles (Bài viết / Tin tức)
 - **Xóa mềm**: `DELETE /api/v1/admin/content/articles/{id}` (chuyển qua `DELETE /api/v1/admin/content/{type}/{id}`)
@@ -1062,12 +1069,12 @@ Status: `REMOVED`
 |---|---|---|---|---|
 | `GET /api/v1/admin/settings` | `settings.read` | Paginated list with optional filters: `q` (key/description substring), `group`, `isPublic`. Sensitive keys return `settingValue="********"` with `sensitive=true, masked=true`. | `CONFIRMED_FROM_CODE` | `AdminSettingsController.java`, `AdminSettingsService.java` |
 | `GET /api/v1/admin/settings/{key}` | `settings.read` | Single setting by key. Sensitive values masked. | `CONFIRMED_FROM_CODE` | `AdminSettingsController.java` |
-| `PATCH /api/v1/admin/settings/{key}` | `settings.write` | Update single setting (value, group, isPublic, description). Validates type/range per `SettingDefinitionRegistry`. Sensitive keys cannot be made public. **Keys flagged `superAdminOnly` (group `product_assign`) reject the write with 403 unless the caller holds wildcard `*` (`SUPER_ADMIN`)** — `ADMIN` is blocked despite having `settings.write`. | `CONFIRMED_FROM_CODE` | `AdminSettingsController.java` |
-| `PATCH /api/v1/admin/settings` | `settings.write` | **Batch update** — atomically update multiple settings in one transaction. Body: `{"updates":[{"key":"…","value":"…"}]}`. All validations run before any mutation; if any item is invalid the whole request fails with 400 and no settings are changed. Same `superAdminOnly` 403 gate as the single-update path. | `CONFIRMED_FROM_CODE` | `AdminSettingsController.java`, `AdminSettingsService.batchUpdateSettings` |
+| `PATCH /api/v1/admin/settings/{key}` | `settings.write` | Update single setting (value, group, isPublic, description, **enLocked** — V309, translation-lock boolean, presence-flag: null = unchanged). Validates type/range per `SettingDefinitionRegistry`. Sensitive keys cannot be made public. **Keys flagged `superAdminOnly` (group `product_assign`) reject the write with 403 unless the caller holds wildcard `*` (`SUPER_ADMIN`)** — `ADMIN` is blocked despite having `settings.write`. | `CONFIRMED_FROM_CODE` | `AdminSettingsController.java` |
+| `PATCH /api/v1/admin/settings` | `settings.write` | **Batch update** — atomically update multiple settings in one transaction. Body: `{"updates":[{"key":"…","value":"…","valueEn":"…","enLocked":true}]}` (`valueEn`/`enLocked` optional, null = unchanged). All validations run before any mutation; if any item is invalid the whole request fails with 400 and no settings are changed. Same `superAdminOnly` 403 gate as the single-update path. | `CONFIRMED_FROM_CODE` | `AdminSettingsController.java`, `AdminSettingsService.batchUpdateSettings` |
 | `GET /api/v1/admin/product-assignment` | `products.read` | Returns the editable "Phân công" guide text (7 fields: title + 3 role labels + 3 task lists) for the product create/edit banner. Read uses `products.read` (not `settings.read`) so `SHOP_MANAGER`/`EDITOR` who edit products can render the banner. Write is via the `superAdminOnly` settings keys above. | `CONFIRMED_FROM_CODE` | `AdminProductAssignmentController.java` |
 | `GET /api/v1/settings/public` | public | List settings marked `isPublic=true` that are on the registry public allowlist. Sensitive keys are never exposed regardless of DB flag. | `CONFIRMED_FROM_CODE` | `PublicSettingsController.java` |
 
-**Batch update response shape:** `ApiDataResponse<List<AdminSiteSettingResponse>>` — items in same order as request `updates` array.
+**Batch update response shape:** `ApiDataResponse<List<AdminSiteSettingResponse>>` — items in same order as request `updates` array. `AdminSiteSettingResponse` includes `enLocked` (V309) — true when an admin manually edited that row's English value; the bigbike-admin Settings screen auto-translate-on-save skips rows where `enLocked=true` (mirrors `enOverrides` on Product/Category/Brand/Article, see `en_overrides (V296)` above).
 
 **Sensitive key masking:** Any key whose name contains `secret`, `password`, `token`, `api_key`, `privatekey`, etc. always returns `settingValue="********"` in admin responses and in audit log `before_data`/`after_data`.
 

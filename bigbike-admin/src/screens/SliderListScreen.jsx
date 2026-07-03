@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
+import { useMediaAltSync } from '@/lib/useMediaAltSync'
 
 const LOCATIONS = ['home', 'category', 'category_sidebar', 'promotion']
 // Query-param mặc định cho bộ lọc Vị trí (T9 URL-sync, đồng bộ với các list screen khác).
@@ -182,6 +183,10 @@ export function SliderListScreen({ canUpdate }) {
   const [productSearch, setProductSearch] = useState('')
   const [productPickerOpen, setProductPickerOpen] = useState(false)
   const debouncedProductSearch = useDebounce(productSearch, 300)
+  // desktopAlt/mobileAlt are decoupled Inputs (not ImageUrlInput's own alt UI) —
+  // wire them through the shared prefill/sync-back helper, one instance per image.
+  const desktopAltSync = useMediaAltSync()
+  const mobileAltSync = useMediaAltSync()
 
   const { data: productSearchData, isFetching: isSearchingProducts } = useQuery({
     queryKey: ['slider-product-search', debouncedProductSearch, contentLang],
@@ -550,12 +555,20 @@ export function SliderListScreen({ canUpdate }) {
               </div>
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('sliders.formDesktopUrl')}</span>
-                <ImageUrlInput value={form.desktopImageUrl} onChange={(url) => setForm((p) => ({ ...p, desktopImageUrl: url }))} recommend={IMAGE_RECO.sliderDesktop} />
+                <ImageUrlInput
+                  value={form.desktopImageUrl}
+                  onChange={(url, media) => setForm((p) => ({ ...p, desktopImageUrl: url, desktopAlt: desktopAltSync.pickAlt(p.desktopAlt, media) }))}
+                  recommend={IMAGE_RECO.sliderDesktop}
+                />
                 <span className="hint">{t('sliders.formDesktopUrlHint')}</span>
               </div>
               <label className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('sliders.formDesktopAlt')}</span>
-                <Input value={form.desktopAlt} onChange={(e) => setForm((p) => ({ ...p, desktopAlt: e.target.value }))} />
+                <Input
+                  value={form.desktopAlt}
+                  onChange={(e) => setForm((p) => ({ ...p, desktopAlt: e.target.value }))}
+                  onBlur={(e) => desktopAltSync.flushAltSync(e.target.value)}
+                />
               </label>
 
               <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground border-t border-border pt-3 mt-1" style={{ gridColumn: '1 / -1' }}>
@@ -563,12 +576,20 @@ export function SliderListScreen({ canUpdate }) {
               </div>
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('sliders.formMobileUrl')}</span>
-                <ImageUrlInput value={form.mobileImageUrl} onChange={(url) => setForm((p) => ({ ...p, mobileImageUrl: url }))} recommend={IMAGE_RECO.bannerMobile} />
+                <ImageUrlInput
+                  value={form.mobileImageUrl}
+                  onChange={(url, media) => setForm((p) => ({ ...p, mobileImageUrl: url, mobileAlt: mobileAltSync.pickAlt(p.mobileAlt, media) }))}
+                  recommend={IMAGE_RECO.sliderMobile}
+                />
                 <span className="hint">{t('sliders.formMobileUrlHint')}</span>
               </div>
               <label className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('sliders.formMobileAlt')}</span>
-                <Input value={form.mobileAlt} onChange={(e) => setForm((p) => ({ ...p, mobileAlt: e.target.value }))} />
+                <Input
+                  value={form.mobileAlt}
+                  onChange={(e) => setForm((p) => ({ ...p, mobileAlt: e.target.value }))}
+                  onBlur={(e) => mobileAltSync.flushAltSync(e.target.value)}
+                />
               </label>
 
               <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground border-t border-border pt-3 mt-1" style={{ gridColumn: '1 / -1' }}>

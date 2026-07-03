@@ -826,6 +826,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   onChange={(url) => updateField('heroImageUrl', url)}
                   disabled={isReadOnly}
                   error={validationErrors.heroImageUrl}
+                  recommend={IMAGE_RECO.illustration}
                 />
                 <span className="hint">{t('categories.detail.heroImageUrlHint')}</span>
               </div>

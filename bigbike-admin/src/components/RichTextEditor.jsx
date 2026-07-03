@@ -15,7 +15,6 @@ import {
   Underline, Undo,
 } from 'lucide-react'
 import { MediaPickerModal } from './MediaPickerModal'
-import { MediaDimensionWarning } from './MediaDimensionWarning'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -51,8 +50,6 @@ function Divider() {
 export function RichTextEditor({ value, onChange, placeholder, disabled, hasError, enableImagePicker = false }) {
   const { t } = useTranslation()
   const [imagePickerOpen, setImagePickerOpen] = useState(false)
-  // Ảnh vừa chèn — để nhắc kích thước (ảnh nội dung quá nhỏ sẽ mờ). Cảnh báo tự ẩn khi ảnh đạt.
-  const [recentImageUrl, setRecentImageUrl] = useState('')
   const [linkModal, setLinkModal] = useState({ open: false, value: '' })
   const linkInputRef = useCallback((el) => { if (el) el.focus() }, [])
 
@@ -286,17 +283,16 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
         className="rich-editor-content min-h-[240px]"
       />
 
-      {recentImageUrl && (
-        <div className="px-3 pt-2">
-          <MediaDimensionWarning url={recentImageUrl} recommend={IMAGE_RECO.general} kind="image" />
-        </div>
-      )}
-
       {imagePickerOpen && (
         <MediaPickerModal
-          onSelect={(url) => {
-            editor.chain().focus().setImage({ src: url }).run()
-            setRecentImageUrl(url)
+          recommend={IMAGE_RECO.general}
+          kind="image"
+          onSelect={(url, media) => {
+            // No per-image alt UI exists inside the rich-text body, so the best we
+            // can do is carry the library's saved alt/title onto the <img> tag —
+            // there's no context field here to sync a fresh upload's alt back from.
+            const alt = media?.altText || media?.title || undefined
+            editor.chain().focus().setImage({ src: url, alt, title: media?.title || undefined }).run()
             setImagePickerOpen(false)
           }}
           onClose={() => setImagePickerOpen(false)}

@@ -17,5 +17,7 @@ public record AdminSiteSettingResponse(
         String valueType,
         boolean sensitive,
         boolean masked,
-        boolean superAdminOnly
+        boolean superAdminOnly,
+        /** Admin manually edited the English value — auto-translate on save skips it (V309). */
+        boolean enLocked
 ) {}

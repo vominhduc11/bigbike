@@ -914,6 +914,7 @@ export function normalizeSetting(input) {
     settingGroup: toTrimmedStringLocal(s.settingGroup) || 'GENERAL',
     valueType: toTrimmedStringLocal(s.valueType) || 'STRING',
     superAdminOnly: Boolean(s.superAdminOnly),
+    enLocked: Boolean(s.enLocked),
     updatedAt: toTrimmedStringLocal(s.updatedAt) || undefined,
   }
 }

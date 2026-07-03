@@ -1234,12 +1234,13 @@ class AdminMutationApiTest {
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].slug").value(hiddenSlug));
 
-        // no filter → both brands appear
+        // no filter (default list) → hidden/soft-deleted brand excluded, only visible brand appears
         mockMvc.perform(get("/api/v1/admin/brands")
                         .param("q", suffix)
                         .header("X-Admin-Permissions", "catalog.read"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(2));
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].slug").value(visibleSlug));
     }
 
     @Test

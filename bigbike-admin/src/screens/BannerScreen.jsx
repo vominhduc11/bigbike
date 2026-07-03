@@ -5,6 +5,7 @@ import { StatePanel } from '../components/StatePanel'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
+import { useMediaAltSync } from '@/lib/useMediaAltSync'
 import { fetchSettings, batchUpdateSettings, mapValidationErrors } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
@@ -106,11 +107,11 @@ function ImageField({ label, hint, value, onChange, recommend, disabled, badge, 
 }
 
 // ── Một ô chữ (VI + EN) ─────────────────────────────────────────────────────
-function TextField({ label, value, valueEn, onChange, onChangeEn, disabled, t, error, errorEn }) {
+function TextField({ label, value, valueEn, onChange, onChangeEn, onBlur, disabled, t, error, errorEn }) {
   return (
     <div className="form-field">
       <span>{label}</span>
-      <Input value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} aria-invalid={error ? true : undefined} />
+      <Input value={value} onChange={(e) => onChange(e.target.value)} onBlur={onBlur} disabled={disabled} aria-invalid={error ? true : undefined} />
       {error && <small className="field-error" role="alert">{error}</small>}
       <span className="hint" style={{ marginTop: 6 }}>{t('banners.englishLabel')}</span>
       <Input value={valueEn} onChange={(e) => onChangeEn(e.target.value)} disabled={disabled} className="mt-1" aria-invalid={errorEn ? true : undefined} />
@@ -122,6 +123,9 @@ function TextField({ label, value, valueEn, onChange, onChangeEn, disabled, t, e
 // ── Thẻ một trang ────────────────────────────────────────────────────────────
 function PageBannerCard({ page, get, getEn, set, setEn, defaults, canUpdate, t, errors, errorsEn }) {
   const k = (suffix) => `${page.prefix}_${suffix}`
+  // `image_alt` (illustration's alt/title) lives as a decoupled TextField, not inside
+  // ImageUrlInput's own alt UI — wire it through the shared prefill/sync-back helper.
+  const illuAltSync = useMediaAltSync()
 
   const ownBg = get(k('image_url'))
   const ownIllu = get(k('illustration_url'))
@@ -183,7 +187,7 @@ function PageBannerCard({ page, get, getEn, set, setEn, defaults, canUpdate, t, 
             hint={t('banners.hintBgMobile')}
             value={get(k('mobile_image_url'))}
             onChange={(url) => set(k('mobile_image_url'), url)}
-            recommend={IMAGE_RECO.bannerMobile}
+            recommend={IMAGE_RECO.heroMobile}
             disabled={!canUpdate}
             error={errors[k('mobile_image_url')]}
           />
@@ -194,7 +198,10 @@ function PageBannerCard({ page, get, getEn, set, setEn, defaults, canUpdate, t, 
             label={t('banners.fieldIllustration')}
             hint={t('banners.hintIllustration')}
             value={ownIllu}
-            onChange={(url) => set(k('illustration_url'), url)}
+            onChange={(url, media) => {
+              set(k('illustration_url'), url)
+              set(k('image_alt'), illuAltSync.pickAlt(get(k('image_alt')), media))
+            }}
             recommend={IMAGE_RECO.illustration}
             disabled={!canUpdate}
             badge={<SourceBadge source={illustration.source} t={t} />}
@@ -206,6 +213,7 @@ function PageBannerCard({ page, get, getEn, set, setEn, defaults, canUpdate, t, 
             valueEn={getEn(k('image_alt'))}
             onChange={(v) => set(k('image_alt'), v)}
             onChangeEn={(v) => setEn(k('image_alt'), v)}
+            onBlur={() => illuAltSync.flushAltSync(get(k('image_alt')))}
             disabled={!canUpdate}
             t={t}
             error={errors[k('image_alt')]}

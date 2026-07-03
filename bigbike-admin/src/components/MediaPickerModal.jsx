@@ -5,6 +5,8 @@ import { fetchMedia, uploadMedia } from '../lib/adminApi'
 import { useDebounce } from '../lib/useDebounce'
 import { useHasPermission } from '../lib/auth'
 import { MediaDetailModal } from './MediaDetailModal'
+import { MediaRequirementHint, MediaValidationError } from './MediaRequirementHint'
+import { useMediaValidation } from '../lib/useMediaDimensions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -66,12 +68,21 @@ function IconPencil() {
  * MediaPickerModal — browse + upload media, call onSelect on pick.
  *
  * Props:
- *   onSelect(url)          — single-select mode (default): called with one URL string
- *   onSelectMultiple(urls) — multi-select mode: called with array of URL strings
- *   multiSelect            — enable multi-select (default: false)
- *   onClose()              — called when modal should close
+ *   onSelect(url, media)          — single-select mode (default): url string, plus the
+ *                                    full media item ({id, altText, title, isNewUpload, ...})
+ *                                    so callers can prefill a context alt field. `media` is
+ *                                    the 2nd arg so existing `onSelect={(url) => ...}` callers
+ *                                    keep working unchanged.
+ *   onSelectMultiple(urls, items) — multi-select mode: array of URL strings, plus the
+ *                                    matching array of media items (same order)
+ *   multiSelect                   — enable multi-select (default: false)
+ *   onClose()                     — called when modal should close
+ *   recommend                     — spec từ imageRecommendations.js; có thì CHẶN xác nhận khi ảnh
+ *                                    đã chọn không đạt (chỉ áp dụng ở chế độ single-select)
+ *   kind                          — 'image' | 'video', mặc định 'image' (đo naturalWidth/Height
+ *                                    hay videoWidth/Height tương ứng)
  */
-export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = false, onClose }) {
+export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = false, onClose, recommend, kind = 'image' }) {
   const { t } = useTranslation()
   const hasPermission = useHasPermission()
   // media.write gates both uploading new files and editing metadata (alt/title).
@@ -94,6 +105,11 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
   const detailOpenRef = useRef(false)
   const fileInputRef = useRef(null)
   const PAGE_SIZE = 30
+  // Full media objects by URL, so handleConfirm can hand callers altText/title —
+  // not just the URL. Populated from fetched pages and from this session's uploads
+  // (uploads are tagged isNewUpload so callers know to sync alt text back).
+  const mediaCacheRef = useRef(new Map())
+  const validation = useMediaValidation(kind, !multiSelect ? selectedUrls : null, recommend)
 
   // Reset page on new search.
   useEffect(() => { setPage(1) }, [debouncedSearch])
@@ -104,9 +120,17 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
     fetchMedia({ search: debouncedSearch, mimeType: 'image/', page, pageSize: PAGE_SIZE })
       .then((r) => {
         if (!active) return
+        const items = r.items ?? []
+        items.forEach((it) => {
+          if (!it.publicUrl) return
+          // The post-upload refetch (refreshKey bump below) races the confirm click —
+          // don't let it silently strip the isNewUpload tag off this session's own upload.
+          const existing = mediaCacheRef.current.get(it.publicUrl)
+          mediaCacheRef.current.set(it.publicUrl, existing?.isNewUpload ? { ...it, isNewUpload: true } : it)
+        })
         setState({
           status: 'success',
-          items: r.items ?? [],
+          items,
           totalPages: r.pagination?.totalPages ?? 1,
         })
       })
@@ -196,6 +220,9 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
         const url = result?.item?.publicUrl
         if (url) {
           uploadedUrls.push(url)
+          // isNewUpload tells callers this item has no saved alt/title yet — they
+          // should sync the context alt the admin types back into the library.
+          mediaCacheRef.current.set(url, { ...result.item, isNewUpload: true })
           setUploadQueue((q) => q.map((item) => item.name === file.name ? { ...item, progress: 100 } : item))
         }
       } catch (err) {
@@ -259,6 +286,10 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
         ...prev,
         items: prev.items.map((it) => (it.id === updated.id ? { ...it, ...updated } : it)),
       }))
+      if (updated.publicUrl) {
+        const cached = mediaCacheRef.current.get(updated.publicUrl)
+        mediaCacheRef.current.set(updated.publicUrl, { ...cached, ...updated })
+      }
     }
     closeDetail()
   }
@@ -285,15 +316,16 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
   function handleConfirm() {
     if (multiSelect) {
       const urls = [...selectedUrls]
-      if (urls.length) onSelectMultiple?.(urls)
+      if (urls.length) onSelectMultiple?.(urls, urls.map((u) => mediaCacheRef.current.get(u) ?? null))
     } else {
-      if (selectedUrls) onSelect?.(selectedUrls)
+      if (selectedUrls && !validation.blocked) onSelect?.(selectedUrls, mediaCacheRef.current.get(selectedUrls) ?? null)
     }
   }
 
   const hasSelection = multiSelect ? selectedUrls.size > 0 : Boolean(selectedUrls)
   const selectionCount = multiSelect ? selectedUrls.size : (selectedUrls ? 1 : 0)
   const isLoading = state.status === 'loading'
+  const canConfirm = hasSelection && (multiSelect || (!validation.blocked && validation.status !== 'loading'))
 
   // Portal to <body> so the fixed-position backdrop/modal cover the whole
   // viewport. Rendered inline, an ancestor with a transform (e.g. a dnd-kit
@@ -355,7 +387,20 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
         </div>
 
         {/* Gợi ý kích thước — ảnh đăng lên web nên đúng kích thước/tỉ lệ theo vị trí dùng */}
-        <p className="px-4 pt-1 text-xs text-muted-foreground">{t('media.picker.sizeHint')}</p>
+        <div className="px-4 pt-1">
+          {recommend
+            ? <MediaRequirementHint recommend={recommend} />
+            : <p className="text-xs text-muted-foreground">{t('media.picker.sizeHint')}</p>}
+          {!multiSelect && selectedUrls && (
+            <MediaValidationError
+              reasons={validation.reasons}
+              kind={kind}
+              width={validation.width}
+              height={validation.height}
+              recommend={recommend}
+            />
+          )}
+        </div>
 
         {/* Upload queue */}
         {uploadQueue.length > 0 && (
@@ -499,7 +544,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
             <Button
               type="button"
               onClick={handleConfirm}
-              disabled={!hasSelection}
+              disabled={!canConfirm}
             >
               {multiSelect ? t('media.picker.confirmMulti', { count: selectionCount }) : t('media.picker.confirmSingle')}
             </Button>

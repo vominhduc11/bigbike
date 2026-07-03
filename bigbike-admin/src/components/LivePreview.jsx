@@ -105,116 +105,113 @@ export function LivePreview({
   const scale = availWidth > 0 ? Math.min(1, availWidth / targetWidth) : 1
 
   return (
-    <div className="fixed inset-0 z-[var(--admin-z-overlay)] flex">
-      {/* Lớp phủ mờ — bấm để đóng */}
-      <button
-        type="button"
-        aria-label={t('common.close', { defaultValue: 'Đóng' })}
-        className="flex-1 cursor-default bg-black/40"
-        onClick={onClose}
-      />
+    // Không có lớp phủ full-viewport chặn click: panel chỉ chiếm dải bên phải
+    // (max 860px), phần form bên trái vẫn thao tác được trong lúc xem preview —
+    // đúng tinh thần "live" (xem cập nhật ngay khi gõ, không phải đóng panel mới
+    // sửa tiếp được). Đóng bằng nút X hoặc Escape (useDialogA11y).
+    <aside
+      ref={panelRef}
+      tabIndex={-1}
+      className="fixed inset-y-0 right-0 z-[var(--admin-z-overlay)] flex w-full max-w-[860px] flex-col border-l border-border bg-muted shadow-xl outline-none"
+    >
+      <header className="flex items-center gap-2 border-b border-border bg-card px-4 py-2">
+        <Eye size={16} className="text-primary" />
+        <span className="text-sm font-medium">{previewTitle}</span>
+        {loading && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
 
-      {/* Panel phải */}
-      <aside ref={panelRef} tabIndex={-1} className="flex h-full w-full max-w-[860px] flex-col border-l border-border bg-muted shadow-xl outline-none">
-        <header className="flex items-center gap-2 border-b border-border bg-card px-4 py-2">
-          <Eye size={16} className="text-primary" />
-          <span className="text-sm font-medium">{previewTitle}</span>
-          {loading && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
-
-          <div className="ml-auto flex items-center gap-1.5">
-            {/* Ngôn ngữ nội dung — gọi lại dry-run khi đổi */}
-            <div className="flex overflow-hidden rounded-md border border-border">
-              {['vi', 'en'].map((code) => (
-                <button
-                  key={code}
-                  type="button"
-                  onClick={() => onLangChange(code)}
-                  className={cn(
-                    'px-2 py-1 text-xs font-medium uppercase transition-colors',
-                    lang === code ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted',
-                  )}
-                >
-                  {code}
-                </button>
-              ))}
-            </div>
-
-            {/* Thiết bị xem trước */}
-            <div className="flex overflow-hidden rounded-md border border-border">
+        <div className="ml-auto flex items-center gap-1.5">
+          {/* Ngôn ngữ nội dung — gọi lại dry-run khi đổi */}
+          <div className="flex overflow-hidden rounded-md border border-border">
+            {['vi', 'en'].map((code) => (
               <button
+                key={code}
                 type="button"
-                onClick={() => onDeviceChange('desktop')}
-                aria-label={t(`${i18nPrefix}.desktop`, { defaultValue: 'Máy tính' })}
+                onClick={() => onLangChange(code)}
                 className={cn(
-                  'px-2 py-1 transition-colors',
-                  device === 'desktop' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted',
+                  'px-2 py-1 text-xs font-medium uppercase transition-colors',
+                  lang === code ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted',
                 )}
               >
-                <Monitor size={14} />
+                {code}
               </button>
-              <button
-                type="button"
-                onClick={() => onDeviceChange('mobile')}
-                aria-label={t(`${i18nPrefix}.mobile`, { defaultValue: 'Điện thoại' })}
-                className={cn(
-                  'px-2 py-1 transition-colors',
-                  device === 'mobile' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted',
-                )}
-              >
-                <Smartphone size={14} />
-              </button>
-            </div>
-
-            <Button variant="ghost" size="icon" type="button" onClick={onClose} aria-label={t('common.close', { defaultValue: 'Đóng' })}>
-              <X size={16} />
-            </Button>
+            ))}
           </div>
-        </header>
 
-        {/* Cảnh báo khi dry-run lỗi (thường là thiếu thông tin bắt buộc) */}
-        {error && (
-          <div
-            className="flex items-start gap-2 border-b border-border px-4 py-2 text-xs"
-            style={{
-              background: 'var(--admin-color-status-warning-bg)',
-              color: 'var(--admin-color-status-warning-text)',
-            }}
-          >
-            <AlertCircle size={14} className="mt-0.5 shrink-0" />
-            <span>
-              {t(`${i18nPrefix}.invalid`, {
-                defaultValue: 'Chưa xem trước được — kiểm tra lại các thông tin bắt buộc (ví dụ: danh mục, đường dẫn).',
-              })}
-              {error.message ? ` (${error.message})` : ''}
-            </span>
+          {/* Thiết bị xem trước */}
+          <div className="flex overflow-hidden rounded-md border border-border">
+            <button
+              type="button"
+              onClick={() => onDeviceChange('desktop')}
+              aria-label={t(`${i18nPrefix}.desktop`, { defaultValue: 'Máy tính' })}
+              className={cn(
+                'px-2 py-1 transition-colors',
+                device === 'desktop' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted',
+              )}
+            >
+              <Monitor size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onDeviceChange('mobile')}
+              aria-label={t(`${i18nPrefix}.mobile`, { defaultValue: 'Điện thoại' })}
+              className={cn(
+                'px-2 py-1 transition-colors',
+                device === 'mobile' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted',
+              )}
+            >
+              <Smartphone size={14} />
+            </button>
           </div>
-        )}
 
-        {/* Iframe storefront thật — render ở bề rộng desktop/mobile thật rồi scale
-            vừa khung để thấy đúng layout theo breakpoint, không bị kẹt ở tablet. */}
-        <div
-          ref={frameHostRef}
-          className="flex flex-1 justify-center overflow-hidden bg-muted p-3"
-        >
-          <div
-            className="shadow"
-            style={{ width: Math.round(targetWidth * scale), height: availHeight || '100%' }}
-          >
-            <iframe
-              ref={iframeRef}
-              title={previewTitle}
-              src={`${webOrigin}${previewPath}`}
-              className="border-0 bg-white"
-              style={{
-                width: targetWidth,
-                height: availHeight ? availHeight / scale : '100%',
-                transform: `scale(${scale})`,
-                transformOrigin: 'top left',
-              }}
-            />
-          </div>
+          <Button variant="ghost" size="icon" type="button" onClick={onClose} aria-label={t('common.close', { defaultValue: 'Đóng' })}>
+            <X size={16} />
+          </Button>
         </div>
-      </aside>
-    </div>
+      </header>
+
+      {/* Cảnh báo khi dry-run lỗi (thường là thiếu thông tin bắt buộc) */}
+      {error && (
+        <div
+          className="flex items-start gap-2 border-b border-border px-4 py-2 text-xs"
+          style={{
+            background: 'var(--admin-color-status-warning-bg)',
+            color: 'var(--admin-color-status-warning-text)',
+          }}
+        >
+          <AlertCircle size={14} className="mt-0.5 shrink-0" />
+          <span>
+            {t(`${i18nPrefix}.invalid`, {
+              defaultValue: 'Chưa xem trước được — kiểm tra lại các thông tin bắt buộc (ví dụ: danh mục, đường dẫn).',
+            })}
+            {error.message ? ` (${error.message})` : ''}
+          </span>
+        </div>
+      )}
+
+      {/* Iframe storefront thật — render ở bề rộng desktop/mobile thật rồi scale
+          vừa khung để thấy đúng layout theo breakpoint, không bị kẹt ở tablet. */}
+      <div
+        ref={frameHostRef}
+        className="flex flex-1 justify-center overflow-hidden bg-muted p-3"
+      >
+        <div
+          className="shadow"
+          style={{ width: Math.round(targetWidth * scale), height: availHeight || '100%' }}
+        >
+          <iframe
+            ref={iframeRef}
+            title={previewTitle}
+            src={`${webOrigin}${previewPath}`}
+            className="border-0 bg-white"
+            style={{
+              width: targetWidth,
+              height: availHeight ? availHeight / scale : '100%',
+              transform: `scale(${scale})`,
+              transformOrigin: 'top left',
+            }}
+          />
+        </div>
+      </div>
+    </aside>
   )
 }

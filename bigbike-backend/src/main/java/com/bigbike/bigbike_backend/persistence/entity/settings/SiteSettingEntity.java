@@ -39,6 +39,10 @@ public class SiteSettingEntity {
     @Column(name = "is_public", nullable = false)
     private boolean isPublic = false;
 
+    /** Admin manually edited the English value — auto-translate on save must not overwrite it (V309). */
+    @Column(name = "en_locked", nullable = false)
+    private boolean enLocked = false;
+
     @Column(columnDefinition = "text")
     private String description;
 

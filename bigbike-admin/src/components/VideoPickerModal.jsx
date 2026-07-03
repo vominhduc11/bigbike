@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { fetchMedia, uploadMedia } from '../lib/adminApi'
 import { useDebounce } from '../lib/useDebounce'
 import { useHasPermission } from '../lib/auth'
-import { MediaDimensionWarning } from './MediaDimensionWarning'
+import { MediaRequirementHint, MediaValidationError } from './MediaRequirementHint'
+import { useMediaValidation } from '../lib/useMediaDimensions'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -54,7 +55,7 @@ function IconCheck() {
   )
 }
 
-export function VideoPickerModal({ onSelect, onClose }) {
+export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.video }) {
   const { t } = useTranslation()
   const hasPermission = useHasPermission()
   const canWrite = hasPermission('media.write')
@@ -70,6 +71,10 @@ export function VideoPickerModal({ onSelect, onClose }) {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadError, setUploadError] = useState('')
   const fileInputRef = useRef(null)
+  // Same media-cache trick as MediaPickerModal: onSelect passes back the full
+  // media item (2nd arg) so callers can prefill/sync-back a context title.
+  const mediaCacheRef = useRef(new Map())
+  const validation = useMediaValidation('video', selectedUrl, recommend)
 
   function markLoading() {
     setState((prev) => ({ ...prev, status: 'loading', error: '' }))
@@ -83,9 +88,17 @@ export function VideoPickerModal({ onSelect, onClose }) {
     fetchMedia({ search: debouncedSearch, mimeType: 'video/', page, pageSize: PAGE_SIZE })
       .then((result) => {
         if (!active) return
+        const items = result.items ?? []
+        items.forEach((it) => {
+          if (!it.publicUrl) return
+          // Same race as MediaPickerModal: don't let the post-upload refetch strip
+          // the isNewUpload tag off this session's own upload before confirm.
+          const existing = mediaCacheRef.current.get(it.publicUrl)
+          mediaCacheRef.current.set(it.publicUrl, existing?.isNewUpload ? { ...it, isNewUpload: true } : it)
+        })
         setState({
           status: 'success',
-          items: result.items ?? [],
+          items,
           totalPages: result.pagination?.totalPages ?? 1,
           error: '',
         })
@@ -168,6 +181,7 @@ export function VideoPickerModal({ onSelect, onClose }) {
       const result = await uploadMedia(file, '', (pct) => setUploadProgress(pct))
       const url = result?.item?.publicUrl
       if (url) {
+        mediaCacheRef.current.set(url, { ...result.item, isNewUpload: true })
         markLoading()
         setSelectedUrl(url)
         setSearch('')
@@ -184,8 +198,10 @@ export function VideoPickerModal({ onSelect, onClose }) {
   }
 
   function handleConfirm() {
-    if (selectedUrl) onSelect(selectedUrl)
+    if (selectedUrl && !validation.blocked) onSelect(selectedUrl, mediaCacheRef.current.get(selectedUrl) ?? null)
   }
+
+  const canConfirm = Boolean(selectedUrl) && !validation.blocked && validation.status !== 'loading'
 
   const isLoading = state.status === 'loading'
 
@@ -321,11 +337,18 @@ export function VideoPickerModal({ onSelect, onClose }) {
           </div>
         )}
 
-        {selectedUrl && (
-          <div className="px-4">
-            <MediaDimensionWarning url={selectedUrl} recommend={IMAGE_RECO.video} kind="video" />
-          </div>
-        )}
+        <div className="px-4 pt-1">
+          <MediaRequirementHint recommend={recommend} />
+          {selectedUrl && (
+            <MediaValidationError
+              reasons={validation.reasons}
+              kind="video"
+              width={validation.width}
+              height={validation.height}
+              recommend={recommend}
+            />
+          )}
+        </div>
 
         <div className="mpicker-footer">
           {selectedUrl ? (
@@ -333,11 +356,11 @@ export function VideoPickerModal({ onSelect, onClose }) {
               {selectedUrl.split('/').pop()}
             </span>
           ) : (
-            <span className="mpicker-hint">{t('homeVideos.picker.selectHint')} · {t('homeVideos.picker.sizeHint')}</span>
+            <span className="mpicker-hint">{t('homeVideos.picker.selectHint')}</span>
           )}
           <div className="mpicker-footer-actions">
             <Button variant="secondary" type="button" onClick={onClose}>{t('common.cancel')}</Button>
-            <Button type="button" onClick={handleConfirm} disabled={!selectedUrl}>
+            <Button type="button" onClick={handleConfirm} disabled={!canConfirm}>
               {t('homeVideos.picker.confirm')}
             </Button>
           </div>

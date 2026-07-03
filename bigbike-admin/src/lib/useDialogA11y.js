@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 const FOCUSABLE = [
   'a[href]', 'button:not([disabled])', 'textarea:not([disabled])',
@@ -20,6 +20,16 @@ const FOCUSABLE = [
  * @param {{active?: boolean, onClose?: () => void}} opts
  */
 export function useDialogA11y(ref, { active = true, onClose } = {}) {
+  // Callback đọc qua ref, KHÔNG đưa vào dependency array bên dưới: caller thường
+  // truyền onClose dạng inline arrow (tham chiếu mới mỗi render cha). Nếu để trong
+  // deps, effect setup/cleanup chạy lại mỗi lần cha render (vd mỗi keystroke của
+  // form đang mở kèm dialog) — cleanup trả focus về "trước đó", setup lại cướp
+  // focus vào dialog, làm mất focus của input NGOÀI dialog đang gõ dở.
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
+
   useEffect(() => {
     if (!active) return undefined
     const node = ref.current
@@ -37,7 +47,7 @@ export function useDialogA11y(ref, { active = true, onClose } = {}) {
     function onKeyDown(e) {
       if (e.key === 'Escape') {
         e.stopPropagation()
-        onClose?.()
+        onCloseRef.current?.()
         return
       }
       if (e.key !== 'Tab') return
@@ -64,5 +74,5 @@ export function useDialogA11y(ref, { active = true, onClose } = {}) {
         previouslyFocused.focus({ preventScroll: true })
       }
     }
-  }, [ref, active, onClose])
+  }, [ref, active])
 }

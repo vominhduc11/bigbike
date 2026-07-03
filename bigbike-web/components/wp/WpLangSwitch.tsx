@@ -2,7 +2,7 @@
 
 import { useLocale } from "next-intl";
 import { useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { LOCALES, type Locale } from "@/i18n/locale";
 import { useSetLocale } from "@/components/providers/ClientIntlProvider";
 import { useAltSlug } from "@/components/i18n/AltSlugProvider";
@@ -13,13 +13,25 @@ import { toProductPath, toCategoryPath, toBrandPath, toArticlePath } from "@/lib
  * (cụm VI|EN nằm trong .user-control của header WP). Đổi ngôn ngữ ngay ở CLIENT
  * qua ClientIntlProvider (ghi cookie NEXT_LOCALE + swap message). Khi ở các trang
  * chi tiết có đăng ký Alt Slug, tự động điều hướng sang URL đúng ngôn ngữ (V213/214/215).
+ *
+ * Ẩn ở route `/preview/*` (khung xem trước nhúng trong admin, xem `app/preview/product`
+ * và `app/preview/article`): các trang preview KHÔNG bọc `LocalizedContentProvider`
+ * (`ProductView`/`ArticleView` coi dữ liệu nháp đã được backend dry-run resolve sẵn
+ * đúng locale — xem comment `previewMode` ở `ProductView.tsx`), nên nút này đổi
+ * `locale` toàn cục sang "en" mà không có provider cấp dữ liệu EN cho `LText`/`LHtml`/
+ * `LocalizedTaxonomyName` → các field đó render rỗng. Admin đã có nút đổi ngôn ngữ
+ * RIÊNG trong panel `LivePreview` (gọi lại dry-run đúng locale) nên nút của site là
+ * thừa + xung đột trong ngữ cảnh này.
  */
 export function WpLangSwitch() {
   const locale = useLocale() as Locale;
   const setLocale = useSetLocale();
   const altSlug = useAltSlug();
   const router = useRouter();
+  const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
+
+  if (pathname?.startsWith("/preview")) return null;
 
   function selectLocale(next: Locale) {
     if (next === locale || isPending) return;

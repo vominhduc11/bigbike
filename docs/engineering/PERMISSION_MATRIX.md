@@ -64,6 +64,16 @@ The `product_assign_*` site-setting keys (the editable "Phân công" guide on th
 
 Status: `CONFIRMED_FROM_CODE` — `SettingDefinitionRegistry.java`, `AdminSettingsService.java`, `AdminProductAssignmentController.java`, `SettingsScreen.jsx`
 
+## Bilingual auto-translate proxy (`POST /api/v1/admin/translate`)
+
+Not gated by a single dedicated permission — `AdminTranslateController.requireAnyContentWrite` accepts
+the caller if they hold **any one** of `TRANSLATE_PERMISSIONS`: `products.update`, `catalog.update`,
+`content.update`, or `settings.write` (the last one added **V309** so the bigbike-admin Settings screen's
+VI/EN auto-translate-on-save can call this shared endpoint). Any role holding at least one of these four
+can translate VI→EN text for any module — the endpoint itself does not further scope by module.
+
+Status: `CONFIRMED_FROM_CODE` — `AdminTranslateController.java` (`TRANSLATE_PERMISSIONS`)
+
 ## Audit Log Permission
 
 | Permission | Roles with access | Endpoint |
