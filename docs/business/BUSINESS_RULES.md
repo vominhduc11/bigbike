@@ -183,6 +183,7 @@ Evidence:
 - `CATEGORY_RULE_003`: `slug` tiếng Việt là **canonical**; mỗi danh mục có thêm `slugEn` (slug tiếng Anh) **tùy chọn**. Khi xem bản tiếng Anh, URL dùng `slugEn`; **trống thì lùi về `slug` tiếng Việt**. Web tra cứu danh mục theo **vi HOẶC en** slug (cả hai URL mở cùng danh mục). `slugEn` phải **duy nhất** trong phạm vi danh mục và **không được trùng** bất kỳ `slug` tiếng Việt nào của danh mục khác (cross-column uniqueness — partial-unique index lo en-vs-en, vi-vs-en enforce ở tầng ứng dụng). Đổi/xoá `slugEn` **tự sinh redirect 301**. `CONFIRMED_FROM_CODE`
 - `CATEGORY_RULE_004`: **Xóa mềm danh mục** (đưa vào Thùng rác) đặt cột `deleted = true`. Khi xóa mềm, sản phẩm bên trong danh mục **giữ nguyên** (không bị dồn đi). Khi **Xóa vĩnh viễn danh mục** từ Thùng rác, xóa luôn toàn bộ cây danh mục con bên dưới nó. Mọi sản phẩm trong cả cây (gốc lẫn con) không bị xóa mà **tự động chuyển sang danh mục hệ thống "Chưa phân loại"** (`uncategorized`) trước khi thực sự xóa. Thao tác xóa vĩnh viễn từ Thùng rác không bị chặn vì lý do "còn sản phẩm". Admin (`bigbike-admin`) hiện hộp xác nhận nêu rõ số sản phẩm/danh mục con sẽ chuyển/xóa trước khi thực thi. `CONFIRMED_FROM_CODE` (2026-06-27)
 - `CATEGORY_RULE_005`: Danh mục hệ thống **"Chưa phân loại"** (`id`/`slug` = `uncategorized`, tên VI "Chưa phân loại", EN "Uncategorized") là **kho chứa** cho sản phẩm khi danh mục gốc bị xoá vĩnh viễn (`CATEGORY_RULE_004`). Danh mục này **bị khóa**: backend chặn **sửa** (`updateCategory`) và **xóa** (cả xóa mềm và xóa cứng) nó (HTTP 409). Mặc định **`is_visible = false`** — không hiển thị như một danh mục ngoài storefront (menu/lưới danh mục); sản phẩm bên trong vẫn truy cập/tìm kiếm bình thường. `CONFIRMED_FROM_CODE` (2026-06-27)
+- `CATEGORY_RULE_006`: **Lọc/duyệt sản phẩm theo danh mục gồm cả danh mục con.** Khi lọc theo một danh mục (admin: tham số `categoryId`; web khách: slug danh mục), kết quả gồm sản phẩm gắn trực tiếp vào danh mục đó **và** sản phẩm gắn vào bất kỳ danh mục con nào bên dưới (đệ quy toàn bộ cây con). Danh mục lá (không con) chỉ trả về đúng sản phẩm gắn trực tiếp — không đổi so với trước. `CONFIRMED_FROM_CODE` (2026-07-03)
 
 Evidence:
 
@@ -193,7 +194,7 @@ Evidence:
 - `V293__add_category_deleted.sql` (bổ sung cột `deleted` cho categories)
 - `AdminCatalogController.java` (`DELETE /admin/categories/{id}` để xóa mềm, `POST /admin/categories/{id}/restore` để khôi phục, `DELETE /admin/categories/{id}/permanent` để xóa vĩnh viễn)
 - `ProductEntity.java` (`category_id` `nullable = false`)
-- `JpaCatalogReadRepository.java` (resolve locale + fallback cho category, lọc bỏ `deleted = true`)
+- `JpaCatalogReadRepository.java` (resolve locale + fallback cho category, lọc bỏ `deleted = true`; `resolveCategoryIdWithDescendants`/`resolveCategorySlugWithDescendants` — BFS trong bộ nhớ trên toàn bộ cây danh mục để mở rộng 1 category thành chính nó + mọi danh mục con, dùng cho cả `buildProductSpec` (admin) và `buildPublicListingSpec` (web khách))
 - `CatalogController.java` (`lang` param trên category endpoints)
 
 ## Brand Catalog Rules
@@ -201,15 +202,18 @@ Evidence:
 - `BRAND_RULE_001`: Mỗi thương hiệu bắt buộc có **bản nội dung tiếng Việt** (canonical). **Bản tiếng Anh tự sinh khi lưu** (Gemini, `TRANSLATION_RULE_001`); admin sửa lại tuỳ ý và bản sửa tay được giữ (`TRANSLATION_RULE_002`). `CONFIRMED_FROM_CODE`
 - `BRAND_RULE_002`: Khi đọc thương hiệu bằng tiếng Anh (`lang=en`), mỗi trường thiếu bản tiếng Anh sẽ **tự lùi về bản tiếng Việt theo từng trường**. `CONFIRMED_FROM_CODE`
 - `BRAND_RULE_003`: `slug` tiếng Việt là **canonical**; mỗi thương hiệu có thêm `slugEn` (slug tiếng Anh) **tùy chọn**. Khi xem bản tiếng Anh, URL dùng `slugEn`; **trống thì lùi về `slug` tiếng Việt**. Web tra cứu thương hiệu theo **vi HOẶC en** slug (cả hai URL mở cùng thương hiệu). `slugEn` phải **duy nhất** trong phạm vi thương hiệu và **không được trùng** bất kỳ `slug` tiếng Việt nào của thương hiệu khác (cross-column uniqueness — partial-unique index lo en-vs-en, vi-vs-en enforce ở tầng ứng dụng). Đổi/xoá `slugEn` **tự sinh redirect 301**. `CONFIRMED_FROM_CODE`
-- `BRAND_RULE_004`: **Xóa mềm thương hiệu** (gộp với tính năng Ẩn) đặt cột `isVisible = false` (đưa vào Thùng rác). Khôi phục thương hiệu đặt lại `isVisible = true`. Chỉ được **Xóa vĩnh viễn thương hiệu** từ Thùng rác (`isVisible = false`), nếu đang hoạt động thì chặn lại (409). Khi xóa cứng thương hiệu, sản phẩm liên kết vẫn được giữ nguyên nhưng tham chiếu thương hiệu bị đặt về NULL. `CONFIRMED_FROM_CODE` (2026-06-27)
+- `BRAND_RULE_004`: **Xóa mềm thương hiệu** (gộp với tính năng Ẩn) đặt cột `isVisible = false` (đưa vào Thùng rác). Khôi phục thương hiệu đặt lại `isVisible = true`. Chỉ được **Xóa vĩnh viễn thương hiệu** từ Thùng rác (`isVisible = false`), nếu đang hoạt động thì chặn lại (409). Khi xóa cứng thương hiệu còn sản phẩm, toàn bộ sản phẩm liên kết được **tự động chuyển sang thương hiệu hệ thống "Chưa phân loại"** (`uncategorized-brand`) thay vì để trống — mirror `CATEGORY_RULE_004`. API trả về số sản phẩm đã chuyển (`reassignedProductCount`) để admin biết. Thương hiệu "Chưa phân loại" **bị khoá** (không cho sửa/xoá/khôi phục), **ẩn hoàn toàn khỏi web** (`isVisible = false` vĩnh viễn — không có trang riêng, không menu/bộ lọc, PDP sản phẩm bên trong không hiện mục thương hiệu nào) và **ẩn khỏi danh sách quản lý thương hiệu trong admin** (chỉ hiện tên "Chưa phân loại" trên chính sản phẩm để admin biết cần gán lại). `CONFIRMED_FROM_CODE` (2026-07-03)
 
 Evidence:
 
 - `BrandEntity.java` (các cột `name_en`, `description_en`, `seo_title_en`, `seo_description_en`, `isVisible`)
-- `AdminCatalogMutationService.java` (`deleteBrand` đặt `isVisible = false`, `restoreBrand` đặt `isVisible = true`, `hardDeleteBrand` xóa khỏi DB)
-- `JpaCatalogReadRepository.java` (resolve locale + fallback cho brand)
+- `AdminCatalogMutationService.java` (`deleteBrand` đặt `isVisible = false`, `restoreBrand` đặt `isVisible = true`, `hardDeleteBrand` chuyển sản phẩm sang `uncategorized-brand` rồi xóa khỏi DB, khoá sửa/xoá/khôi phục thương hiệu hệ thống)
+- `ProductJpaRepository.java` (`reassignBrand` bulk-update)
+- `AdminCatalogReadService.java` (`listBrands` loại `uncategorized-brand` khỏi kết quả)
+- `JpaCatalogReadRepository.java` (resolve locale + fallback cho brand; `toBrandSummary` trả `null` khi `publicView && !isVisible`)
 - `CatalogController.java` (`lang` param trên brand endpoints)
-- `AdminCatalogController.java` (`DELETE /admin/brands/{id}` để xóa mềm, `POST /admin/brands/{id}/restore` để khôi phục, `DELETE /admin/brands/{id}/permanent` để xóa vĩnh viễn)
+- `AdminCatalogController.java` (`DELETE /admin/brands/{id}` để xóa mềm, `POST /admin/brands/{id}/restore` để khôi phục, `DELETE /admin/brands/{id}/permanent` để xóa vĩnh viễn, trả `reassignedProductCount`)
+- Migration `V304__ensure_uncategorized_brand.sql` (seed thương hiệu hệ thống, mirror `V292` của category)
 
 ## Article (Blog) Rules
 

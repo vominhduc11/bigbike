@@ -375,13 +375,14 @@ public class AdminCatalogController extends AdminControllerSupport {
     }
 
     @DeleteMapping("/brands/{id}/permanent")
-    public org.springframework.http.ResponseEntity<Void> permanentDeleteBrand(
+    public ApiDataResponse<java.util.Map<String, Object>> permanentDeleteBrand(
             @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "catalog.update");
-        adminCatalogMutationService.hardDeleteBrand(id, resolveAdminId());
-        return org.springframework.http.ResponseEntity.noContent().build();
+        int reassignedProductCount = adminCatalogMutationService.hardDeleteBrand(id, resolveAdminId());
+        return apiResponseFactory.data(
+                java.util.Map.of("reassignedProductCount", reassignedProductCount), request);
     }
 
     private static int resolveSize(Integer size, Integer pageSize) {

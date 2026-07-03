@@ -70,11 +70,21 @@ export function WpPurchaseSection({
     enabled: !previewMode,
   });
 
-  // Override giá/tồn/variants bằng snapshot khi đã có; props ISR làm fallback.
-  const variants = useMemo<ProductVariant[]>(
-    () => snapshot?.variants ?? product.variants ?? [],
-    [snapshot?.variants, product.variants],
-  );
+  // Override giá/tồn bằng snapshot khi đã có; ảnh/gallery/options GIỮ NGUYÊN từ props
+  // ISR — snapshot là projection "listing" nhẹ, KHÔNG mang variant.image/gallery (xem
+  // CatalogReadService.getProductSnapshotByIdOrSlug), nên không được thay hẳn cả mảng
+  // variants kẻo ảnh màu ở VariantPicker biến mất ngay sau khi poll xong.
+  const variants = useMemo<ProductVariant[]>(() => {
+    const base = product.variants ?? [];
+    if (!snapshot) return base;
+    const freshById = new Map(snapshot.variants.map((v) => [v.id, v]));
+    return base.map((v) => {
+      const fresh = freshById.get(v.id);
+      return fresh
+        ? { ...v, price: fresh.price, stockState: fresh.stockState, stockQuantity: fresh.stockQuantity, isAvailable: fresh.isAvailable }
+        : v;
+    });
+  }, [snapshot, product.variants]);
   const freshPrice: ProductPrice = snapshot
     ? {
         retailPrice: snapshot.pricing.retailPrice,

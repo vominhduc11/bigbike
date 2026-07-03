@@ -348,7 +348,10 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
   - Đặt `isVisible = true`.
 - **Xóa vĩnh viễn**: `DELETE /api/v1/admin/brands/{id}/permanent`
   - Chặn lại bằng lỗi `409 Conflict` nếu thương hiệu chưa được ẩn/xóa mềm (`isVisible == true`).
-  - Thực hiện xóa cứng thương hiệu khỏi DB, đặt null các tham chiếu thương hiệu của sản phẩm.
+  - Tự động chuyển toàn bộ sản phẩm đang gắn thương hiệu này sang thương hiệu hệ thống "Chưa phân loại" (`uncategorized-brand`).
+  - Thực hiện xóa cứng thương hiệu khỏi DB.
+  - Response: `200 OK` với `{ data: { reassignedProductCount: number } }` (thay vì `204 No Content`) — số sản phẩm vừa được chuyển, để admin hiển thị thông báo.
+  - Chặn (409) mọi thao tác sửa/xóa/khôi phục đối với thương hiệu hệ thống `uncategorized-brand`; thương hiệu này luôn ẩn (`isVisible = false`) và bị loại khỏi kết quả `GET /admin/brands`.
 
 ### 4. News Articles (Bài viết / Tin tức)
 - **Xóa mềm**: `DELETE /api/v1/admin/content/articles/{id}` (chuyển qua `DELETE /api/v1/admin/content/{type}/{id}`)
@@ -452,6 +455,14 @@ Status: `CONFIRMED_FROM_CODE` — no remaining endpoint.
 - `@Pattern(SLUG_REGEX)` is intentionally **not** used because `Nữ` contains Vietnamese characters incompatible with the slug regex; `@Size(max=20)` is used instead.
 
 Status: `CONFIRMED_FROM_CODE` — `CatalogController.java`, `CatalogReadService.matchesGender`.
+
+### Product list — category filter includes descendant categories (2026-07-03)
+
+`GET /api/v1/admin/products` (`categoryId` param) and `GET /api/v1/products` (category slug in the path/`category` param) both scope results to the requested category **and every category nested under it**, not just products assigned directly to that exact category (`BUSINESS_RULES.md` → `CATEGORY_RULE_006`). A leaf category (no children) behaves exactly as before — only its direct products.
+
+Resolution happens per-request: the full category set (~35 rows) is loaded and walked via BFS from the requested category id/slug to collect self + descendant ids, then the product query filters by `category.id IN (...)` instead of an exact match. An invalid/unresolvable category slug on the public endpoint still yields zero results (was: no match on the raw slug predicate; now: an always-false predicate after slug resolution fails) — no change in observable behaviour for that case.
+
+Status: `CONFIRMED_FROM_CODE` — `JpaCatalogReadRepository.resolveCategoryIdWithDescendants` / `resolveCategorySlugWithDescendants`, called from `findProductsFiltered` (admin) and `findPublishedProductsPaged` (public) before building the respective `Specification`.
 
 ### Product list — list-view payload vs detail payload
 

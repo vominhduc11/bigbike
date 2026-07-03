@@ -10,6 +10,7 @@ import com.bigbike.bigbike_backend.service.common.PaginationService;
 import com.bigbike.bigbike_backend.service.common.SortDirection;
 import com.bigbike.bigbike_backend.service.common.SortParser;
 import com.bigbike.bigbike_backend.service.common.SortSpec;
+import java.text.Collator;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -26,6 +27,25 @@ public class AdminCatalogReadService {
     private static final Set<String> PRODUCT_SORT_FIELDS = Set.of("name", "price", "createdAt", "updatedAt", "homepageOrder");
     private static final Set<String> CATEGORY_SORT_FIELDS = Set.of("name", "createdAt", "updatedAt", "sortOrder");
     private static final Set<String> BRAND_SORT_FIELDS = Set.of("name", "createdAt", "updatedAt");
+
+    // Vietnamese collation for "sort by name" — base letter first (Á sorts near A, not after Z),
+    // then diacritic/tone as a tie-break. SECONDARY strength keeps case-insensitivity (matches the
+    // old String.CASE_INSENSITIVE_ORDER behaviour) while making accents significant.
+    private static final Collator VI_NAME_COLLATOR = viNameCollator();
+
+    private static Collator viNameCollator() {
+        Collator collator = Collator.getInstance(new Locale("vi"));
+        collator.setStrength(Collator.SECONDARY);
+        return collator;
+    }
+
+    /**
+     * System "Chưa phân loại" brand bucket (BRAND_RULE_004) — internal bookkeeping
+     * only, never a manageable row in the admin brand list (unlike the category
+     * equivalent, brands have no separate trash flag, so showing it here would
+     * make it appear as an orphaned/trashed brand with misleading actions).
+     */
+    private static final String UNCATEGORIZED_BRAND_ID = "uncategorized-brand";
 
     private final CatalogReadRepository catalogReadRepository;
     private final SortParser sortParser;
@@ -138,6 +158,7 @@ public class AdminCatalogReadService {
         String locale = normalizeLocale(lang);
         // Admin VI/EN switch: ở EN chỉ hiện thương hiệu đã có tên tiếng Anh.
         List<Brand> result = catalogReadRepository.findAllBrands(locale, "en".equals(locale)).stream()
+                .filter(brand -> !UNCATEGORIZED_BRAND_ID.equals(brand.id()))
                 .filter(brand -> matchesVisibility(brand.isVisible(), visibility))
                 .filter(brand -> matchesBrandQuery(brand, query))
                 .sorted(brandComparator(sortSpec))
@@ -192,13 +213,17 @@ public class AdminCatalogReadService {
         }
 
         Comparator<Product> comparator = switch (sortSpec.field()) {
-            case "name" -> Comparator.comparing(Product::name, String.CASE_INSENSITIVE_ORDER);
+            case "name" -> Comparator.comparing(Product::name, VI_NAME_COLLATOR::compare);
             case "price" -> Comparator.comparing(product -> product.price().retailPrice());
             case "createdAt" -> Comparator.comparing(Product::createdAt);
             case "updatedAt" -> Comparator.comparing(Product::updatedAt);
             default -> throw new IllegalStateException("Unsupported sort field.");
         };
-        return sortSpec.direction() == SortDirection.DESC ? comparator.reversed() : comparator;
+        Comparator<Product> directed = sortSpec.direction() == SortDirection.DESC ? comparator.reversed() : comparator;
+        // Tie-break by id (always ascending, regardless of primary sort direction) so products
+        // sharing an identical name/price/createdAt/updatedAt render in a stable order across
+        // requests — the underlying fetch has no SQL ORDER BY, so ties are otherwise unstable.
+        return directed.thenComparing(Product::id);
     }
 
     private static Comparator<Brand> brandComparator(SortSpec sortSpec) {

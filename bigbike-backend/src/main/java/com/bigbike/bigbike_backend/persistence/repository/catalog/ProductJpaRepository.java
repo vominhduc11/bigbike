@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.persistence.repository.catalog;
 import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import jakarta.persistence.LockModeType;
@@ -45,6 +46,23 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Strin
     int reassignCategory(@Param("target") CategoryEntity target,
                          @Param("sourceIds") List<String> sourceIds,
                          @Param("now") Instant now);
+
+    /** Ids of every product referencing {@code brandId}. */
+    @Query("SELECT p.id FROM ProductEntity p WHERE p.brand.id = :brandId")
+    List<String> findIdsByBrand_Id(@Param("brandId") String brandId);
+
+    /**
+     * Bulk-reassign every product currently pointing at {@code brandId} to
+     * {@code target}. Used when a brand is hard-deleted: its products fall back to
+     * the "Chưa phân loại" system brand instead of being blocked by the
+     * {@code fk_products_brand_id} constraint (see
+     * {@code AdminCatalogMutationService.hardDeleteBrand}, {@code BRAND_RULE_004}).
+     */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE ProductEntity p SET p.brand = :target, p.updatedAt = :now WHERE p.brand.id = :brandId")
+    int reassignBrand(@Param("target") BrandEntity target,
+                       @Param("brandId") String brandId,
+                       @Param("now") Instant now);
 
     /**
      * Products in a given publish status. The public catalog read path

@@ -1,6 +1,10 @@
 // Query defaults and homepage-block lookup tables for ProductListScreen.
 // Extracted from ProductListScreen.jsx to keep the screen file focused on behaviour.
 
+import { buildCategoryTreeOrder } from '../product-detail/constants'
+
+export { buildCategoryTreeOrder }
+
 export const DUPLICATE_SESSION_KEY = 'product-duplicate-payload'
 
 export const INITIAL_QUERY = {

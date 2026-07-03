@@ -73,6 +73,13 @@ public class AdminCatalogMutationService {
      */
     private static final String UNCATEGORIZED_CATEGORY_ID = "uncategorized";
 
+    /**
+     * Thương hiệu hệ thống "Chưa phân loại" — kho chứa sản phẩm khi thương hiệu gốc
+     * bị xoá vĩnh viễn (xem BRAND_RULE_004). Bị khoá: không cho sửa/xoá, ẩn khỏi
+     * danh sách quản lý. Bảo đảm tồn tại qua Flyway V304.
+     */
+    private static final String UNCATEGORIZED_BRAND_ID = "uncategorized-brand";
+
     private final ProductJpaRepository productJpaRepository;
     private final ProductVariantJpaRepository productVariantJpaRepository;
     private final CategoryJpaRepository categoryJpaRepository;
@@ -421,6 +428,13 @@ public class AdminCatalogMutationService {
 
         BrandEntity entity = brandJpaRepository.findById(brandId)
                 .orElseThrow(() -> new NotFoundException("Brand not found."));
+
+        // Thương hiệu hệ thống "Chưa phân loại" bị khoá — không cho đổi tên/slug/ẩn.
+        if (UNCATEGORIZED_BRAND_ID.equals(entity.getId())) {
+            throw new ConflictException(
+                    "Không thể chỉnh sửa thương hiệu \"Chưa phân loại\" — đây là thương hiệu hệ thống được khoá.");
+        }
+
         String previousSlug = entity.getSlug();
         String previousSlugEn = entity.getSlugEn();
 
@@ -447,6 +461,10 @@ public class AdminCatalogMutationService {
         requireJpaPersistenceEnabled();
         BrandEntity entity = brandJpaRepository.findById(brandId)
                 .orElseThrow(() -> new NotFoundException("Brand not found."));
+        if (UNCATEGORIZED_BRAND_ID.equals(entity.getId())) {
+            throw new ConflictException(
+                    "Không thể xoá thương hiệu \"Chưa phân loại\" — đây là thương hiệu hệ thống.");
+        }
         if (!entity.isVisible()) {
             return catalogReadRepository.findBrandById(entity.getId())
                     .orElseThrow(() -> new NotFoundException("Brand not found."));
@@ -465,6 +483,12 @@ public class AdminCatalogMutationService {
         requireJpaPersistenceEnabled();
         BrandEntity entity = brandJpaRepository.findById(brandId)
                 .orElseThrow(() -> new NotFoundException("Brand not found."));
+        // "Chưa phân loại" phải luôn ẩn khỏi storefront (BRAND_RULE_004) — không cho
+        // khôi phục thành thương hiệu công khai dù gọi thẳng API.
+        if (UNCATEGORIZED_BRAND_ID.equals(entity.getId())) {
+            throw new ConflictException(
+                    "Không thể khôi phục thương hiệu \"Chưa phân loại\" — đây là thương hiệu hệ thống luôn bị ẩn.");
+        }
         if (entity.isVisible()) {
             return catalogReadRepository.findBrandById(entity.getId())
                     .orElseThrow(() -> new NotFoundException("Brand not found."));
@@ -478,17 +502,41 @@ public class AdminCatalogMutationService {
                 .orElseThrow(() -> new NotFoundException("Brand not found."));
     }
 
+    /**
+     * Hard-delete a brand. Products are NOT deleted — they are reassigned to the
+     * protected "Chưa phân loại" brand so the storefront never ends up with a
+     * dangling FK reference (fk_products_brand_id has no ON DELETE SET NULL). See
+     * BUSINESS_RULES.md BRAND_RULE_004. Returns the number of products reassigned,
+     * so the caller can surface it to the admin.
+     */
     @Transactional
-    public void hardDeleteBrand(String brandId, UUID adminId) {
+    public int hardDeleteBrand(String brandId, UUID adminId) {
         requireJpaPersistenceEnabled();
         BrandEntity entity = brandJpaRepository.findById(brandId)
                 .orElseThrow(() -> new NotFoundException("Brand not found."));
-        if (entity.isVisible()) {
-            throw new com.bigbike.bigbike_backend.api.error.ConflictException("Only trashed brands can be permanently deleted.");
+        if (UNCATEGORIZED_BRAND_ID.equals(entity.getId())) {
+            throw new ConflictException(
+                    "Không thể xoá thương hiệu \"Chưa phân loại\" — đây là thương hiệu hệ thống.");
         }
+        if (entity.isVisible()) {
+            throw new ConflictException("Only trashed brands can be permanently deleted.");
+        }
+
+        List<String> reassignedProductIds = productJpaRepository.findIdsByBrand_Id(brandId);
+        if (!reassignedProductIds.isEmpty()) {
+            BrandEntity uncategorized = brandJpaRepository.findById(UNCATEGORIZED_BRAND_ID)
+                    .orElseThrow(() -> new ConflictException(
+                            "Thương hiệu \"Chưa phân loại\" không tồn tại — không thể chuyển sản phẩm. Liên hệ kỹ thuật."));
+            productJpaRepository.reassignBrand(uncategorized, brandId, Instant.now());
+        }
+
         auditLog("BRAND_HARD_DELETED", "BRAND", adminId, brandJson(entity), null);
         brandJpaRepository.delete(entity);
         revalidateBrand(entity, null);
+        if (!reassignedProductIds.isEmpty()) {
+            webRevalidationService.revalidateProductsByIds(reassignedProductIds);
+        }
+        return reassignedProductIds.size();
     }
 
     private void requireJpaPersistenceEnabled() {

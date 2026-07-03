@@ -1,0 +1,11 @@
+-- Admin product search (buildProductSpec) matched name/slug/sku byte-for-byte after lowercasing,
+-- so a query typed without Vietnamese diacritics (or with slightly different tone marks) silently
+-- returned zero results even when the visible product name contains it. `unaccent` lets the query
+-- wrap both the column and the search term so accents are ignored on both sides.
+--
+-- Ships in the postgres:16-alpine image's contrib modules — no extra package install needed.
+-- Not paired with a new functional index: at today's row count (~1,200 products) EXPLAIN already
+-- shows a sequential scan on this predicate even with the existing pg_trgm indexes (V299), so
+-- wrapping columns in unaccent(...) does not regress anything measurable. Revisit (immutable
+-- wrapper function + functional GIN index) if the catalog grows an order of magnitude.
+CREATE EXTENSION IF NOT EXISTS unaccent;

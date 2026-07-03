@@ -25,7 +25,7 @@ import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { PaginationControls } from '../components/PaginationControls'
 import { MobileCardList } from '../components/layout/MobileCardList'
-import { DUPLICATE_SESSION_KEY, HOMEPAGE_BLOCK_LABEL_KEYS, HOMEPAGE_BLOCK_LIMITS, INITIAL_QUERY } from './product-list/constants'
+import { DUPLICATE_SESSION_KEY, HOMEPAGE_BLOCK_LABEL_KEYS, HOMEPAGE_BLOCK_LIMITS, INITIAL_QUERY, buildCategoryTreeOrder } from './product-list/constants'
 import { ProductRow } from './product-list/ProductRow'
 import { ProductMobileCard } from './product-list/ProductMobileCard'
 
@@ -70,6 +70,9 @@ export function ProductListScreen({ navigate, canUpdate }) {
   const { data: categoriesData } = useQuery({ queryKey: ['categories', 'tree', contentLang], queryFn: () => fetchCategoryTree(), staleTime: 5 * 60_000 })
   const brands = useMemo(() => brandsData?.items ?? [], [brandsData])
   const categories = useMemo(() => categoriesData?.items ?? [], [categoriesData])
+  // Depth-annotated (parent-first, child indented) order for the category filter dropdown —
+  // categories is already flattened parent-before-children, this just adds `depth` per item.
+  const categoryTreeOptions = useMemo(() => buildCategoryTreeOrder(categories), [categories])
 
   useEffect(() => {
     syncQueryToUrl(query, INITIAL_QUERY)
@@ -474,7 +477,10 @@ export function ProductListScreen({ navigate, canUpdate }) {
           ariaLabel={t('products.filterCategory')}
           options={[
             { value: 'ALL', label: t('products.filterCategory') },
-            ...categories.map((c) => ({ value: c.id, label: c.name })),
+            ...categoryTreeOptions.map((c) => ({
+              value: c.id,
+              label: <span style={{ paddingInlineStart: `${c.depth * 16}px` }}>{c.name}</span>,
+            })),
           ]}
         />
         <FilterSelect

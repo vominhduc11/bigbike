@@ -586,7 +586,8 @@ export async function restoreBrand(brandId) {
 }
 
 export async function permanentDeleteBrand(brandId) {
-  await requestJson(`/admin/brands/${brandId}/permanent`, { method: 'DELETE' })
+  const payload = await requestJson(`/admin/brands/${brandId}/permanent`, { method: 'DELETE' })
+  return { reassignedProductCount: payload?.data?.reassignedProductCount ?? 0 }
 }
 
 // Attribute management

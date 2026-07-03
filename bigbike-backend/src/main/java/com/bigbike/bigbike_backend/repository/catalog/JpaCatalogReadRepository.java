@@ -41,14 +41,22 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRep
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
@@ -132,8 +140,9 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
             int size,
             String locale
     ) {
+        Set<String> categoryIds = resolveCategorySlugWithDescendants(categorySlug);
         Specification<ProductEntity> spec = buildPublicListingSpec(
-                categorySlug, brandSlug, q, gender, minPrice, maxPrice, homepageBlock, sortSpec);
+                categoryIds, brandSlug, q, gender, minPrice, maxPrice, homepageBlock, sortSpec);
         org.springframework.data.domain.PageRequest pageRequest =
                 org.springframework.data.domain.PageRequest.of(Math.max(0, page - 1), Math.max(1, size));
         org.springframework.data.domain.Page<ProductEntity> result =
@@ -144,8 +153,27 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         return new ProductListingPage(items, result.getTotalElements());
     }
 
+    /**
+     * Resolves a storefront category slug to self + descendant category ids (CATEGORY_RULE_006).
+     * Returns {@code null} when no slug was requested at all (skip the category predicate
+     * entirely), or an empty set when a slug was given but didn't resolve to any category (the
+     * caller turns that into an always-false predicate so an invalid slug still yields zero
+     * results, matching prior behaviour). Deliberately uses the single-arg, VI-slug-only
+     * {@code findBySlug} lookup — not the {@code slugEn}-aware overload — to preserve the exact
+     * matching scope the raw {@code category.slug = :categorySlug} predicate had before this
+     * change.
+     */
+    private Set<String> resolveCategorySlugWithDescendants(String categorySlug) {
+        if (categorySlug == null || categorySlug.isBlank()) {
+            return null;
+        }
+        return categoryJpaRepository.findBySlug(categorySlug)
+                .map(entity -> resolveCategoryIdWithDescendants(entity.getId()))
+                .orElse(Set.of());
+    }
+
     private static Specification<ProductEntity> buildPublicListingSpec(
-            String categorySlug,
+            Set<String> categoryIds,
             String brandSlug,
             String q,
             String gender,
@@ -157,8 +185,10 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("publishStatus"), PublishStatus.PUBLISHED));
-            if (categorySlug != null && !categorySlug.isBlank()) {
-                predicates.add(cb.equal(root.join("category", JoinType.LEFT).get("slug"), categorySlug));
+            if (categoryIds != null) {
+                predicates.add(categoryIds.isEmpty()
+                        ? cb.disjunction()
+                        : root.join("category", JoinType.LEFT).get("id").in(categoryIds));
             }
             if (brandSlug != null && !brandSlug.isBlank()) {
                 predicates.add(cb.equal(root.join("brand", JoinType.LEFT).get("slug"), brandSlug));
@@ -234,10 +264,39 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     @Override
     public List<Product> findProductsFiltered(String query, String publishStatus, String stockState, String brandId, String categoryId, String locale) {
-        Specification<ProductEntity> spec = buildProductSpec(query, publishStatus, stockState, brandId, categoryId, locale);
+        Set<String> categoryIds = resolveCategoryIdWithDescendants(categoryId);
+        Specification<ProductEntity> spec = buildProductSpec(query, publishStatus, stockState, brandId, categoryIds, locale);
         return productJpaRepository.findAll(spec).stream()
                 .map(entity -> toDomainListItem(entity, locale))
                 .toList();
+    }
+
+    /**
+     * Self + every descendant category id, so filtering by a parent category also surfaces
+     * products assigned directly to one of its children (CATEGORY_RULE_006). Categories are a
+     * small table (~35 rows) loaded in full and walked in memory via BFS — same tradeoff already
+     * used by AdminCatalogReadService.listAllCategoriesForTree for the same table.
+     */
+    private Set<String> resolveCategoryIdWithDescendants(String categoryId) {
+        if (categoryId == null || categoryId.isBlank()) {
+            return Set.of();
+        }
+        Map<String, List<String>> childrenByParent = new HashMap<>();
+        for (Category category : findAllCategories()) {
+            if (category.parentId() != null) {
+                childrenByParent.computeIfAbsent(category.parentId(), k -> new ArrayList<>()).add(category.id());
+            }
+        }
+        Set<String> visited = new HashSet<>();
+        Deque<String> queue = new ArrayDeque<>(List.of(categoryId));
+        while (!queue.isEmpty()) {
+            String current = queue.poll();
+            if (!visited.add(current)) {
+                continue;
+            }
+            queue.addAll(childrenByParent.getOrDefault(current, List.of()));
+        }
+        return visited;
     }
 
     private Product toDomainListItem(ProductEntity entity, String locale) {
@@ -433,7 +492,12 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         );
     }
 
-    private static Specification<ProductEntity> buildProductSpec(String query, String publishStatus, String stockState, String brandId, String categoryId, String locale) {
+    /** {@code lower(unaccent(value))} — first use of {@code cb.function(...)} in this repository. */
+    private static Expression<String> unaccentLower(CriteriaBuilder cb, Expression<?> value) {
+        return cb.function("unaccent", String.class, cb.lower(value.as(String.class)));
+    }
+
+    private static Specification<ProductEntity> buildProductSpec(String query, String publishStatus, String stockState, String brandId, Collection<String> categoryIds, String locale) {
         return (root, criteriaQuery, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (publishStatus == null || publishStatus.isBlank() || "ALL".equalsIgnoreCase(publishStatus)) {
@@ -447,17 +511,25 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 predicates.add(cb.equal(root.get("stockState"), ProductStockState.valueOf(stockState)));
             }
             if (query != null && !query.isBlank()) {
-                String term = "%" + query.toLowerCase(Locale.ROOT) + "%";
-                Predicate nameLike = cb.like(cb.lower(root.get("name")), term);
-                Predicate slugLike = cb.like(cb.lower(root.get("slug")), term);
-                Predicate skuLike = cb.like(cb.lower(cb.coalesce(root.get("sku"), "")), term);
-                predicates.add(cb.or(nameLike, slugLike, skuLike));
+                // unaccent() on both sides so a search typed without Vietnamese diacritics (or with
+                // slightly different tone marks) still matches accented stored text, e.g. "ao" finds
+                // "Áo...". Also matches nameEn/slugEn so a search while viewing the English content
+                // language still finds products whose visible (English) name doesn't appear in vi
+                // name/slug — mirrors the vi-falls-back-to-en display philosophy used elsewhere (pick()).
+                Expression<String> term = cb.function("unaccent", String.class,
+                        cb.literal("%" + query.toLowerCase(Locale.ROOT) + "%"));
+                Predicate nameLike = cb.like(unaccentLower(cb, root.get("name")), term);
+                Predicate slugLike = cb.like(unaccentLower(cb, root.get("slug")), term);
+                Predicate skuLike = cb.like(unaccentLower(cb, cb.coalesce(root.get("sku"), "")), term);
+                Predicate nameEnLike = cb.like(unaccentLower(cb, cb.coalesce(root.get("nameEn"), "")), term);
+                Predicate slugEnLike = cb.like(unaccentLower(cb, cb.coalesce(root.get("slugEn"), "")), term);
+                predicates.add(cb.or(nameLike, slugLike, skuLike, nameEnLike, slugEnLike));
             }
             if (brandId != null && !brandId.isBlank()) {
                 predicates.add(cb.equal(root.join("brand", JoinType.LEFT).get("id"), brandId));
             }
-            if (categoryId != null && !categoryId.isBlank()) {
-                predicates.add(cb.equal(root.get("category").get("id"), categoryId));
+            if (categoryIds != null && !categoryIds.isEmpty()) {
+                predicates.add(root.get("category").get("id").in(categoryIds));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };

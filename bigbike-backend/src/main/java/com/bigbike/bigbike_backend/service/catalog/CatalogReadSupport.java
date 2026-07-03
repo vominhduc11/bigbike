@@ -7,6 +7,7 @@ import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.service.common.SortDirection;
 import com.bigbike.bigbike_backend.service.common.SortSpec;
 import java.math.BigDecimal;
+import java.text.Collator;
 import java.text.Normalizer;
 import java.util.Comparator;
 import java.util.List;
@@ -33,6 +34,17 @@ final class CatalogReadSupport {
     static final Set<String> PRODUCT_SORT_FIELDS = Set.of("name", "price", "createdAt", "homepageOrder");
     static final Set<String> CATEGORY_SORT_FIELDS = Set.of("name", "createdAt", "sortOrder");
     static final Set<String> BRAND_SORT_FIELDS = Set.of("name", "createdAt");
+
+    // Vietnamese collation for "sort by name" — base letter first (Á sorts near A, not after Z),
+    // then diacritic/tone as a tie-break. SECONDARY strength keeps case-insensitivity (matches the
+    // old String.CASE_INSENSITIVE_ORDER behaviour) while making accents significant.
+    private static final Collator VI_NAME_COLLATOR = viNameCollator();
+
+    private static Collator viNameCollator() {
+        Collator collator = Collator.getInstance(new Locale("vi"));
+        collator.setStrength(Collator.SECONDARY);
+        return collator;
+    }
 
     /**
      * Display name lookup for color base slugs (output of {@link #colorBaseSlug}).
@@ -472,7 +484,7 @@ final class CatalogReadSupport {
         }
 
         Comparator<Product> comparator = switch (sortSpec.field()) {
-            case "name" -> Comparator.comparing(Product::name, String.CASE_INSENSITIVE_ORDER);
+            case "name" -> Comparator.comparing(Product::name, VI_NAME_COLLATOR::compare);
             case "price" -> Comparator.comparing(
                     CatalogReadSupport::effectivePrice,
                     Comparator.nullsLast(Comparator.naturalOrder())
@@ -480,7 +492,10 @@ final class CatalogReadSupport {
             case "createdAt" -> Comparator.comparing(Product::createdAt);
             default -> throw new IllegalStateException("Unsupported sort field.");
         };
-        return sortSpec.direction() == SortDirection.DESC ? comparator.reversed() : comparator;
+        Comparator<Product> directed = sortSpec.direction() == SortDirection.DESC ? comparator.reversed() : comparator;
+        // Tie-break by id (always ascending) so products sharing an identical name/price/createdAt
+        // render in a stable order across requests.
+        return directed.thenComparing(Product::id);
     }
 
     static Comparator<Category> categoryComparator(SortSpec sortSpec) {

@@ -7,6 +7,7 @@ import { Tr } from "@/components/i18n/Tr";
 import { Button } from "@/components/ui/button";
 import { useLocalizedField } from "@/components/i18n/LocalizedContent";
 import { TrustLivePrice, TrustLiveStock } from "@/components/catalog/ProductTrustLive";
+import { PdpSectionHeading } from "@/components/catalog/product-view/PdpSection";
 import { COMMITMENT_ICON_MAP } from "@/components/wp/purchase/CommitmentsList";
 import { telHref, zaloHref } from "@/lib/utils/format";
 import type { Product, ProductCommitment } from "@/lib/contracts/public";
@@ -40,9 +41,10 @@ type TrustContactProps = {
 };
 
 /**
- * Thẻ trust "Mua tại BigBike.vn" — theo mẫu "Trust Block" của chủ shop: header tự vẽ (icon vuông +
- * tiêu đề + huy hiệu "Chính hãng"), lưới ô Giá/Kho/Cam kết/Đồng kiểm co giãn 2→3→N cột, footer liên
- * hệ (Hotline bấm gọi, giờ mở cửa, Zalo, Địa chỉ) + CTA Zalo.
+ * Thẻ trust "Mua tại BigBike.vn" — tiêu đề dùng CHUNG <PdpSectionHeading> như mọi section PDP khác
+ * (vạch đỏ + chữ hoa 24px), huy hiệu "Chính hãng" đặt ở slot `end` cùng hàng. Bên dưới là lưới ô
+ * Giá/Kho/Cam kết/Đồng kiểm co giãn 2→3→N cột, footer liên hệ (Hotline bấm gọi, giờ mở cửa, Zalo,
+ * Địa chỉ) + CTA Zalo.
  *
  * Cam kết (Bảo hành/Giao hàng/Đổi trả…) đọc THẲNG từ `product.commitments` — CÙNG NGUỒN với khối
  * "Cam kết" render dưới nút mua (CommitmentsList, đầu trang, cùng COMMITMENT_ICON_MAP). Admin chỉ
@@ -52,8 +54,9 @@ type TrustContactProps = {
  * "Chính hãng" + "Đồng kiểm khi nhận" là chữ tĩnh (cam kết chung toàn shop, không phải dữ liệu
  * riêng từng SP) — cùng lý do tiêu đề khối cũng là chữ tĩnh.
  *
- * Khối này tự vẽ tiêu đề riêng (KHÔNG dùng <PdpSectionHeading> chung mọi section khác — mẫu thiết
- * kế yêu cầu icon + huy hiệu ngay trong tiêu đề).
+ * Cỡ chữ trong khối theo đúng thang PDP (`STYLEGUIDE.md` §Thang chữ trang chi tiết sản phẩm):
+ * giá trị ô = "Nội dung" 18px (cam kết), nhãn ô = "Chữ nhỏ" 14px (nhãn số liệu), số hotline =
+ * "Tiêu đề phụ" 20px (nút Gọi/Zalo) — trước đây lệch thang (16/12/18), đã chỉnh 2026-07-03.
  */
 export function ProductTrustCard({
   items,
@@ -103,20 +106,15 @@ export function ProductTrustCard({
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-brand pb-4">
-        <div className="flex items-center gap-3">
-          <span className="flex size-7 shrink-0 items-center justify-center bg-brand" aria-hidden="true">
-            <Shield className="size-4 text-white" strokeWidth={2.2} />
-          </span>
-          <h2 className="font-barlow text-ui-15 uppercase tracking-wide text-foreground">
-            <Tr ns="Product" k="trustBlockTitle" />
-          </h2>
-        </div>
-        <div className="inline-flex shrink-0 items-center gap-1.5 text-ui-14 font-semibold text-success">
-          <BadgeCheck className="size-4" strokeWidth={2} aria-hidden="true" />
-          <Tr ns="Product" k="trustVerified" />
-        </div>
-      </div>
+      <PdpSectionHeading
+        title={<Tr ns="Product" k="trustBlockTitle" />}
+        end={
+          <div className="inline-flex shrink-0 items-center gap-1.5 text-ui-14 font-semibold text-success">
+            <BadgeCheck className="size-4" strokeWidth={2} aria-hidden="true" />
+            <Tr ns="Product" k="trustVerified" />
+          </div>
+        }
+      />
 
       {cells.length > 0 ? (
         <div
@@ -137,11 +135,13 @@ export function ProductTrustCard({
                   <Icon className={`size-3.5 ${cell.tone === "red" ? "text-brand" : "text-foreground"}`} strokeWidth={1.8} />
                 </span>
                 <span
-                  className={`font-barlow text-ui-16 max-md:text-ui-14 font-semibold ${cell.tone === "red" ? "text-brand" : "text-foreground"}`}
+                  className={`font-barlow text-ui-18 max-md:text-ui-16 font-semibold ${cell.tone === "red" ? "text-brand" : "text-foreground"}`}
                 >
                   {cell.value}
                 </span>
-                {cell.label ? <span className="text-ui-12 uppercase tracking-wide text-muted-foreground">{cell.label}</span> : null}
+                {cell.label ? (
+                  <span className="text-ui-14 max-md:text-ui-12 uppercase tracking-wide text-muted-foreground">{cell.label}</span>
+                ) : null}
               </div>
             );
           })}
@@ -157,7 +157,7 @@ export function ProductTrustCard({
               // (xem [[project_bigbike_web_wp_css_overrides_tailwind_layer]]). Phải ép !important.
               <a
                 href={telHref(hotline)}
-                className="inline-flex items-center gap-2 font-barlow text-ui-18 font-semibold !text-brand transition-colors hover:!text-brand-hover"
+                className="inline-flex items-center gap-2 font-barlow text-ui-20 max-md:text-ui-18 font-semibold !text-brand transition-colors hover:!text-brand-hover"
               >
                 <Phone className="size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
                 {hotline}

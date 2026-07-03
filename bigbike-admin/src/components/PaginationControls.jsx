@@ -1,6 +1,19 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+// Windowed page-number list: always keeps page 1 + the last page visible, a window of
+// up to 5 pages around the current one, and 'ellipsis' markers where pages are skipped.
+// Ported from bigbike-web/components/ui/PaginationNav.tsx's buildPageList.
+function buildPageList(page, totalPages) {
+  if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1)
+  const pages = [1]
+  if (page > 3) pages.push('ellipsis')
+  for (let p = Math.max(2, page - 2); p <= Math.min(totalPages - 1, page + 2); p++) pages.push(p)
+  if (page < totalPages - 2) pages.push('ellipsis')
+  pages.push(totalPages)
+  return pages
+}
+
 export function PaginationControls({ pagination, onPageChange }) {
   const { t } = useTranslation()
   const [jumpInput, setJumpInput] = useState('')
@@ -58,18 +71,20 @@ export function PaginationControls({ pagination, onPageChange }) {
             {t('pagination.previous')}
           </button>
 
-          {totalPages <= 7
-            ? Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  className={p === page ? 'active' : ''}
-                  onClick={() => onPageChange(p)}
-                  aria-current={p === page ? 'page' : undefined}
-                >
-                  {p}
-                </button>
-              ))
-            : null}
+          {buildPageList(page, totalPages).map((p, i) =>
+            p === 'ellipsis' ? (
+              <span key={`ellipsis-${i}`} className="info" aria-hidden="true">…</span>
+            ) : (
+              <button
+                key={p}
+                className={p === page ? 'active' : ''}
+                onClick={() => onPageChange(p)}
+                aria-current={p === page ? 'page' : undefined}
+              >
+                {p}
+              </button>
+            )
+          )}
 
           <button
             className="bb-btn bb-btn-secondary bb-btn-sm"

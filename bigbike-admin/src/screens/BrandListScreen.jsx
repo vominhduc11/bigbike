@@ -235,9 +235,17 @@ export function BrandListScreen({ navigate, canUpdate }) {
     if (!confirmed) return
 
     try {
-      await permanentDeleteBrand(brand.id)
+      const { reassignedProductCount } = await permanentDeleteBrand(brand.id)
       queryClient.invalidateQueries({ queryKey: ['brands'] })
-      toast.success(t('brands.permanentDeleteSuccess', { defaultValue: 'Xóa vĩnh viễn thương hiệu thành công.' }))
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      toast.success(
+        reassignedProductCount > 0
+          ? t('brands.permanentDeleteSuccessWithProducts', {
+              count: reassignedProductCount,
+              defaultValue: `Đã xóa vĩnh viễn thương hiệu. {{count}} sản phẩm bên trong đã được chuyển sang "Chưa phân loại".`,
+            })
+          : t('brands.permanentDeleteSuccess', { defaultValue: 'Xóa vĩnh viễn thương hiệu thành công.' })
+      )
     } catch (error) {
       toast.error(error.message || t('common.error'))
     }
@@ -325,7 +333,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
       label: '',
       align: 'right',
       render: (brand) => {
-        const isTrashed = query.visibility === 'HIDDEN'
+        const isTrashed = !brand.isVisible
         return (
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
             {!isTrashed && (

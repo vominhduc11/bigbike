@@ -216,8 +216,8 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
 
   // Trust block "Mua tại BigBike.vn" (#12) — lưới Giá/Kho realtime + Cam kết (cùng nguồn
   // product.commitments với khối dưới nút mua) + footer liên hệ (xem product-view/ProductTrustCard).
-  // Tự ẩn khi rỗng cả ba. Thẻ tự vẽ tiêu đề riêng (icon + huy hiệu "Chính hãng" trong header) —
-  // KHÔNG bọc <PdpSectionHeading> chung như các section khác (xem bodyNodes.trust).
+  // Tự ẩn khi rỗng cả ba. Tiêu đề dùng CHUNG <PdpSectionHeading> như mọi section khác (huy hiệu
+  // "Chính hãng" ở slot `end` cùng hàng) — tự vẽ bên TRONG ProductTrustCard, không lặp lại ở đây.
   const trustItems = buildTrustItems({ product, previewMode });
   const hasTrustContact = Boolean(hotline || contactAddress);
   const hasTrustCommitments = safeArray(product.commitments).some((c) => c.title);
