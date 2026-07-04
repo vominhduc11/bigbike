@@ -1085,6 +1085,8 @@ Status: `REMOVED`
 
 **Sensitive key masking:** Any key whose name contains `secret`, `password`, `token`, `api_key`, `privatekey`, etc. always returns `settingValue="********"` in admin responses and in audit log `before_data`/`after_data`.
 
+**`IMAGE_URL`-typed setting validation:** Keys typed `IMAGE_URL` in `SettingDefinitionRegistry` (hero banner images `hero_*_image_url`/`hero_*_mobile_image_url`/`hero_*_illustration_url`, `hero_default_bg_url`/`hero_default_illustration_url`, and `og_image_url`) are validated by the **shared media-URL whitelist** (`SafeMediaAssetUrlPolicy.validateImageUrlOrThrow`), not the generic URL check. Accepts relative `/media/…` and `/media-proxy/…` paths (what the admin media picker stores), absolute URLs under the configured MinIO public base, and BigBike legacy upload/CDN paths; rejects external hotlinks — same policy the catalog/content modules already use (per `DATA_CONTRACT.md` "menu icon" whitelist note). This fixes the prior `400 VALIDATION_ERROR` (`INVALID_URL`) when saving a library-picked image (relative `/media/…`) to a Banner/Hero or SEO setting. `CONFIRMED_FROM_CODE` — `SettingValueValidator.java`, `SafeMediaAssetUrlPolicy.java`.
+
 **Public storefront setting keys returned by `GET /api/v1/settings/public`:**
 
 - `general`:

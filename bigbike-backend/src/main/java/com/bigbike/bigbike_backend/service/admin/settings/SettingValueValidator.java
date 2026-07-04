@@ -1,15 +1,23 @@
 package com.bigbike.bigbike_backend.service.admin.settings;
 
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.service.security.SafeMediaAssetUrlPolicy;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Set;
 import java.util.regex.Pattern;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class SettingValueValidator {
+
+    // IMAGE_URL settings (hero banners, OG image…) must point at an approved media source —
+    // the admin media picker stores relative /media/... paths, so reuse the shared whitelist
+    // policy instead of the generic URL check (which rejected relative paths → HTTP 400 on save).
+    private final SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy;
 
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
             "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
@@ -69,7 +77,7 @@ public class SettingValueValidator {
                     validateUrl(key, rawValue, true);
                 }
             }
-            case IMAGE_URL -> validateUrl(key, rawValue, false);
+            case IMAGE_URL -> safeMediaAssetUrlPolicy.validateImageUrlOrThrow(rawValue, "value");
             case EMAIL -> validateEmail(key, rawValue);
             case PHONE -> validatePhone(key, rawValue);
             case ENUM -> validateEnum(key, rawValue, def);
