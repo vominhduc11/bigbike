@@ -85,7 +85,7 @@ export function ArticleView({
   const hasSidebar = highlighted.length > 0 || newest.length > 0;
 
   const inner = (
-    <div className="single single-post single-format-standard bb-wp-news-page">
+    <div key="blog-detail-root" className="single single-post single-format-standard bb-wp-news-page">
       <WpCategoryHero
         title={articleTitle}
         titleNode={<LText field="title">{articleTitle}</LText>}
@@ -101,7 +101,7 @@ export function ArticleView({
           <div className="row">
             <div className={hasSidebar ? "col-md-8" : "col-md-12"}>
               <div className="blog">
-                <div className="blog-thumbnail">
+                <div className="blog-thumbnail" key="blog-thumbnail-real">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={BLOG_THUMBNAIL} alt="" />
                 </div>

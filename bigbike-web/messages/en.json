@@ -99,6 +99,10 @@
     "defaultHeading": "BigBike would love to listen and understand you better",
     "defaultDescription": "Subscribe to receive special offers, new product updates and BigBike events. Do not miss useful information and exclusive promotions that improve your riding experience.",
     "linkFallback": "Link",
+    "taglineLong": "BIGBIKE WANTS TO LISTEN AND UNDERSTAND YOU BETTER",
+    "address": "79/30/52 Au Co, Ward 14, District 11, Ho Chi Minh City",
+    "businessRegistration": "Business Registration Certificate No.: 41K8017383 | Issued on March 8, 2016 | Issued by: People's Committee of District 11",
+    "description": "Bigbike.vn Protective Gear Shop has been operating since 2014 at 79/30/52 Âu Cơ, Hòa Bình Ward, Ho Chi Minh City. Authorized retailer of helmets, jackets, gloves, boots and motorcycle accessories from AGV, LS2, Komine, Taichi, Scoyco, Caberg, HJC, ILM — serving the Ho Chi Minh City biker community with nationwide delivery.",
     "fallbackInfo": {
       "warranty": "Warranty policy",
       "returns": "Return policy",
@@ -155,6 +159,7 @@
     "viewProductAria": "View {name}",
     "fallbackShortName": "Product",
     "loadFailed": "Failed to load product details.",
+    "featuredSpecsTitle": "Featured statistics",
     "tabs": {
       "description": "Description",
       "promotion": "Offers & promotions",

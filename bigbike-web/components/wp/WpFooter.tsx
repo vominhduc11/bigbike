@@ -28,23 +28,7 @@ const T = "/wp-content/themes/bigbike";
  */
 const FOOTER_HOTLINES = ["0906 902 404", "0764 640 679 - Mrs. Thư / Zalo"];
 const FOOTER_EMAIL = "bigbikevnshop@gmail.com";
-const FOOTER_ADDRESS = {
-  vi: "79/30/52 Âu Cơ, Phường Hoà Bình, TP. Hồ Chí Minh",
-  en: "79/30/52 Au Co, Ward 14, District 11, Ho Chi Minh City",
-};
-const FOOTER_TAGLINE = {
-  vi: "BIGBIKE MONG ĐƯỢC LẮNG NGHE VÀ THẤU HIỂU BẠN HƠN",
-  en: "BIGBIKE WANTS TO LISTEN AND UNDERSTAND YOU BETTER",
-};
-const FOOTER_DESCRIPTION = {
-  vi: "Shop Bảo Hộ Bigbike.vn hoạt động từ 2014 tại 79/30/52 Âu Cơ, Phường Hòa Bình, TP. Hồ Chí Minh. Chuyên phân phối chính hãng mũ bảo hiểm, áo giáp, găng tay, giày bảo hộ và phụ kiện mô tô từ AGV, LS2, Komine, Taichi, Scoyco, Caberg, HJC, ILM — phục vụ cộng đồng biker TP.HCM và giao hàng toàn quốc.",
-  en: "Bigbike.vn Protective Gear Shop has been operating since 2014 at 79/30/52 Âu Cơ, Hòa Bình Ward, Ho Chi Minh City. Authorized retailer of helmets, jackets, gloves, boots and motorcycle accessories from AGV, LS2, Komine, Taichi, Scoyco, Caberg, HJC, ILM — serving the Ho Chi Minh City biker community with nationwide delivery.",
-};
 const FOOTER_BCT_URL = "http://online.gov.vn/Home/WebDetails/27044";
-const FOOTER_BUSINESS_REGISTRATION = {
-  vi: "Giấy chứng nhận đăng ký kinh doanh số: 41K8017383 | Ngày cấp 8 tháng 3 năm 2016 | Nơi cấp: Ủy Ban Nhân Dân Quận 11",
-  en: "Business Registration Certificate No.: 41K8017383 | Issued on March 8, 2016 | Issued by: People's Committee of District 11",
-};
 const FOOTER_SOCIAL_LINKS = {
   facebook: "https://www.facebook.com/bigbikegear",
   youtube: "https://www.youtube.com/@bigbike-shop",
@@ -114,15 +98,9 @@ const titleStyle: React.CSSProperties = {
 /** Footer WordPress bigbike.vn — port 1:1 từ footer.php. */
 export async function WpFooter() {
   const locale = await getLocale();
-  const isEn = locale === "en";
 
   const settings = (await listPublicSettings(locale)).data ?? [];
   const settingDescription = pickSetting(settings, ["footer_description"]);
-
-  const tagline = isEn ? FOOTER_TAGLINE.en : FOOTER_TAGLINE.vi;
-  const shopDescription = settingDescription || (isEn ? FOOTER_DESCRIPTION.en : FOOTER_DESCRIPTION.vi);
-  const contactAddress = isEn ? FOOTER_ADDRESS.en : FOOTER_ADDRESS.vi;
-  const businessRegistration = isEn ? FOOTER_BUSINESS_REGISTRATION.en : FOOTER_BUSINESS_REGISTRATION.vi;
 
   return (
     <footer data-bb-focus="general_brand">
@@ -132,7 +110,7 @@ export async function WpFooter() {
             <div className="col-md-7">
               <div className="newletters">
                 <form action="">
-                  <h2 className="slogan-bigbike">{tagline}</h2>
+                  <h2 className="slogan-bigbike"><Tr ns="Footer" k="taglineLong" /></h2>
                 </form>
                 <div className="contact-infor">
                   <div className="contact-infor--item">
@@ -147,7 +125,7 @@ export async function WpFooter() {
                       </a>
                     </p>
                     <p>
-                      <i className="fal fa-map-marker-alt" /> {contactAddress}
+                      <i className="fal fa-map-marker-alt" /> <Tr ns="Footer" k="address" />
                     </p>
                   </div>
                 </div>
@@ -156,7 +134,7 @@ export async function WpFooter() {
             <div className="col-md-5">
               <div className="information">
                 <div className="information--item">
-                  <p>{shopDescription}</p>
+                  <p>{settingDescription || <Tr ns="Footer" k="description" />}</p>
                 </div>
                 <div className="row">
                   <div className="col-md-7">
@@ -236,7 +214,7 @@ export async function WpFooter() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={`${T}/images/license.png`} alt="logo-bigbike" />
                 </a>
-                <p>{businessRegistration}</p>
+                <p><Tr ns="Footer" k="businessRegistration" /></p>
               </div>
             </div>
           </div>

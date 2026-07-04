@@ -65,6 +65,15 @@ const allowlist = [
     file: path.join(projectRoot, "components", "wp", "WpCheckoutClient.tsx"),
     labels: new Set(["legacy storefront phone number"]),
   },
+  {
+    file: path.join(projectRoot, "components", "wp", "WpFooter.tsx"),
+    labels: new Set([
+      "legacy storefront email",
+      "legacy storefront phone number",
+      "legacy storefront address fragment",
+      "legacy storefront social handle",
+    ]),
+  },
 ];
 
 function isAllowed(filePath, label) {

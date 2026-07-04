@@ -1,6 +1,6 @@
 "use client";
 
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useLocalizedField } from "@/components/i18n/LocalizedContent";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import type { ProductSpecStat } from "@/lib/contracts/public";
@@ -22,6 +22,7 @@ export function FeaturedSpecsBar({
   viStatsHtml?: string;
 }) {
   const locale = useLocale();
+  const t = useTranslations("Product");
   const enStats = useLocalizedField<ProductSpecStat[]>("specStats");
   const enStatsHtml = useLocalizedField<string>("specStatsHtml");
 
@@ -34,7 +35,7 @@ export function FeaturedSpecsBar({
     return (
       <div
         role="region"
-        aria-label="Số liệu nổi bật"
+        aria-label={t("featuredSpecsTitle")}
         className="my-10 featured-specs-html"
         dangerouslySetInnerHTML={{ __html: html }}
       />
@@ -50,7 +51,7 @@ export function FeaturedSpecsBar({
     <div
       role="region"
       className="my-10 grid grid-cols-2 gap-px border border-border bg-border md:grid-cols-4"
-      aria-label="Số liệu nổi bật"
+      aria-label={t("featuredSpecsTitle")}
     >
       {boxes.map((s, i) => (
         <div

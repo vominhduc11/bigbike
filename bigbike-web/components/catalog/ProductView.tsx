@@ -3,6 +3,8 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
+import { useQuery } from "@tanstack/react-query";
+import { listPublicSettings } from "@/lib/api/public-api";
 
 import { WpPurchaseSection } from "@/components/wp/WpPurchaseSection";
 import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
@@ -135,7 +137,20 @@ function MobileTrustLine({ product }: { product: Product }) {
 }
 
 export function ProductView({ product, settings, previewMode = false }: ProductViewProps) {
-  const name = safeText(product.name, "Sản phẩm");
+  const locale = useLocale();
+  const tProduct = useTranslations("Product");
+
+  // Fetch site settings client-side using the active locale to ensure we get English translations of
+  // static fields (hours, address, zalo) when locale = "en".
+  const { data: freshSettingsResult } = useQuery({
+    queryKey: ["public-settings", locale],
+    queryFn: () => listPublicSettings(locale),
+    initialData: { data: settings, error: null },
+    staleTime: 5 * 60 * 1000,
+  });
+  const activeSettings = freshSettingsResult?.data ?? settings;
+
+  const name = safeText(product.name, tProduct("fallbackShortName") || "Sản phẩm");
 
   // Nhãn cho thanh nhảy-mục MOBILE (anchor nav tổng ở đầu nội dung).
   const tTab = useTranslations("Product.tabs");
@@ -143,13 +158,13 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   // Business NAP — same key set as footer / contact page so the bottom contact
   // band shows site-wide values (consistent local-SEO). Live-preview also loads
   // these (client fetch) so the trust block + contact band match the live page.
-  const siteName = pickSetting(settings, ["site_name"]) || "BigBike";
-  const contactAddress = pickSetting(settings, ["contact_address", "address"]);
-  const hotline = pickSetting(settings, ["hotline", "phone"]);
-  const zaloUrl = pickSetting(settings, ["zalo_url"]);
-  const zaloDisplay = pickSetting(settings, ["zalo_display"]);
-  const hoursWeekday = pickSetting(settings, ["opening_hours_weekday"]);
-  const hoursWeekend = pickSetting(settings, ["opening_hours_weekend"]);
+  const siteName = pickSetting(activeSettings, ["site_name"]) || "BigBike";
+  const contactAddress = pickSetting(activeSettings, ["contact_address", "address"]);
+  const hotline = pickSetting(activeSettings, ["hotline", "phone"]);
+  const zaloUrl = pickSetting(activeSettings, ["zalo_url"]);
+  const zaloDisplay = pickSetting(activeSettings, ["zalo_display"]);
+  const hoursWeekday = pickSetting(activeSettings, ["opening_hours_weekday"]);
+  const hoursWeekend = pickSetting(activeSettings, ["opening_hours_weekend"]);
   // Khối cam kết dưới nút mua hàng (V232) + dải tin cậy trên tên sản phẩm (V233) giờ quản theo
   // TỪNG sản phẩm (product.commitments / product.trustBadges) — WpPurchaseSection tự đọc thẳng từ
   // product, không còn lấy từ settings.

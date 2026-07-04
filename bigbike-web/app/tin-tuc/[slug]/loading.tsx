@@ -11,7 +11,7 @@ export default async function ArticleDetailLoading() {
   return (
     <>
       <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-news.css?v=4" />
-      <div className="single single-post" aria-label={t("loading")}>
+      <div key="blog-detail-loading-root" className="single single-post" aria-label={t("loading")}>
         <div
           className="page-title"
           style={{ backgroundImage: "url('/wp-content/themes/bigbike/images/page-title-bg.png')" }}
@@ -30,7 +30,7 @@ export default async function ArticleDetailLoading() {
             <div className="row">
               <div className="col-md-8">
                 <div className="blog">
-                  <div className="blog-thumbnail">
+                  <div className="blog-thumbnail" key="blog-thumbnail-skeleton">
                     <div className="aspect-[16/9] w-full bg-black/10" />
                   </div>
                   <div className="blog-meta">

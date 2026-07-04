@@ -294,11 +294,6 @@ public class CatalogRequestValidator {
         if (slugEn == null) {
             return;
         }
-        if (slugEn.equals(viSlug)) {
-            errors.add(new ApiErrorDetail("translations.en.slug", "INVALID_VALUE",
-                    "English slug must differ from the Vietnamese slug."));
-            return;
-        }
         Optional<String> byViSlug = findIdByViSlug.apply(slugEn);
         if (byViSlug.isPresent() && (currentId == null || !byViSlug.get().equals(currentId))) {
             errors.add(new ApiErrorDetail("translations.en.slug", "DUPLICATE",

@@ -144,11 +144,6 @@ public class ContentRequestValidator {
             return;
         }
         String currentId = current == null ? null : current.getId();
-        if (slugEn.equals(viSlug)) {
-            errors.add(new ApiErrorDetail("translations.en.slug", "INVALID_VALUE",
-                    "English slug must differ from the Vietnamese slug."));
-            return;
-        }
         ArticleEntity byViSlug = articleJpaRepository.findBySlug(slugEn).orElse(null);
         if (byViSlug != null && byViSlug.getPublishStatus() != com.bigbike.bigbike_backend.domain.catalog.PublishStatus.TRASH
                 && (currentId == null || !byViSlug.getId().equals(currentId))) {

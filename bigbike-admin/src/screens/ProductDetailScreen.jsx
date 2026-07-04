@@ -1097,7 +1097,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                       : t('products.detail.slugHint')}
                   >
                     <Input
-                      value={isEnLang ? (form.translations?.en?.slug ?? '') : form.slug}
+                      value={isEnLang ? (form.translations?.en?.slug || form.slug || '') : (form.slug || '')}
                       placeholder={isEnLang ? 'vd: fullface-helmet-agv-k1s' : 'vd: mu-bao-hiem-fullface-agv-k1s'}
                       onChange={(e) => (isEnLang ? handleEnSlugChange(e.target.value) : handleSlugChange(e.target.value))}
                       onBlur={(e) => {
