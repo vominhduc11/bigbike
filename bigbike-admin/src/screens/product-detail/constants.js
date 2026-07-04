@@ -630,9 +630,18 @@ export function cleanDescriptionBlocks(blocks) {
       }
     })
     .map(({ _key, ...rest }) => {
-      // Khối feature: bỏ các dòng danh sách rỗng để không gửi item trắng xuống backend.
-      if (rest.type === 'feature' && Array.isArray(rest.items)) {
-        return { ...rest, items: rest.items.filter((it) => (it ?? '').trim().length > 0) }
+      // Khối image: bỏ alt text
+      if (rest.type === 'image') {
+        const { alt: _alt, ...keep } = rest
+        return keep
+      }
+      // Khối feature: bỏ alt text và bỏ các dòng danh sách rỗng để không gửi item trắng xuống backend.
+      if (rest.type === 'feature') {
+        const { alt: _alt, ...keep } = rest
+        if (Array.isArray(keep.items)) {
+          return { ...keep, items: keep.items.filter((it) => (it ?? '').trim().length > 0) }
+        }
+        return keep
       }
       // Phù hợp với ai: html là nguồn DUY NHẤT được lưu (web render theo html). Bỏ `cards` khỏi
       // payload; nếu thiếu html (dữ liệu cũ) thì sinh từ cards để không mất nội dung.
@@ -733,13 +742,13 @@ export function toPayload(form) {
           description: form.seoDescription.trim() || null,
           canonicalUrl,
           ogImage: form.seoOgImageUrl.trim()
-            ? { url: form.seoOgImageUrl.trim(), alt: form.seoOgImageAlt.trim() || undefined }
+            ? { url: form.seoOgImageUrl.trim() }
             : null,
         }
       : null,
     // Always include image — null signals "clear the primary image".
     image: form.imageUrl.trim()
-      ? { url: form.imageUrl.trim(), alt: form.imageAlt.trim() || undefined }
+      ? { url: form.imageUrl.trim() }
       : null,
     // English content (V136), entered manually. Always sent so the backend full-replaces
     // the English columns; empty fields clear them — except `name`, which is required
@@ -757,10 +766,9 @@ export function toPayload(form) {
             videoUrl: (img.videoUrl || '').trim(),
             videoProvider: img.provider || 'youtube',
             url: (img.url || '').trim() || undefined,
-            alt: img.alt?.trim() || undefined,
             sortOrder: i,
           }
-        : { mediaType: 'image', url: img.url.trim(), alt: img.alt?.trim() || undefined, sortOrder: i }
+        : { mediaType: 'image', url: img.url.trim(), sortOrder: i }
     ))
 
   payload.videos = form.videos
@@ -880,10 +888,9 @@ export function toPayload(form) {
               videoUrl: (img.videoUrl || '').trim(),
               videoProvider: img.provider || 'youtube',
               url: (img.url || '').trim() || undefined,
-              alt: img.alt?.trim() || undefined,
               sortOrder: j,
             }
-          : { mediaType: 'image', url: img.url.trim(), alt: img.alt?.trim() || undefined, sortOrder: j }
+          : { mediaType: 'image', url: img.url.trim(), sortOrder: j }
       ))
 
     const shouldSendGallery = Boolean(colorKey && gallery.length > 0 && !emittedGalleryColors.has(colorKey))
@@ -897,7 +904,6 @@ export function toPayload(form) {
       // variant form section. Cart/checkout always use product price.
       // Representation image (ảnh đại diện màu) is a separate variant field, scoped per-color.
       imageUrl: v.imageUrl?.trim() || undefined,
-      imageAlt: v.imageAlt?.trim() || undefined,
       imageWidth: v.imageWidth ?? undefined,
       imageHeight: v.imageHeight ?? undefined,
       imageMimeType: v.imageMimeType ?? undefined,

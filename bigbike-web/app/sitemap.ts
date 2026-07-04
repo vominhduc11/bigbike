@@ -82,109 +82,279 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: STATIC_PAGE_DATES.home,
       changeFrequency: "daily",
       priority: 1,
+      alternates: {
+        languages: {
+          vi: toCanonicalUrl("/"),
+          en: toCanonicalUrl("/"),
+        },
+      },
     },
+  ];
+
+  // Static routes with VI <-> EN mapping
+  const staticRoutes = [
     {
-      url: toCanonicalUrl(toProductListPath()),
+      vi: "/san-pham/",
+      en: "/products/",
       lastModified: STATIC_PAGE_DATES.productList,
-      changeFrequency: "daily",
+      changeFrequency: "daily" as const,
       priority: 0.9,
     },
     {
-      url: toCanonicalUrl(toArticleListPath()),
+      vi: "/tin-tuc/",
+      en: "/news/",
       lastModified: STATIC_PAGE_DATES.articleList,
-      changeFrequency: "weekly",
+      changeFrequency: "weekly" as const,
       priority: 0.7,
     },
     {
-      url: toCanonicalUrl(toBrandListPath()),
-      lastModified: STATIC_PAGE_DATES.brandList,
-      changeFrequency: "monthly",
-      priority: 0.5,
-    },
-    // ── Static informational pages ───────────────────────────
-    {
-      url: toCanonicalUrl(toPagePath("gioi-thieu")),
+      vi: "/gioi-thieu/",
+      en: "/about/",
       lastModified: STATIC_PAGE_DATES.about,
-      changeFrequency: "yearly",
+      changeFrequency: "yearly" as const,
       priority: 0.5,
     },
     {
-      url: toCanonicalUrl(toPagePath("huong-dan")),
+      vi: "/huong-dan/",
+      en: "/guide/",
       lastModified: STATIC_PAGE_DATES.guide,
-      changeFrequency: "yearly",
+      changeFrequency: "yearly" as const,
       priority: 0.5,
     },
-    // /huong-dan-mua-hang merged into the guide builder; it now 301s to /huong-dan/mua-hang/,
-    // so it is no longer listed here (redirected URLs must not appear in the sitemap).
     {
-      url: toCanonicalUrl(toPagePath("lien-he")),
+      vi: "/lien-he/",
+      en: "/contact/",
       lastModified: STATIC_PAGE_DATES.contact,
-      changeFrequency: "yearly",
+      changeFrequency: "yearly" as const,
       priority: 0.5,
     },
   ];
 
+  for (const route of staticRoutes) {
+    const viUrl = toCanonicalUrl(route.vi);
+    const enUrl = toCanonicalUrl(route.en);
+    entries.push(
+      {
+        url: viUrl,
+        lastModified: route.lastModified,
+        changeFrequency: route.changeFrequency,
+        priority: route.priority,
+        alternates: {
+          languages: {
+            vi: viUrl,
+            en: enUrl,
+          },
+        },
+      },
+      {
+        url: enUrl,
+        lastModified: route.lastModified,
+        changeFrequency: route.changeFrequency,
+        priority: route.priority,
+        alternates: {
+          languages: {
+            vi: viUrl,
+            en: enUrl,
+          },
+        },
+      }
+    );
+  }
+
+  // Brands list has no EN-specific URL path mapping
+  const brandListUrl = toCanonicalUrl(toBrandListPath());
+  entries.push({
+    url: brandListUrl,
+    lastModified: STATIC_PAGE_DATES.brandList,
+    changeFrequency: "monthly",
+    priority: 0.5,
+    alternates: {
+      languages: {
+        vi: brandListUrl,
+        en: brandListUrl,
+      },
+    },
+  });
+
   for (const p of products) {
+    const viUrl = toCanonicalUrl(toProductPath(p.slug));
+    const enUrl = p.slugEn ? toCanonicalUrl(toProductPath(p.slugEn)) : null;
+    const lastMod = p.updatedAt ? new Date(p.updatedAt) : STATIC_PAGE_DATES.home;
+
     entries.push({
-      url: toCanonicalUrl(toProductPath(p.slug)),
-      lastModified: p.updatedAt ? new Date(p.updatedAt) : STATIC_PAGE_DATES.home,
+      url: viUrl,
+      lastModified: lastMod,
       changeFrequency: "weekly",
       priority: 0.8,
-      // hreflang en khi sản phẩm có slug tiếng Anh riêng (PRODUCT_RULE_003).
-      ...(p.slugEn ? { alternates: { languages: { en: toCanonicalUrl(toProductPath(p.slugEn)) } } } : {}),
+      ...(enUrl ? { alternates: { languages: { vi: viUrl, en: enUrl } } } : {}),
     });
+
+    if (enUrl) {
+      entries.push({
+        url: enUrl,
+        lastModified: lastMod,
+        changeFrequency: "weekly",
+        priority: 0.8,
+        alternates: {
+          languages: {
+            vi: viUrl,
+            en: enUrl,
+          },
+        },
+      });
+    }
   }
 
   for (const c of categories) {
+    const viUrl = toCanonicalUrl(toCategoryPath(c.slug, "vi", false));
+    const enUrl = c.slugEn ? toCanonicalUrl(toCategoryPath(c.slugEn, "en", true)) : null;
+    const lastMod = c.updatedAt ? new Date(c.updatedAt) : STATIC_PAGE_DATES.home;
+
     entries.push({
-      url: toCanonicalUrl(toCategoryPath(c.slug)),
-      lastModified: c.updatedAt ? new Date(c.updatedAt) : STATIC_PAGE_DATES.home,
+      url: viUrl,
+      lastModified: lastMod,
       changeFrequency: "weekly",
       priority: 0.6,
-      ...(c.slugEn ? { alternates: { languages: { en: toCanonicalUrl(toCategoryPath(c.slugEn)) } } } : {}),
+      ...(enUrl ? { alternates: { languages: { vi: viUrl, en: enUrl } } } : {}),
     });
+
+    if (enUrl) {
+      entries.push({
+        url: enUrl,
+        lastModified: lastMod,
+        changeFrequency: "weekly",
+        priority: 0.6,
+        alternates: {
+          languages: {
+            vi: viUrl,
+            en: enUrl,
+          },
+        },
+      });
+    }
   }
 
   for (const b of brands) {
+    const viUrl = toCanonicalUrl(toBrandPath(b.slug));
+    const enUrl = b.slugEn ? toCanonicalUrl(toBrandPath(b.slugEn)) : null;
+    const lastMod = b.updatedAt ? new Date(b.updatedAt) : STATIC_PAGE_DATES.home;
+
     entries.push({
-      url: toCanonicalUrl(toBrandPath(b.slug)),
-      lastModified: b.updatedAt ? new Date(b.updatedAt) : STATIC_PAGE_DATES.home,
+      url: viUrl,
+      lastModified: lastMod,
       changeFrequency: "monthly",
       priority: 0.5,
-      ...(b.slugEn ? { alternates: { languages: { en: toCanonicalUrl(toBrandPath(b.slugEn)) } } } : {}),
+      ...(enUrl ? { alternates: { languages: { vi: viUrl, en: enUrl } } } : {}),
     });
+
+    if (enUrl) {
+      entries.push({
+        url: enUrl,
+        lastModified: lastMod,
+        changeFrequency: "monthly",
+        priority: 0.5,
+        alternates: {
+          languages: {
+            vi: viUrl,
+            en: enUrl,
+          },
+        },
+      });
+    }
   }
 
   for (const a of articles) {
     if (a.seo?.noIndex) continue;
+    const viUrl = toCanonicalUrl(toArticlePath(a.slug, "vi", false));
+    const enUrl = a.slugEn ? toCanonicalUrl(toArticlePath(a.slugEn, "en", true)) : null;
+    const lastMod = a.updatedAt ? new Date(a.updatedAt) : STATIC_PAGE_DATES.home;
+
     entries.push({
-      url: toCanonicalUrl(toArticlePath(a.slug)),
-      lastModified: a.updatedAt ? new Date(a.updatedAt) : STATIC_PAGE_DATES.home,
+      url: viUrl,
+      lastModified: lastMod,
       changeFrequency: "monthly",
       priority: 0.4,
-      // hreflang en khi bài viết có slug tiếng Anh riêng (ARTICLE_RULE_003).
-      ...(a.slugEn ? { alternates: { languages: { en: toCanonicalUrl(toArticlePath(a.slugEn)) } } } : {}),
+      ...(enUrl ? { alternates: { languages: { vi: viUrl, en: enUrl } } } : {}),
     });
+
+    if (enUrl) {
+      entries.push({
+        url: enUrl,
+        lastModified: lastMod,
+        changeFrequency: "monthly",
+        priority: 0.4,
+        alternates: {
+          languages: {
+            vi: viUrl,
+            en: enUrl,
+          },
+        },
+      });
+    }
   }
 
-  // Trang chính sách tĩnh (/chinh-sach/{slug-gốc}).
+  // Trang chính sách tĩnh (/chinh-sach/{slug-gốc} ↔ /policy/{slug-gốc})
   for (const slug of POLICY_PAGE_SLUGS) {
-    entries.push({
-      url: toCanonicalUrl(`/chinh-sach/${slug}/`),
-      lastModified: STATIC_PAGE_DATES.policy,
-      changeFrequency: "yearly",
-      priority: 0.3,
-    });
+    const viUrl = toCanonicalUrl(`/chinh-sach/${slug}/`);
+    const enUrl = toCanonicalUrl(`/policy/${slug}/`);
+    entries.push(
+      {
+        url: viUrl,
+        lastModified: STATIC_PAGE_DATES.policy,
+        changeFrequency: "yearly",
+        priority: 0.3,
+        alternates: {
+          languages: {
+            vi: viUrl,
+            en: enUrl,
+          },
+        },
+      },
+      {
+        url: enUrl,
+        lastModified: STATIC_PAGE_DATES.policy,
+        changeFrequency: "yearly",
+        priority: 0.3,
+        alternates: {
+          languages: {
+            vi: viUrl,
+            en: enUrl,
+          },
+        },
+      }
+    );
   }
 
-  // Trang con của Hướng dẫn (/huong-dan/{segment}/).
+  // Trang con của Hướng dẫn (/huong-dan/{segment}/ ↔ /guide/{segment}/)
   for (const entry of getGuideLayout("vi").entries) {
-    entries.push({
-      url: toCanonicalUrl(`/huong-dan/${entry.pathSegment}/`),
-      lastModified: STATIC_PAGE_DATES.guide,
-      changeFrequency: "yearly",
-      priority: 0.5,
-    });
+    const viUrl = toCanonicalUrl(`/huong-dan/${entry.pathSegment}/`);
+    const enUrl = toCanonicalUrl(`/guide/${entry.pathSegment}/`);
+    entries.push(
+      {
+        url: viUrl,
+        lastModified: STATIC_PAGE_DATES.guide,
+        changeFrequency: "yearly",
+        priority: 0.5,
+        alternates: {
+          languages: {
+            vi: viUrl,
+            en: enUrl,
+          },
+        },
+      },
+      {
+        url: enUrl,
+        lastModified: STATIC_PAGE_DATES.guide,
+        changeFrequency: "yearly",
+        priority: 0.5,
+        alternates: {
+          languages: {
+            vi: viUrl,
+            en: enUrl,
+          },
+        },
+      }
+    );
   }
 
   return entries;

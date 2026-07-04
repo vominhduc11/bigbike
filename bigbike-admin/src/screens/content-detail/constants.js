@@ -212,7 +212,13 @@ export function toPayload(form, isCreate) {
     // bodyBlocks presence-flag: send when non-null so backend overwrites both body_blocks + body columns.
     // When null (new form, no blocks added yet) omit so backend leaves columns unchanged.
     bodyBlocks: form.bodyBlocks !== null
-      ? form.bodyBlocks.map(({ _key: _k, ...rest }) => rest).filter(isBlockValid)
+      ? form.bodyBlocks.map(({ _key: _k, ...rest }) => {
+          if (rest.type === 'image' || rest.type === 'feature') {
+            const { alt: _alt, ...keep } = rest
+            return keep
+          }
+          return rest
+        }).filter(isBlockValid)
       : undefined,
   }
 
@@ -232,12 +238,12 @@ export function toPayload(form, isCreate) {
 
     // Always send coverImage so clearing a URL removes it on backend
     payload.coverImage = form.coverImageUrl.trim()
-      ? { url: form.coverImageUrl.trim(), alt: form.coverImageAlt.trim() || undefined }
+      ? { url: form.coverImageUrl.trim() }
       : { url: '' }
 
     // Always send productImage so clearing a URL removes it on backend
     payload.productImage = form.productImageUrl.trim()
-      ? { url: form.productImageUrl.trim(), alt: form.productImageAlt.trim() || undefined }
+      ? { url: form.productImageUrl.trim() }
       : { url: '' }
 
     // Always send categoryId — empty string clears the category
@@ -271,7 +277,7 @@ export function toPayload(form, isCreate) {
     description: form.seoDescription.trim() || null,
     canonicalUrl: form.seoCanonicalUrl.trim() || null,
     ogImage: form.seoOgImageUrl.trim()
-      ? { url: form.seoOgImageUrl.trim(), alt: form.seoOgImageAlt.trim() || undefined }
+      ? { url: form.seoOgImageUrl.trim() }
       : null,
     // noindex toggle — gửi boolean trong object seo cùng các field SEO khác.
     noIndex: Boolean(form.seoNoIndex),

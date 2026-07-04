@@ -16,12 +16,16 @@ import { defineConfig } from 'vite'
  * what the backend's server-side filter sees — faithfully reproducing prod,
  * where the admin is genuinely served from an allowed origin.
  *
+ * Default matches this VPS's current BIGBIKE_CORS_ALLOWED_ORIGINS (root .env) —
+ * public IP only, no `localhost` entry. Override with E2E_BACKEND_ORIGIN if that
+ * allow-list ever changes (e.g. a different host/IP).
+ *
  * Targets are host-mapped Docker ports: backend 8080, MinIO 9000.
  * `/media-proxy` is listed before `/media` so the regex contexts don't overlap.
  */
 const BACKEND = 'http://localhost:8080'
 const MINIO = 'http://localhost:9000'
-const ALLOWED_ORIGIN = process.env.E2E_BACKEND_ORIGIN || 'http://localhost:4000'
+const ALLOWED_ORIGIN = process.env.E2E_BACKEND_ORIGIN || 'http://103.1.236.148:4000'
 
 function spoofOrigin(proxy: any) {
   const set = (req: any) => {

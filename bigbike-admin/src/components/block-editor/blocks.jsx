@@ -129,7 +129,7 @@ export function ListBlockEditor({ block, onChange, disabled }) {
   )
 }
 
-export function ImageBlockEditor({ block, onChange, disabled, onPickImage, onAltBlur }) {
+export function ImageBlockEditor({ block, onChange, disabled, onPickImage }) {
   const { t } = useTranslation()
   return (
     <div className="flex-1 flex flex-col gap-2">
@@ -149,14 +149,6 @@ export function ImageBlockEditor({ block, onChange, disabled, onPickImage, onAlt
           </Button>
         )}
         <div className="flex-1 flex flex-col gap-2">
-          <Input
-            placeholder={t('products.detail.blocks.imageAltPlaceholder')}
-            value={block.alt || ''}
-            onChange={(e) => onChange({ alt: e.target.value })}
-            onBlur={(e) => onAltBlur?.(e.target.value)}
-            disabled={disabled}
-            maxLength={500}
-          />
           <Input
             placeholder={t('products.detail.blocks.imageCaptionPlaceholder')}
             value={block.caption || ''}
@@ -260,7 +252,7 @@ export function CalloutBlockEditor({ block, onChange, disabled }) {
   )
 }
 
-export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, onAltBlur, productMode }) {
+export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, productMode }) {
   const { t } = useTranslation()
   const items = block.items || ['']
 
@@ -312,14 +304,6 @@ export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, onA
           </Button>
         )}
         <div className="flex-1 flex flex-col gap-2">
-          <Input
-            placeholder={t('products.detail.blocks.imageAltPlaceholder')}
-            value={block.alt || ''}
-            onChange={(e) => onChange({ alt: e.target.value })}
-            onBlur={(e) => onAltBlur?.(e.target.value)}
-            disabled={disabled}
-            maxLength={500}
-          />
           <Input
             placeholder={t('products.detail.blocks.imageCaptionPlaceholder')}
             value={block.caption || ''}

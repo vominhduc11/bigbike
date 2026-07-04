@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -174,7 +174,7 @@ export function MobileCartSheet() {
                     <CartSheetThumb item={item} />
                     <div className="min-w-0 flex-1">
                       <p className={microLabel}>{item.sku || "BIGBIKE"}</p>
-                      <h3 className="mt-[2px] mr-7 line-clamp-2 font-cta text-ui-13 font-medium leading-[1.2] text-[var(--bb-text-inverse)]">
+                      <h3 className="mt-[2px] mr-7 line-clamp-2 font-cta text-ui-16 font-medium leading-[1.2] text-[var(--bb-text-inverse)]">
                         {item.productName}
                       </h3>
                       {item.variantName ? (
@@ -207,7 +207,7 @@ export function MobileCartSheet() {
                             +
                           </button>
                         </div>
-                        <strong className="text-brand-on-dark font-body text-ui-14">{formatVnd(item.lineTotal)}</strong>
+                        <strong className="text-brand-on-dark font-body text-ui-16">{formatVnd(item.lineTotal)}</strong>
                       </div>
                     </div>
                     <button

@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { LOCALES, type Locale } from "@/i18n/locale";
 import { useSetLocale } from "@/components/providers/ClientIntlProvider";
 import { useAltSlug } from "@/components/i18n/AltSlugProvider";
-import { toProductPath, toCategoryPath, toBrandPath, toArticlePath } from "@/lib/utils/routes";
+import { toProductPath, toCategoryPath, toBrandPath, toArticlePath, translatePath } from "@/lib/utils/routes";
 
 /**
  * Đổi ngôn ngữ — control bigbike-web giữ lại nhưng style hợp theme WP
@@ -43,13 +43,18 @@ export function WpLangSwitch() {
         if (altSlug.kind === "product") {
           targetPath = toProductPath(slug);
         } else if (altSlug.kind === "category") {
-          targetPath = toCategoryPath(slug);
+          targetPath = toCategoryPath(slug, next, next === "en" && !!altSlug.enSlug);
         } else if (altSlug.kind === "brand") {
           targetPath = toBrandPath(slug);
         } else if (altSlug.kind === "article") {
-          targetPath = toArticlePath(slug);
+          targetPath = toArticlePath(slug, next, next === "en" && !!altSlug.enSlug);
         }
         router.push(targetPath);
+      } else if (pathname) {
+        const targetPath = translatePath(pathname, next);
+        if (targetPath !== pathname) {
+          router.push(targetPath);
+        }
       }
     });
   }

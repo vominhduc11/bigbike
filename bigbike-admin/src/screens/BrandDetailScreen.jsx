@@ -101,11 +101,11 @@ function toPayload(form) {
   }
 
   payload.logo = form.logoUrl.trim()
-    ? { url: form.logoUrl.trim(), alt: form.logoAlt.trim() || undefined }
+    ? { url: form.logoUrl.trim() }
     : { url: '' }
 
   payload.banner = form.bannerUrl.trim()
-    ? { url: form.bannerUrl.trim(), alt: form.bannerAlt.trim() || undefined }
+    ? { url: form.bannerUrl.trim() }
     : { url: '' }
 
   if (
@@ -119,7 +119,7 @@ function toPayload(form) {
       description: form.seoDescription.trim() || undefined,
       canonicalUrl: form.seoCanonicalUrl.trim() || undefined,
       ogImage: form.seoOgImageUrl.trim()
-        ? { url: form.seoOgImageUrl.trim(), alt: form.seoOgImageAlt.trim() || undefined }
+        ? { url: form.seoOgImageUrl.trim() }
         : null,
     }
   }

@@ -41,6 +41,9 @@ function buildFooterMenuItems(locale: string) {
   ];
 }
 
+import { translatePath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
+
 export function WpFooterMenuLinks() {
   const locale = useLocale();
   const items = buildFooterMenuItems(locale);
@@ -49,7 +52,7 @@ export function WpFooterMenuLinks() {
     <ul className="menu">
       {items.map((item) => (
         <li key={item.href} className="menu-item">
-          <Link href={item.href}>{item.label}</Link>
+          <Link href={translatePath(item.href, locale as Locale)}>{item.label}</Link>
         </li>
       ))}
     </ul>

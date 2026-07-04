@@ -4,11 +4,12 @@ import Link from "next/link";
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { LogOut } from "lucide-react";
 import { performLogout, refreshAuth, useAuth } from "@/lib/auth/auth-store";
 import type { CustomerProfile } from "@/lib/contracts/commerce";
-import { toLoginPath } from "@/lib/utils/routes";
+import { toLoginPath, translatePath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 
 /**
  * Thân trang tài khoản theo theme WP — port 1:1 từ woocommerce/myaccount/navigation.php
@@ -36,7 +37,7 @@ const NAV = [
   { href: "/tai-khoan/edit-account/", labelKey: "info", match: "/tai-khoan/edit-account" },
 ] as const;
 
-function navIsActive(item: (typeof NAV)[number], pathname: string | null): boolean {
+function navIsActive(item: { href: string; labelKey: string; match: string; exact?: boolean }, pathname: string | null): boolean {
   if (!pathname) return false;
   if ("exact" in item && item.exact) return pathname === item.match || pathname === `${item.match}/`;
   return pathname.startsWith(item.match);
@@ -60,6 +61,7 @@ export function WpAccountNav({
 }) {
   const t = useTranslations("Account");
   const tNav = useTranslations("Account.nav");
+  const locale = useLocale() as Locale;
   const router = useRouter();
   const pathname = usePathname();
   const auth = useAuth();
@@ -70,6 +72,12 @@ export function WpAccountNav({
       router.replace(toLoginPath(loginRedirect));
     }
   }, [auth.status, router, loginRedirect]);
+
+  const localizedNav = NAV.map((item) => ({
+    ...item,
+    href: translatePath(item.href, locale),
+    match: translatePath(item.match, locale),
+  }));
 
   async function handleLogout() {
     if (loggingOut) return;
@@ -95,7 +103,7 @@ export function WpAccountNav({
             </div>
             <div className="account-nav animate-pulse">
               <ul>
-                {NAV.map((item) => (
+                {localizedNav.map((item) => (
                   <li key={item.href}>
                     <div className="my-2 h-4 w-1/2 rounded bg-black/10" />
                   </li>
@@ -123,7 +131,7 @@ export function WpAccountNav({
   }
 
   const profile = auth.profile;
-  const activeNav = NAV.find((n) => navIsActive(n, pathname));
+  const activeNav = localizedNav.find((n) => navIsActive(n, pathname));
 
   async function refreshProfile() {
     await refreshAuth();
@@ -143,7 +151,7 @@ export function WpAccountNav({
               </Link>
             </li>
             <li>
-              <Link href="/tai-khoan/">
+              <Link href={translatePath("/tai-khoan/", locale)}>
                 <span property="name">{t("breadcrumbAccount")}</span>
               </Link>
             </li>
@@ -176,7 +184,7 @@ export function WpAccountNav({
               </div>
               <div className="account-nav">
                 <ul>
-                  {NAV.map((item) => (
+                  {localizedNav.map((item) => (
                     <li key={item.href} className={navIsActive(item, pathname) ? "is-active" : ""}>
                       <Link href={item.href}>{tNav(item.labelKey)}</Link>
                     </li>

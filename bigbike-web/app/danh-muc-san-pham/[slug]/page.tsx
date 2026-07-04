@@ -77,7 +77,7 @@ export async function generateMetadata({ params }: CategoryDetailPageProps): Pro
     ogImage: category.seo?.ogImage?.url ?? (category.image ?? category.icon)?.url ?? undefined,
     // hreflang vi/en khi danh mục có slug tiếng Anh riêng (CATEGORY_RULE_003).
     languageAlternates: category.slugEn
-      ? { vi: toCategoryPath(category.slug), en: toCategoryPath(category.slugEn) }
+      ? { vi: toCategoryPath(category.slug), en: toCategoryPath(category.slugEn, "en", true) }
       : undefined,
   });
 }

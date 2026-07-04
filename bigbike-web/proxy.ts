@@ -4,6 +4,8 @@
 // backend and a small in-process cache.
 
 import { NextResponse, type NextRequest } from "next/server";
+import { resolveLocale } from "./i18n/locale";
+import { getLocalizedRoute } from "./lib/utils/routes";
 
 const API_BASE_URL =
   process.env.BIGBIKE_API_BASE_URL ??
@@ -146,35 +148,69 @@ function isLoop(currentPath: string, target: string): boolean {
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const pathname = request.nextUrl.pathname;
+  const search = request.nextUrl.search;
+
+  // 1. Get locale from cookie NEXT_LOCALE
+  const localeCookie = request.cookies.get("NEXT_LOCALE")?.value;
+  const locale = resolveLocale(localeCookie);
+
+  // 2. Check the localized route mapping
+  const result = getLocalizedRoute(pathname + search, locale);
+
+  if (result.action === "redirect") {
+    const url = request.nextUrl.clone();
+    url.pathname = result.url.split("?")[0];
+    const searchPart = result.url.includes("?") ? result.url.slice(result.url.indexOf("?")) : "";
+    url.search = searchPart;
+    return NextResponse.redirect(url, 307);
+  }
+
+  let currentPathname = pathname;
+  let isRewritten = false;
+  let rewriteUrl: URL | null = null;
+
+  if (result.action === "rewrite") {
+    isRewritten = true;
+    rewriteUrl = request.nextUrl.clone();
+    rewriteUrl.pathname = result.url.split("?")[0];
+    const searchPart = result.url.includes("?") ? result.url.slice(result.url.indexOf("?")) : "";
+    rewriteUrl.search = searchPart;
+    currentPathname = rewriteUrl.pathname;
+  }
 
   // Forward the current pathname to server components so Root Layout can hide the
   // default bigbike-web shell on routes ported to the WordPress theme.
   const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("x-pathname", pathname);
-  const forward = () => NextResponse.next({ request: { headers: requestHeaders } });
+  requestHeaders.set("x-pathname", currentPathname);
+  const forward = () => {
+    if (isRewritten && rewriteUrl) {
+      return NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } });
+    }
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  };
 
   if (
-    pathname !== "/" &&
-    !pathname.endsWith("/") &&
-    !pathname.includes(".")
+    currentPathname !== "/" &&
+    !currentPathname.endsWith("/") &&
+    !currentPathname.includes(".")
   ) {
     const destination = new URL(request.url);
-    destination.pathname = `${pathname}/`;
+    destination.pathname = `${currentPathname}/`;
     return NextResponse.redirect(destination.toString(), 308);
   }
 
   // Auth protection: /tai-khoan/* requires bb_session cookie
-  if (pathname.startsWith("/tai-khoan")) {
+  if (currentPathname.startsWith("/tai-khoan")) {
     const sessionCookie = request.cookies.get("bb_session");
     if (!sessionCookie?.value) {
       const loginUrl = new URL("/dang-nhap", request.url);
-      loginUrl.searchParams.set("tiep", pathname);
+      loginUrl.searchParams.set("tiep", currentPathname);
       return NextResponse.redirect(loginUrl);
     }
   }
 
 
-  if (pathname === "/" && request.nextUrl.searchParams.has("s")) {
+  if (currentPathname === "/" && request.nextUrl.searchParams.has("s")) {
     const query = request.nextUrl.searchParams.get("s")?.trim() ?? "";
     if (query.length > 0) {
       const destination = new URL("/tim-kiem/", request.url);
@@ -189,10 +225,10 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  const rule = await lookupRedirect(pathname);
+  const rule = await lookupRedirect(currentPathname);
   if (!rule) return forward();
 
-  if (isLoop(pathname, rule.target)) {
+  if (isLoop(currentPathname, rule.target)) {
     return forward();
   }
 

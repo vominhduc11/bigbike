@@ -64,7 +64,7 @@ export async function generateMetadata({ params }: ArticleDetailPageProps): Prom
     ogType: "article",
     // hreflang vi/en khi bài viết có slug tiếng Anh riêng (ARTICLE_RULE_003).
     languageAlternates: article.slugEn
-      ? { vi: canonicalPath, en: toArticlePath(article.slugEn) }
+      ? { vi: canonicalPath, en: toArticlePath(article.slugEn, "en", true) }
       : undefined,
   });
 }

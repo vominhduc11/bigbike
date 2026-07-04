@@ -44,7 +44,7 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, err
   const { t } = useTranslation()
   const [pickerOpen, setPickerOpen] = useState(false)
   const hasImage = Boolean(value?.trim())
-  const { pickAlt, flushAltSync } = useMediaAltSync()
+  const { pickAlt } = useMediaAltSync()
 
   return (
     <div className="image-url-input">
@@ -71,18 +71,7 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, err
       {error && <small className="field-error">{error}</small>}
       <MediaRequirementHint recommend={recommend} className="mt-1 text-xs text-muted-foreground" />
       <ImagePreview url={value} />
-      {hasImage && onAltChange !== undefined && (
-        <Input
-          type="text"
-          placeholder={t('imageInput.altPlaceholder')}
-          value={alt ?? ''}
-          onChange={(e) => onAltChange(e.target.value)}
-          onBlur={(e) => flushAltSync(e.target.value)}
-          disabled={disabled}
-          maxLength={255}
-          className="mt-2"
-         />
-      )}
+
       {pickerOpen && (
         <MediaPickerModal
           recommend={recommend}

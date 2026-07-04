@@ -133,7 +133,7 @@ export function toPayload(form) {
   }
 
   const imageUrl = form.imageUrl.trim()
-  payload.image = imageUrl ? { url: imageUrl, alt: form.name.trim() || undefined } : { url: null }
+  payload.image = imageUrl ? { url: imageUrl } : { url: null }
 
   const bannerImageUrl = form.bannerImageUrl.trim()
   payload.banner = bannerImageUrl ? { url: bannerImageUrl } : { url: null }
@@ -156,7 +156,7 @@ export function toPayload(form) {
     description: seoDescription || undefined,
     canonicalUrl: seoCanonicalUrl || undefined,
     ogImage: seoOgImageUrl
-      ? { url: seoOgImageUrl, alt: form.seoOgImageAlt.trim() || undefined }
+      ? { url: seoOgImageUrl }
       : null,
   }
 

@@ -33,7 +33,6 @@ import {
 import { IconChevronDown, IconChevronUp, GalleryEditor } from './ContentEditors'
 import { MediaPickerModal } from '../../components/MediaPickerModal'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
-import { useMediaAltSync } from '@/lib/useMediaAltSync'
 
 // Sentinel value for the "+ Tạo loại thuộc tính mới…" entry appended to the
 // attribute-name Select — kept distinct from any real attribute name/code.
@@ -440,7 +439,9 @@ function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled, conte
             disabled={disabled}
           >
             <SelectTrigger>
-              <SelectValue placeholder={t('products.detail.variant.optionNamePlaceholder')} />
+              <SelectValue placeholder={t('products.detail.variant.optionNamePlaceholder')}>
+                {opt.name ? (contentLang === 'en' ? (resolveAttr(attributes, opt.name)?.nameEn || opt.name) : (resolveAttr(attributes, opt.name)?.name || opt.name)) : ''}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {opt.name && !attributes.some((a) => a.name === opt.name) && (
@@ -645,7 +646,7 @@ function VariantCard({
 }) {
   const { t } = useTranslation()
   const [pickerOpen, setPickerOpen] = useState(false)
-  const { pickAlt, flushAltSync } = useMediaAltSync()
+
   function updateField(field, value) {
     onChange(variant._key, { [field]: value })
   }
@@ -809,16 +810,6 @@ function VariantCard({
                 {variant.imageUrl && (
                   <div className="mt-2">
                     <img src={variant.imageUrl} alt={variant.imageAlt || ''} className="img-preview max-h-40 object-contain" />
-                    <Input
-                      type="text"
-                      placeholder={t('imageInput.altPlaceholder', { defaultValue: 'Nhập alt cho ảnh' })}
-                      value={variant.imageAlt ?? ''}
-                      onChange={(e) => updateField('imageAlt', e.target.value)}
-                      onBlur={(e) => flushAltSync(e.target.value)}
-                      disabled={disabled}
-                      maxLength={255}
-                      className="mt-2"
-                    />
                   </div>
                 )}
               </div>
@@ -829,7 +820,7 @@ function VariantCard({
                   onSelect={(url, media) => {
                     onChange(variant._key, {
                       imageUrl: url,
-                      imageAlt: pickAlt(variant.imageAlt, media),
+                      imageAlt: '',
                       imageWidth: media.width,
                       imageHeight: media.height,
                       imageMimeType: media.mimeType

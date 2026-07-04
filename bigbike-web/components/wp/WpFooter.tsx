@@ -2,14 +2,19 @@ import { getLocale } from "next-intl/server";
 import { Tr } from "@/components/i18n/Tr";
 import { telHref } from "@/lib/utils/format";
 import { WpFooterMenuLinks } from "./WpFooterMenuLinks";
+import { listPublicSettings } from "@/lib/api/public-api";
+import { pickSetting } from "@/lib/utils/settings";
 
 const T = "/wp-content/themes/bigbike";
 
 /**
  * Nội dung liên hệ/thương hiệu/menu chân trang — HARDCODE theo yêu cầu chủ shop
  * (2026-07-03), không còn đọc từ Cài đặt (site_settings) hay Menu trong trang
- * Quản trị. Muốn đổi SĐT/email/địa chỉ/mạng xã hội/slogan/mô tả/ĐKKD/link chân
+ * Quản trị. Muốn đổi SĐT/email/địa chỉ/mạng xã hội/slogan/ĐKKD/link chân
  * trang phải sửa trực tiếp các hằng số dưới đây, không sửa được từ Quản trị nữa.
+ *
+ * Ngoại lệ duy nhất là Mô tả ngắn (footer_description) trong footer được kết nối lại
+ * với Cài đặt > Thông tin shop từ ngày 2026-07-04 theo yêu cầu của chủ shop.
  *
  * hotline/email/địa chỉ/mạng xã hội vẫn là các key site_settings dùng CHUNG cho
  * header, trang chủ, trang sản phẩm, Liên hệ, Giới thiệu, khung chat nổi... —
@@ -111,8 +116,11 @@ export async function WpFooter() {
   const locale = await getLocale();
   const isEn = locale === "en";
 
+  const settings = (await listPublicSettings(locale)).data ?? [];
+  const settingDescription = pickSetting(settings, ["footer_description"]);
+
   const tagline = isEn ? FOOTER_TAGLINE.en : FOOTER_TAGLINE.vi;
-  const shopDescription = isEn ? FOOTER_DESCRIPTION.en : FOOTER_DESCRIPTION.vi;
+  const shopDescription = settingDescription || (isEn ? FOOTER_DESCRIPTION.en : FOOTER_DESCRIPTION.vi);
   const contactAddress = isEn ? FOOTER_ADDRESS.en : FOOTER_ADDRESS.vi;
   const businessRegistration = isEn ? FOOTER_BUSINESS_REGISTRATION.en : FOOTER_BUSINESS_REGISTRATION.vi;
 

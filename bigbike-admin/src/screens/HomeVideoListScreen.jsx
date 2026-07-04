@@ -23,7 +23,6 @@ import {
 } from '../lib/adminApi'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { VideoPickerModal } from '../components/VideoPickerModal'
-import { useMediaAltSync } from '@/lib/useMediaAltSync'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -48,7 +47,6 @@ const EMPTY_FORM = {
   videoType: 'youtube',
   videoUrl: '',
   thumbnailUrl: '',
-  thumbnailAlt: '',
   isActive: true,
 }
 
@@ -228,7 +226,6 @@ export function HomeVideoListScreen({ canUpdate }) {
   const [localItems, setLocalItems] = useState(null)
   const [activeId, setActiveId] = useState(null)
   const [videoPickerOpen, setVideoPickerOpen] = useState(false)
-  const videoAltSync = useMediaAltSync()
   const [previewVideo, setPreviewVideo] = useState(null)
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [isBulkBusy, setIsBulkBusy] = useState(false)
@@ -369,7 +366,6 @@ export function HomeVideoListScreen({ canUpdate }) {
           : (isAllowedFacebookVideoUrl(video.videoUrl) ? 'facebook' : 'upload'),
       videoUrl: video.videoUrl,
       thumbnailUrl: video.thumbnail?.url || '',
-      thumbnailAlt: video.thumbnail?.alt || '',
       isActive: video.isActive,
     }
     setForm(next)
@@ -460,7 +456,7 @@ export function HomeVideoListScreen({ canUpdate }) {
       sortOrder: editingVideo ? editingVideo.sortOrder : newSortOrder,
       isActive: form.isActive,
       thumbnail: hasThumbnail
-        ? { url: form.thumbnailUrl.trim(), alt: form.thumbnailAlt.trim() || title }
+        ? { url: form.thumbnailUrl.trim() }
         : null,
       ...(editingVideo && !hasThumbnail ? { clearThumbnail: true } : {}),
     }
@@ -732,7 +728,7 @@ export function HomeVideoListScreen({ canUpdate }) {
               required
               value={form.title}
               onChange={(event) => { setForm((prev) => ({ ...prev, title: event.target.value })); clearFieldError('title') }}
-              onBlur={() => { validateField('title'); videoAltSync.flushAltSync(form.title) }}
+              onBlur={() => validateField('title')}
               placeholder={t('homeVideos.formTitlePlaceholder')}
             />
           </FormField>
@@ -881,8 +877,6 @@ export function HomeVideoListScreen({ canUpdate }) {
             <ImageUrlInput
               value={form.thumbnailUrl}
               onChange={(url) => setForm((prev) => ({ ...prev, thumbnailUrl: url }))}
-              alt={form.thumbnailAlt}
-              onAltChange={(alt) => setForm((prev) => ({ ...prev, thumbnailAlt: alt }))}
               recommend={IMAGE_RECO.videoThumb}
             />
             <span className="text-xs text-muted-foreground font-normal">{t('homeVideos.formThumbnailHint')}</span>
@@ -936,7 +930,11 @@ export function HomeVideoListScreen({ canUpdate }) {
       {videoPickerOpen && canUpdate && (
         <VideoPickerModal
           onSelect={(url, media) => {
-            setForm((prev) => ({ ...prev, videoUrl: url, title: videoAltSync.pickAlt(prev.title, media) }))
+            setForm((prev) => ({
+              ...prev,
+              videoUrl: url,
+              title: prev.title.trim() ? prev.title : (media?.title || media?.altText || '')
+            }))
             clearFieldError('videoUrl')
             setVideoPickerOpen(false)
           }}

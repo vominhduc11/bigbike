@@ -181,12 +181,7 @@ export function WpCartClient() {
       <div className="row">
         <div className="col-md-8">
           <div className="cart-avalable">
-            <h3>
-              {t("cartHeading")}{" "}
-              <span>
-                <b>{itemCount}</b>
-              </span>
-            </h3>
+            <h3>{t("cartHeading")}</h3>
           </div>
 
           <div className="table" role="list">

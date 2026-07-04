@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useLocale } from "next-intl";
 import { useSyncExternalStore, type ComponentProps } from "react";
-import { DEFAULT_LOCALE } from "@/i18n/locale";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/locale";
 import {
   toArticlePath,
   toBrandPath,
@@ -65,7 +65,14 @@ export function LocalizedLink({
   const hydrated = useHydrated();
 
   const useEn = hydrated && locale !== DEFAULT_LOCALE;
-  const href = PATH_FOR_KIND[kind](useEn ? (enSlug || viSlug) : viSlug);
+  let href = "/";
+  if (kind === "category") {
+    href = toCategoryPath(useEn ? (enSlug || viSlug) : viSlug, locale as Locale, !!(useEn && enSlug));
+  } else if (kind === "article") {
+    href = toArticlePath(useEn ? (enSlug || viSlug) : viSlug, locale as Locale, !!(useEn && enSlug));
+  } else {
+    href = PATH_FOR_KIND[kind](useEn ? (enSlug || viSlug) : viSlug);
+  }
 
   return <Link href={href} {...rest} />;
 }

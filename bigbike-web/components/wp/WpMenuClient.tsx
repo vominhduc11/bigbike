@@ -2,13 +2,14 @@
 
 import { useLocale } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
-import { DEFAULT_LOCALE } from "@/i18n/locale";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/locale";
 import { fetchPublicMenu } from "@/lib/api/client-api";
 import { buildPublicMenuTree } from "@/lib/utils/public-menu";
 import type { HeaderNavNode } from "@/components/layout/header-nav/shared";
 import Link from "next/link";
 import { normalizeMenuUrl } from "@/lib/utils/nav";
 import { submenuIcon } from "@/lib/ui-classes";
+import { translatePath } from "@/lib/utils/routes";
 
 type WpMenuClientProps = {
   initialNodes: HeaderNavNode[];
@@ -42,14 +43,15 @@ export function WpMenuClient({ initialNodes, top = false }: WpMenuClientProps) {
   const rawNodes = isAlt && data ? data : initialNodes;
   const filteredNodes = filterMenuNodes(rawNodes);
 
-  return <WpMenuRecursive nodes={filteredNodes} top={top} />;
+  return <WpMenuRecursive nodes={filteredNodes} top={top} locale={locale} />;
 }
 
-function WpMenuRecursive({ nodes, top = false }: { nodes: HeaderNavNode[]; top?: boolean }) {
+function WpMenuRecursive({ nodes, top = false, locale }: { nodes: HeaderNavNode[]; top?: boolean; locale: string }) {
   return (
     <ul className={top ? "header-nav" : "sub-menu"}>
       {nodes.map((node) => {
-        const href = normalizeMenuUrl(node.url) || "/";
+        const rawHref = normalizeMenuUrl(node.url) || "/";
+        const href = translatePath(rawHref, locale as Locale);
         const hasChildren = node.children && node.children.length > 0;
         const target = node.openInNewTab ? "_blank" : undefined;
 
@@ -71,7 +73,7 @@ function WpMenuRecursive({ nodes, top = false }: { nodes: HeaderNavNode[]; top?:
               )}
               {node.label}
             </Link>
-            {hasChildren && <WpMenuRecursive nodes={node.children} />}
+            {hasChildren && <WpMenuRecursive nodes={node.children} locale={locale} />}
             {hasChildren && (
               <div className="arrow">
                 <i className="fal fa-chevron-down" />

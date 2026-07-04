@@ -51,6 +51,10 @@ export function ClientIntlProvider({
   const [messages, setMessages] = useState<IntlMessages>(initialMessages);
   const [enCache, setEnCache] = useState<IntlMessages | null>(null);
 
+  if (typeof globalThis !== "undefined") {
+    (globalThis as any).__NEXT_LOCALE__ = locale;
+  }
+
   const applyLocale = useCallback(
     async (next: Locale) => {
       if (next === DEFAULT_LOCALE) {
