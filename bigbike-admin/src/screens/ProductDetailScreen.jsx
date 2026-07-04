@@ -1856,7 +1856,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <SectionCard title={t('products.detail.sectionSeo')} badge={<RoleBadge role="seo" />}>
                 {/* Live Google SERP preview */}
                 <div className="mb-4 p-3 border border-border bg-white">
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                  <div className="flex items-center gap-1 text-xs text-[#5f6368] mb-1">
                     <PfSearch size={12} />
                     <span>{t('products.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
                   </div>

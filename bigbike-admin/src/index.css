@@ -605,8 +605,16 @@ a {
 }
 
 /* ─── Xem trước HTML bảng size (chế độ "Dán mã HTML") ────────────────────────*/
+/* Nội dung được soạn dạng HTML để render trên web (NỀN SÁNG) — ghi chú/khối trong đó
+   gán sẵn màu chữ tối/xám cho nền sáng. Vì vậy ô xem thử phải là "tờ giấy" nền sáng cố
+   định (KHÔNG theo theme tối của admin), nếu không chữ xám sẽ chìm trên nền tối. Dùng
+   tông xám dịu (KHÔNG trắng tinh) để giảm chói trong chế độ tối mà vẫn đọc rõ chữ ghi
+   chú (~#6b7280). Màu cố định ở đây là CỐ Ý (như ô xem trước Google), không dùng token. */
 .size-guide-preview {
   font-size: 0.875rem;
+  background: #e8eaed !important;
+  color: #1f2937;
+  border-color: #cbd2da !important;
 }
 .size-guide-preview table {
   border-collapse: collapse;
@@ -614,13 +622,14 @@ a {
 }
 .size-guide-preview th,
 .size-guide-preview td {
-  border: 1px solid var(--admin-color-border-default);
+  border: 1px solid #cbd2da;
   padding: 0.4em 0.6em;
   text-align: left;
   vertical-align: top;
 }
 .size-guide-preview th {
-  background: var(--admin-color-surface-muted);
+  background: #dce0e6;
+  color: #111827;
   font-weight: 600;
 }
 .size-guide-preview p:last-child {

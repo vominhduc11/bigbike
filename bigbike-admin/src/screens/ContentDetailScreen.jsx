@@ -731,7 +731,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
               <SectionCard title={t('content.detail.sectionSeo')}>
                 {/* Live Google SERP preview */}
                 <div className="mb-4 p-3 border border-border bg-white">
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                  <div className="flex items-center gap-1 text-xs text-[#5f6368] mb-1">
                     <Search size={12} />
                     <span>{t('content.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
                   </div>

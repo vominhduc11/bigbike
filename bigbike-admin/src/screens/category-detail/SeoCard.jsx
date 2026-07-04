@@ -24,7 +24,7 @@ export function SeoCard({ form, isEnLang, isReadOnly, validationErrors, updateFi
       <div className="bb-card-body">
         {/* Xem trước trên Google */}
         <div className="mb-4 p-3 border border-border bg-white">
-          <div className="text-xs text-muted-foreground mb-1">{t('categories.detail.seoPreviewLabel', { defaultValue: 'Xem thử trên Google' })}</div>
+          <div className="text-xs text-[#5f6368] mb-1">{t('categories.detail.seoPreviewLabel', { defaultValue: 'Xem thử trên Google' })}</div>
           <div className="text-xs text-[#5f6368] break-all mb-1">{previewUrl}</div>
           <div className="text-lg leading-snug text-[#1a0dab] break-words mb-1">
             {(seoTitleVal || nameVal || t('categories.detail.seoPreviewFallbackTitle', { defaultValue: 'Tiêu đề danh mục' })).slice(0, 60)}
