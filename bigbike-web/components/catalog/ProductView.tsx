@@ -466,7 +466,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
             sau Specs Dashboard, trước "Tính năng chi tiết". Tự ẩn khi rỗng, không gate visibility. */}
         {quickAnswer ? (
           <section className="my-10">
-            <blockquote className="border-l-4 border-brand bg-brand-soft px-5 py-4 text-18 leading-relaxed text-foreground">
+            <blockquote className="border-l-4 border-brand bg-muted px-5 py-4 text-18 leading-relaxed text-foreground">
               <LText field="quickAnswerSummary">{quickAnswer}</LText>
             </blockquote>
           </section>
