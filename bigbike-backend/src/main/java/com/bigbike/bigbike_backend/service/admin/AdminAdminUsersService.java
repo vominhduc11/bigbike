@@ -283,7 +283,7 @@ public class AdminAdminUsersService {
     private boolean isValidRole(String normalizedRole) {
         // DB-driven: a role is valid iff it exists in admin_roles (system roles seeded by
         // Flyway + any custom roles). No hardcoded list — so it can never drift when the
-        // built-in role set changes (e.g. V200 reduced it from 7 to 4).
+        // built-in role set changes (e.g. V211 reduced it from 7 to 4).
         return adminRoleRepo.existsById(normalizedRole);
     }
 

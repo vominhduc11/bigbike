@@ -934,6 +934,29 @@ Mỗi danh mục / sản phẩm / thương hiệu / **bài viết** có thêm c�
 
 Status: `CONFIRMED_FROM_CODE` — `CategoryEntity`/`ProductEntity`/`BrandEntity`/`ArticleEntity` (`slugEn`), `*JpaRepository.findBySlugEn`, `JpaCatalogReadRepository`/`JpaContentReadRepository` (map `slugEn` + OR-resolve), `AdminCatalogMutationService`/`AdminContentMutationService` (validate), migrations `V213`/`V214`/`V215`/`V216`.
 
+### Redirects table (`redirects`)
+
+Stores admin-managed URL-redirect rules, independent from the `slug_en`-triggered auto-redirect described above (that feature writes into this same table via `autoCreateSlugRedirect`, but most rows are created directly by admins through `AdminRedirectController`).
+
+| Column | Type | Notes |
+|---|---|---|
+| `source_pattern` | `VARCHAR(1024)` | The old/legacy path. **Case-sensitive, stored without a trailing slash** (except the root `/`) — canonicalized by `AdminRedirectService.canonicalizePath` at write time. Unique (`uq_redirects_source_pattern`, `V80`). |
+| `target_url` | `VARCHAR(2048)` | Destination — either an internal path (`/...`) or an absolute `http(s)://` URL whose host must match `bigbike.site.base-url` (open-redirect protection, see `REDIRECT_RULE_004`). Protocol-relative (`//...`) and non-http(s) schemes are rejected. |
+| `redirect_type` | `VARCHAR(32)` | `PERMANENT`/`TEMPORARY`/`CUSTOM` — **UI/classification label only**. It has no effect on the actual HTTP response; only `status_code` is honored at resolution time (`InternalRedirectController`/`bigbike-web/proxy.ts`). |
+| `status_code` | `INT` | One of `{301, 302, 307, 308}` (`REDIRECT_RULE_005`). Bean Validation on the DTO only bounds `100-599`; the allow-list is enforced in `AdminRedirectService.normalizeStatusCode` (business rule, not a structural constraint). |
+| `enabled` | `BOOLEAN` | Disabled rules are skipped by the internal lookup. |
+| `hit_count` / `last_hit_at` | `INT` / `TIMESTAMP` | Incremented fire-and-forget by `bigbike-web/proxy.ts` after a served redirect. |
+| `legacy_id` | `BIGINT` nullable | Reference to the original WordPress redirect row id (migration provenance only). |
+| `notes` | `TEXT` nullable | Free-text admin note. |
+
+**Normalization policy** (`AdminRedirectService.canonicalizePath`, applied to `source_pattern` and internal-path `target_url` before persistence and before the uniqueness/loop checks): case-sensitive (matches `bigbike-web/proxy.ts`'s lookup, which never lowercases the incoming pathname, and Postgres's default case-sensitive text equality), trailing slash stripped except for the root `/`. `/Foo` and `/foo` remain distinct, independently-manageable rows by design; `/foo` and `/foo/` are treated as the same rule.
+
+**Business rules enforced in `AdminRedirectService`** (see BUSINESS_RULES.md `REDIRECT_RULE_001`–`006` for the authoritative list): self-redirect prevention, multi-hop loop detection (max chain depth 20, walked via `redirectRepo.findBySourcePattern`), source-pattern uniqueness, open-redirect protection, status-code allow-list, hit-count tracking.
+
+**Migration-seeded data caveat:** `V106__import_legacy_wp_redirects.sql` inserts rows directly via SQL (`ON CONFLICT (source_pattern) DO NOTHING` for uniqueness only) — this one-time import bypasses the application-level self-loop/open-redirect checks that gate the admin API. Existing rows are not retroactively re-validated.
+
+Status: `CONFIRMED_FROM_CODE` — `RedirectEntity.java`, `AdminRedirectService.java`, `V4__create_media_redirect_menu_tables.sql`, `V80__add_redirect_source_pattern_unique.sql`, `V106__import_legacy_wp_redirects.sql`.
+
 ### Article bilingual content — English columns (V138)
 
 Bài viết (blog) có 2 bản nội dung: **tiếng Việt** (canonical) và **tiếng Anh** (tùy chọn).

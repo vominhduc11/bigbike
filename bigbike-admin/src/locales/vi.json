@@ -694,7 +694,9 @@
         "answerPlaceholder": "Câu trả lời *",
         "removeFaq": "Xoá câu hỏi",
         "addFaq": "Thêm câu hỏi",
-        "unit": "câu hỏi"
+        "unit": "câu hỏi",
+        "addInViFirst": "Thêm câu hỏi ở tab Tiếng Việt trước, rồi quay lại đây để dịch.",
+        "missingViError": "Câu hỏi dòng #{{rows}} thiếu nội dung tiếng Việt (đã nhập tiếng Anh). Vui lòng bổ sung ở tab Tiếng Việt hoặc xoá dòng."
       },
       "commitments": {
         "empty": "Chưa có dòng cam kết. Nhấn \"+ Thêm dòng\" để bắt đầu.",
@@ -705,6 +707,8 @@
         "addRow": "Thêm dòng",
         "removeRow": "Xoá dòng",
         "unit": "dòng",
+        "addInViFirst": "Thêm dòng ở tab Tiếng Việt trước, rồi quay lại đây để dịch.",
+        "missingViError": "Cam kết dòng #{{rows}} thiếu nội dung tiếng Việt (đã nhập tiếng Anh). Vui lòng bổ sung ở tab Tiếng Việt hoặc xoá dòng.",
         "icons": {
           "truck": "Giao hàng",
           "refreshCw": "Đổi trả",
@@ -741,7 +745,10 @@
         "consPlaceholder": "vd: Không kèm Pinlock",
         "addPro": "Thêm ưu điểm",
         "addCon": "Thêm nhược điểm",
-        "remove": "Xoá mục"
+        "remove": "Xoá mục",
+        "addInViFirst": "Thêm mục ở tab Tiếng Việt trước, rồi quay lại đây để dịch.",
+        "missingViErrorPros": "Ưu điểm dòng #{{rows}} thiếu nội dung tiếng Việt (đã nhập tiếng Anh). Vui lòng bổ sung ở tab Tiếng Việt hoặc xoá dòng.",
+        "missingViErrorCons": "Nhược điểm dòng #{{rows}} thiếu nội dung tiếng Việt (đã nhập tiếng Anh). Vui lòng bổ sung ở tab Tiếng Việt hoặc xoá dòng."
       },
       "dragToReorder": "Kéo để sắp xếp",
       "removeRowConfirmTitle": "Xóa dòng",

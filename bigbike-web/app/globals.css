@@ -85,6 +85,7 @@
 
   /* State & semantic text colors — expose token để tránh dùng arbitrary CSS-var utilities */
   --color-state-success-text: var(--bb-state-success-text);
+  --color-state-success-bg: var(--bb-state-success-bg);
   --color-state-warning-text: var(--bb-state-warning-text);
   --color-state-warning: var(--bb-state-warning);
   --color-state-warning-bg: var(--bb-state-warning-bg);
@@ -5923,4 +5924,292 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
       margin-bottom: 0 !important;
     }
   }
+}
+
+/* ============================================================================
+   DARK MODE — WP-THEME CSS OVERRIDES (Trang chủ — wp-theme-home.css)
+   KHÔNG sửa wp-theme-home.css trực tiếp (file "port 1:1, DO NOT hand-edit").
+   Selector `[data-theme="dark"] .foo` đạt specificity (0,2,x) — luôn thắng
+   selector gốc trong wp-theme-home.css (thường (0,1,x) hoặc thấp hơn), bất kể
+   thứ tự nạp file. Base page background (<body>) đã tự động tối qua token
+   Layer A (`.bb-theme` thắng specificity so với `body{background:#fff}` của
+   WP CSS) — khối dưới đây CHỈ xử lý các selector có nền/chữ RIÊNG, cụ thể hơn
+   nền trang. Không đụng header/footer/badge tự-nền-đỏ (nền/chữ cố định, không
+   phụ thuộc theme) hay hover-overlay có ảnh nền (ảnh không đổi theo theme).
+   ============================================================================ */
+
+/* Khối "Giới thiệu BigBike" (about-bigbike) — HomeLocalizedSettings.tsx */
+[data-theme="dark"] .about-bigbike .block-content p,
+[data-theme="dark"] .block-title--content p {
+  color: var(--bb-text-secondary);
+}
+[data-theme="dark"] .block-title h3 {
+  color: var(--bb-text-primary);
+}
+
+/* Lưới danh mục trang chủ (product-category-list) — HomeCategoryGrid.tsx.
+   Không đụng trạng thái :hover (phủ ảnh cat-hover.jpg + chữ trắng — không phụ
+   thuộc theme, ảnh không đổi màu). */
+[data-theme="dark"] .product-category-list .item {
+  background: var(--bb-bg-surface);
+  border-color: var(--bb-border-default);
+}
+[data-theme="dark"] .product-category-list .item span.desc,
+[data-theme="dark"] .product-category-list .item i {
+  color: var(--bb-text-primary);
+}
+
+/* Thẻ sản phẩm nổi bật (ProductSwiper/WpProductSwipeItem) — thanh "thêm giỏ
+   hàng" trượt lên (product--item-cart) và ribbon giảm giá vốn đã nền đen/đỏ
+   cố định, giữ nguyên cả 2 theme; chỉ khu vực .desc (nền xám nhạt) + chữ tiêu
+   đề/danh mục/giá cần đổi. */
+[data-theme="dark"] .product .desc {
+  background-color: var(--bb-bg-surface-alt);
+}
+[data-theme="dark"] .product .product--item-title a {
+  color: var(--bb-text-primary);
+}
+[data-theme="dark"] .product .product--item-category,
+[data-theme="dark"] body .product .product--item-price,
+[data-theme="dark"] .product .product--item-price {
+  color: var(--bb-text-brand);
+}
+
+/* "3 sản phẩm nổi bật" đầu trang chủ (app/page.tsx, khối .category-list — KHÁC
+   .product-category-list của HomeCategoryGrid) — wp-theme-home.css khoá nền
+   bằng !important nên override cũng cần !important để thắng; border/text
+   không !important ở bản gốc nên không cần ở đây. */
+[data-theme="dark"] .category-list .item {
+  background: var(--bb-bg-surface) !important;
+  border-color: var(--bb-border-default);
+}
+[data-theme="dark"] .category-list .item--title a {
+  color: var(--bb-text-primary);
+}
+[data-theme="dark"] .category-list .item--category,
+[data-theme="dark"] .category-list .item--btn {
+  color: var(--bb-text-brand);
+}
+
+/* Danh sách tin tức (HomeNewsList.tsx) — badge ngày tháng vốn nền đỏ/chữ
+   trắng cố định, giữ nguyên; chỉ tiêu đề + khung thẻ cần đổi. */
+[data-theme="dark"] .news--item {
+  background: var(--bb-bg-surface);
+}
+[data-theme="dark"] .news--item-inside h3 a {
+  color: var(--bb-text-primary);
+}
+
+/* Nội dung SEO cuối trang (content-bottom, field home_content_bottom_html) —
+   khối .wyswyg dùng lại token Layer C-adjacent cho bảng (nếu content có bảng). */
+[data-theme="dark"] .content-bottom {
+  background-color: var(--bb-bg-surface-alt);
+}
+[data-theme="dark"] .wyswyg table {
+  color: var(--bb-text-primary);
+}
+[data-theme="dark"] .wyswyg table td,
+[data-theme="dark"] .wyswyg table th {
+  border-top-color: var(--bb-border-default);
+}
+
+/* Phân trang (pagination) — bundle dùng chung, phòng khi xuất hiện trên home. */
+[data-theme="dark"] .pagination ul li a {
+  color: var(--bb-text-primary);
+}
+[data-theme="dark"] .pagination ul li.current {
+  color: var(--bb-text-brand);
+}
+
+/* ============================================================================
+   DARK MODE — WP-THEME CSS OVERRIDES (PDP — wp-theme-product.css)
+   Cùng nguyên tắc như khối Home ở trên. PDP hiện đã tái xây phần lớn khu mua
+   hàng bằng token Tailwind trực tiếp (.price/.product_title không còn màu
+   riêng trong CSS legacy, .status/.stock là badge nền đen/đỏ cố định — không
+   phụ thuộc theme) — grep xác nhận .tabs-nav/.woocommerce-table/.gallery-
+   thumbs/.quantity-group/.pa_color/.related.products KHÔNG còn dùng trên PDP
+   (0 kết quả trong components/catalog), nên phần cần đè ở đây rất gọn. */
+
+/* Breadcrumb (.bb-wp-pdp .container > .breadcrumb, ProductView.tsx) — biến
+   thể trắng-trên-nền-tối `.page-title .breadcrumb` (trang khác, có hero ảnh)
+   không bị ảnh hưởng: cùng specificity nhưng rule đó nạp sau (wp-theme-*.css)
+   nên vẫn thắng ở tie-break theo thứ tự nạp. */
+[data-theme="dark"] .breadcrumb ul li a,
+[data-theme="dark"] .breadcrumb ul li span {
+  color: var(--bb-text-secondary);
+}
+[data-theme="dark"] .breadcrumb ul li {
+  color: var(--bb-border-strong);
+}
+
+/* Đường kẻ phân tách mô tả ngắn / khu chọn biến thể (WpPurchaseSection.tsx) —
+   không có rule màu riêng trong wp-theme-product.css, dùng màu <hr> mặc định
+   của trình duyệt (thường xám nhạt) — gần như vô hình trên nền tối. */
+[data-theme="dark"] .variation-divider {
+  border-color: var(--bb-border-default);
+}
+
+/* ============================================================================
+   DARK MODE — LAYER C (khối HTML admin dán trên PDP, ThemeAwareHtml.tsx)
+   2 bản (light/dark) render song song, CSS thuần chọn đúng bản theo
+   data-theme — KHÔNG cần biết theme lúc render (giữ ISR/SSG cho PDP). Xem
+   lib/utils/richtext-dark-transform.ts cho quy luật đổi màu.
+   ============================================================================ */
+[data-theme-variant="dark"] {
+  display: none;
+}
+[data-theme="dark"] [data-theme-variant="dark"] {
+  display: block;
+}
+[data-theme="dark"] [data-theme-variant="light"] {
+  display: none;
+}
+
+/* ============================================================================
+   DARK MODE — WP-THEME CSS OVERRIDES (Danh mục — wp-theme-category.css)
+   Route: /danh-muc-san-pham/[slug], /san-pham, /tim-kiem, /brands(/[slug]).
+   Product card/category-tile/breadcrumb/pagination/block-title đã dùng chung
+   selector không page-scoped ở khối Home/PDP phía trên — chỉ bổ sung phần
+   sidebar lọc danh mục + thanh lọc mobile riêng của trang này.
+   ============================================================================ */
+[data-theme="dark"] .widget {
+  border-color: var(--bb-border-default);
+}
+[data-theme="dark"] .widget--body .product-categories li a,
+[data-theme="dark"] .widget--body .product-category ul li a,
+[data-theme="dark"] .woocommerce-widget-layered-nav-list li a {
+  color: var(--bb-text-secondary);
+}
+[data-theme="dark"] .widget--body .product-categories li.current > a,
+[data-theme="dark"] .widget--body .product-categories li.current-cat > a,
+[data-theme="dark"] .widget--body .product-category ul li.current a,
+[data-theme="dark"] .widget--body .static-navigation ul li a:hover,
+[data-theme="dark"] .widget--body .static-navigation ul li.current a {
+  color: var(--bb-text-brand);
+}
+[data-theme="dark"] .widget--body .static-navigation ul li {
+  border-color: var(--bb-border-default);
+}
+[data-theme="dark"] .widget--body .static-navigation ul li a {
+  color: var(--bb-text-primary);
+}
+/* Thanh lọc dính (sticky) + drawer lọc mobile — nền trắng cứng trong CSS gốc. */
+[data-theme="dark"] .product-list-filter,
+[data-theme="dark"] .mobile-sidebar-title p,
+[data-theme="dark"] .sidebar-wrap-product .wrapper-product {
+  background-color: var(--bb-bg-surface);
+}
+[data-theme="dark"] .mobile-sidebar-title {
+  color: var(--bb-text-primary);
+}
+[data-theme="dark"] .product-list-filter .col-sm-6.filter-mobile-wrapper .filter-mobile p {
+  border-color: var(--bb-border-default);
+}
+
+/* ============================================================================
+   DARK MODE — WP-THEME CSS OVERRIDES (Giỏ hàng — wp-theme-cart.css)
+   Route: /gio-hang. .cart-summary-card/.checkout-summary dùng CHUNG giao diện
+   giữa giỏ hàng và thanh toán (comment gốc trong wp-theme-cart.css).
+   ============================================================================ */
+[data-theme="dark"] .cart-table .table--items,
+[data-theme="dark"] .summary.total-summary,
+[data-theme="dark"] .checkout-summary-title,
+[data-theme="dark"] .cart-summary-card .cart_totals h2 {
+  border-color: var(--bb-border-default);
+}
+[data-theme="dark"] .cart-table .table--items-item.cart-information h3,
+[data-theme="dark"] .cart-table .table--items-item.cart-information p {
+  color: var(--bb-text-secondary);
+}
+[data-theme="dark"] .cart-table .table--items-item.action i,
+[data-theme="dark"] .summary.total-summary .total-price {
+  color: var(--bb-text-brand);
+}
+[data-theme="dark"] .summary--items .discount {
+  color: var(--bb-discount);
+}
+/* Thông báo lỗi/rỗng giỏ hàng (WpCartClient.tsx — trạng thái thật, không chỉ
+   test): tái dùng token danger đã có thay vì bịa màu mới. */
+[data-theme="dark"] .woocommerce-notices-wrapper .woocommerce-error {
+  color: var(--bb-state-danger);
+  background-color: var(--bb-state-danger-bg);
+  border-color: var(--bb-state-danger-border);
+}
+[data-theme="dark"] .checkout-summary,
+[data-theme="dark"] .cart-summary-card {
+  background: var(--bb-bg-surface);
+}
+[data-theme="dark"] .cart-table .table--items-item.quantity .quantity-form,
+[data-theme="dark"] .cart-table .table--items-item.quantity input {
+  border-color: var(--bb-border-default);
+}
+[data-theme="dark"] .cart-table .table--items-item.quantity input {
+  background-color: var(--bb-bg-surface);
+  color: var(--bb-text-primary);
+}
+
+/* ============================================================================
+   DARK MODE — WP-THEME CSS OVERRIDES (Đăng nhập/Đăng ký — wp-theme-auth.css)
+   Route: /dang-nhap, /dang-ky, /quen-mat-khau, /xac-nhan-email. Nút social
+   login Google (nền trắng bắt buộc theo brand Google) KHÔNG đổi — xem
+   components/auth/SocialLoginButtons.tsx.
+   ============================================================================ */
+[data-theme="dark"] body .user-activity .social-login a {
+  border-color: var(--bb-border-default);
+  color: var(--bb-text-primary);
+}
+[data-theme="dark"] .forgot-password-link a {
+  color: var(--bb-text-secondary);
+}
+
+/* ============================================================================
+   DARK MODE — WP-THEME CSS OVERRIDES (Tin tức — wp-theme-news.css)
+   Route: /tin-tuc, /tin-tuc/[slug]. .news--item(-desc/-inside) đã đổi ở khối
+   Home. Khối HTML admin dán trong bài viết (ArticleView.tsx, allowInlineStyles
+   qua LHtml) tự có Layer C nhờ fix chung trong components/i18n/LocalizedContent.tsx.
+   ============================================================================ */
+[data-theme="dark"] .title-post a,
+[data-theme="dark"] .title-post {
+  color: var(--bb-text-primary);
+}
+[data-theme="dark"] .blog-meta,
+[data-theme="dark"] .news-date:not(.news--item-desc .news-date) {
+  color: var(--bb-text-secondary);
+}
+[data-theme="dark"] .related--title {
+  color: var(--bb-text-primary);
+}
+
+/* ============================================================================
+   DARK MODE — WP-THEME CSS OVERRIDES (Trang tĩnh + Tài khoản — wp-theme-static.css)
+   Route: /gioi-thieu, /lien-he, /huong-dan(/[...sub]), /chinh-sach/[slug],
+   /tai-khoan(+con), /[slug] catch-all, /not-found. .wyswyg/.about-us/.block-title
+   đã đổi ở khối Home/PDP — phần dưới chỉ bổ sung sidebar tài khoản + navigation
+   tĩnh riêng của nhóm trang này.
+   ============================================================================ */
+[data-theme="dark"] .account-dashboard .account-nav,
+[data-theme="dark"] .my-account-sidebar {
+  background-color: var(--bb-bg-surface);
+}
+[data-theme="dark"] .account-dashboard .account-nav ul li {
+  border-color: var(--bb-border-default);
+}
+[data-theme="dark"] .account-dashboard .account-nav ul li a,
+[data-theme="dark"] .woocommerce-MyAccount-content a {
+  color: var(--bb-text-primary);
+}
+[data-theme="dark"] .account-dashboard .account-loggin .infor .logout i,
+[data-theme="dark"] .account-dashboard .order-history table tr td.order-detail-link i {
+  color: var(--bb-text-brand);
+}
+[data-theme="dark"] .account-dashboard .order-history table tr {
+  border-color: var(--bb-border-default);
+}
+[data-theme="dark"] .woocommerce-table thead th,
+[data-theme="dark"] .woocommerce-table td,
+[data-theme="dark"] .woocommerce-table th {
+  border-color: var(--bb-border-default);
+}
+[data-theme="dark"] .woocommerce-table {
+  color: var(--bb-text-primary);
 }

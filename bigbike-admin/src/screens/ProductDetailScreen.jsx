@@ -1478,6 +1478,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 }
               >
                 <p className="text-xs text-muted-foreground mb-2">{t('products.detail.commitments.hint')}</p>
+                {validationErrors.commitments && (
+                  <p className="field-error text-xs text-[var(--admin-color-status-danger-text)] font-semibold mb-2 flex items-center gap-1" role="alert">
+                    <AlertCircle size={13} className="shrink-0" />
+                    {validationErrors.commitments}
+                  </p>
+                )}
                 <CommitmentEditor
                   items={form.commitments}
                   onChange={(next) => updateField('commitments', next)}
@@ -1584,6 +1590,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 <div className="grid gap-5 md:grid-cols-2">
                   <div>
                     <div className="text-sm font-medium mb-2">{t('products.detail.highlights.prosTitle', { defaultValue: 'Ưu điểm' })}</div>
+                    {validationErrors.positiveNotes && (
+                      <p className="field-error text-xs text-[var(--admin-color-status-danger-text)] font-semibold mb-2 flex items-center gap-1" role="alert">
+                        <AlertCircle size={13} className="shrink-0" />
+                        {validationErrors.positiveNotes}
+                      </p>
+                    )}
                     <HighlightsEditor
                       items={form.positiveNotes}
                       onChange={(next) => updateField('positiveNotes', next)}
@@ -1595,6 +1607,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </div>
                   <div>
                     <div className="text-sm font-medium mb-2">{t('products.detail.highlights.consTitle', { defaultValue: 'Nhược điểm' })}</div>
+                    {validationErrors.negativeNotes && (
+                      <p className="field-error text-xs text-[var(--admin-color-status-danger-text)] font-semibold mb-2 flex items-center gap-1" role="alert">
+                        <AlertCircle size={13} className="shrink-0" />
+                        {validationErrors.negativeNotes}
+                      </p>
+                    )}
                     <HighlightsEditor
                       items={form.negativeNotes}
                       onChange={(next) => updateField('negativeNotes', next)}

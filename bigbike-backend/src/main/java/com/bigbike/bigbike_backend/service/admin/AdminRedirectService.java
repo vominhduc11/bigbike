@@ -1,10 +1,12 @@
 package com.bigbike.bigbike_backend.service.admin;
 
-import com.bigbike.bigbike_backend.api.admin.AdminRedirectController.CreateRedirectRequest;
-import com.bigbike.bigbike_backend.api.admin.AdminRedirectController.UpdateRedirectRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.redirect.AdminRedirectResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.redirect.CreateRedirectRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.redirect.UpdateRedirectRequest;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.mapper.RedirectMapper;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.redirect.RedirectEntity;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
@@ -24,11 +26,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdminRedirectService {
@@ -44,47 +50,14 @@ public class AdminRedirectService {
     );
 
     private final RedirectJpaRepository redirectRepo;
+    private final RedirectMapper redirectMapper;
     private final AuditLogWriter auditLogWriter;
     private final PaginationService paginationService;
     private final WebRevalidationService webRevalidationService;
+    private final ObjectMapper objectMapper;
 
     @Value("${bigbike.site.base-url:https://bigbike.vn}")
     private String siteBaseUrl;
-
-    public record AdminRedirectResponse(
-            UUID id,
-            String sourcePattern,
-            String targetUrl,
-            String redirectType,
-            int statusCode,
-            boolean enabled,
-            long hitCount,
-            Instant lastHitAt,
-            String notes,
-            Long legacyId,
-            Instant createdAt,
-            Instant updatedAt
-    ) {}
-
-    public record CreateRedirectRequest(
-            String sourcePattern,
-            String targetUrl,
-            String redirectType,
-            Integer statusCode,
-            Boolean enabled,
-            String notes,
-            Long legacyId
-    ) {}
-
-    public record UpdateRedirectRequest(
-            String sourcePattern,
-            String targetUrl,
-            String redirectType,
-            Integer statusCode,
-            Boolean enabled,
-            String notes,
-            Long legacyId
-    ) {}
 
     public PageResult<AdminRedirectResponse> listRedirects(
             int page,
@@ -100,7 +73,7 @@ public class AdminRedirectService {
         List<AdminRedirectResponse> items = redirectRepo.findAll(spec).stream()
                 .sorted(Comparator.comparing(RedirectEntity::getUpdatedAt).reversed()
                         .thenComparing(RedirectEntity::getCreatedAt, Comparator.reverseOrder()))
-                .map(this::toResponse)
+                .map(redirectMapper::toResponse)
                 .toList();
 
         return paginationService.paginate(items, normalizedPage, normalizedSize);
@@ -109,7 +82,7 @@ public class AdminRedirectService {
     public AdminRedirectResponse getRedirect(UUID id) {
         RedirectEntity entity = redirectRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Redirect not found."));
-        return toResponse(entity);
+        return redirectMapper.toResponse(entity);
     }
 
     @Transactional
@@ -137,14 +110,19 @@ public class AdminRedirectService {
         entity.setLegacyId(request.legacyId());
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
-        entity = redirectRepo.save(entity);
-        // uq_redirects_source_pattern is the DB-level safety net for concurrent inserts
-        // that race past the ensureUniqueSourcePattern application-level check above.
+        try {
+            entity = redirectRepo.save(entity);
+        } catch (DataIntegrityViolationException e) {
+            // uq_redirects_source_pattern is the DB-level safety net for concurrent inserts
+            // that race past the ensureUniqueSourcePattern application-level check above —
+            // translate it into the same conflict shape the happy-path check produces.
+            throw new ConflictException("Redirect source already exists: " + sourcePattern);
+        }
 
         auditLogWriter.save(buildAudit(adminId, "REDIRECT_CREATED", entity.getId(), null, snapshot(entity)));
         webRevalidationService.revalidate("redirects");
 
-        return toResponse(entity);
+        return redirectMapper.toResponse(entity);
     }
 
     @Transactional
@@ -183,12 +161,10 @@ public class AdminRedirectService {
         if (request.enabled() != null) {
             entity.setEnabled(request.enabled());
         }
-        if (request.notes() != null) {
-            entity.setNotes(normalizeNotes(request.notes()));
-        }
-        if (request.legacyId() != null) {
-            entity.setLegacyId(request.legacyId());
-        }
+        // notes/legacyId are always overwritten (not guarded by a null-check) so the admin form —
+        // which always submits the full form state — can actually clear a previously-saved value.
+        entity.setNotes(normalizeNotes(request.notes()));
+        entity.setLegacyId(request.legacyId());
         if (entity.getRedirectType() == null || entity.getRedirectType().isBlank()) {
             entity.setRedirectType(defaultRedirectType(entity.getStatusCode()));
         }
@@ -198,7 +174,7 @@ public class AdminRedirectService {
         auditLogWriter.save(buildAudit(adminId, "REDIRECT_UPDATED", entity.getId(), before, snapshot(entity)));
         webRevalidationService.revalidate("redirects");
 
-        return toResponse(entity);
+        return redirectMapper.toResponse(entity);
     }
 
     @Transactional
@@ -211,35 +187,22 @@ public class AdminRedirectService {
         webRevalidationService.revalidate("redirects");
     }
 
-    private AdminRedirectResponse toResponse(RedirectEntity entity) {
-        return new AdminRedirectResponse(
-                entity.getId(),
-                entity.getSourcePattern(),
-                entity.getTargetUrl(),
-                entity.getRedirectType(),
-                entity.getStatusCode(),
-                entity.isEnabled(),
-                entity.getHitCount(),
-                entity.getLastHitAt(),
-                entity.getNotes(),
-                entity.getLegacyId(),
-                entity.getCreatedAt(),
-                entity.getUpdatedAt()
-        );
-    }
-
     private String normalizeSourcePattern(String value) {
         String trimmed = trimToNull(value);
         if (trimmed == null) {
             throw ValidationException.fromField("sourcePattern", "REQUIRED", "Source pattern is required.");
         }
-        return trimmed.startsWith("/") ? trimmed : "/" + trimmed;
+        String withLeadingSlash = trimmed.startsWith("/") ? trimmed : "/" + trimmed;
+        return canonicalizePath(withLeadingSlash);
     }
 
     private String normalizeRequiredUrl(String value, String field) {
         String trimmed = trimToNull(value);
         if (trimmed == null) {
             throw ValidationException.fromField(field, "REQUIRED", "Target URL is required.");
+        }
+        if (trimmed.startsWith("/") && !trimmed.startsWith("//")) {
+            return canonicalizePath(trimmed);
         }
         return trimmed;
     }
@@ -332,8 +295,8 @@ public class AdminRedirectService {
      *                      pass {@code null} for new redirects
      */
     private void validateNoRedirectLoop(String sourcePattern, String targetUrl, UUID excludeId) {
-        String normalizedSource = normalizeRedirectPath(sourcePattern);
-        String normalizedTarget = normalizeRedirectPath(targetUrl);
+        String normalizedSource = canonicalizePath(sourcePattern);
+        String normalizedTarget = canonicalizePath(targetUrl);
 
         // Direct self-loop
         if (normalizedSource.equals(normalizedTarget)) {
@@ -372,18 +335,23 @@ public class AdminRedirectService {
                     : redirectRepo.findBySourcePattern(current);
 
             if (next.isEmpty()) break; // chain ends here — no loop
-            current = normalizeRedirectPath(next.get().getTargetUrl());
+            current = canonicalizePath(next.get().getTargetUrl());
         }
     }
 
-    /** Normalizes an internal path for loop comparison: lowercase, trim, remove trailing slash. */
-    private static String normalizeRedirectPath(String path) {
+    /**
+     * Canonical form of an internal path used for storage, uniqueness, and loop comparison:
+     * trim, strip one trailing slash unless the path is exactly "/". Case-sensitive — matches
+     * {@code bigbike-web/proxy.ts}'s lookup behavior (never lowercases the incoming pathname)
+     * and the case-sensitive DB uniqueness constraint (see DATA_CONTRACT.md "Redirects table").
+     */
+    private static String canonicalizePath(String path) {
         if (path == null) return "";
-        path = path.trim().toLowerCase(Locale.ROOT);
-        if (path.length() > 1 && path.endsWith("/")) {
-            path = path.substring(0, path.length() - 1);
+        String trimmed = path.trim();
+        if (trimmed.length() > 1 && trimmed.endsWith("/")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
         }
-        return path;
+        return trimmed;
     }
 
     /** Returns true if the given URL is an external (non-relative) URL. */
@@ -405,17 +373,29 @@ public class AdminRedirectService {
         if (entity == null) {
             return null;
         }
-        return "{" +
-                "\"id\":\"" + escape(entity.getId()) + "\"," +
-                "\"sourcePattern\":\"" + escape(entity.getSourcePattern()) + "\"," +
-                "\"targetUrl\":\"" + escape(entity.getTargetUrl()) + "\"," +
-                "\"redirectType\":\"" + escape(entity.getRedirectType()) + "\"," +
-                "\"statusCode\":" + entity.getStatusCode() + "," +
-                "\"enabled\":" + entity.isEnabled() + "," +
-                "\"hitCount\":" + entity.getHitCount() + "," +
-                "\"legacyId\":" + (entity.getLegacyId() == null ? "null" : entity.getLegacyId()) + "," +
-                "\"notes\":\"" + escape(entity.getNotes()) + "\"" +
-                "}";
+        return toJson(Map.of(
+                "id", entity.getId() == null ? "" : entity.getId().toString(),
+                "sourcePattern", nvl(entity.getSourcePattern()),
+                "targetUrl", nvl(entity.getTargetUrl()),
+                "redirectType", nvl(entity.getRedirectType()),
+                "statusCode", entity.getStatusCode(),
+                "enabled", entity.isEnabled(),
+                "hitCount", entity.getHitCount(),
+                "legacyId", entity.getLegacyId() == null ? "" : entity.getLegacyId(),
+                "notes", nvl(entity.getNotes())));
+    }
+
+    private String toJson(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (Exception e) {
+            log.warn("Failed to serialize redirect audit JSON: {}", e.getMessage());
+            return "{}";
+        }
+    }
+
+    private static String nvl(String value) {
+        return value != null ? value : "";
     }
 
     private AuditLogEntity buildAudit(UUID adminId, String action, UUID resourceId, String before, String after) {
@@ -437,14 +417,5 @@ public class AdminRedirectService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
-    }
-
-    private String escape(Object value) {
-        if (value == null) {
-            return "";
-        }
-        return value.toString()
-                .replace("\\", "\\\\")
-                .replace("\"", "\\\"");
     }
 }

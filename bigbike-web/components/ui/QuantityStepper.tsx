@@ -42,7 +42,7 @@ export function QuantityStepper({
   return (
     <div
       className={cn(
-        "inline-flex items-stretch border border-border-control bg-white",
+        "inline-flex items-stretch border border-border-control bg-card",
         disabled && "opacity-60",
         className,
       )}

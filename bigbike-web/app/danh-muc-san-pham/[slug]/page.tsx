@@ -132,7 +132,13 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
   const heroBreadcrumb: WpCategoryCrumb[] = [
     { label: "Bigbike.vn", href: toHomePath() },
     ...(parentCategory
-      ? [{ label: safeText(parentCategory.name, "Danh mục"), href: toCategoryPath(parentCategory.slug) }]
+      ? [
+          {
+            label: safeText(parentCategory.name, "Danh mục"),
+            href: toCategoryPath(parentCategory.slug),
+            altHref: parentCategory.slugEn ? toCategoryPath(parentCategory.slugEn, "en", true) : undefined,
+          },
+        ]
       : []),
     { label: categoryName, labelNode: <LText field="name">{categoryName}</LText> },
   ];

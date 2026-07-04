@@ -105,7 +105,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
             title={errorTitle}
             breadcrumb={[
               { label: "Bigbike.vn", href: toHomePath() },
-              { label: t("breadcrumb"), href: toArticleListPath() },
+              { label: t("breadcrumb"), href: toArticleListPath(), altHref: toArticleListPath("en") },
               { label: errorTitle },
             ]}
             bgUrl={heroBgUrl}

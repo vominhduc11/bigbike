@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { requestPasswordReset, resetCustomerPassword } from "@/lib/api/client-api";
@@ -13,6 +13,7 @@ import {
   type ResetPasswordFormValues,
 } from "@/lib/schemas/auth";
 import { toLoginPath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 import { FormRootError } from "@/components/ui/FormRootError";
 import { WpAuthField } from "@/components/wp/WpAuthField";
 
@@ -93,6 +94,7 @@ function ResetPasswordForm({ token }: { token: string }) {
   const t = useTranslations("Auth.reset");
   const tForgot = useTranslations("Auth.forgot");
   const tValidation = useTranslations("Auth.validation");
+  const locale = useLocale() as Locale;
   const router = useRouter();
   const [success, setSuccess] = useState(false);
 
@@ -124,7 +126,7 @@ function ResetPasswordForm({ token }: { token: string }) {
         <div className="row">
           <div className="col-12">
             <div className="form-submit form-group">
-              <button type="button" onClick={() => router.push(toLoginPath())}>
+              <button type="button" onClick={() => router.push(toLoginPath(undefined, locale))}>
                 {t("loginNow")}
               </button>
             </div>

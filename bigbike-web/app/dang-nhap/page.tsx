@@ -3,7 +3,6 @@ import Link from "next/link";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { readSingleSearchParam } from "@/lib/utils/query";
 import { isSafeReturnTo } from "@/lib/utils/auth";
-import { toAccountPath } from "@/lib/utils/routes";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import { Tr } from "@/components/i18n/Tr";
 import { LoginForm } from "./LoginForm";
@@ -29,7 +28,10 @@ export const metadata: Metadata = buildPublicMetadata({
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
   const rawReturnTo = readSingleSearchParam(params.tiep) ?? "";
-  const returnTo = isSafeReturnTo(rawReturnTo) ? rawReturnTo : toAccountPath();
+  // Không có query "tiep" hợp lệ → để LoginForm (client) tự tính đích mặc định
+  // theo đúng locale hiện tại của khách, vì server luôn render "vi" tĩnh (xem
+  // i18n/request.ts) nên không thể xác định đúng locale ở đây.
+  const returnTo = isSafeReturnTo(rawReturnTo) ? rawReturnTo : undefined;
 
   return (
     <WpStaticShell title="" breadcrumb={[]} showHero={false} mainClassName="" cssHref={AUTH_CSS}>

@@ -3,13 +3,14 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginCustomer } from "@/lib/api/client-api";
 import { refreshAuth, useAuth } from "@/lib/auth/auth-store";
 import { createLoginSchema, type LoginFormValues } from "@/lib/schemas/auth";
-import { toForgotPasswordPath } from "@/lib/utils/routes";
+import { toAccountPath, toForgotPasswordPath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 import { FormRootError } from "@/components/ui/FormRootError";
 import { WpAuthField } from "@/components/wp/WpAuthField";
 import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
@@ -19,17 +20,19 @@ import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
  * (.form-group label+.form-control, .form-checkbox Ghi nhớ, .forgot-password-link,
  * .form-submit button đỏ). GIỮ NGUYÊN logic auth (RHF + zod + loginCustomer + refreshAuth).
  */
-export function LoginForm({ returnTo }: { returnTo: string }) {
+export function LoginForm({ returnTo }: { returnTo?: string }) {
   const t = useTranslations("Auth.login");
   const tValidation = useTranslations("Auth.validation");
+  const locale = useLocale() as Locale;
+  const resolvedReturnTo = returnTo ?? toAccountPath(locale);
   const router = useRouter();
   const auth = useAuth();
 
   useEffect(() => {
     if (auth.status === "authenticated") {
-      router.replace(returnTo);
+      router.replace(resolvedReturnTo);
     }
-  }, [auth.status, router, returnTo]);
+  }, [auth.status, router, resolvedReturnTo]);
 
   const {
     register,
@@ -45,7 +48,7 @@ export function LoginForm({ returnTo }: { returnTo: string }) {
     try {
       await loginCustomer(values.login, values.password, values.remember);
       await refreshAuth();
-      router.push(returnTo);
+      router.push(resolvedReturnTo);
     } catch (err: unknown) {
       const raw = (err as Error).message;
       const message = /invalid credentials/i.test(raw) ? t("invalidCredentials") : raw;
@@ -91,7 +94,7 @@ export function LoginForm({ returnTo }: { returnTo: string }) {
             </div>
             <div className="col-md-6">
               <div className="forgot-password-link text-right">
-                <Link href={toForgotPasswordPath()}>{t("forgotPassword")}</Link>
+                <Link href={toForgotPasswordPath(undefined, locale)}>{t("forgotPassword")}</Link>
               </div>
             </div>
           </div>
@@ -103,7 +106,7 @@ export function LoginForm({ returnTo }: { returnTo: string }) {
           </div>
         </form>
 
-        <SocialLoginButtons returnTo={returnTo} />
+        <SocialLoginButtons returnTo={resolvedReturnTo} />
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ import { ProductGallery } from "@/components/catalog/ProductGallery";
 import { hasApprovedReviews } from "@/lib/rating";
 import { useLocalizedField, LHtml } from "@/components/i18n/LocalizedContent";
 import { sanitizeRichHtml } from "@/lib/utils/html";
+import { ThemeAwareHtml } from "@/components/content/ThemeAwareHtml";
 import { MobileStickyPurchaseBar } from "@/components/catalog/MobileStickyPurchaseBar";
 import { openWriteReviewDialog } from "@/components/catalog/writeReviewBus";
 import { VariantPicker } from "./purchase/VariantPicker";
@@ -244,9 +245,9 @@ export function WpPurchaseSection({
           {/* Eyebrow + dải tin cậy: 2 dòng nhỏ trên tiêu đề. KHÔNG dùng <ul>/<li> để né
               dấu đầu dòng của theme WP; chấm phân cách tự vẽ, chỉ chen GIỮA các mục. */}
           {trustBadgesHtml.trim() ? (
-            <div
+            <ThemeAwareHtml
               className="max-md:hidden mb-11 bb-trust-badges-html"
-              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(trustBadgesHtml, { allowInlineStyles: true }) }}
+              html={sanitizeRichHtml(trustBadgesHtml, { allowInlineStyles: true })}
             />
           ) : trustItems.length > 0 ? (
             <div className="max-md:hidden mb-11 flex flex-wrap items-center gap-x-4 gap-y-2 text-ui-14 max-md:text-ui-12 text-muted-foreground">

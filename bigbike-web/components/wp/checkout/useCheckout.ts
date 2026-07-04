@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { generateId } from "@/lib/utils";
@@ -13,6 +13,7 @@ import type { PriceChange } from "@/lib/contracts/commerce";
 import { createCheckoutAddressSchema, type CheckoutAddressFormValues } from "@/lib/schemas/checkout";
 import { pushDataLayer, toGtmCartItems } from "@/lib/analytics";
 import { toOrderConfirmPath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 import { pickDefaultAddress } from "./helpers";
 
 /**
@@ -24,6 +25,7 @@ import { pickDefaultAddress } from "./helpers";
 export function useCheckout() {
   const t = useTranslations("Checkout");
   const tValidation = useTranslations("Checkout.validation");
+  const locale = useLocale() as Locale;
   const router = useRouter();
   const { refreshCount } = useCart();
 
@@ -200,7 +202,7 @@ export function useCheckout() {
         setPriceChanges(order.priceChanges);
         setPendingOrderNav({ orderNumber: order.orderNumber, orderKey: order.orderKey });
       } else {
-        router.push(toOrderConfirmPath(order.orderNumber, order.orderKey));
+        router.push(toOrderConfirmPath(order.orderNumber, order.orderKey, locale));
       }
     } catch (err: unknown) {
       setSubmitError((err as Error).message);
@@ -217,7 +219,7 @@ export function useCheckout() {
 
   function confirmPendingOrder() {
     if (pendingOrderNav) {
-      router.push(toOrderConfirmPath(pendingOrderNav.orderNumber, pendingOrderNav.orderKey));
+      router.push(toOrderConfirmPath(pendingOrderNav.orderNumber, pendingOrderNav.orderKey, locale));
     }
   }
 

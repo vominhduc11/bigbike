@@ -946,7 +946,7 @@ export const SECTION_DEFS = [
 // groups below), with SEO on its own tab so the SEO-role workflow stays separate.
 // Keys must match SECTION_DEFS keys; drives the per-tab error badge + findTabForErrors.
 export const TAB_SECTIONS = {
-  product: ['basic', 'description', 'pricing', 'media', 'variants', 'gallery', 'videos', 'specs', 'specStats', 'faqs', 'commitments', 'trustBadges', 'related', 'accessories'],
+  product: ['basic', 'description', 'highlights', 'pricing', 'media', 'variants', 'gallery', 'videos', 'specs', 'specStats', 'faqs', 'commitments', 'trustBadges', 'related', 'accessories'],
   seo:     ['seo'],
 }
 
@@ -962,7 +962,7 @@ export const TAB_SECTIONS = {
 // Keys/order mirror the render order in ProductDetailScreen (canonical PDP order §0b).
 export const PRODUCT_GROUPS = {
   buyArea: ['basic', 'media', 'gallery', 'trustBadges', 'pricing', 'variants', 'commitments', 'specStats'],
-  body:    ['description', 'related', 'specs', 'faqs', 'videos'],
+  body:    ['description', 'highlights', 'related', 'specs', 'faqs', 'videos'],
   closing: ['accessories'],
 }
 
@@ -1025,6 +1025,7 @@ export const SECTION_FIELD_PREFIXES = {
   specStats:     ['specStats'],
   faqs:          ['faqs'],
   commitments:   ['commitments'],
+  highlights:    ['positiveNotes', 'negativeNotes'],
   trustBadges:   ['trustBadges'],
   variants:      ['variants'],
   related:       ['relatedProductIds'],

@@ -11,6 +11,7 @@ import {
   fetchPublicProduct,
 } from "@/lib/api/client-api";
 import { sanitizeRichHtml } from "@/lib/utils/html";
+import { ThemeAwareHtml } from "@/components/content/ThemeAwareHtml";
 
 /**
  * Client-side content localizer — giữ kiến trúc ISR/SEO (server luôn render tĩnh `vi`,
@@ -138,6 +139,18 @@ export function LHtml({ field, viHtml, className, allowInlineStyles, rewriteMedi
       container.removeEventListener("error", handleError, true);
     };
   }, [html]);
+
+  // allowInlineStyles: màu admin tự đặt có thể "chữ đen trên nền đen" khi bật dark
+  // mode — render 2 bản (light/dark) song song, CSS chọn đúng bản (xem
+  // ThemeAwareHtml + STYLEGUIDE.md §Dark mode). Bọc ngoài bằng đúng containerRef
+  // để listener lỗi ảnh (capture-phase) vẫn bắt được ảnh lỗi ở CẢ 2 bản.
+  if (allowInlineStyles) {
+    return (
+      <div ref={containerRef}>
+        <ThemeAwareHtml className={className} html={html} />
+      </div>
+    );
+  }
 
   return <div ref={containerRef} className={className} dangerouslySetInnerHTML={{ __html: html }} />;
 }

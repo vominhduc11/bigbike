@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useLocale } from "next-intl";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import type { ReactNode } from "react";
 
@@ -15,6 +16,7 @@ import { sanitizeRichHtml } from "@/lib/utils/html";
 import { stripHtmlTags } from "@/lib/utils/text";
 import { makeSlugThumbnailFallback, resolveWpUploadUrl } from "@/lib/utils/wp-media";
 import { toArticleListPath, toCanonicalUrl, toHomePath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 import { WpArticleImage } from "../WpArticleImage";
 import { ArticleTableOfContents } from "./ArticleTableOfContents";
 
@@ -57,9 +59,10 @@ export function ArticleView({
   related = [],
   previewMode = false,
 }: ArticleViewProps) {
+  const locale = useLocale() as Locale;
   const articleTitle = safeText(article.title, "Bài viết");
   const categoryLabel = getArticleCategoryLabel(article);
-  const categoryHref = getArticleCategoryHref(article);
+  const categoryHref = getArticleCategoryHref(article, locale);
   const articleDate = getArticleDate(article);
 
   const legacyShareUrl = toCanonicalUrl(`/tin-tuc/${article.slug}.html`);
@@ -290,13 +293,13 @@ function getArticleCategoryLabel(article: Article): string {
   return safeText(article.category?.name ?? article.categories?.[0]?.name, "Tin tức");
 }
 
-function getArticleCategoryHref(article: Article): string {
+function getArticleCategoryHref(article: Article, locale: Locale): string {
   const slug = article.category?.slug ?? article.categories?.[0]?.slug;
   if (!slug || slug === "tin-tuc") {
-    return toArticleListPath();
+    return toArticleListPath(locale);
   }
 
-  return `${toArticleListPath()}?category=${encodeURIComponent(slug)}`;
+  return `${toArticleListPath(locale)}?category=${encodeURIComponent(slug)}`;
 }
 
 function getArticleDate(article: Article): string | null | undefined {

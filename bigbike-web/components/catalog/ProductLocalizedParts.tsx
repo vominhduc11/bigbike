@@ -7,6 +7,7 @@ import { LHtml } from "@/components/i18n/LocalizedContent";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { resolveMediaUrl } from "@/lib/utils/format";
 import { HomeVideoCarousel } from "@/components/home/HomeVideoCarousel";
+import { ThemeAwareHtml } from "@/components/content/ThemeAwareHtml";
 import type { VideoAsset, HomeVideo, ProductHighlight } from "@/lib/contracts/public";
 import {
   Accordion,
@@ -97,9 +98,9 @@ export function ProductSpecsTable({ viSpecs, viSpecsHtml = "" }: { viSpecs: Spec
   const specsHtml = locale === "en" ? enSpecsHtml : viSpecsHtml;
   if (specsHtml && specsHtml.trim()) {
     return (
-      <div
+      <ThemeAwareHtml
         className="thong-so-ki-thuat overflow-x-auto"
-        dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(specsHtml, { allowInlineStyles: true }) }}
+        html={sanitizeRichHtml(specsHtml, { allowInlineStyles: true })}
       />
     );
   }
@@ -166,9 +167,9 @@ export function ProductFaqs({ viFaqs }: { viFaqs: Faq[] }) {
             </span>
           </AccordionTrigger>
           <AccordionContent>
-            <div
+            <ThemeAwareHtml
               className="wyswyg pl-9 text-muted-foreground"
-              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(faq.answer ?? "", { allowInlineStyles: true }) }}
+              html={sanitizeRichHtml(faq.answer ?? "", { allowInlineStyles: true })}
             />
           </AccordionContent>
         </AccordionItem>

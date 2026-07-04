@@ -98,7 +98,7 @@ export function MobileStickyPurchaseBar({
         // while still matching body:has(.is-visible) (which hides the bottom nav
         // even for a display:none element) — that produced "nav disappears but
         // bar never shows". `flex` is the mobile state; `md:hidden` hides ≥768.
-        "flex md:hidden fixed bottom-0 left-0 right-0 z-[651] pt-3 px-4 [padding-bottom:max(8px,env(safe-area-inset-bottom))] gap-2.5 bg-white border-t border-border [box-shadow:0_-4px_16px_rgba(0,0,0,0.08)] [transition-property:transform] duration-200 ease-[ease]",
+        "flex md:hidden fixed bottom-0 left-0 right-0 z-[651] pt-3 px-4 [padding-bottom:max(8px,env(safe-area-inset-bottom))] gap-2.5 bg-card border-t border-border [box-shadow:0_-4px_16px_rgba(0,0,0,0.08)] [transition-property:transform] duration-200 ease-[ease]",
         visible
           ? "[transform:translateY(0)] pointer-events-auto"
           : "[transform:translateY(calc(100%_+_1px))] pointer-events-none",

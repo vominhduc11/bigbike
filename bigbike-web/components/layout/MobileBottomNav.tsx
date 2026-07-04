@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Home, ShoppingCart, User } from "lucide-react";
 import { useHeaderUi } from "@/components/layout/HeaderUiContext";
 import { useCart } from "@/lib/cart-context";
 import { cn } from "@/lib/utils";
 import { isAuthRoute, toAccountPath, toHomePath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 
 function isHomePath(pathname: string) {
   return pathname === "/" || pathname === "";
@@ -38,6 +39,7 @@ function ActiveBar() {
 
 export function MobileBottomNav() {
   const t = useTranslations("Header");
+  const locale = useLocale() as Locale;
   const pathname = usePathname();
   const { cartCount } = useCart();
   const { openPanel, isPanelOpen } = useHeaderUi();
@@ -102,7 +104,7 @@ export function MobileBottomNav() {
         </button>
 
         <Link
-          href={toAccountPath()}
+          href={toAccountPath(locale)}
           className={tabClass(accountActive)}
           aria-current={accountActive ? "page" : undefined}
         >

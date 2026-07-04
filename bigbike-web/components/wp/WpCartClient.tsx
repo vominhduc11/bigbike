@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useCartQuery, useRemoveCartItem, useUpdateCartItem } from "@/lib/query/hooks";
 import { pushDataLayer, toGtmCartItems } from "@/lib/analytics";
 import { toProductListPath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 import { cartToDrafts } from "./cart/helpers";
 import { CartItemRow } from "./cart/CartItemRow";
 import { CartSummary } from "./cart/CartSummary";
@@ -23,6 +24,7 @@ import { CartSkeleton } from "./cart/CartSkeleton";
  */
 export function WpCartClient() {
   const t = useTranslations("CartWp");
+  const locale = useLocale() as Locale;
   const cartQuery = useCartQuery();
   const updateItem = useUpdateCartItem();
   const removeItem = useRemoveCartItem();
@@ -119,7 +121,7 @@ export function WpCartClient() {
     [setItemMutating, removeItem],
   );
 
-  const continueHref = toProductListPath();
+  const continueHref = toProductListPath(locale);
 
   if (cartQuery.isLoading) {
     return <CartSkeleton label={t("loadingAria")} />;

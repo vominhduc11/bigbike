@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { Cart } from "@/lib/contracts/commerce";
 import { formatVnd } from "@/lib/utils/format";
 import { toCheckoutPath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 
 // Cột phải giỏ hàng: tổng tiền + nút thanh toán. Port .summary /
 // .cart_totals / .total-summary của theme WP.
@@ -16,6 +17,7 @@ export function CartSummary({
   hasUnavailable: boolean;
 }) {
   const t = useTranslations("CartWp");
+  const locale = useLocale() as Locale;
   return (
     <div className="col-md-4">
       <div className="cart-summary-card">
@@ -85,7 +87,7 @@ export function CartSummary({
             {t("checkoutSubmit")}
           </span>
         ) : (
-          <Link className="checkout-button" href={toCheckoutPath()}>
+          <Link className="checkout-button" href={toCheckoutPath(locale)}>
             {t("checkoutSubmit")}
           </Link>
         )}

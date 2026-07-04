@@ -9,6 +9,14 @@ import {
   toProductListPath,
   toCategoryListPath,
   toArticleListPath,
+  toLoginPath,
+  toRegisterPath,
+  toForgotPasswordPath,
+  toAccountPath,
+  toOrderHistoryPath,
+  toOrderDetailPath,
+  toOrderConfirmPath,
+  getSafeLoginHref,
 } from "../../lib/utils/routes";
 
 describe("Route Localization Utility Tests", () => {
@@ -133,6 +141,36 @@ describe("Route Localization Utility Tests", () => {
       expect(toProductListPath("en")).toBe("/products/");
       expect(toCategoryListPath("en")).toBe("/categories/");
       expect(toArticleListPath("en")).toBe("/news/");
+    });
+
+    // Regression coverage for the "URL không đổi sang tiếng Anh" fix: these helpers
+    // are called from client components via useLocale() (WpHeaderUser, WpAccountNav,
+    // LoginForm, OrderHistoryContent, OrderDetailContent...) — a caller that forgets
+    // to thread the explicit locale argument silently falls back to "vi" via
+    // getActiveLocale(), which is exactly the class of bug this suite guards against.
+    it("toLoginPath / toRegisterPath / toForgotPasswordPath / toAccountPath honor an explicit en locale", () => {
+      expect(toLoginPath(undefined, "en")).toBe("/login/");
+      expect(toLoginPath(undefined, "vi")).toBe("/dang-nhap/");
+      expect(toRegisterPath("en")).toBe("/register/");
+      expect(toForgotPasswordPath(undefined, "en")).toBe("/forgot-password/");
+      expect(toAccountPath("en")).toBe("/account/");
+      expect(toAccountPath("vi")).toBe("/tai-khoan/");
+    });
+
+    it("toLoginPath translates a returnTo path into the target locale before appending it", () => {
+      expect(toLoginPath("/tai-khoan/don-hang/", "en")).toBe("/login/?tiep=%2Faccount%2Forders%2F");
+    });
+
+    it("getSafeLoginHref returns a locale-correct login URL", () => {
+      expect(getSafeLoginHref("/tai-khoan/don-hang/", "en")).toBe("/login/?tiep=%2Faccount%2Forders%2F");
+      expect(getSafeLoginHref("/dang-nhap/", "en")).toBe("/login/");
+    });
+
+    it("toOrderHistoryPath / toOrderDetailPath / toOrderConfirmPath honor an explicit en locale", () => {
+      expect(toOrderHistoryPath("en")).toBe("/account/orders/");
+      expect(toOrderHistoryPath("vi")).toBe("/tai-khoan/don-hang/");
+      expect(toOrderDetailPath("123", "en")).toBe("/account/orders/123/");
+      expect(toOrderConfirmPath("BB1001", "abc-key", "en")).toBe("/orders/confirm/?so=BB1001&key=abc-key");
     });
   });
 });

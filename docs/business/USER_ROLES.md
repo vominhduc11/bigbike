@@ -44,7 +44,7 @@ File này dùng làm nền cho:
 | Admin | Internal user | Vận hành hệ thống ở mức rộng: product, order, customer, content, settings, media, users, reports. | Admin portal, admin APIs. | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java`, `SecurityConfig`, `bigbike-admin/README.md`, admin controllers |
 | Super Admin | Internal user | Quyền cao nhất, có wildcard permission và bảo vệ chống tự hạ quyền/last super admin demotion. | Admin portal, admin users/roles/settings/all admin modules. | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java`, `AdminAdminUsersService.java` |
 | Shop Manager | Internal user | Quản lý bán hàng/vận hành shop: products, orders, customers, reviews. | Admin portal selected business modules. | `CONFIRMED_FROM_CODE` for role mapping; UI behavior `NEEDS_VERIFICATION` | `AdminRolePermissions.java` |
-| Editor | Internal user | Quản lý content/media/menu/slider, SEO redirects và đọc catalog. | Admin content/media/menu/slider/redirects modules. | `CONFIRMED_FROM_CODE` for role mapping; UI behavior `NEEDS_VERIFICATION` | `AdminRolePermissions.java`, `V200__reduce_default_roles.sql` |
+| Editor | Internal user | Quản lý content/media/menu/slider, SEO redirects và đọc catalog. | Admin content/media/menu/slider/redirects modules. | `CONFIRMED_FROM_CODE` for role mapping; UI behavior `NEEDS_VERIFICATION` | `AdminRolePermissions.java`, `V211__reduce_default_roles.sql` |
 | Staff | Internal user | Role nghiệp vụ chung để gọi nhân viên vận hành; repo không có role exact `STAFF`. | Admin modules depending assigned role. | `INFERRED_FROM_STRUCTURE` | Business docs/admin scope; exact technical role absent in `AdminRolePermissions.java` |
 | System | System actor | Tự động validate, tạo order/payment/shipping, gửi notification, audit, websocket event. (Không trừ/hoàn kho — availability là cờ boolean admin tự bật/tắt, V261.) | Backend services/internal workflows. | `CONFIRMED_FROM_CODE` | `CheckoutService`, `AdminOrderService`, `AdminOrderWsService` |
 | Email Service | Third-party/system actor | Gửi transactional email cho order/admin notifications. | Backend notification/email integration. | `CONFIRMED_FROM_CODE` for code path; runtime `NEEDS_VERIFICATION` | `OrderNotificationService`, `bigbike-backend/pom.xml`, `docker-compose.yaml` |
@@ -204,7 +204,7 @@ Admin default role has broad business access to read/update many admin modules. 
 | Related Modules | Content, Media, Menus, Sliders, Redirects/SEO, Products/Catalog read. |
 | Related Business Processes | Content/SEO Management, Media Management, Homepage Content Management, Redirect Management. |
 | Status | `CONFIRMED_FROM_CODE` for role map; UI behavior `NEEDS_VERIFICATION` |
-| Evidence | `AdminRolePermissions.java`, `V200__reduce_default_roles.sql`, `AdminRedirectController` |
+| Evidence | `AdminRolePermissions.java`, `V211__reduce_default_roles.sql`, `AdminRedirectController` |
 
 ### Role: Staff
 
@@ -406,7 +406,7 @@ Confirmed evidence:
 - `SUPER_ADMIN` has wildcard `*`.
 - Admin user management validates built-in/custom roles and writes audit logs.
 - Role management (`AdminRoleService`) supports listing roles, editing role permissions, creating custom roles and deleting custom roles.
-- **Role governance** (enforced, not just inferred): the **4 built-in roles** (`SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER`, `EDITOR`) are **system roles** (`is_system = TRUE`) and **cannot be deleted**. `V49__create_roles_permissions_tables.sql` originally seeded 7; `V200__reduce_default_roles.sql` removed the WordPress-legacy content roles (`AUTHOR`, `CONTRIBUTOR`, `SEO_EDITOR`) and folded their SEO redirect permissions into `EDITOR`. `SUPER_ADMIN` permissions are **immutable** (`*`); the other 3 system roles can have their permission set **edited** but not deleted. Only **custom roles** can be deleted — and only when no admin user is still assigned. `CUSTOMER` is a **storefront auth role** (`ROLE_CUSTOMER`), not a row in `admin_roles`. Full detail: `PERMISSION_MATRIX.md` → Role Governance.
+- **Role governance** (enforced, not just inferred): the **4 built-in roles** (`SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER`, `EDITOR`) are **system roles** (`is_system = TRUE`) and **cannot be deleted**. `V49__create_roles_permissions_tables.sql` originally seeded 7; `V211__reduce_default_roles.sql` removed the WordPress-legacy content roles (`AUTHOR`, `CONTRIBUTOR`, `SEO_EDITOR`) and folded their SEO redirect permissions into `EDITOR`. `SUPER_ADMIN` permissions are **immutable** (`*`); the other 3 system roles can have their permission set **edited** but not deleted. Only **custom roles** can be deleted — and only when no admin user is still assigned. `CUSTOMER` is a **storefront auth role** (`ROLE_CUSTOMER`), not a row in `admin_roles`. Full detail: `PERMISSION_MATRIX.md` → Role Governance.
 
 Important distinction:
 
@@ -429,7 +429,7 @@ Production auth status:
 | Shipping Provider | `NOT_FOUND_IN_REPO` | No carrier-specific integration found. |
 | Backup / Ops Admin | `NOT_FOUND_IN_REPO` | No backup/restore operations role found. |
 | Marketing Manager | `NEEDS_VERIFICATION` | Content/SEO exist, but no explicit marketing role found. |
-| SEO Editor (removed) | `CONFIRMED_FROM_CODE` | Built-in role removed by `V200__reduce_default_roles.sql`; SEO redirect permissions folded into `EDITOR`. Re-create as a custom role if a dedicated SEO-only operator is needed. |
+| SEO Editor (removed) | `CONFIRMED_FROM_CODE` | Built-in role removed by `V211__reduce_default_roles.sql`; SEO redirect permissions folded into `EDITOR`. Re-create as a custom role if a dedicated SEO-only operator is needed. |
 | Custom Role | `CONFIRMED_FROM_CODE` | `AdminRoleService` supports create/edit/delete of custom roles (`is_system = FALSE`); deletion blocked while any admin user is still assigned. Governance enforced and documented in `PERMISSION_MATRIX.md` → Role Governance. |
 | System Job / Scheduled Task | `NEEDS_VERIFICATION` | System actor exists through services; scheduled/background jobs not fully audited here. |
 
@@ -442,7 +442,7 @@ Production auth status:
 | Admin | `AdminRolePermissions.java`, `SecurityConfig`, `DevAdminAuthService.java`, admin controllers | Admin role/permission mapping and admin API protection. | High |
 | Super Admin | `AdminRolePermissions.java`, `AdminAdminUsersService.java`, `AdminRolesController.java` | Wildcard permission and Super Admin guardrails. | High |
 | Shop Manager | `AdminRolePermissions.java` | Built-in role and default permission set. | High for role existence; UI Medium |
-| Editor | `AdminRolePermissions.java`, `V200__reduce_default_roles.sql` | Built-in content/media/menu/slider/redirect role. | High for role existence; UI Medium |
+| Editor | `AdminRolePermissions.java`, `V211__reduce_default_roles.sql` | Built-in content/media/menu/slider/redirect role. | High for role existence; UI Medium |
 | Staff | `AdminRolePermissions.java`, admin docs | No exact staff role; business umbrella inferred. | Medium-Low |
 | System | `CheckoutService`, `AdminOrderService`, `AdminReturnService`, `AdminOrderWsService` | Internal business automation/side effects. | High |
 | Email Service | `OrderNotificationService`, `bigbike-backend/pom.xml`, `docker-compose.yaml` | Notification code paths and mail dependency/config. | Medium-High |
@@ -459,7 +459,7 @@ Production auth status:
 1. `Staff` is a business-friendly umbrella role, but no exact `STAFF` technical role was found. Use built-in roles or custom roles instead.
 2. Production admin authentication **is implemented** (JWT login via `AuthController`/`AdminAuthService`/`JwtService`/`JwtAuthFilter`, with startup fail-fast on a weak `BIGBIKE_JWT_SECRET` under the prod profile). Remaining verification is operational: login brute-force/lockout and refresh-token revocation depth.
 3. Admin UI route guards and action-level disabled/hidden behavior need a dedicated UI audit. Backend permission enforcement is clearer than UI behavior.
-4. `SHOP_MANAGER` and `EDITOR` are confirmed in permission map, but business naming/Vietnamese labels and user-facing admin UI need verification. (`AUTHOR`, `CONTRIBUTOR`, `SEO_EDITOR` removed in `V200__reduce_default_roles.sql`.)
+4. `SHOP_MANAGER` and `EDITOR` are confirmed in permission map, but business naming/Vietnamese labels and user-facing admin UI need verification. (`AUTHOR`, `CONTRIBUTOR`, `SEO_EDITOR` removed in `V211__reduce_default_roles.sql`.)
 5. `SUPER_ADMIN` guardrails exist in admin user service, but UI confirmation/destructive-action safeguards need verification.
 6. Custom role creation/edit/delete exists; role governance (system roles non-deletable, `SUPER_ADMIN` immutable, custom-only deletion) is now documented in `PERMISSION_MATRIX.md` → Role Governance and section 12 above.
 7. Customer role is confirmed, including returns creation/list/detail, but return eligibility rules need deeper audit in `CustomerReturnService`.

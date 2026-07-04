@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
 import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { toProductListPath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 
 // Inlined leaf styling for the WP #main-banner hero. Leaf CSS was removed from
 // globals.css; .bb-main-banner/-img/-link/-copy stay as bare e2e markers and the
@@ -26,7 +28,8 @@ export type HeroSlide = {
   desktopSrc: string;
   mobileSrc?: string;
   alt: string;
-  href: string;
+  /** Link admin đặt riêng cho slide (sản phẩm/danh mục/ngoài); null → dùng mặc định (trang sản phẩm). */
+  href: string | null;
   productName: string;
   categoryName: string;
   productCode: string;
@@ -56,6 +59,8 @@ function enforceHorizontalTrack(swiper: SwiperType | null) {
 }
 
 function HeroSlideView({ slide }: { slide: HeroSlide }) {
+  const locale = useLocale() as Locale;
+  const href = slide.href ?? toProductListPath(locale);
   const slideLabel =
     [slide.productName || slide.categoryName || slide.alt || "BigBike", slide.productCode]
       .filter(Boolean)
@@ -86,7 +91,7 @@ function HeroSlideView({ slide }: { slide: HeroSlide }) {
     </div>
   );
 
-  if (!slide.href) {
+  if (!href) {
     return (
       <div className={LINK_CLASS} aria-label={slideLabel}>
         {picture}
@@ -96,7 +101,7 @@ function HeroSlideView({ slide }: { slide: HeroSlide }) {
   }
 
   return (
-    <Link href={slide.href} className={LINK_CLASS} aria-label={slideLabel}>
+    <Link href={href} className={LINK_CLASS} aria-label={slideLabel}>
       {picture}
       {copy}
     </Link>

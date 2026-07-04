@@ -658,42 +658,47 @@ export function HighlightsEditor({ items, onChange, disabled, contentLang = 'vi'
   }
 
   return (
-    <SortableList
-      items={items}
-      getId={(it) => it._key}
-      onReorder={(next) => onChange(next)}
-      disabled={disabled}
-      className="list-editor"
-      renderItem={(item, sortable, index) => (
-        <div ref={sortable.setNodeRef} style={sortable.style} className="list-editor-row">
-          <DragHandle handleProps={sortable.handleProps} disabled={disabled} label={t('products.detail.dragToReorder')} />
-          <div className="flex-1">
-            <Input
-              placeholder={placeholder}
-              value={item[fContent] || ''}
-              onChange={(e) => updateItem(index, e.target.value)}
-              disabled={disabled}
-              maxLength={2000}
-            />
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive hover:text-destructive"
-            onClick={() => removeItem(index)}
-            disabled={disabled}
-            aria-label={t('products.detail.highlights.remove', { defaultValue: 'Xóa mục' })}
-          >
-            ✕
-          </Button>
-        </div>
+    <>
+      {items.length === 0 && isEn && (
+        <p className="list-editor-empty">{t('products.detail.highlights.addInViFirst', { defaultValue: 'Thêm mục ở tab Tiếng Việt trước, rồi quay lại đây để dịch.' })}</p>
       )}
-      footer={
-        <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
-          + {addLabel}
-        </Button>
-      }
-    />
+      <SortableList
+        items={items}
+        getId={(it) => it._key}
+        onReorder={(next) => onChange(next)}
+        disabled={disabled}
+        className="list-editor"
+        renderItem={(item, sortable, index) => (
+          <div ref={sortable.setNodeRef} style={sortable.style} className="list-editor-row">
+            <DragHandle handleProps={sortable.handleProps} disabled={disabled || isEn} label={t('products.detail.dragToReorder')} />
+            <div className="flex-1">
+              <Input
+                placeholder={placeholder}
+                value={item[fContent] || ''}
+                onChange={(e) => updateItem(index, e.target.value)}
+                disabled={disabled}
+                maxLength={2000}
+              />
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-destructive hover:text-destructive"
+              onClick={() => removeItem(index)}
+              disabled={disabled || isEn}
+              aria-label={t('products.detail.highlights.remove', { defaultValue: 'Xóa mục' })}
+            >
+              ✕
+            </Button>
+          </div>
+        )}
+        footer={!isEn && (
+          <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
+            + {addLabel}
+          </Button>
+        )}
+      />
+    </>
   )
 }
 
@@ -722,7 +727,9 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
   return (
     <div className="list-editor">
       {items.length === 0 && (
-        <p className="list-editor-empty">{t('products.detail.faqs.empty')}</p>
+        <p className="list-editor-empty">
+          {isEn ? t('products.detail.faqs.addInViFirst', { defaultValue: 'Thêm câu hỏi ở tab Tiếng Việt trước, rồi quay lại đây để dịch.' }) : t('products.detail.faqs.empty')}
+        </p>
       )}
       <SortableList
         items={items}
@@ -735,7 +742,7 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
         const errAnswer = validationErrors?.[`faqs.${index}.answer`]
         return (
           <div ref={sortable.setNodeRef} style={sortable.style} className="list-editor-row list-editor-row--stack">
-            <DragHandle handleProps={sortable.handleProps} disabled={disabled} label={t('products.detail.dragToReorder')} />
+            <DragHandle handleProps={sortable.handleProps} disabled={disabled || isEn} label={t('products.detail.dragToReorder')} />
             <div className="flex flex-1 flex-col gap-2">
               <div>
                 <Input className={errQuestion ? 'border-danger' : undefined}
@@ -764,7 +771,7 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
               size="icon"
               className="text-destructive hover:text-destructive"
               onClick={() => removeItem(index)}
-              disabled={disabled}
+              disabled={disabled || isEn}
               aria-label={t('products.detail.faqs.removeFaq')}
             >
               ✕
@@ -772,11 +779,11 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
           </div>
         )
       }}
-        footer={
+        footer={!isEn && (
           <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
             + {t('products.detail.faqs.addFaq')}
           </Button>
-        }
+        )}
       />
     </div>
   )

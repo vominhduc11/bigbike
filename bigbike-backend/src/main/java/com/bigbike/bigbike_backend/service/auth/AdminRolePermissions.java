@@ -59,11 +59,11 @@ public final class AdminRolePermissions {
                     "media.read", "media.write",
                     "menus.read", "menus.write",
                     "sliders.read", "sliders.write",
-                    // SEO redirects folded in from the removed SEO_EDITOR role (V200).
+                    // SEO redirects folded in from the removed SEO_EDITOR role (V211).
                     "redirects.read", "redirects.write",
                     "home_highlights.read", "home_highlights.write"
             )
-            // AUTHOR, CONTRIBUTOR, SEO_EDITOR removed in V200__reduce_default_roles.sql
+            // AUTHOR, CONTRIBUTOR, SEO_EDITOR removed in V211__reduce_default_roles.sql
             // (WordPress-legacy content roles; SEO redirects folded into EDITOR).
     );
 }

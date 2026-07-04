@@ -38,6 +38,7 @@ import type { BrandSummary, CategorySummary, DescriptionBlock, Product, PublicSi
 import { safeArray, safeText } from "@/lib/utils/format";
 import { pickSetting } from "@/lib/utils/settings";
 import { sanitizeRichHtml } from "@/lib/utils/html";
+import { ThemeAwareHtml } from "@/components/content/ThemeAwareHtml";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 
 type ProductViewProps = {
@@ -115,9 +116,9 @@ function MobileTrustLine({ product }: { product: Product }) {
 
   if (trustBadgesHtml.trim()) {
     return (
-      <div
+      <ThemeAwareHtml
         className="md:hidden max-md:mt-4 max-md:mb-4 mb-11 bb-trust-badges-html"
-        dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(trustBadgesHtml, { allowInlineStyles: true }) }}
+        html={sanitizeRichHtml(trustBadgesHtml, { allowInlineStyles: true })}
       />
     );
   }

@@ -1,16 +1,15 @@
 import Link from "next/link";
-import { ShoppingCart } from "lucide-react";
 import { getLocale } from "next-intl/server";
 import type { HeaderNavNode } from "@/components/layout/header-nav/shared";
 import { listPublicSettings } from "@/lib/api/public-api";
 import { Tr } from "@/components/i18n/Tr";
 import { WpSearchIcon } from "./WpSearchIcon";
 import { pickSetting } from "@/lib/utils/settings";
-import { toCartPath } from "@/lib/utils/routes";
-import { WpCartCount } from "./WpCartCount";
+import { WpCartLink } from "./WpCartLink";
 import { WpHeaderUser } from "./WpHeaderUser";
 import { WpLangSwitch } from "./WpLangSwitch";
 import { WpMenuClient } from "./WpMenuClient";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 const T = "/wp-content/themes/bigbike";
 
@@ -148,11 +147,10 @@ export async function WpHeader({ menuNodes }: { menuNodes: HeaderNavNode[] }) {
 
               <div className="user-control d-inline-block">
                 <WpLangSwitch />
+                <ThemeToggle />
                 <WpSearchIcon />
                 <div className="user-control--item cart">
-                  <Link href={toCartPath()} aria-label="Giỏ hàng">
-                    <ShoppingCart size={22} strokeWidth={1.75} aria-hidden /> <WpCartCount />
-                  </Link>
+                  <WpCartLink ariaLabel="Giỏ hàng" />
                 </div>
                 <div className="user-control--item user desktop-user">
                   <WpHeaderUser variant="desktop" />

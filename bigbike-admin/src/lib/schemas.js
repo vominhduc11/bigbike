@@ -23,6 +23,18 @@ function validateEnSlug(t, slug, ctx) {
   }
 }
 
+// Dòng có bản EN nhưng field VI bắt buộc rỗng hoàn toàn sẽ bị toPayload() lọc mất khi lưu
+// (constants.js lọc theo VI) — phát hiện để chặn lưu thay vì lẳng lặng mất nội dung EN.
+function bilingualGapRows(items, viFields, enFields) {
+  const rows = []
+  ;(items || []).forEach((item, i) => {
+    const viBlank = viFields.every((f) => !(item[f] || '').trim())
+    const enHasContent = enFields.some((f) => (item[f] || '').trim())
+    if (viBlank && enHasContent) rows.push(i + 1)
+  })
+  return rows
+}
+
 export function normalizeVariantToken(value) {
   return String(value || '')
     .normalize('NFD')
@@ -112,6 +124,9 @@ export function createProductSchema(t, isCreate = false) {
         _key: z.string().optional(),
         question: z.string().max(500, 'Câu hỏi tối đa 500 ký tự.'),
         answer: z.string().max(20000, 'Câu trả lời tối đa 20000 ký tự.'),
+        // Khai báo để superRefine (bilingualGapRows) nhìn thấy (z.object strip key lạ).
+        questionEn: z.string().max(500).optional(),
+        answerEn: z.string().max(20000).optional(),
       })).max(50, 'FAQs tối đa 50 câu hỏi.').optional(),
       // Cam kết theo từng sản phẩm (V232) — tùy chọn; chỉ kiểm tra độ dài.
       commitments: z.array(z.object({
@@ -343,6 +358,57 @@ export function createProductSchema(t, isCreate = false) {
         if (!question) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Vui lòng nhập câu hỏi.', path: ['faqs', i, 'question'] })
         if (!answer) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Vui lòng nhập câu trả lời.', path: ['faqs', i, 'answer'] })
       })
+
+      // Dòng chỉ có bản EN (VI rỗng hoàn toàn) sẽ bị payload lọc mất khi lưu — chặn lưu thay
+      // vì lẳng lặng mất nội dung tiếng Anh người dùng đã gõ (mỗi mảng gộp 1 thông báo duy nhất
+      // vì zodErrors() chỉ giữ issue đầu tiên theo mỗi path).
+      const faqGaps = bilingualGapRows(data.faqs, ['question', 'answer'], ['questionEn', 'answerEn'])
+      if (faqGaps.length) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['faqs'],
+          message: t('products.detail.faqs.missingViError', {
+            rows: faqGaps.join(', #'),
+            defaultValue: 'Câu hỏi dòng #{{rows}} thiếu nội dung tiếng Việt (đã nhập tiếng Anh). Vui lòng bổ sung ở tab Tiếng Việt hoặc xoá dòng.',
+          }),
+        })
+      }
+
+      const commitmentGaps = bilingualGapRows(data.commitments, ['title'], ['titleEn', 'subtitleEn'])
+      if (commitmentGaps.length) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['commitments'],
+          message: t('products.detail.commitments.missingViError', {
+            rows: commitmentGaps.join(', #'),
+            defaultValue: 'Cam kết dòng #{{rows}} thiếu nội dung tiếng Việt (đã nhập tiếng Anh). Vui lòng bổ sung ở tab Tiếng Việt hoặc xoá dòng.',
+          }),
+        })
+      }
+
+      const positiveGaps = bilingualGapRows(data.positiveNotes, ['content'], ['contentEn'])
+      if (positiveGaps.length) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['positiveNotes'],
+          message: t('products.detail.highlights.missingViErrorPros', {
+            rows: positiveGaps.join(', #'),
+            defaultValue: 'Ưu điểm dòng #{{rows}} thiếu nội dung tiếng Việt (đã nhập tiếng Anh). Vui lòng bổ sung ở tab Tiếng Việt hoặc xoá dòng.',
+          }),
+        })
+      }
+
+      const negativeGaps = bilingualGapRows(data.negativeNotes, ['content'], ['contentEn'])
+      if (negativeGaps.length) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['negativeNotes'],
+          message: t('products.detail.highlights.missingViErrorCons', {
+            rows: negativeGaps.join(', #'),
+            defaultValue: 'Nhược điểm dòng #{{rows}} thiếu nội dung tiếng Việt (đã nhập tiếng Anh). Vui lòng bổ sung ở tab Tiếng Việt hoặc xoá dòng.',
+          }),
+        })
+      }
 
       // Validate gallery URLs
       data.gallery?.forEach((img, i) => {

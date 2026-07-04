@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { OrderListItem } from "@/lib/contracts/commerce";
 import { useOrders } from "@/lib/query/hooks";
 import { WpAccountSectionHeading } from "@/components/wp/WpAccountNav";
@@ -10,6 +10,7 @@ import { PaginationNav } from "@/components/ui/PaginationNav";
 import { formatVnd, orderStatusLabelWithT } from "@/lib/utils/format";
 import { LocalDate } from "@/components/i18n/LocalDate";
 import { toOrderDetailPath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 import { orderFilterHref } from "@/lib/utils/orders";
 import { cn } from "@/lib/utils";
 import { bbLink, skelBase } from "@/lib/ui-classes";
@@ -25,6 +26,7 @@ const filterHref = (status?: string) => orderFilterHref(ORDERS_PATH, status);
 export function OrderHistoryContent() {
   const t = useTranslations("Account.orders");
   const tNav = useTranslations("Account.nav");
+  const locale = useLocale() as Locale;
   const searchParams = useSearchParams();
   const pageParam = Number(searchParams.get("page"));
   const page = Number.isInteger(pageParam) && pageParam > 0 ? pageParam : 1;
@@ -105,7 +107,7 @@ export function OrderHistoryContent() {
                 {orders.map((order) => (
                   <tr key={order.id} className="border-b border-border">
                     <td className="py-4 pr-4 align-top">
-                      <Link href={toOrderDetailPath(order.id)} className={bbLink}>
+                      <Link href={toOrderDetailPath(order.id, locale)} className={bbLink}>
                         #{order.orderNumber}
                       </Link>
                       {order.productNames && order.productNames.length > 0 && (
@@ -124,7 +126,7 @@ export function OrderHistoryContent() {
                     </td>
                     <td className="py-4 align-top">
                       <Link
-                        href={toOrderDetailPath(order.id)}
+                        href={toOrderDetailPath(order.id, locale)}
                         className="inline-flex h-9 items-center justify-center bg-brand px-5 font-cta text-ui-14 max-md:text-ui-12 font-semibold uppercase text-white hover:bg-brand-hover"
                       >
                         {t("view")}
@@ -141,7 +143,7 @@ export function OrderHistoryContent() {
             {orders.map((order) => (
               <li key={order.id} className="border border-border bg-card p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <Link href={toOrderDetailPath(order.id)} className={`${bbLink} font-semibold`}>
+                  <Link href={toOrderDetailPath(order.id, locale)} className={`${bbLink} font-semibold`}>
                     #{order.orderNumber}
                   </Link>
                   <span className="text-ui-14 max-md:text-ui-12 text-muted-foreground">{orderStatusLabelWithT(order.status, t)}</span>
@@ -160,7 +162,7 @@ export function OrderHistoryContent() {
                   </dd>
                 </dl>
                 <Link
-                  href={toOrderDetailPath(order.id)}
+                  href={toOrderDetailPath(order.id, locale)}
                   className="mt-3 inline-flex h-11 w-full items-center justify-center bg-brand px-5 font-cta text-ui-14 max-md:text-ui-12 font-semibold uppercase text-white hover:bg-brand-hover"
                 >
                   {t("view")}

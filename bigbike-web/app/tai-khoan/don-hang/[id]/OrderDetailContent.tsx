@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { WpAccountSectionHeading } from "@/components/wp/WpAccountNav";
 import { Button } from "@/components/ui/button";
 import { useCancelOrder, useOrder } from "@/lib/query/hooks";
@@ -9,6 +9,7 @@ import { formatAddress, formatVnd, fulfillmentStatusLabelWithT, orderStatusLabel
 import { isCustomerCancellable } from "@/lib/utils/orders";
 import { useLocalDate } from "@/components/i18n/LocalDate";
 import { toOrderHistoryPath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 import { cn } from "@/lib/utils";
 import { bbLink, sectionSubheading, skelStack } from "@/lib/ui-classes";
 import { SkelBlock } from "@/components/ui/skeleton/primitives";
@@ -16,6 +17,7 @@ import { SkelBlock } from "@/components/ui/skeleton/primitives";
 export function OrderDetailContent({ orderId }: { orderId: string }) {
   const t = useTranslations("Account.orders");
   const tCheckout = useTranslations("Checkout");
+  const locale = useLocale() as Locale;
   const fmtDate = useLocalDate();
   const tCatalog = useTranslations("Catalog");
   const { data: order, isLoading, error: queryError } = useOrder(orderId);
@@ -56,7 +58,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
       <>
         <WpAccountSectionHeading title={t("detailHeading")} />
         <p className="mb-4 text-ui-16 max-md:text-ui-14 text-brand">{error || t("notFound")}</p>
-        <Link href={toOrderHistoryPath()} className={cn(bbLink, "text-ui-14 max-md:text-ui-12")}>
+        <Link href={toOrderHistoryPath(locale)} className={cn(bbLink, "text-ui-14 max-md:text-ui-12")}>
           {t("backToHistory")}
         </Link>
       </>
@@ -197,7 +199,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
       )}
 
       <div className="mt-6">
-        <Link href={toOrderHistoryPath()} className={cn(bbLink, "text-ui-14 max-md:text-ui-12")}>
+        <Link href={toOrderHistoryPath(locale)} className={cn(bbLink, "text-ui-14 max-md:text-ui-12")}>
           {t("backToHistory")}
         </Link>
       </div>

@@ -64,7 +64,7 @@ public class AdminProductImportController extends AdminControllerSupport {
     }
 
     /**
-     * Round-trip export: the full 46-column template shape (one row per product/variant),
+     * Round-trip export: the full 41-column template shape (one row per product/variant),
      * for "download current catalog to edit and re-import." Deliberately separate from
      * {@code GET /api/v1/admin/reports/products/export} (13-column reporting overview,
      * gated by {@code reports.export}) — this one is a catalog-authoring capability.

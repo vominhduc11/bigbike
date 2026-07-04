@@ -659,13 +659,13 @@ Lets a shop owner create/update many products at once from a file (typically Cha
 | Permission | `products.update` (same domain as every other product-write endpoint — see `PERMISSION_MATRIX.md` "Catalog / Product permissions") |
 | `POST /api/v1/admin/products/import/validate` | multipart `file` + `type` (`csv`\|`json`). Parses + resolves references + runs the same validation `POST /api/v1/admin/products` would, but never persists. Returns `ImportReportResponse`. |
 | `POST /api/v1/admin/products/import/commit` | Same multipart contract (client re-sends the identical file it already validated — stateless, no server-side temp storage between calls) + optional `skipRowKeys` (comma-separated) to exclude rows the admin unchecked in the review table. For each row that still validates clean, calls the real `createProduct`/`updateProduct` directly — zero drift from the single-product API. Each row commits (or fails) independently; one bad row never rolls back rows already saved earlier in the same file. |
-| `GET /api/v1/admin/products/import/export` | Round-trip export: the full 46-column template shape (one row per product/variant, category/brand emitted as slug) for "download current catalog → edit → re-import." Deliberately separate from `GET /api/v1/admin/reports/products/export` (13-column reporting overview, gated by `reports.export` instead). |
+| `GET /api/v1/admin/products/import/export` | Round-trip export: the full 41-column template shape (one row per product/variant, category/brand emitted as slug) for "download current catalog → edit → re-import." Deliberately separate from `GET /api/v1/admin/reports/products/export` (13-column reporting overview, gated by `reports.export` instead). |
 
-**CSV row shape** mirrors `product-import-template.csv`: one "SẢN PHẨM CHÍNH" row per product plus zero or more "BIẾN THỂ" child rows grouped by an internal file-local key column — see the template file itself for the full 46-column layout.
+**CSV row shape** mirrors `product-import-template.csv`: one "SẢN PHẨM CHÍNH" row per product plus zero or more "BIẾN THỂ" child rows grouped by an internal file-local key column (`Mã sản phẩm nội bộ`, column 2) — see the template file itself for the full 41-column layout. Five display-only/never-read columns from the pre-2026-07-04 46-column layout were removed: `Mã biến thể nội bộ` (variant identity in CSV is always SKU-matched, never id-matched — see below), `Danh mục (tên hiển thị, chỉ để đối chiếu)` / `Thương hiệu (tên hiển thị, chỉ để đối chiếu)` (only the slug columns are parsed), `Tên biến thể hiển thị (hệ thống tự sinh)` (server-derived, `PRODUCT_RULE_008`), and `Đơn vị tiền tệ` (always VND, `PRODUCT_RULE_011`).
 
 **JSON row shape** is `UpsertProductRequest` byte-for-byte, deserialized directly (no separate import DTO) — **except** `categoryId`/`brandId` are interpreted as **slugs**, not literal database IDs, identically to the CSV path (neither a shop owner nor an LLM can know real internal IDs).
 
-**Upsert matching:** product-level `sku` first (fallback `slug`) — more than one product sharing the same `sku` is an ambiguous-row error rather than a guess, since `products.sku` has no DB uniqueness (`PRODUCT_RULE_SKU_001` only covers variant SKU). **Variants are matched by SKU** (falling back to a file-supplied variant-id hint only after verifying it belongs to the target product) before the existing full-replace-by-id `applyVariants` logic runs — this preserves each variant's real database id (and therefore its `stock_movements` history and `quantityOnHand`) across re-imports of an unchanged catalog.
+**Upsert matching:** product-level `sku` first (fallback `slug`) — more than one product sharing the same `sku` is an ambiguous-row error rather than a guess, since `products.sku` has no DB uniqueness (`PRODUCT_RULE_SKU_001` only covers variant SKU). **Variants are matched by SKU** before the existing full-replace-by-id `applyVariants` logic runs — this preserves each variant's real database id (and therefore its `stock_movements` history and `quantityOnHand`) across re-imports of an unchanged catalog. (JSON import can additionally supply a `variants[].id` hint, honored only after verifying it belongs to the target product; the CSV template has no variant-id column at all — SKU is the sole match key there.)
 
 **Validation note:** `validateImport` calls `CatalogRequestValidator.validateAndResolveCategory`/`validateAndResolveBrand`/`validateProductRequest` directly with `preview=false` — **not** `previewProduct` — because the preview/dry-run mode deliberately skips the English-name-required check and cross-product SKU/slug uniqueness (see "Product preview" above), which would under-report errors relative to what a real commit enforces.
 
@@ -1175,6 +1175,38 @@ Trang `/lien-he` là **trang tĩnh hoàn toàn**: bố cục, nhãn, tiêu đề
 | Method | Path | Permission | Current behavior | Status | Evidence |
 |---|---|---|---|---|---|
 | `GET` | `/api/v1/admin/customers/summary` | `customers.read` | KPI counts for the admin Customers screen. Returns `AdminCustomerSummaryResponse`: `total` (all customers), `vip` (customers whose lifetime order total ≥ 10,000,000 VND — mirrors `AdminCustomerService.deriveSegment` VIP rule), `newLast30Days` (registered within the last 30 days), `active` (status = `ACTIVE`). | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java`, `AdminCustomerService.java` |
+
+## Redirect Management Contract
+
+Admin CRUD for URL redirect rules (`redirects` table) plus an internal lookup API consumed by `bigbike-web`'s edge proxy (`proxy.ts`) to resolve legacy/old URLs on the storefront.
+
+### Admin CRUD — `AdminRedirectController` (`/api/v1/admin`)
+
+| Method | Path | Permission | Body / Query | Response | Notes |
+|---|---|---|---|---|---|
+| `GET` | `/redirects` | `redirects.read` | Query: `page` (≥1, default 1), `size` (1-100, default 20), `q` (search), `enabled` (`true`/`false`), `statusCode` | `{data: [...], pagination}` list of `AdminRedirectResponse` | Standard paginated list envelope. |
+| `GET` | `/redirects/{id}` | `redirects.read` | — | `{data: AdminRedirectResponse}` | |
+| `POST` | `/redirects` | `redirects.write` | `CreateRedirectRequest`: `sourcePattern` (required), `targetUrl` (required), `redirectType` (`PERMANENT`/`TEMPORARY`/`CUSTOM`, defaults from statusCode), `statusCode` (one of `301/302/307/308`, business rule — see `REDIRECT_RULE_005`), `enabled`, `notes`, `legacyId` | `{data: AdminRedirectResponse}` | Rejects self-redirect, multi-hop loop (max depth 20), duplicate `sourcePattern`, and open-redirect targets (see BUSINESS_RULES.md `REDIRECT_RULE_00x`). |
+| `PATCH` | `/redirects/{id}` | `redirects.write` | `UpdateRedirectRequest` (same fields; `notes`/`legacyId` always overwritten from the request, so an explicit blank/empty clears a previously-stored value) | `{data: AdminRedirectResponse}` | Same validation as create. |
+| `DELETE` | `/redirects/{id}` | `redirects.write` | — | `204 No Content` | |
+
+Every mutation writes an `AuditLogEntity` (`resourceType = REDIRECT`, see Audit Log Contract below).
+
+### Internal lookup API — `InternalRedirectController` (`/api/internal`)
+
+Not wrapped in the standard `{data}` envelope (bare JSON, optimized for the hot per-request proxy path). Requires header `X-Internal-Token` matching `BIGBIKE_INTERNAL_TOKEN` (backend) / `INTERNAL_API_TOKEN` (`bigbike-web`) — deny-by-default when the token is unset in non-dev profiles (see DEPLOYMENT_GUIDE.md "Security Hardening Config" and PERMISSION_MATRIX.md "Internal Redirect Caveat").
+
+| Method | Path | Response | Notes |
+|---|---|---|---|
+| `GET` | `/redirect?path=` | `200 {redirectId, target, statusCode}` on an enabled match, `404` on miss, `401` unauthorized, `400` blank `path` | Exact-match lookup (`findBySourcePattern`), case-sensitive, no trailing slash (see DATA_CONTRACT.md). `redirectType` is **not** returned here — only `statusCode` drives the actual HTTP response `bigbike-web/proxy.ts` sends to the browser. |
+| `GET` | `/redirects/active` | `200 [...]` bulk dump of enabled redirects (includes `redirectType`) | Not currently called by `bigbike-web` — reserved for future use, not part of the live request path. |
+| `POST` | `/redirects/hit/{redirectId}` | `204` | Fire-and-forget hit-count increment, called by the proxy after a successful redirect. |
+
+Consumed only by `bigbike-web/proxy.ts` over the Docker-internal network (`http://bigbike-backend:8080`) — never over the public `api.bigbike.vn` domain. `deploy/nginx/api.bigbike.vn.conf` blocks `/api/internal/**` from the public internet as a second layer of defense (see DEPLOYMENT_GUIDE.md).
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence: `AdminRedirectController.java`, `AdminRedirectService.java`, `InternalRedirectController.java`, `bigbike-web/proxy.ts`, `V4__create_media_redirect_menu_tables.sql`, `V58__add_redirect_permissions.sql`, `V80__add_redirect_source_pattern_unique.sql`.
 
 ## Audit Log Contract
 

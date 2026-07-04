@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CheckoutSkeleton } from "@/components/ui/Skeletons";
 import { formatVnd } from "@/lib/utils/format";
 import { toCartPath, toProductListPath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 import {
   CheckoutStepTitle,
   CheckoutConfirmRow,
@@ -24,6 +25,7 @@ import { useCheckout } from "./checkout/useCheckout";
 export function WpCheckoutClient() {
   const t = useTranslations("Checkout");
   const tCart = useTranslations("Cart");
+  const locale = useLocale() as Locale;
   const [confirmedChecked, setConfirmedChecked] = useState(false);
 
   const {
@@ -61,7 +63,7 @@ export function WpCheckoutClient() {
   if (cartError) {
     return (
       <div className="woocommerce-error" role="alert">
-        {t("loadCartFailed")} <Link href={toCartPath()}>{t("backToCart")}</Link>
+        {t("loadCartFailed")} <Link href={toCartPath(locale)}>{t("backToCart")}</Link>
       </div>
     );
   }
@@ -73,13 +75,13 @@ export function WpCheckoutClient() {
         <p className="mb-6 text-muted-foreground">{t("emptyDescription")}</p>
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Link
-            href={toProductListPath()}
+            href={toProductListPath(locale)}
             className="inline-flex items-center justify-center bg-brand! px-7 py-3 font-cta text-ui-18 max-md:text-ui-16 uppercase text-white! transition-opacity hover:opacity-90"
           >
             {t("continueShopping")}
           </Link>
           <Link
-            href={toCartPath()}
+            href={toCartPath(locale)}
             className="font-cta uppercase underline text-muted-foreground! hover:text-foreground!"
           >
             {t("viewCart")}

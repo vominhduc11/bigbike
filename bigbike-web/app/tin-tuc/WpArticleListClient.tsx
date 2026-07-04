@@ -17,6 +17,7 @@ import { safeText } from "@/lib/utils/format";
 import { stripHtmlTags } from "@/lib/utils/text";
 import { buildQueryString } from "@/lib/utils/query";
 import { toArticleListPath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 import { makeSlugThumbnailFallback, resolveWpUploadUrl } from "@/lib/utils/wp-media";
 import { WpArticleImage } from "./WpArticleImage";
 
@@ -39,7 +40,7 @@ export function WpArticleListClient({
   initialPagination?: PublicArticleListResult["pagination"];
 }) {
   const searchParams = useSearchParams();
-  const locale = useLocale();
+  const locale = useLocale() as Locale;
   const t = useTranslations("Blog");
 
   const { page, size, category, q } = useMemo(() => {
@@ -78,7 +79,7 @@ export function WpArticleListClient({
 
   const makeListHref = (overrides: { category?: string; size?: number }) => {
     const nextSize = overrides.size && overrides.size !== DEFAULT_PAGE_SIZE ? overrides.size : undefined;
-    return `${toArticleListPath()}${buildQueryString({ size: nextSize, category: overrides.category, q })}`;
+    return `${toArticleListPath(locale)}${buildQueryString({ size: nextSize, category: overrides.category, q })}`;
   };
 
   const emptyNotice = isError
@@ -101,7 +102,7 @@ export function WpArticleListClient({
       <div className="row">
         {hasMultipleCategories ? (
           <div className="col-md-3">
-            <WpNewsCategoryWidget categories={categories} activeSlug={category} />
+            <WpNewsCategoryWidget categories={categories} activeSlug={category} locale={locale} />
           </div>
         ) : null}
 
@@ -177,9 +178,11 @@ export function WpArticleListClient({
 function WpNewsCategoryWidget({
   categories,
   activeSlug,
+  locale,
 }: {
   categories: ContentCategoryWithCount[];
   activeSlug?: string;
+  locale: Locale;
 }) {
   const t = useTranslations("Blog");
   if (categories.length <= 1) {
@@ -197,8 +200,8 @@ function WpNewsCategoryWidget({
             {categories.map((cat) => {
               const isRoot = cat.slug === ROOT_CATEGORY_SLUG;
               const href = isRoot
-                ? toArticleListPath()
-                : `${toArticleListPath()}${buildQueryString({ category: cat.slug })}`;
+                ? toArticleListPath(locale)
+                : `${toArticleListPath(locale)}${buildQueryString({ category: cat.slug })}`;
               const isActive = isRoot ? !activeSlug : cat.slug === activeSlug;
 
               return (

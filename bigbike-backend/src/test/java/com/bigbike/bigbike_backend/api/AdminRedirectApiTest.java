@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.api;
 
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -255,6 +256,78 @@ class AdminRedirectApiTest {
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
+    void shouldTreatTrailingSlashAsDuplicateSourcePattern() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String sourcePattern = "/slash-test-" + suffix;
+
+        mockMvc.perform(post("/api/v1/admin/redirects")
+                        .with(devAuth())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "redirects.write")
+                        .content("""
+                                {"sourcePattern":"%s","targetUrl":"/target-slash-%s"}
+                                """.formatted(sourcePattern, suffix)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/admin/redirects")
+                        .with(devAuth())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "redirects.write")
+                        .content("""
+                                {"sourcePattern":"%s/","targetUrl":"/target-slash-b-%s"}
+                                """.formatted(sourcePattern, suffix)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+
+        redirectJpaRepository.findBySourcePattern(sourcePattern)
+                .ifPresent(redirectJpaRepository::delete);
+    }
+
+    @Test
+    void shouldClearNotesAndLegacyIdOnUpdate() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String sourcePattern = "/clear-fields-test-" + suffix;
+
+        mockMvc.perform(post("/api/v1/admin/redirects")
+                        .with(devAuth())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "redirects.write")
+                        .content("""
+                                {
+                                  "sourcePattern": "%s",
+                                  "targetUrl": "/target-clear-%s",
+                                  "notes": "Ghi chu ban dau",
+                                  "legacyId": 123
+                                }
+                                """.formatted(sourcePattern, suffix)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.notes").value("Ghi chu ban dau"))
+                .andExpect(jsonPath("$.data.legacyId").value(123));
+
+        RedirectEntity created = redirectJpaRepository.findBySourcePattern(sourcePattern)
+                .orElseThrow(() -> new IllegalStateException("Expected redirect to be created."));
+
+        mockMvc.perform(patch("/api/v1/admin/redirects/{id}", created.getId())
+                        .with(devAuth())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "redirects.write")
+                        .content("""
+                                {
+                                  "notes": "",
+                                  "legacyId": null
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        RedirectEntity updated = redirectJpaRepository.findById(created.getId())
+                .orElseThrow(() -> new IllegalStateException("Expected redirect to still exist."));
+        assertNull(updated.getNotes(), "notes should be cleared when the admin blanks the field");
+        assertNull(updated.getLegacyId(), "legacyId should be cleared when the admin blanks the field");
+
+        redirectJpaRepository.delete(updated);
     }
 
     @Test

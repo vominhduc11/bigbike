@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { performLogout, useAuth } from "@/lib/auth/auth-store";
 import { toAccountPath, toLoginPath, toRegisterPath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 
 /**
  * Khối user trên header WP — giữ DOM gốc (.user-logged / .toogle-menu / .not-login),
@@ -15,6 +16,7 @@ import { toAccountPath, toLoginPath, toRegisterPath } from "@/lib/utils/routes";
  */
 export function WpHeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
   const t = useTranslations("WpUser");
+  const locale = useLocale() as Locale;
   const auth = useAuth();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -38,7 +40,7 @@ export function WpHeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
           <p>
             HEY YO! <span>{displayName}</span>
           </p>
-          <Link href={toAccountPath()}>{t("account")}</Link>
+          <Link href={toAccountPath(locale)}>{t("account")}</Link>
           <div className="logout-btn">
             <a href="#" onClick={(e) => { e.preventDefault(); void handleLogout(); }}>
               <i className="fal fa-sign-out-alt" />
@@ -51,8 +53,8 @@ export function WpHeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
       <div className="not-login">
         <i className="fal fa-user-circle" />
         <div className="wrap">
-          <Link href={toRegisterPath()}>{t("register")}</Link> /{" "}
-          <Link href={toLoginPath()}>{t("login")}</Link>
+          <Link href={toRegisterPath(locale)}>{t("register")}</Link> /{" "}
+          <Link href={toLoginPath(undefined, locale)}>{t("login")}</Link>
         </div>
       </div>
     );
@@ -69,7 +71,7 @@ export function WpHeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
         <div className="toogle-menu">
           <ul>
             <li className="login-btn">
-              <Link href={toAccountPath()}>{t("account")}</Link>
+              <Link href={toAccountPath(locale)}>{t("account")}</Link>
             </li>
             <li className="register-btn">
               <a href="#" onClick={(e) => { e.preventDefault(); void handleLogout(); }}>
@@ -90,10 +92,10 @@ export function WpHeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
       <div className="toogle-menu">
         <ul>
           <li className="login-btn">
-            <Link href={toRegisterPath()}>{t("register")}</Link>
+            <Link href={toRegisterPath(locale)}>{t("register")}</Link>
           </li>
           <li className="register-btn">
-            <Link href={toLoginPath()}>{t("login")}</Link>
+            <Link href={toLoginPath(undefined, locale)}>{t("login")}</Link>
           </li>
         </ul>
       </div>

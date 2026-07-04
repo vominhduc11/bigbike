@@ -265,7 +265,7 @@ export function ProductGallery({
           // Ảnh chính LUÔN lấp đầy chiều ngang khu vực của nó (square theo bề rộng) ở
           // mọi kích thước — không giới hạn px/canh giữa, nên khi responsive không còn
           // khoảng trắng hai bên.
-          className="relative w-full aspect-square overflow-hidden bg-white max-md:border max-md:border-border max-md:bg-[var(--bb-bg-surface-raised)]"
+          className="relative w-full aspect-square overflow-hidden bg-card max-md:border max-md:border-border max-md:bg-[var(--bb-bg-surface-raised)]"
           onMouseEnter={handleMainMouseEnter}
           onMouseMove={handleMainMouseMove}
           onMouseLeave={() => setZoomActive(false)}
@@ -299,7 +299,7 @@ export function ProductGallery({
             {allItems.map((item, index) => (
               <SwiperSlide
                 key={itemKey(item, index)}
-                className="flex items-center justify-center bg-white"
+                className="flex items-center justify-center bg-card"
               >
                 {item.kind === "video" ? (
                   <VideoSlide
@@ -340,7 +340,7 @@ export function ProductGallery({
         {zoomActive && zoomImageUrl && (
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute top-0 left-[calc(100%+12px)] z-30 w-[min(520px,42vw)] aspect-square border border-border-default bg-white bg-no-repeat shadow-[0_18px_36px_rgba(0,0,0,0.25)]"
+            className="pointer-events-none absolute top-0 left-[calc(100%+12px)] z-30 w-[min(520px,42vw)] aspect-square border border-border-default bg-card bg-no-repeat shadow-[0_18px_36px_rgba(0,0,0,0.25)]"
             style={{
               backgroundImage: `url("${zoomImageUrl.replaceAll('"', "%22")}")`,
               backgroundPosition: `${zoomPos.x * 100}% ${zoomPos.y * 100}%`,
@@ -462,7 +462,7 @@ export function ProductGallery({
                   className={slideClass}
                   onClick={() => mainRef.current?.slideTo(index)}
                 >
-                  <div className={cn(tileClass, "bg-white")}>
+                  <div className={cn(tileClass, "bg-card")}>
                     <MediaImage
                       image={item.asset}
                       altFallback={altFallback}

@@ -38,14 +38,14 @@ The bulk product import endpoints are gated by the same `products.update` permis
 
 ## Roles
 
-Four built-in admin roles are seeded as **system roles** (`is_system = TRUE`). `V49__create_roles_permissions_tables.sql` originally seeded seven; `V200__reduce_default_roles.sql` removed the three WordPress-legacy content roles (`AUTHOR`, `CONTRIBUTOR`, `SEO_EDITOR`) and folded SEO redirect permissions into `EDITOR`. `CUSTOMER` is a **storefront auth role**, not a row in the `admin_roles` table and not shown in the admin Roles screen.
+Four built-in admin roles are seeded as **system roles** (`is_system = TRUE`). `V49__create_roles_permissions_tables.sql` originally seeded seven; `V211__reduce_default_roles.sql` removed the three WordPress-legacy content roles (`AUTHOR`, `CONTRIBUTOR`, `SEO_EDITOR`) and folded SEO redirect permissions into `EDITOR`. `CUSTOMER` is a **storefront auth role**, not a row in the `admin_roles` table and not shown in the admin Roles screen.
 
 | Role | Type | Current scope | Status | Evidence |
 |---|---|---|---|---|
 | `SUPER_ADMIN` | system (built-in) | wildcard `*` — permissions immutable; cannot be edited or deleted | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql`, `AdminRoleService.java` |
 | `ADMIN` | system (built-in) | full operations including media, settings, redirects | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql` |
 | `SHOP_MANAGER` | system (built-in) | catalog/orders/customers/reviews (shipping permissions removed 2026-06-23 `SHIP_RULE_001`; POS removed 2026-06-23) | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql`, `V264__remove_shipping_methods.sql` |
-| `EDITOR` | system (built-in) | catalog/content/media/menu/slider + SEO redirects operations | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql`, `V200__reduce_default_roles.sql` |
+| `EDITOR` | system (built-in) | catalog/content/media/menu/slider + SEO redirects operations | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql`, `V211__reduce_default_roles.sql` |
 | custom roles | non-system | any keys from `PermissionCatalog`; created/edited/deleted via the Roles API | `CONFIRMED_FROM_CODE` | `AdminRoleService.createRole/deleteRole` |
 | `CUSTOMER` | storefront (not an admin role) | own profile/address/order APIs; **not** in `admin_roles` | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
 
@@ -53,7 +53,7 @@ Four built-in admin roles are seeded as **system roles** (`is_system = TRUE`). `
 
 Enforced in `AdminRoleService` (Admin Roles API, gated by `roles.write`):
 
-- **System roles cannot be deleted.** `deleteRole` rejects any role with `is_system = TRUE` (`Cannot delete built-in system role`). All 4 built-in roles are system roles — there is no "2 fixed roles, rest deletable" model. (The built-in set itself is changed only through a Flyway migration, e.g. `V200` which reduced it from 7 to 4 — not through the Roles API.)
+- **System roles cannot be deleted.** `deleteRole` rejects any role with `is_system = TRUE` (`Cannot delete built-in system role`). All 4 built-in roles are system roles — there is no "2 fixed roles, rest deletable" model. (The built-in set itself is changed only through a Flyway migration, e.g. `V211` which reduced it from 7 to 4 — not through the Roles API.)
 - **`SUPER_ADMIN` permissions are immutable.** `updateRolePermissions` rejects edits to `SUPER_ADMIN` (`Cannot modify SUPER_ADMIN permissions`) — it stays wildcard `*`. The other 3 system roles **can** have their permission set edited (but still cannot be deleted).
 - **Custom roles** are created via `createRole` with `is_system = FALSE`; they can be both edited and deleted. `deleteRole` also blocks deletion while any admin user is still assigned to the role (`countByRole > 0`).
 - Role IDs must match `[A-Z][A-Z0-9_]{1,49}`; assigned permission keys are validated against `PermissionCatalog.ALL_KEYS` (unknown keys rejected).
@@ -132,13 +132,19 @@ Status: `CONFIRMED_FROM_CODE` — `AdminAuthService.java`, `AdminLoginAttemptSer
 
 ## Internal Redirect Caveat
 
-Spring Security marks internal redirect endpoints `permitAll`, with the expectation that infrastructure restricts them in production.
+`/api/internal/**` (redirect lookup, consumed only by `bigbike-web/proxy.ts` over the Docker-internal network) is `permitAll` in Spring Security — auth is handled manually inside `InternalRedirectController.isAuthorized()` instead of the normal RBAC/JWT flow used by `/api/v1/admin/**`.
+
+- **Shared-secret header:** requests must carry `X-Internal-Token` matching `bigbike.internal.token` (env `BIGBIKE_INTERNAL_TOKEN` on the backend, must equal `INTERNAL_API_TOKEN` on `bigbike-web`). Deny-by-default (`401`) when the token is blank, **except** when `bigbike.internal.allow-open=true` — a flag set **only** in `application-dev.properties` (local dev convenience) and never in staging/prod profiles.
+- **Infra-level restriction:** `deploy/nginx/api.bigbike.vn.conf` blocks `/api/internal/` from the public internet (`403`), the same pattern used for `/actuator/**`. This is defense-in-depth on top of the token check, since `bigbike-web` never calls this path over the public domain anyway (it uses the internal Docker hostname `http://bigbike-backend:8080`).
 
 Status: `CONFIRMED_FROM_CONFIG`
 
 Evidence:
 
 - `SecurityConfig.java`
+- `InternalRedirectController.java` (`isAuthorized`)
+- `application.properties` / `application-dev.properties`
+- `deploy/nginx/api.bigbike.vn.conf`
 
 ## Reports Permissions
 

@@ -281,7 +281,7 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
           </tbody>
         </table>
       </div>
-      <div className="mb-8 border border-border border-l-4 border-l-brand bg-white p-4">
+      <div className="mb-8 border border-border border-l-4 border-l-brand bg-card p-4">
         <p className="m-0 leading-body font-body text-ui-15 max-md:text-ui-14">
           {t(lang, COPY.bootNote)}
         </p>
@@ -368,7 +368,7 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
         </table>
       </div>
       <p className="mb-4 text-ui-14 leading-snug text-muted-foreground">{t(lang, COPY.pantsNote)}</p>
-      <div className="mb-8 border border-border border-l-4 border-l-brand bg-white p-4">
+      <div className="mb-8 border border-border border-l-4 border-l-brand bg-card p-4">
         <p className="m-0 leading-body font-body text-ui-15 max-md:text-ui-14">
           <strong className="text-brand">{t(lang, { vi: "Mặc thử trước khi mua:", en: "Try on before buying:" })}</strong>{" "}
           {t(lang, COPY.pantsHighlight)}

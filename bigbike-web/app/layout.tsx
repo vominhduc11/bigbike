@@ -89,6 +89,20 @@ export default async function RootLayout({
   return (
     <html lang={DEFAULT_LOCALE} className={`h-full antialiased ${fontBarlowCondensed.variable} ${fontBarlow.variable}`} suppressHydrationWarning>
       <body className="bb-theme min-h-full flex flex-col" suppressHydrationWarning>
+        {/* Chống "chớp sáng": set data-theme trên <html> TRƯỚC khi paint, đọc
+            cookie bb_theme (xem lib/theme/theme-store.ts) — chỉ light/dark,
+            không có "system". strategy="beforeInteractive" → Next luôn đưa
+            script này vào <head> và chạy nó trước mọi code khác, bất kể đặt ở
+            đâu trong cây component (đã xác nhận qua node_modules/next/dist/docs).
+            Cố tình KHÔNG đọc cookie ở Server Component (xem STYLEGUIDE.md
+            §Dark mode) — giữ nguyên ISR/SSG toàn site. */}
+        <Script
+          id="bb-theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var m=document.cookie.match(/(?:^|;\\s*)bb_theme=([^;]*)/);var r=(m&&decodeURIComponent(m[1])==="dark")?"dark":"light";document.documentElement.setAttribute("data-theme",r);}catch(e){}})();`,
+          }}
+        />
         {GTM_ID && (
           <Script
             id="gtm-init"

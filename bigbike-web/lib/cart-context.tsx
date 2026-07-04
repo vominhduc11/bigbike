@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useQueryClient } from "@tanstack/react-query";
 import { addCartItem } from "@/lib/api/client-api";
 import { useCartQuery } from "@/lib/query/hooks";
 import { queryKeys } from "@/lib/query/keys";
 import { useAuth } from "@/lib/auth/auth-store";
 import { toCartPath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 
 type Toast = {
   id: number;
@@ -28,6 +29,7 @@ const CartContext = createContext<CartContextValue | null>(null);
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
   const t = useTranslations("Cart");
+  const locale = useLocale() as Locale;
   const qc = useQueryClient();
   // Single shared cache for the whole app (queryKeys.cart()) — the same query
   // WpCartClient, MobileCartSheet and useCheckout now all read/write. Sửa/xoá
@@ -83,7 +85,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             <b className="block text-caption font-bold tracking-display uppercase text-brand mb-[2px]">{toast.title}</b>
             <span className="text-caption text-muted-foreground">{toast.message}</span>
           </div>
-          <Link href={toCartPath()} className="text-caption font-bold text-brand no-underline whitespace-nowrap tracking-wide shrink-0 hover:text-brand-hover">
+          <Link href={toCartPath(locale)} className="text-caption font-bold text-brand no-underline whitespace-nowrap tracking-wide shrink-0 hover:text-brand-hover">
             {t("toastViewCart")}
           </Link>
         </div>

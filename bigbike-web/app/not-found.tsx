@@ -1,14 +1,12 @@
-﻿import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+﻿import { getTranslations } from "next-intl/server";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import { Container } from "@/components/layout/Container";
 import { ArticleCard } from "@/components/content/ArticleCard";
 import { listArticles } from "@/lib/api/public-api";
-import { toArticleListPath, toHomePath, toProductListPath } from "@/lib/utils/routes";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { toHomePath } from "@/lib/utils/routes";
 import { sectionHeading } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
+import { NotFoundActions } from "./NotFoundActions";
 
 export const revalidate = 3600;
 
@@ -48,36 +46,7 @@ export default async function NotFoundPage() {
           </div>
           <p className="text-body text-muted-foreground">{t("description")}</p>
 
-          <form
-            action={toProductListPath()}
-            method="get"
-            className="flex flex-col sm:flex-row w-full max-w-[560px] mx-auto border border-border overflow-hidden bg-card"
-            role="search"
-            aria-label={t("searchAriaLabel")}
-          >
-            <Input
-              type="search"
-              name="q"
-              placeholder={t("searchPlaceholder")}
-              className="flex-1 border-0 rounded-none bg-transparent h-12 min-h-0 text-caption focus-visible:ring-0 focus-visible:ring-offset-0"
-              aria-label={t("searchInputAriaLabel")}
-            />
-            <Button type="submit" variant="primary" className="rounded-none h-12 shrink-0 w-full sm:w-auto">
-              {t("searchButton")}
-            </Button>
-          </form>
-
-          <div className="flex flex-wrap gap-3 justify-center">
-            <Button asChild variant="primary">
-              <Link href={toHomePath()}>{t("goHome")}</Link>
-            </Button>
-            <Button asChild variant="secondary">
-              <Link href={toProductListPath()}>{t("browseProducts")}</Link>
-            </Button>
-            <Button asChild variant="secondary">
-              <Link href={toArticleListPath()}>{t("readNews")}</Link>
-            </Button>
-          </div>
+          <NotFoundActions />
 
           {recent.length > 0 && (
             <section className="mt-6 text-left" aria-label={t("recentArticlesAriaLabel")}>

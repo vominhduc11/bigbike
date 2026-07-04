@@ -40,13 +40,16 @@ export type ContactInfo = {
   email?: string;
 };
 
-/* Brand palette — khớp WP gốc (đỏ #ff0c09 = .information--item h3) */
-const RED = "#ff0c09";
-const TEXT = "#111111";
-const MUTED = "#6f6f6f";
-const FAINT = "#999999";
-const BORDER = "#dfdfdf";
-const TILE_BG = "#f7f7f7";
+/* Brand palette — qua token thay vì hex cứng (vẫn thắng CSS legacy unlayered vì
+   VẪN là inline style, chỉ giá trị tham chiếu var() thay vì literal) → tự đổi
+   theo dark mode mà không mất đặc tính chống-đè của inline style. */
+const RED = "var(--bb-brand-primary)";
+const TEXT = "var(--bb-text-primary)";
+const MUTED = "var(--bb-text-secondary)";
+const FAINT = "var(--bb-text-muted)";
+const BORDER = "var(--bb-border-default)";
+const TILE_BG = "var(--bb-bg-surface-alt)";
+const SURFACE = "var(--bb-bg-surface)";
 
 function getVietnamTime() {
   const d = new Date();
@@ -193,7 +196,7 @@ function SocialLink({
         gap: 12,
         padding: "10px 12px",
         border: `1px solid ${BORDER}`,
-        background: "#fff",
+        background: SURFACE,
         textDecoration: "none",
         color: TEXT,
       }}
@@ -406,7 +409,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
         style={{ gap: 1, background: BORDER, borderTop: `1px solid ${BORDER}` }}
       >
         {/* CỘT TRÁI: thông tin cửa hàng */}
-        <div style={{ background: "#fff", padding: 20 }}>
+        <div style={{ background: SURFACE, padding: 20 }}>
           <ColHeader icon={<Store size={18} color={RED} />}>
             {vi ? "Thông tin cửa hàng" : "Store information"}
           </ColHeader>
@@ -456,8 +459,8 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                       marginTop: 10,
                       padding: "3px 10px",
                       fontWeight: 700,
-                      background: isOpenNow ? "#e8f7ed" : "#fff0f0",
-                      color: isOpenNow ? "#1a7a3c" : RED,
+                      background: isOpenNow ? "var(--bb-state-success-bg)" : "var(--bb-state-danger-bg)",
+                      color: isOpenNow ? "var(--bb-color-success)" : RED,
                     }}
                   >
                     <span
@@ -465,7 +468,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                         width: 7,
                         height: 7,
                         borderRadius: "50%",
-                        background: isOpenNow ? "#1a7a3c" : RED,
+                        background: isOpenNow ? "var(--bb-color-success)" : RED,
                         display: "inline-block",
                       }}
                     />
@@ -550,7 +553,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
         </div>
 
         {/* CỘT PHẢI: kênh liên hệ trực tuyến */}
-        <div style={{ background: "#fff", padding: 20 }}>
+        <div style={{ background: SURFACE, padding: 20 }}>
           <ColHeader icon={<MessageSquare size={18} color={RED} />}>
             {vi ? "Liên hệ trực tuyến" : "Contact online"}
           </ColHeader>
@@ -616,7 +619,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
         }}
       >
         {stats.map((stat) => (
-          <div key={stat.label} style={{ background: "#fff", padding: "16px 8px", textAlign: "center" }}>
+          <div key={stat.label} style={{ background: SURFACE, padding: "16px 8px", textAlign: "center" }}>
             <div
               className="text-ui-24 max-md:text-ui-22"
               style={{

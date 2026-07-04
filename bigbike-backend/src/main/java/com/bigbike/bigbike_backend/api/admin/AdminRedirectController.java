@@ -1,17 +1,17 @@
 package com.bigbike.bigbike_backend.api.admin;
 
+import com.bigbike.bigbike_backend.api.admin.dto.redirect.AdminRedirectResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.redirect.CreateRedirectRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.redirect.UpdateRedirectRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.service.admin.AdminRedirectService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
-import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -37,35 +37,8 @@ public class AdminRedirectController extends AdminControllerSupport {
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
 
-    public record CreateRedirectRequest(
-            @NotBlank @Size(max = 1024) String sourcePattern,
-            @NotBlank @Size(max = 2048) String targetUrl,
-            @Size(max = 32) String redirectType,
-            @Min(100) @Max(599) Integer statusCode,
-            @JsonAlias("isEnabled")
-            Boolean enabled,
-            @Size(max = 2000) String notes,
-            Long legacyId
-    ) {}
-
-    public record UpdateRedirectRequest(
-            @Size(max = 1024)
-            String sourcePattern,
-            @Size(max = 2048)
-            String targetUrl,
-            @Size(max = 32)
-            String redirectType,
-            @Min(100) @Max(599)
-            Integer statusCode,
-            @JsonAlias("isEnabled")
-            Boolean enabled,
-            @Size(max = 2000)
-            String notes,
-            Long legacyId
-    ) {}
-
     @GetMapping
-    public ApiListResponse<AdminRedirectService.AdminRedirectResponse> listRedirects(
+    public ApiListResponse<AdminRedirectResponse> listRedirects(
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             @RequestParam(required = false) String q,
@@ -81,7 +54,7 @@ public class AdminRedirectController extends AdminControllerSupport {
     }
 
     @GetMapping("/{id}")
-    public ApiDataResponse<AdminRedirectService.AdminRedirectResponse> getRedirect(
+    public ApiDataResponse<AdminRedirectResponse> getRedirect(
             @PathVariable UUID id,
             HttpServletRequest request
     ) {
@@ -90,42 +63,26 @@ public class AdminRedirectController extends AdminControllerSupport {
     }
 
     @PostMapping
-    public ApiDataResponse<AdminRedirectService.AdminRedirectResponse> createRedirect(
+    public ApiDataResponse<AdminRedirectResponse> createRedirect(
             @Valid @RequestBody CreateRedirectRequest payload,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "redirects.write");
         return apiResponseFactory.data(
-                adminRedirectService.createRedirect(resolveAdminId(), new AdminRedirectService.CreateRedirectRequest(
-                        payload.sourcePattern(),
-                        payload.targetUrl(),
-                        payload.redirectType(),
-                        payload.statusCode(),
-                        payload.enabled(),
-                        payload.notes(),
-                        payload.legacyId()
-                )),
+                adminRedirectService.createRedirect(resolveAdminId(), payload),
                 request
         );
     }
 
     @PatchMapping("/{id}")
-    public ApiDataResponse<AdminRedirectService.AdminRedirectResponse> updateRedirect(
+    public ApiDataResponse<AdminRedirectResponse> updateRedirect(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateRedirectRequest payload,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "redirects.write");
         return apiResponseFactory.data(
-                adminRedirectService.updateRedirect(id, resolveAdminId(), new AdminRedirectService.UpdateRedirectRequest(
-                        payload.sourcePattern(),
-                        payload.targetUrl(),
-                        payload.redirectType(),
-                        payload.statusCode(),
-                        payload.enabled(),
-                        payload.notes(),
-                        payload.legacyId()
-                )),
+                adminRedirectService.updateRedirect(id, resolveAdminId(), payload),
                 request
         );
     }

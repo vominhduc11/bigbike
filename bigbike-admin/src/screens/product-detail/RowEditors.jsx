@@ -61,7 +61,9 @@ export function CommitmentEditor({ items, onChange, disabled, contentLang = 'vi'
   return (
     <div className="list-editor">
       {items.length === 0 && (
-        <p className="list-editor-empty">{t('products.detail.commitments.empty')}</p>
+        <p className="list-editor-empty">
+          {isEn ? t('products.detail.commitments.addInViFirst', { defaultValue: 'Thêm dòng ở tab Tiếng Việt trước, rồi quay lại đây để dịch.' }) : t('products.detail.commitments.empty')}
+        </p>
       )}
       <SortableList
         items={items}
@@ -71,7 +73,7 @@ export function CommitmentEditor({ items, onChange, disabled, contentLang = 'vi'
         className="list-editor"
         renderItem={(item, sortable, index) => (
         <div ref={sortable.setNodeRef} style={sortable.style} className="list-editor-row list-editor-row--stack">
-          <DragHandle handleProps={sortable.handleProps} disabled={disabled} label={t('products.detail.dragToReorder')} />
+          <DragHandle handleProps={sortable.handleProps} disabled={disabled || isEn} label={t('products.detail.dragToReorder')} />
           <div className="flex flex-1 flex-col gap-2">
             {/* Icon dùng chung mọi ngôn ngữ — chỉ cho sửa ở chế độ nội dung tiếng Việt để tránh nhầm. */}
             <Select value={item.icon || 'shield-check'} onValueChange={(v) => updateItem(index, 'icon', v)} disabled={disabled || isEn}>
@@ -109,18 +111,18 @@ export function CommitmentEditor({ items, onChange, disabled, contentLang = 'vi'
             size="icon"
             className="text-destructive hover:text-destructive"
             onClick={() => removeItem(index)}
-            disabled={disabled}
+            disabled={disabled || isEn}
             aria-label={t('products.detail.commitments.removeRow')}
           >
             ✕
           </Button>
         </div>
         )}
-        footer={
+        footer={!isEn && (
           <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
             + {t('products.detail.commitments.addRow')}
           </Button>
-        }
+        )}
       />
     </div>
   )

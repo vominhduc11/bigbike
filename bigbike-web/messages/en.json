@@ -75,6 +75,7 @@
     "megaMenuEmpty": "Select a category to see details.",
     "languageLabel": "Language",
     "primaryNavigation": "Primary navigation",
+    "themeLabel": "Theme",
     "fallbackNav": {
       "home": "Home",
       "products": "Products",

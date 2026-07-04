@@ -173,7 +173,7 @@ export function AddressBookContent() {
                 return (
                 <div
                   key={addr.id}
-                  className={`border bg-white p-5 ${addr.isDefault ? "border-brand-border" : "border-border"}`}
+                  className={`border bg-card p-5 ${addr.isDefault ? "border-brand-border" : "border-border"}`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <b className="font-body text-ui-18 max-md:text-ui-16 font-semibold text-foreground">

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { ShoppingCart, Trash2 } from "lucide-react";
 import { MediaImage } from "@/components/ui/MediaImage";
 import {
@@ -17,6 +17,7 @@ import { useCartQuery, useRemoveCartItem, useUpdateCartItem } from "@/lib/query/
 import { cn } from "@/lib/utils";
 import { formatVnd } from "@/lib/utils/format";
 import { toCartPath, toCheckoutPath, toProductListPath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 import { useHeaderUi } from "./HeaderUiContext";
 
 // Dark-shell micro label (GIỎ HÀNG / TỔNG TẠM TÍNH / line SKU)
@@ -44,6 +45,7 @@ function CartSheetThumb({ item }: { item: CartItem }) {
 
 export function MobileCartSheet() {
   const t = useTranslations("CartMini");
+  const locale = useLocale() as Locale;
   const { isPanelOpen, openPanel, closePanel } = useHeaderUi();
   const { refreshCount } = useCart();
   const open = isPanelOpen("cart");
@@ -157,7 +159,7 @@ export function MobileCartSheet() {
                 <ShoppingCart size={28} />
               </span>
               <p className="mt-[6px] mb-4">{t("emptyCta")}</p>
-              <Link href={toProductListPath()} onClick={closePanel} className={cn(ctaBtn, ctaBtnFilled, "mt-[2px]")}>
+              <Link href={toProductListPath(locale)} onClick={closePanel} className={cn(ctaBtn, ctaBtnFilled, "mt-[2px]")}>
                 {t("shopNow")}
               </Link>
             </div>
@@ -244,7 +246,7 @@ export function MobileCartSheet() {
             ) : null}
             <div className={cn("grid gap-2", unavailable ? "grid-cols-2" : "grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)]")}>
               <Link
-                href={toCartPath()}
+                href={toCartPath(locale)}
                 className={cn(ctaBtn, "border border-[var(--bb-mobile-shell-border-strong)] text-[var(--bb-text-inverse)]")}
                 onClick={closePanel}
               >
@@ -261,7 +263,7 @@ export function MobileCartSheet() {
                   {t("checkout")}
                 </span>
               ) : (
-                <Link href={toCheckoutPath()} className={cn(ctaBtn, ctaBtnFilled)} onClick={closePanel}>
+                <Link href={toCheckoutPath(locale)} className={cn(ctaBtn, ctaBtnFilled)} onClick={closePanel}>
                   {t("checkout")}
                 </Link>
               )}

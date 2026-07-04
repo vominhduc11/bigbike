@@ -69,9 +69,9 @@ export function WpAccountNav({
 
   useEffect(() => {
     if (auth.status === "anonymous") {
-      router.replace(toLoginPath(loginRedirect));
+      router.replace(toLoginPath(loginRedirect, locale));
     }
-  }, [auth.status, router, loginRedirect]);
+  }, [auth.status, router, loginRedirect, locale]);
 
   const localizedNav = NAV.map((item) => ({
     ...item,

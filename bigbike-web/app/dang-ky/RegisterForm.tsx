@@ -2,13 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerCustomer } from "@/lib/api/client-api";
 import { refreshAuth } from "@/lib/auth/auth-store";
 import { createRegisterSchema, type RegisterFormValues } from "@/lib/schemas/auth";
 import { toAccountPath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 import { FormRootError } from "@/components/ui/FormRootError";
 import { WpAuthField } from "@/components/wp/WpAuthField";
 import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
@@ -18,9 +19,11 @@ import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
  * name/email + phone + password/repassword, .form-submit button đỏ).
  * GIỮ NGUYÊN logic auth (RHF + zod + registerCustomer + refreshAuth + success state).
  */
-export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string }) {
+export function RegisterForm({ returnTo }: { returnTo?: string }) {
   const t = useTranslations("Auth.register");
   const tValidation = useTranslations("Auth.validation");
+  const locale = useLocale() as Locale;
+  const resolvedReturnTo = returnTo ?? toAccountPath(locale);
   const router = useRouter();
   const [registered, setRegistered] = useState(false);
   const [confirmedEmail, setConfirmedEmail] = useState("");
@@ -60,7 +63,7 @@ export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string
               </p>
             )}
             <div className="form-submit form-group">
-              <button type="button" onClick={() => router.push(returnTo)}>
+              <button type="button" onClick={() => router.push(resolvedReturnTo)}>
                 {t("successCta")}
               </button>
             </div>
@@ -143,7 +146,7 @@ export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string
           </div>
         </form>
 
-        <SocialLoginButtons returnTo={returnTo} />
+        <SocialLoginButtons returnTo={resolvedReturnTo} />
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { Check } from "lucide-react";
 import type { DescriptionBlock } from "@/lib/contracts/public";
 import { resolveMediaUrl } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
+import { ThemeAwareHtml } from "@/components/content/ThemeAwareHtml";
 import { facebookEmbedUrl, getTikTokId, isFacebookVideoUrl, tiktokEmbedUrl } from "../product-gallery/media";
 import type { FeatureBlockT, SizeGuideBlockT, SuitabilityBlockT } from "./grouping";
 
@@ -97,7 +98,7 @@ function TextBlock({ block }: { block: DescriptionBlock }) {
     case "paragraph": {
       const html = block.html?.trim();
       if (!html) return null;
-      return <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html, { allowInlineStyles: true }) }} />;
+      return <ThemeAwareHtml className="wyswyg text-ui-18 max-md:text-ui-16" html={sanitizeRichHtml(html, { allowInlineStyles: true })} />;
     }
     case "list": {
       const items = (block.items ?? []).map((it) => (it ?? "").trim()).filter(Boolean);
@@ -130,7 +131,7 @@ function TextBlock({ block }: { block: DescriptionBlock }) {
       if (!html) return null;
       return (
         <div className="border-l-4 border-brand bg-muted px-4 py-3">
-          <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html, { allowInlineStyles: true }) }} />
+          <ThemeAwareHtml className="wyswyg text-ui-18 max-md:text-ui-16" html={sanitizeRichHtml(html, { allowInlineStyles: true })} />
         </div>
       );
     }
@@ -178,7 +179,7 @@ export function FeatureBody({ block }: { block: FeatureBlockT }) {
           ) : null}
         </div>
       ) : null}
-      {html ? <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html, { allowInlineStyles: true }) }} /> : null}
+      {html ? <ThemeAwareHtml className="wyswyg text-ui-18 max-md:text-ui-16" html={sanitizeRichHtml(html, { allowInlineStyles: true })} /> : null}
       {items.length > 0 ? (
         block.listStyle === "numbered" ? (
           <ol className="flex list-none flex-col gap-2 text-ui-18 max-md:text-ui-16 leading-snug">
@@ -227,7 +228,7 @@ export function SuitabilityBlockView({ block }: { block: SuitabilityBlockT }) {
     return (
       <div className="flex flex-col gap-4">
         <BlockTitle text={block.title} />
-        <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: html }} />
+        <ThemeAwareHtml className="wyswyg text-ui-18 max-md:text-ui-16" html={html} />
       </div>
     );
   }
@@ -279,7 +280,7 @@ export function SizeGuideBlockView({ block }: { block: SizeGuideBlockT }) {
     // gap-4 = khoảng tiêu đề→nội dung, đồng nhất với TextStack/FeatureBody (16px mọi loại khối).
     <div className="flex flex-col gap-4">
       <BlockTitle text={block.title} />
-      <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: html }} />
+      <ThemeAwareHtml className="wyswyg text-ui-18 max-md:text-ui-16" html={html} />
     </div>
   );
 }

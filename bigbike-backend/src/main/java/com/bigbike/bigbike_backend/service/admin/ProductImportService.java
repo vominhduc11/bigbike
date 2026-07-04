@@ -80,25 +80,20 @@ public class ProductImportService {
     private static final String[] EXPORT_HEADERS = {
             "Loại dòng (Sản phẩm chính / Biến thể)",
             "Mã sản phẩm nội bộ",
-            "Mã biến thể nội bộ",
             "SKU / mã model sản phẩm",
             "SKU bán hàng thực tế",
             "Tên sản phẩm - Tiếng Việt",
             "Tên sản phẩm - Tiếng Anh",
             "Đường dẫn (slug) - Tiếng Việt",
             "Danh mục (slug)",
-            "Danh mục (tên hiển thị, chỉ để đối chiếu)",
             "Thương hiệu (slug)",
-            "Thương hiệu (tên hiển thị, chỉ để đối chiếu)",
             "Giới tính mục tiêu (Nam / Nữ / Unisex / để trống)",
             "Trạng thái đăng (Nháp / Đã xuất bản / Ẩn / Thùng rác)",
             "Thuộc tính biến thể #1 - Tên", "Thuộc tính biến thể #1 - Giá trị",
             "Thuộc tính biến thể #2 - Tên", "Thuộc tính biến thể #2 - Giá trị",
             "Thuộc tính biến thể #3 - Tên", "Thuộc tính biến thể #3 - Giá trị",
-            "Tên biến thể hiển thị (hệ thống tự sinh)",
             "Giá bán lẻ - VNĐ",
             "Giá so sánh - VNĐ",
-            "Đơn vị tiền tệ",
             "Tình trạng kho (Còn hàng / Hết hàng)",
             "Ẩn cưỡng bức khỏi bán (Có / Không)",
             "Ảnh đại diện - URL",
@@ -558,7 +553,7 @@ public class ProductImportService {
                 diff.inFile(), diff.added(), diff.updated(), diff.removed(), diff.removedSkus());
     }
 
-    // ── CSV parsing (46-column template — see product-import-template.csv) ─────
+    // ── CSV parsing (41-column template — see product-import-template.csv) ─────
 
     private static final class ParsedRow {
         final int rowNumber;
@@ -628,7 +623,7 @@ public class ProductImportService {
 
         List<ApiErrorDetail> warnings = new ArrayList<>();
         UpsertProductRequest request = buildProductRequestFromCsvMainRow(main, variantRecords, warnings);
-        PublishStatus fileStatus = parsePublishStatusOrNull(col(main, 13), warnings);
+        PublishStatus fileStatus = parsePublishStatusOrNull(col(main, 10), warnings);
 
         ParsedRow row = new ParsedRow(rowNumber, rowKey, request, fileStatus);
         row.parseErrors.addAll(groupErrors);
@@ -641,39 +636,39 @@ public class ProductImportService {
         UpsertProductRequest request = new UpsertProductRequest();
         boolean hasVariants = !variantRecords.isEmpty();
 
-        String modelSku = col(main, 3);
-        String sellingSku = col(main, 4);
+        String modelSku = col(main, 2);
+        String sellingSku = col(main, 3);
         String resolvedSku = hasVariants ? modelSku : (sellingSku != null ? sellingSku : modelSku);
         if (resolvedSku != null) {
             request.setSku(resolvedSku);
         }
 
-        request.setName(col(main, 5));
-        String slug = col(main, 7);
+        request.setName(col(main, 4));
+        String slug = col(main, 6);
         if (slug != null) {
             request.setSlug(slug);
         }
-        request.setCategoryId(col(main, 8));
-        String brandSlug = col(main, 10);
+        request.setCategoryId(col(main, 7));
+        String brandSlug = col(main, 8);
         if (brandSlug != null) {
             request.setBrandId(brandSlug);
         }
-        String gender = col(main, 12);
+        String gender = col(main, 9);
         if (gender != null) {
             request.setGender(gender);
         }
 
-        applyDecimal(col(main, 21), request::setRetailPrice, warnings, "retailPrice");
-        applyDecimal(col(main, 22), request::setCompareAtPrice, warnings, "compareAtPrice");
+        applyDecimal(col(main, 17), request::setRetailPrice, warnings, "retailPrice");
+        applyDecimal(col(main, 18), request::setCompareAtPrice, warnings, "compareAtPrice");
 
         if (hasVariants) {
-            String forceRaw = col(main, 25);
+            String forceRaw = col(main, 20);
             if (forceRaw != null) {
                 request.setForceOutOfStock(Boolean.TRUE.equals(parseYesNo(forceRaw)));
             }
         } else {
-            String stockRaw = col(main, 24);
-            String forceRaw = col(main, 25);
+            String stockRaw = col(main, 19);
+            String forceRaw = col(main, 20);
             if (stockRaw != null || forceRaw != null) {
                 Boolean inStock = parseStockToken(stockRaw);
                 Boolean forceHide = parseYesNo(forceRaw);
@@ -681,19 +676,19 @@ public class ProductImportService {
             }
         }
 
-        applyMainImage(request, col(main, 26), col(main, 27), warnings);
-        List<GalleryImageRequest> gallery = buildGalleryList(splitPipeList(col(main, 28)), warnings, "gallery");
+        applyMainImage(request, col(main, 21), col(main, 22), warnings);
+        List<GalleryImageRequest> gallery = buildGalleryList(splitPipeList(col(main, 23)), warnings, "gallery");
         if (gallery != null) {
             request.setGallery(gallery);
         }
 
-        String shortDescVi = col(main, 32);
+        String shortDescVi = col(main, 27);
         if (shortDescVi != null) request.setShortDescription(shortDescVi);
-        String descVi = col(main, 34);
+        String descVi = col(main, 29);
         if (descVi != null) request.setDescription(descVi);
-        String specsHtmlVi = col(main, 36);
+        String specsHtmlVi = col(main, 31);
         if (specsHtmlVi != null) request.setSpecificationsHtml(specsHtmlVi);
-        String sizeGuideVi = col(main, 38);
+        String sizeGuideVi = col(main, 33);
         if (sizeGuideVi != null) request.setSizeGuide(sizeGuideVi);
 
         applySeoFromCsv(request, main, warnings);
@@ -712,37 +707,33 @@ public class ProductImportService {
 
     private VariantRequest buildVariantRequestFromCsvRow(CSVRecord rec, List<ApiErrorDetail> warnings) {
         VariantRequest variant = new VariantRequest();
-        String fileVariantId = col(rec, 2);
-        if (fileVariantId != null) {
-            variant.setId(fileVariantId);
-        }
-        variant.setSku(col(rec, 4));
-        applyDecimal(col(rec, 21), variant::setRetailPrice, warnings, "variants.retailPrice");
-        applyDecimal(col(rec, 22), variant::setCompareAtPrice, warnings, "variants.compareAtPrice");
+        variant.setSku(col(rec, 3));
+        applyDecimal(col(rec, 17), variant::setRetailPrice, warnings, "variants.retailPrice");
+        applyDecimal(col(rec, 18), variant::setCompareAtPrice, warnings, "variants.compareAtPrice");
 
-        String stockRaw = col(rec, 24);
+        String stockRaw = col(rec, 19);
         Boolean available = parseStockToken(stockRaw);
         if (available == null) {
             warnings.add(new ApiErrorDetail("variants.isAvailable", "DEFAULTED",
                     (stockRaw == null
-                            ? "Biến thể SKU '" + col(rec, 4) + "' chưa ghi tình trạng kho"
+                            ? "Biến thể SKU '" + col(rec, 3) + "' chưa ghi tình trạng kho"
                             : "Giá trị tình trạng kho '" + stockRaw + "' không nhận dạng được")
                             + " — mặc định Còn hàng."));
             available = Boolean.TRUE;
         }
         variant.setIsAvailable(available);
 
-        String imageUrl = col(rec, 29);
+        String imageUrl = col(rec, 24);
         if (imageUrl != null) {
             if (isWhitelistedMediaUrl(imageUrl)) {
                 variant.setImageUrl(imageUrl);
-                variant.setImageAlt(col(rec, 30));
+                variant.setImageAlt(col(rec, 25));
             } else {
                 warnings.add(new ApiErrorDetail("variants.imageUrl", "IMAGE_DROPPED",
                         "Ảnh biến thể từ nguồn ngoài bị bỏ qua: " + imageUrl));
             }
         }
-        List<GalleryImageRequest> gallery = buildGalleryList(splitPipeList(col(rec, 31)), warnings, "variants.gallery");
+        List<GalleryImageRequest> gallery = buildGalleryList(splitPipeList(col(rec, 26)), warnings, "variants.gallery");
         if (gallery != null) {
             variant.setGallery(gallery);
         }
@@ -778,10 +769,10 @@ public class ProductImportService {
     }
 
     private void applySeoFromCsv(UpsertProductRequest request, CSVRecord main, List<ApiErrorDetail> warnings) {
-        String title = col(main, 40);
-        String desc = col(main, 42);
-        String canonical = col(main, 44);
-        String ogImageUrl = col(main, 45);
+        String title = col(main, 35);
+        String desc = col(main, 37);
+        String canonical = col(main, 39);
+        String ogImageUrl = col(main, 40);
         boolean hasOgImage = ogImageUrl != null && isWhitelistedMediaUrl(ogImageUrl);
         if (ogImageUrl != null && !hasOgImage) {
             warnings.add(new ApiErrorDetail("seo.ogImage.url", "IMAGE_DROPPED",
@@ -800,13 +791,13 @@ public class ProductImportService {
 
     private void applyTranslationsFromCsv(UpsertProductRequest request, CSVRecord main) {
         ProductTranslationRequest.ProductContentRequest en = ProductTranslationRequest.ProductContentRequest.builder()
-                .name(col(main, 6))
-                .shortDescription(col(main, 33))
-                .description(col(main, 35))
-                .specificationsHtml(col(main, 37))
-                .sizeGuide(col(main, 39))
-                .seoTitle(col(main, 41))
-                .seoDescription(col(main, 43))
+                .name(col(main, 5))
+                .shortDescription(col(main, 28))
+                .description(col(main, 30))
+                .specificationsHtml(col(main, 32))
+                .sizeGuide(col(main, 34))
+                .seoTitle(col(main, 36))
+                .seoDescription(col(main, 38))
                 .build();
         request.setTranslations(new ProductTranslationRequest(en));
     }
@@ -856,7 +847,7 @@ public class ProductImportService {
 
     private List<VariantOptionRequest> parseVariantOptions(CSVRecord rec) {
         List<VariantOptionRequest> options = new ArrayList<>();
-        int[][] pairs = {{14, 15}, {16, 17}, {18, 19}};
+        int[][] pairs = {{11, 12}, {13, 14}, {15, 16}};
         for (int[] pair : pairs) {
             String name = col(rec, pair[0]);
             String value = col(rec, pair[1]);
@@ -939,46 +930,41 @@ public class ProductImportService {
     private void printProductRows(CSVPrinter printer, ProductEntity p) throws IOException {
         List<ProductVariantEntity> variants = p.getVariants();
         boolean hasVariants = variants != null && !variants.isEmpty();
-        String[] row = new String[46];
+        String[] row = new String[41];
         row[0] = "SẢN PHẨM CHÍNH";
         row[1] = p.getId();
-        row[2] = "";
-        row[3] = nvl(p.getSku());
-        row[4] = hasVariants ? "" : nvl(p.getSku());
-        row[5] = nvl(p.getName());
-        row[6] = nvl(p.getNameEn());
-        row[7] = nvl(p.getSlug());
-        row[8] = p.getCategory() != null ? nvl(p.getCategory().getSlug()) : "";
-        row[9] = p.getCategory() != null ? nvl(p.getCategory().getName()) : "";
-        row[10] = p.getBrand() != null ? nvl(p.getBrand().getSlug()) : "";
-        row[11] = p.getBrand() != null ? nvl(p.getBrand().getName()) : "";
-        row[12] = nvl(p.getGender());
-        row[13] = publishStatusLabel(p.getPublishStatus());
-        row[14] = ""; row[15] = ""; row[16] = ""; row[17] = ""; row[18] = ""; row[19] = "";
-        row[20] = "";
-        row[21] = formatDecimalOrBlank(p.getRetailPrice());
-        row[22] = formatDecimalOrBlank(p.getCompareAtPrice());
-        row[23] = "VND";
-        row[24] = hasVariants ? "" : (Boolean.TRUE.equals(p.getForceOutOfStock()) ? "Hết hàng" : "Còn hàng");
-        row[25] = Boolean.TRUE.equals(p.getForceOutOfStock()) ? "Có" : "Không";
-        row[26] = nvl(p.getImageUrl());
-        row[27] = nvl(p.getImageAlt());
-        row[28] = joinImageUrls(p.getGallery(), ProductGalleryImageEntity::getMediaType, ProductGalleryImageEntity::getImageUrl);
-        row[29] = ""; row[30] = ""; row[31] = "";
-        row[32] = nvl(p.getShortDescription());
-        row[33] = nvl(p.getShortDescriptionEn());
-        row[34] = nvl(p.getDescription());
-        row[35] = nvl(p.getDescriptionEn());
-        row[36] = nvl(p.getSpecificationsHtml());
-        row[37] = nvl(p.getSpecificationsHtmlEn());
-        row[38] = nvl(p.getSizeGuide());
-        row[39] = nvl(p.getSizeGuideEn());
-        row[40] = nvl(p.getSeoTitle());
-        row[41] = nvl(p.getSeoTitleEn());
-        row[42] = nvl(p.getSeoDescription());
-        row[43] = nvl(p.getSeoDescriptionEn());
-        row[44] = nvl(p.getSeoCanonicalUrl());
-        row[45] = nvl(p.getSeoOgImageUrl());
+        row[2] = nvl(p.getSku());
+        row[3] = hasVariants ? "" : nvl(p.getSku());
+        row[4] = nvl(p.getName());
+        row[5] = nvl(p.getNameEn());
+        row[6] = nvl(p.getSlug());
+        row[7] = p.getCategory() != null ? nvl(p.getCategory().getSlug()) : "";
+        row[8] = p.getBrand() != null ? nvl(p.getBrand().getSlug()) : "";
+        row[9] = nvl(p.getGender());
+        row[10] = publishStatusLabel(p.getPublishStatus());
+        row[11] = ""; row[12] = ""; row[13] = ""; row[14] = ""; row[15] = ""; row[16] = "";
+        row[17] = formatDecimalOrBlank(p.getRetailPrice());
+        row[18] = formatDecimalOrBlank(p.getCompareAtPrice());
+        row[19] = hasVariants ? "" : (Boolean.TRUE.equals(p.getForceOutOfStock()) ? "Hết hàng" : "Còn hàng");
+        row[20] = Boolean.TRUE.equals(p.getForceOutOfStock()) ? "Có" : "Không";
+        row[21] = nvl(p.getImageUrl());
+        row[22] = nvl(p.getImageAlt());
+        row[23] = joinImageUrls(p.getGallery(), ProductGalleryImageEntity::getMediaType, ProductGalleryImageEntity::getImageUrl);
+        row[24] = ""; row[25] = ""; row[26] = "";
+        row[27] = nvl(p.getShortDescription());
+        row[28] = nvl(p.getShortDescriptionEn());
+        row[29] = nvl(p.getDescription());
+        row[30] = nvl(p.getDescriptionEn());
+        row[31] = nvl(p.getSpecificationsHtml());
+        row[32] = nvl(p.getSpecificationsHtmlEn());
+        row[33] = nvl(p.getSizeGuide());
+        row[34] = nvl(p.getSizeGuideEn());
+        row[35] = nvl(p.getSeoTitle());
+        row[36] = nvl(p.getSeoTitleEn());
+        row[37] = nvl(p.getSeoDescription());
+        row[38] = nvl(p.getSeoDescriptionEn());
+        row[39] = nvl(p.getSeoCanonicalUrl());
+        row[40] = nvl(p.getSeoOgImageUrl());
         printer.printRecord((Object[]) escapeRow(row));
 
         if (hasVariants) {
@@ -990,29 +976,26 @@ public class ProductImportService {
 
     private String[] buildVariantExportRow(ProductEntity p, ProductVariantEntity v) {
         List<ProductVariantOptionEntity> options = v.getOptions();
-        String[] row = new String[46];
+        String[] row = new String[41];
         row[0] = "BIẾN THỂ";
         row[1] = p.getId();
-        row[2] = v.getId();
-        row[3] = "";
-        row[4] = nvl(v.getSku());
-        row[5] = ""; row[6] = ""; row[7] = ""; row[8] = ""; row[9] = ""; row[10] = ""; row[11] = ""; row[12] = ""; row[13] = "";
+        row[2] = "";
+        row[3] = nvl(v.getSku());
+        row[4] = ""; row[5] = ""; row[6] = ""; row[7] = ""; row[8] = ""; row[9] = ""; row[10] = "";
         for (int i = 0; i < 3; i++) {
             ProductVariantOptionEntity opt = (options != null && i < options.size()) ? options.get(i) : null;
-            row[14 + i * 2] = opt != null ? nvl(opt.getOptionName()) : "";
-            row[15 + i * 2] = opt != null ? nvl(opt.getOptionValue()) : "";
+            row[11 + i * 2] = opt != null ? nvl(opt.getOptionName()) : "";
+            row[12 + i * 2] = opt != null ? nvl(opt.getOptionValue()) : "";
         }
-        row[20] = nvl(v.getName());
-        row[21] = formatDecimalOrBlank(v.getRetailPrice());
-        row[22] = formatDecimalOrBlank(v.getCompareAtPrice());
-        row[23] = "VND";
-        row[24] = v.isAvailable() ? "Còn hàng" : "Hết hàng";
-        row[25] = "";
-        row[26] = ""; row[27] = ""; row[28] = "";
-        row[29] = nvl(v.getImageUrl());
-        row[30] = nvl(v.getImageAlt());
-        row[31] = joinImageUrls(v.getGallery(), ProductVariantGalleryImageEntity::getMediaType, ProductVariantGalleryImageEntity::getImageUrl);
-        for (int i = 32; i < 46; i++) {
+        row[17] = formatDecimalOrBlank(v.getRetailPrice());
+        row[18] = formatDecimalOrBlank(v.getCompareAtPrice());
+        row[19] = v.isAvailable() ? "Còn hàng" : "Hết hàng";
+        row[20] = "";
+        row[21] = ""; row[22] = ""; row[23] = "";
+        row[24] = nvl(v.getImageUrl());
+        row[25] = nvl(v.getImageAlt());
+        row[26] = joinImageUrls(v.getGallery(), ProductVariantGalleryImageEntity::getMediaType, ProductVariantGalleryImageEntity::getImageUrl);
+        for (int i = 27; i < 41; i++) {
             row[i] = "";
         }
         return row;

@@ -5,6 +5,7 @@ import { getLocale } from "next-intl/server";
 
 import { HomeAnalytics } from "@/components/home/HomeAnalytics";
 import { Tr } from "@/components/i18n/Tr";
+import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { ExperienceCarousel } from "@/components/home/ExperienceCarousel";
 import { HomeVideoCarousel } from "@/components/home/HomeVideoCarousel";
 import { BrandCarousel } from "@/components/home/BrandCarousel";
@@ -45,12 +46,7 @@ import {
 } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { pickSetting } from "@/lib/utils/settings";
-import {
-  toCategoryPath,
-  toHomePath,
-  toProductListPath,
-  toProductPath,
-} from "@/lib/utils/routes";
+import { toHomePath, toProductPath } from "@/lib/utils/routes";
 import type { HomeVideo } from "@/lib/contracts/public";
 
 // ISR: render tĩnh + revalidate on-demand theo tag (home/products/sliders…) do backend
@@ -134,10 +130,7 @@ function toHeroSlide(slider: HomeSlider): HeroSlide | null {
     desktopSrc,
     mobileSrc,
     alt: productName || categoryName || "BigBike",
-    href: toSafePublicHref(
-      slider.link || slider.productLink || slider.externalLink,
-      toProductListPath(),
-    ),
+    href: toSafePublicHref(slider.link || slider.productLink || slider.externalLink, "") || null,
     productName,
     categoryName,
     productCode: slider.sku?.trim() || "BIGBIKE",
@@ -278,9 +271,9 @@ export default async function HomePage() {
                         </Link>
                       </div>
                       {h.categoryName ? (
-                        <Link className="item--category" href={toCategoryPath(h.categorySlug)}>
+                        <LocalizedLink kind="category" viSlug={h.categorySlug} enSlug={null} className="item--category">
                           {h.categoryName}
-                        </Link>
+                        </LocalizedLink>
                       ) : null}
                       <h3 className="item--title">
                         <Link href={href}>{h.productName}</Link>

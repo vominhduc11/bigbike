@@ -694,7 +694,9 @@
         "answerPlaceholder": "Answer *",
         "removeFaq": "Remove question",
         "addFaq": "Add question",
-        "unit": "questions"
+        "unit": "questions",
+        "addInViFirst": "Add the question in the Vietnamese tab first, then come back here to translate it.",
+        "missingViError": "FAQ row #{{rows}} is missing Vietnamese content (English was entered). Please fill it in on the Vietnamese tab or remove the row."
       },
       "commitments": {
         "empty": "No commitment rows yet. Click \"+ Add row\" to start.",
@@ -705,6 +707,8 @@
         "addRow": "Add row",
         "removeRow": "Remove row",
         "unit": "rows",
+        "addInViFirst": "Add the row in the Vietnamese tab first, then come back here to translate it.",
+        "missingViError": "Commitment row #{{rows}} is missing Vietnamese content (English was entered). Please fill it in on the Vietnamese tab or remove the row.",
         "icons": {
           "truck": "Delivery",
           "refreshCw": "Returns",
@@ -741,7 +745,10 @@
         "consPlaceholder": "e.g. No Pinlock included",
         "addPro": "Add pro",
         "addCon": "Add con",
-        "remove": "Remove item"
+        "remove": "Remove item",
+        "addInViFirst": "Add the item in the Vietnamese tab first, then come back here to translate it.",
+        "missingViErrorPros": "Pro row #{{rows}} is missing Vietnamese content (English was entered). Please fill it in on the Vietnamese tab or remove the row.",
+        "missingViErrorCons": "Con row #{{rows}} is missing Vietnamese content (English was entered). Please fill it in on the Vietnamese tab or remove the row."
       },
       "dragToReorder": "Drag to reorder",
       "removeRowConfirmTitle": "Remove row",

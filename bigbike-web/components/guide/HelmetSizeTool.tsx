@@ -138,11 +138,11 @@ export default function HelmetSizeTool({ locale }: HelmetSizeToolProps) {
   };
 
   return (
-    <div className="mb-8 border border-neutral-200 bg-white p-6 max-w-xl">
+    <div className="mb-8 border border-border bg-card p-6 max-w-xl">
       <h3 className="m-0 mb-2 font-cta text-ui-20 font-bold uppercase tracking-wide text-brand">
         {isEn ? "Helmet Size Calculator" : "Công cụ tính size mũ bảo hiểm"}
       </h3>
-      <p className="m-0 mb-6 text-ui-14 text-neutral-500 leading-relaxed">
+      <p className="m-0 mb-6 text-ui-14 text-muted-foreground leading-relaxed">
         {isEn
           ? "Enter your head circumference to find the best fit across the brands we offer."
           : "Nhập vòng đầu để biết ngay size phù hợp với các thương hiệu BigBike đang bán."}
@@ -150,7 +150,7 @@ export default function HelmetSizeTool({ locale }: HelmetSizeToolProps) {
 
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end mb-6">
         <div className="flex-1 min-w-0">
-          <label htmlFor="head-input" className="block text-ui-14 text-neutral-500 mb-2 font-cta uppercase tracking-wide">
+          <label htmlFor="head-input" className="block text-ui-14 text-muted-foreground mb-2 font-cta uppercase tracking-wide">
             {isEn ? "Your head size (cm)" : "Vòng đầu của bạn (cm)"}
           </label>
           <div className="relative flex items-center">
@@ -166,7 +166,7 @@ export default function HelmetSizeTool({ locale }: HelmetSizeToolProps) {
               inputMode="numeric"
               className="pr-12 text-ui-18 font-body font-normal"
             />
-            <span className="absolute right-4 text-ui-14 text-neutral-500 select-none">cm</span>
+            <span className="absolute right-4 text-ui-14 text-muted-foreground select-none">cm</span>
           </div>
         </div>
         <Button
@@ -186,26 +186,26 @@ export default function HelmetSizeTool({ locale }: HelmetSizeToolProps) {
       )}
 
       {result && (
-        <div className="border border-neutral-200 p-5 bg-neutral-50">
+        <div className="border border-border p-5 bg-muted">
           <div className="font-cta text-display font-bold text-brand leading-none mb-1">
             {result.size}
           </div>
-          <div className="text-ui-14 text-neutral-500 mb-4 font-body">
+          <div className="text-ui-14 text-muted-foreground mb-4 font-body">
             {result.rangeText}
           </div>
 
-          <div className="text-ui-14 font-bold uppercase tracking-wide text-neutral-900 mb-2 font-cta">
+          <div className="text-ui-14 font-bold uppercase tracking-wide text-foreground mb-2 font-cta">
             {isEn ? "Suitable Brands" : "Phù hợp với thương hiệu"}
           </div>
           <div className="flex flex-wrap gap-2 mb-4">
             {result.brands.map((brand) => (
-              <span key={brand} className="border border-neutral-300 bg-white px-3 py-1 text-ui-14 text-neutral-900 font-body">
+              <span key={brand} className="border border-border bg-card px-3 py-1 text-ui-14 text-foreground font-body">
                 {brand}
               </span>
             ))}
           </div>
 
-          <div className="border-l-3 border-brand pl-4 py-1 text-ui-14 text-neutral-700 leading-relaxed font-body">
+          <div className="border-l-3 border-brand pl-4 py-1 text-ui-14 text-muted-foreground leading-relaxed font-body">
             <p className="m-0">{result.tip}</p>
             {result.isBorder && (
               <p className="m-0 mt-2 text-brand font-bold">
@@ -221,7 +221,7 @@ export default function HelmetSizeTool({ locale }: HelmetSizeToolProps) {
       {(result || errorMsg) && (
         <button
           onClick={handleReset}
-          className="mt-4 text-ui-14 text-neutral-500 hover:text-neutral-900 underline font-body bg-transparent border-none p-0 cursor-pointer"
+          className="mt-4 text-ui-14 text-muted-foreground hover:text-foreground underline font-body bg-transparent border-none p-0 cursor-pointer"
         >
           {isEn ? "← Enter again" : "← Nhập lại"}
         </button>
