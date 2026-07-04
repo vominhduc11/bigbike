@@ -212,27 +212,30 @@
     "title": "Dashboard",
     "subtitle": "Monitor your business activity in real time.",
     "greetingMorning": "Good morning, {{name}} 👋",
+    "greetingMorningFallback": "Good morning 👋",
     "greetingAfternoon": "Good afternoon, {{name}} 👋",
+    "greetingAfternoonFallback": "Good afternoon 👋",
     "greetingEvening": "Good evening, {{name}} 👋",
+    "greetingEveningFallback": "Good evening 👋",
     "greetingDesc": "Today is {{date}}. Here's how the business is doing.",
     "period7d": "7 days",
     "period30d": "30 days",
     "period90d": "90 days",
-    "periodLabel": "Time range",
+    "periodControlLabel": "Revenue chart period",
     "loadError": "Unable to load dashboard data.",
     "kpi": {
       "todayRevenue": "Today's Revenue",
-      "todayRevenueHint": "vs same time yesterday",
+      "todayRevenueAria": "Today revenue — view reports",
+      "todayScope": "Today",
       "todayOrders": "Today's Orders",
+      "todayOrdersAria": "Today orders — view orders",
       "todayOrdersHint": "All statuses included",
       "pendingOrders": "Pending Orders",
+      "pendingOrdersAria": "Pending orders — view orders",
       "pendingOrdersHint": "Orders awaiting confirmation",
       "activeProducts": "Active Products",
+      "activeProductsAria": "Active products — view products",
       "activeProductsHint": "Published and in stock",
-      "vsPrev": "vs yesterday",
-      "newVsPrev": "vs yesterday",
-      "awaitingAction": "awaiting action",
-      "published": "published",
       "todayPaid": "Collected: {{amount}}",
       "trendUp": "Up {{value}}% vs yesterday",
       "trendDown": "Down {{value}}% vs yesterday",
@@ -269,14 +272,17 @@
       "revenue": "Revenue",
       "ordersAxis": "orders",
       "empty": "No revenue in this period",
-      "emptyDesc": "The revenue chart will appear here once orders are placed."
+      "emptyDesc": "The revenue chart will appear here once orders are placed.",
+      "a11ySummary": "Total revenue in period: {{total}}. Peak date: {{peakDate}} with {{peakValue}}.",
+      "a11yLabel": "Daily revenue chart"
     },
     "orderStatusChart": {
       "title": "Order Breakdown",
       "total": "Total orders",
       "orderUnit": "orders",
       "viewAll": "View all orders",
-      "empty": "No orders in this period"
+      "empty": "No orders in this period",
+      "a11yLabel": "Order status composition chart"
     },
     "recentOrders": {
       "title": "Recent Orders",
@@ -286,7 +292,8 @@
       "total": "Total",
       "status": "Status",
       "empty": "No orders yet",
-      "emptyDesc": "New orders will appear here as soon as customers place them."
+      "emptyDesc": "New orders will appear here as soon as customers place them.",
+      "emptyCta": "View orders"
     },
     "topProducts": {
       "title": "Top Products",
@@ -296,7 +303,8 @@
       "units": "Units sold",
       "revenue": "Revenue",
       "empty": "No top products yet",
-      "emptyDesc": "Rankings update once orders are completed within the period."
+      "emptyDesc": "Rankings update once orders are completed within the period.",
+      "emptyCta": "Add product"
     }
   },
   "pagination": {
@@ -938,6 +946,7 @@
       "videoSectionDescription": "YouTube links or uploaded product videos",
       "specsSectionTitle": "Technical specifications",
       "specsSectionDescription": "Displayed under the \"Technical specifications\" tab on the product page",
+      "specCount": "{{count}} specs",
       "specCount_one": "{{count}} spec",
       "specCount_other": "{{count}} specs",
       "variantSectionTitle": "Product variants",
@@ -2258,6 +2267,9 @@
     "preset90d": "90 days",
     "presetCustom": "Custom",
     "dateRangeError": "'From date' cannot be after 'To date'.",
+    "maxRangeError": "Date range cannot exceed 90 days.",
+    "customPendingTitle": "Date range required",
+    "customPendingDesc": "Please select both From date and To date to view the report.",
     "exportOrders": "Export orders (CSV)",
     "exportProducts": "Export products (CSV)",
     "exportCustomers": "Export customers (CSV)",
@@ -2276,7 +2288,19 @@
     "colEmail": "Email",
     "colOrders": "Orders",
     "colSpend": "Spend",
-    "noData": "No data"
+    "noData": "No data",
+    "trendNoData": "No previous period",
+    "trendNoChange": "No change",
+    "trendNew": "New",
+    "rangeFromTo": "From {{from}} to {{to}}",
+    "kpiGmvHint": "Total value of placed orders in the period (before refunds).",
+    "kpiPaidRevenueHint": "Actual cash collected from orders in the period.",
+    "kpiOrderCountHint": "Number of orders placed in the period.",
+    "kpiAovHint": "Average order value = revenue divided by order count.",
+    "customFrom": "From date",
+    "customTo": "To date",
+    "sortBy": "Sort by",
+    "colCustomer": "Customer"
   },
   "roles": {
     "eyebrow": "System",

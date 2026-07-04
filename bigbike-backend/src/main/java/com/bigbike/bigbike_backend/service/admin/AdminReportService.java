@@ -68,19 +68,33 @@ public class AdminReportService {
         Instant fromInstant = parseFromDate(from);
         Instant toInstant   = parseToDate(to);
 
-        if (fromInstant == null) {
-            fromInstant = LocalDate.now(VN_ZONE).minusDays(29)
-                    .atStartOfDay(VN_ZONE).toInstant();
-        }
         if (toInstant == null) {
             toInstant = LocalDate.now(VN_ZONE).plusDays(1)
                     .atStartOfDay(VN_ZONE).toInstant();
         }
 
-        // GMV: SUM(totalAmount) excl CANCELLED/FAILED — REFUNDED stays (real demand)
+        if (fromInstant == null) {
+            if (to != null && !to.isBlank()) {
+                try {
+                    fromInstant = LocalDate.parse(to).minusDays(29).atStartOfDay(VN_ZONE).toInstant();
+                } catch (Exception e) {
+                    fromInstant = LocalDate.now(VN_ZONE).minusDays(29).atStartOfDay(VN_ZONE).toInstant();
+                }
+            } else {
+                fromInstant = LocalDate.now(VN_ZONE).minusDays(29)
+                        .atStartOfDay(VN_ZONE).toInstant();
+            }
+        }
+
+        if (fromInstant.isAfter(toInstant)) {
+            throw com.bigbike.bigbike_backend.api.error.ValidationException.fromField("from", "DATE_RANGE_INVALID",
+                    "'from' must not be after 'to'.");
+        }
+
+        // GMV: SUM(totalAmount) excl CANCELLED/FAILED
         BigDecimal grossOrderValue = orderRepo.sumRevenueBetweenExcluding(fromInstant, toInstant, REVENUE_EXCLUDED);
 
-        // Paid revenue: SUM(paidAmount) for orders where payment was collected (incl. post-refund statuses)
+        // Paid revenue: SUM(paidAmount) for orders where payment was collected
         BigDecimal paidRevenue = orderRepo.sumPaidRevenueBetweenExcluding(fromInstant, toInstant, REVENUE_EXCLUDED);
 
         long orderCount = orderRepo.countOrdersBetweenExcluding(fromInstant, toInstant, REVENUE_EXCLUDED);
@@ -154,7 +168,7 @@ public class AdminReportService {
         };
 
         List<OrderEntity> orders = orderRepo.findAll(
-                spec, PageRequest.of(0, EXPORT_MAX_ROWS, Sort.by("placedAt").descending())
+                spec, PageRequest.of(0, EXPORT_MAX_ROWS + 1, Sort.by("placedAt").descending())
         ).getContent();
 
         StringWriter sw = new StringWriter();
@@ -166,7 +180,9 @@ public class AdminReportService {
                 .build();
 
         try (CSVPrinter printer = new CSVPrinter(sw, format)) {
+            int count = 0;
             for (OrderEntity o : orders) {
+                if (count >= EXPORT_MAX_ROWS) break;
                 printer.printRecord(
                         o.getOrderNumber(),
                         o.getStatus(),
@@ -183,13 +199,14 @@ public class AdminReportService {
                         formatInstant(o.getCompletedAt()),
                         formatInstant(o.getCancelledAt())
                 );
+                count++;
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to generate CSV export.", e);
         }
 
         byte[] csv = withBom(sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        return new ExportResult(csv, orders.size() == EXPORT_MAX_ROWS);
+        return new ExportResult(csv, orders.size() > EXPORT_MAX_ROWS);
     }
 
     public ExportResult exportCustomersCsv(String status) {
@@ -201,12 +218,15 @@ public class AdminReportService {
             // Only allow valid CustomerStatus values to prevent unsolicited SQL
             boolean valid = Arrays.stream(CustomerStatus.values())
                     .anyMatch(s -> s.name().equals(normalized));
-            if (!valid) return cb.disjunction(); // returns no rows for unknown status
+            if (!valid) {
+                throw com.bigbike.bigbike_backend.api.error.ValidationException.fromField("status", "INVALID_CUSTOMER_STATUS",
+                        "Unknown customer status: " + status);
+            }
             return cb.equal(root.get("status"), normalized);
         };
 
         List<CustomerEntity> customers = customerRepo.findAll(
-                spec, PageRequest.of(0, EXPORT_MAX_ROWS, Sort.by("createdAt").descending())
+                spec, PageRequest.of(0, EXPORT_MAX_ROWS + 1, Sort.by("createdAt").descending())
         ).getContent();
 
         StringWriter sw = new StringWriter();
@@ -217,7 +237,9 @@ public class AdminReportService {
                 .build();
 
         try (CSVPrinter printer = new CSVPrinter(sw, format)) {
+            int count = 0;
             for (CustomerEntity c : customers) {
+                if (count >= EXPORT_MAX_ROWS) break;
                 printer.printRecord(
                         c.getId(),
                         escape(nvl(c.getEmail())),
@@ -231,13 +253,14 @@ public class AdminReportService {
                         formatInstant(c.getLastLoginAt()),
                         formatInstant(c.getCreatedAt())
                 );
+                count++;
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to generate customer CSV export.", e);
         }
 
         byte[] csv = withBom(sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        return new ExportResult(csv, customers.size() == EXPORT_MAX_ROWS);
+        return new ExportResult(csv, customers.size() > EXPORT_MAX_ROWS);
     }
 
     public ExportResult exportProductsCsv(String publishStatus) {
@@ -250,7 +273,7 @@ public class AdminReportService {
         };
 
         List<ProductEntity> products = productRepo.findAll(
-                spec, PageRequest.of(0, EXPORT_MAX_ROWS, Sort.by("createdAt").descending())
+                spec, PageRequest.of(0, EXPORT_MAX_ROWS + 1, Sort.by("createdAt").descending())
         ).getContent();
 
         StringWriter sw = new StringWriter();
@@ -263,7 +286,9 @@ public class AdminReportService {
                 .build();
 
         try (CSVPrinter printer = new CSVPrinter(sw, format)) {
+            int count = 0;
             for (ProductEntity p : products) {
+                if (count >= EXPORT_MAX_ROWS) break;
                 printer.printRecord(
                         p.getId(),
                         escape(nvl(p.getSku())),
@@ -279,13 +304,14 @@ public class AdminReportService {
                         p.getHomepageBlock() != null ? p.getHomepageBlock().name() : "NONE",
                         formatInstant(p.getCreatedAt())
                 );
+                count++;
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to generate product CSV export.", e);
         }
 
         byte[] csv = withBom(sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        return new ExportResult(csv, products.size() == EXPORT_MAX_ROWS);
+        return new ExportResult(csv, products.size() > EXPORT_MAX_ROWS);
     }
 
     private static String nvl(String s) { return s != null ? s : ""; }

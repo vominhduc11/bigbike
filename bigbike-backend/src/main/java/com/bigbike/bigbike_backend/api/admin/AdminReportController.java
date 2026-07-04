@@ -7,6 +7,7 @@ import com.bigbike.bigbike_backend.domain.auth.AdminUserProfile;
 import com.bigbike.bigbike_backend.domain.commerce.OrderStatus;
 import com.bigbike.bigbike_backend.domain.commerce.PaymentStatus;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.domain.customer.CustomerStatus;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.service.admin.AdminReportService;
@@ -45,6 +46,8 @@ public class AdminReportController {
             Arrays.stream(PaymentStatus.values()).map(Enum::name).collect(Collectors.toUnmodifiableSet());
     private static final Set<String> VALID_PUBLISH_STATUSES =
             Arrays.stream(PublishStatus.values()).map(Enum::name).collect(Collectors.toUnmodifiableSet());
+    private static final Set<String> VALID_CUSTOMER_STATUSES =
+            Arrays.stream(CustomerStatus.values()).map(Enum::name).collect(Collectors.toUnmodifiableSet());
 
     private final AdminReportService adminReportService;
     private final DevAdminAuthService devAdminAuthService;
@@ -100,6 +103,11 @@ public class AdminReportController {
             HttpServletRequest request
     ) {
         AdminUserProfile actor = devAdminAuthService.requirePermission(request, "reports.export");
+        if (status != null && !status.isBlank()
+                && !VALID_CUSTOMER_STATUSES.contains(status.toUpperCase(Locale.ROOT))) {
+            throw ValidationException.fromField("status", "INVALID_CUSTOMER_STATUS",
+                    "Unknown customer status: " + status);
+        }
         AdminReportService.ExportResult customersResult = adminReportService.exportCustomersCsv(status);
         recordExportAudit(actor, "CUSTOMERS",
                 "{\"exportType\":\"CUSTOMERS\",\"filters\":{"

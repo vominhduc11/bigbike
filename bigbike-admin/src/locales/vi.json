@@ -212,27 +212,30 @@
     "title": "Bảng điều khiển",
     "subtitle": "Theo dõi hoạt động kinh doanh theo thời gian thực.",
     "greetingMorning": "Chào buổi sáng, {{name}} 👋",
+    "greetingMorningFallback": "Chào buổi sáng 👋",
     "greetingAfternoon": "Chào buổi chiều, {{name}} 👋",
+    "greetingAfternoonFallback": "Chào buổi chiều 👋",
     "greetingEvening": "Chào buổi tối, {{name}} 👋",
+    "greetingEveningFallback": "Chào buổi tối 👋",
     "greetingDesc": "Hôm nay là {{date}}. Đây là tình hình kinh doanh của BigBike.",
     "period7d": "7 ngày",
     "period30d": "30 ngày",
     "period90d": "90 ngày",
-    "periodLabel": "Khoảng thời gian",
+    "periodControlLabel": "Khoảng thời gian biểu đồ doanh thu",
     "loadError": "Không thể tải dữ liệu tổng quan.",
     "kpi": {
       "todayRevenue": "Doanh thu hôm nay",
-      "todayRevenueHint": "So với cùng giờ hôm qua",
+      "todayRevenueAria": "Doanh thu hôm nay — xem báo cáo",
+      "todayScope": "Hôm nay",
       "todayOrders": "Đơn hàng hôm nay",
+      "todayOrdersAria": "Đơn hàng hôm nay — xem đơn hàng",
       "todayOrdersHint": "Bao gồm tất cả trạng thái",
       "pendingOrders": "Đơn chờ xử lý",
+      "pendingOrdersAria": "Đơn chờ xử lý — xem đơn hàng",
       "pendingOrdersHint": "Đơn cần xác nhận",
       "activeProducts": "Sản phẩm đang bán",
+      "activeProductsAria": "Sản phẩm đang bán — xem sản phẩm",
       "activeProductsHint": "Đang xuất bản và còn hàng",
-      "vsPrev": "so hôm qua",
-      "newVsPrev": "so hôm qua",
-      "awaitingAction": "cần xử lý",
-      "published": "đang xuất bản",
       "todayPaid": "Đã thu: {{amount}}",
       "trendUp": "Tăng {{value}}% so hôm qua",
       "trendDown": "Giảm {{value}}% so hôm qua",
@@ -269,14 +272,17 @@
       "revenue": "Doanh thu",
       "ordersAxis": "đơn",
       "empty": "Chưa có doanh thu trong kỳ này",
-      "emptyDesc": "Khi có đơn hàng phát sinh, biểu đồ doanh thu sẽ hiển thị tại đây."
+      "emptyDesc": "Khi có đơn hàng phát sinh, biểu đồ doanh thu sẽ hiển thị tại đây.",
+      "a11ySummary": "Tổng doanh thu trong kỳ: {{total}}. Ngày cao nhất: {{peakDate}} với {{peakValue}}.",
+      "a11yLabel": "Biểu đồ doanh thu theo ngày"
     },
     "orderStatusChart": {
       "title": "Cơ cấu đơn hàng",
       "total": "Tổng đơn",
       "orderUnit": "đơn",
       "viewAll": "Xem tất cả đơn",
-      "empty": "Chưa có đơn hàng trong kỳ này"
+      "empty": "Chưa có đơn hàng trong kỳ này",
+      "a11yLabel": "Biểu đồ cơ cấu đơn hàng theo trạng thái"
     },
     "recentOrders": {
       "title": "Đơn hàng gần nhất",
@@ -286,7 +292,8 @@
       "total": "Tổng tiền",
       "status": "Trạng thái",
       "empty": "Chưa có đơn hàng nào",
-      "emptyDesc": "Đơn hàng mới sẽ xuất hiện tại đây ngay khi khách đặt hàng."
+      "emptyDesc": "Đơn hàng mới sẽ xuất hiện tại đây ngay khi khách đặt hàng.",
+      "emptyCta": "Xem đơn hàng"
     },
     "topProducts": {
       "title": "Sản phẩm bán chạy",
@@ -296,7 +303,8 @@
       "units": "Đã bán",
       "revenue": "Doanh thu",
       "empty": "Chưa có sản phẩm bán chạy",
-      "emptyDesc": "Bảng xếp hạng sẽ cập nhật khi có đơn hàng hoàn tất trong kỳ."
+      "emptyDesc": "Bảng xếp hạng sẽ cập nhật khi có đơn hàng hoàn tất trong kỳ.",
+      "emptyCta": "Thêm sản phẩm"
     }
   },
   "pagination": {
@@ -939,6 +947,8 @@
       "specsSectionTitle": "Thông số kỹ thuật",
       "specsSectionDescription": "Hiển thị trong tab \"Thông số kỹ thuật\" trang sản phẩm",
       "specCount": "{{count}} thông số",
+      "specCount_one": "{{count}} thông số",
+      "specCount_other": "{{count}} thông số",
       "variantSectionTitle": "Biến thể sản phẩm",
       "variantSectionDescription": "Size, màu sắc và các tùy chọn khác",
       "saveDraftTitle": "Lưu giữ trạng thái nháp",
@@ -2257,6 +2267,9 @@
     "preset90d": "90 ngày",
     "presetCustom": "Tuỳ chọn",
     "dateRangeError": "'Từ ngày' không được sau 'Đến ngày'.",
+    "maxRangeError": "Khoảng thời gian chọn không được vượt quá 90 ngày.",
+    "customPendingTitle": "Yêu cầu khoảng ngày",
+    "customPendingDesc": "Vui lòng chọn đầy đủ cả Ngày bắt đầu và Ngày kết thúc để xem báo cáo.",
     "exportOrders": "Xuất đơn hàng (CSV)",
     "exportProducts": "Xuất sản phẩm (CSV)",
     "exportCustomers": "Xuất khách hàng (CSV)",
@@ -2275,7 +2288,19 @@
     "colEmail": "Email",
     "colOrders": "Đơn",
     "colSpend": "Chi tiêu",
-    "noData": "Không có dữ liệu"
+    "noData": "Không có dữ liệu",
+    "trendNoData": "Chưa có kỳ trước",
+    "trendNoChange": "Không đổi",
+    "trendNew": "Mới",
+    "rangeFromTo": "Từ {{from}} đến {{to}}",
+    "kpiGmvHint": "Tổng giá trị các đơn đã đặt trong kỳ (chưa trừ hoàn tiền).",
+    "kpiPaidRevenueHint": "Số tiền thực sự đã thu được từ các đơn trong kỳ.",
+    "kpiOrderCountHint": "Số đơn hàng phát sinh trong kỳ.",
+    "kpiAovHint": "Giá trị trung bình mỗi đơn = doanh số chia số đơn.",
+    "customFrom": "Từ ngày",
+    "customTo": "Đến ngày",
+    "sortBy": "Sắp xếp theo",
+    "colCustomer": "Khách hàng"
   },
   "roles": {
     "eyebrow": "Hệ thống",

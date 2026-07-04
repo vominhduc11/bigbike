@@ -55,7 +55,7 @@ public interface OrderLineItemJpaRepository extends JpaRepository<OrderLineItemE
            "WHERE li.order.placedAt >= :from AND li.productPk IS NOT NULL " +
            "  AND li.order.status NOT IN :excludedStatuses " +
            "GROUP BY li.productPk, li.productName " +
-           "ORDER BY SUM(li.lineTotal) DESC")
+           "ORDER BY SUM(li.lineTotal) DESC, li.productPk ASC")
     List<Object[]> topProductsByRevenueSinceExcluding(
             @Param("from") Instant from,
             @Param("excludedStatuses") List<String> excludedStatuses,
@@ -75,7 +75,7 @@ public interface OrderLineItemJpaRepository extends JpaRepository<OrderLineItemE
         "  AND o.status NOT IN :excludedStatuses " +
         "  AND (li.product_pk IS NOT NULL OR li.product_id IS NOT NULL) " +
         "GROUP BY COALESCE(li.product_pk, li.product_id::text), li.product_name " +
-        "ORDER BY COALESCE(SUM(li.line_total), 0) DESC",
+        "ORDER BY COALESCE(SUM(li.line_total), 0) DESC, COALESCE(li.product_pk, li.product_id::text) ASC",
         nativeQuery = true)
     List<Object[]> topProductsByRevenueInRangeNative(
             @Param("from") Instant from, @Param("to") Instant to,

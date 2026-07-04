@@ -294,23 +294,7 @@
   animation: pulse 1.4s ease-in-out infinite;
 }
 
-.dash-tooltip {
-  background: var(--admin-color-surface-base);
-  border: 1px solid var(--admin-color-border-subtle);
-  border-radius: var(--admin-radius-md);
-  padding: 10px 14px;
-  box-shadow: var(--admin-shadow-md);
-  font-size: var(--admin-text-sm);
-}
-.dash-tooltip-date {
-  margin-bottom: 4px;
-  color: var(--admin-color-text-muted);
-  font-weight: 500;
-}
-.dash-tooltip-row {
-  color: var(--admin-color-text-primary);
-  font-weight: 600;
-}
+
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }

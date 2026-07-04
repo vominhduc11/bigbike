@@ -31,11 +31,12 @@ class CatalogRequestValidatorTest {
 
     private CatalogRequestValidator validator;
     private MediaUrlProperties mediaUrlProperties;
+    private ProductJpaRepository productJpaRepository;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
     void setUp() {
-        ProductJpaRepository productJpaRepository = mock(ProductJpaRepository.class);
+        productJpaRepository = mock(ProductJpaRepository.class);
         ProductVariantJpaRepository productVariantJpaRepository = mock(ProductVariantJpaRepository.class);
         CategoryJpaRepository categoryJpaRepository = mock(CategoryJpaRepository.class);
         BrandJpaRepository brandJpaRepository = mock(BrandJpaRepository.class);
@@ -211,5 +212,90 @@ class CatalogRequestValidatorTest {
         validator.validateProductRequest(request, current, false, false, errors);
 
         assertThat(errors).isEmpty();
+    }
+
+    @Test
+    void validateProductRequest_slugEnEqualsViSlug_isAccepted() {
+        UpsertProductRequest request = createBaseRequest();
+        request.setSlug("scs-s10x");
+
+        ProductTranslationRequest translation = new ProductTranslationRequest();
+        ProductTranslationRequest.ProductContentRequest en = new ProductTranslationRequest.ProductContentRequest();
+        en.setName("English Name");
+        en.setSlug("scs-s10x"); // Trùng với vi slug của chính nó
+        translation.setEn(en);
+        request.setTranslations(translation);
+
+        // Mocks for uniqueness checks - return empty or self
+        ProductEntity currentProduct = new ProductEntity();
+        currentProduct.setId("current-id");
+        when(productJpaRepository.findBySlug("scs-s10x")).thenReturn(java.util.Optional.of(currentProduct));
+        when(productJpaRepository.findBySlugEn("scs-s10x")).thenReturn(java.util.Optional.empty());
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        // currentId matches currentProduct.getId()
+        validator.validateProductRequest(request, currentProduct, false, false, errors);
+
+        assertThat(errors).isEmpty();
+    }
+
+    @Test
+    void validateProductRequest_slugEnCollidesWithOtherProductViSlug_isRejected() {
+        UpsertProductRequest request = createBaseRequest();
+        request.setSlug("scs-s10x");
+
+        ProductTranslationRequest translation = new ProductTranslationRequest();
+        ProductTranslationRequest.ProductContentRequest en = new ProductTranslationRequest.ProductContentRequest();
+        en.setName("English Name");
+        en.setSlug("other-vi-slug");
+        translation.setEn(en);
+        request.setTranslations(translation);
+
+        ProductEntity other = new ProductEntity();
+        other.setId("other-id");
+        when(productJpaRepository.findBySlug("other-vi-slug")).thenReturn(java.util.Optional.of(other));
+        when(productJpaRepository.findBySlugEn("other-vi-slug")).thenReturn(java.util.Optional.empty());
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        validator.validateProductRequest(request, null, true, false, errors);
+
+        assertThat(errors)
+                .hasSize(1)
+                .first()
+                .satisfies(error -> {
+                    assertThat(error.field()).isEqualTo("translations.en.slug");
+                    assertThat(error.code()).isEqualTo("DUPLICATE");
+                    assertThat(error.message()).isEqualTo("English slug is already in use.");
+                });
+    }
+
+    @Test
+    void validateProductRequest_slugEnCollidesWithOtherProductEnSlug_isRejected() {
+        UpsertProductRequest request = createBaseRequest();
+        request.setSlug("scs-s10x");
+
+        ProductTranslationRequest translation = new ProductTranslationRequest();
+        ProductTranslationRequest.ProductContentRequest en = new ProductTranslationRequest.ProductContentRequest();
+        en.setName("English Name");
+        en.setSlug("other-en-slug");
+        translation.setEn(en);
+        request.setTranslations(translation);
+
+        ProductEntity other = new ProductEntity();
+        other.setId("other-id");
+        when(productJpaRepository.findBySlug("other-en-slug")).thenReturn(java.util.Optional.empty());
+        when(productJpaRepository.findBySlugEn("other-en-slug")).thenReturn(java.util.Optional.of(other));
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        validator.validateProductRequest(request, null, true, false, errors);
+
+        assertThat(errors)
+                .hasSize(1)
+                .first()
+                .satisfies(error -> {
+                    assertThat(error.field()).isEqualTo("translations.en.slug");
+                    assertThat(error.code()).isEqualTo("DUPLICATE");
+                    assertThat(error.message()).isEqualTo("English slug is already in use.");
+                });
     }
 }

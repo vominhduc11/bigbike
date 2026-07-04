@@ -68,14 +68,13 @@ export function RevenueAreaChart({ revenueData }) {
     null,
   )
   const summary = t('dashboard.revenueChart.a11ySummary', {
-    defaultValue: 'Tổng doanh thu trong kỳ: {{total}}. Ngày cao nhất: {{peakDate}} với {{peakValue}}.',
     total: formatVndShort(totalRevenue),
     peakDate: peak ? fmtIsoDateShort(peak.date) : '—',
     peakValue: peak ? formatVndShort(peak.revenue) : '—',
   })
 
   return (
-    <figure role="group" aria-label={t('dashboard.revenueChart.a11yLabel', { defaultValue: 'Biểu đồ doanh thu theo ngày' })} className="m-0">
+    <figure role="group" aria-label={t('dashboard.revenueChart.a11yLabel')} className="m-0">
       <p className="sr-only">{summary}</p>
       <ResponsiveContainer width="100%" height={260}>
         <AreaChart data={revenueData} margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
@@ -122,7 +121,7 @@ export function OrderStatusPie({ pieDataWithTotal }) {
   const { t } = useTranslation()
   // Bản đọc-được cho biểu đồ tròn: legend dạng chữ đã có ở DashboardScreen,
   // nên ở đây chỉ cần tên truy cập tổng quát cho vùng đồ hoạ.
-  const label = t('dashboard.orderStatusChart.a11yLabel', { defaultValue: 'Biểu đồ cơ cấu đơn hàng theo trạng thái' })
+  const label = t('dashboard.orderStatusChart.a11yLabel')
   return (
     <div role="group" aria-label={label}>
     <ResponsiveContainer width="100%" height={200}>

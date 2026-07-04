@@ -203,6 +203,9 @@ function withLiveData(data) {
 
 function normalizeError(error) {
   if (error instanceof Error) {
+    if (error.message === 'Failed to fetch' || error.message?.includes('Failed to fetch')) {
+      return new Error('Không thể kết nối máy chủ, vui lòng kiểm tra mạng')
+    }
     return error
   }
 
@@ -1469,13 +1472,10 @@ function normalizeAnalytics(payload) {
   // grossOrderValue ?? totalRevenue: backward compat with old backend shape during rollout
   const grossOrderValue = Number(summary.grossOrderValue ?? summary.totalRevenue) || 0
   const paidRevenue = Number(summary.paidRevenue) || 0
-  const refundAmount = Number(summary.refundAmount) || 0
   return {
     summary: {
       grossOrderValue,
       paidRevenue,
-      refundAmount,
-      netRevenue: Number(summary.netRevenue) || (paidRevenue - refundAmount),
       orderCount: Number(summary.orderCount) || 0,
       avgOrderValue: Number(summary.avgOrderValue) || 0,
     },

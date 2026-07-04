@@ -31,7 +31,7 @@ export function StatePanel({
       role={tone === 'danger' ? 'alert' : 'status'}
     >
       <ToneIcon className="h-6 w-6" aria-hidden="true" />
-      <h2 className="text-base font-semibold font-body">{title}</h2>
+      {title ? <h2 className="text-base font-semibold font-body">{title}</h2> : null}
       {description ? <p className="text-sm opacity-80">{description}</p> : null}
       {actionLabel && onAction ? (
         <Button variant="secondary" onClick={onAction} className="mt-1">

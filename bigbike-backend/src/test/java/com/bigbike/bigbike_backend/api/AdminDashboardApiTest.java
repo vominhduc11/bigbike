@@ -36,6 +36,8 @@ class AdminDashboardApiTest {
     private static final String ADMIN_PASS     = "Admin@Dash12345678";
     private static final String SHOP_MGR_EMAIL = "dash-shopmgr-" + UUID.randomUUID() + "@bigbike.test";
     private static final String SHOP_MGR_PASS  = "ShopMgr@Dash12345678";
+    private static final String EDITOR_EMAIL   = "dash-editor-"   + UUID.randomUUID() + "@bigbike.test";
+    private static final String EDITOR_PASS    = "Editor@Dash12345678";
 
     @Autowired WebApplicationContext webApplicationContext;
     @Autowired AdminUserJpaRepository adminUserRepo;
@@ -53,6 +55,7 @@ class AdminDashboardApiTest {
                 .build();
         ensureAdminUser();
         ensureShopManagerUser();
+        ensureEditorUser();
         adminToken = loginAdmin();
     }
 
@@ -117,18 +120,18 @@ class AdminDashboardApiTest {
     // ── 5. Revenue exclusion: FAILED and REFUNDED also excluded ──────────────
 
     @Test
-    void getDashboard_todayRevenue_excludesFailedAndRefundedOrders() throws Exception {
+    void getDashboard_todayRevenue_excludesFailedAndCancelledOrders() throws Exception {
         double baseline = fetchTodayRevenue();
 
         Instant now = Instant.now();
         orderRepo.save(buildOrder("PROCESSING", "PENDING",  BigDecimal.valueOf(300_000), now));
         orderRepo.save(buildOrder("FAILED",     "FAILED",   BigDecimal.valueOf(100_000), now));
-        orderRepo.save(buildOrder("REFUNDED",   "REFUNDED", BigDecimal.valueOf(150_000), now));
+        orderRepo.save(buildOrder("CANCELLED",  "CANCELLED", BigDecimal.valueOf(150_000), now));
 
         double after = fetchTodayRevenue();
         double delta = after - baseline;
 
-        // Only PROCESSING counts; FAILED and REFUNDED are excluded
+        // Only PROCESSING counts; FAILED and CANCELLED are excluded
         assertThat(delta).isEqualTo(300_000.0);
     }
 
@@ -202,14 +205,55 @@ class AdminDashboardApiTest {
         }
     }
 
-    // ── 9. Unknown period param falls back to 30d (no 400/500) ───────────────
-
     @Test
     void getDashboard_unknownPeriod_fallsBackTo30dGracefully() throws Exception {
         mockMvc.perform(get("/api/v1/admin/dashboard?period=999z")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.revenueData").isArray());
+    }
+
+    // ── 10. Growth rate, order delta, and 403 authorization ───────────────────
+
+    @Test
+    void getDashboard_withEditorAuth_returns403() throws Exception {
+        String editorToken = loginEditor();
+        mockMvc.perform(get("/api/v1/admin/dashboard")
+                        .header("Authorization", "Bearer " + editorToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getDashboard_kpi_growthRateAndOrderDelta() throws Exception {
+        lineItemRepo.deleteAll();
+        orderRepo.deleteAll();
+
+        java.time.LocalDate todayVn = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+        Instant todayStart = todayVn.atStartOfDay(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant();
+        Instant yesterdayMidpoint = todayStart.minus(java.time.Duration.ofHours(12));
+        Instant todayMidpoint = todayStart.plus(java.time.Duration.ofHours(12));
+
+        // Seed yesterday's order (falls in prevDayStart to todayStart)
+        OrderEntity yOrder = buildOrder("COMPLETED", "PAID", BigDecimal.valueOf(100_000), yesterdayMidpoint);
+        orderRepo.save(yOrder);
+
+        // Seed today's order (falls in todayStart onwards)
+        OrderEntity tOrder = buildOrder("PROCESSING", "PAID", BigDecimal.valueOf(150_000), todayMidpoint);
+        orderRepo.save(tOrder);
+
+        MvcResult r = mockMvc.perform(get("/api/v1/admin/dashboard?period=7d")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String json = r.getResponse().getContentAsString();
+        double growthRate = extractJsonDouble(json, "todayRevenuePct");
+        double orderDelta = extractJsonDouble(json, "todayOrdersDelta");
+
+        // (150_000 - 100_000) / 100_000 * 100 = 50.0%
+        assertThat(growthRate).isEqualTo(50.0);
+        // todayOrderCount (1) - prevOrderCount (1) = 0
+        assertThat(orderDelta).isEqualTo(0.0);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -262,6 +306,30 @@ class AdminDashboardApiTest {
             m.setUpdatedAt(now);
             return adminUserRepo.save(m);
         });
+    }
+
+    private void ensureEditorUser() {
+        adminUserRepo.findByEmail(EDITOR_EMAIL).orElseGet(() -> {
+            AdminUserEntity e = new AdminUserEntity();
+            e.setEmail(EDITOR_EMAIL);
+            e.setPasswordHash(passwordService.hash(EDITOR_PASS));
+            e.setDisplayName("Dashboard Test Editor");
+            e.setRole("EDITOR");
+            e.setStatus("ACTIVE");
+            Instant now = Instant.now();
+            e.setCreatedAt(now);
+            e.setUpdatedAt(now);
+            return adminUserRepo.save(e);
+        });
+    }
+
+    private String loginEditor() throws Exception {
+        MvcResult r = mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"" + EDITOR_EMAIL + "\",\"password\":\"" + EDITOR_PASS + "\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        return extractJsonString(r.getResponse().getContentAsString(), "accessToken");
     }
 
     private String loginAdmin() throws Exception {

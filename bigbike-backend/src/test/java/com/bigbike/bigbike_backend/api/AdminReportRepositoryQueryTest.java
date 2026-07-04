@@ -157,7 +157,7 @@ class AdminReportRepositoryQueryTest {
     }
 
     @Test
-    void topProducts_refundedOrdersExcluded_fromRanking() {
+    void topProducts_cancelledOrdersExcluded_fromRanking() {
         Instant now = Instant.now();
 
         // COMPLETED order: should appear in ranking
@@ -165,17 +165,17 @@ class AdminReportRepositoryQueryTest {
         orderRepo.save(completed);
         lineItemRepo.save(lineItem(completed, null, "keep-prod", "Keep Product", 800_000, now));
 
-        // REFUNDED order: must NOT appear in topProducts (RANKING_EXCLUDED)
-        OrderEntity refunded = order("REFUNDED", "REFUNDED", "1200000", now);
-        orderRepo.save(refunded);
-        lineItemRepo.save(lineItem(refunded, null, "refund-prod", "Refunded Product", 1_200_000, now));
+        // CANCELLED order: must NOT appear in topProducts (RANKING_EXCLUDED)
+        OrderEntity cancelled = order("CANCELLED", "CANCELLED", "1200000", now);
+        orderRepo.save(cancelled);
+        lineItemRepo.save(lineItem(cancelled, null, "cancel-prod", "Cancelled Product", 1_200_000, now));
 
         AdminAnalyticsResponse result = reportService.getAnalytics(today(), tomorrow());
 
         List<AdminAnalyticsResponse.TopProductItem> products = result.topProducts();
 
-        assertThat(products.stream().anyMatch(p -> "refund-prod".equals(p.productKey())))
-                .as("REFUNDED order's product must not appear in topProducts ranking")
+        assertThat(products.stream().anyMatch(p -> "cancel-prod".equals(p.productKey())))
+                .as("CANCELLED order's product must not appear in topProducts ranking")
                 .isFalse();
         assertThat(products.stream().anyMatch(p -> "keep-prod".equals(p.productKey())))
                 .as("COMPLETED order's product must appear in topProducts ranking")
@@ -257,7 +257,7 @@ class AdminReportRepositoryQueryTest {
     }
 
     @Test
-    void topCustomers_refundedOrdersExcluded_fromRanking() {
+    void topCustomers_cancelledOrdersExcluded_fromRanking() {
         Instant now = Instant.now();
         UUID custA = customerRepo.save(customer()).getId();
         UUID custB = customerRepo.save(customer()).getId();
@@ -267,8 +267,8 @@ class AdminReportRepositoryQueryTest {
         a.setCustomerId(custA);
         orderRepo.save(a);
 
-        // custB: REFUNDED — must not appear in ranking (RANKING_EXCLUDED)
-        OrderEntity b = order("REFUNDED", "REFUNDED", "1500000", now);
+        // custB: CANCELLED — must not appear in ranking (RANKING_EXCLUDED)
+        OrderEntity b = order("CANCELLED", "CANCELLED", "1500000", now);
         b.setCustomerId(custB);
         orderRepo.save(b);
 
@@ -276,7 +276,7 @@ class AdminReportRepositoryQueryTest {
 
         List<AdminAnalyticsResponse.TopCustomerItem> customers = result.topCustomers();
         assertThat(customers.stream().anyMatch(c -> custB.toString().equals(c.customerKey())))
-                .as("REFUNDED order customer must not appear in topCustomers ranking")
+                .as("CANCELLED order customer must not appear in topCustomers ranking")
                 .isFalse();
         assertThat(customers.stream().anyMatch(c -> custA.toString().equals(c.customerKey())))
                 .as("COMPLETED order customer must appear in topCustomers ranking")

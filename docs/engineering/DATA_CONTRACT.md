@@ -1193,20 +1193,54 @@ the UUID column (exact) and from `product_pk` + `variant_name` (best-effort, onl
 
 Partial unique index `ux_customers_oauth` on `(oauth_provider, oauth_subject)` where `oauth_provider IS NOT NULL` — prevents two accounts linking to the same provider identity.
 
-### Dashboard KPI — `todayPaidRevenue` field
+### Dashboard KPI & Lists
 
-`AdminDashboardSummaryResponse.KpiResponse` includes:
+`AdminDashboardSummaryResponse` contains the following sections:
+
+#### KPI Block (`kpi` field of type `KpiResponse`)
 
 | Field | Computation | Purpose |
 |---|---|---|
 | `todayRevenue` | `SUM(totalAmount)` excluding CANCELLED/FAILED | Gross GMV placed today _(REFUNDED removed 2026-06-23)_ |
 | `todayPaidRevenue` | `SUM(paidAmount)` where `paymentStatus IN ('PAID')` | Actual cash collected today (PARTIALLY_PAID removed in V114) |
+| `todayRevenuePct` | Percentage comparison between today's revenue and yesterday's revenue | Double percentage growth (null if yesterday has no data or zero revenue) |
+| `todayOrders` | Count of orders placed today excluding CANCELLED/FAILED | Volume of transactions today |
+| `todayOrdersDelta` | Difference in order count between today and yesterday | Trend in order volume |
+| `pendingOrders` | Count of orders with status `PENDING` | Active orders requiring admin action |
+| `activeProducts` | Count of products with publish status `PUBLISHED` | Active catalog size |
+
+#### Daily Revenue (`revenueData` field)
+List of `RevenueDayResponse` objects representing the revenue series over the selected period:
+- `date`: `String` (ISO date `yyyy-MM-dd` in Vietnam timezone)
+- `revenue`: `BigDecimal` (gross daily revenue)
+- `orders`: `int` (number of orders)
+
+#### Order Status Breakdown (`orderStatusBreakdown` field)
+List of `OrderStatusBreakdownItem` objects representing count of orders per status:
+- `status`: `String` (order status name)
+- `count`: `long` (number of orders)
+
+#### Recent Orders (`recentOrders` field)
+List of the last 5 `RecentOrderItem` objects:
+- `id`: `UUID` (order ID)
+- `orderNumber`: `String` (order reference number)
+- `customerName`: `String` (customer name)
+- `customerEmail`: `String` (customer email)
+- `total`: `BigDecimal` (total order amount)
+- `orderStatus`: `String` (status of the order)
+- `currency`: `String` (currency code)
+- `placedAt`: `Instant` (creation timestamp)
+
+#### Top Products (`topProducts` field)
+List of top 5 `TopProductItem` objects by revenue:
+- `productId`: `String` (product primary key `product_pk` varchar, supports admin-created products)
+- `name`: `String` (product name snapshot)
+- `revenue`: `BigDecimal` (revenue generated)
+- `units`: `long` (total units sold)
 
 Status: `CONFIRMED_FROM_CODE`
 
 Evidence: `AdminDashboardService.java`, `AdminDashboardSummaryResponse.java`
-
-Status: `CONFIRMED_FROM_CODE` (P-1 fix applied in `AdminDashboardService.java` and `OrderJpaRepository.java`)
 
 ## Customer Status Enum
 
@@ -1246,6 +1280,7 @@ Evidence: `AdminCustomerService.java` line 48, `deriveSegment()` method
 |---|---|---|
 | `date` | `String` | ISO-8601 date string `YYYY-MM-DD` in Asia/Ho_Chi_Minh timezone |
 | `revenue` | `BigDecimal` | Daily grossOrderValue (same exclusion set as summary) |
+| `orders` | `long` | Number of daily orders |
 
 ### TopProduct item (topProducts[] array)
 
@@ -1263,7 +1298,7 @@ Evidence: `AdminCustomerService.java` line 48, `deriveSegment()` method
 | `customerKey` | `String` | COALESCE(customer_id::text, customer_email) — stable group key |
 | `customerEmail` | `String` | MAX(customer_email) — display email |
 | `revenue` | `BigDecimal` | SUM(totalAmount) excl RANKING_EXCLUDED statuses |
-| `orderCount` | `int` | COUNT of orders excl RANKING_EXCLUDED statuses |
+| `orderCount` | `long` | COUNT of orders excl RANKING_EXCLUDED statuses |
 
 Status: `CONFIRMED_FROM_CODE` — shape confirmed from `AdminAnalyticsResponse.java` audit; fields updated per P0 plan. `refundAmount` and `netRevenue` fields were completely removed from the DTO on 2026-07-04.
 

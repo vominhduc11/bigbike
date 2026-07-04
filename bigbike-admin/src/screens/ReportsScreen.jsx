@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useSearchParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import {
   Calendar, Info, TrendingUp, TrendingDown, Minus,
   ChevronUp, ChevronDown, ChevronsUpDown,
@@ -25,10 +27,10 @@ const PRESET_VALUES = [
 function RevenueTooltip({ active, payload, label, locale }) {
   if (!active || !payload?.length) return null
   return (
-    <div className="dash-tooltip">
-      <div className="dash-tooltip-date">{label}</div>
+    <div className="bb-dash-tooltip">
+      <div className="bb-dash-tooltip-date">{label}</div>
       {payload.map((p) => (
-        <div key={p.dataKey} className="dash-tooltip-row" style={{ color: p.color }}>
+        <div key={p.dataKey} className="bb-dash-tooltip-row" style={{ color: p.color }}>
           {p.name}: {p.dataKey === 'revenue' ? formatCurrencyVnd(p.value, locale) : p.value}
         </div>
       ))}
@@ -189,11 +191,43 @@ export function ReportsScreen() {
   const { t, i18n } = useTranslation()
   const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
 
-  const [preset, setPreset] = useState('30d')
-  const [customFrom, setCustomFrom] = useState('')
-  const [customTo, setCustomTo] = useState('')
-  const [retryKey, setRetryKey] = useState(0)
-  const [state, setState] = useState({ status: 'loading', data: null, prev: null, warning: '' })
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const preset = searchParams.get('preset') || '30d'
+  const customFrom = searchParams.get('from') || ''
+  const customTo = searchParams.get('to') || ''
+
+  const setPreset = (val) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('preset', val)
+      if (val !== 'custom') {
+        next.delete('from')
+        next.delete('to')
+      }
+      return next
+    })
+  }
+
+  const setCustomFrom = (val) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('preset', 'custom')
+      if (val) next.set('from', val)
+      else next.delete('from')
+      return next
+    })
+  }
+
+  const setCustomTo = (val) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('preset', 'custom')
+      if (val) next.set('to', val)
+      else next.delete('to')
+      return next
+    })
+  }
 
   const resolvedDates = useCallback(() => {
     if (preset === 'custom') {
@@ -206,38 +240,79 @@ export function ReportsScreen() {
     }
   }, [preset, customFrom, customTo])
 
-  useEffect(() => {
-    let active = true
-    const { from, to } = resolvedDates()
+  const { from, to } = resolvedDates()
+  const prevRange = useMemo(() => shiftRangeBack(from, to), [from, to])
 
-    if (preset === 'custom' && from && to && from > to) {
-      queueMicrotask(() => {
-        if (active) setState({ status: 'error', data: null, prev: null, warning: '', error: t('reports.dateRangeError') })
-      })
-      return () => { active = false }
+  const isEnabled = Boolean(from && to)
+  const isRangeValid = !isEnabled || (from <= to)
+
+  const dateSpanDays = useMemo(() => {
+    if (!from || !to) return 0
+    const fromD = new Date(`${from}T00:00:00`)
+    const toD = new Date(`${to}T00:00:00`)
+    return Math.round((toD - fromD) / 86400000) + 1
+  }, [from, to])
+
+  const isRangeWithinLimit = dateSpanDays <= 90
+
+  const shouldFetch = isEnabled && isRangeValid && isRangeWithinLimit
+
+  const {
+    data: currentResult,
+    isLoading: isCurrentLoading,
+    isError: isCurrentError,
+    error: currentError,
+    refetch: refetchCurrent,
+  } = useQuery({
+    queryKey: ['analytics', from, to],
+    queryFn: () => fetchAnalytics(from, to),
+    enabled: shouldFetch,
+  })
+
+  const {
+    data: prevResult,
+  } = useQuery({
+    queryKey: ['analytics', prevRange.from, prevRange.to],
+    queryFn: () => fetchAnalytics(prevRange.from, prevRange.to).catch(() => null),
+    enabled: shouldFetch && Boolean(prevRange.from && prevRange.to),
+  })
+
+  const state = useMemo(() => {
+    if (preset === 'custom' && (!customFrom || !customTo)) {
+      return { status: 'custom_pending', data: null, prev: null, warning: '' }
     }
+    if (!isRangeValid) {
+      return { status: 'error', data: null, prev: null, warning: '', error: t('reports.dateRangeError') }
+    }
+    if (!isRangeWithinLimit) {
+      return { status: 'error', data: null, prev: null, warning: '', error: t('reports.maxRangeError') }
+    }
+    if (isCurrentLoading) {
+      return { status: 'loading', data: null, prev: null, warning: '' }
+    }
+    if (isCurrentError) {
+      return { status: 'error', data: null, prev: null, warning: '', error: currentError?.message || t('reports.loadError') }
+    }
+    return {
+      status: 'success',
+      data: currentResult?.data || null,
+      prev: prevResult?.data || null,
+      warning: currentResult?.warning || '',
+    }
+  }, [preset, customFrom, customTo, isRangeValid, isRangeWithinLimit, isCurrentLoading, isCurrentError, currentError, currentResult, prevResult, t])
 
-    queueMicrotask(() => {
-      if (active) setState((s) => ({ ...s, status: 'loading' }))
-    })
-    const prevRange = shiftRangeBack(from, to)
-    // Lấy thêm kỳ liền trước để tính so sánh; lỗi kỳ trước không chặn hiển thị kỳ hiện tại.
-    Promise.all([
-      fetchAnalytics(from, to),
-      prevRange.from && prevRange.to
-        ? fetchAnalytics(prevRange.from, prevRange.to).catch(() => null)
-        : Promise.resolve(null),
-    ])
-      .then(([r, prevR]) => {
-        if (!active) return
-        setState({ status: 'success', data: r.data, prev: prevR?.data ?? null, warning: '' })
+  const handleRetry = () => {
+    if (preset === 'custom' && customFrom && customTo && customFrom > customTo) {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('from', customTo)
+        next.set('to', customFrom)
+        return next
       })
-      .catch((e) => {
-        if (!active) return
-        setState({ status: 'error', data: null, prev: null, warning: '', error: e.message })
-      })
-    return () => { active = false }
-  }, [resolvedDates, preset, t, retryKey])
+    } else {
+      refetchCurrent()
+    }
+  }
 
   const { from: exportFrom, to: exportTo } = resolvedDates()
   const tickFmt = (v) => `${(v / 1000000).toFixed(0)}M`
@@ -295,7 +370,7 @@ export function ReportsScreen() {
     {
       key: 'aov',
       label: t('reports.kpiAov'),
-      value: formatCurrencyVnd(state.data.summary.avgOrderValue, locale),
+      value: formatCurrencyVnd(state.data.summary.orderCount > 0 ? (state.data.summary.avgOrderValue || 0) : 0, locale),
       raw: state.data.summary.avgOrderValue,
       prev: state.prev?.summary.avgOrderValue,
       color: 'brand', money: true, icon: <Receipt size={15} />,
@@ -331,16 +406,18 @@ export function ReportsScreen() {
               <input
                 type="date"
                 className="bb-input"
-                aria-label={t('reports.customFrom', { defaultValue: 'Từ ngày' })}
+                aria-label={t('reports.customFrom')}
                 value={customFrom}
+                max={toLocalDateString(0)}
                 onChange={(e) => setCustomFrom(e.target.value)}
               />
               <span className="bb-muted" aria-hidden="true" style={{ alignSelf: 'center', fontSize: 14 }}>→</span>
               <input
                 type="date"
                 className="bb-input"
-                aria-label={t('reports.customTo', { defaultValue: 'Đến ngày' })}
+                aria-label={t('reports.customTo')}
                 value={customTo}
+                max={toLocalDateString(0)}
                 onChange={(e) => setCustomTo(e.target.value)}
               />
             </>
@@ -370,6 +447,9 @@ export function ReportsScreen() {
           )}
         </div>
       </div>
+      <div className="text-xs bb-muted mb-4 text-right pr-2 select-none pointer-events-none opacity-80">
+        * {t('reports.exportAllHint')}
+      </div>
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
 
@@ -395,7 +475,15 @@ export function ReportsScreen() {
           title={t('reports.loadError')}
           description={state.error}
           actionLabel={t('common.retry')}
-          onAction={() => setRetryKey((k) => k + 1)}
+          onAction={handleRetry}
+        />
+      )}
+
+      {state.status === 'custom_pending' && (
+        <StatePanel
+          tone="neutral"
+          title={t('reports.customPendingTitle')}
+          description={t('reports.customPendingDesc')}
         />
       )}
 
@@ -432,10 +520,10 @@ export function ReportsScreen() {
           </div>
 
           {/* Revenue trend chart */}
-          {state.data.dailyRevenue?.length > 1 && (
-            <div className="bb-card mb-4">
-              <div className="bb-card-header"><h2>{t('reports.chartDailyRevenue')}</h2></div>
-              <div className="bb-card-body">
+          <div className="bb-card mb-4">
+            <div className="bb-card-header"><h2>{t('reports.chartDailyRevenue')}</h2></div>
+            <div className="bb-card-body">
+              {state.data.dailyRevenue?.length > 1 ? (
                 <ResponsiveContainer width="100%" height={240}>
                   <AreaChart data={state.data.dailyRevenue} margin={{ left: 10, right: 10, top: 4, bottom: 0 }}>
                     <defs>
@@ -472,9 +560,13 @@ export function ReportsScreen() {
                     />
                   </AreaChart>
                 </ResponsiveContainer>
-              </div>
+              ) : (
+                <div className="flex items-center justify-center bb-muted text-sm" style={{ minHeight: 240 }}>
+                  {t('reports.notEnoughDataForChart')}
+                </div>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Top products bar chart */}
           {state.data.topProducts?.length > 0 && (

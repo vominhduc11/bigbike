@@ -15,7 +15,7 @@ import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { RecentItemsChips } from '../components/RecentItemsChips'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
-import { formatVndShort } from '../lib/formatters'
+import { formatVndShort, formatRelativeTime } from '../lib/formatters'
 import { useAuth } from '../lib/auth'
 import { useRecentItems } from '../lib/useRecentItems'
 import {
@@ -31,7 +31,7 @@ const ORDER_STATUS_COLORS = {
   PROCESSING: 'var(--admin-color-status-info-text)',
   COMPLETED:  'var(--admin-color-status-success-text)',
   CANCELLED:  'var(--admin-color-status-danger-text)',
-  FAILED:     'var(--admin-color-status-danger-text)',
+  FAILED:     'var(--admin-color-status-warning-orange-text)',
 }
 
 // Charts pull in recharts (~346KB) — load them lazily so the dashboard shell
@@ -154,8 +154,10 @@ export function DashboardScreen({ navigate }) {
   function revenueTrend(kpi) {
     const pct = kpi?.todayRevenuePct
     if (pct == null) return { direction: 'neutral', label: t('dashboard.kpi.trendNoData') }
-    if (pct > 0)  return { direction: 'up',   label: t('dashboard.kpi.trendUp',   { value: Math.abs(pct) }) }
-    if (pct < 0)  return { direction: 'down', label: t('dashboard.kpi.trendDown', { value: Math.abs(pct) }) }
+    const absPct = Math.abs(pct)
+    const formattedValue = absPct > 999 ? '>999' : absPct
+    if (pct > 0)  return { direction: 'up',   label: t('dashboard.kpi.trendUp',   { value: formattedValue }) }
+    if (pct < 0)  return { direction: 'down', label: t('dashboard.kpi.trendDown', { value: formattedValue }) }
     return { direction: 'neutral', label: t('dashboard.kpi.trendFlat') }
   }
 
@@ -208,14 +210,18 @@ export function DashboardScreen({ navigate }) {
       <div className="bb-screen-header">
         <div className="bb-screen-title">
           <p className="bb-screen-eyebrow">{t('dashboard.eyebrow')}</p>
-          <h1>{t(`dashboard.${greetingKey}`, { name: firstName })}</h1>
+          <h1>
+            {firstName
+              ? t(`dashboard.${greetingKey}`, { name: firstName })
+              : t(`dashboard.${greetingKey}Fallback`)}
+          </h1>
           <p className="bb-muted">{t('dashboard.greetingDesc', { date: todayLabel })}</p>
         </div>
         <div className="bb-screen-actions">
           <div
             className="bb-seg"
             role="group"
-            aria-label={t('dashboard.periodControlLabel', { defaultValue: 'Khoảng thời gian biểu đồ doanh thu' })}
+            aria-label={t('dashboard.periodControlLabel')}
           >
             {periodTabs.map((tab) => (
               <button
@@ -265,13 +271,13 @@ export function DashboardScreen({ navigate }) {
               className="bb-kpi clickable"
               {...clickableProps(
                 () => navigate('/admin/reports'),
-                t('dashboard.kpi.todayRevenueAria', { defaultValue: 'Doanh thu hôm nay — xem báo cáo' }),
+                t('dashboard.kpi.todayRevenueAria'),
               )}
             >
               <div className="bb-kpi-head">
                 <span>
                   {t('dashboard.kpi.todayRevenue')}
-                  <span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.todayScope', { defaultValue: 'Hôm nay' })}</span>
+                  <span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.todayScope')}</span>
                 </span>
                 <span className="bb-kpi-icon brand"><CircleDollarSign size={15} /></span>
               </div>
@@ -279,9 +285,7 @@ export function DashboardScreen({ navigate }) {
               <div className="bb-kpi-foot">
                 <TrendPill {...revenueTrend(data.kpi)} />
                 <span className="bb-kpi-foot-label">
-                  {data.kpi.todayPaidRevenue != null
-                    ? t('dashboard.kpi.todayPaid', { amount: formatVndShort(data.kpi.todayPaidRevenue) })
-                    : t('dashboard.kpi.todayRevenueHint')}
+                  {t('dashboard.kpi.todayPaid', { amount: formatVndShort(data.kpi.todayPaidRevenue) })}
                 </span>
               </div>
             </div>
@@ -290,13 +294,13 @@ export function DashboardScreen({ navigate }) {
               className="bb-kpi clickable"
               {...clickableProps(
                 () => navigate('/admin/orders'),
-                t('dashboard.kpi.todayOrdersAria', { defaultValue: 'Đơn hàng hôm nay — xem đơn hàng' }),
+                t('dashboard.kpi.todayOrdersAria'),
               )}
             >
               <div className="bb-kpi-head">
                 <span>
                   {t('dashboard.kpi.todayOrders')}
-                  <span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.todayScope', { defaultValue: 'Hôm nay' })}</span>
+                  <span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.todayScope')}</span>
                 </span>
                 <span className="bb-kpi-icon info"><ShoppingBag size={15} /></span>
               </div>
@@ -311,7 +315,7 @@ export function DashboardScreen({ navigate }) {
               className="bb-kpi clickable"
               {...clickableProps(
                 () => navigate('/admin/orders'),
-                t('dashboard.kpi.pendingOrdersAria', { defaultValue: 'Đơn chờ xử lý — xem đơn hàng' }),
+                t('dashboard.kpi.pendingOrdersAria'),
               )}
             >
               <div className="bb-kpi-head">
@@ -330,7 +334,7 @@ export function DashboardScreen({ navigate }) {
               className="bb-kpi clickable"
               {...clickableProps(
                 () => navigate('/admin/products'),
-                t('dashboard.kpi.activeProductsAria', { defaultValue: 'Sản phẩm đang bán — xem sản phẩm' }),
+                t('dashboard.kpi.activeProductsAria'),
               )}
             >
               <div className="bb-kpi-head">
@@ -499,14 +503,19 @@ export function DashboardScreen({ navigate }) {
                         {recentOrders.map((order) => (
                           <tr key={order.id}>
                             <td className="mono">
-                              <button
-                                type="button"
-                                className="bg-transparent border-0 p-0 font-[inherit] text-[length:inherit] cursor-pointer hover:underline focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-2"
-                                style={{ color: 'var(--bb-primary)' }}
-                                onClick={() => navigate(`/admin/orders/${order.id}`)}
-                              >
-                                {order.orderNumber}
-                              </button>
+                              <div className="flex flex-col">
+                                <button
+                                  type="button"
+                                  className="bg-transparent border-0 p-0 font-[inherit] text-[length:inherit] cursor-pointer hover:underline focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-2 text-left"
+                                  style={{ color: 'var(--bb-primary)' }}
+                                  onClick={() => navigate(`/admin/orders/${order.id}`)}
+                                >
+                                  {order.orderNumber}
+                                </button>
+                                <span className="text-[11px] text-muted leading-none mt-0.5">
+                                  {formatRelativeTime(order.placedAt, t)}
+                                </span>
+                              </div>
                             </td>
                             <td title={order.customerName || order.customerEmail || ''}>
                               {order.customerName || order.customerEmail}
@@ -524,7 +533,7 @@ export function DashboardScreen({ navigate }) {
                       <MobileCard
                         key={order.id}
                         title={order.orderNumber}
-                        subtitle={order.customerName || order.customerEmail}
+                        subtitle={`${order.customerName || order.customerEmail} • ${formatRelativeTime(order.placedAt, t)}`}
                         status={<StatusBadge type="order" status={order.orderStatus} />}
                         meta={[
                           { label: t('dashboard.recentOrders.total'), value: formatVndShort(order.total), tone: 'strong' },
@@ -540,7 +549,7 @@ export function DashboardScreen({ navigate }) {
                       tone="neutral"
                       title={t('dashboard.recentOrders.empty')}
                       description={t('dashboard.recentOrders.emptyDesc')}
-                      actionLabel={t('dashboard.recentOrders.emptyCta', { defaultValue: 'Xem đơn hàng' })}
+                      actionLabel={t('dashboard.recentOrders.emptyCta')}
                       onAction={() => navigate('/admin/orders')}
                     />
                   </div>
@@ -623,8 +632,8 @@ export function DashboardScreen({ navigate }) {
                       tone="neutral"
                       title={t('dashboard.topProducts.empty')}
                       description={t('dashboard.topProducts.emptyDesc')}
-                      actionLabel={t('dashboard.topProducts.emptyCta', { defaultValue: 'Thêm sản phẩm' })}
-                      onAction={() => navigate('/admin/products')}
+                      actionLabel={t('dashboard.topProducts.emptyCta')}
+                      onAction={() => navigate('/admin/products/new')}
                     />
                   </div>
                 )}
