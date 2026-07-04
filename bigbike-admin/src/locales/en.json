@@ -1930,7 +1930,6 @@
     "saveError": "Failed to save banners",
     "saveSuccess": "Changes saved",
     "unsavedCount": "{{count}} unsaved change(s)",
-    "viewOnWeb": "View on web",
     "usingDefault": "Using default image",
     "usingFallback": "Using system default image",
     "englishLabel": "English",

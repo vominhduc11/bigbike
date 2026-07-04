@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ExternalLink, FolderTree, FileText, ImageIcon, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { FolderTree, FileText, ImageIcon, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { StatePanel } from '../components/StatePanel'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -143,15 +143,6 @@ function PageBannerCard({ page, get, getEn, set, setEn, defaults, canUpdate, t, 
     <div className="bb-card">
       <div className="bb-card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <h3>{page.title}</h3>
-        <a
-          href={`${STOREFRONT_BASE}${page.path}`}
-          target="_blank"
-          rel="noreferrer"
-          className="bb-btn bb-btn-secondary bb-btn-sm"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}
-        >
-          <ExternalLink size={13} /> {t('banners.viewOnWeb')}
-        </a>
       </div>
       <div className="bb-card-body" style={{ display: 'grid', gap: 16 }}>
         <BannerPreview bg={bg} illustration={illustration} title={get(k('title')) || page.title} />

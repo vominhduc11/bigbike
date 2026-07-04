@@ -247,21 +247,20 @@ export function tabLabel(group, t) {
   return meta.fallbackLabel ?? group ?? t('settings.groupGeneral')
 }
 
-// ── Hướng dẫn vị trí: mỗi ô render ở đâu trên web + link mở đúng trang ───────────
-export const STOREFRONT_BASE = (import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn').replace(/\/$/, '')
+// ── Hướng dẫn vị trí: mỗi ô render ở đâu trên web ───────────
 
-// Khối hiển thị → tiêu đề + đường dẫn storefront (path = null nghĩa là không hiển thị cho khách).
+// Khối hiển thị → tiêu đề.
 export const SECTION_GUIDE = {
-  general_brand:   { title: 'SEO & thông tin shop — mọi trang', path: '/' },
-  contact_main:    { title: 'Trang Liên hệ + Header', path: '/lien-he' },
-  contact_social:  { title: 'Mạng xã hội — chat nổi + trang Liên hệ', path: '/lien-he' },
-  payment_bank:    { title: 'Hiện khi khách đặt đơn & chọn chuyển khoản', path: null },
-  hero_products:   { title: 'Banner đầu trang Tất cả sản phẩm', path: '/san-pham' },
-  hero_brands:     { title: 'Banner đầu trang Thương hiệu', path: '/brands' },
-  hero_news:       { title: 'Banner đầu trang Tin tức', path: '/tin-tuc' },
-  hero_default:    { title: 'Banner mặc định — trang listing chưa đặt ảnh riêng', path: '/san-pham' },
-  seo_home:        { title: 'SEO trang chủ (thẻ meta / khi chia sẻ)', path: '/' },
-  internal_assign: { title: 'Màn Tạo/Sửa sản phẩm (trong admin)', path: null, internal: true },
+  general_brand:   { title: 'SEO & thông tin shop — mọi trang' },
+  contact_main:    { title: 'Trang Liên hệ + Header' },
+  contact_social:  { title: 'Mạng xã hội — chat nổi + trang Liên hệ' },
+  payment_bank:    { title: 'Hiện khi khách đặt đơn & chọn chuyển khoản' },
+  hero_products:   { title: 'Banner đầu trang Tất cả sản phẩm' },
+  hero_brands:     { title: 'Banner đầu trang Thương hiệu' },
+  hero_news:       { title: 'Banner đầu trang Tin tức' },
+  hero_default:    { title: 'Banner mặc định — trang listing chưa đặt ảnh riêng' },
+  seo_home:        { title: 'SEO trang chủ (thẻ meta / khi chia sẻ)' },
+  internal_assign: { title: 'Màn Tạo/Sửa sản phẩm (trong admin)', internal: true },
 }
 export const SECTION_ORDER = Object.keys(SECTION_GUIDE)
 

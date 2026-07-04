@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next'
-import { AlertCircle, ExternalLink, Lock } from 'lucide-react'
+import { AlertCircle, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SettingField } from './SettingField'
-import { groupBySection, SECTION_GUIDE, STOREFRONT_BASE, KEY_GUIDE } from './constants'
+import { groupBySection, SECTION_GUIDE, KEY_GUIDE } from './constants'
 
 export function SettingTabPanel({
   title, items, canUpdate, drafts, draftsEn, errors, onDraftChange, onDraftChangeEn,
@@ -21,7 +21,6 @@ export function SettingTabPanel({
       <div className="bb-card-body">
         {groupBySection(items).map(({ sec, fields }) => {
           const meta = SECTION_GUIDE[sec]
-          const url = meta?.path ? STOREFRONT_BASE + meta.path : null
           return (
             <div key={sec}>
               <div
@@ -32,15 +31,7 @@ export function SettingTabPanel({
                 }}
               >
                 <span style={{ fontWeight: 600, fontSize: 13 }}>{meta?.title || 'Khác'}</span>
-                {url ? (
-                  <a
-                    href={`${url}#bbf=${sec}`} target="_blank" rel="noreferrer"
-                    className="bb-btn bb-btn-secondary bb-btn-sm"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}
-                  >
-                    <ExternalLink size={13} /> Xem trên web
-                  </a>
-                ) : meta?.internal ? (
+                {meta?.internal ? (
                   <span className="bb-muted" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, whiteSpace: 'nowrap' }}>
                     <Lock size={12} /> Nội bộ
                   </span>
