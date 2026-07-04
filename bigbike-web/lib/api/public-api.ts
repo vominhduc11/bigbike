@@ -21,8 +21,13 @@ import type {
 import type { OrderDetail } from "@/lib/contracts/commerce";
 import { env } from "@/env";
 
+// BIGBIKE_API_BASE_URL (server-only, vd hostname nội bộ Docker) chỉ dùng được khi
+// module này chạy trên server. Module này còn bị import bởi component "use client"
+// (vd ProductView cho preview iframe) — browser không resolve được hostname nội bộ
+// nên phải luôn dùng NEXT_PUBLIC_API_BASE_URL, và không được đụng vào biến server-only
+// (t3-env throw ngay khi truy cập biến server từ client bundle).
 const API_BASE_URL =
-  env.BIGBIKE_API_BASE_URL ??
+  (typeof window === "undefined" ? env.BIGBIKE_API_BASE_URL : undefined) ??
   env.NEXT_PUBLIC_API_BASE_URL ??
   "http://localhost:8080";
 
