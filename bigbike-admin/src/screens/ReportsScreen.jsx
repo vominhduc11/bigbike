@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   Calendar, Info, TrendingUp, TrendingDown, Minus,
@@ -12,6 +11,7 @@ import {
   Area, AreaChart, Bar, BarChart,
   CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
+import { useUrlSyncedState } from '../lib/useUrlSyncedState'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { ExportButton } from '../components/ExportButton'
@@ -191,42 +191,24 @@ export function ReportsScreen() {
   const { t, i18n } = useTranslation()
   const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
 
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [query, setQuery] = useUrlSyncedState({ preset: '30d', from: '', to: '' })
 
-  const preset = searchParams.get('preset') || '30d'
-  const customFrom = searchParams.get('from') || ''
-  const customTo = searchParams.get('to') || ''
+  const { preset, from: customFrom, to: customTo } = query
 
   const setPreset = (val) => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev)
-      next.set('preset', val)
-      if (val !== 'custom') {
-        next.delete('from')
-        next.delete('to')
-      }
-      return next
-    })
+    setQuery((prev) => ({
+      preset: val,
+      from: val === 'custom' ? prev.from : '',
+      to: val === 'custom' ? prev.to : '',
+    }))
   }
 
   const setCustomFrom = (val) => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev)
-      next.set('preset', 'custom')
-      if (val) next.set('from', val)
-      else next.delete('from')
-      return next
-    })
+    setQuery((prev) => ({ ...prev, preset: 'custom', from: val }))
   }
 
   const setCustomTo = (val) => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev)
-      next.set('preset', 'custom')
-      if (val) next.set('to', val)
-      else next.delete('to')
-      return next
-    })
+    setQuery((prev) => ({ ...prev, preset: 'custom', to: val }))
   }
 
   const resolvedDates = useCallback(() => {
@@ -303,12 +285,7 @@ export function ReportsScreen() {
 
   const handleRetry = () => {
     if (preset === 'custom' && customFrom && customTo && customFrom > customTo) {
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev)
-        next.set('from', customTo)
-        next.set('to', customFrom)
-        return next
-      })
+      setQuery((prev) => ({ ...prev, from: customTo, to: customFrom }))
     } else {
       refetchCurrent()
     }
