@@ -54,6 +54,9 @@ public class ProductTranslationRequest {
         @Size(max = 50000, message = "English installation guide is too long.")
         private String installationGuide;
 
+        @Size(max = 20000, message = "English size guide is too long.")
+        private String sizeGuide;
+
         @Size(max = 20000, message = "English suitability advisory is too long.")
         private String suitabilityAdvisory;
 

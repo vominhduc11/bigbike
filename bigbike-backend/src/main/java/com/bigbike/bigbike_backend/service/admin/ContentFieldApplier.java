@@ -13,7 +13,10 @@ final class ContentFieldApplier {
 
     public static String articleJson(ArticleEntity e) {
         return "{\"id\":\"" + e.getId() + "\",\"title\":\"" + esc(e.getTitle()) +
-               "\",\"slug\":\"" + e.getSlug() + "\",\"publishStatus\":\"" + e.getPublishStatus() + "\"}";
+               "\",\"slug\":\"" + e.getSlug() + "\",\"publishStatus\":\"" + e.getPublishStatus() +
+               "\",\"excerpt\":\"" + esc(e.getExcerpt()) +
+               "\",\"coverImageUrl\":\"" + esc(e.getCoverImageUrl()) +
+               "\",\"categoryId\":\"" + esc(e.getCategory() == null ? null : e.getCategory().getId()) + "\"}";
     }
 
     public static String esc(String s) {

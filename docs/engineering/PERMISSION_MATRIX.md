@@ -16,6 +16,16 @@
 
 `inventory.*` is listed in `PermissionCatalog` (`roles.groupProducts`), so it is grantable to custom roles via the Roles UI.
 
+### Catalog / Product permissions
+
+| Permission | Granted roles (seed) | Endpoints | Evidence |
+|---|---|---|---|
+| `products.update` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `POST/PATCH /api/v1/admin/products`, `POST /api/v1/admin/products/preview`, `PATCH /api/v1/admin/products/{id}/publish`, `DELETE /api/v1/admin/products/{id}[/permanent]`, `POST /api/v1/admin/products/{id}/restore`, `POST /api/v1/admin/products/import/validate`, `POST /api/v1/admin/products/import/commit`, `GET /api/v1/admin/products/import/export` | `V49__create_roles_permissions_tables.sql`, `AdminCatalogController.java`, `AdminProductImportController.java` |
+
+`EDITOR` holds `products.read`/`catalog.read` only, not `products.update` — confirmed via `V121__realign_inventory_warranty_permissions.sql`'s own comment describing `EDITOR` as a role that "only had products.read."
+
+The bulk product import endpoints are gated by the same `products.update` permission as every other product-write endpoint — deliberately not `reports.export` (import is a catalog mutation, not a read-only report), so import and the normal admin product form share one authorization boundary.
+
 > **POS permissions removed (2026-06-23, online-only).** The four POS permissions — `pos.read`, `pos.write`, `pos.price_override`, `pos.sell_below_cost` — were **deleted** together with the POS module (admin POS screen, `POST /admin/pos/orders`, `GET /admin/pos/products/search`, `AdminPosController` / `PosOrderService`). They were dropped from `PermissionCatalog` and revoked from every role. BigBike is now online-only.
 >
 > **AL-03 realignment (V121).** Before V121, `inventory.*` gated the (now-removed) **Warranty** module while the **Inventory** module was gated by `products.*` — the permission name did not match the module it controlled. V121 introduced the dedicated permissions and re-gated each controller + the admin UI. The migration was a **non-breaking backfill**: every role holding `products.*` also received `inventory.*`. `EDITOR` therefore keeps `inventory.read` (it held `products.read`) — a deliberate compatibility grant. A post-launch RBAC cleanup may remove `inventory.read` from `EDITOR` if the business confirms EDITOR is content-only.

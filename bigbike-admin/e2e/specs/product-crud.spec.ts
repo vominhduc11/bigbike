@@ -70,15 +70,16 @@ async function fillRichTextHtml(card: Locator, html: string) {
 
 // Product main image must be a REAL upload to MinIO — DATA_CONTRACT media rule — and
 // the picker measures the uploaded file's natural dimensions client-side before
-// enabling "Chọn ảnh này": productImage recommend requires >=1800x1800 square-ish
-// (imageRecommendations.js), which e2e/fixtures/product-image-2000.jpg satisfies.
+// enabling "Chọn ảnh này": productImage recommend requires a 1:1 ratio
+// (imageRecommendations.js) — size is advisory only since 2026-07-04, not a blocker;
+// e2e/fixtures/product-image-2000.jpg is square so it satisfies the ratio either way.
 async function uploadMainImage(page: Page) {
   const card = sectionCard(page, 'Ảnh đại diện')
   await card.getByRole('button', { name: 'Chọn từ thư viện' }).click()
   const dialog = page.getByRole('dialog', { name: 'Chọn ảnh từ thư viện' })
   await dialog.locator('input[type="file"]').setInputFiles(TEST_IMAGE_PATH)
   const confirmBtn = dialog.getByRole('button', { name: 'Chọn ảnh này' })
-  await expect(confirmBtn, 'Upload chưa xong hoặc ảnh không đạt kích thước tối thiểu 1800x1800').toBeEnabled({ timeout: 30_000 })
+  await expect(confirmBtn, 'Upload chưa xong hoặc ảnh sai tỉ lệ 1:1').toBeEnabled({ timeout: 30_000 })
   await confirmBtn.click()
   await expect(card.getByRole('button', { name: 'Đổi ảnh' })).toBeVisible()
 }

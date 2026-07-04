@@ -14,6 +14,7 @@ export const DANGEROUS_ACTIONS = new Set([
   'MEDIA_DELETED', 'MEDIA_HARD_DELETED',
   'MENU_ITEM_DELETED', 'ROLE_DELETED', 'REDIRECT_DELETED',
   'CONTENT_ARTICLE_DELETED', 'CONTENT_PAGE_DELETED',
+  'ADMIN_LOGIN_FAILED', 'ADMIN_ACCOUNT_LOCKED',
 ])
 
 // Values considered dangerous in diff table (shown with danger highlight)
@@ -93,7 +94,8 @@ export const RESOURCE_OPTIONS = [
   'ORDER', 'PRODUCT', 'CATEGORY', 'BRAND', 'INVENTORY',
   'CUSTOMER', 'CONTENT', 'MEDIA', 'MENU', 'MENU_ITEM',
   'SITE_SETTING', 'ADMIN_ROLE', 'ADMIN_USER', 'REDIRECT',
-  'REVIEW', 'REPORT',
+  'REVIEW', 'REPORT', 'ADMIN_AUTH', 'SLIDER', 'HOME_VIDEO',
+  'MEDIA_FOLDER', 'ATTRIBUTE', 'HOME_HIGHLIGHT',
 ]
 export const PRESET_KEYS      = ['today', '7d', '30d', 'month']
 

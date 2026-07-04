@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/admin/media-folders")
 @RequiredArgsConstructor
-public class AdminMediaFolderController {
+public class AdminMediaFolderController extends AdminControllerSupport {
 
     private final AdminMediaFolderService folderService;
     private final DevAdminAuthService authService;
@@ -48,7 +48,7 @@ public class AdminMediaFolderController {
             HttpServletRequest request
     ) {
         authService.requirePermission(request, "media.write");
-        return responseFactory.data(folderService.create(body), request);
+        return responseFactory.data(folderService.create(body, resolveAdminId()), request);
     }
 
     @PatchMapping("/{id}")
@@ -58,13 +58,13 @@ public class AdminMediaFolderController {
             HttpServletRequest request
     ) {
         authService.requirePermission(request, "media.write");
-        return responseFactory.data(folderService.update(id, body), request);
+        return responseFactory.data(folderService.update(id, body, resolveAdminId()), request);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id, HttpServletRequest request) {
         authService.requirePermission(request, "media.write");
-        folderService.delete(id);
+        folderService.delete(id, resolveAdminId());
     }
 }

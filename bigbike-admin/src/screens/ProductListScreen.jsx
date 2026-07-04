@@ -5,6 +5,7 @@ import { toast } from '@/lib/toast'
 import { Check, ChevronDown, ChevronsUpDown, ChevronUp, Plus } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { ExportButton } from '@/components/ExportButton'
+import { ImportProductsDialog } from '@/components/ImportProductsDialog'
 import { StatePanel } from '../components/StatePanel'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { FilterChips } from '../components/FilterChips'
@@ -46,6 +47,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
   const [openMenu, setOpenMenu] = useState(null)
   const [selected, setSelected] = useState(() => new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
 
   const state = useAdminList(['products', query, contentLang], () => fetchProducts(query))
 
@@ -436,6 +438,15 @@ export function ProductListScreen({ navigate, canUpdate }) {
           </ExportButton>
           <button
             type="button"
+            className="bb-btn bb-btn-secondary"
+            onClick={() => setImportOpen(true)}
+            disabled={!canUpdate}
+            title={!canUpdate ? t('products.requirePermission') : undefined}
+          >
+            {t('products.importFromFile')}
+          </button>
+          <button
+            type="button"
             className="bb-btn bb-btn-primary"
             onClick={() => navigate('/admin/products/new')}
             disabled={!canUpdate}
@@ -445,6 +456,8 @@ export function ProductListScreen({ navigate, canUpdate }) {
           </button>
         </div>
       </div>
+
+      <ImportProductsDialog open={importOpen} onClose={() => setImportOpen(false)} />
 
       {/* O9 — Vừa xem gần đây */}
       <RecentItemsChips items={recentProductItems} onSelect={(item) => navigate(`/admin/products/${item.id}`)} />

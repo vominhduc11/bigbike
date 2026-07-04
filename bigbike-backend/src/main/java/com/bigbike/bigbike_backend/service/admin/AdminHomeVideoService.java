@@ -76,6 +76,7 @@ public class AdminHomeVideoService {
     public HomeVideo patch(String id, PatchHomeVideoRequest request) {
         HomeVideoEntity entity = homeVideoJpaRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Home video not found."));
+        String before = videoSnapshot(entity);
 
         if (request.getTitle() != null) {
             if (request.getTitle().isBlank()) {
@@ -110,7 +111,7 @@ public class AdminHomeVideoService {
         entity.setUpdatedAt(Instant.now());
         homeVideoJpaRepository.save(entity);
         webRevalidationService.revalidate("home-videos");
-        auditLog("HOME_VIDEO_UPDATED", id, null, videoSnapshot(entity));
+        auditLog("HOME_VIDEO_UPDATED", id, before, videoSnapshot(entity));
         return homeVideoReadService.findById(entity.getId());
     }
 
@@ -213,6 +214,8 @@ public class AdminHomeVideoService {
     private static String videoSnapshot(HomeVideoEntity e) {
         return "{\"id\":\"" + esc(e.getId())
                 + "\",\"title\":\"" + esc(e.getTitle())
+                + "\",\"videoUrl\":\"" + esc(e.getVideoUrl())
+                + "\",\"thumbnailUrl\":\"" + esc(e.getThumbnail() == null ? null : e.getThumbnail().url())
                 + "\",\"sortOrder\":" + e.getSortOrder()
                 + ",\"active\":" + e.isActive() + "}";
     }

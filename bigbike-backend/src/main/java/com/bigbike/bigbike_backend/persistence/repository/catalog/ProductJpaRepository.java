@@ -22,6 +22,13 @@ import org.springframework.lang.Nullable;
 public interface ProductJpaRepository extends JpaRepository<ProductEntity, String>, JpaSpecificationExecutor<ProductEntity> {
     Optional<ProductEntity> findBySlug(String slug);
 
+    /**
+     * Product-level SKU has no DB uniqueness (only variant SKU does — PRODUCT_RULE_SKU_001),
+     * so more than one match is possible; the bulk import upsert-matching path treats that
+     * as an ambiguous row error rather than guessing which product to update.
+     */
+    List<ProductEntity> findAllBySkuIgnoreCase(String sku);
+
     /** Lookup by the optional English slug. Pairs with {@link #findBySlug} for
      * vi-first OR-resolution (JpaCatalogReadRepository) and slug uniqueness
      * checks (AdminCatalogMutationService). */

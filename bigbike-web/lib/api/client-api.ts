@@ -83,9 +83,25 @@ export function submitCheckout(payload: CheckoutPayload, idempotencyKey?: string
 
 export type PublicSetting = { settingKey: string; settingValue: string };
 
-export function fetchPublicSettings(lang?: string): Promise<PublicSetting[]> {
+/**
+ * List endpoint — parsed directly (not via `clientRequest`) so a `data: null`/missing
+ * envelope field defaults to `[]` instead of falling back to the whole response object
+ * (which would make callers' `.find()` throw on a non-array).
+ */
+export async function fetchPublicSettings(lang?: string): Promise<PublicSetting[]> {
   const qs = lang ? `?lang=${encodeURIComponent(lang)}` : "";
-  return clientRequest("GET", `/api/v1/settings/public${qs}`);
+  const res = await fetch(`${API_BASE_URL}/api/v1/settings/public${qs}`, {
+    method: "GET",
+    credentials: "include",
+    headers: { Accept: "application/json" },
+  });
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) {
+    const msg = (payload as { error?: { message?: string } } | null)?.error?.message ?? `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  const body = (payload ?? {}) as { data?: PublicSetting[] };
+  return body.data ?? [];
 }
 
 export function fetchPublicMenu(location: string, lang?: string): Promise<PublicMenu> {

@@ -45,7 +45,6 @@ public class AdminReportService {
 
     /** Wraps a CSV byte array with a flag indicating whether the result was truncated at EXPORT_MAX_ROWS. */
     public record ExportResult(byte[] csv, boolean truncated) {}
-    private static final byte[] UTF8_BOM = {(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
 
     // Vietnam timezone — all date boundary parsing and CSV timestamp formatting use this zone
     // to match AdminDashboardService and the AT TIME ZONE 'Asia/Ho_Chi_Minh' used in native queries.
@@ -187,8 +186,8 @@ public class AdminReportService {
                         o.getOrderNumber(),
                         o.getStatus(),
                         o.getPaymentStatus(),
-                        escape(nvl(o.getCustomerEmail())),
-                        escape(nvl(o.getCustomerPhone())),
+                        CsvExportUtil.escape(nvl(o.getCustomerEmail())),
+                        CsvExportUtil.escape(nvl(o.getCustomerPhone())),
                         o.getCurrency(),
                         formatDecimal(o.getSubtotalAmount()),
                         formatDecimal(o.getShippingAmount()),
@@ -205,7 +204,7 @@ public class AdminReportService {
             throw new RuntimeException("Failed to generate CSV export.", e);
         }
 
-        byte[] csv = withBom(sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        byte[] csv = CsvExportUtil.withBom(sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
         return new ExportResult(csv, orders.size() > EXPORT_MAX_ROWS);
     }
 
@@ -242,13 +241,13 @@ public class AdminReportService {
                 if (count >= EXPORT_MAX_ROWS) break;
                 printer.printRecord(
                         c.getId(),
-                        escape(nvl(c.getEmail())),
-                        escape(nvl(c.getPhone())),
-                        escape(nvl(c.getDisplayName())),
-                        escape(nvl(c.getFirstName())),
-                        escape(nvl(c.getLastName())),
+                        CsvExportUtil.escape(nvl(c.getEmail())),
+                        CsvExportUtil.escape(nvl(c.getPhone())),
+                        CsvExportUtil.escape(nvl(c.getDisplayName())),
+                        CsvExportUtil.escape(nvl(c.getFirstName())),
+                        CsvExportUtil.escape(nvl(c.getLastName())),
                         c.getStatus(),
-                        escape(nvl(c.getGender())),
+                        CsvExportUtil.escape(nvl(c.getGender())),
                         formatInstant(c.getEmailVerifiedAt()),
                         formatInstant(c.getLastLoginAt()),
                         formatInstant(c.getCreatedAt())
@@ -259,7 +258,7 @@ public class AdminReportService {
             throw new RuntimeException("Failed to generate customer CSV export.", e);
         }
 
-        byte[] csv = withBom(sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        byte[] csv = CsvExportUtil.withBom(sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
         return new ExportResult(csv, customers.size() > EXPORT_MAX_ROWS);
     }
 
@@ -291,11 +290,11 @@ public class AdminReportService {
                 if (count >= EXPORT_MAX_ROWS) break;
                 printer.printRecord(
                         p.getId(),
-                        escape(nvl(p.getSku())),
-                        escape(p.getSlug()),
-                        escape(p.getName()),
-                        escape(p.getCategory() != null ? p.getCategory().getName() : ""),
-                        escape(p.getBrand() != null ? p.getBrand().getName() : ""),
+                        CsvExportUtil.escape(nvl(p.getSku())),
+                        CsvExportUtil.escape(p.getSlug()),
+                        CsvExportUtil.escape(p.getName()),
+                        CsvExportUtil.escape(p.getCategory() != null ? p.getCategory().getName() : ""),
+                        CsvExportUtil.escape(p.getBrand() != null ? p.getBrand().getName() : ""),
                         formatDecimal(p.getRetailPrice()),
                         formatDecimal(p.getSalePrice()),
                         p.getCurrency(),
@@ -310,7 +309,7 @@ public class AdminReportService {
             throw new RuntimeException("Failed to generate product CSV export.", e);
         }
 
-        byte[] csv = withBom(sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        byte[] csv = CsvExportUtil.withBom(sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
         return new ExportResult(csv, products.size() > EXPORT_MAX_ROWS);
     }
 
@@ -322,46 +321,6 @@ public class AdminReportService {
 
     private String formatInstant(Instant instant) {
         return instant != null ? DT_FORMAT.format(instant) : "";
-    }
-
-    // Prefix dangerous leading characters with a single quote to prevent spreadsheet formula injection.
-    // Triggers: = + - @ \t \r (OWASP CSV injection — prepend apostrophe).
-    // LF (\n) is stripped because it creates a new CSV row in spreadsheet parsers (RBAUD-002).
-    // After stripping leading LFs, a remaining formula trigger is also apostrophe-escaped.
-    static String escape(String v) {
-        if (v == null || v.isEmpty()) return v;
-        // Strip all leading LF chars (\n).  \r\n together also stripped so \r\n=formula is safe.
-        int start = 0;
-        while (start < v.length() && v.charAt(start) == '\n') {
-            start++;
-        }
-        // If we consumed leading LFs, also consume a trailing \r that was part of \r\n
-        // (handles \r\n=formula → strip both \r and \n then recurse).
-        // Actually: handle \r\n by stripping \r immediately before another \n or at end of stripped prefix.
-        // Simplest: strip leading (\r?\n)+ sequences.
-        if (start > 0) {
-            // Re-strip from index 0 for \r that preceded the \n we already skipped
-            // by restarting with a full scan of (\r\n|\n)+ prefix.
-            String stripped = v.substring(start);
-            return escape(stripped);
-        }
-        // Strip a leading \r only when it is followed by \n (i.e., \r\n sequence).
-        if (v.charAt(0) == '\r' && v.length() > 1 && v.charAt(1) == '\n') {
-            return escape(v.substring(2));
-        }
-        char first = v.charAt(0);
-        if (first == '=' || first == '+' || first == '-' || first == '@'
-                || first == '\t' || first == '\r') {
-            return "'" + v;
-        }
-        return v;
-    }
-
-    static byte[] withBom(byte[] csv) {
-        byte[] result = new byte[UTF8_BOM.length + csv.length];
-        System.arraycopy(UTF8_BOM, 0, result, 0, UTF8_BOM.length);
-        System.arraycopy(csv, 0, result, UTF8_BOM.length, csv.length);
-        return result;
     }
 
     // Parse YYYY-MM-DD as start-of-day in Vietnam timezone.

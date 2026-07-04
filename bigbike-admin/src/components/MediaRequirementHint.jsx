@@ -2,9 +2,9 @@ import { useTranslation } from 'react-i18next'
 import { AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-// Dòng yêu cầu kích thước/tỉ lệ — hiển thị THƯỜNG TRỰC tại ô upload (kể cả chưa chọn ảnh)
-// để admin biết trước cần chuẩn bị ảnh cỡ nào. Khác MediaDimensionWarning (đã gỡ bỏ, chỉ nhắc
-// sau khi chọn): đây chỉ là gợi ý tĩnh, việc CHẶN thật do useMediaValidation() đảm nhiệm.
+// Dòng khuyến nghị kích thước/tỉ lệ — hiển thị THƯỜNG TRỰC tại ô upload (kể cả chưa chọn ảnh)
+// để admin biết trước nên chuẩn bị ảnh cỡ nào. Kích thước chỉ là GỢI Ý (không chặn lưu); tỉ lệ
+// mới là điều kiện CHẶN LƯU thật sự, do useMediaValidation() đảm nhiệm (xem MediaValidationError).
 export function MediaRequirementHint({ recommend, className }) {
   const { t } = useTranslation()
   if (!recommend) return null
@@ -16,15 +16,14 @@ export function MediaRequirementHint({ recommend, className }) {
   )
 }
 
-// Dòng lỗi CHẶN LƯU khi ảnh/video đã chọn không đạt spec — hiển thị đè lên hint tĩnh ở trên.
+// Dòng lỗi CHẶN LƯU khi ảnh/video đã chọn sai tỉ lệ — hiển thị đè lên hint tĩnh ở trên.
+// Kích thước không còn là lý do chặn nên `reasons` giờ chỉ có thể chứa 'wrongRatio'.
 export function MediaValidationError({ reasons, kind, width, height, recommend, className }) {
   const { t } = useTranslation()
   if (!reasons?.length) return null
   const isVideo = kind === 'video'
-  const messages = reasons.map((reason) => {
-    const key = reason === 'tooSmall'
-      ? (isVideo ? 'mediaReco.videoTooSmall' : 'mediaReco.tooSmall')
-      : (isVideo ? 'mediaReco.videoWrongRatio' : 'mediaReco.wrongRatio')
+  const messages = reasons.map((_reason) => {
+    const key = isVideo ? 'mediaReco.videoWrongRatio' : 'mediaReco.wrongRatio'
     return t(key, { w: width, h: height, rw: recommend.minW, rh: recommend.minH })
   })
   return (

@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.service.auth;
 import com.bigbike.bigbike_backend.api.auth.dto.AdminUserSummary;
 import com.bigbike.bigbike_backend.api.auth.dto.TokenResponse;
 import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
+import com.bigbike.bigbike_backend.config.ClientIpResolver;
 import com.bigbike.bigbike_backend.config.JwtProperties;
 import com.bigbike.bigbike_backend.domain.auth.AdminUserProfile;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
@@ -32,10 +33,11 @@ public class AdminAuthService {
     private final AdminPermissionService adminPermissionService;
     private final AdminLoginAttemptService loginAttemptService;
     private final AuditLogWriter auditLogWriter;
+    private final ClientIpResolver clientIpResolver;
 
     @Transactional
     public TokenResponse login(String email, String rawPassword, HttpServletRequest request) {
-        String clientIp = request != null ? request.getRemoteAddr() : null;
+        String clientIp = request != null ? clientIpResolver.resolve(request) : null;
         String userAgent = request != null ? request.getHeader("User-Agent") : null;
 
         AdminUserEntity user = adminUserRepo.findByEmail(email).orElse(null);
@@ -126,7 +128,7 @@ public class AdminAuthService {
         if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
             return;
         }
-        String clientIp = request != null ? request.getRemoteAddr() : null;
+        String clientIp = request != null ? clientIpResolver.resolve(request) : null;
         String userAgent = request != null ? request.getHeader("User-Agent") : null;
         String tokenHash = jwtService.hashToken(rawRefreshToken);
         refreshTokenRepo.findByTokenHash(tokenHash).ifPresent(token -> {
@@ -190,7 +192,7 @@ public class AdminAuthService {
         entity.setCreatedAt(Instant.now());
         entity.setExpiresAt(Instant.now().plusSeconds(jwtProperties.getRefreshTokenTtlSeconds()));
         if (request != null) {
-            entity.setCreatedByIp(request.getRemoteAddr());
+            entity.setCreatedByIp(clientIpResolver.resolve(request));
             entity.setUserAgent(request.getHeader("User-Agent"));
         }
         refreshTokenRepo.save(entity);

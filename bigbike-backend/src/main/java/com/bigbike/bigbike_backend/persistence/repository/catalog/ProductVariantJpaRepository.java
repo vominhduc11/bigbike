@@ -22,6 +22,16 @@ public interface ProductVariantJpaRepository extends JpaRepository<ProductVarian
             @Param("productId") String productId
     );
 
+    /**
+     * Resolves a variant's real database id by its selling SKU. Used by the bulk product
+     * importer to match a file's variant row (which only knows the SKU, never the opaque
+     * id) back to its existing DB row BEFORE calling into {@code applyVariants}'s
+     * full-replace-by-id logic — otherwise an existing variant would look "new," get a
+     * fresh id, and its old row would be orphan-removed, cascade-deleting
+     * {@code stock_movements} history and resetting quantityOnHand to 0.
+     */
+    Optional<ProductVariantEntity> findBySkuIgnoreCase(String sku);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT v FROM ProductVariantEntity v JOIN FETCH v.product WHERE v.id = :id")
     Optional<ProductVariantEntity> findByIdForUpdate(@Param("id") String id);

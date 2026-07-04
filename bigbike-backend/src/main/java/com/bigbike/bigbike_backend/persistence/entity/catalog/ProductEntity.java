@@ -254,6 +254,9 @@ public class ProductEntity {
     @Column(name = "installation_guide_en", columnDefinition = "text")
     private String installationGuideEn;
 
+    @Column(name = "size_guide_en", columnDefinition = "text")
+    private String sizeGuideEn;
+
     @Column(name = "seo_title_en")
     private String seoTitleEn;
 

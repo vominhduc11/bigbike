@@ -14,8 +14,8 @@ export function AuditDetailDrawer({ log, onClose }) {
 
   const TONE_MAP = {
     ORDER: 'info', PRODUCT: 'success', CATEGORY: 'neutral', BRAND: 'neutral',
-    INVENTORY: 'warning', CUSTOMER: 'neutral', SETTING: 'danger',
-    MEDIA: 'neutral', MENU: 'neutral', CONTENT: 'neutral', ROLE: 'danger', ADMIN_USER: 'neutral', REDIRECT: 'warning',
+    INVENTORY: 'warning', CUSTOMER: 'neutral', SITE_SETTING: 'danger',
+    MEDIA: 'neutral', MENU: 'neutral', CONTENT: 'neutral', ADMIN_ROLE: 'danger', ADMIN_USER: 'neutral', REDIRECT: 'warning',
   }
   const moduleTone = TONE_MAP[log.resourceType] || 'neutral'
   const moduleLabel = t(`auditLog.module.${log.resourceType}`, { defaultValue: log.resourceType || t('auditLog.module.OTHER') })

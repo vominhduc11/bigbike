@@ -195,6 +195,7 @@ public class AdminCatalogMutationService {
                 .orElseThrow(() -> new NotFoundException("Product not found."));
         String previousSlug = entity.getSlug();
         String previousSlugEn = entity.getSlugEn();
+        String before = productJson(entity);
 
         List<ApiErrorDetail> errors = new ArrayList<>();
         CategoryEntity category = catalogRequestValidator.validateAndResolveCategory(request.getCategoryId(), false, errors);
@@ -207,7 +208,7 @@ public class AdminCatalogMutationService {
         entity.setUpdatedAt(Instant.now());
         applyProductPatch(entity, request, slug, category, brand, false);
         productJpaRepository.save(entity);
-        auditLog("PRODUCT_UPDATED", "PRODUCT", adminId, null, productJson(entity));
+        auditLog("PRODUCT_UPDATED", "PRODUCT", adminId, before, productJson(entity));
         if (!previousSlug.equals(entity.getSlug())) {
             autoCreateSlugRedirect("/product/" + previousSlug, "/product/" + entity.getSlug());
         }
@@ -224,6 +225,7 @@ public class AdminCatalogMutationService {
 
         ProductEntity entity = productJpaRepository.findById(productId)
                 .orElseThrow(() -> new NotFoundException("Product not found."));
+        String before = productJson(entity);
 
         List<ApiErrorDetail> errors = new ArrayList<>();
         if (publishStatus == null) {
@@ -247,7 +249,7 @@ public class AdminCatalogMutationService {
         entity.setPublishStatus(publishStatus);
         entity.setUpdatedAt(Instant.now());
         productJpaRepository.save(entity);
-        auditLog("PRODUCT_PUBLISH_STATUS_UPDATED", "PRODUCT", adminId, null, productJson(entity));
+        auditLog("PRODUCT_PUBLISH_STATUS_UPDATED", "PRODUCT", adminId, before, productJson(entity));
         revalidateProduct(entity, null);
 
         return catalogReadRepository.findProductById(entity.getId())
@@ -277,10 +279,11 @@ public class AdminCatalogMutationService {
                 entity.getPublishStatus(), PublishStatus.TRASH, "publishStatus", errors);
         AdminMutationValidators.throwIfErrors(errors);
 
+        String before = productJson(entity);
         entity.setPublishStatus(PublishStatus.TRASH);
         entity.setUpdatedAt(Instant.now());
         productJpaRepository.save(entity);
-        auditLog("PRODUCT_SOFT_DELETED", "PRODUCT", adminId, null, productJson(entity));
+        auditLog("PRODUCT_SOFT_DELETED", "PRODUCT", adminId, before, productJson(entity));
         revalidateProduct(entity, null);
 
         return catalogReadRepository.findProductById(entity.getId())
@@ -309,10 +312,11 @@ public class AdminCatalogMutationService {
         }
         AdminMutationValidators.throwIfErrors(errors);
 
+        String before = productJson(entity);
         entity.setPublishStatus(PublishStatus.DRAFT);
         entity.setUpdatedAt(Instant.now());
         productJpaRepository.save(entity);
-        auditLog("PRODUCT_RESTORED", "PRODUCT", adminId, null, productJson(entity));
+        auditLog("PRODUCT_RESTORED", "PRODUCT", adminId, before, productJson(entity));
         revalidateProduct(entity, null);
 
         return catalogReadRepository.findProductById(entity.getId())
@@ -376,6 +380,7 @@ public class AdminCatalogMutationService {
 
         String previousSlug = entity.getSlug();
         String previousSlugEn = entity.getSlugEn();
+        String before = categoryJson(entity);
 
         List<ApiErrorDetail> errors = new ArrayList<>();
         String slug = catalogRequestValidator.validateCategoryRequest(request, entity, false, errors);
@@ -389,7 +394,7 @@ public class AdminCatalogMutationService {
         entity.setUpdatedAt(Instant.now());
         applyCategoryPatch(entity, request, slug, parent, false);
         categoryJpaRepository.save(entity);
-        auditLog("CATEGORY_UPDATED", "CATEGORY", adminId, null, categoryJson(entity));
+        auditLog("CATEGORY_UPDATED", "CATEGORY", adminId, before, categoryJson(entity));
         if (!previousSlug.equals(entity.getSlug())) {
             autoCreateSlugRedirect("/danh-muc-san-pham/" + previousSlug, "/danh-muc-san-pham/" + entity.getSlug());
         }
@@ -437,6 +442,7 @@ public class AdminCatalogMutationService {
 
         String previousSlug = entity.getSlug();
         String previousSlugEn = entity.getSlugEn();
+        String before = brandJson(entity);
 
         List<ApiErrorDetail> errors = new ArrayList<>();
         String slug = catalogRequestValidator.validateBrandRequest(request, entity, false, errors);
@@ -445,7 +451,7 @@ public class AdminCatalogMutationService {
         entity.setUpdatedAt(Instant.now());
         applyBrandPatch(entity, request, slug, false);
         brandJpaRepository.save(entity);
-        auditLog("BRAND_UPDATED", "BRAND", adminId, null, brandJson(entity));
+        auditLog("BRAND_UPDATED", "BRAND", adminId, before, brandJson(entity));
         if (!previousSlug.equals(entity.getSlug())) {
             autoCreateSlugRedirect("/brands/" + previousSlug, "/brands/" + entity.getSlug());
         }
@@ -469,10 +475,11 @@ public class AdminCatalogMutationService {
             return catalogReadRepository.findBrandById(entity.getId())
                     .orElseThrow(() -> new NotFoundException("Brand not found."));
         }
+        String before = brandJson(entity);
         entity.setVisible(false);
         entity.setUpdatedAt(Instant.now());
         brandJpaRepository.save(entity);
-        auditLog("BRAND_SOFT_DELETED", "BRAND", adminId, null, brandJson(entity));
+        auditLog("BRAND_SOFT_DELETED", "BRAND", adminId, before, brandJson(entity));
         revalidateBrand(entity, null);
         return catalogReadRepository.findBrandById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Brand not found."));
@@ -493,10 +500,11 @@ public class AdminCatalogMutationService {
             return catalogReadRepository.findBrandById(entity.getId())
                     .orElseThrow(() -> new NotFoundException("Brand not found."));
         }
+        String before = brandJson(entity);
         entity.setVisible(true);
         entity.setUpdatedAt(Instant.now());
         brandJpaRepository.save(entity);
-        auditLog("BRAND_RESTORED", "BRAND", adminId, null, brandJson(entity));
+        auditLog("BRAND_RESTORED", "BRAND", adminId, before, brandJson(entity));
         revalidateBrand(entity, null);
         return catalogReadRepository.findBrandById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Brand not found."));
@@ -590,30 +598,55 @@ public class AdminCatalogMutationService {
     }
 
     private static String productJson(ProductEntity e) {
-        return writeAuditJson(Map.of(
-                "id", nullSafe(e.getId()),
-                "name", nullSafe(e.getName()),
-                "slug", nullSafe(e.getSlug()),
-                "publishStatus", e.getPublishStatus() == null ? "" : e.getPublishStatus().toString()
-        ));
+        Map<String, Object> fields = new java.util.LinkedHashMap<>();
+        fields.put("id", nullSafe(e.getId()));
+        fields.put("sku", e.getSku());
+        fields.put("name", nullSafe(e.getName()));
+        fields.put("slug", nullSafe(e.getSlug()));
+        fields.put("publishStatus", e.getPublishStatus() == null ? "" : e.getPublishStatus().toString());
+        fields.put("brandId", e.getBrand() == null ? null : e.getBrand().getId());
+        fields.put("categoryId", e.getCategory() == null ? null : e.getCategory().getId());
+        fields.put("shortDescription", e.getShortDescription());
+        fields.put("description", e.getDescription());
+        fields.put("imageUrl", e.getImageUrl());
+        fields.put("retailPrice", e.getRetailPrice());
+        fields.put("compareAtPrice", e.getCompareAtPrice());
+        fields.put("salePrice", e.getSalePrice());
+        fields.put("costPrice", e.getCostPrice());
+        fields.put("stockState", e.getStockState() == null ? null : e.getStockState().toString());
+        fields.put("stockQuantity", e.getStockQuantity());
+        fields.put("forceOutOfStock", e.getForceOutOfStock());
+        return writeAuditJson(fields);
     }
 
     private static String categoryJson(CategoryEntity e) {
-        return writeAuditJson(Map.of(
-                "id", nullSafe(e.getId()),
-                "name", nullSafe(e.getName()),
-                "slug", nullSafe(e.getSlug()),
-                "visible", e.isVisible()
-        ));
+        Map<String, Object> fields = new java.util.LinkedHashMap<>();
+        fields.put("id", nullSafe(e.getId()));
+        fields.put("name", nullSafe(e.getName()));
+        fields.put("slug", nullSafe(e.getSlug()));
+        fields.put("visible", e.isVisible());
+        fields.put("description", e.getDescription());
+        fields.put("introContent", e.getIntroContent());
+        fields.put("imageUrl", e.getImageUrl());
+        fields.put("iconUrl", e.getIconUrl());
+        fields.put("menuIconUrl", e.getMenuIconUrl());
+        fields.put("bannerUrl", e.getBannerUrl());
+        fields.put("parentId", e.getParent() == null ? null : e.getParent().getId());
+        fields.put("sortOrder", e.getSortOrder());
+        fields.put("showOnHomepage", e.getShowOnHomepage());
+        return writeAuditJson(fields);
     }
 
     private static String brandJson(BrandEntity e) {
-        return writeAuditJson(Map.of(
-                "id", nullSafe(e.getId()),
-                "name", nullSafe(e.getName()),
-                "slug", nullSafe(e.getSlug()),
-                "visible", e.isVisible()
-        ));
+        Map<String, Object> fields = new java.util.LinkedHashMap<>();
+        fields.put("id", nullSafe(e.getId()));
+        fields.put("name", nullSafe(e.getName()));
+        fields.put("slug", nullSafe(e.getSlug()));
+        fields.put("visible", e.isVisible());
+        fields.put("description", e.getDescription());
+        fields.put("logoUrl", e.getLogoUrl());
+        fields.put("bannerUrl", e.getBannerUrl());
+        return writeAuditJson(fields);
     }
 
     private static String writeAuditJson(Map<String, Object> fields) {
@@ -1299,10 +1332,11 @@ public class AdminCatalogMutationService {
 
         List<CategoryEntity> subtree = collectCategorySubtree(entity);
         for (CategoryEntity node : subtree) {
+            String before = categoryJson(node);
             node.setDeleted(true);
             node.setUpdatedAt(Instant.now());
             categoryJpaRepository.save(node);
-            auditLog("CATEGORY_SOFT_DELETED", "CATEGORY", adminId, null, categoryJson(node));
+            auditLog("CATEGORY_SOFT_DELETED", "CATEGORY", adminId, before, categoryJson(node));
         }
 
         revalidateCategory(entity, null);
@@ -1320,10 +1354,11 @@ public class AdminCatalogMutationService {
 
         List<CategoryEntity> subtree = collectCategorySubtree(entity);
         for (CategoryEntity node : subtree) {
+            String before = categoryJson(node);
             node.setDeleted(false);
             node.setUpdatedAt(Instant.now());
             categoryJpaRepository.save(node);
-            auditLog("CATEGORY_RESTORED", "CATEGORY", adminId, null, categoryJson(node));
+            auditLog("CATEGORY_RESTORED", "CATEGORY", adminId, before, categoryJson(node));
         }
 
         revalidateCategory(entity, null);
@@ -1469,7 +1504,8 @@ public class AdminCatalogMutationService {
         }
 
         productJpaRepository.saveAll(allEntities);
-        auditLog("PRODUCT_HOMEPAGE_BLOCKS_SET", "PRODUCT", adminId, null, null);
+        auditLog("PRODUCT_HOMEPAGE_BLOCKS_SET", "PRODUCT", adminId, null,
+                writeAuditJson(Map.of("featuredProductIds", featuredIds)));
         webRevalidationService.revalidate("products");
 
         List<Product> result = new ArrayList<>();

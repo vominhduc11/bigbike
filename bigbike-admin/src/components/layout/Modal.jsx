@@ -11,13 +11,14 @@ export function Modal({
   actions,
   wide = false,
   closeLabel = 'Đóng',
+  contentClassName,
 }) {
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose?.() }}>
       <DialogContent
         showClose={false}
         aria-describedby={undefined}
-        className={cn('p-0 flex flex-col max-h-[90vh]', wide ? 'max-w-3xl' : 'max-w-lg')}
+        className={cn('p-0 flex flex-col max-h-[90vh]', contentClassName || (wide ? 'max-w-3xl' : 'max-w-lg'))}
       >
         <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-border shrink-0">
           <DialogTitle className="text-base font-semibold font-body text-foreground leading-snug">

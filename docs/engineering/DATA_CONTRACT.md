@@ -29,21 +29,31 @@ Evidence:
 - `AdminMediaService.java`
 - product/content DTO mappings in repo
 
-### Media dimension validation — minimum upload size per display location (2026-07-03 audit)
+### Media dimension validation — ratio enforced, minimum size advisory only (2026-07-04, thay thế audit 2026-07-03)
 
-Business rule: mọi ảnh/video admin gán vào một vị trí hiển thị cụ thể phải đạt kích thước tối
-thiểu VÀ (nếu vị trí đó ép khung) đúng tỉ lệ — không đạt thì **bị từ chối, không lưu được**
-(trước đây chỉ cảnh báo, không chặn).
+Business rule (đổi 2026-07-04): mọi ảnh/video admin gán vào một vị trí hiển thị cụ thể **chỉ
+cần đúng tỉ lệ** (nếu vị trí đó ép khung, tức `ratio` khác `null`) — không đạt tỉ lệ thì **bị từ
+chối, không lưu được**. **Không còn chặn theo kích thước tối thiểu** (`minW`/`minH`) ở lớp
+client theo từng vị trí nữa; các số `idealW`/`idealH`/`minW`/`minH` trong `IMAGE_RECO` giờ chỉ
+còn vai trò **khuyến nghị hiển thị** cho admin (gợi ý nên dùng ảnh nét cỡ nào), không dùng để
+chặn lưu. Vị trí có `ratio: null` (`logo`, `squareMedium`, `illustration`, `general`) do đó
+**không còn bất kỳ điều kiện chặn nào ở client** — chỉ còn sàn kích thước chung 500×400 ở server
+(bullet 2 dưới) áp dụng đồng loạt bất kể vị trí.
 
-**Phương pháp:** đo khung hiển thị THẬT bằng cách đọc trực tiếp component + CSS của
-`bigbike-web` (desktop tham chiếu 1920×1080, mobile 390×844) — không suy đoán. Ngưỡng chặn
-(`minW`/`minH`) = **2 × khung hiển thị thật** (hệ số retina). Vị trí dùng chung 1 ảnh cho nhiều
-ngữ cảnh (vd banner vừa làm nền desktop vừa mobile qua `background-size:cover`) → lấy ngữ cảnh
-đòi hỏi độ phân giải cao nhất. Nguồn chuẩn duy nhất (single source of truth) là
+**Lịch sử:** trước 2026-07-03 chỉ cảnh báo (không chặn) → audit 2026-07-03 đổi thành chặn cả
+kích thước tối thiểu VÀ tỉ lệ → **2026-07-04 bỏ chặn kích thước tối thiểu ở client, chỉ còn
+chặn tỉ lệ** (kích thước xuống hàng khuyến nghị).
+
+**Phương pháp (không đổi):** đo khung hiển thị THẬT bằng cách đọc trực tiếp component + CSS của
+`bigbike-web` (desktop tham chiếu 1920×1080, mobile 390×844) — không suy đoán. Kích thước
+khuyến nghị (`idealW`/`idealH`, trùng số với `minW`/`minH` cũ) = **2 × khung hiển thị thật** (hệ
+số retina) — số này KHÔNG còn là ngưỡng chặn, chỉ để hiển thị gợi ý. Vị trí dùng chung 1 ảnh cho
+nhiều ngữ cảnh (vd banner vừa làm nền desktop vừa mobile qua `background-size:cover`) → lấy ngữ
+cảnh đòi hỏi độ phân giải cao nhất. Nguồn chuẩn duy nhất (single source of truth) là
 `bigbike-admin/src/lib/imageRecommendations.js` (`IMAGE_RECO`) — bảng dưới đây là ảnh chụp lúc
 audit, sửa code thì sửa cả bảng này.
 
-| Spec key (`IMAGE_RECO`) | Vị trí dùng | Khung hiển thị thật (1×, evidence) | Ngưỡng chặn (2×) | Tỉ lệ ép |
+| Spec key (`IMAGE_RECO`) | Vị trí dùng | Khung hiển thị thật (1×, evidence) | Kích thước khuyến nghị (2×, không chặn) | Tỉ lệ ép (vẫn chặn) |
 |---|---|---|---|---|
 | `productImage` | Ảnh đại diện + gallery sản phẩm (PDP) | Khung vuông tối đa 903×903px (desktop ≥1920px) — kính lúp zoom 2.5× cần nguồn ≥1300×1300 nhưng đã nằm trong 2×903 | 1800×1800 | 1:1 |
 | `categoryImage` | Ảnh danh mục (lưới danh mục trang chủ) | Cột lưới ~255-290px (`HomeCategoryGrid.tsx`, không ép aspect-ratio bằng CSS) | 520×520 | 1:1 (quy ước để lưới thẳng hàng, không phải CSS ép) |
@@ -65,10 +75,10 @@ audit, sửa code thì sửa cả bảng này.
 
 **Chặn ở đâu:**
 
-1. **Client (bigbike-admin, chặn chính xác theo từng vị trí):** `MediaPickerModal`/`VideoPickerModal` nhận prop `recommend` (spec ở trên) — đo kích thước ảnh/video vừa chọn (`useMediaValidation`), disable nút xác nhận + báo lỗi nếu không đạt (`tooSmall` và/hoặc `wrongRatio` đều chặn, không còn cơ chế cảnh báo-rồi-cho-qua). Ô upload luôn hiện dòng "Yêu cầu tối thiểu WxHpx" kể cả khi chưa chọn ảnh.
-2. **Server (`AdminMediaService.java`, phòng vệ chung):** từ chối MỌI ảnh raster (jpeg/png/gif — SVG và WEBP không đo được kích thước do giới hạn `ImageIO`) nhỏ hơn **500×400px** (= giá trị `minW`/`minH` NHỎ NHẤT trong toàn bảng trên, không chặn nhầm vị trí hợp lệ nào) — chặn TRƯỚC khi ghi vào MinIO để không để lại file rác. Không enforce tỉ lệ ở server (chỉ client biết ảnh dùng cho vị trí nào).
+1. **Client (bigbike-admin, chặn theo tỉ lệ, không còn chặn theo kích thước):** `MediaPickerModal`/`VideoPickerModal` nhận prop `recommend` (spec ở trên) — đo kích thước ảnh/video vừa chọn (`useMediaValidation`), disable nút xác nhận + báo lỗi nếu sai tỉ lệ (`wrongRatio`) khi `spec.ratio` khác `null`. Không còn reason `tooSmall` — ảnh/video đúng tỉ lệ nhưng nhỏ hơn số khuyến nghị vẫn được chấp nhận. Ô upload hiện dòng khuyến nghị kích thước (không dùng từ "yêu cầu"/"bắt buộc" cho phần size) + nêu tỉ lệ bắt buộc nếu vị trí đó ép khung.
+2. **Server (`AdminMediaService.java`, phòng vệ chung, không đổi):** từ chối MỌI ảnh raster (jpeg/png/gif — SVG và WEBP không đo được kích thước do giới hạn `ImageIO`) nhỏ hơn **500×400px** — chặn TRƯỚC khi ghi vào MinIO để không để lại file rác. Đây là sàn duy nhất còn lại theo kích thước trong toàn hệ thống (không phân biệt vị trí, không có khái niệm tỉ lệ). Không enforce tỉ lệ ở server (chỉ client biết ảnh dùng cho vị trí nào).
 
-Status: `CONFIRMED_FROM_CODE` (đo trực tiếp component bigbike-web, xem evidence)
+Status: `CONFIRMED_FROM_CODE` (đo trực tiếp component bigbike-web + code hiện tại, xem evidence)
 
 Evidence:
 
@@ -772,6 +782,7 @@ dịch khóa theo id con sẽ bị mồ côi.
 | `name` | `name_en` | `VARCHAR(255)` |
 | `short_description` | `short_description_en` | `TEXT` |
 | `description` | `description_en` | `TEXT` |
+| `size_guide` | `size_guide_en` | `TEXT` |
 | `content_bottom` | `content_bottom_en` | `TEXT` |
 | `promotion_content` | `promotion_content_en` | `TEXT` |
 | `installation_guide` | `installation_guide_en` | `TEXT` |
@@ -806,6 +817,11 @@ detail). Mặc định `vi`; chỉ detail trả cả 2 bản để soạn thảo
 Status: `CONFIRMED_FROM_CODE` — `ProductEntity`, `ProductSpecificationEntity`,
 `ProductFaqEntity` (các trường `*En`), `ProductTranslations` domain record,
 `JpaCatalogReadRepository` (resolve locale list + detail), migration `V136`.
+
+**`size_guide_en` thêm ở `V316__add_product_size_guide_en.sql`** (2026-07-04, cùng đợt tính năng nhập
+sản phẩm hàng loạt) — trước đó cột `size_guide` không có bản tiếng Anh, dù mẫu file nhập/xuất sản phẩm
+có cột riêng cho bảng size tiếng Anh. `ProductTranslationRequest.ProductContentRequest.sizeGuide` (field
+không hậu tố `En` vì đã nằm trong khối `.en`) ghi qua `ProductFieldApplier.applyTranslations`.
 
 ### Category bilingual content — English columns (V137)
 

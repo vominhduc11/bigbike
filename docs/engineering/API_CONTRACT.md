@@ -650,6 +650,31 @@ Status: `CONFIRMED_FROM_CODE`
 
 Evidence: `AdminCatalogController.previewProduct`, `AdminCatalogMutationService.previewProduct` (transient build + no `save`), `JpaCatalogReadRepository.mapPreviewProduct` (public wrapper over `toDomain(entity, true, locale)`), `AdminCatalogMutationService.applyProductPatch` (pure in-memory entity build; its sole repo touch — `resolveRelatedProducts` — is a read).
 
+### Bulk product import — CSV/JSON (V2026-07-04)
+
+Lets a shop owner create/update many products at once from a file (typically ChatGPT-generated) instead of one-by-one via the form. Two-step flow: validate (dry-run report) → commit (actually saves).
+
+| Aspect | Value |
+|---|---|
+| Permission | `products.update` (same domain as every other product-write endpoint — see `PERMISSION_MATRIX.md` "Catalog / Product permissions") |
+| `POST /api/v1/admin/products/import/validate` | multipart `file` + `type` (`csv`\|`json`). Parses + resolves references + runs the same validation `POST /api/v1/admin/products` would, but never persists. Returns `ImportReportResponse`. |
+| `POST /api/v1/admin/products/import/commit` | Same multipart contract (client re-sends the identical file it already validated — stateless, no server-side temp storage between calls) + optional `skipRowKeys` (comma-separated) to exclude rows the admin unchecked in the review table. For each row that still validates clean, calls the real `createProduct`/`updateProduct` directly — zero drift from the single-product API. Each row commits (or fails) independently; one bad row never rolls back rows already saved earlier in the same file. |
+| `GET /api/v1/admin/products/import/export` | Round-trip export: the full 46-column template shape (one row per product/variant, category/brand emitted as slug) for "download current catalog → edit → re-import." Deliberately separate from `GET /api/v1/admin/reports/products/export` (13-column reporting overview, gated by `reports.export` instead). |
+
+**CSV row shape** mirrors `product-import-template.csv`: one "SẢN PHẨM CHÍNH" row per product plus zero or more "BIẾN THỂ" child rows grouped by an internal file-local key column — see the template file itself for the full 46-column layout.
+
+**JSON row shape** is `UpsertProductRequest` byte-for-byte, deserialized directly (no separate import DTO) — **except** `categoryId`/`brandId` are interpreted as **slugs**, not literal database IDs, identically to the CSV path (neither a shop owner nor an LLM can know real internal IDs).
+
+**Upsert matching:** product-level `sku` first (fallback `slug`) — more than one product sharing the same `sku` is an ambiguous-row error rather than a guess, since `products.sku` has no DB uniqueness (`PRODUCT_RULE_SKU_001` only covers variant SKU). **Variants are matched by SKU** (falling back to a file-supplied variant-id hint only after verifying it belongs to the target product) before the existing full-replace-by-id `applyVariants` logic runs — this preserves each variant's real database id (and therefore its `stock_movements` history and `quantityOnHand`) across re-imports of an unchanged catalog.
+
+**Validation note:** `validateImport` calls `CatalogRequestValidator.validateAndResolveCategory`/`validateAndResolveBrand`/`validateProductRequest` directly with `preview=false` — **not** `previewProduct` — because the preview/dry-run mode deliberately skips the English-name-required check and cross-product SKU/slug uniqueness (see "Product preview" above), which would under-report errors relative to what a real commit enforces.
+
+**Publish status:** new products always start `DRAFT` regardless of the file. On update, the file's status column passes through *except* it can never resolve to `PUBLISHED` (or a legacy/unrecognized value) — `updateProduct` never runs the publish-readiness gate (only the dedicated `PATCH /products/{id}/publish` endpoint does), so honoring `PUBLISHED` from a file would let an incomplete product go live with zero field-completeness checking.
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence: `AdminProductImportController.java`, `ProductImportService.java`, `ApiErrorDetail`/`ImportRowResult`/`ImportReportResponse`, `ProductJpaRepository.findAllBySkuIgnoreCase`, `ProductVariantJpaRepository.findBySkuIgnoreCase`, `V30__add_inventory_tracking.sql` (`stock_movements` cascade). See `BUSINESS_RULES.md` `PRODUCT_RULE_009`.
+
 ### Product upsert — single category only
 
 A product belongs to exactly one category, written via `categoryId`. The legacy `product_category_map` M:N side table was dropped in migration `V110__drop_product_category_map.sql` (2026-05-14). The `categories[]` array in product responses now always contains exactly the primary category, preserved for API compatibility.
@@ -1155,25 +1180,38 @@ Trang `/lien-he` là **trang tĩnh hoàn toàn**: bố cục, nhãn, tiêu đề
 
 | Endpoint | Permission | Current behavior | Status | Evidence |
 |---|---|---|---|---|
-| `GET /api/v1/admin/audit-logs` | `audit-logs.read` | Paginated list (page/size), filterable by actorType, actorId, resourceType, resourceId, action, q (matches action text), from/to (LocalDate). Enriches actor display name and resource code. | `CONFIRMED_FROM_CODE` | `AdminAuditLogController.java`, `AdminAuditLogService.java` |
+| `GET /api/v1/admin/audit-logs` | `audit-logs.read` | Paginated list (page/size), filterable by actorType, actorId, resourceType, resourceId, action, q, from/to (LocalDate). Sorted by createdAt desc, id desc (secondary key keeps pagination stable when a batch write shares one timestamp). Enriches actor display name/email and resource display name/code. | `CONFIRMED_FROM_CODE` | `AdminAuditLogController.java`, `AdminAuditLogService.java` |
 
-**Resource types written by backend** (as of P0 fix):
+**Search (`q`) — fixed 2026-07-04, was action-only.** Case-insensitive match across: `action`, the raw `beforeData`/`afterData` JSON (covers product/category/brand/content names, SKUs, slugs — anything the mutation service already recorded), the acting admin's `displayName`/`email` (subquery on `admin_users`), the order number for `ORDER`-resource rows (subquery on `orders`), and the customer's `displayName`/`email` for `CUSTOMER`-resource rows (subquery on `customers`). Matches what `auditLog.filterSearchPlaceholder` (vi.json/en.json) promises: "Tìm mã đơn, sản phẩm, khách hàng, người thao tác…". `action` param kept for backward compatibility, `q` takes precedence. `CONFIRMED_FROM_CODE` — `AdminAuditLogService.buildSearchPredicate`.
+
+**Malformed filters → 400 — fixed 2026-07-04, was silently ignored.** `actorId`, `resourceId` (must parse as UUID) and `from`/`to` (must parse as `YYYY-MM-DD` or ISO instant) throw `ValidationException` (400, `INVALID_UUID_FORMAT` / `INVALID_DATE_FORMAT`) instead of being dropped and silently returning the unfiltered page. Mirrors `AdminReportController.parseDate`. `CONFIRMED_FROM_CODE` — `AdminAuditLogService.parseUuidOrThrow/parseFromDate/parseToDate`.
+
+**Resource display name enrichment — fixed 2026-07-04, was ORDER/REVIEW only.** `ORDER` resolves via a batch join on `orders.order_number` (resourceId is real UUID); `REVIEW` parses `productName`/review id out of its own JSON. Every other type below pulls its display name straight out of the already-recorded `afterData` (fallback `beforeData`) JSON — no DB join, since most of these entities have String (non-UUID) ids. See `AdminAuditLogService.RESOURCE_NAME_FIELDS` for the exact field per type. `INVENTORY` has no natural display name (only variantId/productId codes) and stays unenriched.
+
+**Resource types written by backend:**
 - `ORDER` — order lifecycle events (AdminOrderService, PosOrderService)
-- `PRODUCT` — create/update/publish/soft-delete/restore (AdminCatalogMutationService)
-- `CATEGORY` — create/update/soft-delete (AdminCatalogMutationService)
-- `BRAND` — create/update/soft-delete (AdminCatalogMutationService)
+- `PRODUCT` — create/update/publish/soft-delete/restore (AdminCatalogMutationService). Before/after snapshot (fixed 2026-07-04, was name/slug/status only) now includes sku, brandId, categoryId, shortDescription, description, imageUrl, retailPrice, compareAtPrice, salePrice, costPrice, stockState, stockQuantity, forceOutOfStock — captured **before** the patch is applied (previously several call sites passed `before = null` despite the entity already being loaded).
+- `CATEGORY` — create/update/soft-delete (AdminCatalogMutationService). Snapshot (fixed 2026-07-04) adds description, introContent, imageUrl, iconUrl, menuIconUrl, bannerUrl, parentId, sortOrder, showOnHomepage; before-snapshot bug fixed same as PRODUCT.
+- `BRAND` — create/update/soft-delete (AdminCatalogMutationService). Snapshot (fixed 2026-07-04) adds description, logoUrl, bannerUrl; before-snapshot bug fixed same as PRODUCT.
 - `INVENTORY` — stock adjustments (AdminInventoryService)
-- `CONTENT` — article/page create/update/delete (AdminContentMutationService)
+- `CONTENT` — article create/update/soft-delete/restore/hard-delete (AdminContentMutationService). Snapshot (fixed 2026-07-04) adds excerpt, coverImageUrl, categoryId; before-snapshot bug fixed on update/soft-delete/restore.
 - `CUSTOMER` — AdminCustomerService
 - `MEDIA` — AdminMediaService
 - `MENU` / `MENU_ITEM` — AdminMenuService
 - `REDIRECT` — AdminRedirectService
 - `SITE_SETTING` — AdminSettingsService
 - `REVIEW` — AdminReviewService
-- `ADMIN_USER` — AdminAdminUsersService
+- `ADMIN_USER` — AdminAdminUsersService. `ADMIN_USER_UPDATED` split 2026-07-04 into `ADMIN_USER_ROLE_CHANGED`, `ADMIN_USER_DISABLED`, `ADMIN_USER_SUSPENDED`, `ADMIN_USER_REACTIVATED` (one entry per changed dimension) — `ADMIN_USER_UPDATED` remains for plain displayName/password edits or a no-op patch.
 - `ADMIN_ROLE` — AdminRoleService (fixed in V76; previously erroneously `ADMIN_ROLE:<roleId>`)
+- `ADMIN_AUTH` — AdminAuthService: `ADMIN_LOGIN_SUCCESS`/`ADMIN_LOGIN_FAILED`/`ADMIN_LOGOUT`/`ADMIN_ACCOUNT_LOCKED`. `ipAddress` fixed 2026-07-04 to resolve via `ClientIpResolver` (reads `X-Forwarded-For` from a trusted proxy) instead of raw `request.getRemoteAddr()`, which behind the reverse proxy always returned the Docker-internal address.
+- `SLIDER` — AdminSliderService (home/category slider create/update/delete/reorder)
+- `HOME_VIDEO` — AdminHomeVideoService (homepage video create/update/delete/reorder)
+- `REPORT` — `REPORT_EXPORT_CREATED` on every `/api/v1/admin/reports/*/export` call (AdminReportController)
+- `MEDIA_FOLDER` — added 2026-07-04, previously unaudited (AdminMediaFolderService: folder create/update/delete)
+- `ATTRIBUTE` — added 2026-07-04, previously unaudited (AdminAttributeService: attribute + attribute-value create/update/delete)
+- `HOME_HIGHLIGHT` — added 2026-07-04, previously unaudited (HomeHighlightsService: single `HOME_HIGHLIGHTS_SET` action per full-replace save, before/after = the whole slot list)
 
-**Note:** `resource_id` column is `uuid` type. For entities with String IDs (products, categories, brands, content, roles), `resource_id = null` and the entity identifier is embedded in `afterData`/`beforeData` JSON.
+**Note:** `resource_id` column is `uuid` type. For entities with String IDs (products, categories, brands, content, roles, sliders, home videos, attributes), `resource_id = null` and the entity identifier is embedded in `afterData`/`beforeData` JSON.
 
 **Write guarantee (non-blocking):** All audit-log writes go through the central `AuditLogWriter`, which persists in a separate transaction (`@Transactional(REQUIRES_NEW)`) wrapped in try/catch. An audit-write failure is logged and swallowed — it never rolls back or breaks the originating business action. `createdAt` is auto-set if a caller leaves it null. In the mock/read-only profile (no JPA repository) the write is a silent no-op. `CONFIRMED_FROM_CODE` — `AuditLogWriter.java`, `AuditLogPersister.java`.
 

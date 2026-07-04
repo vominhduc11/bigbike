@@ -454,6 +454,33 @@ export async function permanentDeleteProduct(productId) {
   await requestJson(`/admin/products/${productId}/permanent`, { method: 'DELETE' })
 }
 
+// Bulk import products from file (CSV/JSON) — validate = dry-run report, no persistence;
+// commit = same file re-sent, actually saves rows that still validate clean.
+export async function importProductsValidate(file, type) {
+  const form = new FormData()
+  form.append('file', file)
+  const payload = await requestJson('/admin/products/import/validate', {
+    method: 'POST',
+    query: { type },
+    body: form,
+  })
+  return payload?.data
+}
+
+export async function importProductsCommit(file, type, skipRowKeys) {
+  const form = new FormData()
+  form.append('file', file)
+  const payload = await requestJson('/admin/products/import/commit', {
+    method: 'POST',
+    query: { type, skipRowKeys: skipRowKeys?.length ? skipRowKeys.join(',') : undefined },
+    body: form,
+  })
+  return payload?.data
+}
+
+export async function exportProductImportTemplate() {
+  return fetchCsvBlob('/admin/products/import/export', {}, 'bigbike-products.csv')
+}
 
 export async function fetchCategories(query) {
   try {

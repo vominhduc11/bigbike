@@ -56,9 +56,10 @@ export function useVideoDimensions(url) {
   return dims
 }
 
-// Đo kích thước thật của một ảnh/video rồi so với spec khuyến nghị (imageRecommendations.js).
-// Dùng để CHẶN chọn/lưu ở picker — không chỉ cảnh báo. `status` là trạng thái đo kích thước
-// ('idle'|'loading'|'loaded'|'error'); `blocked` chỉ có ý nghĩa khi status === 'loaded'.
+// Đo kích thước thật của một ảnh/video rồi so TỈ LỆ với spec khuyến nghị (imageRecommendations.js)
+// — kích thước không còn là điều kiện chặn, chỉ còn hiển thị dạng gợi ý (MediaRequirementHint).
+// `status` là trạng thái đo kích thước ('idle'|'loading'|'loaded'|'error'); `blocked` chỉ có ý
+// nghĩa khi status === 'loaded' và giờ chỉ true khi sai tỉ lệ (wrongRatio).
 export function useMediaValidation(kind, url, recommend) {
   const shouldCheck = Boolean(recommend && url)
   const imageDims = useImageDimensions(kind !== 'video' && shouldCheck ? url : '')

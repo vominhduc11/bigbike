@@ -228,26 +228,54 @@ public class AdminAdminUsersService {
         entity.setUpdatedAt(now);
         AdminUserEntity saved = adminUserRepo.save(entity);
 
-        // --- Audit: record which fields changed; never log raw password ---
-        StringBuilder beforeSb = new StringBuilder("{");
-        StringBuilder afterSb = new StringBuilder("{");
-        beforeSb.append("\"role\":\"").append(escapeJson(beforeRole)).append("\"");
-        beforeSb.append(",\"status\":\"").append(escapeJson(beforeStatus)).append("\"");
-        afterSb.append("\"role\":\"").append(escapeJson(saved.getRole())).append("\"");
-        afterSb.append(",\"status\":\"").append(escapeJson(saved.getStatus())).append("\"");
+        // --- Audit: one entry per distinct kind of change, so "vô hiệu hoá / tạm khoá /
+        // đổi vai trò" show up as their own action instead of a generic ADMIN_USER_UPDATED
+        // that's hard to tell apart when scanning the log. Never log raw password.
+        boolean roleChanged = !Objects.equals(beforeRole, saved.getRole());
+        boolean statusChanged = !Objects.equals(beforeStatus, saved.getStatus());
+        boolean displayNameChanged = !Objects.equals(beforeDisplayName, saved.getDisplayName());
+        boolean anyAuditWritten = false;
 
-        if (!Objects.equals(beforeDisplayName, saved.getDisplayName())) {
-            beforeSb.append(",\"displayName\":\"").append(escapeJson(beforeDisplayName)).append("\"");
-            afterSb.append(",\"displayName\":\"").append(escapeJson(saved.getDisplayName())).append("\"");
+        if (roleChanged) {
+            auditLogWriter.save(buildAudit(actorId, clientIp, userAgent, "ADMIN_USER_ROLE_CHANGED", id,
+                    "{\"role\":\"" + escapeJson(beforeRole) + "\"}",
+                    "{\"role\":\"" + escapeJson(saved.getRole()) + "\"}", now));
+            anyAuditWritten = true;
         }
-        if (passwordChanged) {
-            afterSb.append(",\"passwordChanged\":true");
+        if (statusChanged) {
+            String statusAction = switch (saved.getStatus()) {
+                case "DISABLED" -> "ADMIN_USER_DISABLED";
+                case "SUSPENDED" -> "ADMIN_USER_SUSPENDED";
+                default -> "ADMIN_USER_REACTIVATED";
+            };
+            auditLogWriter.save(buildAudit(actorId, clientIp, userAgent, statusAction, id,
+                    "{\"status\":\"" + escapeJson(beforeStatus) + "\"}",
+                    "{\"status\":\"" + escapeJson(saved.getStatus()) + "\"}", now));
+            anyAuditWritten = true;
         }
-        beforeSb.append("}");
-        afterSb.append("}");
-
-        auditLogWriter.save(buildAudit(actorId, clientIp, userAgent, "ADMIN_USER_UPDATED", id,
-                beforeSb.toString(), afterSb.toString(), now));
+        if (displayNameChanged || passwordChanged) {
+            StringBuilder beforeSb = new StringBuilder("{");
+            StringBuilder afterSb = new StringBuilder("{");
+            boolean first = true;
+            if (displayNameChanged) {
+                beforeSb.append("\"displayName\":\"").append(escapeJson(beforeDisplayName)).append("\"");
+                afterSb.append("\"displayName\":\"").append(escapeJson(saved.getDisplayName())).append("\"");
+                first = false;
+            }
+            if (passwordChanged) {
+                if (!first) afterSb.append(",");
+                afterSb.append("\"passwordChanged\":true");
+            }
+            beforeSb.append("}");
+            afterSb.append("}");
+            auditLogWriter.save(buildAudit(actorId, clientIp, userAgent, "ADMIN_USER_UPDATED", id,
+                    beforeSb.toString(), afterSb.toString(), now));
+            anyAuditWritten = true;
+        }
+        if (!anyAuditWritten) {
+            // No-op patch (nothing actually changed) — still record the attempt.
+            auditLogWriter.save(buildAudit(actorId, clientIp, userAgent, "ADMIN_USER_UPDATED", id, "{}", "{}", now));
+        }
 
         return toMap(saved);
     }

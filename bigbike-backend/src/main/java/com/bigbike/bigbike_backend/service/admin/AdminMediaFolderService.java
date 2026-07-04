@@ -4,8 +4,10 @@ import com.bigbike.bigbike_backend.api.admin.dto.media.MediaFolderResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.media.UpsertMediaFolderRequest;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
+import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.media.MediaFolderEntity;
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaFolderJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import java.text.Normalizer;
 import java.time.Instant;
 import java.util.HashMap;
@@ -24,6 +26,7 @@ public class AdminMediaFolderService {
 
     private final MediaFolderJpaRepository folderRepo;
     private final JdbcTemplate jdbc;
+    private final AuditLogWriter auditLogWriter;
 
     public List<MediaFolderResponse> listAll() {
         Map<UUID, Long> counts = mediaCountsByFolder();
@@ -34,7 +37,7 @@ public class AdminMediaFolderService {
     }
 
     @Transactional
-    public MediaFolderResponse create(UpsertMediaFolderRequest req) {
+    public MediaFolderResponse create(UpsertMediaFolderRequest req, UUID adminId) {
         String slug = (req.slug() == null || req.slug().isBlank()) ? slugify(req.name()) : slugify(req.slug());
         // Names made entirely of non-alphanumeric chars (e.g. "@@@") slug to "" —
         // fall back to a short UUID-derived slug so the user isn't blocked.
@@ -51,18 +54,22 @@ public class AdminMediaFolderService {
         f.setDescription(req.description());
         f.setCreatedAt(now);
         f.setUpdatedAt(now);
+        MediaFolderEntity saved;
         try {
-            return toResponse(folderRepo.save(f), 0);
+            saved = folderRepo.save(f);
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
             // Concurrent insert with same slug raced past our existsBySlug check.
             throw new ConflictException("Folder with slug '" + f.getSlug() + "' already exists.");
         }
+        auditLog("MEDIA_FOLDER_CREATED", adminId, saved.getId(), null, folderSnapshot(saved));
+        return toResponse(saved, 0);
     }
 
     @Transactional
-    public MediaFolderResponse update(UUID id, UpsertMediaFolderRequest req) {
+    public MediaFolderResponse update(UUID id, UpsertMediaFolderRequest req, UUID adminId) {
         MediaFolderEntity f = folderRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Folder not found."));
+        String before = folderSnapshot(f);
         f.setName(req.name().trim());
         if (req.slug() != null && !req.slug().isBlank()) {
             String newSlug = slugify(req.slug());
@@ -73,16 +80,43 @@ public class AdminMediaFolderService {
         }
         f.setDescription(req.description());
         f.setUpdatedAt(Instant.now());
+        MediaFolderEntity saved = folderRepo.save(f);
+        auditLog("MEDIA_FOLDER_UPDATED", adminId, id, before, folderSnapshot(saved));
         long count = mediaCountsByFolder().getOrDefault(id, 0L);
-        return toResponse(folderRepo.save(f), count);
+        return toResponse(saved, count);
     }
 
     @Transactional
-    public void delete(UUID id) {
+    public void delete(UUID id, UUID adminId) {
         MediaFolderEntity f = folderRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Folder not found."));
+        String before = folderSnapshot(f);
         // ON DELETE SET NULL — media keep existing, folder_id becomes NULL
         folderRepo.delete(f);
+        auditLog("MEDIA_FOLDER_DELETED", adminId, id, before, null);
+    }
+
+    private void auditLog(String action, UUID adminId, UUID folderId, String before, String after) {
+        AuditLogEntity log = new AuditLogEntity();
+        log.setActorType("ADMIN");
+        log.setActorId(adminId);
+        log.setAction(action);
+        log.setResourceType("MEDIA_FOLDER");
+        log.setResourceId(folderId);
+        log.setBeforeData(before);
+        log.setAfterData(after);
+        log.setCreatedAt(Instant.now());
+        auditLogWriter.save(log);
+    }
+
+    private static String folderSnapshot(MediaFolderEntity f) {
+        return "{\"id\":\"" + f.getId() + "\",\"name\":\"" + esc(f.getName())
+                + "\",\"slug\":\"" + esc(f.getSlug())
+                + "\",\"description\":\"" + esc(f.getDescription()) + "\"}";
+    }
+
+    private static String esc(String s) {
+        return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     private Map<UUID, Long> mediaCountsByFolder() {

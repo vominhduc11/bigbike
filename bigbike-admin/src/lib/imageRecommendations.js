@@ -1,6 +1,7 @@
-// Khuyến nghị + NGƯỠNG CHẶN kích thước ảnh/video cho từng vị trí hiển thị trên bigbike-web.
+// Khuyến nghị kích thước + NGƯỠNG CHẶN tỉ lệ ảnh/video cho từng vị trí hiển thị trên bigbike-web.
 //
-// Phương pháp (audit 2026-07-03, xem docs/engineering/DATA_CONTRACT.md § Media Dimension Rules):
+// Phương pháp (audit 2026-07-03, đổi luật 2026-07-04 — bỏ chặn theo kích thước, xem
+// docs/engineering/DATA_CONTRACT.md § Media Dimension Rules):
 //   1. Đo khung hiển thị THẬT (CSS px, màn hình thường/1×) bằng cách đọc trực tiếp component +
 //      CSS của bigbike-web (không suy đoán) — desktop tham chiếu 1920×1080, mobile 390×844.
 //   2. idealW/idealH = minW/minH = 2 × khung hiển thị thật đó (hệ số retina 2×).
@@ -9,9 +10,12 @@
 //
 // Ý nghĩa các trường:
 //   idealW / idealH  — kích thước khuyến nghị hiển thị cho admin NGAY TẠI ô upload (đã ở mức 2×).
-//   minW   / minH    — ngưỡng sàn để CHẶN LƯU (bước 1) + chặn ở server (bước 2); bằng idealW/idealH.
+//   minW   / minH    — CHỈ còn là số khuyến nghị (trùng idealW/idealH) — KHÔNG còn chặn lưu ở
+//                      client theo vị trí (đổi 2026-07-04). Sàn kích thước duy nhất còn lại nằm
+//                      ở server (AdminMediaService, 500×400 chung cho mọi vị trí).
 //   ratio  = [w, h]  — tỉ lệ khung hiển thị thật; lệch quá ratioTolerance → chặn lưu (wrongRatio).
-//   ratio  = null    — khung không ép tỉ lệ cố định (ảnh tự do / native-render) — chỉ chặn theo size.
+//   ratio  = null    — khung không ép tỉ lệ cố định (ảnh tự do / native-render) — vị trí này
+//                      KHÔNG còn tiêu chí nào để chặn ở client.
 export const IMAGE_RECO = {
   // Ảnh sản phẩm (PDP + gallery): khung vuông tối đa 903×903 (desktop ≥1920px, ProductGallery.tsx) —
   // kính lúp zoom 2.5× cần nguồn ≥1300×1300 nhưng đã nằm trong ngưỡng 2×903 nên không cần cộng thêm.
@@ -66,14 +70,11 @@ export const IMAGE_RECO = {
 // "mờ vì thiếu pixel"; PNG thay thế cũng chỉ hiển thị 20×16px nên mọi file hợp lệ đều đủ nét).
 // Không thêm field vào IMAGE_RECO cho vị trí này — ImageUrlInput không nhận `recommend` sẽ tự bỏ qua.
 
-// So kích thước thực tế của ảnh/video với spec khuyến nghị.
-// Trả về null nếu đạt; hoặc mảng lý do: 'tooSmall' | 'wrongRatio'.
+// So tỉ lệ thực tế của ảnh/video với spec khuyến nghị (kích thước không còn bị chặn, chỉ tỉ lệ).
+// Trả về null nếu đạt; hoặc mảng lý do: 'wrongRatio'.
 export function evaluateImageDimensions(width, height, spec) {
   if (!width || !height || !spec) return null
   const reasons = []
-  if ((spec.minW && width < spec.minW) || (spec.minH && height < spec.minH)) {
-    reasons.push('tooSmall')
-  }
   if (spec.ratio) {
     const target = spec.ratio[0] / spec.ratio[1]
     const actual = width / height

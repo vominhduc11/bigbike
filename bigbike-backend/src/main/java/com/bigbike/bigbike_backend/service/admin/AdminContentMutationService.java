@@ -154,6 +154,7 @@ public class AdminContentMutationService {
         ArticleEntity entity = articleJpaRepository.findById(articleId)
                 .orElseThrow(() -> new NotFoundException("Content not found."));
         String previousSlug = entity.getSlug();
+        String before = articleJson(entity);
 
         List<ApiErrorDetail> errors = new ArrayList<>();
         String slug = contentRequestValidator.validateArticleRequest(request, entity, false, false, errors);
@@ -165,7 +166,7 @@ public class AdminContentMutationService {
         entity.setUpdatedAt(Instant.now());
         applyArticlePatch(entity, request, slug, category, false);
         articleJpaRepository.save(entity);
-        auditLog("CONTENT_ARTICLE_UPDATED", "CONTENT", adminId, null, articleJson(entity));
+        auditLog("CONTENT_ARTICLE_UPDATED", "CONTENT", adminId, before, articleJson(entity));
         revalidateArticle(entity, previousSlug);
 
         Article article = contentReadRepository.findArticleById(entity.getId())
@@ -178,18 +179,19 @@ public class AdminContentMutationService {
         requireJpaPersistenceEnabled();
         ArticleEntity entity = articleJpaRepository.findById(articleId)
                 .orElseThrow(() -> new NotFoundException("Content not found."));
+        String before = articleJson(entity);
         entity.setPublishStatus(PublishStatus.TRASH);
-        
+
         // A6: Rename slug when soft-deleted to free up the original slug
         String prevSlug = entity.getSlug();
         entity.setSlug(entity.getSlug() + "-deleted-" + entity.getId());
         if (entity.getSlugEn() != null) {
             entity.setSlugEn(entity.getSlugEn() + "-deleted-" + entity.getId());
         }
-        
+
         entity.setUpdatedAt(Instant.now());
         articleJpaRepository.save(entity);
-        auditLog("CONTENT_ARTICLE_DELETED", "CONTENT", adminId, null, articleJson(entity));
+        auditLog("CONTENT_ARTICLE_DELETED", "CONTENT", adminId, before, articleJson(entity));
         revalidateArticle(entity, prevSlug);
         Article article = contentReadRepository.findArticleById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Content not found."));
@@ -227,13 +229,14 @@ public class AdminContentMutationService {
             }
         }
         AdminMutationValidators.throwIfErrors(errors);
-        
+
+        String before = articleJson(entity);
         entity.setSlug(originalSlug);
         entity.setSlugEn(originalSlugEn);
         entity.setPublishStatus(PublishStatus.DRAFT);
         entity.setUpdatedAt(Instant.now());
         articleJpaRepository.save(entity);
-        auditLog("CONTENT_ARTICLE_RESTORED", "CONTENT", adminId, null, articleJson(entity));
+        auditLog("CONTENT_ARTICLE_RESTORED", "CONTENT", adminId, before, articleJson(entity));
         revalidateArticle(entity, null);
         Article article = contentReadRepository.findArticleById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Content not found."));

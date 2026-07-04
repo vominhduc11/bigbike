@@ -10,11 +10,14 @@ import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.migration.wordpress.normalizer.ProductSlugGenerator;
+import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeValueEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeValueJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantOptionJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +31,7 @@ public class AdminAttributeService {
     private final AttributeJpaRepository attributeRepo;
     private final AttributeValueJpaRepository valueRepo;
     private final ProductVariantOptionJpaRepository variantOptionRepo;
+    private final AuditLogWriter auditLogWriter;
 
     @Transactional(readOnly = true)
     public List<AttributeSummaryResponse> listAttributes() {
@@ -57,15 +61,17 @@ public class AdminAttributeService {
      * immutable so variant options that resolve via the code keep working.
      */
     @Transactional
-    public AttributeSummaryResponse updateAttributeName(String attributeId, UpdateAttributeRequest request) {
+    public AttributeSummaryResponse updateAttributeName(String attributeId, UpdateAttributeRequest request, UUID adminId) {
         AttributeEntity attribute = attributeRepo.findById(attributeId)
                 .orElseThrow(() -> new NotFoundException("Attribute not found: " + attributeId));
+        String before = attributeSnapshot(attribute);
         attribute.setName(request.name().trim());
         // Presence-flag: omit nameEn → unchanged; send blank → clears the English name.
         if (request.nameEn() != null) {
             attribute.setNameEn(normalizeOptional(request.nameEn()));
         }
         AttributeEntity saved = attributeRepo.save(attribute);
+        auditLog("ATTRIBUTE_UPDATED", adminId, before, attributeSnapshot(saved));
         return new AttributeSummaryResponse(
                 saved.getId(),
                 saved.getCode(),
@@ -83,7 +89,7 @@ public class AdminAttributeService {
      * (the code is the machine key variant options resolve through).
      */
     @Transactional
-    public AttributeSummaryResponse createAttribute(CreateAttributeRequest request) {
+    public AttributeSummaryResponse createAttribute(CreateAttributeRequest request, UUID adminId) {
         String name = request.name().trim();
         String code = ProductSlugGenerator.toSlug(name);
         if (code.isBlank()) {
@@ -102,6 +108,7 @@ public class AdminAttributeService {
         entity.setKind("select");
         entity.setVariation(true);
         AttributeEntity saved = attributeRepo.save(entity);
+        auditLog("ATTRIBUTE_CREATED", adminId, null, attributeSnapshot(saved));
         return new AttributeSummaryResponse(
                 saved.getId(),
                 saved.getCode(),
@@ -119,7 +126,7 @@ public class AdminAttributeService {
      * at the database level ({@code fk_attribute_values_attribute_id ... on delete cascade}).
      */
     @Transactional
-    public void deleteAttribute(String attributeId) {
+    public void deleteAttribute(String attributeId, UUID adminId) {
         AttributeEntity attribute = attributeRepo.findById(attributeId)
                 .orElseThrow(() -> new NotFoundException("Attribute not found: " + attributeId));
         long usageCount = variantOptionRepo.countByAttribute_Id(attributeId);
@@ -128,7 +135,9 @@ public class AdminAttributeService {
                     "Thuộc tính \"" + attribute.getName() + "\" đang được " + usageCount
                             + " biến thể sử dụng, không thể xóa.");
         }
+        String before = attributeSnapshot(attribute);
         attributeRepo.delete(attribute);
+        auditLog("ATTRIBUTE_DELETED", adminId, before, null);
     }
 
     /**
@@ -137,7 +146,7 @@ public class AdminAttributeService {
      * deletion above.
      */
     @Transactional
-    public void deleteAttributeValue(String valueId) {
+    public void deleteAttributeValue(String valueId, UUID adminId) {
         AttributeValueEntity value = valueRepo.findById(valueId)
                 .orElseThrow(() -> new NotFoundException("Attribute value not found: " + valueId));
         long usageCount = variantOptionRepo.countByAttributeValue_Id(valueId);
@@ -146,7 +155,9 @@ public class AdminAttributeService {
                     "Giá trị \"" + value.getLabel() + "\" đang được " + usageCount
                             + " biến thể sử dụng, không thể xóa.");
         }
+        String before = attributeValueSnapshot(value);
         valueRepo.delete(value);
+        auditLog("ATTRIBUTE_VALUE_DELETED", adminId, before, null);
     }
 
     /**
@@ -156,7 +167,7 @@ public class AdminAttributeService {
      * filter keys. Duplicate slugs within the same attribute are rejected.
      */
     @Transactional
-    public AttributeValueResponse createValue(String attributeId, CreateAttributeValueRequest request) {
+    public AttributeValueResponse createValue(String attributeId, CreateAttributeValueRequest request, UUID adminId) {
         AttributeEntity attribute = attributeRepo.findById(attributeId)
                 .orElseThrow(() -> new NotFoundException("Attribute not found: " + attributeId));
 
@@ -184,7 +195,9 @@ public class AdminAttributeService {
         entity.setLabel(label);
         entity.setLabelEn(normalizeOptional(request.labelEn()));
         entity.setSortOrder(nextSortOrder);
-        return toResponse(valueRepo.save(entity));
+        AttributeValueEntity saved = valueRepo.save(entity);
+        auditLog("ATTRIBUTE_VALUE_CREATED", adminId, null, attributeValueSnapshot(saved));
+        return toResponse(saved);
     }
 
     /**
@@ -192,15 +205,18 @@ public class AdminAttributeService {
      * immutable so existing variant options that reference it keep working.
      */
     @Transactional
-    public AttributeValueResponse updateValueLabel(String valueId, UpdateAttributeValueRequest request) {
+    public AttributeValueResponse updateValueLabel(String valueId, UpdateAttributeValueRequest request, UUID adminId) {
         AttributeValueEntity entity = valueRepo.findById(valueId)
                 .orElseThrow(() -> new NotFoundException("Attribute value not found: " + valueId));
+        String before = attributeValueSnapshot(entity);
         entity.setLabel(request.label().trim());
         // Presence-flag: omit labelEn → unchanged; send blank → clears the English label.
         if (request.labelEn() != null) {
             entity.setLabelEn(normalizeOptional(request.labelEn()));
         }
-        return toResponse(valueRepo.save(entity));
+        AttributeValueEntity saved = valueRepo.save(entity);
+        auditLog("ATTRIBUTE_VALUE_UPDATED", adminId, before, attributeValueSnapshot(saved));
+        return toResponse(saved);
     }
 
     private AttributeValueResponse toResponse(AttributeValueEntity v) {
@@ -217,5 +233,35 @@ public class AdminAttributeService {
     /** Trim an optional text field; blank/null → null (so a cleared English label stores NULL). */
     private static String normalizeOptional(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private void auditLog(String action, UUID adminId, String before, String after) {
+        AuditLogEntity log = new AuditLogEntity();
+        log.setActorType("ADMIN");
+        log.setActorId(adminId);
+        log.setAction(action);
+        log.setResourceType("ATTRIBUTE");
+        // Attribute (value) IDs are strings, not UUIDs; identifier lives in before/after JSON.
+        log.setBeforeData(before);
+        log.setAfterData(after);
+        log.setCreatedAt(Instant.now());
+        auditLogWriter.save(log);
+    }
+
+    private static String attributeSnapshot(AttributeEntity a) {
+        return "{\"id\":\"" + esc(a.getId()) + "\",\"code\":\"" + esc(a.getCode())
+                + "\",\"name\":\"" + esc(a.getName()) + "\",\"nameEn\":\"" + esc(a.getNameEn()) + "\"}";
+    }
+
+    private static String attributeValueSnapshot(AttributeValueEntity v) {
+        return "{\"id\":\"" + esc(v.getId())
+                + "\",\"attributeId\":\"" + esc(v.getAttribute() == null ? null : v.getAttribute().getId())
+                + "\",\"slug\":\"" + esc(v.getSlug())
+                + "\",\"label\":\"" + esc(v.getLabel())
+                + "\",\"labelEn\":\"" + esc(v.getLabelEn()) + "\"}";
+    }
+
+    private static String esc(String s) {
+        return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 }

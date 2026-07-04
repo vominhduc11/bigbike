@@ -50,7 +50,7 @@ public class AdminAttributeController extends AdminControllerSupport {
             @Valid @RequestBody CreateAttributeRequest payload,
             HttpServletRequest request) {
         devAdminAuthService.requirePermission(request, "products.update");
-        return apiResponseFactory.data(adminAttributeService.createAttribute(payload), request);
+        return apiResponseFactory.data(adminAttributeService.createAttribute(payload, resolveAdminId()), request);
     }
 
     @DeleteMapping("/attributes/{id}")
@@ -59,7 +59,7 @@ public class AdminAttributeController extends AdminControllerSupport {
             @PathVariable @Pattern(regexp = ID_REGEX) String id,
             HttpServletRequest request) {
         devAdminAuthService.requirePermission(request, "products.update");
-        adminAttributeService.deleteAttribute(id);
+        adminAttributeService.deleteAttribute(id, resolveAdminId());
     }
 
     @DeleteMapping("/attribute-values/{id}")
@@ -68,7 +68,7 @@ public class AdminAttributeController extends AdminControllerSupport {
             @PathVariable @Pattern(regexp = ID_REGEX) String id,
             HttpServletRequest request) {
         devAdminAuthService.requirePermission(request, "products.update");
-        adminAttributeService.deleteAttributeValue(id);
+        adminAttributeService.deleteAttributeValue(id, resolveAdminId());
     }
 
     @GetMapping("/attributes/{attributeId}/values")
@@ -85,7 +85,7 @@ public class AdminAttributeController extends AdminControllerSupport {
             @Valid @RequestBody UpdateAttributeRequest payload,
             HttpServletRequest request) {
         devAdminAuthService.requirePermission(request, "products.update");
-        return apiResponseFactory.data(adminAttributeService.updateAttributeName(id, payload), request);
+        return apiResponseFactory.data(adminAttributeService.updateAttributeName(id, payload, resolveAdminId()), request);
     }
 
     @PostMapping("/attributes/{attributeId}/values")
@@ -94,7 +94,7 @@ public class AdminAttributeController extends AdminControllerSupport {
             @Valid @RequestBody CreateAttributeValueRequest payload,
             HttpServletRequest request) {
         devAdminAuthService.requirePermission(request, "products.update");
-        return apiResponseFactory.data(adminAttributeService.createValue(attributeId, payload), request);
+        return apiResponseFactory.data(adminAttributeService.createValue(attributeId, payload, resolveAdminId()), request);
     }
 
     @PatchMapping("/attribute-values/{id}")
@@ -103,6 +103,6 @@ public class AdminAttributeController extends AdminControllerSupport {
             @Valid @RequestBody UpdateAttributeValueRequest payload,
             HttpServletRequest request) {
         devAdminAuthService.requirePermission(request, "products.update");
-        return apiResponseFactory.data(adminAttributeService.updateValueLabel(id, payload), request);
+        return apiResponseFactory.data(adminAttributeService.updateValueLabel(id, payload, resolveAdminId()), request);
     }
 }

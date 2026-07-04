@@ -166,6 +166,7 @@ public class AdminSliderService {
     public void patch(String sliderId, PatchSliderRequest request) {
         SliderEntity entity = sliderJpaRepository.findById(sliderId)
                 .orElseThrow(() -> new NotFoundException("Slider not found."));
+        String before = sliderSnapshot(entity);
 
         Instant now = Instant.now();
 
@@ -219,7 +220,7 @@ public class AdminSliderService {
         entity.setUpdatedAt(now);
         sliderJpaRepository.save(entity);
         webRevalidationService.revalidate("sliders");
-        auditLog("SLIDER_UPDATED", sliderId, null, sliderSnapshot(entity));
+        auditLog("SLIDER_UPDATED", sliderId, before, sliderSnapshot(entity));
     }
 
     private static ImageAsset toImageAsset(ImageAssetRequest request) {
@@ -266,7 +267,11 @@ public class AdminSliderService {
         return "{\"id\":\"" + esc(e.getId())
                 + "\",\"location\":\"" + esc(e.getLocation())
                 + "\",\"sortOrder\":" + e.getSortOrder()
-                + ",\"active\":" + e.isActive() + "}";
+                + ",\"active\":" + e.isActive()
+                + ",\"productId\":\"" + esc(e.getProduct() == null ? null : e.getProduct().getId())
+                + "\",\"externalLink\":\"" + esc(e.getExternalLink())
+                + "\",\"desktopImageUrl\":\"" + esc(e.getDesktopImage() == null ? null : e.getDesktopImage().url())
+                + "\"}";
     }
 
     /** Resolves the authenticated admin's UUID from the Spring Security context, or null. */

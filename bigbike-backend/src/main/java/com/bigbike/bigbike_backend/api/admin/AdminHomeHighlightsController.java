@@ -46,6 +46,6 @@ public class AdminHomeHighlightsController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "home_highlights.write");
-        return apiResponseFactory.data(homeHighlightsService.saveHighlights(body), request);
+        return apiResponseFactory.data(homeHighlightsService.saveHighlights(body, resolveAdminId()), request);
     }
 }
