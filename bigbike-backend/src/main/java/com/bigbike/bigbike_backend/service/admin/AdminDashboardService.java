@@ -53,9 +53,9 @@ public class AdminDashboardService {
         Instant prevDayStart = todayVn.minusDays(1).atStartOfDay(VN_ZONE).toInstant();
         Instant periodStart  = todayVn.minusDays(days - 1L).atStartOfDay(VN_ZONE).toInstant();
 
-        // ── KPI aggregates (valid orders only — excludes CANCELLED/FAILED/REFUNDED) ─
+        // ── KPI aggregates (valid orders only — excludes CANCELLED/FAILED) ───
         BigDecimal todayRevenue     = orderRepo.sumRevenueSinceExcluding(todayStart, REVENUE_EXCLUDED_STATUSES);
-        // paidRevenue = SUM(paidAmount) for PAID/REFUNDED orders — paidAmount is never reduced by RefundService.
+        // paidRevenue = SUM(paidAmount) for PAID orders (excl CANCELLED).
         // Uses same status set as AdminReportService.sumPaidRevenueBetweenExcluding()
         // so Dashboard.todayPaidRevenue matches Reports.paidRevenue for the same date range.
         BigDecimal todayPaidRevenue = orderRepo.sumPaidRevenueSinceExcluding(todayStart, REVENUE_EXCLUDED_STATUSES);

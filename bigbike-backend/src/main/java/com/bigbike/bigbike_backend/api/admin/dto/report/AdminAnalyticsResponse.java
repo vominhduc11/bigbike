@@ -12,8 +12,6 @@ public record AdminAnalyticsResponse(
     public record PeriodSummary(
             BigDecimal grossOrderValue,
             BigDecimal paidRevenue,
-            BigDecimal refundAmount,
-            BigDecimal netRevenue,
             int orderCount,
             BigDecimal avgOrderValue
     ) {}

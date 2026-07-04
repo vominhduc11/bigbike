@@ -1265,9 +1265,29 @@ Evidence: `AdminCustomerService.java` line 48, `deriveSegment()` method
 | `revenue` | `BigDecimal` | SUM(totalAmount) excl RANKING_EXCLUDED statuses |
 | `orderCount` | `int` | COUNT of orders excl RANKING_EXCLUDED statuses |
 
-Status: `CONFIRMED_FROM_CODE` — shape confirmed from `AdminAnalyticsResponse.java` audit; fields updated per P0 plan.
+Status: `CONFIRMED_FROM_CODE` — shape confirmed from `AdminAnalyticsResponse.java` audit; fields updated per P0 plan. `refundAmount` and `netRevenue` fields were completely removed from the DTO on 2026-07-04.
 
 Evidence: `AdminAnalyticsResponse.java`, `AdminReportService.java`, `OrderJpaRepository.java`, `OrderLineItemJpaRepository.java`
+
+## Order Export CSV Contract
+
+The `GET /api/v1/admin/reports/orders/export` endpoint returns a CSV with the following columns:
+1. `order_number`
+2. `status`
+3. `payment_status`
+4. `customer_email`
+5. `customer_phone`
+6. `currency`
+7. `subtotal`
+8. `shipping`
+9. `total`
+10. `paid_amount`
+11. `placed_at`
+12. `paid_at`
+13. `completed_at`
+14. `cancelled_at`
+
+*(Note: the "discount" column was removed on 2026-07-04 since discounts are no longer supported)*
 
 ## Site Settings — `setting_group` enum (V132)
 

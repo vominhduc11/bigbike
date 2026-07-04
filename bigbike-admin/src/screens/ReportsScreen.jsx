@@ -284,24 +284,6 @@ export function ReportsScreen() {
       hint: t('reports.kpiPaidRevenueHint', { defaultValue: 'Số tiền thực sự đã thu được từ các đơn trong kỳ.' }),
     },
     {
-      key: 'refund',
-      label: t('reports.kpiRefund'),
-      value: formatCurrencyVnd(state.data.summary.refundAmount, locale),
-      raw: state.data.summary.refundAmount,
-      prev: state.prev?.summary.refundAmount,
-      color: 'warning', money: true, icon: <RotateCcw size={15} />,
-      hint: t('reports.kpiRefundHint', { defaultValue: 'Tổng số tiền đã hoàn trả cho khách trong kỳ.' }),
-    },
-    {
-      key: 'net',
-      label: t('reports.kpiNetRevenue'),
-      value: formatCurrencyVnd(state.data.summary.netRevenue, locale),
-      raw: state.data.summary.netRevenue,
-      prev: state.prev?.summary.netRevenue,
-      color: 'info', money: true, icon: <PiggyBank size={15} />,
-      hint: t('reports.kpiNetRevenueHint', { defaultValue: 'Doanh thu thuần = tiền thực thu trừ đi tiền hoàn.' }),
-    },
-    {
       key: 'orders',
       label: t('reports.kpiOrderCount'),
       value: state.data.summary.orderCount.toLocaleString(locale),
@@ -333,12 +315,12 @@ export function ReportsScreen() {
           <div className="bb-seg" role="tablist" aria-label={t('reports.title')}>
             {presetTabs.map((tab) => (
               <button
-                key={tab.key}
-                type="button"
-                role="tab"
-                aria-selected={preset === tab.key}
-                className={preset === tab.key ? 'active' : ''}
-                onClick={() => setPreset(tab.key)}
+                 key={tab.key}
+                 type="button"
+                 role="tab"
+                 aria-selected={preset === tab.key}
+                 className={preset === tab.key ? 'active' : ''}
+                 onClick={() => setPreset(tab.key)}
               >
                 {tab.label}
               </button>
@@ -394,7 +376,7 @@ export function ReportsScreen() {
       {state.status === 'loading' && (
         <>
           <div className="bb-kpi-grid">
-            {[...Array(6)].map((_, i) => (
+            {[...Array(4)].map((_, i) => (
               <SkeletonBlock key={i} height={120} />
             ))}
           </div>

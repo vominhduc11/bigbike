@@ -86,17 +86,15 @@ class AdminReportApiTest {
                 .andExpect(status().isOk());
     }
 
-    // ── 2. Response shape — all 6 summary fields present ─────────────────────
+    // ── 2. Response shape — all summary fields present ──────────────────────
 
     @Test
-    void analytics_defaultRange_returnsAllSixSummaryFields() throws Exception {
+    void analytics_defaultRange_returnsAllSummaryFields() throws Exception {
         mockMvc.perform(get("/api/v1/admin/reports/analytics")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.summary.grossOrderValue").exists())
                 .andExpect(jsonPath("$.summary.paidRevenue").exists())
-                .andExpect(jsonPath("$.summary.refundAmount").exists())
-                .andExpect(jsonPath("$.summary.netRevenue").exists())
                 .andExpect(jsonPath("$.summary.orderCount").exists())
                 .andExpect(jsonPath("$.summary.avgOrderValue").exists())
                 .andExpect(jsonPath("$.dailyRevenue").isArray())
@@ -144,103 +142,7 @@ class AdminReportApiTest {
         assertThat(delta).isEqualTo(500_000.0);
     }
 
-    @Test
-    void analytics_refundedOrders_includedInGrossOrderValue() throws Exception {
-        double baseline = fetchGrossOrderValue();
-
-        Instant now = Instant.now();
-        orderRepo.save(buildOrder("REFUNDED", "REFUNDED", "300000", "300000", now));
-
-        double after = fetchGrossOrderValue();
-        double delta = after - baseline;
-
-        // REFUNDED order still counts as GMV (real demand placed)
-        assertThat(delta).isEqualTo(300_000.0);
-    }
-
-    // ── 5. paidRevenue includes REFUNDED ──────────────────────────────────────
-    // Per REPORT_RULE_002: paidAmount is never reduced by RefundService.applyRefund().
-    // An order with paymentStatus=REFUNDED still contributed paidAmount cash.
-
-    @Test
-    void analytics_paidRevenue_includesRefundedPaymentStatus() throws Exception {
-        double baseline = fetchPaidRevenue();
-
-        Instant now = Instant.now();
-        // Order: totalAmount=400k, paidAmount=400k, then fully refunded
-        orderRepo.save(buildOrder("REFUNDED", "REFUNDED", "400000", "100000", now));
-
-        double after = fetchPaidRevenue();
-        double delta = after - baseline;
-
-        // paidAmount=400k should be in paidRevenue even though paymentStatus=REFUNDED
-        assertThat(delta).isEqualTo(400_000.0);
-    }
-
-    @Test
-    void analytics_paidRevenue_refundedStatus_isIncluded() throws Exception {
-        // PARTIALLY_REFUNDED removed — REFUNDED is the only post-refund status
-        double baseline = fetchPaidRevenue();
-
-        Instant now = Instant.now();
-        // Order paid 600k, then refunded 100k → paymentStatus=REFUNDED
-        orderRepo.save(buildOrder("COMPLETED", "REFUNDED", "600000", "100000", now));
-
-        double after = fetchPaidRevenue();
-        double delta = after - baseline;
-
-        assertThat(delta).isEqualTo(600_000.0);
-    }
-
-    // ── 6. netRevenue = paidRevenue - refundAmount ────────────────────────────
-
-    @Test
-    void analytics_netRevenue_equalsPartialRefundDiff() throws Exception {
-        // Seed: paidAmount=1,000,000; refundAmount=200,000 → netRevenue contribution = +800,000
-        double baseNet = fetchNetRevenue();
-        double basePaid = fetchPaidRevenue();
-        double baseRefund = fetchRefundAmount();
-
-        Instant now = Instant.now();
-        // Order placed today; paid 1M; refunded 200k
-        OrderEntity o = buildOrder("COMPLETED", "REFUNDED", "1000000", "200000", now);
-        o.setPaidAmount(new BigDecimal("1000000"));
-        orderRepo.save(o);
-
-        double afterNet = fetchNetRevenue();
-        double afterPaid = fetchPaidRevenue();
-        double afterRefund = fetchRefundAmount();
-
-        double paidDelta   = afterPaid   - basePaid;
-        double refundDelta = afterRefund - baseRefund;
-        double netDelta    = afterNet    - baseNet;
-
-        assertThat(paidDelta).isEqualTo(1_000_000.0);
-        assertThat(refundDelta).isEqualTo(200_000.0);
-        // netDelta must equal paidDelta - refundDelta (no clamp)
-        assertThat(netDelta).isEqualTo(paidDelta - refundDelta);
-    }
-
-    @Test
-    void analytics_netRevenue_canBeNegative_whenRefundExceedsPaid() throws Exception {
-        // This tests REPORT_RULE_004: no clamp on negative netRevenue
-        double baseNet = fetchNetRevenue();
-
-        Instant now = Instant.now();
-        // Unusual scenario: paidAmount=0 (unpaid), refundAmount=50k (manual refund)
-        OrderEntity o = buildOrder("REFUNDED", "REFUNDED", "500000", "50000", now);
-        o.setPaidAmount(BigDecimal.ZERO); // override default (test: zero cash collected)
-        orderRepo.save(o);
-
-        double afterNet = fetchNetRevenue();
-        double delta = afterNet - baseNet;
-
-        // netRevenue delta = paidRevenue delta(0) - refundAmount delta(50k) = -50k
-        // Must be -50000, not 0 (no clamp)
-        assertThat(delta).isEqualTo(-50_000.0);
-    }
-
-    // ── 7. Audit log for CSV exports ──────────────────────────────────────────
+    // ── 5. Audit log for CSV exports ──────────────────────────────────────────
 
     @Test
     void exportOrders_writesAuditLog() throws Exception {
@@ -323,14 +225,6 @@ class AdminReportApiTest {
 
     private double fetchPaidRevenue() throws Exception {
         return fetchSummaryField("paidRevenue");
-    }
-
-    private double fetchRefundAmount() throws Exception {
-        return fetchSummaryField("refundAmount");
-    }
-
-    private double fetchNetRevenue() throws Exception {
-        return fetchSummaryField("netRevenue");
     }
 
     private double fetchSummaryField(String field) throws Exception {

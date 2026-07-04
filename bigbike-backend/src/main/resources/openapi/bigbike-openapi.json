@@ -6443,14 +6443,6 @@
             "type": "number",
             "description": "Cash collected: SUM(paidAmount) where paymentStatus IN (PAID, REFUNDED), excluding CANCELLED orders."
           },
-          "refundAmount": {
-            "type": "number",
-            "description": "Cumulative refunds: SUM(refundAmount) for orders placed in range. Anchored to placedAt, not refundedAt. May not match period refund events — see REPORT_RULE_011."
-          },
-          "netRevenue": {
-            "type": "number",
-            "description": "paidRevenue minus refundAmount. May be negative."
-          },
           "orderCount": {
             "type": "integer",
             "description": "COUNT of orders excluding CANCELLED and FAILED."

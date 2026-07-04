@@ -32,7 +32,6 @@ const ORDER_STATUS_COLORS = {
   COMPLETED:  'var(--admin-color-status-success-text)',
   CANCELLED:  'var(--admin-color-status-danger-text)',
   FAILED:     'var(--admin-color-status-danger-text)',
-  REFUNDED:   'var(--admin-color-text-muted)',
 }
 
 // Charts pull in recharts (~346KB) — load them lazily so the dashboard shell

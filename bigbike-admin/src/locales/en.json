@@ -2265,8 +2265,6 @@
     "exportAllHint": "Products and customers export everything, not limited to the selected date range.",
     "kpiGmv": "Gross Sales (GMV)",
     "kpiPaidRevenue": "Collected revenue",
-    "kpiRefund": "Refunds",
-    "kpiNetRevenue": "Net revenue",
     "kpiOrderCount": "Order count",
     "kpiAov": "Avg. order value (AOV)",
     "chartDailyRevenue": "Daily revenue",

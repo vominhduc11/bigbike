@@ -2264,8 +2264,6 @@
     "exportAllHint": "Sản phẩm và khách hàng xuất toàn bộ, không theo khoảng ngày đang chọn.",
     "kpiGmv": "Doanh số (GMV)",
     "kpiPaidRevenue": "Tiền thực thu",
-    "kpiRefund": "Hoàn tiền",
-    "kpiNetRevenue": "Doanh thu thuần",
     "kpiOrderCount": "Số đơn hàng",
     "kpiAov": "Giá trị đơn TB (AOV)",
     "chartDailyRevenue": "Doanh thu theo ngày",

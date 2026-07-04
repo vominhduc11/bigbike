@@ -81,12 +81,7 @@ public class AdminReportService {
         BigDecimal grossOrderValue = orderRepo.sumRevenueBetweenExcluding(fromInstant, toInstant, REVENUE_EXCLUDED);
 
         // Paid revenue: SUM(paidAmount) for orders where payment was collected (incl. post-refund statuses)
-        // paidAmount is never modified by RefundService.applyRefund() — it is the total cash collected.
         BigDecimal paidRevenue = orderRepo.sumPaidRevenueBetweenExcluding(fromInstant, toInstant, REVENUE_EXCLUDED);
-
-        // Refunds were removed from the system — there is no refunded revenue to subtract.
-        BigDecimal refundAmount = BigDecimal.ZERO;
-        BigDecimal netRevenue = paidRevenue;
 
         long orderCount = orderRepo.countOrdersBetweenExcluding(fromInstant, toInstant, REVENUE_EXCLUDED);
         BigDecimal avgOrderValue = orderCount > 0
@@ -94,7 +89,7 @@ public class AdminReportService {
                 : BigDecimal.ZERO;
 
         PeriodSummary summary = new PeriodSummary(
-                grossOrderValue, paidRevenue, refundAmount, netRevenue,
+                grossOrderValue, paidRevenue,
                 (int) orderCount, avgOrderValue);
 
         // Daily revenue (VN timezone grouping, REVENUE_EXCLUDED)
@@ -165,7 +160,7 @@ public class AdminReportService {
         StringWriter sw = new StringWriter();
         CSVFormat format = CSVFormat.DEFAULT.builder()
                 .setHeader("order_number", "status", "payment_status", "customer_email",
-                        "customer_phone", "currency", "subtotal", "discount", "shipping",
+                        "customer_phone", "currency", "subtotal", "shipping",
                         "total", "paid_amount", "placed_at", "paid_at",
                         "completed_at", "cancelled_at")
                 .build();
@@ -180,7 +175,6 @@ public class AdminReportService {
                         escape(nvl(o.getCustomerPhone())),
                         o.getCurrency(),
                         formatDecimal(o.getSubtotalAmount()),
-                        formatDecimal(o.getDiscountAmount()),
                         formatDecimal(o.getShippingAmount()),
                         formatDecimal(o.getTotalAmount()),
                         formatDecimal(o.getPaidAmount()),
