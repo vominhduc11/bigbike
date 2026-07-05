@@ -127,7 +127,6 @@ export type ProductStockState =
 
 export type ProductPrice = {
   retailPrice: number;
-  compareAtPrice?: number | null;
   salePrice?: number | null;
   currency: "VND";
 };

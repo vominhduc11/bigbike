@@ -3,7 +3,6 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useLocalizedField } from "@/components/i18n/LocalizedContent";
 import { sanitizeRichHtml } from "@/lib/utils/html";
-import { ThemeAwareHtml } from "@/components/content/ThemeAwareHtml";
 import type { ProductSpecStat } from "@/lib/contracts/public";
 
 /**
@@ -34,9 +33,12 @@ export function FeaturedSpecsBar({
     const html = sanitizeRichHtml(statsHtml, { allowInlineStyles: true });
     if (!html) return null;
     return (
-      <div role="region" aria-label={t("featuredSpecsTitle")} className="my-10">
-        <ThemeAwareHtml className="featured-specs-html" html={html} />
-      </div>
+      <div
+        role="region"
+        aria-label={t("featuredSpecsTitle")}
+        className="my-10 featured-specs-html"
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
     );
   }
 

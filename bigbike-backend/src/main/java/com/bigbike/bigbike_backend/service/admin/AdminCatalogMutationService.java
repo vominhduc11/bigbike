@@ -610,9 +610,7 @@ public class AdminCatalogMutationService {
         fields.put("description", e.getDescription());
         fields.put("imageUrl", e.getImageUrl());
         fields.put("retailPrice", e.getRetailPrice());
-        fields.put("compareAtPrice", e.getCompareAtPrice());
         fields.put("salePrice", e.getSalePrice());
-        fields.put("costPrice", e.getCostPrice());
         fields.put("stockState", e.getStockState() == null ? null : e.getStockState().toString());
         fields.put("stockQuantity", e.getStockQuantity());
         fields.put("forceOutOfStock", e.getForceOutOfStock());
@@ -696,14 +694,8 @@ public class AdminCatalogMutationService {
         if (create || request.isRetailPricePresent()) {
             entity.setRetailPrice(request.getRetailPrice() == null ? BigDecimal.ZERO : request.getRetailPrice());
         }
-        if (create || request.isCompareAtPricePresent()) {
-            entity.setCompareAtPrice(request.getCompareAtPrice());
-        }
         if (create || request.isSalePricePresent()) {
             entity.setSalePrice(request.getSalePrice());
-        }
-        if (create || request.isCostPricePresent()) {
-            entity.setCostPrice(request.getCostPrice());
         }
         // BigBike is VND-only. DTO validator rejects anything else; persistence is hardcoded.
         entity.setCurrency("VND");
@@ -943,14 +935,8 @@ public class AdminCatalogMutationService {
             if (createVariant || req.isRetailPricePresent()) {
                 variant.setRetailPrice(req.getRetailPrice());
             }
-            if (createVariant || req.isCompareAtPricePresent()) {
-                variant.setCompareAtPrice(req.getCompareAtPrice());
-            }
             if (createVariant || req.isSalePricePresent()) {
                 variant.setSalePrice(req.getSalePrice());
-            }
-            if (createVariant || req.isCostPricePresent()) {
-                variant.setCostPrice(req.getCostPrice());
             }
             variant.setCurrency("VND");
             // Cover image = explicit imageUrl from variant request of same color (color-scoped).
@@ -1012,6 +998,33 @@ public class AdminCatalogMutationService {
                     colorKey == null ? List.of() : galleryByColor.getOrDefault(colorKey, List.of())
             );
             nextVariants.add(variant);
+        }
+
+        // Remove + flush variants being dropped BEFORE replacing the collection.
+        // Hibernate flushes inserts/updates ahead of orphan-removal deletes within the
+        // same flush, so a row reusing a dropped variant's SKU (e.g. the request omits
+        // its id, so it's rebuilt as a "new" variant instead of updated in place) would
+        // insert while the old row still holds that SKU — tripping
+        // ux_product_variants_sku_lower even though it's the same product. Removing the
+        // doomed rows from the owning collection and flushing now (instead of waiting for
+        // existing.clear()/addAll() below) frees the SKU ahead of the later insert. This
+        // must go through the collection's own orphanRemoval, not a direct
+        // repository.delete() — calling delete() on an entity still referenced by its
+        // parent's cascaded collection gets silently re-cascaded/resurrected on the next
+        // flush of the parent.
+        Set<String> keptIds = new HashSet<>();
+        for (ProductVariantEntity v : nextVariants) {
+            if (existingById.containsKey(v.getId())) keptIds.add(v.getId());
+        }
+        List<ProductVariantEntity> orphaned = new ArrayList<>();
+        for (Map.Entry<String, ProductVariantEntity> e : existingById.entrySet()) {
+            if (!keptIds.contains(e.getKey())) orphaned.add(e.getValue());
+        }
+        if (!orphaned.isEmpty()) {
+            existing.removeAll(orphaned);
+            if (productVariantJpaRepository != null) {
+                productVariantJpaRepository.flush();
+            }
         }
 
         existing.clear();

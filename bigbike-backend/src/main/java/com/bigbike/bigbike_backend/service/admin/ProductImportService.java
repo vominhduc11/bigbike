@@ -93,7 +93,7 @@ public class ProductImportService {
             "Thuộc tính biến thể #2 - Tên", "Thuộc tính biến thể #2 - Giá trị",
             "Thuộc tính biến thể #3 - Tên", "Thuộc tính biến thể #3 - Giá trị",
             "Giá bán lẻ - VNĐ",
-            "Giá so sánh - VNĐ",
+            "Giá sale - VNĐ",
             "Tình trạng kho (Còn hàng / Hết hàng)",
             "Ẩn cưỡng bức khỏi bán (Có / Không)",
             "Ảnh đại diện - URL",
@@ -659,7 +659,7 @@ public class ProductImportService {
         }
 
         applyDecimal(col(main, 17), request::setRetailPrice, warnings, "retailPrice");
-        applyDecimal(col(main, 18), request::setCompareAtPrice, warnings, "compareAtPrice");
+        applyDecimal(col(main, 18), request::setSalePrice, warnings, "salePrice");
 
         if (hasVariants) {
             String forceRaw = col(main, 20);
@@ -709,7 +709,7 @@ public class ProductImportService {
         VariantRequest variant = new VariantRequest();
         variant.setSku(col(rec, 3));
         applyDecimal(col(rec, 17), variant::setRetailPrice, warnings, "variants.retailPrice");
-        applyDecimal(col(rec, 18), variant::setCompareAtPrice, warnings, "variants.compareAtPrice");
+        applyDecimal(col(rec, 18), variant::setSalePrice, warnings, "variants.salePrice");
 
         String stockRaw = col(rec, 19);
         Boolean available = parseStockToken(stockRaw);
@@ -944,7 +944,7 @@ public class ProductImportService {
         row[10] = publishStatusLabel(p.getPublishStatus());
         row[11] = ""; row[12] = ""; row[13] = ""; row[14] = ""; row[15] = ""; row[16] = "";
         row[17] = formatDecimalOrBlank(p.getRetailPrice());
-        row[18] = formatDecimalOrBlank(p.getCompareAtPrice());
+        row[18] = formatDecimalOrBlank(p.getSalePrice());
         row[19] = hasVariants ? "" : (Boolean.TRUE.equals(p.getForceOutOfStock()) ? "Hết hàng" : "Còn hàng");
         row[20] = Boolean.TRUE.equals(p.getForceOutOfStock()) ? "Có" : "Không";
         row[21] = nvl(p.getImageUrl());
@@ -988,7 +988,7 @@ public class ProductImportService {
             row[12 + i * 2] = opt != null ? nvl(opt.getOptionValue()) : "";
         }
         row[17] = formatDecimalOrBlank(v.getRetailPrice());
-        row[18] = formatDecimalOrBlank(v.getCompareAtPrice());
+        row[18] = formatDecimalOrBlank(v.getSalePrice());
         row[19] = v.isAvailable() ? "Còn hàng" : "Hết hàng";
         row[20] = "";
         row[21] = ""; row[22] = ""; row[23] = "";

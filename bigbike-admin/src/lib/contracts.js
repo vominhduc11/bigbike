@@ -205,7 +205,6 @@ function normalizePrice(input) {
 
   return {
     retailPrice: toInteger(source.retailPrice, 0),
-    compareAtPrice: toInteger(source.compareAtPrice, 0) || undefined,
     salePrice: toInteger(source.salePrice, 0) || undefined,
     currency: toTrimmedString(source.currency) || 'VND',
   }

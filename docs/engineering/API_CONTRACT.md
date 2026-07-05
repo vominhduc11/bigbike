@@ -964,6 +964,16 @@ của entity này, hoặc trùng `slug`/`slug_en` của entity khác cùng loạ
 `slug_en` đang có → lỗi tại path `slug`. Catalog đổi/xoá `slug_en` tự sinh redirect 301;
 **bài viết KHÔNG sinh redirect** (module nội dung không có cơ chế này).
 
+**409 DATA_CONFLICT thân thiện — sản phẩm (2026-07-04):** nếu app-layer validation ở trên bị
+vượt qua (vd race hiếm giữa hai request đồng thời) và DB unique constraint chặn ở tầng
+persistence, `PATCH /api/v1/admin/products/{id}` trả `409 DATA_CONFLICT` kèm `details[]`
+field-level thay vì câu chung "Operation violates a data integrity constraint" rỗng `details`:
+`ux_products_slug_en` → path `translations.en.slug`; `products_slug_key` (slug tiếng Việt) →
+path `slug`; `ux_product_variants_sku_lower` (xem `BUSINESS_RULES.md` `PRODUCT_RULE_SKU_001`) →
+path `variants`. Category/brand/article's tương ứng vẫn trả `409` rỗng `details[]` (chưa map).
+Constraint không nhận diện được vẫn giữ nguyên câu chung như cũ. `CONFIRMED_FROM_CODE` —
+`GlobalExceptionHandler.handleDataIntegrityViolation`/`friendlyConstraintError`.
+
 Status: `CONFIRMED_FROM_CODE` — `CatalogController`/`ContentController` (path resolve), `CategoryJpaRepository`/
 `ProductJpaRepository`/`BrandJpaRepository`/`ArticleJpaRepository` (`findBySlug`/`findBySlugEn`),
 `JpaCatalogReadRepository`/`JpaContentReadRepository` (map `slugEn` + OR-resolve), `*TranslationRequest`/`ArticleTranslationRequest` (field `slug`),
@@ -1222,7 +1232,7 @@ Evidence: `AdminRedirectController.java`, `AdminRedirectService.java`, `Internal
 
 **Resource types written by backend:**
 - `ORDER` — order lifecycle events (AdminOrderService, PosOrderService)
-- `PRODUCT` — create/update/publish/soft-delete/restore (AdminCatalogMutationService). Before/after snapshot (fixed 2026-07-04, was name/slug/status only) now includes sku, brandId, categoryId, shortDescription, description, imageUrl, retailPrice, compareAtPrice, salePrice, costPrice, stockState, stockQuantity, forceOutOfStock — captured **before** the patch is applied (previously several call sites passed `before = null` despite the entity already being loaded).
+- `PRODUCT` — create/update/publish/soft-delete/restore (AdminCatalogMutationService). Before/after snapshot (fixed 2026-07-04, was name/slug/status only) now includes sku, brandId, categoryId, shortDescription, description, imageUrl, retailPrice, salePrice, stockState, stockQuantity, forceOutOfStock — captured **before** the patch is applied (previously several call sites passed `before = null` despite the entity already being loaded).
 - `CATEGORY` — create/update/soft-delete (AdminCatalogMutationService). Snapshot (fixed 2026-07-04) adds description, introContent, imageUrl, iconUrl, menuIconUrl, bannerUrl, parentId, sortOrder, showOnHomepage; before-snapshot bug fixed same as PRODUCT.
 - `BRAND` — create/update/soft-delete (AdminCatalogMutationService). Snapshot (fixed 2026-07-04) adds description, logoUrl, bannerUrl; before-snapshot bug fixed same as PRODUCT.
 - `INVENTORY` — stock adjustments (AdminInventoryService)

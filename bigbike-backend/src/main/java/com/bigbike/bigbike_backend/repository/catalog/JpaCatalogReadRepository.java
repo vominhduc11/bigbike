@@ -327,10 +327,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 List.of(),
                 new ProductPrice(
                         entity.getRetailPrice(),
-                        entity.getCompareAtPrice(),
                         entity.getSalePrice(),
-                        entity.getCurrency(),
-                        null // list-card view: cost not needed
+                        entity.getCurrency()
                 ),
                 List.of(),
                 List.of(),
@@ -406,10 +404,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 List.of(),
                 new ProductPrice(
                         entity.getRetailPrice(),
-                        entity.getCompareAtPrice(),
                         entity.getSalePrice(),
-                        entity.getCurrency(),
-                        null // public: cost not needed
+                        entity.getCurrency()
                 ),
                 toVariantsForListing(entity, locale),
                 List.of(),
@@ -465,10 +461,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 ? null
                 : new ProductPrice(
                         entity.getRetailPrice(),
-                        entity.getCompareAtPrice(),
                         entity.getSalePrice(),
-                        entity.getCurrency() == null ? "VND" : entity.getCurrency(),
-                        null // public: cost not needed
+                        entity.getCurrency() == null ? "VND" : entity.getCurrency()
                 );
 
         List<ProductVariantOption> options = entity.getOptions() == null
@@ -777,10 +771,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 toVideos(entity),
                 new ProductPrice(
                         entity.getRetailPrice(),
-                        entity.getCompareAtPrice(),
                         entity.getSalePrice(),
-                        entity.getCurrency(),
-                        publicView ? null : entity.getCostPrice() // admin-only
+                        entity.getCurrency()
                 ),
                 toVariants(entity, publicView, locale),
                 toSpecifications(entity, publicView, locale),
@@ -1150,10 +1142,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 ? null
                 : new ProductPrice(
                         entity.getRetailPrice(),
-                        entity.getCompareAtPrice(),
                         entity.getSalePrice(),
-                        entity.getCurrency() == null ? "VND" : entity.getCurrency(),
-                        publicView ? null : entity.getCostPrice() // admin-only (variant cost)
+                        entity.getCurrency() == null ? "VND" : entity.getCurrency()
                 );
 
         // Prefer the human-readable attribute label over the raw slug so the

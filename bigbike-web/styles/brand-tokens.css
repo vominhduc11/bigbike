@@ -7,8 +7,6 @@
  */
 
 :root {
-  color-scheme: light;
-
   /* Color primitives */
   --bb-color-red-50: #fff4f3;
   --bb-color-red-500: #ff0c09;
@@ -55,9 +53,6 @@
   --bb-bg-surface: var(--bb-color-white);
   --bb-bg-surface-raised: var(--bb-color-gray-50);
   --bb-bg-surface-hover: var(--bb-color-red-50);
-  /* Same value as --bb-color-gray-25; documented in STYLEGUIDE.md Palette table.
-     Backs the shadcn --muted mapping in app/globals.css. */
-  --bb-bg-surface-alt: var(--bb-color-gray-25);
   /* Dark surfaces for header, footer, drawers, toasts, media players */
   --bb-bg-surface-dark: #141414;
   --bb-bg-surface-dark-2: #0d0d0d;
@@ -287,81 +282,8 @@
   }
 }
 
-/* ============================================================================
-   DARK MODE — token overrides
-   Applied whenever the anti-flash script (app/layout.tsx) or ThemeToggle sets
-   `data-theme="dark"` on <html>. Only semantic tokens that face the *page*
-   (backgrounds/text/borders/state colors) are overridden here — header/footer/
-   drawer surfaces already use the dedicated --bb-*-dark primitives below and
-   stay visually identical in both themes (by design, see STYLEGUIDE.md).
-
-   Every pair here is verified by __tests__/theme/contrast.test.ts (WCAG AA:
-   >=4.5:1 normal text, >=3:1 large text/UI components), reading this file
-   directly — do not hand-edit a value without re-running that test.
-   ============================================================================ */
-:root[data-theme="dark"] {
-  color-scheme: dark;
-
-  /* Backgrounds — page/section darkest, surface a touch lighter (elevation),
-     surface-raised lighter again (modals/dropdown float above surface). */
-  --bb-bg-page: #0b0b0d;
-  --bb-bg-section: #0b0b0d;
-  --bb-bg-surface: #18181b;
-  --bb-bg-surface-raised: #232328;
-  --bb-bg-surface-hover: #2a1614; /* dark tint of red-50 */
-  --bb-bg-surface-alt: #1a1a1e;
-
-  /* Text on page/surface (NOT header/footer — those keep --bb-text-inverse*) */
-  --bb-text-primary: #f2f2f4;
-  --bb-text-secondary: #b6b6bd;
-  --bb-text-muted: #b6b6bd;
-  --bb-text-disabled: #6c6c72;
-  /* --bb-brand-primary-aa (#cc0906) on a near-black page is a thin ~3.4:1 —
-     reuse --bb-brand-primary-inverse (already tuned for red-on-dark-surface
-     use in the footer) for a comfortable ~8:1 instead of inventing a new value. */
-  --bb-text-brand: var(--bb-brand-primary-inverse);
-
-  /* Borders — ascending lightness = ascending emphasis, same shape as light. */
-  --bb-border-subtle: #26262b;
-  --bb-border-default: #38383f;
-  --bb-border-strong: #4d4d55;
-  --bb-border-control: #6b6b74;
-  --bb-border-control-hover: #86868f;
-
-  /* State colors — same hue as light, background alpha raised (a pale 14%
-     wash nearly disappears on #0b0b0d) and text/icon lightened for AA on the
-     new, darker chip background. --bb-state-danger and --bb-state-info are
-     themselves the text/icon color in the light palette (no separate "-text"
-     token exists for them, unlike success/warning) — both must be overridden
-     directly, not just their -bg/-border. */
-  --bb-state-success: #9bcb84;
-  --bb-state-success-text: #9bcb84;
-  --bb-state-success-bg: rgba(119, 136, 102, 0.28);
-  --bb-state-success-border: rgba(119, 136, 102, 0.55);
-  --bb-state-warning-text: #ffd35c;
-  --bb-state-warning-bg: rgba(252, 185, 0, 0.22);
-  --bb-state-warning-border: rgba(252, 185, 0, 0.5);
-  --bb-state-danger: var(--bb-brand-primary-inverse);
-  --bb-state-danger-bg: rgba(255, 12, 9, 0.16);
-  --bb-state-danger-border: rgba(255, 12, 9, 0.5);
-  --bb-state-info: #7ab6ff;
-  --bb-state-info-bg: rgba(0, 123, 255, 0.22);
-  --bb-state-info-border: rgba(0, 123, 255, 0.5);
-
-  /* "Còn hàng" / badge "Chính hãng" — the one functional non-brand green,
-     distinct from --bb-state-success above (docs/STYLEGUIDE.md §Palette). */
-  --bb-color-success: #6fd07c;
-
-  /* PDP ưu/nhược điểm + rating star — lighten, keep hue. */
-  --bb-pros-accent: #4caf6b;
-  --bb-cons-accent: var(--bb-brand-primary-inverse);
-  --bb-rating-star: #e8a13f;
-
-  /* Giỏ hàng — dòng giảm giá (.summary--items .discount) */
-  --bb-discount: #b892ff;
-}
-
 .bb-theme {
+  color-scheme: light;
   background: var(--bb-bg-page);
   color: var(--bb-text-primary);
   font-family: var(--bb-font-body);

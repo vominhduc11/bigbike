@@ -180,7 +180,7 @@ export function HelmetSizeGuideContent({ locale }: { locale: string }) {
 
       {/* 3. Mũ mới có nên hơi chật */}
       <SectionTitle>{t(lang, COPY.s3Title)}</SectionTitle>
-      <div className="mb-6 border border-border border-l-4 border-l-brand bg-card p-4">
+      <div className="mb-6 border border-border border-l-4 border-l-brand bg-white p-4">
         <p className="leading-body">
           <strong className="text-brand">{t(lang, COPY.highlightLead)}</strong>{" "}
           {t(lang, COPY.highlight)}

@@ -77,7 +77,7 @@ export function WpBrandListClient({
     return (
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-7">
         {Array.from({ length: 10 }).map((_, i) => (
-          <div key={i} className="flex h-full flex-col items-center justify-between gap-4 border border-border bg-card p-5">
+          <div key={i} className="flex h-full flex-col items-center justify-between gap-4 border border-neutral-200 bg-white p-5">
             <Skeleton className="h-16 w-4/5" />
             <Skeleton className="h-4 w-3/5" />
           </div>
@@ -117,7 +117,7 @@ export function WpBrandListClient({
                 viSlug={brand.slug}
                 enSlug={brand.slugEn}
                 title={name}
-                className="group flex h-full flex-col items-center justify-between gap-4 border border-border bg-card p-5 no-underline transition-colors hover:border-foreground"
+                className="group flex h-full flex-col items-center justify-between gap-4 border border-neutral-200 bg-white p-5 no-underline transition-colors hover:border-neutral-900"
               >
                 <span className="flex h-16 w-full items-center justify-center">
                   {logoUrl ? (
@@ -127,10 +127,10 @@ export function WpBrandListClient({
                       className="max-h-16 w-auto max-w-full object-contain transition-transform duration-200 group-hover:scale-105"
                     />
                   ) : (
-                    <span className="text-2xl font-bold tracking-wide text-muted-foreground">{initials}</span>
+                    <span className="text-2xl font-bold tracking-wide text-neutral-300">{initials}</span>
                   )}
                 </span>
-                <span className="text-center text-ui-14 font-semibold uppercase tracking-wide text-foreground">
+                <span className="text-center text-ui-14 font-semibold uppercase tracking-wide text-neutral-800">
                   {name}
                 </span>
               </LocalizedLink>

@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Product } from "@/lib/contracts/public";
 import { WpProductSwipeItem } from "./WpProductSwipeItem";
@@ -51,5 +51,30 @@ describe("WpProductSwipeItem — gate sao theo REVIEW_RULE_003", () => {
   it("thiếu cả rating lẫn ratingCount (entry localStorage cũ) → ẩn sao", () => {
     const { container } = render(<WpProductSwipeItem product={makeProduct()} />);
     expect(container.querySelector('[aria-label$="sao"]')).toBeNull();
+  });
+});
+
+describe("WpProductSwipeItem — mô hình giá 2 trường (PRODUCT_RULE_012)", () => {
+  it("có salePrice hợp lệ → hiện giá sale + giá niêm yết gạch ngang + badge %", () => {
+    const { container } = render(
+      <WpProductSwipeItem
+        product={makeProduct({ price: { retailPrice: 500000, salePrice: 400000, currency: "VND" } })}
+      />,
+    );
+    expect(screen.getByText("400.000 ₫")).toBeInTheDocument();
+    const old = container.querySelector(".old");
+    expect(old).not.toBeNull();
+    expect(old!.textContent).toBe("500.000 ₫");
+    expect(container.querySelector(".product--item-sale")).not.toBeNull();
+    expect(screen.getByText("20%")).toBeInTheDocument();
+  });
+
+  it("chỉ có retailPrice (salePrice trống) → hiện giá niêm yết, KHÔNG gạch ngang/badge", () => {
+    const { container } = render(
+      <WpProductSwipeItem product={makeProduct({ price: { retailPrice: 500000, currency: "VND" } })} />,
+    );
+    expect(screen.getByText("500.000 ₫")).toBeInTheDocument();
+    expect(container.querySelector(".old")).toBeNull();
+    expect(container.querySelector(".product--item-sale")).toBeNull();
   });
 });

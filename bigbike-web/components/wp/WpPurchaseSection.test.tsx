@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Product } from "@/lib/contracts/public";
@@ -45,13 +46,19 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
   } as Product;
 }
 
-function renderSection(rating: number | null, ratingCount: number | null) {
-  return render(
+function renderWithQueryClient(ui: React.ReactElement) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+}
+
+function renderSection(rating: number | null, ratingCount: number | null, productOverrides: Partial<Product> = {}) {
+  return renderWithQueryClient(
     <WpPurchaseSection
-      product={makeProduct()}
+      product={makeProduct(productOverrides)}
       gallery={[]}
       rating={rating}
       ratingCount={ratingCount}
+      previewMode
     />,
   );
 }
@@ -74,12 +81,27 @@ describe("WpPurchaseSection — buy-box PDP, gate sao theo REVIEW_RULE_003", () 
     expect(
       container.querySelector('[itemtype="https://schema.org/AggregateRating"]'),
     ).toBeNull();
-    expect(screen.getByText(/Chưa có đánh giá/)).toBeInTheDocument();
+    expect(screen.getByText(/noReviews/)).toBeInTheDocument();
   });
 
   it("rating ảo 4.5 + ratingCount 0 (hàng WP-import) → vẫn ẩn sao (REVIEW_RULE_004)", () => {
     const { container } = renderSection(4.5, 0);
     expect(container.querySelector('[aria-label$="sao"]')).toBeNull();
-    expect(screen.getByText(/Chưa có đánh giá/)).toBeInTheDocument();
+    expect(screen.getByText(/noReviews/)).toBeInTheDocument();
+  });
+});
+
+describe("WpPurchaseSection — mô hình giá 2 trường (PRODUCT_RULE_012)", () => {
+  it("có salePrice hợp lệ → hiện giá sale + giá niêm yết gạch ngang", () => {
+    renderSection(null, null, { price: { retailPrice: 2000000, salePrice: 1500000, currency: "VND" } });
+    expect(screen.getByText("1.500.000 ₫")).toBeInTheDocument();
+    const old = screen.getByText("2.000.000 ₫");
+    expect(old.tagName).toBe("DEL");
+  });
+
+  it("chỉ có retailPrice (salePrice trống) → hiện giá niêm yết, KHÔNG gạch ngang", () => {
+    const { container } = renderSection(null, null, { price: { retailPrice: 2000000, currency: "VND" } });
+    expect(screen.getByText("2.000.000 ₫")).toBeInTheDocument();
+    expect(container.querySelector("del")).toBeNull();
   });
 });

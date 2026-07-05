@@ -80,7 +80,6 @@ public class CatalogRequestValidator {
         }
 
         AdminMutationValidators.validateNonNegativeDecimal(request.getRetailPrice(), "retailPrice", "retailPrice", errors);
-        AdminMutationValidators.validateNonNegativeDecimal(request.getCompareAtPrice(), "compareAtPrice", "compareAtPrice", errors);
         AdminMutationValidators.validateNonNegativeDecimal(request.getSalePrice(), "salePrice", "salePrice", errors);
         AdminMutationValidators.validateCurrency(request.getCurrency(), "currency", errors);
         AdminMutationValidators.validateImageAsset(
@@ -167,13 +166,10 @@ public class CatalogRequestValidator {
         BigDecimal mergedRetail = request.isRetailPricePresent()
                 ? request.getRetailPrice()
                 : (current == null ? null : current.getRetailPrice());
-        BigDecimal mergedCompareAt = request.isCompareAtPricePresent()
-                ? request.getCompareAtPrice()
-                : (current == null ? null : current.getCompareAtPrice());
         BigDecimal mergedSale = request.isSalePricePresent()
                 ? request.getSalePrice()
                 : (current == null ? null : current.getSalePrice());
-        AdminMutationValidators.validateSalePriceRule(mergedRetail, mergedCompareAt, mergedSale, "salePrice", errors);
+        AdminMutationValidators.validateSalePriceRule(mergedRetail, mergedSale, "salePrice", errors);
 
         Map<String, ProductVariantEntity> currentVariantsById = new HashMap<>();
         if (current != null && current.getVariants() != null) {
@@ -188,21 +184,16 @@ public class CatalogRequestValidator {
             for (int i = 0; i < request.getVariants().size(); i++) {
                 VariantRequest v = request.getVariants().get(i);
                 AdminMutationValidators.validateNonNegativeDecimal(v.getRetailPrice(), "variants[" + i + "].retailPrice", "retailPrice", errors);
-                AdminMutationValidators.validateNonNegativeDecimal(v.getCompareAtPrice(), "variants[" + i + "].compareAtPrice", "compareAtPrice", errors);
                 AdminMutationValidators.validateNonNegativeDecimal(v.getSalePrice(), "variants[" + i + "].salePrice", "salePrice", errors);
                 ProductVariantEntity currentVariant = currentVariantsById.get(AdminMutationValidators.trimToNull(v.getId()));
                 BigDecimal mergedVariantRetail = v.isRetailPricePresent()
                         ? v.getRetailPrice()
                         : (currentVariant == null ? null : currentVariant.getRetailPrice());
-                BigDecimal mergedVariantCompareAt = v.isCompareAtPricePresent()
-                        ? v.getCompareAtPrice()
-                        : (currentVariant == null ? null : currentVariant.getCompareAtPrice());
                 BigDecimal mergedVariantSale = v.isSalePricePresent()
                         ? v.getSalePrice()
                         : (currentVariant == null ? null : currentVariant.getSalePrice());
-                validateVariantSalePriceRule(
+                AdminMutationValidators.validateSalePriceRule(
                         mergedVariantRetail,
-                        mergedVariantCompareAt,
                         mergedVariantSale,
                         "variants[" + i + "].salePrice",
                         errors
@@ -348,23 +339,6 @@ public class CatalogRequestValidator {
                         "variants[" + e.getValue() + "].sku", "DUPLICATE",
                         "Variant SKU is already used by another product."));
             }
-        }
-    }
-
-    private static void validateVariantSalePriceRule(
-            BigDecimal retailPrice,
-            BigDecimal compareAtPrice,
-            BigDecimal salePrice,
-            String field,
-            List<ApiErrorDetail> errors
-    ) {
-        if (salePrice == null || retailPrice == null) {
-            return;
-        }
-
-        BigDecimal reference = compareAtPrice != null ? compareAtPrice : retailPrice;
-        if (salePrice.compareTo(reference) >= 0) {
-            errors.add(new ApiErrorDetail(field, "INVALID_VALUE", "salePrice must be lower than compareAtPrice or retailPrice."));
         }
     }
 

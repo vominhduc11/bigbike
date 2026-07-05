@@ -15,7 +15,6 @@ public record ProductSnapshotResponse(
 ) {
     public record Pricing(
             BigDecimal retailPrice,
-            BigDecimal compareAtPrice,
             BigDecimal salePrice,
             int discountPercent,
             String currency

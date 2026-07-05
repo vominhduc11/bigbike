@@ -166,7 +166,7 @@ export function PrivacyPolicyContent({ locale }: { locale: string }) {
       <SectionTitle>{t(lang, COPY.s4Title)}</SectionTitle>
       <p className="mb-3 leading-body">{t(lang, COPY.s4Intro)}</p>
       <Bullets lang={lang} items={SHARE} />
-      <div className="mb-6 border border-border border-l-4 border-l-brand bg-card p-4">
+      <div className="mb-6 border border-border border-l-4 border-l-brand bg-white p-4">
         <p className="font-bold leading-body text-brand">{t(lang, COPY.s4NoSell)}</p>
       </div>
 

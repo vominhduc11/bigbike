@@ -87,7 +87,6 @@ class AdminMutationApiTest {
                   "categoryId": "cat_helmet",
                   "brandId": "brand_ls2",
                   "retailPrice": 2500000,
-                  "compareAtPrice": 2900000,
                   "salePrice": 2300000,
                   "currency": "VND",
                   "stockState": "IN_STOCK",
@@ -167,14 +166,13 @@ class AdminMutationApiTest {
                   "brandId": "brand_ls2",
                   "retailPrice": 1990000,
                   "salePrice": 1790000,
-                  "costPrice": 1200000,
                   "currency": "VND",
                   "publishStatus": "DRAFT"
                 }
                 """.formatted(slug);
 
-        // Returns the public Product shape (publicView=true): retail/sale present,
-        // cost price hidden — exactly what the storefront PDP would render.
+        // Returns the public Product shape (publicView=true): retail/sale present —
+        // exactly what the storefront PDP would render.
         mockMvc.perform(post("/api/v1/admin/products/preview")
                         .contentType(MediaType.APPLICATION_JSON)
                         .characterEncoding(StandardCharsets.UTF_8)
@@ -184,8 +182,7 @@ class AdminMutationApiTest {
                 .andExpect(jsonPath("$.data.name").value("Preview Dry Run Product"))
                 .andExpect(jsonPath("$.data.publishStatus").value("DRAFT"))
                 .andExpect(jsonPath("$.data.price.salePrice").value(1790000))
-                .andExpect(jsonPath("$.data.price.currency").value("VND"))
-                .andExpect(jsonPath("$.data.price.costPrice").doesNotExist());
+                .andExpect(jsonPath("$.data.price.currency").value("VND"));
 
         // Dry-run must NOT persist: no new row, and the slug never lands in the DB.
         assertThat(productJpaRepository.count()).isEqualTo(countBefore);
@@ -446,7 +443,6 @@ class AdminMutationApiTest {
         create.setName("Phase 1 Variant Price Product " + suffix);
         create.setCategoryId("cat_helmet");
         create.setRetailPrice(new BigDecimal("2500000"));
-        create.setCompareAtPrice(new BigDecimal("2900000"));
         create.setSalePrice(new BigDecimal("2300000"));
         create.setCurrency("VND");
         create.setPublishStatus(PublishStatus.DRAFT);
@@ -458,7 +454,6 @@ class AdminMutationApiTest {
         VariantRequest variant = new VariantRequest();
         variant.setSku("VAR-" + suffix);
         variant.setRetailPrice(new BigDecimal("1800000"));
-        variant.setCompareAtPrice(new BigDecimal("2100000"));
         variant.setSalePrice(new BigDecimal("1700000"));
         variant.setIsAvailable(true);
         variant.setSortOrder(0);
@@ -475,7 +470,6 @@ class AdminMutationApiTest {
                   "name": "Phase 1 Variant Price Product Updated %s",
                   "categoryId": "cat_helmet",
                   "retailPrice": 2500000,
-                  "compareAtPrice": 2900000,
                   "salePrice": 2300000,
                   "currency": "VND",
                   "stockState": "IN_STOCK",
@@ -512,7 +506,6 @@ class AdminMutationApiTest {
         ProductVariantEntity updatedVariant = productVariantJpaRepository.findById(variantId)
                 .orElseThrow(() -> new IllegalStateException("Expected updated variant."));
         assertThat(updatedVariant.getRetailPrice()).isEqualByComparingTo("1800000");
-        assertThat(updatedVariant.getCompareAtPrice()).isEqualByComparingTo("2100000");
         assertThat(updatedVariant.getSalePrice()).isEqualByComparingTo("1700000");
     }
 

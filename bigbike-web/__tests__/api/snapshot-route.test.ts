@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { GET } from "@/app/api/products/[id]/snapshot/route";
 
 const mockSnapshot = {
-  pricing: { retailPrice: 5000000, compareAtPrice: null, salePrice: null, discountPercent: 0, currency: "VND" },
+  pricing: { retailPrice: 5000000, salePrice: null, discountPercent: 0, currency: "VND" },
   stock: { stockState: "IN_STOCK", label: "Còn hàng", forceOutOfStock: false, quantity: 10 },
   variants: [],
 };

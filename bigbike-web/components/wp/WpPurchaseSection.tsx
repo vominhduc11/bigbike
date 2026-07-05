@@ -12,7 +12,6 @@ import { ProductGallery } from "@/components/catalog/ProductGallery";
 import { hasApprovedReviews } from "@/lib/rating";
 import { useLocalizedField, LHtml } from "@/components/i18n/LocalizedContent";
 import { sanitizeRichHtml } from "@/lib/utils/html";
-import { ThemeAwareHtml } from "@/components/content/ThemeAwareHtml";
 import { MobileStickyPurchaseBar } from "@/components/catalog/MobileStickyPurchaseBar";
 import { openWriteReviewDialog } from "@/components/catalog/writeReviewBus";
 import { VariantPicker } from "./purchase/VariantPicker";
@@ -34,7 +33,7 @@ type Props = {
 
 /** Shape trả về của /api/products/[slug]/snapshot — chỉ phần cần freshness (giá/tồn/variants). */
 type ProductSnapshot = {
-  pricing: { retailPrice: number; compareAtPrice: number | null; salePrice: number | null; discountPercent: number; currency: string };
+  pricing: { retailPrice: number; salePrice: number | null; discountPercent: number; currency: string };
   stock: { stockState: string; label: string; forceOutOfStock: boolean };
   variants: ProductVariant[];
 };
@@ -89,7 +88,6 @@ export function WpPurchaseSection({
   const freshPrice: ProductPrice = snapshot
     ? {
         retailPrice: snapshot.pricing.retailPrice,
-        compareAtPrice: snapshot.pricing.compareAtPrice,
         salePrice: snapshot.pricing.salePrice,
         currency: "VND",
       }
@@ -117,8 +115,8 @@ export function WpPurchaseSection({
   );
 
   const priceSource = selectedVariant?.price ?? freshPrice;
-  const { current, compare } = derivePricing(priceSource);
-  const showOld = compare != null && compare > current;
+  const { current, retail, isSale } = derivePricing(priceSource);
+  const showOld = isSale;
 
   // STOCK_RULE_009 — hiển thị buy-box PDP (display-only, KHÔNG đổi điều kiện mua
   // ở STOCK_RULE_005/006). Mô hình tồn kho giờ là boolean Còn/Hết — KHÔNG hiển thị
@@ -245,9 +243,9 @@ export function WpPurchaseSection({
           {/* Eyebrow + dải tin cậy: 2 dòng nhỏ trên tiêu đề. KHÔNG dùng <ul>/<li> để né
               dấu đầu dòng của theme WP; chấm phân cách tự vẽ, chỉ chen GIỮA các mục. */}
           {trustBadgesHtml.trim() ? (
-            <ThemeAwareHtml
+            <div
               className="max-md:hidden mb-11 bb-trust-badges-html"
-              html={sanitizeRichHtml(trustBadgesHtml, { allowInlineStyles: true })}
+              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(trustBadgesHtml, { allowInlineStyles: true }) }}
             />
           ) : trustItems.length > 0 ? (
             <div className="max-md:hidden mb-11 flex flex-wrap items-center gap-x-4 gap-y-2 text-ui-14 max-md:text-ui-12 text-muted-foreground">
@@ -271,7 +269,7 @@ export function WpPurchaseSection({
             <div className="price">
               <p className="price js-single-price flex flex-wrap items-baseline gap-x-3">
                 <span className="!text-ui-32 max-md:!text-ui-30 !leading-tight !text-brand !font-bold">{formatVndNumber(current)} ₫</span>
-                {showOld ? <del>{formatVndNumber(compare!)} ₫</del> : null}
+                {showOld ? <del>{formatVndNumber(retail)} ₫</del> : null}
               </p>
             </div>
             <div className="status">

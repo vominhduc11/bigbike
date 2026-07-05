@@ -996,7 +996,6 @@ class Phase1NReviewsApiTest {
         entity.setCategory(source.getCategory());
         entity.setBrand(source.getBrand());
         entity.setRetailPrice(source.getRetailPrice());
-        entity.setCompareAtPrice(source.getCompareAtPrice());
         entity.setSalePrice(source.getSalePrice());
         entity.setCurrency(source.getCurrency());
         entity.setStockState(source.getStockState());

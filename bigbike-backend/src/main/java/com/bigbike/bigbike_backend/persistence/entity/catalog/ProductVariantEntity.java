@@ -38,14 +38,8 @@ public class ProductVariantEntity {
     @Column(name = "retail_price", precision = 19, scale = 2)
     private BigDecimal retailPrice;
 
-    @Column(name = "compare_at_price", precision = 19, scale = 2)
-    private BigDecimal compareAtPrice;
-
     @Column(name = "sale_price", precision = 19, scale = 2)
     private BigDecimal salePrice;
-
-    @Column(name = "cost_price", precision = 19, scale = 2)
-    private BigDecimal costPrice;
 
     private String currency;
 

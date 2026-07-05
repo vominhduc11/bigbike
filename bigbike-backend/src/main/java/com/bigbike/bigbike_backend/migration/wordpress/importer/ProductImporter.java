@@ -115,10 +115,8 @@ public class ProductImporter implements DomainImporter {
                 BigDecimal retailPrice = mp.price() != null
                         ? mp.price()
                         : (mp.regularPrice() != null ? mp.regularPrice() : BigDecimal.ZERO);
-                BigDecimal compareAtPrice = mp.regularPrice();
                 BigDecimal salePrice = mp.salePrice();
                 entity.setRetailPrice(retailPrice);
-                entity.setCompareAtPrice(compareAtPrice != null && compareAtPrice.signum() > 0 ? compareAtPrice : null);
                 entity.setSalePrice(salePrice != null && salePrice.signum() > 0 ? salePrice : null);
                 entity.setCurrency("VND");
 

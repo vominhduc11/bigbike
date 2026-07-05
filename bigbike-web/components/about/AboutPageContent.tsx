@@ -27,12 +27,9 @@ import { telHref } from "@/lib/utils/format";
  */
 
 const THEME = "/wp-content/themes/bigbike";
-/* Qua token thay vì hex cứng — vẫn thắng CSS legacy unlayered (vẫn là inline
-   style, chỉ giá trị là var() thay vì literal) nên tự đổi theo dark mode. */
-const TEXT = "var(--bb-text-primary)";
-const MUTED = "var(--bb-text-secondary)";
-const RED = "var(--bb-brand-primary)";
-const SURFACE = "var(--bb-bg-surface)";
+const TEXT = "#3a3a3a";
+const MUTED = "#6f6f6f";
+const RED = "#ff0c09";
 
 export type AboutBrandLogo = {
   id: string;
@@ -68,7 +65,7 @@ function ServiceTile({
       style={{
         padding: 28,
         boxShadow: "0 0 30px rgba(0,0,0,.16)",
-        background: highlight ? RED : SURFACE,
+        background: highlight ? RED : "#fff",
         color: fg,
       }}
     >
@@ -105,7 +102,7 @@ function ContactItem({
       <div style={{ minWidth: 0 }}>
         <div
           className="text-ui-16"
-          style={{ fontWeight: 700, color: "var(--bb-text-primary)", marginBottom: 8 }}
+          style={{ fontWeight: 700, color: "#000", marginBottom: 8 }}
         >
           {label}
         </div>

@@ -1300,21 +1300,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </Field>
 
                   <Field
-                    label={<span title={t('products.detail.compareAtPriceTitle')}>{t('products.detail.compareAtPriceLabel')}</span>}
-                    error={validationErrors.compareAtPrice}
-                  >
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      placeholder="vd: 6.500.000"
-                      value={formatPrice(form.compareAtPrice)}
-                      onChange={(e) => updateField('compareAtPrice', e.target.value.replace(/\D/g, ''))}
-                      disabled={isReadOnly}
-                    />
-                  </Field>
-
-                  <Field
                     label={t('products.detail.salePrice')}
                     error={
                       validationErrors.salePrice
@@ -1360,9 +1345,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                         <Button
                           size="sm"
                           type="button"
-                          disabled={!(Number(form.retailPrice) || Number(form.compareAtPrice))}
+                          disabled={!Number(form.retailPrice)}
                           onClick={() => {
-                            const base = Number(form.retailPrice) || Number(form.compareAtPrice)
+                            const base = Number(form.retailPrice)
                             const pct = Number(discountPct)
                             if (base > 0 && pct > 0 && pct < 100) {
                               updateField('salePrice', String(Math.round(base * (1 - pct / 100))))
@@ -1374,25 +1359,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                           {t('products.detail.apply')}
                         </Button>
                         <small className="text-xs text-muted-foreground">
-                          {(Number(form.retailPrice) || Number(form.compareAtPrice))
+                          {Number(form.retailPrice)
                             ? t('products.detail.discountFromBaseHint')
                             : t('products.detail.discountNeedsBaseHint')}
                         </small>
                       </div>
                     )}
-                  </Field>
-
-                  <Field label={t('products.detail.costPrice')} error={validationErrors.costPrice}>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      placeholder="vd: 3.000.000"
-                      value={formatPrice(form.costPrice)}
-                      onChange={(e) => updateField('costPrice', e.target.value.replace(/\D/g, ''))}
-                      disabled={isReadOnly}
-                    />
-                    <small className="text-xs text-muted-foreground">{t('products.detail.costPriceHint')}</small>
                   </Field>
 
                   <Field label={t('products.detail.publishStatus')} error={validationErrors.publishStatus}>

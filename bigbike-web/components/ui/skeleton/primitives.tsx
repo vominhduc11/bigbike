@@ -133,7 +133,7 @@ export function ArticleCardSkel() {
       aria-hidden="true"
       style={{ pointerEvents: "none" }}
     >
-      <div className="relative aspect-[16/9] overflow-hidden shrink-0 bg-card">
+      <div className="relative aspect-[16/9] overflow-hidden shrink-0 bg-white">
         <SkelBlock w="100%" h="100%" rounded={false} style={{ position: "absolute", inset: 0 }} />
       </div>
       <div className="relative pt-[41px] px-5 pb-[30px] flex flex-col gap-2 flex-1 bg-card max-md:pt-[34px] max-md:px-[14px] max-md:pb-[18px]">

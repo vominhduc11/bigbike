@@ -14,7 +14,7 @@ import { Tr } from "@/components/i18n/Tr";
 // ["product-snapshot", slug, locale] nên react-query chia sẻ cache, KHÔNG fetch thừa.
 
 type Snapshot = {
-  pricing: { retailPrice: number; compareAtPrice: number | null; salePrice: number | null; discountPercent: number; currency: string };
+  pricing: { retailPrice: number; salePrice: number | null; discountPercent: number; currency: string };
   stock: { stockState: string; label: string; forceOutOfStock: boolean };
   variants: unknown[];
 };
@@ -43,7 +43,6 @@ export function TrustLivePrice({ product, previewMode = false }: { product: Prod
   const price: ProductPrice = snap
     ? {
         retailPrice: snap.pricing.retailPrice,
-        compareAtPrice: snap.pricing.compareAtPrice,
         salePrice: snap.pricing.salePrice,
         currency: "VND",
       }

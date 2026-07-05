@@ -228,9 +228,7 @@ export function buildEmptyForm() {
     brandId: '',
     categoryId: '',
     retailPrice: '',
-    compareAtPrice: '',
     salePrice: '',
-    costPrice: '',
     forceOutOfStock: false,
     publishStatus: 'DRAFT',
     imageUrl: '',
@@ -433,17 +431,9 @@ export function buildFormFromItem(item) {
       Number.isInteger(item.price?.retailPrice) && item.price.retailPrice >= 0
         ? String(item.price.retailPrice)
         : '',
-    compareAtPrice:
-      Number.isInteger(item.price?.compareAtPrice) && item.price.compareAtPrice > 0
-        ? String(item.price.compareAtPrice)
-        : '',
     salePrice:
       Number.isInteger(item.price?.salePrice) && item.price.salePrice > 0
         ? String(item.price.salePrice)
-        : '',
-    costPrice:
-      Number.isInteger(item.price?.costPrice) && item.price.costPrice > 0
-        ? String(item.price.costPrice)
         : '',
     forceOutOfStock: Boolean(item.forceOutOfStock),
     publishStatus: item.publishStatus,
@@ -730,9 +720,7 @@ export function toPayload(form) {
     // Send null when cleared so backend (presence-flag logic) can distinguish
     // "user erased this" from "field not part of this request".
     retailPrice: toIntegerOrNull(form.retailPrice),
-    compareAtPrice: toIntegerOrNull(form.compareAtPrice),
     salePrice: toIntegerOrNull(form.salePrice),
-    costPrice: toIntegerOrNull(form.costPrice),
     currency: 'VND',
     forceOutOfStock: Boolean(form.forceOutOfStock),
     publishStatus: form.publishStatus,
@@ -1016,7 +1004,7 @@ export function computeAttrSetWarning(items, t) {
 export const SECTION_FIELD_PREFIXES = {
   basic:         ['name','slug','sku','gender','shortDescription','brandId','categoryId','publishStatus'],
   description:   ['description'],
-  pricing:       ['retailPrice','compareAtPrice','salePrice','costPrice'],
+  pricing:       ['retailPrice','salePrice'],
   media:         ['imageUrl'],
   seo:           ['seoTitle','seoDescription','seoCanonicalUrl','seoOgImageUrl','seoOgImageAlt'],
   gallery:       ['gallery'],

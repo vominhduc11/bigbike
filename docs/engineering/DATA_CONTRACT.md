@@ -125,19 +125,26 @@ Evidence:
 - `V297__derive_variant_name_from_options.sql`
 - `bigbike-admin/src/screens/product-detail/VariantEditors.jsx` (`deriveVariantName`, no name `<Input>` in `VariantCard`)
 
-### Cost price (admin-only)
+### Product pricing model — 2 fields (2026-07-04)
 
-`products.cost_price` and `product_variants.cost_price` (`numeric(19,2)`, nullable, `>= 0`; added in `V195`) store the purchase/cost price. (These columns formerly backed the POS below-cost guard, which was removed with the POS module 2026-06-23; cost price is retained for margin reporting.) Resolution mirrors selling price: **variant cost first, then product cost**; `NULL` means cost is unknown.
+`products.retail_price` / `product_variants.retail_price` (`numeric(19,2)`, `NOT NULL` on products, nullable on variants) is the list price ("Giá niêm yết"). `sale_price` (`numeric(19,2)`, nullable, `>= 0`) is the optional discounted selling price ("Giá sale") — when set it must be strictly **less than** `retail_price` (enforced by `AdminMutationValidators.validateSalePriceRule`, both product- and variant-level). There is no admin/public read split any more — nothing sensitive left to withhold, so both prices are returned on every read (admin and public).
 
-**Cost is admin-only and must never reach the storefront.** The shared `ProductPrice` domain record carries `costPrice`, but it is populated **only on admin (non-public) reads** (`publicView == false`); public reads pass `null`, and the public DTO `ProductSnapshotResponse` maps an explicit price subset (`retailPrice`, `compareAtPrice`, `salePrice`) that excludes cost entirely. Admin sets it via the product create/update API (`UpsertProductRequest.costPrice`, `VariantRequest.costPrice`).
+`compare_at_price` ("Giá gốc/gạch ngang") and `cost_price` ("Giá vốn") were **removed entirely** from both `products` and `product_variants` in `V317__consolidate_product_pricing.sql` (columns dropped, along with their `V195` non-negative `CHECK` constraints). Rationale: `cost_price` formerly backed the POS below-cost guard, which was removed with the POS module 2026-06-23 (`ORDER_RULE_008`) — it had zero remaining code consumers and zero populated rows in production at the time of removal. `compare_at_price` and `retail_price`/`salePrice` had become redundant in practice: of all rows with `compare_at_price` set, the only ones where it differed meaningfully from `retail_price` were rows with an active discount, and those rows already had `retail_price == sale_price` (or `sale_price` unset) — i.e. `compare_at_price` was carrying the "was" price while `retail_price` carried the "is" price, which is exactly what the 2-field model expresses directly.
+
+Historical rows where `compare_at_price > retail_price` (a real, currently-displayed discount) were backfilled **before** the column drop, in the same migration: `sale_price = COALESCE(sale_price, retail_price)`, `retail_price = compare_at_price`. This is lossless per the pre-migration data audit (every affected row already had `retail_price == sale_price` or `sale_price IS NULL`).
+
+The shared `ProductPrice` domain record is now `ProductPrice(BigDecimal retailPrice, BigDecimal salePrice, String currency)`.
+
+**Web display rule** (PDP, product card, everywhere price is shown): `salePrice` set and `< retailPrice` → show `retailPrice` struck through + `salePrice` as the main/selling price + discount-percent badge. `salePrice` not set → show `retailPrice` as the plain selling price, no strikethrough, no badge. See `PRODUCT_RULE_012`.
 
 Status: `CONFIRMED_FROM_CODE`
 
 Evidence:
 
-- `ProductPrice.java` (`costPrice` field), `ProductSnapshotResponse.java` (public subset excludes cost)
-- `JpaCatalogReadRepository.java` (admin vs `publicView ? null` cost), `AdminCatalogMutationService.java` (`applyProductPatch` / `applyVariants`)
-- `PosOrderService.resolveCost` / below-cost guard; `V195__add_cost_price.sql`
+- `ProductPrice.java`, `ProductSnapshotResponse.java` (both 2-field only)
+- `AdminMutationValidators.validateSalePriceRule`, `CatalogRequestValidator.java`
+- `bigbike-web/lib/pricing.ts` (`derivePricing`)
+- `V317__consolidate_product_pricing.sql`, `PRODUCT_RULE_012`
 
 ### Address fields — district (quận/huyện) is legacy-only (2025 administrative reform)
 

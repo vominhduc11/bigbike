@@ -84,7 +84,6 @@ final class AdminMutationValidators {
 
     static void validateSalePriceRule(
             BigDecimal retailPrice,
-            BigDecimal compareAtPrice,
             BigDecimal salePrice,
             String field,
             List<ApiErrorDetail> errors
@@ -93,9 +92,8 @@ final class AdminMutationValidators {
             return;
         }
 
-        BigDecimal reference = compareAtPrice != null ? compareAtPrice : retailPrice;
-        if (salePrice.compareTo(reference) >= 0) {
-            errors.add(new ApiErrorDetail(field, "INVALID_VALUE", "salePrice must be lower than compareAtPrice or retailPrice."));
+        if (salePrice.compareTo(retailPrice) >= 0) {
+            errors.add(new ApiErrorDetail(field, "INVALID_VALUE", "salePrice must be lower than retailPrice."));
         }
     }
 

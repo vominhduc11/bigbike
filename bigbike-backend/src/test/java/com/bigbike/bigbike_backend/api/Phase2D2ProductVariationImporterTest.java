@@ -96,7 +96,6 @@ class Phase2D2ProductVariationImporterTest {
         assertThat(saved).isPresent();
         assertThat(saved.get().getSku()).isEqualTo("SKU-VAR-001");
         assertThat(saved.get().getRetailPrice()).isEqualByComparingTo(new BigDecimal("500000"));
-        assertThat(saved.get().getCompareAtPrice()).isEqualByComparingTo(new BigDecimal("600000"));
         assertThat(saved.get().getCurrency()).isEqualTo("VND");
     }
 

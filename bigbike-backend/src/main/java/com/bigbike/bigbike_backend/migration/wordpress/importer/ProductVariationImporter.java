@@ -108,10 +108,8 @@ public class ProductVariationImporter implements DomainImporter {
                 entity.setName(buildName(mv));
 
                 BigDecimal retailPrice = mv.price() != null ? mv.price() : mv.regularPrice();
-                BigDecimal compareAtPrice = mv.regularPrice();
                 BigDecimal salePrice = mv.salePrice();
                 entity.setRetailPrice(retailPrice != null && retailPrice.signum() > 0 ? retailPrice : null);
-                entity.setCompareAtPrice(compareAtPrice != null && compareAtPrice.signum() > 0 ? compareAtPrice : null);
                 entity.setSalePrice(salePrice != null && salePrice.signum() > 0 ? salePrice : null);
                 entity.setCurrency("VND");
 

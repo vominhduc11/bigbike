@@ -11,7 +11,7 @@
 
 | Mục | Quy tắc |
 |---|---|
-| Theme | Mặc định **light-first** (WP-parity): nền trang `#ffffff`, chữ đen. Khách có thể bật **Dark mode** (công tắc 2 trạng thái Sáng/Tối trong header, xem §Dark mode) — header và footer giữ dark KHÔNG đổi ở cả 2 theme |
+| Theme | Light-first (WP-parity): nền trang `#ffffff`, chữ đen; header và footer giữ dark |
 | CTA chính | Đỏ `#FF0C09`, dùng cho mua hàng, khẩn cấp, giá sale |
 | Link / tương tác phụ | Xanh `#007BFF` |
 | Chat / hỗ trợ | Cyan `#00BFFF`, nút tròn cố định góc phải dưới |
@@ -76,41 +76,6 @@ Accessibility mappings:
 - `#007BFF` remains the canonical blue primitive. For body links and small informational text on light backgrounds, use `--bb-link-text` (currently `#005FCC`).
 - On dark header surfaces, red hover/active states may use the canonical brand red (`--bb-brand-primary-on-dark`). On the footer top strip `#3A3A3A`, use `--bb-brand-primary-inverse` for red hover accents.
 - Default subtle dividers can stay light (`#DDDDDD` / `#CECECE`), but form controls and selected/important borders must use `--bb-border-control` or a stronger token.
-
----
-
-## Dark mode
-
-Site hỗ trợ **2 trạng thái**: Sáng / Tối, gạt bằng công tắc (switch) trong header — không có "Theo hệ thống". Mặc định vẫn light-first (WP-parity) cho khách chưa từng chọn; dark mode là lựa chọn của khách, lưu bền qua cookie `bb_theme`, áp dụng bằng thuộc tính `data-theme="dark"` trên `<html>` (+ `color-scheme: dark`). Không có "chớp sáng" (flash-of-wrong-theme): theme được set bằng script chặn-render (`next/script strategy="beforeInteractive"`) trước khi trang paint, không cần server biết cookie (giữ nguyên ISR/SSG toàn site — xem `docs/` phần kiến trúc nếu cần chi tiết kỹ thuật).
-
-**Header/footer giữ nguyên dark ở cả 2 theme** — không đổi theo toggle.
-
-### Bảng màu tối (`:root[data-theme="dark"]` trong `brand-tokens.css`)
-
-| Token | Light | Dark | Vai trò |
-|---|---|---|---|
-| `--bb-bg-page` / `--bb-bg-section` | `#ffffff` | `#0b0b0d` | nền trang — gần đen, không `#000` tuyệt đối |
-| `--bb-bg-surface` | `#ffffff` | `#18181b` | card/surface — nhô nhẹ khỏi nền trang |
-| `--bb-bg-surface-raised` | `#f5f5f5` | `#232328` | modal/dropdown — nhô cao hơn surface |
-| `--bb-bg-surface-hover` | `#fff4f3` | `#2a1614` | tint đỏ ấm khi hover |
-| `--bb-bg-surface-alt` | `#f8f8f8` | `#1a1a1e` | nền phụ (map `--muted` shadcn) |
-| `--bb-text-primary` | `#000000` | `#f2f2f4` | chữ chính — gần trắng, không `#fff` tuyệt đối |
-| `--bb-text-secondary` / `--bb-text-muted` | `#6f6f6f` | `#b6b6bd` | chữ phụ/mờ |
-| `--bb-text-disabled` | `#8a8a8a` | `#6c6c72` | chữ vô hiệu hoá |
-| `--bb-text-brand` | `#cc0906` | `#ff7f7a` (= `--bb-brand-primary-inverse`) | chữ màu brand trên nền trang — tái dùng token "red-on-dark" có sẵn thay vì tự nghĩ giá trị mới |
-| `--bb-border-subtle/default/strong/control/control-hover` | `#dddddd`…`#6f6f6f` | `#26262b`…`#86868f` | thang viền tăng dần độ nhấn, cùng hình dạng bậc như light |
-| `--bb-state-success/-warning/-danger/-info` (text + bg + border) | wash nhạt trên nền trắng | giữ hue, tăng alpha nền + tăng sáng chữ | overlay nhạt gần như biến mất trên nền gần-đen nếu không chỉnh |
-| `--bb-color-success` (badge "Còn hàng"/"Chính hãng") | `#2e7d32` | `#6fd07c` | |
-| `--bb-pros-accent` / `--bb-cons-accent` / `--bb-rating-star` | đậm | sáng hơn, giữ hue | |
-| `--bb-text-inverse*`, `--bb-bg-surface-dark*`, màu chat/Zalo | không đổi | không đổi | header/footer/FAB vốn đã tối cố định |
-
-### Cam kết tương phản
-
-Mọi cặp nền×chữ/nền×viền-có-nghĩa ở **cả 2 theme** đạt tối thiểu WCAG AA (**≥4.5:1** chữ thường, **≥3:1** chữ lớn/viền control có nghĩa) — kiểm tra tự động bằng `__tests__/theme/contrast.test.ts`, đọc trực tiếp giá trị token từ `brand-tokens.css` (không phải số hardcode trong test) nên sẽ FAIL nếu ai sửa token phá tương phản. Border trang trí (`-subtle`/`-default`/`-strong`) và border/background của status-chip không bị ép ngưỡng này (đã vậy sẵn ở light, xem §Palette "Default subtle dividers can stay light").
-
-### Khối HTML admin dán (PDP)
-
-Các khối "dán HTML" trên trang chi tiết sản phẩm (`.wyswyg`, `allowInlineStyles: true`) giữ nguyên màu admin đã đặt — admin không đổi gì. Khi dark bật, web tự render thêm 1 bản đã chuyển màu (giữ bản sắc màu nhấn, chỉ đổi neutral bg/text; loại trừ `img`/`video`/`iframe`/`background-image`) và dùng CSS `[data-theme]` để chỉ hiện đúng bản — xem `lib/utils/richtext-dark-transform.ts`.
 
 ---
 

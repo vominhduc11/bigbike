@@ -27,14 +27,14 @@ export function WpProductSwipeItem({
   wrapperClassName?: string;
 }) {
   const tProduct = useTranslations("Product");
-  const { current, compare, isSale, discountPercent } = derivePricing(product.price);
+  const { current, retail, isSale, discountPercent } = derivePricing(product.price);
   const img = toLegacyWpMediaUrl(resolveMediaUrl(product.image?.url?.trim()));
   const name = safeText(product.name, "");
   // REVIEW_RULE_003: chỉ hiện sao khi có ≥ 1 review đã duyệt — không còn default
   // 4.5. Khi 0 review, KHÔNG render `.rating-star` (plugin starRating của theme
   // WP vẽ 2 sao mặc định cho mọi `.rating-star` thiếu data-rating).
   const hasReviews = hasApprovedReviews(product.rating, product.ratingCount);
-  const showOld = compare != null && compare > current;
+  const showOld = isSale;
 
   // Lưới danh mục (`col-*`) cần MỌI thẻ cao bằng nhau, bất kể tên dài/ngắn hay
   // tỉ lệ ảnh khác nhau. Carousel (swiper-slide) giữ nguyên look WP gốc.
@@ -140,7 +140,7 @@ export function WpProductSwipeItem({
             <div className="col-md-12">
               <div className="product--item-price">
                 <p>{formatVndNumber(current)} ₫</p>
-                {showOld ? <p className="old">{formatVndNumber(compare)} ₫</p> : null}
+                {showOld ? <p className="old">{formatVndNumber(retail)} ₫</p> : null}
               </div>
             </div>
           </div>

@@ -88,7 +88,6 @@ export function createProductSchema(t, isCreate = false) {
       // "Quick Answer" (trả lời nhanh, V300) — vi; bản en ở translations.en.
       quickAnswerSummary: z.string().max(600, 'Quick Answer tối đa 600 ký tự.').nullable().optional(),
       retailPrice: z.string().optional(),
-      compareAtPrice: z.string().optional(),
       salePrice: z.string().optional(),
       publishStatus: isCreate ? z.string().min(1, t('products.detail.errPublishRequired')) : z.string().optional(),
       imageUrl: z.string().optional(),
@@ -215,7 +214,6 @@ export function createProductSchema(t, isCreate = false) {
       }
 
       const retail = toInt(data.retailPrice)
-      const compare = toInt(data.compareAtPrice)
       const sale = toInt(data.salePrice)
 
       // retailPrice required on create — variant-level prices are no longer
@@ -226,13 +224,10 @@ export function createProductSchema(t, isCreate = false) {
       if (Number.isNaN(retail)) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errRetailPriceInt'), path: ['retailPrice'] })
       }
-      if (Number.isNaN(compare)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errCompareAtPriceInt'), path: ['compareAtPrice'] })
-      }
       if (Number.isNaN(sale)) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errSalePriceInt'), path: ['salePrice'] })
       }
-      if (Number.isInteger(sale) && Number.isInteger(retail) && (sale >= retail || (Number.isInteger(compare) && sale >= compare))) {
+      if (Number.isInteger(sale) && Number.isInteger(retail) && sale >= retail) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errSalePriceHigh'), path: ['salePrice'] })
       }
       if (data.imageUrl?.trim() && !MEDIA_URL_REGEX.test(data.imageUrl.trim())) {

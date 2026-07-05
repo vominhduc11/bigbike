@@ -48,7 +48,7 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
         enSlug={article.slugEn}
         className="group flex flex-col no-underline text-inherit bg-card border-none rounded-none [box-shadow:var(--bb-shadow-md)] [transition:box-shadow_0.3s_ease] hover:border-brand hover:[box-shadow:var(--bb-shadow-product)] max-md:border max-md:border-solid max-md:border-border max-md:[box-shadow:none]"
       >
-        <div className="relative aspect-[16/9] overflow-hidden shrink-0 bg-card">
+        <div className="relative aspect-[16/9] overflow-hidden shrink-0 bg-white">
           <MediaImage
             image={article.coverImage}
             altFallback={title}

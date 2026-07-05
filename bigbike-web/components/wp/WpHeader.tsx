@@ -9,7 +9,6 @@ import { WpCartLink } from "./WpCartLink";
 import { WpHeaderUser } from "./WpHeaderUser";
 import { WpLangSwitch } from "./WpLangSwitch";
 import { WpMenuClient } from "./WpMenuClient";
-import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 const T = "/wp-content/themes/bigbike";
 
@@ -147,7 +146,6 @@ export async function WpHeader({ menuNodes }: { menuNodes: HeaderNavNode[] }) {
 
               <div className="user-control d-inline-block">
                 <WpLangSwitch />
-                <ThemeToggle />
                 <WpSearchIcon />
                 <div className="user-control--item cart">
                   <WpCartLink ariaLabel="Giỏ hàng" />

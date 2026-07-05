@@ -28,12 +28,8 @@ public class VariantRequest {
 
     private BigDecimal retailPrice;
     private boolean retailPricePresent = false;
-    private BigDecimal compareAtPrice;
-    private boolean compareAtPricePresent = false;
     private BigDecimal salePrice;
     private boolean salePricePresent = false;
-    private BigDecimal costPrice;
-    private boolean costPricePresent = false;
 
     // stockState is a derived field (computed from quantityOnHand). Removed from input — backend ignores it.
 
@@ -69,18 +65,8 @@ public class VariantRequest {
         this.retailPricePresent = true;
     }
 
-    public void setCompareAtPrice(BigDecimal compareAtPrice) {
-        this.compareAtPrice = compareAtPrice;
-        this.compareAtPricePresent = true;
-    }
-
     public void setSalePrice(BigDecimal salePrice) {
         this.salePrice = salePrice;
         this.salePricePresent = true;
-    }
-
-    public void setCostPrice(BigDecimal costPrice) {
-        this.costPrice = costPrice;
-        this.costPricePresent = true;
     }
 }

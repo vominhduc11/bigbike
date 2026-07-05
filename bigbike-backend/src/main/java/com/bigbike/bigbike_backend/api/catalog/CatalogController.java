@@ -119,13 +119,11 @@ public class CatalogController {
         ProductPrice price = product.price();
         BigDecimal retail = price != null && price.retailPrice() != null
                 ? price.retailPrice() : BigDecimal.ZERO;
-        BigDecimal compareAt = price != null ? price.compareAtPrice() : null;
         BigDecimal sale = price != null ? price.salePrice() : null;
-        BigDecimal effective = sale != null ? sale : retail;
 
         int discountPercent = 0;
-        if (compareAt != null && compareAt.signum() > 0 && compareAt.compareTo(effective) > 0) {
-            BigDecimal ratio = effective.divide(compareAt, 4, RoundingMode.HALF_UP);
+        if (sale != null && sale.signum() > 0 && retail.compareTo(sale) > 0) {
+            BigDecimal ratio = sale.divide(retail, 4, RoundingMode.HALF_UP);
             discountPercent = BigDecimal.ONE.subtract(ratio)
                     .multiply(BigDecimal.valueOf(100))
                     .setScale(0, RoundingMode.HALF_UP)
@@ -137,7 +135,6 @@ public class CatalogController {
 
         ProductSnapshotResponse.Pricing pricing = new ProductSnapshotResponse.Pricing(
                 retail,
-                compareAt,
                 sale,
                 discountPercent,
                 price != null && price.currency() != null ? price.currency() : "VND"

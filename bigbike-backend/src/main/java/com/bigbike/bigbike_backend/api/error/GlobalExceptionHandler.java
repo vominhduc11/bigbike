@@ -113,10 +113,38 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiErrorResponse> handleDataIntegrityViolation(
             DataIntegrityViolationException ex, HttpServletRequest request) {
-        log.warn("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
+        String cause = ex.getMostSpecificCause().getMessage();
+        log.warn("Data integrity violation: {}", cause);
+        ApiErrorDetail detail = friendlyConstraintError(cause);
+        if (detail != null) {
+            return build(HttpStatus.CONFLICT, "DATA_CONFLICT", detail.message(), List.of(detail), request);
+        }
         return build(HttpStatus.CONFLICT, "DATA_CONFLICT",
                 "Operation violates a data integrity constraint. Please try again.",
                 List.of(), request);
+    }
+
+    /**
+     * Known UNIQUE-constraint names that can still reach the DB despite app-layer
+     * pre-validation (e.g. a genuine concurrent race) mapped to a shop-owner-facing
+     * field error instead of the generic "data integrity constraint" sentence.
+     * See PRODUCT_RULE_003 (slugEn) / PRODUCT_RULE_SKU_001 (variant SKU).
+     */
+    static ApiErrorDetail friendlyConstraintError(String cause) {
+        if (cause == null) return null;
+        if (cause.contains("ux_products_slug_en")) {
+            return new ApiErrorDetail("translations.en.slug", "DUPLICATE",
+                    "Đường dẫn tiếng Anh đã được dùng cho sản phẩm khác.");
+        }
+        if (cause.contains("products_slug_key")) {
+            return new ApiErrorDetail("slug", "DUPLICATE",
+                    "Đường dẫn (tiếng Việt) đã được dùng cho sản phẩm khác.");
+        }
+        if (cause.contains("ux_product_variants_sku_lower")) {
+            return new ApiErrorDetail("variants", "DUPLICATE",
+                    "Mã SKU biến thể bị trùng với sản phẩm/biến thể khác.");
+        }
+        return null;
     }
 
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
