@@ -613,7 +613,14 @@ export function cleanDescriptionBlocks(blocks) {
         case 'image':     return (b.url ?? '').trim().length > 0
         case 'video':     return (b.url ?? '').trim().length > 0
         case 'callout':   return (b.html ?? '').trim().length > 0
-        case 'feature':   return (b.url ?? '').trim().length > 0
+        case 'feature': {
+          const hasImage = (b.url ?? '').trim().length > 0
+          const hasText = (b.subheading ?? '').trim().length > 0
+            || (b.heading ?? '').trim().length > 0
+            || (b.html ?? '').trim().length > 0
+            || (b.items ?? []).some((it) => (it ?? '').trim().length > 0)
+          return hasImage || hasText
+        }
         case 'suitability': return (b.html ?? '').trim().length > 0 || (b.cards ?? []).some(cardHasContent)
         case 'sizeGuide': return (b.html ?? '').trim().length > 0
         default:          return true

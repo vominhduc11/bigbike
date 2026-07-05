@@ -152,12 +152,14 @@ public sealed interface DescriptionBlock
     }
 
     /**
-     * { type: "feature", side?: "auto"|"left"|"right", url, alt?, caption?, subheading?, heading?, html?,
+     * { type: "feature", side?: "auto"|"left"|"right", url?, alt?, caption?, subheading?, heading?, html?,
      *   listStyle?: "bulleted"|"numbered", items?: string[] }
      *
      * <p>Một "hàng tính năng" gói chung 1 ảnh + tiêu đề phụ (eyebrow) + tiêu đề chính + đoạn mô tả +
      * danh sách, render thành khối 2 cột ảnh–chữ trên web (xen kẽ trái/phải khi {@code side} = "auto"
-     * hoặc null). Chỉ {@code url} bắt buộc; các phần chữ đều tuỳ chọn.
+     * hoặc null). Không field nào bắt buộc riêng lẻ — khối chỉ bị coi là rỗng (và bị admin lọc bỏ trước
+     * khi gửi) khi cả ảnh lẫn mọi phần chữ đều trống. Thiếu {@code url} → web render full-width chỉ chữ,
+     * không chừa cột ảnh trống (xem {@code featureHasImage}/{@code featureHasText} ở bigbike-web).
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
@@ -167,7 +169,6 @@ public sealed interface DescriptionBlock
         @Pattern(regexp = "auto|left|right", message = "feature.side must be 'auto', 'left', or 'right'.")
         private String side;
 
-        @NotBlank(message = "feature.url is required.")
         @Size(max = 2000, message = "feature.url must not exceed 2 000 characters.")
         private String url;
 

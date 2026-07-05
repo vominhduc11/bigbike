@@ -322,8 +322,17 @@ for the admin editor.
 | `suitabilityAdvisory` | `suitability_advisory` + `suitability_advisory_en` (`V237`; format đổi ở `V240__convert_suitability_advisory_to_cards.sql`) | `TEXT`, max 20 000 | "Phù hợp với ai" — **JSON array các thẻ tư vấn** `[{ audience, advice, linkLabel?, linkUrl? }]` (trước V240 là rich-HTML). Web parse JSON → mỗi item một thẻ (đối tượng in đậm + lời khuyên + link nội bộ tùy chọn); `linkUrl` dùng chung cả vi/en, mảng `_en` mirror theo index. Hidden when empty. |
 
 It is detail-only (null in list responses), nullable, presence-flag on PATCH,
-empty/blank normalized to `NULL`. The PDP "Hoàn thiện bộ bảo hộ — Có thể bạn cũng
-cần" block reuses the existing `relatedProducts` (no new cross-sell column).
+empty/blank normalized to `NULL`.
+
+> **Correction (2026-07-05):** this section previously stated the PDP "Hoàn thiện
+> bộ bảo hộ" block reuses `relatedProducts`. Verified against `ProductView.tsx`
+> (`i18n key crossSellTitle` → `"Hoàn thiện bộ bảo hộ"` / `"Complete your gear"`)
+> and `messages/vi.json:136`: **`crossSellTitle` renders the `accessoryProducts`
+> field**, not `relatedProducts`. `relatedProducts` instead renders as
+> `relatedTitle` ("Sản phẩm tương tự" / "Related products") — see
+> "Product related products — `relatedProducts` / `relatedProductIds`" and
+> "Product accessories — `accessoryProducts` / `accessoryProductIds` (V239)" in
+> `API_CONTRACT.md`.
 
 Status: `CONFIRMED_FROM_CODE`
 
@@ -433,13 +442,13 @@ Eleven block types (8 gốc + 3 khối PDP chuyên biệt V246):
 | `video` | `provider` (`youtube`\|`tiktok`\|`facebook`\|`upload`), `url` (≤ 2 000 chars) | `caption` (≤ 500) |
 | `callout` | `variant` (`info`\|`warning`\|`note`), `html` (≤ 10 000 chars) | — |
 | `divider` | — | — |
-| `feature` | `url` (≤ 2 000 chars) | `side` (`auto`\|`left`\|`right`, mặc định `auto`), `alt` (≤ 500), `caption` (≤ 500), `subheading` (≤ 500), `heading` (≤ 500), `html` (≤ 50 000), `listStyle` (`bulleted`\|`numbered`), `items` (≤ 200 strings, each ≤ 2 000 chars) |
+| `feature` | — (không field nào bắt buộc riêng lẻ; xem ghi chú dưới) | `url` (≤ 2 000 chars), `side` (`auto`\|`left`\|`right`, mặc định `auto`), `alt` (≤ 500), `caption` (≤ 500), `subheading` (≤ 500), `heading` (≤ 500), `html` (≤ 50 000), `listStyle` (`bulleted`\|`numbered`), `items` (≤ 200 strings, each ≤ 2 000 chars) |
 | `suitability` (V246) | — | `title` (≤ 500), `html` (≤ 20 000; **nguồn render web**, cho phép `<table>` + CSS inline). `cards` chỉ là lưới an toàn legacy — payload mới CHỈ gửi `html` (xem dưới) |
 | `sizeGuide` (V246) | — | `title` (≤ 500), `html` (≤ 20 000; **nguồn render web**, cho phép thẻ `<table>` + CSS inline) |
 
 **2 khối PDP chuyên biệt (V246) — chỉ dùng cho SẢN PHẨM:** `suitability` (Phù hợp với ai), `sizeGuide` (Bảng size). Bản EN nằm ở khối tương ứng trong `description_blocks_en` (theo vị trí). **Mô hình mới (cập nhật):** `html` là **nguồn render DUY NHẤT** của cả 2 khối trên web. Cả 2 hỗ trợ 2 tab nhập ở admin — "có cấu trúc" HOẶC "dán HTML" — **cùng ghi vào field `html`**. Tab cấu trúc chỉ là công cụ nhập: thao tác (`sizeGuide`: cột/dòng/ghi chú; `suitability`: thẻ đối tượng/lời khuyên/link) được **GHÉP vào `html` hiện có, giữ nguyên CSS/markup, chỉ đổi chữ** (helpers `lib/sizeChart.js`, `lib/suitabilityCards.js`). Chuyển HTML→cấu trúc thì parse `html` lấy chữ (bỏ CSS); thêm dòng/thẻ nhân bản phần tử cuối (kế thừa CSS). **Payload chỉ gửi `html`** cho 2 khối này (suitability bỏ `cards` khỏi payload — `cleanDescriptionBlocks`); `cards` chỉ còn là lưới an toàn legacy khi `html` rỗng (admin sinh `html` từ `cards` lúc nạp để không mất nội dung). HTML thô được sanitize ở web (`sanitizeRichHtml` với `allowInlineStyles` → **giữ `style` inline**, vẫn chặn script/onclick/javascript:); admin preview dùng `sanitizeHtml` đã mở `style`. **Ưu/Nhược điểm (`prosCons`) ĐÃ TÁCH RA khỏi mô tả (V251)** — quay lại là khối RIÊNG cố định ngay dưới mô tả, ngoài tab; nguồn dữ liệu là bảng con `product_highlights` (xem §Ưu điểm/Nhược điểm), KHÔNG còn là khối trong `description_blocks`. Subtype `ProsConsBlock` vẫn còn trong sealed interface (dormant, để deserialize an toàn dữ liệu cũ); migration `V251` gỡ mọi khối `prosCons` còn sót trong `description_blocks`/`_en`.
 
-**`feature` — hàng ảnh + chữ 2 cột (thêm sau V139, code-only):** Gói chung 1 ảnh + tiêu đề phụ (`subheading`, eyebrow) + tiêu đề chính (`heading`) + đoạn mô tả (`html`) + danh sách vào MỘT khối, render thành khối 2 cột ảnh–chữ trên web (chỉ desktop; mobile xếp dọc). `side`=`auto`/null → các khối `feature` liên tiếp tự xen kẽ trái/phải (so le); `left`/`right` ép vị trí ảnh. Chỉ `url` bắt buộc. **Khối này thay thế cơ chế "ghép ngầm" cũ** (web từng tự gom một khối `image`/`video` + cụm `text` liền sau thành hàng 2 cột) — cơ chế ghép ngầm đã được GỠ BỎ; muốn 2 cột phải dùng khối `feature`.
+**`feature` — hàng ảnh + chữ 2 cột (thêm sau V139, code-only):** Gói chung 1 ảnh + tiêu đề phụ (`subheading`, eyebrow) + tiêu đề chính (`heading`) + đoạn mô tả (`html`) + danh sách vào MỘT khối, render thành khối 2 cột ảnh–chữ trên web (chỉ desktop; mobile xếp dọc). `side`=`auto`/null → các khối `feature` liên tiếp tự xen kẽ trái/phải (so le); `left`/`right` ép vị trí ảnh. **Không field nào bắt buộc riêng lẻ** — admin có thể lưu khối chỉ có ảnh, chỉ có chữ, hoặc cả hai; khối chỉ bị coi là rỗng và bị lọc bỏ trước khi gửi khi CẢ ảnh lẫn mọi phần chữ đều trống (`cleanDescriptionBlocks` ở admin). Web tự chọn layout theo dữ liệu thực có (`featureHasImage`/`featureHasText` ở `description-blocks/grouping.ts`): đủ ảnh+chữ → 2 cột; chỉ chữ hoặc chỉ ảnh → full width, không chừa nửa cột trống. **Khối này thay thế cơ chế "ghép ngầm" cũ** (web từng tự gom một khối `image`/`video` + cụm `text` liền sau thành hàng 2 cột) — cơ chế ghép ngầm đã được GỠ BỎ; muốn 2 cột phải dùng khối `feature`.
 
 **Vốn từ khối GIỚI HẠN ở phạm vi SẢN PHẨM (V238 + V246 + V251):** Trình soạn mô tả sản phẩm (và tab tự do của sản phẩm) cho tạo **6 khối**: `paragraph` (chỉ văn bản — ô rich-text chứa được `h2/h3/ul/ol/bold/link`), `image` (chỉ ảnh), `feature` với `side="right"` (ảnh phải) / `side="left"` (ảnh trái), và 2 khối PDP `suitability` / `sizeGuide`. **`prosCons` đã gỡ khỏi vốn từ khối (V251)** — Ưu/Nhược điểm nhập ở card riêng, là khối cố định ngoài mô tả. Các loại `heading`/`list`/`callout`/`divider`/`video` đứng riêng **không còn được tạo cho sản phẩm**. Sealed interface `DescriptionBlock` vẫn GIỮ đủ các subtype vì **dùng chung với Content** (Article/Page/Contact vẫn cần heading/list/…). Migration `V238__ConsolidateProductDescriptionBlocks.java` gộp dữ liệu sản phẩm cũ (`products.description_blocks` + `description_blocks_en` + `product_tabs` custom blocks/blocksEn) về vốn từ 4 khối: mỗi mục (heading + đoạn/list/callout đi liền sau) gộp thành MỘT khối `paragraph` rich-HTML (giữ nguyên nội dung), `divider` bị bỏ (web tự kẻ vạch giữa khối), `image`/`feature` giữ nguyên. Idempotent (chỉ rewrite hàng có loại khối ngoài 4-vocab hoặc gộp được).
 

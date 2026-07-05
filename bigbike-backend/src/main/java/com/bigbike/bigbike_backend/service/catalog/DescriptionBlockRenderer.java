@@ -125,19 +125,24 @@ public class DescriptionBlockRenderer {
     /**
      * Feature = một hàng ảnh + tiêu đề + đoạn + danh sách. Bản HTML này là fallback/SEO
      * (web đọc thẳng block để dựng 2 cột so le); ở đây render tuần tự trong một &lt;div class="bb-feature"&gt;.
+     * {@code url} không bắt buộc (2026-07-05) — khối chỉ-chữ bỏ hẳn thẻ {@code <figure>/<img>} thay vì
+     * xuất {@code <img src="">} rỗng, khớp quy tắc "thiếu url → render full-width chỉ chữ" của
+     * {@code DescriptionBlock.FeatureBlock}.
      */
     private String renderFeature(DescriptionBlock.FeatureBlock b) {
         StringBuilder sb = new StringBuilder("<div class=\"bb-feature\">");
-        // Ảnh
-        sb.append("<figure><img src=\"").append(escapeAttr(b.getUrl())).append("\"");
-        if (b.getAlt() != null && !b.getAlt().isBlank()) {
-            sb.append(" alt=\"").append(escapeAttr(b.getAlt())).append("\"");
+        // Ảnh (bỏ qua hoàn toàn nếu không có url — không chừa cột ảnh trống)
+        if (b.getUrl() != null && !b.getUrl().isBlank()) {
+            sb.append("<figure><img src=\"").append(escapeAttr(b.getUrl())).append("\"");
+            if (b.getAlt() != null && !b.getAlt().isBlank()) {
+                sb.append(" alt=\"").append(escapeAttr(b.getAlt())).append("\"");
+            }
+            sb.append(">");
+            if (b.getCaption() != null && !b.getCaption().isBlank()) {
+                sb.append("<figcaption>").append(escapeHtml(b.getCaption())).append("</figcaption>");
+            }
+            sb.append("</figure>");
         }
-        sb.append(">");
-        if (b.getCaption() != null && !b.getCaption().isBlank()) {
-            sb.append("<figcaption>").append(escapeHtml(b.getCaption())).append("</figcaption>");
-        }
-        sb.append("</figure>");
         // Tiêu đề phụ (eyebrow)
         if (b.getSubheading() != null && !b.getSubheading().isBlank()) {
             sb.append("<p class=\"bb-feature-eyebrow\">").append(escapeHtml(b.getSubheading())).append("</p>");

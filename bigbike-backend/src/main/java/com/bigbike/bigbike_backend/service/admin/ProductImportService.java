@@ -28,6 +28,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaReposi
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
+import com.bigbike.bigbike_backend.service.content.BodyBlockParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
@@ -115,8 +116,12 @@ public class ProductImportService {
             "SEO - Mô tả trang - Tiếng Việt",
             "SEO - Mô tả trang - Tiếng Anh",
             "SEO - Canonical URL",
-            "SEO - Ảnh chia sẻ mạng xã hội (og:image) - URL"
+            "SEO - Ảnh chia sẻ mạng xã hội (og:image) - URL",
+            "Sản phẩm liên quan (SKU, nhiều SKU cách nhau bằng |)",
+            "Phụ kiện bán kèm (SKU, nhiều SKU cách nhau bằng |)"
     };
+
+    private static final int TEMPLATE_COLUMN_COUNT = 43;
 
     private final ProductJpaRepository productJpaRepository;
     private final ProductVariantJpaRepository productVariantJpaRepository;
@@ -126,6 +131,7 @@ public class ProductImportService {
     private final AdminCatalogMutationService adminCatalogMutationService;
     private final MediaUrlProperties mediaUrlProperties;
     private final Validator validator;
+    private final BodyBlockParser bodyBlockParser;
 
     public ProductImportService(
             ObjectProvider<ProductJpaRepository> productJpaRepositoryProvider,
@@ -135,7 +141,8 @@ public class ProductImportService {
             CatalogRequestValidator catalogRequestValidator,
             AdminCatalogMutationService adminCatalogMutationService,
             MediaUrlProperties mediaUrlProperties,
-            Validator validator
+            Validator validator,
+            BodyBlockParser bodyBlockParser
     ) {
         this.productJpaRepository = productJpaRepositoryProvider.getIfAvailable();
         this.productVariantJpaRepository = productVariantJpaRepositoryProvider.getIfAvailable();
@@ -145,6 +152,7 @@ public class ProductImportService {
         this.adminCatalogMutationService = adminCatalogMutationService;
         this.mediaUrlProperties = mediaUrlProperties;
         this.validator = validator;
+        this.bodyBlockParser = bodyBlockParser;
     }
 
     private void requireJpaPersistenceEnabled() {
@@ -206,6 +214,7 @@ public class ProductImportService {
 
         runBeanValidation(request, errors);
         resolveCategoryAndBrand(request, errors);
+        resolveRelatedAndAccessoryRefs(request, warnings);
 
         ProductEntity existing = resolveExistingProduct(request, errors);
         boolean ambiguous = errors.stream().anyMatch(e -> "AMBIGUOUS".equals(e.code()));
@@ -685,7 +694,10 @@ public class ProductImportService {
         String shortDescVi = col(main, 27);
         if (shortDescVi != null) request.setShortDescription(shortDescVi);
         String descVi = col(main, 29);
-        if (descVi != null) request.setDescription(descVi);
+        if (descVi != null) {
+            request.setDescription(descVi);
+            request.setDescriptionBlocks(bodyBlockParser.parseHtmlToBlocks(descVi));
+        }
         String specsHtmlVi = col(main, 31);
         if (specsHtmlVi != null) request.setSpecificationsHtml(specsHtmlVi);
         String sizeGuideVi = col(main, 33);
@@ -693,6 +705,18 @@ public class ProductImportService {
 
         applySeoFromCsv(request, main, warnings);
         applyTranslationsFromCsv(request, main);
+
+        // Raw SKU/slug tokens only — resolved to real product IDs later in processRow()
+        // by resolveRelatedAndAccessoryRefs(), which runs for both the CSV and JSON import
+        // paths (JSON callers may send literal IDs OR the same SKU/slug tokens).
+        String relatedSkus = col(main, 41);
+        if (relatedSkus != null) {
+            request.setRelatedProductIds(splitPipeList(relatedSkus));
+        }
+        String accessorySkus = col(main, 42);
+        if (accessorySkus != null) {
+            request.setAccessoryProductIds(splitPipeList(accessorySkus));
+        }
 
         if (hasVariants) {
             List<VariantRequest> variants = new ArrayList<>();
@@ -790,16 +814,20 @@ public class ProductImportService {
     }
 
     private void applyTranslationsFromCsv(UpsertProductRequest request, CSVRecord main) {
+        String descEn = col(main, 30);
         ProductTranslationRequest.ProductContentRequest en = ProductTranslationRequest.ProductContentRequest.builder()
                 .name(col(main, 5))
                 .shortDescription(col(main, 28))
-                .description(col(main, 30))
+                .description(descEn)
                 .specificationsHtml(col(main, 32))
                 .sizeGuide(col(main, 34))
                 .seoTitle(col(main, 36))
                 .seoDescription(col(main, 38))
                 .build();
         request.setTranslations(new ProductTranslationRequest(en));
+        if (descEn != null) {
+            request.setDescriptionBlocksEn(bodyBlockParser.parseHtmlToBlocks(descEn));
+        }
     }
 
     private void applyDecimal(String raw, Consumer<BigDecimal> setter, List<ApiErrorDetail> warnings, String field) {
@@ -863,6 +891,73 @@ public class ProductImportService {
             return List.of();
         }
         return Arrays.stream(raw.split("\\|")).map(String::trim).filter(s -> !s.isEmpty()).toList();
+    }
+
+    /**
+     * Re-resolves {@code relatedProductIds}/{@code accessoryProductIds} for both the CSV and
+     * JSON import paths (called from {@link #processRow}, after category/brand resolution).
+     * CSV rows arrive here holding raw SKU tokens (see column 42/43 parsing in
+     * {@link #buildProductRequestFromCsvMainRow}); JSON rows may hold literal product IDs
+     * (the pre-existing single-product-API shape) or the same SKU/slug tokens. Each token is
+     * tried as: exact product ID → SKU (case-insensitive) → slug, in that order, so existing
+     * ID-based JSON payloads keep working unchanged.
+     *
+     * <p>Unknown/ambiguous tokens are dropped with a soft warning rather than failing the row.
+     * If the original list was non-empty but every token failed to resolve, the field is reset
+     * to {@code null} (untouched) instead of persisting an empty list — an all-typo cell must
+     * not silently wipe an existing selection (mirrors {@code buildGalleryList}'s same
+     * all-invalid-entries fallback). A genuinely empty input list (JSON explicit {@code []},
+     * or a CSV cell containing only separators) passes through as an explicit clear, matching
+     * the single-product API's presence-flag semantics for these two fields.
+     *
+     * <p>A token referencing a product created earlier in the same file resolves fine on commit
+     * (rows commit sequentially — see class javadoc) but may warn as {@code NOT_FOUND} during
+     * validate-only preview, since that product does not exist in the database yet.
+     */
+    private void resolveRelatedAndAccessoryRefs(UpsertProductRequest request, List<ApiErrorDetail> warnings) {
+        List<String> related = request.getRelatedProductIds();
+        if (related != null) {
+            request.setRelatedProductIds(resolveProductRefTokens(related, warnings, "relatedProductIds"));
+        }
+        List<String> accessories = request.getAccessoryProductIds();
+        if (accessories != null) {
+            request.setAccessoryProductIds(resolveProductRefTokens(accessories, warnings, "accessoryProductIds"));
+        }
+    }
+
+    private List<String> resolveProductRefTokens(List<String> tokens, List<ApiErrorDetail> warnings, String field) {
+        if (tokens.isEmpty()) {
+            return tokens;
+        }
+        List<String> resolved = new ArrayList<>();
+        for (String raw : tokens) {
+            String token = AdminMutationValidators.trimToNull(raw);
+            if (token == null) {
+                continue;
+            }
+            if (productJpaRepository.findById(token).isPresent()) {
+                resolved.add(token);
+                continue;
+            }
+            List<ProductEntity> bySku = productJpaRepository.findAllBySkuIgnoreCase(token);
+            if (bySku.size() == 1) {
+                resolved.add(bySku.get(0).getId());
+                continue;
+            }
+            if (bySku.size() > 1) {
+                warnings.add(new ApiErrorDetail(field, "AMBIGUOUS",
+                        "SKU '" + token + "' trùng nhiều sản phẩm — bỏ qua tham chiếu ở " + field + "."));
+                continue;
+            }
+            ProductEntity bySlug = productJpaRepository.findBySlug(token).orElse(null);
+            if (bySlug != null) {
+                resolved.add(bySlug.getId());
+            } else {
+                warnings.add(new ApiErrorDetail(field, "NOT_FOUND",
+                        "Không tìm thấy sản phẩm với SKU/đường dẫn '" + token + "' ở " + field + " — bỏ qua."));
+            }
+        }
+        return resolved.isEmpty() ? null : resolved;
     }
 
     private boolean isWhitelistedMediaUrl(String url) {
@@ -930,7 +1025,7 @@ public class ProductImportService {
     private void printProductRows(CSVPrinter printer, ProductEntity p) throws IOException {
         List<ProductVariantEntity> variants = p.getVariants();
         boolean hasVariants = variants != null && !variants.isEmpty();
-        String[] row = new String[41];
+        String[] row = new String[TEMPLATE_COLUMN_COUNT];
         row[0] = "SẢN PHẨM CHÍNH";
         row[1] = p.getId();
         row[2] = nvl(p.getSku());
@@ -965,6 +1060,8 @@ public class ProductImportService {
         row[38] = nvl(p.getSeoDescriptionEn());
         row[39] = nvl(p.getSeoCanonicalUrl());
         row[40] = nvl(p.getSeoOgImageUrl());
+        row[41] = joinSkus(p.getRelatedProducts());
+        row[42] = joinSkus(p.getAccessoryProducts());
         printer.printRecord((Object[]) escapeRow(row));
 
         if (hasVariants) {
@@ -976,7 +1073,7 @@ public class ProductImportService {
 
     private String[] buildVariantExportRow(ProductEntity p, ProductVariantEntity v) {
         List<ProductVariantOptionEntity> options = v.getOptions();
-        String[] row = new String[41];
+        String[] row = new String[TEMPLATE_COLUMN_COUNT];
         row[0] = "BIẾN THỂ";
         row[1] = p.getId();
         row[2] = "";
@@ -995,10 +1092,18 @@ public class ProductImportService {
         row[24] = nvl(v.getImageUrl());
         row[25] = nvl(v.getImageAlt());
         row[26] = joinImageUrls(v.getGallery(), ProductVariantGalleryImageEntity::getMediaType, ProductVariantGalleryImageEntity::getImageUrl);
-        for (int i = 27; i < 41; i++) {
+        for (int i = 27; i < TEMPLATE_COLUMN_COUNT; i++) {
             row[i] = "";
         }
         return row;
+    }
+
+    private String joinSkus(List<ProductEntity> products) {
+        if (products == null || products.isEmpty()) {
+            return "";
+        }
+        return products.stream().map(ProductEntity::getSku).filter(s -> s != null && !s.isBlank())
+                .collect(java.util.stream.Collectors.joining("|"));
     }
 
     private static String[] escapeRow(String[] row) {

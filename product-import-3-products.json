@@ -1,0 +1,151 @@
+[
+  {
+    "sku": "SCS-CAM-S",
+    "categoryId": "tai-nghe-bluetooth-mu-bao-hiem",
+    "relatedProductIds": ["SCSG7", "SCSS12"],
+    "descriptionBlocks": [
+      { "type": "heading", "level": 2, "text": "SCS CAM-S LÀ GÌ VÀ KHÔNG PHẢI LÀ GÌ" },
+      { "type": "paragraph", "html": "<p><strong>Đường phố Việt Nam không thiếu tình huống bất ngờ. Câu hỏi không phải là \"có bị va chạm không\" — mà là \"khi va chạm xảy ra, mình có bằng chứng gì trong tay không?\"</strong></p><p>Đó là lý do SCS Cam-S tồn tại. Cam-S không phải camera action để quay vlog phượt đẹp. Không phải GoPro để dựng clip đường đèo viral TikTok. Cam-S là thiết bị giám sát hành trình — có nhiệm vụ duy nhất: ghi lại tất cả những gì xảy ra trước mặt bạn, liên tục, để bạn có bằng chứng khi cần.</p>" },
+      { "type": "heading", "level": 3, "text": "Bằng chứng làm được gì?" },
+      { "type": "list", "style": "bulleted", "items": [
+        "Xe kia đâm vào bạn rồi bỏ chạy → video có biển số, CSGT có thể truy tìm",
+        "Va chạm xảy ra, hai bên tranh cãi ai sai → video phân xử ngay, không cần nhân chứng",
+        "Bị hỏi \"tại sao đi nhanh quá\" hay \"mày vượt đèn đỏ\" → video chứng minh ngược lại",
+        "Bảo hiểm hỏi \"xe ai lỗi?\" → video gửi đi, không cần mô tả bằng lời"
+      ] },
+      { "type": "paragraph", "html": "<p>10 giờ quay liên tục không phải để lưu trữ 10 giờ video. Cam-S ghi đè liên tục theo chu kỳ (loop recording) — video cũ nhất bị xóa khi thẻ đầy. Bạn chỉ cần giữ lại đoạn quan trọng khi sự cố xảy ra.</p>" },
+      { "type": "heading", "level": 3, "text": "Cấu hình thẻ nhớ ảnh hưởng đến thời gian lưu" },
+      { "type": "list", "style": "bulleted", "items": [
+        "Thẻ 32GB ≈ 3–4 giờ video Full HD 1080p trước khi ghi đè",
+        "Thẻ 64GB ≈ 6–8 giờ — đủ 1 ngày làm của shipper",
+        "Thẻ 128GB ≈ 10–12 giờ — ghi đè từ đầu hôm sau"
+      ] },
+      { "type": "paragraph", "html": "<p><em>Chọn thẻ nhớ phù hợp với hành trình — BigBike tư vấn khi mua.</em></p>" },
+
+      { "type": "feature", "subheading": "Pin dung lượng khủng", "heading": "Quay liên tục 10h, vừa sạc vừa quay", "html": "<p><strong>Lợi ích:</strong></p><p>Cắm sạc từ pin dự phòng hoặc nguồn điện xe, Cam-S quay không ngắt — shipper làm ca 8 tiếng, biker đi tour 2 ngày đều không cần lo \"camera hết pin lúc quan trọng nhất.\"</p><p><strong>Bằng chứng:</strong></p><p>Theo thông tin từ trang sản phẩm <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"http://BigBike.vn\">BigBike.vn</a>: SCS Cam-S hỗ trợ quay liên tục lên đến 10h và có thể vừa sạc vừa quay.</p><p><em>[Cần ảnh: Cổng sạc Type-C của SCS Cam-S cận cảnh đang cắm sạc trong khi đèn record đỏ vẫn sáng — minh họa vừa sạc vừa quay.]</em></p><p><strong>Hạn chế:</strong></p><p><em>Chống rung ở mức trung bình — đường xóc, ổ gà sẽ thấy rung trong video. Đây là camera giám sát, không phải action cam. Video dùng để xác nhận tình huống, không phải để edit clip đẹp.</em></p>" },
+
+      { "type": "feature", "subheading": "Camera Full HD", "heading": "Full HD 1080p góc rộng — đọc được biển số, nhận diện tình huống giao thông", "html": "<p><strong>Lợi ích:</strong></p><p>1080p Full HD là ngưỡng tối thiểu để đọc biển số xe ở khoảng cách hợp lý và nhận diện màu xe, loại xe trong tình huống va chạm. Thấp hơn ngưỡng này sẽ khó dùng làm bằng chứng hữu hiệu.</p><p><strong>Bằng chứng:</strong></p><p>Cam-S quay Full HD 1080p với góc rộng bao quát toàn cảnh phía trước, hình ảnh rõ nét cả ban ngày lẫn ban đêm theo thông số hãng.</p><p><em>[Cần ảnh: Screenshot từ video Cam-S quay ban ngày — thấy rõ biển số xe phía trước ở khoảng cách 5–10m.]</em></p><p><strong>Hạn chế:</strong></p><p><em>Ban đêm dưới đèn đường thành phố vẫn nhận diện được biển số. Đường tối hoàn toàn không có đèn thì chất lượng giảm đáng kể — không có cảm biến ánh sáng lớn như camera ô tô chuyên dụng.</em></p>" },
+
+      { "type": "feature", "subheading": "Chống nước IP67", "heading": "IP67 — đi mưa, đi đèo sương không cần tháo camera", "html": "<p><strong>Lợi ích:</strong></p><p>Theo thông số của nhà sản xuất, IP67 chịu được ngâm nước 1m trong 30 phút — mưa Sài Gòn, đèo sương, bắn nước từ xe trước đều không lo. Không cần dừng xe che camera hay tháo ra mỗi khi trời chuyển mưa.</p><p><strong>Bằng chứng:</strong></p><p>SCS Cam-S đạt chuẩn chống nước IP67 theo thông số nhà sản xuất và xác nhận từ trang <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"http://BigBike.vn\">BigBike.vn</a>.</p><p><em>[Cần ảnh: SCS Cam-S đang gắn trên mũ trong cảnh mưa — giọt nước bắn vào thiết bị nhưng vẫn đang hoạt động, đèn record sáng.]</em></p><p><strong>Hạn chế:</strong></p><p><em>Sau khi bị ướt nhiều, lau khô cổng sạc trước khi cắm điện. IP67 bảo vệ khỏi nước thời tiết — không bảo vệ va đập khi ngã.</em></p>" },
+
+      { "type": "feature", "subheading": "Lắp đặt đa vị trí", "heading": "Gắn được trên mũ fullface, 3/4, lật hàm và xe máy — 1 thiết bị nhiều vị trí", "html": "<p><strong>Lợi ích:</strong></p><p>Bộ phụ kiện kèm hộp cho phép gắn Cam-S theo nhu cầu: gắn mũ để góc nhìn theo đầu người, gắn ghi đông để góc cố định. Không cần mua thêm phụ kiện cho các loại mũ phổ biến.</p><p><strong>Bằng chứng:</strong></p><p>Cam-S hỗ trợ lắp đặt trên mũ fullface, 3/4, lật hàm, xe máy và xe đạp theo thông tin <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"http://BigBike.vn\">BigBike.vn</a> — full bộ phụ kiện gắn đi kèm trong hộp.</p><p><em>[Cần ảnh: So sánh 2 ảnh — SCS Cam-S gắn trên mũ fullface (góc trái) và gắn trên ghi đông xe máy (góc phải).]</em></p><p><strong>Hạn chế:</strong></p><p><em>Mỗi lần chuyển vị trí cần tháo và gắn lại bằng tay. Nên quyết định vị trí cố định trước khi xuất phát, không thay đổi giữa chuyến.</em></p>" },
+
+      { "type": "heading", "level": 2, "text": "SCS CAM-S KHÔNG SINH RA ĐỂ LÀM ĐIỀU NÀY" },
+      { "type": "paragraph", "html": "<p>Trước khi mua, cần biết Cam-S không phải thứ gì:</p>" },
+      { "type": "list", "style": "bulleted", "items": [
+        "❌ Không phải camera vlog/action: Mục tiêu quay clip đẹp TikTok → xem GoPro, DJI, Insta360. Cam-S không có chống rung điện tử mạnh, không có slow-mo, không có màn hình.",
+        "❌ Không phải camera so sánh hình ảnh với GoPro: Tiêu chuẩn đánh giá là \"có ghi được biển số không?\" — không phải \"màu có đẹp không?\"",
+        "❌ Không phải thiết bị thay thế tai nghe SCS: Cam-S không có loa, không có mic intercom, không kết nối BT với mũ. Muốn vừa camera vừa intercom, xem [SCS G7+ (3.290.000đ) — gắn link] hoặc [SCS S12 camera 2K (5.890.000đ) — gắn link]."
+      ] },
+      { "type": "paragraph", "html": "<p>✅ Cam-S đúng với bạn nếu: cần thiết bị đáng tin cậy chạy liên tục, lưu bằng chứng, giá phải chăng, không cần setup phức tạp.</p>" },
+
+      { "type": "suitability", "title": "PHÙ HỢP VỚI AI", "cards": [
+        { "audience": "Biker đi xe hàng ngày muốn bảo vệ pháp lý", "advice": "Nội thành TP.HCM và các đô thị, đường đông xe, nguy cơ va chạm cao → gắn lên là chạy, quay liên tục nền mà không cần thao tác — bằng chứng tự động có mặt khi cần." },
+        { "audience": "Shipper / tài xế công nghệ làm ca dài", "advice": "Làm việc 8–10 tiếng/ngày, nhiều tình huống tranh chấp giao thông với khách hoặc người đi đường → vừa sạc vừa quay liên tục, cắm sạc vào xe là camera chạy cả ngày, không cần nhớ bật tắt; gắn cố định trên xe, không cần tháo vào ra mỗi ngày." },
+        { "audience": "Biker muốn vừa có camera vừa có intercom", "advice": "Đi phượt theo nhóm, cần nói chuyện với đồng hành đồng thời ghi lại hành trình → Cam-S không có intercom, không phục vụ được nhu cầu kép này. Xem [SCS G7+ tích hợp camera 1080p + intercom BT (3.290.000đ) — gắn link] hoặc [SCS S12 camera 2K + intercom (5.890.000đ) — gắn link]." },
+        { "audience": "Biker muốn quay vlog phượt chất lượng cao", "advice": "Quay clip đường đèo để đăng TikTok, YouTube — cần hình đẹp, màu sắc tốt, chống rung mạnh → Cam-S chống rung yếu, không có slow-mo, không tối ưu cho post-production. GoPro Hero hoặc DJI Osmo Action sẽ cho kết quả tốt hơn đáng kể." }
+      ] }
+    ],
+    "descriptionBlocksEn": [
+      { "type": "heading", "level": 2, "text": "WHAT THE CAM-S IS AND ISN'T" },
+      { "type": "paragraph", "html": "<p>Vietnamese roads don't run out of surprises. The question isn't whether you'll have a near-miss — it's whether you'll have evidence in hand when it matters.</p><p>That's what the SCS Cam-S exists for. It's not an action camera for scenic vlog footage. Not a GoPro for viral mountain pass clips. The Cam-S is a road surveillance device with one job: record everything in front of you, continuously, so you have evidence when you need it.</p>" },
+      { "type": "heading", "level": 3, "text": "What having that evidence means" },
+      { "type": "list", "style": "bulleted", "items": [
+        "A car hits you and drives off → the video has the plate number, traffic police can track them",
+        "A collision happens and both sides argue who was at fault → the video resolves it instantly, no witnesses needed",
+        "Someone claims 'you were going too fast' or 'you ran the red' → the video proves otherwise",
+        "Insurance asks 'whose fault was it?' → send the video, no need for written statements"
+      ] },
+      { "type": "paragraph", "html": "<p>10 hours of continuous recording doesn't mean 10 hours of stored footage. The Cam-S uses loop recording — the oldest footage is overwritten when the card fills up. You only need to save the clip when something happens. The camera handles everything else automatically.</p>" },
+      { "type": "heading", "level": 3, "text": "Memory card capacity determines how long before overwriting" },
+      { "type": "list", "style": "bulleted", "items": [
+        "32GB card ≈ 3–4 hours of Full HD 1080p before overwriting",
+        "64GB card ≈ 6–8 hours — enough for a full shipper shift",
+        "128GB card ≈ 10–12 hours — overwrites from the beginning the next day"
+      ] },
+      { "type": "paragraph", "html": "<p><em>Choose your card based on your typical trip length — BigBike advises at point of purchase.</em></p>" },
+
+      { "type": "feature", "subheading": "The Longest Battery Camera", "heading": "10-Hour Continuous Recording, Charge and Record at Once", "html": "<p><strong>Benefit:</strong></p><p>Plug in a power bank or vehicle power and the Cam-S records non-stop — shippers working 8-hour shifts and bikers on 2-day tours don't have to worry about the camera dying at the worst possible moment.</p><p><strong>Evidence:</strong></p><p>Per <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"http://BigBike.vn\">BigBike.vn</a> product page: the SCS Cam-S supports continuous recording up to 10 hours and can charge while recording.</p><p><em>[PHOTO NEEDED: SCS Cam-S Type-C port close-up with charging cable plugged in while recording LED is still active — showing charge-and-record in action.]</em></p><p><strong>Limitation:</strong></p><p><em>Image stabilisation is basic — bumpy roads and potholes will produce visible shake in the footage. This is a surveillance camera, not an action cam. Video is for identifying situations, not for editing polished clips.</em></p>" },
+
+      { "type": "feature", "subheading": "Full HD 1080p Camera", "heading": "Full HD 1080p wide angle — read licence plates, identify road incidents", "html": "<p><strong>Benefit:</strong></p><p>1080p Full HD is the minimum threshold for reading licence plates at a reasonable distance and identifying vehicle colour and type after a collision. Below this threshold, footage loses its value as evidence.</p><p><strong>Evidence:</strong></p><p>The Cam-S records Full HD 1080p with a wide-angle lens that captures the full scene ahead, clear in both daylight and night-time conditions per manufacturer spec.</p><p><em>[PHOTO NEEDED: Screen capture from Cam-S footage showing a vehicle plate number clearly legible at 5–10m distance in daylight.]</em></p><p><strong>Limitation:</strong></p><p><em>In complete darkness with no street lighting, image quality drops significantly. The Cam-S does not have a large-sensor low-light system like dedicated automotive dash cams.</em></p>" },
+
+      { "type": "feature", "subheading": "Waterproof IP67", "heading": "IP67 waterproof — ride through rain without removing the camera", "html": "<p><strong>Benefit:</strong></p><p>IP67 means the unit can be submerged in 1m of water for 30 minutes — heavy Ho Chi Minh City rain, mountain fog, water splashing from the vehicle ahead: all handled without stopping to remove or cover the camera.</p><p><strong>Evidence:</strong></p><p>SCS Cam-S IP67 rating per manufacturer specification and confirmed on the <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"http://BigBike.vn\">BigBike.vn</a> product page.</p><p><em>[PHOTO NEEDED: SCS Cam-S mounted on a helmet in rain conditions — water droplets visible on unit, recording LED still active.]</em></p><p><strong>Limitation:</strong></p><p><em>Dry the charging port before plugging in after getting wet. IP67 protects against weather — not against impact damage from a fall.</em></p>" },
+
+      { "type": "feature", "subheading": "Multi-Position Mounting", "heading": "Mounts on fullface, 3/4, flip helmet and motorcycle handlebars — one device, multiple positions", "html": "<p><strong>Benefit:</strong></p><p>The in-box mounting kit covers the common use cases: helmet mount for a POV angle that follows your head, or handlebar mount for a fixed forward angle. No additional accessories needed for standard helmets and bikes.</p><p><strong>Evidence:</strong></p><p>Cam-S supports fullface, open-face 3/4, flip-front helmets, motorcycles and bicycles per <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"http://BigBike.vn\">BigBike.vn</a> product information — full mounting kit included in box.</p><p><em>[PHOTO NEEDED: Side-by-side — Cam-S mounted on a fullface helmet (left) and on motorcycle handlebars (right).]</em></p><p><strong>Limitation:</strong></p><p><em>Changing mount positions requires manual removal and reattachment. Decide on a fixed position before you leave — switching mid-journey is inconvenient.</em></p>" },
+
+      { "type": "suitability", "title": "WHO IT'S FOR", "cards": [
+        { "audience": "Daily motorcycle commuter who wants legal protection", "advice": "Urban riding in Ho Chi Minh City and other cities — dense traffic, high collision risk → mount it and go, it records continuously in the background with no interaction needed. Evidence is automatically there when you need it. Choose a 64GB card so you're not overwriting after 3–4 hours." },
+        { "audience": "Courier / ride-hailing driver on long shifts", "advice": "Working 8–10 hour shifts, frequent traffic disputes with customers or other road users → plug into the bike's power and the camera runs the entire shift without needing to touch it; mount it permanently on the bike, no need to remove daily." },
+        { "audience": "Rider who wants camera plus intercom together", "advice": "Group touring — needs to talk to riding partners while recording the journey → Cam-S has no intercom, cannot serve both needs simultaneously. See [SCS G7+ with integrated 1080p camera and Bluetooth intercom (3,290,000 VND) — link] or [SCS S12 with 2K dual camera (5,890,000 VND) — link]." },
+        { "audience": "Rider who wants high-quality vlog footage", "advice": "Recording mountain pass content for TikTok or YouTube — image quality and stabilisation matter → Cam-S has weak stabilisation, no slow-motion, not optimised for post-production. A GoPro Hero or DJI Osmo Action will produce meaningfully better results, worth the higher price for this use case." }
+      ] }
+    ]
+  },
+
+  {
+    "sku": "TNB-SCS-S10X",
+    "categoryId": "tai-nghe-bluetooth-mu-bao-hiem",
+    "relatedProductIds": ["SCSS-13", "T2PLUS", "TNB-SCS-S9X", "SCSG7"],
+    "accessoryProductIds": ["PKSCS"],
+    "descriptionBlocks": [
+      { "type": "feature", "heading": "35 giờ pin — không cắm sạc giữa chuyến", "html": "<p><strong>Lợi ích:</strong></p><p>35 giờ intercom liên tục theo spec hãng — đủ cho 2–3 ngày phượt xa không cần cắm sạc. Standby 15 ngày, sạc đầy 2.5 giờ qua USB.</p><p><strong>Bằng chứng:</strong></p><p>Theo spec sheet chính thức SCS/4T Hitek: 35h intercom, 15 ngày standby, 2.5h sạc đầy. BigBike chưa test thực tế độc lập.</p><p><em>[Cần ảnh: Cổng sạc USB trên thiết bị — thấy rõ cổng và đèn sạc]</em></p><p><strong>Hạn chế:</strong></p><p><em>35 giờ là số spec hãng ở điều kiện lý tưởng — thực tế khi chạy tốc độ cao hoặc môi trường nhiễu, pin có thể thấp hơn.</em></p>" },
+
+      { "type": "feature", "heading": "Intercom 2 người 1000m", "html": "<p><strong>Lợi ích:</strong></p><p>Kết nối intercom 2 người 1000m theo spec. Bluetooth 5.3 tiết kiệm pin hơn BT 4.x. Hỗ trợ tiếng Việt — thông báo kết nối và pin bằng tiếng Việt.</p><p><strong>Bằng chứng:</strong></p><p>Spec hãng: 1000m, BT 5.3, IP67. Giá 1.550.000đ — rẻ nhất trong dòng intercom 2 người đạt IP67 tại BigBike.</p><p><strong>Hạn chế:</strong></p><p><em>1000m là khoảng cách lý tưởng — qua đèo nhiều cua, rừng cây thực tế ngắn hơn. Chỉ 2 người — đoàn từ 3 người xem SCS S13/T2 Plus [gắn link].</em></p>" },
+
+      { "type": "suitability", "title": "PHÙ HỢP VỚI AI", "cards": [
+        { "audience": "Dùng cho cặp đôi", "advice": "Nếu hay chạy cùng 1 người — bạn đời, bạn thân — và muốn 2 người nói chuyện trực tiếp không cần điện thoại → S10X là lựa chọn hợp lý nhất ở tầm giá này." },
+        { "audience": "Nếu nhóm bạn nhiều hơn 2 người", "advice": "Nếu đoàn từ 3 người trở lên cần liên lạc cùng lúc → S10X không đủ. Xem SCS S13 (10 người Mesh, 3.190.000đ) hoặc T2 Plus (10 người Mesh, 3.390.000đ)." },
+        { "audience": "Nếu bạn chỉ độc hành", "advice": "Nếu chỉ cần nghe nhạc và điện thoại 1 mình → SCS S9X (950.000đ) rẻ hơn, pin tương đương." },
+        { "audience": "Không muốn bỏ lỡ khoảnh khắc đẹp", "advice": "Nếu cần vừa intercom vừa quay video → SCS G7+ (3.290.000đ) có camera 1080p tích hợp." }
+      ] }
+    ],
+    "descriptionBlocksEn": [
+      { "type": "feature", "heading": "35-hour battery — no mid-ride charging", "html": "<p><strong>Benefit:</strong></p><p>35 hours continuous intercom per manufacturer spec — enough for 2–3 days of touring without a power bank. 15-day standby, 2.5-hour full charge via USB.</p><p><strong>Evidence:</strong></p><p>Per official SCS/4T Hitek spec: 35h intercom, 15-day standby, 2.5h charge. BigBike has not independently tested this figure.</p><p><em>[PHOTO NEEDED: USB charging port on device — port and LED indicator clearly visible]</em></p><p><strong>Limitation:</strong></p><p><em>35h is the manufacturer's ideal-conditions rating — real-world battery at highway speed or in high-interference environments will be lower.</em></p>" },
+
+      { "type": "feature", "heading": "2-rider intercom up to 1000m", "html": "<p><strong>Benefit:</strong></p><p>Connects two riders up to 1000m per spec. BT 5.3 is more energy-efficient than older BT 4.x. Vietnamese voice prompts tell you exactly what the device is doing.</p><p><strong>Evidence:</strong></p><p>Per spec: 1000m, BT 5.3, IP67. At 1,550,000 VND, lowest price for a 2-rider intercom with IP67 currently at BigBike.</p><p><em>[PHOTO NEEDED: Two helmets both fitted with SCS S10X — shows mounting on different helmet types]</em></p><p><strong>Limitation:</strong></p><p><em>1000m is line-of-sight under ideal conditions — actual range through mountain curves or dense forest is shorter. 2 people only — groups of 3+ need Mesh (S13 or T2 Plus [link]).</em></p>" },
+
+      { "type": "suitability", "title": "WHO IT'S FOR & OUR ADVICE", "cards": [
+        { "audience": "For couples", "advice": "If you regularly ride with one other person — partner, friend, colleague — and want to talk without touching your phone → S10X is the most practical option at this price." },
+        { "audience": "If your group is more than 2 people", "advice": "If your group is 3 or more who all need to talk simultaneously → S10X won't cut it. See SCS S13 (10-rider Mesh, 3,190,000 VND) or T2 Plus (10-rider Mesh + 1000m, 3,390,000 VND) [link]." },
+        { "audience": "If you ride solo", "advice": "If you only need solo music and phone calls, no intercom → SCS S9X (950,000 VND) is cheaper with similar battery life [link]." },
+        { "audience": "Don't want to miss great moments", "advice": "If you need intercom + a helmet camera → SCS G7+ (3,290,000 VND) has a built-in 1080p camera [link]." }
+      ] }
+    ]
+  },
+
+  {
+    "sku": "MDS-CAB-TANCAR",
+    "categoryId": "dual-sport",
+    "relatedProductIds": ["CB-DRIFT"],
+    "descriptionBlocks": [
+      { "type": "feature", "subheading": "Cân nặng thực tế", "heading": "Trọng lượng thực tế 1.602g (size L) – nặng hơn số hãng công bố 102g", "html": "<p><em>[Cần ảnh: Màn hình cân tiểu ly hiển thị 1.602g, mũ Tanami Carbon size L đặt trên cân thực tế tại BigBike]</em></p><p><strong>Lợi ích:</strong></p><p>Vỏ sợi carbon thật sự nên vẫn nhẹ hơn mũ fiberglass cùng giá – chạy đường dài ít mỏi cổ hơn. Tuy nhiên, số thực tế tại BigBike nặng hơn thông số hãng công bố, cần biết trước để chọn đúng.</p><p><strong>Bằng chứng:</strong></p><p>Cân thực tế tại BigBike bằng cân tiểu ly: 1.602g (size L). Hãng công bố 1.500g (±50g) cho large shell – chênh 102g so với thực tế.</p><p><strong>Hạn chế:</strong></p><p><em>1.602g không phải nhẹ – người quen mũ fullface thường (khoảng 1.400–1.500g) sẽ cảm nhận được sự khác biệt sau hành trình dài.</em></p>" },
+
+      { "type": "feature", "heading": "Chuyển đổi on-road / off-road trong vài giây – không cần dụng cụ", "html": "<p><em>[Cần ảnh: Mũ bảo hiểm dual sport CABERG TANAMI CARBON - 2 IN 1, tem kiểm định Quatest]</em></p><p><strong>Lợi ích:</strong></p><p>Đây là điểm chính mà người mua Tanami Carbon trả tiền cho: một mũ dùng được cả đường nhựa lẫn địa hình. Trên đường nhựa: lắp kính, đóng vent, cảm giác giống fullface touring. Ra địa hình: tháo kính không cần dụng cụ, mở vent nam châm, đeo goggles thoải mái.</p><p><strong>Bằng chứng:</strong></p><p>Hệ thống vent cằm và sau dùng nam châm tháo rời tức thì – không ốc vít, không cần tua vít. Kính chính tháo không cần dụng cụ, tương thích goggles motocross.</p><p><strong>Hạn chế:</strong></p><p><em>Tay đua đã cảm nhận mũ này rộng hơn fullface thuần túy ở phần cằm – đặc trưng của dòng dual sport, không tránh được, nên thử trước nếu thường xuyên đi tốc độ cao.</em></p>" },
+
+      { "type": "feature", "heading": "Hệ thống thông gió 3 lớp + DVT kính râm tích hợp", "html": "<p><em>[Cần ảnh: Mũ bảo hiểm dual sport CABERG TANAMI CARBON - 2 IN 1, hệ thống kính DVT & thông gió]</em></p><p><strong>Lợi ích:</strong></p><p>Thích hợp TPHCM và miền Nam: 1 vent cằm điều chỉnh được, 2 vent đỉnh đầu, 2 cửa thoát khí sau tháo rời. Trời nóng: mở hết, thông hơn hẳn fullface thông thường. Đi xa buổi chiều nắng: DVT gạt xuống không cần dừng xe thay kính.</p><p><strong>Bằng chứng:</strong></p><p>DVT (Double Visor Tech) – cần gạt bên trái điều khiển kính râm tích hợp, hoạt động được khi đeo găng tay. Pinlock Max Vision 70 kèm theo hộp – chống sương kính ngoài.</p><p><strong>Hạn chế:</strong></p><p><em>Thông gió tối đa chỉ thực sự vượt trội khi tháo hết vent cover – nếu chỉ mở một phần, kém hơn các mũ fullface touring chuyên dụng cùng giá.</em></p>" },
+
+      { "type": "suitability", "title": "PHÙ HỢP VỚI AI VÀ LỜI KHUYÊN", "cards": [
+        { "audience": "Nếu bạn có xe ADV", "advice": "Nếu bạn hay đi cả đường nhựa lẫn địa hình trong cùng một chuyến → Tanami Carbon là mũ đáng đầu tư thay vì mang 2 mũ." },
+        { "audience": "Nếu thường xuyên đi xa lộ tốc độ cao", "advice": "Nếu bạn thường xuyên touring xa lộ tốc độ cao và cần mũ thật yên tĩnh → nên xem thêm Caberg Drift Evo 2 Carbon [gắn link] thay thế." },
+        { "audience": "Ngân sách dưới 8 triệu", "advice": "Nếu ngân sách dưới 8 triệu – phiên bản Tanami fiberglass nhẹ hơn túi tiền, tính năng tương đương [gắn link]." },
+        { "audience": "Chỉ đi phố là thường", "advice": "Nếu chỉ đi phố hàng ngày trong thành phố – không cần đến dòng dual sport này, xem Caberg Avalon X [gắn link] phù hợp hơn." }
+      ] },
+      { "type": "sizeGuide", "title": "Bảng size", "html": "<table><thead><tr><th>Size</th><th>Vòng đầu (cm)</th><th>Ghi chú</th></tr></thead><tbody><tr><td>XS</td><td>53 – 54</td><td>Shell nhỏ (XS – M)</td></tr><tr><td>S</td><td>55 – 56</td><td>Shell nhỏ (XS – M)</td></tr><tr><td>M</td><td>57 – 58</td><td>Shell nhỏ (XS – M)</td></tr><tr><td>L</td><td>59 – 60</td><td>Shell lớn (L – XXL) · <strong>Cân thực tế tại BigBike: 1.602g</strong></td></tr><tr><td>XL</td><td>61 – 62</td><td>Shell lớn (L – XXL)</td></tr><tr><td>XXL</td><td>63 – 64</td><td>Shell lớn (L – XXL)</td></tr></tbody></table><p>① Đo vòng đầu bằng thước dây, đặt ngang trên lông mày khoảng 2cm, quanh phần rộng nhất của đầu.</p><p>② Nếu số đo nằm giữa 2 size → chọn size lớn hơn, hoặc liên hệ BigBike để được tư vấn.</p><p>③ Mũ mới hơi ôm má là bình thường – lớp mút sẽ nén và vừa hơn sau 2–4 tuần đội.</p>" }
+    ],
+    "descriptionBlocksEn": [
+      { "type": "feature", "subheading": "Actual Weight", "heading": "Actual weight 1,602g (size L) — 102g heavier than the manufacturer's label", "html": "<p><em>[PHOTO NEEDED: Precision-scale display showing 1,602g, with the Tanami Carbon size L helmet placed on the scale at BigBike]</em></p><p><strong>Benefit:</strong></p><p>Full carbon shell makes this noticeably lighter than fiberglass dual sport helmets — less neck fatigue on full-day rides.</p><p><strong>Evidence:</strong></p><p>Weighed in-store at BigBike using a precision scale: 1,602g (size L). The manufacturer's label inside the helmet states 1,500g ±50g for large shell — actual weight is 102g heavier than the label. Small shell (XS–M) not yet weighed at our shop.</p><p><strong>Limitation:</strong></p><p><em>1,602g is still heavier than a pure fullface carbon helmet at a similar price — a reasonable trade-off for the 2-in-1 dual sport functionality.</em></p>" },
+
+      { "type": "feature", "heading": "Switches between on-road and off-road in seconds — no tools needed", "html": "<p><em>[PHOTO NEEDED: Side-by-side — helmet with visor fitted (on-road) and helmet with goggles (off-road)]</em></p><p><strong>Benefit:</strong></p><p>This is exactly what Tanami Carbon buyers pay for: one helmet that handles both tarmac and trails on the same ride. On-road: fit the visor, close the chin vent — feels close to a touring fullface. Off-road: remove the visor tool-free, open magnetic vents, slip on motocross goggles.</p><p><strong>Evidence:</strong></p><p>The chin vent uses magnets for instant removal — no screws, no tools. The visor removes tool-free and is compatible with standard motocross goggles. Pinlock Max Vision 70 included in the box.</p><p><strong>Limitation:</strong></p><p><em>Riders used to a pure fullface will notice the chin area feels more open — that's inherent to dual sport design. Try it in-store if you regularly ride at highway speeds.</em></p>" },
+
+      { "type": "feature", "heading": "3-layer ventilation + integrated DVT sun visor", "html": "<p><em>[PHOTO NEEDED: CABERG TANAMI CARBON dual-sport helmet - 2 IN 1, DVT visor & ventilation system]</em></p><p><strong>Benefit:</strong></p><p>Well suited to Ho Chi Minh City and the south: 1 adjustable chin vent, 2 crown vents, 2 removable rear exhaust vents. In hot weather, open everything for noticeably better airflow than a standard fullface. On long afternoon rides in strong sun, flip the DVT sun visor down without stopping to swap visors.</p><p><strong>Evidence:</strong></p><p>DVT (Double Visor Tech) — a left-side lever operates the integrated sun visor, usable while wearing gloves. Pinlock Max Vision 70 is included in the box to prevent visor fogging.</p><p><strong>Limitation:</strong></p><p><em>Maximum airflow only really stands out with the vent covers fully removed — with vents only partially open, it's less effective than dedicated touring fullface helmets at the same price.</em></p>" },
+
+      { "type": "suitability", "title": "WHO IT'S FOR & OUR ADVICE", "cards": [
+        { "audience": "If you have an ADV bike", "advice": "If you ride an ADV bike (Honda CB500X, Versys 650, Himalayan...) and mix tarmac with trails on the same trip → the Tanami Carbon makes sense — no need to carry two helmets." },
+        { "audience": "If you frequently ride high-speed highways", "advice": "If you primarily tour at highway speeds and rarely go off-road → consider the Caberg Drift Evo II Carbon [link] instead — pure fullface, quieter at speed." },
+        { "audience": "Budget under 8 million", "advice": "If your budget is under 8 million VND and you mostly ride on pavement → the Tanami fiberglass version [link] offers the same functionality at a lower price." },
+        { "audience": "Mostly just city riding", "advice": "If you only ride around the city daily → this dual sport helmet is overkill; the Caberg Avalon X [link] is a better fit." }
+      ] },
+      { "type": "sizeGuide", "title": "Size Chart", "html": "<table><thead><tr><th>Size</th><th>Head circumference (cm)</th><th>Notes</th></tr></thead><tbody><tr><td>XS</td><td>53 – 54</td><td>Small shell (XS – M)</td></tr><tr><td>S</td><td>55 – 56</td><td>Small shell (XS – M)</td></tr><tr><td>M</td><td>57 – 58</td><td>Small shell (XS – M)</td></tr><tr><td>L</td><td>59 – 60</td><td>Large shell (L – XXL) · <strong>Weighed in-store at BigBike: 1,602g</strong></td></tr><tr><td>XL</td><td>61 – 62</td><td>Large shell (L – XXL)</td></tr><tr><td>XXL</td><td>63 – 64</td><td>Large shell (L – XXL)</td></tr></tbody></table><p>① Measure head circumference with a soft tape measure placed about 2cm above the eyebrows, around the widest part of the head.</p><p>② If your measurement falls between two sizes, choose the larger size or contact BigBike for advice.</p><p>③ A slightly snug fit on the cheeks when new is normal — the liner foam will compress and mould to your head over 2–4 weeks of use.</p>" }
+    ]
+  }
+]

@@ -26,6 +26,9 @@ import java.util.List;
  *   <li>{@code <video>} with {@code <source>} → {@link DescriptionBlock.VideoBlock} provider="upload"</li>
  *   <li>{@code <blockquote>} → {@link DescriptionBlock.CalloutBlock} variant="note"</li>
  *   <li>{@code <hr>} → {@link DescriptionBlock.DividerBlock}</li>
+ *   <li>{@code <div class="bb-feature">} → {@link DescriptionBlock.FeatureBlock} (image src/alt,
+ *       eyebrow, heading, paragraphs, list decomposed); falls back to opaque HTML only when the
+ *       div has neither a real image nor any text content at all</li>
  *   <li>Bare text node → {@link DescriptionBlock.ParagraphBlock}</li>
  *   <li>Any other element → fallback {@link DescriptionBlock.ParagraphBlock} (outerHTML preserved)</li>
  * </ul>
@@ -74,8 +77,73 @@ public class BodyBlockParser {
             case "video"      -> videoFromVideo(el);
             case "blockquote" -> callout(el);
             case "hr"         -> divider();
+            case "div"        -> el.hasClass("bb-feature") ? feature(el) : fallback(el);
             default           -> fallback(el);
         };
+    }
+
+    /**
+     * {@code <div class="bb-feature">} → staggered image+text {@link DescriptionBlock.FeatureBlock}
+     * (mirrors {@code DescriptionBlockRenderer.renderFeature}'s output shape, so a round-trip
+     * parse→render is stable). No field is individually required (2026-07-05: {@code feature.url}'s
+     * {@code @NotBlank} was dropped — see {@code DescriptionBlock.FeatureBlock} javadoc) — a block
+     * is only dropped to the generic opaque-HTML {@link #fallback} when it has **neither** a real
+     * image URL **nor** any text (subheading/heading/paragraph/list items all blank), mirroring the
+     * admin block editor's own save-time filter ({@code hasImage || hasText} in
+     * {@code product-detail/constants.js}). A placeholder {@code <img>} with no {@code src} (content
+     * drafted before photos are shot) still becomes an editable text-only feature block as long as
+     * there's real copy — the web renders it full-width with no image column.
+     */
+    private DescriptionBlock feature(Element el) {
+        Element figure = el.selectFirst("figure");
+        Element imgEl = figure != null ? figure.selectFirst("img") : el.selectFirst("> img");
+
+        var block = new DescriptionBlock.FeatureBlock();
+        block.setType("feature");
+        if (imgEl != null && !imgEl.attr("src").isBlank()) {
+            block.setUrl(imgEl.attr("src"));
+            block.setAlt(imgEl.attr("alt"));
+        }
+
+        Element figcaption = figure != null ? figure.selectFirst("figcaption") : null;
+        if (figcaption != null) block.setCaption(figcaption.text());
+
+        Element eyebrow = el.selectFirst("> .bb-feature-eyebrow");
+        if (eyebrow != null) block.setSubheading(eyebrow.text());
+
+        Element headingEl = el.selectFirst("> h2, > h3");
+        if (headingEl != null) block.setHeading(headingEl.text());
+
+        StringBuilder html = new StringBuilder();
+        List<String> items = new ArrayList<>();
+        String listStyle = null;
+        for (Element child : el.children()) {
+            if (child == figure || child == imgEl || child == eyebrow || child == headingEl) continue;
+            if (child.tagName().equals("p")) {
+                html.append(child.outerHtml());
+            } else if (child.tagName().equals("ul") || child.tagName().equals("ol")) {
+                listStyle = child.tagName().equals("ol") ? "numbered" : "bulleted";
+                for (Element li : child.select("> li")) {
+                    String text = li.text().trim();
+                    if (!text.isEmpty()) items.add(text);
+                }
+            }
+        }
+        block.setHtml(html.toString());
+        if (!items.isEmpty()) {
+            block.setListStyle(listStyle);
+            block.setItems(items);
+        }
+
+        boolean hasImage = block.getUrl() != null && !block.getUrl().isBlank();
+        boolean hasText = (block.getSubheading() != null && !block.getSubheading().isBlank())
+                || (block.getHeading() != null && !block.getHeading().isBlank())
+                || (block.getHtml() != null && !block.getHtml().isBlank())
+                || (block.getItems() != null && !block.getItems().isEmpty());
+        if (!hasImage && !hasText) {
+            return fallback(el);
+        }
+        return block;
     }
 
     private DescriptionBlock.HeadingBlock heading(int level, Element el) {

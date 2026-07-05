@@ -218,6 +218,56 @@ class BodyBlockParserTest {
         assertThat(blocks.get(0).getType()).isEqualTo("divider");
     }
 
+    // ── Feature ("bb-feature" staggered image+text) ─────────────────────────────
+
+    @Test
+    void bbFeatureDiv_withRealImage_parsesToFeatureBlock() {
+        String html = "<div class=\"bb-feature\">"
+                + "<figure><img src=\"https://cdn.bigbike.vn/feature.jpg\" alt=\"Pin\"></figure>"
+                + "<p class=\"bb-feature-eyebrow\">Pin dung lượng khủng</p>"
+                + "<h2>Quay liên tục 10h</h2>"
+                + "<p><strong>Lợi ích:</strong></p>"
+                + "<p>Không lo hết pin giữa hành trình.</p>"
+                + "<ul><li>Chống rung cơ bản</li></ul>"
+                + "</div>";
+        var blocks = parser.parseHtmlToBlocks(html);
+        assertThat(blocks).hasSize(1);
+        var b = assertFeature(blocks.get(0));
+        assertThat(b.getType()).isEqualTo("feature");
+        assertThat(b.getUrl()).isEqualTo("https://cdn.bigbike.vn/feature.jpg");
+        assertThat(b.getAlt()).isEqualTo("Pin");
+        assertThat(b.getSubheading()).isEqualTo("Pin dung lượng khủng");
+        assertThat(b.getHeading()).isEqualTo("Quay liên tục 10h");
+        assertThat(b.getHtml()).contains("Lợi ích").contains("Không lo hết pin giữa hành trình.");
+        assertThat(b.getListStyle()).isEqualTo("bulleted");
+        assertThat(b.getItems()).containsExactly("Chống rung cơ bản");
+    }
+
+    @Test
+    void bbFeatureDiv_withNoImageSrcButRealText_parsesToTextOnlyFeatureBlock() {
+        String html = "<div class=\"bb-feature\"><figure><img></figure>"
+                + "<h2>Chưa có ảnh</h2><p>Nội dung.</p></div>";
+        var b = assertFeature(parser.parseHtmlToBlocks(html).get(0));
+        assertThat(b.getUrl()).isNull();
+        assertThat(b.getHeading()).isEqualTo("Chưa có ảnh");
+        assertThat(b.getHtml()).contains("Nội dung.");
+    }
+
+    @Test
+    void bbFeatureDiv_withNoImageElementButRealText_parsesToTextOnlyFeatureBlock() {
+        String html = "<div class=\"bb-feature\"><h2>Chưa có ảnh</h2><p>Nội dung.</p></div>";
+        var b = assertFeature(parser.parseHtmlToBlocks(html).get(0));
+        assertThat(b.getUrl()).isNull();
+        assertThat(b.getHeading()).isEqualTo("Chưa có ảnh");
+    }
+
+    @Test
+    void bbFeatureDiv_withNoImageAndNoText_becomesFallbackParagraph() {
+        String html = "<div class=\"bb-feature\"><figure><img></figure></div>";
+        var b = assertParagraph(parser.parseHtmlToBlocks(html).get(0));
+        assertThat(b.getHtml()).contains("bb-feature");
+    }
+
     // ── Fallback ─────────────────────────────────────────────────────────────
 
     @Test
@@ -362,6 +412,11 @@ class BodyBlockParserTest {
     private static DescriptionBlock.CalloutBlock assertCallout(DescriptionBlock b) {
         assertThat(b).isInstanceOf(DescriptionBlock.CalloutBlock.class);
         return (DescriptionBlock.CalloutBlock) b;
+    }
+
+    private static DescriptionBlock.FeatureBlock assertFeature(DescriptionBlock b) {
+        assertThat(b).isInstanceOf(DescriptionBlock.FeatureBlock.class);
+        return (DescriptionBlock.FeatureBlock) b;
     }
 
     private static long countType(List<DescriptionBlock> blocks, Class<?> type) {

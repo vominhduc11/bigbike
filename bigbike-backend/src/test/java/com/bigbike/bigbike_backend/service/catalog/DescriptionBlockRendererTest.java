@@ -133,6 +133,30 @@ class DescriptionBlockRendererTest {
     }
 
     @Test
+    void feature_withUrl_rendersFigureImg() {
+        var block = DescriptionBlock.FeatureBlock.builder()
+                .type("feature")
+                .url("https://cdn.bigbike.vn/feature.jpg")
+                .alt("Pin")
+                .heading("Quay liên tục 10h")
+                .build();
+        String html = renderer.renderBlocksToHtml(List.of(block));
+        assertThat(html).contains("<figure>").contains("<img src=\"https://cdn.bigbike.vn/feature.jpg\"").contains("<h2>Quay liên tục 10h</h2>");
+    }
+
+    @Test
+    void feature_withoutUrl_omitsFigureEntirely() {
+        var block = DescriptionBlock.FeatureBlock.builder()
+                .type("feature")
+                .heading("Chỉ có chữ, chưa có ảnh")
+                .html("<p>Nội dung mô tả.</p>")
+                .build();
+        String html = renderer.renderBlocksToHtml(List.of(block));
+        assertThat(html).doesNotContain("<figure>").doesNotContain("<img");
+        assertThat(html).contains("<h2>Chỉ có chữ, chưa có ảnh</h2>").contains("Nội dung mô tả.");
+    }
+
+    @Test
     void emptyList_returnsEmptyString() {
         assertThat(renderer.renderBlocksToHtml(List.of())).isEmpty();
         assertThat(renderer.renderBlocksToHtml(null)).isEmpty();
