@@ -73,6 +73,15 @@
 
       { "type": "feature", "subheading": "Multi-Position Mounting", "heading": "Mounts on fullface, 3/4, flip helmet and motorcycle handlebars — one device, multiple positions", "html": "<p><strong>Benefit:</strong></p><p>The in-box mounting kit covers the common use cases: helmet mount for a POV angle that follows your head, or handlebar mount for a fixed forward angle. No additional accessories needed for standard helmets and bikes.</p><p><strong>Evidence:</strong></p><p>Cam-S supports fullface, open-face 3/4, flip-front helmets, motorcycles and bicycles per <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"http://BigBike.vn\">BigBike.vn</a> product information — full mounting kit included in box.</p><p><em>[PHOTO NEEDED: Side-by-side — Cam-S mounted on a fullface helmet (left) and on motorcycle handlebars (right).]</em></p><p><strong>Limitation:</strong></p><p><em>Changing mount positions requires manual removal and reattachment. Decide on a fixed position before you leave — switching mid-journey is inconvenient.</em></p>" },
 
+      { "type": "heading", "level": 2, "text": "WHAT THE CAM-S ISN'T FOR" },
+      { "type": "paragraph", "html": "<p>Before you buy, here's what the Cam-S is not:</p>" },
+      { "type": "list", "style": "bulleted", "items": [
+        "❌ Not a vlog/action camera: if your goal is polished TikTok footage → look at GoPro, DJI, or Insta360 instead. The Cam-S has no strong electronic stabilisation, no slow-motion, no screen.",
+        "❌ Not a camera to compare image quality against a GoPro: the standard here is \"can it read the licence plate?\" — not \"does the colour look nice?\"",
+        "❌ Not a replacement for an SCS intercom headset: the Cam-S has no speakers, no intercom mic, no Bluetooth pairing with your helmet. Want camera and intercom together? See [SCS G7+ (3,290,000 VND) — link] or [SCS S12 2K camera (5,890,000 VND) — link]."
+      ] },
+      { "type": "paragraph", "html": "<p>✅ The Cam-S is right for you if: you need a reliable device that runs continuously, saves evidence, is reasonably priced, and doesn't require complicated setup.</p>" },
+
       { "type": "suitability", "title": "WHO IT'S FOR", "cards": [
         { "audience": "Daily motorcycle commuter who wants legal protection", "advice": "Urban riding in Ho Chi Minh City and other cities — dense traffic, high collision risk → mount it and go, it records continuously in the background with no interaction needed. Evidence is automatically there when you need it. Choose a 64GB card so you're not overwriting after 3–4 hours." },
         { "audience": "Courier / ride-hailing driver on long shifts", "advice": "Working 8–10 hour shifts, frequent traffic disputes with customers or other road users → plug into the bike's power and the camera runs the entire shift without needing to touch it; mount it permanently on the bike, no need to remove daily." },
