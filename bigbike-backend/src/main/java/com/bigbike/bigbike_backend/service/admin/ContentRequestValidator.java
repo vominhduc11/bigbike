@@ -118,12 +118,17 @@ public class ContentRequestValidator {
         if (!preview) {
             validateArticleEnglishSlug(request, slug, current, errors);
             // Tiếng Anh chỉ bắt buộc khi tiếng Việt tương ứng đang bắt buộc (TRANSLATION_RULE_002).
-            // `title` là field cốt lõi bắt buộc ở VI → `translations.en.title` cũng bắt buộc, áp
-            // dụng cho cả tạo mới lẫn sửa bản ghi cũ (không chỉ khi request đổi tiêu đề).
+            // `title` là field cốt lõi bắt buộc ở VI → bản ghi phải luôn có `translations.en.title`.
+            // Request không gửi field này (vd bulk publish/hide chỉ gửi {publishStatus}) thì fallback
+            // về giá trị đã lưu (`current`) thay vì bắt mọi request gửi lại toàn bộ bản dịch.
             ArticleTranslationRequest.ArticleContentRequest en =
                     request.getTranslations() == null ? null : request.getTranslations().getEn();
+            String enTitle = en == null ? null : en.getTitle();
+            if (enTitle == null && current != null) {
+                enTitle = current.getTitleEn();
+            }
             AdminMutationValidators.validateRequiredText(
-                    en == null ? null : en.getTitle(), "translations.en.title", "English title", errors);
+                    enTitle, "translations.en.title", "English title", errors);
         }
 
         return slug;

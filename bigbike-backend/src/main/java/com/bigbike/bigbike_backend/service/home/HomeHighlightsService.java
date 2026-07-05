@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.service.home;
 
 import com.bigbike.bigbike_backend.api.admin.dto.home.AdminSaveHighlightsRequest;
 import com.bigbike.bigbike_backend.api.public_.dto.HomeHighlightItemDto;
+import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.home.HomeHighlightEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
@@ -49,10 +50,14 @@ public class HomeHighlightsService {
     @Transactional
     public List<HomeHighlightItemDto> saveHighlights(AdminSaveHighlightsRequest body, UUID adminId) {
         for (var input : body.slots()) {
-            if (!productRepo.existsById(input.productId())) {
+            var product = productRepo.findById(input.productId())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.UNPROCESSABLE_ENTITY,
+                            "Product not found: " + input.productId()));
+            if (product.getPublishStatus() != PublishStatus.PUBLISHED) {
                 throw new ResponseStatusException(
                         HttpStatus.UNPROCESSABLE_ENTITY,
-                        "Product not found: " + input.productId());
+                        "Product '" + input.productId() + "' must be PUBLISHED to appear on the homepage.");
             }
         }
 

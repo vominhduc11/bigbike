@@ -111,6 +111,7 @@ public class CartController {
             String guestId = CustomerSessionFilter.extractCookie(request, GUEST_COOKIE);
             if (guestId != null) {
                 customerCart = cartService.mergeGuestCart(guestId, customerCart);
+                clearGuestCookie(response);
             }
             return customerCart;
         }
@@ -136,6 +137,17 @@ public class CartController {
                 .secure(secureCookies)
                 .path("/")
                 .maxAge(GUEST_TTL)
+                .sameSite("Strict")
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
+    private void clearGuestCookie(HttpServletResponse response) {
+        ResponseCookie cookie = ResponseCookie.from(GUEST_COOKIE, "")
+                .httpOnly(false)
+                .secure(secureCookies)
+                .path("/")
+                .maxAge(0)
                 .sameSite("Strict")
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());

@@ -35,7 +35,7 @@ function ProductPicker({ value, onChange, disabled }) {
 
   const { data, isFetching } = useQuery({
     queryKey: ['home-highlights-product-search', query, contentLang],
-    queryFn: () => fetchProducts({ q: query, page: 1, pageSize: 8 }),
+    queryFn: () => fetchProducts({ q: query, page: 1, pageSize: 8, publishStatus: 'PUBLISHED' }),
     enabled: open && query.trim().length > 0,
     staleTime: 30_000,
   })

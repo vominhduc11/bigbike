@@ -161,10 +161,16 @@ public class AdminRedirectService {
         if (request.enabled() != null) {
             entity.setEnabled(request.enabled());
         }
-        // notes/legacyId are always overwritten (not guarded by a null-check) so the admin form —
-        // which always submits the full form state — can actually clear a previously-saved value.
-        entity.setNotes(normalizeNotes(request.notes()));
-        entity.setLegacyId(request.legacyId());
+        // Presence-guarded like every other field above — a partial PATCH (eg. toggle-enabled
+        // sending only {enabled}) must not silently null out notes/legacyId. To clear notes,
+        // send an explicit empty string; legacyId, once set, can only be overwritten with a new
+        // id via this endpoint (a bare JSON null is indistinguishable from "field omitted").
+        if (request.notes() != null) {
+            entity.setNotes(normalizeNotes(request.notes()));
+        }
+        if (request.legacyId() != null) {
+            entity.setLegacyId(request.legacyId());
+        }
         if (entity.getRedirectType() == null || entity.getRedirectType().isBlank()) {
             entity.setRedirectType(defaultRedirectType(entity.getStatusCode()));
         }

@@ -709,14 +709,14 @@ export async function deleteContent(contentType, contentId) {
 }
 
 export async function restoreContent(contentType, contentId) {
-  const pathType = normalizeContentPathType(contentType)
-  const payload = await requestJson(`/admin/content/${pathType}/${contentId}/restore`, { method: 'POST' })
+  const mutationPath = normalizeContentMutationPath(contentType)
+  const payload = await requestJson(`/admin/content/${mutationPath}/${contentId}/restore`, { method: 'POST' })
   return parseDetailPayload(payload, normalizeContentItem)
 }
 
 export async function permanentDeleteContent(contentType, contentId) {
-  const pathType = normalizeContentPathType(contentType)
-  await requestJson(`/admin/content/${pathType}/${contentId}/permanent`, { method: 'DELETE' })
+  const mutationPath = normalizeContentMutationPath(contentType)
+  await requestJson(`/admin/content/${mutationPath}/${contentId}/permanent`, { method: 'DELETE' })
 }
 
 export async function previewArticle(input, lang) {

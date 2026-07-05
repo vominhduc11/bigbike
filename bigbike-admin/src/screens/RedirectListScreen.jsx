@@ -122,9 +122,10 @@ export function RedirectListScreen({ canUpdate }) {
         redirectType: form.redirectType,
         statusCode: Number(form.statusCode),
         enabled: form.enabled,
-      }
-      if (form.notes.trim()) {
-        payload.notes = form.notes.trim()
+        // Always send notes (even "") from the full edit form — the backend now only clears a
+        // previously-saved value on an explicit non-null field, so omitting it here would leave
+        // stale notes behind instead of clearing them.
+        notes: form.notes.trim(),
       }
       if (form.legacyId !== '') {
         payload.legacyId = Number(form.legacyId)

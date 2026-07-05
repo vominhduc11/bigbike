@@ -414,14 +414,16 @@ a {
   to   { transform: translateY(0)    scale(1);    opacity: 1; }
 }
 /* ─── Rich text editor (TipTap) ──────────────────────────────────────────────
-   Canvas (.tiptap) cố định SÁNG, không ăn theo [data-theme="dark"] của admin.
-   Lý do: nội dung soạn ở đây luôn hiển thị trên nền trắng ở bigbike-web
-   (STYLEGUIDE.md: "nền trang #ffffff, chữ đen"), kể cả khi admin bật dark mode.
-   Nếu để canvas ăn theo token admin: (1) WYSIWYG sai lệch với giao diện thật,
-   (2) span có màu chữ cố định (WP import cũ, hoặc do người dùng chọn màu chữ)
-   mất tương phản khi nền canvas đổi sang tối — đây chính là bug báo cáo.
-   Toolbar/khung ngoài/thanh đếm ký tự vẫn ăn theo theme admin bình thường vì
-   không chứa nội dung có màu cố định. */
+   Canvas (.tiptap) ăn theo token admin --admin-color-* (đổi theo
+   [data-theme="dark"] như phần còn lại của giao diện) — quyết định chủ shop
+   2026-07-05, đổi từ bản trước đó cố định canvas sáng để khớp WYSIWYG với
+   bigbike-web (nền trắng). Rủi ro đã biết và được chủ shop chấp nhận: nội
+   dung sản phẩm cũ có span màu chữ cố định (xám/đen, chọn cho nền trắng —
+   vd WP import hoặc do người dùng tự chọn màu) có thể mất tương phản trên
+   nền tối. Cần rà soát riêng các mô tả sản phẩm cũ để chỉnh lại màu chữ nếu
+   phát hiện bị chìm. --rte-canvas-* bên dưới VẪN giữ (không xoá) vì các khối
+   "xem trước đúng như trên web" (SERP preview, xem trước HTML, LivePreview…)
+   vẫn phải cố định sáng để mô phỏng đúng trang thật. */
 :root {
   --rte-canvas-bg:             #ffffff;
   --rte-canvas-surface-muted:  #f8f9fa;
@@ -468,8 +470,8 @@ a {
   outline: none;
   min-height: 200px;
   padding: 12px 16px;
-  background: var(--rte-canvas-bg);
-  color: var(--rte-canvas-text);
+  background: var(--admin-color-surface-base);
+  color: var(--admin-color-text-primary);
 }
 
 .rich-editor-content .tiptap p {
@@ -514,16 +516,16 @@ a {
 }
 
 .rich-editor-content .tiptap blockquote {
-  border-left: 3px solid var(--rte-canvas-primary);
+  border-left: 3px solid var(--admin-color-primary);
   padding-left: 1em;
-  color: var(--rte-canvas-text-secondary);
+  color: var(--admin-color-text-secondary);
   margin: 0.75em 0;
   font-style: italic;
 }
 
 .rich-editor-content .tiptap code {
-  background: var(--rte-canvas-surface-muted);
-  border: 1px solid var(--rte-canvas-border-subtle);
+  background: var(--admin-color-surface-muted);
+  border: 1px solid var(--admin-color-border-subtle);
   border-radius: var(--admin-radius-xs);
   padding: 0.1em 0.35em;
   font-size: 0.875em;
@@ -531,8 +533,8 @@ a {
 }
 
 .rich-editor-content .tiptap pre {
-  background: var(--rte-canvas-surface-muted);
-  border: 1px solid var(--rte-canvas-border-subtle);
+  background: var(--admin-color-surface-muted);
+  border: 1px solid var(--admin-color-border-subtle);
   border-radius: var(--admin-radius-sm);
   padding: var(--admin-space-4);
   overflow-x: auto;
@@ -548,7 +550,7 @@ a {
 
 .rich-editor-content .tiptap hr {
   border: none;
-  border-top: 1.5px solid var(--rte-canvas-border-default);
+  border-top: 1.5px solid var(--admin-color-border-default);
   margin: 1.5em 0;
 }
 
@@ -562,7 +564,7 @@ a {
 }
 .rich-editor-content .tiptap th,
 .rich-editor-content .tiptap td {
-  border: 1px solid var(--rte-canvas-border-default);
+  border: 1px solid var(--admin-color-border-default);
   padding: 6px 8px;
   vertical-align: top;
   box-sizing: border-box;
@@ -570,7 +572,7 @@ a {
   min-width: 2em;
 }
 .rich-editor-content .tiptap th {
-  background: var(--rte-canvas-surface-muted);
+  background: var(--admin-color-surface-muted);
   font-weight: 600;
   text-align: left;
 }
@@ -578,7 +580,7 @@ a {
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--rte-canvas-primary);
+  background: var(--admin-color-primary);
   opacity: 0.12;
   pointer-events: none;
 }
@@ -588,7 +590,7 @@ a {
   top: 0;
   bottom: 0;
   width: 4px;
-  background: var(--rte-canvas-primary);
+  background: var(--admin-color-primary);
   cursor: col-resize;
 }
 .rich-editor-content .tiptap.resize-cursor {
@@ -597,20 +599,20 @@ a {
 
 .rich-editor-content .tiptap p.is-empty:first-child::before {
   content: attr(data-placeholder);
-  color: var(--rte-canvas-placeholder);
+  color: var(--admin-color-text-placeholder);
   pointer-events: none;
   float: left;
   height: 0;
 }
 
 .rich-editor-content .tiptap a {
-  color: var(--rte-canvas-primary);
+  color: var(--admin-color-primary);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
 .rich-editor-content .tiptap a:hover {
-  color: var(--rte-canvas-primary-hover);
+  color: var(--admin-color-primary-hover);
 }
 
 .rich-editor-content .tiptap u {
@@ -630,7 +632,7 @@ a {
 }
 
 .rich-editor-content .tiptap .rte-image.ProseMirror-selectednode {
-  border-color: var(--rte-canvas-primary);
+  border-color: var(--admin-color-primary);
   outline: none;
 }
 

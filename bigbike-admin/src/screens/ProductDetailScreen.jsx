@@ -1164,7 +1164,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     </Select>
                   </Field>
 
-                  <Field label={t('products.detail.trust.originBrand', { defaultValue: 'Thương hiệu (nước)' })}>
+                  <Field
+                    label={t('products.detail.trust.originBrand', { defaultValue: 'Thương hiệu (nước)' })}
+                    hint={t('products.detail.trust.originBrandHint', { defaultValue: 'Dùng chung cho cả bản tiếng Việt và tiếng Anh — không có bản dịch riêng theo tab ngôn ngữ, gõ ở tab nào cũng ghi đè cùng một giá trị.' })}
+                  >
                     <Input
                       placeholder="vd: Ý"
                       value={form.originBrandCountry}

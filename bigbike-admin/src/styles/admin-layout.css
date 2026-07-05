@@ -450,6 +450,12 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  /* Cột nav dài bằng cột nội dung (grid stretch mặc định) — ghim lại khi cuộn
+     để không mất tab đang có, thay vì cuộn khuất để lại khoảng trắng. */
+  position: sticky;
+  top: calc(var(--bb-topbar-h) + 20px);
+  z-index: var(--admin-z-sticky);
+  align-self: start;
 }
 
 .settings-nav button {

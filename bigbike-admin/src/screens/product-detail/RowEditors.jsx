@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Award, BadgeCheck, Clock, CreditCard, Gift, Headphones, MapPin, Package, RefreshCw, ShieldCheck, Truck, Wrench,
@@ -148,10 +148,22 @@ export function TrustBadgesEditor({ disabled, html = '', onHtmlChange }) {
     const parsed = parseTrustBadgesFromHtml(html)
     return parsed.length ? parsed : [newRow()]
   })
+  // `html` có thể đến muộn (vd sau khi trang tải xong dữ liệu sản phẩm import từ CSV/JSON) — lúc
+  // đó `rows` đã lỡ khởi tạo rỗng từ trước và không tự nạp lại. Theo dõi html "bên ngoài" (khác với
+  // html do chính commit() vừa ghi lên) để nạp lại rows, tránh tab "Có cấu trúc" đứng hình trống.
+  const lastHtmlRef = useRef(html)
+  useEffect(() => {
+    if (html === lastHtmlRef.current) return
+    lastHtmlRef.current = html
+    const parsed = parseTrustBadgesFromHtml(html)
+    setRows(parsed.length ? parsed : [newRow()])
+  }, [html])
 
   function commit(nextRows) {
     setRows(nextRows)
-    onHtmlChange?.(mergeTrustBadgesIntoHtml(nextRows, html))
+    const nextHtml = mergeTrustBadgesIntoHtml(nextRows, html)
+    lastHtmlRef.current = nextHtml
+    onHtmlChange?.(nextHtml)
   }
   function changeMode(next) {
     if (next === mode) return
@@ -272,10 +284,22 @@ export function SpecStatEditor({ disabled, html = '', onHtmlChange }) {
     const parsed = parseSpecStatsFromHtml(html)
     return parsed.length ? parsed : [newRow()]
   })
+  // `html` có thể đến muộn (vd sau khi trang tải xong dữ liệu sản phẩm import từ CSV/JSON) — lúc
+  // đó `rows` đã lỡ khởi tạo rỗng từ trước và không tự nạp lại. Theo dõi html "bên ngoài" (khác với
+  // html do chính commit() vừa ghi lên) để nạp lại rows, tránh tab "Có cấu trúc" đứng hình trống.
+  const lastHtmlRef = useRef(html)
+  useEffect(() => {
+    if (html === lastHtmlRef.current) return
+    lastHtmlRef.current = html
+    const parsed = parseSpecStatsFromHtml(html)
+    setRows(parsed.length ? parsed : [newRow()])
+  }, [html])
 
   function commit(nextRows) {
     setRows(nextRows)
-    onHtmlChange?.(mergeSpecStatsIntoHtml(nextRows, html))
+    const nextHtml = mergeSpecStatsIntoHtml(nextRows, html)
+    lastHtmlRef.current = nextHtml
+    onHtmlChange?.(nextHtml)
   }
   function changeMode(next) {
     if (next === mode) return

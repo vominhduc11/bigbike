@@ -194,7 +194,7 @@ public class CartService {
 
     @Transactional
     public CartEntity mergeGuestCart(String guestId, CartEntity customerCart) {
-        return cartRepo.findBySessionId(guestId).stream().findFirst().map(guestCart -> {
+        return cartRepo.findBySessionIdAndStatus(guestId, STATUS_ACTIVE).stream().findFirst().map(guestCart -> {
             if (guestCart.getId().equals(customerCart.getId())) return customerCart;
 
             List<CartItemEntity> customerItems = cartItemRepo.findByCartId(customerCart.getId());
@@ -210,6 +210,7 @@ public class CartService {
                     ci.setUpdatedAt(Instant.now());
                     calculator.recalculateItem(ci);
                     cartItemRepo.save(ci);
+                    cartItemRepo.delete(guestItem);
                 } else {
                     guestItem.setCart(customerCart);
                     guestItem.setUpdatedAt(Instant.now());

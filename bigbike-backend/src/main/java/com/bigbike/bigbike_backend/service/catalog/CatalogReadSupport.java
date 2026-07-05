@@ -338,6 +338,19 @@ final class CatalogReadSupport {
                 .anyMatch(category -> category.slug().equals(categorySlug));
     }
 
+    /**
+     * Same as {@link #matchesCategory(Product, String)} but against a pre-resolved set of
+     * self + descendant slugs (CATEGORY_RULE_006), for the in-memory filter path used when a
+     * color filter is present. {@code null} allowedSlugs means "no category filter".
+     */
+    static boolean matchesCategoryOrDescendants(Product product, Set<String> allowedSlugs) {
+        if (allowedSlugs == null) {
+            return true;
+        }
+        return product.categories() != null && product.categories().stream()
+                .anyMatch(category -> allowedSlugs.contains(category.slug()));
+    }
+
     static boolean matchesBrand(Product product, String brandSlug) {
         if (brandSlug == null || brandSlug.isBlank()) {
             return true;

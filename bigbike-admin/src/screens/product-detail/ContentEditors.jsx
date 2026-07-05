@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { GripVertical } from 'lucide-react'
 import { MediaPickerModal } from '../../components/MediaPickerModal'
@@ -512,11 +512,23 @@ export function SpecificationsEditor({ disabled, html = '', onHtmlChange }) {
     const parsed = parseSpecsFromHtml(html)
     return parsed.length ? parsed : [newRow()]
   })
+  // `html` có thể đến muộn (vd sau khi trang tải xong dữ liệu sản phẩm import từ CSV/JSON) — lúc
+  // đó `rows` đã lỡ khởi tạo rỗng từ trước và không tự nạp lại. Theo dõi html "bên ngoài" (khác với
+  // html do chính commit() vừa ghi lên) để nạp lại rows, tránh tab "Có cấu trúc" đứng hình trống.
+  const lastHtmlRef = useRef(html)
+  useEffect(() => {
+    if (html === lastHtmlRef.current) return
+    lastHtmlRef.current = html
+    const parsed = parseSpecsFromHtml(html)
+    setRows(parsed.length ? parsed : [newRow()])
+  }, [html])
 
   // Ghi dòng → merge vào html (giữ CSS). html là field được lưu (qua onHtmlChange).
   function commit(nextRows) {
     setRows(nextRows)
-    onHtmlChange?.(mergeSpecsIntoHtml(nextRows, html))
+    const nextHtml = mergeSpecsIntoHtml(nextRows, html)
+    lastHtmlRef.current = nextHtml
+    onHtmlChange?.(nextHtml)
   }
   function changeMode(next) {
     if (next === mode) return

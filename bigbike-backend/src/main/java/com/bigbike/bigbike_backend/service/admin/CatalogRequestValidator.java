@@ -5,21 +5,26 @@ import com.bigbike.bigbike_backend.api.admin.dto.CategoryTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.ProductTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertBrandRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertCategoryRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.ProductTabRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.VideoRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.GalleryImageRequest;
 import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.config.MediaUrlProperties;
+import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGalleryImageEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVideoEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
+import com.bigbike.bigbike_backend.service.security.HomeVideoUrlPolicy;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,19 +44,22 @@ public class CatalogRequestValidator {
     private final CategoryJpaRepository categoryJpaRepository;
     private final BrandJpaRepository brandJpaRepository;
     private final MediaUrlProperties mediaUrlProperties;
+    private final HomeVideoUrlPolicy homeVideoUrlPolicy;
 
     public CatalogRequestValidator(
             ObjectProvider<ProductJpaRepository> productJpaRepositoryProvider,
             ObjectProvider<ProductVariantJpaRepository> productVariantJpaRepositoryProvider,
             ObjectProvider<CategoryJpaRepository> categoryJpaRepositoryProvider,
             ObjectProvider<BrandJpaRepository> brandJpaRepositoryProvider,
-            MediaUrlProperties mediaUrlProperties
+            MediaUrlProperties mediaUrlProperties,
+            HomeVideoUrlPolicy homeVideoUrlPolicy
     ) {
         this.productJpaRepository = productJpaRepositoryProvider.getIfAvailable();
         this.productVariantJpaRepository = productVariantJpaRepositoryProvider.getIfAvailable();
         this.categoryJpaRepository = categoryJpaRepositoryProvider.getIfAvailable();
         this.brandJpaRepository = brandJpaRepositoryProvider.getIfAvailable();
         this.mediaUrlProperties = mediaUrlProperties;
+        this.homeVideoUrlPolicy = homeVideoUrlPolicy;
     }
 
     public String validateProductRequest(
@@ -96,15 +104,23 @@ public class CatalogRequestValidator {
         );
 
         if (!preview) {
+            // Grandfather set: image-shaped URLs (plain gallery images AND video-item thumbnails
+            // share the same imageUrl column) already saved on the entity are not re-validated on
+            // unrelated edits — only newly-submitted URLs must pass the MinIO whitelist.
             Set<String> existingGalleryUrls = new HashSet<>();
+            // Same idea for video source URLs (product-level videos[] + video gallery items) —
+            // only NEW video URLs go through the YouTube/TikTok/Facebook/MinIO whitelist.
+            Set<String> existingVideoUrls = new HashSet<>();
             if (current != null) {
                 if (current.getGallery() != null) {
                     for (ProductGalleryImageEntity img : current.getGallery()) {
-                        if (!"video".equalsIgnoreCase(img.getMediaType())) {
-                            String u = AdminMutationValidators.trimToNull(img.getImageUrl());
-                            if (u != null) {
-                                existingGalleryUrls.add(u);
-                            }
+                        String u = AdminMutationValidators.trimToNull(img.getImageUrl());
+                        if (u != null) {
+                            existingGalleryUrls.add(u);
+                        }
+                        String vu = AdminMutationValidators.trimToNull(img.getVideoUrl());
+                        if (vu != null) {
+                            existingVideoUrls.add(vu);
                         }
                     }
                 }
@@ -112,13 +128,27 @@ public class CatalogRequestValidator {
                     for (ProductVariantEntity variant : current.getVariants()) {
                         if (variant.getGallery() != null) {
                             for (ProductVariantGalleryImageEntity img : variant.getGallery()) {
-                                if (!"video".equalsIgnoreCase(img.getMediaType())) {
-                                    String u = AdminMutationValidators.trimToNull(img.getImageUrl());
-                                    if (u != null) {
-                                        existingGalleryUrls.add(u);
-                                    }
+                                String u = AdminMutationValidators.trimToNull(img.getImageUrl());
+                                if (u != null) {
+                                    existingGalleryUrls.add(u);
+                                }
+                                String vu = AdminMutationValidators.trimToNull(img.getVideoUrl());
+                                if (vu != null) {
+                                    existingVideoUrls.add(vu);
                                 }
                             }
+                        }
+                    }
+                }
+                if (current.getVideos() != null) {
+                    for (ProductVideoEntity video : current.getVideos()) {
+                        String vu = AdminMutationValidators.trimToNull(video.getVideoUrl());
+                        if (vu != null) {
+                            existingVideoUrls.add(vu);
+                        }
+                        String tu = AdminMutationValidators.trimToNull(video.getThumbnailUrl());
+                        if (tu != null) {
+                            existingGalleryUrls.add(tu);
                         }
                     }
                 }
@@ -127,17 +157,7 @@ public class CatalogRequestValidator {
             if (request.getGallery() != null) {
                 for (int i = 0; i < request.getGallery().size(); i++) {
                     GalleryImageRequest imgReq = request.getGallery().get(i);
-                    if (imgReq != null && !"video".equalsIgnoreCase(imgReq.getMediaType())) {
-                        String url = AdminMutationValidators.trimToNull(imgReq.getUrl());
-                        if (url != null && !existingGalleryUrls.contains(url)) {
-                            AdminMutationValidators.validateWhitelistedMediaUrl(
-                                    url,
-                                    "gallery[" + i + "].url",
-                                    mediaUrlProperties.getPublicBaseUrl(),
-                                    errors
-                            );
-                        }
-                    }
+                    validateGalleryMediaUrls(imgReq, "gallery[" + i + "]", existingGalleryUrls, existingVideoUrls, errors);
                 }
             }
             if (request.getVariants() != null) {
@@ -146,19 +166,48 @@ public class CatalogRequestValidator {
                     if (v != null && v.getGallery() != null) {
                         for (int j = 0; j < v.getGallery().size(); j++) {
                             GalleryImageRequest imgReq = v.getGallery().get(j);
-                            if (imgReq != null && !"video".equalsIgnoreCase(imgReq.getMediaType())) {
-                                String url = AdminMutationValidators.trimToNull(imgReq.getUrl());
-                                if (url != null && !existingGalleryUrls.contains(url)) {
-                                    AdminMutationValidators.validateWhitelistedMediaUrl(
-                                            url,
-                                            "variants[" + i + "].gallery[" + j + "].url",
-                                            mediaUrlProperties.getPublicBaseUrl(),
-                                            errors
-                                    );
-                                }
-                            }
+                            validateGalleryMediaUrls(
+                                    imgReq, "variants[" + i + "].gallery[" + j + "]", existingGalleryUrls, existingVideoUrls, errors);
                         }
                     }
+                }
+            }
+            if (request.getVideos() != null) {
+                for (int i = 0; i < request.getVideos().size(); i++) {
+                    VideoRequest videoReq = request.getVideos().get(i);
+                    if (videoReq == null) {
+                        continue;
+                    }
+                    String videoUrl = AdminMutationValidators.trimToNull(videoReq.getUrl());
+                    if (videoUrl != null && !existingVideoUrls.contains(videoUrl) && !homeVideoUrlPolicy.isAllowed(videoUrl)) {
+                        errors.add(new ApiErrorDetail(
+                                "videos[" + i + "].url",
+                                "INVALID_VALUE",
+                                "Video URL must be a supported YouTube/TikTok/Facebook URL or an approved internal media URL."
+                        ));
+                    }
+                    String thumbnailUrl = AdminMutationValidators.trimToNull(videoReq.getThumbnailUrl());
+                    if (thumbnailUrl != null && !existingGalleryUrls.contains(thumbnailUrl)) {
+                        AdminMutationValidators.validateWhitelistedMediaUrl(
+                                thumbnailUrl,
+                                "videos[" + i + "].thumbnailUrl",
+                                mediaUrlProperties.getPublicBaseUrl(),
+                                errors
+                        );
+                    }
+                }
+            }
+
+            validateDescriptionBlockMediaUrls(request.getDescriptionBlocks(), "descriptionBlocks", errors);
+            validateDescriptionBlockMediaUrls(request.getDescriptionBlocksEn(), "descriptionBlocksEn", errors);
+            if (request.getTabs() != null) {
+                for (int i = 0; i < request.getTabs().size(); i++) {
+                    ProductTabRequest tab = request.getTabs().get(i);
+                    if (tab == null) {
+                        continue;
+                    }
+                    validateDescriptionBlockMediaUrls(tab.getBlocks(), "tabs[" + i + "].blocks", errors);
+                    validateDescriptionBlockMediaUrls(tab.getBlocksEn(), "tabs[" + i + "].blocksEn", errors);
                 }
             }
         }
@@ -254,6 +303,63 @@ public class CatalogRequestValidator {
         }
 
         return slug;
+    }
+
+    /** Validates a single gallery item's URL(s) against the media whitelist (M6/M7 — video items were
+     * previously skipped entirely). {@code fieldPrefix} is the JSON path up to (not including) `.url`. */
+    private void validateGalleryMediaUrls(
+            GalleryImageRequest imgReq,
+            String fieldPrefix,
+            Set<String> existingGalleryUrls,
+            Set<String> existingVideoUrls,
+            List<ApiErrorDetail> errors
+    ) {
+        if (imgReq == null) {
+            return;
+        }
+        if (ProductFieldApplier.isVideoGalleryItem(imgReq)) {
+            String videoUrl = AdminMutationValidators.trimToNull(imgReq.getVideoUrl());
+            if (videoUrl != null && !existingVideoUrls.contains(videoUrl) && !homeVideoUrlPolicy.isAllowed(videoUrl)) {
+                errors.add(new ApiErrorDetail(
+                        fieldPrefix + ".videoUrl",
+                        "INVALID_VALUE",
+                        "Video URL must be a supported YouTube/TikTok/Facebook URL or an approved internal media URL."
+                ));
+            }
+            String thumbnailUrl = AdminMutationValidators.trimToNull(imgReq.getUrl());
+            if (thumbnailUrl != null && !existingGalleryUrls.contains(thumbnailUrl)) {
+                AdminMutationValidators.validateWhitelistedMediaUrl(
+                        thumbnailUrl, fieldPrefix + ".url", mediaUrlProperties.getPublicBaseUrl(), errors);
+            }
+        } else {
+            String url = AdminMutationValidators.trimToNull(imgReq.getUrl());
+            if (url != null && !existingGalleryUrls.contains(url)) {
+                AdminMutationValidators.validateWhitelistedMediaUrl(
+                        url, fieldPrefix + ".url", mediaUrlProperties.getPublicBaseUrl(), errors);
+            }
+        }
+    }
+
+    /** Mirrors ContentRequestValidator's ImageBlock/FeatureBlock whitelist loop for product
+     * description blocks (M8 — previously unvalidated for products, unlike articles). */
+    private void validateDescriptionBlockMediaUrls(
+            List<DescriptionBlock> blocks, String fieldPrefix, List<ApiErrorDetail> errors
+    ) {
+        if (blocks == null) {
+            return;
+        }
+        for (int i = 0; i < blocks.size(); i++) {
+            DescriptionBlock block = blocks.get(i);
+            if (block instanceof DescriptionBlock.ImageBlock imageBlock) {
+                AdminMutationValidators.validateWhitelistedMediaUrl(
+                        imageBlock.getUrl(), fieldPrefix + "[" + i + "].url",
+                        mediaUrlProperties.getPublicBaseUrl(), errors);
+            } else if (block instanceof DescriptionBlock.FeatureBlock featureBlock) {
+                AdminMutationValidators.validateWhitelistedMediaUrl(
+                        featureBlock.getUrl(), fieldPrefix + "[" + i + "].url",
+                        mediaUrlProperties.getPublicBaseUrl(), errors);
+            }
+        }
     }
 
     private static String extractEnSlug(Object enContent) {
@@ -437,12 +543,15 @@ public class CatalogRequestValidator {
         );
 
         // Tiếng Anh chỉ bắt buộc khi tiếng Việt tương ứng đang bắt buộc (TRANSLATION_RULE_002).
-        // `name` là field cốt lõi bắt buộc ở VI → `translations.en.name` cũng bắt buộc, áp
-        // dụng cho cả tạo mới lẫn sửa bản ghi cũ (không chỉ khi request đổi tên).
-        CategoryTranslationRequest.CategoryContentRequest categoryEn =
-                request.getTranslations() == null ? null : request.getTranslations().getEn();
-        AdminMutationValidators.validateRequiredText(
-                categoryEn == null ? null : categoryEn.getName(), "translations.en.name", "English name", errors);
+        // `name` là field cốt lõi bắt buộc ở VI → `translations.en.name` cũng bắt buộc, nhưng chỉ khi
+        // request thực sự đặt tên (tạo mới, hoặc sửa có gửi `name`) — khớp điều kiện validate tên VI
+        // ở trên, để PATCH tối giản (vd chỉ {visible}/{sortOrder}) không bị chặn.
+        if (create || request.getName() != null) {
+            CategoryTranslationRequest.CategoryContentRequest categoryEn =
+                    request.getTranslations() == null ? null : request.getTranslations().getEn();
+            AdminMutationValidators.validateRequiredText(
+                    categoryEn == null ? null : categoryEn.getName(), "translations.en.name", "English name", errors);
+        }
 
         return slug;
     }
@@ -542,12 +651,15 @@ public class CatalogRequestValidator {
         );
 
         // Tiếng Anh chỉ bắt buộc khi tiếng Việt tương ứng đang bắt buộc (TRANSLATION_RULE_002).
-        // `name` là field cốt lõi bắt buộc ở VI → `translations.en.name` cũng bắt buộc, áp
-        // dụng cho cả tạo mới lẫn sửa bản ghi cũ (không chỉ khi request đổi tên).
-        BrandTranslationRequest.BrandContentRequest brandEn =
-                request.getTranslations() == null ? null : request.getTranslations().getEn();
-        AdminMutationValidators.validateRequiredText(
-                brandEn == null ? null : brandEn.getName(), "translations.en.name", "English name", errors);
+        // `name` là field cốt lõi bắt buộc ở VI → `translations.en.name` cũng bắt buộc, nhưng chỉ khi
+        // request thực sự đặt tên (tạo mới, hoặc sửa có gửi `name`) — khớp điều kiện validate tên VI
+        // ở trên, để PATCH tối giản (vd chỉ {visible}/{sortOrder}) không bị chặn.
+        if (create || request.getName() != null) {
+            BrandTranslationRequest.BrandContentRequest brandEn =
+                    request.getTranslations() == null ? null : request.getTranslations().getEn();
+            AdminMutationValidators.validateRequiredText(
+                    brandEn == null ? null : brandEn.getName(), "translations.en.name", "English name", errors);
+        }
 
         return slug;
     }

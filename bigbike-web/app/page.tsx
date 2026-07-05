@@ -138,7 +138,9 @@ function toHeroSlide(slider: HomeSlider): HeroSlide | null {
 }
 
 function isRenderableHomeVideo(video: HomeVideo): boolean {
-  if (video.youtubeId && /^[A-Za-z0-9_-]{11}$/.test(video.youtubeId)) return true;
+  // Backend already whitelists YouTube/TikTok/Facebook and only populates embedUrl for those
+  // (null for self-hosted MinIO videos, which VideoModal renders straight from videoUrl).
+  if (video.embedUrl) return true;
   return isSafeHomeVideoUrl(video.videoUrl);
 }
 

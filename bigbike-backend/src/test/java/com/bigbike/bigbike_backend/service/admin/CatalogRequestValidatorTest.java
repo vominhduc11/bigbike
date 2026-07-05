@@ -19,6 +19,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaReposi
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
+import com.bigbike.bigbike_backend.service.security.HomeVideoUrlPolicy;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -56,12 +57,16 @@ class CatalogRequestValidatorTest {
         ObjectProvider<BrandJpaRepository> brandJpaRepositoryProvider = mock(ObjectProvider.class);
         when(brandJpaRepositoryProvider.getIfAvailable()).thenReturn(brandJpaRepository);
 
+        HomeVideoUrlPolicy homeVideoUrlPolicy = mock(HomeVideoUrlPolicy.class);
+        when(homeVideoUrlPolicy.isAllowed(org.mockito.ArgumentMatchers.anyString())).thenReturn(true);
+
         validator = new CatalogRequestValidator(
                 productJpaRepositoryProvider,
                 productVariantJpaRepositoryProvider,
                 categoryJpaRepositoryProvider,
                 brandJpaRepositoryProvider,
-                mediaUrlProperties
+                mediaUrlProperties,
+                homeVideoUrlPolicy
         );
     }
 

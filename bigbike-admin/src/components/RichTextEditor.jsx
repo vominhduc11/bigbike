@@ -280,7 +280,7 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
       {/* Editor content */}
       <EditorContent
         editor={editor}
-        className="rich-editor-content rte-canvas-frame min-h-[240px]"
+        className="rich-editor-content min-h-[240px]"
       />
 
       {imagePickerOpen && (

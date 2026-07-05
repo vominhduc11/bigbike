@@ -15,11 +15,17 @@ import com.bigbike.bigbike_backend.service.common.PaginationService;
 import com.bigbike.bigbike_backend.service.common.SortDirection;
 import com.bigbike.bigbike_backend.service.common.SortParser;
 import com.bigbike.bigbike_backend.service.common.SortSpec;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -80,9 +86,10 @@ public class CatalogReadService {
         // specStats/trustBadges/notes/related/accessory — none of that survives
         // toListView() anyway, so loading it just to discard it wastes a lazy-collection
         // batch fetch per relation on every request that lands on this path).
+        Set<String> categorySlugs = resolveCategorySlugsWithDescendants(category, lang);
         List<Product> result = catalogReadRepository.findAllPublishedProductsForListing(lang).stream()
                 .filter(product -> product.publishStatus() == PublishStatus.PUBLISHED)
-                .filter(product -> matchesCategory(product, category))
+                .filter(product -> matchesCategoryOrDescendants(product, categorySlugs))
                 .filter(product -> matchesBrand(product, brand))
                 .filter(product -> matchesQuery(product, q))
                 .filter(product -> matchesColor(product, filterColor))
@@ -104,6 +111,53 @@ public class CatalogReadService {
                 page0.totalItems(),
                 page0.totalPages()
         );
+    }
+
+    /**
+     * Resolves a category slug to self + every descendant slug (CATEGORY_RULE_006), for the
+     * in-memory filter path (color filter present, see {@link #listProducts}) which otherwise
+     * only exact-matches the product's own category slug. Mirrors
+     * {@code JpaCatalogReadRepository.resolveCategoryIdWithDescendants} but keyed on slug and
+     * operating on the small in-memory category list already loaded for facets.
+     */
+    private Set<String> resolveCategorySlugsWithDescendants(String categorySlug, String lang) {
+        if (categorySlug == null || categorySlug.isBlank()) {
+            return null;
+        }
+        List<Category> categories = catalogReadRepository.findAllCategories(lang);
+        Map<String, List<String>> childrenByParentId = new HashMap<>();
+        Map<String, String> slugById = new HashMap<>();
+        for (Category cat : categories) {
+            slugById.put(cat.id(), cat.slug());
+            if (cat.parentId() != null) {
+                childrenByParentId.computeIfAbsent(cat.parentId(), k -> new ArrayList<>()).add(cat.id());
+            }
+        }
+        String rootId = categories.stream()
+                .filter(cat -> categorySlug.equals(cat.slug()))
+                .map(Category::id)
+                .findFirst()
+                .orElse(null);
+        if (rootId == null) {
+            return Set.of();
+        }
+        Set<String> visitedIds = new HashSet<>();
+        Deque<String> queue = new ArrayDeque<>(List.of(rootId));
+        while (!queue.isEmpty()) {
+            String current = queue.poll();
+            if (!visitedIds.add(current)) {
+                continue;
+            }
+            queue.addAll(childrenByParentId.getOrDefault(current, List.of()));
+        }
+        Set<String> slugs = new HashSet<>();
+        for (String id : visitedIds) {
+            String slug = slugById.get(id);
+            if (slug != null) {
+                slugs.add(slug);
+            }
+        }
+        return slugs;
     }
 
     public Product getProductBySlug(String slug, String lang) {
