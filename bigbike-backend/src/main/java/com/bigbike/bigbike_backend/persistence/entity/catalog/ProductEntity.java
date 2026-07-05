@@ -272,6 +272,9 @@ public class ProductEntity {
     @Column(name = "quick_answer_summary_en", columnDefinition = "text")
     private String quickAnswerSummaryEn;
 
+    @Column(name = "origin_brand_country_en", length = 120)
+    private String originBrandCountryEn;
+
     @Column(nullable = false)
     private Instant createdAt;
 

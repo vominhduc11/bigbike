@@ -792,7 +792,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 toTrustBadges(entity, publicView, locale),
                 toHighlights(entity, ProductHighlightEntity.KIND_PRO, publicView, locale),
                 toHighlights(entity, ProductHighlightEntity.KIND_CON, publicView, locale),
-                entity.getOriginBrandCountry(),
+                pick(entity.getOriginBrandCountry(), entity.getOriginBrandCountryEn(), locale),
                 entity.getSizeGuide(),
                 pick(entity.getSuitabilityAdvisory(), entity.getSuitabilityAdvisoryEn(), locale),
                 pick(entity.getSpecificationsHtml(), entity.getSpecificationsHtmlEn(), locale),

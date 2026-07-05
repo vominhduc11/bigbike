@@ -616,6 +616,7 @@ drop. Đọc ra domain `Product` thành 2 mảng `positiveNotes` / `negativeNote
 | `pdp_shipping_line` | `TEXT` | YES | **(dormant từ V249)** Domain field `pdpShippingLine` đã gỡ; cột giữ làm lưới an toàn, dữ liệu đã backfill sang `product_purchase_lines`. Không còn admin đọc/ghi. |
 | `pdp_return_line` | `TEXT` | YES | **(dormant từ V249)** Domain field `pdpReturnLine` đã gỡ; cột giữ làm lưới an toàn, dữ liệu đã backfill sang `product_purchase_lines`. Không còn admin đọc/ghi. |
 | `origin_brand_country` | `VARCHAR(120)` | YES | "Thương hiệu [nước]". Domain `originBrandCountry`. |
+| `origin_brand_country_en` | `VARCHAR(120)` | YES | **(V319)** Bản tiếng Anh của `origin_brand_country`. Domain `originBrandCountryEn`; resolved per-locale qua `pick()` (như các field `*_en` khác), raw value chỉ trả trong `translations.en.originBrandCountry` trên admin read. |
 | `size_guide` | `TEXT` | YES | Bảng size dạng HTML (rich-text, sanitize khi render). Domain `sizeGuide`. |
 
 **Trọng lượng (đã gỡ):** field dẫn xuất `weightGrams` đã được **gỡ khỏi domain/API/admin/web**

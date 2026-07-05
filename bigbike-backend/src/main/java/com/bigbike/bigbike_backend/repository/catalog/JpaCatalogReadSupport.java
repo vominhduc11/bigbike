@@ -139,6 +139,7 @@ final class JpaCatalogReadSupport {
                 || isPresent(entity.getQuickAnswerSummaryEn())
                 || isPresent(entity.getSeoTitleEn())
                 || isPresent(entity.getSeoDescriptionEn())
+                || isPresent(entity.getOriginBrandCountryEn())
                 || (descriptionBlocksEn != null && !descriptionBlocksEn.isEmpty());
         if (!anyEnglish) {
             return null;
@@ -156,7 +157,8 @@ final class JpaCatalogReadSupport {
                 entity.getQuickAnswerSummaryEn(),
                 entity.getSeoTitleEn(),
                 entity.getSeoDescriptionEn(),
-                descriptionBlocksEn
+                descriptionBlocksEn,
+                entity.getOriginBrandCountryEn()
         ));
     }
 

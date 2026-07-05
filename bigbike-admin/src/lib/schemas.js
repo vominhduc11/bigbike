@@ -186,6 +186,7 @@ export function createProductSchema(t, isCreate = false) {
           quickAnswerSummary: z.string().max(600, 'Quick Answer (EN) tối đa 600 ký tự.').optional(),
           seoTitle: z.string().optional(),
           seoDescription: z.string().optional(),
+          originBrandCountry: z.string().max(120).optional(),
         }).optional(),
       }).optional(),
     })

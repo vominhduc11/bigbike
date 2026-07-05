@@ -364,6 +364,8 @@ function normalizeProductTranslations(input) {
     seoDescription: toTrimmedString(source.seoDescription) || undefined,
     // Khối mô tả tiếng Anh (V229) — giữ nguyên mảng để admin BlockEditor (EN) hydrate.
     descriptionBlocks: Array.isArray(source.descriptionBlocks) ? source.descriptionBlocks : null,
+    // "Thương hiệu [nước]" bản EN (V319).
+    originBrandCountry: toTrimmedString(source.originBrandCountry) || undefined,
   }
 }
 

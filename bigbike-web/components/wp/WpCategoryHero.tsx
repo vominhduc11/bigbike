@@ -95,8 +95,14 @@ export function WpCategoryHero({
             </div>
           </div>
         </div>
-        <div className="img text-right">
-          <img src={illustration} alt={illustrationAlt ?? title} />
+        {/* "Cái phanh": chặn ảnh minh hoạ ≤400px cao (≈88% banner, khớp bản xem trước admin) và
+            ≤50% chiều rộng (giữ trong nửa phải, không lấn tiêu đề) — ảnh to cỡ nào cũng nằm gọn. */}
+        <div className="img text-right max-w-[50%]">
+          <img
+            src={illustration}
+            alt={illustrationAlt ?? title}
+            className="max-h-[400px] w-auto"
+          />
         </div>
       </div>
     </div>

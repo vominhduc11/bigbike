@@ -1166,12 +1166,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
                   <Field
                     label={t('products.detail.trust.originBrand', { defaultValue: 'Thương hiệu (nước)' })}
-                    hint={t('products.detail.trust.originBrandHint', { defaultValue: 'Dùng chung cho cả bản tiếng Việt và tiếng Anh — không có bản dịch riêng theo tab ngôn ngữ, gõ ở tab nào cũng ghi đè cùng một giá trị.' })}
+                    hint={t('products.detail.trust.originBrandHint', { defaultValue: 'Nhập riêng cho từng ngôn ngữ — chuyển tab VI/EN ở góc trên để nhập bản còn lại (vd: "Nhật Bản" ở tab VI, "Japan" ở tab EN).' })}
                   >
                     <Input
-                      placeholder="vd: Ý"
-                      value={form.originBrandCountry}
-                      onChange={(e) => updateField('originBrandCountry', e.target.value)}
+                      placeholder={isEn ? 'e.g. Japan' : 'vd: Ý'}
+                      value={langValue('originBrandCountry')}
+                      onChange={(e) => langChange('originBrandCountry', e.target.value)}
                       disabled={isReadOnly}
                       maxLength={120}
                     />

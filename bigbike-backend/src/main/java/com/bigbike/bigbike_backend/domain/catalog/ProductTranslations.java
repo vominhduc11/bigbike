@@ -31,7 +31,9 @@ public record ProductTranslations(ProductContent en) {
             String seoTitle,
             String seoDescription,
             /** English structured description blocks (V229); null when authored as legacy HTML. */
-            List<DescriptionBlock> descriptionBlocks
+            List<DescriptionBlock> descriptionBlocks,
+            /** English "Thương hiệu [nước]" (V319). */
+            String originBrandCountry
     ) {
     }
 }

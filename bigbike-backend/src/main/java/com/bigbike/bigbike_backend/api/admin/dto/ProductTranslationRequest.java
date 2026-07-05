@@ -77,5 +77,8 @@ public class ProductTranslationRequest {
 
         @Size(max = 5000, message = "English SEO description is too long.")
         private String seoDescription;
+
+        @Size(max = 120, message = "English origin brand country is too long.")
+        private String originBrandCountry;
     }
 }

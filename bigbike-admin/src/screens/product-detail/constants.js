@@ -292,6 +292,7 @@ export function buildEmptyTranslation() {
     quickAnswerSummary: '',
     seoTitle: '',
     seoDescription: '',
+    originBrandCountry: '',
   }
 }
 

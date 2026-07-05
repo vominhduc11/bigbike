@@ -191,16 +191,19 @@ export function WpPurchaseSection({
 
   // Eyebrow (danh mục / thương hiệu·xuất xứ) ngay trên tiêu đề — port mockup PDP. GIỮ design
   // system web (text-brand + font-heading uppercase), KHÔNG dùng đỏ/Barlow của mockup.
-  // category.name/brand.name resolve theo locale ở backend (toCategorySummary/toBrandSummary) —
-  // đọc qua useLocalizedField như commitments/trustBadges ở trên. originBrandCountry KHÔNG có cột
-  // *_en (schema chỉ 1 cột) nên giữ nguyên bản vi ở mọi ngôn ngữ.
+  // category.name/brand.name/originBrandCountry resolve theo locale ở backend
+  // (toCategorySummary/toBrandSummary/pick) — đọc qua useLocalizedField như commitments/
+  // trustBadges ở trên (V319: originBrandCountry có cột *_en riêng).
   const enCategory = useLocalizedField<CategorySummary>("category");
   const activeCategory = locale === "en" ? enCategory : product.category;
   const eyebrowCategory =
     activeCategory?.slug === "chua-phan-loai" ? "" : safeText(activeCategory?.name, "");
   const enBrand = useLocalizedField<BrandSummary>("brand");
   const activeBrand = locale === "en" ? enBrand : product.brand;
-  const eyebrowBrand = safeText(product.originBrandCountry, "") || safeText(activeBrand?.name, "");
+  const enOriginBrandCountry = useLocalizedField<string>("originBrandCountry");
+  const activeOriginBrandCountry =
+    locale === "en" ? enOriginBrandCountry : product.originBrandCountry;
+  const eyebrowBrand = safeText(activeOriginBrandCountry, "") || safeText(activeBrand?.name, "");
   const eyebrow = [eyebrowCategory, eyebrowBrand].filter(Boolean).join(" / ");
 
   // Khối "cam kết" dưới nút mua (V232) — quản theo TỪNG sản phẩm; khối ngoài tab → rỗng thì ẩn cả khối.

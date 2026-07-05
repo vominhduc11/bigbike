@@ -125,6 +125,7 @@ final class ProductFieldApplier {
         entity.setQuickAnswerSummaryEn(en == null ? null : AdminMutationValidators.trimToNull(en.getQuickAnswerSummary()));
         entity.setSeoTitleEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSeoTitle()));
         entity.setSeoDescriptionEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSeoDescription()));
+        entity.setOriginBrandCountryEn(en == null ? null : AdminMutationValidators.trimToNull(en.getOriginBrandCountry()));
     }
 
     public static void applySpecifications(ProductEntity entity, List<SpecificationRequest> requests) {

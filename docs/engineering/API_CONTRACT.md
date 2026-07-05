@@ -806,6 +806,9 @@ field bổ sung cho template trang sản phẩm chuẩn SEO/AEO:
 - **`purchaseLines`** — **GỠ HẲN ở V276** (2026-06-24). Field `purchaseLines` (các dòng tự do của khối "Mua tại BigBike.vn" theo từng SP, V249) đã gỡ khỏi request/response/domain; bảng `product_purchase_lines` bị drop (`V276__drop_product_purchase_lines.sql`). Khối "Mua tại BigBike.vn" trên bigbike-web vẫn còn nhưng **chỉ** gồm các ô tự động: **Giá + Tồn kho** (realtime) và **Hotline + Địa chỉ** (từ site settings) — không còn dòng admin nhập tay.
 - **`originBrandCountry`** — `String` ≤ 120 ký tự (presence-flag) — "thương hiệu [nước]".
   (Trường `originManufactureCountry` / cột `origin_manufacture_country` đã gỡ ở V241 — không còn hiển thị trên web.)
+  **(V319)** Bilingual — có bản tiếng Anh riêng qua `translations.en.originBrandCountry`
+  (không còn dùng chung 1 giá trị cho cả 2 ngôn ngữ). Public/admin detail response resolve
+  theo locale qua `pick()` giống các field `*_en` khác (fallback về bản vi khi chưa dịch).
 - **`weightGrams`** — **đã gỡ** (quyết định chủ shop). Field dẫn xuất này không còn trên
   request/response/domain, không còn ô nhập trong admin, web ngừng khai schema.org `Product.weight`.
   Cột vật lý `weight_kg` vẫn tồn tại trong DB (kích thước WooCommerce-import) nhưng không còn
