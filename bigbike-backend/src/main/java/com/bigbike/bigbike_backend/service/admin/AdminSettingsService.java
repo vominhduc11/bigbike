@@ -28,6 +28,9 @@ import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +46,7 @@ public class AdminSettingsService {
     private final WebRevalidationService webRevalidationService;
     private final SettingDefinitionRegistry definitionRegistry;
     private final SettingValueValidator valueValidator;
+    private final ObjectMapper objectMapper;
 
     // ── List ──────────────────────────────────────────────────────────────────
 
@@ -240,20 +244,29 @@ public class AdminSettingsService {
     // ── Product assignment guide (banner read) ─────────────────────────────────
 
     /**
-     * Reads the 7 {@code product_assign_*} keys for the product create/edit banner.
-     * Returns empty strings for any key not yet seeded so the admin UI can fall back to its
-     * own defaults. Gated upstream by {@code products.read} so every product editor can render it.
+     * Reads {@code product_assign_title} + {@code product_assign_roles} for the product/content
+     * create-edit banner (same data, both screens). A missing, blank, or malformed
+     * {@code product_assign_roles} value falls back to an empty role list rather than throwing —
+     * this read sits on the hot path for every product/content editor open, gated only by
+     * {@code products.read} so every role that can reach it must never see a 500 here.
      */
     public AdminProductAssignmentResponse getProductAssignment() {
         return new AdminProductAssignmentResponse(
                 settingValueOrEmpty("product_assign_title"),
-                settingValueOrEmpty("product_assign_role_content"),
-                settingValueOrEmpty("product_assign_items_content"),
-                settingValueOrEmpty("product_assign_role_seo"),
-                settingValueOrEmpty("product_assign_items_seo"),
-                settingValueOrEmpty("product_assign_role_manager"),
-                settingValueOrEmpty("product_assign_items_manager")
+                parseAssignmentRoles(settingValueOrEmpty("product_assign_roles"))
         );
+    }
+
+    private List<AdminProductAssignmentResponse.RoleAssignmentDto> parseAssignmentRoles(String rawJson) {
+        if (rawJson == null || rawJson.isBlank()) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(rawJson,
+                    new TypeReference<List<AdminProductAssignmentResponse.RoleAssignmentDto>>() {});
+        } catch (JacksonException e) {
+            return List.of();
+        }
     }
 
     private String settingValueOrEmpty(String key) {

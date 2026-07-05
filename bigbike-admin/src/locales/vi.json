@@ -589,11 +589,8 @@
       "assign": {
         "title": "Phân công",
         "roleContent": "Content",
-        "itemsContent": "Thông tin cơ bản · Ảnh đại diện · Bộ sưu tập ảnh · Video · Thông số kỹ thuật · Hướng dẫn lắp đặt · Câu hỏi thường gặp · Biến thể · Sản phẩm liên quan · Nội dung SEO dưới",
         "roleSeo": "SEO",
-        "itemsSeo": "Thông tin SEO (Title, Meta, OG image) · Đường dẫn (slug) · Kiểm tra checklist trước khi đăng",
-        "roleManager": "Quản lý",
-        "itemsManager": "Giá & trạng thái · Duyệt đăng sản phẩm"
+        "roleManager": "Quản lý"
       },
       "gallery": {
         "pickImage": "Chọn ảnh",
@@ -1526,13 +1523,7 @@
       "tabSeoPublish": "SEO & Hiển thị",
       "tabsAriaLabel": "Phần của nội dung",
       "assign": {
-        "title": "Phân công bài viết",
-        "roleContent": "Content",
-        "itemsContent": "Tiêu đề · Ảnh đại diện · Nội dung chính · Tags & danh mục · Liên kết sản phẩm",
-        "roleSeo": "SEO",
-        "itemsSeo": "Tiêu đề SEO · Meta description · Slug · OG image · Kiểm tra trước khi đăng",
-        "roleManager": "Quản lý",
-        "itemsManager": "Phê duyệt · Đăng bài · Ẩn / xóa bài"
+        "title": "Phân công bài viết"
       },
       "saveDirty": "Có thay đổi chưa lưu",
       "saveClean": "Đã lưu",
@@ -2001,7 +1992,19 @@
     "valEmail": "Nhập đúng định dạng email, vd: ten@bigbike.vn",
     "valUrl": "Nhập đường dẫn web đầy đủ, vd: https://bigbike.vn/khuyen-mai",
     "valPhone": "Số điện thoại chỉ được chứa chữ số, dấu + hoặc dấu gạch",
-    "valNumber": "Giá trị phải là một số không âm."
+    "valNumber": "Giá trị phải là một số không âm.",
+    "assign": {
+      "description": "Banner phân công hiển thị trên màn tạo/sửa sản phẩm và bài viết — dùng chung 1 nguồn dữ liệu.",
+      "titleLabel": "Tiêu đề banner",
+      "roleNamePlaceholder": "Tên vai trò",
+      "itemsPlaceholder": "Công việc phụ trách...",
+      "addRole": "Thêm vai trò",
+      "removeRole": "Xóa vai trò",
+      "removeConfirmTitle": "Xóa vai trò",
+      "removeConfirmMessage": "Xóa vai trò này? Thay đổi chỉ áp dụng sau khi Lưu.",
+      "saveError": "Lưu thất bại.",
+      "unsavedHint": "Có thay đổi chưa lưu"
+    }
   },
   "adminUsers": {
     "eyebrow": "Hệ thống",

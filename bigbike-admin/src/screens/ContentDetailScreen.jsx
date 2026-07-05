@@ -730,31 +730,33 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
               {/* ── Card: SEO ── */}
               <SectionCard title={t('content.detail.sectionSeo')}>
                 {/* Live Google SERP preview */}
-                <div className="mb-4 p-3 border border-border bg-white">
-                  <div className="flex items-center gap-1 text-xs text-[#5f6368] mb-1">
-                    <Search size={12} />
-                    <span>{t('content.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
-                  </div>
-                  <div className="text-xs text-[#5f6368] break-all mb-1">
-                    {(() => {
-                      const canonical = form.seoCanonicalUrl?.trim()
-                      if (!canonical) {
-                        return <>https://bigbike.vn<span className="text-[#70757a]"> › {isArticle ? 'tin-tuc' : 'trang'} › {form.slug || 'duong-dan'}</span></>
-                      }
-                      try {
-                        const u = new URL(canonical)
-                        const parts = u.pathname.split('/').filter(Boolean)
-                        return <>{u.hostname}{parts.length > 0 && <span className="text-[#70757a]">{' › ' + parts.join(' › ')}</span>}</>
-                      } catch {
-                        return <>{canonical}</>
-                      }
-                    })()}
-                  </div>
-                  <div className="text-lg leading-snug text-[#1a0dab] break-words mb-1">
-                    {(langValue('seoTitle') || form.title || t('content.detail.serpTitleFallback', { defaultValue: 'Tiêu đề trên Google' })).slice(0, 60)}
-                  </div>
-                  <div className="text-sm leading-relaxed text-[#4d5156] break-words">
-                    {langValue('seoDescription') || form.excerpt || t('content.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn sẽ hiển thị ở đây.' })}
+                <div className="mb-4 rte-canvas-frame">
+                  <div className="p-3 border border-border bg-white">
+                    <div className="flex items-center gap-1 text-xs text-[#5f6368] mb-1">
+                      <Search size={12} />
+                      <span>{t('content.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
+                    </div>
+                    <div className="text-xs text-[#5f6368] break-all mb-1">
+                      {(() => {
+                        const canonical = form.seoCanonicalUrl?.trim()
+                        if (!canonical) {
+                          return <>https://bigbike.vn<span className="text-[#70757a]"> › {isArticle ? 'tin-tuc' : 'trang'} › {form.slug || 'duong-dan'}</span></>
+                        }
+                        try {
+                          const u = new URL(canonical)
+                          const parts = u.pathname.split('/').filter(Boolean)
+                          return <>{u.hostname}{parts.length > 0 && <span className="text-[#70757a]">{' › ' + parts.join(' › ')}</span>}</>
+                        } catch {
+                          return <>{canonical}</>
+                        }
+                      })()}
+                    </div>
+                    <div className="text-lg leading-snug text-[#1a0dab] break-words mb-1">
+                      {(langValue('seoTitle') || form.title || t('content.detail.serpTitleFallback', { defaultValue: 'Tiêu đề trên Google' })).slice(0, 60)}
+                    </div>
+                    <div className="text-sm leading-relaxed text-[#4d5156] break-words">
+                      {langValue('seoDescription') || form.excerpt || t('content.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn sẽ hiển thị ở đây.' })}
+                    </div>
                   </div>
                 </div>
 

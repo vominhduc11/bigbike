@@ -570,7 +570,7 @@ function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled, conte
             className="flex-1"
             placeholder={t('products.detail.variant.optionValuePlaceholder')}
             value={opt.value}
-            onChange={(e) => onUpdate({ value: e.target.value })}
+            onChange={(e) => onUpdate({ value: e.target.value, attributeValueId: null })}
             disabled={disabled}
           />
         )}

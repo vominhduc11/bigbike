@@ -1,40 +1,27 @@
 import { useTranslation } from 'react-i18next'
-import { Users } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { fetchProductAssignment } from '../../lib/adminApi'
+import { AssignmentBanner } from '@/components/AssignmentBanner'
 
+// Đọc CHUNG 1 nguồn dữ liệu với banner phân công trên product-detail (queryKey/staleTime khớp
+// đúng ProductDetailScreen — QueryClientProvider dùng chung toàn app nên 2 màn hình share thẳng
+// 1 cache entry, không cần nâng AssignmentConfigContext lên layout chung). Trước đây banner này
+// hardcode hoàn toàn qua i18n, không gọi API — nay Super Admin sửa vai trò ở Settings sẽ cập
+// nhật đồng thời cả banner sản phẩm lẫn banner bài viết.
 export function ContentAssignmentBanner() {
   const { t } = useTranslation()
+  const { data } = useQuery({
+    queryKey: ['product-assignment'],
+    queryFn: fetchProductAssignment,
+    staleTime: 5 * 60 * 1000,
+  })
+
   return (
-    <div className="px-4 py-3 bg-surface-muted border-b border-border">
-      <div className="flex items-center gap-1.5 mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        <Users size={12} />
-        <span>{t('content.detail.assign.title', { defaultValue: 'Phân công bài viết' })}</span>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-primary)' }}>
-          <div className="text-xs font-bold uppercase tracking-wide text-foreground mb-0.5">
-            {t('content.detail.assign.roleContent', { defaultValue: 'Content' })}
-          </div>
-          <div className="text-xs leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
-            {t('content.detail.assign.itemsContent', { defaultValue: 'Tiêu đề · Ảnh đại diện · Nội dung chính · Tags & danh mục · Liên kết sản phẩm' })}
-          </div>
-        </div>
-        <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-status-warning-text)' }}>
-          <div className="text-xs font-bold uppercase tracking-wide text-foreground mb-0.5">
-            {t('content.detail.assign.roleSeo', { defaultValue: 'SEO' })}
-          </div>
-          <div className="text-xs leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
-            {t('content.detail.assign.itemsSeo', { defaultValue: 'Tiêu đề SEO · Meta description · Slug · OG image · Kiểm tra trước khi đăng' })}
-          </div>
-        </div>
-        <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-text-primary)' }}>
-          <div className="text-xs font-bold uppercase tracking-wide text-foreground mb-0.5">
-            {t('content.detail.assign.roleManager', { defaultValue: 'Quản lý' })}
-          </div>
-          <div className="text-xs leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
-            {t('content.detail.assign.itemsManager', { defaultValue: 'Phê duyệt · Đăng bài · Ẩn / xóa bài' })}
-          </div>
-        </div>
-      </div>
-    </div>
+    <AssignmentBanner
+      title={data?.title || t('content.detail.assign.title', { defaultValue: 'Phân công bài viết' })}
+      roles={data?.roles ?? []}
+    />
   )
 }
+
+export default ContentAssignmentBanner

@@ -75,10 +75,12 @@ export function RichTextEditorWithSource({
             {t('richEditor.previewLabel')}
           </label>
           {(value || '').trim() ? (
-            <div
-              className="size-guide-preview rounded-sm border border-border bg-surface p-3 overflow-x-auto"
-              dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) }}
-            />
+            <div className="rte-canvas-frame">
+              <div
+                className="rte-canvas rounded-sm p-3 overflow-x-auto"
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) }}
+              />
+            </div>
           ) : (
             <p className="list-editor-empty">{t('richEditor.previewEmpty')}</p>
           )}

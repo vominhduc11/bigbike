@@ -13,7 +13,7 @@ import { lazyScreen } from '../lib/lazyScreen'
 import { setContentLang } from '../lib/contentLang'
 import {
   validateValue, isTranslatableSetting, REQUIRED_SETTING_KEYS, TAB_ORDER, SENSITIVE_SETTING_TABS, HIDDEN_GROUPS, HIDDEN_KEYS,
-  TAB_META, FALLBACK_META, tabLabel, BANNERS_TAB_ID,
+  TAB_META, FALLBACK_META, tabLabel, BANNERS_TAB_ID, ASSIGN_TAB_ID,
   getAutosaveKey, saveFormToStorage, loadFormFromStorage, clearFormFromStorage,
 } from './settings/constants'
 import { SettingTabPanel } from './settings/SettingTabPanel'
@@ -21,6 +21,9 @@ import { SettingTabPanel } from './settings/SettingTabPanel'
 // Lazy — Cài đặt mở mặc định ở tab chung, không phải tab Banner (496 dòng); tải sẵn tĩnh
 // trước đây kéo theo code Banner vào MỌI lần mở Cài đặt dù không xem tab đó.
 const BannerScreen = lazyScreen(() => import('./BannerScreen'), 'BannerScreen')
+// Lazy — cùng lý do: tab "Phân công" chỉ Super Admin mới thấy, không kéo code
+// AssignmentRolesScreen vào mọi lần mở Cài đặt của role khác.
+const AssignmentRolesScreen = lazyScreen(() => import('./AssignmentRolesScreen'), 'AssignmentRolesScreen')
 
 // ── SettingsScreen ────────────────────────────────────────────────────────────
 
@@ -92,12 +95,18 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
     const bannerTab = { id: BANNERS_TAB_ID, kind: 'banners' }
     if (i === -1) tabs.unshift(bannerTab)
     else tabs.splice(i + 1, 0, bannerTab)
+    // Tab "Phân công" — synthetic như Banner, nhưng CHỈ Super Admin thấy: nhóm product_assign
+    // đã rời khỏi `groups` (HIDDEN_GROUPS) nên mất luôn filter `s.superAdminOnly && !isSuperAdmin`
+    // ở trên — phải tự gate ở đây để role khác không thấy tab này.
+    if (isSuperAdmin) tabs.push({ id: ASSIGN_TAB_ID, kind: 'assign' })
     return tabs
-  }, [groups])
+  }, [groups, isSuperAdmin])
 
   // Derive active tab: user pick takes priority, else first available tab
   const firstTab = groups.size > 0 ? [...groups.keys()][0] : null
-  const isValidOverride = activeTabOverride && (groups.has(activeTabOverride) || activeTabOverride === BANNERS_TAB_ID)
+  const isValidOverride = activeTabOverride && (
+    groups.has(activeTabOverride) || activeTabOverride === BANNERS_TAB_ID || activeTabOverride === ASSIGN_TAB_ID
+  )
   const activeTab = isValidOverride ? activeTabOverride : firstTab
 
   const activeItems = useMemo(() => {
@@ -237,7 +246,10 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
   // O3: Ctrl/Cmd+S lưu tab đang xem — chỉ bật khi có quyền sửa, không ở tab Banner
   // (tab đó có luồng lưu riêng của BannerScreen) và tab hiện tại có thay đổi chưa lưu.
   const activeDirtyCount = activeItems.filter((s) => drafts[s.key] !== undefined || draftsEn[s.key] !== undefined).length
-  useSaveShortcut(canUpdate && activeTab !== BANNERS_TAB_ID && activeDirtyCount > 0, handleSave)
+  useSaveShortcut(
+    canUpdate && activeTab !== BANNERS_TAB_ID && activeTab !== ASSIGN_TAB_ID && activeDirtyCount > 0,
+    handleSave,
+  )
 
   if (state.status === 'loading') {
     return <StatePanel tone="info" title={t('settings.loading')} description={t('common.pleaseWait')} />
@@ -327,6 +339,24 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                 )
               }
 
+              // Tab "Phân công" — nhúng AssignmentRolesScreen, cùng cơ chế với Banner ở trên.
+              if (tab.kind === 'assign') {
+                const Icon = TAB_META.PRODUCT_ASSIGN.icon
+                const isActive = activeTab === ASSIGN_TAB_ID
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    className={isActive ? 'active' : ''}
+                    onClick={() => setActiveTabOverride(ASSIGN_TAB_ID)}
+                    aria-current={isActive ? 'true' : undefined}
+                  >
+                    <Icon size={15} />
+                    <span style={{ flex: 1 }}>{tabLabel('PRODUCT_ASSIGN', t)}</span>
+                  </button>
+                )
+              }
+
               const group = tab.id
               const items = groups.get(group) || []
               const meta = TAB_META[group] || FALLBACK_META
@@ -357,7 +387,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
 
           {/* Content panel */}
           <div>
-            {saveSuccess && activeTab !== BANNERS_TAB_ID && (
+            {saveSuccess && activeTab !== BANNERS_TAB_ID && activeTab !== ASSIGN_TAB_ID && (
               <div
                 role="status"
                 className="settings-save-banner mb-3"
@@ -373,7 +403,13 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
               </Suspense>
             )}
 
-            {activeTab && activeTab !== BANNERS_TAB_ID && (
+            {activeTab === ASSIGN_TAB_ID && (
+              <Suspense fallback={<ScreenSkeleton />}>
+                <AssignmentRolesScreen embedded canUpdate={canUpdate} />
+              </Suspense>
+            )}
+
+            {activeTab && activeTab !== BANNERS_TAB_ID && activeTab !== ASSIGN_TAB_ID && (
               <SettingTabPanel
                 title={tabLabel(activeTab, t)}
                 items={activeItems}

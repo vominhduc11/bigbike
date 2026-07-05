@@ -1845,19 +1845,21 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               {/* ── Card: SEO ── */}
               <SectionCard title={t('products.detail.sectionSeo')} badge={<RoleBadge role="seo" />}>
                 {/* Live Google SERP preview */}
-                <div className="mb-4 p-3 border border-border bg-white">
-                  <div className="flex items-center gap-1 text-xs text-[#5f6368] mb-1">
-                    <PfSearch size={12} />
-                    <span>{t('products.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
-                  </div>
-                  <div className="text-xs text-[#5f6368] break-all mb-1">
-                    {canonicalUrlFromSlug(form.slug) || `https://bigbike.vn/product/duong-dan-san-pham/`}
-                  </div>
-                  <div className="text-lg leading-snug text-[#1a0dab] break-words mb-1">
-                    {(form.seoTitle || form.name || t('products.detail.serpTitleFallback', { defaultValue: 'Tiêu đề sản phẩm trên Google' })).slice(0, 60)}
-                  </div>
-                  <div className="text-sm leading-relaxed text-[#4d5156] break-words">
-                    {form.seoDescription || form.shortDescription || t('products.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn về sản phẩm sẽ hiển thị ở đây.' })}
+                <div className="mb-4 rte-canvas-frame">
+                  <div className="p-3 border border-border bg-white">
+                    <div className="flex items-center gap-1 text-xs text-[#5f6368] mb-1">
+                      <PfSearch size={12} />
+                      <span>{t('products.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
+                    </div>
+                    <div className="text-xs text-[#5f6368] break-all mb-1">
+                      {canonicalUrlFromSlug(form.slug) || `https://bigbike.vn/product/duong-dan-san-pham/`}
+                    </div>
+                    <div className="text-lg leading-snug text-[#1a0dab] break-words mb-1">
+                      {(form.seoTitle || form.name || t('products.detail.serpTitleFallback', { defaultValue: 'Tiêu đề sản phẩm trên Google' })).slice(0, 60)}
+                    </div>
+                    <div className="text-sm leading-relaxed text-[#4d5156] break-words">
+                      {form.seoDescription || form.shortDescription || t('products.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn về sản phẩm sẽ hiển thị ở đây.' })}
+                    </div>
                   </div>
                 </div>
 

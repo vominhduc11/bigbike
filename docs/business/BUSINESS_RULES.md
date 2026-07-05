@@ -259,6 +259,15 @@ Evidence:
 - `bigbike-admin/src/screens/SettingsScreen.jsx` (`handleSave` lưu trực tiếp `batchUpdateSettings`, không còn gọi dịch/khoá)
 - `screens/settings/constants.js` (`TRANSLATABLE_GROUPS`, `isTranslatableSetting()` — không đổi phạm vi field nào dịch được)
 
+- `SETTINGS_RULE_002` (thêm 2026-07-05 — banner Phân công thành danh sách vai trò động): **Banner "Phân công" trên màn tạo/sửa sản phẩm VÀ màn tạo/sửa bài viết dùng chung 1 nguồn dữ liệu** (`GET /api/v1/admin/product-assignment`) — không phải 2 cấu hình độc lập, sửa ở Settings cập nhật cả 2 nơi. Banner báo cho nhân sự nội bộ biết ai phụ trách phần nào của sản phẩm/bài viết (mặc định Content/SEO/Quản lý, nhưng tùy chỉnh được). Số vai trò **tối thiểu 1, tối đa 6** (`product_assign_roles`, kiểu JSON, validate ở `SettingValueValidator`) — giới hạn trên để tránh vỡ layout banner (grid tối đa 3 cột, tự xuống dòng khi nhiều hơn). Chỉ SUPER_ADMIN thêm/sửa/xóa vai trò (`superAdminOnly`); mọi role mở được trình sửa sản phẩm (SUPER_ADMIN/ADMIN/SHOP_MANAGER/EDITOR) đều xem được banner nhưng không sửa được. 3 vai trò gốc (Content/SEO/Quản lý) giữ id ổn định (`content`/`seo`/`manager`) qua migration `V318` — nếu Super Admin xóa hẳn 1 trong 3 vai trò gốc, các nhãn nhỏ gắn cố định trong form sản phẩm (không đổi theo số vai trò, ví dụ nhãn cạnh khối SEO) vẫn hiện tên mặc định ban đầu thay vì biến mất. `CONFIRMED_FROM_CODE`
+
+Evidence:
+- `SettingDefinitionRegistry.java` (`product_assign_roles`, kiểu JSON, `.superAdminOnly()`), `SettingValueValidator.java` (`validateProductAssignRoles` — giới hạn 1-6 + field bắt buộc)
+- `V318__consolidate_product_assignment_roles.sql` (gộp 6 key cũ thành `product_assign_roles`, giữ id `content`/`seo`/`manager`)
+- `AdminProductAssignmentController.java` (`GET /api/v1/admin/product-assignment`, gate `products.read`)
+- `bigbike-admin/src/screens/product-detail/Layout.jsx` (`useRoleLabel` — fallback tên mặc định khi id không còn tồn tại), `bigbike-admin/src/screens/content-detail/ContentAssignmentBanner.jsx` (đọc chung endpoint/query key)
+- `DATA_CONTRACT.md` — "`product_assign` keys + super-admin-only write"; `PERMISSION_MATRIX.md` — "Super-admin-only settings (`product_assign`)"
+
 ## Static Page Rules — REMOVED (2026-06-24)
 
 > **REMOVED / Deprecated 2026-06-24.** Module "Trang tĩnh CMS" (pages) đã gỡ khỏi toàn stack. 10 trang thông tin (Giới thiệu, Liên hệ, Hướng dẫn + 3 trang con, 4 trang chính sách) nay **đóng cứng trong `bigbike-web`** (nguồn `static-pages.json` + `static-pages.ts`, song ngữ VI/EN cố định trong code). Không còn bảng `pages` (drop ở `V271`), không còn endpoint hay màn admin quản lý trang. Các rule dưới đây **không còn áp dụng** — giữ lại làm lịch sử.

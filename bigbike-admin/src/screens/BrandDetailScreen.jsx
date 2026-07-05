@@ -690,14 +690,16 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
           </div>
           <div className="bb-card-body">
             {/* Xem trước trên Google */}
-            <div className="mb-4 p-3 border border-border bg-white">
-              <div className="text-xs text-[#5f6368] mb-1">{t('brands.detail.seoPreviewLabel', { defaultValue: 'Xem thử trên Google' })}</div>
-              <div className="text-xs text-[#5f6368] break-all mb-1">{previewUrl}</div>
-              <div className="text-lg leading-snug text-[#1a0dab] break-words mb-1">
-                {(seoTitleVal || nameVal || t('brands.detail.seoPreviewFallbackTitle', { defaultValue: 'Tiêu đề thương hiệu' })).slice(0, 60)}
-              </div>
-              <div className="text-sm leading-relaxed text-[#4d5156] break-words">
-                {seoDescVal || t('brands.detail.seoPreviewFallbackDesc', { defaultValue: 'Mô tả ngắn về thương hiệu sẽ hiển thị ở đây.' })}
+            <div className="mb-4 rte-canvas-frame">
+              <div className="p-3 border border-border bg-white">
+                <div className="text-xs text-[#5f6368] mb-1">{t('brands.detail.seoPreviewLabel', { defaultValue: 'Xem thử trên Google' })}</div>
+                <div className="text-xs text-[#5f6368] break-all mb-1">{previewUrl}</div>
+                <div className="text-lg leading-snug text-[#1a0dab] break-words mb-1">
+                  {(seoTitleVal || nameVal || t('brands.detail.seoPreviewFallbackTitle', { defaultValue: 'Tiêu đề thương hiệu' })).slice(0, 60)}
+                </div>
+                <div className="text-sm leading-relaxed text-[#4d5156] break-words">
+                  {seoDescVal || t('brands.detail.seoPreviewFallbackDesc', { defaultValue: 'Mô tả ngắn về thương hiệu sẽ hiển thị ở đây.' })}
+                </div>
               </div>
             </div>
 

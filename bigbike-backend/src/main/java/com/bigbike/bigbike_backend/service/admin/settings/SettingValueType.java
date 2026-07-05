@@ -12,5 +12,6 @@ public enum SettingValueType {
     PHONE,
     IMAGE_URL,
     HTML,
-    ENUM
+    ENUM,
+    JSON
 }

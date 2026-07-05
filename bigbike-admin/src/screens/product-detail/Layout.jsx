@@ -1,17 +1,23 @@
 import { cloneElement, isValidElement, useContext, useId } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlertCircle, ChevronDown, GripVertical, ImageOff, Users, X } from 'lucide-react'
+import { AlertCircle, ChevronDown, GripVertical, ImageOff, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { resolveDisplayUrl } from '@/lib/contracts'
+import { AssignmentBanner as AssignmentBannerView } from '@/components/AssignmentBanner'
 import { AssignmentConfigContext } from './constants'
 
-// Returns the configured role label for a role key, or the i18n default when the
-// admin hasn't customised it (empty/missing value).
+// Returns the configured role label for a role key, or the i18n default when the admin hasn't
+// customised it / has deleted the original dynamic role entirely (kept as a graceful fallback
+// rather than disappearing — the ~20 RoleBadge call sites throughout ProductDetailScreen still
+// need SOME label for content/seo/manager regardless of what Super Admin does to the roles list
+// in Settings → Phân công).
 function useRoleLabel(role, t) {
   const cfg = useContext(AssignmentConfigContext)
-  if (role === 'content') return cfg?.roleContent || t('products.detail.assign.roleContent', { defaultValue: 'Content' })
-  if (role === 'seo') return cfg?.roleSeo || t('products.detail.assign.roleSeo', { defaultValue: 'SEO' })
-  if (role === 'manager') return cfg?.roleManager || t('products.detail.assign.roleManager', { defaultValue: 'Quản lý' })
+  const match = cfg?.roles?.find((r) => r.id === role)
+  if (match) return match.name
+  if (role === 'content') return t('products.detail.assign.roleContent', { defaultValue: 'Content' })
+  if (role === 'seo') return t('products.detail.assign.roleSeo', { defaultValue: 'SEO' })
+  if (role === 'manager') return t('products.detail.assign.roleManager', { defaultValue: 'Quản lý' })
   return ''
 }
 
@@ -116,50 +122,18 @@ export function SectionCard({ title, badge, required, children }) {
 }
 
 // Inline assignment guide — replaces the icon-only Popover in the header.
-// Text comes from the editable product-assignment config (context), falling back to
-// the i18n defaults whenever the admin has left a field empty / config hasn't loaded.
+// Thin adapter over the shared, purely-presentational AssignmentBanner (same component the
+// content/article editor's banner renders — both read the SAME product-assignment config, just
+// via different mount points/contexts). Falls back to the i18n title default whenever the admin
+// hasn't set a custom title / config hasn't loaded; `roles` defaults to `[]` so a stale-frontend
+// deploy against a not-yet-migrated backend degrades instead of crashing on `.map()`.
 export function AssignmentBanner({ t }) {
   const cfg = useContext(AssignmentConfigContext)
-  const title = cfg?.title || t('products.detail.assign.title')
-  const roleContent = cfg?.roleContent || t('products.detail.assign.roleContent')
-  const itemsContent = cfg?.itemsContent || t('products.detail.assign.itemsContent')
-  const roleSeo = cfg?.roleSeo || t('products.detail.assign.roleSeo')
-  const itemsSeo = cfg?.itemsSeo || t('products.detail.assign.itemsSeo')
-  const roleManager = cfg?.roleManager || t('products.detail.assign.roleManager')
-  const itemsManager = cfg?.itemsManager || t('products.detail.assign.itemsManager')
   return (
-    <div className="px-4 py-3 bg-surface-muted border-b border-border">
-      <div className="flex items-center gap-1.5 mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        <Users size={12} />
-        <span>{title}</span>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-primary)' }}>
-          <div className="text-xs font-bold uppercase tracking-wide text-foreground mb-0.5">
-            {roleContent}
-          </div>
-          <div className="text-xs leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
-            {itemsContent}
-          </div>
-        </div>
-        <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-status-warning-text)' }}>
-          <div className="text-xs font-bold uppercase tracking-wide text-foreground mb-0.5">
-            {roleSeo}
-          </div>
-          <div className="text-xs leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
-            {itemsSeo}
-          </div>
-        </div>
-        <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-text-primary)' }}>
-          <div className="text-xs font-bold uppercase tracking-wide text-foreground mb-0.5">
-            {roleManager}
-          </div>
-          <div className="text-xs leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
-            {itemsManager}
-          </div>
-        </div>
-      </div>
-    </div>
+    <AssignmentBannerView
+      title={cfg?.title || t('products.detail.assign.title')}
+      roles={cfg?.roles ?? []}
+    />
   )
 }
 

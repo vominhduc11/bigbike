@@ -194,22 +194,24 @@ export function LivePreview({
         ref={frameHostRef}
         className="flex flex-1 justify-center overflow-hidden bg-muted p-3"
       >
-        <div
-          className="shadow"
-          style={{ width: Math.round(targetWidth * scale), height: availHeight || '100%' }}
-        >
-          <iframe
-            ref={iframeRef}
-            title={previewTitle}
-            src={`${webOrigin}${previewPath}`}
-            className="border-0 bg-white"
-            style={{
-              width: targetWidth,
-              height: availHeight ? availHeight / scale : '100%',
-              transform: `scale(${scale})`,
-              transformOrigin: 'top left',
-            }}
-          />
+        <div className="rte-canvas-frame">
+          <div
+            className="shadow"
+            style={{ width: Math.round(targetWidth * scale), height: availHeight || '100%' }}
+          >
+            <iframe
+              ref={iframeRef}
+              title={previewTitle}
+              src={`${webOrigin}${previewPath}`}
+              className="border-0 bg-white"
+              style={{
+                width: targetWidth,
+                height: availHeight ? availHeight / scale : '100%',
+                transform: `scale(${scale})`,
+                transformOrigin: 'top left',
+              }}
+            />
+          </div>
         </div>
       </div>
     </aside>

@@ -1387,7 +1387,7 @@ The `GET /api/v1/admin/reports/orders/export` endpoint returns a CSV with the fo
 | `seo` | Homepage SEO title/description, OG image, bottom HTML block | SEO website |
 | `store` | Operational: low-stock threshold | Cửa hàng |
 | `inventory` | **No rows.** The `default_warranty_months` key was removed in V266 (warranty module dropped); `reservation_ttl_minutes` and `serial_inventory_only` in V259 (serial tracking dropped). No `inventory` group remains in the DB. | (không có tab — nhóm trống) |
-| `product_assign` | Editable text of the "Phân công" guide shown on the product create/edit screen — role names + task lists (7 keys). **Super-admin-only writable** (see below). | Phân công sản phẩm |
+| `product_assign` | Editable text of the "Phân công" guide shown on the product AND content/article create/edit screens (shared data) — `product_assign_title` (STRING) + `product_assign_roles` (JSON array, 1–6 dynamic role entries, V318). **Super-admin-only writable** (see below). | Phân công sản phẩm |
 | `security` | **Removed 2026-06-24 (V273).** `login_max_attempts` + `session_timeout_minutes` were seeded (V29) but **never enforced** by any auth/session code (no account lockout, no idle-timeout); dropped from the DB and from `SettingDefinitionRegistry`. | (đã gỡ) |
 
 **Removed:** `payment_sepay` — the SePay payment gateway was removed in V59; any leftover `payment_sepay` rows are deleted by V132.
@@ -1427,21 +1427,22 @@ The `public_product` group has **no shared settings** — all product-detail con
 
 `AboutServiceMediaSeeder` is idempotent: it keys MinIO objects deterministically (`uploads/seed/about-service-{n}.png`), looks up the `media` row by `file_path`, and only rewrites the setting while its value is blank or a `/wp-content/themes/` path — so admin-chosen images are never overwritten. MinIO is per-environment and not replicated by DB migrations, so the seed runs at runtime on each env; MinIO failures are logged (not fatal) and the web still falls back to the theme image baked into `bigbike-web/public`.
 
-### `product_assign` keys + super-admin-only write (V157)
+### `product_assign` keys + super-admin-only write (V157, consolidated to a dynamic role list by V318)
 
-The product create/edit screen shows a "Phân công" (team-assignment) guide banner. Its text is no longer hardcoded — it lives in `site_settings` (group `product_assign`, `is_public = false`), seeded by `V157__seed_product_assignment_settings.sql` with the original Vietnamese defaults.
+The product create/edit screen — and, since V318, the content/article create/edit screen too — shows a "Phân công" (team-assignment) guide banner reading the SAME underlying data. Originally 7 flat keys, one STRING/LONG_TEXT pair per fixed role (seeded `V157__seed_product_assignment_settings.sql`). `V318__consolidate_product_assignment_roles.sql` consolidated the 6 per-role keys into one JSON array so Super Admin can add/remove roles (1–6) without a code deploy — the old hardcoded "exactly 3 roles" (Content/SEO/Quản lý) model no longer exists structurally.
 
 | `setting_key` | Type | Content |
 |---|---|---|
-| `product_assign_title` | STRING | Banner heading ("Phân công") |
-| `product_assign_role_content` | STRING | Role 1 label ("Content") |
-| `product_assign_items_content` | LONG_TEXT | Tasks owned by Content |
-| `product_assign_role_seo` | STRING | Role 2 label ("SEO") |
-| `product_assign_items_seo` | LONG_TEXT | Tasks owned by SEO |
-| `product_assign_role_manager` | STRING | Role 3 label ("Quản lý") |
-| `product_assign_items_manager` | LONG_TEXT | Tasks owned by Manager |
+| `product_assign_title` | STRING | Banner heading ("Phân công") — unchanged by V318 |
+| `product_assign_roles` | JSON | Array of `{id, name, items}` objects, 1–6 entries. `items` is a single free-text field (matches the old per-role LONG_TEXT content 1:1, not a nested list). Introduced by V318, replacing the 6 keys below. |
 
-**Super-admin-only write.** These keys carry a `superAdminOnly` flag in `SettingDefinitionRegistry`. `AdminSettingsService` rejects any write (single or batch) to a `superAdminOnly` key unless the caller holds the wildcard `*` permission (i.e. `SUPER_ADMIN`) — even `ADMIN` (who has `settings.write`) is blocked. `AdminSiteSettingResponse` exposes `superAdminOnly` so the admin UI hides the tab for non-super-admins. The flag is surfaced in `AdminSiteSettingResponse.superAdminOnly`.
+V318 migrated the 3 legacy role/items pairs (`product_assign_role_content`/`product_assign_items_content`, `_seo`, `_manager`) into `product_assign_roles`, preserving whatever text was live in the DB at migration time (not the original V157 seed defaults), and assigning stable ids `content`/`seo`/`manager` to the 3 migrated entries — so the admin UI's `useRoleLabel` lookup can still fall back to the original default label if one of these 3 is later renamed or deleted. The 6 old keys were then deleted from `site_settings`.
+
+**`product_assign_roles` validation** (`SettingValueValidator.validateProductAssignRoles`): must be a JSON array of 1–6 objects; each needs a non-blank, array-unique `id`, a non-blank `name` (≤1,000 chars), and an `items` string (≤65,536 chars, blank allowed — a newly-added role may not have its tasks filled in yet).
+
+**Read shape.** `AdminSettingsService.getProductAssignment()` returns `AdminProductAssignmentResponse(String title, List<RoleAssignmentDto> roles)` (`RoleAssignmentDto(String id, String name, String items)`) — parses `product_assign_roles`' raw JSON via Jackson; a missing key or parse failure returns an empty `roles` list rather than throwing, since this read sits on the hot path for every product/content editor open across all 4 roles that can reach it.
+
+**Super-admin-only write.** Both keys carry a `superAdminOnly` flag in `SettingDefinitionRegistry`. `AdminSettingsService` rejects any write (single or batch) to a `superAdminOnly` key unless the caller holds the wildcard `*` permission (i.e. `SUPER_ADMIN`) — even `ADMIN` (who has `settings.write`) is blocked. `AdminSiteSettingResponse` exposes `superAdminOnly` so the admin UI hides the tab for non-super-admins. The flag is surfaced in `AdminSiteSettingResponse.superAdminOnly`.
 
 Migration `V132__cleanup_sepay_and_normalize_inventory_settings.sql`:
 - `DELETE FROM site_settings WHERE setting_group = 'payment_sepay'` — removes dead SePay rows that survived V59 in some environments.
@@ -1451,9 +1452,10 @@ Status: `CONFIRMED_FROM_CODE`
 
 Evidence:
 - `SettingDefinitionRegistry.java` — registers keys for `general`/`contact`/`payment`/`public_hero`/`seo`/`store`/`product_assign` (the `promo`/`tax`/`inventory`/`public_product`/`security`/`public_about`/`public_home` groups have **no** registered keys)
-- `V157__seed_product_assignment_settings.sql` — seeds the 7 `product_assign_*` rows
+- `V157__seed_product_assignment_settings.sql` — original 7-key seed; `V318__consolidate_product_assignment_roles.sql` — consolidation to the 2-key JSON shape
 - `AdminProductAssignmentController.java` — `GET /api/v1/admin/product-assignment` (read for the banner, `products.read`)
-- `SettingsScreen.jsx` — `TAB_ORDER` / `TAB_META` (tab rendering), `HIDDEN_GROUPS` (`public_hero`, `contact`), super-admin filter for `superAdminOnly` keys
+- `SettingsScreen.jsx` — `HIDDEN_GROUPS` now includes `product_assign` (bypasses the generic per-field settings flow; rendered instead by the bespoke `AssignmentRolesScreen.jsx`, same pattern as `public_hero`/`BannerScreen.jsx`), explicit `isSuperAdmin` gate on the synthetic tab
+- `bigbike-admin/src/screens/product-detail/Layout.jsx` (`useRoleLabel`/`AssignmentBanner`), `bigbike-admin/src/screens/content-detail/ContentAssignmentBanner.jsx` (reads the same endpoint/query key)
 - `V59__remove_sepay_payment_artifacts.sql`, `V132__cleanup_sepay_and_normalize_inventory_settings.sql`
 
 ### Site Settings — `en_locked` — ĐÃ GỠ BỎ (V312)

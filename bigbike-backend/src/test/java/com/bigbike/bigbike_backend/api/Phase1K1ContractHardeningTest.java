@@ -188,6 +188,75 @@ class Phase1K1ContractHardeningTest {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
+    // SECTION 4b — product_assign_roles (dynamic assignment banner, V318)
+    // ══════════════════════════════════════════════════════════════════════════
+
+    @Test
+    void productAssignRoles_superAdminCanWriteValidPayload_andReadReflectsIt() throws Exception {
+        createTestSetting("product_assign_title", "Phân công", "product_assign", false);
+        createTestSetting("product_assign_roles", "[]", "product_assign", false);
+
+        String rolesJson = "[{\"id\":\"content\",\"name\":\"Content\",\"items\":\"A · B\"},"
+                + "{\"id\":\"warehouse\",\"name\":\"Kho vận\",\"items\":\"\"}]";
+        String requestBody = "{\"value\":\"" + escapeForJsonString(rolesJson) + "\"}";
+
+        mockMvc.perform(patch("/api/v1/admin/settings/product_assign_roles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/admin/product-assignment")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.roles.length()").value(2))
+                .andExpect(jsonPath("$.data.roles[0].id").value("content"))
+                .andExpect(jsonPath("$.data.roles[1].name").value("Kho vận"));
+    }
+
+    // Caller holds settings.write but NOT the wildcard '*' (not SUPER_ADMIN) → superAdminOnly gate rejects.
+    @Test
+    void productAssignRoles_nonSuperAdminWithSettingsWrite_getsForbidden() throws Exception {
+        createTestSetting("product_assign_roles", "[]", "product_assign", false);
+        String writerToken = createNonSuperAdminSettingsWriterToken();
+
+        String requestBody = "{\"value\":\"" + escapeForJsonString(buildRoles(1)) + "\"}";
+
+        mockMvc.perform(patch("/api/v1/admin/settings/product_assign_roles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody)
+                        .header("Authorization", "Bearer " + writerToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void productAssignRoles_outOfRangeOrMalformedPayload_rejectedWith400() throws Exception {
+        createTestSetting("product_assign_roles", "[]", "product_assign", false);
+
+        // 0 roles — below the 1-role minimum
+        mockMvc.perform(patch("/api/v1/admin/settings/product_assign_roles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"value\":\"[]\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+
+        // 7 roles — above the 6-role maximum
+        String sevenRolesBody = "{\"value\":\"" + escapeForJsonString(buildRoles(7)) + "\"}";
+        mockMvc.perform(patch("/api/v1/admin/settings/product_assign_roles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(sevenRolesBody)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+
+        // Malformed JSON
+        mockMvc.perform(patch("/api/v1/admin/settings/product_assign_roles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"value\":\"not json\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
     // SECTION 5 — OpenAPI static spec regression checks
     // ══════════════════════════════════════════════════════════════════════════
 
@@ -305,6 +374,67 @@ class Phase1K1ContractHardeningTest {
         i.setCreatedAt(now);
         i.setUpdatedAt(now);
         return menuItemRepo.save(i);
+    }
+
+    // Creates (or reuses) a non-system role holding settings.write but NOT the wildcard '*',
+    // an admin user assigned to it, and returns a login token — used to prove the
+    // product_assign_* superAdminOnly gate blocks a caller that has settings.write but isn't
+    // SUPER_ADMIN, mirroring ensureSuperAdminRole/ensureAdminUser/loginAdmin above for a 2nd identity.
+    private String createNonSuperAdminSettingsWriterToken() throws Exception {
+        String roleId = "SETTINGS_WRITER_TEST";
+        if (!roleRepo.existsById(roleId)) {
+            AdminRoleEntity role = new AdminRoleEntity();
+            role.setId(roleId);
+            role.setName("Settings Writer Test");
+            role.setDescription("Phase1K1 hardening test role — settings.write without wildcard");
+            role.setSystem(false);
+            role.setPermissions(new LinkedHashSet<>(Set.of("settings.write", "settings.read", "products.read")));
+            Instant now = Instant.now();
+            role.setCreatedAt(now);
+            role.setUpdatedAt(now);
+            roleRepo.save(role);
+        }
+        adminPermissionService.evict(roleId);
+
+        String email = "1k1-settings-writer-" + UUID.randomUUID() + "@bigbike.test";
+        String password = "Writer@1K1Secure!";
+        adminUserRepo.findByEmail(email).orElseGet(() -> {
+            AdminUserEntity admin = new AdminUserEntity();
+            admin.setEmail(email);
+            admin.setPasswordHash(passwordService.hash(password));
+            admin.setDisplayName("Phase1K1 Settings Writer");
+            admin.setRole(roleId);
+            admin.setStatus("ACTIVE");
+            Instant now = Instant.now();
+            admin.setCreatedAt(now);
+            admin.setUpdatedAt(now);
+            return adminUserRepo.save(admin);
+        });
+
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"" + email + "\",\"password\":\"" + password + "\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        return extractJsonValue(result.getResponse().getContentAsString(), "accessToken");
+    }
+
+    // Builds a JSON array of `count` distinct {id,name,items} role objects — used to probe the
+    // 1-6 product_assign_roles size limit without hand-writing a literal 7-role JSON string.
+    private static String buildRoles(int count) {
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < count; i++) {
+            if (i > 0) sb.append(",");
+            sb.append("{\"id\":\"r").append(i).append("\",\"name\":\"R").append(i).append("\",\"items\":\"\"}");
+        }
+        return sb.append("]").toString();
+    }
+
+    // Escapes a JSON string so it can be embedded as the value of an outer JSON string field —
+    // product_assign_roles' setting_value IS a JSON array, so writing it via
+    // PATCH /admin/settings/{key} means nesting JSON-as-a-string inside the request body's own JSON.
+    private static String escapeForJsonString(String raw) {
+        return raw.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     private String extractJsonValue(String json, String key) {

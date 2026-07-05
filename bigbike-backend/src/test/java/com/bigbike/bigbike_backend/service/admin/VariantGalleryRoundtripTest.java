@@ -575,6 +575,190 @@ class VariantGalleryRoundtripTest {
                 .isNotNull();
     }
 
+    @Test
+    void staleAttributeValueId_relinksAfterFreeTextValueEdit() {
+        // Reproduces the reported bug end-to-end: VariantEditors.jsx's free-text
+        // Input for a non-color option (e.g. "Size") sends the new text on edit but
+        // does not clear the stale attributeValueId already sitting in local state
+        // from the last load — before the fix this made Path 1 blindly trust the
+        // old id, so the "Size" badge stayed stuck on the old value forever.
+        AttributeEntity attr = attributeRepo.findByCode("test-size-stale").orElseGet(() -> {
+            AttributeEntity a = new AttributeEntity();
+            a.setId("test-size-stale");
+            a.setCode("test-size-stale");
+            a.setName("Test Size Stale");
+            a.setKind("select");
+            a.setVariation(true);
+            return attributeRepo.save(a);
+        });
+        if (attributeValueRepo.findByAttributeIdAndSlug(attr.getId(), "xxl").isEmpty()) {
+            AttributeValueEntity xxl = new AttributeValueEntity();
+            xxl.setId("test-size-stale-xxl");
+            xxl.setAttribute(attr);
+            xxl.setSlug("xxl");
+            xxl.setLabel("XXL");
+            xxl.setSortOrder(0);
+            attributeValueRepo.save(xxl);
+        }
+        if (attributeValueRepo.findByAttributeIdAndSlug(attr.getId(), "xxxl").isEmpty()) {
+            AttributeValueEntity xxxl = new AttributeValueEntity();
+            xxxl.setId("test-size-stale-xxxl");
+            xxxl.setAttribute(attr);
+            xxxl.setSlug("xxxl");
+            xxxl.setLabel("XXXL");
+            xxxl.setSortOrder(1);
+            attributeValueRepo.save(xxxl);
+        }
+        entityManager.flush();
+
+        // ── 1. Create sending only the free-text value "XXL" (no explicit id — this
+        //    is exactly what the non-color Input in VariantEditors.jsx sends). Path
+        //    2/3 auto-links to the XXL dictionary entry by slug match, and the read
+        //    response hands the admin form that id back for round-tripping. ──
+        UpsertProductRequest create = new UpsertProductRequest();
+        create.setSlug("stale-size-product");
+        create.setName("Stale Size Product");
+        create.setCategoryId(category.getId());
+        create.setRetailPrice(new BigDecimal("1000000"));
+        create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        create.setTranslations(englishName("Stale Size Product EN"));
+
+        VariantRequest v1 = new VariantRequest();
+        v1.setIsAvailable(true);
+        v1.setOptions(List.of(option("test-size-stale", "XXL")));
+        create.setVariants(List.of(v1));
+
+        Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
+        String variantId = saved.variants().get(0).id();
+
+        Product afterCreate = readRepository.findProductById(saved.id()).orElseThrow();
+        String staleId = afterCreate.variants().get(0).options().get(0).attributeValueId();
+        assertThat(staleId)
+                .as("initial save auto-links via slug match, so the read round-trips the XXL dictionary id")
+                .isEqualTo("test-size-stale-xxl");
+
+        // A real edit is a separate HTTP request/session from the create, which always
+        // starts by loading the current row fresh from the DB. Flush + clear here so the
+        // update below sees that same fresh-load boundary instead of chaining onto the
+        // create's still-open persistence context in one transaction.
+        entityManager.flush();
+        entityManager.clear();
+
+        // ── 2. Re-save simulating the free-text-edit bug: NEW text "XXXL" but the
+        //    SAME stale attributeValueId the read handed back for "XXL" — exactly
+        //    what onUpdate({ value: e.target.value }) without clearing
+        //    attributeValueId produces. ──
+        UpsertProductRequest update = new UpsertProductRequest();
+        update.setSlug("stale-size-product");
+        update.setName("Stale Size Product");
+        update.setCategoryId(category.getId());
+        update.setRetailPrice(new BigDecimal("1000000"));
+        update.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        update.setTranslations(englishName("Stale Size Product EN"));
+
+        VariantRequest v2 = new VariantRequest();
+        v2.setId(variantId);
+        v2.setIsAvailable(true);
+        v2.setOptions(List.of(colorOption("test-size-stale", "XXXL", staleId)));
+        update.setVariants(List.of(v2));
+
+        mutationService.updateProduct(saved.id(), update, DEV_ADMIN_ID);
+
+        entityManager.flush();
+        entityManager.clear();
+        ProductVariantEntity storedVariant = variantRepo.findById(variantId).orElseThrow();
+        assertThat(storedVariant.getOptions())
+                .as("update must fully replace the option, not append a second row")
+                .hasSize(1);
+        assertThat(storedVariant.getOptions().get(0).getAttributeValue())
+                .as("stale XXL FK must not stick once the free-text value says XXXL")
+                .isNotNull();
+        assertThat(storedVariant.getOptions().get(0).getAttributeValue().getId())
+                .as("must re-link to the XXXL dictionary entry instead of keeping the stale XXL FK")
+                .isEqualTo("test-size-stale-xxxl");
+
+        Product afterUpdate = readRepository.findProductById(saved.id()).orElseThrow();
+        assertThat(afterUpdate.variants().get(0).options().get(0).value())
+                .as("read-back label must reflect the new value, not the stale XXL label")
+                .isEqualTo("XXXL");
+    }
+
+    @Test
+    void readPath_discardsStalePersistedAttributeValue() {
+        // Site 3 (read-path self-heal): construct a corrupted row directly via JPA,
+        // bypassing the (now-fixed) write path — this is the shape a pre-fix save
+        // could have left behind, or that any future write path bypassing
+        // AdminCatalogMutationService could still produce. The read path must not
+        // trust an attribute_value FK that disagrees with the option's own text.
+        AttributeEntity attr = attributeRepo.findByCode("test-size-corrupt").orElseGet(() -> {
+            AttributeEntity a = new AttributeEntity();
+            a.setId("test-size-corrupt");
+            a.setCode("test-size-corrupt");
+            a.setName("Test Size Corrupt");
+            a.setKind("select");
+            a.setVariation(true);
+            return attributeRepo.save(a);
+        });
+        if (attributeValueRepo.findByAttributeIdAndSlug(attr.getId(), "xxl").isEmpty()) {
+            AttributeValueEntity xxl = new AttributeValueEntity();
+            xxl.setId("test-size-corrupt-xxl");
+            xxl.setAttribute(attr);
+            xxl.setSlug("xxl");
+            xxl.setLabel("XXL");
+            xxl.setSortOrder(0);
+            attributeValueRepo.save(xxl);
+        }
+        if (attributeValueRepo.findByAttributeIdAndSlug(attr.getId(), "xxxl").isEmpty()) {
+            AttributeValueEntity xxxl = new AttributeValueEntity();
+            xxxl.setId("test-size-corrupt-xxxl");
+            xxxl.setAttribute(attr);
+            xxxl.setSlug("xxxl");
+            xxxl.setLabel("XXXL");
+            xxxl.setSortOrder(1);
+            attributeValueRepo.save(xxxl);
+        }
+        entityManager.flush();
+
+        // Create normally with "XXL" so the row legitimately links to the XXL entry.
+        UpsertProductRequest create = new UpsertProductRequest();
+        create.setSlug("corrupt-size-product");
+        create.setName("Corrupt Size Product");
+        create.setCategoryId(category.getId());
+        create.setRetailPrice(new BigDecimal("1000000"));
+        create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        create.setTranslations(englishName("Corrupt Size Product EN"));
+
+        VariantRequest v1 = new VariantRequest();
+        v1.setIsAvailable(true);
+        v1.setOptions(List.of(option("test-size-corrupt", "XXL")));
+        create.setVariants(List.of(v1));
+
+        Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
+        String variantId = saved.variants().get(0).id();
+
+        // Directly corrupt the persisted row via JPA, bypassing the mutation
+        // service entirely: flip optionValue to "XXXL" while leaving the
+        // attribute_value FK pointed at the "XXL" dictionary entry.
+        ProductVariantEntity storedVariant = variantRepo.findById(variantId).orElseThrow();
+        var corruptedOption = storedVariant.getOptions().get(0);
+        assertThat(corruptedOption.getAttributeValue().getId())
+                .as("sanity check: the create legitimately linked to XXL before we corrupt it")
+                .isEqualTo("test-size-corrupt-xxl");
+        corruptedOption.setOptionValue("XXXL");
+        variantRepo.save(storedVariant);
+        entityManager.flush();
+        entityManager.clear();
+
+        Product reread = readRepository.findProductById(saved.id()).orElseThrow();
+        var rereadOption = reread.variants().get(0).options().get(0);
+        assertThat(rereadOption.value())
+                .as("read path must discard the stale XXL FK and resolve XXXL from the dictionary")
+                .isEqualTo("XXXL");
+        assertThat(rereadOption.attributeValueId())
+                .as("admin read must round-trip the re-resolved XXXL id, not the stale XXL id")
+                .isEqualTo("test-size-corrupt-xxxl");
+    }
+
     private VariantOptionRequest colorOption(String name, String value, String attributeValueId) {
         VariantOptionRequest option = option(name, value);
         option.setAttributeValueId(attributeValueId);

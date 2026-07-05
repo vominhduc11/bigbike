@@ -432,6 +432,36 @@ a {
   --rte-canvas-border-default: #d1d5db;
   --rte-canvas-primary:        #cc4a08;
   --rte-canvas-primary-hover:  #ac3e08;
+
+  /* Khung đệm (mat) quanh canvas trắng cố định — vô hiệu ở light mode. */
+  --rte-canvas-frame-padding: 0px;
+  --rte-canvas-frame-bg:      transparent;
+  --rte-canvas-frame-shadow:  none;
+}
+[data-theme="dark"] {
+  /* Dark mode: đệm 1 nấc surface-raised giữa nền admin gần đen và canvas trắng
+     để giảm chói cục bộ — không đổi màu bên trong canvas. */
+  --rte-canvas-frame-padding: var(--admin-space-2);
+  --rte-canvas-frame-bg:      var(--admin-color-surface-raised);
+  --rte-canvas-frame-shadow:  var(--admin-shadow-sm);
+}
+
+/* Khung đệm dùng chung cho mọi canvas trắng cố định (rich-text, HTML preview,
+   live preview, thẻ mô phỏng Google) — chỉ thêm viền/đệm/bóng đổ bao quanh,
+   không đụng tới nền/màu chữ bên trong canvas. */
+.rte-canvas-frame {
+  border-radius: var(--admin-radius-sm);
+  padding: var(--rte-canvas-frame-padding);
+  background: var(--rte-canvas-frame-bg);
+  box-shadow: var(--rte-canvas-frame-shadow);
+}
+
+/* Dùng cho canvas trắng là node lá (không có div cha riêng để gắn frame) cần khớp
+   đúng màu cố định với --rte-canvas-* (không ăn theo theme). */
+.rte-canvas {
+  background: var(--rte-canvas-bg);
+  color: var(--rte-canvas-text);
+  border: 1px solid var(--rte-canvas-border-default);
 }
 
 .rich-editor-content .tiptap {

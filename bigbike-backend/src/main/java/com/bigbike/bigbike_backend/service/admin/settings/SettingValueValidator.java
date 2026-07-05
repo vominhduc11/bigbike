@@ -5,10 +5,14 @@ import com.bigbike.bigbike_backend.service.security.SafeMediaAssetUrlPolicy;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 @RequiredArgsConstructor
@@ -18,6 +22,7 @@ public class SettingValueValidator {
     // the admin media picker stores relative /media/... paths, so reuse the shared whitelist
     // policy instead of the generic URL check (which rejected relative paths → HTTP 400 on save).
     private final SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy;
+    private final ObjectMapper objectMapper;
 
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
             "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
@@ -32,6 +37,14 @@ public class SettingValueValidator {
     private static final Set<String> GOOGLE_MAPS_ONLY_KEYS = Set.of("google_maps_url");
     private static final Set<String> GOOGLE_MAPS_ALLOWED_HOSTS = Set.of(
             "www.google.com", "google.com", "maps.google.com");
+
+    // product_assign_roles: dynamic role list backing the "Phân công" banner (product + content
+    // editors). Frontend mirrors this same 1–6 limit in bigbike-admin/src/screens/settings/constants.js
+    // (MIN_ASSIGNMENT_ROLES/MAX_ASSIGNMENT_ROLES) — no shared-constant mechanism across the JVM/JS
+    // boundary, keep both in sync by hand if this ever changes.
+    private static final String PRODUCT_ASSIGN_ROLES_KEY = "product_assign_roles";
+    private static final int MIN_ASSIGNMENT_ROLES = 1;
+    private static final int MAX_ASSIGNMENT_ROLES = 6;
 
     public void validate(String key, String rawValue, SettingDefinition def) {
         if (rawValue == null) return;
@@ -81,6 +94,7 @@ public class SettingValueValidator {
             case EMAIL -> validateEmail(key, rawValue);
             case PHONE -> validatePhone(key, rawValue);
             case ENUM -> validateEnum(key, rawValue, def);
+            case JSON -> validateJson(key, rawValue, def);
         }
     }
 
@@ -190,6 +204,55 @@ public class SettingValueValidator {
         if (!def.allowedValues().contains(trimmed)) {
             throw fail(key, "NOT_IN_ENUM",
                     "Value must be one of: " + String.join(", ", def.allowedValues()));
+        }
+    }
+
+    private void validateJson(String key, String rawValue, SettingDefinition def) {
+        validateLength(key, rawValue, MAX_LONG_TEXT_LENGTH);
+        JsonNode node;
+        try {
+            node = objectMapper.readTree(rawValue);
+        } catch (JacksonException e) {
+            throw fail(key, "NOT_JSON", "Value is not valid JSON.");
+        }
+        if (PRODUCT_ASSIGN_ROLES_KEY.equals(key)) {
+            validateProductAssignRoles(key, node);
+        }
+    }
+
+    private void validateProductAssignRoles(String key, JsonNode node) {
+        if (!node.isArray()) {
+            throw fail(key, "NOT_ARRAY", "Value must be a JSON array of roles.");
+        }
+        if (node.size() < MIN_ASSIGNMENT_ROLES) {
+            throw fail(key, "TOO_FEW_ROLES", "At least " + MIN_ASSIGNMENT_ROLES + " role is required.");
+        }
+        if (node.size() > MAX_ASSIGNMENT_ROLES) {
+            throw fail(key, "TOO_MANY_ROLES", "At most " + MAX_ASSIGNMENT_ROLES + " roles are allowed.");
+        }
+        Set<String> seenIds = new HashSet<>();
+        for (JsonNode role : node) {
+            String id = role.path("id").asString("");
+            if (id.isBlank()) {
+                throw fail(key, "ROLE_ID_REQUIRED", "Each role must have a non-blank id.");
+            }
+            if (!seenIds.add(id)) {
+                throw fail(key, "ROLE_ID_DUPLICATE", "Role id must be unique: " + id);
+            }
+            String name = role.path("name").asString("");
+            if (name.isBlank()) {
+                throw fail(key, "ROLE_NAME_REQUIRED", "Each role must have a non-blank name.");
+            }
+            if (name.length() > MAX_STRING_LENGTH) {
+                throw fail(key, "ROLE_NAME_TOO_LONG", "Role name exceeds " + MAX_STRING_LENGTH + " characters.");
+            }
+            JsonNode itemsNode = role.path("items");
+            if (!itemsNode.isString()) {
+                throw fail(key, "ROLE_ITEMS_INVALID", "Role items must be a string.");
+            }
+            if (itemsNode.asString("").length() > MAX_LONG_TEXT_LENGTH) {
+                throw fail(key, "ROLE_ITEMS_TOO_LONG", "Role items exceeds " + MAX_LONG_TEXT_LENGTH + " characters.");
+            }
         }
     }
 

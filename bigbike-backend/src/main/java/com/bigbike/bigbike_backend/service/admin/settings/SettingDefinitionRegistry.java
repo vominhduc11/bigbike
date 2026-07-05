@@ -221,28 +221,15 @@ public class SettingDefinitionRegistry {
                 // ── STORE: gỡ hẳn V310 — store_currency/store_timezone không có code nào đọc lại
                 // (VND + giờ Việt Nam đã hardcode thẳng nơi khác); tab admin cũng đã ẩn từ trước.
 
-                // ── PRODUCT_ASSIGN ── (text phân công đội ngũ trên màn tạo/sửa sản phẩm; chỉ SUPER_ADMIN sửa)
+                // ── PRODUCT_ASSIGN ── (banner phân công đội ngũ trên màn tạo/sửa sản phẩm + bài viết;
+                // chỉ SUPER_ADMIN sửa. product_assign_roles gộp từ 6 key role_*/items_* cố định cũ
+                // (V318) thành 1 mảng JSON động, 1-6 vai trò — xem DATA_CONTRACT.md.)
                 SettingDefinition.builder("product_assign_title", "product_assign", SettingValueType.STRING)
                         .superAdminOnly()
                         .description("Tiêu đề banner phân công trên màn tạo/sửa sản phẩm.").build(),
-                SettingDefinition.builder("product_assign_role_content", "product_assign", SettingValueType.STRING)
+                SettingDefinition.builder("product_assign_roles", "product_assign", SettingValueType.JSON)
                         .superAdminOnly()
-                        .description("Tên vai trò 1 (mặc định: Content) trên banner phân công.").build(),
-                SettingDefinition.builder("product_assign_items_content", "product_assign", SettingValueType.LONG_TEXT)
-                        .superAdminOnly()
-                        .description("Danh sách công việc do vai trò Content phụ trách.").build(),
-                SettingDefinition.builder("product_assign_role_seo", "product_assign", SettingValueType.STRING)
-                        .superAdminOnly()
-                        .description("Tên vai trò 2 (mặc định: SEO) trên banner phân công.").build(),
-                SettingDefinition.builder("product_assign_items_seo", "product_assign", SettingValueType.LONG_TEXT)
-                        .superAdminOnly()
-                        .description("Danh sách công việc do vai trò SEO phụ trách.").build(),
-                SettingDefinition.builder("product_assign_role_manager", "product_assign", SettingValueType.STRING)
-                        .superAdminOnly()
-                        .description("Tên vai trò 3 (mặc định: Quản lý) trên banner phân công.").build(),
-                SettingDefinition.builder("product_assign_items_manager", "product_assign", SettingValueType.LONG_TEXT)
-                        .superAdminOnly()
-                        .description("Danh sách công việc do vai trò Quản lý phụ trách.").build()
+                        .description("Danh sách vai trò (tên + việc phụ trách) trên banner phân công, 1-6 vai trò.").build()
         );
     }
 }

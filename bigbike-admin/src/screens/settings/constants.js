@@ -107,6 +107,17 @@ export const REQUIRED_SETTING_KEYS = new Set(['site_name'])
 // không trùng group nào để không lẫn với các tab render bằng SettingTabPanel.
 export const BANNERS_TAB_ID = '__banners__'
 
+// Tab "Phân công" cũng KHÔNG phải settingGroup render qua SettingTabPanel — nhóm product_assign
+// nhường chỗ cho AssignmentRolesScreen (danh sách vai trò động, xem HIDDEN_GROUPS bên dưới),
+// cùng cơ chế synthetic tab như BANNERS_TAB_ID.
+export const ASSIGN_TAB_ID = '__product_assign__'
+
+// Giới hạn số vai trò trên banner Phân công — khớp tay với MIN_ASSIGNMENT_ROLES/
+// MAX_ASSIGNMENT_ROLES trong SettingValueValidator.java (không có cơ chế share hằng số
+// giữa JVM/JS, đổi 1 bên nhớ đổi bên kia).
+export const MIN_ASSIGNMENT_ROLES = 1
+export const MAX_ASSIGNMENT_ROLES = 6
+
 export const TAB_ORDER = [
   'GENERAL', 'CONTACT', 'PAYMENT', 'PUBLIC_HERO', 'SEO',
   'PRODUCT_ASSIGN',
@@ -132,8 +143,12 @@ export const SENSITIVE_SETTING_TABS = new Set()
 //   nhận đơn BACS (xem bigbike-web/lib/utils/orders.ts resolveBankTransfer), nên KHÔNG xoá dữ liệu/
 //   setting definition, chỉ ẩn khỏi admin. Đổi số TK sau này cần sửa thẳng site_settings (DB) hoặc
 //   bỏ 'PAYMENT' khỏi HIDDEN_GROUPS để hiện lại tab.
+// - PRODUCT_ASSIGN: banner Phân công (product_assign_title + product_assign_roles, JSON động
+//   1-6 vai trò từ V318) render bằng trình riêng AssignmentRolesScreen (nhúng làm tab "Phân công"
+//   NGAY TRONG màn Cài đặt, xem ASSIGN_TAB_ID) — ẩn khỏi luồng SettingTabPanel/SettingField chung
+//   vì cần UI thêm/xóa vai trò động mà form field tĩnh không đáp ứng được.
 // (PUBLIC_ABOUT đã gỡ hẳn V274 — trang Giới thiệu là trang tĩnh, không còn nhóm settings.)
-export const HIDDEN_GROUPS = new Set(['PUBLIC_HERO', 'CONTACT', 'PAYMENT'])
+export const HIDDEN_GROUPS = new Set(['PUBLIC_HERO', 'CONTACT', 'PAYMENT', 'PRODUCT_ASSIGN'])
 
 // Field cụ thể bị ẩn — hiện không còn field nào (nhóm STORE duy nhất từng ở đây đã gỡ hẳn V310).
 export const HIDDEN_KEYS = new Set()
@@ -201,14 +216,8 @@ export const KEY_LABELS_VI = {
   // global hero defaults
   hero_default_bg_url: 'Ảnh nền mặc định hero (dùng khi trang không có ảnh riêng)',
   hero_default_illustration_url: 'Ảnh gear mặc định hero (dùng khi trang không có ảnh minh hoạ riêng)',
-  // product_assign (banner phân công trên màn tạo/sửa sản phẩm — chỉ super admin sửa)
-  product_assign_title: 'Tiêu đề banner phân công',
-  product_assign_role_content: 'Tên vai trò 1 (mặc định: Content)',
-  product_assign_items_content: 'Công việc của vai trò Content',
-  product_assign_role_seo: 'Tên vai trò 2 (mặc định: SEO)',
-  product_assign_items_seo: 'Công việc của vai trò SEO',
-  product_assign_role_manager: 'Tên vai trò 3 (mặc định: Quản lý)',
-  product_assign_items_manager: 'Công việc của vai trò Quản lý',
+  // product_assign: KHÔNG còn ở đây — nhóm này render qua AssignmentRolesScreen riêng
+  // (xem HIDDEN_GROUPS), không qua SettingField/KEY_LABELS_VI chung.
 }
 
 export const KEY_HINTS_VI = {
@@ -260,7 +269,6 @@ export const SECTION_GUIDE = {
   hero_news:       { title: 'Banner đầu trang Tin tức' },
   hero_default:    { title: 'Banner mặc định — trang listing chưa đặt ảnh riêng' },
   seo_home:        { title: 'SEO trang chủ (thẻ meta / khi chia sẻ)' },
-  internal_assign: { title: 'Màn Tạo/Sửa sản phẩm (trong admin)', internal: true },
 }
 export const SECTION_ORDER = Object.keys(SECTION_GUIDE)
 
@@ -313,13 +321,7 @@ export const KEY_GUIDE = {
   og_image_url:             ['seo_home', 'ảnh khi chia sẻ mạng xã hội'],
   home_content_bottom_html: ['seo_home', 'đoạn nội dung cuối trang chủ'],
 
-  product_assign_title:         ['internal_assign', 'tiêu đề banner phân công'],
-  product_assign_role_content:  ['internal_assign', 'tên vai trò Content'],
-  product_assign_items_content: ['internal_assign', 'việc của Content'],
-  product_assign_role_seo:      ['internal_assign', 'tên vai trò SEO'],
-  product_assign_items_seo:     ['internal_assign', 'việc của SEO'],
-  product_assign_role_manager:  ['internal_assign', 'tên vai trò Quản lý'],
-  product_assign_items_manager: ['internal_assign', 'việc của Quản lý'],
+  // product_assign: KHÔNG còn ở đây — xem ghi chú ở KEY_LABELS_VI/HIDDEN_GROUPS phía trên.
 }
 
 export function groupBySection(items) {

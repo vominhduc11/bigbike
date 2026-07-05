@@ -66,11 +66,11 @@ Enforced in `AdminRoleService` (Admin Roles API, gated by `roles.write`):
 
 ## Super-admin-only settings (`product_assign`)
 
-The `product_assign_*` site-setting keys (the editable "Phân công" guide on the product create/edit screen) are flagged `superAdminOnly` in `SettingDefinitionRegistry`. There is **no dedicated permission key** for them — the gate is the wildcard `*` itself:
+The `product_assign` site-setting keys — `product_assign_title` and `product_assign_roles` (a JSON array of 1–6 dynamic role entries, consolidated from 6 legacy keys by `V318`; see `DATA_CONTRACT.md`) — back the editable "Phân công" guide shown on BOTH the product and content/article create-edit screens (same data, same endpoint). Both keys are flagged `superAdminOnly` in `SettingDefinitionRegistry`. There is **no dedicated permission key** for them — the gate is the wildcard `*` itself:
 
-- **Write** (`PATCH /api/v1/admin/settings[/{key}]`): `AdminSettingsService` rejects the write with 403 unless the caller's resolved permissions contain `*`. So only `SUPER_ADMIN` can edit; `ADMIN` is blocked even though it holds `settings.write`.
-- **Read for the banner** (`GET /api/v1/admin/product-assignment`): gated by `products.read`, so every role that can open the product editor (`SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER`, `EDITOR`) sees the banner text.
-- **Admin UI**: the "Phân công sản phẩm" settings tab is hidden for non-super-admins (`AdminSiteSettingResponse.superAdminOnly` + `hasPermission('*')` filter in `SettingsScreen`).
+- **Write** (`PATCH /api/v1/admin/settings[/{key}]`): `AdminSettingsService` rejects the write with 403 unless the caller's resolved permissions contain `*`. So only `SUPER_ADMIN` can edit; `ADMIN` is blocked even though it holds `settings.write`. `product_assign_roles` additionally enforces a 1–6 array-size + required-field structural check in `SettingValueValidator` regardless of caller.
+- **Read for the banner** (`GET /api/v1/admin/product-assignment`): gated by `products.read`, so every role that can open the product editor (`SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER`, `EDITOR`) sees the banner; the content/article editor banner reads the same endpoint.
+- **Admin UI**: the "Phân công sản phẩm" settings tab is a bespoke synthetic tab (`AssignmentRolesScreen.jsx`, outside the generic per-field settings flow as of V318 — the group is in `HIDDEN_GROUPS`) explicitly gated on `isSuperAdmin` in `SettingsScreen.jsx` — non-super-admins never see the tab button.
 
 Status: `CONFIRMED_FROM_CODE` — `SettingDefinitionRegistry.java`, `AdminSettingsService.java`, `AdminProductAssignmentController.java`, `SettingsScreen.jsx`
 

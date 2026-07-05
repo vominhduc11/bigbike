@@ -1057,8 +1057,13 @@ public class AdminCatalogMutationService {
      * references for a freshly-built variant option. Three resolution paths, in order:
      *
      * <ol>
-     *   <li>Direct ID: when {@code attributeValueId} is supplied the FK is set without
-     *       any text matching — the admin selected the value from the dictionary UI.</li>
+     *   <li>Direct ID: when {@code attributeValueId} is supplied, the fetched value is
+     *       trusted only if its own {@code slug} or {@code label} (normalised) agrees
+     *       with {@code optionValue} — see {@link #matchesOptionValue}. This guards
+     *       against a stale id carried forward in the admin form's local state after a
+     *       free-text edit of the option's value (the id is never cleared just because
+     *       the text changed). A missing or mismatched id falls through to path 2/3
+     *       instead of short-circuiting.</li>
      *   <li>Code lookup: {@code findByCode(optionName)} covers WP-imported attributes
      *       whose code is a WP taxonomy slug (e.g. {@code "pa_color"}).</li>
      *   <li>Name fallback: {@code findByNameIgnoreCase(optionName)} covers human-typed
@@ -1075,13 +1080,15 @@ public class AdminCatalogMutationService {
     private void linkAttributeReferences(ProductVariantOptionEntity opt,
                                           String optionName, String optionValue,
                                           String attributeValueId) {
-        // Path 1: admin supplied an explicit attribute-value ID from the dictionary
+        // Path 1: admin supplied an explicit attribute-value ID from the dictionary —
+        // trust it only if it still matches the submitted text (see matchesOptionValue).
         if (attributeValueId != null && attributeValueJpaRepository != null) {
-            attributeValueJpaRepository.findById(attributeValueId).ifPresent(v -> {
-                opt.setAttribute(v.getAttribute());
-                opt.setAttributeValue(v);
-            });
-            return;
+            AttributeValueEntity byId = attributeValueJpaRepository.findById(attributeValueId).orElse(null);
+            if (byId != null && matchesOptionValue(byId, optionValue)) {
+                opt.setAttribute(byId.getAttribute());
+                opt.setAttributeValue(byId);
+                return;
+            }
         }
 
         if (attributeJpaRepository == null) return;
@@ -1117,6 +1124,20 @@ public class AdminCatalogMutationService {
         }
         valueOpt.ifPresent(opt::setAttributeValue);
     }
+
+    /**
+     * True when {@code value}'s own {@code slug} or {@code label} (normalised)
+     * agrees with {@code optionValue} — guards {@link #linkAttributeReferences}'
+     * direct-ID path against trusting a stale {@code attributeValueId} that still
+     * points at a sibling value under the same attribute (e.g. "XXL" after the
+     * option's free text was edited to "XXXL" without clearing the id).
+     */
+    private static boolean matchesOptionValue(AttributeValueEntity value, String optionValue) {
+        String normalized = normalizeVariantToken(optionValue);
+        return normalized.equals(normalizeVariantToken(value.getSlug()))
+                || normalized.equals(normalizeVariantToken(value.getLabel()));
+    }
+
     private void applyCategoryPatch(
             CategoryEntity entity,
             UpsertCategoryRequest request,

@@ -589,11 +589,8 @@
       "assign": {
         "title": "Assignment",
         "roleContent": "Content",
-        "itemsContent": "Basic info · Main image · Image gallery · Video · Specifications · Installation guide · FAQ · Variants · Related products · SEO bottom content",
         "roleSeo": "SEO",
-        "itemsSeo": "SEO meta (Title, Meta, OG image) · URL slug · Review checklist before publishing",
-        "roleManager": "Manager",
-        "itemsManager": "Price & status · Approve and publish"
+        "roleManager": "Manager"
       },
       "gallery": {
         "pickImage": "Pick image",
@@ -1526,13 +1523,7 @@
       "tabSeoPublish": "SEO & Publishing",
       "tabsAriaLabel": "Content sections",
       "assign": {
-        "title": "Content assignment",
-        "roleContent": "Content",
-        "itemsContent": "Title · Featured image · Body content · Tags & categories · Related products",
-        "roleSeo": "SEO",
-        "itemsSeo": "SEO title · Meta description · Slug · OG image · Pre-publish checklist",
-        "roleManager": "Manager",
-        "itemsManager": "Approve · Publish · Hide / delete post"
+        "title": "Content assignment"
       },
       "saveDirty": "Unsaved changes",
       "saveClean": "Saved",
@@ -2001,7 +1992,19 @@
     "valEmail": "Enter a valid email, e.g. name@bigbike.vn",
     "valUrl": "Enter a full web URL, e.g. https://bigbike.vn/promo",
     "valPhone": "Phone number may only contain digits, + or -",
-    "valNumber": "Value must be a non-negative number."
+    "valNumber": "Value must be a non-negative number.",
+    "assign": {
+      "description": "The assignment banner shows on both the product and article create/edit screens — they share the same data.",
+      "titleLabel": "Banner title",
+      "roleNamePlaceholder": "Role name",
+      "itemsPlaceholder": "Tasks owned...",
+      "addRole": "Add role",
+      "removeRole": "Remove role",
+      "removeConfirmTitle": "Remove role",
+      "removeConfirmMessage": "Remove this role? The change only applies after you Save.",
+      "saveError": "Save failed.",
+      "unsavedHint": "Unsaved changes"
+    }
   },
   "adminUsers": {
     "eyebrow": "System",

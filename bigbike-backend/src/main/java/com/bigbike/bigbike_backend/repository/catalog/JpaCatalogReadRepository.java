@@ -1197,19 +1197,30 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     /**
-     * Build a {@link ProductVariantOption} from one stored option row,
-     * resolving the AttributeValue dictionary lazily when the FK is null so the
-     * read path can return the human label ("Đen bóng") rather than the raw
-     * slug. Colour variants render on the storefront from the variant's own
-     * gallery image (see {@code VariantSelector.tsx}), so no per-term swatch or
-     * hex value is surfaced here.
+     * Build a {@link ProductVariantOption} from one stored option row, resolving
+     * the AttributeValue dictionary lazily so the read path can return the human
+     * label ("Đen bóng") rather than the raw slug. The lazy-resolution chain below
+     * fires whenever the persisted FK is null, OR is populated but disagrees with
+     * the option's own text (slug/label normalised mismatch, discarded up front —
+     * see {@link #matchesOptionValue}) — the latter guards against a stale FK left
+     * behind by a free-text edit of a sibling value under the same attribute (e.g.
+     * "XXL" vs "XXXL"). Colour variants render on the storefront from the
+     * variant's own gallery image (see {@code VariantSelector.tsx}), so no
+     * per-term swatch or hex value is surfaced here.
      */
     private ProductVariantOption toVariantOption(ProductVariantOptionEntity option, boolean publicView, String locale) {
         AttributeEntity attribute = option.getAttribute();
         AttributeValueEntity value = option.getAttributeValue();
 
-        // Lazy resolution path: only fires when the FK wasn't populated at write time.
-        // Three fallbacks mirror AdminCatalogMutationService.linkAttributeReferences():
+        // Discard a stale FK before the fallback chain runs, so a mismatch
+        // re-resolves exactly like a null FK instead of being trusted blindly.
+        if (value != null && !matchesOptionValue(value, option.getOptionValue())) {
+            value = null;
+        }
+
+        // Lazy resolution path: fires when the FK wasn't populated at write time,
+        // or was just discarded above as stale. Three fallbacks mirror
+        // AdminCatalogMutationService.linkAttributeReferences():
         //   1. findByCode  — exact WP taxonomy slug (e.g. "pa_color")
         //   2. findByNameIgnoreCase — human-typed label (e.g. "Màu sắc")
         //   3. slug normalisation  — strips diacritics so "Đen" matches stored slug "den"
@@ -1258,6 +1269,21 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 ),
                 attributeValueId
         );
+    }
+
+    /**
+     * True when {@code value}'s own {@code slug} or {@code label} (normalised)
+     * agrees with {@code optionValue} — guards {@link #toVariantOption} against
+     * trusting a persisted {@code attribute_value} FK that points at a sibling
+     * value under the same attribute (read-path twin of
+     * {@code AdminCatalogMutationService.linkAttributeReferences}'s own
+     * {@code matchesOptionValue}; duplicated per this file's existing
+     * {@code normalizeVariantToken} cross-layer precedent).
+     */
+    private static boolean matchesOptionValue(AttributeValueEntity value, String optionValue) {
+        String normalized = normalizeVariantToken(optionValue);
+        return normalized.equals(normalizeVariantToken(value.getSlug()))
+                || normalized.equals(normalizeVariantToken(value.getLabel()));
     }
 
     private CategorySummary toCategorySummary(CategoryEntity entity, String locale) {
