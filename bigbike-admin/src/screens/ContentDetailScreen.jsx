@@ -52,7 +52,7 @@ import {
 } from './content-detail/constants'
 import { ContentAssignmentBanner } from './content-detail/ContentAssignmentBanner'
 import { SectionCard } from './content-detail/SectionCard'
-import { Field } from './content-detail/Field'
+import { FormField as Field } from '../components/layout/FormField'
 
 // Module chỉ còn quản lý BÀI VIẾT (ARTICLE). Trang thông tin tĩnh + trình dựng /huong-dan đã gỡ
 // khỏi admin (owner 2026-06-24) — nội dung đóng cứng trong web.
@@ -628,7 +628,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       full
                       label={t('content.detail.slug')}
                       error={validationErrors['translations.en.slug']}
-                      hint={t('content.detail.slugHintEn', { defaultValue: 'Đường dẫn tiếng Anh (tùy chọn) — để trống sẽ dùng đường dẫn tiếng Việt.' })}
+                      helper={t('content.detail.slugHintEn', { defaultValue: 'Đường dẫn tiếng Anh (tùy chọn) — để trống sẽ dùng đường dẫn tiếng Việt.' })}
                     >
                       <Input
                         value={form.translations?.en?.slug ?? ''}
@@ -655,7 +655,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       backend tự gán mọi bài vào nhóm này nên không cần cho admin chọn. */}
 
                   {isArticle && (
-                    <Field full label={t('content.detail.excerpt')} hint={isEnLang ? t('content.detail.enFieldHint') : undefined}>
+                    <Field full label={t('content.detail.excerpt')} helper={isEnLang ? t('content.detail.enFieldHint') : undefined}>
                       <Textarea
                         value={isEnLang ? (form.translations?.en?.excerpt ?? '') : form.excerpt}
                         onChange={(e) => isEnLang ? updateTranslation('excerpt', e.target.value) : updateField('excerpt', e.target.value)}
@@ -697,7 +697,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
               {/* ── Card: Hình ảnh — article gallery / page hero ── */}
               <SectionCard title={t('content.detail.sectionMedia')}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field full label={t('content.detail.coverImageUrl')} hint={t('content.detail.coverImageUrlHint')}>
+                  <Field full label={t('content.detail.coverImageUrl')} helper={t('content.detail.coverImageUrlHint')}>
                     <ImageUrlInput
                       value={form.coverImageUrl}
                       onChange={(url) => updateField('coverImageUrl', url)}
@@ -708,7 +708,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       recommend={IMAGE_RECO.cover}
                     />
                   </Field>
-                  <Field full label={t('content.detail.productImageUrl', { defaultValue: 'Ảnh sản phẩm (overlay carousel)' })} hint={t('content.detail.productImageUrlHint', { defaultValue: 'Ảnh PNG nền trong hiển thị chồng lên ảnh bìa trong carousel Góc Trải Nghiệm ở trang chủ.' })}>
+                  <Field full label={t('content.detail.productImageUrl', { defaultValue: 'Ảnh sản phẩm (overlay carousel)' })} helper={t('content.detail.productImageUrlHint', { defaultValue: 'Ảnh PNG nền trong hiển thị chồng lên ảnh bìa trong carousel Góc Trải Nghiệm ở trang chủ.' })}>
                     <ImageUrlInput
                       value={form.productImageUrl}
                       onChange={(url) => updateField('productImageUrl', url)}
@@ -766,7 +766,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                     count={`${langValue('seoTitle').length} / 255`}
                     countWarn={langValue('seoTitle').length > 230}
                     error={!isEnLang ? validationErrors.seoTitle : undefined}
-                    hint={isEnLang ? t('content.detail.enFieldHint') : undefined}
+                    helper={isEnLang ? t('content.detail.enFieldHint') : undefined}
                   >
                     <Input
                       value={isEnLang ? (form.translations?.en?.seoTitle ?? '') : form.seoTitle}
@@ -782,7 +782,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                     count={`${langValue('seoDescription').length} / 5000`}
                     countWarn={langValue('seoDescription').length > 4500}
                     error={!isEnLang ? validationErrors.seoDescription : undefined}
-                    hint={isEnLang ? t('content.detail.enFieldHint') : undefined}
+                    helper={isEnLang ? t('content.detail.enFieldHint') : undefined}
                   >
                     <Textarea
                       value={isEnLang ? (form.translations?.en?.seoDescription ?? '') : form.seoDescription}
@@ -807,7 +807,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                   <Field
                     full
                     label={t('content.detail.seoOgImageUrl', { defaultValue: 'SEO OG image URL' })}
-                    hint={t('content.detail.seoOgImageUrlHint', { defaultValue: 'Ảnh chia sẻ MXH, 1200×630px.' })}
+                    helper={t('content.detail.seoOgImageUrlHint', { defaultValue: 'Ảnh chia sẻ MXH, 1200×630px.' })}
                     error={validationErrors.seoOgImageUrl}
                   >
                     <ImageUrlInput

@@ -4,12 +4,13 @@ import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 
 /**
- * FormField — shared labelled form control.
- * Tự liên kết label↔control (htmlFor/id) và gắn aria-invalid + aria-describedby
- * vào control con khi có lỗi, để screen reader đọc được lỗi và lỗi không chỉ dựa
- * vào màu (control nhận viền đỏ qua aria-invalid, kèm icon ở dòng lỗi).
+ * FormField — shared labelled form control dùng chung toàn admin.
+ * Tự liên kết label↔control (htmlFor/id) và gắn aria-invalid/aria-required/aria-describedby
+ * vào control con, để trạng thái lỗi/bắt buộc không chỉ dựa vào màu (control nhận viền đỏ
+ * qua aria-invalid, kèm icon ở dòng lỗi). `full` trải field ra 2 cột grid; `count`/`countWarn`
+ * hiện bộ đếm ký tự đối diện nhãn (dùng cho field có giới hạn độ dài).
  */
-export function FormField({ label, required, helper, error, htmlFor, children }) {
+export function FormField({ label, required, helper, error, htmlFor, count, countWarn, full, children }) {
   const autoId = useId()
   const fieldId = htmlFor || autoId
   const errorId = `${fieldId}-error`
@@ -26,19 +27,28 @@ export function FormField({ label, required, helper, error, htmlFor, children })
     : children
 
   return (
-    <div className="flex flex-col gap-1.5">
-      {label ? (
-        <Label htmlFor={fieldId} className="flex items-center gap-0.5">
-          {label}
-          {required ? <span className="text-danger ml-0.5" aria-hidden="true">*</span> : null}
-        </Label>
+    <div className={cn('flex flex-col gap-1.5', full && 'md:col-span-2')}>
+      {label || count != null ? (
+        <div className="flex items-center justify-between">
+          {label ? (
+            <Label htmlFor={fieldId} className="flex items-center gap-0.5">
+              {label}
+              {required ? <span className="text-danger ml-0.5" aria-hidden="true">*</span> : null}
+            </Label>
+          ) : null}
+          {count != null ? (
+            <span className={cn('text-xs tabular-nums text-muted-foreground', countWarn && 'text-[var(--admin-color-status-warning-text)] font-semibold')}>
+              {count}
+            </span>
+          ) : null}
+        </div>
       ) : null}
       {control}
       {helper && !error ? (
         <span id={helperId} className="text-xs text-muted-foreground">{helper}</span>
       ) : null}
       {error ? (
-        <span id={errorId} className="flex items-center gap-1 text-xs text-danger" role="alert">
+        <span id={errorId} className="flex items-center gap-1 text-xs text-danger font-semibold" role="alert">
           <AlertCircle size={13} aria-hidden="true" className="shrink-0" />
           {error}
         </span>

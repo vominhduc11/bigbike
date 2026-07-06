@@ -9,34 +9,13 @@ import { useMediaValidation } from '../lib/useMediaDimensions'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { IconClose, IconUpload, IconCheck } from './media-picker/pickerIcons'
+import { formatBytes, mergeMediaCacheItem } from './media-picker/pickerUtils'
+import { useModalFocusTrap, useBodyScrollLock } from './media-picker/useModalBehavior'
 
 const ALLOWED_MIME = ['video/mp4']
 const MAX_FILE_SIZE = 50 * 1024 * 1024
 const PAGE_SIZE = 20
-
-function formatBytes(bytes) {
-  if (!bytes) return ''
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
-function IconClose() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-      <path d="M18 6 6 18M6 6l12 12" />
-    </svg>
-  )
-}
-
-function IconUpload() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="17 8 12 3 7 8" />
-      <line x1="12" y1="3" x2="12" y2="15" />
-    </svg>
-  )
-}
 
 function IconVideo() {
   return (
@@ -47,20 +26,11 @@ function IconVideo() {
   )
 }
 
-function IconCheck() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  )
-}
-
 export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.video }) {
   const { t } = useTranslation()
   const hasPermission = useHasPermission()
   const canWrite = hasPermission('media.write')
   const modalRef = useRef(null)
-  const previousFocusRef = useRef(null)
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 300)
   const [page, setPage] = useState(1)
@@ -89,13 +59,7 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
       .then((result) => {
         if (!active) return
         const items = result.items ?? []
-        items.forEach((it) => {
-          if (!it.publicUrl) return
-          // Same race as MediaPickerModal: don't let the post-upload refetch strip
-          // the isNewUpload tag off this session's own upload before confirm.
-          const existing = mediaCacheRef.current.get(it.publicUrl)
-          mediaCacheRef.current.set(it.publicUrl, existing?.isNewUpload ? { ...it, isNewUpload: true } : it)
-        })
+        items.forEach((it) => mergeMediaCacheItem(mediaCacheRef, it))
         setState({
           status: 'success',
           items,
@@ -115,48 +79,8 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
     return () => { active = false }
   }, [debouncedSearch, page, reloadKey, t])
 
-  useEffect(() => {
-    previousFocusRef.current = document.activeElement
-    const focusableSelector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-    const modal = modalRef.current
-    const initialFocusTarget = modal?.querySelector(focusableSelector)
-    if (initialFocusTarget) initialFocusTarget.focus()
-
-    function onKey(event) {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        onClose()
-        return
-      }
-      if (event.key !== 'Tab') return
-      const currentModal = modalRef.current
-      if (!currentModal) return
-      const focusables = Array.from(currentModal.querySelectorAll(focusableSelector))
-      if (!focusables.length) return
-      const first = focusables[0]
-      const last = focusables[focusables.length - 1]
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault()
-        last.focus()
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault()
-        first.focus()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      if (previousFocusRef.current && typeof previousFocusRef.current.focus === 'function') {
-        previousFocusRef.current.focus()
-      }
-    }
-  }, [onClose])
-
-  useEffect(() => {
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
-  }, [])
+  useModalFocusTrap({ modalRef, onClose })
+  useBodyScrollLock()
 
   async function handleFileChange(event) {
     if (!canWrite) return

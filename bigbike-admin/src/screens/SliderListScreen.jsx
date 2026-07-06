@@ -5,9 +5,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { GripVertical, Plus } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import { SortableList } from '../components/Sortable'
-import { createSlider, deleteSlider, fetchProducts, fetchSliders, reorderSliders, updateSlider } from '../lib/adminApi'
+import { createSlider, deleteSlider, fetchSliders, reorderSliders, updateSlider } from '../lib/adminApi'
 import { useContentLang } from '../lib/contentLang'
-import { useDebounce } from '../lib/useDebounce'
+import { useProductPicker } from '../lib/useProductPicker'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -177,16 +177,17 @@ export function SliderListScreen({ canUpdate }) {
   const [togglingId, setTogglingId] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
   // Tìm-chọn sản phẩm cho trường Product ID (thay ô gõ ID thủ công).
-  const [productSearch, setProductSearch] = useState('')
   const [productPickerOpen, setProductPickerOpen] = useState(false)
-  const debouncedProductSearch = useDebounce(productSearch, 300)
-
-
-  const { data: productSearchData, isFetching: isSearchingProducts } = useQuery({
-    queryKey: ['slider-product-search', debouncedProductSearch, contentLang],
-    queryFn: () => fetchProducts({ q: debouncedProductSearch, page: 1, pageSize: 8, publishStatus: 'PUBLISHED' }),
-    enabled: productPickerOpen && debouncedProductSearch.trim().length > 0,
-    staleTime: 30_000,
+  const {
+    search: productSearch,
+    setSearch: setProductSearch,
+    items: productSearchItems,
+    isFetching: isSearchingProducts,
+  } = useProductPicker({
+    queryKey: 'slider-product-search',
+    contentLang,
+    params: { page: 1, pageSize: 8, publishStatus: 'PUBLISHED' },
+    enabled: productPickerOpen,
   })
 
   const { data, isLoading, isError, error } = useQuery({
@@ -358,7 +359,7 @@ export function SliderListScreen({ canUpdate }) {
     setProductPickerOpen(false)
     setLinkFieldError('')
     setFormError('')
-  }, [])
+  }, [setProductSearch])
 
   function clearSelectedProduct() {
     const next = { ...form, productId: '', productName: '' }
@@ -605,7 +606,7 @@ export function SliderListScreen({ canUpdate }) {
                     open={productPickerOpen && productSearch.trim().length > 0}
                     onOpenChange={(next) => { if (!next) setProductPickerOpen(false) }}
                     loading={isSearchingProducts}
-                    items={productSearchData?.items ?? []}
+                    items={productSearchItems}
                     onPick={handlePickProduct}
                     placeholder={t('sliders.formProductSearchPlaceholder', { defaultValue: 'Tìm sản phẩm theo tên hoặc SKU…' })}
                     loadingText={`${t('common.loading')}…`}

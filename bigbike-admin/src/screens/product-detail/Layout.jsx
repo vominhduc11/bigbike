@@ -1,6 +1,6 @@
-import { cloneElement, isValidElement, useContext, useId } from 'react'
+import { useContext, useId } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlertCircle, ChevronDown, GripVertical, ImageOff, X } from 'lucide-react'
+import { ChevronDown, GripVertical, ImageOff, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { resolveDisplayUrl } from '@/lib/contracts'
 import { AssignmentBanner as AssignmentBannerView } from '@/components/AssignmentBanner'
@@ -134,67 +134,6 @@ export function AssignmentBanner({ t }) {
       title={cfg?.title || t('products.detail.assign.title')}
       roles={cfg?.roles ?? []}
     />
-  )
-}
-
-// Field shell — pass `full` to span both grid columns.
-// `required` thêm dấu * đỏ sau nhãn + gắn aria-required vào control.
-// Liên kết label↔control và gắn aria-invalid + aria-describedby khi có lỗi.
-export function Field({ label, hint, error, count, countWarn, full, required, children }) {
-  const fieldId = useId()
-  const errorId = `${fieldId}-error`
-  const hintId = `${fieldId}-hint`
-  const describedBy = error ? errorId : hint ? hintId : undefined
-
-  const control = isValidElement(children)
-    ? cloneElement(children, {
-        id: children.props.id || fieldId,
-        'aria-invalid': error ? true : children.props['aria-invalid'],
-        'aria-required': required ? true : children.props['aria-required'],
-        'aria-describedby': cn(children.props['aria-describedby'], describedBy) || undefined,
-      })
-    : children
-
-  return (
-    <div className={cn('flex flex-col gap-1.5', full && 'md:col-span-2')}>
-      {(label || count != null) && (
-        <div className="flex justify-between items-baseline text-sm font-medium text-foreground/80">
-          {label && (
-            <label htmlFor={fieldId}>
-              {label}
-              {required && (
-                <span
-                  className="ml-1 text-[var(--admin-color-status-danger-text)]"
-                  aria-label="bắt buộc"
-                  title="Bắt buộc"
-                >*</span>
-              )}
-            </label>
-          )}
-          {count != null && (
-            <span
-              className={cn(
-                'text-xs tabular-nums text-muted-foreground',
-                countWarn && 'text-[var(--admin-color-status-warning-text)] font-semibold',
-              )}
-            >
-              {count}
-            </span>
-          )}
-        </div>
-      )}
-      {control}
-      {error
-        ? (
-          <span id={errorId} className="field-error flex items-center gap-1 text-xs text-[var(--admin-color-status-danger-text)] font-semibold" role="alert">
-            <AlertCircle size={13} aria-hidden="true" className="shrink-0" />
-            {error}
-          </span>
-        )
-        : hint
-          ? <span id={hintId} className="text-xs text-muted-foreground">{hint}</span>
-          : null}
-    </div>
   )
 }
 

@@ -10,33 +10,12 @@ import { MediaRequirementHint, MediaValidationError } from './MediaRequirementHi
 import { useMediaValidation } from '../lib/useMediaDimensions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { IconClose, IconUpload, IconCheck } from './media-picker/pickerIcons'
+import { formatBytes, mergeMediaCacheItem } from './media-picker/pickerUtils'
+import { useModalFocusTrap, useBodyScrollLock } from './media-picker/useModalBehavior'
 
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']
 const MAX_FILE_SIZE = 50 * 1024 * 1024
-
-function formatBytes(bytes) {
-  if (!bytes) return ''
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
-function IconClose() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-      <path d="M18 6 6 18M6 6l12 12" />
-    </svg>
-  )
-}
-
-function IconUpload() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="17 8 12 3 7 8" />
-      <line x1="12" y1="3" x2="12" y2="15" />
-    </svg>
-  )
-}
 
 function IconImage() {
   return (
@@ -44,14 +23,6 @@ function IconImage() {
       <rect x="3" y="3" width="18" height="18" rx="2" />
       <circle cx="8.5" cy="8.5" r="1.5" />
       <polyline points="21 15 16 10 5 21" />
-    </svg>
-  )
-}
-
-function IconCheck() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="20 6 9 17 4 12" />
     </svg>
   )
 }
@@ -89,7 +60,6 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
   // media.write gates both uploading new files and editing metadata (alt/title).
   const canWrite = hasPermission('media.write')
   const modalRef = useRef(null)
-  const previousFocusRef = useRef(null)
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 300)
   const [page, setPage] = useState(1)
@@ -118,17 +88,11 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
   useEffect(() => {
     let active = true
     setState((p) => ({ ...p, status: 'loading' }))
-    fetchMedia({ search: debouncedSearch, mimeType: 'image/', page, pageSize: PAGE_SIZE })
+    fetchMedia({ search: debouncedSearch, mimeType: `${kind}/`, page, pageSize: PAGE_SIZE })
       .then((r) => {
         if (!active) return
         const items = r.items ?? []
-        items.forEach((it) => {
-          if (!it.publicUrl) return
-          // The post-upload refetch (refreshKey bump below) races the confirm click —
-          // don't let it silently strip the isNewUpload tag off this session's own upload.
-          const existing = mediaCacheRef.current.get(it.publicUrl)
-          mediaCacheRef.current.set(it.publicUrl, existing?.isNewUpload ? { ...it, isNewUpload: true } : it)
-        })
+        items.forEach((it) => mergeMediaCacheItem(mediaCacheRef, it))
         setState({
           status: 'success',
           items,
@@ -140,55 +104,12 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
         setState({ status: 'error', items: [], totalPages: 1, error: e.message })
       })
     return () => { active = false }
-  }, [debouncedSearch, page, refreshKey])
+  }, [debouncedSearch, page, refreshKey, kind])
 
-  // Focus trap + ESC + restore focus
-  useEffect(() => {
-    previousFocusRef.current = document.activeElement
-    const focusableSelector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-    const modal = modalRef.current
-    const initialFocusTarget = modal?.querySelector(focusableSelector)
-    if (initialFocusTarget) initialFocusTarget.focus()
-
-    function onKey(e) {
-      // While the detail editor is open it owns the keyboard (Escape/Tab);
-      // let its own handler manage focus so we don't close the whole picker.
-      if (detailOpenRef.current) return
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        onClose()
-        return
-      }
-      if (e.key !== 'Tab') return
-      const currentModal = modalRef.current
-      if (!currentModal) return
-      const focusables = Array.from(currentModal.querySelectorAll(focusableSelector))
-      if (!focusables.length) return
-      const first = focusables[0]
-      const last = focusables[focusables.length - 1]
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault()
-        last.focus()
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault()
-        first.focus()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      if (previousFocusRef.current && typeof previousFocusRef.current.focus === 'function') {
-        previousFocusRef.current.focus()
-      }
-    }
-  }, [onClose])
-
-  // Lock body scroll
-  useEffect(() => {
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
-  }, [])
+  // While the detail editor is open it owns the keyboard (Escape/Tab); let its own
+  // handler manage focus so we don't close the whole picker.
+  useModalFocusTrap({ modalRef, onClose, isSuspendedRef: detailOpenRef })
+  useBodyScrollLock()
 
   // ── Upload helpers ──────────────────────────────────────────────────────────
 

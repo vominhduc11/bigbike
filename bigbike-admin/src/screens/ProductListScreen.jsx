@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
-import { Check, ChevronDown, ChevronsUpDown, ChevronUp, Plus } from 'lucide-react'
+import { Copy, Eye, EyeOff, ExternalLink, MoreHorizontal, Package, Pencil, Plus, Trash2, Undo2 } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { ExportButton } from '@/components/ExportButton'
 import { ImportProductsDialog } from '@/components/ImportProductsDialog'
@@ -14,8 +14,11 @@ import { FilterSearchInput } from '../components/FilterSearchInput'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { RecentItemsChips } from '../components/RecentItemsChips'
+import { AdminTable } from '../components/AdminTable'
+import { PublishStatusBadge } from '../components/StatusBadge'
 import { showConfirm } from '../lib/confirm'
 import { ApiClientError, exportProductImportTemplate, exportProductsCsv, fetchBrands, fetchCategoryTree, fetchProductDetail, fetchProducts, publishProduct, restoreProduct, softDeleteProduct, permanentDeleteProduct } from '../lib/adminApi'
+import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
 import { useColumnVisibility } from '../lib/useColumnVisibility'
 import { useContentLang } from '../lib/contentLang'
@@ -25,10 +28,8 @@ import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { PaginationControls } from '../components/PaginationControls'
-import { MobileCardList } from '../components/layout/MobileCardList'
 import { DUPLICATE_SESSION_KEY, HOMEPAGE_BLOCK_LABEL_KEYS, HOMEPAGE_BLOCK_LIMITS, INITIAL_QUERY, buildCategoryTreeOrder, categoryLabel } from './product-list/constants'
-import { ProductRow } from './product-list/ProductRow'
-import { ProductMobileCard } from './product-list/ProductMobileCard'
+import { StockCell } from './product-list/cells'
 
 export function ProductListScreen({ navigate, canUpdate }) {
   const { t } = useTranslation()
@@ -99,9 +100,8 @@ export function ProductListScreen({ navigate, canUpdate }) {
   }, [openMenu])
 
   // Functional update (not reading `openMenu` from closure) + useCallback([]) so this
-  // handler's identity stays stable across renders — passing a fresh arrow function to
-  // every ProductRow on each openMenu change broke prop-identity memoization for rows
-  // that didn't change, forcing the whole visible list to re-render on any menu toggle.
+  // handler's identity stays stable across renders instead of changing on every
+  // openMenu toggle.
   const handleToggleMenu = useCallback((id) => {
     setOpenMenu((prev) => (prev === id ? null : id))
   }, [])
@@ -275,27 +275,12 @@ export function ProductListScreen({ navigate, canUpdate }) {
 
   const isTrashView = query.publishStatus === 'TRASH'
 
-  const toggle = useCallback((id) => {
-    setSelected((prev) => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }, [])
-  const toggleAll = useCallback(() => {
-    setSelected((prev) => (
-      prev.size === items.length ? new Set() : new Set(items.map((p) => p.id))
-    ))
-  }, [items])
-  const allChecked = items.length > 0 && selected.size === items.length
-
   // In-header sort: maps a column to query.sort (định dạng "field:dir" như endpoint
-  // sản phẩm đang dùng). Click đảo chiều; cột đang sort hiện chevron + aria-sort.
+  // sản phẩm đang dùng). AdminTable tự đảo chiều khi click lại cùng cột.
   const [sortField, sortDir] = (query.sort || '').split(':')
-  const handleHeaderSort = useCallback((field) => {
-    const nextDir = sortField === field && sortDir === 'asc' ? 'desc' : 'asc'
+  const handleSortChange = useCallback((field, nextDir) => {
     updateQuery({ sort: `${field}:${nextDir}` }, { resetPage: true })
-  }, [sortField, sortDir])
+  }, [])
 
   const totalItems = pagination?.totalItems ?? items.length
 
@@ -389,28 +374,289 @@ export function ProductListScreen({ navigate, canUpdate }) {
     return chips
   }, [query.search, query.categoryId, query.brandId, query.publishStatus, query.stockState, categories, brands, t])
 
-  // Mô tả cột có thể sort trong header để dựng <th> đồng nhất (label + chevron + aria-sort).
-  const sortableHeader = (field, label, extraClass = '') => {
-    const active = sortField === field
-    const ariaSort = active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'
-    return (
-      <th
-        scope="col"
-        className={`sortable${active ? ' sorted' : ''}${extraClass ? ` ${extraClass}` : ''}`}
-        aria-sort={ariaSort}
-        tabIndex={0}
-        role="button"
-        onClick={() => handleHeaderSort(field)}
-        onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); handleHeaderSort(field) } }}
-      >
-        {label}
-        <span className="sort-ind" aria-hidden="true">
-          {active
-            ? (sortDir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)
-            : <ChevronsUpDown size={12} />}
+  const allColumns = [
+    {
+      key: 'name',
+      label: t('products.colProduct'),
+      sortable: true,
+      render: (product) => (
+        <div className="bb-product-cell">
+          <span className="bb-product-thumb" style={{ width: 40, height: 40 }}>
+            {product.image?.url ? (
+              <img
+                src={product.image.url}
+                alt={product.image.alt || product.name}
+                referrerPolicy="no-referrer"
+                loading="lazy"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              <Package size={22} />
+            )}
+          </span>
+          {formatText(product.name)}
+        </div>
+      ),
+    },
+    {
+      key: 'sku',
+      label: 'SKU',
+      render: (product) => <span className="mono">{formatText(product.sku, 'SKU TBD')}</span>,
+    },
+    {
+      key: 'price',
+      label: t('products.colPrice'),
+      align: 'right',
+      sortable: true,
+      render: (product) => {
+        const sale = product.price?.salePrice
+        return (
+          <span style={{ fontWeight: 700 }}>
+            {sale > 0 ? (
+              <>
+                {formatCurrencyVnd(sale)}
+                <div className="bb-cell-sub" style={{ textDecoration: 'line-through' }}>
+                  {formatCurrencyVnd(product.price.retailPrice)}
+                </div>
+              </>
+            ) : (
+              formatCurrencyVnd(product.price?.retailPrice)
+            )}
+          </span>
+        )
+      },
+    },
+    {
+      key: 'stock',
+      label: t('products.colStock'),
+      render: (product) => <StockCell state={product.stockState} />,
+    },
+    {
+      key: 'category',
+      label: t('products.colCategory'),
+      render: (product) => {
+        const catName = categoryLabel(product)
+        return catName ? formatText(catName) : <span className="bb-muted">—</span>
+      },
+    },
+    {
+      key: 'brand',
+      label: t('products.colBrand'),
+      render: (product) => (product.brand?.name ? formatText(product.brand.name) : <span className="bb-muted">—</span>),
+    },
+    {
+      key: 'homepage',
+      label: t('products.colHomepage'),
+      render: (product) => {
+        const block = product.homepageBlock
+        if (!block || block === 'NONE') return <span className="bb-muted">—</span>
+        return (
+          <span style={{ fontSize: 12.5, fontWeight: 600 }}>
+            {t('products.homepageFeatured')}
+            {Number.isFinite(product.homepageOrder) ? ` · #${product.homepageOrder}` : ''}
+          </span>
+        )
+      },
+    },
+    {
+      key: 'publish',
+      label: t('products.colPublish'),
+      render: (product) => <PublishStatusBadge value={product.publishStatus} />,
+    },
+    {
+      key: 'updatedAt',
+      label: t('products.colUpdated'),
+      align: 'right',
+      sortable: true,
+      render: (product) => <span className="bb-muted text-xs">{formatDateTime(product.updatedAt)}</span>,
+    },
+    {
+      key: 'actions',
+      label: '',
+      align: 'right',
+      render: (product) => {
+        const isTrashed = product.publishStatus === 'TRASH'
+        const isBusy = deletingId === product.id || restoringId === product.id
+        const isPublished = product.publishStatus === 'PUBLISHED'
+        const isMenuOpen = openMenu === product.id
+        const detailPath = `/admin/products/${product.id}`
+        return (
+          <div onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => navigate(detailPath)}>
+              <Pencil size={14} />
+            </button>
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <button
+                type="button"
+                className="bb-icon-btn"
+                data-row-menu-trigger
+                title={t('common.actions')}
+                onClick={() => handleToggleMenu(product.id)}
+              >
+                <MoreHorizontal size={15} />
+              </button>
+              {isMenuOpen && (
+                <div className="bb-row-menu">
+                  <button type="button" onClick={() => { handleCloseMenu(); navigate(detailPath) }}>
+                    <Pencil size={13} />{t('common.edit')}
+                  </button>
+                  <button type="button" onClick={() => { handleCloseMenu(); window.open(detailPath, '_blank', 'noopener') }}>
+                    <ExternalLink size={13} />{t('common.openInNewTab')}
+                  </button>
+                  {canUpdate && !isTrashed && (
+                    <button type="button" disabled={togglingPublishId === product.id} onClick={() => { handleCloseMenu(); handleTogglePublish(product) }}>
+                      {isPublished ? <EyeOff size={13} /> : <Eye size={13} />}
+                      {isPublished ? t('products.unpublishAction', { defaultValue: 'Ẩn' }) : t('products.publishAction', { defaultValue: 'Xuất bản' })}
+                    </button>
+                  )}
+                  {canUpdate && (
+                    <button type="button" onClick={() => { handleCloseMenu(); handleDuplicate(product) }}>
+                      <Copy size={13} />{t('products.duplicate')}
+                    </button>
+                  )}
+                  {canUpdate && isTrashed && (
+                    <>
+                      <button type="button" disabled={isBusy} onClick={() => { handleCloseMenu(); handleRestore(product) }}>
+                        <Undo2 size={13} />{restoringId === product.id ? t('products.restoringLabel') : t('products.restore')}
+                      </button>
+                      <hr />
+                      <button type="button" className="danger" disabled={isBusy} onClick={() => { handleCloseMenu(); handlePermanentDelete(product) }}>
+                        <Trash2 size={13} />{t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' })}
+                      </button>
+                    </>
+                  )}
+                  {canUpdate && !isTrashed && (
+                    <>
+                      <hr />
+                      <button type="button" className="danger" disabled={isBusy} onClick={() => { handleCloseMenu(); handleDelete(product) }}>
+                        <Trash2 size={13} />{deletingId === product.id ? t('products.deletingLabel') : t('common.delete')}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      },
+    },
+  ]
+  const columns = allColumns.filter((c) => !hiddenColumnKeys.includes(c.key))
+
+  function mobileCard(product) {
+    const isTrashed = product.publishStatus === 'TRASH'
+    const isBusy = deletingId === product.id || restoringId === product.id
+    const block = product.homepageBlock
+    const detailPath = `/admin/products/${product.id}`
+    const sale = product.price?.salePrice
+    const catName = categoryLabel(product)
+    return {
+      title: (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="bb-product-thumb" style={{ width: 32, height: 32, flexShrink: 0 }}>
+            {product.image?.url ? (
+              <img
+                src={product.image.url}
+                alt={product.image.alt || product.name}
+                referrerPolicy="no-referrer"
+                loading="lazy"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              <Package size={18} />
+            )}
+          </span>
+          {formatText(product.name)}
         </span>
-      </th>
-    )
+      ),
+      subtitle: formatText(product.sku, 'SKU TBD'),
+      status: <PublishStatusBadge value={product.publishStatus} />,
+      meta: [
+        {
+          label: t('products.colPrice'),
+          value: sale > 0 ? (
+            <span>
+              {formatCurrencyVnd(sale)}
+              <span style={{ textDecoration: 'line-through', marginLeft: 8 }}>
+                {formatCurrencyVnd(product.price.retailPrice)}
+              </span>
+            </span>
+          ) : (
+            formatCurrencyVnd(product.price?.retailPrice)
+          ),
+          tone: 'strong',
+        },
+        { label: t('products.colStock'), value: <StockCell state={product.stockState} /> },
+        { label: t('products.colCategory'), value: catName ? formatText(catName) : <span className="bb-muted">—</span> },
+        { label: t('products.colBrand'), value: product.brand?.name ? formatText(product.brand.name) : <span className="bb-muted">—</span> },
+        {
+          label: t('products.colHomepage'),
+          value: (!block || block === 'NONE') ? (
+            <span className="bb-muted">—</span>
+          ) : (
+            <span style={{ fontSize: 12.5, fontWeight: 600 }}>
+              {t('products.homepageFeatured')}
+              {Number.isFinite(product.homepageOrder) ? ` · #${product.homepageOrder}` : ''}
+            </span>
+          ),
+        },
+        { label: t('products.colUpdated'), value: formatDateTime(product.updatedAt) },
+      ],
+      actions: (
+        <div onClick={(e) => e.stopPropagation()}>
+          <button type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => navigate(detailPath)}>
+            <Pencil size={14} />
+          </button>
+          <button
+            type="button"
+            className="bb-icon-btn"
+            title={t('common.openInNewTab')}
+            onClick={() => window.open(detailPath, '_blank', 'noopener')}
+          >
+            <ExternalLink size={14} />
+          </button>
+          {canUpdate && (
+            <button type="button" className="bb-icon-btn" title={t('products.duplicate')} onClick={() => handleDuplicate(product)}>
+              <Copy size={14} />
+            </button>
+          )}
+          {canUpdate && isTrashed && (
+            <>
+              <button
+                type="button"
+                className="bb-icon-btn"
+                disabled={isBusy}
+                title={restoringId === product.id ? t('products.restoringLabel') : t('products.restore')}
+                onClick={() => handleRestore(product)}
+              >
+                <Undo2 size={14} />
+              </button>
+              <button
+                type="button"
+                className="bb-icon-btn danger"
+                disabled={isBusy}
+                title={t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' })}
+                onClick={() => handlePermanentDelete(product)}
+              >
+                <Trash2 size={14} />
+              </button>
+            </>
+          )}
+          {canUpdate && !isTrashed && (
+            <button
+              type="button"
+              className="bb-icon-btn"
+              disabled={isBusy}
+              title={deletingId === product.id ? t('products.deletingLabel') : t('common.delete')}
+              onClick={() => handleDelete(product)}
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
+      ),
+      onClick: () => navigate(detailPath),
+    }
   }
 
   return (
@@ -632,86 +878,23 @@ export function ProductListScreen({ navigate, canUpdate }) {
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
         <div className="bb-card">
-          <div className="hide-on-mobile">
-          <div className="bb-table-wrap">
-            <table className="bb-table" aria-label={t('products.title')}>
-              <thead>
-                <tr>
-                  <th scope="col" className="col-check">
-                    <span
-                      className={`bb-cb${allChecked ? ' checked' : ''}`}
-                      role="checkbox"
-                      aria-checked={allChecked}
-                      aria-label={t('common.selectAll', { defaultValue: 'Chọn tất cả' })}
-                      tabIndex={0}
-                      onClick={toggleAll}
-                      onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleAll() } }}
-                    >
-                      {allChecked && <Check size={11} />}
-                    </span>
-                  </th>
-                  {sortableHeader('name', t('products.colProduct'))}
-                  {!hiddenColumnKeys.includes('sku') && <th scope="col" className="hidden lg:table-cell">SKU</th>}
-                  {sortableHeader('price', t('products.colPrice'), 'num')}
-                  <th scope="col">{t('products.colStock')}</th>
-                  {!hiddenColumnKeys.includes('category') && <th scope="col" className="hidden xl:table-cell">{t('products.colCategory')}</th>}
-                  {!hiddenColumnKeys.includes('brand') && <th scope="col" className="hidden 2xl:table-cell">{t('products.colBrand')}</th>}
-                  {!hiddenColumnKeys.includes('homepage') && <th scope="col" className="hidden xl:table-cell">{t('products.colHomepage')}</th>}
-                  <th scope="col">{t('products.colPublish')}</th>
-                  {!hiddenColumnKeys.includes('updatedAt') && sortableHeader('updatedAt', t('products.colUpdated'), 'hidden lg:table-cell')}
-                  <th scope="col" className="col-actions" />
-                </tr>
-              </thead>
-              <tbody>
-                {state.status === 'loading' && items.length === 0 && (
-                  [...Array(8)].map((_, i) => (
-                    <tr key={`sk-${i}`}>
-                      <td colSpan={11}><div className="bb-skeleton-block" style={{ height: 32 }} /></td>
-                    </tr>
-                  ))
-                )}
-                {items.map((product) => (
-                  <ProductRow
-                    key={product.id}
-                    product={product}
-                    navigate={navigate}
-                    canUpdate={canUpdate}
-                    checked={selected.has(product.id)}
-                    isDeleting={deletingId === product.id}
-                    isRestoring={restoringId === product.id}
-                    isTogglingPublish={togglingPublishId === product.id}
-                    isMenuOpen={openMenu === product.id}
-                    hiddenColumns={hiddenColumnKeys}
-                    onToggleSelect={toggle}
-                    onToggleMenu={handleToggleMenu}
-                    onCloseMenu={handleCloseMenu}
-                    onDuplicate={handleDuplicate}
-                    onRestore={handleRestore}
-                    onPermanentDelete={handlePermanentDelete}
-                    onDelete={handleDelete}
-                    onTogglePublish={handleTogglePublish}
-                  />
-                ))}
-              </tbody>
-            </table>
+          <div className="bb-card-body bb-card-body--flush">
+            <AdminTable
+              columns={columns}
+              rows={items}
+              loading={state.status === 'loading'}
+              pageSize={query.pageSize}
+              sortKey={sortField}
+              sortDir={sortDir}
+              onSortChange={handleSortChange}
+              selectable
+              selectedIds={[...selected]}
+              onSelectionChange={(ids) => setSelected(new Set(ids))}
+              onRowClick={(product) => navigate(`/admin/products/${product.id}`)}
+              rowHref={(product) => `/admin/products/${product.id}`}
+              mobileCard={mobileCard}
+            />
           </div>
-          </div>
-          <MobileCardList>
-            {items.map((product) => (
-              <ProductMobileCard
-                key={product.id}
-                product={product}
-                navigate={navigate}
-                canUpdate={canUpdate}
-                isDeleting={deletingId === product.id}
-                isRestoring={restoringId === product.id}
-                onDuplicate={handleDuplicate}
-                onRestore={handleRestore}
-                onPermanentDelete={handlePermanentDelete}
-                onDelete={handleDelete}
-              />
-            ))}
-          </MobileCardList>
           {state.status === 'success' && pagination && (
             <PaginationControls
               pagination={pagination}

@@ -13,7 +13,6 @@ import {
   fetchCategoryTree,
   fetchProductAssignment,
   fetchProductDetail,
-  fetchProducts,
   mapValidationErrors,
   previewProduct,
   updateProduct,
@@ -29,6 +28,7 @@ import { Screen, ScreenHeader, StickyActionBar, Tabs } from '../components/layou
 import { StatePanel } from '../components/StatePanel'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
+import { useProductPicker } from '../lib/useProductPicker'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { parseSpecsFromHtml } from '../lib/specSheet'
 import { parseSpecStatsFromHtml } from '../lib/specStatsBlock'
@@ -115,8 +115,8 @@ import {
   SectionCard,
   CollapsibleGroup,
   AssignmentBanner,
-  Field,
 } from './product-detail/Layout'
+import { FormField as Field } from '../components/layout/FormField'
 import { AssignmentConfigContext } from './product-detail/constants'
 
 // "Phù hợp với ai" (suitability) và "Bảng size" (sizeGuide) KHÔNG còn nhập trong trình dựng mô tả —
@@ -283,38 +283,38 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
   // Product picker for the "Sản phẩm liên quan" section — debounced search,
   // self excluded so a product can't be added to its own related list.
-  const [relatedSearch, setRelatedSearch] = useState('')
-  const [relatedSearchDebounced, setRelatedSearchDebounced] = useState('')
-  useEffect(() => {
-    const handle = setTimeout(() => setRelatedSearchDebounced(relatedSearch.trim()), 300)
-    return () => clearTimeout(handle)
-  }, [relatedSearch])
-
-  const { data: relatedSearchResult, isFetching: isSearchingRelated } = useQuery({
-    queryKey: ['product-related-search', relatedSearchDebounced, contentLang],
-    queryFn: () => fetchProducts({ q: relatedSearchDebounced, pageSize: 8 }),
-    enabled: relatedSearchDebounced.length >= 1,
+  const {
+    search: relatedSearch,
+    setSearch: setRelatedSearch,
+    debouncedSearch: relatedSearchDebounced,
+    items: relatedSearchItemsRaw,
+    isFetching: isSearchingRelated,
+    reset: resetRelatedSearch,
+  } = useProductPicker({
+    queryKey: 'product-related-search',
+    contentLang,
+    params: { pageSize: 8 },
     staleTime: 60 * 1000,
   })
-  const relatedSearchItems = (relatedSearchResult?.items ?? []).filter((p) => p.id !== productId)
+  const relatedSearchItems = relatedSearchItemsRaw.filter((p) => p.id !== productId)
   const relatedAtMax = form.relatedProductIds.length >= RELATED_PRODUCTS_MAX
 
   // Product picker for the "Phụ kiện" section — debounced search, self excluded so a
   // product can't be added to its own accessory list. Mirrors the related-products picker.
-  const [accessorySearch, setAccessorySearch] = useState('')
-  const [accessorySearchDebounced, setAccessorySearchDebounced] = useState('')
-  useEffect(() => {
-    const handle = setTimeout(() => setAccessorySearchDebounced(accessorySearch.trim()), 300)
-    return () => clearTimeout(handle)
-  }, [accessorySearch])
-
-  const { data: accessorySearchResult, isFetching: isSearchingAccessory } = useQuery({
-    queryKey: ['product-accessory-search', accessorySearchDebounced, contentLang],
-    queryFn: () => fetchProducts({ q: accessorySearchDebounced, pageSize: 8 }),
-    enabled: accessorySearchDebounced.length >= 1,
+  const {
+    search: accessorySearch,
+    setSearch: setAccessorySearch,
+    debouncedSearch: accessorySearchDebounced,
+    items: accessorySearchItemsRaw,
+    isFetching: isSearchingAccessory,
+    reset: resetAccessorySearch,
+  } = useProductPicker({
+    queryKey: 'product-accessory-search',
+    contentLang,
+    params: { pageSize: 8 },
     staleTime: 60 * 1000,
   })
-  const accessorySearchItems = (accessorySearchResult?.items ?? []).filter((p) => p.id !== productId)
+  const accessorySearchItems = accessorySearchItemsRaw.filter((p) => p.id !== productId)
   const accessoryAtMax = form.accessoryProductIds.length >= RELATED_PRODUCTS_MAX
 
   useEffect(() => {
@@ -485,8 +485,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       }
     })
     setIsDirty(true)
-    setRelatedSearch('')
-    setRelatedSearchDebounced('')
+    resetRelatedSearch()
   }
 
   async function removeRelatedProduct(removeId) {
@@ -539,8 +538,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       }
     })
     setIsDirty(true)
-    setAccessorySearch('')
-    setAccessorySearchDebounced('')
+    resetAccessorySearch()
   }
 
   async function removeAccessoryProduct(removeId) {
@@ -1107,7 +1105,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     label={t('products.detail.slug')}
                     required={isCreate && !isEnLang}
                     error={isEnLang ? validationErrors['translations.en.slug'] : validationErrors.slug}
-                    hint={isEnLang
+                    helper={isEnLang
                       ? t('products.detail.slugHintEn', { defaultValue: 'Đường dẫn tiếng Anh (tùy chọn) — để trống sẽ dùng đường dẫn tiếng Việt.' })
                       : t('products.detail.slugHint')}
                   >
@@ -1134,7 +1132,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     label={t('products.detail.sku')}
                     count={`${form.sku.length} / 100`}
                     countWarn={form.sku.length > 85}
-                    hint={t('products.detail.skuHint')}
+                    helper={t('products.detail.skuHint')}
                     required={isCreate}
                     error={validationErrors.sku}
                   >
@@ -1181,7 +1179,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
                   <Field
                     label={t('products.detail.trust.originBrand', { defaultValue: 'Thương hiệu (nước)' })}
-                    hint={t('products.detail.trust.originBrandHint', { defaultValue: 'Nhập riêng cho từng ngôn ngữ — chuyển tab VI/EN ở góc trên để nhập bản còn lại (vd: "Nhật Bản" ở tab VI, "Japan" ở tab EN).' })}
+                    helper={t('products.detail.trust.originBrandHint', { defaultValue: 'Nhập riêng cho từng ngôn ngữ — chuyển tab VI/EN ở góc trên để nhập bản còn lại (vd: "Nhật Bản" ở tab VI, "Japan" ở tab EN).' })}
                   >
                     <Input
                       placeholder={isEn ? 'e.g. Japan' : 'vd: Ý'}
@@ -1216,7 +1214,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   <Field
                     full
                     label={t('products.detail.shortDescription')}
-                    hint={t('products.detail.shortDescriptionHint')}
+                    helper={t('products.detail.shortDescriptionHint')}
                     error={validationErrors.shortDescription}
                   >
                     <RichTextEditorWithSource
@@ -1917,7 +1915,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   <Field
                     full
                     label={t('products.detail.seoCanonicalUrl')}
-                    hint={t('products.detail.seoCanonicalAuto', { defaultValue: 'Tự sinh theo đường dẫn (slug) — không cần nhập.' })}
+                    helper={t('products.detail.seoCanonicalAuto', { defaultValue: 'Tự sinh theo đường dẫn (slug) — không cần nhập.' })}
                   >
                     <Input
                       value={canonicalUrlFromSlug(form.slug) || ''}
@@ -1927,7 +1925,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     />
                   </Field>
 
-                  <Field full label={t('products.detail.seoOgImageUrl')} hint="1200×630px (chuẩn mạng xã hội)." error={validationErrors.seoOgImageUrl}>
+                  <Field full label={t('products.detail.seoOgImageUrl')} helper="1200×630px (chuẩn mạng xã hội)." error={validationErrors.seoOgImageUrl}>
                     <ImageUrlInput
                       value={form.seoOgImageUrl}
                       onChange={(url) => updateField('seoOgImageUrl', url)}

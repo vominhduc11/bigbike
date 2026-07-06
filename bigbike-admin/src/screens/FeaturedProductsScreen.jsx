@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { GripVertical, X } from 'lucide-react'
 import { toast } from '@/lib/toast'
-import { fetchHomepageBlocks, saveHomepageBlocks, fetchProducts } from '../lib/adminApi'
+import { fetchHomepageBlocks, saveHomepageBlocks } from '../lib/adminApi'
 import { useContentLang } from '../lib/contentLang'
-import { useDebounce } from '../lib/useDebounce'
+import { useProductPicker } from '../lib/useProductPicker'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { clearNavGuard } from '@/lib/navigationGuard'
 import { showConfirm } from '../lib/confirm'
@@ -22,32 +22,28 @@ const FEATURED_GRID_MAX = 12
 function ProductPicker({ onAdd, disabledIds, disabled }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
-  const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
-  // Debounce trước khi bắn request tìm kiếm để không gọi server mỗi phím gõ.
-  const debouncedQuery = useDebounce(query, 300)
-
-  const { data, isFetching } = useQuery({
-    queryKey: ['featured-products-search', debouncedQuery, contentLang],
-    queryFn: () => fetchProducts({ q: debouncedQuery, page: 1, pageSize: 8, publishStatus: 'PUBLISHED' }),
-    enabled: open && debouncedQuery.trim().length > 0,
-    staleTime: 30_000,
+  const { search, setSearch, items, isFetching, reset } = useProductPicker({
+    queryKey: 'featured-products-search',
+    contentLang,
+    params: { page: 1, pageSize: 8, publishStatus: 'PUBLISHED' },
+    enabled: open,
   })
 
-  const results = (data?.items ?? []).filter((p) => !disabledIds.has(p.id))
+  const results = items.filter((p) => !disabledIds.has(p.id))
 
   const handleSelect = useCallback((product) => {
     onAdd(product)
-    setQuery('')
+    reset()
     setOpen(false)
-  }, [onAdd])
+  }, [onAdd, reset])
 
   return (
     <ProductPickerCombobox
-      search={query}
-      onSearchChange={(v) => { setQuery(v); setOpen(true) }}
+      search={search}
+      onSearchChange={(v) => { setSearch(v); setOpen(true) }}
       onFocus={() => setOpen(true)}
-      open={open && query.trim().length > 0}
+      open={open && search.trim().length > 0}
       onOpenChange={(next) => { if (!next) setOpen(false) }}
       loading={isFetching}
       items={results}

@@ -3,9 +3,10 @@ import { AlertCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
-import { fetchHomeHighlights, saveHomeHighlights, fetchProducts } from '../lib/adminApi'
+import { fetchHomeHighlights, saveHomeHighlights } from '../lib/adminApi'
 import { useContentLang } from '../lib/contentLang'
 import { normalizeImageAsset } from '../lib/contracts'
+import { useProductPicker } from '../lib/useProductPicker'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { Screen } from '../components/layout/Screen'
@@ -30,35 +31,32 @@ function slotsSignature(slots) {
 function ProductPicker({ value, onChange, disabled }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
-  const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
-
-  const { data, isFetching } = useQuery({
-    queryKey: ['home-highlights-product-search', query, contentLang],
-    queryFn: () => fetchProducts({ q: query, page: 1, pageSize: 8, publishStatus: 'PUBLISHED' }),
-    enabled: open && query.trim().length > 0,
-    staleTime: 30_000,
+  const { search, setSearch, items, isFetching, reset } = useProductPicker({
+    queryKey: 'home-highlights-product-search',
+    contentLang,
+    params: { page: 1, pageSize: 8, publishStatus: 'PUBLISHED' },
+    debounceMs: 0,
+    enabled: open,
   })
-
-  const results = data?.items ?? []
 
   const handleSelect = useCallback((product) => {
     onChange(product)
-    setQuery('')
+    reset()
     setOpen(false)
-  }, [onChange])
+  }, [onChange, reset])
 
-  const displayValue = query || (value ? value.name : '')
+  const displayValue = search || (value ? value.name : '')
 
   return (
     <ProductPickerCombobox
       search={displayValue}
-      onSearchChange={(v) => { setQuery(v); setOpen(true) }}
+      onSearchChange={(v) => { setSearch(v); setOpen(true) }}
       onFocus={() => setOpen(true)}
-      open={open && query.trim().length > 0}
+      open={open && search.trim().length > 0}
       onOpenChange={(next) => { if (!next) setOpen(false) }}
       loading={isFetching}
-      items={results}
+      items={items}
       onPick={handleSelect}
       placeholder={t('homeHighlights.searchPlaceholder')}
       loadingText={`${t('common.loading')}…`}
