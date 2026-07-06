@@ -885,13 +885,6 @@
   overflow: hidden;
 }
 .bb-product-thumb img { width: 100%; height: 100%; object-fit: cover; }
-/* Tên SP là link thật (mở tab mới được) nhưng trông như text thường của bảng */
-.bb-product-name-link {
-  color: inherit;
-  text-decoration: none;
-  cursor: pointer;
-}
-.bb-product-name-link:hover { color: var(--bb-primary); text-decoration: underline; }
 /* Link bọc ô định danh trong AdminTable: display:contents giữ nguyên layout ô
    (kể cả ô có avatar/logo + chữ) nhưng vẫn là <a> thật để mở tab mới được. */
 .bb-row-link { display: contents; color: inherit; text-decoration: none; cursor: pointer; }
