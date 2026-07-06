@@ -6,7 +6,7 @@ import {
   emptySuitabilityCard,
 } from './suitabilityCards'
 
-const card = (audience, advice, linkLabel = '', linkUrl = '') => ({ audience, advice, linkLabel, linkUrl })
+const card = (audience, advice) => ({ audience, advice })
 
 describe('serializeSuitabilityCards', () => {
   it('rỗng / chỉ thẻ trống → chuỗi rỗng', () => {
@@ -19,16 +19,6 @@ describe('serializeSuitabilityCards', () => {
     const html = serializeSuitabilityCards([card('Touring đường dài', 'Trọng lượng nhẹ phát huy tốt.')])
     expect(html).toContain('<ul class="suitability-list">')
     expect(html).toContain('<strong>Touring đường dài</strong> → Trọng lượng nhẹ phát huy tốt.')
-  })
-
-  it('có link → thêm <a href>', () => {
-    const html = serializeSuitabilityCards([card('Người mới', 'Chọn cỡ M.', 'Xem hướng dẫn', '/huong-dan')])
-    expect(html).toContain('<a href="/huong-dan">Xem hướng dẫn</a>')
-  })
-
-  it('link thiếu nhãn HOẶC url → bỏ link', () => {
-    expect(serializeSuitabilityCards([card('A', 'B', 'Nhãn', '')])).not.toContain('<a')
-    expect(serializeSuitabilityCards([card('A', 'B', '', '/x')])).not.toContain('<a')
   })
 
   it('escape ký tự HTML', () => {
@@ -44,9 +34,9 @@ describe('parseSuitabilityCards', () => {
     expect(parseSuitabilityCards(null)).toEqual([])
   })
 
-  it('round-trip giữ nguyên đối tượng / lời khuyên / link', () => {
+  it('round-trip giữ nguyên đối tượng / lời khuyên', () => {
     const cards = [
-      card('Touring đường dài', 'Trọng lượng nhẹ phát huy tốt.', 'Xem hướng dẫn', '/huong-dan'),
+      card('Touring đường dài', 'Trọng lượng nhẹ phát huy tốt.'),
       card('Đi phố hằng ngày', 'Ưu tiên thoáng khí, gọn nhẹ.'),
     ]
     const parsed = parseSuitabilityCards(serializeSuitabilityCards(cards))

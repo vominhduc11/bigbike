@@ -15,7 +15,7 @@ import { PageSizeSelect } from '../components/PageSizeSelect'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { RecentItemsChips } from '../components/RecentItemsChips'
 import { showConfirm } from '../lib/confirm'
-import { ApiClientError, exportProductsCsv, fetchBrands, fetchCategoryTree, fetchProductDetail, fetchProducts, publishProduct, restoreProduct, softDeleteProduct, permanentDeleteProduct } from '../lib/adminApi'
+import { ApiClientError, exportProductImportTemplate, exportProductsCsv, fetchBrands, fetchCategoryTree, fetchProductDetail, fetchProducts, publishProduct, restoreProduct, softDeleteProduct, permanentDeleteProduct } from '../lib/adminApi'
 import { useAdminList } from '../lib/useAdminList'
 import { useColumnVisibility } from '../lib/useColumnVisibility'
 import { useContentLang } from '../lib/contentLang'
@@ -435,6 +435,20 @@ export function ProductListScreen({ navigate, canUpdate }) {
             }}
           >
             {t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
+          </ExportButton>
+          <ExportButton
+            disabled={!canUpdate}
+            title={!canUpdate ? t('products.requirePermission') : undefined}
+            onExport={async () => {
+              try {
+                await exportProductImportTemplate()
+              } catch {
+                throw new Error(t('export.error'))
+              }
+              toast.success(t('export.success'))
+            }}
+          >
+            {t('common.exportJson', { defaultValue: 'Xuất JSON' })}
           </ExportButton>
           <button
             type="button"

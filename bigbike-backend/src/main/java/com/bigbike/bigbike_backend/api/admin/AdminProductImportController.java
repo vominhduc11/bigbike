@@ -15,6 +15,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -70,6 +71,17 @@ public class AdminProductImportController extends AdminControllerSupport {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"bigbike-products.json\"")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(json);
+    }
+
+    /** Same round-trip shape as {@link #exportTemplate}, scoped to one product (array of one). */
+    @GetMapping("/export/{id}")
+    public ResponseEntity<byte[]> exportProduct(@PathVariable String id, HttpServletRequest request) {
+        devAdminAuthService.requirePermission(request, "products.update");
+        ProductImportService.ProductExportFile file = productImportService.exportProductAsTemplateJson(id);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.filename() + "\"")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(file.content());
     }
 
     private static Set<String> parseSkipRowKeys(String raw) {

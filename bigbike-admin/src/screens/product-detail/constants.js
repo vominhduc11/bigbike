@@ -4,7 +4,7 @@
 
 import { createContext } from 'react'
 import { parseSizeGuide, emptySizeGuide } from '../../lib/sizeChart'
-import { serializeSuitabilityCards } from '../../lib/suitabilityCards'
+import { serializeSuitabilityCards, suitabilityCardHasContent } from '../../lib/suitabilityCards'
 import { serializeSpecs, parseSpecsFromHtml } from '../../lib/specSheet'
 import { serializeSpecStats, parseSpecStatsFromHtml } from '../../lib/specStatsBlock'
 import { serializeTrustBadges, parseTrustBadgesFromHtml } from '../../lib/trustBadgesBlock'
@@ -153,7 +153,7 @@ export function getPublishReadiness(form, t, isCreate = false) {
     { id: 'seoCanonical',  label: t('products.detail.checklist.seoCanonical'),  ok: Boolean(form.slug?.trim()),    required: false },
     { id: 'gallery',       label: t('products.detail.checklist.gallery'),       ok: (form.gallery || []).some((img) => img.url?.trim()),                                                       required: false },
     { id: 'prosCons',      label: t('products.detail.checklist.prosCons'),      ok: (form.positiveNotes || []).some((h) => (h.content || '').trim()) || (form.negativeNotes || []).some((h) => (h.content || '').trim()), required: false },
-    { id: 'suitability',   label: t('products.detail.checklist.suitability'),   ok: (Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks : []).some((b) => b.type === 'suitability' && ((b.html || '').trim() || (b.cards || []).some((c) => c.audience?.trim() || c.advice?.trim() || c.linkLabel?.trim()))),    required: false },
+    { id: 'suitability',   label: t('products.detail.checklist.suitability'),   ok: (Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks : []).some((b) => b.type === 'suitability' && ((b.html || '').trim() || (b.cards || []).some(suitabilityCardHasContent))),    required: false },
     { id: 'specifications',label: t('products.detail.checklist.specifications'),ok: (form.specifications || []).some((s) => s.name?.trim() && s.value?.trim()),                                required: false },
     { id: 'variants',      label: t('products.detail.checklist.variants'),      ok: (form.variants || []).some((v) => v.name?.trim()),                                                         required: false },
   ]
@@ -262,7 +262,7 @@ export function buildEmptyForm() {
     negativeNotes: [],
     originBrandCountry: '',
     sizeChart: emptySizeGuide(),
-    // "Phù hợp với ai" (V240) — danh sách thẻ {audience, advice, linkLabel, linkUrl + *En}.
+    // "Phù hợp với ai" (V240) — danh sách thẻ {audience, advice + *En}.
     // Serialize thành 2 chuỗi JSON (vi + en) khi lưu; xem parse/serializeSuitabilityCards.
     suitabilityCards: [],
     gender: '',
@@ -603,8 +603,6 @@ function hydrateBlockKeys(blocks) {
 // Lọc + dọn khối mô tả trước khi gửi: bỏ khối rỗng (sẽ fail @NotBlank ở backend) và
 // strip _key (chỉ dùng tracking ở frontend). Dùng chung cho cả khối VI và EN.
 export function cleanDescriptionBlocks(blocks) {
-  const cardHasContent = (c) =>
-    (c?.audience ?? '').trim() || (c?.advice ?? '').trim() || ((c?.linkLabel ?? '').trim() && (c?.linkUrl ?? '').trim())
   return blocks
     .filter((b) => {
       switch (b.type) {
@@ -622,7 +620,7 @@ export function cleanDescriptionBlocks(blocks) {
             || (b.items ?? []).some((it) => (it ?? '').trim().length > 0)
           return hasImage || hasText
         }
-        case 'suitability': return (b.html ?? '').trim().length > 0 || (b.cards ?? []).some(cardHasContent)
+        case 'suitability': return (b.html ?? '').trim().length > 0 || (b.cards ?? []).some(suitabilityCardHasContent)
         case 'sizeGuide': return (b.html ?? '').trim().length > 0
         default:          return true
       }

@@ -187,7 +187,7 @@ public class DescriptionBlockRenderer {
         return sb.toString();
     }
 
-    /** Phù hợp với ai → mỗi thẻ một &lt;p&gt; (đối tượng đậm → lời khuyên → link).
+    /** Phù hợp với ai → mỗi thẻ một &lt;p&gt; (đối tượng đậm → lời khuyên).
      *  Chế độ "dán HTML": khi html non-blank, xuất html tự do THAY cho cards (sanitize qua Safelist chung). */
     private String renderSuitability(DescriptionBlock.SuitabilityBlock b) {
         StringBuilder sb = new StringBuilder("<div class=\"bb-suitability\">");
@@ -204,20 +204,13 @@ public class DescriptionBlockRenderer {
                 if (c == null) continue;
                 String audience = c.getAudience();
                 String advice = c.getAdvice();
-                String linkLabel = c.getLinkLabel();
-                String linkUrl = c.getLinkUrl();
-                boolean hasLink = linkLabel != null && !linkLabel.isBlank() && linkUrl != null && !linkUrl.isBlank();
-                if ((audience == null || audience.isBlank()) && (advice == null || advice.isBlank()) && !hasLink) continue;
+                if ((audience == null || audience.isBlank()) && (advice == null || advice.isBlank())) continue;
                 sb.append("<p class=\"bb-suitability-card\">");
                 if (audience != null && !audience.isBlank()) {
                     sb.append("<strong>").append(escapeHtml(audience)).append("</strong> ");
                 }
                 if (advice != null && !advice.isBlank()) {
                     sb.append(escapeHtml(advice)).append(" ");
-                }
-                if (hasLink) {
-                    sb.append("<a href=\"").append(escapeAttr(linkUrl)).append("\">")
-                      .append(escapeHtml(linkLabel)).append("</a>");
                 }
                 sb.append("</p>");
             }

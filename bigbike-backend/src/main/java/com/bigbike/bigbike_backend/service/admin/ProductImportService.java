@@ -20,6 +20,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.VideoRequest;
 import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.api.error.ApiException;
 import com.bigbike.bigbike_backend.api.error.MutationNotImplementedException;
+import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
@@ -29,6 +30,7 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductHighlightEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
@@ -41,11 +43,14 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -190,6 +195,11 @@ public class ProductImportService {
         }
 
         resolveVariantIdentities(existing, request.getVariants(), errors);
+
+        if (!isCreate && existing != null) {
+            preserveExistingMedia(request);
+        }
+
         checkBatchVariantSkuDuplicates(request.getVariants(), batchSkusLower, errors);
         checkMissingImage(request, existing, warnings);
 
@@ -479,6 +489,71 @@ public class ProductImportService {
         }
     }
 
+    /**
+     * Owner decision 2026-07-06 (extends PRODUCT_RULE_009): import UPDATE never touches media.
+     * Product-level main image/gallery/videos, and each already-existing (matched) variant's own
+     * cover image + gallery, stay exactly as already stored — no matter what the file sends for
+     * those keys. Every other field in the row still replaces normally. A variant the file adds
+     * fresh (no existing match — {@code resolveVariantIdentities} left its id {@code null}) keeps
+     * whatever media the file provides, since there is no old value to protect.
+     *
+     * <p>Product-level: {@code image} uses the same present-flag semantics {@code applyProductPatch}
+     * checks ({@code create || isImagePresent()}), so forcing it back to "absent" is enough to
+     * leave the column untouched. {@code gallery}/{@code videos} already treat {@code null} as
+     * "untouched" on update (only an explicit {@code []} clears them), so nulling them out here has
+     * the same effect.
+     *
+     * <p>Variant-level: {@code applyVariants} has no such presence flag — the cover image/gallery
+     * it writes always comes straight from the request. So existing variants' stored media is
+     * fetched fresh (gallery is {@code LAZY} and {@link #commitImport} is not
+     * {@code @Transactional} — see {@link ProductVariantJpaRepository#findByIdsWithGallery}) and
+     * copied onto the matching request row before {@code applyVariants} runs.
+     */
+    private void preserveExistingMedia(UpsertProductRequest request) {
+        request.setImage(null);
+        request.setImagePresent(false);
+        request.setGallery(null);
+        request.setVideos(null);
+
+        List<VariantRequest> variants = request.getVariants();
+        if (variants == null || variants.isEmpty()) {
+            return;
+        }
+        List<String> matchedIds = variants.stream()
+                .map(v -> AdminMutationValidators.trimToNull(v.getId()))
+                .filter(id -> id != null)
+                .toList();
+        if (matchedIds.isEmpty()) {
+            return;
+        }
+        Map<String, ProductVariantEntity> existingById = productVariantJpaRepository.findByIdsWithGallery(matchedIds)
+                .stream().collect(Collectors.toMap(ProductVariantEntity::getId, v -> v));
+        for (VariantRequest v : variants) {
+            String id = AdminMutationValidators.trimToNull(v.getId());
+            ProductVariantEntity match = id == null ? null : existingById.get(id);
+            if (match == null) {
+                continue;
+            }
+            v.setImageUrl(match.getImageUrl());
+            v.setImageAlt(match.getImageAlt());
+            v.setImageWidth(match.getImageWidth());
+            v.setImageHeight(match.getImageHeight());
+            v.setImageMimeType(match.getImageMimeType());
+            v.setGallery(mapVariantGallery(match.getGallery()));
+        }
+    }
+
+    private static List<GalleryImageRequest> mapVariantGallery(List<ProductVariantGalleryImageEntity> gallery) {
+        if (gallery == null || gallery.isEmpty()) {
+            return null;
+        }
+        return gallery.stream().map(g -> GalleryImageRequest.builder()
+                .mediaType(g.getMediaType()).videoUrl(g.getVideoUrl()).videoProvider(g.getVideoProvider())
+                .url(g.getImageUrl()).alt(g.getImageAlt())
+                .width(g.getImageWidth()).height(g.getImageHeight()).mimeType(g.getImageMimeType())
+                .sortOrder(g.getSortOrder()).build()).toList();
+    }
+
     private record VariantDiff(int inFile, int added, int updated, int removed, List<String> removedSkus) {
     }
 
@@ -647,6 +722,27 @@ public class ProductImportService {
         List<UpsertProductRequest> out = productJpaRepository.findAll().stream()
                 .map(this::toExportRequest)
                 .toList();
+        return writeExportJson(out);
+    }
+
+    /** Single-product variant of {@link #exportCurrentCatalogAsTemplateJson()} — same array shape
+     * (one element) so the downloaded file re-imports without edits. */
+    @Transactional(readOnly = true)
+    public ProductExportFile exportProductAsTemplateJson(String id) {
+        requireJpaPersistenceEnabled();
+        List<ProductEntity> found = productJpaRepository.findByIdsWithVariants(List.of(id));
+        if (found.isEmpty()) {
+            throw new NotFoundException("Product not found: " + id);
+        }
+        ProductEntity entity = found.get(0);
+        byte[] json = writeExportJson(List.of(toExportRequest(entity)));
+        return new ProductExportFile("product-" + entity.getSku() + ".json", json);
+    }
+
+    /** Filename + JSON bytes for a single-product export download. */
+    public record ProductExportFile(String filename, byte[] content) {}
+
+    private static byte[] writeExportJson(List<UpsertProductRequest> out) {
         try {
             return EXPORT_MAPPER.writeValueAsBytes(out);
         } catch (IOException e) {
@@ -819,11 +915,7 @@ public class ProductImportService {
                     .optionName(o.getOptionName()).optionValue(o.getOptionValue()).build()).toList());
         }
         if (notEmpty(v.getGallery())) {
-            vr.setGallery(v.getGallery().stream().map(g -> GalleryImageRequest.builder()
-                    .mediaType(g.getMediaType()).videoUrl(g.getVideoUrl()).videoProvider(g.getVideoProvider())
-                    .url(g.getImageUrl()).alt(g.getImageAlt())
-                    .width(g.getImageWidth()).height(g.getImageHeight()).mimeType(g.getImageMimeType())
-                    .sortOrder(g.getSortOrder()).build()).toList());
+            vr.setGallery(mapVariantGallery(v.getGallery()));
         }
         return vr;
     }

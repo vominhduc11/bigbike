@@ -32,6 +32,17 @@ public interface ProductVariantJpaRepository extends JpaRepository<ProductVarian
      */
     Optional<ProductVariantEntity> findBySkuIgnoreCase(String sku);
 
+    /**
+     * Eager-fetches {@code gallery} (LAZY by default) for a batch of variant ids. Used by the
+     * bulk product importer to read an existing variant's stored image/gallery before
+     * overwriting the file's request with it (owner decision: import UPDATE never replaces
+     * media) — {@code ProductImportService.commitImport} is deliberately not
+     * {@code @Transactional}, so a plain lazy `getGallery()` on an entity fetched earlier would
+     * throw once the row's own short-lived transaction has closed.
+     */
+    @Query("SELECT DISTINCT v FROM ProductVariantEntity v LEFT JOIN FETCH v.gallery WHERE v.id IN :ids")
+    List<ProductVariantEntity> findByIdsWithGallery(@Param("ids") Collection<String> ids);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT v FROM ProductVariantEntity v JOIN FETCH v.product WHERE v.id = :id")
     Optional<ProductVariantEntity> findByIdForUpdate(@Param("id") String id);

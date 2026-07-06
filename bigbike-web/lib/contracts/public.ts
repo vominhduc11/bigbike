@@ -202,7 +202,7 @@ export type DescriptionBlock =
   | {
       type: "suitability";
       title?: string;
-      cards?: Array<{ audience?: string; advice?: string; linkLabel?: string; linkUrl?: string }>;
+      cards?: Array<{ audience?: string; advice?: string }>;
       html?: string;
     }
   // Bảng size (V246) — HTML tự do (thường là bảng) nhúng trong mô tả.

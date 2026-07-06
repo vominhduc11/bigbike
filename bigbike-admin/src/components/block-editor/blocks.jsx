@@ -10,7 +10,7 @@ import { RichTextEditor } from '../RichTextEditor'
 import { RichTextEditorWithSource } from '../RichTextEditorWithSource'
 import { generateId } from '@/lib/utils'
 import { parseSizeGuide, serializeSizeGuide, mergeSizeGuideIntoHtml } from '../../lib/sizeChart'
-import { parseSuitabilityCards, mergeSuitabilityIntoHtml, emptySuitabilityCard } from '../../lib/suitabilityCards'
+import { parseSuitabilityCards, mergeSuitabilityIntoHtml, emptySuitabilityCard, suitabilityCardHasContent } from '../../lib/suitabilityCards'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
 import AiHtmlBrief from '../AiHtmlBrief'
 import { SortableList, DragHandle } from '../Sortable'
@@ -471,7 +471,7 @@ export function SuitabilityBlockEditor({ block, onChange, disabled }) {
   function addCard() { commit([...cards, emptySuitabilityCard()]) }
   async function removeCard(i) {
     const card = cards[i]
-    const hasContent = Boolean((card?.audience || card?.advice || card?.linkLabel || card?.linkUrl || '').trim())
+    const hasContent = suitabilityCardHasContent(card)
     if (hasContent) {
       const confirmed = await showConfirm(t('products.detail.blocks.removeConfirmMessage'), t('products.detail.blocks.removeConfirmTitle'))
       if (!confirmed) return
@@ -527,24 +527,6 @@ export function SuitabilityBlockEditor({ block, onChange, disabled }) {
                 disabled={disabled}
                 maxLength={2000}
               />
-              <div className="flex gap-2">
-                <Input
-                  className="flex-1"
-                  placeholder={t('products.detail.blocks.suitabilityLinkLabelPlaceholder')}
-                  value={card.linkLabel || ''}
-                  onChange={(e) => updateCard(i, { linkLabel: e.target.value })}
-                  disabled={disabled}
-                  maxLength={500}
-                />
-                <Input
-                  className="flex-1"
-                  placeholder={t('products.detail.blocks.suitabilityLinkUrlPlaceholder')}
-                  value={card.linkUrl || ''}
-                  onChange={(e) => updateCard(i, { linkUrl: e.target.value })}
-                  disabled={disabled}
-                  maxLength={2000}
-                />
-              </div>
             </div>
           ))}
           <Button variant="outline" size="sm" onClick={addCard} disabled={disabled} className="self-start">

@@ -9,7 +9,7 @@ Chỉ còn **1 file duy nhất**: `mau-day-du.json`. Mỗi object trong mảng =
 ## ⛔ 5 quy tắc BẮT BUỘC (sai là hỏng)
 
 1. **`sku` và `categoryId` là bắt buộc ở mọi object.** `categoryId` là **slug danh mục** (ví dụ `mu-bao-hiem`), `brandId` là **slug thương hiệu** (ví dụ `ls2`) — **KHÔNG** phải mã nội bộ dạng `cat_...`/`brand_...`. Khi **tạo mới** phải có thêm `name` (tiếng Việt) và `translations.en.name` (tiếng Anh) — thiếu tên tiếng Anh sẽ báo lỗi dòng đó.
-2. **Mọi ảnh phải nằm trong kho ảnh của shop (MinIO).** Dùng đường dẫn `/media/...` **hoặc** URL đầy đủ `https://media.bigbike.vn/bigbike-media/...`. **KHÔNG** dán ảnh từ host ngoài (Google Drive, Imgur, CDN bên thứ ba, link `bigbike.vn/wp-content/...` cũ) — sẽ bị loại và sản phẩm mất ảnh. Chưa có ảnh trong kho → **để trống**, bổ sung sau trong trang quản trị.
+2. **Mọi ảnh phải nằm trong kho ảnh của shop (MinIO).** Dùng đường dẫn `/media/...` **hoặc** URL đầy đủ `https://media.bigbike.vn/bigbike-media/...`. **KHÔNG** dán ảnh từ host ngoài (Google Drive, Imgur, CDN bên thứ ba, link `bigbike.vn/wp-content/...` cũ) — sẽ bị loại và sản phẩm mất ảnh. Chưa có ảnh trong kho → **để trống**, bổ sung sau trong trang quản trị. **Chỉ áp dụng khi tạo sản phẩm mới** — nạp lại file cho sản phẩm **đã có sẵn** thì `image`/`gallery`/`videos`/ảnh biến thể trong file **bị bỏ qua hoàn toàn**, ảnh/video cũ trên hệ thống luôn được giữ nguyên (xem mục "Cập nhật sản phẩm đã có").
 3. **JSON KHÔNG được có khoá lạ.** Chỉ dùng đúng các khoá liệt kê bên dưới. Thừa 1 khoá (kể cả khoá ghi chú `_comment`) → **cả file bị từ chối**. Muốn ghi chú thì ghi ở file hướng dẫn này, không ghi trong file JSON.
 4. **KHÔNG để chữ nháp lọt ra khách:** bỏ hết `[Cần ảnh: ...]`, `[gắn link]`, `[Bigbike kiểm tra bổ sung]`. Link sản phẩm khác phải là URL thật hoặc bỏ.
 5. **URL (canonical, link nội dung) dùng tên miền thật** (`bigbike.vn`), **không** dùng địa chỉ máy chủ thử nghiệm (`http://103.x.x.x:...`).
@@ -31,10 +31,11 @@ Mỗi sản phẩm dùng các khoá sau. **Khoá nào không có nội dung thì
 | `categoryId` | chuỗi | **BẮT BUỘC.** slug danh mục (ví dụ `mu-bao-hiem`). |
 | `brandId` | chuỗi | slug thương hiệu (ví dụ `ls2`). |
 | `gender` | chuỗi | `Nam` / `Nữ` / `Unisex`, hoặc bỏ. |
+| `originBrandCountry` | chuỗi | Xuất xứ thương hiệu (ví dụ `Trung Quốc`) — hiển thị ở ô "Thương hiệu (nước)" trên trang quản trị. Song ngữ: tiếng Việt ở khoá này, tiếng Anh ở `translations.en.originBrandCountry` (ví dụ `China`). Tối đa 120 ký tự, tuỳ chọn. |
 | `retailPrice` | số | Giá bán lẻ (VNĐ, số nguyên, **không** dấu phẩy/chấm ngăn cách). |
 | `salePrice` | số | Giá khuyến mãi (tuỳ chọn). |
-| `image` | obj | Ảnh đại diện: `{ "url": "...", "alt": "..." }`. |
-| `gallery` | mảng | Thư viện ảnh: `[ { "url": "...", "alt": "...", "sortOrder": 0 } ]`. |
+| `image` | obj | Ảnh đại diện: `{ "url": "...", "alt": "..." }`. **Chỉ dùng khi tạo mới** — sản phẩm đã có sẵn thì bỏ qua, ảnh cũ luôn giữ nguyên. |
+| `gallery` | mảng | Thư viện ảnh: `[ { "url": "...", "alt": "...", "sortOrder": 0 } ]`. **Chỉ dùng khi tạo mới** — sản phẩm đã có sẵn thì bỏ qua, giữ nguyên. |
 | `shortDescription` | chuỗi | Mô tả ngắn (HTML đơn giản). |
 | `specificationsHtml` | chuỗi | Bảng thông số kỹ thuật (HTML thô). |
 | `seo` | obj | `{ "title": "...", "description": "...", "canonicalUrl": "https://bigbike.vn/product/..." }`. |
@@ -51,6 +52,7 @@ Mỗi biến thể:
   "imageUrl": "/media/...", "imageAlt": "..." }
 ```
 - `sku` **bắt buộc, duy nhất** cho mỗi biến thể. Hệ thống đối chiếu biến thể **theo SKU** khi cập nhật → giữ lịch sử tồn kho, không xoá nhầm.
+- `imageUrl`/`imageAlt`/`gallery` của biến thể: nếu SKU khớp với biến thể **đã có sẵn**, ảnh trong file bị bỏ qua — ảnh cũ giữ nguyên. Chỉ áp dụng cho biến thể **hoàn toàn mới** (SKU chưa từng có).
 - `options`: mỗi thuộc tính một cặp `optionName`/`optionValue` (ví dụ `{ "optionName": "Màu", "optionValue": "Đen" }`, `{ "optionName": "Size", "optionValue": "L" }`). Tên biến thể tự sinh từ options — không nhập tay.
 
 ### Tiếng Anh — `translations`
@@ -59,7 +61,7 @@ Mỗi biến thể:
   "name": "...", "shortDescription": "...", "specificationsHtml": "...",
   "seoTitle": "...", "seoDescription": "..." } }
 ```
-`translations.en.name` **nên có** (bắt buộc khi tạo mới). Các trường EN khác tuỳ chọn.
+`translations.en.name` **nên có** (bắt buộc khi tạo mới). Các trường EN khác tuỳ chọn, gồm cả `originBrandCountry` (bản tiếng Anh của xuất xứ thương hiệu).
 
 ---
 
@@ -67,6 +69,8 @@ Mỗi biến thể:
 
 ### Quick Answer — `quickAnswerSummary`
 Chuỗi thường (không HTML), **40–60 từ**, tối đa 600 ký tự. Tóm tắt sản phẩm là gì / cho ai / giá.
+
+⚠️ **Đây LÀ khoá riêng ở cấp cao nhất của sản phẩm** (ngang hàng `sku`, `descriptionBlocks`...) — **KHÔNG** viết nội dung "trả lời nhanh" thành một khối `paragraph` bên trong `descriptionBlocks`. Nếu nhét vào `descriptionBlocks`, hệ thống sẽ hiểu đó là một đoạn mô tả bình thường, ô Quick Answer thật sẽ trống và nội dung bị lặp/lẫn vào Mô tả chi tiết.
 
 ### Ô số liệu nổi bật — `specStats` (**tối đa 4**)
 Mỗi ô: `{ "value": "~35h", "label": "Pin nghe nhạc", "valueEn": "~35h", "labelEn": "Music battery", "sortOrder": 1 }`
@@ -89,7 +93,7 @@ Mỗi mục: `{ "question": "...?", "answer": "<p>Câu trả lời, cho phép HT
 
 ### Video (mục riêng) — `videos` (tối đa 20)
 Mỗi mục: `{ "url": "https://www.youtube.com/watch?v=XXXXXXXXXXX", "provider": "youtube", "title": "...", "description": "...", "sortOrder": 1 }`
-`provider` chỉ nhận: **`youtube` · `tiktok` · `facebook` · `upload`** (nền tảng khác bị cấm). Link phải **đầy đủ** (không dùng link rút gọn `youtu.be`/`vt.tiktok.com`/`fb.watch`). `upload` = video đã ở trong kho (`/media/...`). Không có video → **bỏ khoá `videos`**.
+`provider` chỉ nhận: **`youtube` · `tiktok` · `facebook` · `upload`** (nền tảng khác bị cấm). Link phải **đầy đủ** (không dùng link rút gọn `youtu.be`/`vt.tiktok.com`/`fb.watch`). `upload` = video đã ở trong kho (`/media/...`). Không có video → **bỏ khoá `videos`**. **Chỉ dùng khi tạo mới** — sản phẩm đã có sẵn thì bỏ qua, video cũ luôn giữ nguyên (sửa video phải làm trực tiếp trong trang quản trị).
 
 ### Mô tả chi tiết — `descriptionBlocks` / `descriptionBlocksEn`
 Mảng các khối. Các loại khối dùng cho sản phẩm:
@@ -111,7 +115,8 @@ Muốn sửa/bổ sung cho sản phẩm **đã đăng bán** (thêm FAQ, sửa m
 
 - Vẫn phải có `sku` (khớp đúng sản phẩm đã tồn tại) và `categoryId` (điền đúng slug danh mục hiện tại, kể cả khi không đổi danh mục).
 - Khoá **không đưa vào file** → dữ liệu hiện có của khoá đó **giữ nguyên, không đổi, không mất**. Đây là lý do luôn nhắc "khoá nào không có nội dung thì bỏ hẳn khoá đó".
-- Khoá **có đưa vào** trong số `specStats`, `trustBadges`, `commitments`, `positiveNotes`, `negativeNotes`, `faqs`, `videos`, `gallery`, `variants` → **thay thế toàn bộ danh sách cũ bằng danh sách mới**, không cộng dồn. Muốn giữ mục cũ + thêm mục mới → phải liệt kê lại **đầy đủ cả cũ lẫn mới** trong cùng mảng đó.
+- **Ảnh và video luôn giữ nguyên dữ liệu cũ, bất kể file ghi gì** — `image` (ảnh đại diện), `gallery` (bộ sưu tập ảnh, kể cả ảnh gắn trong đó), `videos` (video sản phẩm), và ảnh/gallery riêng của **từng biến thể đã có sẵn** (`variants[].imageUrl`, `variants[].imageAlt`, `variants[].gallery`). Muốn đổi ảnh/video của sản phẩm đã đăng bán, phải sửa trực tiếp trong trang quản trị — nạp file **không** dùng để thay ảnh/video của sản phẩm cũ. (Biến thể **mới thêm** trong cùng lần nạp — không khớp SKU nào đã có — vẫn lấy ảnh từ file bình thường, vì biến thể đó chưa có ảnh cũ để giữ.)
+- Khoá **có đưa vào** trong số `specStats`, `trustBadges`, `commitments`, `positiveNotes`, `negativeNotes`, `faqs`, `variants` (trừ ảnh/gallery biến thể — xem trên) → **thay thế toàn bộ danh sách cũ bằng danh sách mới**, không cộng dồn. Muốn giữ mục cũ + thêm mục mới → phải liệt kê lại **đầy đủ cả cũ lẫn mới** trong cùng mảng đó.
 - `descriptionBlocks` / `descriptionBlocksEn` cũng thay thế toàn bộ — sửa 1 đoạn vẫn phải dán lại **nguyên mảng khối mô tả đầy đủ** của sản phẩm đó (lấy từ trang quản trị hoặc từ file tải về), không chỉ đoạn muốn sửa.
 
 > Mẹo: bấm **"Tải dữ liệu hiện tại"** trong hộp thoại Nhập để tải về file JSON **đầy đủ** của toàn bộ sản phẩm hiện có — sửa trực tiếp trên đó rồi nạp lại là an toàn nhất (đúng cấu trúc, không sót khoá).
@@ -126,12 +131,15 @@ Bạn tạo dữ liệu nhập sản phẩm cho cửa hàng BigBike theo ĐÚNG 
 một mảng JSON duy nhất, gồm:
 
 - Hàng hoá: sku, slug, name, categoryId (slug danh mục), brandId (slug thương hiệu),
-  gender, retailPrice, salePrice, image, gallery, shortDescription, specificationsHtml,
-  seo, và variants nếu có màu/size.
-- Tiếng Anh: translations.en (ít nhất name).
-- Nội dung: descriptionBlocks, quickAnswerSummary, specStats (tối đa 4), trustBadges,
-  commitments (icon đúng trong 12 key cho phép), positiveNotes, negativeNotes, faqs,
-  và sizeGuide (khối trong descriptionBlocks) nếu là đồ mặc/mũ.
+  gender, originBrandCountry (xuất xứ thương hiệu, vd "Trung Quốc"), retailPrice,
+  salePrice, image, gallery, shortDescription, specificationsHtml, seo, và variants
+  nếu có màu/size.
+- Tiếng Anh: translations.en (ít nhất name; nên có cả originBrandCountry bản tiếng Anh,
+  vd "China").
+- Nội dung: descriptionBlocks, quickAnswerSummary (KHOÁ RIÊNG cấp cao nhất — không viết
+  vào trong descriptionBlocks), specStats (tối đa 4), trustBadges, commitments (icon
+  đúng trong 12 key cho phép), positiveNotes, negativeNotes, faqs, và sizeGuide (khối
+  trong descriptionBlocks) nếu là đồ mặc/mũ.
 
 BẮT BUỘC:
 - Mỗi object có sku + categoryId; categoryId/brandId là SLUG, không phải mã nội bộ.

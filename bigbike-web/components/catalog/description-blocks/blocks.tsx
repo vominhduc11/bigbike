@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Check } from "lucide-react";
 
 import type { DescriptionBlock } from "@/lib/contracts/public";
@@ -216,7 +215,7 @@ function BlockTitle({ text }: { text?: string }) {
   );
 }
 
-/** Khối "Phù hợp với ai" (V246) — danh sách thẻ tư vấn (đối tượng đậm → lời khuyên → link nội bộ).
+/** Khối "Phù hợp với ai" (V246) — danh sách thẻ tư vấn (đối tượng đậm → lời khuyên).
  *  Chế độ "dán HTML": khi block.html non-blank thì render html (sanitize) THAY cho cards. */
 export function SuitabilityBlockView({ block }: { block: SuitabilityBlockT }) {
   const rawHtml = (block.html ?? "").trim();
@@ -243,25 +242,14 @@ export function SuitabilityBlockView({ block }: { block: SuitabilityBlockT }) {
         {cards.map((card, index) => {
           const audience = (card.audience ?? "").trim();
           const advice = (card.advice ?? "").trim();
-          const linkLabel = (card.linkLabel ?? "").trim();
-          const linkUrl = (card.linkUrl ?? "").trim();
-          const hasLink = Boolean(linkLabel && linkUrl);
           return (
             <div
               key={index}
               className="border-l-4 border-l-brand bg-secondary px-4 py-3 text-18 max-md:text-ui-16 leading-relaxed text-muted-foreground"
             >
               {audience && <strong className="font-bold text-foreground">{audience}</strong>}
-              {audience && (advice || hasLink) && <span> → </span>}
+              {audience && advice && <span> → </span>}
               {advice && <span>{advice}</span>}
-              {hasLink && (
-                <>
-                  {advice && " "}
-                  <Link href={linkUrl} className="font-medium text-brand hover:underline">
-                    {linkLabel}
-                  </Link>
-                </>
-              )}
             </div>
           );
         })}

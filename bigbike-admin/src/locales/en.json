@@ -672,13 +672,12 @@
       },
       "specStats": {
         "empty": "No stat boxes yet. Click \"+ Add box\" to start.",
-        "hint": "Up to 4 highlight stat boxes right under the buy area — the closing argument that the price is worth it. Each box has 3 lines: the main figure (large, accent color) · a unit/note (gray, optional) · the metric name (uppercase). E.g. 1,350 / grams / WEIGHT, or ECE / 22.06 / SAFETY STANDARD. Do NOT repeat technical specs here. Max 4; leave empty to hide the block.",
-        "valuePlaceholder": "Main figure (e.g. 1,350) *",
-        "unitPlaceholder": "Unit / note (e.g. grams) — optional",
+        "hint": "Up to 4 highlight stat boxes right under the buy area — the closing argument that the price is worth it. Each box has 2 lines: the main figure (large, accent color) · the metric name (uppercase). E.g. 1,350 grams / WEIGHT, or ECE 22.06 / SAFETY STANDARD. Do NOT repeat technical specs here. Max 4; leave empty to hide the block.",
+        "valuePlaceholder": "Main figure (e.g. 1,350 grams) *",
         "labelPlaceholder": "Metric name (e.g. Weight) *",
         "removeRow": "Remove box",
         "addRow": "Add box",
-        "aiBriefPrompt": "Generate HTML for the \"Highlight Stat Boxes\" block on a BigBike product detail page. Hard requirements:\n- Return plain HTML with inline CSS only (style=\"...\" attribute). NO <script>, NO <style> tag, no ids.\n- The outer wrapper MUST have class=\"bb-specstats\" (required for the system to parse it — the only class allowed).\n- Grid container: <div class=\"bb-specstats\" style=\"display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;border:1px solid #e5e7eb;background:#e5e7eb\">\n- Each box: <div style=\"display:flex;flex-direction:column;align-items:center;gap:4px;background:#ffffff;padding:24px 16px;text-align:center\">\n- Each box must contain exactly these spans in order:\n  1. Main figure: <span style=\"font-weight:700;font-size:24px;line-height:1;text-transform:uppercase;color:#cc0906\">1,350</span>\n  2. Unit (optional — OMIT this span if there is no unit): <span style=\"font-size:13px;font-weight:500;line-height:1.2;color:#6b7280\">grams</span>\n  3. Metric name: <span style=\"font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#6b7280;opacity:0.72\">Weight</span>\n- Maximum 4 boxes. NO dark backgrounds, box-shadow, or gradients.\n\nBox content (replace with actual product figures):\n[Box 1: figure / unit / metric name]\n[Box 2: ...]\n..."
+        "aiBriefPrompt": "Generate HTML for the \"Highlight Stat Boxes\" block on a BigBike product detail page. Hard requirements:\n- Return plain HTML with inline CSS only (style=\"...\" attribute). NO <script>, NO <style> tag, no ids.\n- The outer wrapper MUST have class=\"bb-specstats\" (required for the system to parse it — the only class allowed).\n- Grid container: <div class=\"bb-specstats\" style=\"display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;border:1px solid #e5e7eb;background:#e5e7eb\">\n- Each box: <div style=\"display:flex;flex-direction:column;align-items:center;gap:4px;background:#ffffff;padding:24px 16px;text-align:center\">\n- Each box must contain exactly these spans in order:\n  1. Main figure: <span style=\"font-weight:700;font-size:24px;line-height:1;text-transform:uppercase;color:#cc0906\">1,350 grams</span>\n  2. Metric name: <span style=\"font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#6b7280;opacity:0.72\">Weight</span>\n- Maximum 4 boxes. NO dark backgrounds, box-shadow, or gradients.\n\nBox content (replace with actual product figures):\n[Box 1: figure / metric name]\n[Box 2: ...]\n..."
       },
       "faqs": {
         "empty": "No questions yet. Click \"+ Add question\" to start.",
@@ -766,8 +765,6 @@
         "sectionTitlePlaceholder": "Block title (optional)",
         "suitabilityAudiencePlaceholder": "Audience (e.g. Long-distance touring, Budget 5–8M…)",
         "suitabilityAdvicePlaceholder": "Advice (one line: if… then…)",
-        "suitabilityLinkLabelPlaceholder": "Suggested link label (optional)",
-        "suitabilityLinkUrlPlaceholder": "Internal path (e.g. /san-pham/abc)",
         "suitabilityAddCard": "Add card",
         "moveUp": "Move up",
         "moveDown": "Move down",
@@ -950,6 +947,7 @@
       "specCount_other": "{{count}} specs",
       "variantSectionTitle": "Product variants",
       "variantSectionDescription": "Sizes, colors, and other options",
+      "exportJson": "Export JSON",
       "saveDraftTitle": "Save as draft state",
       "saveDraft": "Save draft",
       "saveDraftDisabledPublished": "Product is published — hide it first before saving as draft",

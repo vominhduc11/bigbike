@@ -3,8 +3,8 @@
  * để tab "Dán mã HTML" của khối luôn hiển thị sẵn mã tương ứng với các thẻ (giống Bảng size),
  * và để chuyển qua lại 2 chế độ không mất nội dung.
  *
- * Mỗi thẻ: { audience, advice, linkLabel, linkUrl }. HTML xuất ra phản chiếu đúng cách web
- * render thẻ: <strong>đối tượng</strong> → lời khuyên <a href=...>nhãn link</a>.
+ * Mỗi thẻ: { audience, advice }. HTML xuất ra phản chiếu đúng cách web render thẻ:
+ * <strong>đối tượng</strong> → lời khuyên.
  *
  * LƯU Ý nguồn sự thật: chế độ có cấu trúc vẫn ghi `cards`, `html` để trống → web render thẻ.
  * HTML sinh ra ở đây chỉ để HIỂN THỊ trong admin; chỉ khi admin tự sửa khác đi thì `html` mới
@@ -12,7 +12,7 @@
  */
 
 export function emptySuitabilityCard() {
-  return { audience: '', advice: '', linkLabel: '', linkUrl: '' }
+  return { audience: '', advice: '' }
 }
 
 function escapeHtml(s) {
@@ -27,16 +27,17 @@ function normalizeCard(c) {
   return {
     audience: (c?.audience || '').trim(),
     advice: (c?.advice || '').trim(),
-    linkLabel: (c?.linkLabel || '').trim(),
-    linkUrl: (c?.linkUrl || '').trim(),
   }
 }
 
-const hasContent = (c) => c.audience || c.advice || (c.linkLabel && c.linkUrl)
+/** Thẻ có nội dung không (dùng để lọc thẻ rỗng khi serialize/parse, và khi admin xoá thẻ/dọn payload). */
+export function suitabilityCardHasContent(c) {
+  return Boolean(((c?.audience || '') + (c?.advice || '')).trim())
+}
 
 /** cards[] → HTML (rỗng nếu không thẻ nào có nội dung). */
 export function serializeSuitabilityCards(cards) {
-  const items = (cards || []).map(normalizeCard).filter(hasContent)
+  const items = (cards || []).map(normalizeCard).filter((c) => suitabilityCardHasContent(c))
   if (items.length === 0) return ''
   const lis = items.map((c) => `<li>${cardInnerHtml(c)}</li>`)
   return `<ul class="suitability-list">${lis.join('')}</ul>`
@@ -44,12 +45,10 @@ export function serializeSuitabilityCards(cards) {
 
 /** Dựng nội dung BÊN TRONG một thẻ từ card (giữ phần tử thẻ ngoài + style/class của nó). */
 function cardInnerHtml(c) {
-  const hasLink = Boolean(c.linkLabel && c.linkUrl)
   let inner = ''
   if (c.audience) inner += `<strong>${escapeHtml(c.audience)}</strong>`
-  if (c.audience && (c.advice || hasLink)) inner += ' → '
+  if (c.audience && c.advice) inner += ' → '
   if (c.advice) inner += escapeHtml(c.advice)
-  if (hasLink) inner += `${c.advice ? ' ' : ''}<a href="${escapeHtml(c.linkUrl)}">${escapeHtml(c.linkLabel)}</a>`
   return inner
 }
 
@@ -60,7 +59,7 @@ function cardInnerHtml(c) {
  * HTML trống / không có <li>|<p> để map → sinh mặc định serializeSuitabilityCards.
  */
 export function mergeSuitabilityIntoHtml(cards, existingHtml) {
-  const model = (cards || []).map(normalizeCard).filter(hasContent)
+  const model = (cards || []).map(normalizeCard).filter((c) => suitabilityCardHasContent(c))
   const fresh = serializeSuitabilityCards(model)
   if (!existingHtml || typeof existingHtml !== 'string' || !existingHtml.trim()) return fresh
   if (typeof DOMParser === 'undefined') return fresh
@@ -95,7 +94,7 @@ export function mergeSuitabilityIntoHtml(cards, existingHtml) {
 }
 
 /** HTML → cards[] (best-effort; đọc lại đúng định dạng do serializeSuitabilityCards tạo ra).
- *  Mỗi <li>/<p>: <strong> → đối tượng, <a> → link, phần chữ còn lại (bỏ dấu →) → lời khuyên. */
+ *  Mỗi <li>/<p>: <strong> → đối tượng, phần chữ còn lại (bỏ dấu → và link cũ nếu có) → lời khuyên. */
 export function parseSuitabilityCards(html) {
   if (!html || typeof html !== 'string' || !html.trim()) return []
   if (typeof DOMParser === 'undefined') return []
@@ -106,18 +105,16 @@ export function parseSuitabilityCards(html) {
     return source
       .map((el) => {
         const strongEl = el.querySelector('strong, b')
-        const aEl = el.querySelector('a')
         const clone = el.cloneNode(true)
+        // Bỏ hẳn <a> (link gợi ý cũ nếu HTML còn giữ) để không lẫn vào lời khuyên.
         clone.querySelectorAll('strong, b, a').forEach((n) => n.remove())
         const advice = (clone.textContent || '').replace(/→/g, ' ').replace(/\s+/g, ' ').trim()
         return normalizeCard({
           audience: strongEl?.textContent || '',
           advice,
-          linkLabel: aEl?.textContent || '',
-          linkUrl: aEl?.getAttribute('href') || '',
         })
       })
-      .filter(hasContent)
+      .filter((c) => suitabilityCardHasContent(c))
   } catch {
     return []
   }

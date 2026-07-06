@@ -481,6 +481,10 @@ export async function exportProductImportTemplate() {
   return fetchCsvBlob('/admin/products/import/export', {}, 'bigbike-products.json', 'application/json')
 }
 
+export async function exportProductJson(productId) {
+  return fetchCsvBlob(`/admin/products/import/export/${productId}`, {}, `product-${productId}.json`, 'application/json')
+}
+
 export async function fetchCategories(query) {
   try {
     const payload = await requestJson('/admin/categories', { query: buildCategoryQuery(query) })

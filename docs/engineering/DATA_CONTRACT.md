@@ -396,16 +396,22 @@ on read, raw English trong `translations.en`, detail-only, presence-flag on PATC
 |---|---|---|---|
 | `specStatsHtml` | `spec_stats_html` + `spec_stats_html_en` (`V256`) | `TEXT`, max 50 000 | Khi non-blank, web **render HTML này** (qua `sanitizeRichHtml` với `allowInlineStyles`) THAY cho lưới `specStats` có cấu trúc; rỗng → lưới ô số liệu có cấu trúc (`product_spec_stats`) làm lưới an toàn legacy. |
 
-**Admin UX (không đổi contract):** khối có 2 tab — nhập "có cấu trúc" (mỗi ô tối đa 3 dòng: **value**
-số liệu chính + **unit** đơn vị/chú thích TÙY CHỌN + **label** tên chỉ tiêu, tối đa 4 ô) HOẶC
-"dán HTML"; cả 2 cùng ghi vào `specStatsHtml`. Tab cấu trúc là công cụ nhập: sửa được GHÉP vào HTML
-hiện có (giữ style/markup, chỉ đổi chữ — helper `lib/specStatsBlock.js`, lưới sinh ra có class
-`bb-specstats` + inline-style tự chứa mô phỏng `FeaturedSpecsBar`). Mỗi ô mã hoá theo **số span**: 2
-span = `[value, label]` (không đơn vị — gồm cả HTML legacy chỉ-2-dòng), 3 span = `[value, unit, label]`;
-`value` luôn span đầu, `label` luôn span cuối → parse không nhập nhằng, sản phẩm cũ 2 dòng vẫn đọc đúng.
-Lưu ý: dòng `unit` chỉ nằm TRONG `specStatsHtml`; mảng `specStats` có cấu trúc (`product_spec_stats`,
-fallback legacy) vẫn chỉ `{value, label}` — đúng mô hình "HTML là nguồn". HTML→cấu trúc parse lấy chữ (bỏ
-CSS). Nạp sản phẩm cũ chưa có `spec_stats_html` → admin sinh HTML từ lưới `specStats`. Status:
+**Admin UX (không đổi contract):** khối có 2 tab — nhập "có cấu trúc" (mỗi ô 2 dòng: **value**
+số liệu chính + **label** tên chỉ tiêu, tối đa 4 ô) HOẶC "dán HTML"; cả 2 cùng ghi vào
+`specStatsHtml`. Tab cấu trúc là công cụ nhập: sửa được GHÉP vào HTML hiện có (giữ style/markup,
+chỉ đổi chữ — helper `lib/specStatsBlock.js`, lưới sinh ra có class `bb-specstats` + inline-style
+tự chứa mô phỏng `FeaturedSpecsBar`). Mỗi ô mã hoá cố định **2 span**: `[value, label]`; `value`
+luôn span đầu, `label` luôn span cuối → parse không nhập nhằng. Mảng `specStats` có cấu trúc
+(`product_spec_stats`, fallback legacy) vẫn chỉ `{value, label}` — đúng mô hình "HTML là nguồn".
+HTML→cấu trúc parse lấy chữ (bỏ CSS). Nạp sản phẩm cũ chưa có `spec_stats_html` → admin sinh HTML
+từ lưới `specStats`.
+
+**Đã bỏ (owner decision 2026-07-06):** dòng thứ 3 tuỳ chọn **unit** (đơn vị/chú thích, vd "gram")
+từng cho phép mã hoá ô thành 3 span `[value, unit, label]`. Admin không còn ô nhập này; parser vẫn
+đọc an toàn dữ liệu cũ (bỏ qua mọi span ở giữa, chỉ lấy span đầu/cuối). Migration
+`V322__strip_spec_stats_html_unit_span.sql` dọn span đơn vị còn sót trong dữ liệu cũ của
+`spec_stats_html`/`spec_stats_html_en` (không đổi schema — `unit` chưa bao giờ là cột riêng).
+Status:
 `CONFIRMED_FROM_CODE` — `ProductEntity.specStatsHtml`/`specStatsHtmlEn`, `Product.specStatsHtml`,
 `UpsertProductRequest`(+presence)/`ProductTranslationRequest`, `AdminCatalogMutationService` /
 `ProductFieldApplier`, `JpaCatalogReadRepository`/`JpaCatalogReadSupport`, migration
@@ -443,10 +449,10 @@ Eleven block types (8 gốc + 3 khối PDP chuyên biệt V246):
 | `callout` | `variant` (`info`\|`warning`\|`note`), `html` (≤ 10 000 chars) | — |
 | `divider` | — | — |
 | `feature` | — (không field nào bắt buộc riêng lẻ; xem ghi chú dưới) | `url` (≤ 2 000 chars), `side` (`auto`\|`left`\|`right`, mặc định `auto`), `alt` (≤ 500), `caption` (≤ 500), `subheading` (≤ 500), `heading` (≤ 500), `html` (≤ 50 000), `listStyle` (`bulleted`\|`numbered`), `items` (≤ 200 strings, each ≤ 2 000 chars) |
-| `suitability` (V246) | — | `title` (≤ 500), `html` (≤ 20 000; **nguồn render web**, cho phép `<table>` + CSS inline). `cards` chỉ là lưới an toàn legacy — payload mới CHỈ gửi `html` (xem dưới) |
+| `suitability` (V246) | — | `title` (≤ 500), `html` (≤ 20 000; **nguồn render web**, cho phép `<table>` + CSS inline). `cards` chỉ là lưới an toàn legacy — payload mới CHỈ gửi `html` (xem dưới). Mỗi card: `audience`/`advice` — `linkLabel`/`linkUrl` (link gợi ý nội bộ) đã **GỠ khỏi UI + schema** (owner decision 2026-07-06); `V321` dọn sạch 2 key này khỏi `cards` cũ trong DB, `@JsonIgnoreProperties(ignoreUnknown = true)` vẫn đọc an toàn nếu còn sót |
 | `sizeGuide` (V246) | — | `title` (≤ 500), `html` (≤ 20 000; **nguồn render web**, cho phép thẻ `<table>` + CSS inline) |
 
-**2 khối PDP chuyên biệt (V246) — chỉ dùng cho SẢN PHẨM:** `suitability` (Phù hợp với ai), `sizeGuide` (Bảng size). Bản EN nằm ở khối tương ứng trong `description_blocks_en` (theo vị trí). **Mô hình mới (cập nhật):** `html` là **nguồn render DUY NHẤT** của cả 2 khối trên web. Cả 2 hỗ trợ 2 tab nhập ở admin — "có cấu trúc" HOẶC "dán HTML" — **cùng ghi vào field `html`**. Tab cấu trúc chỉ là công cụ nhập: thao tác (`sizeGuide`: cột/dòng/ghi chú; `suitability`: thẻ đối tượng/lời khuyên/link) được **GHÉP vào `html` hiện có, giữ nguyên CSS/markup, chỉ đổi chữ** (helpers `lib/sizeChart.js`, `lib/suitabilityCards.js`). Chuyển HTML→cấu trúc thì parse `html` lấy chữ (bỏ CSS); thêm dòng/thẻ nhân bản phần tử cuối (kế thừa CSS). **Payload chỉ gửi `html`** cho 2 khối này (suitability bỏ `cards` khỏi payload — `cleanDescriptionBlocks`); `cards` chỉ còn là lưới an toàn legacy khi `html` rỗng (admin sinh `html` từ `cards` lúc nạp để không mất nội dung). HTML thô được sanitize ở web (`sanitizeRichHtml` với `allowInlineStyles` → **giữ `style` inline**, vẫn chặn script/onclick/javascript:); admin preview dùng `sanitizeHtml` đã mở `style`. **Ưu/Nhược điểm (`prosCons`) ĐÃ TÁCH RA khỏi mô tả (V251)** — quay lại là khối RIÊNG cố định ngay dưới mô tả, ngoài tab; nguồn dữ liệu là bảng con `product_highlights` (xem §Ưu điểm/Nhược điểm), KHÔNG còn là khối trong `description_blocks`. Subtype `ProsConsBlock` vẫn còn trong sealed interface (dormant, để deserialize an toàn dữ liệu cũ); migration `V251` gỡ mọi khối `prosCons` còn sót trong `description_blocks`/`_en`.
+**2 khối PDP chuyên biệt (V246) — chỉ dùng cho SẢN PHẨM:** `suitability` (Phù hợp với ai), `sizeGuide` (Bảng size). Bản EN nằm ở khối tương ứng trong `description_blocks_en` (theo vị trí). **Mô hình mới (cập nhật):** `html` là **nguồn render DUY NHẤT** của cả 2 khối trên web. Cả 2 hỗ trợ 2 tab nhập ở admin — "có cấu trúc" HOẶC "dán HTML" — **cùng ghi vào field `html`**. Tab cấu trúc chỉ là công cụ nhập: thao tác (`sizeGuide`: cột/dòng/ghi chú; `suitability`: thẻ đối tượng/lời khuyên) được **GHÉP vào `html` hiện có, giữ nguyên CSS/markup, chỉ đổi chữ** (helpers `lib/sizeChart.js`, `lib/suitabilityCards.js`). Chuyển HTML→cấu trúc thì parse `html` lấy chữ (bỏ CSS); thêm dòng/thẻ nhân bản phần tử cuối (kế thừa CSS). **Payload chỉ gửi `html`** cho 2 khối này (suitability bỏ `cards` khỏi payload — `cleanDescriptionBlocks`); `cards` chỉ còn là lưới an toàn legacy khi `html` rỗng (admin sinh `html` từ `cards` lúc nạp để không mất nội dung). HTML thô được sanitize ở web (`sanitizeRichHtml` với `allowInlineStyles` → **giữ `style` inline**, vẫn chặn script/onclick/javascript:); admin preview dùng `sanitizeHtml` đã mở `style`. **Ưu/Nhược điểm (`prosCons`) ĐÃ TÁCH RA khỏi mô tả (V251)** — quay lại là khối RIÊNG cố định ngay dưới mô tả, ngoài tab; nguồn dữ liệu là bảng con `product_highlights` (xem §Ưu điểm/Nhược điểm), KHÔNG còn là khối trong `description_blocks`. Subtype `ProsConsBlock` vẫn còn trong sealed interface (dormant, để deserialize an toàn dữ liệu cũ); migration `V251` gỡ mọi khối `prosCons` còn sót trong `description_blocks`/`_en`.
 
 **`feature` — hàng ảnh + chữ 2 cột (thêm sau V139, code-only):** Gói chung 1 ảnh + tiêu đề phụ (`subheading`, eyebrow) + tiêu đề chính (`heading`) + đoạn mô tả (`html`) + danh sách vào MỘT khối, render thành khối 2 cột ảnh–chữ trên web (chỉ desktop; mobile xếp dọc). `side`=`auto`/null → các khối `feature` liên tiếp tự xen kẽ trái/phải (so le); `left`/`right` ép vị trí ảnh. **Không field nào bắt buộc riêng lẻ** — admin có thể lưu khối chỉ có ảnh, chỉ có chữ, hoặc cả hai; khối chỉ bị coi là rỗng và bị lọc bỏ trước khi gửi khi CẢ ảnh lẫn mọi phần chữ đều trống (`cleanDescriptionBlocks` ở admin). Web tự chọn layout theo dữ liệu thực có (`featureHasImage`/`featureHasText` ở `description-blocks/grouping.ts`): đủ ảnh+chữ → 2 cột; chỉ chữ hoặc chỉ ảnh → full width, không chừa nửa cột trống. **Khối này thay thế cơ chế "ghép ngầm" cũ** (web từng tự gom một khối `image`/`video` + cụm `text` liền sau thành hàng 2 cột) — cơ chế ghép ngầm đã được GỠ BỎ; muốn 2 cột phải dùng khối `feature`.
 

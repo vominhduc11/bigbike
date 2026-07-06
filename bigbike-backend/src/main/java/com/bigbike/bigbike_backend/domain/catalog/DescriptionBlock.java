@@ -219,7 +219,7 @@ public sealed interface DescriptionBlock
     }
 
     /**
-     * { type: "suitability", title?: string, cards: [{ audience, advice, linkLabel?, linkUrl? }], html?: string }
+     * { type: "suitability", title?: string, cards: [{ audience, advice }], html?: string }
      *
      * <p>Khối "Phù hợp với ai" (V240) nhúng trong mô tả — danh sách thẻ tư vấn. Bản EN nằm ở khối
      * tương ứng trong {@code descriptionBlocksEn}.
@@ -241,7 +241,7 @@ public sealed interface DescriptionBlock
         @Size(max = 20000, message = "suitability.html must not exceed 20 000 characters.")
         private String html;
 
-        /** Một thẻ tư vấn: đối tượng + lời khuyên + link gợi ý nội bộ tuỳ chọn. */
+        /** Một thẻ tư vấn: đối tượng + lời khuyên. */
         @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
         public static final class SuitabilityCard {
             @Size(max = 500, message = "suitability.card.audience must not exceed 500 characters.")
@@ -249,12 +249,6 @@ public sealed interface DescriptionBlock
 
             @Size(max = 2000, message = "suitability.card.advice must not exceed 2 000 characters.")
             private String advice;
-
-            @Size(max = 500, message = "suitability.card.linkLabel must not exceed 500 characters.")
-            private String linkLabel;
-
-            @Size(max = 2000, message = "suitability.card.linkUrl must not exceed 2 000 characters.")
-            private String linkUrl;
         }
     }
 

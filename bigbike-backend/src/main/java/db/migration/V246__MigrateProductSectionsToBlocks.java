@@ -162,7 +162,7 @@ public class V246__MigrateProductSectionsToBlocks extends BaseJavaMigration {
                 .build();
     }
 
-    /** Dựng khối suitability từ JSON thẻ cũ ({@code [{audience,advice,linkLabel,linkUrl}]}). Null nếu rỗng. */
+    /** Dựng khối suitability từ JSON thẻ cũ ({@code [{audience,advice}]}). Null nếu rỗng. */
     private DescriptionBlock buildSuitability(ObjectMapper mapper, String json) throws Exception {
         if (json == null || json.isBlank() || "null".equals(json.strip())) return null;
         JsonNode root = mapper.readTree(json);
@@ -171,11 +171,9 @@ public class V246__MigrateProductSectionsToBlocks extends BaseJavaMigration {
         for (JsonNode node : root) {
             String audience = text(node, "audience");
             String advice = text(node, "advice");
-            String linkLabel = text(node, "linkLabel");
-            String linkUrl = text(node, "linkUrl");
-            if (audience == null && advice == null && (linkLabel == null || linkUrl == null)) continue;
+            if (audience == null && advice == null) continue;
             cards.add(DescriptionBlock.SuitabilityBlock.SuitabilityCard.builder()
-                    .audience(audience).advice(advice).linkLabel(linkLabel).linkUrl(linkUrl).build());
+                    .audience(audience).advice(advice).build());
         }
         if (cards.isEmpty()) return null;
         return DescriptionBlock.SuitabilityBlock.builder().type("suitability").cards(cards).build();

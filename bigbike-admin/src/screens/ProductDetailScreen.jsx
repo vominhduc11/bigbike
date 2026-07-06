@@ -3,11 +3,12 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
 import {
-  AlertCircle, Check, ChevronDown, Eye, Info, Loader2, Lock, Save, Search as PfSearch, X,
+  AlertCircle, Check, ChevronDown, Download, Eye, Info, Loader2, Lock, Save, Search as PfSearch, X,
 } from 'lucide-react'
 
 import {
   createProduct,
+  exportProductJson,
   fetchBrands,
   fetchCategoryTree,
   fetchProductAssignment,
@@ -153,6 +154,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const [isDirty, setIsDirty] = useState(false)
   const [validationErrors, setValidationErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isExportingJson, setIsExportingJson] = useState(false)
   const slugEditedByUser = useRef(false)
   const enSlugEditedByUser = useRef(false)
   const [originalPublishStatus, setOriginalPublishStatus] = useState(null)
@@ -697,6 +699,19 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         errorEl.scrollIntoView({ block: 'center', behavior: 'smooth' })
       }
     }))
+  }
+
+  async function handleExportJson() {
+    if (!canUpdate || isExportingJson) return
+    setIsExportingJson(true)
+    try {
+      await exportProductJson(productId)
+      toast.success(t('export.success'))
+    } catch {
+      toast.error(t('export.error'))
+    } finally {
+      setIsExportingJson(false)
+    }
   }
 
   async function handleSave(overridePublishStatus) {
@@ -1982,6 +1997,21 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             <Eye size={14} className="mr-1.5" />
             {t('products.detail.preview.open', { defaultValue: 'Xem trước' })}
           </Button>
+
+          {!isCreate && (
+            <Button
+              variant="outline"
+              type="button"
+              disabled={!canUpdate || isExportingJson}
+              onClick={handleExportJson}
+              title={!canUpdate ? t('products.requirePermission') : undefined}
+            >
+              {isExportingJson
+                ? <Loader2 size={14} className="animate-spin mr-1.5" />
+                : <Download size={14} className="mr-1.5" />}
+              {t('products.detail.exportJson', { defaultValue: 'Xuất JSON' })}
+            </Button>
+          )}
 
 
           <Button
