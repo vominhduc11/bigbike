@@ -2326,7 +2326,7 @@
     "trendNoChange": "No change",
     "trendNew": "New",
     "rangeFromTo": "From {{from}} to {{to}}",
-    "kpiGmvHint": "Total value of placed orders in the period (before refunds).",
+    "kpiGmvHint": "Total value of placed orders in the period.",
     "kpiPaidRevenueHint": "Actual cash collected from orders in the period.",
     "kpiOrderCountHint": "Number of orders placed in the period.",
     "kpiAovHint": "Average order value = revenue divided by order count.",

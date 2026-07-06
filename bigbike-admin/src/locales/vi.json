@@ -2326,7 +2326,7 @@
     "trendNoChange": "Không đổi",
     "trendNew": "Mới",
     "rangeFromTo": "Từ {{from}} đến {{to}}",
-    "kpiGmvHint": "Tổng giá trị các đơn đã đặt trong kỳ (chưa trừ hoàn tiền).",
+    "kpiGmvHint": "Tổng giá trị các đơn đã đặt trong kỳ.",
     "kpiPaidRevenueHint": "Số tiền thực sự đã thu được từ các đơn trong kỳ.",
     "kpiOrderCountHint": "Số đơn hàng phát sinh trong kỳ.",
     "kpiAovHint": "Giá trị trung bình mỗi đơn = doanh số chia số đơn.",

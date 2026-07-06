@@ -324,7 +324,7 @@ export function ReportsScreen() {
       raw: state.data.summary.grossOrderValue,
       prev: state.prev?.summary.grossOrderValue,
       color: 'danger', money: true, icon: <CircleDollarSign size={15} />,
-      hint: t('reports.kpiGmvHint', { defaultValue: 'Tổng giá trị các đơn đã đặt trong kỳ (chưa trừ hoàn tiền).' }),
+      hint: t('reports.kpiGmvHint', { defaultValue: 'Tổng giá trị các đơn đã đặt trong kỳ.' }),
     },
     {
       key: 'paid',
