@@ -7,14 +7,12 @@
 | `bigbike-web` | Next.js 16.2.4 / React 19 | Public storefront, SEO pages, cart, checkout, customer account | `CONFIRMED_FROM_CODE` | `bigbike-web/package.json`, `bigbike-web/app`, `bigbike-web/lib` |
 | `bigbike-admin` | Vite 8 / React 19 | Internal operations dashboard | `CONFIRMED_FROM_CODE` | `bigbike-admin/package.json`, `bigbike-admin/src` |
 | `bigbike-backend` | Spring Boot 4.0.5 / Java 17 | API, business rules, persistence, auth, integrations, WebSocket | `CONFIRMED_FROM_CODE` | `bigbike-backend/pom.xml`, `src/main/java` |
-| `bigbike_mobile` | Flutter / Dart | Companion client using shared backend APIs | `CONFIRMED_FROM_CODE`; release scope `NEEDS_VERIFICATION` | `pubspec.yaml`, `lib/core` |
 
 ## Runtime Boundaries
 
 - `bigbike-web` is the public BFF/client layer and consumes backend REST APIs. `CONFIRMED_FROM_CODE`
 - `bigbike-admin` is a separate SPA that consumes backend admin APIs and the admin order WebSocket. `CONFIRMED_FROM_CODE`
 - `bigbike-backend` owns business validation, state changes, persistence, auth, and integrations. `CONFIRMED_FROM_CODE`
-- `bigbike_mobile` uses cookie-backed REST flows with Dio and CSRF support instead of a separate mobile-only backend. `CONFIRMED_FROM_CODE`
 
 ## Backend Architecture
 

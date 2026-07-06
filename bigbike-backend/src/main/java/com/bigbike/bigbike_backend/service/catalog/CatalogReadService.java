@@ -200,29 +200,6 @@ public class CatalogReadService {
                 .orElseThrow(() -> new NotFoundException("Product not found."));
     }
 
-    public PageResult<Product> getWishlistProducts(List<String> productIds, int page, int size, String lang) {
-        // One batch query instead of one per wishlist id; re-order by the input
-        // id list so the storefront keeps the same display order as before.
-        Map<String, Product> publishedById = catalogReadRepository.findProductsByIdsPublicView(productIds, lang).stream()
-                .filter(p -> p.publishStatus() == PublishStatus.PUBLISHED)
-                .collect(Collectors.toMap(Product::id, p -> p, (a, b) -> a));
-        List<Product> products = productIds.stream()
-                .map(publishedById::get)
-                .filter(Objects::nonNull)
-                .toList();
-        // The wishlist page renders the same storefront ProductCard as the catalog
-        // list, so it returns the same list-view shape (see toListView / API_CONTRACT.md
-        // "Product list") — keeping both ApiListResponse<Product> endpoints consistent.
-        PageResult<Product> page0 = paginationService.paginate(products, page, size);
-        return new PageResult<>(
-                page0.items().stream().map(CatalogReadSupport::toListView).toList(),
-                page0.page(),
-                page0.pageSize(),
-                page0.totalItems(),
-                page0.totalPages()
-        );
-    }
-
     public PageResult<Category> listCategories(int page, int size, String sort, Boolean showOnHomepage, String lang) {
         SortSpec sortSpec = sortParser.parse(sort, "sortOrder", SortDirection.ASC, CATEGORY_SORT_FIELDS);
 
@@ -261,9 +238,11 @@ public class CatalogReadService {
     /**
      * Compute product counts per filter value for the storefront catalog sidebar.
      *
-     * <p>v1 uses a base context of {@code PUBLISHED + search query}. Brand, color and
-     * price counts also honor {@code categorySlug}; the category facet intentionally
-     * ignores {@code categorySlug} so every category still shows a navigable count.
+     * <p>v1 uses a base context of {@code PUBLISHED + search query}. Brand, color,
+     * gender and price counts also honor {@code categorySlug} — including its descendant
+     * categories (CATEGORY_RULE_006), so the counts match the product listing. The
+     * category facet intentionally ignores {@code categorySlug} (exact per-category
+     * count) so every category still shows its own navigable count.
      * Counts are not cross-excluded per dimension — this matches the legacy WordPress
      * filter widget and keeps the endpoint a single pass over the catalog.
      */
@@ -281,8 +260,14 @@ public class CatalogReadService {
                 .filter(product -> matchesQuery(product, q))
                 .toList();
 
+        // Expand the category to self + all descendants (CATEGORY_RULE_006) so the
+        // brand/color/gender/price facet counts match the product listing, which also
+        // includes descendant products (see listProducts in-memory path). Using exact
+        // slug matching here undercounts on a parent category: the facet would advertise
+        // e.g. "Đen bóng (1)" while clicking it returns the full descendant-expanded list.
+        Set<String> categorySlugs = resolveCategorySlugsWithDescendants(categorySlug, locale);
         List<Product> inCategory = publishedMatchingQuery.stream()
-                .filter(product -> matchesCategory(product, categorySlug))
+                .filter(product -> matchesCategoryOrDescendants(product, categorySlugs))
                 .toList();
 
         return new CatalogFacets(

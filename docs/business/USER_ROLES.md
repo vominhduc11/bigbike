@@ -39,8 +39,8 @@ File này dùng làm nền cho:
 
 | Role / Actor | Type | Purpose | Access Area | Status | Evidence |
 |---|---|---|---|---|---|
-| Guest / Visitor | Human user | Xem public website, sản phẩm, content, search, cart/checkout dạng guest. | Public web, public APIs, mobile public routes. | `CONFIRMED_FROM_CODE` | `bigbike-web/app/page.tsx`, `bigbike-web/lib/utils/routes.ts`, `SecurityConfig`, `CheckoutService` |
-| Customer | Human user | Đăng ký/đăng nhập, checkout, quản lý profile/address/order. | Public web/mobile account area, customer APIs. | `CONFIRMED_FROM_CODE` | `CustomerAuthController`, `CustomerOrderController`, `CustomerAddressController`, `SecurityConfig`, `PHASE_1D_CUSTOMER_AUTH_REPORT.md` |
+| Guest / Visitor | Human user | Xem public website, sản phẩm, content, search, cart/checkout dạng guest. | Public web, public APIs. | `CONFIRMED_FROM_CODE` | `bigbike-web/app/page.tsx`, `bigbike-web/lib/utils/routes.ts`, `SecurityConfig`, `CheckoutService` |
+| Customer | Human user | Đăng ký/đăng nhập, checkout, quản lý profile/address/order. | Public web account area, customer APIs. | `CONFIRMED_FROM_CODE` | `CustomerAuthController`, `CustomerOrderController`, `CustomerAddressController`, `SecurityConfig`, `PHASE_1D_CUSTOMER_AUTH_REPORT.md` |
 | Admin | Internal user | Vận hành hệ thống ở mức rộng: product, order, customer, content, settings, media, users, reports. | Admin portal, admin APIs. | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java`, `SecurityConfig`, `bigbike-admin/README.md`, admin controllers |
 | Super Admin | Internal user | Quyền cao nhất, có wildcard permission và bảo vệ chống tự hạ quyền/last super admin demotion. | Admin portal, admin users/roles/settings/all admin modules. | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java`, `AdminAdminUsersService.java` |
 | Shop Manager | Internal user | Quản lý bán hàng/vận hành shop: products, orders, customers, reviews. | Admin portal selected business modules. | `CONFIRMED_FROM_CODE` for role mapping; UI behavior `NEEDS_VERIFICATION` | `AdminRolePermissions.java` |
@@ -94,13 +94,13 @@ File này dùng làm nền cho:
 | Field | Value |
 |---|---|
 | Purpose | Người dùng có tài khoản, có thể đăng nhập, quản lý profile/address/order và checkout. |
-| Access Area | Customer auth/account/profile/address/order APIs, public web/mobile account routes. |
+| Access Area | Customer auth/account/profile/address/order APIs, public web account routes. |
 | Main Actions | Register/login/refresh/logout, view profile, manage addresses, list/view orders, checkout as authenticated customer. |
 | Restricted Actions | Không được gọi admin APIs; không được xem order của customer khác; customer mutations cần session/CSRF theo design. |
 | Related Modules | Customer Account/Auth, Cart, Checkout, Orders, Address, Profile. |
 | Related Business Processes | Customer Account, Cart/Checkout, Order Tracking. |
 | Status | `CONFIRMED_FROM_CODE` |
-| Evidence | `CustomerAuthController`, `CustomerOrderController`, `CustomerAddressController`, `SecurityConfig`, `PHASE_1D_CUSTOMER_AUTH_REPORT.md`, `bigbike_mobile/lib/core/router/app_router.dart` |
+| Evidence | `CustomerAuthController`, `CustomerOrderController`, `CustomerAddressController`, `SecurityConfig`, `PHASE_1D_CUSTOMER_AUTH_REPORT.md` |
 
 #### Business-level allowed actions
 

@@ -35,7 +35,6 @@ export function ImportProductsDialog({ open, onClose }) {
 
   const [step, setStep] = useState('pick') // pick | validating | review | committing | done
   const [file, setFile] = useState(null)
-  const [fileType, setFileType] = useState('csv')
   const [report, setReport] = useState(null)
   const [excludedRowKeys, setExcludedRowKeys] = useState(new Set())
   const [error, setError] = useState(null)
@@ -56,17 +55,15 @@ export function ImportProductsDialog({ open, onClose }) {
   function handleFileChange(e) {
     const picked = e.target.files?.[0]
     if (!picked) return
-    const type = picked.name.toLowerCase().endsWith('.json') ? 'json' : 'csv'
     setFile(picked)
-    setFileType(type)
-    runValidate(picked, type)
+    runValidate(picked)
   }
 
-  async function runValidate(pickedFile, type) {
+  async function runValidate(pickedFile) {
     setStep('validating')
     setError(null)
     try {
-      const result = await importProductsValidate(pickedFile, type)
+      const result = await importProductsValidate(pickedFile)
       setReport(result)
       setExcludedRowKeys(new Set(result.rows.filter((r) => r.status === 'ERROR').map((r) => r.rowKey)))
       setStep('review')
@@ -81,7 +78,7 @@ export function ImportProductsDialog({ open, onClose }) {
     setStep('committing')
     setError(null)
     try {
-      const result = await importProductsCommit(file, fileType, Array.from(excludedRowKeys))
+      const result = await importProductsCommit(file, Array.from(excludedRowKeys))
       setReport(result)
       setStep('done')
       queryClient.invalidateQueries({ queryKey: ['products'] })
@@ -144,7 +141,7 @@ export function ImportProductsDialog({ open, onClose }) {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".csv,.json"
+            accept=".json"
             className="hidden"
             onChange={handleFileChange}
           />

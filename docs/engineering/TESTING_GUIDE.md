@@ -7,7 +7,6 @@
 | `bigbike-web` | `npm run lint`, `npm run test`, `npm run build` | `CONFIRMED_FROM_CONFIG` | `bigbike-web/package.json` |
 | `bigbike-admin` | `npm run lint`, `npm run build` | `CONFIRMED_FROM_CONFIG` | `bigbike-admin/package.json` |
 | `bigbike-backend` | `./mvnw test`, `./mvnw package` | `CONFIRMED_FROM_CONFIG` | `bigbike-backend/pom.xml` |
-| `bigbike_mobile` | `flutter test` available through Flutter toolchain | `CONFIRMED_FROM_CONFIG` | `pubspec.yaml` |
 
 ## CI Truth
 
@@ -18,7 +17,6 @@ GitHub Actions currently runs:
 | backend | `./mvnw -B clean verify` and Docker build | `CONFIRMED_FROM_CONFIG` | `.github/workflows/ci.yml` |
 | web | `npm ci`, `npm run lint`, `npm run build`, Docker build | `CONFIRMED_FROM_CONFIG` | `.github/workflows/ci.yml` |
 | admin | `npm ci`, `npm run lint`, `npm run build`, Docker build | `CONFIRMED_FROM_CONFIG` | `.github/workflows/ci.yml` |
-| mobile | no CI job | `NOT_FOUND_IN_REPO` | `.github/workflows/ci.yml` |
 
 ## Confirmed Backend Feature Tests
 
@@ -36,4 +34,3 @@ GitHub Actions currently runs:
 |---|---|---|
 | Admin repo has no dedicated `test` script in `package.json`. | `CONFIRMED_FROM_CONFIG` | `bigbike-admin/package.json` |
 | Web unit tests exist locally but are not run in CI. | `CONFIRMED_FROM_CONFIG` | `bigbike-web/package.json`, `.github/workflows/ci.yml` |
-| Mobile tests are not wired into CI. | `NOT_FOUND_IN_REPO` | `.github/workflows/ci.yml` |

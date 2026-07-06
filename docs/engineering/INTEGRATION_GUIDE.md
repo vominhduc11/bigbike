@@ -9,7 +9,7 @@
 | SMTP mail | Transactional email path exists when env is configured. All mail goes through `EmailDispatchService.send(to, subject, template, ctx)` rendering a Thymeleaf template under `templates/email/`. Templates include customer `password-reset`, `password-change-alert`, order confirmation, and **admin `admin-invite`** (set-password link for newly invited admins; degrades gracefully — when no `JavaMailSender` bean is configured, `isEnabled()` is false and the caller surfaces the invite link instead) | `CONFIRMED_FROM_CODE` + `CONFIRMED_FROM_CONFIG` | `EmailDispatchService.java`, `AdminInviteService.java`, `templates/email/admin-invite.html` |
 | Web revalidation | Backend can call Next.js revalidation endpoint with shared secret | `CONFIRMED_FROM_CONFIG` | `docker-compose.yaml` |
 | WebSocket/STOMP | Admin order push channel is live | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java`, `AdminOrderWsService.java` |
-| VN address data | Public backend address API and client-side address helpers are present | `CONFIRMED_FROM_CODE` | `VnAddressController.java`, `vn-address-data.ts`, mobile endpoints |
+| VN address data | Public backend address API and client-side address helpers are present | `CONFIRMED_FROM_CODE` | `VnAddressController.java`, `vn-address-data.ts` |
 
 > **Gemini auto-translation — REMOVED (2026-07-03).** The VI→EN auto-translation integration (Google
 > Gemini `generateContent` API, `GeminiTranslationService`, `AdminTranslateController`,

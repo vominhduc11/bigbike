@@ -12,7 +12,7 @@
 
 `docs/business/` và `docs/engineering/` là **source of truth**. Code dựng từ docs, không phải ngược lại.
 
-Trước khi sửa file source trong [bigbike-backend/](bigbike-backend/), [bigbike-web/](bigbike-web/), [bigbike-admin/](bigbike-admin/), [bigbike_mobile/](bigbike_mobile/):
+Trước khi sửa file source trong [bigbike-backend/](bigbike-backend/), [bigbike-web/](bigbike-web/), [bigbike-admin/](bigbike-admin/):
 
 1. **Đọc đúng docs liên quan** (tra mapping dưới), chỉ section bạn đụng đến — không đọc cả file.
 2. **Cite evidence path** trong response/PR (vd "theo `BUSINESS_RULES.md` rule `ORDER_RULE_003`").

@@ -73,7 +73,7 @@ Nguyên tắc đọc file này:
 |---|---|
 | Category | Project Term |
 | Definition | Nền tảng commerce/D2C retail cho đồ bảo hộ moto, biker gear và phụ kiện touring. |
-| BigBike Context | Repo gồm public SEO-first sales website, internal admin dashboard, Spring Boot backend, Flutter mobile companion, Docker Compose infrastructure và design system. |
+| BigBike Context | Repo gồm public SEO-first sales website, internal admin dashboard, Spring Boot backend, Docker Compose infrastructure và design system. |
 | Example | Khách xem sản phẩm trên public web, checkout tạo order; admin xử lý sản phẩm/đơn hàng trong admin portal. |
 | Related Docs | `PROJECT_OVERVIEW.md`, `README.md`, `MODULE_CATALOG.md` |
 | Status | `CONFIRMED_FROM_REPO` |
@@ -207,11 +207,11 @@ Nguyên tắc đọc file này:
 |---|---|
 | Category | Business Term / Role Term |
 | Definition | Người dùng có tài khoản BigBike. |
-| BigBike Context | Customer có auth/account/address/order/return APIs và web/mobile account routes. |
+| BigBike Context | Customer có auth/account/address/order/return APIs và web account routes. |
 | Example | Customer đăng nhập, xem `/tai-khoan/don-hang/`, tạo return cho order của mình. |
 | Related Docs | `USER_ROLES.md`, `WORKFLOW_OVERVIEW.md` |
 | Status | `CONFIRMED_FROM_REPO` |
-| Evidence | `SecurityConfig.java`, `bigbike_mobile/lib/core/router/app_router.dart` |
+| Evidence | `SecurityConfig.java` |
 
 ### Guest / Visitor
 
@@ -353,7 +353,7 @@ Nguyên tắc đọc file này:
 | BigBike Context | Đăng ký/đăng nhập, quản lý profile/address/order/return, checkout authenticated. |
 | Related Modules / Processes | Customer Auth, Account, Orders, Returns, Checkout. |
 | Status | `CONFIRMED_FROM_REPO` |
-| Evidence | `SecurityConfig.java`, `USER_ROLES.md`, mobile account routes |
+| Evidence | `SecurityConfig.java`, `USER_ROLES.md` |
 
 ### Admin
 
@@ -435,11 +435,11 @@ Nguyên tắc đọc file này:
 | Field | Value |
 |---|---|
 | Definition | UI building blocks: route là đường dẫn, screen/page là màn hình, component là UI unit tái sử dụng. |
-| BigBike Context | Public web routes nằm trong Next.js app/route helpers; admin screens nằm trong SPA; mobile routes dùng GoRouter. |
+| BigBike Context | Public web routes nằm trong Next.js app/route helpers; admin screens nằm trong SPA. |
 | Example | `/san-pham/`, `/admin/products`, `ProductDetailScreen`, `HeroSlider`. |
 | Related Docs | `MODULE_CATALOG.md` |
 | Status | `CONFIRMED_FROM_REPO` |
-| Evidence | `bigbike-web/lib/utils/routes.ts`, `bigbike-admin/README.md`, `bigbike_mobile/lib/core/router/app_router.dart` |
+| Evidence | `bigbike-web/lib/utils/routes.ts`, `bigbike-admin/README.md` |
 
 ### Admin Module / Public Web Module / Backend Module / Shared Module
 
@@ -470,7 +470,7 @@ Nguyên tắc đọc file này:
 | Field | Value |
 |---|---|
 | Definition | Luồng hệ thống chạy xuyên nhiều app/module/backend/database/integration để hỗ trợ business process. |
-| BigBike Context | Checkout E2E đi qua Public Web/Mobile, Cart, Checkout API, Order, Payment, Shipping, Inventory, Notification. |
+| BigBike Context | Checkout E2E đi qua Public Web, Cart, Checkout API, Order, Payment, Shipping, Inventory, Notification. |
 | Example | Cart/Checkout/Order Creation Workflow. |
 | Related Docs | `WORKFLOW_OVERVIEW.md` |
 | Status | `STANDARD_ANALYSIS_TERM` |
@@ -641,11 +641,11 @@ Nguyên tắc đọc file này:
 | Field | Value |
 |---|---|
 | Definition | Guard là cơ chế chặn truy cập/action. Frontend Guard chỉ hỗ trợ UX; Backend Enforcement là lớp bắt buộc. |
-| BigBike Context | Mobile GoRouter redirect account/checkout nếu chưa authenticated; backend SecurityConfig vẫn là boundary thật. |
+| BigBike Context | Frontend route guard redirect account/checkout nếu chưa authenticated; backend SecurityConfig vẫn là boundary thật. |
 | Example | FE ẩn button delete không đủ; backend vẫn phải reject user thiếu permission. |
 | Related Docs | `BUSINESS_RULES.md`, `ACCEPTANCE_CRITERIA.md` |
 | Status | `STANDARD_ANALYSIS_TERM`; route guards `CONFIRMED_FROM_REPO` |
-| Evidence | `SecurityConfig.java`, `bigbike_mobile/lib/core/router/app_router.dart` |
+| Evidence | `SecurityConfig.java` |
 
 ### Permission Denied / Sensitive Data / Secret
 
@@ -792,7 +792,6 @@ Nguyên tắc đọc file này:
 | `bigbike-web` | Public SEO/sales website bằng Next.js. | `CONFIRMED_FROM_REPO` | `README.md`, `bigbike-web/lib/utils/routes.ts` |
 | `bigbike-admin` | Internal admin dashboard bằng Vite + React. | `CONFIRMED_FROM_REPO` | `README.md`, `bigbike-admin/README.md` |
 | `bigbike-backend` | Spring Boot backend service. | `CONFIRMED_FROM_REPO` | `README.md`, `SecurityConfig.java` |
-| `bigbike_mobile` | Flutter mobile companion/customer app routes. | `CONFIRMED_FROM_REPO` | `bigbike_mobile/lib/core/router/app_router.dart` |
 | `Bigbike Design System` | Brand/UI source of truth. | `CONFIRMED_FROM_REPO` | `README.md` |
 | `PublishStatus` | Product/content publish lifecycle enum. | `CONFIRMED_FROM_REPO` | `PublishStatus.java` |
 | `ProductStockState` | Product stock state enum. | `CONFIRMED_FROM_REPO` | `ProductStockState.java` |
@@ -834,7 +833,6 @@ Nguyên tắc đọc file này:
 | Shipping Provider / Shipping Method | Business docs | Internal shipping method confirmed; carrier integration not found. | Shipping Method là cấu hình nội bộ; Shipping Provider là carrier external. | Business xác nhận GHN/GHTK/ViettelPost scope. |
 | Staging | Prompt yêu cầu kiểm nếu có | Repo có dev/mock/prod; staging chưa thấy. | Không dùng staging như confirmed environment nếu chưa có config/deploy evidence. | Business/DevOps xác nhận có staging không. |
 | `docs/DECISIONS.md` | README mentions | Direct fetch trong audit pass này không thấy file trên main. | Treat as planned/missing referenced doc until exists. | Kiểm tra path/branch hoặc tạo sau. |
-| Mobile scope | README/project docs | `bigbike_mobile` có route/code nhưng README root tree không liệt kê rõ trong repo structure section cũ. | Treat `bigbike_mobile` as existing mobile companion; production scope cần confirm. | Business xác nhận mobile là production scope hay companion/prototype. |
 
 ## 18. Terms Not Confirmed In Repository
 

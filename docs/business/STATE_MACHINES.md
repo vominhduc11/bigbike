@@ -67,7 +67,7 @@ File này liên quan trực tiếp đến:
 
 ### Purpose
 
-Product state machine kiểm soát vòng đời public/internal của sản phẩm: từ draft, publish, hide/archive/trash và khả năng hiển thị ngoài public web/mobile.
+Product state machine kiểm soát vòng đời public/internal của sản phẩm: từ draft, publish, hide/archive/trash và khả năng hiển thị ngoài public web.
 
 ### State Field
 

@@ -7,7 +7,6 @@
 > - `bigbike-web`: public website / SEO commerce website for end customers (Next.js)
 > - `bigbike-admin`: internal admin dashboard (Vite + React)
 > - `bigbike-backend`: Spring Boot backend (Java 17)
-> - `bigbike_mobile`: Flutter mobile companion app (production scope: `NEEDS_VERIFICATION` — see [docs/business/PROJECT_OVERVIEW.md](docs/business/PROJECT_OVERVIEW.md))
 > - `docs/`: business + engineering documentation (source of truth — see Section 2 Docs-First Contract)
 
 ---
@@ -33,7 +32,6 @@ bigbike/
 │   ├── src/styles/admin-tokens.css # Admin token source
 │   └── public/brand/               # Admin brand assets
 ├── bigbike-backend/                # Spring Boot backend
-├── bigbike_mobile/                 # Flutter mobile companion app
 └── bigbike_vn__2026_04_17/         # Local-only legacy WordPress export (do not commit)
 ```
 
@@ -47,7 +45,7 @@ Domain context (products, brand identity, actors): xem [docs/business/PROJECT_OV
 
 ### Bắt buộc
 
-1. **Đọc docs liên quan trước khi sửa code.** Trước khi đụng vào bất kỳ file source nào trong [bigbike-backend/](bigbike-backend/), [bigbike-web/](bigbike-web/), [bigbike-admin/](bigbike-admin/) hoặc [bigbike_mobile/](bigbike_mobile/), tra Section 3 mapping và chỉ đọc đúng doc/section liên quan đến phần đang sửa.
+1. **Đọc docs liên quan trước khi sửa code.** Trước khi đụng vào bất kỳ file source nào trong [bigbike-backend/](bigbike-backend/), [bigbike-web/](bigbike-web/) hoặc [bigbike-admin/](bigbike-admin/), tra Section 3 mapping và chỉ đọc đúng doc/section liên quan đến phần đang sửa.
 2. **Cite evidence khi mô tả thay đổi.** Trong PR summary / final response, cite path docs cụ thể (ví dụ `docs/business/BUSINESS_RULES.md` rule `ORDER_RULE_003`, hoặc `docs/engineering/API_CONTRACT.md` Section 8.3) làm căn cứ.
 3. **Không bịa rule.** Nếu rule / contract / permission / state cần thiết không có trong docs hoặc đang `NEEDS_VERIFICATION` / `NOT_FOUND_IN_REPO` / `CONFLICTING_EVIDENCE`, **dừng và hỏi user**.
 4. **Docs đi trước code khi có lệch.** Nếu thay đổi ảnh hưởng business rule, API contract, data shape, permission, state machine, workflow hoặc deployment env: update docs trước, rồi mới sửa code, **trong cùng một PR**.
@@ -176,22 +174,6 @@ bigbike_vn__2026_04_17/sqldump.sql  # Schema-only reference
 ```
 
 **Không commit** raw WordPress source, raw SQL dump data, `wp-config.php` secret values, user data, order data, customer email/phone/address, password hash, session, token, API key, webhook secret, hoặc order key values.
-
-### 3.6 Khi thay đổi `bigbike_mobile`
-
-> **Production scope**: `NEEDS_VERIFICATION` — xem [docs/business/PROJECT_OVERVIEW.md](docs/business/PROJECT_OVERVIEW.md) để confirm scope trước khi implement feature lớn.
-
-| Bạn đang sửa | Đọc (chỉ section liên quan) |
-|---|---|
-| Gọi API / response shape | `docs/engineering/API_CONTRACT.md` section endpoint đó; `docs/engineering/DATA_CONTRACT.md` section field liên quan |
-| Auth / session | `docs/engineering/API_CONTRACT.md` section auth; `docs/engineering/PERMISSION_MATRIX.md` |
-| Business flow | `docs/business/WORKFLOW_OVERVIEW.md` section liên quan |
-| Business rule | `docs/business/BUSINESS_RULES.md` section rule liên quan |
-| Feature / module scope | `docs/business/MODULE_CATALOG.md` |
-
-Dùng cho: Flutter mobile companion app — screens, API calls, state management, navigation.
-
-**Lưu ý**: `bigbike_mobile` dùng Flutter/Dart. Section 6 (React/Tailwind/shadcn) và Section 7 (Spring Boot/Lombok/MapStruct) không áp dụng cho mobile code. Docs-First Contract (Section 2) và global rules (Section 5) áp dụng bình thường.
 
 ---
 
@@ -969,12 +951,6 @@ Không biến admin thành biker poster gallery.
 **Purpose:** Business enforcement, API, data persistence, auth/permission, status transition, validation, integration boundary.
 
 **Rules:** Validate mọi incoming data. Enforce permission. Never trust frontend total. Never expose secret. Align response với contract. Consistent error shape. Reject invalid state transition. Preserve order snapshot. Stack theo Section 7.
-
-### 15.4 `bigbike_mobile`
-
-**Purpose:** Flutter mobile companion app (production scope `NEEDS_VERIFICATION` — xem [docs/business/PROJECT_OVERVIEW.md](docs/business/PROJECT_OVERVIEW.md)).
-
-**Rules:** Gọi đúng API theo `API_CONTRACT.md`. Không trust client-side total hay permission. Handle network failure gracefully. Dùng docs mapping Section 3.6 trước khi sửa. Section 6 (React stack) và Section 7 (Spring Boot stack) không áp dụng — Docs-First Contract (Section 2) và Section 5 áp dụng bình thường.
 
 ---
 

@@ -4,7 +4,7 @@
 
 | Step | Actor | Current flow | Status | Evidence |
 |---|---|---|---|---|
-| 1 | Guest/Customer | Browse products, content, search, and suggestions | `CONFIRMED_FROM_CODE` | public controllers, web/mobile clients |
+| 1 | Guest/Customer | Browse products, content, search, and suggestions | `CONFIRMED_FROM_CODE` | public controllers, web clients |
 | 2 | Guest/Customer | Build cart with cookie or customer session | `CONFIRMED_FROM_CODE` | `CartController.java`, `CartService.java` |
 | 3 | Guest/Customer | Submit checkout with CSRF token | `CONFIRMED_FROM_CODE` | `CustomerCsrfFilter.java`, `CheckoutService.java` |
 | 4 | System | Revalidate price, stock (no shipping-method step — `SHIP_RULE_001`) | `CONFIRMED_FROM_CODE` | `CheckoutService.java` |
@@ -77,6 +77,6 @@ Preview **không** đổi `publishStatus`, không lưu, và không expose draft 
 
 | Step | Actor | Current flow | Status | Evidence |
 |---|---|---|---|---|
-| 1 | Web/Mobile | Load provinces | `CONFIRMED_FROM_CODE` | `VnAddressController.java`, clients |
-| 2 | Web/Mobile | Load districts by province code | `CONFIRMED_FROM_CODE` | `VnAddressController.java` |
-| 3 | Web/Mobile | Load wards by district code | `CONFIRMED_FROM_CODE` | `VnAddressController.java` |
+| 1 | Web | Load provinces | `CONFIRMED_FROM_CODE` | `VnAddressController.java`, clients |
+| 2 | Web | Load districts by province code | `CONFIRMED_FROM_CODE` | `VnAddressController.java` |
+| 3 | Web | Load wards by district code | `CONFIRMED_FROM_CODE` | `VnAddressController.java` |

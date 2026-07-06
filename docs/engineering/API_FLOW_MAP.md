@@ -4,14 +4,14 @@
 
 | Client surface | Endpoint(s) | Backend entrypoint | Core side effects / data | Status |
 |---|---|---|---|---|
-| Web/mobile search | `GET /api/v1/search`, `GET /api/v1/search-suggest` | `PublicSearchController` | Search result payload from global search service | `CONFIRMED_FROM_CODE` |
+| Web search | `GET /api/v1/search`, `GET /api/v1/search-suggest` | `PublicSearchController` | Search result payload from global search service | `CONFIRMED_FROM_CODE` |
 | Tin tức list page (`/tin-tuc`) | `GET /api/v1/articles`, `GET /api/v1/content-categories` | `ContentController` -> `ContentReadService` | Paginated article list + content categories with published-article counts for the category filter (desktop sidebar + mobile drawer) | `CONFIRMED_FROM_CODE` |
-| Web/mobile address lookup | `GET /api/v1/address/**` | `VnAddressController` | Read-only administrative address data | `CONFIRMED_FROM_CODE` |
+| Web address lookup | `GET /api/v1/address/**` | `VnAddressController` | Read-only administrative address data | `CONFIRMED_FROM_CODE` |
 | Product comparison page (`/so-sanh`) | `GET /api/v1/products/{slug}` | `CatalogController` -> catalog read service | One detail fetch per compared product (incl. `specifications`, omitted from list responses); read-only, no write side effects. Comparison list itself lives in browser `localStorage` | `CONFIRMED_FROM_CODE` |
-| Cart UI/mobile | `/api/v1/cart`, `/api/v1/cart/items` | `CartController` -> `CartService` | Session/customer cart, item snapshots | `CONFIRMED_FROM_CODE` |
-| Checkout UI/mobile | `POST /api/v1/checkout`, `POST /api/v1/orders/quick-buy` | `CheckoutController` -> `CheckoutService` | Order/payment/shipping snapshots, per-variant `isAvailable` gate (no quantity decrement, V261), notifications, WS event | `CONFIRMED_FROM_CODE` |
-| Customer address UI/mobile | `/api/v1/customer/addresses` | `CustomerAddressController` -> `CustomerAddressService` | Own-address CRUD | `CONFIRMED_FROM_CODE` |
-| Customer orders UI/mobile | `/api/v1/customer/orders` | `CustomerOrderController` -> `OrderReadService` | Own order list/detail | `CONFIRMED_FROM_CODE` |
+| Cart UI | `/api/v1/cart`, `/api/v1/cart/items` | `CartController` -> `CartService` | Session/customer cart, item snapshots | `CONFIRMED_FROM_CODE` |
+| Checkout UI | `POST /api/v1/checkout`, `POST /api/v1/orders/quick-buy` | `CheckoutController` -> `CheckoutService` | Order/payment/shipping snapshots, per-variant `isAvailable` gate (no quantity decrement, V261), notifications, WS event | `CONFIRMED_FROM_CODE` |
+| Customer address UI | `/api/v1/customer/addresses` | `CustomerAddressController` -> `CustomerAddressService` | Own-address CRUD | `CONFIRMED_FROM_CODE` |
+| Customer orders UI | `/api/v1/customer/orders` | `CustomerOrderController` -> `OrderReadService` | Own order list/detail | `CONFIRMED_FROM_CODE` |
 | Storefront login screen (`/dang-nhap`, `/dang-ky`) | `POST /api/v1/customer/auth/login` (+ `remember`), `POST /register`, `GET /oauth/{provider}/authorize` + `/callback` | `CustomerAuthController` / `CustomerOAuthController` -> `CustomerAuthService` / `CustomerOAuthService` | Session cookies issued; `remember` drives refresh-cookie lifetime; OAuth links-or-creates the customer | `CONFIRMED_FROM_CODE` |
 | Admin media UI | `/api/v1/admin/media` | `AdminMediaController` -> `AdminMediaService` | Tika validation, MinIO storage, metadata persistence | `CONFIRMED_FROM_CODE` |
 | Admin dashboard out-of-stock alert | `GET /api/v1/admin/inventory/summary` | `AdminInventoryController` -> `AdminInventoryService` | Standalone admin inventory screen removed 2026-06-23; only the summary endpoint is still called (by the Dashboard "Hết hàng" alert). Còn/Hết toggled per-variant in the product editor (`products.update`). `grouped` / `PATCH .../availability` / `export.csv` endpoints remain in the controller but are no longer called from admin UI. Serial tracking removed V259, quantity model removed V261 | `CONFIRMED_FROM_CODE` |
@@ -34,7 +34,7 @@ Status: `CONFIRMED_FROM_CODE`
 
 ### POS — REMOVED (owner decision 2026-06-23, online-only)
 
-The admin POS flow was removed entirely. There is no `admin POS UI -> AdminPosController -> PosOrderService` path anymore; all sales flow through the storefront checkout (`Checkout UI/mobile` row above).
+The admin POS flow was removed entirely. There is no `admin POS UI -> AdminPosController -> PosOrderService` path anymore; all sales flow through the storefront checkout (`Checkout UI` row above).
 
 Status: `REMOVED`
 

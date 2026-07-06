@@ -77,23 +77,28 @@ public class ContentRequestValidator {
         );
 
         if (request.isBodyBlocksPresent() && request.getBodyBlocks() != null) {
+            // Grandfather media URLs already stored on the article (MEDIA_RULE_003) so editing legacy
+            // content that hotlinks old images is not blocked; only NEW external urls are rejected.
+            java.util.Set<String> existingBlockMediaUrls = current == null
+                    ? new java.util.HashSet<>()
+                    : AdminMutationValidators.collectBlockMediaUrls(current.getBodyBlocks());
+            String base = mediaUrlProperties.getPublicBaseUrl();
             int index = 0;
             for (com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock block : request.getBodyBlocks()) {
                 if (block instanceof com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock.ImageBlock imageBlock) {
-                    AdminMutationValidators.validateWhitelistedMediaUrl(
-                            imageBlock.getUrl(),
-                            "bodyBlocks[" + index + "].url",
-                            mediaUrlProperties.getPublicBaseUrl(),
-                            errors
-                    );
+                    String u = AdminMutationValidators.trimToNull(imageBlock.getUrl());
+                    if (u != null && !existingBlockMediaUrls.contains(u)) {
+                        AdminMutationValidators.validateWhitelistedMediaUrl(u, "bodyBlocks[" + index + "].url", base, errors);
+                    }
                 } else if (block instanceof com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock.FeatureBlock featureBlock) {
-                    AdminMutationValidators.validateWhitelistedMediaUrl(
-                            featureBlock.getUrl(),
-                            "bodyBlocks[" + index + "].url",
-                            mediaUrlProperties.getPublicBaseUrl(),
-                            errors
-                    );
+                    String u = AdminMutationValidators.trimToNull(featureBlock.getUrl());
+                    if (u != null && !existingBlockMediaUrls.contains(u)) {
+                        AdminMutationValidators.validateWhitelistedMediaUrl(u, "bodyBlocks[" + index + "].url", base, errors);
+                    }
                 }
+                AdminMutationValidators.validateHtmlInlineImages(
+                        AdminMutationValidators.blockRawHtml(block),
+                        "bodyBlocks[" + index + "]", existingBlockMediaUrls, base, errors);
                 index++;
             }
         }
@@ -117,18 +122,23 @@ public class ContentRequestValidator {
 
         if (!preview) {
             validateArticleEnglishSlug(request, slug, current, errors);
-            // Tiếng Anh chỉ bắt buộc khi tiếng Việt tương ứng đang bắt buộc (TRANSLATION_RULE_002).
-            // `title` là field cốt lõi bắt buộc ở VI → bản ghi phải luôn có `translations.en.title`.
-            // Request không gửi field này (vd bulk publish/hide chỉ gửi {publishStatus}) thì fallback
-            // về giá trị đã lưu (`current`) thay vì bắt mọi request gửi lại toàn bộ bản dịch.
-            ArticleTranslationRequest.ArticleContentRequest en =
-                    request.getTranslations() == null ? null : request.getTranslations().getEn();
-            String enTitle = en == null ? null : en.getTitle();
-            if (enTitle == null && current != null) {
-                enTitle = current.getTitleEn();
+            // Tiếng Anh bắt buộc khi — và chỉ khi — tiếng Việt tương ứng đang được ĐẶT trong
+            // request này (TRANSLATION_RULE_002, presence-flag): mirror đúng nhánh VI title ở
+            // dòng 58 và EN-name danh mục/thương hiệu (`create || request.getName() != null`).
+            // Cập nhật một phần KHÔNG chạm tiêu đề (vd bulk publish/hide chỉ gửi {publishStatus},
+            // title == null) không phải là "sửa nội dung" → KHÔNG bắt buộc EN title, cho qua kể cả
+            // bản ghi cũ chưa từng có EN. Khi thực sự sửa tiêu đề mà request bỏ qua bản dịch thì
+            // fallback về giá trị đã lưu (`current`) thay vì bắt gửi lại toàn bộ bản dịch.
+            if (create || request.getTitle() != null) {
+                ArticleTranslationRequest.ArticleContentRequest en =
+                        request.getTranslations() == null ? null : request.getTranslations().getEn();
+                String enTitle = en == null ? null : en.getTitle();
+                if (enTitle == null && current != null) {
+                    enTitle = current.getTitleEn();
+                }
+                AdminMutationValidators.validateRequiredText(
+                        enTitle, "translations.en.title", "English title", errors);
             }
-            AdminMutationValidators.validateRequiredText(
-                    enTitle, "translations.en.title", "English title", errors);
         }
 
         return slug;

@@ -220,6 +220,47 @@ class CatalogRequestValidatorTest {
     }
 
     @Test
+    void validateProductRequest_newOutsideMinioInlineHtmlImage_isRejected() {
+        UpsertProductRequest request = createBaseRequest();
+        com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock.ParagraphBlock p =
+                new com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock.ParagraphBlock();
+        p.setType("paragraph");
+        p.setHtml("<p>Xem <img src=\"https://cdn.external.vn/uploads/xe.jpg\"> nhé</p>");
+        request.setDescriptionBlocks(java.util.List.of(p));
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        validator.validateProductRequest(request, null, true, false, errors);
+
+        assertThat(errors).anySatisfy(error -> {
+            assertThat(error.field()).startsWith("descriptionBlocks[0].html.img[");
+            assertThat(error.code()).isEqualTo("INVALID_VALUE");
+        });
+    }
+
+    @Test
+    void validateProductRequest_legacyInlineHtmlImage_isAccepted() {
+        ProductEntity current = new ProductEntity();
+        com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock.ParagraphBlock existing =
+                new com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock.ParagraphBlock();
+        existing.setType("paragraph");
+        existing.setHtml("<p><img src=\"https://cdn.external.vn/uploads/xe.jpg\"></p>");
+        current.setDescriptionBlocks(java.util.List.of(existing));
+
+        UpsertProductRequest request = createBaseRequest();
+        com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock.ParagraphBlock p =
+                new com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock.ParagraphBlock();
+        p.setType("paragraph");
+        p.setHtml("<p><img src=\"https://cdn.external.vn/uploads/xe.jpg\"></p>");
+        request.setDescriptionBlocks(java.util.List.of(p));
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        validator.validateProductRequest(request, current, false, false, errors);
+
+        assertThat(errors).noneSatisfy(error ->
+                assertThat(error.field()).startsWith("descriptionBlocks[0].html"));
+    }
+
+    @Test
     void validateProductRequest_slugEnEqualsViSlug_isAccepted() {
         UpsertProductRequest request = createBaseRequest();
         request.setSlug("scs-s10x");

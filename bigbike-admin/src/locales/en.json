@@ -2469,7 +2469,7 @@
   },
   "import": {
     "dialogTitle": "Import products from file",
-    "pickFileHint": "Choose a CSV or JSON file following the product import template. New products are always created as drafts — you review and publish them yourself afterwards.",
+    "pickFileHint": "Choose a JSON file following the product import template. New products are always created as drafts — you review and publish them yourself afterwards.",
     "pickFile": "Choose file",
     "downloadCurrent": "Download current catalog (for editing)",
     "validating": "Checking file...",

@@ -2469,7 +2469,7 @@
   },
   "import": {
     "dialogTitle": "Nhập sản phẩm từ file",
-    "pickFileHint": "Chọn file CSV hoặc JSON theo đúng mẫu nhập sản phẩm. Sản phẩm mới luôn vào trạng thái nháp — bạn tự rà soát và đăng bán sau.",
+    "pickFileHint": "Chọn file JSON theo đúng mẫu nhập sản phẩm. Sản phẩm mới luôn vào trạng thái nháp — bạn tự rà soát và đăng bán sau.",
     "pickFile": "Chọn file",
     "downloadCurrent": "Tải dữ liệu hiện tại (để chỉnh sửa)",
     "validating": "Đang kiểm tra file...",

@@ -13,6 +13,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.GalleryImageRequest;
 import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.config.MediaUrlProperties;
 import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
+import com.bigbike.bigbike_backend.domain.catalog.ProductTab;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
@@ -198,16 +199,30 @@ public class CatalogRequestValidator {
                 }
             }
 
-            validateDescriptionBlockMediaUrls(request.getDescriptionBlocks(), "descriptionBlocks", errors);
-            validateDescriptionBlockMediaUrls(request.getDescriptionBlocksEn(), "descriptionBlocksEn", errors);
+            // Media URLs already stored on the product (body blocks + tabs) are grandfathered so
+            // editing legacy content that hotlinks old images is never blocked (MEDIA_RULE_003,
+            // mirrors the gallery/video legacy tolerance above). Only NEW external urls are rejected.
+            Set<String> existingBlockMediaUrls = new HashSet<>();
+            if (current != null) {
+                existingBlockMediaUrls.addAll(AdminMutationValidators.collectBlockMediaUrls(current.getDescriptionBlocks()));
+                existingBlockMediaUrls.addAll(AdminMutationValidators.collectBlockMediaUrls(current.getDescriptionBlocksEn()));
+                if (current.getProductTabs() != null) {
+                    for (ProductTab tab : current.getProductTabs()) {
+                        existingBlockMediaUrls.addAll(AdminMutationValidators.collectBlockMediaUrls(tab.blocks()));
+                        existingBlockMediaUrls.addAll(AdminMutationValidators.collectBlockMediaUrls(tab.blocksEn()));
+                    }
+                }
+            }
+            validateDescriptionBlockMediaUrls(request.getDescriptionBlocks(), "descriptionBlocks", existingBlockMediaUrls, errors);
+            validateDescriptionBlockMediaUrls(request.getDescriptionBlocksEn(), "descriptionBlocksEn", existingBlockMediaUrls, errors);
             if (request.getTabs() != null) {
                 for (int i = 0; i < request.getTabs().size(); i++) {
                     ProductTabRequest tab = request.getTabs().get(i);
                     if (tab == null) {
                         continue;
                     }
-                    validateDescriptionBlockMediaUrls(tab.getBlocks(), "tabs[" + i + "].blocks", errors);
-                    validateDescriptionBlockMediaUrls(tab.getBlocksEn(), "tabs[" + i + "].blocksEn", errors);
+                    validateDescriptionBlockMediaUrls(tab.getBlocks(), "tabs[" + i + "].blocks", existingBlockMediaUrls, errors);
+                    validateDescriptionBlockMediaUrls(tab.getBlocksEn(), "tabs[" + i + "].blocksEn", existingBlockMediaUrls, errors);
                 }
             }
         }
@@ -343,22 +358,28 @@ public class CatalogRequestValidator {
     /** Mirrors ContentRequestValidator's ImageBlock/FeatureBlock whitelist loop for product
      * description blocks (M8 — previously unvalidated for products, unlike articles). */
     private void validateDescriptionBlockMediaUrls(
-            List<DescriptionBlock> blocks, String fieldPrefix, List<ApiErrorDetail> errors
+            List<DescriptionBlock> blocks, String fieldPrefix, Set<String> existing, List<ApiErrorDetail> errors
     ) {
         if (blocks == null) {
             return;
         }
+        String base = mediaUrlProperties.getPublicBaseUrl();
         for (int i = 0; i < blocks.size(); i++) {
             DescriptionBlock block = blocks.get(i);
             if (block instanceof DescriptionBlock.ImageBlock imageBlock) {
-                AdminMutationValidators.validateWhitelistedMediaUrl(
-                        imageBlock.getUrl(), fieldPrefix + "[" + i + "].url",
-                        mediaUrlProperties.getPublicBaseUrl(), errors);
+                String u = AdminMutationValidators.trimToNull(imageBlock.getUrl());
+                if (u != null && (existing == null || !existing.contains(u))) {
+                    AdminMutationValidators.validateWhitelistedMediaUrl(u, fieldPrefix + "[" + i + "].url", base, errors);
+                }
             } else if (block instanceof DescriptionBlock.FeatureBlock featureBlock) {
-                AdminMutationValidators.validateWhitelistedMediaUrl(
-                        featureBlock.getUrl(), fieldPrefix + "[" + i + "].url",
-                        mediaUrlProperties.getPublicBaseUrl(), errors);
+                String u = AdminMutationValidators.trimToNull(featureBlock.getUrl());
+                if (u != null && (existing == null || !existing.contains(u))) {
+                    AdminMutationValidators.validateWhitelistedMediaUrl(u, fieldPrefix + "[" + i + "].url", base, errors);
+                }
             }
+            AdminMutationValidators.validateHtmlInlineImages(
+                    AdminMutationValidators.blockRawHtml(block), fieldPrefix + "[" + i + "].html",
+                    existing, base, errors);
         }
     }
 

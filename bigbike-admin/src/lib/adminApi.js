@@ -454,32 +454,31 @@ export async function permanentDeleteProduct(productId) {
   await requestJson(`/admin/products/${productId}/permanent`, { method: 'DELETE' })
 }
 
-// Bulk import products from file (CSV/JSON) — validate = dry-run report, no persistence;
+// Bulk import products from a JSON file — validate = dry-run report, no persistence;
 // commit = same file re-sent, actually saves rows that still validate clean.
-export async function importProductsValidate(file, type) {
+export async function importProductsValidate(file) {
   const form = new FormData()
   form.append('file', file)
   const payload = await requestJson('/admin/products/import/validate', {
     method: 'POST',
-    query: { type },
     body: form,
   })
   return payload?.data
 }
 
-export async function importProductsCommit(file, type, skipRowKeys) {
+export async function importProductsCommit(file, skipRowKeys) {
   const form = new FormData()
   form.append('file', file)
   const payload = await requestJson('/admin/products/import/commit', {
     method: 'POST',
-    query: { type, skipRowKeys: skipRowKeys?.length ? skipRowKeys.join(',') : undefined },
+    query: { skipRowKeys: skipRowKeys?.length ? skipRowKeys.join(',') : undefined },
     body: form,
   })
   return payload?.data
 }
 
 export async function exportProductImportTemplate() {
-  return fetchCsvBlob('/admin/products/import/export', {}, 'bigbike-products.csv')
+  return fetchCsvBlob('/admin/products/import/export', {}, 'bigbike-products.json', 'application/json')
 }
 
 export async function fetchCategories(query) {
@@ -1551,7 +1550,7 @@ function filenameFromDisposition(headerValue, fallback) {
   return match ? match[1].trim() : fallback
 }
 
-async function fetchCsvBlob(path, params = {}, fallbackName = 'export.csv') {
+async function fetchCsvBlob(path, params = {}, fallbackName = 'export.csv', accept = 'text/csv') {
   const qs = Object.entries(params)
     .filter(([, v]) => v != null && v !== '')
     .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
@@ -1559,7 +1558,7 @@ async function fetchCsvBlob(path, params = {}, fallbackName = 'export.csv') {
   const url = `${API_BASE}${path}${qs ? `?${qs}` : ''}`
 
   const doFetch = (token) => {
-    const headers = { Accept: 'text/csv' }
+    const headers = { Accept: accept }
     if (token) headers.Authorization = `Bearer ${token}`
     return fetch(url, { headers })
   }

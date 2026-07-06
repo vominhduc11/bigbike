@@ -335,7 +335,6 @@ public class AdminCatalogMutationService {
         }
 
         productJpaRepository.deleteHomeHighlightsByProductId(productId);
-        productJpaRepository.deleteWishlistByProductId(productId);
 
         auditLog("PRODUCT_HARD_DELETED", "PRODUCT", adminId, productJson(entity), null);
         productJpaRepository.delete(entity);

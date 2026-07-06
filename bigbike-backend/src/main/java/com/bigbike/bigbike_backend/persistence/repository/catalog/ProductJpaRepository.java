@@ -222,8 +222,4 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Strin
     @Modifying(flushAutomatically = true)
     @Query(value = "DELETE FROM home_category_highlights WHERE product_id = :productId", nativeQuery = true)
     void deleteHomeHighlightsByProductId(@Param("productId") String productId);
-
-    @Modifying(flushAutomatically = true)
-    @Query(value = "DELETE FROM wishlist_items WHERE product_id = :productId", nativeQuery = true)
-    void deleteWishlistByProductId(@Param("productId") String productId);
 }

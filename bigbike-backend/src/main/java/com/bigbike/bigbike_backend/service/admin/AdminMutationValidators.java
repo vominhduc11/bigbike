@@ -11,8 +11,13 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.math.BigDecimal;
 import java.util.Locale;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
+import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Element;
 
 final class AdminMutationValidators {
 
@@ -189,6 +194,99 @@ final class AdminMutationValidators {
                     "INVALID_VALUE",
                     "Media URL must start with the configured MinIO public base URL."
             ));
+        }
+    }
+
+    /**
+     * Collects every media URL already present in a stored block list — structured
+     * {@code ImageBlock}/{@code FeatureBlock} urls plus inline {@code <img src>} inside raw-HTML
+     * block fields (paragraph/callout/feature/suitability/sizeGuide). Used to grandfather legacy
+     * hotlinks when a product/article is edited, mirroring the gallery/video legacy tolerance
+     * (MEDIA_RULE_002 / MEDIA_RULE_003) so old imported content stays editable.
+     */
+    static Set<String> collectBlockMediaUrls(List<DescriptionBlock> blocks) {
+        Set<String> urls = new HashSet<>();
+        if (blocks == null) {
+            return urls;
+        }
+        for (DescriptionBlock block : blocks) {
+            if (block instanceof DescriptionBlock.ImageBlock imageBlock) {
+                String u = trimToNull(imageBlock.getUrl());
+                if (u != null) {
+                    urls.add(u);
+                }
+            } else if (block instanceof DescriptionBlock.FeatureBlock featureBlock) {
+                String u = trimToNull(featureBlock.getUrl());
+                if (u != null) {
+                    urls.add(u);
+                }
+            }
+            urls.addAll(extractInlineImageSrcs(blockRawHtml(block)));
+        }
+        return urls;
+    }
+
+    /** Raw-HTML payload of the block types that carry free HTML, or {@code null} for the rest. */
+    static String blockRawHtml(DescriptionBlock block) {
+        if (block instanceof DescriptionBlock.ParagraphBlock b) {
+            return b.getHtml();
+        }
+        if (block instanceof DescriptionBlock.CalloutBlock b) {
+            return b.getHtml();
+        }
+        if (block instanceof DescriptionBlock.FeatureBlock b) {
+            return b.getHtml();
+        }
+        if (block instanceof DescriptionBlock.SuitabilityBlock b) {
+            return b.getHtml();
+        }
+        if (block instanceof DescriptionBlock.SizeGuideBlock b) {
+            return b.getHtml();
+        }
+        return null;
+    }
+
+    /** All inline {@code <img src>} values in a raw-HTML fragment (empty set when blank). */
+    static Set<String> extractInlineImageSrcs(String html) {
+        Set<String> srcs = new HashSet<>();
+        String normalized = trimToNull(html);
+        if (normalized == null) {
+            return srcs;
+        }
+        for (Element img : Jsoup.parseBodyFragment(normalized).select("img[src]")) {
+            String src = trimToNull(img.attr("src"));
+            if (src != null) {
+                srcs.add(src);
+            }
+        }
+        return srcs;
+    }
+
+    /**
+     * Rejects NEW external {@code <img src>} hotlinks pasted into a raw-HTML block field (§14.3):
+     * each src must be an approved MinIO/internal media URL. Srcs already present in {@code existing}
+     * (legacy content) and {@code data:} URIs are tolerated so editing old records is never blocked.
+     */
+    static void validateHtmlInlineImages(
+            String html,
+            String field,
+            Set<String> existing,
+            String allowedMediaBaseUrl,
+            List<ApiErrorDetail> errors
+    ) {
+        String normalized = trimToNull(html);
+        if (normalized == null) {
+            return;
+        }
+        int idx = 0;
+        for (Element img : Jsoup.parseBodyFragment(normalized).select("img[src]")) {
+            String src = trimToNull(img.attr("src"));
+            if (src != null
+                    && !src.toLowerCase(Locale.ROOT).startsWith("data:")
+                    && (existing == null || !existing.contains(src))) {
+                validateWhitelistedMediaUrl(src, field + ".img[" + idx + "]", allowedMediaBaseUrl, errors);
+            }
+            idx++;
         }
     }
 
