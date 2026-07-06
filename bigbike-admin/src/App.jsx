@@ -156,8 +156,6 @@ function parseRoute(pathname) {
   if (module === 'redirects')        return { kind: 'screen', name: 'redirects' }
   if (module === 'admin-users') return { kind: 'screen', name: 'admin-users' }
   if (module === 'settings')    return { kind: 'screen', name: 'settings' }
-  // Banner trang nay là một tab trong Cài đặt — giữ /admin/banners làm lối tắt cũ mở màn Cài đặt.
-  if (module === 'banners')     return { kind: 'screen', name: 'settings' }
   if (module === 'audit-logs')  return { kind: 'screen', name: 'audit-logs' }
   if (module === 'reports')     return { kind: 'screen', name: 'reports' }
   if (module === 'roles')       return { kind: 'screen', name: 'roles' }
@@ -231,18 +229,6 @@ function AdminApp() {
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
-
-  // L3: /admin/banners chỉ là lối tắt cũ (Banner trang nay là một tab trong Cài đặt),
-  // không có mục nav riêng trong NAV_GROUP_DEFS → đổi URL thật sang /admin/settings
-  // ngay khi vào route này, để sidebar/breadcrumb có trạng thái active đúng thay vì
-  // chỉ đổi nội dung màn hình mà giữ nguyên URL không khớp mục nav nào.
-  useEffect(() => {
-    const segments = normalizePath(pathname).split('/').filter(Boolean)
-    if (segments[0] === 'admin' && segments[1] === 'banners') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      navigate('/admin/settings', { replace: true })
-    }
-  }, [pathname, navigate])
 
   useEffect(() => {
     if (authState.status !== 'authenticated') return

@@ -6,20 +6,20 @@ import { formatDateTimeWithSeconds } from '../../lib/formatters'
 
 // ── Actions that are dangerous — shown with a warning indicator ────────────────
 export const DANGEROUS_ACTIONS = new Set([
-  'ORDER_CANCELLED', 'ORDER_REFUNDED', 'ORDER_REFUND_CREATED',
+  'ORDER_CANCELLED',
   'PRODUCT_DELETED', 'PRODUCT_SOFT_DELETED',
   'CUSTOMER_DELETED',
   'CATEGORY_DELETED', 'CATEGORY_SOFT_DELETED',
   'BRAND_DELETED', 'BRAND_SOFT_DELETED',
   'MEDIA_DELETED', 'MEDIA_HARD_DELETED',
   'MENU_ITEM_DELETED', 'ROLE_DELETED', 'REDIRECT_DELETED',
-  'CONTENT_ARTICLE_DELETED', 'CONTENT_PAGE_DELETED',
+  'CONTENT_ARTICLE_DELETED',
   'ADMIN_LOGIN_FAILED', 'ADMIN_ACCOUNT_LOCKED',
 ])
 
 // Values considered dangerous in diff table (shown with danger highlight)
 export const DANGEROUS_VALUES = new Set([
-  'CANCELLED', 'REFUNDED', 'FAILED', 'BANNED', 'SUSPENDED',
+  'CANCELLED', 'FAILED', 'BANNED', 'SUSPENDED',
 ])
 
 // ── Date preset helper ─────────────────────────────────────────────────────────

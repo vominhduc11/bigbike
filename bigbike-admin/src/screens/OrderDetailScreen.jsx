@@ -234,9 +234,9 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   }
 
   async function handleFulfillmentUpdate(newFulfillmentStatus) {
-    const DANGEROUS = new Set(['CANCELLED', 'RETURNED'])
+    const DANGEROUS = new Set(['CANCELLED'])
     if (DANGEROUS.has(newFulfillmentStatus)) {
-      const labelKeys = { CANCELLED: 'orders.detail.ffDangerCancelled', RETURNED: 'orders.detail.ffDangerReturned' }
+      const labelKeys = { CANCELLED: 'orders.detail.ffDangerCancelled' }
       const label = t(labelKeys[newFulfillmentStatus])
       if (!await showConfirm(t('orders.detail.confirmFulfillmentMessage', { label }), t('orders.detail.confirmFulfillmentTitle'))) return
     }
@@ -279,7 +279,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   }
 
   const ffStatusLabel = order.fulfillmentStatus
-    ? t({ UNFULFILLED: 'orders.detail.ffUnfulfilled', PROCESSING: 'orders.detail.ffProcessing', SHIPPED: 'orders.detail.ffShipped', DELIVERED: 'orders.detail.ffDelivered', CANCELLED: 'orders.detail.ffCancelled', RETURNED: 'orders.detail.ffReturned' }[order.fulfillmentStatus] ?? order.fulfillmentStatus)
+    ? t({ UNFULFILLED: 'orders.detail.ffUnfulfilled', PROCESSING: 'orders.detail.ffProcessing', SHIPPED: 'orders.detail.ffShipped', DELIVERED: 'orders.detail.ffDelivered', CANCELLED: 'orders.detail.ffCancelled' }[order.fulfillmentStatus] ?? order.fulfillmentStatus)
     : t('orders.detail.ffNone')
 
   return (
