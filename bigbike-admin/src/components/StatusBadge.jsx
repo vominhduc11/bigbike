@@ -8,7 +8,6 @@ const ORDER_STATUS_TONE = {
   COMPLETED:  'success',
   CANCELLED:  'neutral',
   FAILED:     'danger',
-  REFUNDED:   'warning',
   UNKNOWN:    'muted',
 }
 
@@ -16,7 +15,6 @@ const PAYMENT_STATUS_TONE = {
   PENDING:   'warning',
   UNPAID:    'warning',
   PAID:      'success',
-  REFUNDED:  'warning',
   CANCELLED: 'neutral',
   FAILED:    'danger',
   UNKNOWN:   'muted',

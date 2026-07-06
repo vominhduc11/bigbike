@@ -314,23 +314,13 @@ function parseDetailPayload(payload, normalizeItem) {
   return { item }
 }
 
-function normalizeContentPathType(contentType) {
-  const normalized = String(contentType || '')
-    .trim()
-    .toLowerCase()
-
-  if (normalized === 'articles' || normalized === 'article') {
-    return 'article'
-  }
-  if (normalized === 'pages' || normalized === 'page') {
-    return 'page'
-  }
+// Content chỉ còn ARTICLE (PAGE đã gỡ khỏi backend) — luôn resolve về path bài viết.
+function normalizeContentPathType(_contentType) {
   return 'article'
 }
 
-function normalizeContentMutationPath(contentType) {
-  const normalized = normalizeContentPathType(contentType)
-  return normalized === 'page' ? 'pages' : 'articles'
+function normalizeContentMutationPath(_contentType) {
+  return 'articles'
 }
 
 export function mapValidationErrors(error) {

@@ -14,20 +14,21 @@ export function prependSelectedOption(items, selected) {
   return [selected, ...items]
 }
 
-export function normalizeContentType(value) {
-  return String(value || '').toUpperCase() === 'PAGE' ? 'PAGE' : 'ARTICLE'
+// Content chỉ còn ARTICLE (PAGE đã gỡ khỏi backend) — luôn resolve về ARTICLE/articles.
+export function normalizeContentType(_value) {
+  return 'ARTICLE'
 }
 
-export function mutationPath(contentType) {
-  return normalizeContentType(contentType) === 'PAGE' ? 'pages' : 'articles'
+export function mutationPath(_contentType) {
+  return 'articles'
 }
 
 // Validation-error field prefixes per section key — single source of truth
 // for derived `sectionErrors` and tab-error counts.
 export const SECTION_FIELD_PREFIXES = {
-  basic:   ['title', 'slug', 'pageType', 'categoryId', 'excerpt'],
+  basic:   ['title', 'slug', 'categoryId', 'excerpt'],
   body:    ['body', 'bodyBlocks'],
-  media:   ['coverImageUrl', 'heroImage'],
+  media:   ['coverImageUrl'],
   seo:     ['seoTitle', 'seoDescription', 'seoCanonicalUrl', 'seoOgImageUrl'],
   publish: ['publishStatus'],
 }
@@ -89,9 +90,7 @@ export function buildEmptyForm(contentType) {
     featured: false,
     homeExperience: false,
     seoNoIndex: false,
-    pageType: 'CUSTOM',
     categoryId: '',
-    parentId: '',
     coverImageUrl: '',
     coverImageAlt: '',
     productImageUrl: '',
@@ -102,11 +101,9 @@ export function buildEmptyForm(contentType) {
     seoCanonicalUrl: '',
     seoOgImageUrl: '',
     seoOgImageAlt: '',
-    heroImageUrl: '',
-    heroTitle: '',
     type: normalizeContentType(contentType),
     translations: {
-      en: { slug: '', title: '', excerpt: '', body: '', seoTitle: '', seoDescription: '', heroTitle: '' },
+      en: { slug: '', title: '', excerpt: '', body: '', seoTitle: '', seoDescription: '' },
     },
   }
 }
@@ -124,9 +121,7 @@ export function buildFormFromItem(contentType, item) {
     featured: Boolean(item.featured),
     homeExperience: Boolean(item.homeExperience),
     seoNoIndex: Boolean(item.seo?.noIndex),
-    pageType: item.pageType || fallback.pageType,
     categoryId: item.categoryId || '',
-    parentId: item.parentId || '',
     coverImageUrl: item.coverImage?.url || '',
     coverImageAlt: item.coverImage?.alt || '',
     productImageUrl: item.productImage?.url || '',
@@ -139,8 +134,6 @@ export function buildFormFromItem(contentType, item) {
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
     seoOgImageUrl: item.seo?.ogImage?.url || '',
     seoOgImageAlt: item.seo?.ogImage?.alt || '',
-    heroImageUrl: item.heroImage?.url || '',
-    heroTitle: item.heroTitle || '',
     type: normalizeContentType(item.type || contentType),
     translations: {
       en: {
@@ -151,7 +144,6 @@ export function buildFormFromItem(contentType, item) {
         body: item.translations?.en?.body || '',
         seoTitle: item.translations?.en?.seoTitle || '',
         seoDescription: item.translations?.en?.seoDescription || '',
-        heroTitle: item.translations?.en?.heroTitle || '',
       },
     },
   }
@@ -204,7 +196,7 @@ export function isBlockValid(block) {
 
 // P1-001: Always emit fields that can be cleared so backend can distinguish
 // "omitted = keep" vs "sent = apply (possibly clear)".
-export function toPayload(form, isCreate) {
+export function toPayload(form, _isCreate) {
   const payload = {
     slug: form.slug.trim(),
     title: form.title.trim(),
@@ -256,21 +248,6 @@ export function toPayload(form, isCreate) {
     payload.homeExperience = Boolean(form.homeExperience)
   }
 
-  if (form.type === 'PAGE') {
-    if (isCreate) {
-      payload.pageType = form.pageType.trim()
-    }
-    // Always send parentId — empty string clears the parent
-    payload.parentId = form.parentId || ''
-
-    // Hero — always send so admin can clear by leaving blank.
-    // Empty url is accepted by backend (@Pattern allows empty) and treated as "clear".
-    payload.heroImage = form.heroImageUrl.trim()
-      ? { url: form.heroImageUrl.trim() }
-      : { url: '' }
-    payload.heroTitle = form.heroTitle.trim() || ''
-  }
-
   // Always send seo as non-null object so backend can clear fields when all are empty
   payload.seo = {
     title: form.seoTitle.trim() || null,
@@ -294,7 +271,6 @@ export function toPayload(form, isCreate) {
       body: form.translations?.en?.body?.trim() || null,
       seoTitle: form.translations?.en?.seoTitle?.trim() || null,
       seoDescription: form.translations?.en?.seoDescription?.trim() || null,
-      heroTitle: form.translations?.en?.heroTitle?.trim() || null,
     },
   }
 

@@ -634,7 +634,7 @@ export function createBrandSchema(t) {
 
 // ── Content ───────────────────────────────────────────────────────────────────
 
-export function createContentSchema(t, isCreate, normalizedType) {
+export function createContentSchema(t, _isCreate, normalizedType) {
   return z.object({
     slug: z.string(),
     title: z.string(),
@@ -644,7 +644,6 @@ export function createContentSchema(t, isCreate, normalizedType) {
     // Công tắc bài viết — boolean optional, không có validation đặc biệt.
     featured: z.boolean().optional(),
     seoNoIndex: z.boolean().optional(),
-    pageType: z.string().optional(),
     coverImageUrl: z.string().optional(),
     productImageUrl: z.string().optional(),
     relatedProductIds: z.array(z.string()).optional(),
@@ -696,9 +695,6 @@ export function createContentSchema(t, isCreate, normalizedType) {
     }
     if (!data.publishStatus) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('content.detail.errPublishRequired'), path: ['publishStatus'] })
-    }
-    if (normalizedType === 'PAGE' && isCreate && !data.pageType?.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('content.detail.errPageTypeRequired'), path: ['pageType'] })
     }
     if (data.coverImageUrl?.trim() && !MEDIA_URL_REGEX.test(data.coverImageUrl.trim())) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('content.detail.errCoverImageUrl'), path: ['coverImageUrl'] })

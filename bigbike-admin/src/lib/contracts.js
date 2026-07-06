@@ -8,7 +8,7 @@ export const STOCK_STATE_VALUES = [
   'IN_STOCK',
   'OUT_OF_STOCK',
 ]
-export const CONTENT_TYPE_VALUES = ['ARTICLE', 'PAGE']
+export const CONTENT_TYPE_VALUES = ['ARTICLE']
 
 export function isKnownPublishStatus(value) {
   return PUBLISH_STATUS_VALUES.includes(value)
@@ -601,9 +601,6 @@ function normalizeContentTranslations(source) {
       body: typeof en.body === 'string' ? en.body : '',
       seoTitle: toTrimmedString(en.seoTitle) || '',
       seoDescription: toTrimmedString(en.seoDescription) || '',
-      heroTitle: toTrimmedString(en.heroTitle) || '',
-      heroDescription: toTrimmedString(en.heroDescription) || '',
-      heroKicker: toTrimmedString(en.heroKicker) || '',
     },
   }
 }
@@ -633,16 +630,10 @@ export function normalizeContentItem(input) {
     body: toTrimmedString(source.body) || undefined,
     coverImage: normalizeImageAsset(source.coverImage),
     productImage: normalizeImageAsset(source.productImage),
-    pageType: toTrimmedString(source.pageType) || undefined,
     // Flat id scalar — required by ContentDetailScreen to pre-select dropdown
     // and to re-send on save so backend does not clear the association.
     categoryId,
     parentId: toTrimmedString(source.parentId) || undefined,
-    // Hero fields for PAGE type
-    heroImage: normalizeImageAsset(source.heroImage),
-    heroTitle: toTrimmedString(source.heroTitle) || undefined,
-    heroDescription: toTrimmedString(source.heroDescription) || undefined,
-    heroKicker: toTrimmedString(source.heroKicker) || undefined,
     categories: Array.isArray(source.categories)
       ? source.categories.map(normalizeCategorySummary).filter(Boolean)
       : [],
@@ -687,10 +678,10 @@ export function normalizeRedirect(input) {
 }
 
 export const ORDER_STATUS_VALUES = [
-  'PENDING', 'ON_HOLD', 'PROCESSING', 'COMPLETED', 'CANCELLED', 'FAILED', 'REFUNDED',
+  'PENDING', 'ON_HOLD', 'PROCESSING', 'COMPLETED', 'CANCELLED', 'FAILED',
 ]
 export const PAYMENT_STATUS_VALUES = [
-  'UNPAID', 'PAID', 'REFUNDED', 'CANCELLED',
+  'UNPAID', 'PAID', 'CANCELLED',
 ]
 
 function toTrimmedStringLocal(value) {
@@ -820,9 +811,6 @@ export function normalizeOrder(input) {
     taxAmount: toIntegerLocal(s.taxAmount, 0),
     total: toIntegerLocal(s.totalAmount, 0),
     paidAmount: toIntegerLocal(s.paidAmount, 0),
-    refundAmount: toIntegerLocal(s.refundAmount, 0),
-    refundReason: toTrimmedStringLocal(s.refundReason) || undefined,
-    refundedAt: toTrimmedStringLocal(s.refundedAt) || undefined,
     currency: toTrimmedStringLocal(s.currency) || 'VND',
     // Dates — backend uses placedAt (not createdAt)
     placedAt: toTrimmedStringLocal(s.placedAt) || undefined,

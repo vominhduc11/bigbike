@@ -178,8 +178,8 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
         t('orders.detail.confirmBacsTitle')
       )
       if (!confirmed) return
-    } else if (newStatus === 'COMPLETED' || newStatus === 'REFUNDED') {
-      const labelKeys = { COMPLETED: 'orders.detail.dangerCompleted', REFUNDED: 'orders.detail.dangerRefunded' }
+    } else if (newStatus === 'COMPLETED') {
+      const labelKeys = { COMPLETED: 'orders.detail.dangerCompleted' }
       const label = labelKeys[newStatus] ? t(labelKeys[newStatus]) : newStatus
       const confirmed = await showConfirm(
         t('orders.detail.confirmStatusMessage', { label }),
@@ -347,7 +347,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
               )}
             </div>
           </div>
-          {!['CANCELLED', 'FAILED', 'REFUNDED'].includes(order.orderStatus)
+          {!['CANCELLED', 'FAILED'].includes(order.orderStatus)
             && (PAYMENT_TRANSITIONS[order.paymentStatus] ?? []).length > 0 && (
             <div style={{
               padding: '12px 16px',

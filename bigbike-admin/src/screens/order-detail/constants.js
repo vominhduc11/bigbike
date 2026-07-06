@@ -5,7 +5,6 @@
 export const PAYMENT_TRANSITIONS = {
   UNPAID:    ['PAID', 'CANCELLED'],
   PAID:      ['UNPAID'],
-  REFUNDED:  [],
   CANCELLED: [],
 }
 

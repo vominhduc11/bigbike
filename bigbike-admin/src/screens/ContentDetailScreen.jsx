@@ -622,8 +622,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                     />
                   </Field>
 
-                  {/* Đường dẫn URL theo ngôn ngữ — slug tiếng Anh CHỈ cho BÀI VIẾT (ARTICLE_RULE_003);
-                      trang tĩnh giữ slug cố định (PAGE_RULE_003) nên luôn hiện slug tiếng Việt. */}
+                  {/* Đường dẫn URL theo ngôn ngữ — slug tiếng Anh cho BÀI VIẾT (ARTICLE_RULE_003). */}
                   {isEnLang && isArticle ? (
                     <Field
                       full
