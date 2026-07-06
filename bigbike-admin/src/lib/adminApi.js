@@ -743,15 +743,6 @@ export async function fetchRedirects(query) {
   }
 }
 
-export async function fetchRedirectDetail(redirectId) {
-  try {
-    const payload = await requestJson(`/admin/redirects/${redirectId}`)
-    return withLiveData(parseDetailPayload(payload, normalizeRedirect))
-  } catch (error) {
-    throw normalizeError(error)
-  }
-}
-
 export async function createRedirect(input) {
   const payload = await requestJson('/admin/redirects', {
     method: 'POST',
@@ -1103,14 +1094,6 @@ export async function fetchSettings() {
   } catch (error) {
     throw normalizeError(error)
   }
-}
-
-export async function updateSetting(key, value) {
-  const payload = await requestJson(`/admin/settings/${key}`, {
-    method: 'PATCH',
-    body: { value },
-  })
-  return { item: normalizeSetting(payload?.data || {}) }
 }
 
 export async function batchUpdateSettings(updates) {
@@ -1737,16 +1720,6 @@ export async function fetchAdminNotifications() {
     unreadCount: Number(data.unreadCount ?? items.length),
     items: items.map(normalizeAdminNotification),
   }
-}
-
-export async function markAdminNotificationsRead(ids) {
-  const list = Array.isArray(ids) ? ids.filter(Boolean) : []
-  if (list.length === 0) return { updated: 0 }
-  const payload = await requestJson('/admin/notifications/mark-read', {
-    method: 'POST',
-    body: { ids: list },
-  })
-  return payload?.data ?? { updated: 0 }
 }
 
 export async function markAllAdminNotificationsRead() {
