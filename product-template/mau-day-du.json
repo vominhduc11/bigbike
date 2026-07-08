@@ -1,24 +1,24 @@
 [
   {
-     "sku": "SCS-CAM-S",
-     "categoryId": "tai-nghe-bluetooth-mu-bao-hiem",
-     "brandId": "scs",
-     "gender": "Unisex",
-     "retailPrice": 3290000,
-     "salePrice": null,
-     "name": {
+    "sku": "SCS-CAM-S",
+    "categoryId": "tai-nghe-bluetooth-mu-bao-hiem",
+    "brandId": "scs",
+    "gender": "Unisex",
+    "retailPrice": 3290000,
+    "salePrice": null,
+    "name": {
       "nameVI": "CAMERA HÀNH TRÌNH GẮN XE MÁY SCS CAM-S - GHI HÌNH FULL HD 1080P, NHỎ GỌN, CHỐNG NƯỚC IP67",
       "nameEN": "SCS CAM-S"
     },
-     "slug": {
+    "slug": {
       "slugVI": "camera-hanh-trinh-gan-xe-scs-cam-s",
       "slugEN": "scs-cam-s"
     },
-     "shortDescription": {
+    "shortDescription": {
       "shortDescriptionVI": null,
       "shortDescriptionEN": "<p>•<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span>Quay liên tục 10h khi vừa sạc vừa quay— đủ cho 1 ngày shipper hoặc tour 2 ngày</span></p><p>•<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span>Full HD 1080p góc rộng — ghi lại biển số, tình huống va chạm, bằng chứng giao thông</span></p><p>•<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span>IP67 chống nước + gắn được trên mũ fullface, 3/4, lật hàm và xe máy</span></p>"
     },
-     "specifications": {
+    "specifications": {
       "specificationsVI": null,
       "specificationsEN": null
     },
@@ -38,7 +38,7 @@
       "originBrandCountryVI": "Trung Quốc",
       "originBrandCountryEN": null
     },
-     "seo": {
+    "seo": {
       "titleVI": "CAMERA HÀNH TRÌNH DÀNH CHO XE MÁY SCS CAM-S",
       "titleEN": "SCS Cam-S – Camera Giám Sát Hành Trình Xe Máy, IP67 | BigBike",
       "descriptionVI": null,
