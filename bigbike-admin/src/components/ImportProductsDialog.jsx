@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, Check, Download, Loader2, Upload, X } from 'lucide-react'
 import { Modal } from '@/components/layout/Modal'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from '@/lib/toast'
 import {
   ApiClientError,
@@ -192,11 +193,10 @@ export function ImportProductsDialog({ open, onClose }) {
                   <tr key={row.rowKey} className="border-b border-border last:border-0 align-top">
                     {step === 'review' && (
                       <td className="p-2">
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           disabled={row.status === 'ERROR'}
                           checked={!excludedRowKeys.has(row.rowKey)}
-                          onChange={() => toggleRow(row.rowKey)}
+                          onCheckedChange={() => toggleRow(row.rowKey)}
                           aria-label={t('import.rowCheckboxLabel', { name: row.productName || row.rowKey })}
                         />
                       </td>
