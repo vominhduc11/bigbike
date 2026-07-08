@@ -1,4 +1,4 @@
-﻿import { getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import { Container } from "@/components/layout/Container";
 import { ArticleCard } from "@/components/content/ArticleCard";
