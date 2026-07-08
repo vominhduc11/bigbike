@@ -28,14 +28,7 @@
    Custom CSS breakpoints:               640px · 900px · 901–1200px · 1920px
    ───────────────────────────────────────────────────────────────────────────*/
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   Summary card grid (KPI cards)
-   ═══════════════════════════════════════════════════════════════════════════ */
 
-.summary-card.is-active {
-  border-color: var(--admin-color-primary);
-  background: var(--admin-color-surface-selected);
-}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Segmented tabs
@@ -358,7 +351,7 @@
 
 .dash-attention-item--danger  .dash-attention-icon { background: var(--admin-color-status-danger-bg);  color: var(--admin-color-status-danger-text); }
 .dash-attention-item--warning .dash-attention-icon { background: var(--admin-color-status-warning-bg); color: var(--admin-color-status-warning-text); }
-.dash-attention-item--info    .dash-attention-icon { background: var(--admin-color-status-info-bg);    color: var(--admin-color-status-info-text); }
+
 
 .dash-attention-body {
   flex: 1;
@@ -402,19 +395,7 @@
 
 /* On tablet/mobile a minimum width keeps columns legible; the wrap scrolls. */
 
-/* ── Inventory info banner ────────────────────────────────────────────────── */
-.inv-info-banner {
-  background: var(--admin-color-status-info-bg);
-  border: 1px solid var(--admin-color-status-info-border);
-  border-radius: var(--admin-radius-md);
-  padding: 12px 16px;
-  margin-bottom: 16px;
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  font-size: var(--admin-text-xs);
-  color: var(--admin-color-status-info-text);
-}
+
 
 /* ── Settings UI utilities ────────────────────────────────────────────────── */
 .settings-save-banner {
