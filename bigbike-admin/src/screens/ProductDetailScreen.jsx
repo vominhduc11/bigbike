@@ -1187,7 +1187,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     <Select value={form.gender || 'NONE'} onValueChange={(val) => { if (val) updateField('gender', val === 'NONE' ? '' : val) }} disabled={isReadOnly}>
                       <SelectTrigger>
                         <SelectValue placeholder={t('products.detail.genderPlaceholder', { defaultValue: 'Không chọn' })}>
-                          {form.gender ? (GENDER_LABEL_EN[form.gender] && isEn ? GENDER_LABEL_EN[form.gender] : form.gender) : undefined}
+                          {form.gender
+                            ? (GENDER_LABEL_EN[form.gender] && isEn ? GENDER_LABEL_EN[form.gender] : form.gender)
+                            : t('products.detail.genderPlaceholder', { defaultValue: 'Không chọn' })}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
