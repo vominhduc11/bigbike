@@ -14,7 +14,28 @@ export const AssignmentConfigContext = createContext(null)
 
 // Base URL trang sản phẩm trên storefront. Canonical luôn tự sinh từ slug
 // (https://bigbike.vn/product/{slug}) — admin không nhập tay (khớp PRODUCT_DATA_COMPLETENESS_AUDIT).
-const PRODUCT_STOREFRONT_BASE = `${(import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn').replace(/\/$/, '')}/product`
+//
+// KHÔNG tái dùng thẳng VITE_STOREFRONT_BASE_URL: biến đó phục vụ mục đích khác (base URL cho
+// iframe live-preview — trên VPS bị trỏ vào IP máy chủ để né trình duyệt chặn Private Network
+// Access, xem project_admin_preview_storefront_url). Backend chỉ chấp nhận host bigbike.vn/
+// www.bigbike.vn, hoặc localhost/127.0.0.1 khi profile dev (AdminMutationValidators.validatePublicUrl)
+// — một IP dev/staging bất kỳ sẽ luôn bị 400 seo.canonicalUrl. Nên tự xét host của biến env trước:
+// chỉ dùng khi nó thật sự là localhost/127.0.0.1, còn lại luôn fallback về domain production.
+function resolveProductStorefrontBase() {
+  const raw = import.meta.env.VITE_STOREFRONT_BASE_URL
+  if (raw) {
+    try {
+      const host = new URL(raw).hostname
+      if (host === 'localhost' || host === '127.0.0.1') {
+        return `${raw.replace(/\/$/, '')}/product`
+      }
+    } catch {
+      // raw không parse được thành URL hợp lệ -> rơi xuống fallback production bên dưới.
+    }
+  }
+  return 'https://bigbike.vn/product'
+}
+const PRODUCT_STOREFRONT_BASE = resolveProductStorefrontBase()
 
 // URL canonical tự sinh từ slug. null khi chưa có slug.
 // Dấu "/" cuối khớp với route web (next.config trailingSlash:true → /product/{slug}/).

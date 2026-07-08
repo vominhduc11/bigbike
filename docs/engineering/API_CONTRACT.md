@@ -651,6 +651,22 @@ Status: `CONFIRMED_FROM_CODE`
 
 Evidence: `AdminCatalogController.previewProduct`, `AdminCatalogMutationService.previewProduct` (transient build + no `save`), `JpaCatalogReadRepository.mapPreviewProduct` (public wrapper over `toDomain(entity, true, locale)`), `AdminCatalogMutationService.applyProductPatch` (pure in-memory entity build; its sole repo touch — `resolveRelatedProducts` — is a read).
 
+### `seo.canonicalUrl` — host allowlist on every upsert (2026-07-08)
+
+`seo.canonicalUrl` is validated on **every** Product/Category/Brand upsert (`CatalogRequestValidator.validateProductRequest`/`validateCategoryRequest`/`validateBrandRequest`, all three call the shared `AdminMutationValidators.validateSeoMeta`) and every Article upsert (`ContentRequestValidator`) — including **preview**, which shares the exact same call with no carve-out for this field (unlike slug uniqueness, see "Product preview" above).
+
+Rule (`AdminMutationValidators.validatePublicUrl`): the URL must be `http(s)` and its **host** must be either:
+- `bigbike.vn` or `www.bigbike.vn` (always allowed), or
+- `localhost` or `127.0.0.1` (allowed **only** when the backend's active Spring profile is `dev`/`mock`/`test`/`local` — `CatalogRequestValidator.isDev`/`ContentRequestValidator.isDev`, read from `Environment.getActiveProfiles()`).
+
+Any other host (including a raw dev/staging IP) → `400 VALIDATION_ERROR` `field=seo.canonicalUrl, code=INVALID_VALUE, message="Canonical URL must belong to bigbike.vn or www.bigbike.vn."` — **on both preview and the real save**, since the rule is not preview-specific.
+
+**Frontend contract this implies (`bigbike-admin`):** the product form never lets the admin type a canonical URL — `canonicalUrlFromSlug()` (`bigbike-admin/src/screens/product-detail/constants.js`) auto-derives it from the slug. Its base URL MUST resolve to `https://bigbike.vn` (or a literal `localhost`/`127.0.0.1` origin) to ever pass the rule above — it must **not** blindly reuse `VITE_STOREFRONT_BASE_URL`, because that env var is independently dedicated to the live-preview iframe's `src` (see "Admin storefront-preview URL" gotcha — on a VPS it is deliberately pinned to the server's public IP to dodge a Private Network Access block, not to the production domain). Conflating the two: any environment where `VITE_STOREFRONT_BASE_URL` is neither `bigbike.vn` nor `localhost`/`127.0.0.1` (e.g. a VPS IP) makes **every** product preview and save fail this check. This exact incident happened 2026-07-08 (host-allowlist rule shipped in a same-day refactor, `canonicalUrlFromSlug`'s reuse of `VITE_STOREFRONT_BASE_URL` had existed since 2026-06-21 with no backend host check to conflict with until then) — fixed by having `canonicalUrlFromSlug`'s base resolve the env var's host itself and fall back to `https://bigbike.vn` unless that host is literally `localhost`/`127.0.0.1`.
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence: `AdminMutationValidators.validatePublicUrl`/`validateSeoMeta`, `CatalogRequestValidator` (`isDev` field + 3 call sites), `ContentRequestValidator` (`isDev` field), `bigbike-admin/src/screens/product-detail/constants.js` (`canonicalUrlFromSlug`, `PRODUCT_STOREFRONT_BASE`).
+
 ### Bulk product import — JSON (V2026-07-04; CSV path removed V2026-07-06)
 
 Lets a shop owner create/update many products at once from a single JSON file (typically ChatGPT/Claude-generated) instead of one-by-one via the form. Two-step flow: validate (dry-run report) → commit (actually saves). **CSV was removed on 2026-07-06** — a JSON object already carries the full product (goods *and* rich content), so the earlier goods-in-CSV + content-in-JSON split was collapsed to one JSON format; the `type` param is gone.
