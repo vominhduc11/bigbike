@@ -50,7 +50,7 @@ function previewSrc(url, { themeAsset = false } = {}) {
 function BannerPreview({ bg, illustration, title }) {
   return (
     <div
-      className="relative w-full overflow-hidden rounded-[var(--admin-radius-md)] border border-[var(--bb-border)] bg-neutral-800"
+      className="relative w-full overflow-hidden rounded-[var(--admin-radius-md)] border border-[var(--bb-border)] bg-[var(--bb-sidebar)]"
       style={{ aspectRatio: '1920 / 460' }}
     >
       {bg.src ? (
@@ -59,7 +59,7 @@ function BannerPreview({ bg, illustration, title }) {
       <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-transparent" aria-hidden="true" />
       <div className="absolute inset-y-0 left-0 flex flex-col justify-center gap-1 px-4 sm:px-6">
         <span className="text-base font-bold leading-tight text-white drop-shadow sm:text-xl">{title}</span>
-        <span className="text-[11px] text-white/80">Bigbike.vn / {title}</span>
+        <span className="text-xs text-white/80">Bigbike.vn / {title}</span>
       </div>
       {illustration.src ? (
         <img

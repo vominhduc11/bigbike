@@ -261,18 +261,18 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
             disabled={disabled}
           />
         </span>
-        {btn(() => editor.chain().focus().unsetColor().unsetBackgroundColor().run(), false, t('richEditor.clearColor', { defaultValue: 'Xóa màu' }), <span className="text-[12px] font-semibold line-through">A</span>)}
+        {btn(() => editor.chain().focus().unsetColor().unsetBackgroundColor().run(), false, t('richEditor.clearColor', { defaultValue: 'Xóa màu' }), <span className="text-xs font-semibold line-through">A</span>)}
 
         {/* Bảng */}
         <Divider />
         {btn(() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(), false, t('richEditor.insertTable', { defaultValue: 'Chèn bảng' }), <TableIcon size={14} />)}
         {s?.isTable && (
           <>
-            {btn(() => editor.chain().focus().addColumnAfter().run(), false, t('richEditor.addColumn', { defaultValue: 'Thêm cột' }), <span className="text-[11px] px-0.5">+|</span>)}
-            {btn(() => editor.chain().focus().addRowAfter().run(), false, t('richEditor.addRow', { defaultValue: 'Thêm dòng' }), <span className="text-[11px] px-0.5">+−</span>)}
-            {btn(() => editor.chain().focus().deleteColumn().run(), false, t('richEditor.deleteColumn', { defaultValue: 'Xóa cột' }), <span className="text-[11px] px-0.5 text-destructive">−|</span>)}
-            {btn(() => editor.chain().focus().deleteRow().run(), false, t('richEditor.deleteRow', { defaultValue: 'Xóa dòng' }), <span className="text-[11px] px-0.5 text-destructive">−−</span>)}
-            {btn(() => editor.chain().focus().deleteTable().run(), false, t('richEditor.deleteTable', { defaultValue: 'Xóa bảng' }), <span className="text-[11px] px-0.5 text-destructive">✕▦</span>)}
+            {btn(() => editor.chain().focus().addColumnAfter().run(), false, t('richEditor.addColumn', { defaultValue: 'Thêm cột' }), <span className="text-xs px-0.5">+|</span>)}
+            {btn(() => editor.chain().focus().addRowAfter().run(), false, t('richEditor.addRow', { defaultValue: 'Thêm dòng' }), <span className="text-xs px-0.5">+−</span>)}
+            {btn(() => editor.chain().focus().deleteColumn().run(), false, t('richEditor.deleteColumn', { defaultValue: 'Xóa cột' }), <span className="text-xs px-0.5 text-destructive">−|</span>)}
+            {btn(() => editor.chain().focus().deleteRow().run(), false, t('richEditor.deleteRow', { defaultValue: 'Xóa dòng' }), <span className="text-xs px-0.5 text-destructive">−−</span>)}
+            {btn(() => editor.chain().focus().deleteTable().run(), false, t('richEditor.deleteTable', { defaultValue: 'Xóa bảng' }), <span className="text-xs px-0.5 text-destructive">✕▦</span>)}
           </>
         )}
       </div>

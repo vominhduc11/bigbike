@@ -164,7 +164,7 @@ export function GlobalSearch({ navigate, visiblePaths }) {
       >
         <Search size={15} className="shrink-0" />
         <span className="flex-1 truncate text-left text-sm">{t('search.placeholder')}</span>
-        <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] font-semibold">⌘K</kbd>
+        <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 text-xs font-semibold">⌘K</kbd>
       </button>
 
       {open && createPortal(
@@ -203,7 +203,7 @@ export function GlobalSearch({ navigate, visiblePaths }) {
                 aria-autocomplete="list"
                 autoComplete="off"
               />
-              <kbd className="rounded border border-border bg-surface-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">Esc</kbd>
+              <kbd className="rounded border border-border bg-surface-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">Esc</kbd>
             </div>
 
             <div ref={listRef} id="bb-search-listbox" role="listbox" aria-label={t('search.title')} className="max-h-[52vh] overflow-y-auto p-1.5">
@@ -219,7 +219,7 @@ export function GlobalSearch({ navigate, visiblePaths }) {
                 const GroupIcon = GROUP_META[group].icon
                 return (
                   <div key={group} className="mb-1 last:mb-0">
-                    <p className="px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                    <p className="px-2.5 py-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
                       {t(`search.group.${group}`)}
                     </p>
                     {groupRows.map((row) => {

@@ -28,8 +28,8 @@ export function FilterSearchInput({ value, onChange, placeholder, ariaLabel, aut
         aria-label={ariaLabel}
         autoFocus={autoFocus}
         className={cn(
-          'h-[30px] w-full pl-7 pr-2.5 text-[12.5px] shadow-none',
-          'rounded-[6px] border-[var(--bb-border-strong)] bg-[var(--bb-surface)] text-[var(--bb-text)]',
+          'h-[30px] w-full pl-7 pr-2.5 text-xs shadow-none',
+          'rounded-[var(--admin-radius-xs)] border-[var(--bb-border-strong)] bg-[var(--bb-surface)] text-[var(--bb-text)]',
           'focus-visible:border-[var(--bb-primary)] focus-visible:ring-[3px] focus-visible:ring-[var(--bb-primary-muted)] focus-visible:ring-offset-0',
           className
         )}

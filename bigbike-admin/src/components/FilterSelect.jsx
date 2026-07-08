@@ -26,8 +26,8 @@ export function FilterSelect({ value, onValueChange, options = [], placeholder, 
       <SelectTrigger
         aria-label={ariaLabel}
         className={cn(
-          'h-[30px] w-auto gap-2 px-2.5 text-[12.5px] shadow-none',
-          'rounded-[6px] border-[var(--bb-border-strong)] bg-[var(--bb-surface)] text-[var(--bb-text)]',
+          'h-[30px] w-auto gap-2 px-2.5 text-xs shadow-none',
+          'rounded-[var(--admin-radius-xs)] border-[var(--bb-border-strong)] bg-[var(--bb-surface)] text-[var(--bb-text)]',
           'focus:border-[var(--bb-primary)] focus:ring-[3px] focus:ring-[var(--bb-primary-muted)] focus:ring-offset-0',
           className
         )}

@@ -512,7 +512,7 @@ export function DashboardScreen({ navigate }) {
                                 >
                                   {order.orderNumber}
                                 </button>
-                                <span className="text-[11px] text-muted leading-none mt-0.5">
+                                <span className="text-xs text-muted leading-none mt-0.5">
                                   {formatRelativeTime(order.placedAt, t)}
                                 </span>
                               </div>

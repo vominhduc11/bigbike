@@ -63,7 +63,7 @@ export function IntroContentField({ value, onChange, disabled, lang = 'vi' }) {
   return (
     <div className="flex flex-col gap-4">
       {model._legacy && (
-        <p className="rounded-[var(--admin-radius-xs)] border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+        <p className="rounded-[var(--admin-radius-xs)] border border-warning-border bg-warning-bg px-3 py-2 text-xs text-warning">
           {t('categories.detail.introLegacyWarning')}
         </p>
       )}
