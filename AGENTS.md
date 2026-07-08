@@ -362,8 +362,8 @@ Tailwind utility classes / CSS variables     ← text-primary, bg-brand, var(--a
 ```
 
 **Quy tắc:**
-- **Màu**: **Primary = cam Direction B `#cc4a08`** (dark `#f0791f`) cho CTA / active / selected / focus / link — map qua `--admin-color-primary`, shadcn `--primary` / `--ring`, và `--bb-primary*`. **Đỏ thương hiệu `#e8281e`** (`--admin-color-brand-red` / `--bb-brand`) **chỉ** cho brand chrome: vạch active sidebar, nav badge, notification pip, logo. Danger giữ token danger riêng. Tham chiếu qua CSS variable / Tailwind token, không hardcode hex.
-- **Font**: `Inter` (body/UI/content), `Bungee` (display — số KPI, wordmark), `JetBrains Mono` (mã/SKU/ID). **Không dùng Exo/Barlow/Oswald** trong admin. Đã cài qua `@fontsource`.
+- **Màu**: **Primary = đỏ `#FF0C09`** (dark `#FF5A4D`) dùng chung cho cả CTA/active/selected/focus/link và brand chrome (logo, sidebar active, nav badge, notification pip), cùng giá trị đỏ thương hiệu chính thức của `bigbike-web`. Thương hiệu đỏ `--admin-color-brand-red` (`--bb-brand`) giờ là alias thuần của primary color. Danger giữ token danger riêng. Tham chiếu qua CSS variable / Tailwind token, không hardcode hex.
+- **Font**: `Inter` (body/UI/content), `Oswald` (display — số KPI, wordmark, tiêu đề H1), `JetBrains Mono` (mã/SKU/ID). Đã cài qua `@fontsource`. Không dùng Exo/Bungee trong admin.
 - **Scale / spacing**: type scale + thang 4px theo `admin-tokens.css` (`--admin-text-*`, `--admin-space-*`).
 - **Border radius**: theo token bo `--admin-radius-*` (xs 5 / sm 8 / md 12 / lg 16 px); `rounded-full` chỉ cho phần tử thực sự tròn. Admin **không** dùng `rounded-none` mặc định như web.
 - **Visual style**: operational/data-first — dense, readable, table/form/filter centric. Không hero/campaign visuals trong operational screens (trừ module preview cụ thể yêu cầu).

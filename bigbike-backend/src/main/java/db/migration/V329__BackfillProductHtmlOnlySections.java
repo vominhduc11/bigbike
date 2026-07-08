@@ -25,9 +25,12 @@ import java.util.Map;
  * có sẵn {@code *_html}/{@code *_html_en} không rỗng (admin đã tay-serialize từ trước khi migration
  * này được viết), nên trên dữ liệu hiện tại migration này backfill 0 sản phẩm — vẫn viết đầy đủ để
  * làm lưới an toàn cho môi trường khác có dữ liệu khác, và làm bước "xác nhận trước khi xoá bảng".
- * {@code group_name}/{@code group_name_en} rỗng trên toàn bộ 95 dòng {@code product_specifications}
- * đã audit — logic serialize (giống hệt {@code specSheet.js}) không dùng 2 field này, nên nếu một
- * môi trường khác có dữ liệu không rỗng ở đây, migration NÉM LỖI thay vì âm thầm bỏ dữ liệu.
+ *
+ * <p>{@code group_name}/{@code group_name_en} (tiêu đề nhóm thông số, vd "Kết nối"/"Âm thanh") rỗng
+ * trên toàn bộ 95 dòng đã audit ban đầu, nhưng dữ liệu sản phẩm mới thêm sau đó (SP tai nghe SCS
+ * S9XM, mũ Caberg Drift Evo II) có dùng field này — {@code serializeSpecsHtml} chèn 1 hàng tiêu đề
+ * nhóm (colspan 2, in đậm) mỗi khi group đổi, giữ đúng phân nhóm hiển thị trên PDP thay vì làm phẳng
+ * thành 1 danh sách.
  */
 public class V329__BackfillProductHtmlOnlySections extends BaseJavaMigration {
 
@@ -52,6 +55,9 @@ public class V329__BackfillProductHtmlOnlySections extends BaseJavaMigration {
                     + "font-size:14px;color:var(--color-muted-foreground,#6b7280)";
     private static final String BADGE_STYLE = "display:flex;align-items:center;gap:8px";
     private static final String DOT_STYLE = "height:6px;width:6px;flex:none;background:var(--color-brand,#e8281e)";
+    private static final String GROUP_HEADING_STYLE =
+            "background:var(--color-secondary,#f3f4f6);font-weight:700;text-transform:uppercase;"
+                    + "letter-spacing:0.04em;font-size:14px;padding-top:12px";
 
     @Override
     public void migrate(Context context) throws Exception {
@@ -72,16 +78,9 @@ public class V329__BackfillProductHtmlOnlySections extends BaseJavaMigration {
              ResultSet rs = select.executeQuery()) {
             while (rs.next()) {
                 String productId = rs.getString("product_id");
-                String groupName = rs.getString("group_name");
-                String groupNameEn = rs.getString("group_name_en");
-                if (!isBlank(groupName) || !isBlank(groupNameEn)) {
-                    throw new IllegalStateException("V329: product " + productId
-                            + " has a non-blank group_name on product_specifications — outside the audited "
-                            + "shape (the serialize logic drops this field), aborting migration.");
-                }
                 byProduct.computeIfAbsent(productId, k -> new ArrayList<>()).add(new SpecRow(
-                        rs.getString("name"), rs.getString("spec_value"), groupName,
-                        rs.getString("name_en"), rs.getString("spec_value_en"), groupNameEn));
+                        rs.getString("name"), rs.getString("spec_value"), rs.getString("group_name"),
+                        rs.getString("name_en"), rs.getString("spec_value_en"), rs.getString("group_name_en")));
             }
         }
 
@@ -217,18 +216,33 @@ public class V329__BackfillProductHtmlOnlySections extends BaseJavaMigration {
         return updated;
     }
 
-    /** Mirrors {@code specSheet.js}'s {@code serializeSpecs}. */
+    /**
+     * Mirrors {@code specSheet.js}'s {@code serializeSpecs}, cộng thêm hàng tiêu đề nhóm (colspan 2)
+     * mỗi khi {@code group_name}/{@code group_name_en} đổi giá trị so với dòng trước — giữ đúng phân
+     * nhóm hiển thị (vd "Kết nối" / "Âm thanh") thay vì làm phẳng thành 1 bảng dài.
+     */
     private static String serializeSpecsHtml(List<SpecRow> rows, boolean en) {
         StringBuilder trs = new StringBuilder();
+        String lastGroup = null;
+        boolean sawGroup = false;
         for (SpecRow row : rows) {
             String name = (en ? nullToEmpty(row.nameEn()) : nullToEmpty(row.name())).trim();
             String value = (en ? nullToEmpty(row.valueEn()) : nullToEmpty(row.value())).trim();
             if (name.isEmpty() && value.isEmpty()) continue;
+
+            String group = (en ? nullToEmpty(row.groupNameEn()) : nullToEmpty(row.groupName())).trim();
+            if (!group.isEmpty() && !group.equals(lastGroup)) {
+                trs.append("<tr><th colspan=\"2\" style=\"").append(GROUP_HEADING_STYLE).append("\">")
+                        .append(escapeHtml(group)).append("</th></tr>");
+                sawGroup = true;
+            }
+            lastGroup = group.isEmpty() ? lastGroup : group;
+
             trs.append("<tr><th scope=\"row\">").append(escapeHtml(name)).append("</th><td>")
                     .append(escapeHtml(value)).append("</td></tr>");
         }
         if (trs.length() == 0) return "";
-        return "<table class=\"shop_attributes\"><tbody>" + trs + "</tbody></table>";
+        return "<table class=\"shop_attributes" + (sawGroup ? " bb-specs-grouped" : "") + "\"><tbody>" + trs + "</tbody></table>";
     }
 
     /** Mirrors {@code specStatsBlock.js}'s {@code serializeSpecStats}. */

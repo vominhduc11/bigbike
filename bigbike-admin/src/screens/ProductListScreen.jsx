@@ -325,9 +325,21 @@ export function ProductListScreen({ navigate, canUpdate }) {
     successKey: 'products.bulkRestoreSuccess',
   }), [runBulk])
 
+  const handleBulkPermanentDelete = useCallback(() => runBulk({
+    confirmKey: 'products.bulkPermanentDeleteConfirm',
+    titleKey: 'products.bulkPermanentDeleteTitle',
+    confirmLabel: 'common.permanentDelete',
+    variant: 'danger',
+    action: permanentDeleteProduct,
+    successKey: 'products.bulkPermanentDeleteSuccess',
+  }), [runBulk])
+
   const bulkActions = canUpdate
     ? (isTrashView
-        ? [{ label: t('products.bulkRestore'), onClick: handleBulkRestore, disabled: bulkBusy }]
+        ? [
+            { label: t('products.bulkRestore'), onClick: handleBulkRestore, disabled: bulkBusy },
+            { label: t('products.bulkPermanentDelete', { defaultValue: 'Xóa vĩnh viễn' }), tone: 'danger', onClick: handleBulkPermanentDelete, disabled: bulkBusy },
+          ]
         : [{ label: t('products.bulkDelete'), onClick: handleBulkDelete, tone: 'danger', disabled: bulkBusy }])
     : []
 

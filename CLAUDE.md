@@ -89,8 +89,8 @@ Mọi trang/screen phải lấy màu/font/spacing/radius từ **design system c�
 - Spacing thang 4px. Radius `rounded-none` mặc định (`rounded-full` chỉ cho phần tử thật sự tròn).
 
 **bigbike-admin** (cascade: `admin-tokens.css` → `index.css` → Tailwind/CSS var):
-- Màu: **Primary = cam `#cc4a08`** (dark `#f0791f`) cho CTA/active/selected/focus/link; **đỏ `#e8281e`** **chỉ** cho brand chrome (vạch sidebar active, nav badge, notification pip, logo); danger có token riêng. Qua token, không hardcode hex.
-- Font: Inter (body), Bungee (display/KPI), JetBrains Mono (mã/SKU) — không Exo/Barlow/Oswald.
+- Màu: **Primary = đỏ `#FF0C09`** (dark `#FF5A4D`) dùng chung cho cả CTA/active/selected/focus/link và brand chrome (logo, vạch sidebar active, nav badge, notification pip). Đồng bộ cùng màu đỏ thương hiệu chính thức của `bigbike-web`. Qua token, không hardcode hex.
+- Font: Inter (body), Oswald (display/KPI/H1), JetBrains Mono (mã/SKU) — không Exo/Barlow/Bungee.
 - Spacing thang 4px. Radius theo `--admin-radius-*` (xs5/sm8/md12/lg16). Admin **không** `rounded-none` mặc định. Visual data-first, không hero/campaign trong operational screen.
 
 **Cấm (cả 2 app):** arbitrary Tailwind value (`bg-[#abc]`, `text-[13px]`) khi đã có token; Tailwind built-in color (`bg-red-500`) thay brand token; import font ngoài danh sách; dùng font/token app này trong app kia; CSS scoped per-page khi Tailwind đủ.

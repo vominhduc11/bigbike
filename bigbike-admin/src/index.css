@@ -345,9 +345,10 @@ a {
 }
 
 .detail-section-header h2 {
+  font-family: var(--admin-font-display);
   margin: 0;
   font-size: var(--admin-text-base);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--admin-color-text-primary);
 }
@@ -437,9 +438,6 @@ a {
   --rte-canvas-placeholder:    #adb5bd;
   --rte-canvas-border-subtle:  #e8eaed;
   --rte-canvas-border-default: #d1d5db;
-  --rte-canvas-primary:        #cc4a08;
-  --rte-canvas-primary-hover:  #ac3e08;
-
   /* Khung đệm (mat) quanh canvas trắng cố định — vô hiệu ở light mode. */
   --rte-canvas-frame-padding: 0px;
   --rte-canvas-frame-bg:      transparent;

@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Checkbox } from "@/components/ui/checkbox";
 
 export function CheckoutStepTitle({ step, children }: { step?: number; children: React.ReactNode }) {
@@ -23,14 +24,15 @@ export function FieldError({ message }: { message?: string }) {
 }
 
 export function CodPaymentBlock() {
+  const t = useTranslations("Checkout");
   return (
     <div className="bb-co-cod-block">
       <div className="bb-co-cod-icon">
         <svg viewBox="0 0 24 24" className="w-[22px] h-[22px] fill-white"><path d="M2 8h20v2H2zm0 4h20v2H2zm0 4h12v2H2zM18 14l2 2 4-4-1.4-1.4L20 13.2l-.6-.6z"/></svg>
       </div>
       <div className="bb-co-cod-text text-left">
-        <strong>Thanh toán khi nhận hàng (COD)</strong>
-        <span>Trả tiền mặt khi nhận — đồng kiểm hàng trước khi thanh toán</span>
+        <strong>{t("paymentMethod.COD")}</strong>
+        <span>{t("codSubtitle")}</span>
       </div>
       <div className="bb-co-cod-check">
         <svg viewBox="0 0 24 24" className="w-[13px] h-[13px] fill-white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
@@ -46,6 +48,7 @@ export function CheckoutConfirmRow({
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
 }) {
+  const t = useTranslations("Checkout");
   return (
     <div className="bb-co-confirm-row text-left">
       <Checkbox
@@ -55,29 +58,32 @@ export function CheckoutConfirmRow({
         className="mt-1 h-5 w-5 shrink-0 border-black data-[state=checked]:bg-black data-[state=checked]:text-white rounded-none"
       />
       <label htmlFor="confirm-cb" className="select-none text-ui-15 leading-relaxed text-foreground cursor-pointer">
-        Shop BigBike sẽ gọi điện xác nhận đơn hàng trước khi giao. Đơn hàng chỉ được xử lý sau khi xác nhận qua điện thoại. <strong className="text-black">Không trừ tiền trước khi xác nhận.</strong>
+        {t.rich("confirmNotice", { strong: (chunks) => <strong className="text-black">{chunks}</strong> })}
       </label>
     </div>
   );
 }
 
 export function TrustMini() {
+  const t = useTranslations("Checkout");
   return (
     <div className="bb-co-trust-mini text-left">
       <div className="bb-co-trust-row">
         <div className="bb-co-trust-dot" />
-        <span>Giao toàn quốc · COD · Đồng kiểm khi nhận</span>
+        <span>{t("trustShipping")}</span>
       </div>
       <div className="bb-co-trust-row">
         <div className="bb-co-trust-dot" />
-        <span>Đổi size miễn phí trong 30 ngày nếu không vừa</span>
+        <span>{t("trustReturnPolicy")}</span>
       </div>
       <div className="bb-co-trust-row">
         <div className="bb-co-trust-dot" />
-        <span>Bảo hành 24 tháng theo hãng</span>
+        <span>{t("trustWarranty")}</span>
       </div>
       <div className="bb-co-trust-row">
         <div className="bb-co-trust-dot" />
+        {/* Địa chỉ cửa hàng — dữ liệu doanh nghiệp (legacy storefront address fragment), giữ nguyên
+            không dịch (allowlist trong check-no-runtime-business-data.mjs). */}
         <span>79/30/52 Âu Cơ, Phường Hòa Bình, TP.HCM</span>
       </div>
     </div>
@@ -85,17 +91,20 @@ export function TrustMini() {
 }
 
 export function ZaloSupportBlock() {
+  const t = useTranslations("Checkout");
   return (
     <div className="bb-co-zalo-block">
-      <p className="text-ui-15 text-foreground mb-2.5 font-semibold">Cần hỗ trợ trước khi đặt?</p>
+      <p className="text-ui-15 text-foreground mb-2.5 font-semibold">{t("zaloSupportTitle")}</p>
       <a
         href="https://zalo.me/0764640679"
         target="_blank"
         rel="noopener noreferrer"
         className="bb-co-zalo-btn"
       >
-        Chat Zalo ngay
+        {t("zaloSupportCta")}
       </a>
+      {/* Tên nhân viên tư vấn + SĐT — dữ liệu doanh nghiệp (legacy storefront phone number), giữ
+          nguyên không dịch (allowlist trong check-no-runtime-business-data.mjs). */}
       <p className="text-ui-13 text-muted-foreground mt-2">Mrs. Thư · 0764640679</p>
     </div>
   );

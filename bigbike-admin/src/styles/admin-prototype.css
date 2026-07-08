@@ -293,9 +293,10 @@
   margin: 0 0 6px;
 }
 .bb-screen-title h1 {
-  font-size: 25px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-family: var(--admin-font-display);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   line-height: 1.15;
   margin: 0 0 4px;
   color: var(--bb-text);
@@ -542,7 +543,7 @@
 .bb-kpi-value {
   font-family: var(--admin-font-display);
   font-size: 23px;
-  font-weight: 400;
+  font-weight: 600;
   letter-spacing: 0.005em;
   color: var(--bb-text);
   font-variant-numeric: tabular-nums;

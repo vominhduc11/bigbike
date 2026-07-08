@@ -488,10 +488,16 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
   )
 }
 
-/** HTML thông số có phải do trình nhập cấu trúc sinh ra không (để mở đúng tab mặc định). */
+/**
+ * HTML thông số có phải do trình nhập cấu trúc sinh ra không (để mở đúng tab mặc định).
+ * `bb-specs-grouped` (V329 backfill) đánh dấu bảng có hàng tiêu đề nhóm (colspan 2) — model
+ * cấu trúc ở đây KHÔNG có khái niệm nhóm nên parse/merge sẽ làm phẳng mất tiêu đề; buộc mở tab
+ * "Mã HTML" (giữ nguyên, không parse) thay vì "Có cấu trúc" để tránh mất phân nhóm khi lưu.
+ */
 function isGeneratedSpecsHtml(html) {
   const h = (html || '').trim()
   if (!h) return true
+  if (h.includes('bb-specs-grouped')) return false
   return h.includes('shop_attributes')
 }
 

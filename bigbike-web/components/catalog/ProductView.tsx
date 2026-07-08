@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { listPublicSettings } from "@/lib/api/public-api";
 
+import { DEFAULT_LOCALE } from "@/i18n/locale";
 import { WpPurchaseSection } from "@/components/wp/WpPurchaseSection";
 import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
 import { LText, LocalizedContentProvider, useLocalizedField } from "@/components/i18n/LocalizedContent";
@@ -126,11 +127,14 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   const tProduct = useTranslations("Product");
 
   // Fetch site settings client-side using the active locale to ensure we get English translations of
-  // static fields (hours, address, zalo) when locale = "en".
+  // static fields (hours, address, zalo) when locale = "en". `initialData` chỉ gán cho key `vi`
+  // (locale mặc định, đúng bản server đã render) — nếu gán tĩnh cho MỌI key, react-query coi luôn
+  // bản `vi` đó là "fresh" cho cả key `en` trong suốt `staleTime` (5 phút) và KHÔNG fetch lại, khiến
+  // giờ mở cửa/địa chỉ/Zalo kẹt tiếng Việt dù đã đổi sang tiếng Anh.
   const { data: freshSettingsResult } = useQuery({
     queryKey: ["public-settings", locale],
     queryFn: () => listPublicSettings(locale),
-    initialData: { data: settings, error: null },
+    initialData: locale === DEFAULT_LOCALE ? { data: settings, error: null } : undefined,
     staleTime: 5 * 60 * 1000,
   });
   const activeSettings = freshSettingsResult?.data ?? settings;

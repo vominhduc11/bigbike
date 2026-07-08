@@ -97,7 +97,7 @@ export function CheckoutAddressFields({
           {...register("addressLine1")}
         />
         {idPrefix === "billing" && (
-          <p className="hint">Ví dụ: 79/30/52 Âu Cơ, Phường Hòa Bình</p>
+          <p className="hint">{t("addressExampleHint")}</p>
         )}
         <FieldError message={errors.addressLine1?.message} />
       </div>

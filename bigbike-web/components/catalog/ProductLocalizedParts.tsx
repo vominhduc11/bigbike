@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Check, X } from "lucide-react";
+import { Check, X, ChevronDown, ChevronUp } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useLocalizedField } from "@/components/i18n/LocalizedContent";
 import { LHtml } from "@/components/i18n/LocalizedContent";
 import { sanitizeRichHtml } from "@/lib/utils/html";
@@ -90,20 +92,82 @@ export function ProductSpecsTable({ viSpecsHtml = "" }: { viSpecsHtml?: string }
   const locale = useLocale();
   const enSpecsHtml = useLocalizedField<string>("specifications");
 
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [clamped, setClamped] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   // "HTML thắng": có HTML (EN override khi đổi ngôn ngữ, hoặc bản vi) → render HTML đã sanitize.
   const specsHtml = locale === "en" ? enSpecsHtml : viSpecsHtml;
-  if (specsHtml && specsHtml.trim()) {
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const checkHeight = () => {
+      if (el.scrollHeight > 360) {
+        setClamped(true);
+      } else {
+        setClamped(false);
+      }
+    };
+
+    checkHeight();
+    const timer = setTimeout(checkHeight, 150);
+    return () => clearTimeout(timer);
+  }, [specsHtml]);
+
+  if (!specsHtml || !specsHtml.trim()) {
     return (
-      <div
-        className="thong-so-ki-thuat overflow-x-auto"
-        dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(specsHtml, { allowInlineStyles: true }) }}
-      />
+      <div className="thong-so-ki-thuat">
+        <p>{t("specsEmpty")}</p>
+      </div>
     );
   }
 
+  const showMoreLabel = t("reviews.showMore") || (locale === "en" ? "Show more" : "Xem thêm");
+  const showLessLabel = t("reviews.showLess") || (locale === "en" ? "Show less" : "Thu gọn");
+
   return (
-    <div className="thong-so-ki-thuat">
-      <p>{t("specsEmpty")}</p>
+    <div className="relative">
+      <div
+        ref={containerRef}
+        className={cn(
+          "thong-so-ki-thuat overflow-x-auto transition-all duration-300 ease-in-out",
+          clamped && !isExpanded && "max-h-[280px] overflow-hidden"
+        )}
+      >
+        <div dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(specsHtml, { allowInlineStyles: true }) }} />
+      </div>
+
+      {clamped && (
+        <div
+          className={cn(
+            "flex justify-center",
+            !isExpanded
+              ? "absolute bottom-0 left-0 right-0 pt-24 pb-4 bg-gradient-to-t from-[var(--bb-bg-page)] via-[var(--bb-bg-page)]/95 to-transparent"
+              : "mt-6"
+          )}
+        >
+          <button
+            type="button"
+            onClick={() => setIsExpanded((v) => !v)}
+            aria-expanded={isExpanded}
+            className="flex items-center gap-1.5 border border-brand bg-[var(--bb-bg-page)] px-6 py-2.5 text-ui-14 font-cta font-bold uppercase tracking-wider text-brand transition-all duration-[var(--bb-duration-fast)] hover:bg-brand hover:text-white cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            {isExpanded ? (
+              <>
+                {showLessLabel}
+                <ChevronUp className="h-4 w-4" aria-hidden="true" />
+              </>
+            ) : (
+              <>
+                {showMoreLabel}
+                <ChevronDown className="h-4 w-4" aria-hidden="true" />
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -127,7 +191,7 @@ export function ProductFaqs({ viFaqs }: { viFaqs: Faq[] }) {
     <Accordion type="single" collapsible className="pdp-faq-accordion w-full border-t border-border">
       {faqs.map((faq, i) => (
         <AccordionItem key={i} value={`faq-${i}`}>
-          <AccordionTrigger className="group gap-3 normal-case hover:text-brand data-[state=open]:text-brand">
+          <AccordionTrigger className="group gap-3 text-left normal-case hover:text-brand data-[state=open]:text-brand">
             <span className="flex min-w-0 flex-1 items-center gap-3">
               <span
                 className="shrink-0 font-cta text-ui-18 max-md:text-ui-16 font-bold leading-snug tabular-nums text-muted-foreground transition-colors group-hover:text-brand group-data-[state=open]:text-brand"

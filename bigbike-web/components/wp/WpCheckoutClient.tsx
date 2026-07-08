@@ -194,7 +194,7 @@ export function WpCheckoutClient() {
 
           {/* Card 2: Phương thức thanh toán */}
           <div className="bb-co-card">
-            <p className="bb-co-card-title">Phương thức thanh toán</p>
+            <p className="bb-co-card-title">{t("paymentMethodTitle")}</p>
             
             <CodPaymentBlock />
 

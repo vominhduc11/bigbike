@@ -1,10 +1,10 @@
 :root {
   /* ─── Brand ─────────────────────────────────────────────────────────────── */
-  --admin-color-brand-red:         #e8281e;
-  --admin-color-brand-red-hover:   #cc1f17;
-  --admin-color-brand-red-active:  #b01810;
-  --admin-color-brand-red-subtle:  #fff1f0;
-  --admin-color-brand-red-muted:   rgba(232, 40, 30, 0.12);
+  --admin-color-brand-red:         var(--admin-color-primary);
+  --admin-color-brand-red-hover:   var(--admin-color-primary-hover);
+  --admin-color-brand-red-active:  var(--admin-color-primary-active);
+  --admin-color-brand-red-subtle:  var(--admin-color-primary-subtle);
+  --admin-color-brand-red-muted:   var(--admin-color-primary-muted);
 
   /* ─── Backgrounds ───────────────────────────────────────────────────────── */
   --admin-color-background-app:     #f2f3f5;
@@ -80,7 +80,7 @@
 
   /* ─── Typography ────────────────────────────────────────────────────────── */
   --admin-font-body:    Inter, system-ui, -apple-system, sans-serif;
-  --admin-font-display: Bungee, Inter, system-ui, sans-serif;
+  --admin-font-display: Oswald, Inter, system-ui, sans-serif;
   --admin-font-mono:    'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
 
   /* Type scale — aligned to the redesign prototype (--t-*) */
@@ -139,13 +139,13 @@
      Used for CTA / active / selected / focus / links across the admin.
      Brand red (--admin-color-brand-red) is reserved for brand chrome only:
      sidebar active bar, nav badge, notification pip, logo. ──────────────── */
-  --admin-color-primary:             #cc4a08;
-  --admin-color-primary-hover:       #ac3e08;
-  --admin-color-primary-active:      #8a3206;
-  --admin-color-primary-subtle:      #fff3e9;
-  --admin-color-primary-subtle-text: #ac3e08;
-  --admin-color-primary-muted:       rgba(204, 74, 8, 0.14);
-  --admin-color-primary-ring:        rgba(204, 74, 8, 0.40);
+  --admin-color-primary:             #ff0c09;
+  --admin-color-primary-hover:       #e50a07;
+  --admin-color-primary-active:      #cc0906;
+  --admin-color-primary-subtle:      #fff1f0;
+  --admin-color-primary-subtle-text: #cc0906;
+  --admin-color-primary-muted:       rgba(255, 12, 9, 0.12);
+  --admin-color-primary-ring:        rgba(255, 12, 9, 0.40);
   --admin-color-on-primary:          #ffffff;
 
   /* ─── Short-form aliases (used by inline styles across screens) ─────────── */
@@ -268,19 +268,16 @@
 [data-theme="dark"] {
   color-scheme: dark;
 
-  /* ─── Brand — unchanged, red stays red ─── */
-  --admin-color-brand-red-subtle:  #2a1010;
-  --admin-color-brand-red-muted:   rgba(232, 40, 30, 0.16);
 
-  /* ─── Primary (orange) — dark ─── */
-  --admin-color-primary:             #f0791f;
-  --admin-color-primary-hover:       #f8923f;
-  --admin-color-primary-active:      #d96412;
-  --admin-color-primary-subtle:      #2a1808;
-  --admin-color-primary-subtle-text: #f5a45f;
-  --admin-color-primary-muted:       rgba(240, 121, 31, 0.18);
-  --admin-color-primary-ring:        rgba(240, 121, 31, 0.45);
-  --admin-color-on-primary:          #231000;
+  /* ─── Primary — dark ─── */
+  --admin-color-primary:             #ff5a4d;
+  --admin-color-primary-hover:       #ff7a6f;
+  --admin-color-primary-active:      #e8402f;
+  --admin-color-primary-subtle:      #2a1310;
+  --admin-color-primary-subtle-text: #ff9184;
+  --admin-color-primary-muted:       rgba(255, 90, 77, 0.18);
+  --admin-color-primary-ring:        rgba(255, 90, 77, 0.45);
+  --admin-color-on-primary:          #2a0805;
 
   /* ─── Backgrounds ─── */
   --admin-color-background-app:     #010409;
@@ -294,7 +291,6 @@
   --admin-color-surface-muted:    #1c2128;
   --admin-color-surface-raised:   #21262d;
   --admin-color-surface-hover:    #21262d;
-  --admin-color-surface-selected: rgba(232, 40, 30, 0.12);
 
   /* ─── Rank badges ─── */
   --admin-rank-1-bg:   rgba(251, 191, 36, 0.15);

@@ -40,7 +40,7 @@ export function CheckoutSummary({
             <div className="item-info">
               <p className="item-name">{item.productName}</p>
               <p className="item-meta">
-                {item.variantName ? `${item.variantName} · ` : ""}SL: {item.quantity}
+                {item.variantName ? `${item.variantName} · ` : ""}{t("qtyAbbrev")}: {item.quantity}
               </p>
               <p className="item-price">{formatVnd(item.lineTotal)}</p>
             </div>
@@ -51,24 +51,24 @@ export function CheckoutSummary({
       <div className="mt-4">
         {/* Chỉ hiện "Tạm tính" + "Khuyến mãi" khi có giảm giá */}
         <div className="price-row">
-          <span>Tạm tính</span>
+          <span>{t("summarySubtotal")}</span>
           <span>{formatVnd(cartSubtotal)}</span>
         </div>
 
         {cart.totals.discountAmount > 0 && (
           <div className="price-row">
-            <span>Khuyến mãi</span>
+            <span>{t("summaryDiscount")}</span>
             <span className="text-brand font-semibold">-{formatVnd(cart.totals.discountAmount)}</span>
           </div>
         )}
 
         <div className="price-row">
-          <span>Phí vận chuyển</span>
+          <span>{t("summaryShipping")}</span>
           <span className="text-state-success-text font-bold uppercase">{t("shippingFree")}</span>
         </div>
 
         <div className="price-row total">
-          <span>Tổng cộng</span>
+          <span>{t("summaryTotal")}</span>
           <span className="amount">{formatVnd(grandTotal)}</span>
         </div>
       </div>
