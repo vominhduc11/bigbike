@@ -1,6 +1,6 @@
 import type { PublicMenuItem } from "@/lib/contracts/public";
 
-export type PublicMenuTreeNode = PublicMenuItem & {
+ type PublicMenuTreeNode = PublicMenuItem & {
   children: PublicMenuTreeNode[];
 };
 
@@ -30,7 +30,7 @@ export function buildPublicMenuTree(items: PublicMenuItem[]): PublicMenuTreeNode
   return roots;
 }
 
-export function flattenPublicMenuTree(
+ function flattenPublicMenuTree(
   nodes: PublicMenuTreeNode[],
 ): PublicMenuTreeNode[] {
   return nodes.flatMap((node) => [node, ...flattenPublicMenuTree(node.children)]);

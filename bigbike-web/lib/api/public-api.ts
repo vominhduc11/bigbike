@@ -191,7 +191,7 @@ async function loadDataWithQuery<T>(
 // thẳng từ constants để KHÔNG kéo module server này vào client bundle.
 export { PRODUCT_SORT_VALUES } from "@/lib/constants/catalog";
 
-export type ProductListQuery = {
+ type ProductListQuery = {
   page?: number;
   size?: number;
   sort?: string;
@@ -241,7 +241,7 @@ export async function getProductBySlug(slug: string, lang?: string): Promise<Dat
   return result.data ? { ...result, data: withFlatHighlights(result.data) } : result;
 }
 
-export type CategoryListQuery = {
+ type CategoryListQuery = {
   page?: number;
   size?: number;
   sort?: string;
@@ -276,7 +276,7 @@ export function getCategoryBySlug(slug: string, lang?: string): Promise<DataResu
   );
 }
 
-export type BrandListQuery = {
+ type BrandListQuery = {
   page?: number;
   size?: number;
   sort?: string;
@@ -307,7 +307,7 @@ export function getBrandBySlug(slug: string, lang?: string): Promise<DataResult<
   );
 }
 
-export type CatalogFacetsQuery = {
+ type CatalogFacetsQuery = {
   category?: string;
   q?: string;
   /** Content language: "vi" (default) or "en". Facet labels fall back to Vietnamese. */
@@ -328,7 +328,7 @@ export function getCatalogFacets(query: CatalogFacetsQuery): Promise<DataResult<
   );
 }
 
-export type ArticleListQuery = {
+ type ArticleListQuery = {
   page?: number;
   size?: number;
   sort?: string;
@@ -374,7 +374,7 @@ export function listPublicSettings(lang?: string): Promise<DataResult<PublicSite
 }
 
 /** Active sliders for a given placement location (e.g. "home", "category_sidebar"). */
-export function listSliders(location: string): Promise<DataResult<HomeSlider[]>> {
+ function listSliders(location: string): Promise<DataResult<HomeSlider[]>> {
   return loadDataWithQuery<HomeSlider[]>("/api/v1/sliders", { location }, 3600, ["sliders"]);
 }
 
@@ -415,15 +415,15 @@ export function getOrderLookup(orderNumber: string, orderKey: string): Promise<D
 
 // ── Cross-domain search ──────────────────────────────────────────────────────
 
-export type SearchResults = {
+ type SearchResults = {
   query: string;
   products: Product[];
   articles: Article[];
 };
 
-export type SearchTypeFilter = "product" | "article";
+ type SearchTypeFilter = "product" | "article";
 
-export type SearchQuery = {
+ type SearchQuery = {
   q: string;
   types?: SearchTypeFilter[];
   limit?: number;

@@ -88,24 +88,6 @@ export function CheckoutSkeleton() {
   );
 }
 
-/** Account inner content — fits inside AccountShell main column */
-export function AccountInnerSkeleton({ rows = 3 }: { rows?: number }) {
-  return (
-    <SkeletonRoot labelKey="account">
-      <div className={accountHeaderShell}>
-        <div className={skelCol} style={{ flex: 1 }}>
-          <SkelTitle w="30%" h="1.6em" />
-          <SkelText w="50%" />
-        </div>
-      </div>
-      <div className={skelStack}>
-        {Array.from({ length: rows }).map((_, i) => (
-          <SkelBlock key={i} w="100%" h={120} />
-        ))}
-      </div>
-    </SkeletonRoot>
-  );
-}
 
 /** Full Account layout (sidebar + main) — used when AccountShell hasn't loaded yet */
 export function AccountLayoutSkeleton({ rows = 3 }: { rows?: number }) {
@@ -142,51 +124,6 @@ export function AccountLayoutSkeleton({ rows = 3 }: { rows?: number }) {
   );
 }
 
-/** Order list — header + tabs + N order cards */
-export function OrderListSkeleton({ count = 3 }: { count?: number }) {
-  return (
-    <SkeletonRoot labelKey="orders">
-      <div className={accountHeaderShell}>
-        <div className={skelCol} style={{ flex: 1 }}>
-          <SkelTitle w="30%" h="1.6em" />
-          <SkelText w="40%" />
-        </div>
-      </div>
-      <div className={skelRow} style={{ borderBottom: "1px solid var(--bb-border-subtle)", marginBottom: 20 }}>
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} style={{ padding: "12px 20px" }}><SkelText w={80} /></div>
-        ))}
-      </div>
-      <div className={skelStack}>
-        {Array.from({ length: count }).map((_, i) => (
-          <div key={i} className="bb-order-card">
-            <div className="bb-order-head">
-              <div className={skelRow} style={{ flex: 1, gap: 22 }}>
-                <div className={skelCol}><SkelText w={50} /><SkelText w={80} /></div>
-                <div className={skelCol}><SkelText w={50} /><SkelText w={90} /></div>
-                <div className={skelCol}><SkelText w={50} /><SkelText w={70} /></div>
-              </div>
-              <SkelChip w={90} />
-            </div>
-            <div className="bb-order-body">
-              <div className={skelRow}>
-                {Array.from({ length: 3 }).map((_, j) => <SkelBlock key={j} w={56} h={56} />)}
-              </div>
-              <div className={skelCol} style={{ flex: 1 }}>
-                <SkelText w="60%" />
-                <SkelText w="40%" />
-              </div>
-              <div className={skelCol} style={{ alignItems: "flex-end" }}>
-                <SkelTitle w={120} h="1.2em" />
-                <SkelText w={80} />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </SkeletonRoot>
-  );
-}
 
 /** Order detail — header + summary card + items + totals + addresses */
 export function OrderDetailSkeleton() {
@@ -207,48 +144,6 @@ export function OrderDetailSkeleton() {
   );
 }
 
-/** Form skeleton — page header + label/input rows + button */
-export function FormSkeleton({
-  fields = 6,
-  twoCol = true,
-}: { fields?: number; twoCol?: boolean }) {
-  return (
-    <SkeletonRoot labelKey="form">
-      <div className={accountHeaderShell}>
-        <div className={skelCol} style={{ flex: 1 }}>
-          <SkelTitle w="25%" h="1.6em" />
-          <SkelText w="40%" />
-        </div>
-      </div>
-      <div
-        style={{
-          padding: "22px 24px",
-          background: "var(--bb-bg-surface)",
-          border: "1px solid var(--bb-border-subtle)",
-          borderRadius: "var(--bb-radius-card)",
-        }}
-      >
-        <SkelText w="20%" />
-        <div
-          style={{
-            display: "grid",
-            gap: 14,
-            gridTemplateColumns: twoCol ? "1fr 1fr" : "1fr",
-            marginTop: 18,
-          }}
-        >
-          {Array.from({ length: fields }).map((_, i) => (
-            <div key={i} className={skelStack}>
-              <SkelText w="40%" />
-              <SkelBlock w="100%" h={42} />
-            </div>
-          ))}
-        </div>
-        <SkelButton w={160} />
-      </div>
-    </SkeletonRoot>
-  );
-}
 
 /** Order confirmation / success screen */
 export function OrderConfirmSkeleton() {

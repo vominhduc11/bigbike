@@ -1,9 +1,9 @@
-export type ApiMeta = {
+ type ApiMeta = {
   requestId: string;
   timestamp: string;
 };
 
-export type PaginationMeta = {
+ type PaginationMeta = {
   page: number;
   pageSize: number;
   totalItems: number;
@@ -18,7 +18,7 @@ export type ApiErrorDetail = {
   message: string;
 };
 
-export type ApiErrorPayload = {
+ type ApiErrorPayload = {
   code: string;
   message: string;
   details?: ApiErrorDetail[];
@@ -63,7 +63,7 @@ export type GalleryMedia = {
   videoProvider?: string | null;
 };
 
-export type SliderImage = {
+ type SliderImage = {
   url?: string | null;
   alt?: string | null;
   width?: number | null;
@@ -111,7 +111,7 @@ export type VideoAsset = {
   description?: string | null;
 };
 
-export type SeoMeta = {
+ type SeoMeta = {
   title?: string;
   description?: string;
   canonicalUrl?: string;
@@ -135,7 +135,7 @@ export type ProductPrice = {
   currency: "VND";
 };
 
-export type ProductVariantOption = {
+ type ProductVariantOption = {
   name: string;
   value: string;
 };
@@ -201,7 +201,7 @@ export type SizeGuideSection = {
   html?: string;
 };
 
-export type ProductFaq = {
+ type ProductFaq = {
   question: string;
   answer: string;
 };
@@ -319,13 +319,13 @@ export type Product = {
   suitabilityAdvisory?: string | null;
   /** "Dán mã HTML" cho khối Thông số kỹ thuật (V255) — HTML (sanitizeRichHtml, cho phép `<table>`) là
    *  nguồn render DUY NHẤT, không còn bảng có cấu trúc để fallback. Detail-only. */
-  specificationsHtml?: string | null;
+  specifications?: string | null;
   /** "Dán mã HTML" cho khối "Ô số liệu nổi bật" (specStats, V256) — HTML (sanitizeRichHtml, cho phép
    *  CSS inline) là nguồn render DUY NHẤT, không còn lưới ô số liệu có cấu trúc để fallback. Detail-only. */
-  specStatsHtml?: string | null;
+  specStats?: string | null;
   /** "Dán mã HTML" cho khối "Dải tin cậy" (trustBadges, V257) — HTML (sanitizeRichHtml, cho phép CSS
    *  inline) là nguồn render DUY NHẤT, không còn dải badge có cấu trúc để fallback. Detail-only. */
-  trustBadgesHtml?: string | null;
+  trustBadges?: string | null;
   /** "Quick Answer" (trả lời nhanh, V300) — đoạn tóm tắt AIO 40–60 từ, hiển thị blockquote ngay
    *  sau Specs Dashboard, trước "Tính năng chi tiết". Max 600 ký tự. Locale-resolved. Detail-only. */
   quickAnswerSummary?: string | null;
@@ -392,7 +392,7 @@ export type Brand = {
 };
 
 /** One filter value + the count of published products matching it. */
-export type FacetBucket = {
+ type FacetBucket = {
   key: string;
   label: string;
   /** Brand logo — only populated for brand buckets. */
@@ -401,7 +401,7 @@ export type FacetBucket = {
 };
 
 /** A fixed price band + the count of products priced within it. */
-export type PriceBucket = {
+ type PriceBucket = {
   key: string;
   label: string;
   minPrice?: number | null;
@@ -419,7 +419,7 @@ export type CatalogFacets = {
   priceBands: PriceBucket[];
 };
 
-export type ContentCategorySummary = {
+ type ContentCategorySummary = {
   id: string;
   slug: string;
   name: string;

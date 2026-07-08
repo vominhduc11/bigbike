@@ -4,7 +4,7 @@ import { useSyncExternalStore } from "react";
 import { fetchMe, logoutCustomer } from "@/lib/api/client-api";
 import type { CustomerProfile } from "@/lib/contracts/commerce";
 
-export type AuthState =
+ type AuthState =
   | { status: "loading" }
   | { status: "anonymous" }
   | { status: "authenticated"; profile: CustomerProfile };
@@ -20,11 +20,11 @@ function setState(next: AuthState) {
   listeners.forEach((listener) => listener(state));
 }
 
-export function getAuthState(): AuthState {
+ function getAuthState(): AuthState {
   return state;
 }
 
-export function subscribeAuth(listener: Listener): () => void {
+ function subscribeAuth(listener: Listener): () => void {
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
@@ -61,7 +61,7 @@ export function refreshAuth(): Promise<void> {
   return inflight;
 }
 
-export function setAnonymous(): void {
+ function setAnonymous(): void {
   setState({ status: "anonymous" });
 }
 

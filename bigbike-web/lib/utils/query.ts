@@ -1,4 +1,4 @@
-export type SearchParamValue = string | string[] | undefined;
+ type SearchParamValue = string | string[] | undefined;
 export type RouteSearchParams = Record<string, SearchParamValue>;
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;

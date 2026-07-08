@@ -21,13 +21,6 @@ vi.mock("@/components/catalog/MobileStickyPurchaseBar", () => ({
   MobileStickyPurchaseBar: () => <div data-testid="sticky-bar" />,
 }));
 
-vi.mock("@/components/catalog/QuickBuyModal", () => ({
-  QuickBuyModal: () => null,
-}));
-
-vi.mock("@/components/catalog/QuickBuySuccessModal", () => ({
-  QuickBuySuccessModal: () => null,
-}));
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
   return {

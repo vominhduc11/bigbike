@@ -96,7 +96,7 @@ function parseUrl(value: string): URL | null {
   }
 }
 
-export function isSafePublicHref(value: string | null | undefined): boolean {
+ function isSafePublicHref(value: string | null | undefined): boolean {
   const normalized = trimToNull(value);
   if (!normalized || hasUnsafePrefix(normalized)) {
     return false;
@@ -147,18 +147,8 @@ export function formatDate(value: string | null | undefined, fallback = "—"): 
   }).format(date);
 }
 
-export function normalizeHeading(value: string | null | undefined, fallback: string): string {
-  const text = safeText(value, fallback);
-  return text.length > 120 ? `${text.slice(0, 117)}...` : text;
-}
-
 export function formatAddress(parts: (string | null | undefined)[]): string {
   return parts.filter(Boolean).join(", ");
-}
-
-export function isValidVnPhone(phone: string): boolean {
-  // Re-uses the same regex as checkoutAddressSchema (supports both local 0x and +84x forms)
-  return /^(0[3-9][0-9]{8}|\+84[3-9][0-9]{8})$/.test(phone.trim());
 }
 
 /** Build a `tel:` href from a raw phone string, keeping only digits and "+". */
@@ -177,7 +167,7 @@ export function zaloHref(value: string): string {
   return digits ? `https://zalo.me/${digits}` : value;
 }
 
-export function paymentMethodLabel(method: string | null | undefined): string {
+ function paymentMethodLabel(method: string | null | undefined): string {
   const code = (method ?? "").trim().toUpperCase();
   switch (code) {
     case "COD":
@@ -194,14 +184,6 @@ export function paymentMethodLabel(method: string | null | undefined): string {
 type TFn = (key: string) => string;
 
 /** Locale-aware variant of stockStateLabel. Pass t from useTranslations("Product"). */
-export function stockStateLabelWithT(stockState: string | null | undefined, t: TFn): string {
-  switch (stockState) {
-    case "IN_STOCK": return t("stockState.IN_STOCK");
-    case "OUT_OF_STOCK": return t("stockState.OUT_OF_STOCK");
-    default: return t("stockState.UNKNOWN");
-  }
-}
-
 /** Locale-aware variant of orderStatusLabel. Pass t from useTranslations("Account.orders"). */
 export function orderStatusLabelWithT(status: string | null | undefined, t: TFn): string {
   const known = ["PENDING", "ON_HOLD", "PROCESSING", "COMPLETED", "CANCELLED", "REFUNDED", "FAILED"];
@@ -210,12 +192,6 @@ export function orderStatusLabelWithT(status: string | null | undefined, t: TFn)
 }
 
 /** Locale-aware variant of paymentStatusLabel. Pass t from useTranslations("Account.orders"). */
-export function paymentStatusLabelWithT(status: string | null | undefined, t: TFn): string {
-  const known = ["UNPAID", "PAID", "REFUNDED", "CANCELLED"];
-  if (status && known.includes(status)) return t(`paymentStatus.${status}`);
-  return status ?? t("paymentStatus.UNKNOWN");
-}
-
 /** Locale-aware label for fulfillment (giao hàng) status. Pass t from useTranslations("Account.orders"). */
 export function fulfillmentStatusLabelWithT(status: string | null | undefined, t: TFn): string {
   const known = ["UNFULFILLED", "PROCESSING", "SHIPPED", "DELIVERED", "RETURNED", "CANCELLED"];

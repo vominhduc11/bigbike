@@ -400,33 +400,11 @@ body {
   text-transform: uppercase;
 }
 
-.bb-query-select {
-  width: 100%;
-  min-height: 2.75rem;
-  border: 1px solid var(--bb-border-default);
-  border-radius: var(--bb-radius-input);
-  background: var(--bb-bg-page);
-  color: var(--bb-text-primary);
-  padding: 0 var(--bb-space-4);
-  font-family: var(--bb-font-body);
-  font-size: var(--bb-text-sm);
-  transition:
-    border-color var(--bb-duration-fast) var(--bb-ease-standard),
-    box-shadow var(--bb-duration-fast) var(--bb-ease-standard),
-    background-color var(--bb-duration-fast) var(--bb-ease-standard);
-}
 
-.bb-query-select:focus {
-  outline: none;
-  border-color: var(--bb-border-control-hover);
-  background: var(--bb-bg-surface);
-  box-shadow: var(--bb-focus-ring);
-}
 
-.bb-query-select:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
+
+
+
 
 .bb-grid-products,
 .bb-grid-categories {
@@ -442,56 +420,21 @@ body {
   grid-template-columns: repeat(1, minmax(0, 1fr));
 }
 
-.bb-category-card-link {
-  display: block;
-  height: 100%;
-}
 
-.bb-category-image {
-  width: 100%;
-  aspect-ratio: 3 / 2;
-  /* This class is only used for brand logos (/brands). Transparent wordmark PNGs
-     must be shown in full, so `contain` (not `cover`, which sliced wide logos at
-     the card edges from 768px up where the contain fix used to be mobile-only). */
-  object-fit: contain;
-  background: var(--bb-bg-surface);
-  padding: 12px;
-  display: block;
-  transition: transform var(--bb-duration-normal) var(--bb-ease-standard);
-}
 
-.bb-category-card {
-  background: var(--bb-bg-surface);
-  border: 1px solid var(--bb-border-subtle);
-}
 
-.bb-category-card:hover .bb-category-image {
-  filter: brightness(1.06) saturate(1.1);
-}
 
-.bb-category-body {
-  border-top: 1px solid var(--bb-border-subtle);
-  background: var(--bb-bg-surface);
-  color: var(--bb-text-primary);
-}
 
-.bb-category-body {
-  display: grid;
-  gap: var(--bb-space-2);
-  padding: var(--bb-space-4);
-}
 
-.bb-category-body h3 {
-  font-size: var(--bb-text-base);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  line-height: 1.3;
-  text-transform: uppercase;
-}
 
-.bb-category-body p {
-  color: var(--bb-text-secondary);
-}
+
+
+
+
+
+
+
+
 
 .bb-query-form {
   display: grid;
@@ -511,30 +454,13 @@ body {
   accent-color: var(--bb-brand-primary);
 }
 
-.bb-query-select {
-  border: 1px solid var(--bb-border-default);
-  border-radius: var(--bb-radius-sm);
-  background: var(--bb-bg-surface-raised);
-  color: var(--bb-text-primary);
-  min-height: 42px;
-  padding: 0 var(--bb-space-3);
-}
 
-.bb-query-select:focus {
-  outline: none;
-  border-color: var(--bb-border-control-hover);
-  box-shadow: var(--bb-focus-ring);
-}
 
-.bb-detail-layout {
-  display: grid;
-  gap: var(--bb-space-6);
-}
 
-.bb-detail-layout > div,
-.bb-detail-layout > aside {
-  min-width: 0;
-}
+
+
+
+
 
 .bb-richtext {
   display: grid;
@@ -622,9 +548,7 @@ body {
   /* Detail (guide) sidebar+content go 2-col from md(768) to match WP
      col-md-3/col-md-9 (was 1024 → blank 768-1023 tablet band). Ratio 3fr/9fr =
      25%/75% (WP); sidebar placed left via md:order in GuidePage. */
-  .bb-detail-layout {
-    grid-template-columns: minmax(0, 3fr) minmax(0, 9fr);
-  }
+  
 }
 
 @media (min-width: 1024px) {
@@ -967,75 +891,23 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
    been removed from the JSX (no remaining rule or JS hook). */
 
 /* -- Logo: top-aligned so red diagonal stripe overflows below 80px header */
-.bb-logo {
-  display: flex;
-  align-items: flex-start;
-  height: 100%;
-  padding-top: 0;
-  padding-right: clamp(18px, 2.4vw, 60px);
-  flex-shrink: 0;
-  overflow: visible;
-  position: relative;
-  z-index: 1;
-}
 
-.bb-logo > a {
-  display: block;
-  line-height: 0;
-}
 
-.bb-logo-img {
-  display: block;
-  width: clamp(190px, 12vw, 228px);
-  max-width: none;
-  height: auto;
-  max-height: none;
-  transition: filter 0.3s ease;
-}
+
+
+
 
 /* Scrolled state: logo-1.png is a compact horizontal logo */
-.bb-logo .hide-desktop.bb-logo-img {
-  width: clamp(126px, 8vw, 156px);
-}
 
-.bb-logo > a:hover .bb-logo-img,
-.bb-logo > a:focus-visible .bb-logo-img {
-  filter: brightness(1.1);
-  transition: filter 140ms;
-}
 
-.bb-logo .hide-mobile { display: block; }
-.bb-logo .hide-desktop { display: none; }
+
+
+
+
 
 /* Desktop logo swap on scroll - mirrors WP headroom--not-top behavior:
    logo-1 (ngang, nhỏ) ẩn sẵn dưới dạng absolute, fade-in khi cuộn. */
-@media (min-width: 768px) {
-  .bb-logo {
-    position: relative;
-  }
-  .bb-logo .hide-desktop {
-    display: block !important;
-    position: absolute;
-    top: 50%;
-    left: 0;
-    transform: translateY(-50%);
-    visibility: hidden;
-    opacity: 0;
-    transition: visibility 0.3s ease, opacity 0.3s ease;
-  }
-  .bb-logo .hide-mobile {
-    transition: visibility 0.3s ease, opacity 0.3s ease;
-  }
-  html[data-header-scrolled] .bb-logo .hide-mobile {
-    visibility: hidden;
-    opacity: 0;
-  }
-  html[data-header-scrolled] .bb-logo .hide-desktop {
-    visibility: visible;
-    opacity: 1;
-  }
 
-}
 
 /* Account + PDP pages: push main content below the logo emblem's vertical extent
    so the hanging emblem gets its own clear zone above the breadcrumb instead of
@@ -1054,14 +926,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 }
 
 /* Mobile: logo-1.png hiện mặc định, không có scroll-swap */
-@media (max-width: 767px) {
-  .bb-logo {
-    align-items: center;
-    padding-right: 0;
-  }
-  .bb-logo .hide-mobile { display: none; }
-  .bb-logo .hide-desktop { display: block; }
-}
+
 
 /* -- Right column: navigation + user-control.
    .bb-navigation / .bb-header-nav (wrapper layout), .bb-header-nav-item (base +
@@ -1090,35 +955,17 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   color: var(--bb-brand-primary);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .bb-header-info-sheet,
-  .bb-mobile-header-panel {
-    transition-duration: 1ms !important;
-  }
-}
+
 
 /* Live search suggestions dropdown */
 @keyframes bb-suggest-in {
   from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.bb-account-avatar {
-  font-size: 0.875rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  background: var(--bb-brand-primary-soft);
-  color: var(--bb-text-brand);
-  border: 1px solid var(--bb-brand-primary-border);
-}
 
-.bb-account-avatar:hover,
-.bb-account-avatar:focus-visible {
-  background: var(--bb-action-primary);
-  color: var(--bb-text-inverse);
-  border-color: var(--bb-action-primary);
-}
+
+
 
 /* Closed-state uses `display: none` so neither the panel nor its descendants
    (drawer, account, nav, sub-icons) contribute to body.scrollWidth at 768-1260px
@@ -1131,42 +978,11 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
    `@starting-style + transition: display allow-discrete` keeps the slide-in
    animation from the right via the WP-parity timing (Chrome 117+, Safari 17.4+,
    Firefox 129+). Older browsers degrade gracefully to instant show/hide. */
-.bb-mobile-header-panel {
-  display: none;
-  position: fixed;
-  top: var(--bb-header-height);
-  left: max(0px, calc(100vw - 500px));
-  z-index: var(--bb-z-modal);
-  width: min(100vw, 500px);
-  height: calc(100dvh - var(--bb-header-height));
-  overflow-y: auto;
-  overflow-anchor: none;
-  scrollbar-width: none;
-  padding-bottom: 30px;
-  background: #000000;
-  transform: translateX(100%);
-  opacity: 0;
-  transition:
-    transform 0.6s ease,
-    opacity 0.6s ease,
-    display 0.6s allow-discrete;
-}
 
-.bb-mobile-header-panel::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-}
 
-.bb-mobile-header-panel.is-open {
-  display: block;
-  transform: translateX(0);
-  opacity: 1;
 
-  @starting-style {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-}
+
+
 
 /* Tablet drawer — 768px–1260px
    1. transform: none on open state → fixed children position vs. viewport (not the 500px panel)
@@ -1175,13 +991,9 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
    4. Light/white theme — consistent with desktop mega menu and ShopInfoDrawer */
 @media (min-width: 768px) and (max-width: 1260px) {
   /* Starts below header — header stays visible for orientation */
-  .bb-mobile-header-panel {
-    background: #ffffff;
-  }
+  
 
-  .bb-mobile-header-panel.is-open {
-    transform: none;
-  }
+  
 
   .bb-mobile-header-overlay.is-open {
     top: var(--bb-header-height);
@@ -1217,37 +1029,16 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 
 }
 
-.bb-mobile-nav-children {
-  display: grid;
-  background: rgba(255, 255, 255, 0.02);
-  overflow: hidden;
-  grid-template-rows: 0fr;
-  opacity: 0;
-  transition: grid-template-rows 0.2s var(--bb-ease-standard), opacity 0.2s ease;
-  will-change: grid-template-rows;
-}
 
-.bb-mobile-nav-children > * {
-  min-height: 0;
-}
 
-.bb-mobile-nav-children.is-open {
-  grid-template-rows: 1fr;
-  opacity: 1;
-}
 
-@media (prefers-reduced-motion: reduce) {
-  .bb-mobile-nav-children {
-    transition-duration: 1ms;
-  }
-}
+
+
+
+
 
 /* Tablet drawer — nav-children accordion background (light theme) */
-@media (min-width: 768px) and (max-width: 1260px) {
-  .bb-mobile-nav-children {
-    background: rgba(0, 0, 0, 0.02);
-  }
-}
+
 
 /* -- Hero Slider -------------------------------------------- */
 
@@ -1416,10 +1207,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
    không cần override !important. */
 
 /* -- Products Section ------------------------------------ */
-.bb-products-section {
-  background: var(--bb-bg-page);
-  padding: var(--bb-space-12) 0;
-}
+
 
 /* Product Carousel */
 
@@ -1585,20 +1373,16 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 .bb-cat-hero-breadcrumb a:hover { color: var(--bb-brand-primary-on-dark); }
 .bb-cat-hero-breadcrumb span[aria-hidden] { color: var(--bb-brand-primary-on-dark); white-space: nowrap; flex-shrink: 0; }
 .bb-cat-hero-breadcrumb span[aria-current] { color: rgba(255,255,255,0.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex-shrink: 1; }
-.bb-cat-hero-title { font-family: var(--bb-font-body); text-transform: uppercase; font-size: var(--fs-h1); letter-spacing: 0.02em; line-height: 1.2; margin: 0; color: #fff; }
+
 
 /* WP-parity trang shop (/san-pham): tiêu đề banner chữ thường ("Tất cả sản phẩm"),
    breadcrumb đặt DƯỚI tiêu đề dạng tên site "Bigbike.vn" (không in hoa, không
    letter-spacing). Scoped trong .bb-product-archive nên không đụng hero trang khác. */
-.bb-product-archive .bb-cat-hero-title { text-transform: none !important; }
-.bb-product-archive .bb-cat-hero-breadcrumb { text-transform: none !important; letter-spacing: normal; margin: 10px 0 0; }
+
+
 
 /* -- Category SEO description block (below product grid) -- */
-.bb-cat-intro {
-  font-family: var(--bb-font-body);
-  width: 100%;
-  margin-bottom: 24px;
-}
+
 
 /* BLOCK A */
 .bb-ci-a {
@@ -1960,11 +1744,7 @@ body:has(.bb-account-layout) .bb-breadcrumb {
   padding-left: 24px;
 }
 
-.bb-account-avatar {
-  width: 50px; height: 50px; border-radius: 999px; flex-shrink: 0;
-  background: #f3f3f3; color: #6f6f6f; /* was #b0b0b0 (2.35:1 fail) → #6f6f6f (4.59:1 AA pass) */
-  display: flex; align-items: center; justify-content: center;
-}
+
 
 /* -- Order status timeline -------------------------------- */
 
@@ -2026,13 +1806,13 @@ body:has(.bb-account-layout) .bb-breadcrumb {
 
 /* -- bb-* auth & content page supplements ---------------- */
 .bb-auth-footer { text-align: center; margin-top: var(--bb-space-4); color: var(--bb-text-secondary); font-size: var(--bb-text-sm); }
-.bb-sidebar-grid { display: grid; gap: var(--bb-space-4); align-content: start; }
+
 .bb-sidebar-heading { margin-bottom: var(--bb-space-4); font-size: var(--bb-text-lg); }
-.bb-nav-links { display: grid; gap: var(--bb-space-2); }
-.bb-updated-date { color: var(--bb-text-muted); font-size: var(--bb-text-xs); margin-top: var(--bb-space-4); }
+
+
 
 /* -- Loading / skeleton states ---------------------------- */
-.bb-empty-state { text-align: center; padding: 60px 0; color: var(--bb-text-muted); }
+
 
 /* -- Order detail: line items ------------------------------ */
 
@@ -2188,7 +1968,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
  *    dropdown (rendered in AccountShell, shown via Tailwind md:hidden). */
 @media (max-width: 767px) {
   .bb-account-layout { grid-template-columns: 1fr; gap: 16px; }
-  .bb-account-avatar { width: 44px; height: 44px; }
+  
 }
 
 /* -- PDP actions stack vertically on phones so primary CTA gets full
@@ -2524,9 +2304,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
 /* Promo banner - keep image-backed dark feel optional. Light fallback: */
 
 /* Experience / video / news section bg */
-.bb-products-section {
-  background: var(--bb-bg-page);
-}
+
 
 .bb-news-img-placeholder {
   background: var(--bb-color-gray-100);
@@ -2696,39 +2474,16 @@ a:not(.font-cta):hover {
   font-weight: 600;
 }
 
-.bb-query-select {
-  min-height: 52px;
-  padding: 0 20px;
-  border: 1px solid var(--bb-border-subtle);
-  border-radius: 0;
-  background: #ffffff;
-  color: #000000;
-  font-family: var(--bb-font-body);
-  font-size: var(--bb-text-base);
-  font-weight: 400;
-  line-height: 52px;
-}
 
-.bb-query-select:focus {
-  border-color: var(--bb-color-blue);
-  box-shadow: var(--bb-focus-ring);
-  outline: none;
-}
+
+
 
 input[type="radio"],
 input[type="checkbox"] {
   accent-color: var(--bb-text-brand);
 }
 
-.bb-cat-hero-title {
-  color: #ffffff;
-  font-family: var(--bb-font-body);
-  font-size: var(--fs-h1); /* WP page banner = 24px, cố định mọi màn hình */
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: 0;
-  text-transform: uppercase;
-}
+
 
 .bb-product-card {
   overflow: hidden;
@@ -2811,10 +2566,7 @@ input[type="checkbox"] {
 
 @media (max-width: 639px) {
 
-  .bb-cat-hero-title {
-    font-size: var(--fs-h1); /* WP page banner = 24px ở mọi màn hình */
-    line-height: 1.2;
-  }
+  
 
   .bb-products-section,
 .bb-seo-content {
@@ -2823,10 +2575,7 @@ input[type="checkbox"] {
 }
 
 @media (min-width: 640px) and (max-width: 1023px) {
-  .bb-cat-hero-title {
-    font-size: var(--fs-h1);
-    line-height: 36px;
-  }
+  
 
   .bb-products-section,
 .bb-seo-content {
@@ -2852,26 +2601,15 @@ input[type="checkbox"] {
    Applied last in cascade — all values per DESIGN.md spec.
    ========================================================= */
 
-.bb-query-select {
-  background: var(--bb-color-white);
-  color: var(--bb-color-black);
-  min-height: 52px;
-  padding: 0 20px;
-}
 
-.bb-query-select:focus {
-  border-color: var(--bb-color-blue);
-  background: var(--bb-color-white);
-}
+
+
 
 /* -- Price --------------------------------------------- */
 
 /* -- Category card ------------------------------------- */
 
-.bb-category-card {
-  background: var(--bb-bg-surface);
-  color: var(--bb-text-primary);
-}
+
 
 /* -- Product grid: 2 cols at 640px, 3 cols at 1024px+, 4 cols at 2560px+ - */
 
@@ -2921,31 +2659,18 @@ input[type="checkbox"] {
    (TYPOGRAPHY §6 "một token = một clamp()"). */
 
 /* Homepage product carousel: legacy WP parity for page-home.php #main-product-slide. */
-.bb-home-products-parity {
-  padding-top: 40px; /* WP .product-list .pt-40 = 40px (was 60) */
-  padding-bottom: 40px;
-  background: #fff;
-}
+
 
 /* FeaturedProductsCarousel track — shared by the homepage featured carousel and
    the PDP related-products carousel (un-scoped from .bb-home-products-parity so
    the component renders identically off the homepage). The homepage element is
    the only .bb-fp-page-track inside .bb-home-products-parity, so dropping the
    ancestor leaves the homepage computed styles unchanged. */
-.bb-fp-page-track {
-  display: flex;
-  gap: 30px;
-  transition: transform 0.3s ease;
-  will-change: transform;
-}
 
-body:has(.bb-article-detail-page) .bb-header-info-sheet {
-  overflow: hidden;
-}
 
-body:has(.bb-article-detail-page) .bb-header-info-sheet:not(.is-open) .bb-header-info-content {
-  display: none;
-}
+
+
+
 
 body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolute.z-20 {
   right: 0 !important;
@@ -3229,22 +2954,22 @@ body:has(.bb-home) {
 }
 
 @keyframes socialRotate {
-  0%   { transform: rotate(-90deg); }
+  0% { transform: rotate(-90deg); }
   100% { transform: rotate(0deg); }
 }
 
 @keyframes b24-widget-button-visible {
-  0%       { transform: scale(0); }
-  30.001%  { transform: scale(1.2); }
-  62.999%  { transform: scale(1); }
-  100%     { transform: scale(1); }
+  0% { transform: scale(0); }
+  30.001% { transform: scale(1.2); }
+  62.999% { transform: scale(1); }
+  100% { transform: scale(1); }
 }
 
 /* Pulsing "halo" rings radiating outward from the floating chat FAB to draw
    attention. Two staggered rings (see FloatingChat.tsx) share this loop. */
 @keyframes bb-chat-halo {
-  0%   { transform: scale(1);   opacity: 0.5; }
-  70%  { opacity: 0; }
+  0% { transform: scale(1);   opacity: 0.5; }
+  70% { opacity: 0; }
   100% { transform: scale(2.2); opacity: 0; }
 }
 
@@ -3419,7 +3144,7 @@ body:has(.bb-home) {
   margin-bottom: 0 !important;
 }
 
-/* "Ô số liệu nổi bật" (FeaturedSpecsBar, V256) khi render từ HTML đã lưu (specStatsHtml): HTML tự
+/* "Ô số liệu nổi bật" (FeaturedSpecsBar, V256) khi render từ HTML đã lưu (field specStats): HTML tự
    chứa dùng lưới `repeat(auto-fit,minmax(120px,1fr))`. auto-fit CHỈ co cột RỖNG hoàn toàn — với 4 ô
    trên mobile (rơi xuống 3 cột) ô thứ 4 đứng một mình hàng dưới, chừa 2 ô xám trống → trông lỗi.
    Ép lưới về đúng thiết kế gốc của FeaturedSpecsBar bản có cấu trúc (`grid-cols-2` / `md:grid-cols-4`):
@@ -3623,9 +3348,7 @@ body:has(.bb-home) {
   margin-top: 0 !important;
 }
 
-.bb-wp-tabs .tab-panel * {
-  line-height: inherit;
-}
+
 
 /* PDP Videos tab (bb-wp-video-* / video-slide--*) migrated to inline Tailwind in
    ProductVideosTab.tsx: iframe/video styled directly (no wrapper-descendant
@@ -3668,201 +3391,78 @@ body:has(.bb-home) {
  * Product archive/listing parity with WP WooCommerce archive-product.php.
  * Scoped to archive components so homepage/PDP/cart keep their own surfaces.
  * ============================================================ */
-.bb-product-archive {
-  background: #ffffff;
-  color: #000000;
-}
 
-.bb-product-archive .bb-wp-container,
-.bb-product-archive .container.bb-wp-container {
-  /* Track the canonical fluid content rail (.bb-container) so the archive grid
-     aligns with the PageHero / breadcrumb at every width. The page gutter lives
-     in the width formula (16/24/32px, identical to .bb-container); the legacy WP
-     15px container padding is dropped so the row(-15) / col(+15) gutter lands the
-     card content exactly on the rail instead of 15px inside it. The cap grows via
-     --bb-container-xl at 2xl/3xl/4xl (see LARGE-DESKTOP block). */
-  width: min(100% - calc(var(--bb-page-padding-mobile) * 2), var(--bb-container-xl));
-  max-width: none;
-  margin-inline: auto;
-  padding-inline: 0;
-}
 
-.bb-product-archive .bb-wp-row,
-.bb-product-archive .row.bb-wp-row {
-  display: flex;
-  flex-wrap: wrap;
-  margin-inline: -15px;
-}
 
-.bb-product-archive .bb-wp-row > [class*="bb-wp-col"] {
-  min-width: 0;
-  width: 100%;
-  padding-inline: 15px;
-}
 
-.bb-product-archive .bb-wp-col-6 {
-  flex: 0 0 50%;
-  max-width: 50%;
-}
 
-.bb-product-archive .align-items-center {
-  align-items: center;
-}
 
-.bb-product-archive .text-right {
-  text-align: right;
-}
 
-@media (min-width: 576px) {
-  .bb-product-archive .bb-wp-container,
-  .bb-product-archive .container.bb-wp-container {
-    width: min(100% - calc(var(--bb-page-padding-tablet) * 2), var(--bb-container-xl));
-  }
-}
 
-@media (min-width: 768px) {
-  /* container width carries from the 576px tablet rule; only column spans change */
-  .bb-product-archive .bb-wp-col-md-3 {
-    flex: 0 0 25%;
-    max-width: 25%;
-  }
-}
 
-@media (min-width: 992px) {
-  .bb-product-archive .bb-wp-container,
-  .bb-product-archive .container.bb-wp-container {
-    width: min(100% - calc(var(--bb-page-padding-desktop) * 2), var(--bb-container-xl));
-  }
-}
+
+
+
+
+
+
+
+
+
+
 
 /* `.product-list.pb-40` + `.product-list-filter` kept for the SEARCH page
    (tim-kiem shares `.bb-product-archive` + these classes); the catalog archive
    migrated this chrome to inline Tailwind (ProductArchiveLayout). */
-.bb-product-archive .product-list.pb-40 {
-  padding-bottom: 40px;
-}
 
-.bb-product-archive .product-list-filter {
-  position: sticky;
-  top: 80px;
-  background: #ffffff;
-  z-index: 2;
-}
+
+
 
 html.overlay {
   overflow: hidden;
 }
 
-body:has(.bb-search-results-page) {
-  overflow-x: hidden;
-}
 
-.bb-product-archive .woocommerce-info {
-  margin: 30px 0 0;
-  color: #6f6f6f;
-  font-size: var(--fs-caption);
-  line-height: 1.5;
-}
 
-.bb-product-archive .product .desc {
-  padding: 30px;
-  background-color: #f8f8f8;
-  margin: 0;
-  color: #000000;
-  line-height: 1.5;
-}
 
-.bb-product-archive .product .desc p {
-  font-size: var(--bb-text-sm);
-}
 
-.bb-product-archive .product .desc h2 {
-  font-size: var(--bb-text-base);
-  font-weight: 600;
-}
 
-.bb-product-archive .product .desc h2 span {
-  font-size: var(--bb-text-base);
-  font-weight: 600 !important;
-}
 
-.bb-product-archive .product .desc :first-child {
-  margin-top: 0;
-}
 
-.bb-product-archive .product .desc :last-child {
-  margin-bottom: 0;
-}
 
-.bb-search-results-page .bb-search-row {
-  align-items: flex-start;
-}
+
+
+
+
+
+
+
+
+
 
 /* Search has no filter sidebar, so the content column spans the full row.
    (The catalog archive keeps its 25% sidebar; this page does not.) */
-.bb-search-results-page .bb-search-content {
-  flex: 0 0 100%;
-  max-width: 100%;
-  width: 100%;
-}
 
-.bb-search-results-page .bb-search-inner-container {
-  width: 100%;
-  margin-inline: auto;
-  padding-inline: 15px;
-}
 
-.bb-search-results-page .bb-search-toolbar {
-  min-height: 0;
-  margin: 0;
-}
 
-.bb-search-results-page .bb-search-toolbar .bb-wp-row {
-  min-height: 0;
-}
 
-.bb-search-results-page .bb-search-product-row {
-  margin-inline: -15px;
-}
 
-.bb-search-results-page .bb-wp-col-6 {
-  flex: 0 0 50%;
-  max-width: 50%;
-}
 
-@media (min-width: 768px) {
-  .bb-search-results-page .bb-wp-col-md-3 {
-    flex: 0 0 25%;
-    max-width: 25%;
-  }
-}
+
+
+
+
+
+
+
 
 /* Full-width content (no sidebar) → 5 cards / row from the desktop tier up so
    the recovered 25% is used and card width stays balanced (was ≥2560px-only). */
-@media (min-width: 992px) {
-  .bb-search-results-page .bb-search-product-row > .bb-wp-col-md-3,
-  .bb-search-results-page .bb-search-product-row > .col-md-3 {
-    flex: 0 0 20%;
-    max-width: 20%;
-  }
-}
 
-.bb-search-results-page .bb-search-product-col {
-  padding-inline: 15px;
-}
 
-@media (max-width: 767px) {
-  /* col-md spans + the toolbar row flex are kept for the SEARCH page; the
-     catalog archive's toolbar/sort/filter columns moved to inline Tailwind. */
-  .bb-product-archive .bb-wp-col-md-3 {
-    max-width: 100%;
-    padding: 0;
-  }
 
-  .bb-product-archive .product-list-filter .bb-wp-row {
-    display: flex;
-  }
-}
+
+
 
 /* Homepage visual parity: WordPress page-template-page-home cache 2026-01-19. */
 .bb-home {
@@ -3976,15 +3576,9 @@ body:has(.bb-search-results-page) {
 
 /* Homepage spacing pass: scoped after WP parity utilities so the home rhythm
    follows page-home.php without changing global section rules. */
-.bb-home-products-parity {
-  padding-top: 40px;
-  padding-bottom: 40px;
-}
 
-.bb-home > .bb-products-section:not(.bb-home-products-parity) {
-  padding-top: 40px;
-  padding-bottom: 40px;
-}
+
+
 
 .bb-home .content-bottom {
   padding-top: 30px;
@@ -4015,29 +3609,12 @@ body:has(.bb-search-results-page) {
   }
 }
 
-@media (min-width: 768px) and (max-width: 1023px) {
-  .bb-home-products-parity {
-    padding-top: 40px;
-    padding-bottom: 40px;
-  }
 
-  .bb-home > .bb-products-section:not(.bb-home-products-parity) {
-    padding-top: 40px;
-    padding-bottom: 40px;
-  }
-
-}
 
 @media (max-width: 767px) {
-  .bb-home-products-parity {
-    padding-top: 32px;
-    padding-bottom: 32px;
-  }
+  
 
-  .bb-home > .bb-products-section:not(.bb-home-products-parity) {
-    padding-top: 32px;
-    padding-bottom: 32px;
-  }
+  
 
   .bb-home .content-bottom {
     padding-top: 30px;
@@ -4115,43 +3692,13 @@ body:has(.bb-search-results-page) {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.26);
   }
 
-  .bb-logo {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    z-index: 2;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    transform: translateX(-50%);
-  }
+  
 
-  .bb-header-info-trigger {
-    display: none !important;
-  }
+  
 
-  .bb-mobile-header-panel {
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100dvh;
-    padding: 0;
-    overflow: hidden;
-    background: transparent;
-    opacity: 0;
-    pointer-events: none;
-    transform: none;
-    transition: opacity 280ms var(--bb-ease-standard),
-      display 280ms allow-discrete;
-  }
+  
 
-  .bb-mobile-header-panel.is-open {
-    opacity: 1;
-    pointer-events: auto;
-    @starting-style {
-      opacity: 0;
-    }
-  }
+  
 
   .bb-mobile-header-overlay.is-open {
     background: color-mix(in srgb, var(--bb-color-black) 58%, transparent);
@@ -4189,12 +3736,7 @@ body:has(.bb-search-results-page) {
     flex-shrink: 0;
   }
 
-  .bb-mobile-header-panel.is-open .bb-mobile-header-drawer {
-    transform: translateX(0);
-    @starting-style {
-      transform: translateX(100%);
-    }
-  }
+  
 
   .bb-mobile-drawer-head {
     display: flex;
@@ -4223,9 +3765,7 @@ body:has(.bb-search-results-page) {
     cursor: pointer;
   }
 
-  .bb-mobile-nav-children {
-    background: color-mix(in srgb, var(--bb-text-inverse) 4%, transparent);
-  }
+  
 
   .bb-cart-toast {
     top: auto !important;
@@ -4258,10 +3798,7 @@ body:has(.bb-search-results-page) {
     color: var(--bb-text-inverse);
   }
 
-  .bb-home-products-parity {
-    padding-top: 20px;
-    padding-bottom: 8px;
-  }
+  
 
   .bb-home .content-bottom {
     border-top: 1px solid var(--bb-mobile-shell-border);
@@ -4306,20 +3843,13 @@ body:has(.bb-search-results-page) {
     overflow-x: clip;
   }
 
-  .bb-product-archive .container.bb-wp-container,
-  .bb-search-results-page .bb-search-inner-container {
-    width: 100%;
-    max-width: none;
-    padding-inline: var(--bb-mobile-page-x);
-  }
+  
 
   .bb-site-header {
     z-index: var(--bb-z-header);
   }
 
-  .bb-logo {
-    pointer-events: auto;
-  }
+  
 
   .bb-page {
     padding-block: 24px calc(var(--bb-mobile-section-y) + 8px);
@@ -4339,11 +3869,7 @@ body:has(.bb-search-results-page) {
     line-height: 1.08;
   }
 
-  .bb-cat-hero-title {
-    max-width: min(100%, 21rem);
-    line-height: 1.06 !important;
-    overflow-wrap: anywhere;
-  }
+  
 
   .bb-page-head .sub {
     font-size: var(--fs-caption);
@@ -4362,9 +3888,7 @@ body:has(.bb-search-results-page) {
     gap: var(--bb-mobile-card-gap);
   }
 
-  .bb-category-body {
-    padding: 14px;
-  }
+  
 
   .bb-home,
   .bb-home-products-parity,
@@ -4377,9 +3901,7 @@ body:has(.bb-search-results-page) {
     padding-bottom: calc(var(--bb-mobile-nav-height) + env(safe-area-inset-bottom) + 16px);
   }
 
-  .bb-home-products-parity {
-    padding-top: 24px;
-  }
+  
 
   .bb-home .content-bottom {
     border-top: 1px solid var(--bb-border-subtle);
@@ -4398,33 +3920,11 @@ body:has(.bb-search-results-page) {
 
   /* `.product-list-filter` sticky chrome kept for the SEARCH page toolbar; the
      catalog archive's toolbar/result/sort/filter chrome moved to inline Tailwind. */
-  .bb-product-archive .product-list-filter {
-    position: sticky;
-    top: var(--bb-header-height);
-    z-index: 30;
-    margin-inline: calc(var(--bb-mobile-page-x) * -1);
-    border-bottom: 1px solid var(--bb-border-subtle);
-    background: color-mix(in srgb, var(--bb-bg-page) 96%, transparent);
-    padding: 10px var(--bb-mobile-page-x);
-    backdrop-filter: blur(10px);
-  }
+  
 
-  .bb-search-results-page .bb-search-product-row {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: stretch;
-    gap: var(--bb-mobile-card-gap);
-    margin-inline: 0;
-  }
+  
 
-  .bb-search-results-page .bb-search-product-col {
-    width: auto;
-    max-width: none;
-    flex: initial;
-    min-width: 0;
-    grid-column: auto;
-    padding-inline: 0;
-  }
+  
 
   .bb-wp-pdp .bb-breadcrumb {
     padding: 12px var(--bb-mobile-page-x);
@@ -4515,8 +4015,7 @@ body:has(.bb-search-results-page) {
 
   .bb-checkout-page .form-control,
   .bb-checkout-page input,
-  .bb-checkout-page textarea,
-  /* Exclude the Radix radio/checkbox (rendered as <button> at a fixed 16px width):
+  .bb-checkout-page textarea,/* Exclude the Radix radio/checkbox (rendered as <button> at a fixed 16px width):
      a blanket touch-target min-height stretches them into tall rectangles — same
      issue already handled for the auth checkbox below. */
   .bb-checkout-page button:not([role="radio"]):not([role="checkbox"]),
@@ -4597,11 +4096,7 @@ body:has(.bb-search-results-page) {
   }
 }
 
-@media (max-width: 374px) {
-  .bb-search-results-page .bb-search-product-row {
-    grid-template-columns: 1fr;
-  }
-}
+
 
 /* Contrast normalizers for legacy WP-parity selectors.
    Keep these after responsive blocks so older hardcoded colors cannot win the cascade. */
@@ -4832,29 +4327,13 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
     z-index: var(--bb-z-header);
   }
 
-  .bb-logo {
-    left: 50%;
-    width: 128px;
-    height: var(--bb-header-height);
-    transform: translateX(-50%);
-  }
+  
 
-  .bb-logo > a {
-    display: inline-flex;
-    min-height: var(--bb-touch-target);
-    align-items: center;
-    justify-content: center;
-  }
+  
 
-  .bb-logo-img {
-    width: 112px;
-    max-width: 112px;
-    height: auto;
-  }
+  
 
-  .bb-mobile-header-panel {
-    z-index: var(--bb-mobile-panel-z);
-  }
+  
 
   .bb-mobile-header-overlay.is-open {
     background: color-mix(in srgb, var(--bb-color-black) 68%, transparent);
@@ -4874,11 +4353,7 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
     min-height: var(--bb-touch-target);
   }
 
-  .bb-category-image {
-    object-fit: contain !important;
-    background: var(--bb-bg-surface);
-    padding: 12px;
-  }
+  
 
   .bb-product-image img,
   .bb-product-image > span > img {
@@ -4894,12 +4369,7 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
     text-wrap: balance;
   }
 
-  .bb-category-body h3 {
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-  }
+  
 
   .bb-home .content-bottom.wyswyg p,
 .bb-page-head .sub {
@@ -5153,17 +4623,7 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
   }
 }
 
-@media (min-width: 2560px) {
-  .bb-product-archive .bb-wp-container,
-  .bb-product-archive .container.bb-wp-container {
-    max-width: 2240px;
-  }
 
-  /* PDP breadcrumb intentionally stops at the 1920 tier (1600px) so it aligns
-     with the product overview/tabs/related rails, which cap at 1600px at 4xl
-     (the gallery is column-filling, not 2240-wide). See STYLEGUIDE container
-     exception for /product/[slug]. */
-}
 
 /* ══════════════════════════════════════════════════════════════════════
    UNIFORM ULTRA-WIDE EXPANSION — phương án B (toàn site), 3xl + 4xl ONLY.
@@ -5247,7 +4707,7 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
 /* Nháy viền khi admin "Xem trên web" cuộn tới khối tương ứng (SettingsFocusScroller). */
 @keyframes bbFocusFlash {
   0%, 100% { box-shadow: 0 0 0 0 rgba(232, 40, 30, 0); }
-  20%      { box-shadow: 0 0 0 4px rgba(232, 40, 30, 0.6); }
+  20% { box-shadow: 0 0 0 4px rgba(232, 40, 30, 0.6); }
 }
 .bb-focus-flash {
   animation: bbFocusFlash 1.1s ease-in-out 2;

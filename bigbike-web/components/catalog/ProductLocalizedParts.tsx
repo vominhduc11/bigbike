@@ -88,7 +88,7 @@ export function ProductProsCons({
 export function ProductSpecsTable({ viSpecsHtml = "" }: { viSpecsHtml?: string }) {
   const t = useTranslations("Product");
   const locale = useLocale();
-  const enSpecsHtml = useLocalizedField<string>("specificationsHtml");
+  const enSpecsHtml = useLocalizedField<string>("specifications");
 
   // "HTML thắng": có HTML (EN override khi đổi ngôn ngữ, hoặc bản vi) → render HTML đã sanitize.
   const specsHtml = locale === "en" ? enSpecsHtml : viSpecsHtml;

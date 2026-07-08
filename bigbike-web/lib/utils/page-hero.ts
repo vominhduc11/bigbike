@@ -1,6 +1,6 @@
 import type { PublicSiteSetting } from "@/lib/contracts/public";
 
-export type HeroSettingPrefix = "hero_products" | "hero_brands" | "hero_news";
+ type HeroSettingPrefix = "hero_products" | "hero_brands" | "hero_news";
 
 type HeroPropsFromSettings = {
   imageUrl: string | null;
@@ -28,7 +28,7 @@ export function readHeroSettings(
   };
 }
 
-export type DefaultHeroAssets = {
+ type DefaultHeroAssets = {
   defaultBgUrl: string | null;
   defaultIllustrationUrl: string | null;
 };

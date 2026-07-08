@@ -179,9 +179,9 @@ export function WpPurchaseSection({
 
   // Dải tin cậy (V257) — HTML (EN override hoặc bản vi) là nguồn render duy nhất, sanitize
   // (cho phép CSS inline); không còn dải badge có cấu trúc để fallback.
-  const enTrustHtml = useLocalizedField<string>("trustBadgesHtml");
-  const trustBadgesHtml =
-    locale === "en" ? enTrustHtml ?? "" : product.trustBadgesHtml ?? "";
+  const enTrustHtml = useLocalizedField<string>("trustBadges");
+  const trustBadgesResolvedHtml =
+    locale === "en" ? enTrustHtml ?? "" : product.trustBadges ?? "";
 
   // Mô tả ngắn nằm trong khối mua hàng (dưới đánh giá, trên phần chọn biến thể) — vị trí gốc.
   // Đổi ngôn ngữ qua LHtml (field "shortDescription"); trống → không render.
@@ -236,10 +236,10 @@ export function WpPurchaseSection({
         <div className="product-information">
           {/* Eyebrow + dải tin cậy: 2 dòng nhỏ trên tiêu đề. KHÔNG dùng <ul>/<li> để né
               dấu đầu dòng của theme WP; chấm phân cách tự vẽ, chỉ chen GIỮA các mục. */}
-          {trustBadgesHtml.trim() ? (
+          {trustBadgesResolvedHtml.trim() ? (
             <div
               className="max-md:hidden mb-11 bb-trust-badges-html"
-              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(trustBadgesHtml, { allowInlineStyles: true }) }}
+              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(trustBadgesResolvedHtml, { allowInlineStyles: true }) }}
             />
           ) : null}
           {eyebrow ? (

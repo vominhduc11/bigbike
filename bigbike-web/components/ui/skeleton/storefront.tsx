@@ -310,44 +310,6 @@ export function BrandListSkeleton() {
   );
 }
 
-/** Brand detail — breadcrumb + page-head + brand-logo + sidebar + grid */
-export function BrandDetailSkeleton() {
-  return (
-    <SkeletonRoot labelKey="brandPage">
-      <div className="bb-breadcrumb"><SkelText w={220} /></div>
-      <div className="bb-page-head">
-        <SkelText w="12%" />
-        <SkelTitle w="35%" h="2em" />
-        <SkelText w="60%" />
-      </div>
-      <Container className="mb-6">
-        <SkelBlock w="100%" h={180} />
-      </Container>
-      <div className={bbCatLayout}>
-        <aside className="self-start border-r border-[var(--bb-border-subtle)] pr-7">
-          <div className={skelStack}>
-            <SkelTitle w="50%" />
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className={skelStack} style={{ paddingBlock: 12, borderBottom: "1px solid var(--bb-border-subtle)" }}>
-                <SkelText w="60%" />
-                <SkelText w="80%" />
-              </div>
-            ))}
-          </div>
-        </aside>
-        <div>
-          <div className={bbCatalogHead}>
-            <SkelText w={140} />
-            <SkelButton w={160} />
-          </div>
-          <div className={productGrid}>
-            {Array.from({ length: 8 }).map((_, i) => <ProductCardSkel key={i} />)}
-          </div>
-        </div>
-      </div>
-    </SkeletonRoot>
-  );
-}
 
 /** Search page — header + query form + result skeleton (mixed grid) */
 export function SearchSkeleton({ label = "Loading search results" }: { label?: string }) {

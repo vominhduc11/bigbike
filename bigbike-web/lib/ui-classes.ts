@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Shared Tailwind class bundles — the "1 CSS rule for many elements" cases.
  *
  * Replaces shared multi-selector groups that used to live in globals.css
@@ -68,12 +68,6 @@ export const detailTableCell = "mt-[3px] block text-caption font-bold normal-cas
  * where rem `text-caption` would shrink to ~12.25px. */
 export const categoryBadge = "m-0 text-ui-14 max-md:text-ui-12 font-bold uppercase tracking-display text-brand";
 
-/** Auth card heading (was `.bb-auth-heading`). On auth-wrap h1s the kept marker
- * rule `.bb-page--auth .bb-auth-wrap h1` overrides this (text-32/uppercase). */
-export const authHeading = "font-body text-[length:var(--fs-h3)] font-semibold normal-case";
-/** Auth form input sizing (was `.bb-auth-input`). */
-export const authInput = "h-[52px] min-h-[52px] px-5 py-0 text-caption";
-
 /** Header action icon button (was `.bb-user-control .bb-icon-btn` /
  * `.bb-site-header .bb-cart-icon-link`): full-height transparent square button,
  * white icon, brand-red on hover with a faint white wash, focus ring; WCAG
@@ -110,7 +104,7 @@ export const bbLink =
   "font-bold no-underline text-[var(--bb-link-text)] transition-colors duration-fast ease-[var(--bb-ease-standard)] hover:text-brand focus-visible:text-brand";
 
 /** Section vertical rhythm (was `.bb-section` padding-block: 32/52/section-y). */
-export const sectionPad =
+const sectionPad =
   "py-8 min-[640px]:py-[52px] min-[1024px]:py-[var(--bb-section-y)]";
 /** Full centered content section rail (was `.bb-section`): rhythm + max-width
  * (--bb-container-xl incl. large-desktop expansion) + responsive inline padding. */

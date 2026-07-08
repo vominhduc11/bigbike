@@ -16,7 +16,7 @@ export type CartItem = {
   available: boolean
 }
 
-export type CartTotals = {
+ type CartTotals = {
   subtotalAmount: number
   discountAmount: number
   shippingAmount: number
@@ -32,7 +32,7 @@ export type Cart = {
   totals: CartTotals
 }
 
-export type CheckoutAddress = {
+ type CheckoutAddress = {
   fullName: string
   email: string
   phone: string
@@ -62,7 +62,7 @@ export type CheckoutPayload = {
   customerNote?: string
 }
 
-export type PaymentMethodOption = {
+ type PaymentMethodOption = {
   code: string
   title: string
 }
@@ -121,14 +121,14 @@ export type OrderAddress = {
   addressLine2: string | null
 }
 
-export type OrderShippingItem = {
+ type OrderShippingItem = {
   id: string
   methodCode: string | null
   methodTitle: string
   amount: number
 }
 
-export type OrderPayment = {
+ type OrderPayment = {
   id: string
   paymentMethod: string
   status: string
@@ -137,7 +137,7 @@ export type OrderPayment = {
   paidAt: string | null
 }
 
-export type OrderNote = {
+ type OrderNote = {
   id: string
   noteType?: string
   content: string

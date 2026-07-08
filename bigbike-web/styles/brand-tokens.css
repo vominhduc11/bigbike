@@ -1,4 +1,4 @@
-﻿/**
+/**
  * BigBike Brand Tokens
  * Source: C:\Users\vomin\Downloads\DESIGN.md
  * Track B light-first WP-parity (2026-05-12): nền trang #fff, chữ đen,
@@ -289,16 +289,6 @@
   font-family: var(--bb-font-body);
 }
 
-.bb-kicker {
-  font-family: var(--bb-font-cta);
-  font-size: var(--bb-text-xs);
-  font-weight: 900;
-  line-height: 1;
-  letter-spacing: 0;
-  text-transform: uppercase;
-  color: var(--bb-text-brand);
-}
-
 .bb-text-muted { color: var(--bb-text-muted); }
 .bb-text-brand { color: var(--bb-text-brand); }
 
@@ -319,19 +309,6 @@
 .bb-card-hover:hover {
   border-color: var(--bb-brand-primary);
   box-shadow: var(--bb-shadow-product);
-}
-
-.bb-price {
-  color: var(--bb-product-price);
-  font-family: var(--bb-font-cta);
-  font-size: var(--bb-text-base);
-  font-weight: var(--bb-font-weight-semibold);
-  line-height: 1.5;
-}
-
-.bb-price-compare {
-  color: var(--bb-text-secondary);
-  text-decoration: line-through;
 }
 
 .bb-richtext {

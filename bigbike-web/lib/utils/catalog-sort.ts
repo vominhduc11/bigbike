@@ -1,4 +1,4 @@
-export const WP_ORDERBY_VALUES = [
+ const WP_ORDERBY_VALUES = [
   "menu_order",
   "popularity",
   "date",

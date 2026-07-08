@@ -82,7 +82,7 @@ export function submitCheckout(payload: CheckoutPayload, idempotencyKey?: string
   return clientRequest("POST", "/api/v1/checkout", payload, extra);
 }
 
-export type PublicSetting = { settingKey: string; settingValue: string };
+ type PublicSetting = { settingKey: string; settingValue: string };
 
 /**
  * List endpoint — parsed directly (not via `clientRequest`) so a `data: null`/missing
@@ -141,7 +141,7 @@ export function fetchPublicCategory(slug: string, lang?: string): Promise<Catego
   return clientRequest("GET", withLang(`/api/v1/categories/${encodeURIComponent(slug)}`, lang));
 }
 
-export type PublicProductListQuery = {
+ type PublicProductListQuery = {
   page?: number;
   size?: number;
   sort?: string;
@@ -204,7 +204,7 @@ export async function fetchPublicProductList(
   return { data: body.data ?? [], pagination: body.pagination ?? null };
 }
 
-export type PublicArticleListQuery = {
+ type PublicArticleListQuery = {
   page?: number;
   size?: number;
   category?: string;

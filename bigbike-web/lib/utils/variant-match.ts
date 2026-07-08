@@ -118,16 +118,6 @@ export function findMatchingVariant(
  *
  * Returns null when nothing has been picked.
  */
-export function findPreviewVariant(
-  variants: ProductVariant[],
-  selection: Record<string, string>,
-): ProductVariant | null {
-  return (
-    findMatchingVariant(variants, selection, { onlyAvailable: true }) ??
-    findMatchingVariant(variants, selection)
-  );
-}
-
 /**
  * Gallery preview is color-scoped: selecting Size or another non-color
  * attribute must not swap the PDP gallery. Returns the representative variant

@@ -15,7 +15,7 @@ if (
   );
 }
 
-export function getActiveLocale(): Locale {
+function getActiveLocale(): Locale {
   if (typeof window !== "undefined") {
     return (globalThis as any).__NEXT_LOCALE__ || "vi";
   }
@@ -116,66 +116,7 @@ export function translatePath(pathname: string, targetLocale: Locale): string {
   return "/" + mapped.join("/") + (hasTrailingSlash ? "/" : "") + search;
 }
 
-export function getLocalizedRoute(pathname: string, targetLocale: Locale): {
-  action: "rewrite" | "redirect" | "passthrough";
-  url: string;
-} {
-  const cleanPath = pathname.split("?")[0];
-  const search = pathname.includes("?") ? pathname.slice(pathname.indexOf("?")) : "";
-  const segments = cleanPath.split("/").filter(Boolean);
 
-  if (segments.length === 0) {
-    return { action: "passthrough", url: pathname };
-  }
-
-  const seg0 = segments[0];
-
-  if (seg0 === "danh-muc-san-pham" && segments.length > 1) {
-    return { action: "passthrough", url: pathname };
-  }
-  if (seg0 === "tin-tuc" && segments.length > 1) {
-    return { action: "passthrough", url: pathname };
-  }
-
-  if (seg0 === "categories" && segments.length > 1) {
-    if (targetLocale === "vi") {
-      return { action: "redirect", url: "/danh-muc-san-pham/" + segments.slice(1).join("/") + "/" + search };
-    } else {
-      return { action: "rewrite", url: "/danh-muc-san-pham/" + segments.slice(1).join("/") + "/" + search };
-    }
-  }
-  if (seg0 === "news" && segments.length > 1) {
-    if (targetLocale === "vi") {
-      return { action: "redirect", url: "/tin-tuc/" + segments.slice(1).join("/") + "/" + search };
-    } else {
-      return { action: "rewrite", url: "/tin-tuc/" + segments.slice(1).join("/") + "/" + search };
-    }
-  }
-
-  const toEn = translatePath(cleanPath, "en");
-  const toVi = translatePath(cleanPath, "vi");
-
-  const isViPath = (toEn !== cleanPath);
-  const isEnPath = (toVi !== cleanPath);
-
-  if (isViPath) {
-    if (targetLocale === "en") {
-      return { action: "redirect", url: toEn + search };
-    } else {
-      return { action: "passthrough", url: pathname };
-    }
-  }
-
-  if (isEnPath) {
-    if (targetLocale === "vi") {
-      return { action: "redirect", url: toVi + search };
-    } else {
-      return { action: "rewrite", url: toVi + search };
-    }
-  }
-
-  return { action: "passthrough", url: pathname };
-}
 
 export function toProductPath(slug: string): string {
   return `/product/${slug}/`;
@@ -186,10 +127,7 @@ export function toProductListPath(locale?: Locale): string {
   return currentLocale === "en" ? "/products/" : "/san-pham/";
 }
 
-export function toCategoryListPath(locale?: Locale): string {
-  const currentLocale = locale || getActiveLocale();
-  return currentLocale === "en" ? "/categories/" : "/danh-muc-san-pham/";
-}
+
 
 export function toCategoryPath(slug: string, locale?: Locale, isEnSlug?: boolean): string {
   const currentLocale = locale || getActiveLocale();
@@ -199,9 +137,7 @@ export function toCategoryPath(slug: string, locale?: Locale, isEnSlug?: boolean
   return `/danh-muc-san-pham/${slug}/`;
 }
 
-export function toCategoryHierPath(childSlug: string, locale?: Locale, isEnSlug?: boolean): string {
-  return toCategoryPath(childSlug, locale, isEnSlug);
-}
+
 
 export function toBrandPath(slug: string): string {
   return `/brands/${slug}/`;
@@ -312,11 +248,4 @@ export function isAuthRoute(pathname: string | null | undefined): boolean {
   return (AUTH_ROUTE_PATHS as readonly string[]).includes(p);
 }
 
-/**
- * Returns the login URL, safely filtering out auth pages from returnTo.
- * Prevents redirect loops like /dang-nhap/?tiep=%2Fdang-nhap%2F.
- */
-export function getSafeLoginHref(currentPathname: string | null | undefined, locale?: Locale): string {
-  if (isAuthRoute(currentPathname)) return toLoginPath(undefined, locale);
-  return toLoginPath(currentPathname ?? undefined, locale);
-}
+

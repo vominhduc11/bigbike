@@ -27,7 +27,7 @@ import {
 
 const ORDERBY_INVALID_MESSAGE = "orderby không hợp lệ.";
 
-export type CatalogListParseOptions = {
+ type CatalogListParseOptions = {
   /**
    * Trang /san-pham và /tim-kiem cho phép lọc theo `category` qua query param;
    * trang danh mục/thương hiệu lấy category từ route nên không đọc param này.
@@ -39,7 +39,7 @@ export type CatalogListParseOptions = {
   queryParamKeys?: string[];
 };
 
-export type CatalogListFilters = {
+ type CatalogListFilters = {
   q: string | undefined;
   category: string | undefined;
   brand: string | undefined;
@@ -49,7 +49,7 @@ export type CatalogListFilters = {
   maxPrice: number | undefined;
 };
 
-export type CatalogListParams = {
+ type CatalogListParams = {
   page: number;
   size: number;
   productSort: string;

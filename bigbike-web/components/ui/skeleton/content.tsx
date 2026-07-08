@@ -11,48 +11,6 @@ import { Container } from "@/components/layout/Container";
 import { skelStack } from "@/lib/ui-classes";
 import { SkeletonRoot, SkelBlock, SkelButton, SkelText, SkelTitle } from "./primitives";
 
-/** Article detail (tin-tuc/[slug]) — breadcrumb + meta + h1 + cover + body */
-export function ArticleDetailSkeleton({ label = "Loading article" }: { label?: string }) {
-  return (
-    <SkeletonRoot label={label}>
-      <section
-        className="relative mb-[90px] bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/wp/page-title-bg.png')" }}
-      >
-        <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px]">
-          <div className="-mx-[15px] flex min-h-[450px] flex-wrap items-center">
-            <div className="relative w-full px-[15px] md:w-1/2">
-              <SkelTitle w="82%" h="1.8em" />
-              <div className="mt-3 flex gap-2">
-                <SkelText w={90} />
-                <SkelText w={180} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-      <div className="pb-10">
-        <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px]">
-          <div className="-mx-[15px] flex flex-wrap">
-            <div className="relative w-full px-[15px]">
-              <div className={skelStack}>
-                <SkelTitle w="50%" h="2em" />
-                <SkelText w="98%" />
-                <SkelText w="100%" />
-                <SkelText w="92%" />
-                <SkelText w="96%" />
-                <SkelText w="60%" />
-                <SkelBlock w="100%" h={280} />
-                <SkelText w="100%" />
-                <SkelText w="78%" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </SkeletonRoot>
-  );
-}
 
 /** Auth (login/register/forgot-password) — small centered card */
 export function AuthSkeleton() {

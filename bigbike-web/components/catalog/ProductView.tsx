@@ -107,14 +107,14 @@ function LocalizedProductSwiper({
  */
 function MobileTrustLine({ product }: { product: Product }) {
   const locale = useLocale();
-  const enTrustHtml = useLocalizedField<string>("trustBadgesHtml");
-  const trustBadgesHtml = locale === "en" ? enTrustHtml ?? "" : product.trustBadgesHtml ?? "";
+  const enTrustHtml = useLocalizedField<string>("trustBadges");
+  const trustBadgesResolvedHtml = locale === "en" ? enTrustHtml ?? "" : product.trustBadges ?? "";
 
-  if (trustBadgesHtml.trim()) {
+  if (trustBadgesResolvedHtml.trim()) {
     return (
       <div
         className="md:hidden max-md:mt-4 max-md:mb-4 mb-11 bb-trust-badges-html"
-        dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(trustBadgesHtml, { allowInlineStyles: true }) }}
+        dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(trustBadgesResolvedHtml, { allowInlineStyles: true }) }}
       />
     );
   }
@@ -151,7 +151,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   const hoursWeekday = pickSetting(activeSettings, ["opening_hours_weekday"]);
   const hoursWeekend = pickSetting(activeSettings, ["opening_hours_weekend"]);
   // Khối cam kết dưới nút mua hàng (V232) + dải tin cậy trên tên sản phẩm (V233) giờ quản theo
-  // TỪNG sản phẩm (product.commitments / product.trustBadgesHtml) — WpPurchaseSection tự đọc thẳng
+  // TỪNG sản phẩm (product.commitments / product.trustBadges) — WpPurchaseSection tự đọc thẳng
   // từ product, không còn lấy từ settings.
   const gallery = safeArray(product.gallery);
   // Canonical layout (PDP_CONTENT_GUIDE §0b): "Phù hợp với ai" (#7) và "Bảng size" (#8) là SECTION RIÊNG,
@@ -161,9 +161,9 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   const suitabilitySection = product.suitabilitySection ?? null;
   const sizeGuideSection = product.sizeGuideSection ?? null;
   // "Dán mã HTML" cho Thông số kỹ thuật (V255) — HTML là nguồn render duy nhất.
-  const specsHtml = product.specificationsHtml?.trim() ? product.specificationsHtml : "";
+  const specsHtml = product.specifications?.trim() ? product.specifications : "";
   // "Dán mã HTML" cho Ô số liệu nổi bật (V256) — HTML là nguồn render duy nhất.
-  const specStatsHtml = product.specStatsHtml?.trim() ? product.specStatsHtml : "";
+  const specStatsResolvedHtml = product.specStats?.trim() ? product.specStats : "";
   const faqs = safeArray(product.faqs);
   const videos = safeArray(product.videos);
   const related = safeArray(product.relatedProducts).filter((p) => p.id !== product.id);
@@ -439,7 +439,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
 
         {/* #2 Specs Dashboard (V235) — tối đa 4 ô số liệu nổi bật ngay dưới khu vực mua hàng.
             "Đòn chốt" bán hàng. Khối ngoài tab → tự ẩn khi không có ô nào (không gate visibility). */}
-        <FeaturedSpecsBar viStatsHtml={specStatsHtml} />
+        <FeaturedSpecsBar viStatsHtml={specStatsResolvedHtml} />
 
         {/* #3 Quick Answer (V300) — đoạn tóm tắt AIO 40–60 từ để Google/AI trích dẫn. Blockquote ngay
             sau Specs Dashboard, trước "Tính năng chi tiết". Tự ẩn khi rỗng, không gate visibility. */}
