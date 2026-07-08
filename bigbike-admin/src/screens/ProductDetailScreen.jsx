@@ -1260,7 +1260,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 badge={
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
-                      {parseTrustBadgesFromHtml(langValue('trustBadgesHtml')).length} {t('products.detail.trustBadges.unit', { defaultValue: 'nhãn' })}
+                      {parseTrustBadgesFromHtml(langValue('trustBadges')).length} {t('products.detail.trustBadges.unit', { defaultValue: 'nhãn' })}
                     </span>
                     <RoleBadge role="content" />
                   </div>
@@ -1269,17 +1269,17 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 <p className="text-xs text-muted-foreground mb-2">
                   {t('products.detail.trustBadges.hint', { defaultValue: 'Các nhãn ngắn hiển thị NGAY TRÊN tên sản phẩm (vd "Chính hãng", "BH 2 năm", "Freeship"). Để trống → web ẩn dải. Mỗi sản phẩm tự nhập riêng.' })}
                 </p>
-                {validationErrors.trustBadgesHtml && (
+                {validationErrors.trustBadges && (
                   <p className="field-error text-xs text-[var(--admin-color-status-danger-text)] font-semibold mb-2 flex items-center gap-1" role="alert">
                     <AlertCircle size={13} className="shrink-0" />
-                    {validationErrors.trustBadgesHtml}
+                    {validationErrors.trustBadges}
                   </p>
                 )}
                 <TrustBadgesEditor
                   key={`trustbadges-${contentLang}`}
                   disabled={isReadOnly}
-                  html={langValue('trustBadgesHtml')}
-                  onHtmlChange={(v) => langChange('trustBadgesHtml', v)}
+                  html={langValue('trustBadges')}
+                  onHtmlChange={(v) => langChange('trustBadges', v)}
                 />
               </SectionCard>
 
@@ -1475,24 +1475,24 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 badge={
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
-                      {parseSpecStatsFromHtml(langValue('specStatsHtml')).length} / 4
+                      {parseSpecStatsFromHtml(langValue('specStats')).length} / 4
                     </span>
                     <RoleBadge role="content" />
                   </div>
                 }
               >
                 <p className="text-xs text-muted-foreground mb-2">{t('products.detail.specStats.hint')}</p>
-                {validationErrors.specStatsHtml && (
+                {validationErrors.specStats && (
                   <p className="field-error text-xs text-[var(--admin-color-status-danger-text)] font-semibold mb-2 flex items-center gap-1" role="alert">
                     <AlertCircle size={13} className="shrink-0" />
-                    {validationErrors.specStatsHtml}
+                    {validationErrors.specStats}
                   </p>
                 )}
                 <SpecStatEditor
                   key={`specstats-${contentLang}`}
                   disabled={isReadOnly}
-                  html={langValue('specStatsHtml')}
-                  onHtmlChange={(v) => langChange('specStatsHtml', v)}
+                  html={langValue('specStats')}
+                  onHtmlChange={(v) => langChange('specStats', v)}
                 />
               </SectionCard>
               </CollapsibleGroup>
@@ -1710,7 +1710,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 badge={
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
-                      {t('products.detail.specCount', { count: parseSpecsFromHtml(langValue('specificationsHtml')).length })}
+                      {t('products.detail.specCount', { count: parseSpecsFromHtml(langValue('specifications')).length })}
                     </span>
                     <RoleBadge role="content" />
                   </div>
@@ -1719,8 +1719,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 <SpecificationsEditor
                   key={`specs-${contentLang}`}
                   disabled={isReadOnly}
-                  html={langValue('specificationsHtml')}
-                  onHtmlChange={(v) => langChange('specificationsHtml', v)}
+                  html={langValue('specifications')}
+                  onHtmlChange={(v) => langChange('specifications', v)}
                 />
               </SectionCard>
 
@@ -1856,14 +1856,14 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 {/* Live Google SERP preview */}
                 <div className="mb-4 rte-canvas-frame">
                   <div className="p-3 border border-border bg-white">
-                    <div className="flex items-center gap-1 text-xs text-[#5f6368] mb-1">
+                    <div className="flex items-center gap-1 text-xs text-google-url mb-1">
                       <PfSearch size={12} />
                       <span>{t('products.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
                     </div>
-                    <div className="text-xs text-[#5f6368] break-all mb-1">
+                    <div className="text-xs text-google-url break-all mb-1">
                       {canonicalUrlFromSlug(form.slug) || `https://bigbike.vn/product/duong-dan-san-pham/`}
                     </div>
-                    <div className="text-lg leading-snug text-[#1a0dab] break-words mb-1">
+                    <div className="text-lg leading-snug text-google-title break-words mb-1">
                       {(form.seoTitle || form.name || t('products.detail.serpTitleFallback', { defaultValue: 'Tiêu đề sản phẩm trên Google' })).slice(0, 60)}
                     </div>
                     <div className="text-sm leading-relaxed text-[#4d5156] break-words">

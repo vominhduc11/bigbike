@@ -73,6 +73,11 @@
   --admin-color-status-neutral-bg:   #f3f4f6;
   --admin-color-status-neutral-text: #374151;
 
+  /* ─── Google SERP Preview ───────────────────────────────────────────────── */
+  --admin-color-google-title: #1a0dab;
+  --admin-color-google-url:   #5f6368;
+  --admin-color-google-crumb: #70757a;
+
   /* ─── Typography ────────────────────────────────────────────────────────── */
   --admin-font-body:    Inter, system-ui, -apple-system, sans-serif;
   --admin-font-display: Bungee, Inter, system-ui, sans-serif;
