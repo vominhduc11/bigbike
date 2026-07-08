@@ -427,7 +427,7 @@
 .bb-badge-danger  { color: var(--bb-danger);  background: var(--bb-danger-bg);  border-color: var(--bb-danger-border); }
 .bb-badge-info    { color: var(--bb-info);    background: var(--bb-info-bg);    border-color: var(--bb-info-border); }
 .bb-badge-neutral { color: var(--bb-neutral); background: var(--bb-neutral-bg); border-color: var(--bb-neutral-border); }
-.bb-badge-brand   { color: var(--bb-brand);   background: var(--bb-brand-subtle); border-color: rgba(232,40,30,0.20); }
+
 .bb-badge-muted   { color: var(--bb-text-muted); background: var(--bb-surface-raised); border-color: var(--bb-border); }
 
 /* ─── Form controls ─────────────────────────────────────────────────────────── */

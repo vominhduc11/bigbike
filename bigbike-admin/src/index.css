@@ -63,6 +63,11 @@
   --color-info-bg:                 var(--admin-color-status-info-bg);
   --color-info-border:             var(--admin-color-status-info-border);
 
+  /* Google SERP Preview colors */
+  --color-google-title:            var(--admin-color-google-title);
+  --color-google-url:              var(--admin-color-google-url);
+  --color-google-crumb:            var(--admin-color-google-crumb);
+
   /* Surface tokens */
   --color-surface:                 var(--admin-color-surface-base);
   --color-surface-muted:           var(--admin-color-surface-muted);
@@ -668,11 +673,7 @@ a {
   margin-bottom: 0;
 }
 
-/* ─── react-day-picker overrides ─────────────────────────────────────────────*/
-.rdp-root {
-  font-family: var(--admin-font-body) !important;
-  font-size: 0.8125rem !important;
-}
+
 /* ─── Responsive ─────────────────────────────────────────────────────────────*/
 
 /* ── Tablet + Mobile (≤1024px): header chật, nên nút đổi ngôn ngữ nội dung được
