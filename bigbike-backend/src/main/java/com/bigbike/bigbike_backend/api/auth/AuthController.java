@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.api.auth;
 
+import com.bigbike.bigbike_backend.api.auth.dto.AcceptInviteRequest;
 import com.bigbike.bigbike_backend.api.auth.dto.LoginRequest;
 import com.bigbike.bigbike_backend.api.auth.dto.LogoutRequest;
 import com.bigbike.bigbike_backend.api.auth.dto.RefreshRequest;
@@ -16,7 +17,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -113,10 +113,10 @@ public class AuthController {
 
     @PostMapping("/admin/accept-invite")
     public ApiDataResponse<Void> acceptInvite(
-            @RequestBody Map<String, String> body,
+            @Valid @RequestBody AcceptInviteRequest body,
             HttpServletRequest request
     ) {
-        adminInviteService.acceptInvite(body.get("token"), body.get("password"));
+        adminInviteService.acceptInvite(body.token(), body.password());
         return apiResponseFactory.data(null, request);
     }
 

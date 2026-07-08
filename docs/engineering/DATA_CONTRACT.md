@@ -356,7 +356,7 @@ empty/blank normalized to `NULL`.
 
 Status: `CONFIRMED_FROM_CODE`
 
-### Product specs HTML — `specifications_html` (V255, mô hình "HTML là nguồn" — cập nhật)
+### Product specs HTML — field `specifications` (V255, mô hình "HTML là nguồn" — cập nhật)
 
 `specifications_html` là **nguồn render DUY NHẤT** của tab "Thông số kỹ thuật" trên web. Theo
 đúng `shortDescription`/`suitability_advisory` dual-text pattern: cột canonical (vi) + `_en`,
@@ -364,27 +364,28 @@ Status: `CONFIRMED_FROM_CODE`
 
 | Field | DB columns (added) | Type | PDP surface |
 |---|---|---|---|
-| `specificationsHtml` | `specifications_html` + `specifications_html_en` (`V255`) | `TEXT`, max 50 000 | Web **luôn** render HTML này (qua `sanitizeRichHtml`, **cho phép `<table>` và CSS inline `style`**). HTML là **nguồn DUY NHẤT**; không còn bảng/lưới cấu trúc dự phòng. |
+| `specifications` | `specifications_html` + `specifications_html_en` (`V255`) | `TEXT`, max 50 000 | Web **luôn** render HTML này (qua `sanitizeRichHtml`, **cho phép `<table>` và CSS inline `style`**). HTML là **nguồn DUY NHẤT**; không còn bảng/lưới cấu trúc dự phòng. |
 
 It is detail-only (null in list responses), nullable, presence-flag on PATCH,
 empty/blank normalized to `NULL`. **Admin UX (không đổi contract):** ô "Thông số kỹ thuật" có 2 tab —
-nhập "có cấu trúc" (dòng tên/giá trị) HOẶC "dán HTML"; **cả 2 cùng ghi vào `specificationsHtml`**.
+nhập "có cấu trúc" (dòng tên/giá trị) HOẶC "dán HTML"; **cả 2 cùng ghi vào field `specifications` này**.
 Tab cấu trúc chỉ là công cụ nhập tạm: khi mở tab thì parse HTML hiện có lấy chữ (bỏ CSS), khi lưu thì
 GHÉP nội dung đã sửa ngược vào HTML hiện có (giữ nguyên `style`/markup, helper `lib/specSheet.js`).
-Admin/backend không còn nhận, lưu, trả về mảng `specifications` cấu trúc. HTML rỗng thì web không render
-tab thông số kỹ thuật. Dữ liệu cũ đã được backfill sang HTML trước khi drop bảng `product_specifications`.
-HTML thô được sanitize ở web (`sanitizeRichHtml` với `allowInlineStyles`),
+**Lưu ý phân biệt tên:** đây KHÔNG phải field cấu trúc `specifications` (mảng dòng tên/giá trị) của
+bảng `product_specifications` cũ — bảng đó đã backfill sang HTML rồi bị DROP ở V329/V330; admin/backend
+từ đó không còn nhận, lưu, trả về mảng cấu trúc dưới bất kỳ tên nào. HTML rỗng thì web không render
+tab thông số kỹ thuật. HTML thô được sanitize ở web (`sanitizeRichHtml` với `allowInlineStyles`),
 không parse/sanitize ở backend (opaque như `suitability_advisory`).
 
-Status: `CONFIRMED_FROM_CODE` — `ProductEntity.specificationsHtml`/`specificationsHtmlEn`,
-`Product.specificationsHtml`, `ProductTranslations.ProductContent.specificationsHtml`,
+Status: `CONFIRMED_FROM_CODE` — `ProductEntity.specifications`/`specificationsEn`,
+`Product.specifications`, `ProductTranslations.ProductContent.specifications`,
 `UpsertProductRequest` (+ presence flag) / `ProductTranslationRequest` (HTML only),
 `AdminCatalogMutationService.applyProductPatch` / `ProductFieldApplier.applyTranslations`,
 `JpaCatalogReadRepository` (detail mapper `pick`s it; list mapper passes `null`),
 migration `V255__add_product_specifications_html.sql`, `V329__BackfillProductHtmlOnlySections.java`,
 `V330__drop_product_html_only_structured_tables.sql`.
 
-### Product spec-stats HTML — `spec_stats_html` (V256, mô hình "HTML là nguồn")
+### Product spec-stats HTML — field `specStats` (V256, mô hình "HTML là nguồn")
 
 `spec_stats_html` là **nguồn render** của khối "Ô số liệu nổi bật" (specStats) dưới khu mua hàng trên
 web. Mô hình giống `specifications_html` (V255): cột canonical (vi) + `_en`, `pick(vi, en, locale)`
@@ -392,16 +393,17 @@ on read, raw English trong `translations.en`, detail-only, presence-flag on PATC
 
 | Field | DB columns (added) | Type | PDP surface |
 |---|---|---|---|
-| `specStatsHtml` | `spec_stats_html` + `spec_stats_html_en` (`V256`) | `TEXT`, max 50 000 | Web **luôn** render HTML này khi non-blank (qua `sanitizeRichHtml` với `allowInlineStyles`). HTML là **nguồn DUY NHẤT**; không còn lưới `specStats` cấu trúc dự phòng. |
+| `specStats` | `spec_stats_html` + `spec_stats_html_en` (`V256`) | `TEXT`, max 50 000 | Web **luôn** render HTML này khi non-blank (qua `sanitizeRichHtml` với `allowInlineStyles`). HTML là **nguồn DUY NHẤT**; không còn lưới cấu trúc dự phòng. |
 
 **Admin UX (không đổi contract):** khối có 2 tab — nhập "có cấu trúc" (mỗi ô 2 dòng: **value**
-số liệu chính + **label** tên chỉ tiêu, tối đa 4 ô) HOẶC "dán HTML"; cả 2 cùng ghi vào
-`specStatsHtml`. Tab cấu trúc là công cụ nhập tạm: parse từ HTML khi mở tab, sửa xong GHÉP vào HTML hiện có (giữ style/markup,
+số liệu chính + **label** tên chỉ tiêu, tối đa 4 ô) HOẶC "dán HTML"; cả 2 cùng ghi vào field
+`specStats` này. Tab cấu trúc là công cụ nhập tạm: parse từ HTML khi mở tab, sửa xong GHÉP vào HTML hiện có (giữ style/markup,
 chỉ đổi chữ — helper `lib/specStatsBlock.js`, lưới sinh ra có class `bb-specstats` + inline-style
 tự chứa mô phỏng `FeaturedSpecsBar`). Mỗi ô mã hoá cố định **2 span**: `[value, label]`; `value`
-luôn span đầu, `label` luôn span cuối → parse không nhập nhằng. Admin/backend không còn nhận, lưu,
-trả về mảng `specStats`; HTML rỗng thì web không render khối số liệu. Dữ liệu cũ đã được backfill sang
-HTML trước khi drop bảng `product_spec_stats`.
+luôn span đầu, `label` luôn span cuối → parse không nhập nhằng. **Lưu ý phân biệt tên:** đây KHÔNG
+phải field cấu trúc `specStats` (lưới ô value/label) của bảng `product_spec_stats` cũ — bảng đó đã
+backfill sang HTML rồi bị DROP ở V329/V330; admin/backend từ đó không còn nhận, lưu, trả về lưới
+cấu trúc dưới bất kỳ tên nào. HTML rỗng thì web không render khối số liệu.
 
 **Đã bỏ (owner decision 2026-07-06):** dòng thứ 3 tuỳ chọn **unit** (đơn vị/chú thích, vd "gram")
 từng cho phép mã hoá ô thành 3 span `[value, unit, label]`. Admin không còn ô nhập này; parser vẫn
@@ -409,13 +411,13 @@ từng cho phép mã hoá ô thành 3 span `[value, unit, label]`. Admin không 
 `V322__strip_spec_stats_html_unit_span.sql` dọn span đơn vị còn sót trong dữ liệu cũ của
 `spec_stats_html`/`spec_stats_html_en` (không đổi schema — `unit` chưa bao giờ là cột riêng).
 Status:
-`CONFIRMED_FROM_CODE` — `ProductEntity.specStatsHtml`/`specStatsHtmlEn`, `Product.specStatsHtml`,
+`CONFIRMED_FROM_CODE` — `ProductEntity.specStats`/`specStatsEn`, `Product.specStats`,
 `UpsertProductRequest`(+presence)/`ProductTranslationRequest`, `AdminCatalogMutationService` /
 `ProductFieldApplier`, `JpaCatalogReadRepository`/`JpaCatalogReadSupport`, migration
 `V256__add_product_spec_stats_html.sql`, `V329__BackfillProductHtmlOnlySections.java`,
 `V330__drop_product_html_only_structured_tables.sql`.
 
-### Product trust-badges HTML — `trust_badges_html` (V257, mô hình "HTML là nguồn")
+### Product trust-badges HTML — field `trustBadges` (V257, mô hình "HTML là nguồn")
 
 `trust_badges_html` là **nguồn render** của khối "Dải tin cậy" (trustBadges) trên tên sản phẩm ở web.
 Mô hình giống `spec_stats_html` (V256): cột vi + `_en`, `pick` per-locale, raw EN trong
@@ -423,13 +425,14 @@ Mô hình giống `spec_stats_html` (V256): cột vi + `_en`, `pick` per-locale,
 
 | Field | DB columns (added) | Type | PDP surface |
 |---|---|---|---|
-| `trustBadgesHtml` | `trust_badges_html` + `trust_badges_html_en` (`V257`) | `TEXT`, max 50 000 | Web **luôn** render HTML này khi non-blank (qua `sanitizeRichHtml` với `allowInlineStyles`). HTML là **nguồn DUY NHẤT**; không còn dải `trustBadges` cấu trúc dự phòng. |
+| `trustBadges` | `trust_badges_html` + `trust_badges_html_en` (`V257`) | `TEXT`, max 50 000 | Web **luôn** render HTML này khi non-blank (qua `sanitizeRichHtml` với `allowInlineStyles`). HTML là **nguồn DUY NHẤT**; không còn dải cấu trúc dự phòng. |
 
-**Admin UX:** 2 tab (cấu trúc: danh sách nhãn ngắn / dán HTML), cùng ghi `trustBadgesHtml`; tab cấu trúc
-parse tạm từ HTML và GHÉP ngược vào HTML giữ style + chấm tròn, chỉ đổi chữ (helper
-`lib/trustBadgesBlock.js`, class `bb-trust-badges`). Admin/backend không còn nhận, lưu, trả về mảng
-`trustBadges`; HTML rỗng thì web không render dải tin cậy. Dữ liệu cũ đã được backfill sang HTML trước khi
-drop bảng `product_trust_badges`. Status: `CONFIRMED_FROM_CODE` —
+**Admin UX:** 2 tab (cấu trúc: danh sách nhãn ngắn / dán HTML), cùng ghi vào field `trustBadges`
+này; tab cấu trúc parse tạm từ HTML và GHÉP ngược vào HTML giữ style + chấm tròn, chỉ đổi chữ (helper
+`lib/trustBadgesBlock.js`, class `bb-trust-badges`). **Lưu ý phân biệt tên:** đây KHÔNG phải field
+cấu trúc `trustBadges` (danh sách nhãn) của bảng `product_trust_badges` cũ — bảng đó đã backfill sang
+HTML rồi bị DROP ở V329/V330; admin/backend từ đó không còn nhận, lưu, trả về danh sách cấu trúc dưới
+bất kỳ tên nào. HTML rỗng thì web không render dải tin cậy. Status: `CONFIRMED_FROM_CODE` —
 migration `V257__add_product_trust_badges_html.sql` (+ thread `ProductEntity`/`Product`/
 `ProductTranslations`/`UpsertProductRequest`/`ProductTranslationRequest`/mutation+read như V256),
 `V329__BackfillProductHtmlOnlySections.java`, `V330__drop_product_html_only_structured_tables.sql`.
@@ -628,6 +631,8 @@ drop. Đọc ra domain `Product` thành 1 field lồng `highlights` (record
 | `faqs` | `JSONB` | YES | (V331/V332/V333) FAQ per-product, shape giữ nguyên API `faqs[]`; thay cho bảng con `product_faqs`. |
 | `commitments` | `JSONB` | YES | (V331/V332/V333) Commitment rows per-product, shape giữ nguyên API `commitments[]`; thay cho bảng con `product_commitments`. |
 | `highlights` | `JSONB` | YES | (V331/V332/V333) `{ positiveNotes, negativeNotes }`; thay cho bảng con `product_highlights`. |
+| `gallery` | `JSONB` | YES | (V334/V335/V336) Gallery ảnh/video cấp sản phẩm, shape giữ nguyên API `gallery[]` (`GalleryMedia[]`); thay cho bảng con `product_gallery_images`. |
+| `videos` | `JSONB` | YES | (V334/V335/V336) Video cấp sản phẩm cho tab "Video", shape giữ nguyên API `videos[]` (`VideoAsset[]`); thay cho bảng con `product_videos`. |
 
 **Trọng lượng (đã gỡ):** field dẫn xuất `weightGrams` đã được **gỡ khỏi domain/API/admin/web**
 (quyết định chủ shop — ô "Trọng lượng (gram)" trong form đăng sản phẩm biến mất, web ngừng khai
@@ -640,6 +645,69 @@ Status: `CONFIRMED_FROM_CODE` — `ProductEntity`
 `ProductHighlights` (domain), `Product`, `AdminCatalogMutationService.applyHighlights`,
 `JpaCatalogReadRepository`, migration `V175`, `V331__add_product_jsonb_content_columns.sql`,
 `V332__MigrateProductChildContentToJsonb.java`, `V333__drop_product_child_content_tables.sql`.
+
+### Product gallery — `products.gallery` JSONB (V1 → V248 → V334/V335/V336)
+
+Per-product mixed image/video gallery hiển thị ở dải media chính trên PDP (tách biệt
+với `products.videos` — tab "Video" riêng, xem mục dưới). Ban đầu là bảng con
+`product_gallery_images` (`V1__create_catalog_content_tables.sql`), thêm hỗ trợ
+media hỗn hợp ảnh+video ở `V248__add_gallery_media_video.sql`. Nay là 1 cột JSONB
+nullable trên `products` (`gallery`), theo đúng khuôn vật lý như `description_blocks`
+/ `faqs` / `commitments` / `highlights`.
+
+Shape: JSON array of `GalleryMedia { mediaType, image: ImageAsset|null, videoUrl,
+videoProvider }` — `image: ImageAsset { id, url, alt, width, height, mimeType }`.
+`mediaType="image"` → `image` là ảnh, `videoUrl`/`videoProvider` null. `mediaType="video"`
+→ `image` là thumbnail/poster tuỳ chọn (có thể null), `videoUrl`+`videoProvider`
+(`youtube`|`tiktok`|`facebook`|`upload`) là video.
+
+Upsert DTO (`GalleryImageRequest`, wire shape **không đổi** qua lần chuyển này) nhận
+`url`/`alt`/`width`/`height`/`mimeType`/`mediaType`/`videoUrl`/`videoProvider`/`sortOrder`.
+Full-replace; item rỗng (ảnh thiếu `url` HOẶC video thiếu `videoUrl`) bị bỏ; thứ tự lưu
+= thứ tự sau khi sort theo `sortOrder` (null → dùng index gốc), stable — giống hệt cơ
+chế `ordered()` đã dùng cho `faqs`/`commitments`/`highlights`. Ảnh trong item có `id`
+luôn `null` (request không mang field id trên wire). Exposed trên public + admin
+product detail responses là `gallery` array trên domain `Product`; product *list*
+responses trả `[]` (detail-only).
+
+**Whitelist ảnh (write-time, MEDIA_RULE_003)**: `CatalogRequestValidator.validateProductRequest`
+grandfathers mọi URL ảnh/video ĐÃ lưu trên entity hiện tại (không re-validate khi edit
+không đụng gallery); chỉ URL MỚI phải qua `AdminMutationValidators.validateWhitelistedMediaUrl`.
+
+Status: `CONFIRMED_FROM_CODE` — `GalleryMedia`/`ImageAsset` domain record, `GalleryImageRequest`,
+`ProductFieldApplier.applyGallery`, `ProductGalleryConverter` JSONB converter trên
+`ProductEntity.gallery`, `JpaCatalogReadRepository.toGallery`/`toGalleryMedia`,
+`V1__create_catalog_content_tables.sql`, `V248__add_gallery_media_video.sql`,
+`V334__add_product_gallery_videos_jsonb_columns.sql`,
+`V335__MigrateProductGalleryVideosToJsonb.java`,
+`V336__drop_product_gallery_videos_tables.sql`.
+
+### Product videos — `products.videos` JSONB (V1 → V175 → V334/V335/V336)
+
+Per-product video list cho tab "Video" riêng dưới PDP — **tách biệt** với
+`products.gallery` (gallery video do admin đăng chung khu ảnh thumbnail, xem mục
+trên). Ban đầu là bảng con `product_videos` (`V1__create_catalog_content_tables.sql`),
+thêm cột `description` ở `V175__add_product_seo_template_fields.sql`. Nay là 1 cột
+JSONB nullable trên `products` (`videos`), theo đúng khuôn vật lý như `faqs`/`commitments`.
+
+Shape: JSON array of `VideoAsset { id, url, title, thumbnail: ImageAsset|null, provider,
+description }`. `description` (2-3 câu, V175) render dưới embed + `VideoObject.description`
+(schema.org JSON-LD), 1 ngôn ngữ (không song ngữ).
+
+Upsert DTO (`VideoRequest`, wire shape **không đổi**) nhận `url`/`title`/`provider`/
+`description`/`thumbnailUrl`/`sortOrder`. Full-replace; item thiếu `url` bị bỏ; thứ tự
+lưu = thứ tự sau khi sort theo `sortOrder` (null → dùng index gốc), giống `applyGallery`.
+`id`/`thumbnail.id` luôn `null` (request không mang các field id trên wire). Exposed
+trên public + admin product detail responses là `videos` array trên domain `Product`;
+product *list* responses trả `[]` (detail-only).
+
+Status: `CONFIRMED_FROM_CODE` — `VideoAsset`/`ImageAsset` domain record, `VideoRequest`,
+`ProductFieldApplier.applyVideos`, `ProductVideosConverter` JSONB converter trên
+`ProductEntity.videos`, `JpaCatalogReadRepository.toVideos`,
+`V1__create_catalog_content_tables.sql`, `V175__add_product_seo_template_fields.sql`,
+`V334__add_product_gallery_videos_jsonb_columns.sql`,
+`V335__MigrateProductGalleryVideosToJsonb.java`,
+`V336__drop_product_gallery_videos_tables.sql`.
 
 ### Product gender field — `products.gender` (V184)
 
@@ -665,35 +733,26 @@ Evidence: `ProductEntity.java`, `Product.java`, `CatalogReadService.java` (`matc
 
 ### Product video description — `product_videos.description` (V175)
 
-Thêm cột `description TEXT NULL` vào bảng con `product_videos`. Mô tả 2–3 câu nội dung
-video, render dưới embed và làm `description` cho schema.org `VideoObject`. 1 ngôn ngữ
-(không song ngữ). Phơi ra `VideoAsset.description` trên domain. `VideoRequest` nhận
-`description` (`@Size(max = 5000)`).
+**Đã chuyển sang JSONB** — xem mục *"Product videos — `products.videos` JSONB"* ở trên
+(V334/V335/V336). Lịch sử: cột `description TEXT NULL` từng thêm vào bảng con
+`product_videos` ở V175, nay là field `description` trong mỗi phần tử JSON.
 
 ### Gallery media hỗn hợp — ảnh + video trong gallery (V248)
 
-Hai bảng gallery `product_gallery_images` và `product_variant_gallery_images` thêm nhóm cột media:
-`media_type VARCHAR(8) NOT NULL DEFAULT 'image'` (`image`|`video`), `video_url TEXT`,
-`video_provider VARCHAR(16)` (`youtube`|`tiktok`|`facebook`|`upload`); cột `image_url` được **nới NULL**
-(item video có thể không có thumbnail). Một dòng gallery giờ là **ảnh** (mediaType=image, dùng `image_*`) hoặc
-**video** (mediaType=video, `video_url`+`video_provider`, `image_*` = thumbnail/poster tuỳ chọn); `image_alt`
-vẫn là text thay thế cho SEO/trợ năng. (Từng có thêm cột `caption VARCHAR(500)` — V294 — nhưng đã bị xoá ở
-V295, không còn trong schema.)
+**Phần product-level đã chuyển sang JSONB** — xem mục *"Product gallery —
+`products.gallery` JSONB"* ở trên (V334/V335/V336). Phần **biến thể**
+(`product_variant_gallery_images`) **KHÔNG đổi** — vẫn là bảng con riêng, đọc qua
+`ProductVariant.gallery`, cùng shape `GalleryMedia[]`, cùng logic
+`JpaCatalogReadRepository.toGalleryMedia` (dùng chung với product-level).
 
-Domain: `Product.gallery` và `ProductVariant.gallery` đổi `List<ImageAsset>` → **`List<GalleryMedia>`**
-(`GalleryMedia(mediaType, image, videoUrl, videoProvider)`). Web contract: `gallery: GalleryMedia[]`
-trên Product + ProductVariant. Read mapper `JpaCatalogReadRepository.toGalleryMedia` dựng item theo loại.
+Domain: `Product.gallery` và `ProductVariant.gallery` cùng dùng `List<GalleryMedia>`
+(`GalleryMedia(mediaType, image, videoUrl, videoProvider)`) — không đổi từ V248.
 
-**Tách biệt với `product_videos`** (mục "Video" riêng dưới PDP): gallery video do admin đăng CHUNG khu
-vực ảnh thumbnail (cùng `GalleryEditor` admin, cho cả sản phẩm lẫn biến thể), hiển thị trong dải media
-trên cùng (`ProductGallery` tự tách ảnh/video từ danh sách gallery); còn `product_videos` chỉ feed tab
-"Video". Tương thích ngược: gallery cũ (default `media_type='image'`) hiển thị y như cũ.
-
-**Quy tắc Whitelist ảnh (Write-time)**: Backend thực hiện siết chặt bảo mật ảnh trong gallery. Với mỗi ảnh mới hoặc thay đổi (không nằm trong danh sách URL đã lưu trước đó của sản phẩm hoặc các biến thể), URL ảnh (khi `mediaType` không phải `video`) bắt buộc phải thuộc whitelist MinIO thông qua phương thức `CatalogRequestValidator.validateProductRequest` gọi `AdminMutationValidators.validateWhitelistedMediaUrl`. Dữ liệu ảnh cũ (legacy) không đổi vẫn được chấp nhận để đảm bảo khả năng tương thích ngược.
-
-Status: `CONFIRMED_FROM_CODE` — `V248__add_gallery_media_video.sql`, `V295__drop_gallery_caption_columns.sql`,
-`ProductGalleryImageEntity`/`ProductVariantGalleryImageEntity`, `GalleryMedia`, `GalleryImageRequest`
-(`mediaType`/`videoUrl`/`videoProvider`), `AdminCatalogMutationService.applyGallery`/`applyVariantGallery`.
+Status: `CONFIRMED_FROM_CODE` — `V248__add_gallery_media_video.sql`,
+`V295__drop_gallery_caption_columns.sql`, `ProductVariantGalleryImageEntity` (biến
+thể, còn bảng), `ProductGalleryConverter` (sản phẩm, nay JSONB), `GalleryMedia`,
+`GalleryImageRequest` (`mediaType`/`videoUrl`/`videoProvider`),
+`ProductFieldApplier.applyGallery`/`applyVariantGallery`.
 
 ### Variant color representation image (2026-07-03)
 
@@ -724,7 +783,7 @@ de-duplicates, preserves order, drops the product's own ID and unknown IDs.
 
 Exposed as the `relatedProducts` array on the domain `Product` record — present
 on the public `GET /api/v1/products/{slug}` and admin product detail responses;
-empty in product *list* responses (detail-only, like `specificationsHtml`/`faqs`).
+empty in product *list* responses (detail-only, like `specifications`/`faqs`).
 Each entry uses the **list-view** product shape (no nested gallery/specs/
 relatedProducts). The public read path includes **only `PUBLISHED`** related
 products; admin reads keep every linked product so the editor can show drafts.
@@ -816,7 +875,7 @@ product detail dùng JSONB/HTML cùng dòng để tránh bảng dịch phụ d�
 
 **Field `*En` trong JSONB:** `description_blocks`, `suitability_section`, `faqs`,
 `commitments`, `highlights` giữ bản tiếng Anh inline trong từng object. Các khối
-HTML-only (`specificationsHtml`, `specStatsHtml`, `trustBadgesHtml`) dùng cột `_en`
+HTML-only (`specifications`, `specStats`, `trustBadges`) dùng cột `_en`
 riêng trên `products`.
 
 **Fallback theo từng trường:** khi đọc bản tiếng Anh, mỗi trường lấy
@@ -1400,7 +1459,7 @@ The `GET /api/v1/admin/reports/orders/export` endpoint returns a CSV with the fo
 | `public_home` | **Removed 2026-07-03 (V311).** Was: homepage promo banner, experience/about blocks, featured/news/videos kicker+title (15 keys). All hardcoded in `bigbike-web` now — see §"`public_home` keys — removed" below. | (đã gỡ) |
 | `payment` | Bank-transfer account shown to customers at checkout — holder, number, bank, branch (4 keys) | Thanh toán |
 | `public_about` | **Removed 2026-06-24 (V274).** The About page (`/gioi-thieu`) is **fully static** — copy from i18n `About`, the 5 service tiles from theme assets; the web never read these keys (`AboutPageContent.tsx`). The 28 rows (seeded V223, re-seeded V269), the `SettingDefinitionRegistry` defs, and `AboutServiceMediaSeeder` were all dropped. | (đã gỡ) |
-| `public_product` | **No shared settings.** All product-detail content is per-product now: commitment rows under the buy buttons (`product.commitments`, JSONB on `products`) and the trust-badge row above the title (`product.trustBadgesHtml`, HTML-only). The former `product_commitment_*` (V228) and `product_trust_*` keys were removed in V232/V233. | (không có tab — nhóm trống) |
+| `public_product` | **No shared settings.** All product-detail content is per-product now: commitment rows under the buy buttons (`product.commitments`, JSONB on `products`) and the trust-badge row above the title (`product.trustBadges`, HTML-only). The former `product_commitment_*` (V228) and `product_trust_*` keys were removed in V232/V233. | (không có tab — nhóm trống) |
 | `public_hero` | Hero banners for listing pages (`/san-pham`, `/brands`, `/tin-tuc`) — 17 keys (5 per page incl. per-page `illustration_url` + 2 global fallbacks). Managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`), not the generic settings screen. | Banner trang |
 | `promo` | **No rows.** The promo-banner keys (`promo_title`/`promo_off`/`promo_href`/`promo_image_url`) used to live in the `public_home` group — that group was removed entirely in V311 (hardcoded in `bigbike-web`); no `promo` group ever existed in the DB. | (không có tab — nhóm trống) |
 | `seo` | Homepage SEO title/description, OG image, bottom HTML block | SEO website |
@@ -1512,7 +1571,8 @@ system web. Tất cả nullable / default an toàn → sản phẩm cũ giữ ng
 `description_blocks` giờ resolve **theo từng field trong từng khối** qua `DescriptionBlock.resolveForLocale`
 (en → field `*En` nếu non-blank, fallback field VI) — chi tiết ở §"Product description blocks —
 description_blocks (V139, gộp song ngữ ở V326)". (`specifications[].featured` của V230 đã
-**gỡ bỏ ở V235**; `specStats` cấu trúc cũng đã backfill vào `specStatsHtml` và drop bảng ở V329/V330.) Khối EN của mô tả không còn
+**gỡ bỏ ở V235**; field cấu trúc `specStats` cũ (bảng `product_spec_stats`) cũng đã backfill vào HTML
+(nay là field `specStats` hiện hành, cột `spec_stats_html`) và drop bảng ở V329/V330.) Khối EN của mô tả không còn
 nằm ở `translations.en.descriptionBlocks` (field đã xóa khỏi `ProductTranslations.ProductContent`) —
 admin đọc thẳng field `*En` trong từng khối của `descriptionBlocks`, không cần đường riêng.
 

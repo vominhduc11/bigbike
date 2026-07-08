@@ -11,8 +11,9 @@ import com.bigbike.bigbike_backend.api.admin.dto.VariantOptionRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantRequest;
 import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.config.MediaUrlProperties;
+import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
+import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
@@ -66,7 +67,8 @@ class CatalogRequestValidatorTest {
                 categoryJpaRepositoryProvider,
                 brandJpaRepositoryProvider,
                 mediaUrlProperties,
-                homeVideoUrlPolicy
+                homeVideoUrlPolicy,
+                null
         );
     }
 
@@ -197,10 +199,8 @@ class CatalogRequestValidatorTest {
     void validateProductRequest_legacyOutsideMinioGalleryUrl_isAccepted() {
         // Setup existing product with same outside url
         ProductEntity current = new ProductEntity();
-        ProductGalleryImageEntity existingImg = new ProductGalleryImageEntity();
-        existingImg.setImageUrl("https://cdn.external.vn/uploads/xe.jpg");
-        existingImg.setMediaType("image");
-        current.setGallery(Collections.singletonList(existingImg));
+        current.setGallery(Collections.singletonList(
+                GalleryMedia.ofImage(new ImageAsset(null, "https://cdn.external.vn/uploads/xe.jpg", null, null, null, null))));
 
         UpsertProductRequest request = createBaseRequest();
 

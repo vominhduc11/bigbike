@@ -16,8 +16,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -38,12 +37,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
  *   public review submit    → 5 req/min
  */
 @Component
+@Slf4j
 public class RateLimitingFilter extends OncePerRequestFilter {
 
     private enum LimitTier { LOGIN, REGISTER, PASSWORD_RESET, RESEND_VERIFICATION, REFRESH, CART, CHECKOUT, ORDER_LOOKUP, SEARCH, REVIEW, REVIEW_PHOTO }
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final Logger log = LoggerFactory.getLogger(RateLimitingFilter.class);
 
     /**
      * Proxies allowed to set X-Forwarded-For. Configurable via bigbike.trusted-proxies

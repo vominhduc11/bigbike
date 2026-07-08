@@ -19,11 +19,9 @@ import com.bigbike.bigbike_backend.domain.catalog.VideoAsset;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantOptionEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVideoEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeValueEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeJpaRepository;
@@ -79,9 +77,7 @@ import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSuppo
 @RequiredArgsConstructor
 public class JpaCatalogReadRepository implements CatalogReadRepository {
 
-    private static final Comparator<ProductGalleryImageEntity> GALLERY_ORDER = Comparator.comparingInt(ProductGalleryImageEntity::getSortOrder);
     private static final Comparator<ProductVariantGalleryImageEntity> VARIANT_GALLERY_ORDER = Comparator.comparingInt(ProductVariantGalleryImageEntity::getSortOrder);
-    private static final Comparator<ProductVideoEntity> VIDEO_ORDER = Comparator.comparingInt(ProductVideoEntity::getSortOrder);
     private static final Comparator<ProductVariantEntity> VARIANT_ORDER = Comparator.comparingInt(ProductVariantEntity::getSortOrder);
     private static final Comparator<ProductVariantOptionEntity> VARIANT_OPTION_ORDER = Comparator.comparingInt(ProductVariantOptionEntity::getSortOrder);
 
@@ -334,9 +330,9 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 null,                       // originBrandCountry — detail only
                 null,                       // sizeGuide — detail only
                 null,                       // suitabilityAdvisory — detail only
-                null,                       // specificationsHtml — detail only
-                null,                       // specStatsHtml — detail only
-                null,                       // trustBadgesHtml — detail only
+                null,                       // specifications — detail only
+                null,                       // specStats — detail only
+                null,                       // trustBadges — detail only
                 null,                       // quickAnswerSummary — detail only
                 entity.getGender(),
                 List.of(),                  // relatedProducts — detail only
@@ -405,9 +401,9 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 null,                       // originBrandCountry — detail only
                 null,                       // sizeGuide — detail only
                 null,                       // suitabilityAdvisory — detail only
-                null,                       // specificationsHtml — detail only
-                null,                       // specStatsHtml — detail only
-                null,                       // trustBadgesHtml — detail only
+                null,                       // specifications — detail only
+                null,                       // specStats — detail only
+                null,                       // trustBadges — detail only
                 null,                       // quickAnswerSummary — detail only
                 entity.getGender(),
                 List.of(),                  // relatedProducts — detail only
@@ -769,9 +765,9 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 pick(entity.getOriginBrandCountry(), entity.getOriginBrandCountryEn(), locale),
                 entity.getSizeGuide(),
                 pick(entity.getSuitabilityAdvisory(), entity.getSuitabilityAdvisoryEn(), locale),
-                pick(entity.getSpecificationsHtml(), entity.getSpecificationsHtmlEn(), locale),
-                pick(entity.getSpecStatsHtml(), entity.getSpecStatsHtmlEn(), locale),
-                pick(entity.getTrustBadgesHtml(), entity.getTrustBadgesHtmlEn(), locale),
+                pick(entity.getSpecifications(), entity.getSpecificationsEn(), locale),
+                pick(entity.getSpecStats(), entity.getSpecStatsEn(), locale),
+                pick(entity.getTrustBadges(), entity.getTrustBadgesEn(), locale),
                 pick(entity.getQuickAnswerSummary(), entity.getQuickAnswerSummaryEn(), locale),
                 entity.getGender(),
                 toRelatedProducts(entity, publicView, locale),
@@ -907,18 +903,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     private List<GalleryMedia> toGallery(ProductEntity entity) {
-        if (entity.getGallery() == null) {
-            return List.of();
-        }
-        return entity.getGallery().stream()
-                .sorted(GALLERY_ORDER)
-                .map(item -> toGalleryMedia(
-                        item.getMediaType(), item.getVideoUrl(), item.getVideoProvider(),
-                        item.getImageId(), item.getImageUrl(), item.getImageAlt(),
-                        item.getImageWidth(), item.getImageHeight(), item.getImageMimeType()
-                ))
-                .filter(m -> m != null)
-                .toList();
+        return entity.getGallery() == null ? List.of() : entity.getGallery();
     }
 
     /** Map một dòng gallery (ảnh/video) → {@link GalleryMedia}. Null khi thiếu nội dung (ảnh rỗng / video thiếu url). */
@@ -940,27 +925,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     private List<VideoAsset> toVideos(ProductEntity entity) {
-        if (entity.getVideos() == null) {
-            return List.of();
-        }
-        return entity.getVideos().stream()
-                .sorted(VIDEO_ORDER)
-                .map(item -> new VideoAsset(
-                        item.getVideoId(),
-                        item.getVideoUrl(),
-                        item.getTitle(),
-                        toImageAsset(
-                                item.getThumbnailId(),
-                                item.getThumbnailUrl(),
-                                item.getThumbnailAlt(),
-                                item.getThumbnailWidth(),
-                                item.getThumbnailHeight(),
-                                item.getThumbnailMimeType()
-                        ),
-                        item.getProvider(),
-                        item.getDescription()
-                ))
-                .toList();
+        return entity.getVideos() == null ? List.of() : entity.getVideos();
     }
 
     /**

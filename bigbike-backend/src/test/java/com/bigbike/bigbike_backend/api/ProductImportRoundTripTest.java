@@ -90,8 +90,8 @@ class ProductImportRoundTripTest {
                       { "type": "heading", "level": 2, "text": "Tiêu đề" },
                       { "type": "paragraph", "html": "<p>Nội dung chi tiết</p>" }
                     ],
-                    "specStatsHtml": { "specStatsHtmlVI": "<div>35h – Pin</div>" },
-                    "trustBadgesHtml": { "trustBadgesHtmlVI": "<div>Bảo hành 24 tháng</div>" },
+                    "specStats": { "specStatsVI": "<div>35h – Pin</div>" },
+                    "trustBadges": { "trustBadgesVI": "<div>Bảo hành 24 tháng</div>" },
                     "commitments": [ { "icon": "shield-check", "title": "Chính hãng", "subtitle": "100%%", "sortOrder": 0 } ],
                     "faqs": [ { "question": "Câu hỏi?", "answer": "<p>Trả lời</p>", "sortOrder": 0 } ],
                     "highlights": {

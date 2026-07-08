@@ -10,17 +10,18 @@ import com.bigbike.bigbike_backend.api.admin.dto.HighlightRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantOptionRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VideoRequest;
+import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
+import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.ProductCommitment;
 import com.bigbike.bigbike_backend.domain.catalog.ProductFaq;
 import com.bigbike.bigbike_backend.domain.catalog.ProductHighlight;
 import com.bigbike.bigbike_backend.domain.catalog.ProductHighlights;
+import com.bigbike.bigbike_backend.domain.catalog.VideoAsset;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVideoEntity;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -39,32 +40,26 @@ final class ProductFieldApplier {
     );
 
     public static void applyGallery(ProductEntity entity, List<GalleryImageRequest> requests) {
-        List<ProductGalleryImageEntity> existing = entity.getGallery();
-        if (existing == null) {
-            existing = new ArrayList<>();
-            entity.setGallery(existing);
-        }
-        existing.clear();
-        for (int i = 0; i < requests.size(); i++) {
-            GalleryImageRequest req = requests.get(i);
+        List<Indexed<GalleryImageRequest>> ordered = ordered(requests, GalleryImageRequest::getSortOrder);
+        List<GalleryMedia> gallery = new ArrayList<>();
+        for (Indexed<GalleryImageRequest> item : ordered) {
+            GalleryImageRequest req = item.value();
             boolean isVideo = isVideoGalleryItem(req);
             String url = AdminMutationValidators.trimToNull(req.getUrl());
             String videoUrl = AdminMutationValidators.trimToNull(req.getVideoUrl());
             // Bỏ qua item rỗng: ảnh thiếu url, hoặc video thiếu videoUrl.
             if (isVideo ? videoUrl == null : url == null) continue;
-            ProductGalleryImageEntity img = new ProductGalleryImageEntity();
-            img.setProduct(entity);
-            img.setSortOrder(req.getSortOrder() != null ? req.getSortOrder() : i);
-            img.setMediaType(isVideo ? "video" : "image");
-            img.setVideoUrl(isVideo ? videoUrl : null);
-            img.setVideoProvider(isVideo ? AdminMutationValidators.trimToNull(req.getVideoProvider()) : null);
-            img.setImageUrl(url);
-            img.setImageAlt(AdminMutationValidators.trimToNull(req.getAlt()));
-            img.setImageWidth(req.getWidth());
-            img.setImageHeight(req.getHeight());
-            img.setImageMimeType(AdminMutationValidators.trimToNull(req.getMimeType()));
-            existing.add(img);
+            if (isVideo) {
+                gallery.add(GalleryMedia.ofVideo(
+                        buildImageAsset(url, req.getAlt(), req.getWidth(), req.getHeight(), req.getMimeType()),
+                        videoUrl,
+                        AdminMutationValidators.trimToNull(req.getVideoProvider())));
+            } else {
+                gallery.add(GalleryMedia.ofImage(
+                        buildImageAsset(url, req.getAlt(), req.getWidth(), req.getHeight(), req.getMimeType())));
+            }
         }
+        entity.setGallery(gallery);
     }
 
     /** Một dòng gallery là VIDEO khi mediaType="video" hoặc có videoUrl. */
@@ -74,27 +69,31 @@ final class ProductFieldApplier {
         return AdminMutationValidators.trimToNull(req.getVideoUrl()) != null;
     }
 
+    /** Dựng {@link ImageAsset} từ 1 gallery/video request. {@code id} luôn null (request không có field id trên wire). */
+    private static ImageAsset buildImageAsset(String url, String alt, Integer width, Integer height, String mimeType) {
+        if (url == null) return null;
+        return new ImageAsset(null, url, AdminMutationValidators.trimToNull(alt), width, height,
+                AdminMutationValidators.trimToNull(mimeType));
+    }
+
     public static void applyVideos(ProductEntity entity, List<VideoRequest> requests) {
-        List<ProductVideoEntity> existing = entity.getVideos();
-        if (existing == null) {
-            existing = new ArrayList<>();
-            entity.setVideos(existing);
-        }
-        existing.clear();
-        for (int i = 0; i < requests.size(); i++) {
-            VideoRequest req = requests.get(i);
+        List<Indexed<VideoRequest>> ordered = ordered(requests, VideoRequest::getSortOrder);
+        List<VideoAsset> videos = new ArrayList<>();
+        for (Indexed<VideoRequest> item : ordered) {
+            VideoRequest req = item.value();
             String url = AdminMutationValidators.trimToNull(req.getUrl());
             if (url == null) continue;
-            ProductVideoEntity video = new ProductVideoEntity();
-            video.setProduct(entity);
-            video.setSortOrder(req.getSortOrder() != null ? req.getSortOrder() : i);
-            video.setVideoUrl(url);
-            video.setTitle(AdminMutationValidators.trimToNull(req.getTitle()));
-            video.setProvider(AdminMutationValidators.trimToNull(req.getProvider()));
-            video.setDescription(AdminMutationValidators.trimToNull(req.getDescription()));
-            video.setThumbnailUrl(AdminMutationValidators.trimToNull(req.getThumbnailUrl()));
-            existing.add(video);
+            String thumbnailUrl = AdminMutationValidators.trimToNull(req.getThumbnailUrl());
+            ImageAsset thumbnail = buildImageAsset(thumbnailUrl, null, null, null, null);
+            videos.add(new VideoAsset(
+                    null,
+                    url,
+                    AdminMutationValidators.trimToNull(req.getTitle()),
+                    thumbnail,
+                    AdminMutationValidators.trimToNull(req.getProvider()),
+                    AdminMutationValidators.trimToNull(req.getDescription())));
         }
+        entity.setVideos(videos);
     }
 
     /**
@@ -111,9 +110,9 @@ final class ProductFieldApplier {
         entity.setDescriptionEn(en == null ? null : AdminMutationValidators.trimToNull(en.getDescription()));
         entity.setSizeGuideEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSizeGuide()));
         entity.setSuitabilityAdvisoryEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSuitabilityAdvisory()));
-        entity.setSpecificationsHtmlEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSpecificationsHtml()));
-        entity.setSpecStatsHtmlEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSpecStatsHtml()));
-        entity.setTrustBadgesHtmlEn(en == null ? null : AdminMutationValidators.trimToNull(en.getTrustBadgesHtml()));
+        entity.setSpecificationsEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSpecifications()));
+        entity.setSpecStatsEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSpecStats()));
+        entity.setTrustBadgesEn(en == null ? null : AdminMutationValidators.trimToNull(en.getTrustBadges()));
         entity.setQuickAnswerSummaryEn(en == null ? null : AdminMutationValidators.trimToNull(en.getQuickAnswerSummary()));
         entity.setSeoTitleEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSeoTitle()));
         entity.setSeoDescriptionEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSeoDescription()));

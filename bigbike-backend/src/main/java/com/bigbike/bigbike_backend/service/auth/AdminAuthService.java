@@ -6,11 +6,11 @@ import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
 import com.bigbike.bigbike_backend.config.ClientIpResolver;
 import com.bigbike.bigbike_backend.config.JwtProperties;
 import com.bigbike.bigbike_backend.domain.auth.AdminUserProfile;
-import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminRefreshTokenEntity;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminRefreshTokenJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
+import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
@@ -33,6 +33,7 @@ public class AdminAuthService {
     private final AdminPermissionService adminPermissionService;
     private final AdminLoginAttemptService loginAttemptService;
     private final AuditLogWriter auditLogWriter;
+    private final AuditLogFactory auditLogFactory;
     private final ClientIpResolver clientIpResolver;
 
     @Transactional
@@ -138,19 +139,19 @@ public class AdminAuthService {
         });
     }
 
-    /** Best-effort audit entry for an authentication event (login/logout). Never throws. */
     private void auditLogin(UUID actorId, String action, String email, String reason,
             String clientIp, String userAgent) {
-        AuditLogEntity log = new AuditLogEntity();
-        log.setActorType("ADMIN");
-        log.setActorId(actorId);
-        log.setAction(action);
-        log.setResourceType("ADMIN_AUTH");
-        log.setAfterData(authDetailJson(email, reason));
-        log.setIpAddress(clientIp);
-        log.setUserAgent(userAgent);
-        log.setCreatedAt(Instant.now());
-        auditLogWriter.save(log);
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN",
+                actorId,
+                action,
+                "ADMIN_AUTH",
+                null,
+                null,
+                authDetailJson(email, reason),
+                clientIp,
+                userAgent
+        ));
     }
 
     private static String authDetailJson(String email, String reason) {

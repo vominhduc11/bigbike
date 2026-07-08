@@ -19,7 +19,7 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
-import com.bigbike.bigbike_backend.service.admin.AdminCatalogMutationService;
+import com.bigbike.bigbike_backend.service.admin.ProductMutationService;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -35,7 +35,7 @@ class AdminReadApiTest {
     private WebApplicationContext webApplicationContext;
 
     @Autowired
-    private AdminCatalogMutationService adminCatalogMutationService;
+    private ProductMutationService productMutationService;
 
     @BeforeEach
     void setup() {
@@ -104,7 +104,7 @@ class AdminReadApiTest {
         seo.setOgImage(ogImage);
         create.setSeo(seo);
 
-        Product created = adminCatalogMutationService.createProduct(create, DEV_ADMIN_ID);
+        Product created = productMutationService.createProduct(create, DEV_ADMIN_ID);
 
         mockMvc.perform(get("/api/v1/admin/products/{id}", created.id())
                         .header("X-Admin-Permissions", "products.read"))
@@ -134,8 +134,8 @@ class AdminReadApiTest {
                         .name("Trash List Product EN " + suffix)
                         .build()));
 
-        Product created = adminCatalogMutationService.createProduct(create, DEV_ADMIN_ID);
-        adminCatalogMutationService.softDeleteProduct(created.id(), DEV_ADMIN_ID);
+        Product created = productMutationService.createProduct(create, DEV_ADMIN_ID);
+        productMutationService.softDeleteProduct(created.id(), DEV_ADMIN_ID);
 
         mockMvc.perform(get("/api/v1/admin/products")
                         .param("q", slug)
@@ -174,9 +174,9 @@ class AdminReadApiTest {
                         .name("Publish Then Trash Product EN " + suffix)
                         .build()));
 
-        Product created = adminCatalogMutationService.createProduct(create, DEV_ADMIN_ID);
-        adminCatalogMutationService.updateProductPublishStatus(created.id(), PublishStatus.PUBLISHED, DEV_ADMIN_ID);
-        Product deleted = adminCatalogMutationService.softDeleteProduct(created.id(), DEV_ADMIN_ID);
+        Product created = productMutationService.createProduct(create, DEV_ADMIN_ID);
+        productMutationService.updateProductPublishStatus(created.id(), PublishStatus.PUBLISHED, DEV_ADMIN_ID);
+        Product deleted = productMutationService.softDeleteProduct(created.id(), DEV_ADMIN_ID);
 
         // Ends up in TRASH in one call — the intermediate DRAFT hop never surfaces as a
         // separately observable state (owner decision 2026-07-07).

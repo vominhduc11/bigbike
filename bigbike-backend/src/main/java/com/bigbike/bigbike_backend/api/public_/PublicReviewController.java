@@ -8,6 +8,7 @@ import com.bigbike.bigbike_backend.api.public_.dto.SubmitReviewRequest;
 import com.bigbike.bigbike_backend.service.public_.PublicReviewService;
 import com.bigbike.bigbike_backend.service.security.SafeMediaAssetUrlPolicy;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
@@ -55,7 +56,7 @@ public class PublicReviewController {
     @ResponseStatus(HttpStatus.CREATED)
     public ApiDataResponse<Map<String, Object>> submitReview(
             @PathVariable @Size(max = 64) String productId,
-            @RequestBody SubmitReviewRequest body,
+            @Valid @RequestBody SubmitReviewRequest body,
             HttpServletRequest request
     ) {
         // Honeypot stealth: real users never see this field. If a bot fills it,
@@ -64,7 +65,7 @@ public class PublicReviewController {
         if (body.website() != null && !body.website().trim().isEmpty()) {
             return apiResponseFactory.data(Map.of("success", true), request);
         }
-        validate(body);
+        validatePhotos(body.photos());
         publicReviewService.submitReview(
                 productId, body.authorName(), body.rating(), body.comment(), body.photos());
         return apiResponseFactory.data(Map.of("success", true), request);
@@ -79,28 +80,6 @@ public class PublicReviewController {
     ) {
         String url = publicReviewService.uploadReviewPhoto(productId, file);
         return apiResponseFactory.data(Map.of("url", url), request);
-    }
-
-    private void validate(SubmitReviewRequest body) {
-        if (body.authorName() == null || body.authorName().isBlank()) {
-            throw ValidationException.fromField("authorName", "REQUIRED", "Vui l\u00f2ng nh\u1eadp t\u00ean.");
-        }
-        if (body.authorName().trim().length() > 80) {
-            throw ValidationException.fromField(
-                    "authorName",
-                    "TOO_LONG",
-                    "T\u00ean kh\u00f4ng \u0111\u01b0\u1ee3c v\u01b0\u1ee3t qu\u00e1 80 k\u00fd t\u1ef1.");
-        }
-        if (body.rating() == null || body.rating() < 1 || body.rating() > 5) {
-            throw ValidationException.fromField("rating", "INVALID", "\u0110\u00e1nh gi\u00e1 ph\u1ea3i t\u1eeb 1 \u0111\u1ebfn 5 sao.");
-        }
-        if (body.comment() != null && body.comment().length() > 1000) {
-            throw ValidationException.fromField(
-                    "comment",
-                    "TOO_LONG",
-                    "Nh\u1eadn x\u00e9t kh\u00f4ng \u0111\u01b0\u1ee3c v\u01b0\u1ee3t qu\u00e1 1000 k\u00fd t\u1ef1.");
-        }
-        validatePhotos(body.photos());
     }
 
     /** Photos must be internal MinIO URLs (/media/...) and capped at 10 \u2014 external/hotlink rejected. */

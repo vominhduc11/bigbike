@@ -26,7 +26,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
+import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import java.util.UUID;
 import org.springframework.beans.factory.ObjectProvider;
@@ -53,6 +53,7 @@ public class AdminContentMutationService {
     private final JpaContentReadRepository jpaContentReadRepository;
     private final WebRevalidationService webRevalidationService;
     private final AuditLogWriter auditLogWriter;
+    private final AuditLogFactory auditLogFactory;
     private final DescriptionBlockRenderer descriptionBlockRenderer;
     private final ContentRequestValidator contentRequestValidator;
     private final ArticleMapper articleMapper;
@@ -67,6 +68,7 @@ public class AdminContentMutationService {
             ObjectProvider<JpaContentReadRepository> jpaContentReadRepositoryProvider,
             WebRevalidationService webRevalidationService,
             AuditLogWriter auditLogWriter,
+            AuditLogFactory auditLogFactory,
             DescriptionBlockRenderer descriptionBlockRenderer,
             ContentRequestValidator contentRequestValidator,
             ArticleMapper articleMapper,
@@ -80,6 +82,7 @@ public class AdminContentMutationService {
         this.jpaContentReadRepository = jpaContentReadRepositoryProvider.getIfAvailable();
         this.webRevalidationService = webRevalidationService;
         this.auditLogWriter = auditLogWriter;
+        this.auditLogFactory = auditLogFactory;
         this.descriptionBlockRenderer = descriptionBlockRenderer;
         this.contentRequestValidator = contentRequestValidator;
         this.articleMapper = articleMapper;
@@ -107,7 +110,8 @@ public class AdminContentMutationService {
 
         applyArticlePatch(entity, request, slug, category, true);
         articleJpaRepository.save(entity);
-        auditLog("CONTENT_ARTICLE_CREATED", "CONTENT", adminId, null, articleJson(entity));
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "CONTENT_ARTICLE_CREATED", "CONTENT", null, null, articleJson(entity)));
         revalidateArticle(entity, null);
 
         Article article = contentReadRepository.findArticleById(entity.getId())
@@ -166,7 +170,8 @@ public class AdminContentMutationService {
         entity.setUpdatedAt(Instant.now());
         applyArticlePatch(entity, request, slug, category, false);
         articleJpaRepository.save(entity);
-        auditLog("CONTENT_ARTICLE_UPDATED", "CONTENT", adminId, before, articleJson(entity));
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "CONTENT_ARTICLE_UPDATED", "CONTENT", null, before, articleJson(entity)));
         revalidateArticle(entity, previousSlug);
 
         Article article = contentReadRepository.findArticleById(entity.getId())
@@ -213,7 +218,8 @@ public class AdminContentMutationService {
 
         entity.setUpdatedAt(Instant.now());
         articleJpaRepository.save(entity);
-        auditLog("CONTENT_ARTICLE_DELETED", "CONTENT", adminId, before, articleJson(entity));
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "CONTENT_ARTICLE_DELETED", "CONTENT", null, before, articleJson(entity)));
         revalidateArticle(entity, prevSlug);
         Article article = contentReadRepository.findArticleById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Content not found."));
@@ -258,7 +264,8 @@ public class AdminContentMutationService {
         entity.setPublishStatus(PublishStatus.DRAFT);
         entity.setUpdatedAt(Instant.now());
         articleJpaRepository.save(entity);
-        auditLog("CONTENT_ARTICLE_RESTORED", "CONTENT", adminId, before, articleJson(entity));
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "CONTENT_ARTICLE_RESTORED", "CONTENT", null, before, articleJson(entity)));
         revalidateArticle(entity, null);
         Article article = contentReadRepository.findArticleById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Content not found."));
@@ -287,7 +294,8 @@ public class AdminContentMutationService {
             }
         }
         
-        auditLog("CONTENT_ARTICLE_HARD_DELETED", "CONTENT", adminId, articleJson(entity), null);
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "CONTENT_ARTICLE_HARD_DELETED", "CONTENT", null, articleJson(entity), null));
         articleJpaRepository.delete(entity);
         revalidateArticle(entity, null);
     }
@@ -333,18 +341,6 @@ public class AdminContentMutationService {
                     "Content mutation APIs require JPA persistence profile. Mock profile is read-only."
             );
         }
-    }
-
-    private void auditLog(String action, String resourceType, UUID adminId, String before, String after) {
-        AuditLogEntity log = new AuditLogEntity();
-        log.setActorType("ADMIN");
-        log.setActorId(adminId);
-        log.setAction(action);
-        log.setResourceType(resourceType);
-        log.setBeforeData(before);
-        log.setAfterData(after);
-        log.setCreatedAt(Instant.now());
-        auditLogWriter.save(log);
     }
 
     private void applyArticlePatch(

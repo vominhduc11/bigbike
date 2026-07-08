@@ -3,10 +3,8 @@ package com.bigbike.bigbike_backend.service.admin;
 import com.bigbike.bigbike_backend.api.admin.dto.menu.AdminMenuItemResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.menu.AdminMenuResponse;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
-import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.menu.MenuEntity;
 import com.bigbike.bigbike_backend.persistence.entity.menu.MenuItemEntity;
-import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -157,34 +155,6 @@ final class MenuSupport {
     }
 
     // ── Audit helpers ─────────────────────────────────────────────────────────
-
-    static AuditLogEntity buildMenuAudit(UUID adminId, String action, UUID resourceId,
-            String before, String after) {
-        AuditLogEntity log = new AuditLogEntity();
-        log.setActorType("ADMIN");
-        log.setActorId(adminId);
-        log.setAction(action);
-        log.setResourceType("MENU");
-        log.setResourceId(resourceId);
-        log.setBeforeData(before);
-        log.setAfterData(after);
-        log.setCreatedAt(Instant.now());
-        return log;
-    }
-
-    static AuditLogEntity buildItemAudit(UUID adminId, String action, UUID resourceId,
-            String before, String after) {
-        AuditLogEntity log = new AuditLogEntity();
-        log.setActorType("ADMIN");
-        log.setActorId(adminId);
-        log.setAction(action);
-        log.setResourceType("MENU_ITEM");
-        log.setResourceId(resourceId);
-        log.setBeforeData(before);
-        log.setAfterData(after);
-        log.setCreatedAt(Instant.now());
-        return log;
-    }
 
     static String menuSnapshot(MenuEntity m) {
         return "{\"location\":\"" + escapeJson(m.getLocation()) +

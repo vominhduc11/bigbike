@@ -137,16 +137,16 @@ export function getPublishReadiness(form, t) {
     // Điều kiện `ok` mirror đúng bộ lọc trong toPayload để khớp cái thực sự được lưu.
     { id: 'shortDesc', label: t('products.detail.checklist.shortDesc'), ok: Boolean(form.shortDescription?.trim()),                                 required: false },
     { id: 'desc',      label: t('products.detail.checklist.desc'),      ok: (Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks.length > 0 : (form.description?.trim().length ?? 0) > 0),  required: false },
-    { id: 'specStats',     label: t('products.detail.checklist.specStats'),     ok: Boolean((form.specStatsHtml || '').trim()),                                                                 required: false },
+    { id: 'specStats',     label: t('products.detail.checklist.specStats'),     ok: Boolean((form.specStats || '').trim()),                                                                 required: false },
     { id: 'faqs',          label: t('products.detail.checklist.faqs'),          ok: (form.faqs || []).some((f) => f.question?.trim() && f.answer?.trim()),                                     required: false },
-    { id: 'trustBadges',   label: t('products.detail.checklist.trustBadges', { defaultValue: 'Dải tin cậy' }), ok: Boolean((form.trustBadgesHtml || '').trim()),                                       required: false },
+    { id: 'trustBadges',   label: t('products.detail.checklist.trustBadges', { defaultValue: 'Dải tin cậy' }), ok: Boolean((form.trustBadges || '').trim()),                                       required: false },
     { id: 'seoTitle',      label: t('products.detail.checklist.seoTitle'),      ok: Boolean(form.seoTitle?.trim()),           required: false },
     { id: 'seoDesc',       label: t('products.detail.checklist.seoDesc'),       ok: Boolean(form.seoDescription?.trim()),     required: false },
     { id: 'seoCanonical',  label: t('products.detail.checklist.seoCanonical'),  ok: Boolean(form.slug?.trim()),    required: false },
     { id: 'gallery',       label: t('products.detail.checklist.gallery'),       ok: (form.gallery || []).some((img) => img.url?.trim()),                                                       required: false },
     { id: 'prosCons',      label: t('products.detail.checklist.prosCons'),      ok: (form.positiveNotes || []).some((h) => (h.content || '').trim()) || (form.negativeNotes || []).some((h) => (h.content || '').trim()), required: false },
     { id: 'suitability',   label: t('products.detail.checklist.suitability'),   ok: Boolean((form.suitabilitySection?.html || '').trim() || (form.suitabilitySection?.cards || []).some(suitabilityCardHasContent)),    required: false },
-    { id: 'specifications',label: t('products.detail.checklist.specifications'),ok: Boolean((form.specificationsHtml || '').trim()),                                                            required: false },
+    { id: 'specifications',label: t('products.detail.checklist.specifications'),ok: Boolean((form.specifications || '').trim()),                                                            required: false },
     { id: 'variants',      label: t('products.detail.checklist.variants'),      ok: (form.variants || []).some((v) => v.name?.trim()),                                                         required: false },
   ]
 
@@ -233,11 +233,11 @@ export function buildEmptyForm() {
     gallery: [],
     videos: [],
     // Chế độ "Dán mã HTML" cho khối Thông số kỹ thuật (V255) — bản vi; bản en ở translations.en.
-    specificationsHtml: '',
+    specifications: '',
     // "Dán mã HTML" cho khối Ô số liệu nổi bật (V256) — bản vi; bản en ở translations.en.
-    specStatsHtml: '',
+    specStats: '',
     // "Dán mã HTML" cho khối Dải tin cậy (V257) — bản vi; bản en ở translations.en.
-    trustBadgesHtml: '',
+    trustBadges: '',
     // "Quick Answer" (trả lời nhanh, V300) — bản vi; bản en ở translations.en.
     quickAnswerSummary: '',
     faqs: [],
@@ -272,9 +272,9 @@ export function buildEmptyTranslation() {
     shortDescription: '',
     description: '',
     suitabilityAdvisory: '',
-    specificationsHtml: '',
-    specStatsHtml: '',
-    trustBadgesHtml: '',
+    specifications: '',
+    specStats: '',
+    trustBadges: '',
     quickAnswerSummary: '',
     seoTitle: '',
     seoDescription: '',
@@ -396,14 +396,14 @@ export function buildFormFromItem(item) {
     name: item.name || '',
     shortDescription: item.shortDescription || '',
     // Thông số kỹ thuật — html là nguồn render duy nhất (backend không còn nhận/trả bảng
-    // `specifications` có cấu trúc).
-    specificationsHtml: item.specificationsHtml || '',
+    // `specifications` có cấu trúc kiểu cũ, đã xoá ở product_specifications/V329/V330).
+    specifications: item.specifications || '',
     // Ô số liệu nổi bật — html là nguồn render duy nhất (V256; backend không còn nhận/trả lưới
-    // `specStats` có cấu trúc).
-    specStatsHtml: item.specStatsHtml || '',
+    // `specStats` có cấu trúc kiểu cũ, đã xoá ở product_spec_stats/V329/V330).
+    specStats: item.specStats || '',
     // Dải tin cậy — html là nguồn render duy nhất (V257; backend không còn nhận/trả dải
-    // `trustBadges` có cấu trúc).
-    trustBadgesHtml: item.trustBadgesHtml || '',
+    // `trustBadges` có cấu trúc kiểu cũ, đã xoá ở product_trust_badges/V329/V330).
+    trustBadges: item.trustBadges || '',
     // "Quick Answer" (trả lời nhanh, V300) — bản vi; bản en ở translations.en (auto qua translationFormFromItem).
     quickAnswerSummary: item.quickAnswerSummary || '',
     description: item.description || '',
@@ -653,11 +653,11 @@ export function toPayload(form) {
     name: form.name.trim(),
     shortDescription: form.shortDescription.trim() || undefined,
     // V255: luôn gửi key (null khi rỗng) để presence-flag backend xoá được HTML khi quay về tab cấu trúc.
-    specificationsHtml: form.specificationsHtml?.trim() || null,
+    specifications: form.specifications?.trim() || null,
     // V256: Ô số liệu nổi bật — html là nguồn render web; luôn gửi key (null khi rỗng).
-    specStatsHtml: form.specStatsHtml?.trim() || null,
+    specStats: form.specStats?.trim() || null,
     // V257: Dải tin cậy — html là nguồn render web; luôn gửi key (null khi rỗng).
-    trustBadgesHtml: form.trustBadgesHtml?.trim() || null,
+    trustBadges: form.trustBadges?.trim() || null,
     // V300: Quick Answer — presence-flag, luôn gửi key (null khi rỗng).
     quickAnswerSummary: form.quickAnswerSummary?.trim() || null,
     description: Array.isArray(form.descriptionBlocks) ? undefined : (form.description.trim() || undefined),
@@ -775,7 +775,7 @@ export function toPayload(form) {
     payload.descriptionBlocks = cleanDescriptionBlocks(form.descriptionBlocks)
   }
   // suitabilitySection / sizeGuideSection (V327/V328) — field riêng, luôn gửi key (null khi rỗng)
-  // giống pattern specificationsHtml, không phải pattern điều kiện của descriptionBlocks.
+  // giống pattern specifications, không phải pattern điều kiện của descriptionBlocks.
   payload.suitabilitySection = cleanSuitabilitySection(form.suitabilitySection)
   payload.sizeGuideSection = cleanSizeGuideSection(form.sizeGuideSection)
   const scopedVariants = withColorScopedMedia(form.variants).filter((v) => v.name.trim())
@@ -929,12 +929,14 @@ export const SECTION_FIELD_PREFIXES = {
   seo:           ['seoTitle','seoDescription','seoCanonicalUrl','seoOgImageUrl','seoOgImageAlt'],
   gallery:       ['gallery'],
   videos:        ['videos'],
-  specs:         ['specificationsHtml'],
-  specStats:     ['specStatsHtml'],
+  // Khoá bên trái = section key (tên tab); mảng bên phải = tên field thực trong form/payload —
+  // sau khi bỏ hậu tố "Html", specStats/trustBadges trùng chữ với section key của chính chúng.
+  specs:         ['specifications'],
+  specStats:     ['specStats'],
   faqs:          ['faqs'],
   commitments:   ['commitments'],
   highlights:    ['positiveNotes', 'negativeNotes'],
-  trustBadges:   ['trustBadgesHtml'],
+  trustBadges:   ['trustBadges'],
   variants:      ['variants'],
   related:       ['relatedProductIds'],
   accessories:   ['accessoryProductIds'],

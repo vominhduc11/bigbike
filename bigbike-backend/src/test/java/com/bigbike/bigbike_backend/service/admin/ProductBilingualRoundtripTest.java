@@ -36,7 +36,7 @@ class ProductBilingualRoundtripTest {
 
     private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
-    @Autowired AdminCatalogMutationService mutationService;
+    @Autowired ProductMutationService mutationService;
     @Autowired CatalogReadRepository readRepository;
     @Autowired CategoryJpaRepository categoryRepo;
 

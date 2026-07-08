@@ -2,11 +2,11 @@ import { generateId } from '@/lib/utils'
 
 /**
  * Chuyển đổi giữa danh sách thông số có cấu trúc (model nhập trong admin) và HTML lưu vào
- * `specificationsHtml` — để web render HTML thay cho bảng dòng. Model: [{ _key, name, value }].
+ * `specifications` — để web render HTML thay cho bảng dòng. Model: [{ _key, name, value }].
  *
  * HTML sinh ra mirror đúng markup web hiện tại (table.shop_attributes, mỗi dòng <th scope="row">
  * tên + <td> giá trị) để giao diện không đổi. Như sizeChart/suitabilityCards: tab "Có cấu trúc"
- * chỉ là công cụ nhập, `specificationsHtml` mới là nguồn render.
+ * chỉ là công cụ nhập, `specifications` mới là nguồn render.
  */
 
 function escapeHtml(s) {

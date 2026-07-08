@@ -2,7 +2,7 @@ import { generateId } from '@/lib/utils'
 
 /**
  * Chuyển đổi giữa danh sách "Dải tin cậy" có cấu trúc (model nhập trong admin) và HTML lưu vào
- * `trustBadgesHtml` — web render HTML thay cho dải có cấu trúc (V257). Model: [{ _key, content }].
+ * `trustBadges` — web render HTML thay cho dải có cấu trúc (V257). Model: [{ _key, content }].
  *
  * HTML sinh ra là một dải flex tự chứa (inline-style + biến brand web `--color-brand`, kèm hex
  * fallback) mô phỏng dải tin cậy trên tên sản phẩm. Container có class `bb-trust-badges` để

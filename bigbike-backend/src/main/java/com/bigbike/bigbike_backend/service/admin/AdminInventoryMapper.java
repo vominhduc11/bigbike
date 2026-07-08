@@ -4,16 +4,13 @@ import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdminStockItemRespons
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdminStockProductGroupResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdminStockVariantResponse;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
-import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.UUID;
 
 /**
  * Stateless mapping/formatting helpers extracted from {@link AdminInventoryService}.
@@ -192,14 +189,4 @@ final class AdminInventoryMapper {
         return value;
     }
 
-    static AuditLogEntity buildAudit(UUID actorId, String action, String resourceType, String afterData) {
-        AuditLogEntity log = new AuditLogEntity();
-        log.setActorType("ADMIN");
-        log.setActorId(actorId);
-        log.setAction(action);
-        log.setResourceType(resourceType);
-        log.setAfterData(afterData);
-        log.setCreatedAt(Instant.now());
-        return log;
-    }
 }

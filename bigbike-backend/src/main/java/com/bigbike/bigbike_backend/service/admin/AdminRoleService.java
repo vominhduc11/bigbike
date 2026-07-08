@@ -4,8 +4,8 @@ import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
-import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminRoleEntity;
+import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminRoleJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
@@ -35,6 +35,7 @@ public class AdminRoleService {
     private final AdminUserJpaRepository adminUserRepo;
     private final AuditLogWriter auditLogWriter;
     private final AdminPermissionService adminPermissionService;
+    private final AuditLogFactory auditLogFactory;
 
     public List<Map<String, Object>> getAllRoles() {
         return roleRepo.findAll().stream()
@@ -74,8 +75,16 @@ public class AdminRoleService {
 
         adminPermissionService.evict(saved.getId());
 
-        auditLogWriter.save(buildAudit(actorId, clientIp, userAgent, "ROLE_PERMISSIONS_UPDATED",
-                permissionsJson(role.getId(), before), permissionsJson(role.getId(), saved.getPermissions())));
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN",
+                actorId,
+                "ROLE_PERMISSIONS_UPDATED",
+                "ADMIN_ROLE",
+                null,
+                permissionsJson(role.getId(), before),
+                permissionsJson(role.getId(), saved.getPermissions()),
+                clientIp,
+                userAgent));
 
         return toMap(saved);
     }
@@ -119,8 +128,16 @@ public class AdminRoleService {
 
         adminPermissionService.evict(saved.getId());
 
-        auditLogWriter.save(buildAudit(actorId, clientIp, userAgent, "ROLE_CREATED",
-                null, permissionsJson(saved.getId(), saved.getPermissions())));
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN",
+                actorId,
+                "ROLE_CREATED",
+                "ADMIN_ROLE",
+                null,
+                null,
+                permissionsJson(saved.getId(), saved.getPermissions()),
+                clientIp,
+                userAgent));
 
         return toMap(saved);
     }
@@ -145,8 +162,16 @@ public class AdminRoleService {
 
         adminPermissionService.evict(role.getId());
 
-        auditLogWriter.save(buildAudit(actorId, clientIp, userAgent, "ROLE_DELETED",
-                permissionsJson(role.getId(), before), null));
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN",
+                actorId,
+                "ROLE_DELETED",
+                "ADMIN_ROLE",
+                null,
+                permissionsJson(role.getId(), before),
+                null,
+                clientIp,
+                userAgent));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -182,19 +207,4 @@ public class AdminRoleService {
                 "]}";
     }
 
-    private AuditLogEntity buildAudit(UUID actorId, String clientIp, String userAgent,
-            String action, String before, String after) {
-        AuditLogEntity log = new AuditLogEntity();
-        log.setActorType("ADMIN");
-        log.setActorId(actorId);
-        log.setAction(action);
-        log.setResourceType("ADMIN_ROLE");
-        // resource_id stays null: role IDs are String, not UUID
-        log.setBeforeData(before);
-        log.setAfterData(after);
-        log.setIpAddress(clientIp);
-        log.setUserAgent(userAgent);
-        log.setCreatedAt(Instant.now());
-        return log;
-    }
 }

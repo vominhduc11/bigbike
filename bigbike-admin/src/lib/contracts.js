@@ -324,9 +324,9 @@ function normalizeProductTranslations(input) {
     suitabilityAdvisory: toTrimmedString(source.suitabilityAdvisory) || undefined,
     // "Dán mã HTML" bản EN (V255/V256/V257) — surface để translationFormFromItem nạp vào
     // form.translations.en; nếu không, mở SP hiện trống bản EN → Lưu ghi đè xoá HTML EN đã lưu.
-    specificationsHtml: toTrimmedString(source.specificationsHtml) || undefined,
-    specStatsHtml: toTrimmedString(source.specStatsHtml) || undefined,
-    trustBadgesHtml: toTrimmedString(source.trustBadgesHtml) || undefined,
+    specifications: toTrimmedString(source.specifications) || undefined,
+    specStats: toTrimmedString(source.specStats) || undefined,
+    trustBadges: toTrimmedString(source.trustBadges) || undefined,
     // "Quick Answer" bản EN (V300).
     quickAnswerSummary: toTrimmedString(source.quickAnswerSummary) || undefined,
     seoTitle: toTrimmedString(source.seoTitle) || undefined,
@@ -421,9 +421,9 @@ export function normalizeProduct(input) {
     // "Dán mã HTML" cho 3 khối (V255/V256/V257) — web render HTML này thay bảng/lưới/dải có cấu trúc.
     // PHẢI surface ở đây: nếu không form admin nạp undefined → mở SP hiện trống → bấm Lưu gửi null
     // → xoá mất HTML đã lưu (đúng anti-pattern đã ghi chú ở positiveNotes phía trên).
-    specificationsHtml: toTrimmedString(source.specificationsHtml) || undefined,
-    specStatsHtml: toTrimmedString(source.specStatsHtml) || undefined,
-    trustBadgesHtml: toTrimmedString(source.trustBadgesHtml) || undefined,
+    specifications: toTrimmedString(source.specifications) || undefined,
+    specStats: toTrimmedString(source.specStats) || undefined,
+    trustBadges: toTrimmedString(source.trustBadges) || undefined,
     // "Quick Answer" (trả lời nhanh, V300) — bản vi; bản en ở translations.en.
     quickAnswerSummary: toTrimmedString(source.quickAnswerSummary) || undefined,
     // Admin-curated related products — list-view refs used to render product

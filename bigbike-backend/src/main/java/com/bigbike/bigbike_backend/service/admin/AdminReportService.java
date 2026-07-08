@@ -13,6 +13,11 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepo
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
+import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import jakarta.persistence.criteria.Predicate;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -24,8 +29,11 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -42,6 +50,7 @@ public class AdminReportService {
 
     /** Maximum rows returned per CSV export. Exposed so controller can set X-Export-Truncated header. */
     public static final int EXPORT_MAX_ROWS = 10_000;
+    private static final ObjectMapper AUDIT_JSON = JsonMapper.builder().findAndAddModules().build();
 
     /** Wraps a CSV byte array with a flag indicating whether the result was truncated at EXPORT_MAX_ROWS. */
     public record ExportResult(byte[] csv, boolean truncated) {}
@@ -62,6 +71,8 @@ public class AdminReportService {
     private final OrderLineItemJpaRepository lineItemRepo;
     private final CustomerJpaRepository customerRepo;
     private final ProductJpaRepository productRepo;
+    private final AuditLogWriter auditLogWriter;
+    private final AuditLogFactory auditLogFactory;
 
     public AdminAnalyticsResponse getAnalytics(String from, String to) {
         Instant fromInstant = parseFromDate(from);
@@ -313,7 +324,50 @@ public class AdminReportService {
         return new ExportResult(csv, products.size() > EXPORT_MAX_ROWS);
     }
 
+    public void recordExportAudit(
+            String actorId,
+            String exportType,
+            Map<String, Object> filters,
+            String ipAddress,
+            String userAgent
+    ) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("exportType", exportType);
+        payload.put("filters", filters != null ? filters : Map.of());
+        payload.put("rowLimit", EXPORT_MAX_ROWS);
+
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN",
+                parseActorId(actorId),
+                "REPORT_EXPORT_CREATED",
+                "REPORT",
+                null,
+                null,
+                writeAuditJson(payload),
+                ipAddress,
+                userAgent));
+    }
+
     private static String nvl(String s) { return s != null ? s : ""; }
+
+    private UUID parseActorId(String id) {
+        if (id == null) {
+            return null;
+        }
+        try {
+            return UUID.fromString(id);
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
+    }
+
+    private String writeAuditJson(Map<String, Object> payload) {
+        try {
+            return AUDIT_JSON.writeValueAsString(payload);
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Failed to serialize report export audit payload.", exception);
+        }
+    }
 
     private String formatDecimal(BigDecimal value) {
         return value != null ? value.toPlainString() : "0";

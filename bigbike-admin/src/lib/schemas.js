@@ -87,11 +87,11 @@ export function createProductSchema(t, isCreate = false) {
       sizeGuideSection: z.any().nullable().optional(),
       shortDescription: z.string().optional(),
       // "Dán mã HTML" cho khối Thông số kỹ thuật (V255) — vi; bản en ở translations.en.
-      specificationsHtml: z.string().max(50000, 'Mã HTML thông số tối đa 50000 ký tự.').nullable().optional(),
+      specifications: z.string().max(50000, 'Mã HTML thông số tối đa 50000 ký tự.').nullable().optional(),
       // "Dán mã HTML" cho khối Ô số liệu nổi bật (V256) — vi; bản en ở translations.en.
-      specStatsHtml: z.string().max(50000, 'Mã HTML ô số liệu tối đa 50000 ký tự.').nullable().optional(),
+      specStats: z.string().max(50000, 'Mã HTML ô số liệu tối đa 50000 ký tự.').nullable().optional(),
       // "Dán mã HTML" cho khối Dải tin cậy (V257) — vi; bản en ở translations.en.
-      trustBadgesHtml: z.string().max(50000, 'Mã HTML dải tin cậy tối đa 50000 ký tự.').nullable().optional(),
+      trustBadges: z.string().max(50000, 'Mã HTML dải tin cậy tối đa 50000 ký tự.').nullable().optional(),
       // "Quick Answer" (trả lời nhanh, V300) — vi; bản en ở translations.en.
       quickAnswerSummary: z.string().max(600, 'Quick Answer tối đa 600 ký tự.').nullable().optional(),
       retailPrice: z.string().optional(),
@@ -171,9 +171,9 @@ export function createProductSchema(t, isCreate = false) {
           shortDescription: z.string().optional(),
           description: z.string().optional(),
           suitabilityAdvisory: z.string().max(20000, 'Phù hợp với ai tối đa 20000 ký tự.').optional(),
-          specificationsHtml: z.string().max(50000, 'Mã HTML thông số tối đa 50000 ký tự.').optional(),
-          specStatsHtml: z.string().max(50000, 'Mã HTML ô số liệu nổi bật tối đa 50000 ký tự.').optional(),
-          trustBadgesHtml: z.string().max(50000, 'Mã HTML dải tin cậy tối đa 50000 ký tự.').optional(),
+          specifications: z.string().max(50000, 'Mã HTML thông số tối đa 50000 ký tự.').optional(),
+          specStats: z.string().max(50000, 'Mã HTML ô số liệu nổi bật tối đa 50000 ký tự.').optional(),
+          trustBadges: z.string().max(50000, 'Mã HTML dải tin cậy tối đa 50000 ký tự.').optional(),
           quickAnswerSummary: z.string().max(600, 'Quick Answer (EN) tối đa 600 ký tự.').optional(),
           seoTitle: z.string().optional(),
           seoDescription: z.string().optional(),
@@ -342,7 +342,7 @@ export function createProductSchema(t, isCreate = false) {
       }
       const enLimits = [
         ['name', 255], ['shortDescription', 2000], ['description', 20000],
-        ['contentBottom', 50000], ['specificationsHtml', 50000], ['specStatsHtml', 50000], ['trustBadgesHtml', 50000],
+        ['contentBottom', 50000], ['specifications', 50000], ['specStats', 50000], ['trustBadges', 50000],
         ['quickAnswerSummary', 600],
         ['seoTitle', 255], ['seoDescription', 5000],
       ]

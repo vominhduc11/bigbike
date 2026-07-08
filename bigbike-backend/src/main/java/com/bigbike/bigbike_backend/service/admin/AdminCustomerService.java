@@ -14,9 +14,9 @@ import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.customer.CustomerStatus;
 import com.bigbike.bigbike_backend.mapper.CustomerAddressMapper;
 import com.bigbike.bigbike_backend.mapper.CustomerMapper;
-import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
+import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerAddressJpaRepository;
@@ -61,6 +61,7 @@ public class AdminCustomerService {
     private final CustomerAddressJpaRepository addressRepo;
     private final OrderJpaRepository orderRepo;
     private final AuditLogWriter auditLogWriter;
+    private final AuditLogFactory auditLogFactory;
     private final CustomerSessionService customerSessionService;
     private final CustomerMapper customerMapper;
     private final CustomerAddressMapper customerAddressMapper;
@@ -204,7 +205,8 @@ public class AdminCustomerService {
             throw new ConflictException("Email or phone is already in use by another customer.");
         }
 
-        auditLogWriter.save(buildAudit(adminId, "CUSTOMER_UPDATED", customerId, beforeSnapshot, snapshot(customer)));
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "CUSTOMER_UPDATED", "CUSTOMER", customerId, beforeSnapshot, snapshot(customer)));
 
         return getCustomerDetail(customerId);
     }
@@ -235,7 +237,8 @@ public class AdminCustomerService {
 
         String after = "{\"status\":\"" + newStatus + "\",\"reason\":" +
                 (req.reason() != null ? "\"" + escapeJson(req.reason()) + "\"" : "null") + "}";
-        auditLogWriter.save(buildAudit(adminId, "CUSTOMER_STATUS_UPDATED", customerId, before, after));
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "CUSTOMER_STATUS_UPDATED", "CUSTOMER", customerId, before, after));
 
         return getCustomerDetail(customerId);
     }
@@ -297,20 +300,6 @@ public class AdminCustomerService {
     }
 
     // ── Build helpers ─────────────────────────────────────────────────────────
-
-    private AuditLogEntity buildAudit(UUID adminId, String action, UUID resourceId,
-            String before, String after) {
-        AuditLogEntity log = new AuditLogEntity();
-        log.setActorType("ADMIN");
-        log.setActorId(adminId);
-        log.setAction(action);
-        log.setResourceType("CUSTOMER");
-        log.setResourceId(resourceId);
-        log.setBeforeData(before);
-        log.setAfterData(after);
-        log.setCreatedAt(Instant.now());
-        return log;
-    }
 
     private static String snapshot(CustomerEntity c) {
         return "{\"email\":\"" + nvl(c.getEmail()) + "\",\"phone\":\"" + nvl(c.getPhone()) +

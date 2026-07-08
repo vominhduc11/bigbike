@@ -1,11 +1,14 @@
 package com.bigbike.bigbike_backend.api.admin;
 
+import com.bigbike.bigbike_backend.api.admin.dto.CreateRoleRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.UpdateRolePermissionsRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.config.ClientIpResolver;
 import com.bigbike.bigbike_backend.service.admin.AdminRoleService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -40,16 +43,14 @@ public class AdminRolesController extends AdminControllerSupport {
     @PutMapping("/{id}/permissions")
     public ApiDataResponse<Map<String, Object>> updatePermissions(
             @PathVariable String id,
-            @RequestBody Map<String, Object> body,
+            @Valid @RequestBody UpdateRolePermissionsRequest body,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "roles.write");
         String clientIp = clientIpResolver.resolve(request);
         String userAgent = request.getHeader("User-Agent");
 
-        @SuppressWarnings("unchecked")
-        List<String> permList = (List<String>) body.get("permissions");
-        var permissions = new LinkedHashSet<>(permList != null ? permList : List.of());
+        var permissions = new LinkedHashSet<>(body.permissions() != null ? body.permissions() : List.of());
 
         return apiResponseFactory.data(
                 adminRoleService.updateRolePermissions(id, permissions, resolveAdminId(), clientIp, userAgent),
@@ -60,22 +61,20 @@ public class AdminRolesController extends AdminControllerSupport {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiDataResponse<Map<String, Object>> createRole(
-            @RequestBody Map<String, Object> body,
+            @Valid @RequestBody CreateRoleRequest body,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "roles.write");
         String clientIp = clientIpResolver.resolve(request);
         String userAgent = request.getHeader("User-Agent");
 
-        @SuppressWarnings("unchecked")
-        List<String> permList = (List<String>) body.get("permissions");
-        var permissions = new LinkedHashSet<>(permList != null ? permList : List.of());
+        var permissions = new LinkedHashSet<>(body.permissions() != null ? body.permissions() : List.of());
 
         return apiResponseFactory.data(
                 adminRoleService.createRole(
-                        (String) body.get("id"),
-                        (String) body.get("name"),
-                        (String) body.getOrDefault("description", ""),
+                        body.id(),
+                        body.name(),
+                        body.description() != null ? body.description() : "",
                         permissions,
                         resolveAdminId(),
                         clientIp,

@@ -17,11 +17,11 @@ public record ProductTranslations(ProductContent en) {
             /** English "Phù hợp với ai" advisory HTML (V237). */
             String suitabilityAdvisory,
             /** English specs HTML override (V255); "html thắng" cho khối Thông số kỹ thuật. */
-            String specificationsHtml,
+            String specifications,
             /** English "Ô số liệu nổi bật" HTML (V256); nguồn render khi non-blank. */
-            String specStatsHtml,
+            String specStats,
             /** English "Dải tin cậy" HTML (V257); nguồn render khi non-blank. */
-            String trustBadgesHtml,
+            String trustBadges,
             /** English "Quick Answer" summary (V300), max 600 ký tự. */
             String quickAnswerSummary,
             String seoTitle,

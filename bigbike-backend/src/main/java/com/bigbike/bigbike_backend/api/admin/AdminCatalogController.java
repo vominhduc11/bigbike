@@ -12,7 +12,10 @@ import com.bigbike.bigbike_backend.domain.catalog.Brand;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import java.util.List;
-import com.bigbike.bigbike_backend.service.admin.AdminCatalogMutationService;
+import com.bigbike.bigbike_backend.service.admin.ProductMutationService;
+import com.bigbike.bigbike_backend.service.admin.CategoryMutationService;
+import com.bigbike.bigbike_backend.service.admin.BrandMutationService;
+import com.bigbike.bigbike_backend.service.admin.HomepageBlockMutationService;
 import com.bigbike.bigbike_backend.service.admin.AdminCatalogReadService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -49,7 +52,10 @@ public class AdminCatalogController extends AdminControllerSupport {
     private static final String LANG_REGEX = "^(vi|en)$";
 
     private final AdminCatalogReadService adminCatalogReadService;
-    private final AdminCatalogMutationService adminCatalogMutationService;
+    private final ProductMutationService productMutationService;
+    private final CategoryMutationService categoryMutationService;
+    private final BrandMutationService brandMutationService;
+    private final HomepageBlockMutationService homepageBlockMutationService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
 
@@ -104,7 +110,7 @@ public class AdminCatalogController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "products.update");
-        return apiResponseFactory.data(adminCatalogMutationService.createProduct(payload, resolveAdminId()), request);
+        return apiResponseFactory.data(productMutationService.createProduct(payload, resolveAdminId()), request);
     }
 
     /**
@@ -120,7 +126,7 @@ public class AdminCatalogController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "products.update");
-        return apiResponseFactory.data(adminCatalogMutationService.previewProduct(payload, lang), request);
+        return apiResponseFactory.data(productMutationService.previewProduct(payload, lang), request);
     }
 
     @PatchMapping("/products/{id}")
@@ -130,7 +136,7 @@ public class AdminCatalogController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "products.update");
-        return apiResponseFactory.data(adminCatalogMutationService.updateProduct(id, payload, resolveAdminId()), request);
+        return apiResponseFactory.data(productMutationService.updateProduct(id, payload, resolveAdminId()), request);
     }
 
     @PatchMapping("/products/{id}/publish")
@@ -141,7 +147,7 @@ public class AdminCatalogController extends AdminControllerSupport {
     ) {
         devAdminAuthService.requirePermission(request, "products.update");
         return apiResponseFactory.data(
-                adminCatalogMutationService.updateProductPublishStatus(id, payload.getPublishStatus(), resolveAdminId()),
+                productMutationService.updateProductPublishStatus(id, payload.getPublishStatus(), resolveAdminId()),
                 request
         );
     }
@@ -157,7 +163,7 @@ public class AdminCatalogController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "products.update");
-        return apiResponseFactory.data(adminCatalogMutationService.softDeleteProduct(id, resolveAdminId()), request);
+        return apiResponseFactory.data(productMutationService.softDeleteProduct(id, resolveAdminId()), request);
     }
 
     /**
@@ -170,7 +176,7 @@ public class AdminCatalogController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "products.update");
-        return apiResponseFactory.data(adminCatalogMutationService.restoreProduct(id, resolveAdminId()), request);
+        return apiResponseFactory.data(productMutationService.restoreProduct(id, resolveAdminId()), request);
     }
 
     @DeleteMapping("/products/{id}/permanent")
@@ -179,7 +185,7 @@ public class AdminCatalogController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "products.update");
-        adminCatalogMutationService.hardDeleteProduct(id, resolveAdminId());
+        productMutationService.hardDeleteProduct(id, resolveAdminId());
         return org.springframework.http.ResponseEntity.noContent().build();
     }
 
@@ -189,7 +195,7 @@ public class AdminCatalogController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "products.update");
-        return apiResponseFactory.data(adminCatalogMutationService.setHomepageBlocks(payload, resolveAdminId()), request);
+        return apiResponseFactory.data(homepageBlockMutationService.setHomepageBlocks(payload, resolveAdminId()), request);
     }
 
     @GetMapping("/categories")
@@ -253,7 +259,7 @@ public class AdminCatalogController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "catalog.update");
-        return apiResponseFactory.data(adminCatalogMutationService.createCategory(payload, resolveAdminId()), request);
+        return apiResponseFactory.data(categoryMutationService.createCategory(payload, resolveAdminId()), request);
     }
 
     @PatchMapping("/categories/{id}")
@@ -263,7 +269,7 @@ public class AdminCatalogController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "catalog.update");
-        return apiResponseFactory.data(adminCatalogMutationService.updateCategory(id, payload, resolveAdminId()), request);
+        return apiResponseFactory.data(categoryMutationService.updateCategory(id, payload, resolveAdminId()), request);
     }
 
     /**
@@ -278,7 +284,7 @@ public class AdminCatalogController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "catalog.update");
-        return apiResponseFactory.data(adminCatalogMutationService.softDeleteCategory(id, resolveAdminId()), request);
+        return apiResponseFactory.data(categoryMutationService.softDeleteCategory(id, resolveAdminId()), request);
     }
 
     @PostMapping("/categories/{id}/restore")
@@ -287,7 +293,7 @@ public class AdminCatalogController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "catalog.update");
-        return apiResponseFactory.data(adminCatalogMutationService.restoreCategory(id, resolveAdminId()), request);
+        return apiResponseFactory.data(categoryMutationService.restoreCategory(id, resolveAdminId()), request);
     }
 
     @DeleteMapping("/categories/{id}/permanent")
@@ -296,7 +302,7 @@ public class AdminCatalogController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "catalog.update");
-        adminCatalogMutationService.hardDeleteCategory(id, resolveAdminId());
+        categoryMutationService.hardDeleteCategory(id, resolveAdminId());
         return org.springframework.http.ResponseEntity.noContent().build();
     }
 
@@ -343,7 +349,7 @@ public class AdminCatalogController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "catalog.update");
-        return apiResponseFactory.data(adminCatalogMutationService.createBrand(payload, resolveAdminId()), request);
+        return apiResponseFactory.data(brandMutationService.createBrand(payload, resolveAdminId()), request);
     }
 
     @PatchMapping("/brands/{id}")
@@ -353,7 +359,7 @@ public class AdminCatalogController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "catalog.update");
-        return apiResponseFactory.data(adminCatalogMutationService.updateBrand(id, payload, resolveAdminId()), request);
+        return apiResponseFactory.data(brandMutationService.updateBrand(id, payload, resolveAdminId()), request);
     }
 
     @DeleteMapping("/brands/{id}")
@@ -362,7 +368,7 @@ public class AdminCatalogController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "catalog.update");
-        return apiResponseFactory.data(adminCatalogMutationService.deleteBrand(id, resolveAdminId()), request);
+        return apiResponseFactory.data(brandMutationService.deleteBrand(id, resolveAdminId()), request);
     }
 
     @PostMapping("/brands/{id}/restore")
@@ -371,7 +377,7 @@ public class AdminCatalogController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "catalog.update");
-        return apiResponseFactory.data(adminCatalogMutationService.restoreBrand(id, resolveAdminId()), request);
+        return apiResponseFactory.data(brandMutationService.restoreBrand(id, resolveAdminId()), request);
     }
 
     @DeleteMapping("/brands/{id}/permanent")
@@ -380,7 +386,7 @@ public class AdminCatalogController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "catalog.update");
-        int reassignedProductCount = adminCatalogMutationService.hardDeleteBrand(id, resolveAdminId());
+        int reassignedProductCount = brandMutationService.hardDeleteBrand(id, resolveAdminId());
         return apiResponseFactory.data(
                 java.util.Map.of("reassignedProductCount", reassignedProductCount), request);
     }

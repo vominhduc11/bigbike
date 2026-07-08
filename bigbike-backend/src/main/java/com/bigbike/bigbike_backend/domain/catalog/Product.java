@@ -60,13 +60,13 @@ public record Product(
         String suitabilityAdvisory,
         /** "Dán mã HTML" cho khối Thông số kỹ thuật (V255). HTML là nguồn render duy nhất.
          *  Detail-only; null in list. Resolved per-locale via {@code pick}. */
-        String specificationsHtml,
+        String specifications,
         /** "Dán mã HTML" cho khối "Ô số liệu nổi bật" (V256). HTML là nguồn render duy nhất.
          *  Detail-only; null in list. */
-        String specStatsHtml,
+        String specStats,
         /** "Dán mã HTML" cho khối "Dải tin cậy" (V257). HTML là nguồn render duy nhất.
          *  Detail-only; null in list. */
-        String trustBadgesHtml,
+        String trustBadges,
         /** "Quick Answer" (trả lời nhanh, V300) — đoạn tóm tắt AIO 40-60 từ, blockquote ngay sau
          *  Specs Dashboard, trước "Tính năng chi tiết". Max 600 ký tự. Detail-only; null in list. */
         String quickAnswerSummary,

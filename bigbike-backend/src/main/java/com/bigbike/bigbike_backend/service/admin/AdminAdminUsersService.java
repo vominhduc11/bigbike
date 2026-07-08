@@ -3,8 +3,8 @@ package com.bigbike.bigbike_backend.service.admin;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.ForbiddenException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
-import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
+import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminRoleJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
@@ -51,6 +51,7 @@ public class AdminAdminUsersService {
     private final PasswordService passwordService;
     private final AdminInviteService adminInviteService;
     private final AdminAccountStatusService adminAccountStatusService;
+    private final AuditLogFactory auditLogFactory;
 
     public PageResult<Map<String, Object>> listAdminUsers(int page, int size, String q, String roleFilter, String statusFilter) {
         int normalizedPage = Math.max(1, page);
@@ -131,7 +132,8 @@ public class AdminAdminUsersService {
         String afterData = "{\"email\":\"" + escapeJson(saved.getEmail())
                 + "\",\"role\":\"" + saved.getRole()
                 + "\",\"status\":\"INVITED\"}";
-        auditLogWriter.save(buildAudit(actorId, clientIp, userAgent, "ADMIN_USER_INVITED", saved.getId(), null, afterData, now));
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", actorId, "ADMIN_USER_INVITED", "ADMIN_USER", saved.getId(), null, afterData, clientIp, userAgent));
 
         return withInvite(toMap(saved), invite);
     }
@@ -142,8 +144,9 @@ public class AdminAdminUsersService {
         AdminUserEntity user = adminUserRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Admin user not found."));
         AdminInviteService.InviteResult invite = adminInviteService.resendInvite(id);
-        auditLogWriter.save(buildAudit(actorId, clientIp, userAgent, "ADMIN_USER_INVITE_RESENT", id, null,
-                "{\"email\":\"" + escapeJson(user.getEmail()) + "\"}", Instant.now()));
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", actorId, "ADMIN_USER_INVITE_RESENT", "ADMIN_USER", id, null,
+                "{\"email\":\"" + escapeJson(user.getEmail()) + "\"}", clientIp, userAgent));
         return withInvite(toMap(user), invite);
     }
 
@@ -245,9 +248,9 @@ public class AdminAdminUsersService {
         }
 
         if (roleChanged) {
-            auditLogWriter.save(buildAudit(actorId, clientIp, userAgent, "ADMIN_USER_ROLE_CHANGED", id,
+            auditLogWriter.save(auditLogFactory.build("ADMIN", actorId, "ADMIN_USER_ROLE_CHANGED", "ADMIN_USER", id,
                     "{\"role\":\"" + escapeJson(beforeRole) + "\"}",
-                    "{\"role\":\"" + escapeJson(saved.getRole()) + "\"}", now));
+                    "{\"role\":\"" + escapeJson(saved.getRole()) + "\"}", clientIp, userAgent));
             anyAuditWritten = true;
         }
         if (statusChanged) {
@@ -256,9 +259,9 @@ public class AdminAdminUsersService {
                 case "SUSPENDED" -> "ADMIN_USER_SUSPENDED";
                 default -> "ADMIN_USER_REACTIVATED";
             };
-            auditLogWriter.save(buildAudit(actorId, clientIp, userAgent, statusAction, id,
+            auditLogWriter.save(auditLogFactory.build("ADMIN", actorId, statusAction, "ADMIN_USER", id,
                     "{\"status\":\"" + escapeJson(beforeStatus) + "\"}",
-                    "{\"status\":\"" + escapeJson(saved.getStatus()) + "\"}", now));
+                    "{\"status\":\"" + escapeJson(saved.getStatus()) + "\"}", clientIp, userAgent));
             anyAuditWritten = true;
         }
         if (displayNameChanged || passwordChanged) {
@@ -276,13 +279,14 @@ public class AdminAdminUsersService {
             }
             beforeSb.append("}");
             afterSb.append("}");
-            auditLogWriter.save(buildAudit(actorId, clientIp, userAgent, "ADMIN_USER_UPDATED", id,
-                    beforeSb.toString(), afterSb.toString(), now));
+            auditLogWriter.save(auditLogFactory.build("ADMIN", actorId, "ADMIN_USER_UPDATED", "ADMIN_USER", id,
+                    beforeSb.toString(), afterSb.toString(), clientIp, userAgent));
             anyAuditWritten = true;
         }
         if (!anyAuditWritten) {
             // No-op patch (nothing actually changed) — still record the attempt.
-            auditLogWriter.save(buildAudit(actorId, clientIp, userAgent, "ADMIN_USER_UPDATED", id, "{}", "{}", now));
+            auditLogWriter.save(auditLogFactory.build(
+                    "ADMIN", actorId, "ADMIN_USER_UPDATED", "ADMIN_USER", id, "{}", "{}", clientIp, userAgent));
         }
 
         return toMap(saved);
@@ -317,19 +321,4 @@ public class AdminAdminUsersService {
         );
     }
 
-    private AuditLogEntity buildAudit(UUID actorId, String clientIp, String userAgent,
-            String action, UUID resourceId, String before, String after, Instant now) {
-        AuditLogEntity log = new AuditLogEntity();
-        log.setActorType("ADMIN");
-        log.setActorId(actorId);
-        log.setAction(action);
-        log.setResourceType("ADMIN_USER");
-        log.setResourceId(resourceId);
-        log.setBeforeData(before);
-        log.setAfterData(after);
-        log.setIpAddress(clientIp);
-        log.setUserAgent(userAgent);
-        log.setCreatedAt(now);
-        return log;
-    }
 }

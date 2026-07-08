@@ -18,6 +18,7 @@ import com.bigbike.bigbike_backend.domain.menu.MenuLocations;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.menu.MenuEntity;
 import com.bigbike.bigbike_backend.persistence.entity.menu.MenuItemEntity;
+import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.menu.MenuItemJpaRepository;
@@ -95,6 +96,7 @@ public class AdminMenuService {
     private final MenuJpaRepository menuRepo;
     private final MenuItemJpaRepository menuItemRepo;
     private final AuditLogWriter auditLogWriter;
+    private final AuditLogFactory auditLogFactory;
     private final PaginationService paginationService;
     private final WebRevalidationService webRevalidationService;
     private final CategoryJpaRepository categoryRepo;
@@ -173,7 +175,7 @@ public class AdminMenuService {
         entity = menuRepo.save(entity);
 
         webRevalidationService.revalidate("menus");
-        auditLogWriter.save(buildMenuAudit(adminId, "MENU_CREATED", entity.getId(), null,
+        auditLogWriter.save(auditLogFactory.build("ADMIN", adminId, "MENU_CREATED", "MENU", entity.getId(), null,
                 "{\"location\":\"" + escapeJson(entity.getLocation()) + "\",\"name\":\"" + escapeJson(entity.getName()) + "\"}"));
 
         return toMenuResponse(entity, List.of());
@@ -203,7 +205,8 @@ public class AdminMenuService {
         menuRepo.save(entity);
 
         webRevalidationService.revalidate("menus");
-        auditLogWriter.save(buildMenuAudit(adminId, "MENU_UPDATED", menuId, before, menuSnapshot(entity)));
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "MENU_UPDATED", "MENU", menuId, before, menuSnapshot(entity)));
 
         return toMenuResponse(entity, menuItemRepo.findByMenuIdOrderBySortOrderAsc(menuId));
     }
@@ -233,7 +236,7 @@ public class AdminMenuService {
         menuRepo.delete(entity);
 
         webRevalidationService.revalidate("menus");
-        auditLogWriter.save(buildMenuAudit(adminId, "MENU_DELETED", menuId, before, null));
+        auditLogWriter.save(auditLogFactory.build("ADMIN", adminId, "MENU_DELETED", "MENU", menuId, before, null));
     }
 
     // ── Create menu item ──────────────────────────────────────────────────────
@@ -279,7 +282,7 @@ public class AdminMenuService {
         item = menuItemRepo.save(item);
 
         webRevalidationService.revalidate("menus");
-        auditLogWriter.save(buildItemAudit(adminId, "MENU_ITEM_CREATED", item.getId(), null,
+        auditLogWriter.save(auditLogFactory.build("ADMIN", adminId, "MENU_ITEM_CREATED", "MENU_ITEM", item.getId(), null,
                 "{\"label\":\"" + escapeJson(item.getLabel()) + "\",\"menuId\":\"" + menuId + "\"}"));
 
         return toItemResponse(item);
@@ -352,7 +355,8 @@ public class AdminMenuService {
         menuItemRepo.save(item);
 
         webRevalidationService.revalidate("menus");
-        auditLogWriter.save(buildItemAudit(adminId, "MENU_ITEM_UPDATED", itemId, before, itemSnapshot(item)));
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "MENU_ITEM_UPDATED", "MENU_ITEM", itemId, before, itemSnapshot(item)));
 
         return toItemResponse(item);
     }
@@ -380,7 +384,8 @@ public class AdminMenuService {
         menuItemRepo.delete(item);
 
         webRevalidationService.revalidate("menus");
-        auditLogWriter.save(buildItemAudit(adminId, "MENU_ITEM_DELETED", itemId, before, null));
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "MENU_ITEM_DELETED", "MENU_ITEM", itemId, before, null));
     }
 
     // ── Reorder items ─────────────────────────────────────────────────────────
@@ -439,7 +444,7 @@ public class AdminMenuService {
         menuItemRepo.saveAll(existingItems);
 
         webRevalidationService.revalidate("menus");
-        auditLogWriter.save(buildMenuAudit(adminId, "MENU_ITEMS_REORDERED", menuId, null,
+        auditLogWriter.save(auditLogFactory.build("ADMIN", adminId, "MENU_ITEMS_REORDERED", "MENU", menuId, null,
                 "{\"itemCount\":" + req.items().size() + "}"));
 
         return toMenuResponse(menu, menuItemRepo.findByMenuIdOrderBySortOrderAsc(menuId));

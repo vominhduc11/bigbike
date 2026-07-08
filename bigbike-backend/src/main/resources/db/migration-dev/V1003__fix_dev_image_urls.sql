@@ -40,15 +40,14 @@ update products set
 where id = 'prod_ls2_jacket_city';
 
 -- ───── PRODUCT GALLERY ─────
-update product_gallery_images set
-    image_url   = 'https://picsum.photos/seed/prod-ls2-ff800-g1/1200/1200',
-    image_width = 1200, image_height = 1200
-where image_id = 'img_prod_ls2_ff800_1';
-
-update product_gallery_images set
-    image_url   = 'https://picsum.photos/seed/prod-ls2-ff800-g2/1200/1200',
-    image_width = 1200, image_height = 1200
-where image_id = 'img_prod_ls2_ff800_2';
+-- (2026-07-08) Đã gỡ 2 UPDATE product_gallery_images từng nằm ở đây (image_id
+-- 'img_prod_ls2_ff800_1'/'_2'). Bảng product_gallery_images đã gộp vào cột JSONB
+-- products.gallery rồi DROP ở V334-V336. 2 UPDATE này target dữ liệu chỉ từng tồn
+-- tại trên 1 DB dev cụ thể đã bị chỉnh tay/qua admin UI trước đây — không có
+-- migration nào (kể cả trong db/migration hay db/migration-dev) từng INSERT dòng
+-- với image_id đó vào bảng thật, nên trên fresh install 2 UPDATE này vốn dĩ luôn
+-- là no-op (0 dòng khớp). Sau khi bảng bị DROP, giữ lại sẽ làm fresh replay lỗi
+-- "relation does not exist" thay vì no-op như trước — an toàn xoá hẳn.
 
 -- ───── ARTICLES ─────
 update articles set

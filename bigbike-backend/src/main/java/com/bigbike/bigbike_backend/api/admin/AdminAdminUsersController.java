@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.api.admin;
 
+import com.bigbike.bigbike_backend.api.admin.dto.CreateAdminUserRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.UpdateAdminUserRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
@@ -7,6 +9,7 @@ import com.bigbike.bigbike_backend.config.ClientIpResolver;
 import com.bigbike.bigbike_backend.service.admin.AdminAdminUsersService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.util.Map;
@@ -60,7 +63,7 @@ public class AdminAdminUsersController extends AdminControllerSupport {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiDataResponse<Map<String, Object>> createAdminUser(
-            @RequestBody Map<String, String> body,
+            @Valid @RequestBody CreateAdminUserRequest body,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "admin-users.write");
@@ -72,9 +75,9 @@ public class AdminAdminUsersController extends AdminControllerSupport {
                         resolveAdminRole(),
                         clientIp,
                         userAgent,
-                        body.get("email"),
-                        body.get("displayName"),
-                        body.get("role")
+                        body.email(),
+                        body.displayName(),
+                        body.role()
                 ),
                 request
         );
@@ -97,7 +100,7 @@ public class AdminAdminUsersController extends AdminControllerSupport {
     @PatchMapping("/{id}")
     public ApiDataResponse<Map<String, Object>> updateAdminUser(
             @PathVariable UUID id,
-            @RequestBody Map<String, String> body,
+            @Valid @RequestBody UpdateAdminUserRequest body,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "admin-users.write");
@@ -110,10 +113,10 @@ public class AdminAdminUsersController extends AdminControllerSupport {
                         clientIp,
                         userAgent,
                         id,
-                        body.get("displayName"),
-                        body.get("status"),
-                        body.get("newPassword"),
-                        body.get("role")
+                        body.displayName(),
+                        body.status(),
+                        body.newPassword(),
+                        body.role()
                 ),
                 request
         );

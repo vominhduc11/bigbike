@@ -19,6 +19,7 @@ import com.bigbike.bigbike_backend.persistence.repository.menu.MenuJpaRepository
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.service.common.PaginationService;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
+import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -34,12 +35,13 @@ class AdminMenuServiceTest {
     private final MenuJpaRepository menuRepo = mock(MenuJpaRepository.class);
     private final MenuItemJpaRepository menuItemRepo = mock(MenuItemJpaRepository.class);
     private final AuditLogWriter auditLogWriter = mock(AuditLogWriter.class);
+    private final AuditLogFactory auditLogFactory = mock(AuditLogFactory.class);
     private final PaginationService paginationService = mock(PaginationService.class);
     private final WebRevalidationService webRevalidationService = mock(WebRevalidationService.class);
     private final CategoryJpaRepository categoryRepo = mock(CategoryJpaRepository.class);
 
     private final AdminMenuService service = new AdminMenuService(
-            menuRepo, menuItemRepo, auditLogWriter, paginationService, webRevalidationService, categoryRepo);
+            menuRepo, menuItemRepo, auditLogWriter, auditLogFactory, paginationService, webRevalidationService, categoryRepo);
 
     private static CategoryEntity category(String id, String slug, String slugEn) {
         CategoryEntity cat = new CategoryEntity();

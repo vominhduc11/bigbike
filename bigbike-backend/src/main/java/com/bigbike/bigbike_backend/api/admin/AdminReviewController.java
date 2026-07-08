@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.api.admin;
 
+import com.bigbike.bigbike_backend.api.admin.dto.UpdateReviewStatusRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
@@ -63,7 +64,7 @@ public class AdminReviewController extends AdminControllerSupport {
     @PatchMapping("/{id}/status")
     public ApiDataResponse<Map<String, Object>> updateStatus(
             @PathVariable Long id,
-            @RequestBody Map<String, String> body,
+            @Valid @RequestBody UpdateReviewStatusRequest body,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "reviews.write");
@@ -71,7 +72,7 @@ public class AdminReviewController extends AdminControllerSupport {
                 adminReviewService.updateStatus(
                         resolveAdminId(),
                         id,
-                        body.get("status"),
+                        body.status(),
                         request.getRemoteAddr(),
                         request.getHeader("User-Agent")
                 ),

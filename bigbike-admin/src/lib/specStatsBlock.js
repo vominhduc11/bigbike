@@ -2,7 +2,7 @@ import { generateId } from '@/lib/utils'
 
 /**
  * Chuyển đổi giữa danh sách "Ô số liệu nổi bật" có cấu trúc (model nhập trong admin) và HTML lưu
- * vào `specStatsHtml` — web render HTML thay cho lưới có cấu trúc (V256). Model: [{ _key, value, label }].
+ * vào `specStats` — web render HTML thay cho lưới có cấu trúc (V256). Model: [{ _key, value, label }].
  *
  * Mỗi ô 2 dòng: `value` (số liệu chính — lớn/đậm/màu nhấn) · `label` (tên chỉ tiêu — in hoa, xám nhạt).
  *

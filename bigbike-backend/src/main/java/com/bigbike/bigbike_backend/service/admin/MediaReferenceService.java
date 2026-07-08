@@ -2,6 +2,8 @@ package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.media.MediaReferenceItem;
 import com.bigbike.bigbike_backend.persistence.entity.media.MediaEntity;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
@@ -29,6 +31,7 @@ import java.util.Set;
 public class MediaReferenceService {
 
     private final JdbcTemplate jdbc;
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     public boolean hasReferences(MediaEntity media) {
         if (media == null) return false;
@@ -50,8 +53,7 @@ public class MediaReferenceService {
         collectLike(refs, "SELECT id::text, name FROM products WHERE image_url LIKE ?",
                 suffix, rs -> new MediaReferenceItem("PRODUCT", rs.getString(1), rs.getString(2), "/products/" + rs.getString(1)));
 
-        collectLike(refs, "SELECT p.id::text, p.name FROM product_gallery_images g JOIN products p ON p.id = g.product_id WHERE g.image_url LIKE ?",
-                suffix, rs -> new MediaReferenceItem("PRODUCT_GALLERY", rs.getString(1), rs.getString(2), "/products/" + rs.getString(1)));
+        collectGalleryReferences(refs, media.getFilePath());
 
         collectLike(refs,
                 "SELECT v.id::text, COALESCE(p.name,'') || ' / ' || COALESCE(v.sku, v.id::text) AS label, p.id::text " +
@@ -117,7 +119,6 @@ public class MediaReferenceService {
         // compared to running an indexed LIKE per candidate.
         String[] columnQueries = {
                 "SELECT DISTINCT image_url FROM products WHERE image_url IS NOT NULL AND image_url <> ''",
-                "SELECT DISTINCT image_url FROM product_gallery_images WHERE image_url IS NOT NULL AND image_url <> ''",
                 "SELECT DISTINCT image_url FROM product_variants WHERE image_url IS NOT NULL AND image_url <> ''",
                 "SELECT DISTINCT image_url FROM product_variant_gallery_images WHERE image_url IS NOT NULL AND image_url <> ''",
                 "SELECT DISTINCT image_url FROM categories WHERE image_url IS NOT NULL AND image_url <> ''",
@@ -133,6 +134,10 @@ public class MediaReferenceService {
         for (String sql : columnQueries) {
             referencedBlobs.addAll(jdbc.query(sql, (rs, rowNum) -> rs.getString(1)));
         }
+        // products.gallery is JSONB — extract image URLs in Java (see collectGalleryReferences).
+        jdbc.query("SELECT gallery::text AS gallery FROM products WHERE gallery IS NOT NULL", rs -> {
+            referencedBlobs.addAll(extractGalleryImageUrls(rs.getString("gallery")));
+        });
 
         // For each candidate, mark as used if any referenced blob ends with /
         // contains its file_path
@@ -165,7 +170,6 @@ public class MediaReferenceService {
 
         String[] columnQueries = {
                 "SELECT image_url FROM products WHERE image_url IS NOT NULL AND image_url <> ''",
-                "SELECT image_url FROM product_gallery_images WHERE image_url IS NOT NULL AND image_url <> ''",
                 "SELECT image_url FROM product_variants WHERE image_url IS NOT NULL AND image_url <> ''",
                 "SELECT image_url FROM product_variant_gallery_images WHERE image_url IS NOT NULL AND image_url <> ''",
                 "SELECT image_url FROM categories WHERE image_url IS NOT NULL AND image_url <> ''",
@@ -180,6 +184,10 @@ public class MediaReferenceService {
         for (String sql : columnQueries) {
             referencedBlobs.addAll(jdbc.query(sql, (rs, rowNum) -> rs.getString(1)));
         }
+        // products.gallery is JSONB — extract image URLs in Java (see collectGalleryReferences).
+        jdbc.query("SELECT gallery::text AS gallery FROM products WHERE gallery IS NOT NULL", rs -> {
+            referencedBlobs.addAll(extractGalleryImageUrls(rs.getString("gallery")));
+        });
 
         java.util.Map<java.util.UUID, Integer> counts = new java.util.HashMap<>();
         for (IdPath tuple : tuples) counts.put(tuple.id(), 0);
@@ -201,5 +209,42 @@ public class MediaReferenceService {
     private void collectLike(List<MediaReferenceItem> target, String sql, String pattern, RowMapper mapper) {
         RowCallbackHandler handler = rs -> target.add(mapper.map(rs));
         jdbc.query(sql, handler, pattern);
+    }
+
+    /**
+     * products.gallery is JSONB (V334/V335/V336) — jsonb_array_elements/LATERAL isn't portable
+     * to the H2 (MODE=PostgreSQL) test datasource, so gallery image URLs are extracted in Java
+     * instead of via a native jsonb path expression, same spirit as the sliders blob check below.
+     */
+    private void collectGalleryReferences(List<MediaReferenceItem> target, String filePath) {
+        jdbc.query("SELECT id, name, gallery::text AS gallery FROM products WHERE gallery IS NOT NULL", rs -> {
+            String id = rs.getString("id");
+            String name = rs.getString("name");
+            for (String url : extractGalleryImageUrls(rs.getString("gallery"))) {
+                if (url != null && url.endsWith(filePath)) {
+                    target.add(new MediaReferenceItem("PRODUCT_GALLERY", id, name, "/products/" + id));
+                }
+            }
+        });
+    }
+
+    /** Parses a {@code products.gallery} JSON array and returns each item's {@code image.url} (skips videos without an image). */
+    private List<String> extractGalleryImageUrls(String galleryJson) {
+        if (galleryJson == null || galleryJson.isBlank()) return List.of();
+        try {
+            JsonNode array = MAPPER.readTree(galleryJson);
+            List<String> urls = new ArrayList<>();
+            if (array.isArray()) {
+                for (JsonNode item : array) {
+                    JsonNode urlNode = item.path("image").path("url");
+                    if (urlNode.isTextual()) {
+                        urls.add(urlNode.asText());
+                    }
+                }
+            }
+            return urls;
+        } catch (Exception e) {
+            return List.of();
+        }
     }
 }

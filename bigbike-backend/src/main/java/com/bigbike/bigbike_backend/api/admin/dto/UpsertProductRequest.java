@@ -87,18 +87,18 @@ public class UpsertProductRequest {
     // "Dán mã HTML" cho khối Thông số kỹ thuật (V255) — HTML thô, backend lưu opaque
     // (như size_guide); web sanitize khi render. Khi non-blank → web hiện HTML thay bảng specs.
     @Size(max = 50000, message = "Specifications HTML is too long.")
-    private String specificationsHtml;
-    private boolean specificationsHtmlPresent = false;
+    private String specifications;
+    private boolean specificationsPresent = false;
 
     // "Dán mã HTML" cho khối "Ô số liệu nổi bật" (specStats, V256) — HTML thô, opaque như trên.
     @Size(max = 50000, message = "Spec stats HTML is too long.")
-    private String specStatsHtml;
-    private boolean specStatsHtmlPresent = false;
+    private String specStats;
+    private boolean specStatsPresent = false;
 
     // "Dán mã HTML" cho khối "Dải tin cậy" (trustBadges, V257) — HTML thô, opaque như trên.
     @Size(max = 50000, message = "Trust badges HTML is too long.")
-    private String trustBadgesHtml;
-    private boolean trustBadgesHtmlPresent = false;
+    private String trustBadges;
+    private boolean trustBadgesPresent = false;
 
     // "Quick Answer" (trả lời nhanh, V300) — đoạn tóm tắt AIO 40-60 từ, blockquote ngay sau
     // Specs Dashboard, trước "Tính năng chi tiết". Presence-flag như suitabilityAdvisory.
@@ -222,19 +222,19 @@ public class UpsertProductRequest {
         this.suitabilityAdvisoryPresent = true;
     }
 
-    public void setSpecificationsHtml(String specificationsHtml) {
-        this.specificationsHtml = specificationsHtml;
-        this.specificationsHtmlPresent = true;
+    public void setSpecifications(String specifications) {
+        this.specifications = specifications;
+        this.specificationsPresent = true;
     }
 
-    public void setSpecStatsHtml(String specStatsHtml) {
-        this.specStatsHtml = specStatsHtml;
-        this.specStatsHtmlPresent = true;
+    public void setSpecStats(String specStats) {
+        this.specStats = specStats;
+        this.specStatsPresent = true;
     }
 
-    public void setTrustBadgesHtml(String trustBadgesHtml) {
-        this.trustBadgesHtml = trustBadgesHtml;
-        this.trustBadgesHtmlPresent = true;
+    public void setTrustBadges(String trustBadges) {
+        this.trustBadges = trustBadges;
+        this.trustBadgesPresent = true;
     }
 
     public void setQuickAnswerSummary(String quickAnswerSummary) {

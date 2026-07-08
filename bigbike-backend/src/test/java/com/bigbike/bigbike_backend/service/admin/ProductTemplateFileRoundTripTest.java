@@ -11,10 +11,13 @@ import org.junit.jupiter.api.Test;
 /**
  * Guards {@code product-template/mau-day-du.json} — the hand-maintained example file referenced by
  * {@code HUONG-DAN.md} — against silently drifting out of sync with {@link ProductImportRow}'s wire
- * shape (exactly the drift found and fixed in this pass: stale top-level {@code specifications}/
- * {@code specStats}/{@code trustBadges} arrays the DTO no longer declares). Pure deserialization +
- * mapping, no Spring context / DB needed — mirrors the same {@code new ObjectMapper()} config
- * {@code ProductImportService} itself uses to parse an uploaded import file.
+ * shape (exactly the drift found and fixed in this pass: stale top-level structured
+ * {@code specifications}/{@code specStats}/{@code trustBadges} array fields from the pre-V255
+ * model, backfilled into HTML and dropped at V329/V330 — not to be confused with the current
+ * HTML-only {@code specifications}/{@code specStats}/{@code trustBadges} nested-object fields the
+ * DTO declares today). Pure deserialization + mapping, no Spring context / DB needed — mirrors the
+ * same {@code new ObjectMapper()} config {@code ProductImportService} itself uses to parse an
+ * uploaded import file.
  */
 class ProductTemplateFileRoundTripTest {
 

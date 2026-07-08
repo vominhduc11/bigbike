@@ -100,6 +100,52 @@ class AdminMutationValidatorsTest {
     }
 
     @Test
+    void seoCanonicalUrlMustBelongToRealDomainInProduction() {
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        SeoMetaRequest seo = new SeoMetaRequest();
+        seo.setCanonicalUrl("https://invalid-domain.com/product/mu-bao-hiem-ls2-ff800/");
+
+        AdminMutationValidators.validateSeoMeta(seo, "seo", MINIO_BASE_URL, false, errors);
+
+        assertThat(errors)
+                .hasSize(1)
+                .first()
+                .satisfies(error -> {
+                    assertThat(error.field()).isEqualTo("seo.canonicalUrl");
+                    assertThat(error.code()).isEqualTo("INVALID_VALUE");
+                    assertThat(error.message()).contains("Canonical URL must belong to bigbike.vn or www.bigbike.vn");
+                });
+    }
+
+    @Test
+    void seoCanonicalUrlAllowsLocalhostInDevMode() {
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        SeoMetaRequest seo = new SeoMetaRequest();
+        seo.setCanonicalUrl("http://localhost:3000/product/mu-bao-hiem-ls2-ff800/");
+
+        AdminMutationValidators.validateSeoMeta(seo, "seo", MINIO_BASE_URL, true, errors);
+
+        assertThat(errors).isEmpty();
+    }
+
+    @Test
+    void seoCanonicalUrlRejectsLocalhostInProductionMode() {
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        SeoMetaRequest seo = new SeoMetaRequest();
+        seo.setCanonicalUrl("http://localhost:3000/product/mu-bao-hiem-ls2-ff800/");
+
+        AdminMutationValidators.validateSeoMeta(seo, "seo", MINIO_BASE_URL, false, errors);
+
+        assertThat(errors)
+                .hasSize(1)
+                .first()
+                .satisfies(error -> {
+                    assertThat(error.field()).isEqualTo("seo.canonicalUrl");
+                    assertThat(error.code()).isEqualTo("INVALID_VALUE");
+                });
+    }
+
+    @Test
     void validatePublishTransition_allowsValidTransitions() {
         List<ApiErrorDetail> errors = new ArrayList<>();
         AdminMutationValidators.validatePublishTransition(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.DRAFT, com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED, "publishStatus", errors);

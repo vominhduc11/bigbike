@@ -1,7 +1,6 @@
 package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderListItemResponse;
-import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderNoteEntity;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
@@ -62,22 +61,6 @@ final class AdminOrderSupport {
         note.setCustomerVisible(customerVisible);
         note.setCreatedAt(now);
         return note;
-    }
-
-    static AuditLogEntity buildAudit(UUID adminId, String action, String resourceType,
-            UUID resourceId, String before, String after, Instant now, String clientIp, String userAgent) {
-        AuditLogEntity log = new AuditLogEntity();
-        log.setActorType("ADMIN");
-        log.setActorId(adminId);
-        log.setAction(action);
-        log.setResourceType(resourceType);
-        log.setResourceId(resourceId);
-        log.setBeforeData(before);
-        log.setAfterData(after);
-        log.setIpAddress(clientIp);
-        log.setUserAgent(userAgent);
-        log.setCreatedAt(now);
-        return log;
     }
 
     static Instant parseFromDate(String date) {

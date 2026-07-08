@@ -68,45 +68,74 @@ and publish_status <> 'PUBLISHED';
 -- 3) Seed product videos. There were no product_videos rows in runtime data.
 -- These reuse existing home-video YouTube URLs plus FF327 thumbnails so the
 -- Video tab can render with real contract data instead of UI hardcoding.
-insert into product_videos (
-    product_id,
-    sort_order,
-    video_id,
-    video_url,
-    title,
-    provider,
-    thumbnail_url,
-    thumbnail_alt,
-    thumbnail_width,
-    thumbnail_height,
-    thumbnail_mime_type
+-- (2026-07-08) product_videos bảng con đã gộp vào cột JSONB products.videos
+-- (V334-V336) — set thẳng cả mảng thay vì INSERT nhiều dòng. Guard idempotent
+-- bằng điều kiện "chưa có video nào" (tương đương ý định NOT EXISTS gốc).
+update products
+set videos = jsonb_build_array(
+    jsonb_build_object(
+        'id', 'ff327-parity-video-1',
+        'url', 'https://www.youtube.com/shorts/bNmDaq37ghI',
+        'title', 'Review mũ bảo hiểm LS2 FF327 Challenger Carbon',
+        'thumbnail', jsonb_build_object(
+            'id', null,
+            'url', 'http://localhost:9000/bigbike-media/wp-uploads/2019/03/mu_bao_hiem_ls2_carbon_ff327_challenger-04.jpg',
+            'alt', 'Video LS2 FF327 Challenger Carbon',
+            'width', 1000,
+            'height', 1000,
+            'mimeType', 'image/jpeg'
+        ),
+        'provider', 'YOUTUBE',
+        'description', null
+    ),
+    jsonb_build_object(
+        'id', 'ff327-parity-video-2',
+        'url', 'https://youtube.com/shorts/WhWzlp3NH14',
+        'title', 'Chi tiết form mũ và kính chắn gió LS2 FF327',
+        'thumbnail', jsonb_build_object(
+            'id', null,
+            'url', 'http://localhost:9000/bigbike-media/wp-uploads/2019/03/mu_bao_hiem_ls2_carbon_ff327_challenger-02.jpg',
+            'alt', 'Chi tiết LS2 FF327 Challenger Carbon',
+            'width', 1000,
+            'height', 1000,
+            'mimeType', 'image/jpeg'
+        ),
+        'provider', 'YOUTUBE',
+        'description', null
+    ),
+    jsonb_build_object(
+        'id', 'ff327-parity-video-3',
+        'url', 'https://youtube.com/shorts/zgTqj7kk7Pk',
+        'title', 'Trải nghiệm đội mũ LS2 FF327 cho touring',
+        'thumbnail', jsonb_build_object(
+            'id', null,
+            'url', 'http://localhost:9000/bigbike-media/wp-uploads/2019/03/mu_bao_hiem_ls2_carbon_ff327_challenger-05.jpg',
+            'alt', 'Trải nghiệm LS2 FF327 Challenger Carbon',
+            'width', 1000,
+            'height', 1000,
+            'mimeType', 'image/jpeg'
+        ),
+        'provider', 'YOUTUBE',
+        'description', null
+    ),
+    jsonb_build_object(
+        'id', 'ff327-parity-video-4',
+        'url', 'https://youtube.com/shorts/eW5QmxrfcU4',
+        'title', 'Hướng dẫn chọn size LS2 FF327 Challenger Carbon',
+        'thumbnail', jsonb_build_object(
+            'id', null,
+            'url', 'http://localhost:9000/bigbike-media/wp-uploads/2019/03/mu_bao_hiem_ls2_carbon_ff327_challenger-06.jpg',
+            'alt', 'Chọn size LS2 FF327 Challenger Carbon',
+            'width', 1000,
+            'height', 1000,
+            'mimeType', 'image/jpeg'
+        ),
+        'provider', 'YOUTUBE',
+        'description', null
+    )
 )
-select
-    'wp-prod-6093',
-    seed.sort_order,
-    seed.video_id,
-    seed.video_url,
-    seed.title,
-    'YOUTUBE',
-    seed.thumbnail_url,
-    seed.thumbnail_alt,
-    1000,
-    1000,
-    'image/jpeg'
-from (
-    values
-        (0, 'ff327-parity-video-1', 'https://www.youtube.com/shorts/bNmDaq37ghI', 'Review mũ bảo hiểm LS2 FF327 Challenger Carbon', 'http://localhost:9000/bigbike-media/wp-uploads/2019/03/mu_bao_hiem_ls2_carbon_ff327_challenger-04.jpg', 'Video LS2 FF327 Challenger Carbon'),
-        (1, 'ff327-parity-video-2', 'https://youtube.com/shorts/WhWzlp3NH14', 'Chi tiết form mũ và kính chắn gió LS2 FF327', 'http://localhost:9000/bigbike-media/wp-uploads/2019/03/mu_bao_hiem_ls2_carbon_ff327_challenger-02.jpg', 'Chi tiết LS2 FF327 Challenger Carbon'),
-        (2, 'ff327-parity-video-3', 'https://youtube.com/shorts/zgTqj7kk7Pk', 'Trải nghiệm đội mũ LS2 FF327 cho touring', 'http://localhost:9000/bigbike-media/wp-uploads/2019/03/mu_bao_hiem_ls2_carbon_ff327_challenger-05.jpg', 'Trải nghiệm LS2 FF327 Challenger Carbon'),
-        (3, 'ff327-parity-video-4', 'https://youtube.com/shorts/eW5QmxrfcU4', 'Hướng dẫn chọn size LS2 FF327 Challenger Carbon', 'http://localhost:9000/bigbike-media/wp-uploads/2019/03/mu_bao_hiem_ls2_carbon_ff327_challenger-06.jpg', 'Chọn size LS2 FF327 Challenger Carbon')
-) as seed(sort_order, video_id, video_url, title, thumbnail_url, thumbnail_alt)
-where exists (select 1 from products where id = 'wp-prod-6093')
-  and not exists (
-    select 1
-    from product_videos existing
-    where existing.product_id = 'wp-prod-6093'
-      and existing.video_id = seed.video_id
-);
+where id = 'wp-prod-6093'
+  and (videos is null or jsonb_array_length(videos) = 0);
 
 -- 4) Seed technical specifications for the Additional information tab.
 insert into product_specifications (

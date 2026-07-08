@@ -18,7 +18,7 @@ import lombok.Setter;
  * <p>{@code html}/{@code htmlEn} là nguồn render duy nhất, giống {@link SizeGuideSection}.
  * Tab "có cấu trúc" trong admin chỉ parse/merge tạm vào HTML.
  */
-@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonIgnoreProperties(ignoreUnknown = false)
 @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
 public final class SuitabilitySection {
 

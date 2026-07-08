@@ -36,12 +36,12 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLi
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderNoteJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderShippingItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
+import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.checkout.OrderNotificationService;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
-import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.buildAudit;
 import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.buildNote;
 import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.buildStatusChangedEvent;
 import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.parseFromDate;
@@ -137,6 +137,7 @@ public class AdminOrderService {
     private final PaymentJpaRepository paymentRepo;
     private final AuditLogJpaRepository auditLogRepo;
     private final AuditLogWriter auditLogWriter;
+    private final AuditLogFactory auditLogFactory;
     private final OrderNotificationService orderNotificationService;
     private final AdminOrderWsService adminOrderWsService;
     private final WebRevalidationService webRevalidationService;
@@ -361,9 +362,9 @@ public class AdminOrderService {
         }
 
         // Audit log
-        auditLogWriter.save(buildAudit(adminId, "ORDER_STATUS_UPDATED", "ORDER", order.getId(),
+        auditLogWriter.save(auditLogFactory.build("ADMIN", adminId, "ORDER_STATUS_UPDATED", "ORDER", order.getId(),
                 "{\"status\":\"" + beforeStatus + "\"}",
-                "{\"status\":\"" + newStatus + "\"}", now, clientIp, userAgent));
+                "{\"status\":\"" + newStatus + "\"}", clientIp, userAgent));
 
         // Email customer when status is customer-visible (after commit so DB state is consistent)
         String customerNote = (req.note() != null && Boolean.TRUE.equals(req.customerVisible()))
@@ -460,9 +461,9 @@ public class AdminOrderService {
         }
 
         // Audit
-        auditLogWriter.save(buildAudit(adminId, "ORDER_PAYMENT_STATUS_UPDATED", "ORDER", order.getId(),
+        auditLogWriter.save(auditLogFactory.build("ADMIN", adminId, "ORDER_PAYMENT_STATUS_UPDATED", "ORDER", order.getId(),
                 "{\"paymentStatus\":\"" + beforePaymentStatus + "\"}",
-                "{\"paymentStatus\":\"" + newPaymentStatus + "\"}", now, clientIp, userAgent));
+                "{\"paymentStatus\":\"" + newPaymentStatus + "\"}", clientIp, userAgent));
 
         var paymentStatusChangedEvent = new OrderWsEvent(
                 "ORDER_PAYMENT_STATUS_CHANGED", order.getId(), order.getOrderNumber(),
@@ -538,14 +539,14 @@ public class AdminOrderService {
             noteRepo.save(buildNote(order, adminId, "ADMIN", req.note(), visible, now));
         }
 
-        auditLogWriter.save(buildAudit(adminId, "ORDER_FULFILLMENT_STATUS_UPDATED", "ORDER",
+        auditLogWriter.save(auditLogFactory.build("ADMIN", adminId, "ORDER_FULFILLMENT_STATUS_UPDATED", "ORDER",
                 order.getId(),
                 "{\"fulfillmentStatus\":\"" + current + "\"}",
                 "{\"fulfillmentStatus\":\"" + newStatus + "\""
                         + (order.getTrackingNumber() != null
                                 ? ",\"trackingNumber\":\"" + order.getTrackingNumber() + "\""
                                 : "") + "}",
-                now, clientIp, userAgent));
+                clientIp, userAgent));
 
         if ("SHIPPED".equals(newStatus)) {
             String customerNote = (req.note() != null && Boolean.TRUE.equals(req.customerVisible()))
@@ -579,9 +580,9 @@ public class AdminOrderService {
         OrderNoteEntity note = buildNote(order, adminId, noteType, req.content(), visible, now);
         note = noteRepo.save(note);
 
-        auditLogWriter.save(buildAudit(adminId, "ORDER_NOTE_CREATED", "ORDER", orderId,
+        auditLogWriter.save(auditLogFactory.build("ADMIN", adminId, "ORDER_NOTE_CREATED", "ORDER", orderId,
                 null,
-                "{\"noteType\":\"" + noteType + "\",\"customerVisible\":" + visible + "}", now,
+                "{\"noteType\":\"" + noteType + "\",\"customerVisible\":" + visible + "}",
                 clientIp, userAgent));
 
         var noteAddedEvent = new OrderWsEvent(

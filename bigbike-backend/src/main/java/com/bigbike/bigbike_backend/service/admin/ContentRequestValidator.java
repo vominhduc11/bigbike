@@ -10,6 +10,7 @@ import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepo
 import com.bigbike.bigbike_backend.persistence.repository.content.ContentCategoryJpaRepository;
 import java.util.List;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -18,15 +19,19 @@ public class ContentRequestValidator {
     private final ArticleJpaRepository articleJpaRepository;
     private final ContentCategoryJpaRepository contentCategoryJpaRepository;
     private final MediaUrlProperties mediaUrlProperties;
+    private final boolean isDev;
 
     public ContentRequestValidator(
             ObjectProvider<ArticleJpaRepository> articleJpaRepositoryProvider,
             ObjectProvider<ContentCategoryJpaRepository> contentCategoryJpaRepositoryProvider,
-            MediaUrlProperties mediaUrlProperties
+            MediaUrlProperties mediaUrlProperties,
+            Environment environment
     ) {
         this.articleJpaRepository = articleJpaRepositoryProvider.getIfAvailable();
         this.contentCategoryJpaRepository = contentCategoryJpaRepositoryProvider.getIfAvailable();
         this.mediaUrlProperties = mediaUrlProperties;
+        this.isDev = environment != null && java.util.Arrays.stream(environment.getActiveProfiles())
+                .anyMatch(p -> java.util.Set.of("dev", "mock", "test", "local").contains(p.toLowerCase()));
     }
 
     /** True when the request carries a non-empty {@code bodyBlocks} array (server will render it into {@code body}). */
@@ -73,6 +78,7 @@ public class ContentRequestValidator {
                 request.getSeo(),
                 "seo",
                 mediaUrlProperties.getPublicBaseUrl(),
+                isDev,
                 errors
         );
 
@@ -106,18 +112,18 @@ public class ContentRequestValidator {
         // Slug uniqueness is a persistence concern — skip it for the live-preview
         // dry-run, else previewing an EXISTING article (current is always null here)
         // would flag its own saved slug as a duplicate and always 400.
-        if (!preview && slug != null) {
-            ArticleEntity existingBySlug = articleJpaRepository.findBySlug(slug).orElse(null);
-            if (existingBySlug != null && existingBySlug.getPublishStatus() != com.bigbike.bigbike_backend.domain.catalog.PublishStatus.TRASH
-                    && (current == null || !existingBySlug.getId().equals(current.getId()))) {
-                errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use."));
-            }
-            // A new vi slug must not collide with any article's English slug either.
-            ArticleEntity existingBySlugEn = articleJpaRepository.findBySlugEn(slug).orElse(null);
-            if (existingBySlugEn != null && existingBySlugEn.getPublishStatus() != com.bigbike.bigbike_backend.domain.catalog.PublishStatus.TRASH
-                    && (current == null || !existingBySlugEn.getId().equals(current.getId()))) {
-                errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use (English slug)."));
-            }
+        if (!preview) {
+            CatalogRequestValidator.validateVietnameseSlugAgainstEnglish(
+                    slug,
+                    current == null ? null : current.getId(),
+                    s -> articleJpaRepository.findBySlug(s)
+                            .filter(a -> a.getPublishStatus() != com.bigbike.bigbike_backend.domain.catalog.PublishStatus.TRASH)
+                            .map(ArticleEntity::getId),
+                    s -> articleJpaRepository.findBySlugEn(s)
+                            .filter(a -> a.getPublishStatus() != com.bigbike.bigbike_backend.domain.catalog.PublishStatus.TRASH)
+                            .map(ArticleEntity::getId),
+                    errors
+            );
         }
 
         if (!preview) {

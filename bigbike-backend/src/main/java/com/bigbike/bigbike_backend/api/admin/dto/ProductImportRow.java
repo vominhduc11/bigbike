@@ -54,9 +54,9 @@ public class ProductImportRow {
     // HTML-only PDP blocks. Bulk import must provide HTML directly here; the legacy structured
     // fields specifications/specStats/trustBadges and suitabilitySection.cards are no longer part
     // of the wire shape.
-    private SpecificationsHtmlField specificationsHtml;
-    private SpecStatsHtmlField specStatsHtml;
-    private TrustBadgesHtmlField trustBadgesHtml;
+    private SpecificationsField specifications;
+    private SpecStatsField specStats;
+    private TrustBadgesField trustBadges;
     private QuickAnswerSummaryField quickAnswerSummary;
     private OriginBrandCountryField originBrandCountry;
     private SeoField seo;
@@ -115,9 +115,9 @@ public class ProductImportRow {
     @NoArgsConstructor
     @AllArgsConstructor
     @JsonInclude(JsonInclude.Include.ALWAYS)
-    public static class SpecificationsHtmlField {
-        private String specificationsHtmlVI;
-        private String specificationsHtmlEN;
+    public static class SpecificationsField {
+        private String specificationsVI;
+        private String specificationsEN;
     }
 
     @Getter
@@ -125,9 +125,9 @@ public class ProductImportRow {
     @NoArgsConstructor
     @AllArgsConstructor
     @JsonInclude(JsonInclude.Include.ALWAYS)
-    public static class SpecStatsHtmlField {
-        private String specStatsHtmlVI;
-        private String specStatsHtmlEN;
+    public static class SpecStatsField {
+        private String specStatsVI;
+        private String specStatsEN;
     }
 
     @Getter
@@ -135,9 +135,9 @@ public class ProductImportRow {
     @NoArgsConstructor
     @AllArgsConstructor
     @JsonInclude(JsonInclude.Include.ALWAYS)
-    public static class TrustBadgesHtmlField {
-        private String trustBadgesHtmlVI;
-        private String trustBadgesHtmlEN;
+    public static class TrustBadgesField {
+        private String trustBadgesVI;
+        private String trustBadgesEN;
     }
 
     @Getter

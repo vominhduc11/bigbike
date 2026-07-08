@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.persistence.entity.catalog;
 import lombok.Getter;
 import lombok.Setter;
 import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
+import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
 import com.bigbike.bigbike_backend.domain.catalog.ProductCommitment;
 import com.bigbike.bigbike_backend.domain.catalog.ProductFaq;
 import com.bigbike.bigbike_backend.domain.catalog.ProductHighlights;
@@ -10,10 +11,13 @@ import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.catalog.SizeGuideSection;
 import com.bigbike.bigbike_backend.domain.catalog.SuitabilitySection;
+import com.bigbike.bigbike_backend.domain.catalog.VideoAsset;
 import com.bigbike.bigbike_backend.persistence.converter.DescriptionBlocksConverter;
 import com.bigbike.bigbike_backend.persistence.converter.ProductCommitmentsConverter;
 import com.bigbike.bigbike_backend.persistence.converter.ProductFaqsConverter;
+import com.bigbike.bigbike_backend.persistence.converter.ProductGalleryConverter;
 import com.bigbike.bigbike_backend.persistence.converter.ProductHighlightsConverter;
+import com.bigbike.bigbike_backend.persistence.converter.ProductVideosConverter;
 import com.bigbike.bigbike_backend.persistence.converter.SizeGuideSectionConverter;
 import com.bigbike.bigbike_backend.persistence.converter.SuitabilitySectionConverter;
 import jakarta.persistence.CascadeType;
@@ -163,17 +167,17 @@ public class ProductEntity {
     // "Dán mã HTML" cho khối Thông số kỹ thuật (V255). HTML là nguồn render duy nhất;
     // bảng product_specifications đã backfill và drop ở V329/V330.
     @Column(name = "specifications_html", columnDefinition = "text")
-    private String specificationsHtml;
+    private String specifications;
 
     // "Dán mã HTML" cho khối "Ô số liệu nổi bật" (V256). HTML là nguồn render duy nhất;
     // bảng product_spec_stats đã backfill và drop ở V329/V330.
     @Column(name = "spec_stats_html", columnDefinition = "text")
-    private String specStatsHtml;
+    private String specStats;
 
     // "Dán mã HTML" cho khối "Dải tin cậy" (V257). HTML là nguồn render duy nhất;
     // bảng product_trust_badges đã backfill và drop ở V329/V330.
     @Column(name = "trust_badges_html", columnDefinition = "text")
-    private String trustBadgesHtml;
+    private String trustBadges;
 
     // "Quick Answer" (trả lời nhanh, V300) — đoạn tóm tắt AIO 40-60 từ, blockquote ngay sau
     // Specs Dashboard, trước "Tính năng chi tiết". Bilingual dual-text (vi canonical + _en);
@@ -263,13 +267,13 @@ public class ProductEntity {
     private String suitabilityAdvisoryEn;
 
     @Column(name = "specifications_html_en", columnDefinition = "text")
-    private String specificationsHtmlEn;
+    private String specificationsEn;
 
     @Column(name = "spec_stats_html_en", columnDefinition = "text")
-    private String specStatsHtmlEn;
+    private String specStatsEn;
 
     @Column(name = "trust_badges_html_en", columnDefinition = "text")
-    private String trustBadgesHtmlEn;
+    private String trustBadgesEn;
 
     @Column(name = "quick_answer_summary_en", columnDefinition = "text")
     private String quickAnswerSummaryEn;
@@ -287,11 +291,15 @@ public class ProductEntity {
     @Column(nullable = false)
     private Long version;
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<ProductGalleryImageEntity> gallery;
+    @Convert(converter = ProductGalleryConverter.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "gallery", columnDefinition = "jsonb")
+    private List<GalleryMedia> gallery;
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<ProductVideoEntity> videos;
+    @Convert(converter = ProductVideosConverter.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "videos", columnDefinition = "jsonb")
+    private List<VideoAsset> videos;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ProductVariantEntity> variants;

@@ -7,8 +7,8 @@ import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.mapper.RedirectMapper;
-import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.redirect.RedirectEntity;
+import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.redirect.RedirectJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.redirect.RedirectSpecification;
@@ -52,6 +52,7 @@ public class AdminRedirectService {
     private final RedirectJpaRepository redirectRepo;
     private final RedirectMapper redirectMapper;
     private final AuditLogWriter auditLogWriter;
+    private final AuditLogFactory auditLogFactory;
     private final PaginationService paginationService;
     private final WebRevalidationService webRevalidationService;
     private final ObjectMapper objectMapper;
@@ -119,7 +120,8 @@ public class AdminRedirectService {
             throw new ConflictException("Redirect source already exists: " + sourcePattern);
         }
 
-        auditLogWriter.save(buildAudit(adminId, "REDIRECT_CREATED", entity.getId(), null, snapshot(entity)));
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "REDIRECT_CREATED", "REDIRECT", entity.getId(), null, snapshot(entity)));
         webRevalidationService.revalidate("redirects");
 
         return redirectMapper.toResponse(entity);
@@ -177,7 +179,8 @@ public class AdminRedirectService {
         entity.setUpdatedAt(Instant.now());
         entity = redirectRepo.save(entity);
 
-        auditLogWriter.save(buildAudit(adminId, "REDIRECT_UPDATED", entity.getId(), before, snapshot(entity)));
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "REDIRECT_UPDATED", "REDIRECT", entity.getId(), before, snapshot(entity)));
         webRevalidationService.revalidate("redirects");
 
         return redirectMapper.toResponse(entity);
@@ -189,7 +192,8 @@ public class AdminRedirectService {
                 .orElseThrow(() -> new NotFoundException("Redirect not found."));
         String before = snapshot(entity);
         redirectRepo.delete(entity);
-        auditLogWriter.save(buildAudit(adminId, "REDIRECT_DELETED", entity.getId(), before, null));
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "REDIRECT_DELETED", "REDIRECT", entity.getId(), before, null));
         webRevalidationService.revalidate("redirects");
     }
 
@@ -402,19 +406,6 @@ public class AdminRedirectService {
 
     private static String nvl(String value) {
         return value != null ? value : "";
-    }
-
-    private AuditLogEntity buildAudit(UUID adminId, String action, UUID resourceId, String before, String after) {
-        AuditLogEntity log = new AuditLogEntity();
-        log.setActorType("ADMIN");
-        log.setActorId(adminId);
-        log.setAction(action);
-        log.setResourceType("REDIRECT");
-        log.setResourceId(resourceId);
-        log.setBeforeData(before);
-        log.setAfterData(after);
-        log.setCreatedAt(Instant.now());
-        return log;
     }
 
     private String trimToNull(String value) {

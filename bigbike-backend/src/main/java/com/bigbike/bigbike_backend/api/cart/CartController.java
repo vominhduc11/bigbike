@@ -1,15 +1,13 @@
 package com.bigbike.bigbike_backend.api.cart;
 
 import com.bigbike.bigbike_backend.api.cart.dto.AddCartItemRequest;
-import com.bigbike.bigbike_backend.api.cart.dto.CartItemResponse;
 import com.bigbike.bigbike_backend.api.cart.dto.CartResponse;
-import com.bigbike.bigbike_backend.api.cart.dto.CartTotalsResponse;
 import com.bigbike.bigbike_backend.api.cart.dto.UpdateCartItemRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.config.CustomerSessionFilter;
-import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
+import com.bigbike.bigbike_backend.mapper.CartMapper;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartItemEntity;
 import com.bigbike.bigbike_backend.service.cart.CartService;
@@ -17,7 +15,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,12 +45,14 @@ public class CartController {
 
     private final CartService cartService;
     private final ApiResponseFactory apiResponseFactory;
+    private final CartMapper cartMapper;
 
     @GetMapping
     public ApiDataResponse<CartResponse> getCart(HttpServletRequest request, HttpServletResponse response) {
         CartEntity cart = resolveCart(request, response);
         List<CartItemEntity> items = cartService.getItems(cart);
-        return apiResponseFactory.data(toResponse(cart, items), request);
+        return apiResponseFactory.data(
+                cartMapper.toResponse(cart, items, cartService.findUnavailableItemIds(items)), request);
     }
 
     @PostMapping("/items")
@@ -65,7 +64,8 @@ public class CartController {
         CartEntity cart = resolveCart(request, response);
         CartEntity updated = cartService.addItem(cart, req);
         List<CartItemEntity> items = cartService.getItems(updated);
-        return apiResponseFactory.data(toResponse(updated, items), request);
+        return apiResponseFactory.data(
+                cartMapper.toResponse(updated, items, cartService.findUnavailableItemIds(items)), request);
     }
 
     @PatchMapping("/items/{itemId}")
@@ -78,7 +78,8 @@ public class CartController {
         CartEntity cart = resolveCart(request, response);
         CartEntity updated = cartService.updateItemQuantity(cart, itemId, req.quantity());
         List<CartItemEntity> items = cartService.getItems(updated);
-        return apiResponseFactory.data(toResponse(updated, items), request);
+        return apiResponseFactory.data(
+                cartMapper.toResponse(updated, items, cartService.findUnavailableItemIds(items)), request);
     }
 
     @DeleteMapping("/items/{itemId}")
@@ -90,7 +91,8 @@ public class CartController {
         CartEntity cart = resolveCart(request, response);
         CartEntity updated = cartService.removeItem(cart, itemId);
         List<CartItemEntity> items = cartService.getItems(updated);
-        return apiResponseFactory.data(toResponse(updated, items), request);
+        return apiResponseFactory.data(
+                cartMapper.toResponse(updated, items, cartService.findUnavailableItemIds(items)), request);
     }
 
     // Both DELETE /cart and DELETE /cart/clear empty the cart — frontends use the latter.
@@ -99,7 +101,8 @@ public class CartController {
         CartEntity cart = resolveCart(request, response);
         CartEntity updated = cartService.clearCart(cart);
         List<CartItemEntity> items = cartService.getItems(updated);
-        return apiResponseFactory.data(toResponse(updated, items), request);
+        return apiResponseFactory.data(
+                cartMapper.toResponse(updated, items, cartService.findUnavailableItemIds(items)), request);
     }
 
     // ── cart resolution ───────────────────────────────────────────────────────
@@ -166,50 +169,4 @@ public class CartController {
 
     // ── mapping helpers ───────────────────────────────────────────────────────
 
-    private CartResponse toResponse(CartEntity cart, List<CartItemEntity> items) {
-        Set<UUID> unavailableIds = cartService.findUnavailableItemIds(items);
-        List<CartItemResponse> itemResponses = items.stream()
-                .map(item -> toItemResponse(item, !unavailableIds.contains(item.getId())))
-                .toList();
-        CartTotalsResponse totals = new CartTotalsResponse(
-                cart.getSubtotalAmount(),
-                cart.getDiscountAmount(),
-                cart.getShippingAmount(),
-                cart.getFeeAmount(),
-                cart.getTotalAmount()
-        );
-        return new CartResponse(cart.getId(), cart.getStatus(), cart.getCurrency(), itemResponses, totals);
-    }
-
-    private CartItemResponse toItemResponse(CartItemEntity item, boolean available) {
-        return new CartItemResponse(
-                item.getId(),
-                item.getProductId() != null ? item.getProductId().toString() : null,
-                item.getProductVariantId() != null ? item.getProductVariantId().toString() : null,
-                item.getSku(),
-                item.getProductName(),
-                item.getVariantName(),
-                toImageAsset(item),
-                item.getQuantity(),
-                item.getUnitPrice(),
-                item.getLineSubtotal(),
-                item.getLineDiscount(),
-                item.getLineTotal(),
-                available
-        );
-    }
-
-    private ImageAsset toImageAsset(CartItemEntity item) {
-        if (item.getProductImageUrl() == null || item.getProductImageUrl().isBlank()) {
-            return null;
-        }
-        return new ImageAsset(
-                item.getProductImageId(),
-                item.getProductImageUrl(),
-                item.getProductImageAlt(),
-                item.getProductImageWidth(),
-                item.getProductImageHeight(),
-                item.getProductImageMimeType()
-        );
-    }
 }

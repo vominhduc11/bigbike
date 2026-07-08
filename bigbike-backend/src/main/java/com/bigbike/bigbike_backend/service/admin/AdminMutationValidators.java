@@ -124,16 +124,30 @@ final class AdminMutationValidators {
             String allowedMediaBaseUrl,
             List<ApiErrorDetail> errors
     ) {
+        validateSeoMeta(seo, fieldPrefix, allowedMediaBaseUrl, false, errors);
+    }
+
+    static void validateSeoMeta(
+            SeoMetaRequest seo,
+            String fieldPrefix,
+            String allowedMediaBaseUrl,
+            boolean isDev,
+            List<ApiErrorDetail> errors
+    ) {
         if (seo == null) {
             return;
         }
-        validatePublicUrl(seo.getCanonicalUrl(), fieldPrefix + ".canonicalUrl", errors);
+        validatePublicUrl(seo.getCanonicalUrl(), fieldPrefix + ".canonicalUrl", isDev, errors);
         if (seo.getOgImage() != null) {
             validateWhitelistedMediaUrl(seo.getOgImage().getUrl(), fieldPrefix + ".ogImage.url", allowedMediaBaseUrl, errors);
         }
     }
 
     static void validatePublicUrl(String url, String field, List<ApiErrorDetail> errors) {
+        validatePublicUrl(url, field, false, errors);
+    }
+
+    static void validatePublicUrl(String url, String field, boolean isDev, List<ApiErrorDetail> errors) {
         String normalized = trimToNull(url);
         if (normalized == null) {
             return;
@@ -154,6 +168,25 @@ final class AdminMutationValidators {
 
         if (invalid) {
             errors.add(new ApiErrorDetail(field, "INVALID_VALUE", "URL must be a public http(s) URL."));
+            return;
+        }
+
+        if (field.endsWith("canonicalUrl")) {
+            try {
+                URI uri = new URI(normalized);
+                String host = uri.getHost();
+                if (host == null) {
+                    errors.add(new ApiErrorDetail(field, "INVALID_VALUE", "Canonical URL must have a valid host."));
+                    return;
+                }
+                boolean isProductionDomain = host.equalsIgnoreCase("bigbike.vn") || host.equalsIgnoreCase("www.bigbike.vn");
+                boolean isDevAllowed = isDev && (host.equalsIgnoreCase("localhost") || host.equalsIgnoreCase("127.0.0.1"));
+                if (!isProductionDomain && !isDevAllowed) {
+                    errors.add(new ApiErrorDetail(field, "INVALID_VALUE", "Canonical URL must belong to bigbike.vn or www.bigbike.vn."));
+                }
+            } catch (URISyntaxException e) {
+                errors.add(new ApiErrorDetail(field, "INVALID_VALUE", "Canonical URL must be a valid URL."));
+            }
         }
     }
 

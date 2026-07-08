@@ -24,7 +24,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaReposi
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepository;
-import com.bigbike.bigbike_backend.service.admin.AdminCatalogMutationService;
+import com.bigbike.bigbike_backend.service.admin.ProductMutationService;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -65,7 +65,7 @@ class AdminMutationApiTest {
     private ArticleJpaRepository articleJpaRepository;
 
     @Autowired
-    private AdminCatalogMutationService adminCatalogMutationService;
+    private ProductMutationService productMutationService;
 
     @Autowired
     private ProductVariantJpaRepository productVariantJpaRepository;
@@ -461,7 +461,7 @@ class AdminMutationApiTest {
         variant.setGallery(List.of());
         create.setVariants(List.of(variant));
 
-        var saved = adminCatalogMutationService.createProduct(create, DEV_ADMIN_ID);
+        var saved = productMutationService.createProduct(create, DEV_ADMIN_ID);
         String productId = saved.id();
         String variantId = saved.variants().get(0).id();
 

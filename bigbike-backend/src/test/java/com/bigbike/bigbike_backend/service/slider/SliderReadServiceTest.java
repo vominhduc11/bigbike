@@ -72,9 +72,9 @@ class SliderReadServiceTest {
                         null,       // originBrandCountry
                         null,       // sizeGuide
                         null,       // suitabilityAdvisory
-                        null,       // specificationsHtml
-                        null,       // specStatsHtml
-                        null,       // trustBadgesHtml
+                        null,       // specifications
+                        null,       // specStats
+                        null,       // trustBadges
                         null,       // quickAnswerSummary
                         null,       // gender
                         List.of(),  // relatedProducts

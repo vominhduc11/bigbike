@@ -9,9 +9,9 @@ import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.slider.Slider;
-import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.slider.SliderEntity;
+import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.slider.SliderJpaRepository;
@@ -43,6 +43,7 @@ public class AdminSliderService {
     private final WebRevalidationService webRevalidationService;
     private final SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy;
     private final AuditLogWriter auditLogWriter;
+    private final AuditLogFactory auditLogFactory;
 
     @Transactional(readOnly = true)
     public List<Slider> list(String location) {
@@ -250,17 +251,15 @@ public class AdminSliderService {
     // ── Audit helpers (CMS-010) ───────────────────────────────────────────────
 
     private void auditLog(String action, String sliderId, String before, String after) {
-        AuditLogEntity log = new AuditLogEntity();
-        log.setActorType("ADMIN");
-        log.setActorId(resolveActorId());
-        log.setAction(action);
-        log.setResourceType("SLIDER");
         // Slider IDs are strings (not UUIDs); store in before/after JSON, leave resourceId null.
-        log.setResourceId(null);
-        log.setBeforeData(before);
-        log.setAfterData(after != null ? after : "{\"id\":\"" + esc(sliderId) + "\"}");
-        log.setCreatedAt(Instant.now());
-        auditLogWriter.save(log);
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN",
+                resolveActorId(),
+                action,
+                "SLIDER",
+                null,
+                before,
+                after != null ? after : "{\"id\":\"" + esc(sliderId) + "\"}"));
     }
 
     private static String sliderSnapshot(SliderEntity e) {

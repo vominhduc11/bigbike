@@ -8,8 +8,6 @@ import com.bigbike.bigbike_backend.domain.commerce.OrderStatus;
 import com.bigbike.bigbike_backend.domain.commerce.PaymentStatus;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.customer.CustomerStatus;
-import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
-import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.service.admin.AdminReportService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,9 +15,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ContentDisposition;
@@ -51,7 +50,6 @@ public class AdminReportController {
 
     private final AdminReportService adminReportService;
     private final DevAdminAuthService devAdminAuthService;
-    private final AuditLogWriter auditLogWriter;
     private final ClientIpResolver clientIpResolver;
 
     @GetMapping("/analytics")
@@ -86,14 +84,18 @@ public class AdminReportController {
                     "Unknown payment status: " + paymentStatus);
         }
         AdminReportService.ExportResult ordersResult = adminReportService.exportOrdersCsv(status, paymentStatus, from, to);
-        recordExportAudit(actor, "ORDERS",
-                "{\"exportType\":\"ORDERS\",\"filters\":{"
-                        + "\"status\":" + jsonStr(status)
-                        + ",\"paymentStatus\":" + jsonStr(paymentStatus)
-                        + ",\"from\":" + jsonStr(from)
-                        + ",\"to\":" + jsonStr(to)
-                        + "},\"rowLimit\":10000}",
-                request);
+        adminReportService.recordExportAudit(
+                actor.id(),
+                "ORDERS",
+                filters(
+                        "status", blankToNull(status),
+                        "paymentStatus", blankToNull(paymentStatus),
+                        "from", blankToNull(from),
+                        "to", blankToNull(to)
+                ),
+                clientIpResolver.resolve(request),
+                request.getHeader("User-Agent")
+        );
         return csvResponse(ordersResult, "orders_" + LocalDate.now().format(FILE_DATE) + ".csv");
     }
 
@@ -109,11 +111,13 @@ public class AdminReportController {
                     "Unknown customer status: " + status);
         }
         AdminReportService.ExportResult customersResult = adminReportService.exportCustomersCsv(status);
-        recordExportAudit(actor, "CUSTOMERS",
-                "{\"exportType\":\"CUSTOMERS\",\"filters\":{"
-                        + "\"status\":" + jsonStr(status)
-                        + "},\"rowLimit\":10000}",
-                request);
+        adminReportService.recordExportAudit(
+                actor.id(),
+                "CUSTOMERS",
+                filters("status", blankToNull(status)),
+                clientIpResolver.resolve(request),
+                request.getHeader("User-Agent")
+        );
         return csvResponse(customersResult, "customers_" + LocalDate.now().format(FILE_DATE) + ".csv");
     }
 
@@ -129,11 +133,13 @@ public class AdminReportController {
                     "Unknown publish status: " + publishStatus);
         }
         AdminReportService.ExportResult productsResult = adminReportService.exportProductsCsv(publishStatus);
-        recordExportAudit(actor, "PRODUCTS",
-                "{\"exportType\":\"PRODUCTS\",\"filters\":{"
-                        + "\"publishStatus\":" + jsonStr(publishStatus)
-                        + "},\"rowLimit\":10000}",
-                request);
+        adminReportService.recordExportAudit(
+                actor.id(),
+                "PRODUCTS",
+                filters("publishStatus", blankToNull(publishStatus)),
+                clientIpResolver.resolve(request),
+                request.getHeader("User-Agent")
+        );
         return csvResponse(productsResult, "products_" + LocalDate.now().format(FILE_DATE) + ".csv");
     }
 
@@ -176,28 +182,15 @@ public class AdminReportController {
         return ResponseEntity.ok().headers(headers).body(result.csv());
     }
 
-    private void recordExportAudit(AdminUserProfile actor, String exportType,
-                                   String afterData, HttpServletRequest request) {
-        AuditLogEntity log = new AuditLogEntity();
-        log.setActorType("ADMIN");
-        log.setActorId(parseActorId(actor.id()));
-        log.setAction("REPORT_EXPORT_CREATED");
-        log.setResourceType("REPORT");
-        log.setAfterData(afterData);
-        log.setIpAddress(clientIpResolver.resolve(request));
-        log.setUserAgent(request.getHeader("User-Agent"));
-        log.setCreatedAt(Instant.now());
-        auditLogWriter.save(log);
+    private static Map<String, Object> filters(Object... keyValues) {
+        Map<String, Object> filters = new LinkedHashMap<>();
+        for (int i = 0; i < keyValues.length; i += 2) {
+            filters.put((String) keyValues[i], keyValues[i + 1]);
+        }
+        return filters;
     }
 
-    private static UUID parseActorId(String id) {
-        if (id == null) return null;
-        try { return UUID.fromString(id); }
-        catch (IllegalArgumentException e) { return null; }
-    }
-
-    private static String jsonStr(String value) {
-        if (value == null || value.isBlank()) return "null";
-        return "\"" + value + "\"";
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 }

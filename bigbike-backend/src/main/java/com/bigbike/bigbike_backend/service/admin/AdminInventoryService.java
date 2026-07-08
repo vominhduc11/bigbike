@@ -15,10 +15,10 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementEntit
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
+import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.inventory.InventoryPolicyService;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
-import static com.bigbike.bigbike_backend.service.admin.AdminInventoryMapper.buildAudit;
 import static com.bigbike.bigbike_backend.service.admin.AdminInventoryMapper.csvEscape;
 import static com.bigbike.bigbike_backend.service.admin.AdminInventoryMapper.parseState;
 import static com.bigbike.bigbike_backend.service.admin.AdminInventoryMapper.toProductGroup;
@@ -54,6 +54,7 @@ public class AdminInventoryService {
     private final InventoryPolicyService inventoryPolicyService;
     private final WebRevalidationService webRevalidationService;
     private final AuditLogWriter auditLogWriter;
+    private final AuditLogFactory auditLogFactory;
 
     // ── List stock (DB-side filter + sort + pagination) ───────────────────────
 
@@ -233,7 +234,13 @@ public class AdminInventoryService {
             productRepo.save(product);
         }
 
-        auditLogWriter.save(buildAudit(adminId, "INVENTORY_AVAILABILITY_SET", "INVENTORY",
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN",
+                adminId,
+                "INVENTORY_AVAILABILITY_SET",
+                "INVENTORY",
+                null,
+                null,
                 "{\"variantId\":\"" + variantId + "\",\"available\":" + available + "}"));
 
         String slug = product != null ? product.getSlug() : null;
@@ -268,7 +275,13 @@ public class AdminInventoryService {
                 : ProductStockState.OUT_OF_STOCK);
         productRepo.save(product);
 
-        auditLogWriter.save(buildAudit(adminId, "INVENTORY_AVAILABILITY_SET", "INVENTORY",
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN",
+                adminId,
+                "INVENTORY_AVAILABILITY_SET",
+                "INVENTORY",
+                null,
+                null,
                 "{\"productId\":\"" + productId + "\",\"available\":" + available + "}"));
 
         String slug = product.getSlug();

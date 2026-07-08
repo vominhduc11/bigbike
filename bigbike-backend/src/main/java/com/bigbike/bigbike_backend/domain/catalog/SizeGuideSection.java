@@ -15,7 +15,7 @@ import lombok.Setter;
  * mảng, xem lịch sử ở {@code DescriptionBlock.java}). Bilingual dual-field: {@code titleEn}/
  * {@code htmlEn}.
  */
-@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonIgnoreProperties(ignoreUnknown = false)
 @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.ALWAYS)
 public final class SizeGuideSection {

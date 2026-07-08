@@ -9,8 +9,8 @@ import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.video.HomeVideo;
-import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.video.HomeVideoEntity;
+import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.video.HomeVideoJpaRepository;
 import com.bigbike.bigbike_backend.service.security.HomeVideoUrlPolicy;
@@ -42,6 +42,7 @@ public class AdminHomeVideoService {
     private final HomeVideoUrlPolicy homeVideoUrlPolicy;
     private final SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy;
     private final AuditLogWriter auditLogWriter;
+    private final AuditLogFactory auditLogFactory;
 
     @Transactional(readOnly = true)
     public List<HomeVideo> list() {
@@ -198,17 +199,15 @@ public class AdminHomeVideoService {
     // ── Audit helpers (CMS-010) ───────────────────────────────────────────────
 
     private void auditLog(String action, String videoId, String before, String after) {
-        AuditLogEntity log = new AuditLogEntity();
-        log.setActorType("ADMIN");
-        log.setActorId(resolveActorId());
-        log.setAction(action);
-        log.setResourceType("HOME_VIDEO");
         // HomeVideo IDs are strings (not UUIDs); store in before/after JSON, leave resourceId null.
-        log.setResourceId(null);
-        log.setBeforeData(before);
-        log.setAfterData(after != null ? after : "{\"id\":\"" + esc(videoId) + "\"}");
-        log.setCreatedAt(Instant.now());
-        auditLogWriter.save(log);
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN",
+                resolveActorId(),
+                action,
+                "HOME_VIDEO",
+                null,
+                before,
+                after != null ? after : "{\"id\":\"" + esc(videoId) + "\"}"));
     }
 
     private static String videoSnapshot(HomeVideoEntity e) {

@@ -12,13 +12,13 @@ import com.bigbike.bigbike_backend.api.admin.dto.GalleryImageRequest;
 import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.config.MediaUrlProperties;
 import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
+import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
+import com.bigbike.bigbike_backend.domain.catalog.VideoAsset;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGalleryImageEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVideoEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -44,6 +45,7 @@ public class CatalogRequestValidator {
     private final BrandJpaRepository brandJpaRepository;
     private final MediaUrlProperties mediaUrlProperties;
     private final HomeVideoUrlPolicy homeVideoUrlPolicy;
+    private final boolean isDev;
 
     public CatalogRequestValidator(
             ObjectProvider<ProductJpaRepository> productJpaRepositoryProvider,
@@ -51,7 +53,8 @@ public class CatalogRequestValidator {
             ObjectProvider<CategoryJpaRepository> categoryJpaRepositoryProvider,
             ObjectProvider<BrandJpaRepository> brandJpaRepositoryProvider,
             MediaUrlProperties mediaUrlProperties,
-            HomeVideoUrlPolicy homeVideoUrlPolicy
+            HomeVideoUrlPolicy homeVideoUrlPolicy,
+            Environment environment
     ) {
         this.productJpaRepository = productJpaRepositoryProvider.getIfAvailable();
         this.productVariantJpaRepository = productVariantJpaRepositoryProvider.getIfAvailable();
@@ -59,6 +62,8 @@ public class CatalogRequestValidator {
         this.brandJpaRepository = brandJpaRepositoryProvider.getIfAvailable();
         this.mediaUrlProperties = mediaUrlProperties;
         this.homeVideoUrlPolicy = homeVideoUrlPolicy;
+        this.isDev = environment != null && java.util.Arrays.stream(environment.getActiveProfiles())
+                .anyMatch(p -> java.util.Set.of("dev", "mock", "test", "local").contains(p.toLowerCase()));
     }
 
     public String validateProductRequest(
@@ -100,6 +105,7 @@ public class CatalogRequestValidator {
                 request.getSeo(),
                 "seo",
                 mediaUrlProperties.getPublicBaseUrl(),
+                isDev,
                 errors
         );
 
@@ -113,12 +119,12 @@ public class CatalogRequestValidator {
             Set<String> existingVideoUrls = new HashSet<>();
             if (current != null) {
                 if (current.getGallery() != null) {
-                    for (ProductGalleryImageEntity img : current.getGallery()) {
-                        String u = AdminMutationValidators.trimToNull(img.getImageUrl());
+                    for (GalleryMedia item : current.getGallery()) {
+                        String u = item.image() != null ? AdminMutationValidators.trimToNull(item.image().url()) : null;
                         if (u != null) {
                             existingGalleryUrls.add(u);
                         }
-                        String vu = AdminMutationValidators.trimToNull(img.getVideoUrl());
+                        String vu = AdminMutationValidators.trimToNull(item.videoUrl());
                         if (vu != null) {
                             existingVideoUrls.add(vu);
                         }
@@ -141,12 +147,12 @@ public class CatalogRequestValidator {
                     }
                 }
                 if (current.getVideos() != null) {
-                    for (ProductVideoEntity video : current.getVideos()) {
-                        String vu = AdminMutationValidators.trimToNull(video.getVideoUrl());
+                    for (VideoAsset video : current.getVideos()) {
+                        String vu = AdminMutationValidators.trimToNull(video.url());
                         if (vu != null) {
                             existingVideoUrls.add(vu);
                         }
-                        String tu = AdminMutationValidators.trimToNull(video.getThumbnailUrl());
+                        String tu = video.thumbnail() != null ? AdminMutationValidators.trimToNull(video.thumbnail().url()) : null;
                         if (tu != null) {
                             existingGalleryUrls.add(tu);
                         }
@@ -301,18 +307,14 @@ public class CatalogRequestValidator {
         // Slug uniqueness is a persistence concern — skip it for the live-preview
         // dry-run. Otherwise previewing an EXISTING product (current is always null
         // here) would flag its own saved slug as a duplicate and always 400.
-        if (!preview && slug != null) {
-            Optional<ProductEntity> existingBySlug = productJpaRepository.findBySlug(slug);
-            if (existingBySlug.isPresent()
-                    && (current == null || !existingBySlug.get().getId().equals(current.getId()))) {
-                errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use."));
-            }
-            // A new vi slug must not collide with any product's English slug either.
-            Optional<ProductEntity> existingBySlugEn = productJpaRepository.findBySlugEn(slug);
-            if (existingBySlugEn.isPresent()
-                    && (current == null || !existingBySlugEn.get().getId().equals(current.getId()))) {
-                errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use (English slug)."));
-            }
+        if (!preview) {
+            validateVietnameseSlugAgainstEnglish(
+                    slug,
+                    current == null ? null : current.getId(),
+                    s -> productJpaRepository.findBySlug(s).map(ProductEntity::getId),
+                    s -> productJpaRepository.findBySlugEn(s).map(ProductEntity::getId),
+                    errors
+            );
         }
 
         if (!preview) {
@@ -447,6 +449,28 @@ public class CatalogRequestValidator {
         }
     }
 
+    public static void validateVietnameseSlugAgainstEnglish(
+            String slug,
+            String currentId,
+            java.util.function.Function<String, Optional<String>> findIdByViSlug,
+            java.util.function.Function<String, Optional<String>> findIdByEnSlug,
+            List<ApiErrorDetail> errors
+    ) {
+        if (slug == null) {
+            return;
+        }
+        Optional<String> existingBySlug = findIdByViSlug.apply(slug);
+        if (existingBySlug.isPresent()
+                && (currentId == null || !existingBySlug.get().equals(currentId))) {
+            errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use."));
+        }
+        Optional<String> existingBySlugEn = findIdByEnSlug.apply(slug);
+        if (existingBySlugEn.isPresent()
+                && (currentId == null || !existingBySlugEn.get().equals(currentId))) {
+            errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use (English slug)."));
+        }
+    }
+
     /**
      * PRODUCT_RULE_SKU_001 — variant SKUs must be globally unique (case-insensitive).
      * Flags duplicates within the request and against other products. Cross-product
@@ -559,22 +583,17 @@ public class CatalogRequestValidator {
                 request.getSeo(),
                 "seo",
                 mediaUrlProperties.getPublicBaseUrl(),
+                isDev,
                 errors
         );
 
-        if (slug != null) {
-            Optional<CategoryEntity> existingBySlug = categoryJpaRepository.findBySlug(slug);
-            if (existingBySlug.isPresent()
-                    && (current == null || !existingBySlug.get().getId().equals(current.getId()))) {
-                errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use."));
-            }
-            // A new vi slug must not collide with any category's English slug either.
-            Optional<CategoryEntity> existingBySlugEn = categoryJpaRepository.findBySlugEn(slug);
-            if (existingBySlugEn.isPresent()
-                    && (current == null || !existingBySlugEn.get().getId().equals(current.getId()))) {
-                errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use (English slug)."));
-            }
-        }
+        validateVietnameseSlugAgainstEnglish(
+                slug,
+                current == null ? null : current.getId(),
+                s -> categoryJpaRepository.findBySlug(s).map(CategoryEntity::getId),
+                s -> categoryJpaRepository.findBySlugEn(s).map(CategoryEntity::getId),
+                errors
+        );
 
         validateEnglishSlug(
                 extractEnSlug(request.getTranslations() == null ? null : request.getTranslations().getEn()),
@@ -667,22 +686,17 @@ public class CatalogRequestValidator {
                 request.getSeo(),
                 "seo",
                 mediaUrlProperties.getPublicBaseUrl(),
+                isDev,
                 errors
         );
 
-        if (slug != null) {
-            Optional<BrandEntity> existingBySlug = brandJpaRepository.findBySlug(slug);
-            if (existingBySlug.isPresent()
-                    && (current == null || !existingBySlug.get().getId().equals(current.getId()))) {
-                errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use."));
-            }
-            // A new vi slug must not collide with any brand's English slug either.
-            Optional<BrandEntity> existingBySlugEn = brandJpaRepository.findBySlugEn(slug);
-            if (existingBySlugEn.isPresent()
-                    && (current == null || !existingBySlugEn.get().getId().equals(current.getId()))) {
-                errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use (English slug)."));
-            }
-        }
+        validateVietnameseSlugAgainstEnglish(
+                slug,
+                current == null ? null : current.getId(),
+                s -> brandJpaRepository.findBySlug(s).map(BrandEntity::getId),
+                s -> brandJpaRepository.findBySlugEn(s).map(BrandEntity::getId),
+                errors
+        );
 
         validateEnglishSlug(
                 extractEnSlug(request.getTranslations() == null ? null : request.getTranslations().getEn()),

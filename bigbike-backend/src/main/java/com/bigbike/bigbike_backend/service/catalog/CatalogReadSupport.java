@@ -222,9 +222,9 @@ final class CatalogReadSupport {
                 null,                       // originBrandCountry — detail only
                 null,                       // sizeGuide — detail only
                 null,                       // suitabilityAdvisory — detail only
-                null,                       // specificationsHtml — detail only
-                null,                       // specStatsHtml — detail only
-                null,                       // trustBadgesHtml — detail only
+                null,                       // specifications — detail only
+                null,                       // specStats — detail only
+                null,                       // trustBadges — detail only
                 null,                       // quickAnswerSummary — detail only
                 p.gender(),
                 List.of(),                  // relatedProducts — detail only

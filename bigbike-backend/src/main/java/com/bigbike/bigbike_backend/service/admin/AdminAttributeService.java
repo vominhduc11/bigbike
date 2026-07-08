@@ -9,15 +9,15 @@ import com.bigbike.bigbike_backend.api.admin.dto.UpdateAttributeValueRequest;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.mapper.AttributeMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.normalizer.ProductSlugGenerator;
-import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeValueEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeValueJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantOptionJpaRepository;
+import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +32,8 @@ public class AdminAttributeService {
     private final AttributeValueJpaRepository valueRepo;
     private final ProductVariantOptionJpaRepository variantOptionRepo;
     private final AuditLogWriter auditLogWriter;
+    private final AttributeMapper attributeMapper;
+    private final AuditLogFactory auditLogFactory;
 
     @Transactional(readOnly = true)
     public List<AttributeSummaryResponse> listAttributes() {
@@ -52,7 +54,7 @@ public class AdminAttributeService {
         attributeRepo.findById(attributeId)
                 .orElseThrow(() -> new NotFoundException("Attribute not found: " + attributeId));
         return valueRepo.findAllByAttributeIdOrderBySortOrderAsc(attributeId).stream()
-                .map(this::toResponse)
+                .map(attributeMapper::toResponse)
                 .toList();
     }
 
@@ -71,7 +73,8 @@ public class AdminAttributeService {
             attribute.setNameEn(normalizeOptional(request.nameEn()));
         }
         AttributeEntity saved = attributeRepo.save(attribute);
-        auditLog("ATTRIBUTE_UPDATED", adminId, before, attributeSnapshot(saved));
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "ATTRIBUTE_UPDATED", "ATTRIBUTE", null, before, attributeSnapshot(saved)));
         return new AttributeSummaryResponse(
                 saved.getId(),
                 saved.getCode(),
@@ -108,7 +111,8 @@ public class AdminAttributeService {
         entity.setKind("select");
         entity.setVariation(true);
         AttributeEntity saved = attributeRepo.save(entity);
-        auditLog("ATTRIBUTE_CREATED", adminId, null, attributeSnapshot(saved));
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "ATTRIBUTE_CREATED", "ATTRIBUTE", null, null, attributeSnapshot(saved)));
         return new AttributeSummaryResponse(
                 saved.getId(),
                 saved.getCode(),
@@ -137,7 +141,8 @@ public class AdminAttributeService {
         }
         String before = attributeSnapshot(attribute);
         attributeRepo.delete(attribute);
-        auditLog("ATTRIBUTE_DELETED", adminId, before, null);
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "ATTRIBUTE_DELETED", "ATTRIBUTE", null, before, null));
     }
 
     /**
@@ -157,7 +162,8 @@ public class AdminAttributeService {
         }
         String before = attributeValueSnapshot(value);
         valueRepo.delete(value);
-        auditLog("ATTRIBUTE_VALUE_DELETED", adminId, before, null);
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "ATTRIBUTE_VALUE_DELETED", "ATTRIBUTE", null, before, null));
     }
 
     /**
@@ -196,8 +202,9 @@ public class AdminAttributeService {
         entity.setLabelEn(normalizeOptional(request.labelEn()));
         entity.setSortOrder(nextSortOrder);
         AttributeValueEntity saved = valueRepo.save(entity);
-        auditLog("ATTRIBUTE_VALUE_CREATED", adminId, null, attributeValueSnapshot(saved));
-        return toResponse(saved);
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "ATTRIBUTE_VALUE_CREATED", "ATTRIBUTE", null, null, attributeValueSnapshot(saved)));
+        return attributeMapper.toResponse(saved);
     }
 
     /**
@@ -215,37 +222,14 @@ public class AdminAttributeService {
             entity.setLabelEn(normalizeOptional(request.labelEn()));
         }
         AttributeValueEntity saved = valueRepo.save(entity);
-        auditLog("ATTRIBUTE_VALUE_UPDATED", adminId, before, attributeValueSnapshot(saved));
-        return toResponse(saved);
-    }
-
-    private AttributeValueResponse toResponse(AttributeValueEntity v) {
-        return new AttributeValueResponse(
-                v.getId(),
-                v.getAttribute() != null ? v.getAttribute().getId() : null,
-                v.getSlug(),
-                v.getLabel(),
-                v.getLabelEn(),
-                v.getSortOrder()
-        );
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "ATTRIBUTE_VALUE_UPDATED", "ATTRIBUTE", null, before, attributeValueSnapshot(saved)));
+        return attributeMapper.toResponse(saved);
     }
 
     /** Trim an optional text field; blank/null → null (so a cleared English label stores NULL). */
     private static String normalizeOptional(String value) {
         return value == null || value.isBlank() ? null : value.trim();
-    }
-
-    private void auditLog(String action, UUID adminId, String before, String after) {
-        AuditLogEntity log = new AuditLogEntity();
-        log.setActorType("ADMIN");
-        log.setActorId(adminId);
-        log.setAction(action);
-        log.setResourceType("ATTRIBUTE");
-        // Attribute (value) IDs are strings, not UUIDs; identifier lives in before/after JSON.
-        log.setBeforeData(before);
-        log.setAfterData(after);
-        log.setCreatedAt(Instant.now());
-        auditLogWriter.save(log);
     }
 
     private static String attributeSnapshot(AttributeEntity a) {

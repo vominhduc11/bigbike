@@ -8,8 +8,8 @@ import com.bigbike.bigbike_backend.api.admin.dto.settings.UpdateSiteSettingReque
 import com.bigbike.bigbike_backend.api.error.ForbiddenException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
-import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.settings.SiteSettingEntity;
+import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.settings.SiteSettingJpaRepository;
 import com.bigbike.bigbike_backend.service.admin.settings.SettingDefinition;
@@ -42,6 +42,7 @@ public class AdminSettingsService {
 
     private final SiteSettingJpaRepository settingRepo;
     private final AuditLogWriter auditLogWriter;
+    private final AuditLogFactory auditLogFactory;
     private final PaginationService paginationService;
     private final WebRevalidationService webRevalidationService;
     private final SettingDefinitionRegistry definitionRegistry;
@@ -161,7 +162,13 @@ public class AdminSettingsService {
         settingRepo.save(entity);
 
         webRevalidationService.revalidate("settings");
-        auditLogWriter.save(buildAudit(adminId, "SETTING_UPDATED", entity.getId(), before,
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN",
+                adminId,
+                "SETTING_UPDATED",
+                "SITE_SETTING",
+                entity.getId(),
+                before,
                 snapshot(entity, definitionRegistry.isSensitive(settingKey))));
 
         return toAdminResponse(entity);
@@ -232,8 +239,14 @@ public class AdminSettingsService {
             entity.setUpdatedAt(Instant.now());
             settingRepo.save(entity);
 
-            auditLogWriter.save(buildAudit(adminId, "SETTING_UPDATED", entity.getId(),
-                    before, snapshot(entity, sensitive)));
+            auditLogWriter.save(auditLogFactory.build(
+                    "ADMIN",
+                    adminId,
+                    "SETTING_UPDATED",
+                    "SITE_SETTING",
+                    entity.getId(),
+                    before,
+                    snapshot(entity, sensitive)));
             results.add(toAdminResponse(entity));
         }
 
@@ -333,20 +346,6 @@ public class AdminSettingsService {
                 s.getCreatedAt(), s.getUpdatedAt(),
                 valueType, sensitive, masked, superAdminOnly
         );
-    }
-
-    private AuditLogEntity buildAudit(UUID adminId, String action, UUID resourceId,
-            String before, String after) {
-        AuditLogEntity log = new AuditLogEntity();
-        log.setActorType("ADMIN");
-        log.setActorId(adminId);
-        log.setAction(action);
-        log.setResourceType("SITE_SETTING");
-        log.setResourceId(resourceId);
-        log.setBeforeData(before);
-        log.setAfterData(after);
-        log.setCreatedAt(Instant.now());
-        return log;
     }
 
     private static String snapshot(SiteSettingEntity s, boolean sensitive) {

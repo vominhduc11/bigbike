@@ -55,13 +55,13 @@ public class ProductTranslationRequest {
         private String suitabilityAdvisory;
 
         @Size(max = 50000, message = "English specifications HTML is too long.")
-        private String specificationsHtml;
+        private String specifications;
 
         @Size(max = 50000, message = "English spec stats HTML is too long.")
-        private String specStatsHtml;
+        private String specStats;
 
         @Size(max = 50000, message = "English trust badges HTML is too long.")
-        private String trustBadgesHtml;
+        private String trustBadges;
 
         @Size(max = 600, message = "English quick answer is too long.")
         private String quickAnswerSummary;

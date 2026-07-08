@@ -135,7 +135,7 @@ function isGeneratedTrustBadgesHtml(html) {
   return h.includes('bb-trust-badges')
 }
 
-// "Dải tin cậy" trên tên sản phẩm (V233 + V257). `trustBadgesHtml` (theo ngôn ngữ) là NGUỒN render
+// "Dải tin cậy" trên tên sản phẩm (V233 + V257). `trustBadges` (theo ngôn ngữ) là NGUỒN render
 // web; tab "Có cấu trúc" chỉ là công cụ nhập (mỗi nhãn = 1 dòng chữ ngắn). Sửa cấu trúc được GHÉP
 // vào html (giữ CSS/chấm tròn, chỉ đổi chữ); HTML→Cấu trúc parse bỏ CSS. Key theo contentLang ở screen.
 export function TrustBadgesEditor({ disabled, html = '', onHtmlChange }) {
@@ -270,7 +270,7 @@ function isGeneratedSpecStatsHtml(html) {
   return h.includes('bb-specstats')
 }
 
-// "Specs Dashboard" — ô số liệu nổi bật dưới khu vực mua hàng (V235 + V256). `specStatsHtml`
+// "Specs Dashboard" — ô số liệu nổi bật dưới khu vực mua hàng (V235 + V256). `specStats`
 // (theo ngôn ngữ) là NGUỒN render web; tab "Có cấu trúc" chỉ là công cụ nhập (mỗi ô = value + nhãn,
 // tối đa 4). Sửa cấu trúc được GHÉP vào html (giữ CSS, chỉ đổi chữ); HTML→Cấu trúc parse bỏ CSS.
 // Component được key theo contentLang ở screen → đổi ngôn ngữ = remount + nạp lại theo html.

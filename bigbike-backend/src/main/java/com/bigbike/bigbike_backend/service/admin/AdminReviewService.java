@@ -5,9 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
-import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ReviewEntity;
+import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
@@ -48,6 +48,7 @@ public class AdminReviewService {
     private final ReviewJpaRepository reviewRepo;
     private final ProductJpaRepository productRepo;
     private final AuditLogWriter auditLogWriter;
+    private final AuditLogFactory auditLogFactory;
     private final WebRevalidationService webRevalidationService;
     private final EmailDispatchService emailDispatchService;
     private final String siteBaseUrl;
@@ -56,6 +57,7 @@ public class AdminReviewService {
             ReviewJpaRepository reviewRepo,
             ProductJpaRepository productRepo,
             AuditLogWriter auditLogWriter,
+            AuditLogFactory auditLogFactory,
             WebRevalidationService webRevalidationService,
             EmailDispatchService emailDispatchService,
             @Value("${bigbike.site.base-url:https://bigbike.vn}") String siteBaseUrl
@@ -63,6 +65,7 @@ public class AdminReviewService {
         this.reviewRepo = reviewRepo;
         this.productRepo = productRepo;
         this.auditLogWriter = auditLogWriter;
+        this.auditLogFactory = auditLogFactory;
         this.webRevalidationService = webRevalidationService;
         this.emailDispatchService = emailDispatchService;
         this.siteBaseUrl = siteBaseUrl;
@@ -132,14 +135,16 @@ public class AdminReviewService {
         ReviewEntity saved = reviewRepo.save(entity);
         reviewRepo.flush();
         recomputeProductReviewAggregate(entity.getProductId());
-        auditLogWriter.save(buildAudit(
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN",
                 adminId,
                 REVIEW_STATUS_CHANGED_ACTION,
+                REVIEW_RESOURCE_TYPE,
+                null,
                 before,
                 snapshot(saved, productMetadata),
                 ipAddress,
-                userAgent,
-                now
+                userAgent
         ));
 
         Map<String, Object> result = toMap(saved, productMetadata);
@@ -223,14 +228,16 @@ public class AdminReviewService {
         reviewRepo.delete(entity);
         reviewRepo.flush();
         recomputeProductReviewAggregate(productId);
-        auditLogWriter.save(buildAudit(
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN",
                 adminId,
                 REVIEW_DELETED_ACTION,
+                REVIEW_RESOURCE_TYPE,
+                null,
                 before,
                 deletedSnapshot(entity, productMetadata),
                 ipAddress,
-                userAgent,
-                now
+                userAgent
         ));
 
         revalidateProduct(productId);
@@ -312,28 +319,6 @@ public class AdminReviewService {
         return writeJson(payload);
     }
 
-    private AuditLogEntity buildAudit(
-            UUID adminId,
-            String action,
-            String before,
-            String after,
-            String ipAddress,
-            String userAgent,
-            Instant now
-    ) {
-        AuditLogEntity log = new AuditLogEntity();
-        log.setActorType("ADMIN");
-        log.setActorId(adminId);
-        log.setAction(action);
-        log.setResourceType(REVIEW_RESOURCE_TYPE);
-        log.setBeforeData(before);
-        log.setAfterData(after);
-        log.setIpAddress(blankToNull(ipAddress));
-        log.setUserAgent(blankToNull(userAgent));
-        log.setCreatedAt(now);
-        return log;
-    }
-
     private String writeJson(Map<String, Object> payload) {
         try {
             return OBJECT_MAPPER.writeValueAsString(payload);
@@ -347,13 +332,6 @@ public class AdminReviewService {
             return null;
         }
         return BigDecimal.valueOf(avgRating).setScale(1, RoundingMode.HALF_UP);
-    }
-
-    private String blankToNull(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        return value;
     }
 
     private record ProductReviewMetadata(String name, String nameEn, String slug) {}

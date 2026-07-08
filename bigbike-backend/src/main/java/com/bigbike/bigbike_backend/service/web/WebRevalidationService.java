@@ -145,5 +145,52 @@ public class WebRevalidationService {
         }
     }
 
+    public void revalidateProduct(String slug, String previousSlug) {
+        revalidateEntityTags("products", "product:", previousSlug, slug, "home-highlights");
+    }
+
+    public void revalidateCategory(String slug, String previousSlug) {
+        revalidateEntityTags("categories", "category:", previousSlug, slug, "products", "menus", "home-highlights");
+    }
+
+    public void revalidateBrand(String slug, String previousSlug) {
+        revalidateEntityTags("brands", "brand:", previousSlug, slug, "products");
+    }
+
+    private void revalidateEntityTags(
+            String listTag,
+            String itemTagPrefix,
+            String previousSlug,
+            String currentSlug,
+            String... relatedTags
+    ) {
+        LinkedHashSet<String> tags = new LinkedHashSet<>();
+        addTag(tags, listTag);
+        addSlugTag(tags, itemTagPrefix, previousSlug);
+        addSlugTag(tags, itemTagPrefix, currentSlug);
+        for (String relatedTag : relatedTags) {
+            addTag(tags, relatedTag);
+        }
+        revalidate(tags.toArray(String[]::new));
+    }
+
+    private static void addSlugTag(LinkedHashSet<String> tags, String prefix, String slug) {
+        String normalized = trimToNull(slug);
+        if (normalized != null) {
+            tags.add(prefix + normalized);
+        }
+    }
+
+    private static void addTag(LinkedHashSet<String> tags, String tag) {
+        String normalized = trimToNull(tag);
+        if (normalized != null) {
+            tags.add(normalized);
+        }
+    }
+
+    private static String trimToNull(String s) {
+        return s == null || s.isBlank() ? null : s.trim();
+    }
+
     private record RevalidateBody(List<String> tags) {}
 }

@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.migration.wordpress.importer;
 
+import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
+import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressMediaMapper.MappedMedia;
@@ -7,7 +9,6 @@ import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressProductMa
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationDomain;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
@@ -159,32 +160,19 @@ public class ProductImporter implements DomainImporter {
                 }
 
                 // Gallery images — resolved from WP _product_image_gallery (comma-separated media IDs)
-                List<ProductGalleryImageEntity> galleryEntities = new ArrayList<>();
+                List<GalleryMedia> galleryEntities = new ArrayList<>();
                 String thumbUrl = entity.getImageUrl();
                 if (mp.galleryIds() != null) {
-                    int order = 0;
                     for (Long gid : mp.galleryIds()) {
                         MappedMedia gm = mediaByLegacyId.get(gid);
                         if (gm == null || gm.storagePath() == null || gm.storagePath().isBlank()) continue;
                         String url = buildMediaUrl(mediaPublicBaseUrl, gm.storagePath());
                         if (url.equals(thumbUrl)) continue; // skip duplicate of main image
-                        ProductGalleryImageEntity gi = new ProductGalleryImageEntity();
-                        gi.setProduct(entity);
-                        gi.setImageId(String.valueOf(gid));
-                        gi.setImageUrl(url);
-                        gi.setImageAlt(gm.altText());
-                        gi.setImageWidth(gm.width());
-                        gi.setImageHeight(gm.height());
-                        gi.setImageMimeType(gm.mimeType());
-                        gi.setSortOrder(order++);
-                        galleryEntities.add(gi);
+                        galleryEntities.add(GalleryMedia.ofImage(new ImageAsset(
+                                String.valueOf(gid), url, gm.altText(), gm.width(), gm.height(), gm.mimeType())));
                     }
                 }
-                if (entity.getGallery() == null) {
-                    entity.setGallery(new ArrayList<>());
-                }
-                entity.getGallery().clear();
-                entity.getGallery().addAll(galleryEntities);
+                entity.setGallery(new ArrayList<>(galleryEntities));
 
                 entity.setUpdatedAt(Instant.now());
                 warnings.addAll(mp.warnings());

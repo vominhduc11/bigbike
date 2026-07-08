@@ -496,7 +496,7 @@ function isGeneratedSpecsHtml(html) {
 }
 
 /**
- * Thông số kỹ thuật — `specificationsHtml` (theo ngôn ngữ) là NGUỒN DUY NHẤT được lưu & web render.
+ * Thông số kỹ thuật — `specifications` (theo ngôn ngữ) là NGUỒN DUY NHẤT được lưu & web render.
  * Tab "Có cấu trúc" chỉ là công cụ nhập: mỗi thay đổi dòng tên/giá trị được GHÉP vào html hiện có
  * (giữ nguyên CSS/markup, chỉ đổi chữ). HTML → Cấu trúc (chuyển tab): parse html ra dòng (bỏ CSS).
  * Cho phép CSS inline khi dán HTML. Component được key theo contentLang ở screen nên đổi ngôn ngữ =

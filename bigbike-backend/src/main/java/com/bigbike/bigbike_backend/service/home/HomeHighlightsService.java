@@ -8,6 +8,7 @@ import com.bigbike.bigbike_backend.persistence.entity.home.HomeHighlightEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.home.HomeHighlightJpaRepository;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
+import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import java.time.Instant;
 import java.util.List;
@@ -26,6 +27,7 @@ public class HomeHighlightsService {
     private final ProductJpaRepository productRepo;
     private final WebRevalidationService webRevalidationService;
     private final AuditLogWriter auditLogWriter;
+    private final AuditLogFactory auditLogFactory;
 
     @Transactional(readOnly = true)
     public List<HomeHighlightItemDto> listHighlights(String lang) {
@@ -88,15 +90,8 @@ public class HomeHighlightsService {
     }
 
     private void auditLog(UUID adminId, String before, String after) {
-        AuditLogEntity log = new AuditLogEntity();
-        log.setActorType("ADMIN");
-        log.setActorId(adminId);
-        log.setAction("HOME_HIGHLIGHTS_SET");
-        log.setResourceType("HOME_HIGHLIGHT");
-        log.setBeforeData(before);
-        log.setAfterData(after);
-        log.setCreatedAt(Instant.now());
-        auditLogWriter.save(log);
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "HOME_HIGHLIGHTS_SET", "HOME_HIGHLIGHT", null, before, after));
     }
 
     private static String highlightsSnapshot(List<HomeHighlightEntity> entities) {

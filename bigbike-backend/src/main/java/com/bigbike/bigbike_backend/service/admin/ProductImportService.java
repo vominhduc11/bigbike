@@ -20,10 +20,13 @@ import com.bigbike.bigbike_backend.api.error.ApiException;
 import com.bigbike.bigbike_backend.api.error.MutationNotImplementedException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
+import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.ProductHighlight;
 import com.bigbike.bigbike_backend.domain.catalog.ProductHighlights;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.domain.catalog.VideoAsset;
 import com.bigbike.bigbike_backend.migration.wordpress.normalizer.ProductSlugGenerator;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
@@ -100,7 +103,7 @@ public class ProductImportService {
     private final CategoryJpaRepository categoryJpaRepository;
     private final BrandJpaRepository brandJpaRepository;
     private final CatalogRequestValidator catalogRequestValidator;
-    private final AdminCatalogMutationService adminCatalogMutationService;
+    private final ProductMutationService productMutationService;
     private final Validator validator;
 
     public ProductImportService(
@@ -109,7 +112,7 @@ public class ProductImportService {
             ObjectProvider<CategoryJpaRepository> categoryJpaRepositoryProvider,
             ObjectProvider<BrandJpaRepository> brandJpaRepositoryProvider,
             CatalogRequestValidator catalogRequestValidator,
-            AdminCatalogMutationService adminCatalogMutationService,
+            ProductMutationService productMutationService,
             Validator validator
     ) {
         this.productJpaRepository = productJpaRepositoryProvider.getIfAvailable();
@@ -117,7 +120,7 @@ public class ProductImportService {
         this.categoryJpaRepository = categoryJpaRepositoryProvider.getIfAvailable();
         this.brandJpaRepository = brandJpaRepositoryProvider.getIfAvailable();
         this.catalogRequestValidator = catalogRequestValidator;
-        this.adminCatalogMutationService = adminCatalogMutationService;
+        this.productMutationService = productMutationService;
         this.validator = validator;
     }
 
@@ -227,8 +230,8 @@ public class ProductImportService {
 
         try {
             Product saved = isCreate
-                    ? adminCatalogMutationService.createProduct(request, adminId)
-                    : adminCatalogMutationService.updateProduct(existing.getId(), request, adminId);
+                    ? productMutationService.createProduct(request, adminId)
+                    : productMutationService.updateProduct(existing.getId(), request, adminId);
             String status = warnings.isEmpty() ? "OK" : "WARNING";
             return new ImportRowResult(row.rowNumber, row.rowKey, saved.id(), request.getName(),
                     isCreate ? "CREATE" : "UPDATE", status, List.of(), warnings,
@@ -482,9 +485,9 @@ public class ProductImportService {
         if (en.getDescription() == null) en.setDescription(existing.getDescriptionEn());
         if (en.getSizeGuide() == null) en.setSizeGuide(existing.getSizeGuideEn());
         if (en.getSuitabilityAdvisory() == null) en.setSuitabilityAdvisory(existing.getSuitabilityAdvisoryEn());
-        if (en.getSpecificationsHtml() == null) en.setSpecificationsHtml(existing.getSpecificationsHtmlEn());
-        if (en.getSpecStatsHtml() == null) en.setSpecStatsHtml(existing.getSpecStatsHtmlEn());
-        if (en.getTrustBadgesHtml() == null) en.setTrustBadgesHtml(existing.getTrustBadgesHtmlEn());
+        if (en.getSpecifications() == null) en.setSpecifications(existing.getSpecificationsEn());
+        if (en.getSpecStats() == null) en.setSpecStats(existing.getSpecStatsEn());
+        if (en.getTrustBadges() == null) en.setTrustBadges(existing.getTrustBadgesEn());
         if (en.getQuickAnswerSummary() == null) en.setQuickAnswerSummary(existing.getQuickAnswerSummaryEn());
         if (en.getSeoTitle() == null) en.setSeoTitle(existing.getSeoTitleEn());
         if (en.getSeoDescription() == null) en.setSeoDescription(existing.getSeoDescriptionEn());
@@ -811,12 +814,12 @@ public class ProductImportService {
         // here behaves exactly like an omitted key (nothing gets touched on update).
         r.setShortDescription(new ProductImportRow.ShortDescriptionField(
                 p.getShortDescription(), p.getShortDescriptionEn()));
-        r.setSpecificationsHtml(new ProductImportRow.SpecificationsHtmlField(
-                p.getSpecificationsHtml(), p.getSpecificationsHtmlEn()));
-        r.setSpecStatsHtml(new ProductImportRow.SpecStatsHtmlField(
-                p.getSpecStatsHtml(), p.getSpecStatsHtmlEn()));
-        r.setTrustBadgesHtml(new ProductImportRow.TrustBadgesHtmlField(
-                p.getTrustBadgesHtml(), p.getTrustBadgesHtmlEn()));
+        r.setSpecifications(new ProductImportRow.SpecificationsField(
+                p.getSpecifications(), p.getSpecificationsEn()));
+        r.setSpecStats(new ProductImportRow.SpecStatsField(
+                p.getSpecStats(), p.getSpecStatsEn()));
+        r.setTrustBadges(new ProductImportRow.TrustBadgesField(
+                p.getTrustBadges(), p.getTrustBadgesEn()));
         r.setQuickAnswerSummary(new ProductImportRow.QuickAnswerSummaryField(
                 p.getQuickAnswerSummary(), p.getQuickAnswerSummaryEn()));
         r.setOriginBrandCountry(new ProductImportRow.OriginBrandCountryField(
@@ -844,17 +847,32 @@ public class ProductImportService {
         }
 
         if (notEmpty(p.getGallery())) {
-            r.setGallery(p.getGallery().stream().map(g -> GalleryImageRequest.builder()
-                    .mediaType(g.getMediaType()).videoUrl(g.getVideoUrl()).videoProvider(g.getVideoProvider())
-                    .url(g.getImageUrl()).alt(g.getImageAlt())
-                    .width(g.getImageWidth()).height(g.getImageHeight()).mimeType(g.getImageMimeType())
-                    .sortOrder(g.getSortOrder()).build()).toList());
+            List<GalleryMedia> gallery = p.getGallery();
+            List<GalleryImageRequest> galleryRows = new ArrayList<>();
+            for (int i = 0; i < gallery.size(); i++) {
+                GalleryMedia g = gallery.get(i);
+                ImageAsset img = g.image();
+                galleryRows.add(GalleryImageRequest.builder()
+                        .mediaType(g.mediaType()).videoUrl(g.videoUrl()).videoProvider(g.videoProvider())
+                        .url(img != null ? img.url() : null).alt(img != null ? img.alt() : null)
+                        .width(img != null ? img.width() : null).height(img != null ? img.height() : null)
+                        .mimeType(img != null ? img.mimeType() : null)
+                        .sortOrder(i).build());
+            }
+            r.setGallery(galleryRows);
         }
         if (notEmpty(p.getVideos())) {
-            r.setVideos(p.getVideos().stream().map(v -> VideoRequest.builder()
-                    .url(v.getVideoUrl()).title(v.getTitle()).provider(v.getProvider())
-                    .description(v.getDescription()).thumbnailUrl(v.getThumbnailUrl())
-                    .sortOrder(v.getSortOrder()).build()).toList());
+            List<VideoAsset> videos = p.getVideos();
+            List<VideoRequest> videoRows = new ArrayList<>();
+            for (int i = 0; i < videos.size(); i++) {
+                VideoAsset v = videos.get(i);
+                videoRows.add(VideoRequest.builder()
+                        .url(v.url()).title(v.title()).provider(v.provider())
+                        .description(v.description())
+                        .thumbnailUrl(v.thumbnail() != null ? v.thumbnail().url() : null)
+                        .sortOrder(i).build());
+            }
+            r.setVideos(videoRows);
         }
         if (notEmpty(p.getFaqs())) {
             r.setFaqs(p.getFaqs().stream().map(f -> FaqRequest.builder()

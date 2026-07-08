@@ -4,9 +4,10 @@ import com.bigbike.bigbike_backend.api.admin.dto.media.MediaFolderResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.media.UpsertMediaFolderRequest;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
-import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
+import com.bigbike.bigbike_backend.mapper.MediaFolderMapper;
 import com.bigbike.bigbike_backend.persistence.entity.media.MediaFolderEntity;
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaFolderJpaRepository;
+import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import java.text.Normalizer;
 import java.time.Instant;
@@ -27,11 +28,13 @@ public class AdminMediaFolderService {
     private final MediaFolderJpaRepository folderRepo;
     private final JdbcTemplate jdbc;
     private final AuditLogWriter auditLogWriter;
+    private final MediaFolderMapper mediaFolderMapper;
+    private final AuditLogFactory auditLogFactory;
 
     public List<MediaFolderResponse> listAll() {
         Map<UUID, Long> counts = mediaCountsByFolder();
         return folderRepo.findAll().stream()
-                .map(f -> toResponse(f, counts.getOrDefault(f.getId(), 0L)))
+                .map(f -> mediaFolderMapper.toResponse(f, counts.getOrDefault(f.getId(), 0L)))
                 .sorted((a, b) -> a.name().compareToIgnoreCase(b.name()))
                 .toList();
     }
@@ -61,8 +64,9 @@ public class AdminMediaFolderService {
             // Concurrent insert with same slug raced past our existsBySlug check.
             throw new ConflictException("Folder with slug '" + f.getSlug() + "' already exists.");
         }
-        auditLog("MEDIA_FOLDER_CREATED", adminId, saved.getId(), null, folderSnapshot(saved));
-        return toResponse(saved, 0);
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "MEDIA_FOLDER_CREATED", "MEDIA_FOLDER", saved.getId(), null, folderSnapshot(saved)));
+        return mediaFolderMapper.toResponse(saved, 0);
     }
 
     @Transactional
@@ -81,9 +85,10 @@ public class AdminMediaFolderService {
         f.setDescription(req.description());
         f.setUpdatedAt(Instant.now());
         MediaFolderEntity saved = folderRepo.save(f);
-        auditLog("MEDIA_FOLDER_UPDATED", adminId, id, before, folderSnapshot(saved));
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "MEDIA_FOLDER_UPDATED", "MEDIA_FOLDER", id, before, folderSnapshot(saved)));
         long count = mediaCountsByFolder().getOrDefault(id, 0L);
-        return toResponse(saved, count);
+        return mediaFolderMapper.toResponse(saved, count);
     }
 
     @Transactional
@@ -93,20 +98,8 @@ public class AdminMediaFolderService {
         String before = folderSnapshot(f);
         // ON DELETE SET NULL — media keep existing, folder_id becomes NULL
         folderRepo.delete(f);
-        auditLog("MEDIA_FOLDER_DELETED", adminId, id, before, null);
-    }
-
-    private void auditLog(String action, UUID adminId, UUID folderId, String before, String after) {
-        AuditLogEntity log = new AuditLogEntity();
-        log.setActorType("ADMIN");
-        log.setActorId(adminId);
-        log.setAction(action);
-        log.setResourceType("MEDIA_FOLDER");
-        log.setResourceId(folderId);
-        log.setBeforeData(before);
-        log.setAfterData(after);
-        log.setCreatedAt(Instant.now());
-        auditLogWriter.save(log);
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", adminId, "MEDIA_FOLDER_DELETED", "MEDIA_FOLDER", id, before, null));
     }
 
     private static String folderSnapshot(MediaFolderEntity f) {
@@ -125,11 +118,6 @@ public class AdminMediaFolderService {
                 "SELECT folder_id, COUNT(*) FROM media WHERE folder_id IS NOT NULL AND status <> 'DELETED' GROUP BY folder_id",
                 rs -> { result.put((UUID) rs.getObject(1), rs.getLong(2)); });
         return result;
-    }
-
-    private MediaFolderResponse toResponse(MediaFolderEntity f, long count) {
-        return new MediaFolderResponse(f.getId(), f.getName(), f.getSlug(), f.getDescription(),
-                count, f.getCreatedAt(), f.getUpdatedAt());
     }
 
     /** ASCII-safe slug. Strips Vietnamese diacritics and non-alphanumeric chars. */

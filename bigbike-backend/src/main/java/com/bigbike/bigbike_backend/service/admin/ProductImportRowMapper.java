@@ -132,30 +132,30 @@ final class ProductImportRowMapper {
                 hasEnglish = true;
             }
         }
-        if (row.getSpecificationsHtml() != null) {
-            if (row.getSpecificationsHtml().getSpecificationsHtmlVI() != null) {
-                request.setSpecificationsHtml(row.getSpecificationsHtml().getSpecificationsHtmlVI());
+        if (row.getSpecifications() != null) {
+            if (row.getSpecifications().getSpecificationsVI() != null) {
+                request.setSpecifications(row.getSpecifications().getSpecificationsVI());
             }
-            if (row.getSpecificationsHtml().getSpecificationsHtmlEN() != null) {
-                en.setSpecificationsHtml(row.getSpecificationsHtml().getSpecificationsHtmlEN());
+            if (row.getSpecifications().getSpecificationsEN() != null) {
+                en.setSpecifications(row.getSpecifications().getSpecificationsEN());
                 hasEnglish = true;
             }
         }
-        if (row.getSpecStatsHtml() != null) {
-            if (row.getSpecStatsHtml().getSpecStatsHtmlVI() != null) {
-                request.setSpecStatsHtml(row.getSpecStatsHtml().getSpecStatsHtmlVI());
+        if (row.getSpecStats() != null) {
+            if (row.getSpecStats().getSpecStatsVI() != null) {
+                request.setSpecStats(row.getSpecStats().getSpecStatsVI());
             }
-            if (row.getSpecStatsHtml().getSpecStatsHtmlEN() != null) {
-                en.setSpecStatsHtml(row.getSpecStatsHtml().getSpecStatsHtmlEN());
+            if (row.getSpecStats().getSpecStatsEN() != null) {
+                en.setSpecStats(row.getSpecStats().getSpecStatsEN());
                 hasEnglish = true;
             }
         }
-        if (row.getTrustBadgesHtml() != null) {
-            if (row.getTrustBadgesHtml().getTrustBadgesHtmlVI() != null) {
-                request.setTrustBadgesHtml(row.getTrustBadgesHtml().getTrustBadgesHtmlVI());
+        if (row.getTrustBadges() != null) {
+            if (row.getTrustBadges().getTrustBadgesVI() != null) {
+                request.setTrustBadges(row.getTrustBadges().getTrustBadgesVI());
             }
-            if (row.getTrustBadgesHtml().getTrustBadgesHtmlEN() != null) {
-                en.setTrustBadgesHtml(row.getTrustBadgesHtml().getTrustBadgesHtmlEN());
+            if (row.getTrustBadges().getTrustBadgesEN() != null) {
+                en.setTrustBadges(row.getTrustBadges().getTrustBadgesEN());
                 hasEnglish = true;
             }
         }

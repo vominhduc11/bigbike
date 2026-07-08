@@ -22,7 +22,7 @@ import java.util.List;
  * Jackson uses the "type" discriminator for polymorphic JSON deserialization.
  * Bean Validation constraints on each subtype enforce required fields.
  */
-@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonIgnoreProperties(ignoreUnknown = false)
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
         property = "type",
