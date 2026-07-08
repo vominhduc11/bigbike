@@ -7,15 +7,12 @@ import {
 } from "@/lib/api/public-api";
 import { getGuideLayout } from "@/lib/content/static-pages";
 import {
-  toArticleListPath,
   toArticlePath,
   toBrandListPath,
   toBrandPath,
   toCanonicalUrl,
   toCategoryPath,
   toHomePath,
-  toPagePath,
-  toProductListPath,
   toProductPath,
 } from "@/lib/utils/routes";
 

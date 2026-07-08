@@ -11,7 +11,6 @@ import {
   SkeletonRoot,
   SkelBlock,
   SkelButton,
-  SkelChip,
   SkelCircle,
   SkelText,
   SkelTitle,

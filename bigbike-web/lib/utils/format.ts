@@ -167,20 +167,6 @@ export function zaloHref(value: string): string {
   return digits ? `https://zalo.me/${digits}` : value;
 }
 
- function paymentMethodLabel(method: string | null | undefined): string {
-  const code = (method ?? "").trim().toUpperCase();
-  switch (code) {
-    case "COD":
-      return "Thanh toán khi nhận hàng (COD)";
-    case "BACS":
-      return "Chuyển khoản";
-    case "":
-      return "—";
-    default:
-      return code;
-  }
-}
-
 type TFn = (key: string) => string;
 
 /** Locale-aware variant of stockStateLabel. Pass t from useTranslations("Product"). */

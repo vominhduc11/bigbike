@@ -146,7 +146,6 @@ export function WpCartClient() {
 
   const hasItems = cart.items.length > 0;
   const hasUnavailable = cart.items.some((i) => !i.available);
-  const itemCount = cart.items.reduce((sum, i) => sum + i.quantity, 0);
 
   if (!hasItems) {
     return (

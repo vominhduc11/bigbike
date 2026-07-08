@@ -29,9 +29,3 @@ export function buildPublicMenuTree(items: PublicMenuItem[]): PublicMenuTreeNode
   sortRecursive(roots);
   return roots;
 }
-
- function flattenPublicMenuTree(
-  nodes: PublicMenuTreeNode[],
-): PublicMenuTreeNode[] {
-  return nodes.flatMap((node) => [node, ...flattenPublicMenuTree(node.children)]);
-}

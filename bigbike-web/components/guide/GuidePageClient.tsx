@@ -10,7 +10,7 @@ import type { LucideIcon } from "lucide-react";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import type { WpStaticSidebarItem } from "@/components/wp/WpStaticSidebar";
 import { WpStaticSidebarLayout } from "@/components/wp/WpStaticSidebarLayout";
-import { getGuideLayout, getStaticPage, type StaticGuideEntry, type StaticGuideLayout } from "@/lib/content/static-pages";
+import { getGuideLayout, getStaticPage, type LocalizedStaticPage, type StaticGuideEntry, type StaticGuideLayout } from "@/lib/content/static-pages";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toHomePath } from "@/lib/utils/routes";
@@ -32,7 +32,7 @@ type GuidePageClientProps = {
   subSegments?: string[];
   initialLayout: StaticGuideLayout;
   initialEntries: StaticGuideEntry[];
-  initialPage: any;
+  initialPage: LocalizedStaticPage;
 };
 
 export function buildEntryPath(segment: string): string {

@@ -52,7 +52,8 @@ export function ClientIntlProvider({
   const [enCache, setEnCache] = useState<IntlMessages | null>(null);
 
   if (typeof globalThis !== "undefined") {
-    (globalThis as any).__NEXT_LOCALE__ = locale;
+    // eslint-disable-next-line react-hooks/immutability -- setting global locale for client-side routing parity during render
+    globalThis.__NEXT_LOCALE__ = locale;
   }
 
   const applyLocale = useCallback(

@@ -82,6 +82,7 @@ export function SearchToggle({
 
   useEffect(() => {
     if (!open || debouncedQuery.length < 1) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clear suggestions state synchronously on empty query or closed panel
       setSuggestions([]);
       setSuggestLoading(false);
       return;

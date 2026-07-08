@@ -79,7 +79,9 @@ export function ProductGallery({
   // đang bị destroy và đọc `.el.classList` của `undefined` → văng
   // "Cannot read properties of undefined (reading 'classList')" khi bấm chọn màu.
   const prevVariantKeyRef = useRef(currentVariantKey);
+  // eslint-disable-next-line react-hooks/refs -- intentional ref read/write during render to sync key changes and prevent swiper crash
   if (prevVariantKeyRef.current !== currentVariantKey) {
+    // eslint-disable-next-line react-hooks/refs -- intentional ref write during render to sync key changes and prevent swiper crash
     prevVariantKeyRef.current = currentVariantKey;
     if (thumbsSwiper) setThumbsSwiper(null);
   }
@@ -112,6 +114,7 @@ export function ProductGallery({
   // Variant switch swaps the whole image set; both carousels are keyed by
   // variant so they remount to the first slide — just resync the highlight.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resync active index synchronously on variant key change
     setActiveIndex(0);
   }, [currentVariantKey]);
 

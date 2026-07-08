@@ -21,6 +21,7 @@ export function useRecentSearches() {
   const [searches, setSearches] = useState<string[]>([]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load searches from localStorage after mount to prevent hydration mismatch
     setSearches(loadFromStorage());
   }, []);
 

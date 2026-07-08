@@ -9,7 +9,6 @@ import { formatVnd } from "@/lib/utils/format";
 import { toCartPath, toProductListPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 import {
-  CheckoutStepTitle,
   CheckoutConfirmRow,
   CodPaymentBlock,
   ZaloSupportBlock,

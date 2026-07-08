@@ -3,7 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { DEFAULT_LOCALE } from "@/i18n/locale";
-import { fetchPublicSettings } from "@/lib/api/client-api";
+import { fetchPublicSettings, type PublicSetting } from "@/lib/api/client-api";
 import { queryKeys } from "@/lib/query/keys";
 import { getStaticPage } from "@/lib/content/static-pages";
 import { sanitizeRichHtml } from "@/lib/utils/html";
@@ -29,7 +29,7 @@ type PolicyPageClientProps = {
     seoDescription: string | null;
     seoCanonicalUrl: string | null;
   };
-  initialSettings: any[];
+  initialSettings: PublicSetting[];
 };
 
 function buildStaticSidebarItems(locale: string, currentSlug: string): WpStaticSidebarItem[] {

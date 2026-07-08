@@ -82,6 +82,7 @@ export function HomeVideoCarousel({ videos, surface = "dark", compact = false }:
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync viewport state on mount and resize
     syncViewportState();
 
     const handleResize = () => {

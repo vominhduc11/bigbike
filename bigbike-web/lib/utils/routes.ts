@@ -1,4 +1,4 @@
-import { resolveLocale, type Locale } from "@/i18n/locale";
+import { type Locale } from "@/i18n/locale";
 
 const SITE_ORIGIN =
   process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
@@ -17,7 +17,7 @@ if (
 
 function getActiveLocale(): Locale {
   if (typeof window !== "undefined") {
-    return (globalThis as any).__NEXT_LOCALE__ || "vi";
+    return globalThis.__NEXT_LOCALE__ || "vi";
   }
   return "vi";
 }

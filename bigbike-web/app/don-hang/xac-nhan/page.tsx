@@ -5,14 +5,11 @@ import { getOrderLookup, listPublicSettings } from "@/lib/api/public-api";
 import { PurchaseEvent } from "@/components/analytics/PurchaseEvent";
 import type { OrderAddress, OrderDetail } from "@/lib/contracts/commerce";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
-import { WpCheckoutPageHeading } from "@/components/wp/WpCheckoutPageHeading";
-import { Tr } from "@/components/i18n/Tr";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { sectionHeading } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
 import { formatAddress, formatVnd } from "@/lib/utils/format";
 import { resolveBankTransfer } from "@/lib/utils/orders";
-import { LocalDate } from "@/components/i18n/LocalDate";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("OrderConfirm");
@@ -69,7 +66,7 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
             <NextSteps phone={findAddress(order.addresses, "BILLING")?.phone ?? "—"} />
             <BankTransferInfo order={order} settings={settings} t={t} />
             <OrderDetails order={order} t={t} />
-            <CustomerDetails order={order} t={t} />
+            <CustomerDetails order={order} />
             
             {/* Hotline Bar */}
             <div className="bb-oc-hotline-bar">
@@ -366,10 +363,8 @@ function BankTransferInfo({
 // Bảng thông tin nhận hàng của khách
 function CustomerDetails({
   order,
-  t,
 }: {
   order: OrderDetail;
-  t: OrderConfirmTranslations;
 }) {
   const billingAddress = findAddress(order.addresses, "BILLING");
   if (!billingAddress) return null;

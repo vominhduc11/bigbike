@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Check, Ruler } from "lucide-react";
+import { Ruler } from "lucide-react";
 import { telHref } from "@/lib/utils/format";
 
 const HOTLINE = "0906902404";
