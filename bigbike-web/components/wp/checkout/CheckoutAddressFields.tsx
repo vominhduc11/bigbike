@@ -107,7 +107,7 @@ export function CheckoutAddressFields({
           value={vnValue}
           onChange={onVnChange}
           required
-          labelClassName="block text-[15px] font-bold text-foreground mb-1.5"
+          labelClassName="block text-ui-15 font-bold text-foreground mb-1.5"
         />
         {(errors.province || errors.ward) && (
           <FieldError message={errors.province?.message ?? errors.ward?.message} />

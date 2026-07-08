@@ -32,7 +32,7 @@ export function CheckoutSummary({
                   style={{ backgroundImage: `url("${item.image.url}")` }}
                 />
               ) : (
-                <svg viewBox="0 0 24 24" className="w-[36px] h-[36px] fill-gray-300">
+                <svg viewBox="0 0 24 24" className="w-[36px] h-[36px] fill-border">
                   <path d="M21 6.5C21 4.01 18.99 2 16.5 2h-9C5.01 2 3 4.01 3 6.5v11C3 19.99 5.01 22 7.5 22h9c2.49 0 4.5-2.01 4.5-4.5v-11z" />
                 </svg>
               )}
@@ -64,7 +64,7 @@ export function CheckoutSummary({
 
         <div className="price-row">
           <span>Phí vận chuyển</span>
-          <span className="text-emerald-700 font-bold uppercase">{t("shippingFree")}</span>
+          <span className="text-state-success-text font-bold uppercase">{t("shippingFree")}</span>
         </div>
 
         <div className="price-row total">

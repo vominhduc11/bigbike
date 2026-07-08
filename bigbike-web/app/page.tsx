@@ -367,7 +367,7 @@ export default async function HomePage() {
 
       {/* ===== 8. Videos slide ===== */}
       {homeVideos.length > 0 && (
-        <section className="relative overflow-hidden bg-[#111] py-[90px] max-md:py-[60px]">
+        <section className="relative overflow-hidden bg-surface-dark py-[90px] max-md:py-[60px]">
           <div
             aria-hidden
             className="absolute inset-0 bg-cover bg-center bg-no-repeat [background-image:url('/wp/video-bg.jpg')] [filter:brightness(1.2)]"

@@ -161,7 +161,7 @@ export function WpCheckoutClient() {
           {/* Địa chỉ giao hàng khác (nếu cần) */}
           <div className="bb-co-card">
             <div className="form-group mb-0">
-              <label className="inline-flex! cursor-pointer items-center gap-2 font-bold select-none text-[15px]">
+              <label className="inline-flex! cursor-pointer items-center gap-2 font-bold select-none text-ui-15">
                 <Checkbox
                   checked={shipToDifferent}
                   onCheckedChange={(checked) => setShipToDifferent(checked === true)}

@@ -194,7 +194,7 @@ export function WpAccountNav({
                       type="button"
                       onClick={handleLogout}
                       disabled={loggingOut}
-                      className="cursor-pointer border-0 bg-transparent p-0 text-[14px] font-semibold text-black"
+                      className="cursor-pointer border-0 bg-transparent p-0 text-ui-14 font-semibold text-black"
                     >
                       {loggingOut ? t("loggingOut") : t("logout")}
                     </button>

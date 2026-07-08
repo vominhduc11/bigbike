@@ -58,7 +58,7 @@ function EntryIcon({ icon, label }: { icon: string | null; label: string }) {
     return <img src={src} alt={label} className="mb-3 h-10 w-10 object-contain" />;
   }
   const Lucide = ICONS[icon];
-  return Lucide ? <Lucide size={32} className="mb-3 text-neutral-900" aria-hidden /> : null;
+  return Lucide ? <Lucide size={32} className="mb-3 text-foreground" aria-hidden /> : null;
 }
 
 export function GuidePageClient({
@@ -94,21 +94,21 @@ export function GuidePageClient({
       >
         <WpStaticSidebarLayout sidebarItems={sidebarItems} sidebarEmptyLabel={t("emptyMenu")}>
           {entries.length === 0 ? (
-            <p className="text-ui-16 max-md:text-ui-14 text-neutral-500">{t("emptyMenu")}</p>
+            <p className="text-ui-16 max-md:text-ui-14 text-muted-foreground">{t("emptyMenu")}</p>
           ) : (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:gap-6">
               {entries.map((entry) => (
                 <Link
                   key={entry.pathSegment}
                   href={buildEntryPath(entry.pathSegment)}
-                  className="group block border border-neutral-200 bg-white p-6 no-underline transition-colors hover:border-neutral-900"
+                  className="group block border border-border bg-white p-6 no-underline transition-colors hover:border-foreground"
                 >
                   <EntryIcon icon={entry.icon} label={entry.title} />
-                  <h2 className="m-0 mb-2 text-h4 font-semibold uppercase tracking-wide text-neutral-900">
+                  <h2 className="m-0 mb-2 text-h4 font-semibold uppercase tracking-wide text-foreground">
                     {entry.title}
                   </h2>
                   {entry.description ? (
-                    <p className="m-0 text-ui-16 max-md:text-ui-14 leading-relaxed text-neutral-500">{entry.description}</p>
+                    <p className="m-0 text-ui-16 max-md:text-ui-14 leading-relaxed text-muted-foreground">{entry.description}</p>
                   ) : null}
                 </Link>
               ))}

@@ -54,7 +54,7 @@ export function CheckoutConfirmRow({
         onCheckedChange={(c) => onCheckedChange(c === true)}
         className="mt-1 h-5 w-5 shrink-0 border-black data-[state=checked]:bg-black data-[state=checked]:text-white rounded-none"
       />
-      <label htmlFor="confirm-cb" className="select-none text-[15px] leading-relaxed text-foreground cursor-pointer">
+      <label htmlFor="confirm-cb" className="select-none text-ui-15 leading-relaxed text-foreground cursor-pointer">
         Shop BigBike sẽ gọi điện xác nhận đơn hàng trước khi giao. Đơn hàng chỉ được xử lý sau khi xác nhận qua điện thoại. <strong className="text-black">Không trừ tiền trước khi xác nhận.</strong>
       </label>
     </div>
@@ -87,7 +87,7 @@ export function TrustMini() {
 export function ZaloSupportBlock() {
   return (
     <div className="bb-co-zalo-block">
-      <p className="text-[15px] text-foreground mb-2.5 font-semibold">Cần hỗ trợ trước khi đặt?</p>
+      <p className="text-ui-15 text-foreground mb-2.5 font-semibold">Cần hỗ trợ trước khi đặt?</p>
       <a
         href="https://zalo.me/0764640679"
         target="_blank"
@@ -96,7 +96,7 @@ export function ZaloSupportBlock() {
       >
         Chat Zalo ngay
       </a>
-      <p className="text-[13px] text-muted-foreground mt-2">Mrs. Thư · 0764640679</p>
+      <p className="text-ui-13 text-muted-foreground mt-2">Mrs. Thư · 0764640679</p>
     </div>
   );
 }

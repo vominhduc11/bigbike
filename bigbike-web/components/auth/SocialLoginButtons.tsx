@@ -44,14 +44,14 @@ export function SocialLoginButtons({ returnTo }: { returnTo: string }) {
     <div className="mt-6 flex flex-col gap-3">
       <a
         href={oauthAuthorizeUrl("facebook", returnTo)}
-        className={`${baseClass} bg-[#1877F2]! text-white! hover:bg-[#0f63d6]!`}
+        className={`${baseClass} bg-blue! text-white! hover:bg-blue/90!`}
       >
         <FacebookIcon />
         <span>{t("facebook")}</span>
       </a>
       <a
         href={oauthAuthorizeUrl("google", returnTo)}
-        className={`${baseClass} border border-[#cecece] bg-white! text-black! hover:border-black hover:bg-black/[0.04]!`}
+        className={`${baseClass} border border-border-default bg-white! text-black! hover:border-black hover:bg-black/[0.04]!`}
       >
         <GoogleIcon />
         <span>{t("google")}</span>

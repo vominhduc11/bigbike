@@ -88,7 +88,7 @@ function SocialSvgIcon({ name, label }: { name: keyof typeof BRAND_ICON_PATH; la
 }
 
 const titleStyle: React.CSSProperties = {
-  color: "#ff0c09",
+  color: "var(--bb-action-primary)",
   fontWeight: 500,
   fontSize: "1.143rem",
   textTransform: "uppercase",

@@ -190,7 +190,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
           >
             <ChevronRight aria-hidden="true" className={ARROW_ICON} strokeWidth={2} />
           </button>
-          <div className="absolute left-1/2 bottom-[70px] z-10 flex items-end gap-0 w-[min(370px,calc(100%-48px))] [transform:translateX(-50%)] pb-2.5 border-b border-b-[#707070] text-white font-body text-ui-16 leading-[1.2] text-left max-md:hidden">
+          <div className="absolute left-1/2 bottom-[70px] z-10 flex items-end gap-0 w-[min(370px,calc(100%-48px))] [transform:translateX(-50%)] pb-2.5 border-b border-b-muted-foreground text-white font-body text-ui-16 leading-[1.2] text-left max-md:hidden">
             <span>{activeIndex + 1}/{count}</span>
           </div>
         </>

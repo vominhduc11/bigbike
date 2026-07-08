@@ -44,7 +44,7 @@ const chatTitlePill =
 // hover:!text keeps the row text #333 — overrides the global `a:hover` brand-red rule
 // so the only hover change is the #f2f2f2 background, exactly like WP.
 const chatItem =
-  "flex items-center gap-[5px] px-4 py-2 no-underline text-[var(--bb-chat-text)] ![transition:none] hover:!bg-[#f2f2f2] hover:!text-[var(--bb-chat-text)]";
+  "flex items-center gap-[5px] px-4 py-2 no-underline text-[var(--bb-chat-text)] ![transition:none] hover:!bg-muted hover:!text-[var(--bb-chat-text)]";
 // WP .sudovn-btn-social-item-icon img: 40×40px (svg or png both clamped to 40px)
 const chatItemIcon =
   "shrink-0 inline-flex [&_svg]:block [&_svg]:w-10 [&_svg]:h-10 [&_img]:block [&_img]:w-10 [&_img]:h-10";

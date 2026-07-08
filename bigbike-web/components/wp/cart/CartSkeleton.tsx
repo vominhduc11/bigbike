@@ -6,7 +6,7 @@ export function CartSkeleton({ label }: { label: string }) {
       <div className="col-md-8">
         <Skeleton className="mb-30 h-8 w-48" />
         {[0, 1, 2].map((i) => (
-          <div key={i} className="flex items-start gap-4 border-b border-[#cecece] py-[30px]">
+          <div key={i} className="flex items-start gap-4 border-b border-border-default py-[30px]">
             <Skeleton className="h-[110px] w-[110px] shrink-0" />
             <div className="flex-1 space-y-3 pt-1">
               <Skeleton className="h-4 w-3/4" />
