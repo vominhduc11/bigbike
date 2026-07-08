@@ -739,7 +739,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       {(() => {
                         const canonical = form.seoCanonicalUrl?.trim()
                         if (!canonical) {
-                          return <>https://bigbike.vn<span className="text-[#70757a]"> › {isArticle ? 'tin-tuc' : 'trang'} › {form.slug || 'duong-dan'}</span></>
+                          return <>{storefrontOrigin}<span className="text-[#70757a]"> › {isArticle ? 'tin-tuc' : 'trang'} › {form.slug || 'duong-dan'}</span></>
                         }
                         try {
                           const u = new URL(canonical)

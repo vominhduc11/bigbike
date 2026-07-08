@@ -1076,6 +1076,15 @@ export async function uploadMedia(file, altText = '', onProgress = null) {
 
 // Settings
 
+export async function fetchPublicSettings() {
+  try {
+    const payload = await requestJson('/settings/public', { skipAuth: true })
+    return Array.isArray(payload?.data) ? payload.data : []
+  } catch (error) {
+    throw normalizeError(error)
+  }
+}
+
 export async function fetchSettings() {
   try {
     const payload = await requestJson('/admin/settings', { query: { page: 1, size: 200 } })

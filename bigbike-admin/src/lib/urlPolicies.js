@@ -1,4 +1,4 @@
-const APP_BASE_URL = 'https://bigbike.vn'
+const APP_BASE_URL = import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn'
 const UNSAFE_SCHEME = /^(javascript|data|vbscript|file):/i
 const YOUTUBE_HOSTS = new Set([
   'youtube.com',

@@ -1,8 +1,8 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { StatePanel } from '../components/StatePanel'
-import { ApiClientError } from '../lib/adminApi'
+import { ApiClientError, fetchPublicSettings } from '../lib/adminApi'
 import { useAuth } from '../lib/auth'
 
 export function LoginScreen() {
@@ -14,6 +14,18 @@ export function LoginScreen() {
   const [error, setError] = useState('')
   const [canRetry, setCanRetry] = useState(false)
   const [showForgot, setShowForgot] = useState(false)
+  const [contactEmail, setContactEmail] = useState('admin@bigbike.vn')
+
+  useEffect(() => {
+    fetchPublicSettings()
+      .then((settings) => {
+        const found = settings.find((s) => s.settingKey === 'contact_email')
+        if (found?.settingValue) {
+          setContactEmail(found.settingValue)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const emailId = useId()
   const passwordId = useId()
@@ -173,8 +185,8 @@ export function LoginScreen() {
 
           <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--bb-border)', textAlign: 'center', fontSize: 12, color: 'var(--bb-text-muted)' }}>
             {t('auth.supportContact')}:{' '}
-            <a href="mailto:admin@bigbike.vn" style={{ fontWeight: 600, color: 'var(--bb-primary)' }}>
-              admin@bigbike.vn
+            <a href={`mailto:${contactEmail}`} style={{ fontWeight: 600, color: 'var(--bb-primary)' }}>
+              {contactEmail}
             </a>
           </div>
         </div>
