@@ -109,9 +109,6 @@ function MobileTrustLine({ product }: { product: Product }) {
   const locale = useLocale();
   const enTrustHtml = useLocalizedField<string>("trustBadgesHtml");
   const trustBadgesHtml = locale === "en" ? enTrustHtml ?? "" : product.trustBadgesHtml ?? "";
-  const trustItems = (product.trustBadges ?? [])
-    .map((b) => safeText(b.content, ""))
-    .filter(Boolean);
 
   if (trustBadgesHtml.trim()) {
     return (
@@ -119,18 +116,6 @@ function MobileTrustLine({ product }: { product: Product }) {
         className="md:hidden max-md:mt-4 max-md:mb-4 mb-11 bb-trust-badges-html"
         dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(trustBadgesHtml, { allowInlineStyles: true }) }}
       />
-    );
-  }
-  if (trustItems.length > 0) {
-    return (
-      <div className="md:hidden max-md:mt-4 max-md:mb-4 mb-11 flex flex-wrap items-center gap-x-4 gap-y-2 text-ui-14 max-md:text-ui-12 text-muted-foreground">
-        {trustItems.map((item, i) => (
-          <span key={`${item}-${i}`} className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 shrink-0 bg-brand" aria-hidden />
-            <span>{item}</span>
-          </span>
-        ))}
-      </div>
     );
   }
   return null;
@@ -166,23 +151,18 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   const hoursWeekday = pickSetting(activeSettings, ["opening_hours_weekday"]);
   const hoursWeekend = pickSetting(activeSettings, ["opening_hours_weekend"]);
   // Khối cam kết dưới nút mua hàng (V232) + dải tin cậy trên tên sản phẩm (V233) giờ quản theo
-  // TỪNG sản phẩm (product.commitments / product.trustBadges) — WpPurchaseSection tự đọc thẳng từ
-  // product, không còn lấy từ settings.
+  // TỪNG sản phẩm (product.commitments / product.trustBadgesHtml) — WpPurchaseSection tự đọc thẳng
+  // từ product, không còn lấy từ settings.
   const gallery = safeArray(product.gallery);
-  const descriptionBlocks = safeArray(product.descriptionBlocks) as DescriptionBlock[];
   // Canonical layout (PDP_CONTENT_GUIDE §0b): "Phù hợp với ai" (#7) và "Bảng size" (#8) là SECTION RIÊNG,
-  // thứ tự CỐ ĐỊNH ngay sau Ưu/Nhược điểm + Sản phẩm liên quan — KHÔNG để admin chèn lẫn giữa mô tả. Tách
-  // 2 loại khối này RA khỏi luồng mô tả; phần còn lại (chữ/feature/ảnh/video) là "Mô tả / Tính năng" (#4).
-  const suitabilityBlocks = descriptionBlocks.filter((b) => b.type === "suitability");
-  const sizeGuideBlocks = descriptionBlocks.filter((b) => b.type === "sizeGuide");
-  const descBlocks = descriptionBlocks.filter(
-    (b) => b.type !== "suitability" && b.type !== "sizeGuide",
-  );
-  const specs = safeArray(product.specifications);
-  // "Dán mã HTML" cho Thông số kỹ thuật (V255): khi có, web hiện HTML thay bảng dòng ("html thắng").
+  // thứ tự CỐ ĐỊNH ngay sau Ưu/Nhược điểm + Sản phẩm liên quan — KHÔNG để admin chèn lẫn giữa mô tả.
+  // Từ V327/V328, backend không còn trả 2 loại này bên trong descriptionBlocks — đọc thẳng field riêng.
+  const descBlocks = safeArray(product.descriptionBlocks) as DescriptionBlock[];
+  const suitabilitySection = product.suitabilitySection ?? null;
+  const sizeGuideSection = product.sizeGuideSection ?? null;
+  // "Dán mã HTML" cho Thông số kỹ thuật (V255) — HTML là nguồn render duy nhất.
   const specsHtml = product.specificationsHtml?.trim() ? product.specificationsHtml : "";
-  const specStats = safeArray(product.specStats);
-  // "Dán mã HTML" cho Ô số liệu nổi bật (V256): khi có, web render HTML thay lưới ("html thắng").
+  // "Dán mã HTML" cho Ô số liệu nổi bật (V256) — HTML là nguồn render duy nhất.
   const specStatsHtml = product.specStatsHtml?.trim() ? product.specStatsHtml : "";
   const faqs = safeArray(product.faqs);
   const videos = safeArray(product.videos);
@@ -219,15 +199,15 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   };
 
   // Mọi khối tự hiện khi CÓ nội dung (đã gỡ chức năng "Hiển thị trên web" — không còn bật/tắt từng phần).
-  const showSpecs = specs.length > 0 || Boolean(specsHtml);
+  const showSpecs = Boolean(specsHtml);
   const showFaqs = faqs.length > 0;
   const showVideos = videos.length > 0;
   const showReviews = !previewMode;
   const showProsCons = positiveNotes.length > 0 || negativeNotes.length > 0;
   const showRelated = related.length > 0;
   const showAccessories = accessories.length > 0;
-  const showSuitability = suitabilityBlocks.length > 0;
-  const showSizeGuide = sizeGuideBlocks.length > 0;
+  const showSuitability = Boolean(suitabilitySection?.html?.trim());
+  const showSizeGuide = Boolean(sizeGuideSection?.html?.trim());
 
   // Trust block "Mua tại BigBike.vn" (#12) — lưới Giá/Kho realtime + Cam kết (cùng nguồn
   // product.commitments với khối dưới nút mua) + footer liên hệ (xem product-view/ProductTrustCard).
@@ -328,7 +308,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
     bodyNodes.suitability = (
       <div key="suitability" id="pdp-suitability" className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}>
         <section>
-          <ProductSuitabilitySection blocks={suitabilityBlocks} />
+          <ProductSuitabilitySection section={suitabilitySection} />
         </section>
       </div>
     );
@@ -339,7 +319,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
     bodyNodes.sizeGuide = (
       <div key="sizeGuide" id="pdp-sizeguide" className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}>
         <section>
-          <ProductSizeGuideSection blocks={sizeGuideBlocks} />
+          <ProductSizeGuideSection section={sizeGuideSection} />
         </section>
       </div>
     );
@@ -352,7 +332,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
       <div key="specifications" id="pdp-specifications" className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}>
         <section>
           <PdpSectionHeading title={<Tr ns="Product" k="specifications" />} />
-          <ProductSpecsTable viSpecs={specs} viSpecsHtml={specsHtml} />
+          <ProductSpecsTable viSpecsHtml={specsHtml} />
         </section>
       </div>
     );
@@ -459,7 +439,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
 
         {/* #2 Specs Dashboard (V235) — tối đa 4 ô số liệu nổi bật ngay dưới khu vực mua hàng.
             "Đòn chốt" bán hàng. Khối ngoài tab → tự ẩn khi không có ô nào (không gate visibility). */}
-        <FeaturedSpecsBar stats={specStats} viStatsHtml={specStatsHtml} />
+        <FeaturedSpecsBar viStatsHtml={specStatsHtml} />
 
         {/* #3 Quick Answer (V300) — đoạn tóm tắt AIO 40–60 từ để Google/AI trích dẫn. Blockquote ngay
             sau Specs Dashboard, trước "Tính năng chi tiết". Tự ẩn khi rỗng, không gate visibility. */}

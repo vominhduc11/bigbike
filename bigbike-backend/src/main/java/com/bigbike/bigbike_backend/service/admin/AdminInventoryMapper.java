@@ -59,7 +59,10 @@ final class AdminInventoryMapper {
                 .toList();
 
         String aggregateState = computeAggregateState(variants);
-        boolean anyAvailable = variants.stream().anyMatch(ProductVariantEntity::isAvailable);
+        // Derived from the same aggregateState computation (stockState), not read independently
+        // from isAvailable — the two were kept in sync by convention but nothing enforced it,
+        // which is exactly how stockState/isAvailable drift (audit II-02) went undetected.
+        boolean anyAvailable = "IN_STOCK".equals(aggregateState);
         BigDecimal minPrice = variants.stream()
                 .map(v -> v.getRetailPrice())
                 .filter(Objects::nonNull)

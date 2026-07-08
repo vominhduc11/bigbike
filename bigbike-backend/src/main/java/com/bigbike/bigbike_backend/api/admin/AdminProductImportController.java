@@ -59,7 +59,7 @@ public class AdminProductImportController extends AdminControllerSupport {
 
     /**
      * Round-trip export: the current catalog serialized as a full-fidelity JSON array (the exact
-     * {@code UpsertProductRequest[]} shape the import consumes), for "download current catalog to
+     * {@code ProductImportRow[]} shape the import consumes), for "download current catalog to
      * edit and re-import." Deliberately separate from {@code GET /api/v1/admin/reports/products/export}
      * (CSV reporting overview, gated by {@code reports.export}) — this one is a catalog-authoring capability.
      */

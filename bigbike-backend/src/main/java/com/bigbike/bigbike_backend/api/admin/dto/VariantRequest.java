@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.api.admin.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 import lombok.Setter;
 import jakarta.validation.Valid;
@@ -28,6 +29,17 @@ public class VariantRequest {
 
     private BigDecimal retailPrice;
     private boolean retailPricePresent = false;
+
+    // Owner decision 2026-07-07: salePrice always shows in export, null-filled when the variant
+    // isn't on sale, instead of being dropped. CAUTION for hand-authored IMPORT files (unlike the
+    // bilingual VI/EN columns): this field is deserialized straight from JSON with no null-guard in
+    // between, so an explicit `"salePrice": null` DOES call setSalePrice(null) below and flips
+    // salePricePresent to true — on update that explicitly clears any existing sale price, whereas
+    // omitting the key entirely never calls the setter and leaves the existing price untouched. A
+    // downloaded-then-reimported file is still safe (the null only appears where the variant already
+    // has no sale price, so "clearing" it is a no-op) — but when hand-writing a new import row to
+    // update an existing variant without touching its sale price, omit the key, don't write null.
+    @JsonInclude(JsonInclude.Include.ALWAYS)
     private BigDecimal salePrice;
     private boolean salePricePresent = false;
 

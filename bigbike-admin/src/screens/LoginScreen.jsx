@@ -30,7 +30,7 @@ export function LoginScreen() {
       await login({ email: email.trim(), password })
     } catch (err) {
       if (err instanceof ApiClientError && err.status === 401) {
-        setError(t('auth.invalidCredentials'))
+        setError(err.code === 'ACCOUNT_LOCKED' ? t('auth.accountLocked') : t('auth.invalidCredentials'))
         setCanRetry(false)
       } else {
         // Lỗi mạng/máy chủ — cho phép thử lại tường minh

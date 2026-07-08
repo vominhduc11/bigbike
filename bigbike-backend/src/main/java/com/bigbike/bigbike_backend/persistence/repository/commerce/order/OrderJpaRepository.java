@@ -154,7 +154,7 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
             @Param("excludedStatuses") List<String> excludedStatuses,
             Pageable pageable);
 
-    // ── Dashboard: valid-order aggregates (excludes CANCELLED/FAILED/REFUNDED) ─
+    // ── Dashboard: valid-order aggregates (excludes CANCELLED/FAILED) ─────────
 
     @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM OrderEntity o " +
            "WHERE o.placedAt >= :from AND o.status NOT IN :excludedStatuses")

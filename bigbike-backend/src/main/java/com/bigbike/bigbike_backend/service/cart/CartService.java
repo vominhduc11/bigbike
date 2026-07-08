@@ -13,8 +13,8 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepo
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaRepository;
+import com.bigbike.bigbike_backend.service.pricing.VariantPricing;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -148,8 +148,8 @@ public class CartService {
             applyImageSnapshot(item, product, variant);
             item.setQuantity(req.quantity());
             item.setUnitPrice(unitPrice);
-            item.setRegularPrice(product.getRetailPrice());
-            item.setSalePrice(product.getSalePrice());
+            item.setRegularPrice(VariantPricing.regularPrice(product, variant));
+            item.setSalePrice(VariantPricing.salePrice(product, variant));
             item.setCreatedAt(Instant.now());
         }
         item.setUpdatedAt(Instant.now());
@@ -296,17 +296,8 @@ public class CartService {
         return cartRepo.save(cart);
     }
 
-    /**
-     * Cart unit price always comes from the parent product. Variant-level
-     * price columns exist in the schema for legacy reasons but are
-     * intentionally ignored — the storefront displays a single product price
-     * regardless of which variant the customer picks, and the cart must
-     * agree.
-     */
     private BigDecimal resolveUnitPrice(ProductEntity product, ProductVariantEntity variant) {
-        BigDecimal price = product.getSalePrice() != null
-                ? product.getSalePrice() : product.getRetailPrice();
-        return price.setScale(2, RoundingMode.HALF_UP);
+        return VariantPricing.resolveUnitPrice(product, variant);
     }
 
     private void applyImageSnapshot(CartItemEntity item, ProductEntity product, ProductVariantEntity variant) {

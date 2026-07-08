@@ -3,11 +3,19 @@ package com.bigbike.bigbike_backend.persistence.entity.catalog;
 import lombok.Getter;
 import lombok.Setter;
 import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
-import com.bigbike.bigbike_backend.domain.catalog.ProductTab;
+import com.bigbike.bigbike_backend.domain.catalog.ProductCommitment;
+import com.bigbike.bigbike_backend.domain.catalog.ProductFaq;
+import com.bigbike.bigbike_backend.domain.catalog.ProductHighlights;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.domain.catalog.SizeGuideSection;
+import com.bigbike.bigbike_backend.domain.catalog.SuitabilitySection;
 import com.bigbike.bigbike_backend.persistence.converter.DescriptionBlocksConverter;
-import com.bigbike.bigbike_backend.persistence.converter.ProductTabsConverter;
+import com.bigbike.bigbike_backend.persistence.converter.ProductCommitmentsConverter;
+import com.bigbike.bigbike_backend.persistence.converter.ProductFaqsConverter;
+import com.bigbike.bigbike_backend.persistence.converter.ProductHighlightsConverter;
+import com.bigbike.bigbike_backend.persistence.converter.SizeGuideSectionConverter;
+import com.bigbike.bigbike_backend.persistence.converter.SuitabilitySectionConverter;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -133,12 +141,6 @@ public class ProductEntity {
     @Column(name = "rating_count")
     private Integer ratingCount;
 
-    @Column(name = "promotion_content", columnDefinition = "text")
-    private String promotionContent;
-
-    @Column(name = "installation_guide", columnDefinition = "text")
-    private String installationGuide;
-
     // Dòng "Giao hàng" / "Đổi trả" của khối "Mua tại BigBike.vn" (V247). 1 ngôn ngữ; detail-only.
     @Column(name = "pdp_shipping_line", columnDefinition = "text")
     private String pdpShippingLine;
@@ -152,30 +154,24 @@ public class ProductEntity {
     @Column(name = "size_guide", columnDefinition = "text")
     private String sizeGuide;
 
-    // "Hiển thị trên web" (V245) — admin bật/tắt từng section PDP. Opaque JSON string {sectionKey: boolean};
-    // backend chỉ truyền qua, admin serialize / web parse. Null = chưa quyết → web hiện theo nội dung (legacy).
-    @Column(name = "section_visibility", columnDefinition = "text")
-    private String sectionVisibility;
-
     // "Phù hợp với ai" — JSON array các thẻ [{audience, advice, linkLabel?, linkUrl?}] (V237; format V240).
     // Bilingual dual-text (vi canonical + _en); detail-only.
     // Opaque string giống size_guide; web parse JSON khi render.
     @Column(name = "suitability_advisory", columnDefinition = "text")
     private String suitabilityAdvisory;
 
-    // "Dán mã HTML" cho khối Thông số kỹ thuật (V255) — khi non-blank, web render HTML này
-    // THAY cho bảng product_specifications có cấu trúc ("html thắng"). Bilingual dual-text
-    // (vi canonical + _en); detail-only. Opaque string; web sanitize khi render.
+    // "Dán mã HTML" cho khối Thông số kỹ thuật (V255). HTML là nguồn render duy nhất;
+    // bảng product_specifications đã backfill và drop ở V329/V330.
     @Column(name = "specifications_html", columnDefinition = "text")
     private String specificationsHtml;
 
-    // "Dán mã HTML" cho khối "Ô số liệu nổi bật" (specStats, V256) — khi non-blank, web render HTML
-    // này THAY cho lưới product_spec_stats có cấu trúc. Bilingual dual-text (vi + _en); detail-only.
+    // "Dán mã HTML" cho khối "Ô số liệu nổi bật" (V256). HTML là nguồn render duy nhất;
+    // bảng product_spec_stats đã backfill và drop ở V329/V330.
     @Column(name = "spec_stats_html", columnDefinition = "text")
     private String specStatsHtml;
 
-    // "Dán mã HTML" cho khối "Dải tin cậy" (trustBadges, V257) — khi non-blank, web render HTML này
-    // THAY cho dải product_trust_badges có cấu trúc. Bilingual dual-text (vi + _en); detail-only.
+    // "Dán mã HTML" cho khối "Dải tin cậy" (V257). HTML là nguồn render duy nhất;
+    // bảng product_trust_badges đã backfill và drop ở V329/V330.
     @Column(name = "trust_badges_html", columnDefinition = "text")
     private String trustBadgesHtml;
 
@@ -188,30 +184,42 @@ public class ProductEntity {
     @Column(name = "gender", length = 20)
     private String gender;
 
-    /** Structured description blocks (V139). Null for products authored via legacy RichTextEditor. */
+    /**
+     * Structured description blocks (V139). Each block carries both languages inline in its own
+     * {@code *En} sibling fields (V326 merge) — {@code description_blocks_en} no longer exists as a
+     * separate column. Null for products authored via legacy RichTextEditor.
+     */
     @Convert(converter = DescriptionBlocksConverter.class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "description_blocks", columnDefinition = "jsonb")
     private List<DescriptionBlock> descriptionBlocks;
 
-    /**
-     * English structured description blocks (V229). Null when English is authored as legacy HTML
-     * (description_en) or not translated. Rendered to description_en HTML on save, mirroring the
-     * Vietnamese description_blocks pipeline.
-     */
-    @Convert(converter = DescriptionBlocksConverter.class)
+    // "Phù hợp với ai" (V240, tách khỏi description_blocks ở V327/V328). Detail-only.
+    @Convert(converter = SuitabilitySectionConverter.class)
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "description_blocks_en", columnDefinition = "jsonb")
-    private List<DescriptionBlock> descriptionBlocksEn;
+    @Column(name = "suitability_section", columnDefinition = "jsonb")
+    private SuitabilitySection suitabilitySection;
 
-    /**
-     * Per-product PDP tab configuration (V231). Null = product uses the default tab set. Stored canonical:
-     * each tab's {@code label}/{@code blocks} = Vietnamese, {@code labelEn}/{@code blocksEn} = English.
-     */
-    @Convert(converter = ProductTabsConverter.class)
+    // "Bảng size" (V246, tách khỏi description_blocks ở V327/V328). Detail-only.
+    @Convert(converter = SizeGuideSectionConverter.class)
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "product_tabs", columnDefinition = "jsonb")
-    private List<ProductTab> productTabs;
+    @Column(name = "size_guide_section", columnDefinition = "jsonb")
+    private SizeGuideSection sizeGuideSection;
+
+    @Convert(converter = ProductFaqsConverter.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "faqs", columnDefinition = "jsonb")
+    private List<ProductFaq> faqs;
+
+    @Convert(converter = ProductCommitmentsConverter.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "commitments", columnDefinition = "jsonb")
+    private List<ProductCommitment> commitments;
+
+    @Convert(converter = ProductHighlightsConverter.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "highlights", columnDefinition = "jsonb")
+    private ProductHighlights highlights;
 
     private String seoTitle;
 
@@ -241,12 +249,6 @@ public class ProductEntity {
 
     @Column(name = "description_en", columnDefinition = "text")
     private String descriptionEn;
-
-    @Column(name = "promotion_content_en", columnDefinition = "text")
-    private String promotionContentEn;
-
-    @Column(name = "installation_guide_en", columnDefinition = "text")
-    private String installationGuideEn;
 
     @Column(name = "size_guide_en", columnDefinition = "text")
     private String sizeGuideEn;
@@ -290,24 +292,6 @@ public class ProductEntity {
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ProductVideoEntity> videos;
-
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<ProductSpecificationEntity> specifications;
-
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<ProductSpecStatEntity> specStats;
-
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<ProductFaqEntity> faqs;
-
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<ProductCommitmentEntity> commitments;
-
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<ProductTrustBadgeEntity> trustBadges;
-
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<ProductHighlightEntity> highlights;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ProductVariantEntity> variants;

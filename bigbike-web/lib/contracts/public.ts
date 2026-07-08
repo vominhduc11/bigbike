@@ -119,6 +119,10 @@ export type SeoMeta = {
   noIndex?: boolean | null;
 };
 
+/** DRAFT/PUBLISHED/TRASH are the only active states. HIDDEN is legacy-only (migrated to
+ *  DRAFT — see backend V324, 2026-07-07); kept here purely because web only ever reads this
+ *  field and a residual pre-migration response could theoretically still carry it. Never treat
+ *  it as meaning anything beyond "not PUBLISHED". */
 export type PublishStatus = "DRAFT" | "PUBLISHED" | "HIDDEN" | "TRASH";
 
 export type ProductStockState =
@@ -157,22 +161,6 @@ export type ProductVariant = {
   isAvailable: boolean;
 };
 
-export type ProductSpecification = {
-  name: string;
-  value: string;
-  group?: string;
-};
-
-/**
- * "Specs Dashboard" — một ô số liệu nổi bật ngay dưới khu vực mua hàng trên PDP (V235).
- * `value` là số liệu lớn (vd "24 tháng"), `label` là nhãn (vd "Bảo hành"). Admin quản theo
- * từng sản phẩm, tối đa 4 ô. Là "đòn chốt" bán hàng, KHÔNG phải thông số kỹ thuật.
- */
-export type ProductSpecStat = {
-  value: string;
-  label: string;
-};
-
 /**
  * Structured description block (V139 + V229). Authored in the admin BlockEditor and rendered on the
  * PDP. Shapes mirror the admin editor / backend `DescriptionBlock` polymorphic JSON.
@@ -196,40 +184,21 @@ export type DescriptionBlock =
       html?: string;
       listStyle?: "bulleted" | "numbered";
       items?: string[];
-    }
-  // Phù hợp với ai (V246, từ V240) — danh sách thẻ tư vấn nhúng trong mô tả.
-  // `html` (chế độ dán HTML): khi non-blank thì render html THAY cho cards.
-  | {
-      type: "suitability";
-      title?: string;
-      cards?: Array<{ audience?: string; advice?: string }>;
-      html?: string;
-    }
-  // Bảng size (V246) — HTML tự do (thường là bảng) nhúng trong mô tả.
-  | { type: "sizeGuide"; title?: string; html?: string };
+    };
 
-/**
- * Cấu hình một tab PDP quản lý theo từng sản phẩm (V231). Public read trả `label`/`blocks` đã resolve
- * theo ngôn ngữ. `type` builtin (description/reviews/specs/installation/faq) lấy nội dung từ field sẵn
- * có; `custom` dùng `blocks`.
- */
-export type ProductTabType =
-  | "description"
-  | "reviews"
-  | "specs"
-  | "installation"
-  | "faq"
-  | "custom";
+/** "Phù hợp với ai" (V240) — danh sách thẻ tư vấn, section riêng cố định trên PDP. Tách khỏi
+ *  `descriptionBlocks` ở V327/V328 (trước đó là khối `type: "suitability"` trong mảng đó). `html` là
+ *  nguồn render duy nhất — không còn fallback cấu trúc `cards`. */
+export type SuitabilitySection = {
+  title?: string;
+  html?: string;
+};
 
-export type ProductTab = {
-  id: string;
-  type: ProductTabType;
-  enabled?: boolean;
-  sortOrder?: number | null;
-  /** Nhãn đã resolve theo ngôn ngữ; trống = dùng nhãn mặc định của tab builtin. */
-  label?: string | null;
-  /** Nội dung khối (tab tự do), đã resolve theo ngôn ngữ. */
-  blocks?: DescriptionBlock[] | null;
+/** "Bảng size" (V246) — HTML tự do (thường là bảng), section riêng cố định trên PDP. Tách khỏi
+ *  `descriptionBlocks` ở V327/V328 (trước đó là khối `type: "sizeGuide"` trong mảng đó). */
+export type SizeGuideSection = {
+  title?: string;
+  html?: string;
 };
 
 export type ProductFaq = {
@@ -250,11 +219,25 @@ export type ProductHighlight = {
   contentEn?: string | null;
 };
 
-/** Một nhãn trên dải tin cậy TRÊN tên sản phẩm (V233) — admin quản theo từng sản phẩm. `content` đã resolve theo ngôn ngữ. */
-export type TrustBadge = {
-  content: string;
-  contentEn?: string | null;
-};
+/**
+ * Wire response (2026-07-07) gộp `positiveNotes`/`negativeNotes` thành 1 field lồng
+ * `highlights`. Un-nest về lại field phẳng trên `Product` ngay tại tầng fetch — mọi
+ * component (ProductView, json-ld, LocalizedContent) tiếp tục đọc field phẳng như cũ.
+ */
+export function withFlatHighlights<T extends Record<string, unknown>>(raw: T): T {
+  const source = raw as T & {
+    highlights?: { positiveNotes?: ProductHighlight[] | null; negativeNotes?: ProductHighlight[] | null } | null;
+  };
+  if (!source || typeof source !== "object" || !("highlights" in source)) {
+    return raw;
+  }
+  const { highlights, ...rest } = source;
+  return {
+    ...rest,
+    positiveNotes: highlights?.positiveNotes ?? [],
+    negativeNotes: highlights?.negativeNotes ?? [],
+  } as unknown as T;
+}
 
 export type CategorySummary = {
   id: string;
@@ -289,7 +272,6 @@ export type Product = {
   videos?: VideoAsset[];
   price: ProductPrice;
   variants?: ProductVariant[];
-  specifications?: ProductSpecification[];
   stockState: ProductStockState;
   /** Best-effort on-hand count at product level. Null when not tracked. */
   stockQuantity?: number | null;
@@ -309,23 +291,21 @@ export type Product = {
   ratingCount?: number | null;
   /** Long-form rich-HTML SEO copy rendered at the bottom of the PDP. */
   contentBottom?: string | null;
-  /** Rich-HTML promotion copy rendered in the PDP "Khuyến mãi" tab. */
-  promotionContent?: string | null;
-  /** Không còn hiển thị trên web (đã bỏ). Giữ field để không break API. Detail-only. */
-  installationGuide?: string | null;
   /** Structured content blocks for the product description. Detail-only; null in list responses.
-   *  Locale-resolved server-side (V229): EN blocks for `?lang=en`, falling back to VI. */
+   *  Locale-resolved server-side (V229): EN blocks for `?lang=en`, falling back to VI. Since
+   *  V327/V328 only 4 block types remain here (paragraph/image/feature×2) — suitability/sizeGuide
+   *  moved to the 2 fields below. */
   descriptionBlocks?: DescriptionBlock[] | null;
-  /** Per-product PDP tab configuration (V231). Null/empty → mặc định. Locale-resolved. Detail-only. */
-  tabs?: ProductTab[] | null;
+  /** "Phù hợp với ai" (V240, tách khỏi descriptionBlocks ở V327/V328). Detail-only; null in list.
+   *  Locale-resolved server-side. */
+  suitabilitySection?: SuitabilitySection | null;
+  /** "Bảng size" (V246, tách khỏi descriptionBlocks ở V327/V328). Detail-only; null in list.
+   *  Locale-resolved server-side. */
+  sizeGuideSection?: SizeGuideSection | null;
   /** Product FAQ entries rendered in PDP section "Câu hỏi thường gặp". Detail-only. */
   faqs?: ProductFaq[];
   /** Dòng cam kết dưới nút mua hàng (V232) — admin quản theo từng sản phẩm. Detail-only; rỗng → web ẩn khối. */
   commitments?: ProductCommitment[];
-  /** "Specs Dashboard" — ô số liệu nổi bật dưới khu vực mua hàng (V235), tối đa 4. Detail-only; rỗng → web ẩn khối. */
-  specStats?: ProductSpecStat[];
-  /** Dải tin cậy trên tên sản phẩm (V233) — admin quản theo từng sản phẩm. Detail-only; rỗng → web ẩn dải. */
-  trustBadges?: TrustBadge[];
   /** Ưu điểm (schema.org positiveNotes). Detail-only; empty in list. */
   positiveNotes?: ProductHighlight[];
   /** Nhược điểm (schema.org negativeNotes). Detail-only; empty in list. */
@@ -337,14 +317,14 @@ export type Product = {
   /** "Phù hợp với ai" — JSON array các thẻ `[{audience, advice, linkLabel?, linkUrl?}]`
    *  (V237; format đổi ở V240). Từ V246 render như khối mô tả (type "suitability"). Detail-only. */
   suitabilityAdvisory?: string | null;
-  /** Chế độ "Dán mã HTML" cho khối Thông số kỹ thuật (V255). Khi non-blank, render HTML này
-   *  (sanitizeRichHtml, cho phép `<table>`) THAY cho bảng `specifications` có cấu trúc. Detail-only. */
+  /** "Dán mã HTML" cho khối Thông số kỹ thuật (V255) — HTML (sanitizeRichHtml, cho phép `<table>`) là
+   *  nguồn render DUY NHẤT, không còn bảng có cấu trúc để fallback. Detail-only. */
   specificationsHtml?: string | null;
-  /** Chế độ "Dán mã HTML" cho khối "Ô số liệu nổi bật" (specStats, V256). Khi non-blank, render
-   *  HTML này (sanitizeRichHtml, cho phép CSS inline) THAY cho lưới ô số liệu có cấu trúc. Detail-only. */
+  /** "Dán mã HTML" cho khối "Ô số liệu nổi bật" (specStats, V256) — HTML (sanitizeRichHtml, cho phép
+   *  CSS inline) là nguồn render DUY NHẤT, không còn lưới ô số liệu có cấu trúc để fallback. Detail-only. */
   specStatsHtml?: string | null;
-  /** Chế độ "Dán mã HTML" cho khối "Dải tin cậy" (trustBadges, V257). Khi non-blank, render HTML
-   *  này (sanitizeRichHtml, cho phép CSS inline) THAY cho dải badge có cấu trúc. Detail-only. */
+  /** "Dán mã HTML" cho khối "Dải tin cậy" (trustBadges, V257) — HTML (sanitizeRichHtml, cho phép CSS
+   *  inline) là nguồn render DUY NHẤT, không còn dải badge có cấu trúc để fallback. Detail-only. */
   trustBadgesHtml?: string | null;
   /** "Quick Answer" (trả lời nhanh, V300) — đoạn tóm tắt AIO 40–60 từ, hiển thị blockquote ngay
    *  sau Specs Dashboard, trước "Tính năng chi tiết". Max 600 ký tự. Locale-resolved. Detail-only. */

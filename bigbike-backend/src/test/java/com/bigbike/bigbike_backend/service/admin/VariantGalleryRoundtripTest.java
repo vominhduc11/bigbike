@@ -67,7 +67,7 @@ class VariantGalleryRoundtripTest {
 
     @Test
     void variantGallery_persistsAndIsReadBack() {
-        // â”€â”€ 1. Create product with one variant carrying a 3-image gallery â”€â”€
+        // -- 1. Create product with one variant carrying a 3-image gallery --
         UpsertProductRequest create = new UpsertProductRequest();
         create.setSlug("vgallery-product-1");
         create.setName("VGallery Product 1");
@@ -78,6 +78,7 @@ class VariantGalleryRoundtripTest {
 
         VariantRequest variant = new VariantRequest();
         variant.setIsAvailable(true);
+        variant.setRetailPrice(BigDecimal.TEN);
         variant.setOptions(List.of(option("Color", "Red"), option("Size", "M")));
         variant.setGallery(List.of(
                 galleryItem("/media/red-front.jpg", "Red front", 0),
@@ -92,7 +93,7 @@ class VariantGalleryRoundtripTest {
                 .as("gallery present on the immediate save response")
                 .hasSize(3);
 
-        // â”€â”€ 2. Re-read the product through the same path the admin GET uses â”€
+        // -- 2. Re-read the product through the same path the admin GET uses --
         Product reread = readRepository.findProductById(saved.id()).orElseThrow();
 
         assertThat(reread.variants()).hasSize(1);
@@ -106,7 +107,7 @@ class VariantGalleryRoundtripTest {
 
     @Test
     void variantGallery_isReplacedOnUpdateAndReadBack() {
-        // â”€â”€ Initial save with 2 images â”€â”€
+        // -- Initial save with 2 images --
         UpsertProductRequest create = new UpsertProductRequest();
         create.setSlug("vgallery-product-2");
         create.setName("VGallery Product 2");
@@ -117,6 +118,7 @@ class VariantGalleryRoundtripTest {
 
         VariantRequest v1 = new VariantRequest();
         v1.setIsAvailable(true);
+        v1.setRetailPrice(BigDecimal.TEN);
         v1.setOptions(List.of(option("Color", "Black"), option("Size", "L")));
         v1.setGallery(List.of(
                 galleryItem("/media/black-1.jpg", "Black 1", 0),
@@ -127,7 +129,7 @@ class VariantGalleryRoundtripTest {
         Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
         String variantId = saved.variants().get(0).id();
 
-        // â”€â”€ Update with 4 different images, reusing the same variant ID â”€â”€
+        // -- Update with 4 different images, reusing the same variant ID --
         UpsertProductRequest update = new UpsertProductRequest();
         update.setSlug("vgallery-product-2");
         update.setName("VGallery Product 2");
@@ -139,6 +141,7 @@ class VariantGalleryRoundtripTest {
         VariantRequest v2 = new VariantRequest();
         v2.setId(variantId);
         v2.setIsAvailable(true);
+        v2.setRetailPrice(BigDecimal.TEN);
         v2.setOptions(List.of(option("Color", "Black"), option("Size", "L")));
         v2.setGallery(List.of(
                 galleryItem("/media/black-A.jpg", "Black A", 0),
@@ -206,7 +209,7 @@ class VariantGalleryRoundtripTest {
         create.setTranslations(englishName("VImage Product Color Scope EN"));
 
         // Cover image is explicit imageUrl from variant request of same color. Red-S
-        // carries Red's imageUrl; Red-M does not — backend applies Red's cover to both.
+        // carries Red's imageUrl; Red-M does not - backend applies Red's cover to both.
         VariantRequest redS = variant("Red", "S");
         redS.setImageUrl("/media/red-main.jpg");
         redS.setImageAlt("Red main");
@@ -290,6 +293,7 @@ class VariantGalleryRoundtripTest {
 
         VariantRequest sizeOnly = new VariantRequest();
         sizeOnly.setIsAvailable(true);
+        sizeOnly.setRetailPrice(BigDecimal.TEN);
         sizeOnly.setOptions(List.of(option("Size", "M")));
         create.setVariants(List.of(sizeOnly));
 
@@ -328,7 +332,7 @@ class VariantGalleryRoundtripTest {
         String idM = saved.variants().get(1).id();
         String idL = saved.variants().get(2).id();
 
-        // Plant inconsistent imageUrls directly via JPA â€” simulating data that
+        // Plant inconsistent imageUrls directly via JPA - simulating data that
         // landed in the DB through the WP migration importer (or any other
         // write path that bypasses AdminCatalogMutationService.applyVariants).
         ProductVariantEntity variantS = variantRepo.findById(idS).orElseThrow();
@@ -372,6 +376,7 @@ class VariantGalleryRoundtripTest {
 
         VariantRequest sizeOnly = new VariantRequest();
         sizeOnly.setIsAvailable(true);
+        sizeOnly.setRetailPrice(BigDecimal.TEN);
         sizeOnly.setOptions(List.of(option("Size", "XL")));
         create.setVariants(List.of(sizeOnly));
 
@@ -403,6 +408,7 @@ class VariantGalleryRoundtripTest {
 
         VariantRequest sizeOnly = new VariantRequest();
         sizeOnly.setIsAvailable(true);
+        sizeOnly.setRetailPrice(BigDecimal.TEN);
         sizeOnly.setOptions(List.of(option("Size", "M")));
         sizeOnly.setGallery(List.of(galleryItem("/media/size-m.jpg", "Size M", 0)));
         create.setVariants(List.of(sizeOnly));
@@ -438,7 +444,7 @@ class VariantGalleryRoundtripTest {
         }
         entityManager.flush();
 
-        // ── 1. Create using the SLUG as the option value (no attributeValueId) ──
+        // -- 1. Create using the SLUG as the option value (no attributeValueId) --
         UpsertProductRequest create = new UpsertProductRequest();
         create.setSlug("mw-color-product");
         create.setName("MW Color Product");
@@ -449,6 +455,7 @@ class VariantGalleryRoundtripTest {
 
         VariantRequest v1 = new VariantRequest();
         v1.setIsAvailable(true);
+        v1.setRetailPrice(BigDecimal.TEN);
         v1.setOptions(List.of(option("test-color-mw", "den-bong")));
         create.setVariants(List.of(v1));
 
@@ -470,7 +477,7 @@ class VariantGalleryRoundtripTest {
                 .as("public view omits attributeValueId")
                 .isNull();
 
-        // ── 2. Re-save sending the LABEL back (the edit-reload round-trip) ──
+        // -- 2. Re-save sending the LABEL back (the edit-reload round-trip) --
         UpsertProductRequest update = new UpsertProductRequest();
         update.setSlug("mw-color-product");
         update.setName("MW Color Product");
@@ -482,6 +489,7 @@ class VariantGalleryRoundtripTest {
         VariantRequest v2 = new VariantRequest();
         v2.setId(variantId);
         v2.setIsAvailable(true);
+        v2.setRetailPrice(BigDecimal.TEN);
         v2.setOptions(List.of(option("test-color-mw", "Đen bóng")));
         update.setVariants(List.of(v2));
 
@@ -493,7 +501,7 @@ class VariantGalleryRoundtripTest {
                 .isEqualTo("Đen bóng");
 
         // The write path must also relink & persist the attribute_value FK, so the
-        // read doesn't fall back to the label→slug lookup on every subsequent read.
+        // read doesn't fall back to the label->slug lookup on every subsequent read.
         entityManager.flush();
         entityManager.clear();
         ProductVariantEntity storedVariant = variantRepo.findById(variantId).orElseThrow();
@@ -505,8 +513,8 @@ class VariantGalleryRoundtripTest {
     @Test
     void dedupSuffixSlug_roundTripsViaAttributeValueId() {
         // A WP dedup-suffixed slug ("xam-2") whose label ("Xám") cannot be normalised
-        // back to the slug ("xam" != "xam-2"). Only the explicit attributeValueId —
-        // returned by the admin read and sent back on save — keeps the swatch linked.
+        // back to the slug ("xam" != "xam-2"). Only the explicit attributeValueId -
+        // returned by the admin read and sent back on save - keeps the swatch linked.
         AttributeEntity attr = attributeRepo.findByCode("test-color-dedup").orElseGet(() -> {
             AttributeEntity a = new AttributeEntity();
             a.setId("test-color-dedup");
@@ -527,7 +535,7 @@ class VariantGalleryRoundtripTest {
         }
         entityManager.flush();
 
-        // ── Create with the explicit attributeValueId (the admin dictionary pick) ──
+        // -- Create with the explicit attributeValueId (the admin dictionary pick) --
         UpsertProductRequest create = new UpsertProductRequest();
         create.setSlug("dedup-color-product");
         create.setName("Dedup Color Product");
@@ -538,6 +546,7 @@ class VariantGalleryRoundtripTest {
 
         VariantRequest v1 = new VariantRequest();
         v1.setIsAvailable(true);
+        v1.setRetailPrice(BigDecimal.TEN);
         v1.setOptions(List.of(colorOption("test-color-dedup", "xam-2", "test-color-dedup-xam-2")));
         create.setVariants(List.of(v1));
 
@@ -549,8 +558,8 @@ class VariantGalleryRoundtripTest {
         assertThat(roundTrippedId).isEqualTo("test-color-dedup-xam-2");
         assertThat(afterCreate.variants().get(0).options().get(0).value()).isEqualTo("Xám");
 
-        // ── Re-save sending the LABEL back plus the round-tripped id (what the admin
-        //    form does). The label alone would not relink; the explicit id does. ──
+        // -- Re-save sending the LABEL back plus the round-tripped id (what the admin
+        //    form does). The label alone would not relink; the explicit id does. --
         UpsertProductRequest update = new UpsertProductRequest();
         update.setSlug("dedup-color-product");
         update.setName("Dedup Color Product");
@@ -562,6 +571,7 @@ class VariantGalleryRoundtripTest {
         VariantRequest v2 = new VariantRequest();
         v2.setId(variantId);
         v2.setIsAvailable(true);
+        v2.setRetailPrice(BigDecimal.TEN);
         v2.setOptions(List.of(colorOption("test-color-dedup", "Xám", roundTrippedId)));
         update.setVariants(List.of(v2));
 
@@ -580,7 +590,7 @@ class VariantGalleryRoundtripTest {
         // Reproduces the reported bug end-to-end: VariantEditors.jsx's free-text
         // Input for a non-color option (e.g. "Size") sends the new text on edit but
         // does not clear the stale attributeValueId already sitting in local state
-        // from the last load — before the fix this made Path 1 blindly trust the
+        // from the last load - before the fix this made Path 1 blindly trust the
         // old id, so the "Size" badge stayed stuck on the old value forever.
         AttributeEntity attr = attributeRepo.findByCode("test-size-stale").orElseGet(() -> {
             AttributeEntity a = new AttributeEntity();
@@ -611,10 +621,10 @@ class VariantGalleryRoundtripTest {
         }
         entityManager.flush();
 
-        // ── 1. Create sending only the free-text value "XXL" (no explicit id — this
+        // -- 1. Create sending only the free-text value "XXL" (no explicit id - this
         //    is exactly what the non-color Input in VariantEditors.jsx sends). Path
         //    2/3 auto-links to the XXL dictionary entry by slug match, and the read
-        //    response hands the admin form that id back for round-tripping. ──
+        //    response hands the admin form that id back for round-tripping. --
         UpsertProductRequest create = new UpsertProductRequest();
         create.setSlug("stale-size-product");
         create.setName("Stale Size Product");
@@ -625,6 +635,7 @@ class VariantGalleryRoundtripTest {
 
         VariantRequest v1 = new VariantRequest();
         v1.setIsAvailable(true);
+        v1.setRetailPrice(BigDecimal.TEN);
         v1.setOptions(List.of(option("test-size-stale", "XXL")));
         create.setVariants(List.of(v1));
 
@@ -644,10 +655,10 @@ class VariantGalleryRoundtripTest {
         entityManager.flush();
         entityManager.clear();
 
-        // ── 2. Re-save simulating the free-text-edit bug: NEW text "XXXL" but the
-        //    SAME stale attributeValueId the read handed back for "XXL" — exactly
+        // -- 2. Re-save simulating the free-text-edit bug: NEW text "XXXL" but the
+        //    SAME stale attributeValueId the read handed back for "XXL" - exactly
         //    what onUpdate({ value: e.target.value }) without clearing
-        //    attributeValueId produces. ──
+        //    attributeValueId produces. --
         UpsertProductRequest update = new UpsertProductRequest();
         update.setSlug("stale-size-product");
         update.setName("Stale Size Product");
@@ -659,6 +670,7 @@ class VariantGalleryRoundtripTest {
         VariantRequest v2 = new VariantRequest();
         v2.setId(variantId);
         v2.setIsAvailable(true);
+        v2.setRetailPrice(BigDecimal.TEN);
         v2.setOptions(List.of(colorOption("test-size-stale", "XXXL", staleId)));
         update.setVariants(List.of(v2));
 
@@ -686,7 +698,7 @@ class VariantGalleryRoundtripTest {
     @Test
     void readPath_discardsStalePersistedAttributeValue() {
         // Site 3 (read-path self-heal): construct a corrupted row directly via JPA,
-        // bypassing the (now-fixed) write path — this is the shape a pre-fix save
+        // bypassing the (now-fixed) write path - this is the shape a pre-fix save
         // could have left behind, or that any future write path bypassing
         // AdminCatalogMutationService could still produce. The read path must not
         // trust an attribute_value FK that disagrees with the option's own text.
@@ -730,6 +742,7 @@ class VariantGalleryRoundtripTest {
 
         VariantRequest v1 = new VariantRequest();
         v1.setIsAvailable(true);
+        v1.setRetailPrice(BigDecimal.TEN);
         v1.setOptions(List.of(option("test-size-corrupt", "XXL")));
         create.setVariants(List.of(v1));
 
@@ -768,6 +781,7 @@ class VariantGalleryRoundtripTest {
     private VariantRequest variant(String color, String size) {
         VariantRequest variant = new VariantRequest();
         variant.setIsAvailable(true);
+        variant.setRetailPrice(BigDecimal.TEN);
         variant.setOptions(List.of(option("Color", color), option("Size", size)));
         return variant;
     }
@@ -790,7 +804,7 @@ class VariantGalleryRoundtripTest {
 
 
     // TRANSLATION_RULE_002 requires translations.en.name on every product create/update
-    // (not specific to this feature) — every product save in this file sets it via this
+    // (not specific to this feature) - every product save in this file sets it via this
     // helper so the roundtrip logic under test actually runs instead of 400-ing first.
     private ProductTranslationRequest englishName(String name) {
         return new ProductTranslationRequest(

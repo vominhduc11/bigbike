@@ -1,8 +1,6 @@
 import type { DescriptionBlock } from "@/lib/contracts/public";
 
 export type FeatureBlockT = Extract<DescriptionBlock, { type: "feature" }>;
-export type SuitabilityBlockT = Extract<DescriptionBlock, { type: "suitability" }>;
-export type SizeGuideBlockT = Extract<DescriptionBlock, { type: "sizeGuide" }>;
 
 /** Trả về true nếu khối feature có phần chữ (subheading, heading, html, hoặc ít nhất một mục danh sách không rỗng). */
 export function featureHasText(block: FeatureBlockT): boolean {
@@ -22,16 +20,15 @@ export function featureHasImage(block: FeatureBlockT): boolean {
 const NON_HEADING_TEXT = new Set(["paragraph", "list", "callout"]);
 
 /** Các loại khối render được dưới dạng cụm CHỮ (flow): tiêu đề + thân. Loại NGOÀI tập này mà không phải
- *  feature/image/video/suitability/sizeGuide (vd "prosCons" — vốn render bằng khối RIÊNG ngoài mô tả) bị
- *  BỎ QUA, không tạo flow rỗng để khỏi sinh section trắng chỉ còn vạch kẻ + khoảng hở. */
+ *  feature/image/video (vd "prosCons" — vốn render bằng khối RIÊNG ngoài mô tả) bị BỎ QUA, không tạo
+ *  flow rỗng để khỏi sinh section trắng chỉ còn vạch kẻ + khoảng hở. suitability/sizeGuide không còn
+ *  xuất hiện ở đây từ V327/V328 — tách thành field riêng trên Product, không phải khối trong mảng này. */
 const FLOW_TYPES = new Set(["heading", "paragraph", "list", "callout"]);
 
 export type Group =
   | { kind: "feature"; block: FeatureBlockT; reverse: boolean }
   | { kind: "media"; media: DescriptionBlock }
   | { kind: "flow"; blocks: DescriptionBlock[] }
-  | { kind: "suitability"; block: SuitabilityBlockT }
-  | { kind: "sizeGuide"; block: SizeGuideBlockT }
   | { kind: "divider" };
 
 /**
@@ -59,12 +56,6 @@ export function groupBlocks(blocks: DescriptionBlock[]): Group[] {
       i += 1;
     } else if (b.type === "image" || b.type === "video") {
       groups.push({ kind: "media", media: b });
-      i += 1;
-    } else if (b.type === "suitability") {
-      groups.push({ kind: "suitability", block: b });
-      i += 1;
-    } else if (b.type === "sizeGuide") {
-      groups.push({ kind: "sizeGuide", block: b });
       i += 1;
     } else if (!FLOW_TYPES.has(b.type)) {
       // Loại không render trong mô tả (vd "prosCons" — đã có khối riêng): bỏ qua, KHÔNG tạo flow rỗng.

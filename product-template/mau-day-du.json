@@ -1,461 +1,281 @@
 [
   {
-    "sku": "TNB-SCS-CAMS",
-    "name": "SCS CAM-S",
-    "slug": "scs-cam-s",
-    "categoryId": "tai-nghe-bluetooth-mu-bao-hiem",
-    "brandId": "scs",
-    "originBrandCountry": "Trung Quốc",
-    "retailPrice": 3290000,
-    "image": {
-      "url": "https://media.bigbike.vn/bigbike-media/wp-uploads/2025/11/CAMERA-HANH-TRINH-GAN-XE-GAN-MU-BAO-HIEM-SCS-CAM-S-01.jpg"
+     "sku": "SCS-CAM-S",
+     "categoryId": "tai-nghe-bluetooth-mu-bao-hiem",
+     "brandId": "scs",
+     "gender": "Unisex",
+     "retailPrice": 3290000,
+     "salePrice": null,
+     "name": {
+      "nameVI": "CAMERA HÀNH TRÌNH GẮN XE MÁY SCS CAM-S - GHI HÌNH FULL HD 1080P, NHỎ GỌN, CHỐNG NƯỚC IP67",
+      "nameEN": "SCS CAM-S"
     },
-    "gallery": [
-      {
-        "url": "https://media.bigbike.vn/bigbike-media/wp-uploads/2025/11/z7377752926439_0bb1f708302debdf8f35ec47df77bf1d.jpg"
-      },
-      {
-        "url": "https://media.bigbike.vn/bigbike-media/wp-uploads/2025/11/z7493139711866_3939b176029cc402f9919f5a5b7fbdd5.jpg"
-      },
-      {
-        "url": "https://media.bigbike.vn/bigbike-media/wp-uploads/2025/11/z7493139513657_97a4a6ae2fb89ac591a4226d913e249a.jpg"
-      },
-      {
-        "url": "https://media.bigbike.vn/bigbike-media/wp-uploads/2025/11/z7493153726565_e82e30bdfb3b8953d3ba0ccef3cc7f24.jpg"
-      }
-    ],
-    "shortDescription": "<p>•<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style=\"color: rgb(51, 51, 51);\">Quay liên tục 10h khi vừa sạc vừa quay— đủ cho 1 ngày shipper hoặc tour 2 ngày</span></p><p>•<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style=\"color: rgb(51, 51, 51);\">Full HD 1080p góc rộng — ghi lại biển số, tình huống va chạm, bằng chứng giao thông</span></p><p>•<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style=\"color: rgb(51, 51, 51);\">IP67 chống nước + gắn được trên mũ fullface, 3/4, lật hàm và xe máy</span></p>",
-    "specificationsHtml": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:18px;color:#111111;max-width:100%;\">\n\n  <h2 style=\"font-family:'Barlow Condensed',Arial,sans-serif;font-size:22px;font-weight:bold;text-transform:uppercase;color:#F90606 !important;margin:0 0 8px 0;letter-spacing:0.5px;\">THÔNG SỐ KỸ THUẬT</h2>\n  <p style=\"font-size:14px;color:#6f6f6f !important;margin:0 0 16px 0;font-style:italic;\">\"Lái đúng - bằng chứng đúng\"</p>\n\n  <table style=\"width:100%;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;font-size:18px;margin:0 0 24px 0;\">\n    <thead>\n      <tr>\n        <th style=\"padding:12px 16px;border:1px solid #dddddd;background-color:#f5f5f5;font-weight:bold;color:#111111 !important;text-align:left;width:38%;\">Thông số</th>\n        <th style=\"padding:12px 16px;border:1px solid #dddddd;background-color:#f5f5f5;font-weight:bold;color:#111111 !important;text-align:left;\">Chi tiết</th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Thương hiệu</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">SCS (SUCCESS ETC TECHNOLOGY CO., LTD — Trung Quốc)</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Model</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Cam-S</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Loại</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Camera giám sát hành trình gắn mũ bảo hiểm / xe máy</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Độ phân giải</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"color:#F90606 !important;\">Full HD 1080p</strong></td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Góc quay</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Góc rộng — [Bigbike kiểm tra bổ sung số độ chính xác]</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Thời lượng quay</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">\n          <span style=\"display:block;\"><strong style=\"color:#F90606 !important;\">10 giờ liên tục</strong> khi vừa sạc vừa quay</span>\n          <span style=\"display:block;margin-top:4px;font-size:14px;color:#6f6f6f !important;\">Pin máy (không cắm sạc): [Bigbike kiểm tra bổ sung]</span>\n        </td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Chuẩn chống nước</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"color:#F90606 !important;\">IP67</strong> — ngâm sâu 1m trong 30 phút</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Kết nối</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">App <strong style=\"color:#111111 !important;\">ROADCam</strong> (iOS / Android) qua WiFi</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Thẻ nhớ</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">\n          <span style=\"display:block;\">MicroSD — tối đa [Bigbike kiểm tra bổ sung] GB</span>\n          <span style=\"display:block;margin-top:4px;font-size:14px;color:#6f6f6f !important;\">Ghi đè tự động (loop recording) khi thẻ đầy</span>\n          <span style=\"display:block;margin-top:4px;font-size:14px;color:#111111 !important;\">32GB ≈ 3–4h &nbsp;·&nbsp; 64GB ≈ 6–8h &nbsp;·&nbsp; 128GB ≈ 10–12h</span>\n        </td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Vừa sạc vừa quay</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"color:#111111 !important;\">Có</strong></td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Chống rung</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">\n          Cơ bản\n          <span style=\"display:block;font-size:14px;color:#6f6f6f !important;margin-top:4px;\">Không phải EIS điện tử mạnh như action cam chuyên dụng</span>\n        </td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Tương thích gắn</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Mũ fullface &nbsp;·&nbsp; Mũ 3/4 &nbsp;·&nbsp; Mũ lật hàm &nbsp;·&nbsp; Xe máy &nbsp;·&nbsp; Xe đạp</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Intercom / Âm thanh</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">\n          <strong style=\"color:#F90606 !important;\">Không có</strong>\n          <span style=\"display:block;font-size:14px;color:#6f6f6f !important;margin-top:4px;\">Camera thuần túy — không thay thế tai nghe</span>\n        </td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Size</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#6f6f6f !important;\">Không phân size</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Màu</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">[Bigbike kiểm tra bổ sung]</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Trọng lượng</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#6f6f6f !important;\">[Bigbike kiểm tra bổ sung — cân thực tế tại shop]</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Xuất xứ thương hiệu</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Thương hiệu Trung Quốc</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Sản xuất tại</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Trung Quốc</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Bảo hành</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">\n          <strong style=\"color:#111111 !important;\">24 tháng</strong> lỗi kỹ thuật tại BigBike qua 4T Hitek\n          <span style=\"display:block;font-size:14px;color:#6f6f6f !important;margin-top:4px;\">Không BH: va đập, cấn, móp, bể vỏ, vào nước sau khi vỏ đã nứt</span>\n        </td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Giá</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"font-size:22px;color:#F90606 !important;\">3.290.000đ</strong></td>\n      </tr>\n    </tbody>\n  </table>\n\n  <div style=\"border:1px solid #dddddd;border-left:4px solid #F90606;padding:16px;background-color:#ffffff;\">\n    <p style=\"font-size:14px;color:#111111 !important;margin:0 0 8px 0;line-height:1.7;\">\n      <strong style=\"color:#F90606 !important;\">Lưu ý quan trọng:</strong> SCS Cam-S là camera giám sát hành trình — không phải camera action hay camera vlog.\n    </p>\n    <p style=\"font-size:14px;color:#333333 !important;margin:0;line-height:1.7;\">\n      Điểm mạnh là ghi liên tục, bằng chứng tin cậy, giá hợp lý. Không so sánh chất lượng hình ảnh với GoPro hay DJI — đó là hai dòng sản phẩm khác nhau về mục đích.\n    </p>\n  </div>\n\n</div>",
-    "seo": {
-      "title": "SCS Cam-S – Camera Giám Sát Hành Trình Xe Máy, IP67 | BigBike",
-      "description": "SCS Cam-S camera hành trình gắn mũ Full HD 1080p, quay liên tục 10h (vừa sạc vừa quay), IP67, app ROADCam. Giá 3.290.000đ — lưu bằng chứng mọi tình huống giao thông tại BigBike.",
-      "canonicalUrl": "https://bigbike.vn/product/scs-cam-s"
+     "slug": {
+      "slugVI": "camera-hanh-trinh-gan-xe-scs-cam-s",
+      "slugEN": "scs-cam-s"
     },
-    "translations": {
-      "en": {
-        "name": "SCS CAM-S",
-        "originBrandCountry": "China",
-        "shortDescription": "<p>•<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style=\"color: rgb(51, 51, 51);\">10-hour continuous recording when plugged in — covers a full shipper shift or 2-day tour</span></p><p>•<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style=\"color: rgb(51, 51, 51);\">Full HD 1080p wide angle — captures licence plates, collision incidents, road evidence</span></p><p>•<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style=\"color: rgb(51, 51, 51);\">IP67 waterproof + mounts on fullface, 3/4, flip helmets and motorcycle handlebars</span></p>",
-        "specificationsHtml": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:18px;color:#111111;max-width:100%;\">\n\n  <h2 style=\"font-family:'Barlow Condensed',Arial,sans-serif;font-size:22px;font-weight:bold;text-transform:uppercase;color:#F90606 !important;margin:0 0 8px 0;letter-spacing:0.5px;\">TECHNICAL SPECIFICATIONS</h2>\n  <p style=\"font-size:14px;color:#6f6f6f !important;margin:0 0 16px 0;font-style:italic;\">\"Lái đúng - bằng chứng đúng\" (Ride right, get it right)</p>\n\n  <table style=\"width:100%;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;font-size:18px;margin:0 0 24px 0;\">\n    <thead>\n      <tr>\n        <th style=\"padding:12px 16px;border:1px solid #dddddd;background-color:#f5f5f5;font-weight:bold;color:#111111 !important;text-align:left;width:38%;\">Specification</th>\n        <th style=\"padding:12px 16px;border:1px solid #dddddd;background-color:#f5f5f5;font-weight:bold;color:#111111 !important;text-align:left;\">Detail</th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Brand</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">SCS (SUCCESS ETC TECHNOLOGY CO., LTD — China)</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Model</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Cam-S</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Type</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Helmet / motorcycle dash camera for road surveillance</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Resolution</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"color:#F90606 !important;\">Full HD 1080p</strong></td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Field of view</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Wide angle — [Bigbike to verify exact degree]</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Recording time</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">\n          <span style=\"display:block;\"><strong style=\"color:#F90606 !important;\">10 hours continuous</strong> when charging while recording</span>\n          <span style=\"display:block;margin-top:4px;font-size:14px;color:#6f6f6f !important;\">Battery-only runtime (not plugged in): [Bigbike to verify]</span>\n        </td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Water resistance</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"color:#F90606 !important;\">IP67</strong> — submerged 1m for 30 minutes</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Connectivity</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"color:#111111 !important;\">ROADCam</strong> app (iOS / Android) via WiFi</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Memory card</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">\n          <span style=\"display:block;\">MicroSD — up to [Bigbike to verify] GB</span>\n          <span style=\"display:block;margin-top:4px;font-size:14px;color:#6f6f6f !important;\">Automatic loop recording when card is full</span>\n          <span style=\"display:block;margin-top:4px;font-size:14px;color:#111111 !important;\">32GB ≈ 3–4h &nbsp;·&nbsp; 64GB ≈ 6–8h &nbsp;·&nbsp; 128GB ≈ 10–12h</span>\n        </td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Charge while recording</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"color:#111111 !important;\">Yes</strong></td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Image stabilisation</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">\n          Basic\n          <span style=\"display:block;font-size:14px;color:#6f6f6f !important;margin-top:4px;\">Not strong electronic EIS like a dedicated action camera</span>\n        </td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Compatible mounts</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Fullface &nbsp;·&nbsp; Open-face (3/4) &nbsp;·&nbsp; Flip-front helmet &nbsp;·&nbsp; Motorcycle &nbsp;·&nbsp; Bicycle</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Intercom / Audio</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">\n          <strong style=\"color:#F90606 !important;\">None</strong>\n          <span style=\"display:block;font-size:14px;color:#6f6f6f !important;margin-top:4px;\">Camera only — does not replace a headset</span>\n        </td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Size</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#6f6f6f !important;\">No size</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Colour</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">[Bigbike to verify]</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Weight</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#6f6f6f !important;\">[Bigbike to verify — in-store weighing needed]</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Brand origin</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Chinese brand</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Made in</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">China</td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Warranty</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">\n          <strong style=\"color:#111111 !important;\">24 months</strong> technical defects through BigBike via 4T Hitek\n          <span style=\"display:block;font-size:14px;color:#6f6f6f !important;margin-top:4px;\">Not covered: impact, crushing, cracked casing, water damage after housing compromised</span>\n        </td>\n      </tr>\n      <tr>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Price</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"font-size:22px;color:#F90606 !important;\">3,290,000 VND</strong></td>\n      </tr>\n    </tbody>\n  </table>\n\n  <div style=\"border:1px solid #dddddd;border-left:4px solid #F90606;padding:16px;background-color:#ffffff;\">\n    <p style=\"font-size:14px;color:#111111 !important;margin:0 0 8px 0;line-height:1.7;\">\n      <strong style=\"color:#F90606 !important;\">Important note:</strong> The SCS Cam-S is a road surveillance camera — not an action camera or vlog camera.\n    </p>\n    <p style=\"font-size:14px;color:#333333 !important;margin:0;line-height:1.7;\">\n      Its strengths are continuous recording, reliable evidence, and a reasonable price. Don't compare its image quality to GoPro or DJI — those are different product categories built for a different purpose.\n    </p>\n  </div>\n\n</div>",
-        "seoTitle": "SCS Cam-S – Motorcycle Helmet Dash Cam, IP67, 10h | BigBike",
-        "seoDescription": "SCS Cam-S helmet dash cam Full HD 1080p, continuous 10h recording (charge-and-record), IP67 waterproof, ROADCam app. 3,290,000 VND — record evidence for every road situation at BigBike."
-      }
+     "shortDescription": {
+      "shortDescriptionVI": null,
+      "shortDescriptionEN": "<p>•<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span>Quay liên tục 10h khi vừa sạc vừa quay— đủ cho 1 ngày shipper hoặc tour 2 ngày</span></p><p>•<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span>Full HD 1080p góc rộng — ghi lại biển số, tình huống va chạm, bằng chứng giao thông</span></p><p>•<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span>IP67 chống nước + gắn được trên mũ fullface, 3/4, lật hàm và xe máy</span></p>"
     },
-    "quickAnswerSummary": "Camera giám sát hành trình gắn mũ/xe máy của SCS, quay liên tục 10 giờ khi vừa sạc vừa quay, Full HD 1080p, chống nước IP67. Phù hợp shipper, biker đi hàng ngày cần bằng chứng khi va chạm. Giá 3.290.000đ tại BigBike.",
-    "relatedProductIds": [
-      "SCSG7",
-      "SCSS12"
-    ],
-    "specStats": [
+     "specificationsHtml": {
+      "specificationsHtmlVI": null,
+      "specificationsHtmlEN": null
+    },
+    "specStatsHtml": {
+      "specStatsHtmlVI": null,
+      "specStatsHtmlEN": null
+    },
+    "trustBadgesHtml": {
+      "trustBadgesHtmlVI": null,
+      "trustBadgesHtmlEN": "<div class=\"bb-trust-badges\" style=\"display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:14px;color:var(--color-muted-foreground,#6b7280)\"><span style=\"display:flex;align-items:center;gap:8px\"><span style=\"height:6px;width:6px;flex:none;background:var(--color-brand,#e8281e)\"></span><span>Chính hãng</span></span><span style=\"display:flex;align-items:center;gap:8px\"><span style=\"height:6px;width:6px;flex:none;background:var(--color-brand,#e8281e)\"></span><span>BH 2 năm</span></span><span style=\"display:flex;align-items:center;gap:8px\"><span style=\"height:6px;width:6px;flex:none;background:var(--color-brand,#e8281e)\"></span><span>Freeship toàn quốc</span></span></div>"
+    },
+    "quickAnswerSummary": {
+      "quickAnswerSummaryVI": null,
+      "quickAnswerSummaryEN": null
+    },
+    "originBrandCountry": {
+      "originBrandCountryVI": "Trung Quốc",
+      "originBrandCountryEN": null
+    },
+     "seo": {
+      "titleVI": "CAMERA HÀNH TRÌNH DÀNH CHO XE MÁY SCS CAM-S",
+      "titleEN": "SCS Cam-S – Camera Giám Sát Hành Trình Xe Máy, IP67 | BigBike",
+      "descriptionVI": null,
+      "descriptionEN": "SCS Cam-S camera hành trình gắn mũ Full HD 1080p, quay liên tục 10h (vừa sạc vừa quay), IP67, app ROADCam. Giá 3.290.000đ — lưu bằng chứng mọi tình huống giao thông tại BigBike.",
+      "canonicalUrl": "http://103.1.236.148:3000/product/camera-hanh-trinh-gan-xe-scs-cam-s/"
+    },
+    "faqs": [
       {
-        "value": "10h",
-        "label": "Quay liên tục (vừa sạc)",
-        "valueEn": null,
-        "labelEn": null,
-        "sortOrder": 1
+        "question": "Camera SCS CAM-S có chống nước không, đi mưa dùng được không?",
+        "answer": "<p>Có, sản phẩm đạt chuẩn chống nước IP67, sử dụng bình thường khi đi mưa hoặc thời tiết xấu.</p>",
+        "sortOrder": 0,
+        "questionEn": "Is the SCS CAM-S waterproof for rainy rides?",
+        "answerEn": "<p>Yes, it is rated IP67 waterproof and can be used normally in rain or bad weather.</p>"
       },
       {
-        "value": "1080p",
-        "label": "Full HD",
-        "valueEn": null,
-        "labelEn": null,
-        "sortOrder": 2
+        "question": "Camera gắn được trên những loại mũ bảo hiểm nào?",
+        "answer": "<p>Camera lắp đặt chắc chắn trên hầu hết các loại mũ bảo hiểm: Fullface, 3/4 và mũ lật hàm, cũng như gắn trực tiếp lên xe máy hoặc xe đạp.</p>",
+        "sortOrder": 1,
+        "questionEn": "Which helmet types can the camera be mounted on?",
+        "answerEn": "<p>It mounts securely on most helmet types — full-face, 3/4 and modular — as well as directly on a motorcycle or bicycle.</p>"
       },
       {
-        "value": "IP67",
-        "label": "Chuẩn chống nước",
-        "valueEn": null,
-        "labelEn": null,
-        "sortOrder": 3
-      },
-      {
-        "value": "ROADCam",
-        "label": "App điều khiển",
-        "valueEn": null,
-        "labelEn": null,
-        "sortOrder": 4
-      }
-    ],
-    "trustBadges": [
-      {
-        "content": "Chính hãng",
-        "contentEn": "Genuine Product",
-        "sortOrder": 1
-      },
-      {
-        "content": "BH 24 tháng",
-        "contentEn": "24-month warranty",
-        "sortOrder": 2
-      },
-      {
-        "content": "Freeship toàn quốc",
-        "contentEn": "Free nationwide shipping",
-        "sortOrder": 3
+        "question": "Pin camera dùng được bao lâu, có vừa sạc vừa quay được không?",
+        "answer": "<p>Camera hỗ trợ quay liên tục lên đến 10 giờ và có thể vừa sạc vừa quay, phù hợp cho những chuyến đi dài.</p>",
+        "sortOrder": 2,
+        "questionEn": "How long does the battery last, and can it record while charging?",
+        "answerEn": "<p>It supports up to 10 hours of continuous recording and can record while charging, ideal for long trips.</p>"
       }
     ],
     "commitments": [
       {
         "icon": "truck",
         "title": "Toàn quốc · COD",
-        "subtitle": "Giao hàng 0–4 ngày",
+        "subtitle": "Giao hàng 2–3 ngày",
+        "sortOrder": 0,
         "titleEn": "Nationwide · COD",
-        "subtitleEn": "Delivery in 0–4 days",
-        "sortOrder": 1
+        "subtitleEn": "Delivery in 2–3 days"
       },
       {
-        "icon": "wrench",
-        "title": "Hỗ trợ lắp đặt tại Shop",
-        "subtitle": "Gửi clip hướng dẫn từ xa",
-        "titleEn": "In-store installation support",
-        "subtitleEn": "Remote setup guidance via video",
-        "sortOrder": 2
+        "icon": "refresh-cw",
+        "title": "Đổi size 30 ngày",
+        "subtitle": "Chính sách đổi trả",
+        "sortOrder": 1,
+        "titleEn": "Size exchange in 30 days",
+        "subtitleEn": "Exchange policy"
       },
       {
         "icon": "shield-check",
-        "title": "2 năm- 3 tháng cho phụ kiện",
+        "title": "2 năm chính hãng",
         "subtitle": "Bảo hành",
+        "sortOrder": 2,
         "titleEn": "2-year official warranty",
-        "subtitleEn": "Warranty",
-        "sortOrder": 3
+        "subtitleEn": "Warranty"
       }
     ],
-    "positiveNotes": [
-      {
-        "content": "•\tQuay liên tục 10h khi vừa sạc vừa quay — camera giám sát chạy cả ngày không lo hết pin",
-        "contentEn": "•\t10-hour continuous recording when plugged in — surveillance camera that runs all day without battery worry",
-        "sortOrder": 1
-      },
-      {
-        "content": "•\tIP67 — đi mưa, đèo sương không cần tháo thiết bị",
-        "contentEn": "•\tIP67 waterproofing — ride through rain and mountain fog without removing the device",
-        "sortOrder": 2
-      },
-      {
-        "content": "•\tGắn được trên mũ fullface, 3/4, lật hàm và ghi đông xe — full phụ kiện trong hộp",
-        "contentEn": "•\tMounts on fullface, 3/4, flip helmet and handlebars — full accessory kit in the box",
-        "sortOrder": 3
-      },
-      {
-        "content": "•\tApp ROADCam xem lại video trên điện thoại ngay sau khi dừng xe, không cần tháo thẻ nhớ",
-        "contentEn": "•\tROADCam app lets you review footage on your phone immediately after stopping, no card removal needed",
-        "sortOrder": 4
-      },
-      {
-        "content": "•\t3.290.000đ — rẻ hơn đáng kể so với GoPro Hero (8–12 triệu) cho mục đích giám sát hành trình thuần túy",
-        "contentEn": "•\t3,290,000 VND — significantly cheaper than a GoPro Hero (8–12M VND) for pure road surveillance purposes",
-        "sortOrder": 5
-      }
-    ],
-    "negativeNotes": [
-      {
-        "content": "•\tChống rung kém hơn action cam chuyên dụng — đường xóc, ổ gà thấy rung rõ trong video, không phù hợp nếu mục tiêu là quay clip đẹp",
-        "contentEn": "•\tBasic image stabilisation — bumpy roads and potholes produce visible shake; not suitable if the goal is aesthetically good footage",
-        "sortOrder": 1
-      },
-      {
-        "content": "•\tKhông có màn hình xem trực tiếp — phải kết nối app điện thoại để kiểm tra góc quay trước khi xuất phát",
-        "contentEn": "•\tNo built-in screen — must connect via the ROADCam app to check framing before riding",
-        "sortOrder": 2
-      },
-      {
-        "content": "•\tKhông có intercom hay âm thanh — chỉ là camera thuần túy, không thay thế tai nghe",
-        "contentEn": "•\tNo intercom or audio output — a camera only, cannot replace a headset or communicate with riding partners",
-        "sortOrder": 3
-      },
-      {
-        "content": "•\tThẻ 32GB chỉ lưu ~3–4 giờ video trước khi ghi đè — phải mua thẻ 64GB+ nếu muốn giữ dữ liệu lâu hơn",
-        "contentEn": "•\tA 32GB card stores only ~3–4 hours before overwriting — need 64GB+ to retain footage longer",
-        "sortOrder": 4
-      }
-    ],
-    "faqs": [
-      {
-        "question": "H: SCS Cam-S quay được bao lâu nếu không cắm sạc?",
-        "answer": "<p><span style=\"color: rgb(51, 51, 51);\">Đ: Điểm mạnh thực sự là khả năng vừa sạc vừa quay liên tục đến 10 giờ. Cắm pin dự phòng hoặc nguồn từ xe là quay không giới hạn cả ngày</span></p>",
-        "questionEn": "Q: How long does the Cam-S record on its own battery (without charging)?",
-        "answerEn": "<p><span style=\"color: rgb(51, 51, 51);\">A: The key capability is 10 hours of continuous recording when plugged in. Connect a power bank or bike power and it records all day without interruption</span></p>",
-        "sortOrder": 1
-      },
-      {
-        "question": "H: Video từ Cam-S có dùng làm bằng chứng va chạm giao thông được không?",
-        "answer": "<p><span style=\"color: rgb(51, 51, 51);\">Đ: Được — đây chính là mục đích chính của Cam-S. Full HD 1080p đủ để đọc biển số xe và nhận diện loại xe trong điều kiện ánh sáng ban ngày. Sau va chạm, vào app ROADCam lưu đoạn video lại ngay trước khi máy ghi đè, rồi có thể dùng làm việc với CSGT, bảo hiểm hoặc tranh chấp dân sự.</span></p>",
-        "questionEn": "Q: Can the video be used as evidence in a traffic collision?",
-        "answerEn": "<p><span style=\"color: rgb(51, 51, 51);\">A: Yes — this is the primary purpose of the Cam-S. Full HD 1080p is sufficient to read licence plates and identify vehicle colour and type in daylight. After a collision, immediately open the ROADCam app and save the relevant clip before the camera overwrites it. The saved file can be shared with traffic police, insurance, or used in civil disputes</span></p>",
-        "sortOrder": 2
-      },
-      {
-        "question": "H: Thẻ nhớ bao nhiêu GB lưu được bao lâu?",
-        "answer": "<p><span style=\"color: rgb(51, 51, 51);\">Đ: Full HD 1080p tiêu khoảng 3–4GB/giờ. Thẻ 32GB ≈ 3–4 giờ trước khi ghi đè; thẻ 64GB ≈ 6–8 giờ; thẻ 128GB ≈ 10–12 giờ. Cam-S tự động ghi đè video cũ nhất khi thẻ đầy — bạn chỉ cần lưu đoạn quan trọng ngay sau khi có sự cố.</span></p>",
-        "questionEn": "Q: How much recording time does each memory card size give?",
-        "answerEn": "<p><span style=\"color: rgb(51, 51, 51);\">A: Full HD 1080p uses roughly 3–4GB per hour. A 32GB card gives ~3–4 hours before overwriting; 64GB gives ~6–8 hours; 128GB gives ~10–12 hours. The Cam-S automatically overwrites the oldest footage when the card fills up — you only need to save clips manually after an incident</span></p>",
-        "sortOrder": 3
-      },
-      {
-        "question": "H: Đi mưa có dùng được không?",
-        "answer": "<p><span style=\"color: rgb(51, 51, 51);\">Đ: Được — IP67, chịu ngâm nước 1m trong 30 phút. Mưa Sài Gòn, đèo sương, bắn nước từ xe trước đều ổn. Lau khô cổng sạc trước khi cắm điện sau khi bị ướt.</span></p>",
-        "questionEn": "Q: Does it work in heavy rain?",
-        "answerEn": "<p><span style=\"color: rgb(51, 51, 51);\">A: Yes — IP67 rated for 1m submersion for 30 minutes. Heavy city rain, mountain fog, and water splashes from vehicles ahead are all handled without stopping. Dry the charging port before plugging in after getting wet.</span></p>",
-        "sortOrder": 4
-      },
-      {
-        "question": "H: App ROADCam trên điện thoại làm được gì?",
-        "answer": "<p><span style=\"color: rgb(51, 51, 51);\">Đ: Xem live preview góc quay để điều chỉnh trước khi chạy; xem lại và tải video về điện thoại; thay đổi cài đặt độ phân giải; lưu đoạn video quan trọng không bị ghi đè. Không cần tháo thẻ nhớ để xem lại video.</span></p>",
-        "questionEn": "Q: What does the ROADCam app do?",
-        "answerEn": "<p><span style=\"color: rgb(51, 51, 51);\">A: Live preview of the camera angle for positioning before you ride; review and download footage to your phone; adjust resolution and clip duration settings; save important clips to prevent overwriting. No need to remove the memory card.</span></p>",
-        "sortOrder": 5
-      },
-      {
-        "question": "H: Cam-S có chống rung tốt không? Đi đường xóc thì thế nào?",
-        "answer": "<p><span style=\"color: rgb(51, 51, 51);\">Đ: Chống rung ở mức cơ bản — đường nhựa phẳng thành phố thì ổn. Đường xóc, ổ gà, đường rừng sẽ thấy rung rõ trong video. Giới hạn này cần biết nếu muốn video đẹp — nhưng hoàn toàn đủ để nhận diện tình huống và đọc biển số xe.</span></p>",
-        "questionEn": "Q: Does the Cam-S have image stabilisation? What does footage look like on rough roads?",
-        "answerEn": "<p><span style=\"color: rgb(51, 51, 51);\">A: Basic stabilisation only — smooth city asphalt is fine, but potholes and unpaved roads will produce visible shake. This is a surveillance camera, not an action cam. The footage is more than adequate for identifying traffic situations and reading plates, but it's not suited for edited content.</span></p>",
-        "sortOrder": 6
-      },
-      {
-        "question": "H: Bảo hành Cam-S thế nào? Có bảo hành khi đi mưa hỏng không?",
-        "answer": "<p><span style=\"color: rgb(51, 51, 51);\">Đ: 24 tháng lỗi kỹ thuật tại BigBike qua 4T Hitek. Cam-S đạt IP67 nên đi mưa bình thường không hỏng — vẫn được bảo hành nếu lỗi kỹ thuật. Không bảo hành: va đập, cấn, móp, bể vỏ, hoặc vào nước sau khi vỏ đã nứt do ngã. Gặp lỗi nhắn Zalo 0764640679.</span></p>",
-        "questionEn": "Q: What does the warranty cover? Is water damage covered since it's IP67?",
-        "answerEn": "<p><span style=\"color: rgb(51, 51, 51);\">A: 24 months for manufacturing defects through BigBike via 4T Hitek. The Cam-S is IP67 rated, so rain riding is normal use — if it stops working due to a manufacturer fault, it's covered. Not covered: physical impact damage, cracked casing, or water intrusion after the housing has been compromised. Contact BigBike Zalo 0764640679 for guidance.</span></p>",
-        "sortOrder": 7
-      }
-    ],
+    "highlights": {
+      "positiveNotes": [
+        { "content": "Quay liên tục 10h, vừa sạc vừa quay — đủ cho cả ngày dài", "contentEn": "10h continuous recording, can record while charging — enough for a full day", "sortOrder": 0 },
+        { "content": "Full HD 1080P góc rộng, ghi rõ biển số và tình huống va chạm", "contentEn": "Full HD 1080P wide angle, clearly captures plates and collision situations", "sortOrder": 1 },
+        { "content": "Chống nước IP67, lắp được trên Fullface/3-4/lật hàm và cả xe máy, xe đạp", "contentEn": "IP67 waterproof, mounts on full-face/3-4/modular helmets and on motorcycles, bicycles", "sortOrder": 2 }
+      ],
+      "negativeNotes": [
+        { "content": "Xem lại video phải qua App điện thoại, chưa có màn hình hiển thị trực tiếp trên thân máy", "contentEn": "Video review requires the phone app — no built-in display screen on the device", "sortOrder": 0 }
+      ]
+    },
     "descriptionBlocks": [
       {
-        "alt": null,
-        "url": "https://bigbike.vn/wp-content/uploads/2025/11/z7493159519645_20ec5c09117332c79d30b6d6a09b1242.jpg",
+        "type": "paragraph",
+        "html": "<h1>&nbsp;SCS CAM-S | CAMERA HÀNH TRÌNH HỖ TRỢ LÁI XE AN TOÀN</h1>",
+        "htmlEn": "<h1>&nbsp;SCS CAM-S | DASH CAMERA FOR SAFER RIDING</h1>"
+      },
+      {
+        "type": "paragraph",
+        "html": "<h2>Giới thiệu sản phẩm</h2><p>Camera hành trình mũ bảo hiểm <strong>SCS CAM-S</strong> là lựa chọn lý tưởng cho anh em đi xe máy, phượt thủ và shipper cần ghi lại toàn bộ hành trình di chuyển mỗi ngày. Thiết kế nhỏ gọn – trọng lượng nhẹ – dễ lắp đặt, không gây vướng víu hay cản gió khi chạy tốc độ cao.</p><p>Sản phẩm hỗ trợ ghi hình <strong>Full HD 1080P</strong> sắc nét, góc quay rộng, hình ảnh rõ ràng cả ban ngày lẫn ban đêm, giúp lưu lại những khoảnh khắc quan trọng và tăng tính an toàn khi tham gia giao thông.</p><p>[caption id=\"attachment_40833\" align=\"alignnone\" width=\"2560\"]</p>",
+        "htmlEn": "<h2>Product introduction</h2><p>The helmet dash camera <strong>SCS CAM-S</strong> is the ideal choice for motorcyclists, tourers and delivery riders who need to record their entire daily journey. A compact design – light weight – easy to install, causing no obstruction or wind drag when riding at high speed.</p><p>The product supports <strong>Full HD 1080P</strong> sharp recording, a wide angle, clear images both day and night, helping capture important moments and increasing safety in traffic.</p><p>[caption id=\"attachment_40833\" align=\"alignnone\" width=\"2560\"]</p>"
+      },
+      {
         "type": "image",
-        "caption": ""
-      },
-      {
-        "html": "<p><span style=\"color: rgb(13, 13, 13); background-color: rgb(255, 255, 255);\"><strong>SCS CAM-S LÀ GÌ VÀ KHÔNG PHẢI LÀ GÌ</strong></span></p><p><span style=\"color: rgb(108, 106, 106);\"><strong>Đường phố Việt Nam không thiếu tình huống bất ngờ. Câu hỏi không phải là \"có bị va chạm không\" — mà là \"khi va chạm xảy ra, mình có bằng chứng gì trong tay không?\"</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Đó là lý do SCS Cam-S tồn tại. Cam-S không phải camera action để quay vlog phượt đẹp. Không phải GoPro để dựng clip đường đèo viral TikTok. Cam-S là thiết bị giám sát hành trình — có nhiệm vụ duy nhất: ghi lại tất cả những gì xảy ra trước mặt bạn, liên tục, để bạn có bằng chứng khi cần.</span></p><p>&nbsp;</p><p><span style=\"color: rgb(51, 51, 51);\"><strong>Bằng chứng làm được gì?</strong></span></p><p>•<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style=\"color: rgb(51, 51, 51);\">Xe kia đâm vào bạn rồi bỏ chạy → video có biển số, CSGT có thể truy tìm</span></p><p>•<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style=\"color: rgb(51, 51, 51);\">Va chạm xảy ra, hai bên tranh cãi ai sai → video phân xử ngay, không cần nhân chứng</span></p><p>•<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style=\"color: rgb(51, 51, 51);\">Bị hỏi \"tại sao đi nhanh quá\" hay \"mày vượt đèn đỏ\" → video chứng minh ngược lại</span></p><p>•<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style=\"color: rgb(51, 51, 51);\">Bảo hiểm hỏi \"xe ai lỗi?\" → video gửi đi, không cần mô tả bằng lời</span></p><p>&nbsp;</p><p><span style=\"color: rgb(51, 51, 51);\">10 giờ quay liên tục không phải để lưu trữ 10 giờ video. Cam-S ghi đè liên tục theo chu kỳ (loop recording) — video cũ nhất bị xóa khi thẻ đầy. Bạn chỉ cần giữ lại đoạn quan trọng khi sự cố xảy ra.</span></p><p>&nbsp;</p><p><span style=\"color: rgb(51, 51, 51);\"><strong>Cấu hình thẻ nhớ ảnh hưởng đến thời gian lưu:</strong></span></p><p>•<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style=\"color: rgb(51, 51, 51);\">Thẻ 32GB ≈ 3–4 giờ video Full HD 1080p trước khi ghi đè</span></p><p>•<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style=\"color: rgb(51, 51, 51);\">Thẻ 64GB ≈ 6–8 giờ — đủ 1 ngày làm của shipper</span></p><p>•<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style=\"color: rgb(51, 51, 51);\">Thẻ 128GB ≈ 10–12 giờ — ghi đè từ đầu hôm sau</span></p><p><span style=\"color: rgb(136, 136, 136);\"><em>Chọn thẻ nhớ phù hợp với hành trình — BigBike tư vấn khi mua.</em></span></p>",
-        "type": "paragraph"
-      },
-      {
-        "alt": null,
-        "url": "/media/uploads/6f4bc11f-a131-488e-a67c-242b268fae5e/camera-giam-sat-hanh-trinh-scs-cam-s-gan-tren-xe-.webp",
-        "html": "<p><span style=\"color: rgb(85, 85, 85);\"><strong>Lợi ích:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Cắm sạc từ pin dự phòng hoặc nguồn điện xe, Cam-S quay không ngắt — shipper làm ca 8 tiếng, biker đi tour 2 ngày đều không cần lo \"camera hết pin lúc quan trọng nhất.\"</span></p><p><span style=\"color: rgb(85, 85, 85);\"><strong>Bằng chứng:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Theo thông tin từ trang sản phẩm </span><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"http://BigBike.vn\"><span style=\"color: rgb(51, 51, 51);\">BigBike.vn</span></a><span style=\"color: rgb(51, 51, 51);\">: SCS Cam-S hỗ trợ quay liên tục lên đến 10h và có thể vừa sạc vừa quay.</span></p><p><span style=\"color: rgb(136, 136, 136);\"><em>📷 Cổng sạc Type-C của SCS Cam-S cận cảnh đang cắm sạc trong khi đèn record đỏ vẫn sáng — minh họa vừa sạc vừa quay.</em></span></p><p><span style=\"color: rgb(85, 85, 85);\"><em>Chống rung ở mức trung bình — đường xóc, ổ gà sẽ thấy rung trong video. Đây là camera giám sát, không phải action cam. Video dùng để xác nhận tình huống, không phải để edit clip đẹp.</em></span></p>",
-        "side": "right",
-        "type": "feature",
-        "items": [],
+        "url": "https://bigbike.vn/wp-content/uploads/2025/11/z7493159519645_20ec5c09117332c79d30b6d6a09b1242.jpg",
         "caption": "",
-        "heading": "Quay liên tục 10h — vừa sạc vừa quay, không lo hết pin giữa hành trình",
-        "listStyle": "bulleted",
-        "subheading": "Pin dung lượng khủng"
+        "captionEn": ""
       },
       {
-        "alt": null,
-        "url": "/media/uploads/93614df6-69e3-4df5-bd1f-aba1a5f2b0d8/camera-giam-sat-hanh-trinh-scs-cam-s-gan-tren-xe-pg1-.webp",
-        "html": "<p><span style=\"color: rgb(85, 85, 85);\"><strong>Lợi ích:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">1080p Full HD là ngưỡng tối thiểu để đọc biển số xe ở khoảng cách hợp lý và nhận diện màu xe, loại xe trong tình huống va chạm. Thấp hơn ngưỡng này sẽ khó dùng làm bằng chứng hữu hiệu.</span></p><p><span style=\"color: rgb(85, 85, 85);\"><strong>Bằng chứng:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Cam-S quay Full HD 1080p với góc rộng bao quát toàn cảnh phía trước, hình ảnh rõ nét cả ban ngày lẫn ban đêm theo thông số hãng.</span></p><p><span style=\"color: rgb(136, 136, 136);\"><em>📷 Screenshot từ video Cam-S quay ban ngày — thấy rõ biển số xe phía trước ở khoảng cách 5–10m.</em></span></p><p><span style=\"color: rgb(85, 85, 85);\"><em>Ban đêm dưới đèn đường thành phố vẫn nhận diện được biển số. Đường tối hoàn toàn không có đèn thì chất lượng giảm đáng kể — không có cảm biến ánh sáng lớn như camera ô tô chuyên dụng.</em></span></p>",
-        "side": "left",
-        "type": "feature",
-        "items": [],
+        "type": "paragraph",
+        "html": "<em>SCS CAM S gắn trên motor ADV</em><p>[/caption]</p>",
+        "htmlEn": "<em>SCS CAM S mounted on an ADV motorcycle</em><p>[/caption]</p>"
+      },
+      {
+        "type": "paragraph",
+        "html": "<h2>Ưu điểm nổi bật của camera hành trình mũ bảo hiểm SCS CAM-S</h2><p><br><span style=\"color: #000000;\">• Chuẩn ghi hình <strong>Full HD 1080P</strong> – hình ảnh rõ nét, màu sắc trung thực</span><br><span style=\"color: #000000;\">• Ống kính góc rộng – ghi lại toàn cảnh phía trước, hạn chế điểm mù</span><br><span style=\"color: #000000;\">• Thiết kế siêu<strong> nhỏ gọn, trọng lượng nhẹ, không gây rung lắc</strong> hay khó chịu khi đội mũ</span><br><span style=\"color: #000000;\">• Lắp đặt chắc chắn trên hầu hết các loại mũ bảo hiểm: Fullface, 3/4, mũ lật hàm</span><br><span style=\"color: #000000;\">• Chống rung tốt, hình ảnh ổn định ngay cả khi đi đường xấu hoặc tăng tốc đột ngột</span><br><span style=\"color: #000000;\">• Kết nối App điện thoại – xem lại video nhanh chóng chỉ trong vài giây</span><br><span style=\"color: #000000;\">• Điều khiển trực tiếp trên điện thoại, thao tác đơn giản, dễ sử dụng</span><br><span style=\"color: #000000;\">• Hỗ trợ <strong>quay liên tục lên đến 10h</strong>, pin bền bỉ</span><br><span style=\"color: #000000;\">• Có thể vừa sạc vừa quay, phù hợp cho những chuyến đi dài</span><br><span style=\"color: #000000;\">• Chống nước chuẩn <strong>IP67</strong>, yên tâm sử dụng khi đi mưa hoặc thời tiết xấu</span></p><p>[caption id=\"attachment_40834\" align=\"alignnone\" width=\"1541\"]</p>",
+        "htmlEn": "<h2>Outstanding advantages of the SCS CAM-S helmet dash camera</h2><p><br><span style=\"color: #000000;\">• Recording standard <strong>Full HD 1080P</strong> – sharp images, true-to-life colors</span><br><span style=\"color: #000000;\">• Wide-angle lens – captures the full view ahead, reducing blind spots</span><br><span style=\"color: #000000;\">•<strong> A compact, lightweight design with no shaking</strong> or discomfort when wearing the helmet</span><br><span style=\"color: #000000;\">• Mounts securely on most helmet types: full-face, 3/4, modular</span><br><span style=\"color: #000000;\">• Good anti-shake, stable footage even on rough roads or sudden acceleration</span><br><span style=\"color: #000000;\">• Phone-app connection – review video quickly in just seconds</span><br><span style=\"color: #000000;\">• Direct control from your phone, simple operation, easy to use</span><br><span style=\"color: #000000;\">• Supports <strong>continuous recording up to 10h</strong>, durable battery</span><br><span style=\"color: #000000;\">• Can record while charging, ideal for long trips</span><br><span style=\"color: #000000;\">• Waterproof rated <strong>IP67</strong>, worry-free use in rain or bad weather</span></p><p>[caption id=\"attachment_40834\" align=\"alignnone\" width=\"1541\"]</p>"
+      },
+      {
+        "type": "image",
+        "url": "https://bigbike.vn/wp-content/uploads/2025/11/z7377752926439_0bb1f708302debdf8f35ec47df77bf1d-1.jpg",
         "caption": "",
-        "heading": "Full HD 1080p góc rộng — đọc được biển số, nhận diện tình huống giao thông",
-        "listStyle": "bulleted",
-        "subheading": "Camera full HD"
+        "captionEn": ""
       },
       {
-        "alt": null,
-        "url": "/media/uploads/a7b280e6-988a-4828-8703-b07020d45483/camera-giam-sat-hanh-trinh-scs-cam-s-gan-tren-xe-pg1-mat-truoc.webp",
-        "html": "<p><span style=\"color: rgb(85, 85, 85);\"><strong>Lợi ích:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Theo thông số của nhà sản xuất, IP67 chịu được </span><span style=\"color: red;\">ngâm nước 1m trong 30 phút</span><span style=\"color: rgb(51, 51, 51);\">— mưa Sài Gòn, đèo sương, bắn nước từ xe trước đều không lo. Không cần dừng xe che camera hay tháo ra mỗi khi trời chuyển mưa.</span></p><p><span style=\"color: rgb(85, 85, 85);\"><strong>Bằng chứng:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">SCS Cam-S đạt chuẩn chống nước IP67 theo thông số nhà sản xuất và xác nhận từ trang </span><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"http://BigBike.vn\"><span style=\"color: rgb(51, 51, 51);\">BigBike.vn</span></a><span style=\"color: rgb(51, 51, 51);\">.</span></p><p><span style=\"color: rgb(136, 136, 136);\"><em>📷 SCS Cam-S đang gắn trên mũ trong cảnh mưa — giọt nước bắn vào thiết bị nhưng vẫn đang hoạt động, đèn record sáng.</em></span></p><p><span style=\"color: rgb(85, 85, 85);\"><em>Sau khi bị ướt nhiều, lau khô cổng sạc trước khi cắm điện. IP67 bảo vệ khỏi nước thời tiết — không bảo vệ va đập khi ngã.</em></span></p>",
-        "side": "right",
-        "type": "feature",
-        "items": [],
+        "type": "paragraph",
+        "html": "<em>Full bộ phụ kiện SCS Cam-S gắn trên xe máy - xe đạp - mũ bảo hiểm</em><p>[/caption]</p>",
+        "htmlEn": "<em>Full SCS Cam-S accessory set mounted on motorcycle - bicycle - helmet</em><p>[/caption]</p>"
+      },
+      {
+        "type": "paragraph",
+        "html": "<h2>Ứng dụng thực tế</h2><p>Camera hành trình<strong> SCS CAM-S</strong> đặc biệt phù hợp cho:<br>\n  • Người đi xe máy hằng ngày<br>\n  • Shipper, tài xế công nghệ<br>\n  • Phượt thủ, biker đi tour dài<br>\n  • Người cần lưu bằng chứng khi xảy ra va chạm giao thông</p><p>[caption id=\"attachment_40829\" align=\"alignnone\" width=\"2560\"]</p>",
+        "htmlEn": "<h2>Real-world use</h2><p>The dash camera<strong> SCS CAM-S</strong> is especially suited for:<br>\n  • Daily motorcycle riders<br>\n  • Delivery and ride-hailing drivers<br>\n  • Tourers and bikers on long trips<br>\n  • Anyone needing evidence in a traffic collision</p><p>[caption id=\"attachment_40829\" align=\"alignnone\" width=\"2560\"]</p>"
+      },
+      {
+        "type": "image",
+        "url": "https://bigbike.vn/wp-content/uploads/2025/11/z7493139711866_3939b176029cc402f9919f5a5b7fbdd5.jpg",
         "caption": "",
-        "heading": "IP67 — đi mưa, đi đèo sương không cần tháo camera",
-        "listStyle": "bulleted",
-        "subheading": "chống mưa ip67"
+        "captionEn": ""
       },
       {
-        "alt": null,
-        "url": "/media/uploads/7884892f-f1c3-4a1d-9238-b9d5f2c6f431/camera-giam-sat-hanh-trinh-scs-cam-s-bo-phu-kien.webp",
-        "html": "<p><span style=\"color: rgb(85, 85, 85);\"><strong>Lợi ích:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Bộ phụ kiện kèm hộp cho phép gắn Cam-S theo nhu cầu: gắn mũ để góc nhìn theo đầu người, gắn ghi đông để góc cố định. Không cần mua thêm phụ kiện cho các loại mũ phổ biến.</span></p><p><span style=\"color: rgb(85, 85, 85);\"><strong>Bằng chứng:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Cam-S hỗ trợ lắp đặt trên mũ fullface, 3/4, lật hàm, xe máy và xe đạp theo thông tin </span><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"http://BigBike.vn\"><span style=\"color: rgb(51, 51, 51);\">BigBike.vn</span></a><span style=\"color: rgb(51, 51, 51);\"> — full bộ phụ kiện gắn đi kèm trong hộp.</span></p><p><span style=\"color: rgb(136, 136, 136);\"><em>📷 So sánh 2 ảnh: SCS Cam-S gắn trên mũ fullface (góc trái) và gắn trên ghi đông xe máy (góc phải) — thể hiện tính linh hoạt vị trí.</em></span></p><p><span style=\"color: rgb(85, 85, 85);\"><em>Mỗi lần chuyển vị trí cần tháo và gắn lại bằng tay. Nên quyết định vị trí cố định trước khi xuất phát, không thay đổi giữa chuyến.</em></span></p>",
-        "side": "left",
-        "type": "feature",
-        "items": [],
+        "type": "paragraph",
+        "html": "<em>SCS CAM S gắn trên motor ADV</em><p>[/caption]</p>",
+        "htmlEn": "<em>SCS CAM S mounted on an ADV motorcycle</em><p>[/caption]</p>"
+      },
+      {
+        "type": "paragraph",
+        "html": "<h2>Thông số kỹ thuật (tham khảo)</h2><p><br>\n  • Độ phân giải: <strong>Full HD 1080P</strong><br>\n  • Góc quay: <strong>Góc rộng, bao quát toàn cảnh</strong><br>\n  • Thời lượng pin: <strong>10H</strong><br>\n  • Kết nối: <strong>App điện thoại</strong><br>\n  • Chuẩn chống nước: <strong>IP67</strong><br>\n  • Lắp đặt: <strong>Gắn mũ bảo hiểm - xe máy - xe đạp</strong></p><p>[caption id=\"attachment_40838\" align=\"alignnone\" width=\"1438\"]</p>",
+        "htmlEn": "<h2>Technical specifications (for reference)</h2><p><br>\n  • Resolution: <strong>Full HD 1080P</strong><br>\n  • Field of view: <strong>Wide angle, full panoramic coverage</strong><br>\n  • Battery life: <strong>10H</strong><br>\n  • Connectivity: <strong>Phone app</strong><br>\n  • Waterproof rating: <strong>IP67</strong><br>\n  • Mounting: <strong>Helmet - motorcycle - bicycle mount</strong></p><p>[caption id=\"attachment_40838\" align=\"alignnone\" width=\"1438\"]</p>"
+      },
+      {
+        "type": "image",
+        "url": "https://bigbike.vn/wp-content/uploads/2025/11/z7493157127370_7a44a304f531fc8a6d323b6b7874f369.jpg",
         "caption": "",
-        "heading": "Gắn được trên mũ fullface, 3/4, lật hàm và xe máy — 1 thiết bị nhiều vị trí",
-        "listStyle": "bulleted",
-        "subheading": "lắp đặt đa vị trí"
+        "captionEn": ""
       },
       {
-        "html": "<p><span style=\"color: rgb(5, 5, 5);\"><strong>SCS CAM-S KHÔNG SINH RA ĐỂ LÀM ĐIỀU NÀY</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Trước khi mua, cần biết Cam-S không phải thứ gì:</span></p><p>•<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style=\"color: rgb(51, 51, 51);\">❌ Không phải camera vlog/action: Mục tiêu quay clip đẹp TikTok → xem GoPro, DJI, Insta360. Cam-S không có chống rung điện tử mạnh, không có slow-mo, không có màn hình.</span></p><p>•<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style=\"color: rgb(51, 51, 51);\">❌ Không phải camera so sánh hình ảnh với GoPro: Tiêu chuẩn đánh giá là \"có ghi được biển số không?\" — không phải \"màu có đẹp không?\"</span></p><p>•<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style=\"color: rgb(51, 51, 51);\">❌ Không phải thiết bị thay thế tai nghe SCS: Cam-S không có loa, không có mic intercom, không kết nối BT với mũ. Muốn vừa camera vừa intercom, xem <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://bigbike.vn/product/tai-nghe-bluetooth-camera-intercom-scs-g7\">SCS G7+</a> (3.290.000đ) hoặc <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://bigbike.vn/product/tai-nghe-bluetooth-intercom-scs-s12\">SCS S12</a> camera 2K (5.890.000đ).</span></p><p><span style=\"color: rgb(51, 51, 51);\">✅ Cam-S đúng với bạn nếu: cần thiết bị đáng tin cậy chạy liên tục, lưu bằng chứng, giá phải chăng, không cần setup phức tạp.</span></p>",
-        "type": "paragraph"
+        "type": "paragraph",
+        "html": "<em>SCS CAM S gắn trên xe máy</em><p>[/caption]</p>",
+        "htmlEn": "<em>SCS CAM S mounted on a motorcycle</em><p>[/caption]</p>"
       },
       {
-        "html": "<ul class=\"suitability-list\"><li><strong>Biker đi xe hàng ngày muốn bảo vệ pháp lý</strong> → Nội thành TP.HCM và các đô thị, đường đông xe, nguy cơ va chạm cao - Gắn lên là chạy, quay liên tục nền mà không cần thao tác — bằng chứng tự động có mặt khi cần -</li><li><strong>Shipper / tài xế công nghệ làm ca dài</strong> → Làm việc 8–10 tiếng/ngày, nhiều tình huống tranh chấp giao thông với KH hoặc người đi đường - Vừa sạc vừa quay liên tục — cắm sạc vào xe là camera chạy cả ngày, không cần nhớ bật tắt - Gắn cố định trên xe, không cần tháo vào ra mỗi ngày</li><li><strong>Biker muốn vừa có camera vừa có intercom</strong> → Đi phượt theo nhóm, cần nói chuyện với đồng hành đồng thời ghi lại hành trình - Cam-S không có intercom — không phục vụ được nhu cầu kép này - Xem <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://bigbike.vn/product/tai-nghe-bluetooth-camera-intercom-scs-g7\">SCS G7+</a> tích hợp camera 1080p + intercom BT (3.290.000đ) hoặc <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://bigbike.vn/product/tai-nghe-bluetooth-intercom-scs-s12\">SCS S12</a> camera 2K + intercom (5.890.000đ).</li><li><strong>Biker muốn quay vlog phượt chất lượng cao</strong> → Quay clip đường đèo để đăng TikTok, YouTube — cần hình đẹp, màu sắc tốt, chống rung mạnh - Cam-S chống rung yếu, không có slow-mo, không tối ưu cho post-production - GoPro Hero hoặc DJI Osmo Action sẽ cho kết quả tốt hơn đáng kể</li></ul>",
-        "type": "suitability",
-        "cards": null,
-        "title": "PHÙ HỢP VỚI AI"
+        "type": "paragraph",
+        "html": "<h2>Vì sao nên mua camera hành trình mũ bảo hiểm SCS CAM-S tại BigBike?</h2><p>• Sản phẩm chính hãng, chất lượng ổn định<br>\n  • Tư vấn kỹ thuật tận tình, dễ sử dụng<br>\n  • Phù hợp cho cả đi phố lẫn đi tour dài<br>\n  • Giá tốt nhất cho biker – shipper</p><p>[caption id=\"attachment_40839\" align=\"alignnone\" width=\"2560\"]</p>",
+        "htmlEn": "<h2>Why buy the SCS CAM-S helmet dash camera at BigBike?</h2><p>• Product: genuine, stable quality<br>\n  • Attentive technical advice, easy to use<br>\n  • Suitable for both city riding and long tours<br>\n  • Best prices for bikers and delivery riders</p><p>[caption id=\"attachment_40839\" align=\"alignnone\" width=\"2560\"]</p>"
+      },
+      {
+        "type": "image",
+        "url": "https://bigbike.vn/wp-content/uploads/2025/11/z7493137592727_4252e8f30b565c9105f986dfe3ff533f.jpg",
+        "caption": "",
+        "captionEn": ""
+      },
+      {
+        "type": "paragraph",
+        "html": "<em>Camera hành trình gắn mũ bảo hiểm <strong>SCS CAM-S</strong> lắp trên xe máy ghi hình khi di chuyển</em><p>[/caption]</p><p>👉 Camera hành trình gắn xe máy + mũ bảo hiểm <strong>SCS CAM-S</strong> là giải pháp ghi hình an toàn – tiện lợi – bền bỉ cho mọi cung đường. Liên hệ ngay<strong> Bigbike.vn</strong> để được tư vấn về dịch vụ và sản phẩm tốt nhất.</p><p>_____________________________________________________________________________________________________________</p>",
+        "htmlEn": "<em>Helmet dash camera <strong>SCS CAM-S</strong> mounted on a motorcycle recording while riding</em><p>[/caption]</p><p>👉 The motorcycle + helmet dash camera <strong>SCS CAM-S</strong> is a safe – convenient – durable recording solution for every road. Contact<strong> Bigbike.vn</strong> for advice on the best services and products.</p><p>_____________________________________________________________________________________________________________</p>"
+      },
+      {
+        "type": "paragraph",
+        "html": "<h3>📍 Chi nhánh BigbikeVN: 79/30/52. Đường Âu Cơ. Phường Hòa Bình. Q11</h3><p><img class=\"alignnone  wp-image-40855\" title=\"z7373822804413 31e6f9207f5f1d1f0bdb3150fb63515b\" src=\"https://bigbike.vn/wp-content/uploads/2024/03/z7373822804413_31e6f9207f5f1d1f0bdb3150fb63515b-300x225.jpg\" alt=\"z7373822804413 31e6f9207f5f1d1f0bdb3150fb63515b\" width=\"456\" height=\"342\"> <img class=\"alignnone  wp-image-40856\" title=\"z7373822804637 9cf132a55914f36fbdc38a090b091f2f\" src=\"https://bigbike.vn/wp-content/uploads/2024/03/z7373822804637_9cf132a55914f36fbdc38a090b091f2f-300x225.jpg\" alt=\"z7373822804637 9cf132a55914f36fbdc38a090b091f2f\" width=\"453\" height=\"340\"></p><p><span style=\"text-decoration: underline;\"><strong>THÔNG TIN LIÊN HỆ</strong></span></p><p>☎️ <strong>0764640679</strong> <em>(Thư BigbikeVN)</em><br>\n  ☎️ <strong>02862797251</strong> <em>(Shop BigbikeVN)</em></p><p>⏰ 𝗚𝗶𝗼̛̀ 𝗹𝗮̀𝗺 𝘃𝗶𝗲̣̂𝗰 : 9h - 21h (T2 - T7)</p><p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;9h - 17h (CN)</p><p>🌐&nbsp;<strong><span style=\"text-decoration: underline;\">Website</span>: </strong><a href=\"https://bigbike.vn/danh-muc-san-pham.html\">https://bigbike.vn/danh-muc-san-pham.html</a></p><p>🌐&nbsp;<strong><span style=\"text-decoration: underline;\">Shopee</span>:</strong><a href=\"https://shopee.vn/shopbaohobigbike?categoryId=100535&amp;entryPoint=ShopByPDP&amp;itemId=44455046360&amp;upstream=search\">https://shopee.vn/shopbaohobigbike?categoryId=100535&amp;entryPoint=ShopByPDP&amp;itemId=44455046360&amp;upstream=search</a></p><p>🌐 <strong><span style=\"text-decoration: underline;\">Tiktok</span></strong>: <a href=\"https://www.tiktok.com/@bigbike.vn\">https://www.tiktok.com/@bigbike.vn</a></p>",
+        "htmlEn": "<h3>📍 BigbikeVN branch: 79/30/52. Đường Âu Cơ. Phường Hòa Bình. Q11</h3><p><img class=\"alignnone  wp-image-40855\" title=\"z7373822804413 31e6f9207f5f1d1f0bdb3150fb63515b\" src=\"https://bigbike.vn/wp-content/uploads/2024/03/z7373822804413_31e6f9207f5f1d1f0bdb3150fb63515b-300x225.jpg\" alt=\"z7373822804413 31e6f9207f5f1d1f0bdb3150fb63515b\" width=\"456\" height=\"342\"> <img class=\"alignnone  wp-image-40856\" title=\"z7373822804637 9cf132a55914f36fbdc38a090b091f2f\" src=\"https://bigbike.vn/wp-content/uploads/2024/03/z7373822804637_9cf132a55914f36fbdc38a090b091f2f-300x225.jpg\" alt=\"z7373822804637 9cf132a55914f36fbdc38a090b091f2f\" width=\"453\" height=\"340\"></p><p><span style=\"text-decoration: underline;\"><strong>CONTACT INFORMATION</strong></span></p><p>☎️ <strong>0764640679</strong> <em>(Thư BigbikeVN)</em><br>\n  ☎️ <strong>02862797251</strong> <em>(Shop BigbikeVN)</em></p><p>⏰ 𝗚𝗶𝗼̛̀ 𝗹𝗮̀𝗺 𝘃𝗶𝗲̣̂𝗰 : 9h - 21h (T2 - T7)</p><p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;9h - 17h (CN)</p><p>🌐&nbsp;<strong><span style=\"text-decoration: underline;\">Website</span>: </strong><a href=\"https://bigbike.vn/danh-muc-san-pham.html\">https://bigbike.vn/danh-muc-san-pham.html</a></p><p>🌐&nbsp;<strong><span style=\"text-decoration: underline;\">Shopee</span>:</strong><a href=\"https://shopee.vn/shopbaohobigbike?categoryId=100535&amp;entryPoint=ShopByPDP&amp;itemId=44455046360&amp;upstream=search\">https://shopee.vn/shopbaohobigbike?categoryId=100535&amp;entryPoint=ShopByPDP&amp;itemId=44455046360&amp;upstream=search</a></p><p>🌐 <strong><span style=\"text-decoration: underline;\">Tiktok</span></strong>: <a href=\"https://www.tiktok.com/@bigbike.vn\">https://www.tiktok.com/@bigbike.vn</a></p>"
       }
     ],
-    "descriptionBlocksEn": [
-      {
-        "alt": null,
-        "url": "https://bigbike.vn/wp-content/uploads/2025/11/z7493159519645_20ec5c09117332c79d30b6d6a09b1242.jpg",
-        "type": "image",
-        "caption": ""
-      },
-      {
-        "html": "<p><span style=\"color: rgb(8, 8, 8); background-color: rgb(255, 255, 255);\"><strong>WHAT THE CAM-S IS AND ISN'T</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Vietnamese roads don't run out of surprises. The question isn't whether you'll have a near-miss — it's whether you'll have evidence in hand when it matters.</span></p><p><span style=\"color: rgb(51, 51, 51);\">That's what the SCS Cam-S exists for. It's not an action camera for scenic vlog footage. Not a GoPro for viral mountain pass clips. The Cam-S is a road surveillance device with one job: record everything in front of you, continuously, so you have evidence when you need it.</span></p><p><span style=\"color: rgb(51, 51, 51);\"><strong>What having that evidence means:</strong></span></p><p>•&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style=\"color: rgb(51, 51, 51);\">A car hits you and drives off → the video has the plate number, traffic police can track them</span></p><p>•&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style=\"color: rgb(51, 51, 51);\">A collision happens and both sides argue who was at fault → the video resolves it instantly, no witnesses needed</span></p><p>•&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style=\"color: rgb(51, 51, 51);\">Someone claims 'you were going too fast' or 'you ran the red' → the video proves otherwise</span></p><p>•&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style=\"color: rgb(51, 51, 51);\">Insurance asks 'whose fault was it?' → send the video, no need for written statements</span></p><p><span style=\"color: rgb(51, 51, 51);\">10 hours of continuous recording doesn't mean 10 hours of stored footage. The Cam-S uses loop recording — the oldest footage is overwritten when the card fills up. You only need to save the clip when something happens. The camera handles everything else automatically.</span></p><p><span style=\"color: rgb(51, 51, 51);\"><strong>Memory card capacity determines how long before overwriting:</strong></span></p><p>•&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style=\"color: rgb(51, 51, 51);\">32GB card ≈ 3–4 hours of Full HD 1080p before overwriting</span></p><p>•&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style=\"color: rgb(51, 51, 51);\">64GB card ≈ 6–8 hours — enough for a full shipper shift</span></p><p>•&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style=\"color: rgb(51, 51, 51);\">128GB card ≈ 10–12 hours — overwrites from the beginning the next day</span></p><p><span style=\"color: rgb(136, 136, 136);\"><em>Choose your card based on your typical trip length — BigBike advises at point of purchase</em></span></p>",
-        "type": "paragraph"
-      },
-      {
-        "alt": null,
-        "url": "/media/uploads/6f4bc11f-a131-488e-a67c-242b268fae5e/camera-giam-sat-hanh-trinh-scs-cam-s-gan-tren-xe-.webp",
-        "html": "<p><span style=\"color: rgb(85, 85, 85);\"><strong>Benefit:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Plug in a power bank or vehicle power and the Cam-S records non-stop — shippers working 8-hour shifts and bikers on 2-day tours don't have to worry about the camera dying at the worst possible moment.</span></p><p><span style=\"color: rgb(85, 85, 85);\"><strong>Evidence:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Per </span><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"http://BigBike.vn\"><span style=\"color: rgb(51, 51, 51);\">BigBike.vn</span></a><span style=\"color: rgb(51, 51, 51);\"> product page: the SCS Cam-S supports continuous recording up to 10 hours and can charge while recording.</span></p><p><span style=\"color: rgb(136, 136, 136);\"><em>📷 SCS Cam-S Type-C port close-up with charging cable plugged in while recording LED is still active — showing charge-and-record in action.</em></span></p>",
-        "side": "right",
-        "type": "feature",
-        "items": [
-          "Image stabilisation is basic — bumpy roads and potholes will produce visible shake in the footage. This is a surveillance camera, not an action cam. Video is for identifying situations, not for editing polished clips."
-        ],
-        "caption": "",
-        "heading": "10-Hour Continuous Recording — Charge and Record Without Interruption",
-        "listStyle": "bulleted",
-        "subheading": "The longest battery camera"
-      },
-      {
-        "alt": null,
-        "url": "/media/uploads/93614df6-69e3-4df5-bd1f-aba1a5f2b0d8/camera-giam-sat-hanh-trinh-scs-cam-s-gan-tren-xe-pg1-.webp",
-        "html": "<p><span style=\"color: rgb(85, 85, 85);\"><strong>Benefit:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">1080p Full HD is the minimum threshold for reading licence plates at a reasonable distance and identifying vehicle colour and type after a collision. Below this threshold, footage loses its value as evidence.</span></p><p><span style=\"color: rgb(85, 85, 85);\"><strong>Evidence:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">The Cam-S records Full HD 1080p with a wide-angle lens that captures the full scene ahead, clear in both daylight and night-time conditions per manufacturer spec.</span></p><p><span style=\"color: rgb(136, 136, 136);\"><em>📷 Screen capture from Cam-S footage showing a vehicle plate number clearly legible at 5–10m distance in daylight.</em></span></p>",
-        "side": "left",
-        "type": "feature",
-        "items": [
-          "In complete darkness with no street lighting, image quality drops significantly. The Cam-S does not have a large-sensor low-light system like dedicated automotive dash cams."
-        ],
-        "caption": "",
-        "heading": "Full HD 1080p Wide Angle — Read Licence Plates, Identify Road Incidents",
-        "listStyle": "bulleted",
-        "subheading": "Camera full hd 1080p"
-      },
-      {
-        "alt": null,
-        "url": "/media/uploads/a7b280e6-988a-4828-8703-b07020d45483/camera-giam-sat-hanh-trinh-scs-cam-s-gan-tren-xe-pg1-mat-truoc.webp",
-        "html": "<p><span style=\"color: rgb(85, 85, 85);\"><strong>Benefit:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">IP67 means the unit can be submerged in 1m of water for 30 minutes — heavy Ho Chi Minh City rain, mountain fog, water splashing from the vehicle ahead: all handled without stopping to remove or cover the camera.</span></p><p><span style=\"color: rgb(85, 85, 85);\"><strong>Evidence:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">SCS Cam-S IP67 rating per manufacturer specification and confirmed on the </span><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"http://BigBike.vn\"><span style=\"color: rgb(51, 51, 51);\">BigBike.vn</span></a><span style=\"color: rgb(51, 51, 51);\"> product page.</span></p><p><span style=\"color: rgb(136, 136, 136);\"><em>📷 SCS Cam-S mounted on a helmet in rain conditions — water droplets visible on unit, recording LED still active.</em></span></p>",
-        "side": "right",
-        "type": "feature",
-        "items": [
-          "Dry the charging port before plugging in after getting wet. IP67 protects against weather — not against impact damage from a fall"
-        ],
-        "caption": "",
-        "heading": "IP67 Waterproof — Ride Through Rain Without Removing the Camera",
-        "listStyle": "bulleted",
-        "subheading": "waterproof ip67"
-      },
-      {
-        "alt": null,
-        "url": "/media/uploads/7884892f-f1c3-4a1d-9238-b9d5f2c6f431/camera-giam-sat-hanh-trinh-scs-cam-s-bo-phu-kien.webp",
-        "html": "<p><span style=\"color: rgb(85, 85, 85);\"><strong>Benefit:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">The in-box mounting kit covers the common use cases: helmet mount for a POV angle that follows your head, or handlebar mount for a fixed forward angle. No additional accessories needed for standard helmets and bikes.</span></p><p><span style=\"color: rgb(85, 85, 85);\"><strong>Evidence:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Cam-S supports fullface, open-face 3/4, flip-front helmets, motorcycles and bicycles per </span><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"http://BigBike.vn\"><span style=\"color: rgb(51, 51, 51);\">BigBike.vn</span></a><span style=\"color: rgb(51, 51, 51);\"> product information — full mounting kit included in box.</span></p><p><span style=\"color: rgb(136, 136, 136);\"><em>📷 Side-by-side: Cam-S mounted on a fullface helmet (left) and on motorcycle handlebars (right) — showing mounting flexibility.</em></span></p>",
-        "side": "left",
-        "type": "feature",
-        "items": [
-          "Changing mount positions requires manual removal and reattachment. Decide on a fixed position before you leave — switching mid-journey is inconvenient."
-        ],
-        "caption": "",
-        "heading": "Mounts on Fullface, 3/4, Flip Helmet and Motorcycle Handlebars — One Device, Multiple Positions",
-        "listStyle": "bulleted",
-        "subheading": ""
-      },
-      {
-        "html": "<p><span style=\"color: rgb(51, 51, 51);\"><strong>WHAT THE CAM-S ISN'T FOR</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Before you buy, here's what the Cam-S is not:</span></p><p>•&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style=\"color: rgb(51, 51, 51);\">❌ Not a vlog/action camera: if your goal is polished TikTok footage → look at GoPro, DJI, or Insta360 instead. The Cam-S has no strong electronic stabilisation, no slow-motion, no screen.</span></p><p>•&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style=\"color: rgb(51, 51, 51);\">❌ Not a camera to compare image quality against a GoPro: the standard here is \"can it read the licence plate?\" — not \"does the colour look nice?\"</span></p><p>•&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style=\"color: rgb(51, 51, 51);\">❌ Not a replacement for an SCS intercom headset: the Cam-S has no speakers, no intercom mic, no Bluetooth pairing with your helmet. Want camera and intercom together? See <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://bigbike.vn/product/tai-nghe-bluetooth-camera-intercom-scs-g7\">SCS G7+</a> (3,290,000 VND) or <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://bigbike.vn/product/tai-nghe-bluetooth-intercom-scs-s12\">SCS S12</a> 2K camera (5,890,000 VND).</span></p><p><span style=\"color: rgb(51, 51, 51);\">✅ The Cam-S is right for you if: you need a reliable device that runs continuously, saves evidence, is reasonably priced, and doesn't require complicated setup.</span></p>",
-        "type": "paragraph"
-      },
-      {
-        "html": "<ul class=\"suitability-list\"><li><strong>Daily motorcycle commuter who wants legal protection</strong> → Urban riding in Ho Chi Minh City and other cities — dense traffic, high collision risk - Mount it and go — it records continuously in the background with no interaction needed. Evidence is automatically there when you need it - Choose a 64GB card so you're not overwriting after 3–4 hours.</li><li><strong>Courier / ride-hailing driver on long shifts</strong> → Working 8–10 hour shifts, frequent traffic disputes with customers or other road users - Plug into the bike's power and the camera runs the entire shift without needing to touch it - Mount it permanently on the bike, no need to remove daily</li><li><strong>Rider who wants camera plus intercom together</strong> → Group touring — needs to talk to riding partners while recording the journey - Cam-S has no intercom — cannot serve both needs simultaneously - See <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://bigbike.vn/product/tai-nghe-bluetooth-camera-intercom-scs-g7\">SCS G7+</a> with integrated 1080p camera and Bluetooth intercom (3,290,000 VND) or <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://bigbike.vn/product/tai-nghe-bluetooth-intercom-scs-s12\">SCS S12</a> with 2K dual camera (5,890,000 VND).</li><li><strong>Rider who wants high-quality vlog footage</strong> → Recording mountain pass content for TikTok or YouTube — image quality and stabilisation matter - Cam-S has weak stabilisation, no slow-motion, not optimised for post-production - A GoPro Hero or DJI Osmo Action will produce meaningfully better results, worth the higher price for this use case.</li></ul>",
-        "type": "suitability",
-        "cards": null,
-        "title": "WHO IT'S FOR"
-      }
-    ]
+    "suitabilitySection": {
+      "title": "PHÙ HỢP VỚI AI VÀ LỜI KHUYÊN",
+      "titleEn": "WHO IT'S FOR & OUR ADVICE",
+      "html": "<ul class=\"suitability-list\"><li><strong>Người đi xe máy hằng ngày, shipper, tài xế công nghệ</strong> → Ghi lại toàn bộ hành trình mỗi ngày, làm bằng chứng khi có va chạm giao thông.</li><li><strong>Phượt thủ, biker đi tour dài</strong> → Pin quay liên tục 10 giờ, vừa sạc vừa quay, phù hợp các chuyến đi dài ngày.</li><li><strong>Người chỉ cần ghi hình, không cần đàm thoại nhóm</strong> → SCS CAM-S chỉ ghi hình, không có Intercom — nếu cần vừa ghi hình vừa liên lạc nhóm, cân nhắc thêm dòng tai nghe Bluetooth Intercom riêng.</li></ul>",
+      "htmlEn": "<ul class=\"suitability-list\"><li><strong>Daily motorcycle riders, delivery and ride-hailing drivers</strong> → Records the entire daily journey as evidence in case of a traffic collision.</li><li><strong>Tourers and bikers on long trips</strong> → 10-hour continuous recording, can record while charging — suited for multi-day trips.</li><li><strong>Riders who only need recording, not group talk</strong> → The SCS CAM-S only records video and has no Intercom — pair it with a separate Bluetooth Intercom headset if you also need group communication.</li></ul>"
+    },
+    "sizeGuideSection": {
+      "title": "BẢNG SIZE NGÀM GẮN (BẢN TEST DỮ LIỆU)",
+      "titleEn": "MOUNT BRACKET SIZE (TEST DATA)",
+      "html": "<table style=\"width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px;\"><thead><tr><th style=\"background:#1A1A1A;color:#FFFFFF !important;padding:11px 14px;text-align:center;font-weight:600;\">Loại ngàm gắn</th><th style=\"background:#1A1A1A;color:#FFFFFF !important;padding:11px 14px;text-align:center;font-weight:600;\">Vị trí gắn phù hợp</th></tr></thead><tbody><tr style=\"background:#FFFFFF;\"><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;font-weight:700;\">Ngàm mũ bảo hiểm (kèm hộp)</td><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;\">Fullface, 3/4, lật hàm</td></tr><tr style=\"background:#F7F7F7;\"><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;font-weight:700;\">Ngàm xe (mua thêm riêng)</td><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;\">Ghi đông xe máy, xe đạp</td></tr></tbody></table><p style=\"font-size:13px;margin:6px 0;\"><em>*Lưu ý: Bảng size ngàm gắn này là dữ liệu giả định được tạo ra để test chức năng hiển thị của khối Size Guide trên website cho dòng camera hành trình.</em></p>",
+      "htmlEn": "<table style=\"width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px;\"><thead><tr><th style=\"background:#1A1A1A;color:#FFFFFF !important;padding:11px 14px;text-align:center;font-weight:600;\">Mount type</th><th style=\"background:#1A1A1A;color:#FFFFFF !important;padding:11px 14px;text-align:center;font-weight:600;\">Suitable position</th></tr></thead><tbody><tr style=\"background:#FFFFFF;\"><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;font-weight:700;\">Helmet mount (included)</td><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;\">Full-face, 3/4, modular</td></tr><tr style=\"background:#F7F7F7;\"><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;font-weight:700;\">Vehicle mount (sold separately)</td><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;\">Motorcycle or bicycle handlebar</td></tr></tbody></table><p style=\"font-size:13px;margin:6px 0;\"><em>*Note: This is a mock mount-size guide created so you can test the UI functionality of the Size Guide block for dash cameras.</em></p>"
+    }
   },
   {
-    "sku": "TNB-SCS-S10X",
-    "name": "SCS S10X",
-    "slug": "scs-s10x",
+    "sku": "TNB-SCS-S13",
     "categoryId": "tai-nghe-bluetooth-mu-bao-hiem",
     "brandId": "scs",
-    "retailPrice": 1550000,
-    "image": {
-      "url": "/media/uploads/21b71dc3-0edc-49e2-92da-cae1a74f0785/tai-nghe-bluetooth-intercom-2-nguoi-gan-mu-bao-hiem-scs-s10x-anh-hero.webp"
+    "gender": "Unisex",
+    "retailPrice": null,
+    "salePrice": null,
+    "name": {
+      "nameVI": "SCS S13",
+      "nameEN": "SCS S13 Mesh Intercom"
     },
-    "gallery": [
-      {
-        "url": "/media/uploads/21b71dc3-0edc-49e2-92da-cae1a74f0785/tai-nghe-bluetooth-intercom-2-nguoi-gan-mu-bao-hiem-scs-s10x-anh-hero.webp"
-      },
-      {
-        "url": "/media/uploads/3aebdb32-0338-4480-a28d-fe8da1588a69/tai-nghe-bluetooth-intercom-2-nguoi-gan-mu-bao-hiem-scs-s10x-lap-tren-non.webp"
-      },
-      {
-        "url": "/media/uploads/30b1281e-7372-4422-9215-e8e8de790451/tai-nghe-bluetooth-intercom-2-nguoi-gan-mu-bao-hiem-scs-s10x-full-phu-kien.webp"
-      }
-    ],
-    "shortDescription": "<p><span style=\"color: rgb(51, 51, 51);\">Intercom Bluetooth 2 người 1000m, pin 35 giờ thực tế, IP67 chống nước ngâm. Phân phối chính hãng tại BigBike qua 4T Hitek</span></p>",
-    "specificationsHtml": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:18px;color:#111111;max-width:100%;\">\n\n  <h2 style=\"font-family:'Barlow Condensed',Arial,sans-serif;font-size:22px;font-weight:bold;text-transform:uppercase;color:#F90606 !important;margin:0 0 16px 0;letter-spacing:0.5px;\">THÔNG SỐ KỸ THUẬT</h2>\n\n  <table style=\"width:100%;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;font-size:18px;\">\n    <thead>\n      <tr>\n        <th style=\"padding:12px 16px;border:1px solid #dddddd;background-color:#f5f5f5;font-weight:bold;color:#111111 !important;text-align:left;width:38%;\">Thông số</th>\n        <th style=\"padding:12px 16px;border:1px solid #dddddd;background-color:#f5f5f5;font-weight:bold;color:#111111 !important;text-align:left;\">Chi tiết</th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Thương hiệu</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">SCS (SUCCESS ETC TECHNOLOGY CO., LTD) — Trung Quốc</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Model</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">SCS S10X</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Loại sản phẩm</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Tai nghe Bluetooth Intercom 2 người gắn mũ bảo hiểm</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Bluetooth</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Version 5.3</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Khoảng cách intercom</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"color:#F90606 !important;\">1000m</strong> <span style=\"font-size:14px;color:#6f6f6f !important;\">(điều kiện lý tưởng, đường thẳng, không vật cản)</span></td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Số người kết nối</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">2 người đồng thời</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Pin sử dụng</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"color:#F90606 !important;\">35 giờ</strong> intercom liên tục <span style=\"font-size:14px;color:#6f6f6f !important;\">(theo spec hãng)</span></td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Pin chờ (standby)</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">15 ngày</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Thời gian sạc đầy</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">2.5 giờ</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Chuẩn chống nước</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"color:#F90606 !important;\">IP67</strong> — ngâm nước sâu 1m trong 30 phút</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Loa</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">40mm — CVC + DSP khử tiếng ồn kỹ thuật số</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Mic</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Boom mic cứng + Pad mic mềm (kèm trong hộp)</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Tương thích mũ</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Fullface và Mũ 3/4</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Hỗ trợ tiếng Việt</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Có — thông báo giọng nói tiếng Việt</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Kết nối cross-brand</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Tương thích Cardo, Sena theo dạng 1-1 (BT chuẩn) <span style=\"font-size:14px;color:#6f6f6f !important;\">— không Mesh cross-brand</span></td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Xuất xứ</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Trung Quốc</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Bảo hành</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">24 tháng lỗi kỹ thuật/NSX <span style=\"font-size:14px;color:#6f6f6f !important;\">· Không BH: va đập, cấn, móp, bể, vào nước do sử dụng</span></td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Giá</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"font-size:20px;color:#F90606 !important;\">1.550.000đ</strong></td></tr>\n    </tbody>\n  </table>\n\n</div>",
+    "slug": {
+      "slugVI": "tai-nghe-bluetooth-intercom-scs-s13",
+      "slugEN": null
+    },
+    "shortDescription": {
+      "shortDescriptionVI": "<p></p><p><span style=\"color: rgb(51, 51, 51);\">Tai nghe Intercom Bluetooth trang bị công nghệ Mesh thế hệ mới, cho phép kết nối liên lạc lên đến 10 người cùng lúc. Khoảng cách nhóm xa đến 2000m, là bản nâng cấp hoàn hảo cho các đoàn phượt đông thành viên. Phân phối chính hãng tại BigBike qua 4T Hitek.</span></p>",
+      "shortDescriptionEN": "<p><span style=\"color: rgb(51, 51, 51);\">Equipped with advanced Mesh technology, the SCS S13 connects up to 10 riders simultaneously. Boasting a 2000m group range, it's the perfect upgrade for large motorcycle groups. Distributed officially by BigBike.</span></p>"
+    },
+    "specificationsHtml": {
+      "specificationsHtmlVI": "<table style=\"width:100%;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;font-size:18px;margin:0 0 24px 0;\">\n  <thead>\n    <tr>\n      <th style=\"padding:12px 16px;border:1px solid #dddddd;background-color:#f5f5f5;font-weight:bold;color:#111111 !important;text-align:left;width:38%;\">Thông số</th>\n      <th style=\"padding:12px 16px;border:1px solid #dddddd;background-color:#f5f5f5;font-weight:bold;color:#111111 !important;text-align:left;\">Chi tiết</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Thương hiệu</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">SCS (SUCCESS ETC TECHNOLOGY CO., LTD)</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Model</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">SCS S13</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Công nghệ kết nối</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"color:#F90606 !important;\">Mesh Intercom</strong> + Bluetooth 5.1</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Số người kết nối</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Lên đến <strong style=\"color:#F90606 !important;\">10 người đồng thời</strong> qua Mesh</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Khoảng cách nhóm</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Lên đến 2000m (điều kiện không vật cản)</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Thời lượng pin</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">10 giờ (Mesh Intercom) / 15 giờ (Bluetooth)</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Chuẩn chống nước</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">IP67 — Chống chịu mưa lớn tốt</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Loa & Âm thanh</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Loa HD 40mm, công nghệ khử ồn CVC + DSP</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Hỗ trợ kết nối song song</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Vừa nghe nhạc vừa trò chuyện (Audio Multitasking)</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Xuất xứ thương hiệu</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Thương hiệu Trung Quốc</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Sản xuất tại</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Trung Quốc</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Bảo hành</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">24 tháng lỗi kỹ thuật</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Giá</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"font-size:22px;color:#F90606 !important;\">3.190.000đ</strong></td></tr>\n  </tbody>\n</table>",
+      "specificationsHtmlEN": "<table style=\"width:100%;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;font-size:18px;margin:0 0 24px 0;\">\n  <thead>\n    <tr>\n      <th style=\"padding:12px 16px;border:1px solid #dddddd;background-color:#f5f5f5;font-weight:bold;color:#111111 !important;text-align:left;width:38%;\">Specification</th>\n      <th style=\"padding:12px 16px;border:1px solid #dddddd;background-color:#f5f5f5;font-weight:bold;color:#111111 !important;text-align:left;\">Detail</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Brand</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">SCS (SUCCESS ETC TECHNOLOGY CO., LTD)</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Model</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">SCS S13</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Connectivity</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"color:#F90606 !important;\">Mesh Intercom</strong> + Bluetooth 5.1</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Max simultaneous riders</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Up to <strong style=\"color:#F90606 !important;\">10 riders</strong> via Mesh</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Group range</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Up to 2000m (line-of-sight)</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Battery life</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">10 hours (Mesh) / 15 hours (Bluetooth)</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Water resistance</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">IP67</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Audio</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">40mm HD Speakers, CVC + DSP noise cancellation</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Audio Multitasking</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Yes</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Brand origin</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Chinese brand</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Made in</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">China</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Warranty</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">24 months technical defects</td></tr>\n    <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Price</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"font-size:22px;color:#F90606 !important;\">3,190,000 VND</strong></td></tr>\n  </tbody>\n</table>"
+    },
+    "specStatsHtml": {
+      "specStatsHtmlVI": "<div class=\"bb-specstats\" style=\"display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;border:1px solid var(--color-border,#e5e7eb);background:var(--color-border,#e5e7eb)\"><div style=\"display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--color-background,#ffffff);padding:24px 16px;text-align:center\"><span style=\"font-weight:700;font-size:24px;line-height:1;text-transform:uppercase;color:var(--color-brand,#e8281e)\">10 người</span><span style=\"font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--color-muted-foreground,#6b7280);opacity:0.72\">Kết nối Mesh tối đa</span></div><div style=\"display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--color-background,#ffffff);padding:24px 16px;text-align:center\"><span style=\"font-weight:700;font-size:24px;line-height:1;text-transform:uppercase;color:var(--color-brand,#e8281e)\">2000m</span><span style=\"font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--color-muted-foreground,#6b7280);opacity:0.72\">Khoảng cách nhóm</span></div><div style=\"display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--color-background,#ffffff);padding:24px 16px;text-align:center\"><span style=\"font-weight:700;font-size:24px;line-height:1;text-transform:uppercase;color:var(--color-brand,#e8281e)\">IP67</span><span style=\"font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--color-muted-foreground,#6b7280);opacity:0.72\">Chuẩn chống nước</span></div><div style=\"display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--color-background,#ffffff);padding:24px 16px;text-align:center\"><span style=\"font-weight:700;font-size:24px;line-height:1;text-transform:uppercase;color:var(--color-brand,#e8281e)\">Có</span><span style=\"font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--color-muted-foreground,#6b7280);opacity:0.72\">Trộn âm thanh (Multitasking)</span></div></div>",
+      "specStatsHtmlEN": "<div class=\"bb-specstats\" style=\"display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;border:1px solid var(--color-border,#e5e7eb);background:var(--color-border,#e5e7eb)\"><div style=\"display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--color-background,#ffffff);padding:24px 16px;text-align:center\"><span style=\"font-weight:700;font-size:24px;line-height:1;text-transform:uppercase;color:var(--color-brand,#e8281e)\">10 Riders</span><span style=\"font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--color-muted-foreground,#6b7280);opacity:0.72\">Max Mesh Connection</span></div><div style=\"display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--color-background,#ffffff);padding:24px 16px;text-align:center\"><span style=\"font-weight:700;font-size:24px;line-height:1;text-transform:uppercase;color:var(--color-brand,#e8281e)\">2000m</span><span style=\"font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--color-muted-foreground,#6b7280);opacity:0.72\">Group Range</span></div><div style=\"display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--color-background,#ffffff);padding:24px 16px;text-align:center\"><span style=\"font-weight:700;font-size:24px;line-height:1;text-transform:uppercase;color:var(--color-brand,#e8281e)\">IP67</span><span style=\"font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--color-muted-foreground,#6b7280);opacity:0.72\">Waterproof Rating</span></div><div style=\"display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--color-background,#ffffff);padding:24px 16px;text-align:center\"><span style=\"font-weight:700;font-size:24px;line-height:1;text-transform:uppercase;color:var(--color-brand,#e8281e)\">Yes</span><span style=\"font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--color-muted-foreground,#6b7280);opacity:0.72\">Audio Multitasking</span></div></div>"
+    },
+    "trustBadgesHtml": {
+      "trustBadgesHtmlVI": "<div class=\"bb-trust-badges\" style=\"display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:14px;color:var(--color-muted-foreground,#6b7280)\"><span style=\"display:flex;align-items:center;gap:8px\"><span style=\"height:6px;width:6px;flex:none;background:var(--color-brand,#e8281e)\"></span><span>Phân phối chính hãng</span></span><span style=\"display:flex;align-items:center;gap:8px\"><span style=\"height:6px;width:6px;flex:none;background:var(--color-brand,#e8281e)\"></span><span>Bảo hành 2 năm</span></span><span style=\"display:flex;align-items:center;gap:8px\"><span style=\"height:6px;width:6px;flex:none;background:var(--color-brand,#e8281e)\"></span><span>Freeship toàn quốc</span></span></div>",
+      "trustBadgesHtmlEN": "<div class=\"bb-trust-badges\" style=\"display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:14px;color:var(--color-muted-foreground,#6b7280)\"><span style=\"display:flex;align-items:center;gap:8px\"><span style=\"height:6px;width:6px;flex:none;background:var(--color-brand,#e8281e)\"></span><span>Official Distributor</span></span><span style=\"display:flex;align-items:center;gap:8px\"><span style=\"height:6px;width:6px;flex:none;background:var(--color-brand,#e8281e)\"></span><span>2-Year Warranty</span></span><span style=\"display:flex;align-items:center;gap:8px\"><span style=\"height:6px;width:6px;flex:none;background:var(--color-brand,#e8281e)\"></span><span>Free Nationwide Shipping</span></span></div>"
+    },
+    "quickAnswerSummary": {
+      "quickAnswerSummaryVI": "Dành cho hội nhóm phượt (3-10 người). Khắc phục hoàn toàn tình trạng đứt kết nối dây chuyền nhờ công nghệ Mesh. Chống nước IP67, giá 3.190.000đ.",
+      "quickAnswerSummaryEN": null
+    },
+    "originBrandCountry": {
+      "originBrandCountryVI": null,
+      "originBrandCountryEN": null
+    },
     "seo": {
-      "title": "Tai Nghe SCS S10X Intercom 2 Người – 35h Pin, IP67 | BigBike",
-      "description": "SCS S10X intercom Bluetooth 2 người 1000m, 35 giờ pin thực tế, IP67, BT 5.3 tiếng Việt. Giá 1.550.000đ, đánh giá thật ưu nhược điểm tại BigBike.",
-      "canonicalUrl": "https://bigbike.vn/product/scs-s10x",
-      "ogImage": {
-        "url": "/media/uploads/e02ce360-3d85-4bce-b749-53b709e6764e/tai-nghe-bluetooth-intercom-2-nguoi-gan-mu-bao-hiem-scs-s10x-anh-seo-og.jpg"
-      }
+      "titleVI": "Tai Nghe SCS S13 Mesh Intercom Nhóm 10 Người | BigBike",
+      "titleEN": "SCS S13 Mesh Intercom - 10 Riders Connectivity | BigBike",
+      "descriptionVI": "SCS S13 trang bị công nghệ Mesh kết nối nhóm 10 người, khoảng cách lên đến 2000m. Chống nước IP67, pin trâu, bảo hành 2 năm chính hãng tại BigBike.",
+      "descriptionEN": "SCS S13 with Mesh technology for 10-rider group intercom up to 2000m. IP67 waterproof, long battery life, 2-year warranty at BigBike.",
+      "canonicalUrl": "http://localhost:3000/product/tai-nghe-bluetooth-intercom-scs-s13/"
     },
-    "translations": {
-      "en": {
-        "name": "SCS S10X",
-        "shortDescription": "<p><span style=\"color: rgb(51, 51, 51);\">Bluetooth intercom for 2 riders up to 1000m, 35-hour battery per spec, IP67 waterproof. Officially distributed by BigBike through 4T Hitek.</span></p>",
-        "specificationsHtml": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:18px;color:#111111;max-width:100%;\">\n\n  <h2 style=\"font-family:'Barlow Condensed',Arial,sans-serif;font-size:22px;font-weight:bold;text-transform:uppercase;color:#F90606 !important;margin:0 0 16px 0;letter-spacing:0.5px;\">TECHNICAL SPECIFICATIONS</h2>\n\n  <table style=\"width:100%;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;font-size:18px;\">\n    <thead>\n      <tr>\n        <th style=\"padding:12px 16px;border:1px solid #dddddd;background-color:#f5f5f5;font-weight:bold;color:#111111 !important;text-align:left;width:38%;\">Specification</th>\n        <th style=\"padding:12px 16px;border:1px solid #dddddd;background-color:#f5f5f5;font-weight:bold;color:#111111 !important;text-align:left;\">Detail</th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Brand</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">SCS (SUCCESS ETC TECHNOLOGY CO., LTD) — China</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Model</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">SCS S10X</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Type</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">2-rider Bluetooth Intercom Headset for motorcycle helmets</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Bluetooth</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Version 5.3</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Intercom range</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"color:#F90606 !important;\">1000m</strong> <span style=\"font-size:14px;color:#6f6f6f !important;\">(line-of-sight, no obstructions)</span></td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Max simultaneous riders</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">2</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Battery life</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"color:#F90606 !important;\">35 hours</strong> continuous intercom <span style=\"font-size:14px;color:#6f6f6f !important;\">(per manufacturer spec)</span></td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Standby</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">15 days</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Charge time</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">2.5 hours full charge</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Water resistance</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"color:#F90606 !important;\">IP67</strong> — submerged 1m / 30 minutes</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Speaker</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">40mm — CVC + DSP digital noise cancellation</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Microphone</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Hard boom mic + soft pad mic (both included)</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Helmet compatibility</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Fullface and open-face (3/4)</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Voice language</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Vietnamese voice prompts supported</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Cross-brand intercom</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Pairs 1-to-1 with Cardo, Sena via standard BT <span style=\"font-size:14px;color:#6f6f6f !important;\">— no Mesh cross-brand</span></td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Country of origin</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">China</td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Warranty</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">24 months technical/manufacturing defects <span style=\"font-size:14px;color:#6f6f6f !important;\">· Excludes impact, crush, cracks, water damage from use</span></td></tr>\n      <tr><td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Price</td><td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"font-size:20px;color:#F90606 !important;\">1,550,000 VND</strong></td></tr>\n    </tbody>\n  </table>\n\n</div>"
-      }
-    },
-    "relatedProductIds": [
-      "SCSG7",
-      "T2PLUS",
-      "SCSS-13"
-    ],
-    "accessoryProductIds": [
-      "FF800OB"
-    ],
-    "specStats": [
+    "faqs": [
       {
-        "value": "35h",
-        "label": "Pin thực tế (theo spec hãng)",
-        "valueEn": null,
-        "labelEn": null,
-        "sortOrder": 1
+        "question": "H: Công nghệ Mesh trên SCS S13 khác gì Bluetooth trên SCS S10X?",
+        "answer": "<p>Đ: Khác biệt cốt lõi nằm ở độ ổn định nhóm. Với Bluetooth (S10X), mọi người kết nối theo dạng chuỗi A-B-C-D. Nếu B rớt mạng, C và D cũng mất kết nối. Với Mesh (S13), mọi người kết nối chéo thành một lưới mạng. Nếu B rớt mạng, A-C-D vẫn nói chuyện bình thường, và khi B tới gần sẽ tự động kết nối lại vào lưới mà không cần bấm nút.</p>",
+        "sortOrder": 0,
+        "questionEn": "Q: How is Mesh on S13 different from Bluetooth on S10X?",
+        "answerEn": "<p>A: The core difference is group stability. Bluetooth pairs in a chain (A-B-C-D). If B drops out, C and D lose connection. Mesh links everyone in a web. If B drops out, A-C-D keep talking, and B automatically rejoins when back in range without pressing any buttons.</p>"
       },
       {
-        "value": "1000m",
-        "label": "Khoảng cách intercom",
-        "valueEn": null,
-        "labelEn": null,
-        "sortOrder": 2
+        "question": "H: SCS S13 có kết nối được với tai nghe hãng khác (Cardo, Sena) không?",
+        "answer": "<p>Đ: Có, S13 hỗ trợ Universal Intercom để kết nối 1-1 qua Bluetooth chuẩn với hãng khác. Tuy nhiên, xin lưu ý công nghệ Mesh của hãng nào chỉ chạy nội bộ hãng đó. SCS S13 sẽ không thể nhảy vào nhóm Mesh của Cardo hay Sena, mà chỉ có thể ghép nối Bluetooth 1-1.</p>",
+        "sortOrder": 1,
+        "questionEn": "Q: Can the S13 connect with other brands (Cardo, Sena)?",
+        "answerEn": "<p>A: Yes, it supports Universal Intercom for 1-to-1 Bluetooth pairing with other brands. However, Mesh protocols are proprietary. The S13 cannot join a Cardo or Sena Mesh group; it can only do basic 1-to-1 Bluetooth pairing with them.</p>"
       },
       {
-        "value": "IP67",
-        "label": "Chuẩn chống nước",
-        "valueEn": null,
-        "labelEn": null,
-        "sortOrder": 3
-      },
-      {
-        "value": "BT 5.3",
-        "label": "Bluetooth version",
-        "valueEn": null,
-        "labelEn": null,
-        "sortOrder": 4
-      }
-    ],
-    "trustBadges": [
-      {
-        "content": "Chính hãng",
-        "sortOrder": 1
-      },
-      {
-        "content": "BH 2 năm - PK 3 tháng",
-        "sortOrder": 2
-      },
-      {
-        "content": "Freeship toàn quốc",
-        "sortOrder": 3
+        "question": "H: Vừa nghe nhạc vừa nói chuyện với nhóm được không?",
+        "answer": "<p>Đ: Được, SCS S13 có tính năng Audio Multitasking. Âm lượng nhạc hoặc bản đồ Google Maps sẽ tự động nhỏ xuống làm nền khi có người trong nhóm cất tiếng nói.</p>",
+        "sortOrder": 2,
+        "questionEn": "Q: Can I listen to music while talking to the group?",
+        "answerEn": "<p>A: Yes, thanks to Audio Multitasking. Your music or GPS instructions will automatically lower to the background when someone in the intercom group starts speaking.</p>"
       }
     ],
     "commitments": [
@@ -463,597 +283,131 @@
         "icon": "truck",
         "title": "Giao toàn quốc 2–4 ngày",
         "subtitle": "Hà Nội, TP.HCM và các tỉnh · Thanh toán khi nhận (COD)",
-        "titleEn": "Nationwide delivery in 2–3 days",
-        "subtitleEn": "Hanoi, HCMC and provinces · Cash on delivery (COD)",
-        "sortOrder": 1
+        "sortOrder": 0,
+        "titleEn": "Nationwide delivery in 2–4 days",
+        "subtitleEn": "Hanoi, HCMC and provinces · Cash on delivery (COD)"
       },
       {
         "icon": "shield-check",
         "title": "2 năm chính hãng",
-        "subtitle": "Bảo hành",
+        "subtitle": "Bảo hành thân máy 24 tháng, phụ kiện 3 tháng",
+        "sortOrder": 1,
         "titleEn": "2-year official warranty",
-        "subtitleEn": "Warranty",
-        "sortOrder": 2
+        "subtitleEn": "Warranty: Main unit 24 months, accessories 3 months"
       },
       {
         "icon": "wrench",
         "title": "Hỗ trợ lắp đặt tại Shop",
-        "subtitle": "Hỗ trợ clip - hướng dẫn lắp đặt",
-        "titleEn": null,
-        "subtitleEn": null,
-        "sortOrder": 3
+        "subtitle": "Gửi clip hướng dẫn cài đặt Mesh từ xa",
+        "sortOrder": 2,
+        "titleEn": "In-store installation support",
+        "subtitleEn": "Remote Mesh setup video guidance"
       }
     ],
-    "positiveNotes": [
-      {
-        "content": "•\tPin 35h theo spec — dài nhất trong phân khúc dưới 2 triệu tại BigBike",
-        "contentEn": "•\t35h battery per spec — longest in the sub-2M VND intercom category at BigBike",
-        "sortOrder": 1
-      },
-      {
-        "content": "•\tIP67 — ngâm nước 1m/30 phút, đi mưa to không lo",
-        "contentEn": "•\tIP67 — rated for 1m submersion / 30 min, handles heavy rain",
-        "sortOrder": 2
-      },
-      {
-        "content": "•\tHỗ trợ thông báo tiếng Việt — không cần đoán tiếng Anh khi thao tác",
-        "contentEn": "•\tVietnamese voice prompts — no guessing what the device says",
-        "sortOrder": 3
-      },
-      {
-        "content": "•\t1.550.000đ — thấp nhất cho intercom 2 người đạt IP67 hiện có tại BigBike",
-        "contentEn": "•\t1,550,000 VND — lowest price for 2-rider IP67 intercom at BigBike",
-        "sortOrder": 4
-      },
-      {
-        "content": "•\tTương thích cả fullface và mũ 3/4 — lắp được hầu hết mũ đang bán",
-        "contentEn": "•\tFits both fullface and open-face 3/4 helmets",
-        "sortOrder": 5
-      }
-    ],
-    "negativeNotes": [
-      {
-        "content": "•\tChỉ kết nối 2 người — đoàn từ 3 người trở lên phải xem Mesh (S13/T2 Plus)",
-        "contentEn": "•\t2-rider only — groups of 3+ need a Mesh device (S13 or T2 Plus)",
-        "sortOrder": 1
-      },
-      {
-        "content": "•\t35h là số spec hãng — chưa có test độc lập thực tế tại BigBike",
-        "contentEn": "•\t35h is manufacturer's spec — no independent real-world test from BigBike",
-        "sortOrder": 2
-      },
-      {
-        "content": "•\tKhông có camera — nếu cần quay hành trình xem SCS G7+",
-        "contentEn": "•\tNo camera — for combined intercom + video, see <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://bigbike.vn/product/tai-nghe-bluetooth-camera-intercom-scs-g7\">SCS G7+</a>",
-        "sortOrder": 3
-      },
-      {
-        "content": "•\tThiết kế nhựa đen — không có lựa chọn màu khác",
-        "contentEn": "•\tBlack only — no colour options",
-        "sortOrder": 4
-      }
-    ],
-    "faqs": [
-      {
-        "question": "H: SCS S10X kết nối intercom được mấy người?",
-        "answer": "<p><span style=\"color: rgb(51, 51, 51);\">Đ: 2 người đồng thời, 1000m theo spec hãng. Đoàn từ 3 người trở lên cần liên lạc cùng lúc thì phải xem S13 hoặc T2 Plus có Mesh kết nối đến 10 người.</span></p>",
-        "questionEn": "Q: How many riders can connect at once?",
-        "answerEn": "<p><span style=\"color: rgb(51, 51, 51);\">A: Two simultaneously, up to 1000m per spec. For groups of 3+ who all need to talk at the same time, look at S13 or T2 Plus with Mesh (up to 10 riders).</span></p>",
-        "sortOrder": 1
-      },
-      {
-        "question": "H: Pin S10X dùng được bao lâu?",
-        "answer": "<p><span style=\"color: rgb(51, 51, 51);\">Đ: 35 giờ intercom liên tục theo spec hãng, standby 15 ngày, sạc đầy 2.5 giờ. Chưa có test thực tế độc lập tại BigBike — thực tế tốc độ cao hoặc nhiễu có thể thấp hơn.</span></p>",
-        "questionEn": "Q: How long does the battery last?",
-        "answerEn": "<p><span style=\"color: rgb(51, 51, 51);\">A: 35 hours continuous intercom per manufacturer spec, 15-day standby, 2.5-hour charge. BigBike hasn't independently tested this — real-world battery at high speed or in interference will be lower.</span></p>",
-        "sortOrder": 2
-      },
-      {
-        "question": "H: Kết nối được với Cardo hoặc Sena không?",
-        "answer": "<p><span style=\"color: rgb(51, 51, 51);\">Đ: Được — kết nối 1-1 qua BT chuẩn với tai nghe bất kỳ hãng nào. Lưu ý: chỉ 1-1 theo BT thông thường, không nhảy vào Mesh network của Cardo hay Sena.</span></p>",
-        "questionEn": "Q: Can it pair with a Cardo or Sena intercom?",
-        "answerEn": "<p><span style=\"color: rgb(51, 51, 51);\">A: Yes — 1-to-1 pairing with any brand via standard Bluetooth. Important: this is standard BT pairing only, not Mesh cross-brand. You can't join a Cardo Mesh network on the S10X.</span></p>",
-        "sortOrder": 3
-      },
-      {
-        "question": "H: Đi mưa có dùng được không?",
-        "answer": "<p><span style=\"color: rgb(51, 51, 51);\">Đ: Được — IP67, ngâm 1m/30 phút. Đi mưa to không lo. Sau khi bị ướt nên lau khô cổng sạc trước khi cắm điện.</span></p>",
-        "questionEn": "Q: Can I use it in heavy rain?",
-        "answerEn": "<p><span style=\"color: rgb(51, 51, 51);\">A: Yes — IP67 means it can be submerged in 1m of water for 30 minutes. Heavy rain is fine. Dry the charging port before plugging in after getting wet.</span></p>",
-        "sortOrder": 4
-      },
-      {
-        "question": "H: Gắn vào mũ 3/4 AGV hoặc NIC được không?",
-        "answer": "<p><span style=\"color: rgb(51, 51, 51);\">Đ: Được — tương thích cả fullface lẫn mũ 3/4. Bộ gắn trong hộp có phụ kiện cho cả hai loại. Mũ 3/4 không có hốc sẵn thì dùng miếng dán 3M kèm hộp.</span></p>",
-        "questionEn": "Q: Does it fit an AGV or NIC 3/4 helmet?",
-        "answerEn": "<p><span style=\"color: rgb(51, 51, 51);\">A: Yes — works with both fullface and 3/4 helmets. Mounting hardware for both is in the box. Use the included 3M adhesive pads if the helmet has no pre-cut speaker pockets.</span></p>",
-        "sortOrder": 5
-      },
-      {
-        "question": "H: Bảo hành thế nào?",
-        "answer": "<p><span style=\"color: rgb(51, 51, 51);\">Đ: 24 tháng lỗi kỹ thuật/NSX — liên hệ Zalo BigBike 0764640679. Không bảo hành: va đập, cấn, móp, bể vỏ hoặc vào nước do sử dụng — đây là điều khoản chuẩn tất cả hãng điện tử.</span></p>",
-        "questionEn": "Q: What's covered under warranty?",
-        "answerEn": "<p><span style=\"color: rgb(51, 51, 51);\">A: 24 months for manufacturer defects — contact BigBike Zalo 0764640679. Not covered: physical impact, crushing, cracks, or water damage from riding. This is standard for all electronics brands.</span></p>",
-        "sortOrder": 6
-      }
-    ],
-    "descriptionBlocks": [
-      {
-        "alt": null,
-        "url": "/media/uploads/35356bce-66d6-4e7c-ba50-e35767cda925/tai-nghe-bluetooth-intercom-2-nguoi-gan-mu-bao-hiem-scs-s10x-lifestyle.webp",
-        "html": "<p><span style=\"color: rgb(17, 24, 39);\"><strong>Lợi ích:</strong></span></p><p><span style=\"color: rgb(17, 24, 39);\">35 giờ intercom liên tục theo spec hãng — đủ cho 2–3 ngày phượt xa không cần cắm sạc. Standby 15 ngày, sạc đầy 2.5 giờ qua USB.</span></p><p><span style=\"color: rgb(17, 24, 39);\"><strong>Bằng chứng:</strong></span></p><p><span style=\"color: rgb(17, 24, 39);\">Theo spec sheet chính thức SCS/4T Hitek: 35h intercom, 15 ngày standby, 2.5h sạc đầy. BigBike chưa test thực tế độc lập.</span></p><p><span style=\"color: rgb(17, 24, 39);\"><strong>Hạn chế:</strong></span></p><p><span style=\"color: rgb(17, 24, 39);\"><em>35 giờ là số spec hãng ở điều kiện lý tưởng — thực tế khi chạy tốc độ cao hoặc môi trường nhiễu, pin có thể thấp hơn.</em></span></p>",
-        "side": "right",
-        "type": "feature",
-        "items": [],
-        "caption": "",
-        "heading": "35 giờ pin — không cắm sạc giữa chuyến",
-        "listStyle": "bulleted",
-        "subheading": ""
-      },
-      {
-        "alt": null,
-        "url": "/media/uploads/5f64f94f-406e-40ae-81df-ab5e915fec8e/tai-nghe-bluetooth-intercom-2-nguoi-gan-mu-bao-hiem-scs-s10x-lifestyle-ket-noi.webp",
-        "html": "<p><span style=\"color: rgb(85, 85, 85);\"><strong>Lợi ích:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Kết nối intercom 2 người 1000m theo spec. Bluetooth 5.3 tiết kiệm pin hơn BT 4.x. Hỗ trợ tiếng Việt — thông báo kết nối và pin bằng tiếng Việt.</span></p><p><span style=\"color: rgb(85, 85, 85);\"><strong>Bằng chứng:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Spec hãng: 1000m, BT 5.3, IP67. Giá 1.550.000đ — rẻ nhất trong dòng intercom 2 người đạt IP67 tại BigBike.</span></p><p><span style=\"color: rgb(85, 85, 85);\"><strong>Hạn chế:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\"><em>1000m là khoảng cách lý tưởng — qua đèo nhiều cua, rừng cây thực tế ngắn hơn. Chỉ 2 người — đoàn từ 3 người xem <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://bigbike.vn/product/tai-nghe-bluetooth-intercom-scs-s13\">SCS S13</a>/<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://bigbike.vn/product/tai-nghe-bluetooth-intercom-scs-t2-plus-cho-mu-bao-hiem\">T2 Plus</a>.</em></span></p>",
-        "side": "left",
-        "type": "feature",
-        "items": [],
-        "caption": "",
-        "heading": "Intercom 2 người 1000m",
-        "listStyle": "bulleted",
-        "subheading": ""
-      },
-      {
-        "html": "",
-        "type": "suitability",
-        "cards": [
-          {
-            "audience": "Dùng cho cặp đôi",
-            "advice": "Nếu hay chạy cùng 1 người — bạn đời, bạn thân — và muốn 2 người nói chuyện trực tiếp không cần điện thoại, S10X là lựa chọn hợp lý nhất ở tầm giá này."
-          },
-          {
-            "audience": "Nếu nhóm bạn nhiều hơn 2 người",
-            "advice": "Đoàn từ 3 người trở lên cần liên lạc cùng lúc thì S10X không đủ, cần dòng hỗ trợ Mesh (10 người, 3.190.000đ)."
-          },
-          {
-            "audience": "Nếu bạn chỉ độc hành",
-            "advice": "Chỉ cần nghe nhạc và điện thoại 1 mình thì SCS S9X (950.000đ) rẻ hơn, pin tương đương, không cần trả thêm cho tính năng intercom."
-          },
-          {
-            "audience": "Không muốn bỏ lỡ khoảnh khắc đẹp",
-            "advice": "Cần vừa intercom vừa quay video hành trình thì nên chọn dòng có camera tích hợp sẵn (3.290.000đ)."
-          }
-        ],
-        "title": "PHÙ HỢP VỚI AI"
-      }
-    ],
-    "descriptionBlocksEn": [
-      {
-        "alt": null,
-        "url": "/media/uploads/35356bce-66d6-4e7c-ba50-e35767cda925/tai-nghe-bluetooth-intercom-2-nguoi-gan-mu-bao-hiem-scs-s10x-lifestyle.webp",
-        "html": "<p><span style=\"color: rgb(85, 85, 85);\"><strong>Benefit:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">35 hours continuous intercom per manufacturer spec — enough for 2–3 days of touring without a power bank. 15-day standby, 2.5-hour full charge via USB.</span></p><p><span style=\"color: rgb(85, 85, 85);\"><strong>Evidence:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Per official SCS/4T Hitek spec: 35h intercom, 15-day standby, 2.5h charge. BigBike has not independently tested this figure.</span></p><p><span style=\"color: rgb(85, 85, 85);\"><strong>Limitation:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\"><em>35h is the manufacturer's ideal-conditions rating — real-world battery at highway speed or in high-interference environments will be lower.</em></span></p>",
-        "side": "right",
-        "type": "feature",
-        "items": [],
-        "caption": "",
-        "heading": "35-hour battery — no mid-ride charging",
-        "listStyle": "bulleted",
-        "subheading": ""
-      },
-      {
-        "alt": null,
-        "url": "/media/uploads/5f64f94f-406e-40ae-81df-ab5e915fec8e/tai-nghe-bluetooth-intercom-2-nguoi-gan-mu-bao-hiem-scs-s10x-lifestyle-ket-noi.webp",
-        "html": "<p><span style=\"color: rgb(85, 85, 85);\"><strong>Benefit:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Connects two riders up to 1000m per spec. BT 5.3 is more energy-efficient than older BT 4.x. Vietnamese voice prompts tell you exactly what the device is doing.</span></p><p><span style=\"color: rgb(85, 85, 85);\"><strong>Evidence:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Per spec: 1000m, BT 5.3, IP67. At 1,550,000 VND, lowest price for a 2-rider intercom with IP67 currently at BigBike.</span></p><p><span style=\"color: rgb(85, 85, 85);\"><strong>Limitation:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\"><em>1000m is line-of-sight under ideal conditions — actual range through mountain curves or dense forest is shorter. 2 people only — groups of 3+ need Mesh (<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://bigbike.vn/product/tai-nghe-bluetooth-intercom-scs-s13\">SCS S13</a> or <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://bigbike.vn/product/tai-nghe-bluetooth-intercom-scs-t2-plus-cho-mu-bao-hiem\">T2 Plus</a>).</em></span></p>",
-        "side": "left",
-        "type": "feature",
-        "items": [],
-        "caption": "",
-        "heading": "2-rider intercom up to 1000m",
-        "listStyle": "bulleted",
-        "subheading": ""
-      },
-      {
-        "html": "",
-        "type": "suitability",
-        "cards": [
-          {
-            "audience": "For couples",
-            "advice": "If you regularly ride with one other person — partner, friend, colleague — and want to talk without touching your phone, S10X is the most practical option at this price."
-          },
-          {
-            "audience": "If your group is more than 2 people",
-            "advice": "A group of 3 or more who all need to talk simultaneously needs Mesh support instead (10 riders, 3,190,000 VND)."
-          },
-          {
-            "audience": "If you ride solo",
-            "advice": "If you only need solo music and phone calls, SCS S9X (950,000 VND) is cheaper with similar battery life — no need to pay extra for intercom."
-          },
-          {
-            "audience": "Don't want to miss great moments",
-            "advice": "If you need intercom plus a helmet camera for your rides, choose a model with a built-in camera (3,290,000 VND)."
-          }
-        ],
-        "title": "WHO IT'S FOR & OUR ADVICE"
-      }
-    ]
-  },
-  {
-    "sku": "MDS-CAB-TANCAR",
-    "name": "CABERG TANAMI CARBON 2 IN 1",
-    "slug": "caberg-tanami-carbon-2-in-1",
-    "categoryId": "dual-sport",
-    "brandId": "caberg",
-    "retailPrice": 12000000,
-    "image": {
-      "url": "/media/uploads/385d5e09-6952-4b29-8534-afbc43b3dc99/mu-bao-hiem-adventure-caberg-cacbon-tanami-mat-nghieng.jpg"
+    "highlights": {
+      "positiveNotes": [
+        {
+          "content": "• Công nghệ Mesh Intercom: Một người rớt mạng, cả đoàn vẫn nói chuyện bình thường (không đứt dây chuyền như Bluetooth cũ)",
+          "contentEn": "• Mesh Intercom Technology: If one rider disconnects, the rest of the group stays seamlessly connected",
+          "sortOrder": 0
+        },
+        {
+          "content": "• Kết nối nhóm lớn lên đến 10 người, lý tưởng cho các câu lạc bộ hoặc tour phượt đông",
+          "contentEn": "• Connects up to 10 riders, ideal for large touring groups and clubs",
+          "sortOrder": 1
+        },
+        {
+          "content": "• Audio Multitasking: Vừa trò chuyện với đoàn, vừa nghe nhạc hoặc chỉ đường GPS dưới nền",
+          "contentEn": "• Audio Multitasking: Chat with your group while listening to music or GPS navigation in the background",
+          "sortOrder": 2
+        },
+        {
+          "content": "• Chuẩn chống nước IP67 giúp thiết bị sống khỏe trong các chuyến đi dầm mưa liên tục",
+          "contentEn": "• IP67 rating ensures the device survives continuous heavy rain rides",
+          "sortOrder": 3
+        }
+      ],
+      "negativeNotes": [
+        {
+          "content": "• Pin khi dùng Mesh (10h) sẽ hao nhanh hơn so với khi dùng Bluetooth truyền thống (15h)",
+          "contentEn": "• Battery drains faster when using Mesh mode (10h) compared to traditional Bluetooth mode (15h)",
+          "sortOrder": 0
+        },
+        {
+          "content": "• Mức giá 3.190.000đ cao gấp đôi SCS S10X, sẽ lãng phí nếu bạn chỉ hay đi độc hành hoặc đi 2 người",
+          "contentEn": "• Price tag is double the SCS S10X; overkill if you only ride solo or with a pillion",
+          "sortOrder": 1
+        }
+      ]
     },
-    "gallery": [
-      {
-        "url": "/media/uploads/385d5e09-6952-4b29-8534-afbc43b3dc99/mu-bao-hiem-adventure-caberg-cacbon-tanami-mat-nghieng.jpg"
-      },
-      {
-        "url": "/media/uploads/8a947876-a763-42e6-9adb-a83e60d3a9b8/mu-bao-hiem-adventure-caberg-cacbon-tanami-mat-truoc.jpg"
-      },
-      {
-        "url": "/media/uploads/f92e620c-a9fb-4bf6-b499-159096aa16b7/mu-bao-hiem-adventure-caberg-cacbon-tanami-tem-qcvn.jpg"
-      }
-    ],
-    "shortDescription": "<p><span style=\"color: rgb(51, 51, 51);\">Mũ dual sport 2 in 1 vỏ carbon toàn phần, chuyển đổi on-road/off-road không cần dụng cụ. Dành cho rider ADV và dual sport đi cả đường nhựa lẫn địa hình.</span></p>",
-    "specificationsHtml": "<table style=\"width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px;\">\n  <thead>\n    <tr>\n      <th style=\"background:#1A1A1A;color:#FFFFFF !important;padding:11px 16px;text-align:left;font-weight:600;letter-spacing:0.5px;width:35%;\">Thông số</th>\n      <th style=\"background:#1A1A1A;color:#FFFFFF !important;padding:11px 16px;text-align:left;font-weight:600;letter-spacing:0.5px;\">Chi tiết</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr style=\"background:#FFFFFF;\">\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;font-weight:600;color:#333333 !important;\">Thương hiệu</td>\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;color:#333333 !important;\">Caberg (Ý – Caschi di Bergamo, thành lập 1974)</td>\n    </tr>\n    <tr style=\"background:#F7F7F7;\">\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;font-weight:600;color:#333333 !important;\">Model</td>\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;color:#333333 !important;\">Tanami Carbon</td>\n    </tr>\n    <tr style=\"background:#FFFFFF;\">\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;font-weight:600;color:#333333 !important;\">Loại</td>\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;color:#333333 !important;\">Mũ dual sport on-road / off-road (2 in 1)</td>\n    </tr>\n    <tr style=\"background:#F7F7F7;\">\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;font-weight:600;color:#333333 !important;\">Chất liệu vỏ</td>\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;color:#333333 !important;\">Sợi carbon (carbon fiber) – 2 shell size</td>\n    </tr>\n    <tr style=\"background:#FFFFFF;\">\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;font-weight:600;color:#333333 !important;\">Trọng lượng</td>\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;color:#333333 !important;\">\n        <span style=\"display:block;color:#333333 !important;\">Shell lớn (L–XXL): <strong>1.602g</strong> – cân thực tế tại BigBike</span>\n        <span style=\"display:block;font-size:13px;margin-top:3px;color:#666666 !important;\">Shell nhỏ (XS–M): 1.500g ± 50g theo tem hãng – chưa cân tại shop</span>\n      </td>\n    </tr>\n    <tr style=\"background:#F7F7F7;\">\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;font-weight:600;color:#333333 !important;\">Chuẩn an toàn</td>\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;color:#333333 !important;\"><strong style=\"color:#333333 !important;\">ECE 22.06</strong> – thử 18 điểm va chạm (chuẩn châu Âu mới nhất)</td>\n    </tr>\n    <tr style=\"background:#FFFFFF;\">\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;font-weight:600;color:#333333 !important;\">Thông gió</td>\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;color:#333333 !important;\">1 vent cằm điều chỉnh được (nam châm tháo rời) · 2 vent đỉnh đầu · 2 cửa thoát khí sau tháo rời</td>\n    </tr>\n    <tr style=\"background:#F7F7F7;\">\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;font-weight:600;color:#333333 !important;\">Kính / màn che</td>\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;color:#333333 !important;\">\n        <span style=\"display:block;color:#333333 !important;\">Kính ngoài chống xây xước + Pinlock Max Vision 70 kèm hộp</span>\n        <span style=\"display:block;margin-top:3px;color:#333333 !important;\">DVT kính râm tích hợp – cần gạt trái, dùng được khi đeo găng tay</span>\n        <span style=\"display:block;margin-top:3px;color:#333333 !important;\">Tháo kính không cần dụng cụ · Tương thích goggles motocross</span>\n      </td>\n    </tr>\n    <tr style=\"background:#FFFFFF;\">\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;font-weight:600;color:#333333 !important;\">Khóa / cơ cấu đóng</td>\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;color:#333333 !important;\">Double D-ring nhôm anốt</td>\n    </tr>\n    <tr style=\"background:#F7F7F7;\">\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;font-weight:600;color:#333333 !important;\">Lót trong</td>\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;color:#333333 !important;\">Tháo giặt được hoàn toàn · Kháng khuẩn thoáng khí · Thân thiện da mặt</td>\n    </tr>\n    <tr style=\"background:#FFFFFF;\">\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;font-weight:600;color:#333333 !important;\">Size có sẵn</td>\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;color:#333333 !important;\">XS · S · M · L · XL · XXL &nbsp;(2 shell: XS–M và L–XXL)</td>\n    </tr>\n    <tr style=\"background:#F7F7F7;\">\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;font-weight:600;color:#333333 !important;\">Màu có sẵn</td>\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;color:#333333 !important;\">Vân carbon trơn (Carbon Black)</td>\n    </tr>\n    <tr style=\"background:#FFFFFF;\">\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;font-weight:600;color:#333333 !important;\">Tính năng đặc biệt</td>\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;color:#333333 !important;\">\n        <span style=\"display:block;color:#333333 !important;\">SOS Medical ID NFC – cứu hộ đọc thông tin khẩn cấp không cần mở khóa điện thoại</span>\n        <span style=\"display:block;margin-top:3px;color:#333333 !important;\">Sẵn hốc loa Caberg Pro Speak Evo</span>\n        <span style=\"display:block;margin-top:3px;color:#333333 !important;\">Hỗ trợ ống nước uống trong chin guard</span>\n      </td>\n    </tr>\n    <tr style=\"background:#F7F7F7;\">\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;font-weight:600;color:#333333 !important;\">Xuất xứ thương hiệu</td>\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;color:#333333 !important;\">Thương hiệu Ý (Bergamo)</td>\n    </tr>\n    <tr style=\"background:#FFFFFF;\">\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;font-weight:600;color:#333333 !important;\">Sản xuất tại</td>\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;color:#333333 !important;\">Ý</td>\n    </tr>\n    <tr style=\"background:#F7F7F7;\">\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;font-weight:600;color:#333333 !important;\">Bảo hành</td>\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;color:#333333 !important;\">12 tháng tại BigBike</td>\n    </tr>\n    <tr style=\"background:#FFFFFF;\">\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;font-weight:600;color:#333333 !important;\">Giá</td>\n      <td style=\"padding:10px 16px;border:1px solid #E0E0E0;color:#333333 !important;\"><strong style=\"font-size:15px;color:#333333 !important;\">12.000.000đ</strong></td>\n    </tr>\n  </tbody>\n</table>",
-    "seo": {
-      "title": "CABERG TANAMI CARBON - 2 IN 1",
-      "description": "Caberg Tanami Carbon dual sport 2 in 1, vỏ carbon, cân thực tế 1.602g (size L), ECE 22.06. Giá 12.000.000đ, đánh giá thật ưu nhược điểm tại BigBike.",
-      "canonicalUrl": "https://bigbike.vn/product/caberg-tanami-carbon-2-in-1"
-    },
-    "translations": {
-      "en": {
-        "name": "CABERG TANAMI CARBON - 2 IN 1",
-        "shortDescription": "<p><span style=\"color: rgb(51, 51, 51);\">Full carbon dual sport 2-in-1 helmet, converts between on-road and off-road without tools. Built for ADV and dual sport riders who ride both tarmac and trails.</span></p>",
-        "specificationsHtml": "<div style=\"margin:0 0 24px 0;\">\n\n  <h2 style=\"font-family:'Barlow Condensed',Arial,sans-serif;font-size:22px;font-weight:bold;text-transform:uppercase;color:#F90606 !important;margin:0 0 16px 0;letter-spacing:0.5px;\">\n    TECHNICAL SPECIFICATIONS\n  </h2>\n\n  <table style=\"width:100%;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;font-size:18px;\">\n    <thead>\n      <tr>\n        <th style=\"padding:12px 16px;border:1px solid #dddddd;background-color:#f5f5f5;font-weight:bold;color:#111111 !important;text-align:left;width:32%;\">Specification</th>\n        <th style=\"padding:12px 16px;border:1px solid #dddddd;background-color:#f5f5f5;font-weight:bold;color:#111111 !important;text-align:left;\">Detail</th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Brand</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Caberg (Italy – Caschi di Bergamo, founded 1974)</td>\n      </tr>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Model</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Tanami Carbon</td>\n      </tr>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Type</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Dual-sport on-road / off-road helmet (2-in-1)</td>\n      </tr>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Shell material</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Carbon fiber – 2 shell sizes</td>\n      </tr>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Weight</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">\n          <span style=\"display:block;color:#111111 !important;\">Large shell (L–XXL): <strong style=\"color:#F90606 !important;\">1,602g</strong> – weighed in-store at BigBike</span>\n          <span style=\"display:block;font-size:14px;color:#6f6f6f !important;margin-top:4px;\">Small shell (XS–M): 1,500g ± 50g per manufacturer label – not yet weighed in-store</span>\n        </td>\n      </tr>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Safety certification</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"color:#111111 !important;\">ECE 22.06</strong> – 18-point impact testing (latest European standard)</td>\n      </tr>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Ventilation</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">1 adjustable chin vent (removable magnetic) · 2 crown vents · 2 removable rear exhaust vents</td>\n      </tr>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Visor / shield</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">\n          <span style=\"display:block;color:#111111 !important;\">Scratch-resistant outer visor + Pinlock Max Vision 70 included in box</span>\n          <span style=\"display:block;margin-top:4px;color:#111111 !important;\">Integrated sun visor (left-side lever) – operable while wearing gloves</span>\n          <span style=\"display:block;margin-top:4px;color:#111111 !important;\">Tool-free visor removal · Compatible with motocross goggles</span>\n        </td>\n      </tr>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Fastening system</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Anodised aluminium double D-ring</td>\n      </tr>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Interior lining</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Fully removable and washable · Anti-bacterial, breathable · Skin-friendly</td>\n      </tr>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Available sizes</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">XS · S · M · L · XL · XXL &nbsp;(2 shells: XS–M and L–XXL)</td>\n      </tr>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Available colours</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Plain carbon weave (Carbon Black)</td>\n      </tr>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Special features</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">\n          <span style=\"display:block;color:#111111 !important;\">SOS Medical ID NFC – lets first responders read emergency info without unlocking your phone</span>\n          <span style=\"display:block;margin-top:4px;color:#111111 !important;\">Pre-cut speaker pockets for Caberg Pro Speak Evo</span>\n          <span style=\"display:block;margin-top:4px;color:#111111 !important;\">Hydration tube routing through the chin guard</span>\n        </td>\n      </tr>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Brand origin</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Italian brand (Bergamo)</td>\n      </tr>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Made in</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Italy</td>\n      </tr>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Warranty</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">24 months per Caberg manufacturer policy</td>\n      </tr>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;font-weight:bold;color:#111111 !important;\">Price</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\"><strong style=\"font-size:20px;color:#F90606 !important;\">12,000,000 VND</strong></td>\n      </tr>\n    </tbody>\n  </table>\n\n</div>",
-        "seoTitle": "Caberg Tanami Carbon - 2 in 1",
-        "seoDescription": "Caberg Tanami Carbon dual sport 2-in-1 helmet, carbon shell, actual weight 1.602g (size L), ECE 22.06 certified. Price 12,000,000 VND, honest review at BigBike."
-      }
-    },
-    "relatedProductIds": [
-      "CB-DRIFT",
-      "FF900IIC"
-    ],
-    "accessoryProductIds": [
-      "TNB-SCS-S10X",
-      "KOM-269"
-    ],
     "variants": [
       {
-        "sku": "MDS-CAB-TANCAR-BK-XS",
+        "id": "var_35142a9cf7194844b5279efdd43556ca",
+        "sku": "TNB-SCS-S13-DEN",
+        "retailPrice": 3190000,
+        "salePrice": null,
+        "imageUrl": "/media/uploads/scs/tai-nghe-bluetooth-intercom-scs-s13-chinh.webp",
+        "isAvailable": true,
+        "sortOrder": 0,
         "options": [
           {
-            "optionName": "Size",
-            "optionValue": "XS"
+            "optionName": "Màu",
+            "optionValue": "Đen"
           }
-        ],
-        "retailPrice": 12000000,
-        "isAvailable": true
+        ]
       },
       {
-        "sku": "MDS-CAB-TANCAR-BK-S",
+        "id": "var_cbd5e0ce723b465881b27d8a7ffca671",
+        "sku": "TNB-SCS-S13-BAC",
+        "retailPrice": 3190000,
+        "salePrice": null,
+        "imageUrl": "/media/uploads/scs/tai-nghe-bluetooth-intercom-scs-s13-phu-1.webp",
+        "isAvailable": true,
+        "sortOrder": 1,
         "options": [
           {
-            "optionName": "Size",
-            "optionValue": "S"
+            "optionName": "Màu",
+            "optionValue": "Bạc"
           }
-        ],
-        "retailPrice": 12000000,
-        "isAvailable": true
-      },
-      {
-        "sku": "MDS-CAB-TANCAR-BK-M",
-        "options": [
-          {
-            "optionName": "Size",
-            "optionValue": "M"
-          }
-        ],
-        "retailPrice": 12000000,
-        "isAvailable": true
-      },
-      {
-        "sku": "MDS-CAB-TANCAR-BK-L",
-        "options": [
-          {
-            "optionName": "Size",
-            "optionValue": "L"
-          }
-        ],
-        "retailPrice": 12000000,
-        "isAvailable": true
-      },
-      {
-        "sku": "MDS-CAB-TANCAR-BK-XL",
-        "options": [
-          {
-            "optionName": "Size",
-            "optionValue": "XL"
-          }
-        ],
-        "retailPrice": 12000000,
-        "isAvailable": true
-      },
-      {
-        "sku": "MDS-CAB-TANCAR-BK-3XL",
-        "options": [
-          {
-            "optionName": "Size",
-            "optionValue": "3XL"
-          }
-        ],
-        "retailPrice": 12000000,
-        "isAvailable": true
-      }
-    ],
-    "specStats": [
-      {
-        "value": "1.602",
-        "label": "Cân thực tế BigBike (size L)",
-        "valueEn": "1.602",
-        "labelEn": "Actual weight at BigBike (size L)",
-        "sortOrder": 1
-      },
-      {
-        "value": "ECE 22.06",
-        "label": "Chuẩn an toàn",
-        "valueEn": "ECE 22.06",
-        "labelEn": "Safety Standard",
-        "sortOrder": 2
-      },
-      {
-        "value": "2 + 4",
-        "label": "Cửa gió (nạp + thoát)",
-        "valueEn": "2 + 4",
-        "labelEn": "Vents (intake + exhaust)",
-        "sortOrder": 3
-      },
-      {
-        "value": "DVT",
-        "label": "Kính râm tích hợp",
-        "valueEn": "DVT",
-        "labelEn": "Integrated sun visor",
-        "sortOrder": 4
-      }
-    ],
-    "trustBadges": [
-      {
-        "content": "Chính hãng",
-        "contentEn": "Genuine Product",
-        "sortOrder": 1
-      },
-      {
-        "content": "BH 1 năm",
-        "contentEn": "1-year warranty",
-        "sortOrder": 2
-      },
-      {
-        "content": "Freeship toàn quốc",
-        "contentEn": "Free nationwide shipping",
-        "sortOrder": 3
-      }
-    ],
-    "commitments": [
-      {
-        "icon": "truck",
-        "title": "Giao toàn quốc 0–4 ngày",
-        "subtitle": "Hà Nội, TP.HCM và các tỉnh · Thanh toán khi nhận (COD)",
-        "titleEn": "Nationwide delivery in 0-4 days",
-        "subtitleEn": "Hanoi, HCMC and provinces · Cash on delivery (COD)",
-        "sortOrder": 1
-      },
-      {
-        "icon": "refresh-cw",
-        "title": "Đổi size miễn phí 7 ngày",
-        "subtitle": "Lỗi nhà sản xuất · Không vừa size",
-        "titleEn": "Free size exchange within 7 days",
-        "subtitleEn": "Manufacturer defects · Wrong fit",
-        "sortOrder": 2
-      },
-      {
-        "icon": "shield-check",
-        "title": "Bảo hành 2 năm chính hãng",
-        "subtitle": "Tại BigBike.vn",
-        "titleEn": "2-year official warranty",
-        "subtitleEn": "At BigBike.vn",
-        "sortOrder": 3
-      }
-    ],
-    "positiveNotes": [
-      {
-        "content": "•\tVỏ sợi carbon thật sự – không phải decal carbon – nhẹ hơn fiberglass cùng giá tầm",
-        "contentEn": "•\tGenuine full carbon shell — noticeably lighter than fiberglass dual sport helmets in the same line",
-        "sortOrder": 1
-      },
-      {
-        "content": "•\tECE 22.06 – chuẩn an toàn châu Âu mới nhất, thử 18 điểm va chạm (ECE 22.05 chỉ 6 điểm)",
-        "contentEn": "•\tECE 22.06 — tests 18 impact points, the latest European standard (ECE 22.05 only tests 6)",
-        "sortOrder": 2
-      },
-      {
-        "content": "•\tPinlock Max Vision 70 kèm sẵn trong hộp – không phải mua thêm ~700–900k như nhiều mũ khác",
-        "contentEn": "•\tPinlock Max Vision 70 included in the box — saves 700-800k versus helmets that don’t include it",
-        "sortOrder": 3
-      },
-      {
-        "content": "•\tSOS Medical ID NFC tích hợp – cứu hộ chạm điện thoại vào mũ là lấy được thông tin khẩn cấp",
-        "contentEn": "•\tIntegrated SOS Medical ID NFC — emergency responders can access critical info by tapping a phone to the helmet",
-        "sortOrder": 4
-      }
-    ],
-    "negativeNotes": [
-      {
-        "content": "•\tNặng hơn số hãng công bố 102g (thực tế 1.602g size L) – nên thử đeo trước nếu hay đi trường hàn",
-        "contentEn": "•\tActual weight 1,602g (size L) — 102g heavier than the label; try it on first if you do long multi-day tours",
-        "sortOrder": 1
-      },
-      {
-        "content": "•\tGiá 12.000.000đ – không phải chọn phổ thông; nếu chỉ đi phố hàng ngày, không cần đến dòng dual sport này",
-        "contentEn": "•\t12,000,000 VND — not a budget pick; overkill if you only ride around the city",
-        "sortOrder": 2
-      },
-      {
-        "content": "•\tKhoang cằm rộng hơn fullface thuần túy – tiếng ồn cao hơn ở tốc độ xa lộ nếu không mặc chin curtain",
-        "contentEn": "•\tWider chin area than a pure fullface — slightly more wind noise at highway speeds",
-        "sortOrder": 3
-      },
-      {
-        "content": "•\tChưa có đánh giá thực tế từ người dùng Việt Nam – sản phẩm mới ra mắt tại Việt Nam từ 5/2026",
-        "contentEn": "•\tNo real-world reviews from Vietnamese users yet — new to the Vietnamese market as of May 2026",
-        "sortOrder": 4
-      }
-    ],
-    "faqs": [
-      {
-        "question": "H: Caberg Tanami Carbon nặng bao nhiêu?",
-        "answer": "<p><span>Đ: Cân thực tế tại BigBike: 1.602g (size L). Hãng công bố 1.500g cho large shell – thực tế nặng hơn 102g. Shell nhỏ (XS–M) hãng công bố 1.380g, chúng tôi chưa cân kiểm chứng riêng.</span></p>",
-        "questionEn": "Q: How much does the Caberg Tanami Carbon weigh?",
-        "answerEn": "<p><span style=\"color: rgb(51, 51, 51);\">A: Weighed in-store at BigBike: 1,602g (size L). The manufacturer states 1,500g for the large shell — actual weight is 102g heavier. Small shell (XS–M) is rated 1,380g by the manufacturer; not yet independently weighed at our shop.</span></p>",
-        "sortOrder": 1
-      },
-      {
-        "question": "H: Đạt chuẩn an toàn gì?",
-        "answer": "<p><span>Đ: ECE 22.06 – chuẩn châu Âu mới nhất, thử 18 điểm va chạm trên toàn bộ bề mặt mũ (phiên bản cũ ECE 22.05 chỉ thử 6 điểm cố định). Đây là chuẩn bắt buộc tại châu Âu và được FIM công nhận cho các giải đua MotoGP, WSBK.</span></p>",
-        "questionEn": "Q: What safety certification does it have?",
-        "answerEn": "<p><span style=\"color: rgb(51, 51, 51);\">A: ECE 22.06 — the latest European standard, requiring impact tests at 18 points across the entire shell surface. FIM-approved for international racing. No DOT certification, so it's not for use in the US.</span></p>",
-        "sortOrder": 2
-      },
-      {
-        "question": "H: Chuyển từ on-road sang off-road mất bao lâu?",
-        "answer": "<p><span>Đ: Vài giây. Vent cằm và sau tháo bằng nam châm tức thì – không ốc, không tua vít. Kính chính tháo không cần dụng cụ và tương thích goggles motocross. Trên lý thuyết rất nhanh, thực tế lần đầu sẽ mất 1–2 lần thử để quen tay.</span></p>",
-        "questionEn": "Q: How long does it take to switch from on-road to off-road mode?",
-        "answerEn": "<p><span style=\"color: rgb(51, 51, 51);\">A: About 30–60 seconds once you're familiar. Remove the visor tool-free, open the magnetic chin vent, put on your goggles. The first few times usually take 2–3 minutes to get comfortable with.</span></p>",
-        "sortOrder": 3
-      },
-      {
-        "question": "H: Kính có chống sương không?",
-        "answer": "<p><span>Đ: Có – Pinlock Max Vision 70 kèm sẵn trong hộp. Đây là loại Pinlock tốt (không phải Pinlock 30 cơ bản), nhưng hiệu quả phụ thuộc lắp đúng kỹ thuật. Nếu ở TPHCM đi sáng sớm có sương – lắp Pinlock trước</span></p>",
-        "questionEn": "Q: Does the visor fog up?",
-        "answerEn": "<p><span style=\"color: rgb(51, 51, 51);\">A: No — a Pinlock Max Vision 70 insert is included in the box. Properly fitted, it handles light rain and cold mountain passes well. The integrated DVT sun visor is controlled by a lever on the left side, operable with gloves on</span></p>",
-        "sortOrder": 4
-      },
-      {
-        "question": "H: SOS Medical ID là gì, dùng như thế nào?",
-        "answer": "<p><span>Đ: Chip NFC gắn trong mũ. Dùng app Caberg (miễn phí) để nhập nhóm máu, dị ứng thuốc, số khẩn cấp. Nếu tai nạn, cứu hộ đưa điện thoại vào logo SOS trên mũ là đọc được thông tin – không cần mở khóa điện thoại. Không cần tải app để đọc, chỉ cần điện thoại hỗ trợ NFC.</span></p>",
-        "questionEn": "Q: What is the SOS Medical ID and how do I set it up?",
-        "answerEn": "<p><span style=\"color: rgb(51, 51, 51);\">A: It's an NFC chip built into the helmet. Use the free Caberg app to enter your blood type, medication allergies, and emergency contacts. Emergency responders tap their phone to the SOS logo on the helmet to read the data instantly — no phone unlock or app required to read it.</span></p>",
-        "sortOrder": 5
-      },
-      {
-        "question": "H: Lắp tai nghe Bluetooth được không?",
-        "answer": "<p><span>Đ: Được – mũ có sẵn hốc loa cho Caberg Pro Speak Evo (mua riêng). Cũng có thể lắp tai nghe hãng khác nếu kích thước phù hợp. Chúng tôi chưa test thực tế khe lắp tai nghe ngoài hãng – nếu cần tư vấn thêm, nhắn Zalo.</span></p>",
-        "questionEn": "Q: Can I install a Bluetooth intercom?",
-        "answerEn": "<p><span style=\"color: rgb(51, 51, 51);\">A: Yes — the helmet has pre-cut speaker pockets for the Caberg Pro Speak Evo (sold separately). Other brands work too if the dimensions fit. Message BigBike on Zalo for compatible intercom recommendations</span></p>",
-        "sortOrder": 6
-      },
-      {
-        "question": "H: Bảo hành bao lâu, điều kiện thế nào?",
-        "answer": "<p><span style=\"color: rgb(51, 51, 51);\">Đ: 24 tháng theo hãng Caberg. Bảo hành lỗi nhà sản xuất — không bao gồm va đập, tai nạn, tự ý sửa chữa. Mũ đã va chạm dù không thấy hư ngoài phải thay mới — lớp EPS bên trong đã mất khả năng hấp thụ lực.</span></p>",
-        "questionEn": "Q: What's the warranty and what does it cover?",
-        "answerEn": "<p><span style=\"color: rgb(51, 51, 51);\">A: 24 months per Caberg's policy. Covers manufacturer defects — excludes impact damage, accidents, or unauthorized modifications. A helmet that has been in a crash must be replaced even if it looks intact — the EPS liner inside has lost its ability to absorb impact</span></p>",
-        "sortOrder": 7
+        ]
       }
     ],
     "descriptionBlocks": [
       {
-        "alt": null,
-        "url": "/media/uploads/6b2f1f97-8f5b-4c54-8869-f28fa83349c8/mu-bao-hiem-adventure-caberg-cacbon-tanami-can-nang-thuc-te.jpg",
-        "html": "<p><strong>Lợi ích:</strong></p><p>Vỏ sợi carbon thật sự nên vẫn nhẹ hơn mũ fiberglass cùng giá – chạy đường dài ít mỏi cổ hơn. Tuy nhiên, số thực tế tại BigBike nặng hơn thông số hãng công bố, cần biết trước để chọn đúng.</p><p><strong>Bằng chứng:</strong></p><p>Cân thực tế tại BigBike bằng cân tiểu ly: 1.602g (size L). Hãng công bố 1.500g (±50g) cho large shell – chênh 102g so với thực tế.</p><p><strong>Hạn chế:</strong></p><p><em>1.602g không phải nhẹ – người quen mũ fullface thường (khoảng 1.400–1.500g) sẽ cảm nhận được sự khác biệt sau hành trình dài.</em></p>",
+        "type": "paragraph",
+        "html": "<p><span style=\"color: rgb(13, 13, 13);\"><strong>GIẢI QUYẾT BÀI TOÁN GIAO TIẾP ĐOÀN ĐÔNG</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Nếu bạn đã từng dùng tai nghe Bluetooth truyền thống để đi tour 4-5 người, bạn sẽ hiểu nỗi khổ khi \"một người rớt mạng, cả đoàn câm lặng\". SCS S13 được sinh ra với công nghệ <strong>Mesh Intercom</strong> để giải quyết triệt để vấn đề này. Mạng Mesh tạo ra một lưới liên kết linh hoạt giữa 10 người. Ai tụt lại phía sau? Không sao, 9 người còn lại vẫn liên lạc bình thường. Người tụt lại khi chạy lên gần sẽ tự động được join lại vào nhóm mà không cần bất kỳ thao tác bấm nút nào.</span></p>",
+        "htmlEn": "<p><span style=\"color: rgb(13, 13, 13);\"><strong>SOLVING THE LARGE GROUP COMMUNICATION PROBLEM</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">If you've ever used a traditional Bluetooth intercom for a 4-5 person tour, you know the pain of the \"daisy-chain disconnect\". The SCS S13 is born with <strong>Mesh Intercom</strong> technology to completely resolve this. Mesh creates a flexible web among up to 10 riders. Someone falls behind? No problem, the rest keep talking. When they catch up, they automatically rejoin the network without pressing a single button.</span></p>"
+      },
+      {
+        "type": "feature",
         "side": "right",
-        "type": "feature",
-        "items": [],
-        "caption": "Màn hình cân tiểu ly hiển thị 1.602g, mũ Tanami Carbon size L đặt trên cân thực tế tại BigBike",
-        "heading": "Trọng lượng thực tế 1.602g (size L) – nặng hơn số hãng công bố 102g",
-        "listStyle": "bulleted",
-        "subheading": "cân nặng thực tế"
-      },
-      {
+        "url": "/media/uploads/scs/tai-nghe-bluetooth-intercom-scs-s13-mesh-demo.webp",
         "alt": null,
-        "url": "/media/uploads/f92e620c-a9fb-4bf6-b499-159096aa16b7/mu-bao-hiem-adventure-caberg-cacbon-tanami-tem-qcvn.jpg",
-        "html": "<p><strong>Lợi ích:</strong></p><p>Đây là điểm chính mà người mua Tanami Carbon trả tiền cho: một mũ dùng được cả đường nhựa lẫn địa hình. Trên đường nhựa: lắp kính, đóng vent, cảm giác giống fullface touring. Ra địa hình: tháo kính không cần dụng cụ, mở vent nam châm, đeo goggles thoải mái.</p><p><strong>Bằng chứng:</strong></p><p>Hệ thống vent cằm và sau dùng nam châm tháo rời tức thì – không ốc vít, không cần tua vít. Kính chính tháo không cần dụng cụ, tương thích goggles motocross.</p><p><strong>Hạn chế:</strong></p><p><em>Tay đua đã cảm nhận mũ này rộng hơn fullface thuần túy ở phần cằm – đặc trưng của dòng dual sport, không tránh được, nên thử trước nếu thường xuyên đi tốc độ cao.</em></p>",
-        "side": "left",
-        "type": "feature",
-        "items": [],
-        "caption": "Mũ bảo hiểm dual sport CABERG TANAMI CARBON - 2 IN 1. Tem kiểm định Quatest",
-        "heading": "Chuyển đổi on-road / off-road trong vài giây – không cần dụng cụ",
+        "altEn": null,
+        "caption": null,
+        "captionEn": null,
+        "subheading": "Bứt phá giới hạn",
+        "subheadingEn": null,
+        "heading": "Công nghệ Mesh Intercom - Kết nối 10 người, tự động hàn gắn mạng",
+        "headingEn": null,
+        "html": "<p><span style=\"color: rgb(85, 85, 85);\"><strong>Lợi ích:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Không cần dừng xe để ghép nối lại rườm rà. Audio Multitasking cho phép nhóm vẫn tận hưởng âm nhạc hoặc chỉ đường GPS cá nhân, nhưng luôn kết nối với nhau để cảnh báo ổ gà, xe tải ngược chiều hay đơn giản là chém gió cho đỡ buồn ngủ.</span></p><p><span style=\"color: rgb(85, 85, 85);\"><strong>Hạn chế:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\"><em>Pin khi chạy Mesh sẽ rút ngắn còn khoảng 10 giờ so với 15 giờ ở chế độ Bluetooth. Bù lại thiết bị sử dụng cổng sạc Type-C rất tiện dụng và sạc nhanh khi nghỉ trưa.</em></span></p>",
+        "htmlEn": null,
         "listStyle": "bulleted",
-        "subheading": ""
-      },
-      {
-        "alt": null,
-        "url": "/media/uploads/929abbd5-64e2-4f36-8bbe-96cd8ed65aba/mu-bao-hiem-adventure-caberg-cacbon-tanami-cua-gio-he-thong-kinh.jpg",
-        "html": "<p><strong>Lợi ích:</strong></p><p>Thích hợp TPHCM và miền Nam: 1 vent cằm điều chỉnh được, 2 vent đỉnh đầu, 2 cửa thoát khí sau tháo rời. Trời nóng: mở hết, thông hơn hẳn fullface thông thường. Đi xa buổi chiều nắng: DVT gạt xuống không cần dừng xe thay kính.</p><p><strong>Bằng chứng:</strong></p><p>DVT (Double Visor Tech) – cần gạt bên trái điều khiển kính râm tích hợp, hoạt động được khi đeo găng tay. Pinlock Max Vision 70 kèm theo hộp – chống sương kính ngoài.</p><p><strong>Hạn chế:</strong></p><p><em>Thông gió tối đa chỉ thực sự vượt trội khi tháo hết vent cover – nếu chỉ mở một phần, kém hơn các mũ fullface touring chuyên dụng cùng giá.</em></p>",
-        "side": "right",
-        "type": "feature",
         "items": [],
-        "caption": "Mũ bảo hiểm dual sport CABERG TANAMI CARBON - 2 IN 1. Hệ thống kính DVT & thông gió",
-        "heading": "Hệ thống thông gió 3 lớp + DVT kính râm tích hợp",
-        "listStyle": "bulleted",
-        "subheading": ""
-      },
-      {
-        "html": "<ul class=\"suitability-list\"><li><strong>Nếu bạn có xe ADV</strong> → Nếu bạn hay đi cả đường nhựa lẫn địa hình trong cùng một chuyến – Tanami Carbon là mũ đáng đầu tư thay vì mang 2 mũ</li><li><strong>Nếu thường xuyên đi xa lộ tốc độ cao</strong> → Nếu bạn thường xuyên touring xa lộ tốc độ cao và cần mũ thật yên tĩnh – nên xem thêm <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://bigbike.vn/product/caberg-drift-evo-ii-carbon\">Caberg Drift Evo II Carbon</a> thay thế.</li><li><strong>Ngân sách dưới 8 triệu</strong> → Nếu ngân sách dưới 8 triệu – phiên bản Tanami fiberglass nhẹ hơn túi tiền, tính năng tương đương.</li><li><strong>Chỉ đi phố là thường</strong> → Nếu chỉ đi phố hàng ngày trong thành phố – không cần đến dòng dual sport này, xem Caberg Avalon X phù hợp hơn.</li></ul>",
-        "type": "suitability",
-        "cards": null,
-        "title": "PHÙ HỢP VỚI AI VÀ LỜI KHUYÊN"
-      },
-      {
-        "html": "<table style=\"width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px;\">\n  <thead>\n    <tr>\n      <th style=\"background:#1A1A1A;color:#FFFFFF !important;padding:11px 14px;text-align:center;font-weight:600;letter-spacing:0.5px;\">Size</th>\n      <th style=\"background:#1A1A1A;color:#FFFFFF !important;padding:11px 14px;text-align:center;font-weight:600;letter-spacing:0.5px;\">Vòng đầu (cm)</th>\n      <th style=\"background:#1A1A1A;color:#FFFFFF !important;padding:11px 14px;text-align:left;font-weight:600;letter-spacing:0.5px;\">Ghi chú</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr style=\"background:#FFFFFF;\">\n      <td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;font-weight:700;color:#333333 !important;\">XS</td>\n      <td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;color:#333333 !important;\">53 – 54</td>\n      <td style=\"padding:10px 14px;border:1px solid #E0E0E0;color:#333333 !important;\">Shell nhỏ (XS – M)</td>\n    </tr>\n    <tr style=\"background:#F7F7F7;\">\n      <td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;font-weight:700;color:#333333 !important;\">S</td>\n      <td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;color:#333333 !important;\">55 – 56</td>\n      <td style=\"padding:10px 14px;border:1px solid #E0E0E0;color:#333333 !important;\">Shell nhỏ (XS – M)</td>\n    </tr>\n    <tr style=\"background:#FFFFFF;\">\n      <td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;font-weight:700;color:#333333 !important;\">M</td>\n      <td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;color:#333333 !important;\">57 – 58</td>\n      <td style=\"padding:10px 14px;border:1px solid #E0E0E0;color:#333333 !important;\">Shell nhỏ (XS – M)</td>\n    </tr>\n    <tr style=\"background:#F7F7F7;\">\n      <td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;font-weight:700;color:#333333 !important;\">L</td>\n      <td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;color:#333333 !important;\">59 – 60</td>\n      <td style=\"padding:10px 14px;border:1px solid #E0E0E0;color:#333333 !important;\">Shell lớn (L – XXL) &nbsp;·&nbsp; <strong style=\"color:#333333 !important;\">Cân thực tế tại BigBike: 1.602g</strong></td>\n    </tr>\n    <tr style=\"background:#FFFFFF;\">\n      <td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;font-weight:700;color:#333333 !important;\">XL</td>\n      <td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;color:#333333 !important;\">61 – 62</td>\n      <td style=\"padding:10px 14px;border:1px solid #E0E0E0;color:#333333 !important;\">Shell lớn (L – XXL)</td>\n    </tr>\n    <tr style=\"background:#F7F7F7;\">\n      <td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;font-weight:700;color:#333333 !important;\">XXL</td>\n      <td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;color:#333333 !important;\">63 – 64</td>\n      <td style=\"padding:10px 14px;border:1px solid #E0E0E0;color:#333333 !important;\">Shell lớn (L – XXL)</td>\n    </tr>\n  </tbody>\n</table>\n<p style=\"font-size:13px;margin:6px 0;line-height:1.7;color:#333333 !important;\">① Đo vòng đầu bằng thước dây, đặt ngang trên lông mày khoảng 2cm, quanh phần rộng nhất của đầu.</p>\n<p style=\"font-size:13px;margin:6px 0;line-height:1.7;color:#333333 !important;\">② Nếu số đo nằm giữa 2 size → chọn size lớn hơn, hoặc liên hệ BigBike để được tư vấn.</p>\n<p style=\"font-size:13px;margin:6px 0;line-height:1.7;color:#333333 !important;\">③ Mũ mới hơi ôm má là bình thường – lớp mút sẽ nén và vừa hơn sau 2–4 tuần đội.</p>\n",
-        "type": "sizeGuide",
-        "title": "BẢNG SIZE"
+        "itemsEn": null
       }
     ],
-    "descriptionBlocksEn": [
-      {
-        "alt": null,
-        "url": "/media/uploads/6b2f1f97-8f5b-4c54-8869-f28fa83349c8/mu-bao-hiem-adventure-caberg-cacbon-tanami-can-nang-thuc-te.jpg",
-        "html": "<p><span style=\"color: rgb(85, 85, 85);\"><strong>Benefit:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Full carbon shell makes this noticeably lighter than fiberglass dual sport helmets — less neck fatigue on full-day rides.</span></p><p><span style=\"color: rgb(85, 85, 85);\"><strong>Evidence:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Weighed in-store at BigBike using a precision scale: 1,602g (size L). The manufacturer's label inside the helmet states 1,500g ±50g for large shell — actual weight is 102g heavier than the label. Small shell (XS–M) not yet weighed at our shop.</span></p><p><span style=\"color: rgb(85, 85, 85);\"><strong>Limitation:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\"><em>1,602g is still heavier than a pure fullface carbon helmet at a similar price — a reasonable trade-off for the 2-in-1 dual sport functionality.</em></span></p>",
-        "side": "right",
-        "type": "feature",
-        "items": [],
-        "caption": "Precision-scale display showing 1,602g, with the Tanami Carbon size L helmet placed on the scale at BigBike",
-        "heading": "Actual weight 1,602g (size L) — 102g heavier than the manufacturer's label",
-        "listStyle": "bulleted",
-        "subheading": ""
-      },
-      {
-        "alt": null,
-        "url": "/media/uploads/f92e620c-a9fb-4bf6-b499-159096aa16b7/mu-bao-hiem-adventure-caberg-cacbon-tanami-tem-qcvn.jpg",
-        "html": "<p><span style=\"color: rgb(85, 85, 85);\"><strong>Benefit:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">This is exactly what Tanami Carbon buyers pay for: one helmet that handles both tarmac and trails on the same ride. On-road: fit the visor, close the chin vent — feels close to a touring fullface. Off-road: remove the visor tool-free, open magnetic vents, slip on motocross goggles.</span></p><p><span style=\"color: rgb(85, 85, 85);\"><strong>Evidence:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">The chin vent uses magnets for instant removal — no screws, no tools. The visor removes tool-free and is compatible with standard motocross goggles. Pinlock Max Vision 70 included in the box.</span></p><p><span style=\"color: rgb(85, 85, 85);\"><strong>Limitation:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\"><em>Riders used to a pure fullface will notice the chin area feels more open — that's inherent to dual sport design. Try it in-store if you regularly ride at highway speeds.</em></span></p>",
-        "side": "left",
-        "type": "feature",
-        "items": [],
-        "caption": "CABERG TANAMI CARBON dual-sport helmet - 2 IN 1. Quatest certification sticker",
-        "heading": "Switches between on-road and off-road in seconds — no tools needed",
-        "listStyle": "bulleted",
-        "subheading": ""
-      },
-      {
-        "alt": null,
-        "url": "/media/uploads/929abbd5-64e2-4f36-8bbe-96cd8ed65aba/mu-bao-hiem-adventure-caberg-cacbon-tanami-cua-gio-he-thong-kinh.jpg",
-        "html": "<p><span style=\"color: rgb(85, 85, 85);\"><strong>Benefit:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">Well suited to Ho Chi Minh City and the south: 1 adjustable chin vent, 2 crown vents, 2 removable rear exhaust vents. In hot weather, open everything for noticeably better airflow than a standard fullface. On long afternoon rides in strong sun, flip the DVT sun visor down without stopping to swap visors.</span></p><p><span style=\"color: rgb(85, 85, 85);\"><strong>Evidence:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\">DVT (Double Visor Tech) — a left-side lever operates the integrated sun visor, usable while wearing gloves. Pinlock Max Vision 70 is included in the box to prevent visor fogging.</span></p><p><span style=\"color: rgb(85, 85, 85);\"><strong>Limitation:</strong></span></p><p><span style=\"color: rgb(51, 51, 51);\"><em>Maximum airflow only really stands out with the vent covers fully removed — with vents only partially open, it's less effective than dedicated touring fullface helmets at the same price.</em></span></p>",
-        "side": "right",
-        "type": "feature",
-        "items": [],
-        "caption": "CABERG TANAMI CARBON dual-sport helmet - 2 IN 1. DVT visor & ventilation system",
-        "heading": "3-Layer Ventilation + Integrated DVT Sun Visor",
-        "listStyle": "bulleted",
-        "subheading": ""
-      },
-      {
-        "html": "<ul class=\"suitability-list\"><li><strong>If you have an ADV bike</strong> → If you ride an ADV bike (Honda CB500X, Versys 650, Himalayan...) and mix tarmac with trails on the same trip → the Tanami Carbon makes sense — no need to carry two helmets</li><li><strong>If you frequently ride high-speed highways</strong> → If you primarily tour at highway speeds and rarely go off-road → consider the <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://bigbike.vn/product/caberg-drift-evo-ii-carbon\">Caberg Drift Evo II Carbon</a> instead — pure fullface, quieter at speed</li><li><strong>Budget under 8 million</strong> → If your budget is under 8 million VND and you mostly ride on pavement → the Tanami fiberglass version offers the same functionality at a lower price.</li><li><strong>Mostly just city riding</strong> → If you only ride around the city daily → this dual sport helmet is overkill; the Caberg Avalon X is a better fit</li></ul>",
-        "type": "suitability",
-        "cards": null,
-        "title": "WHO IT'S FOR & OUR ADVICE"
-      },
-      {
-        "html": "<div style=\"margin:0 0 24px 0;\">\n\n  <h2 style=\"font-family:'Barlow Condensed',Arial,sans-serif;font-size:22px;font-weight:bold;text-transform:uppercase;color:#F90606 !important;margin:0 0 16px 0;letter-spacing:0.5px;\">\n    CABERG TANAMI CARBON SIZE CHART\n  </h2>\n\n  <table style=\"width:100%;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;font-size:18px;margin:0 0 16px 0;\">\n    <thead>\n      <tr>\n        <th style=\"padding:12px 16px;border:1px solid #dddddd;background-color:#f5f5f5;font-weight:bold;color:#111111 !important;text-align:center;width:15%;\">Size</th>\n        <th style=\"padding:12px 16px;border:1px solid #dddddd;background-color:#f5f5f5;font-weight:bold;color:#111111 !important;text-align:center;width:25%;\">Head circumference (cm)</th>\n        <th style=\"padding:12px 16px;border:1px solid #dddddd;background-color:#f5f5f5;font-weight:bold;color:#111111 !important;text-align:left;\">Notes</th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;text-align:center;font-weight:bold;\">XS</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;text-align:center;\">53 – 54</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#6f6f6f !important;\">Small shell (XS – M)</td>\n      </tr>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;text-align:center;font-weight:bold;\">S</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;text-align:center;\">55 – 56</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#6f6f6f !important;\">Small shell (XS – M)</td>\n      </tr>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;text-align:center;font-weight:bold;\">M</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;text-align:center;\">57 – 58</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#6f6f6f !important;\">Small shell (XS – M)</td>\n      </tr>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#F90606 !important;text-align:center;font-weight:bold;\">L</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;text-align:center;\">59 – 60</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;\">Large shell (L – XXL) &nbsp;·&nbsp; <strong style=\"color:#F90606 !important;\">Weighed in-store at BigBike: 1,602g</strong></td>\n      </tr>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;text-align:center;font-weight:bold;\">XL</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;text-align:center;\">61 – 62</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#6f6f6f !important;\">Large shell (L – XXL)</td>\n      </tr>\n      <tr style=\"background-color:#ffffff;\">\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;text-align:center;font-weight:bold;\">XXL</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#111111 !important;text-align:center;\">63 – 64</td>\n        <td style=\"padding:12px 16px;border:1px solid #dddddd;color:#6f6f6f !important;\">Large shell (L – XXL)</td>\n      </tr>\n    </tbody>\n  </table>\n\n  <p style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6f6f6f !important;margin:8px 0;line-height:1.6;\">\n    ① Measure head circumference with a soft tape measure placed about 2cm above the eyebrows, around the widest part of the head.\n  </p>\n  <p style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6f6f6f !important;margin:8px 0;line-height:1.6;\">\n    ② If your measurement falls between two sizes, choose the larger size or contact BigBike for advice.\n  </p>\n  <p style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6f6f6f !important;margin:8px 0;line-height:1.6;\">\n    ③ A slightly snug fit on the cheeks when new is normal — the liner foam will compress and mould to your head over 2–4 weeks of use.\n  </p>\n\n</div>\n",
-        "type": "sizeGuide",
-        "title": "SIZE CHART"
-      }
-    ]
+    "suitabilitySection": {
+      "title": "PHÙ HỢP VỚI AI VÀ LỜI KHUYÊN",
+      "titleEn": "WHO IT'S FOR & OUR ADVICE",
+      "html": "<ul class=\"suitability-list\"><li><strong>Dành cho Leader hoặc Chốt đoàn</strong> → Khoảng cách nhóm Mesh lên đến 2000m (tùy địa hình) giúp người đi đầu dễ dàng cảnh báo tình trạng đường sá cho người chốt cuối dù khoảng cách kéo giãn.</li><li><strong>Nhóm phượt từ 3 đến 10 người</strong> → Mesh là bắt buộc nếu nhóm đông. Khác với S10X chỉ dành cho 2 người, S13 là giải pháp hoàn chỉnh cho hội nhóm.</li><li><strong>Cặp đôi hoặc chỉ chạy độc hành</strong> → Nếu bạn chỉ đi 1 mình nghe nhạc, hoặc đi 2 xe với bạn đời, SCS S10X (1.550.000đ) là quá đủ để tiết kiệm ngân sách, không cần thiết phải mua S13.</li></ul>",
+      "htmlEn": "<ul class=\"suitability-list\"><li><strong>For Group Leaders and Sweepers</strong> → The Mesh group range of up to 2000m ensures the front rider can seamlessly warn the tail rider about road hazards, even when the pack stretches out.</li><li><strong>Riding Groups of 3 to 10 People</strong> → Mesh is practically mandatory for larger groups. Unlike the S10X which is limited to 2 riders, the S13 is built specifically for clubs and group tours.</li><li><strong>Couples or Solo Riders</strong> → If you only ride solo for music or with one pillion passenger, the SCS S10X (1,550,000 VND) is more than enough. Save your money.</li></ul>"
+    },
+    "sizeGuideSection": {
+      "title": "BẢNG SIZE NGÀM KẸP (BẢN TEST DỮ LIỆU)",
+      "titleEn": "CLAMP SIZE GUIDE (TEST DATA)",
+      "html": "<table style=\"width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px;\"><thead><tr><th style=\"background:#1A1A1A;color:#FFFFFF !important;padding:11px 14px;text-align:center;font-weight:600;\">Kích thước ngàm kẹp</th><th style=\"background:#1A1A1A;color:#FFFFFF !important;padding:11px 14px;text-align:center;font-weight:600;\">Độ dày vỏ mũ phù hợp (mm)</th></tr></thead><tbody><tr style=\"background:#FFFFFF;\"><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;font-weight:700;\">Tiêu chuẩn (Kèm sẵn trong hộp)</td><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;\">Dưới 25mm</td></tr><tr style=\"background:#F7F7F7;\"><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;font-weight:700;\">Mở rộng (Mua thêm riêng)</td><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;\">25mm - 35mm</td></tr></tbody></table><p style=\"font-size:13px;margin:6px 0;\"><em>*Lưu ý: Bảng size ngàm kẹp này là dữ liệu giả định được tạo ra để bạn có thể test chức năng hiển thị của khối Size Guide trên website cho dòng tai nghe.</em></p>",
+      "htmlEn": "<table style=\"width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px;\"><thead><tr><th style=\"background:#1A1A1A;color:#FFFFFF !important;padding:11px 14px;text-align:center;font-weight:600;\">Clamp Size</th><th style=\"background:#1A1A1A;color:#FFFFFF !important;padding:11px 14px;text-align:center;font-weight:600;\">Suitable Helmet Thickness (mm)</th></tr></thead><tbody><tr style=\"background:#FFFFFF;\"><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;font-weight:700;\">Standard (Included)</td><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;\">Under 25mm</td></tr><tr style=\"background:#F7F7F7;\"><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;font-weight:700;\">Extended (Sold Separately)</td><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;\">25mm - 35mm</td></tr></tbody></table><p style=\"font-size:13px;margin:6px 0;\"><em>*Note: This is a mock clamp size guide created so you can test the UI functionality of the Size Guide block for intercoms.</em></p>"
+    }
   }
 ]

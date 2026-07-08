@@ -5,7 +5,6 @@ import com.bigbike.bigbike_backend.api.admin.dto.CategoryTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.ProductTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertBrandRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertCategoryRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.ProductTabRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VideoRequest;
@@ -13,7 +12,6 @@ import com.bigbike.bigbike_backend.api.admin.dto.GalleryImageRequest;
 import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.config.MediaUrlProperties;
 import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
-import com.bigbike.bigbike_backend.domain.catalog.ProductTab;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
@@ -74,9 +72,10 @@ public class CatalogRequestValidator {
         if (create) {
             AdminMutationValidators.validateRequiredSlug(slug, "slug", errors);
             AdminMutationValidators.validateRequiredText(request.getName(), "name", "Name", errors);
-            if (request.getRetailPrice() == null) {
-                errors.add(new ApiErrorDetail("retailPrice", "REQUIRED", "retailPrice is required."));
-            }
+            // retailPrice/sku/categoryId/brandId/gender requiredness (conditional on
+            // hasVariants and draft-vs-publish, PRODUCT_RULE_005) is enforced post-merge by
+            // AdminMutationValidators.validateProductFieldsRequired, not here — this request-level
+            // check only runs on create/update wholesale and can't see the merged entity/variants.
             // stockState is a derived field — not required from client. Always computed from quantityOnHand.
             if (request.getPublishStatus() == null) {
                 errors.add(new ApiErrorDetail("publishStatus", "REQUIRED", "publishStatus is required."));
@@ -199,31 +198,35 @@ public class CatalogRequestValidator {
                 }
             }
 
-            // Media URLs already stored on the product (body blocks + tabs) are grandfathered so
+            // Media URLs already stored on the product (body blocks) are grandfathered so
             // editing legacy content that hotlinks old images is never blocked (MEDIA_RULE_003,
             // mirrors the gallery/video legacy tolerance above). Only NEW external urls are rejected.
             Set<String> existingBlockMediaUrls = new HashSet<>();
             if (current != null) {
                 existingBlockMediaUrls.addAll(AdminMutationValidators.collectBlockMediaUrls(current.getDescriptionBlocks()));
-                existingBlockMediaUrls.addAll(AdminMutationValidators.collectBlockMediaUrls(current.getDescriptionBlocksEn()));
-                if (current.getProductTabs() != null) {
-                    for (ProductTab tab : current.getProductTabs()) {
-                        existingBlockMediaUrls.addAll(AdminMutationValidators.collectBlockMediaUrls(tab.blocks()));
-                        existingBlockMediaUrls.addAll(AdminMutationValidators.collectBlockMediaUrls(tab.blocksEn()));
-                    }
-                }
+                existingBlockMediaUrls.addAll(AdminMutationValidators.suitabilitySectionMediaUrls(current.getSuitabilitySection()));
+                existingBlockMediaUrls.addAll(AdminMutationValidators.sizeGuideSectionMediaUrls(current.getSizeGuideSection()));
             }
             validateDescriptionBlockMediaUrls(request.getDescriptionBlocks(), "descriptionBlocks", existingBlockMediaUrls, errors);
-            validateDescriptionBlockMediaUrls(request.getDescriptionBlocksEn(), "descriptionBlocksEn", existingBlockMediaUrls, errors);
-            if (request.getTabs() != null) {
-                for (int i = 0; i < request.getTabs().size(); i++) {
-                    ProductTabRequest tab = request.getTabs().get(i);
-                    if (tab == null) {
-                        continue;
-                    }
-                    validateDescriptionBlockMediaUrls(tab.getBlocks(), "tabs[" + i + "].blocks", existingBlockMediaUrls, errors);
-                    validateDescriptionBlockMediaUrls(tab.getBlocksEn(), "tabs[" + i + "].blocksEn", existingBlockMediaUrls, errors);
-                }
+
+            // suitabilitySection/sizeGuideSection (V327/V328, tách khỏi descriptionBlocks) — cùng cơ
+            // chế MEDIA_RULE_003: chỉ ảnh MỚI trỏ host ngoài mới bị chặn.
+            String mediaBase = mediaUrlProperties.getPublicBaseUrl();
+            if (request.getSuitabilitySection() != null) {
+                AdminMutationValidators.validateHtmlInlineImages(
+                        request.getSuitabilitySection().getHtml(), "suitabilitySection.html",
+                        existingBlockMediaUrls, mediaBase, errors);
+                AdminMutationValidators.validateHtmlInlineImages(
+                        request.getSuitabilitySection().getHtmlEn(), "suitabilitySection.htmlEn",
+                        existingBlockMediaUrls, mediaBase, errors);
+            }
+            if (request.getSizeGuideSection() != null) {
+                AdminMutationValidators.validateHtmlInlineImages(
+                        request.getSizeGuideSection().getHtml(), "sizeGuideSection.html",
+                        existingBlockMediaUrls, mediaBase, errors);
+                AdminMutationValidators.validateHtmlInlineImages(
+                        request.getSizeGuideSection().getHtmlEn(), "sizeGuideSection.htmlEn",
+                        existingBlockMediaUrls, mediaBase, errors);
             }
         }
 
@@ -256,6 +259,22 @@ public class CatalogRequestValidator {
                 BigDecimal mergedVariantSale = v.isSalePricePresent()
                         ? v.getSalePrice()
                         : (currentVariant == null ? null : currentVariant.getSalePrice());
+                // Owner decision 2026-07-07 (PRODUCT_RULE_013): a variant without its own retailPrice
+                // falls back to the product's shared retailPrice/salePrice (VariantPricing) — only an
+                // error when the product ALSO has no valid shared retailPrice to fall back to.
+                boolean hasSharedRetail = mergedRetail != null && mergedRetail.compareTo(BigDecimal.ZERO) > 0;
+                if (mergedVariantRetail == null && !hasSharedRetail) {
+                    errors.add(new ApiErrorDetail(
+                            "variants[" + i + "].retailPrice", "REQUIRED", "retailPrice is required for a variant."));
+                }
+                // A variant with no retailPrice of its own is not "self-priced" (VariantPricing.
+                // hasOwnPrice), so a salePrice submitted alone would be silently ignored — reject
+                // instead of accepting data that never takes effect.
+                if (mergedVariantRetail == null && mergedVariantSale != null) {
+                    errors.add(new ApiErrorDetail(
+                            "variants[" + i + "].salePrice", "INVALID_VALUE",
+                            "salePrice cannot be set on a variant that has no retailPrice of its own."));
+                }
                 AdminMutationValidators.validateSalePriceRule(
                         mergedVariantRetail,
                         mergedVariantSale,
@@ -276,11 +295,8 @@ public class CatalogRequestValidator {
             validateVariantSkuUniqueness(request, current, preview, errors);
         }
 
-        if (create) {
-            if (AdminMutationValidators.trimToNull(request.getCategoryId()) == null) {
-                errors.add(new ApiErrorDetail("categoryId", "REQUIRED", "categoryId is required."));
-            }
-        }
+        // categoryId requiredness is enforced post-merge by
+        // AdminMutationValidators.validateProductFieldsRequired (PRODUCT_RULE_005), not here.
 
         // Slug uniqueness is a persistence concern — skip it for the live-preview
         // dry-run. Otherwise previewing an EXISTING product (current is always null
@@ -309,12 +325,15 @@ public class CatalogRequestValidator {
                     errors
             );
             // Tiếng Anh chỉ bắt buộc khi tiếng Việt tương ứng đang bắt buộc (TRANSLATION_RULE_002).
-            // `name` là field cốt lõi bắt buộc ở VI → `translations.en.name` cũng bắt buộc, áp
-            // dụng cho cả tạo mới lẫn sửa bản ghi cũ (không chỉ khi request đổi tên).
-            ProductTranslationRequest.ProductContentRequest en =
-                    request.getTranslations() == null ? null : request.getTranslations().getEn();
-            AdminMutationValidators.validateRequiredText(
-                    en == null ? null : en.getName(), "translations.en.name", "English name", errors);
+            // `name` là field cốt lõi bắt buộc ở VI → `translations.en.name` cũng bắt buộc, nhưng chỉ khi
+            // request thực sự đặt tên (tạo mới, hoặc sửa có gửi `name`) — khớp Category/Brand ở dưới, để
+            // file nhập/PATCH tối giản (vd chỉ sửa giá/FAQ, không đổi name) không bị chặn.
+            if (create || request.getName() != null) {
+                ProductTranslationRequest.ProductContentRequest en =
+                        request.getTranslations() == null ? null : request.getTranslations().getEn();
+                AdminMutationValidators.validateRequiredText(
+                        en == null ? null : en.getName(), "translations.en.name", "English name", errors);
+            }
         }
 
         return slug;
@@ -379,6 +398,9 @@ public class CatalogRequestValidator {
             }
             AdminMutationValidators.validateHtmlInlineImages(
                     AdminMutationValidators.blockRawHtml(block), fieldPrefix + "[" + i + "].html",
+                    existing, base, errors);
+            AdminMutationValidators.validateHtmlInlineImages(
+                    AdminMutationValidators.blockRawHtmlEn(block), fieldPrefix + "[" + i + "].htmlEn",
                     existing, base, errors);
         }
     }

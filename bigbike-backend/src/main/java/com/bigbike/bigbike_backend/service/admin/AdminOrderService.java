@@ -114,7 +114,7 @@ public class AdminOrderService {
     }
 
     private static final Set<String> ALLOWED_FULFILLMENT_STATUSES = Set.of(
-            "UNFULFILLED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "RETURNED"
+            "UNFULFILLED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"
     );
 
     private static final Map<String, Set<String>> ALLOWED_FULFILLMENT_TRANSITIONS;
@@ -124,10 +124,9 @@ public class AdminOrderService {
         // so tracking data is captured before the order can be completed.
         ALLOWED_FULFILLMENT_TRANSITIONS.put("UNFULFILLED", Set.of("PROCESSING", "CANCELLED"));
         ALLOWED_FULFILLMENT_TRANSITIONS.put("PROCESSING",  Set.of("SHIPPED", "CANCELLED"));
-        ALLOWED_FULFILLMENT_TRANSITIONS.put("SHIPPED",     Set.of("DELIVERED", "RETURNED"));
-        ALLOWED_FULFILLMENT_TRANSITIONS.put("DELIVERED",   Set.of("RETURNED"));
+        ALLOWED_FULFILLMENT_TRANSITIONS.put("SHIPPED",     Set.of("DELIVERED"));
+        ALLOWED_FULFILLMENT_TRANSITIONS.put("DELIVERED",   Set.of());
         ALLOWED_FULFILLMENT_TRANSITIONS.put("CANCELLED",   Set.of());
-        ALLOWED_FULFILLMENT_TRANSITIONS.put("RETURNED",    Set.of());
     }
 
     private final OrderJpaRepository orderRepo;
@@ -396,7 +395,7 @@ public class AdminOrderService {
                 .orElseThrow(() -> new NotFoundException("Order not found."));
 
         String orderStatus = order.getStatus();
-        if ("CANCELLED".equals(orderStatus) || "FAILED".equals(orderStatus) || "REFUNDED".equals(orderStatus)) {
+        if ("CANCELLED".equals(orderStatus) || "FAILED".equals(orderStatus)) {
             throw new ConflictException(
                     "Không thể cập nhật thanh toán cho đơn hàng đã " +
                     ("CANCELLED".equals(orderStatus) ? "hủy" : "thất bại") + ".");
@@ -500,12 +499,15 @@ public class AdminOrderService {
             return toDetail(order);
         }
 
-        if (current != null) {
-            Set<String> allowed = ALLOWED_FULFILLMENT_TRANSITIONS.getOrDefault(current, Set.of());
-            if (!allowed.contains(newStatus)) {
-                throw new ConflictException(
-                        "Cannot transition fulfillment from " + current + " to " + newStatus + ".");
-            }
+        // Legacy orders imported before fulfillment tracking existed have a null fulfillmentStatus.
+        // Treat null as the pre-processing "UNFULFILLED" baseline for transition validation so those
+        // orders still must pass through SHIPPED (+ tracking number) before DELIVERED — do not write
+        // "UNFULFILLED" back onto the order here, that backfill is a separate decision.
+        String effectiveCurrent = current != null ? current : "UNFULFILLED";
+        Set<String> allowed = ALLOWED_FULFILLMENT_TRANSITIONS.getOrDefault(effectiveCurrent, Set.of());
+        if (!allowed.contains(newStatus)) {
+            throw new ConflictException(
+                    "Cannot transition fulfillment from " + effectiveCurrent + " to " + newStatus + ".");
         }
 
         Instant now = Instant.now();
@@ -628,16 +630,12 @@ public class AdminOrderService {
     /**
      * Enforce business rules before flipping an order to COMPLETED.
      *
-     * Rule 3 — DELIVERY orders cannot be COMPLETED until the goods have been
-     * marked DELIVERED. fulfillmentStatus is initialised to UNFULFILLED on
-     * order creation and progresses UNFULFILLED → PROCESSING → SHIPPED →
-     * DELIVERED via {@link #updateFulfillmentStatus}.
+     * DELIVERY orders cannot be COMPLETED until the goods have been marked DELIVERED.
+     * fulfillmentStatus is initialised to UNFULFILLED on order creation and progresses
+     * UNFULFILLED → PROCESSING → SHIPPED → DELIVERED via {@link #updateFulfillmentStatus}.
      *
-     * Rule 2 — COD orders must have collected the cash before completion;
-     * "complete" means goods + money, not just goods.
-     *
-     * Rule 1 — COMPLETED + UNPAID is never legitimate; an order must be paid
-     * before it can be completed.
+     * Payment status no longer blocks completion (owner decision 2026-06-23): the admin
+     * reconciles money offline and may mark an order paid before or after completing it.
      */
     private void validateBeforeComplete(OrderEntity order) {
         String fulfillmentType = order.getFulfillmentType();

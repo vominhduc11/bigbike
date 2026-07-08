@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
+import com.bigbike.bigbike_backend.domain.catalog.ProductHighlights;
 import com.bigbike.bigbike_backend.domain.catalog.ProductPrice;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
@@ -57,7 +58,6 @@ class SliderReadServiceTest {
                         List.of(),
                         new ProductPrice(BigDecimal.valueOf(3290000), null, "VND"),
                         List.of(),
-                        List.of(),
                         ProductStockState.IN_STOCK,
                         null,
                         null,
@@ -66,14 +66,9 @@ class SliderReadServiceTest {
                         null,       // homepageOrder
                         null,       // rating
                         null,       // ratingCount
-                        null,       // promotionContent
-                        null,       // installationGuide
                         List.of(),  // faqs
                         List.of(),  // commitments
-                        List.of(),  // specStats
-                        List.of(),  // trustBadges
-                        List.of(),  // positiveNotes
-                        List.of(),  // negativeNotes
+                        ProductHighlights.EMPTY, // highlights
                         null,       // originBrandCountry
                         null,       // sizeGuide
                         null,       // suitabilityAdvisory
@@ -85,8 +80,8 @@ class SliderReadServiceTest {
                         List.of(),  // relatedProducts
                         List.of(),  // accessoryProducts
                         null,       // descriptionBlocks
-                        null,       // tabs
-                        null,       // sectionVisibility
+                        null,       // suitabilitySection
+                        null,       // sizeGuideSection
                         null,       // seo
                         null,       // translations
                         Instant.now(),

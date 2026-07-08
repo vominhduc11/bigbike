@@ -27,6 +27,7 @@ import {
   getVariantColorKey,
   cloneGallery,
   hasGalleryImages,
+  formatPrice,
   VARIANTS_FILTER_THRESHOLD,
   VARIANTS_RENDER_CAP,
 } from './constants'
@@ -721,10 +722,37 @@ function VariantCard({
             {fieldErrors.sku && <small className="field-error" role="alert">{fieldErrors.sku}</small>}
           </label>
 
-          {/* Variant price inputs removed: storefront, cart, and checkout use
-              the parent product price regardless of variant, so collecting
-              per-variant prices here would silently diverge from what the
-              customer sees and pays. */}
+          <label className="form-field">
+            <span>{t('products.detail.variant.retailPrice')}</span>
+            <Input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={formatPrice(variant.retailPrice)}
+              onChange={(e) => updateField('retailPrice', e.target.value.replace(/\D/g, ''))}
+              disabled={disabled}
+              aria-invalid={fieldErrors.retailPrice ? true : undefined}
+            />
+            {fieldErrors.retailPrice && <small className="field-error" role="alert">{fieldErrors.retailPrice}</small>}
+          </label>
+
+          <label className="form-field">
+            <span>{t('products.detail.variant.salePrice')}</span>
+            <Input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={formatPrice(variant.salePrice)}
+              onChange={(e) => updateField('salePrice', e.target.value.replace(/\D/g, ''))}
+              disabled={disabled}
+              aria-invalid={fieldErrors.salePrice ? true : undefined}
+            />
+            {fieldErrors.salePrice && <small className="field-error" role="alert">{fieldErrors.salePrice}</small>}
+          </label>
+
+          <p className="detail-section-desc form-field-wide mt-0 mb-0">
+            {t('products.detail.variant.priceHint')}
+          </p>
 
           <div className="form-field form-field-wide flex items-center gap-2.5">
             <Switch
@@ -975,6 +1003,8 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
       id: '',
       sku: '',
       name: '',
+      retailPrice: '',
+      salePrice: '',
       isAvailable: true,
       options: [],
       gallery: [],
@@ -1227,6 +1257,8 @@ export function VariantMatrixWizard({ onGenerate, onClose }) {
       id: '',
       sku: '',
       name: deriveVariantName(combo),
+      retailPrice: '',
+      salePrice: '',
       isAvailable: true,
       options: combo.map((o) => ({ name: o.name, value: o.value })),
       gallery: [],

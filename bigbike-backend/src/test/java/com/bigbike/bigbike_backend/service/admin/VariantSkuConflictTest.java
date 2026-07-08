@@ -174,6 +174,7 @@ class VariantSkuConflictTest {
         VariantRequest variant = new VariantRequest();
         variant.setSku(sku);
         variant.setIsAvailable(true);
+        variant.setRetailPrice(BigDecimal.TEN);
         VariantOptionRequest option = new VariantOptionRequest();
         option.setOptionName(optionName);
         option.setOptionValue(optionValue);

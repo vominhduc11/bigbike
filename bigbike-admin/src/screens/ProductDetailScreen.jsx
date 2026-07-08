@@ -119,26 +119,11 @@ import {
 import { FormField as Field } from '../components/layout/FormField'
 import { AssignmentConfigContext } from './product-detail/constants'
 
-// "Phù hợp với ai" (suitability) và "Bảng size" (sizeGuide) KHÔNG còn nhập trong trình dựng mô tả —
-// chúng có card riêng. Nhưng dữ liệu vẫn lưu chung trong descriptionBlocks (web tách render #6/#7).
-// Các helper dưới đây tách/ghép 2 khối đặc biệt đó khỏi danh sách khối hiển thị trong BlockEditor.
-const isSpecialDescBlock = (b) => b.type === 'suitability' || b.type === 'sizeGuide'
-// Khối hiển thị trong trình dựng mô tả: BỎ suitability/sizeGuide. Giữ null (chế độ HTML legacy) nguyên.
-const descBuilderBlocks = (all) => (Array.isArray(all) ? all.filter((b) => !isSpecialDescBlock(b)) : all)
-// Ghép lại sau khi sửa trong trình dựng: giữ nguyên 2 khối đặc biệt (web bỏ qua vị trí → thêm vào cuối).
-const mergeBuilderBlocks = (builderBlocks, all) => [
-  ...(builderBlocks ?? []),
-  ...(Array.isArray(all) ? all.filter(isSpecialDescBlock) : []),
-]
-const findSpecialBlock = (all, type) => (Array.isArray(all) ? all.find((b) => b.type === type) : undefined)
+// "Phù hợp với ai" (suitability) và "Bảng size" (sizeGuide) có card riêng NGOÀI trình dựng mô tả, và
+// (V327/V328) dữ liệu của chúng giờ cũng lưu ở 2 field riêng (form.suitabilitySection/sizeGuideSection)
+// — không còn embedded trong descriptionBlocks, không cần helper lọc/ghép nữa.
 // Nhãn hiển thị cho giới tính khi contentLang='en' — value lưu DB vẫn luôn "Nam"/"Nữ" (DATA_CONTRACT.md).
 const GENDER_LABEL_EN = { Nam: 'Male', 'Nữ': 'Female' }
-// Upsert 1 khối đặc biệt theo type (sửa tại chỗ nếu có, thêm vào cuối nếu chưa) — giữ các khối khác.
-const upsertSpecialBlock = (all, block) => {
-  const arr = Array.isArray(all) ? all : []
-  const idx = arr.findIndex((b) => b.type === block.type)
-  return idx === -1 ? [...arr, block] : arr.map((b, i) => (i === idx ? block : b))
-}
 
 // ── Main screen ────────────────────────────────────────────────────────────────
 
@@ -440,16 +425,21 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   }
 
   const isEnLang = contentLang === 'en'
+  // PRODUCT_RULE_005 — sản phẩm có biến thể khi có ≥1 dòng biến thể thật (đã đặt tên qua
+  // thuộc tính). Dùng để quyết định SKU/giá cấp sản phẩm có bắt buộc hay không (mirror schemas.js).
+  const hasVariants = form.variants.some((v) => v.name?.trim())
 
-  // "Phù hợp với ai" / "Bảng size" — nhập ở 2 card riêng (bên dưới), lưu vào descriptionBlocks(En) theo
-  // ngôn ngữ đang chọn. Khối rỗng mặc định có _key ổn định (useMemo) để editor không reseed giữa các lần
-  // render; `key` của editor kèm productId + ngôn ngữ nên VẪN reseed đúng khi đổi sản phẩm / đổi ngôn ngữ.
+  // "Phù hợp với ai" / "Bảng size" — nhập ở 2 card riêng (bên dưới), lưu vào form.suitabilitySection/
+  // form.sizeGuideSection (V327/V328, tách khỏi descriptionBlocks). Khối rỗng mặc định có _key ổn định
+  // (useMemo) để editor không reseed giữa các lần render; `key` của editor kèm productId + ngôn ngữ nên
+  // VẪN reseed đúng khi đổi sản phẩm / đổi ngôn ngữ.
   const suitabilityDefault = useMemo(() => createBlock('suitability'), [])
   const sizeGuideDefault = useMemo(() => createBlock('sizeGuide'), [])
-  const specialDescField = isEnLang ? 'descriptionBlocksEn' : 'descriptionBlocks'
-  const specialDescAll = isEnLang ? form.descriptionBlocksEn : form.descriptionBlocks
-  const suitabilityBlock = findSpecialBlock(specialDescAll, 'suitability') ?? suitabilityDefault
-  const sizeGuideBlock = findSpecialBlock(specialDescAll, 'sizeGuide') ?? sizeGuideDefault
+  const suitabilitySection = form.suitabilitySection ?? suitabilityDefault
+  const sizeGuideSection = form.sizeGuideSection ?? sizeGuideDefault
+  // Tiếng Việt quyết định có khối hay không; tab EN chỉ được dịch khối đã tồn tại, không được tự tạo mới.
+  const suitabilityCreateLockedInEn = isEnLang && !form.suitabilitySection
+  const sizeGuideCreateLockedInEn = isEnLang && !form.sizeGuideSection
 
   // Value of a translatable product-level text field for the active language.
   function langValue(field) {
@@ -1086,7 +1076,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   <Field
                     full
                     label={t('products.detail.name')}
-                    required={isEnLang || isCreate}
+                    required
                     count={`${langValue('name').length} / 255`}
                     countWarn={langValue('name').length > 230}
                     error={isEnLang ? validationErrors['translations.en.name'] : validationErrors.name}
@@ -1103,7 +1093,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   <Field
                     full
                     label={t('products.detail.slug')}
-                    required={isCreate && !isEnLang}
+                    required={!isEnLang}
                     error={isEnLang ? validationErrors['translations.en.slug'] : validationErrors.slug}
                     helper={isEnLang
                       ? t('products.detail.slugHintEn', { defaultValue: 'Đường dẫn tiếng Anh (tùy chọn) — để trống sẽ dùng đường dẫn tiếng Việt.' })
@@ -1133,7 +1123,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     count={`${form.sku.length} / 100`}
                     countWarn={form.sku.length > 85}
                     helper={t('products.detail.skuHint')}
-                    required={isCreate}
+                    required={!hasVariants}
                     error={validationErrors.sku}
                   >
                     <Input
@@ -1145,7 +1135,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     />
                   </Field>
 
-                  <Field label={t('products.detail.categoryId')} required={isCreate} error={validationErrors.categoryId}>
+                  <Field label={t('products.detail.categoryId')} required error={validationErrors.categoryId}>
                     <Select value={form.categoryId} onValueChange={(val) => { if (val) updateField('categoryId', val) }} disabled={isReadOnly}>
                       <SelectTrigger onBlur={() => validateFieldOnBlur('categoryId')}>
                         <SelectValue placeholder={t('products.detail.categoryPlaceholder')}>{selectedCategoryLabel}</SelectValue>
@@ -1163,7 +1153,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     </Select>
                   </Field>
 
-                  <Field label={t('products.detail.brandId')} required={isCreate} error={validationErrors.brandId}>
+                  <Field label={t('products.detail.brandId')} required error={validationErrors.brandId}>
                     <Select value={form.brandId} onValueChange={(val) => { if (val) updateField('brandId', val) }} disabled={isReadOnly}>
                       <SelectTrigger>
                         <SelectValue placeholder={t('products.detail.brandPlaceholder')}>{selectedBrandLabel}</SelectValue>
@@ -1190,7 +1180,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     />
                   </Field>
 
-                  <Field label={t('products.detail.gender', { defaultValue: 'Giới tính' })} required={isCreate} error={validationErrors.gender}>
+                  <Field label={t('products.detail.gender', { defaultValue: 'Giới tính' })} required error={validationErrors.gender}>
                     {/* Guard `if (val)`: Radix bắn onValueChange('') giả khi value đồng bộ lúc
                         mount — không guard sẽ xoá gender (hiện trống + lưu mất dữ liệu). Children
                         rõ ràng cho SelectValue để trigger hiện đúng giá trị. */}
@@ -1279,10 +1269,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 <p className="text-xs text-muted-foreground mb-2">
                   {t('products.detail.trustBadges.hint', { defaultValue: 'Các nhãn ngắn hiển thị NGAY TRÊN tên sản phẩm (vd "Chính hãng", "BH 2 năm", "Freeship"). Để trống → web ẩn dải. Mỗi sản phẩm tự nhập riêng.' })}
                 </p>
-                {validationErrors.trustBadges && (
+                {validationErrors.trustBadgesHtml && (
                   <p className="field-error text-xs text-[var(--admin-color-status-danger-text)] font-semibold mb-2 flex items-center gap-1" role="alert">
                     <AlertCircle size={13} className="shrink-0" />
-                    {validationErrors.trustBadges}
+                    {validationErrors.trustBadgesHtml}
                   </p>
                 )}
                 <TrustBadgesEditor
@@ -1302,7 +1292,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </div>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field label={t('products.detail.retailPrice')} required={isCreate} error={validationErrors.retailPrice}>
+                  <Field label={t('products.detail.retailPrice')} required={!hasVariants} error={validationErrors.retailPrice}>
                     <Input
                       type="text"
                       inputMode="numeric"
@@ -1387,14 +1377,13 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     <Select value={form.publishStatus} onValueChange={(val) => { if (val) updateField('publishStatus', val) }} disabled={isReadOnly}>
                       <SelectTrigger><SelectValue>{form.publishStatus ? t(`status.publish.${form.publishStatus}`, { defaultValue: form.publishStatus }) : undefined}</SelectValue></SelectTrigger>
                       <SelectContent>
-                        {form.publishStatus && !['DRAFT', 'PUBLISHED', 'HIDDEN', 'TRASH'].includes(form.publishStatus) && (
+                        {form.publishStatus && !['DRAFT', 'PUBLISHED', 'TRASH'].includes(form.publishStatus) && (
                           <SelectItem value={form.publishStatus} disabled>
                             {t('products.detail.specialPublishNote', { state: form.publishStatus })}
                           </SelectItem>
                         )}
                         <SelectItem value="DRAFT" disabled={!allowedPublishStatuses.includes('DRAFT')}>{t('status.publish.DRAFT')}</SelectItem>
                         <SelectItem value="PUBLISHED" disabled={!allowedPublishStatuses.includes('PUBLISHED')}>{t('status.publish.PUBLISHED')}</SelectItem>
-                        <SelectItem value="HIDDEN" disabled={!allowedPublishStatuses.includes('HIDDEN')}>{t('status.publish.HIDDEN')}</SelectItem>
                         {form.publishStatus === 'TRASH' && (
                           <SelectItem value="TRASH" disabled>{t('status.publish.TRASH')}</SelectItem>
                         )}
@@ -1493,10 +1482,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 }
               >
                 <p className="text-xs text-muted-foreground mb-2">{t('products.detail.specStats.hint')}</p>
-                {validationErrors.specStats && (
+                {validationErrors.specStatsHtml && (
                   <p className="field-error text-xs text-[var(--admin-color-status-danger-text)] font-semibold mb-2 flex items-center gap-1" role="alert">
                     <AlertCircle size={13} className="shrink-0" />
-                    {validationErrors.specStats}
+                    {validationErrors.specStatsHtml}
                   </p>
                 )}
                 <SpecStatEditor
@@ -1545,25 +1534,15 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   {t('products.detail.descriptionBuilderHint', { defaultValue: 'Trình dựng khối Tính năng chi tiết (chữ, ảnh, ảnh + chữ). Kéo-thả để đổi thứ tự. "Phù hợp với ai" và "Bảng size" nhập ở 2 card riêng bên dưới.' })}
                 </p>
                 <Field full label={t('products.detail.description')} error={validationErrors.description}>
-                  {isEnLang ? (
-                    <BlockEditor
-                      value={descBuilderBlocks(form.descriptionBlocksEn)}
-                      onChange={(blocks) => updateField('descriptionBlocksEn', mergeBuilderBlocks(blocks, form.descriptionBlocksEn))}
-                      disabled={isReadOnly}
-                      hasError={Boolean(validationErrors.description)}
-                      fallbackHtml={langValue('description')}
-                      productMode
-                    />
-                  ) : (
-                    <BlockEditor
-                      value={descBuilderBlocks(form.descriptionBlocks)}
-                      onChange={(blocks) => updateField('descriptionBlocks', mergeBuilderBlocks(blocks, form.descriptionBlocks))}
-                      disabled={isReadOnly}
-                      hasError={Boolean(validationErrors.description)}
-                      fallbackHtml={form.description}
-                      productMode
-                    />
-                  )}
+                  <BlockEditor
+                    value={form.descriptionBlocks}
+                    onChange={(blocks) => updateField('descriptionBlocks', blocks)}
+                    disabled={isReadOnly}
+                    hasError={Boolean(validationErrors.description)}
+                    fallbackHtml={langValue('description')}
+                    productMode
+                    contentLang={contentLang}
+                  />
                 </Field>
               </SectionCard>
 
@@ -1679,7 +1658,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 )}
               </SectionCard>
 
-              {/* ── Card: Phù hợp với ai (#7) — tách RA khỏi trình dựng mô tả; lưu dạng khối suitability trong descriptionBlocks ── */}
+              {/* ── Card: Phù hợp với ai (#7) — field riêng form.suitabilitySection (V327/V328) ── */}
               <SectionCard
                 title={t('products.detail.blocks.blockTypeSuitability')}
                 badge={<RoleBadge role="content" />}
@@ -1687,15 +1666,22 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 <p className="text-xs text-muted-foreground mb-3">
                   {t('products.detail.suitabilityCard.hint', { defaultValue: 'Các thẻ tư vấn "đối tượng → lời khuyên". Hiện thành khối riêng cố định trên trang sản phẩm (ngay sau Ưu/nhược điểm), không phụ thuộc vị trí trong mô tả. Để trống → web ẩn khối.' })}
                 </p>
-                <SuitabilityBlockEditor
-                  key={`suit-${productId ?? 'new'}-${specialDescField}-${suitabilityBlock._key}`}
-                  block={suitabilityBlock}
-                  disabled={isReadOnly}
-                  onChange={(patch) => updateField(specialDescField, upsertSpecialBlock(specialDescAll, { ...suitabilityBlock, ...patch }))}
-                />
+                {suitabilityCreateLockedInEn ? (
+                  <p className="list-editor-empty">
+                    {t('products.detail.suitabilityCard.addInViFirst', { defaultValue: 'Tạo khối này ở tab Tiếng Việt trước, rồi quay lại đây để dịch.' })}
+                  </p>
+                ) : (
+                  <SuitabilityBlockEditor
+                    key={`suit-${productId ?? 'new'}-${suitabilitySection._key}`}
+                    block={suitabilitySection}
+                    disabled={isReadOnly}
+                    contentLang={contentLang}
+                    onChange={(patch) => updateField('suitabilitySection', { ...suitabilitySection, ...patch })}
+                  />
+                )}
               </SectionCard>
 
-              {/* ── Card: Bảng size (#8) — tách RA khỏi trình dựng mô tả; lưu dạng khối sizeGuide trong descriptionBlocks ── */}
+              {/* ── Card: Bảng size (#8) — field riêng form.sizeGuideSection (V327/V328) ── */}
               <SectionCard
                 title={t('products.detail.blocks.blockTypeSizeGuide')}
                 badge={<RoleBadge role="content" />}
@@ -1703,12 +1689,19 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 <p className="text-xs text-muted-foreground mb-3">
                   {t('products.detail.sizeGuideCard.hint', { defaultValue: 'Bảng chọn size (nhập theo cột/dòng hoặc dán HTML). Hiện thành khối riêng cố định trên trang sản phẩm (ngay sau Phù hợp với ai). Để trống → web ẩn khối.' })}
                 </p>
-                <SizeGuideBlockEditor
-                  key={`size-${productId ?? 'new'}-${specialDescField}-${sizeGuideBlock._key}`}
-                  block={sizeGuideBlock}
-                  disabled={isReadOnly}
-                  onChange={(patch) => updateField(specialDescField, upsertSpecialBlock(specialDescAll, { ...sizeGuideBlock, ...patch }))}
-                />
+                {sizeGuideCreateLockedInEn ? (
+                  <p className="list-editor-empty">
+                    {t('products.detail.sizeGuideCard.addInViFirst', { defaultValue: 'Tạo khối này ở tab Tiếng Việt trước, rồi quay lại đây để dịch.' })}
+                  </p>
+                ) : (
+                  <SizeGuideBlockEditor
+                    key={`size-${productId ?? 'new'}-${sizeGuideSection._key}`}
+                    block={sizeGuideSection}
+                    disabled={isReadOnly}
+                    contentLang={contentLang}
+                    onChange={(patch) => updateField('sizeGuideSection', { ...sizeGuideSection, ...patch })}
+                  />
+                )}
               </SectionCard>
 
               {/* ── Card: Thông số ── */}
@@ -2015,8 +2008,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           <Button
             variant="outline"
             type="button"
-            disabled={isReadOnly || !isDirty || !allowedPublishStatuses.includes('DRAFT')}
-            title={!allowedPublishStatuses.includes('DRAFT') ? t('products.detail.saveDraftDisabledPublished') : undefined}
+            disabled={isReadOnly || !isDirty}
             onClick={() => handleSave('DRAFT')}
           >
             {t('products.detail.saveDraft')}
@@ -2044,15 +2036,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => handleSave('DRAFT')}
-                  disabled={!allowedPublishStatuses.includes('DRAFT')}
-                  title={!allowedPublishStatuses.includes('DRAFT') ? t('products.detail.saveDraftDisabledPublished') : undefined}
-                >
+                <DropdownMenuItem onClick={() => handleSave('DRAFT')}>
                   {t('products.detail.saveDraft')}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleSave('HIDDEN')}>
-                  {t('products.detail.saveHidden')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -2063,7 +2048,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         {showPublishChecklist && pendingPublish && (
           <PublishChecklistModal
             form={pendingPublish.formToSave}
-            isCreate={isCreate}
             onConfirm={confirmPublish}
             onCancel={() => { setShowPublishChecklist(false); setPendingPublish(null) }}
           />

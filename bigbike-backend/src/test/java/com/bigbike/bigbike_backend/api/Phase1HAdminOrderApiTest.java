@@ -1372,33 +1372,22 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(status().isConflict());
     }
 
-    // ── RETURNED fulfillment transitions — BUG-001 regression guard ──────────
+    // ── RETURNED fulfillment status removed (owner decision 2026-07-06) ──────
     @Test
-    void updateFulfillment_shippedToReturned_isAllowed() throws Exception {
+    void updateFulfillment_shippedToReturned_isRejected() throws Exception {
         OrderInfo order = placeGuestOrder(9700000);
         patchFulfillment(order.orderId, "{\"fulfillmentStatus\":\"PROCESSING\"}").andExpect(status().isOk());
         patchFulfillment(order.orderId, "{\"fulfillmentStatus\":\"SHIPPED\",\"trackingNumber\":\"TRK-RET-001\",\"shippingCarrier\":\"GHN\"}").andExpect(status().isOk());
         patchFulfillment(order.orderId, "{\"fulfillmentStatus\":\"RETURNED\"}")
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.fulfillmentStatus").value("RETURNED"));
+                .andExpect(status().isBadRequest());
     }
 
     @Test
-    void updateFulfillment_deliveredToReturned_isAllowed() throws Exception {
+    void updateFulfillment_deliveredToReturned_isRejected() throws Exception {
         OrderInfo order = placeGuestOrder(9800000);
         markDelivered(order.orderId);
         patchFulfillment(order.orderId, "{\"fulfillmentStatus\":\"RETURNED\"}")
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.fulfillmentStatus").value("RETURNED"));
-    }
-
-    @Test
-    void updateFulfillment_returnedIsTerminal() throws Exception {
-        OrderInfo order = placeGuestOrder(9900000);
-        markDelivered(order.orderId);
-        patchFulfillment(order.orderId, "{\"fulfillmentStatus\":\"RETURNED\"}").andExpect(status().isOk());
-        patchFulfillment(order.orderId, "{\"fulfillmentStatus\":\"DELIVERED\"}")
-                .andExpect(status().isConflict());
+                .andExpect(status().isBadRequest());
     }
 
     // ── Refund PROCESSING+PAID order flips order status to REFUNDED ───────────

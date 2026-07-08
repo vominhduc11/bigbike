@@ -50,7 +50,7 @@ File này liên quan trực tiếp đến:
 
 | Entity | State Field | States Found | Main Transitions | Enforcement | Status | Evidence |
 |---|---|---|---|---|---|---|
-| Product | `publishStatus` | `DRAFT`, `PUBLISHED`, `HIDDEN`, `TRASH` | Controlled publish transitions; soft-delete to `TRASH`; restore `TRASH -> DRAFT`. Legacy values `ARCHIVED`, `PENDING`, `PRIVATE` migrated away. | Backend validator | `CONFIRMED_BACKEND_ENFORCED` | `PublishStatus.java`, `AdminMutationValidators.java`, `AdminCatalogMutationService.java`, `CatalogReadService.java` |
+| Product | `publishStatus` | `DRAFT`, `PUBLISHED`, `TRASH` | Controlled publish transitions (DRAFT ↔ PUBLISHED allowed both directions); soft-delete sequences `PUBLISHED → DRAFT → TRASH` in one request; restore `TRASH -> DRAFT`. Legacy values `HIDDEN`, `ARCHIVED`, `PENDING`, `PRIVATE` all migrated to `DRAFT` (V324). | Backend validator | `CONFIRMED_BACKEND_ENFORCED` | `PublishStatus.java`, `AdminMutationValidators.java`, `AdminCatalogMutationService.java`, `CatalogReadService.java` |
 | Category | `visible` | `true`, `false` | Soft-delete/hide sets visible false; public only visible; cannot hide parent with visible children. | Backend service | `CONFIRMED_BACKEND_ENFORCED` for visibility rules; no enum state machine | `AdminCatalogMutationService.java`, `CatalogReadService.java` |
 | Brand | `visible` | `true`, `false` | Delete sets visible false; public only visible. | Backend service | `CONFIRMED_BACKEND_ENFORCED` for visibility; no full transition map | `AdminCatalogMutationService.java`, `CatalogReadService.java` |
 | Order | `status` | `PENDING`, `PROCESSING`, `ON_HOLD`, `COMPLETED`, `CANCELLED`, `FAILED` | Explicit allowed transition map in service. (`REFUNDED` removed 2026-06-23 — old refunded orders migrated to `CANCELLED`.) | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java`, `CheckoutService.java` |
@@ -58,7 +58,7 @@ File này liên quan trực tiếp đến:
 | Fulfillment | `fulfillmentStatus` | `fulfillmentStatus` field observed in order detail. (Shipping-method state removed 2026-06-23 — `SHIP_RULE_001`.) | Fulfillment state transitions not confirmed. | Partial backend | `STATUS_ONLY` / `NEEDS_VERIFICATION` | `AdminOrderService.java`, `CheckoutService.java` |
 | Inventory / Stock | `stockState`, availability flag | `IN_STOCK`, `OUT_OF_STOCK` | `stockState` mirrors the boolean availability toggle (V261). Admin không set thủ công qua catalog API. Sản phẩm/biến thể mới luôn bắt đầu `OUT_OF_STOCK`. Bán/huỷ không tự đổi availability. | Backend policy/service | `CONFIRMED_BACKEND_ENFORCED` | `ProductStockState.java`, `AdminInventoryService.java`, `AdminCatalogMutationService.java`, `CheckoutService.java`, `BUSINESS_RULES.md` STOCK_RULE_001–009 |
 | Admin User | `status`, `role` | Status: `INVITED`, `ACTIVE`, `DISABLED`, `SUSPENDED`; Roles: `SUPER_ADMIN`, `ADMIN`, `EDITOR`, `SHOP_MANAGER` (built-in, V211) + custom roles. New users start `INVITED` (no password) and become `ACTIVE` on accepting an email invite. | Status/role update validation; self-deactivation and Super Admin demotion guardrails; invite token lifecycle. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminAdminUsersService.java`, `AdminInviteService.java`, `SecurityConfig.java` |
-| Content Article | `publishStatus` | Same `PublishStatus` enum; active values: `DRAFT`, `PUBLISHED`, `HIDDEN`, `TRASH`; legacy `ARCHIVED` migrated sang `HIDDEN`. | Publish transitions enforced on update; delete sets `TRASH` (soft-delete, restore `TRASH` → `DRAFT`). | Backend service | `CONFIRMED_BACKEND_ENFORCED`; public filtering `NEEDS_VERIFICATION` | `AdminContentController.java`, `AdminContentMutationService.java`, `AdminMutationValidators.java` |
+| Content Article | `publishStatus` | Same `PublishStatus` enum; active values: `DRAFT`, `PUBLISHED`, `TRASH`; legacy `HIDDEN`/`ARCHIVED`/`PENDING`/`PRIVATE` all migrated to `DRAFT` (V324). | Publish transitions enforced on update (DRAFT ↔ PUBLISHED both directions); delete sequences `PUBLISHED → DRAFT → TRASH` in one request (soft-delete, restore `TRASH` → `DRAFT`). | Backend service | `CONFIRMED_BACKEND_ENFORCED`; public filtering `NEEDS_VERIFICATION` | `AdminContentController.java`, `AdminContentMutationService.java`, `AdminMutationValidators.java` |
 | Media | `status` | `ACTIVE`, `INACTIVE`, `DELETED` | Upload creates `ACTIVE`; update validates allowed statuses; soft-delete sets `DELETED`; restore sets `ACTIVE`; hard-delete removes row/object. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminMediaService.java` |
 | Notification | `isRead` (boolean) | Email/websocket events + persistent table. `isRead` toggled by mark-read endpoints. | `false` → `true` via mark-read / mark-all-read. | Backend service | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `V102__create_admin_notifications_table.sql` |
 | Settings | No lifecycle state confirmed | Public/private behavior exists in docs/controllers; no state machine confirmed. | N/A | `STATUS_ONLY` / `NEEDS_VERIFICATION` | `AdminSettingsController`, `PublicSettingsController`, `PHASE_1J...` |
@@ -79,12 +79,12 @@ Active states (dùng trong admin):
 
 - `DRAFT`
 - `PUBLISHED`
-- `HIDDEN`
 - `TRASH`
 
-Legacy values (còn trong enum cho backward compat với dữ liệu cũ, không được phép set qua admin API):
+Legacy values (còn trong enum cho backward compat với dữ liệu cũ, không được phép set qua admin API — bị chặn với `RESERVED_PUBLISH_STATUS` khi dùng làm transition target):
 
-- `ARCHIVED` → đã migrate sang `HIDDEN`
+- `HIDDEN` → đã migrate sang `DRAFT` (V324, 2026-07-07). Trước đó `HIDDEN` từng là active state, và trước nữa là đích migrate của `ARCHIVED` (V87) — nay đơn giản hoá về đúng 1 đích.
+- `ARCHIVED` → đã migrate sang `DRAFT` (trước V324 từng migrate sang `HIDDEN`)
 - `PENDING` → đã migrate sang `DRAFT`
 - `PRIVATE` → đã migrate sang `DRAFT`
 
@@ -108,22 +108,19 @@ Admin live preview (`POST /api/v1/admin/products/preview`) render nội dung nh�
 | From | To | Actor / Role | Preconditions | Side Effects | Enforcement | Evidence |
 |---|---|---|---|---|---|---|
 | `DRAFT` | `PUBLISHED` | Admin / role có `products.update` | Product exists; transition request valid. | Product có thể public nếu public read filter trả `PUBLISHED`. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java`, `AdminCatalogMutationService.java` |
-| `DRAFT` | `HIDDEN` | Admin / role có `products.update` | Product exists. | Product không public. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java` |
 | `DRAFT` | `TRASH` | Admin / role có `products.update` | Product exists. | Soft-delete. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java`, `AdminCatalogMutationService.java` |
-| `PUBLISHED` | `HIDDEN` | Admin / role có `products.update` | Product exists. | Product bị loại khỏi public vì public chỉ trả `PUBLISHED`. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java`, `CatalogReadService.java` |
-| `PUBLISHED` | `TRASH` | Admin / role có `products.update` | Product exists. | Soft-delete and public hidden. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java`, `AdminCatalogMutationService.java` |
-| `HIDDEN` | `PUBLISHED` | Admin / role có `products.update` | Product exists. | Product quay lại public. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java` |
-| `HIDDEN` | `DRAFT` | Admin / role có `products.update` | Product exists. | Product thành draft để chỉnh sửa lại. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java` |
-| `HIDDEN` | `TRASH` | Admin / role có `products.update` | Product exists. | Soft-delete. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java` |
+| `PUBLISHED` | `DRAFT` | Admin / role có `products.update` | Product exists. | Product bị loại khỏi public vì public chỉ trả `PUBLISHED`. Cho phép trực tiếp từ 2026-07-07 (trước đó phải qua `HIDDEN`). | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java`, `CatalogReadService.java` |
+| `PUBLISHED` | `TRASH` | Admin / role có `products.update` | Product exists. | Soft-delete: service tự sequence `PUBLISHED → DRAFT → TRASH` trong cùng transaction/request — admin chỉ thấy 1 click, không có bước trung gian hiển thị. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java`, `AdminCatalogMutationService.java` |
 | `TRASH` | `DRAFT` | Admin / role có `products.update` | Product in trash. | Restore into draft. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java` |
+| `HIDDEN` / `ARCHIVED` / `PENDING` / `PRIVATE` (legacy source) | `DRAFT` | Admin / role có `products.update` | Product exists (residual pre-migration record). | Escape path duy nhất về active state. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java` |
+| `HIDDEN` / `ARCHIVED` / `PENDING` / `PRIVATE` (legacy source) | `TRASH` | Admin / role có `products.update` | Product exists (residual pre-migration record). | Soft-delete vẫn hoạt động bất kể trạng thái legacy hiện tại. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java` |
 
 ### Forbidden Transitions
 
 | From | To | Reason | Enforcement | Evidence |
 |---|---|---|---|---|
 | `DRAFT` | `PUBLISHED` (skip) | Không đi thẳng DRAFT→PUBLISHED nếu muốn review trước; nhưng hiện tại business cho phép. | Không bị block. | `AdminMutationValidators.java` |
-| `PUBLISHED` | `DRAFT` | Không cho phép trực tiếp; phải qua HIDDEN trước. | Backend rejects. | `AdminMutationValidators.java` |
-| any | `ARCHIVED` / `PENDING` / `PRIVATE` | Legacy values, không được set qua admin API. | Backend rejects với `RESERVED_PUBLISH_STATUS`. | `AdminMutationValidators.java` |
+| any | `HIDDEN` / `ARCHIVED` / `PENDING` / `PRIVATE` | Legacy values, không được set qua admin API (kể cả `HIDDEN`, từ 2026-07-07). | Backend rejects với `RESERVED_PUBLISH_STATUS`. | `AdminMutationValidators.java` |
 | `TRASH` | anything except `DRAFT` | Restore từ trash chỉ được về DRAFT. | Backend rejects. | `AdminMutationValidators.java` |
 | any state | same state | No-op; không phải transition. | Backend không báo lỗi. | `AdminMutationValidators.java` |
 
@@ -274,7 +271,6 @@ From checkout behavior:
 | `COMPLETED` | `PENDING` / `PROCESSING` / `ON_HOLD` / `CANCELLED` / `FAILED` | `COMPLETED` is terminal in `ALLOWED_TRANSITIONS`. | Backend throws conflict. | `AdminOrderService.java` |
 | `PROCESSING` / `PENDING` / `ON_HOLD` | `COMPLETED` (when `DELIVERY` + `fulfillmentStatus != DELIVERED`) | Rule 3: cannot complete a delivery order before goods are delivered. | Backend throws conflict with message `Chỉ được hoàn thành đơn giao hàng sau khi đã giao thành công.` | `AdminOrderService.java#validateBeforeComplete` |
 | ~~`PROCESSING` → `COMPLETED` (when `paymentMethod = COD` + `paymentStatus != PAID`)~~ | **Removed 2026-06-23.** Payment no longer blocks completion; this transition is now allowed regardless of payment status. See `ORDER_RULE_001/002`. | n/a | `AdminOrderService.java#validateBeforeComplete` |
-| `PROCESSING` | `COMPLETED` (when `paymentStatus = UNPAID`) | Rule 1: an order cannot be completed while unpaid — there is no receivable/collection process to chase the money. (`PARTIALLY_PAID` removed in V114.) | Backend throws conflict with message `Đơn chưa thanh toán không thể hoàn thành.` | `AdminOrderService.java#validateBeforeComplete` |
 | `CANCELLED` | any other status | Terminal state, no outgoing transitions. | Backend throws conflict. | `AdminOrderService.java` |
 | `FAILED` | any other order status | Terminal state, no outgoing transitions. | Backend throws conflict. | `AdminOrderService.java` |
 | any status | unknown status | Not in `ALLOWED_ORDER_STATUSES`. | Backend validation error. | `AdminOrderService.java` |
@@ -406,9 +402,10 @@ Tracks the physical delivery lifecycle of `DELIVERY` orders. Since the platform 
 
 ### States
 
-`UNFULFILLED` → `PROCESSING` → `SHIPPED` → `DELIVERED` → `RETURNED`  
-`UNFULFILLED` / `PROCESSING` → `CANCELLED`  
-`SHIPPED` → `RETURNED`
+`UNFULFILLED` → `PROCESSING` → `SHIPPED` → `DELIVERED`  
+`UNFULFILLED` / `PROCESSING` → `CANCELLED`
+
+`RETURNED` was removed as a fulfillment status (owner decision 2026-07-06, `V323__remove_returned_fulfillment_status.sql`) — it was a dead branch (no admin UI ever triggered it, 0 orders ever used it) left over from the return/refund feature already removed in V261.
 
 ### Allowed Transitions
 
@@ -419,18 +416,16 @@ Tracks the physical delivery lifecycle of `DELIVERY` orders. Since the platform 
 | `PROCESSING` | `SHIPPED` | Admin / `orders.write` | `trackingNumber` required (non-blank). Sets `shippedAt`. | Stores `trackingNumber`, `shippingCarrier`; sends shipped notification. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java#updateFulfillmentStatus` |
 | `PROCESSING` | `CANCELLED` | Admin / `orders.write` | Order is DELIVERY type. | Audit, WS event. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
 | `SHIPPED` | `DELIVERED` | Admin / `orders.write` | Order is DELIVERY type. | Audit, WS event. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `SHIPPED` | `RETURNED` | Admin / `orders.write` | Order is DELIVERY type. | Audit, WS event. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `DELIVERED` | `RETURNED` | Admin / `orders.write` | Order is DELIVERY type. | Audit, WS event. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
 
 ### Forbidden Transitions
 
 | From | To | Reason | Enforcement | Evidence |
 |---|---|---|---|---|
-| `UNFULFILLED` | `DELIVERED` | Must go through PROCESSING → SHIPPED first so tracking data is captured. | Backend rejects (409). | `AdminOrderService.java` |
+| `UNFULFILLED` (including legacy orders with `fulfillmentStatus = null`, treated as the `UNFULFILLED` baseline) | `DELIVERED` | Must go through PROCESSING → SHIPPED first so tracking data is captured. | Backend rejects (409). Fixed 2026-07-06: previously a `null` `fulfillmentStatus` (1,657 legacy orders) skipped this check entirely and could jump straight to `DELIVERED`. | `AdminOrderService.java#updateFulfillmentStatus` |
 | `SHIPPED` | any without `trackingNumber` | `trackingNumber` is required when transitioning to SHIPPED. | Backend rejects (400). | `AdminOrderService.java#updateFulfillmentStatus` |
-| `DELIVERED` | `CANCELLED` / `PROCESSING` / `SHIPPED` | No back-transition from DELIVERED except RETURNED. | Backend rejects (409). | `AdminOrderService.java` |
+| `DELIVERED` | `CANCELLED` / `PROCESSING` / `SHIPPED` | No back-transition from DELIVERED — terminal state. | Backend rejects (409). | `AdminOrderService.java` |
 | `CANCELLED` | any | Terminal state. | Backend rejects (409). | `AdminOrderService.java` |
-| `RETURNED` | any | Terminal state. | Backend rejects (409). | `AdminOrderService.java` |
+| any | `RETURNED` | Status no longer exists (removed 2026-07-06). | Backend rejects (400) — not in `ALLOWED_FULFILLMENT_STATUSES`. | `AdminOrderService.java` |
 | any | `DELIVERED` or `SHIPPED` (for non-DELIVERY orders) | `fulfillmentStatus` only applies to DELIVERY orders. | Backend rejects (409). | `AdminOrderService.java#updateFulfillmentStatus` |
 
 ### Impact on Order Completion
@@ -521,6 +516,8 @@ From `ProductStockState.java`:
 ## 10. Return / Refund State Machine
 
 > **REMOVED (2026-06-23).** The Return (RMA) and Refund feature was deleted platform-wide: customer returns, the admin returns module, per-item inspection (V104), RMA stock-restore, and every refund flow no longer exist. The `returns` / `return_items` / `return_history` tables and the `REFUNDED` order/payment status were dropped; old `REFUNDED` orders were migrated to `CANCELLED`. There is no system-tracked return lifecycle. (Customer-facing return/exchange **policy text** is kept as a manual commitment — see `BUSINESS_RULES.md` "Returns And Refunds".)
+>
+> **`RETURNED` fulfillment status also removed (2026-07-06).** Separately from the RMA feature above, `OrderEntity.fulfillmentStatus` used to also allow a `RETURNED` value ("parcel returned to sender") — this was a distinct, dead code path with no admin UI trigger and 0 orders ever in that state. It has been fully removed (see §8 above, `V323__remove_returned_fulfillment_status.sql`) so this section and §8 are no longer ambiguous about whether any RETURNED-shaped state still exists anywhere in the system: it does not.
 
 ## 11. User / Admin User State Machine
 
@@ -614,9 +611,9 @@ Content state machine quản lý publish lifecycle của articles (bài viết /
 
 ### States
 
-- Shared `PublishStatus` enum giữ nguyên 7 values cho backward compat với dữ liệu cũ, nhưng admin API chỉ chấp nhận: `DRAFT`, `PUBLISHED`, `HIDDEN`, `TRASH`.
-- Legacy values `ARCHIVED`, `PENDING`, `PRIVATE` bị block bởi `AdminMutationValidators` khi dùng làm transition target.
-- Content delete (article) set `TRASH` — nhất quán với product soft-delete.
+- Shared `PublishStatus` enum giữ nguyên 7 values cho backward compat với dữ liệu cũ, nhưng admin API chỉ chấp nhận: `DRAFT`, `PUBLISHED`, `TRASH`.
+- Legacy values `HIDDEN`, `ARCHIVED`, `PENDING`, `PRIVATE` đều bị block bởi `AdminMutationValidators` khi dùng làm transition target (`RESERVED_PUBLISH_STATUS`).
+- Content delete (article) sequences `PUBLISHED → DRAFT → TRASH` trong cùng 1 request khi bài đang `PUBLISHED`; nếu không thì set thẳng `TRASH` — nhất quán với product soft-delete.
 
 ### Initial State
 
@@ -626,7 +623,7 @@ Content state machine quản lý publish lifecycle của articles (bài viết /
 ### Terminal States
 
 - `TRASH` is the delete target for content delete (soft-delete).
-- Not strictly terminal because the validator allows `TRASH -> DRAFT` (restore). Legacy `ARCHIVED -> DRAFT` còn được giữ như escape path cho dữ liệu cũ còn sót.
+- Not strictly terminal because the validator allows `TRASH -> DRAFT` (restore). Legacy `HIDDEN`/`ARCHIVED`/`PENDING`/`PRIVATE` -> `DRAFT` còn được giữ như escape path duy nhất cho dữ liệu cũ còn sót (V324 đã backfill hết `HIDDEN` sang `DRAFT` — không còn bản ghi sống ở trạng thái này).
 
 ### Live preview (không đổi state)
 
@@ -638,13 +635,12 @@ Same as Product publish transition validator for update operations:
 
 | From | To | Actor / Role | Preconditions | Side Effects | Enforcement | Evidence |
 |---|---|---|---|---|---|---|
-| `DRAFT` | `PUBLISHED` / `HIDDEN` / `TRASH` | Admin / Editor / Author with `content.update` | Content exists. | If `PUBLISHED`, set `publishedAt`; revalidate web tags. | `CONFIRMED_BACKEND_ENFORCED` | `AdminContentMutationService.java`, `AdminMutationValidators.java` |
-| `PUBLISHED` | `HIDDEN` / `TRASH` | Admin / Editor / Author with `content.update` | Content exists. | If not `PUBLISHED`, clear `publishedAt`; revalidate. | `CONFIRMED_BACKEND_ENFORCED` | `AdminContentMutationService.java`, `AdminMutationValidators.java` |
-| `HIDDEN` | `PUBLISHED` / `DRAFT` / `TRASH` | Admin / Editor / Author with `content.update` | Content exists. | Publish/clear publishedAt accordingly; revalidate. | `CONFIRMED_BACKEND_ENFORCED` | `AdminContentMutationService.java`, `AdminMutationValidators.java` |
-| `ARCHIVED` | `DRAFT` / `TRASH` | Admin / Editor / Author with `content.update` | Content exists. | Re-open draft or trash. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java` |
-| `PENDING` | `PUBLISHED` / `DRAFT` / `TRASH` | Admin / Editor / Author with `content.update` | Content exists; status accepted by DTO. | Review/import flow. | `CONFIRMED_BACKEND_ENFORCED` in shared validator; DTO acceptance `NEEDS_VERIFICATION` | `AdminMutationValidators.java` |
-| `PRIVATE` | `PUBLISHED` / `DRAFT` / `HIDDEN` / `TRASH` | Admin / Editor / Author with `content.update` | Content exists; status accepted by DTO. | Private/import flow. | `CONFIRMED_BACKEND_ENFORCED` in shared validator; DTO acceptance `NEEDS_VERIFICATION` | `AdminMutationValidators.java` |
-| `TRASH` | `DRAFT` | Admin / Editor / Author with `content.update` | Content exists. | Restore to draft. | `CONFIRMED_BACKEND_ENFORCED` in shared validator; content delete uses `TRASH` (nhất quán với product) | `AdminMutationValidators.java`, `AdminContentMutationService.java` |
+| `DRAFT` | `PUBLISHED` | Admin / Editor / Author with `content.update` | Content exists. | Set `publishedAt`; revalidate web tags. | `CONFIRMED_BACKEND_ENFORCED` | `AdminContentMutationService.java`, `AdminMutationValidators.java` |
+| `DRAFT` | `TRASH` | Admin / Editor / Author with `content.update` | Content exists. | Soft-delete. | `CONFIRMED_BACKEND_ENFORCED` | `AdminContentMutationService.java`, `AdminMutationValidators.java` |
+| `PUBLISHED` | `DRAFT` | Admin / Editor / Author with `content.update` | Content exists. | Clear `publishedAt`; revalidate. Direct từ 2026-07-07 (trước đó phải qua `HIDDEN`). | `CONFIRMED_BACKEND_ENFORCED` | `AdminContentMutationService.java`, `AdminMutationValidators.java` |
+| `PUBLISHED` | `TRASH` | Admin / Editor / Author with `content.update` | Content exists. | Soft-delete: service tự sequence `PUBLISHED → DRAFT → TRASH` trong cùng request. | `CONFIRMED_BACKEND_ENFORCED` | `AdminContentMutationService.java`, `AdminMutationValidators.java` |
+| `TRASH` | `DRAFT` | Admin / Editor / Author with `content.update` | Content exists. | Restore to draft. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java`, `AdminContentMutationService.java` |
+| `HIDDEN` / `ARCHIVED` / `PENDING` / `PRIVATE` (legacy source) | `DRAFT` / `TRASH` | Admin / Editor / Author with `content.update` | Content exists (residual pre-migration record); status accepted by DTO. | Escape path duy nhất (`DRAFT`) hoặc soft-delete (`TRASH`). | `CONFIRMED_BACKEND_ENFORCED` trong shared validator | `AdminMutationValidators.java` |
 
 ### Forbidden Transitions
 
@@ -658,7 +654,7 @@ Same forbidden publish transition rules as product, enforced by shared validator
 ### Backend Enforcement
 
 - Update article calls `validatePublishTransition`.
-- Delete article sets `publishStatus = TRASH` directly (nhất quán với product soft-delete).
+- Delete article sequences `PUBLISHED → DRAFT → TRASH` in one request when currently `PUBLISHED`, else sets `publishStatus = TRASH` directly (nhất quán với product soft-delete).
 - Public content visibility filtering needs deeper audit.
 
 ### Test Coverage
@@ -671,6 +667,7 @@ Same forbidden publish transition rules as product, enforced by shared validator
 - DTO enum acceptance for `PENDING`, `PRIVATE`, `TRASH` on content.
 - Public read filtering of non-published content.
 - SEO route behavior for archived/hidden content.
+- `HIDDEN` as a mutation target is now uniformly rejected (`RESERVED_PUBLISH_STATUS`) regardless of DTO-level acceptance — no longer needs verification for that question specifically; whether the DTO layer itself still deserializes the legacy enum values (vs rejecting at JSON-parse time) remains `NEEDS_VERIFICATION`.
 
 ## 13. Media State Machine
 
@@ -788,7 +785,7 @@ Notification/email/websocket events exist as side effects, but no persisted noti
 | Payment | `PAID` | Payment record | Payment record can be set `SUCCEEDED`; paidAt set. | Reflect successful payment. | `CONFIRMED_BACKEND_ENFORCED` |
 | Content | `PUBLISHED` | Public Web / SEO | `publishedAt` set; web revalidation triggered. | Public content lifecycle. | `CONFIRMED_BACKEND_ENFORCED`; public filtering `NEEDS_VERIFICATION` |
 | Media | `DELETED` | Media Library | Excluded by default from admin media list. | Avoid showing deleted media. | `CONFIRMED_BACKEND_ENFORCED` |
-| Admin User | `DISABLED` / `SUSPENDED` | Auth/API | Should block login/API use. | Security. | `NEEDS_VERIFICATION` |
+| Admin User | `DISABLED` / `SUSPENDED` | Auth/API | Blocks login (`AdminAuthService.login`) **and every subsequent authenticated request**, not just login. | Security — fixed 2026-07-06: `JwtAuthFilter` now re-checks the admin's current status/role from DB (cached, evicted on write) on every request instead of trusting the JWT claims alone, so a lock/suspend/demote takes effect on the admin's very next request instead of surviving up to the ~15min access-token TTL. | `CONFIRMED_BACKEND_ENFORCED` — `JwtAuthFilter.java`, `AdminAccountStatusService.java`, `AdminAdminUsersService.java` (evicts cache on status/role change) |
 | ~~Shipping Method~~ | — | — | **REMOVED 2026-06-23** (`SHIP_RULE_001`): shipping-method management dropped (V264); no shipping choice or fee at checkout. | — | `REMOVED` |
 
 ## 16. Invalid Transition Policy
@@ -875,7 +872,7 @@ Notes:
 
 ## 21. Known Ambiguities / Needs Verification
 
-1. Product/content both use shared `PublishStatus`, but content admin controller status regex only exposes `DRAFT`, `PUBLISHED`, `HIDDEN`, `TRASH` for filters. DTO acceptance for legacy `PENDING`, `PRIVATE` should be verified.
+1. Product/content both use shared `PublishStatus`; content admin controller status regex now exposes only `DRAFT`, `PUBLISHED`, `TRASH` for filters (`HIDDEN` removed 2026-07-07 — legacy-only, no live rows after V324). DTO acceptance for legacy `PENDING`, `PRIVATE`, `HIDDEN` as mutation targets is confirmed rejected via `RESERVED_PUBLISH_STATUS`.
 2. Product public visibility is confirmed in `CatalogReadService`, but cache/revalidation/public UI behavior should be verified.
 3. Content public visibility filtering needs deeper audit of public content read service.
 4. Order and payment transitions are backend-enforced, but direct tests were not found by targeted search.

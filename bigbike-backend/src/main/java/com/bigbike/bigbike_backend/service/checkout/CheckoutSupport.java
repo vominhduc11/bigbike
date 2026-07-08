@@ -11,6 +11,7 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAddres
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderNoteEntity;
+import com.bigbike.bigbike_backend.service.pricing.VariantPricing;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -182,8 +183,8 @@ final class CheckoutSupport {
         item.setVariantName(variant != null ? variant.getName() : null);
         item.setQuantity(qty);
         item.setUnitPrice(unitPrice);
-        item.setRegularPrice(product.getRetailPrice());
-        item.setSalePrice(product.getSalePrice());
+        item.setRegularPrice(VariantPricing.regularPrice(product, variant));
+        item.setSalePrice(VariantPricing.salePrice(product, variant));
         item.setLineSubtotal(lineSubtotal);
         item.setLineDiscount(lineDiscount);
         item.setLineTax(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
@@ -242,16 +243,8 @@ final class CheckoutSupport {
         );
     }
 
-    /**
-     * Order unit price always comes from the parent product. Variant-level
-     * price columns are intentionally ignored — the storefront and cart
-     * display the product price regardless of variant, so checkout must
-     * agree to keep the displayed total consistent with what the customer
-     * paid.
-     */
     static BigDecimal resolveUnitPrice(ProductEntity product, ProductVariantEntity variant) {
-        BigDecimal p = product.getSalePrice() != null ? product.getSalePrice() : product.getRetailPrice();
-        return p.setScale(2, RoundingMode.HALF_UP);
+        return VariantPricing.resolveUnitPrice(product, variant);
     }
 
     static UUID tryParseUUID(String id) {

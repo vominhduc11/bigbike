@@ -7,8 +7,8 @@ import com.bigbike.bigbike_backend.domain.catalog.CategorySummary;
 import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
+import com.bigbike.bigbike_backend.domain.catalog.ProductHighlights;
 import com.bigbike.bigbike_backend.domain.catalog.ProductPrice;
-import com.bigbike.bigbike_backend.domain.catalog.ProductSpecification;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.ProductVariant;
 import com.bigbike.bigbike_backend.domain.catalog.ProductVariantOption;
@@ -250,10 +250,6 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                                 true
                         )
                 ),
-                List.of(
-                        new ProductSpecification("Chuẩn an toàn", "ECE 22.06", "An toàn", null, null, null),
-                        new ProductSpecification("Trọng lượng", "1500g ± 50g", "Thông số", null, null, null)
-                ),
                 ProductStockState.IN_STOCK,
                 15,
                 false,
@@ -262,14 +258,9 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 1,
                 new BigDecimal("4.50"),
                 null,           // ratingCount
-                null,           // promotionContent
-                null,           // installationGuide
                 List.of(),      // faqs
                 List.of(),      // commitments
-                List.of(),      // specStats
-                List.of(),      // trustBadges
-                List.of(),      // positiveNotes
-                List.of(),      // negativeNotes
+                ProductHighlights.EMPTY, // highlights
                 null,           // originBrandCountry
                 null,           // sizeGuide
                 null,           // suitabilityAdvisory
@@ -281,8 +272,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 List.of(),      // relatedProducts
                 List.of(),      // accessoryProducts
                 null,           // descriptionBlocks
-                null,           // tabs
-                null,           // sectionVisibility
+                null,           // suitabilitySection
+                null,           // sizeGuideSection
                 new SeoMeta(
                         "Mũ bảo hiểm LS2 FF800",
                         "Mũ fullface LS2 FF800 chính hãng tại BigBike.",
@@ -318,23 +309,17 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 List.of(),
                 new ProductPrice(BigDecimal.valueOf(2890000), null, "VND"),
                 List.of(),
-                List.of(new ProductSpecification("Vỏ mũ", "Composite", "Thông số", null, null, null)),
                 ProductStockState.IN_STOCK,
                 null,
                 false,
-                PublishStatus.HIDDEN,
+                PublishStatus.DRAFT,
                 com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.NONE,
                 null,
                 new BigDecimal("4.50"),
                 null,           // ratingCount
-                null,           // promotionContent
-                null,           // installationGuide
                 List.of(),      // faqs
                 List.of(),      // commitments
-                List.of(),      // specStats
-                List.of(),      // trustBadges
-                List.of(),      // positiveNotes
-                List.of(),      // negativeNotes
+                ProductHighlights.EMPTY, // highlights
                 null,           // originBrandCountry
                 null,           // sizeGuide
                 null,           // suitabilityAdvisory
@@ -346,8 +331,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 List.of(),      // relatedProducts
                 List.of(),      // accessoryProducts
                 null,           // descriptionBlocks
-                null,           // tabs
-                null,           // sectionVisibility
+                null,           // suitabilitySection
+                null,           // sizeGuideSection
                 new SeoMeta(
                         "Mũ bảo hiểm KYT NX Race",
                         "KYT NX Race hàng chính hãng.",
@@ -383,7 +368,6 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 List.of(),
                 new ProductPrice(BigDecimal.valueOf(2790000), BigDecimal.valueOf(2450000), "VND"),
                 List.of(),
-                List.of(new ProductSpecification("Chất liệu", "Lưới + chống mài mòn", "Thông số", null, null, null)),
                 ProductStockState.IN_STOCK,
                 4,
                 false,
@@ -392,14 +376,9 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 2,
                 new BigDecimal("4.50"),
                 null,           // ratingCount
-                null,           // promotionContent
-                null,           // installationGuide
                 List.of(),      // faqs
                 List.of(),      // commitments
-                List.of(),      // specStats
-                List.of(),      // trustBadges
-                List.of(),      // positiveNotes
-                List.of(),      // negativeNotes
+                ProductHighlights.EMPTY, // highlights
                 null,           // originBrandCountry
                 null,           // sizeGuide
                 null,           // suitabilityAdvisory
@@ -411,8 +390,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 List.of(),      // relatedProducts
                 List.of(),      // accessoryProducts
                 null,           // descriptionBlocks
-                null,           // tabs
-                null,           // sectionVisibility
+                null,           // suitabilitySection
+                null,           // sizeGuideSection
                 new SeoMeta(
                         "Áo giáp LS2 City Rider",
                         "Áo giáp LS2 cho touring và daily ride.",

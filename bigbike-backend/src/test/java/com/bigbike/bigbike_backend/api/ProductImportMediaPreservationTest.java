@@ -70,14 +70,13 @@ class ProductImportMediaPreservationTest {
                 [
                   {
                     "sku": "%s",
-                    "slug": "%s",
-                    "name": "Media Preserve %s",
+                    "slug": { "slugVI": "%s" },
+                    "name": { "nameVI": "Media Preserve %s", "nameEN": "Media Preserve EN %s" },
                     "categoryId": "mu-bao-hiem",
                     "brandId": "ls2",
                     "gender": "Unisex",
                     "retailPrice": 1000000,
-                    "shortDescription": "<p>Mo ta ban dau</p>",
-                    "translations": { "en": { "name": "Media Preserve EN %s" } },
+                    "shortDescription": { "shortDescriptionVI": "<p>Mo ta ban dau</p>" },
                     "image": { "url": "%s/products/%s.jpg", "alt": "Anh goc" },
                     "gallery": [ { "mediaType": "image", "url": "%s/products/%s-g1.jpg", "alt": "G1 goc", "sortOrder": 0 } ],
                     "videos": [ { "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "provider": "youtube", "title": "Video goc", "sortOrder": 0 } ],
@@ -98,12 +97,12 @@ class ProductImportMediaPreservationTest {
                 [
                   {
                     "sku": "%s",
-                    "slug": "%s",
+                    "slug": { "slugVI": "%s" },
                     "categoryId": "mu-bao-hiem",
                     "brandId": "ls2",
                     "retailPrice": 1000000,
-                    "shortDescription": "<p>Mo ta MOI da doi</p>",
-                    "translations": { "en": { "name": "Media Preserve EN %s" } },
+                    "shortDescription": { "shortDescriptionVI": "<p>Mo ta MOI da doi</p>" },
+                    "name": { "nameEN": "Media Preserve EN %s" },
                     "image": { "url": "%s/products/%s-NEW.jpg", "alt": "Anh MOI" },
                     "gallery": [ { "mediaType": "image", "url": "%s/products/%s-g1-NEW.jpg", "alt": "G1 MOI", "sortOrder": 0 } ],
                     "videos": [ { "url": "https://www.youtube.com/watch?v=NEWNEWNEWNE", "provider": "youtube", "title": "Video MOI", "sortOrder": 0 } ],
@@ -128,7 +127,8 @@ class ProductImportMediaPreservationTest {
         assertThat(after).as("product still present after update").isNotNull();
 
         // Non-media fields DID replace normally.
-        assertThat(after.path("shortDescription").asText()).isEqualTo("<p>Mo ta MOI da doi</p>");
+        assertThat(after.path("shortDescription").path("shortDescriptionVI").asText())
+                .isEqualTo("<p>Mo ta MOI da doi</p>");
 
         // Product-level media stayed exactly as originally imported — the update file's
         // image/gallery/videos were ignored.

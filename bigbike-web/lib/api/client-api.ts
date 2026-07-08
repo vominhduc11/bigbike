@@ -12,6 +12,7 @@ import type {
   UpdateCustomerProfilePayload,
 } from "@/lib/contracts/commerce";
 import type { Article, Brand, Category, Product, PublicMenu } from "@/lib/contracts/public";
+import { withFlatHighlights } from "@/lib/contracts/public";
 import { env } from "@/env";
 
 const API_BASE_URL = env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
@@ -121,8 +122,9 @@ function withLang(path: string, lang?: string): string {
  * product list from localStorage, needs the full payload incl. `specifications`)
  * AND by the client-side content localizer (refetch in EN on locale switch).
  */
-export function fetchPublicProduct(slug: string, lang?: string): Promise<Product> {
-  return clientRequest("GET", withLang(`/api/v1/products/${encodeURIComponent(slug)}`, lang));
+export async function fetchPublicProduct(slug: string, lang?: string): Promise<Product> {
+  const product = await clientRequest<Product>("GET", withLang(`/api/v1/products/${encodeURIComponent(slug)}`, lang));
+  return withFlatHighlights(product);
 }
 
 /** Client-side detail fetches — used by the content localizer to swap detail-page

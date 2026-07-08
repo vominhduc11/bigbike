@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.api.admin.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,9 +20,13 @@ import lombok.Setter;
 @AllArgsConstructor
 public class HighlightRequest {
 
+    // content/contentEn is the bilingual pair — ALWAYS so export (EXPORT_MAPPER is NON_NULL by
+    // default) still emits both sides, null-filling whichever is blank.
+    @JsonInclude(JsonInclude.Include.ALWAYS)
     @Size(max = 2000, message = "Highlight content is too long.")
     private String content;
 
+    @JsonInclude(JsonInclude.Include.ALWAYS)
     @Size(max = 2000, message = "Highlight English content is too long.")
     private String contentEn;
 

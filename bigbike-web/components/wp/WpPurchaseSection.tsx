@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
-import type { BrandSummary, CategorySummary, GalleryMedia, Product, ProductCommitment, ProductPrice, ProductStockState, ProductVariant, TrustBadge } from "@/lib/contracts/public";
+import type { BrandSummary, CategorySummary, GalleryMedia, Product, ProductCommitment, ProductPrice, ProductStockState, ProductVariant } from "@/lib/contracts/public";
 import { useCart } from "@/lib/cart-context";
 import { derivePricing } from "@/lib/pricing";
 import { formatVndNumber, safeText } from "@/lib/utils/format";
@@ -177,8 +177,8 @@ export function WpPurchaseSection({
     "",
   );
 
-  // Dải tin cậy (V257): "HTML thắng" — có HTML (EN override hoặc bản vi) → render HTML đã sanitize
-  // (cho phép CSS inline), bỏ qua dải badge có cấu trúc.
+  // Dải tin cậy (V257) — HTML (EN override hoặc bản vi) là nguồn render duy nhất, sanitize
+  // (cho phép CSS inline); không còn dải badge có cấu trúc để fallback.
   const enTrustHtml = useLocalizedField<string>("trustBadgesHtml");
   const trustBadgesHtml =
     locale === "en" ? enTrustHtml ?? "" : product.trustBadgesHtml ?? "";
@@ -212,15 +212,6 @@ export function WpPurchaseSection({
   const commitments: ProductCommitment[] =
     (locale === "en" ? enCommitments : product.commitments) ?? [];
 
-  // Dải tín hiệu tin cậy trên tên sản phẩm (V233) — admin quản theo TỪNG sản phẩm; nội dung đã
-  // resolve theo ngôn ngữ ở backend. Khối ngoài tab → rỗng thì ẩn dải.
-  const enTrustBadges = useLocalizedField<TrustBadge[]>("trustBadges");
-  const trustItems = (
-    (locale === "en" ? enTrustBadges : product.trustBadges) ?? []
-  )
-    .map((b) => safeText(b.content, ""))
-    .filter(Boolean);
-
   return (
     <>
     <div className="row bb-wp-pdp" itemProp="itemReviewed" itemScope itemType="https://schema.org/Product">
@@ -250,15 +241,6 @@ export function WpPurchaseSection({
               className="max-md:hidden mb-11 bb-trust-badges-html"
               dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(trustBadgesHtml, { allowInlineStyles: true }) }}
             />
-          ) : trustItems.length > 0 ? (
-            <div className="max-md:hidden mb-11 flex flex-wrap items-center gap-x-4 gap-y-2 text-ui-14 max-md:text-ui-12 text-muted-foreground">
-              {trustItems.map((item, i) => (
-                <span key={`${item}-${i}`} className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 shrink-0 bg-brand" aria-hidden />
-                  <span>{item}</span>
-                </span>
-              ))}
-            </div>
           ) : null}
           {eyebrow ? (
             <p className="mb-0 font-heading text-ui-14 max-md:text-ui-12 font-medium uppercase tracking-wider text-brand">

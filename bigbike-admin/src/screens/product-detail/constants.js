@@ -3,11 +3,7 @@
 // and to satisfy react-refresh (non-component exports must live in a .js file).
 
 import { createContext } from 'react'
-import { parseSizeGuide, emptySizeGuide } from '../../lib/sizeChart'
 import { serializeSuitabilityCards, suitabilityCardHasContent } from '../../lib/suitabilityCards'
-import { serializeSpecs, parseSpecsFromHtml } from '../../lib/specSheet'
-import { serializeSpecStats, parseSpecStatsFromHtml } from '../../lib/specStatsBlock'
-import { serializeTrustBadges, parseTrustBadgesFromHtml } from '../../lib/trustBadgesBlock'
 import { normalizeVariantToken, isColorAttributeName } from '../../lib/schemas'
 import { generateId } from '@/lib/utils'
 
@@ -72,20 +68,9 @@ export function slugify(text) {
 }
 
 // Returns the set of statuses the dropdown should allow given the saved status.
-// Mirrors AdminMutationValidators.validatePublishTransition on the backend.
-export function getAllowedPublishStatuses(from) {
-  const RULES = {
-    DRAFT:     ['DRAFT', 'PUBLISHED', 'HIDDEN'],
-    PUBLISHED: ['PUBLISHED', 'HIDDEN'],
-    HIDDEN:    ['HIDDEN', 'PUBLISHED', 'DRAFT'],
-    TRASH:     ['TRASH', 'DRAFT'],
-    // Legacy escape paths for any remaining DB records before migration
-    ARCHIVED:  ['HIDDEN', 'DRAFT'],
-    PENDING:   ['PUBLISHED', 'DRAFT'],
-    PRIVATE:   ['PUBLISHED', 'DRAFT', 'HIDDEN'],
-  }
-  return RULES[from] ?? ['DRAFT', 'PUBLISHED', 'HIDDEN']
-}
+// Publish-status transition rules are shared with Content (identical rule set) — see
+// lib/contentPublishTransitions.js, which mirrors AdminMutationValidators.validatePublishTransition.
+export { allowedPublishOptions as getAllowedPublishStatuses } from '../../lib/contentPublishTransitions'
 
 // Format a raw digit string as Vietnamese price (e.g. "6300000" → "6.300.000").
 export function formatPrice(raw) {
@@ -126,35 +111,42 @@ export function clearFormFromStorage(key) {
 
 // ── Publish readiness checklist ────────────────────────────────────────────────
 
-export function getPublishReadiness(form, t, isCreate = false) {
-  // Publish gate (PRODUCT_RULE_005): name/brand/category/image/price/shortDesc/desc bắt buộc
-  // ở mọi lần đăng (tạo mới lẫn sửa). Khi TẠO MỚI siết hơn: bắt buộc thêm SKU/đường dẫn/đối
-  // tượng — khớp createProductSchema (PRODUCT_RULE_007). FAQ/ô số liệu/dải tin cậy chỉ là
-  // nhắc nhở (required:false) ở mọi luồng, không chặn lưu.
+export function getPublishReadiness(form, t) {
+  // Publish gate (PRODUCT_RULE_005, viết lại 2026-07-07): name/slug/category/brand/gender/ảnh
+  // bắt buộc ở mọi lần đăng, tạo mới lẫn sửa như nhau (không còn phân biệt isCreate). SKU/giá
+  // niêm yết cấp sản phẩm chỉ bắt buộc khi KHÔNG có biến thể; khi có biến thể, mỗi biến thể
+  // thật phải có ảnh đại diện màu riêng. Mô tả ngắn/mô tả chi tiết/FAQ/ô số liệu/dải tin cậy
+  // không bao giờ bắt buộc — chỉ là nhắc nhở (required:false), không chặn đăng.
+  const hasVariants = (form.variants || []).some((v) => v.name?.trim())
+  const realVariants = (form.variants || []).filter((v) => v.name?.trim())
+
   const items = [
     { id: 'name',      label: t('products.detail.checklist.name'),      ok: Boolean(form.name?.trim()),                                             required: true  },
-    { id: 'brand',     label: t('products.detail.checklist.brand'),     ok: Boolean(form.brandId),                                                  required: true  },
+    { id: 'slug',      label: t('products.detail.checklist.slug', { defaultValue: 'Đường dẫn (slug)' }), ok: Boolean(form.slug?.trim()),                required: true  },
     { id: 'category',  label: t('products.detail.checklist.category'),  ok: Boolean(form.categoryId),                                               required: true  },
+    { id: 'brand',     label: t('products.detail.checklist.brand'),     ok: Boolean(form.brandId),                                                  required: true  },
+    { id: 'gender',    label: t('products.detail.checklist.gender', { defaultValue: 'Đối tượng' }), ok: Boolean(form.gender?.trim()),                required: true  },
     { id: 'image',     label: t('products.detail.checklist.image'),     ok: Boolean(form.imageUrl?.trim()),                                         required: true  },
-    { id: 'price',     label: t('products.detail.checklist.price'),     ok: Boolean(form.retailPrice?.trim()) && Number(form.retailPrice) > 0,      required: true  },
-    { id: 'shortDesc', label: t('products.detail.checklist.shortDesc'), ok: Boolean(form.shortDescription?.trim()),                                 required: true  },
-    { id: 'desc',      label: t('products.detail.checklist.desc'),      ok: (Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks.length > 0 : (form.description?.trim().length ?? 0) > 0),  required: true  },
-    // Bắt buộc khi tạo mới, nhắc nhở khi sửa.
-    { id: 'sku',           label: t('products.detail.checklist.sku', { defaultValue: 'Mã SKU' }),          ok: Boolean(form.sku?.trim()),                required: isCreate },
-    { id: 'slug',          label: t('products.detail.checklist.slug', { defaultValue: 'Đường dẫn (slug)' }),ok: Boolean(form.slug?.trim()),               required: isCreate },
-    { id: 'gender',        label: t('products.detail.checklist.gender', { defaultValue: 'Đối tượng' }),     ok: Boolean(form.gender?.trim()),             required: isCreate },
-    { id: 'specStats',     label: t('products.detail.checklist.specStats'),     ok: (form.specStats || []).some((s) => s.value?.trim() && s.label?.trim()),                                    required: false },
-    { id: 'faqs',          label: t('products.detail.checklist.faqs'),          ok: (form.faqs || []).some((f) => f.question?.trim() && f.answer?.trim()),                                     required: false },
-    { id: 'trustBadges',   label: t('products.detail.checklist.trustBadges', { defaultValue: 'Dải tin cậy' }), ok: (form.trustBadges || []).some((b) => b.content?.trim()),                            required: false },
+    // SKU/giá cấp sản phẩm: bắt buộc CHỈ KHI không có biến thể — khi có biến thể coi như đã
+    // thoả (giá/SKU chuyển xuống từng biến thể, xem PRODUCT_RULE_013/PRODUCT_RULE_SKU_001).
+    { id: 'sku',       label: t('products.detail.checklist.sku', { defaultValue: 'Mã SKU' }), ok: hasVariants || Boolean(form.sku?.trim()),          required: !hasVariants },
+    { id: 'price',     label: t('products.detail.checklist.price'),     ok: hasVariants || (Boolean(form.retailPrice?.trim()) && Number(form.retailPrice) > 0), required: true },
+    // Ảnh đại diện màu: bắt buộc cho MỖI biến thể thật khi sản phẩm có biến thể.
+    { id: 'variantImages', label: t('products.detail.checklist.variantImages', { defaultValue: 'Ảnh đại diện màu (từng biến thể)' }), ok: !hasVariants || realVariants.every((v) => Boolean(v.imageUrl?.trim())), required: hasVariants },
     // Nhắc nhở (không chặn đăng): các phần điền vào thì trang sản phẩm đầy đủ & đẹp hơn.
     // Điều kiện `ok` mirror đúng bộ lọc trong toPayload để khớp cái thực sự được lưu.
+    { id: 'shortDesc', label: t('products.detail.checklist.shortDesc'), ok: Boolean(form.shortDescription?.trim()),                                 required: false },
+    { id: 'desc',      label: t('products.detail.checklist.desc'),      ok: (Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks.length > 0 : (form.description?.trim().length ?? 0) > 0),  required: false },
+    { id: 'specStats',     label: t('products.detail.checklist.specStats'),     ok: Boolean((form.specStatsHtml || '').trim()),                                                                 required: false },
+    { id: 'faqs',          label: t('products.detail.checklist.faqs'),          ok: (form.faqs || []).some((f) => f.question?.trim() && f.answer?.trim()),                                     required: false },
+    { id: 'trustBadges',   label: t('products.detail.checklist.trustBadges', { defaultValue: 'Dải tin cậy' }), ok: Boolean((form.trustBadgesHtml || '').trim()),                                       required: false },
     { id: 'seoTitle',      label: t('products.detail.checklist.seoTitle'),      ok: Boolean(form.seoTitle?.trim()),           required: false },
     { id: 'seoDesc',       label: t('products.detail.checklist.seoDesc'),       ok: Boolean(form.seoDescription?.trim()),     required: false },
     { id: 'seoCanonical',  label: t('products.detail.checklist.seoCanonical'),  ok: Boolean(form.slug?.trim()),    required: false },
     { id: 'gallery',       label: t('products.detail.checklist.gallery'),       ok: (form.gallery || []).some((img) => img.url?.trim()),                                                       required: false },
     { id: 'prosCons',      label: t('products.detail.checklist.prosCons'),      ok: (form.positiveNotes || []).some((h) => (h.content || '').trim()) || (form.negativeNotes || []).some((h) => (h.content || '').trim()), required: false },
-    { id: 'suitability',   label: t('products.detail.checklist.suitability'),   ok: (Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks : []).some((b) => b.type === 'suitability' && ((b.html || '').trim() || (b.cards || []).some(suitabilityCardHasContent))),    required: false },
-    { id: 'specifications',label: t('products.detail.checklist.specifications'),ok: (form.specifications || []).some((s) => s.name?.trim() && s.value?.trim()),                                required: false },
+    { id: 'suitability',   label: t('products.detail.checklist.suitability'),   ok: Boolean((form.suitabilitySection?.html || '').trim() || (form.suitabilitySection?.cards || []).some(suitabilityCardHasContent)),    required: false },
+    { id: 'specifications',label: t('products.detail.checklist.specifications'),ok: Boolean((form.specificationsHtml || '').trim()),                                                            required: false },
     { id: 'variants',      label: t('products.detail.checklist.variants'),      ok: (form.variants || []).some((v) => v.name?.trim()),                                                         required: false },
   ]
 
@@ -224,7 +216,6 @@ export function buildEmptyForm() {
     shortDescription: '',
     description: '',
     descriptionBlocks: null,
-    descriptionBlocksEn: null,
     brandId: '',
     categoryId: '',
     retailPrice: '',
@@ -241,7 +232,6 @@ export function buildEmptyForm() {
     seoOgImageAlt: '',
     gallery: [],
     videos: [],
-    specifications: [],
     // Chế độ "Dán mã HTML" cho khối Thông số kỹ thuật (V255) — bản vi; bản en ở translations.en.
     specificationsHtml: '',
     // "Dán mã HTML" cho khối Ô số liệu nổi bật (V256) — bản vi; bản en ở translations.en.
@@ -250,21 +240,17 @@ export function buildEmptyForm() {
     trustBadgesHtml: '',
     // "Quick Answer" (trả lời nhanh, V300) — bản vi; bản en ở translations.en.
     quickAnswerSummary: '',
-    // "Specs Dashboard" — ô số liệu nổi bật dưới khu vực mua hàng (V235).
-    specStats: [],
     faqs: [],
     // Khối cam kết dưới nút mua hàng (V232) — admin quản theo từng sản phẩm.
     commitments: [],
-    // Dải tin cậy trên tên sản phẩm (V233) — admin quản theo từng sản phẩm.
-    trustBadges: [],
     // Template SEO fields (V175).
     positiveNotes: [],
     negativeNotes: [],
     originBrandCountry: '',
-    sizeChart: emptySizeGuide(),
-    // "Phù hợp với ai" (V240) — danh sách thẻ {audience, advice + *En}.
-    // Serialize thành 2 chuỗi JSON (vi + en) khi lưu; xem parse/serializeSuitabilityCards.
-    suitabilityCards: [],
+    // "Phù hợp với ai" / "Bảng size" (V240/V246, tách khỏi descriptionBlocks ở V327/V328) — 2 field
+    // riêng, object đơn (null khi chưa nhập). Xem SuitabilityBlockEditor/SizeGuideBlockEditor.
+    suitabilitySection: null,
+    sizeGuideSection: null,
     gender: '',
     variants: [],
     relatedProductIds: [],
@@ -381,6 +367,14 @@ export function buildFormFromItem(item) {
     id: v.id || '',
     sku: v.sku || '',
     name: v.name || '',
+    retailPrice:
+      Number.isInteger(v.price?.retailPrice) && v.price.retailPrice >= 0
+        ? String(v.price.retailPrice)
+        : '',
+    salePrice:
+      Number.isInteger(v.price?.salePrice) && v.price.salePrice > 0
+        ? String(v.price.salePrice)
+        : '',
     isAvailable: v.isAvailable !== false,
     options: (v.options || []).map((o) => ({
       _key: generateId(),
@@ -401,31 +395,23 @@ export function buildFormFromItem(item) {
     slug: item.slug || '',
     name: item.name || '',
     shortDescription: item.shortDescription || '',
-    // Thông số kỹ thuật — html là nguồn render. Dữ liệu cũ chỉ có bảng `specifications` có cấu trúc
-    // → sinh html (bản vi) để không mất nội dung khi web chuyển sang render-theo-html.
-    specificationsHtml:
-      item.specificationsHtml
-      || serializeSpecs((item.specifications || []).map((s) => ({ name: s.name, value: s.value })))
-      || '',
-    // Ô số liệu nổi bật — html là nguồn render (V256). Dữ liệu cũ chỉ có lưới `specStats` có cấu trúc
-    // → sinh html (bản vi) để không mất nội dung khi web chuyển sang render-theo-html.
-    specStatsHtml:
-      item.specStatsHtml
-      || serializeSpecStats((item.specStats || []).map((s) => ({ value: s.value, label: s.label })))
-      || '',
-    // Dải tin cậy — html là nguồn render (V257). Dữ liệu cũ chỉ có dải `trustBadges` có cấu trúc
-    // → sinh html (bản vi) để không mất nội dung khi web chuyển sang render-theo-html.
-    trustBadgesHtml:
-      item.trustBadgesHtml
-      || serializeTrustBadges((item.trustBadges || []).map((b) => ({ content: b.content })))
-      || '',
+    // Thông số kỹ thuật — html là nguồn render duy nhất (backend không còn nhận/trả bảng
+    // `specifications` có cấu trúc).
+    specificationsHtml: item.specificationsHtml || '',
+    // Ô số liệu nổi bật — html là nguồn render duy nhất (V256; backend không còn nhận/trả lưới
+    // `specStats` có cấu trúc).
+    specStatsHtml: item.specStatsHtml || '',
+    // Dải tin cậy — html là nguồn render duy nhất (V257; backend không còn nhận/trả dải
+    // `trustBadges` có cấu trúc).
+    trustBadgesHtml: item.trustBadgesHtml || '',
     // "Quick Answer" (trả lời nhanh, V300) — bản vi; bản en ở translations.en (auto qua translationFormFromItem).
     quickAnswerSummary: item.quickAnswerSummary || '',
     description: item.description || '',
     // Nạp lại _key cho từng khối (đã bị strip khi lưu) — thiếu _key thì kéo-thả sắp xếp chết.
+    // V326: mỗi khối đã mang sẵn cả 2 ngôn ngữ (field *En) — không còn mảng EN riêng.
     descriptionBlocks: hydrateBlockKeys(item.descriptionBlocks),
-    // Khối mô tả tiếng Anh (V229) — nằm trong translations.en để admin nạp song ngữ.
-    descriptionBlocksEn: hydrateBlockKeys(item.translations?.en?.descriptionBlocks),
+    suitabilitySection: hydrateSuitabilitySection(item.suitabilitySection),
+    sizeGuideSection: hydrateSizeGuideSection(item.sizeGuideSection),
     brandId: item.brandId || item.brand?.id || '',
     categoryId: item.categoryId || item.category?.id || item.categories?.[0]?.id || '',
     retailPrice:
@@ -454,24 +440,6 @@ export function buildFormFromItem(item) {
       type: inferVideoType(v.url || '', v.provider),
       thumbnailUrl: v.thumbnail?.url || '',
     })),
-    specifications: (item.specifications || []).map((s) => ({
-      _key: generateId(),
-      name: s.name || '',
-      value: s.value || '',
-      // Response record exposes spec group as `group` (ProductSpecification); the form field
-      // and the save DTO (SpecificationRequest) use `groupName`. Read both so the group loads.
-      groupName: s.group || s.groupName || '',
-      nameEn: s.nameEn || '',
-      valueEn: s.valueEn || '',
-    })),
-    // "Specs Dashboard" — ô số liệu nổi bật dưới khu vực mua hàng (V235), tối đa 4, song ngữ.
-    specStats: (item.specStats || []).map((s) => ({
-      _key: generateId(),
-      value: s.value || '',
-      label: s.label || '',
-      valueEn: s.valueEn || '',
-      labelEn: s.labelEn || '',
-    })),
     faqs: (item.faqs || []).map((f) => ({
       _key: generateId(),
       question: f.question || '',
@@ -488,12 +456,6 @@ export function buildFormFromItem(item) {
       titleEn: c.titleEn || '',
       subtitleEn: c.subtitleEn || '',
     })),
-    // Dải tin cậy trên tên sản phẩm (V233) — badge {content, contentEn}.
-    trustBadges: (item.trustBadges || []).map((b) => ({
-      _key: generateId(),
-      content: b.content || '',
-      contentEn: b.contentEn || '',
-    })),
     // Template SEO fields (V175). highlights là object {content, contentEn}.
     positiveNotes: (item.positiveNotes || []).map((h) => ({
       _key: generateId(),
@@ -506,8 +468,6 @@ export function buildFormFromItem(item) {
       contentEn: h.contentEn || '',
     })),
     originBrandCountry: item.originBrandCountry || '',
-    sizeChart: parseSizeGuide(item.sizeGuide),
-    suitabilityCards: parseSuitabilityCards(item.suitabilityAdvisory, item.translations?.en?.suitabilityAdvisory),
     gender: item.gender || '',
     variants,
     relatedProductIds: (item.relatedProducts || []).map((p) => p.id).filter(Boolean),
@@ -530,22 +490,6 @@ export function buildFormFromItem(item) {
       })),
     // slug tiếng Anh nằm ở field top-level `slugEn` của response, không trong translations.en.
     translations: { en: { ...translationFormFromItem(item.translations?.en), slug: item.slugEn || '' } },
-  }
-
-  // Thông số kỹ thuật bản EN: backfill html từ bảng cấu trúc cũ (nameEn/valueEn) nếu chưa có html EN.
-  if (!(form.translations.en.specificationsHtml || '').trim()) {
-    const enSpecsHtml = serializeSpecs((item.specifications || []).map((s) => ({ name: s.nameEn, value: s.valueEn })))
-    if (enSpecsHtml) form.translations.en.specificationsHtml = enSpecsHtml
-  }
-  // Ô số liệu nổi bật bản EN: backfill html từ lưới cấu trúc cũ (valueEn/labelEn) nếu chưa có html EN.
-  if (!(form.translations.en.specStatsHtml || '').trim()) {
-    const enStatsHtml = serializeSpecStats((item.specStats || []).map((s) => ({ value: s.valueEn, label: s.labelEn })))
-    if (enStatsHtml) form.translations.en.specStatsHtml = enStatsHtml
-  }
-  // Dải tin cậy bản EN: backfill html từ dải cấu trúc cũ (contentEn) nếu chưa có html EN.
-  if (!(form.translations.en.trustBadgesHtml || '').trim()) {
-    const enTrustHtml = serializeTrustBadges((item.trustBadges || []).map((b) => ({ content: b.contentEn })))
-    if (enTrustHtml) form.translations.en.trustBadgesHtml = enTrustHtml
   }
 
   return form
@@ -589,39 +533,53 @@ export function translationToPayload(en) {
 // "chưa có khối / dùng HTML legacy".
 function hydrateBlockKeys(blocks) {
   if (!Array.isArray(blocks)) return null
-  return blocks.map((b) => {
-    const withKey = b._key ? b : { ...b, _key: generateId() }
-    // Khối suitability: html là nguồn render. Dữ liệu cũ chỉ có `cards` → sinh html để không mất
-    // nội dung khi web chuyển sang render-theo-html.
-    if (withKey.type === 'suitability' && !(withKey.html ?? '').trim() && Array.isArray(withKey.cards)) {
-      return { ...withKey, html: serializeSuitabilityCards(withKey.cards) }
-    }
-    return withKey
-  })
+  return blocks.map((b) => (b._key ? b : { ...b, _key: generateId() }))
+}
+
+// Nạp lại _key cho field suitabilitySection (object đơn, không phải mảng — V327/V328) khi mở sản
+// phẩm. Dữ liệu cũ chỉ có `cards` → sinh `html` để không mất nội dung khi web chuyển sang
+// render-theo-html (đối xứng với cleanSuitabilitySection, chiều ngược lại).
+function hydrateSuitabilitySection(section) {
+  if (!section || typeof section !== 'object') return null
+  const withKey = section._key ? section : { ...section, _key: generateId() }
+  if (!(withKey.html ?? '').trim() && Array.isArray(withKey.cards)) {
+    return { ...withKey, html: serializeSuitabilityCards(withKey.cards) }
+  }
+  return withKey
+}
+
+// Nạp lại _key cho field sizeGuideSection (object đơn — V327/V328) khi mở sản phẩm.
+function hydrateSizeGuideSection(section) {
+  if (!section || typeof section !== 'object') return null
+  return section._key ? section : { ...section, _key: generateId() }
 }
 
 // Lọc + dọn khối mô tả trước khi gửi: bỏ khối rỗng (sẽ fail @NotBlank ở backend) và
-// strip _key (chỉ dùng tracking ở frontend). Dùng chung cho cả khối VI và EN.
+// strip _key (chỉ dùng tracking ở frontend). 1 mảng duy nhất mang cả 2 ngôn ngữ (V326) — khối được
+// coi là "có nội dung" nếu VI HOẶC field *En có chữ (tránh rớt khối chỉ mới dịch xong, chưa có VI).
 export function cleanDescriptionBlocks(blocks) {
   return blocks
     .filter((b) => {
       switch (b.type) {
-        case 'heading':   return (b.text ?? '').trim().length > 0
-        case 'paragraph': return (b.html ?? '').trim().length > 0
+        case 'heading':   return (b.text ?? '').trim().length > 0 || (b.textEn ?? '').trim().length > 0
+        case 'paragraph': return (b.html ?? '').trim().length > 0 || (b.htmlEn ?? '').trim().length > 0
         case 'list':      return (b.items ?? []).some((it) => (it ?? '').trim().length > 0)
+          || (b.itemsEn ?? []).some((it) => (it ?? '').trim().length > 0)
         case 'image':     return (b.url ?? '').trim().length > 0
         case 'video':     return (b.url ?? '').trim().length > 0
-        case 'callout':   return (b.html ?? '').trim().length > 0
+        case 'callout':   return (b.html ?? '').trim().length > 0 || (b.htmlEn ?? '').trim().length > 0
         case 'feature': {
           const hasImage = (b.url ?? '').trim().length > 0
           const hasText = (b.subheading ?? '').trim().length > 0
+            || (b.subheadingEn ?? '').trim().length > 0
             || (b.heading ?? '').trim().length > 0
+            || (b.headingEn ?? '').trim().length > 0
             || (b.html ?? '').trim().length > 0
+            || (b.htmlEn ?? '').trim().length > 0
             || (b.items ?? []).some((it) => (it ?? '').trim().length > 0)
+            || (b.itemsEn ?? []).some((it) => (it ?? '').trim().length > 0)
           return hasImage || hasText
         }
-        case 'suitability': return (b.html ?? '').trim().length > 0 || (b.cards ?? []).some(suitabilityCardHasContent)
-        case 'sizeGuide': return (b.html ?? '').trim().length > 0
         default:          return true
       }
     })
@@ -639,56 +597,40 @@ export function cleanDescriptionBlocks(blocks) {
         }
         return keep
       }
-      // Phù hợp với ai: html là nguồn DUY NHẤT được lưu (web render theo html). Bỏ `cards` khỏi
-      // payload; nếu thiếu html (dữ liệu cũ) thì sinh từ cards để không mất nội dung.
-      if (rest.type === 'suitability') {
-        const html = (rest.html ?? '').trim() || serializeSuitabilityCards(rest.cards)
-        const { cards: _cards, ...keep } = rest
-        return { ...keep, html }
-      }
       return rest
     })
 }
 
-// "Phù hợp với ai" (V240) — field suitabilityAdvisory lưu JSON array các thẻ. Parse 2 cột
-// (vi + en) thành mảng thẻ song ngữ inline cho editor; `linkUrl` dùng chung (lấy từ vi, fallback en).
-// Giá trị legacy không-phải-JSON (HTML cũ trước V240) → coi như rỗng, admin nhập lại.
-export function safeJsonArray(raw) {
-  if (typeof raw !== 'string' || !raw.trim()) return []
-  try {
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
+// Dọn form.suitabilitySection trước khi gửi (V327/V328, tách khỏi descriptionBlocks — đối xứng với
+// cleanDescriptionBlocks nhưng áp dụng cho 1 object đơn, không phải mảng). Rỗng → null (backend clear
+// field). html là nguồn DUY NHẤT được lưu; nếu thiếu html (dữ liệu cũ chỉ có cards) thì sinh từ cards.
+export function cleanSuitabilitySection(section) {
+  if (!section) return null
+  const hasContent = (section.html ?? '').trim().length > 0
+    || (section.htmlEn ?? '').trim().length > 0
+    || (section.cards ?? []).some(suitabilityCardHasContent)
+  if (!hasContent) return null
+  const { _key, cards: _cards, ...rest } = section
+  const html = (rest.html ?? '').trim() || serializeSuitabilityCards(section.cards)
+  return { ...rest, html }
 }
 
-export function parseSuitabilityCards(viRaw, enRaw) {
-  const vi = safeJsonArray(viRaw)
-  const en = safeJsonArray(enRaw)
-  const len = Math.max(vi.length, en.length)
-  const str = (v) => (typeof v === 'string' ? v : '')
-  const cards = []
-  for (let i = 0; i < len; i += 1) {
-    const v = vi[i] || {}
-    const e = en[i] || {}
-    cards.push({
-      _key: generateId(),
-      audience: str(v.audience),
-      advice: str(v.advice),
-      linkLabel: str(v.linkLabel),
-      linkUrl: str(v.linkUrl) || str(e.linkUrl),
-      audienceEn: str(e.audience),
-      adviceEn: str(e.advice),
-      linkLabelEn: str(e.linkLabel),
-    })
-  }
-  return cards
+// Dọn form.sizeGuideSection trước khi gửi (V327/V328). Rỗng → null.
+export function cleanSizeGuideSection(section) {
+  if (!section) return null
+  const hasContent = (section.html ?? '').trim().length > 0 || (section.htmlEn ?? '').trim().length > 0
+  if (!hasContent) return null
+  const { _key, ...rest } = section
+  return rest
 }
 
+// (V327/V328) parseSuitabilityCards(viRaw, enRaw)/safeJsonArray đã gỡ — parser JSON cũ của cột dormant
+// `suitability_advisory` (tiền-V240), chỉ dùng để nạp ghost field form.suitabilityCards (đã gỡ, không
+// ai đọc). "Phù hợp với ai" giờ nhập qua form.suitabilitySection (xem hydrateSuitabilitySection).
 // (V246) serializeSuitabilityCards đã gỡ — "Phù hợp với ai" giờ nhập qua KHỐI suitability trong mô tả.
 // (2026-06-22) "Hiển thị trên web" đã GỠ (SECTION_VISIBILITY_KEYS + sectionHasContent + parse/resolveSectionVisibilityForm):
-// 5 phần PDP giờ hiện thuần theo nội dung, không còn bật/tắt từng phần. Backend giữ cột section_visibility ngủ yên.
+// 5 phần PDP giờ hiện thuần theo nội dung, không còn bật/tắt từng phần. Cột section_visibility
+// đã DROP khỏi DB 2026-07-07 (V325__drop_dead_product_fields.sql) — không còn tồn tại, kể cả ngủ yên.
 
 export function toPayload(form) {
   // Canonical luôn tự sinh từ slug — không lấy từ ô nhập tay nữa.
@@ -701,8 +643,9 @@ export function toPayload(form) {
     form.seoOgImageUrl.trim() ||
     form.seoOgImageAlt.trim()
 
-  // Ưu/Nhược điểm · Phù hợp với ai · Bảng size (V246): không còn gửi từ ô nhập riêng — admin nhập qua
-  // KHỐI trong mô tả (descriptionBlocks). Backend present-flag bỏ qua khi vắng → cột cũ không bị đụng.
+  // Ưu/Nhược điểm: không còn gửi từ ô nhập riêng — admin nhập qua card riêng, lưu vào
+  // positiveNotes/negativeNotes. Phù hợp với ai/Bảng size (V327/V328): field riêng suitabilitySection/
+  // sizeGuideSection, gửi bên dưới (không còn qua khối trong descriptionBlocks).
 
   const payload = {
     sku: form.sku.trim() || null,
@@ -776,30 +719,6 @@ export function toPayload(form) {
       sortOrder: i,
     }))
 
-  const specsList = form.specifications?.length ? form.specifications : parseSpecsFromHtml(form.specificationsHtml || '')
-  payload.specifications = specsList
-    .filter((s) => (s.name || '').trim() && (s.value || '').trim())
-    .map((s, i) => ({
-      name: s.name.trim(),
-      value: s.value.trim(),
-      nameEn: (s.nameEn || '').trim() || undefined,
-      valueEn: (s.valueEn || '').trim() || undefined,
-      sortOrder: i,
-    }))
-
-  // "Specs Dashboard" — ô số liệu nổi bật dưới khu vực mua hàng (V235), tối đa 4.
-  const specStatsList = form.specStats?.length ? form.specStats : parseSpecStatsFromHtml(form.specStatsHtml || '')
-  payload.specStats = specStatsList
-    .filter((s) => (s.value || '').trim() && (s.label || '').trim())
-    .slice(0, 4)
-    .map((s, i) => ({
-      value: s.value.trim(),
-      label: s.label.trim(),
-      valueEn: (s.valueEn || '').trim() || undefined,
-      labelEn: (s.labelEn || '').trim() || undefined,
-      sortOrder: i,
-    }))
-
   payload.faqs = form.faqs
     .filter((f) => f.question.trim() && f.answer.trim())
     .map((f, i) => ({
@@ -822,32 +741,25 @@ export function toPayload(form) {
       sortOrder: i,
     }))
 
-  // Dải tin cậy trên tên sản phẩm (V233) — full-replace; badge content blank bị bỏ.
-  const trustBadgesList = form.trustBadges?.length ? form.trustBadges : parseTrustBadgesFromHtml(form.trustBadgesHtml || '')
-  payload.trustBadges = trustBadgesList
-    .filter((b) => (b.content || '').trim())
-    .map((b, i) => ({
-      content: b.content.trim(),
-      contentEn: (b.contentEn || '').trim() || undefined,
-      sortOrder: i,
-    }))
-
   // Ưu/Nhược điểm (V251): khối RIÊNG cố định dưới mô tả — nhập ở card riêng, lưu vào bảng con
   // product_highlights. Full-replace mỗi nhóm; mục content blank bị bỏ (backend @NotBlank).
-  payload.positiveNotes = form.positiveNotes
-    .filter((h) => (h.content || '').trim())
-    .map((h, i) => ({
-      content: h.content.trim(),
-      contentEn: (h.contentEn || '').trim() || undefined,
-      sortOrder: i,
-    }))
-  payload.negativeNotes = form.negativeNotes
-    .filter((h) => (h.content || '').trim())
-    .map((h, i) => ({
-      content: h.content.trim(),
-      contentEn: (h.contentEn || '').trim() || undefined,
-      sortOrder: i,
-    }))
+  // Wire gộp thành 1 field lồng `highlights` (2026-07-07) — form vẫn giữ 2 field phẳng.
+  payload.highlights = {
+    positiveNotes: form.positiveNotes
+      .filter((h) => (h.content || '').trim())
+      .map((h, i) => ({
+        content: h.content.trim(),
+        contentEn: (h.contentEn || '').trim() || undefined,
+        sortOrder: i,
+      })),
+    negativeNotes: form.negativeNotes
+      .filter((h) => (h.content || '').trim())
+      .map((h, i) => ({
+        content: h.content.trim(),
+        contentEn: (h.contentEn || '').trim() || undefined,
+        sortOrder: i,
+      })),
+  }
 
   // Always send relatedProductIds — empty array explicitly clears the section.
   payload.relatedProductIds = Array.isArray(form.relatedProductIds) ? form.relatedProductIds : []
@@ -862,11 +774,10 @@ export function toPayload(form) {
   if (Array.isArray(form.descriptionBlocks)) {
     payload.descriptionBlocks = cleanDescriptionBlocks(form.descriptionBlocks)
   }
-  // Khối mô tả tiếng Anh (V229) — gửi top-level descriptionBlocksEn theo cùng presence-flag.
-  // Backend render khối EN -> description_en (ghi đè HTML từ translations sau đó).
-  if (Array.isArray(form.descriptionBlocksEn)) {
-    payload.descriptionBlocksEn = cleanDescriptionBlocks(form.descriptionBlocksEn)
-  }
+  // suitabilitySection / sizeGuideSection (V327/V328) — field riêng, luôn gửi key (null khi rỗng)
+  // giống pattern specificationsHtml, không phải pattern điều kiện của descriptionBlocks.
+  payload.suitabilitySection = cleanSuitabilitySection(form.suitabilitySection)
+  payload.sizeGuideSection = cleanSizeGuideSection(form.sizeGuideSection)
   const scopedVariants = withColorScopedMedia(form.variants).filter((v) => v.name.trim())
   const emittedGalleryColors = new Set()
 
@@ -894,8 +805,11 @@ export function toPayload(form) {
       id: v.id || undefined,
       sku: v.sku.trim() || undefined,
       name: v.name.trim(),
-      // Variant price fields intentionally omitted — see ProductDetailScreen
-      // variant form section. Cart/checkout always use product price.
+      // Variant price is authoritative once the product has variants (2026-07-06) — always
+      // send the key (null when cleared) so the backend presence-flag can tell "cleared" from
+      // "not sent" (mirrors the product-level retailPrice/salePrice above).
+      retailPrice: toIntegerOrNull(v.retailPrice),
+      salePrice: toIntegerOrNull(v.salePrice),
       // Representation image (ảnh đại diện màu) is a separate variant field, scoped per-color.
       imageUrl: v.imageUrl?.trim() || undefined,
       imageWidth: v.imageWidth ?? undefined,
@@ -1015,12 +929,12 @@ export const SECTION_FIELD_PREFIXES = {
   seo:           ['seoTitle','seoDescription','seoCanonicalUrl','seoOgImageUrl','seoOgImageAlt'],
   gallery:       ['gallery'],
   videos:        ['videos'],
-  specs:         ['specifications'],
-  specStats:     ['specStats'],
+  specs:         ['specificationsHtml'],
+  specStats:     ['specStatsHtml'],
   faqs:          ['faqs'],
   commitments:   ['commitments'],
   highlights:    ['positiveNotes', 'negativeNotes'],
-  trustBadges:   ['trustBadges'],
+  trustBadges:   ['trustBadgesHtml'],
   variants:      ['variants'],
   related:       ['relatedProductIds'],
   accessories:   ['accessoryProductIds'],

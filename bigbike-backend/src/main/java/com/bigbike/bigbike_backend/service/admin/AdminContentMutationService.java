@@ -179,7 +179,29 @@ public class AdminContentMutationService {
         requireJpaPersistenceEnabled();
         ArticleEntity entity = articleJpaRepository.findById(articleId)
                 .orElseThrow(() -> new NotFoundException("Content not found."));
+
+        if (entity.getPublishStatus() == PublishStatus.TRASH) {
+            Article article = contentReadRepository.findArticleById(entity.getId())
+                    .orElseThrow(() -> new NotFoundException("Content not found."));
+            return articleMapper.toAdminContentItem(article);
+        }
+
         String before = articleJson(entity);
+
+        // Same PUBLISHED -> DRAFT -> TRASH sequencing as AdminCatalogMutationService.softDeleteProduct
+        // (owner decision 2026-07-07) — invisible to the admin, single request/transaction.
+        if (entity.getPublishStatus() == PublishStatus.PUBLISHED) {
+            List<ApiErrorDetail> draftErrors = new ArrayList<>();
+            AdminMutationValidators.validatePublishTransition(
+                    entity.getPublishStatus(), PublishStatus.DRAFT, "publishStatus", draftErrors);
+            AdminMutationValidators.throwIfErrors(draftErrors);
+            entity.setPublishStatus(PublishStatus.DRAFT);
+        }
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        AdminMutationValidators.validatePublishTransition(
+                entity.getPublishStatus(), PublishStatus.TRASH, "publishStatus", errors);
+        AdminMutationValidators.throwIfErrors(errors);
         entity.setPublishStatus(PublishStatus.TRASH);
 
         // A6: Rename slug when soft-deleted to free up the original slug

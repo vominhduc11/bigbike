@@ -119,8 +119,13 @@ class RbacUrlGateIntegrationTest {
         // A JWT bearing role "CUSTOMER" passes the authenticated() URL gate but
         // adminPermissionService.getPermissionsForRole("CUSTOMER") returns empty
         // (CUSTOMER is not a row in admin_roles), so requirePermission() throws 403.
-        String customerJwt = jwtService.generateAccessToken(
-                "customer-test-id", "customer@bigbike.test", "CUSTOMER");
+        // Needs a real ACTIVE admin_users row behind the token (JwtAuthFilter re-checks status/role
+        // against the DB on every request, fixed 2026-07-06, audit IV-01) — role is a plain string
+        // column with no FK to admin_roles, so "CUSTOMER" persists fine here without being a real
+        // admin role, preserving the original "no permissions" premise of this test.
+        String customerEmail = "rbac-customer-" + UUID.randomUUID() + "@bigbike.test";
+        ensureUser(customerEmail, "CUSTOMER");
+        String customerJwt = login(customerEmail);
         mockMvc.perform(get("/api/v1/admin/products")
                         .header("Authorization", "Bearer " + customerJwt))
                 .andExpect(status().isForbidden());

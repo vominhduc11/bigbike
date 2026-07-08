@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -150,6 +151,41 @@ class AdminReadApiTest {
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].id").value(created.id()))
                 .andExpect(jsonPath("$.data[0].publishStatus").value("TRASH"));
+    }
+
+    @Test
+    void softDeletingAPublishedProductSequencesThroughDraftToTrashInvisibly() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String slug = "phase2-publish-then-trash-" + suffix;
+
+        UpsertProductRequest create = new UpsertProductRequest();
+        create.setSlug(slug);
+        create.setName("Publish Then Trash Product " + suffix);
+        create.setCategoryId("cat_helmet");
+        create.setBrandId("brand_ls2");
+        create.setRetailPrice(new BigDecimal("1250000"));
+        create.setPublishStatus(PublishStatus.DRAFT);
+        ImageAssetRequest image = new ImageAssetRequest();
+        image.setUrl("http://localhost:9000/bigbike-media/wp-uploads/" + slug + ".jpg");
+        image.setAlt("Publish Then Trash Product " + suffix);
+        create.setImage(image);
+        create.setTranslations(new ProductTranslationRequest(
+                ProductTranslationRequest.ProductContentRequest.builder()
+                        .name("Publish Then Trash Product EN " + suffix)
+                        .build()));
+
+        Product created = adminCatalogMutationService.createProduct(create, DEV_ADMIN_ID);
+        adminCatalogMutationService.updateProductPublishStatus(created.id(), PublishStatus.PUBLISHED, DEV_ADMIN_ID);
+        Product deleted = adminCatalogMutationService.softDeleteProduct(created.id(), DEV_ADMIN_ID);
+
+        // Ends up in TRASH in one call — the intermediate DRAFT hop never surfaces as a
+        // separately observable state (owner decision 2026-07-07).
+        assertThat(deleted.publishStatus()).isEqualTo(PublishStatus.TRASH);
+
+        mockMvc.perform(get("/api/v1/admin/products/{id}", created.id())
+                        .header("X-Admin-Permissions", "products.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.publishStatus").value("TRASH"));
     }
 
     @Test

@@ -2,7 +2,12 @@
 // Implements only the subset needed: CONNECT, SUBSCRIBE, UNSUBSCRIBE, receive MESSAGE.
 // No external dependencies — native WebSocket only.
 
-const RECONNECT_DELAY_MS = 4000
+const RECONNECT_BASE_MS = 1000
+const RECONNECT_MAX_MS = 30000
+// STOMP ERROR frame bodies thrown by WebSocketConfig's interceptor for a rejected admin —
+// these are permanent (bad/expired token, inactive account, missing permission), not a
+// transient network blip, so reconnecting on a fixed timer would just hammer the server.
+const AUTH_REJECTION_PATTERN = /Admin (JWT required|role required|account is not active)|Invalid or expired token|Not permitted to subscribe/i
 
 function parseFrame(raw) {
   const nullIdx = raw.indexOf('\0')
@@ -40,6 +45,8 @@ let subscriptions = {}   // destination → Set<handler>
 let subIdMap = {}        // destination → subId string (e.g. 'sub-0')
 let subCounter = 0
 let reconnectTimer = null
+let reconnectAttempt = 0
+let authRejected = false
 let onReconnect = null   // callback fired on every CONNECTED (initial + reconnect)
 
 function clearReconnect() {
@@ -48,7 +55,10 @@ function clearReconnect() {
 
 function scheduleReconnect() {
   clearReconnect()
-  reconnectTimer = setTimeout(openConnection, RECONNECT_DELAY_MS)
+  if (authRejected) return // permanent rejection — wait for an explicit connectAdminWs() call
+  const delay = Math.min(RECONNECT_BASE_MS * 2 ** reconnectAttempt, RECONNECT_MAX_MS)
+  reconnectAttempt++
+  reconnectTimer = setTimeout(openConnection, delay)
 }
 
 function openConnection() {
@@ -76,6 +86,8 @@ function openConnection() {
     const frame = parseFrame(e.data)
 
     if (frame.command === 'CONNECTED') {
+      reconnectAttempt = 0
+      authRejected = false
       // Re-subscribe all active topics after (re-)connect, preserving stable subIds
       for (const dest of Object.keys(subscriptions)) {
         if (subscriptions[dest] && subscriptions[dest].size > 0) {
@@ -100,6 +112,9 @@ function openConnection() {
 
     if (frame.command === 'ERROR') {
       console.warn('[AdminWS] STOMP ERROR:', frame.body)
+      if (AUTH_REJECTION_PATTERN.test(frame.body || '')) {
+        authRejected = true
+      }
       ws.close()
     }
   }
@@ -116,6 +131,8 @@ function openConnection() {
 
 export function connectAdminWs(tokenGetter) {
   alive = true
+  reconnectAttempt = 0
+  authRejected = false
   getToken = tokenGetter
   openConnection()
 }

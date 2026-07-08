@@ -5,7 +5,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
+import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.JwtService;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,12 +31,31 @@ class AdminAuthSecurityTest {
 
     @Autowired private WebApplicationContext webApplicationContext;
     @Autowired private JwtService jwtService;
+    @Autowired private AdminUserJpaRepository adminUserRepo;
 
     @BeforeEach
     void setup() {
         this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
                 .apply(SecurityMockMvcConfigurers.springSecurity())
                 .build();
+    }
+
+    /**
+     * JwtAuthFilter re-checks the admin's current status/role against the DB on every request
+     * (fixed 2026-07-06, audit IV-01) — a JWT for a non-existent user id is no longer trusted on
+     * claims alone, so tests need a real ACTIVE admin_users row behind the token's subject.
+     */
+    private String createActiveAdminAndToken(String email, String role) {
+        Instant now = Instant.now();
+        AdminUserEntity admin = new AdminUserEntity();
+        admin.setEmail(email);
+        admin.setDisplayName("Security Test Admin");
+        admin.setRole(role);
+        admin.setStatus("ACTIVE");
+        admin.setCreatedAt(now);
+        admin.setUpdatedAt(now);
+        AdminUserEntity saved = adminUserRepo.save(admin);
+        return jwtService.generateAccessToken(saved.getId().toString(), email, role);
     }
 
     // ── Admin endpoints require ROLE_ADMIN ───────────────────────────────────
@@ -47,8 +69,7 @@ class AdminAuthSecurityTest {
 
     @Test
     void adminEndpointWithValidAdminTokenReturns200() throws Exception {
-        // Generate a test JWT directly — no DB user needed to test security layer
-        String token = jwtService.generateAccessToken("test-user-id", "sec-test@bigbike.test", "ADMIN");
+        String token = createActiveAdminAndToken("sec-test@bigbike.test", "ADMIN");
 
         mockMvc.perform(get("/api/v1/admin/products")
                         .header("Authorization", "Bearer " + token)

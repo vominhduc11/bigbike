@@ -59,8 +59,6 @@ public class DescriptionBlockRenderer {
         if (block instanceof DescriptionBlock.CalloutBlock b)   return renderCallout(b);
         if (block instanceof DescriptionBlock.FeatureBlock b)   return renderFeature(b);
         if (block instanceof DescriptionBlock.ProsConsBlock b)    return renderProsCons(b);
-        if (block instanceof DescriptionBlock.SuitabilityBlock b) return renderSuitability(b);
-        if (block instanceof DescriptionBlock.SizeGuideBlock b)   return renderSizeGuide(b);
         if (block instanceof DescriptionBlock.DividerBlock)     return "<hr>";
         return "";
     }
@@ -187,50 +185,9 @@ public class DescriptionBlockRenderer {
         return sb.toString();
     }
 
-    /** Phù hợp với ai → mỗi thẻ một &lt;p&gt; (đối tượng đậm → lời khuyên).
-     *  Chế độ "dán HTML": khi html non-blank, xuất html tự do THAY cho cards (sanitize qua Safelist chung). */
-    private String renderSuitability(DescriptionBlock.SuitabilityBlock b) {
-        StringBuilder sb = new StringBuilder("<div class=\"bb-suitability\">");
-        if (b.getTitle() != null && !b.getTitle().isBlank()) {
-            sb.append("<h2>").append(escapeHtml(b.getTitle())).append("</h2>");
-        }
-        if (b.getHtml() != null && !b.getHtml().isBlank()) {
-            sb.append(b.getHtml());
-            sb.append("</div>");
-            return sb.toString();
-        }
-        if (b.getCards() != null) {
-            for (DescriptionBlock.SuitabilityBlock.SuitabilityCard c : b.getCards()) {
-                if (c == null) continue;
-                String audience = c.getAudience();
-                String advice = c.getAdvice();
-                if ((audience == null || audience.isBlank()) && (advice == null || advice.isBlank())) continue;
-                sb.append("<p class=\"bb-suitability-card\">");
-                if (audience != null && !audience.isBlank()) {
-                    sb.append("<strong>").append(escapeHtml(audience)).append("</strong> ");
-                }
-                if (advice != null && !advice.isBlank()) {
-                    sb.append(escapeHtml(advice)).append(" ");
-                }
-                sb.append("</p>");
-            }
-        }
-        sb.append("</div>");
-        return sb.toString();
-    }
-
-    /** Bảng size → HTML tự do (sanitize qua Safelist chung). */
-    private String renderSizeGuide(DescriptionBlock.SizeGuideBlock b) {
-        StringBuilder sb = new StringBuilder("<div class=\"bb-size-guide\">");
-        if (b.getTitle() != null && !b.getTitle().isBlank()) {
-            sb.append("<h2>").append(escapeHtml(b.getTitle())).append("</h2>");
-        }
-        if (b.getHtml() != null) {
-            sb.append(b.getHtml());
-        }
-        sb.append("</div>");
-        return sb.toString();
-    }
+    // renderSuitability/renderSizeGuide gỡ bỏ ở V327/V328 — 2 field này tách khỏi descriptionBlocks,
+    // không còn render vào cột phẳng description/description_en (chỉ là fallback cho sản phẩm cũ
+    // chưa có khối nào; 2 section PDP này giờ đọc thẳng field riêng, không phụ thuộc fallback đó).
 
     /** Helper: render một &lt;ul/ol class&gt; từ danh sách chuỗi (bỏ phần tử rỗng). */
     private void appendItemList(StringBuilder sb, String tag, String cssClass, List<String> items) {

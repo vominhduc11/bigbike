@@ -43,11 +43,16 @@ function blockHasContent(block) {
  *   hasError     — bool
  *   fallbackHtml — string | undefined; legacy HTML shown when value is null/empty
  *   productMode  — bool; true ⇒ chỉ 4 khối cho mô tả sản phẩm (V238), mặc định đầy đủ (Content)
+ *   contentLang  — 'vi' | 'en'; 'en' ⇒ mỗi khối hiện field *En (không đổi cấu trúc — thêm/xóa/kéo
+ *                  thả khối bị khóa, giống FaqEditor). Mặc định 'vi' nên chỗ dùng cho Content không
+ *                  cần truyền (không song ngữ).
  */
-export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml, productMode }) {
+export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml, productMode, contentLang = 'vi' }) {
   const { t } = useTranslation()
   const blocks = value ?? []
   const menu = productMode ? PRODUCT_MENU : CONTENT_MENU
+  const isEn = contentLang === 'en'
+  const structDisabled = disabled || isEn
 
   const [mediaPickerIndex, setMediaPickerIndex] = useState(null)
   const [videoPickerIndex, setVideoPickerIndex] = useState(null)
@@ -101,13 +106,15 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
         items={blocks}
         getId={(b) => b._key}
         onReorder={(next) => onChange(next)}
-        disabled={disabled}
+        disabled={structDisabled}
         className="flex flex-col gap-2"
         renderItem={(block, sortable, index) => (
           <BlockCard
             sortable={sortable}
             block={block}
             disabled={disabled}
+            structDisabled={structDisabled}
+            contentLang={contentLang}
             productMode={productMode}
             onUpdate={(patch) => updateBlock(index, patch)}
             onRemove={() => removeBlock(index)}
@@ -121,7 +128,7 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" disabled={disabled} className="self-start">
+          <Button variant="outline" size="sm" disabled={structDisabled} className="self-start">
             + {t('products.detail.blocks.addBlock')}
           </Button>
         </DropdownMenuTrigger>

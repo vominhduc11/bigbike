@@ -18,6 +18,8 @@ import type {
   PublicSiteSetting,
   Product,
 } from "@/lib/contracts/public";
+import { withFlatHighlights } from "@/lib/contracts/public";
+
 import type { OrderDetail } from "@/lib/contracts/commerce";
 import { env } from "@/env";
 
@@ -229,13 +231,14 @@ export function listProducts(query: ProductListQuery): Promise<ListResult<Produc
   );
 }
 
-export function getProductBySlug(slug: string, lang?: string): Promise<DataResult<Product>> {
-  return loadDataWithQuery(
+export async function getProductBySlug(slug: string, lang?: string): Promise<DataResult<Product>> {
+  const result = await loadDataWithQuery<Product>(
     `/api/v1/products/${slug}`,
     { lang },
     3600,
     ["products", `product:${slug}`, `lang:${lang ?? "vi"}`],
   );
+  return result.data ? { ...result, data: withFlatHighlights(result.data) } : result;
 }
 
 export type CategoryListQuery = {

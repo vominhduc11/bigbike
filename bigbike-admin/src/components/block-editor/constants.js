@@ -13,8 +13,8 @@ export const CONTENT_MENU = ['heading', 'paragraph', 'list', 'image'].map((type)
 
 // Vốn từ cho SẢN PHẨM (V238): chỉ các khối mô tả/tính năng cơ bản. "Phù hợp với ai" và "Bảng size"
 // KHÔNG còn là khối thêm trong mô tả — tách RA thành 2 card nhập RIÊNG (giống "Ưu điểm & Nhược điểm").
-// Dữ liệu vẫn lưu dạng khối suitability/sizeGuide trong descriptionBlocks; web render thành khối cố
-// định #6/#7 (xem PDP_CONTENT_GUIDE §0b). Ưu/Nhược điểm nhập ở card riêng, lưu vào product_highlights.
+// (V327/V328) Dữ liệu của 2 card đó giờ lưu ở 2 field riêng form.suitabilitySection/sizeGuideSection,
+// không còn embedded trong descriptionBlocks. Ưu/Nhược điểm nhập ở card riêng, lưu vào product_highlights.
 export const PRODUCT_MENU = [
   { type: 'paragraph',   labelKey: 'products.detail.blocks.blockTypeText' },
   { type: 'image',       labelKey: 'products.detail.blocks.blockTypeImage' },
@@ -22,6 +22,9 @@ export const PRODUCT_MENU = [
   { type: 'feature',     labelKey: 'products.detail.blocks.blockTypeFeatureLeft',  preset: { side: 'left' } },
 ]
 
+// suitability/sizeGuide (V327/V328): không còn discriminator `type` — mỗi field là 1 object đơn,
+// không phải phần tử mảng đa hình. `createBlock` vẫn dùng làm factory giá trị rỗng mặc định cho
+// form.suitabilitySection/sizeGuideSection (giữ `_key` để editor không reseed giữa các lần render).
 export function createBlock(type, preset) {
   const base = { _key: generateId(), type }
   let block
@@ -33,8 +36,8 @@ export function createBlock(type, preset) {
     case 'video':     block = { ...base, provider: 'youtube', url: '', caption: '' }; break
     case 'callout':   block = { ...base, variant: 'info', html: '' }; break
     case 'feature':   block = { ...base, side: 'auto', url: '', alt: '', caption: '', subheading: '', heading: '', html: '', listStyle: 'bulleted', items: [''] }; break
-    case 'suitability': block = { ...base, title: '', cards: [{ audience: '', advice: '' }], html: '' }; break
-    case 'sizeGuide':   block = { ...base, title: '', html: '' }; break
+    case 'suitability': block = { _key: base._key, title: '', cards: [{ audience: '', advice: '' }], html: '' }; break
+    case 'sizeGuide':   block = { _key: base._key, title: '', html: '' }; break
     case 'divider':   block = base; break
     default:          block = base; break
   }

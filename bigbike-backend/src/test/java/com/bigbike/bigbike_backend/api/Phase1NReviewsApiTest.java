@@ -8,9 +8,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
+import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ReviewEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.JwtService;
@@ -57,6 +59,7 @@ class Phase1NReviewsApiTest {
     @Autowired ProductJpaRepository productRepo;
     @Autowired AuditLogJpaRepository auditLogRepo;
     @Autowired JwtService jwtService;
+    @Autowired AdminUserJpaRepository adminUserRepo;
 
     // Plain MockMvc (no Spring Security) â€” for functional behavior tests
     private MockMvc mockMvc;
@@ -901,7 +904,7 @@ class Phase1NReviewsApiTest {
 
     @Test
     void adminListReviews_missingReviewsReadPermission_returns403() throws Exception {
-        String editorToken = jwtService.generateAccessToken("editor-id", "editor@bigbike.test", "EDITOR");
+        String editorToken = createActiveAdminAndToken("EDITOR");
 
         secMvc.perform(get("/api/v1/admin/reviews")
                         .header("Authorization", "Bearer " + editorToken))
@@ -910,7 +913,7 @@ class Phase1NReviewsApiTest {
 
     @Test
     void adminPatchStatus_missingReviewsWritePermission_returns403() throws Exception {
-        String editorToken = jwtService.generateAccessToken("editor-id", "editor@bigbike.test", "EDITOR");
+        String editorToken = createActiveAdminAndToken("EDITOR");
 
         secMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -921,7 +924,7 @@ class Phase1NReviewsApiTest {
 
     @Test
     void adminPatchStatus_missingReviewsWritePermission_doesNotCreateAuditLog() throws Exception {
-        String editorToken = jwtService.generateAccessToken("editor-id", "editor@bigbike.test", "EDITOR");
+        String editorToken = createActiveAdminAndToken("EDITOR");
         long countBefore = countReviewAudits("REVIEW_STATUS_CHANGED", pendingReviewId);
 
         secMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
@@ -936,7 +939,7 @@ class Phase1NReviewsApiTest {
 
     @Test
     void adminDeleteReview_missingReviewsWritePermission_returns403() throws Exception {
-        String editorToken = jwtService.generateAccessToken("editor-id", "editor@bigbike.test", "EDITOR");
+        String editorToken = createActiveAdminAndToken("EDITOR");
 
         secMvc.perform(delete("/api/v1/admin/reviews/" + pendingReviewId)
                         .header("Authorization", "Bearer " + editorToken))
@@ -945,7 +948,7 @@ class Phase1NReviewsApiTest {
 
     @Test
     void adminDeleteReview_missingReviewsWritePermission_doesNotCreateAuditLog() throws Exception {
-        String editorToken = jwtService.generateAccessToken("editor-id", "editor@bigbike.test", "EDITOR");
+        String editorToken = createActiveAdminAndToken("EDITOR");
         long countBefore = countReviewAudits("REVIEW_DELETED", pendingReviewId);
 
         secMvc.perform(delete("/api/v1/admin/reviews/" + pendingReviewId)
@@ -958,6 +961,25 @@ class Phase1NReviewsApiTest {
 
     private Long insertReview(String productId, String authorName, int rating, String body, String status) {
         return insertReview(productId, authorName, rating, body, status, Instant.now());
+    }
+
+    /**
+     * JwtAuthFilter re-checks the admin's current status/role against the DB on every request
+     * (fixed 2026-07-06, audit IV-01) — a JWT for a non-existent user id is no longer trusted on
+     * claims alone, so permission-denial tests need a real ACTIVE admin_users row behind the token.
+     */
+    private String createActiveAdminAndToken(String role) {
+        String email = role.toLowerCase(java.util.Locale.ROOT) + "-" + UUID.randomUUID() + "@bigbike.test";
+        Instant now = Instant.now();
+        AdminUserEntity admin = new AdminUserEntity();
+        admin.setEmail(email);
+        admin.setDisplayName("Reviews Test Admin");
+        admin.setRole(role);
+        admin.setStatus("ACTIVE");
+        admin.setCreatedAt(now);
+        admin.setUpdatedAt(now);
+        AdminUserEntity saved = adminUserRepo.save(admin);
+        return jwtService.generateAccessToken(saved.getId().toString(), email, role);
     }
 
     private Long insertReview(

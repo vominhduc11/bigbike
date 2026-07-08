@@ -21,9 +21,9 @@ export function DraftRecoveryBanner({ ts, onRestore, onDiscard }) {
 
 // ── Publish quality checklist modal ───────────────────────────────────────────
 
-export function PublishChecklistModal({ form, isCreate, onConfirm, onCancel }) {
+export function PublishChecklistModal({ form, onConfirm, onCancel }) {
   const { t } = useTranslation()
-  const items = getPublishReadiness(form, t, isCreate)
+  const items = getPublishReadiness(form, t)
   const requiredItems = items.filter((i) => i.required)
   const optionalItems = items.filter((i) => !i.required)
   const blockers = requiredItems.filter((i) => !i.ok)

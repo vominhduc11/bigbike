@@ -282,36 +282,6 @@ function normalizeVariant(input) {
   }
 }
 
-function normalizeSpecification(input) {
-  if (!input || typeof input !== 'object') return undefined
-  const name = toTrimmedString(input.name)
-  const value = toTrimmedString(input.value || input.specValue)
-  if (!name || !value) return undefined
-  return {
-    name,
-    value,
-    group: toTrimmedString(input.group || input.groupName) || undefined,
-    // Optional English content (V136) — admin product read carries both languages.
-    nameEn: toTrimmedString(input.nameEn) || undefined,
-    valueEn: toTrimmedString(input.valueEn) || undefined,
-    groupEn: toTrimmedString(input.groupEn || input.groupNameEn) || undefined,
-  }
-}
-
-// "Specs Dashboard" — ô số liệu nổi bật dưới khu vực mua hàng (V235): số liệu + nhãn, song ngữ.
-function normalizeSpecStat(input) {
-  if (!input || typeof input !== 'object') return undefined
-  const value = toTrimmedString(input.value)
-  const label = toTrimmedString(input.label)
-  if (!value || !label) return undefined
-  return {
-    value,
-    label,
-    valueEn: toTrimmedString(input.valueEn) || undefined,
-    labelEn: toTrimmedString(input.labelEn) || undefined,
-  }
-}
-
 function normalizeFaq(input) {
   if (!input || typeof input !== 'object') return undefined
   const question = toTrimmedString(input.question)
@@ -351,7 +321,6 @@ function normalizeProductTranslations(input) {
     shortDescription: toTrimmedString(source.shortDescription) || undefined,
     description: toTrimmedString(source.description) || undefined,
     contentBottom: toTrimmedString(source.contentBottom) || undefined,
-    promotionContent: toTrimmedString(source.promotionContent) || undefined,
     suitabilityAdvisory: toTrimmedString(source.suitabilityAdvisory) || undefined,
     // "Dán mã HTML" bản EN (V255/V256/V257) — surface để translationFormFromItem nạp vào
     // form.translations.en; nếu không, mở SP hiện trống bản EN → Lưu ghi đè xoá HTML EN đã lưu.
@@ -362,8 +331,6 @@ function normalizeProductTranslations(input) {
     quickAnswerSummary: toTrimmedString(source.quickAnswerSummary) || undefined,
     seoTitle: toTrimmedString(source.seoTitle) || undefined,
     seoDescription: toTrimmedString(source.seoDescription) || undefined,
-    // Khối mô tả tiếng Anh (V229) — giữ nguyên mảng để admin BlockEditor (EN) hydrate.
-    descriptionBlocks: Array.isArray(source.descriptionBlocks) ? source.descriptionBlocks : null,
     // "Thương hiệu [nước]" bản EN (V319).
     originBrandCountry: toTrimmedString(source.originBrandCountry) || undefined,
   }
@@ -408,22 +375,23 @@ export function normalizeProduct(input) {
     shortDescription: toTrimmedString(source.shortDescription) || undefined,
     description: toTrimmedString(source.description) || undefined,
     contentBottom: toTrimmedString(source.contentBottom) || undefined,
-    promotionContent: toTrimmedString(source.promotionContent) || undefined,
     // Template/trust fields (V175) — render trên PDP web. PHẢI surface ở đây, nếu không
     // form admin nạp undefined → mở SP hiện trống → bấm Lưu gửi null/[] → xoá mất dữ liệu.
     gender: normalizeGender(source.gender),
     originBrandCountry: toTrimmedString(source.originBrandCountry) || undefined,
     sizeGuide: toTrimmedString(source.sizeGuide) || undefined,
     suitabilityAdvisory: toTrimmedString(source.suitabilityAdvisory) || undefined,
-    positiveNotes: Array.isArray(source.positiveNotes)
-      ? source.positiveNotes
+    // Ưu/Nhược điểm (2026-07-07): wire gộp thành 1 field lồng `highlights` — un-nest
+    // ngay ở đây, phần còn lại của form/UI vẫn dùng field phẳng như cũ.
+    positiveNotes: Array.isArray(source.highlights?.positiveNotes)
+      ? source.highlights.positiveNotes
           .map((h) => (h && typeof h === 'object'
             ? { content: toTrimmedString(h.content), contentEn: toTrimmedString(h.contentEn) || undefined }
             : null))
           .filter((h) => h && h.content)
       : [],
-    negativeNotes: Array.isArray(source.negativeNotes)
-      ? source.negativeNotes
+    negativeNotes: Array.isArray(source.highlights?.negativeNotes)
+      ? source.highlights.negativeNotes
           .map((h) => (h && typeof h === 'object'
             ? { content: toTrimmedString(h.content), contentEn: toTrimmedString(h.contentEn) || undefined }
             : null))
@@ -444,31 +412,15 @@ export function normalizeProduct(input) {
     variants: Array.isArray(source.variants)
       ? source.variants.map(normalizeVariant).filter(Boolean)
       : [],
-    specifications: Array.isArray(source.specifications)
-      ? source.specifications.map(normalizeSpecification).filter(Boolean)
-      : [],
-    // "Specs Dashboard" — ô số liệu nổi bật dưới khu vực mua hàng (V235), tối đa 4.
-    specStats: Array.isArray(source.specStats)
-      ? source.specStats.map(normalizeSpecStat).filter(Boolean)
-      : [],
     faqs: Array.isArray(source.faqs)
       ? source.faqs.map(normalizeFaq).filter(Boolean)
       : [],
     commitments: Array.isArray(source.commitments)
       ? source.commitments.map(normalizeCommitment).filter(Boolean)
       : [],
-    // Dải tin cậy trên tên sản phẩm (V233) — danh sách badge {content, contentEn} per-product.
-    // PHẢI surface ở đây, nếu không form nạp undefined → mở SP trống → Lưu gửi [] → xoá mất dữ liệu.
-    trustBadges: Array.isArray(source.trustBadges)
-      ? source.trustBadges
-          .map((b) => (b && typeof b === 'object'
-            ? { content: toTrimmedString(b.content), contentEn: toTrimmedString(b.contentEn) || undefined }
-            : null))
-          .filter((b) => b && b.content)
-      : [],
     // "Dán mã HTML" cho 3 khối (V255/V256/V257) — web render HTML này thay bảng/lưới/dải có cấu trúc.
     // PHẢI surface ở đây: nếu không form admin nạp undefined → mở SP hiện trống → bấm Lưu gửi null
-    // → xoá mất HTML đã lưu (đúng anti-pattern đã ghi chú ở positiveNotes/trustBadges phía trên).
+    // → xoá mất HTML đã lưu (đúng anti-pattern đã ghi chú ở positiveNotes phía trên).
     specificationsHtml: toTrimmedString(source.specificationsHtml) || undefined,
     specStatsHtml: toTrimmedString(source.specStatsHtml) || undefined,
     trustBadgesHtml: toTrimmedString(source.trustBadgesHtml) || undefined,
@@ -514,8 +466,10 @@ export function normalizeProduct(input) {
     // the EN language tab; individual fields are undefined when not translated.
     translations: { en: normalizeProductTranslations(source.translations) },
     descriptionBlocks: Array.isArray(source.descriptionBlocks) ? source.descriptionBlocks : null,
-    // Cấu hình tab PDP theo sản phẩm (V231) — giữ nguyên để admin form hydrate; null = tab mặc định.
-    tabs: Array.isArray(source.tabs) ? source.tabs : null,
+    // "Phù hợp với ai" / "Bảng size" (V240/V246, tách khỏi descriptionBlocks ở V327/V328) — object
+    // đơn, không normalize sâu (khớp mức lỏng hiện có của descriptionBlocks).
+    suitabilitySection: source.suitabilitySection ?? null,
+    sizeGuideSection: source.sizeGuideSection ?? null,
     createdAt: toTrimmedString(source.createdAt) || undefined,
     updatedAt: toTrimmedString(source.updatedAt) || undefined,
   }

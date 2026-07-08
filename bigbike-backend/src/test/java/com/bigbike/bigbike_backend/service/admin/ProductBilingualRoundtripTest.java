@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.bigbike.bigbike_backend.api.admin.dto.FaqRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.ProductTranslationRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.SpecificationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
@@ -78,11 +77,6 @@ class ProductBilingualRoundtripTest {
                         .build();
         create.setTranslations(new ProductTranslationRequest(en));
 
-        SpecificationRequest spec = SpecificationRequest.builder()
-                .name("Trọng lượng").value("1500g").nameEn("Weight").valueEn("1500g")
-                .build();
-        create.setSpecifications(List.of(spec));
-
         FaqRequest faq = FaqRequest.builder()
                 .question("Bảo hành bao lâu?").answer("12 tháng")
                 .questionEn("How long is the warranty?").answerEn("12 months")
@@ -95,7 +89,6 @@ class ProductBilingualRoundtripTest {
         Product en1 = readRepository.findProductBySlug(saved.slug(), "en").orElseThrow();
         assertThat(en1.name()).isEqualTo("Full-face helmet");
         assertThat(en1.description()).isEqualTo("English description");
-        assertThat(en1.specifications().get(0).name()).isEqualTo("Weight");
         assertThat(en1.faqs().get(0).question()).isEqualTo("How long is the warranty?");
         // Public reads never expose the raw translations block.
         assertThat(en1.translations()).isNull();
@@ -104,15 +97,12 @@ class ProductBilingualRoundtripTest {
         Product vi = readRepository.findProductBySlug(saved.slug(), "vi").orElseThrow();
         assertThat(vi.name()).isEqualTo("Mũ bảo hiểm fullface");
         assertThat(vi.description()).isEqualTo("Mô tả tiếng Việt");
-        assertThat(vi.specifications().get(0).name()).isEqualTo("Trọng lượng");
 
         // Admin read — Vietnamese in main fields, English carried in translations / *En.
         Product admin = readRepository.findProductById(saved.id()).orElseThrow();
         assertThat(admin.name()).isEqualTo("Mũ bảo hiểm fullface");
         assertThat(admin.translations()).isNotNull();
         assertThat(admin.translations().en().name()).isEqualTo("Full-face helmet");
-        assertThat(admin.specifications().get(0).name()).isEqualTo("Trọng lượng");
-        assertThat(admin.specifications().get(0).nameEn()).isEqualTo("Weight");
         assertThat(admin.faqs().get(0).questionEn()).isEqualTo("How long is the warranty?");
     }
 

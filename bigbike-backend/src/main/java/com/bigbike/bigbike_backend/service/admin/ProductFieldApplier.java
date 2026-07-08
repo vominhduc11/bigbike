@@ -4,32 +4,26 @@ import com.bigbike.bigbike_backend.api.admin.dto.GalleryImageRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.ImageAssetRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.ProductTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SeoMetaRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.ProductTabRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.SpecificationRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.SpecStatRequest;
-import com.bigbike.bigbike_backend.domain.catalog.ProductTab;
 import com.bigbike.bigbike_backend.api.admin.dto.CommitmentRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.TrustBadgeRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.FaqRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.HighlightRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantOptionRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VideoRequest;
+import com.bigbike.bigbike_backend.domain.catalog.ProductCommitment;
+import com.bigbike.bigbike_backend.domain.catalog.ProductFaq;
+import com.bigbike.bigbike_backend.domain.catalog.ProductHighlight;
+import com.bigbike.bigbike_backend.domain.catalog.ProductHighlights;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGalleryImageEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecificationEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecStatEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductCommitmentEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductTrustBadgeEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductFaqEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductHighlightEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVideoEntity;
 import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -115,8 +109,6 @@ final class ProductFieldApplier {
         entity.setNameEn(en == null ? null : AdminMutationValidators.trimToNull(en.getName()));
         entity.setShortDescriptionEn(en == null ? null : AdminMutationValidators.trimToNull(en.getShortDescription()));
         entity.setDescriptionEn(en == null ? null : AdminMutationValidators.trimToNull(en.getDescription()));
-        entity.setPromotionContentEn(en == null ? null : AdminMutationValidators.trimToNull(en.getPromotionContent()));
-        entity.setInstallationGuideEn(en == null ? null : AdminMutationValidators.trimToNull(en.getInstallationGuide()));
         entity.setSizeGuideEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSizeGuide()));
         entity.setSuitabilityAdvisoryEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSuitabilityAdvisory()));
         entity.setSpecificationsHtmlEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSpecificationsHtml()));
@@ -128,110 +120,22 @@ final class ProductFieldApplier {
         entity.setOriginBrandCountryEn(en == null ? null : AdminMutationValidators.trimToNull(en.getOriginBrandCountry()));
     }
 
-    public static void applySpecifications(ProductEntity entity, List<SpecificationRequest> requests) {
-        List<ProductSpecificationEntity> existing = entity.getSpecifications();
-        if (existing == null) {
-            existing = new ArrayList<>();
-            entity.setSpecifications(existing);
-        }
-        existing.clear();
-        for (int i = 0; i < requests.size(); i++) {
-            SpecificationRequest req = requests.get(i);
-            String name = AdminMutationValidators.trimToNull(req.getName());
-            String value = AdminMutationValidators.trimToNull(req.getValue());
-            if (name == null || value == null) continue;
-            ProductSpecificationEntity spec = new ProductSpecificationEntity();
-            spec.setProduct(entity);
-            spec.setSortOrder(req.getSortOrder() != null ? req.getSortOrder() : i);
-            spec.setName(name);
-            spec.setValue(value);
-            spec.setGroupName(AdminMutationValidators.trimToNull(req.getGroupName()));
-            spec.setNameEn(AdminMutationValidators.trimToNull(req.getNameEn()));
-            spec.setValueEn(AdminMutationValidators.trimToNull(req.getValueEn()));
-            spec.setGroupNameEn(AdminMutationValidators.trimToNull(req.getGroupNameEn()));
-            existing.add(spec);
-        }
-    }
-
-    /**
-     * "Specs Dashboard" stat boxes (V235) — full-replace like {@code specifications}.
-     * Rows with a blank value or label are dropped; max 4 enforced at the DTO boundary.
-     */
-    public static void applySpecStats(ProductEntity entity, List<SpecStatRequest> requests) {
-        List<ProductSpecStatEntity> existing = entity.getSpecStats();
-        if (existing == null) {
-            existing = new ArrayList<>();
-            entity.setSpecStats(existing);
-        }
-        existing.clear();
-        for (int i = 0; i < requests.size(); i++) {
-            SpecStatRequest req = requests.get(i);
-            String value = AdminMutationValidators.trimToNull(req.getValue());
-            String label = AdminMutationValidators.trimToNull(req.getLabel());
-            if (value == null || label == null) continue;
-            ProductSpecStatEntity stat = new ProductSpecStatEntity();
-            stat.setProduct(entity);
-            stat.setSortOrder(req.getSortOrder() != null ? req.getSortOrder() : i);
-            stat.setValue(value);
-            stat.setLabel(label);
-            stat.setValueEn(AdminMutationValidators.trimToNull(req.getValueEn()));
-            stat.setLabelEn(AdminMutationValidators.trimToNull(req.getLabelEn()));
-            existing.add(stat);
-        }
-    }
-
-    /**
-     * Chuyển danh sách tab từ request thành cấu hình lưu trữ (V231). Lưu canonical: label/blocks = vi,
-     * labelEn/blocksEn = en. Tab thiếu type bị bỏ. Trả {@code null} khi rỗng (sản phẩm dùng tab mặc định).
-     */
-    public static List<ProductTab> mapTabs(List<ProductTabRequest> requests) {
-        if (requests == null || requests.isEmpty()) return null;
-        List<ProductTab> out = new ArrayList<>();
-        for (int i = 0; i < requests.size(); i++) {
-            ProductTabRequest r = requests.get(i);
-            String type = AdminMutationValidators.trimToNull(r.getType());
-            if (type == null) continue;
-            String id = AdminMutationValidators.trimToNull(r.getId());
-            boolean custom = "custom".equals(type);
-            out.add(new ProductTab(
-                    id != null ? id : type,
-                    type,
-                    r.isEnabled(),
-                    r.getSortOrder() != null ? r.getSortOrder() : i,
-                    AdminMutationValidators.trimToNull(r.getLabel()),
-                    AdminMutationValidators.trimToNull(r.getLabelEn()),
-                    custom ? emptyToNull(r.getBlocks()) : null,
-                    custom ? emptyToNull(r.getBlocksEn()) : null
-            ));
-        }
-        return out.isEmpty() ? null : out;
-    }
-
-    public static <T> List<T> emptyToNull(List<T> list) {
-        return list == null || list.isEmpty() ? null : list;
-    }
-
     public static void applyFaqs(ProductEntity entity, List<FaqRequest> requests) {
-        List<ProductFaqEntity> existing = entity.getFaqs();
-        if (existing == null) {
-            existing = new ArrayList<>();
-            entity.setFaqs(existing);
-        }
-        existing.clear();
-        for (int i = 0; i < requests.size(); i++) {
-            FaqRequest req = requests.get(i);
+        List<Indexed<FaqRequest>> ordered = ordered(requests, FaqRequest::getSortOrder);
+        List<ProductFaq> faqs = new ArrayList<>();
+        for (Indexed<FaqRequest> item : ordered) {
+            FaqRequest req = item.value();
             String question = AdminMutationValidators.trimToNull(req.getQuestion());
             String answer = AdminMutationValidators.trimToNull(req.getAnswer());
             if (question == null || answer == null) continue;
-            ProductFaqEntity faq = new ProductFaqEntity();
-            faq.setProduct(entity);
-            faq.setSortOrder(req.getSortOrder() != null ? req.getSortOrder() : i);
-            faq.setQuestion(question);
-            faq.setAnswer(answer);
-            faq.setQuestionEn(AdminMutationValidators.trimToNull(req.getQuestionEn()));
-            faq.setAnswerEn(AdminMutationValidators.trimToNull(req.getAnswerEn()));
-            existing.add(faq);
+            faqs.add(new ProductFaq(
+                    question,
+                    answer,
+                    AdminMutationValidators.trimToNull(req.getQuestionEn()),
+                    AdminMutationValidators.trimToNull(req.getAnswerEn())
+            ));
         }
+        entity.setFaqs(faqs);
     }
 
     /** Fallback icon key when admin leaves it blank — matches the web default. */
@@ -242,96 +146,78 @@ final class ProductFieldApplier {
      * with a blank title are dropped; a blank icon falls back to the web default.
      */
     public static void applyCommitments(ProductEntity entity, List<CommitmentRequest> requests) {
-        List<ProductCommitmentEntity> existing = entity.getCommitments();
-        if (existing == null) {
-            existing = new ArrayList<>();
-            entity.setCommitments(existing);
-        }
-        existing.clear();
-        for (int i = 0; i < requests.size(); i++) {
-            CommitmentRequest req = requests.get(i);
+        List<Indexed<CommitmentRequest>> ordered = ordered(requests, CommitmentRequest::getSortOrder);
+        List<ProductCommitment> commitments = new ArrayList<>();
+        for (Indexed<CommitmentRequest> item : ordered) {
+            CommitmentRequest req = item.value();
             String title = AdminMutationValidators.trimToNull(req.getTitle());
             if (title == null) continue;
             String icon = AdminMutationValidators.trimToNull(req.getIcon());
-            ProductCommitmentEntity commitment = new ProductCommitmentEntity();
-            commitment.setProduct(entity);
-            commitment.setSortOrder(req.getSortOrder() != null ? req.getSortOrder() : i);
-            commitment.setIcon(icon != null ? icon : COMMITMENT_DEFAULT_ICON);
-            commitment.setTitle(title);
-            commitment.setSubtitle(AdminMutationValidators.trimToNull(req.getSubtitle()));
-            commitment.setTitleEn(AdminMutationValidators.trimToNull(req.getTitleEn()));
-            commitment.setSubtitleEn(AdminMutationValidators.trimToNull(req.getSubtitleEn()));
-            existing.add(commitment);
+            commitments.add(new ProductCommitment(
+                    icon != null ? icon : COMMITMENT_DEFAULT_ICON,
+                    title,
+                    AdminMutationValidators.trimToNull(req.getSubtitle()),
+                    AdminMutationValidators.trimToNull(req.getTitleEn()),
+                    AdminMutationValidators.trimToNull(req.getSubtitleEn())
+            ));
         }
+        entity.setCommitments(commitments);
     }
 
     /**
-     * Per-product trust badges (V233) — full-replace like {@code commitments}.
-     * Rows with a blank content are dropped.
-     */
-    public static void applyTrustBadges(ProductEntity entity, List<TrustBadgeRequest> requests) {
-        List<ProductTrustBadgeEntity> existing = entity.getTrustBadges();
-        if (existing == null) {
-            existing = new ArrayList<>();
-            entity.setTrustBadges(existing);
-        }
-        existing.clear();
-        for (int i = 0; i < requests.size(); i++) {
-            TrustBadgeRequest req = requests.get(i);
-            String content = AdminMutationValidators.trimToNull(req.getContent());
-            if (content == null) continue;
-            ProductTrustBadgeEntity badge = new ProductTrustBadgeEntity();
-            badge.setProduct(entity);
-            badge.setSortOrder(req.getSortOrder() != null ? req.getSortOrder() : i);
-            badge.setContent(content);
-            badge.setContentEn(AdminMutationValidators.trimToNull(req.getContentEn()));
-            existing.add(badge);
-        }
-    }
-
-    /**
-     * Ưu/Nhược điểm (V175) — cùng bảng con phân biệt bằng {@code kind}. Mỗi nhóm
-     * full-replace ĐỘC LẬP: chỉ thay nhóm có mặt trong request, giữ nguyên nhóm
-     * kia (null = không đụng). Mục {@code content} blank bị bỏ qua.
+     * Ưu/Nhược điểm (V175) — lưu JSONB trên products.highlights. Mỗi nhóm full-replace
+     * ĐỘC LẬP: chỉ thay nhóm có mặt trong request, giữ nguyên nhóm kia (null = không đụng).
      */
     public static void applyHighlights(
             ProductEntity entity,
             List<HighlightRequest> positives,
             List<HighlightRequest> negatives
     ) {
-        List<ProductHighlightEntity> existing = entity.getHighlights();
-        if (existing == null) {
-            existing = new ArrayList<>();
-            entity.setHighlights(existing);
-        }
-        if (positives != null) {
-            existing.removeIf(h -> ProductHighlightEntity.KIND_PRO.equals(h.getKind()));
-            appendHighlights(entity, existing, positives, ProductHighlightEntity.KIND_PRO);
-        }
-        if (negatives != null) {
-            existing.removeIf(h -> ProductHighlightEntity.KIND_CON.equals(h.getKind()));
-            appendHighlights(entity, existing, negatives, ProductHighlightEntity.KIND_CON);
-        }
+        ProductHighlights current = entity.getHighlights();
+        List<ProductHighlight> currentPositive = current == null || current.positiveNotes() == null
+                ? List.of()
+                : current.positiveNotes();
+        List<ProductHighlight> currentNegative = current == null || current.negativeNotes() == null
+                ? List.of()
+                : current.negativeNotes();
+        entity.setHighlights(new ProductHighlights(
+                positives == null ? currentPositive : toHighlights(positives),
+                negatives == null ? currentNegative : toHighlights(negatives)
+        ));
     }
 
-    public static void appendHighlights(
-            ProductEntity entity,
-            List<ProductHighlightEntity> target,
-            List<HighlightRequest> requests,
-            String kind
-    ) {
-        for (int i = 0; i < requests.size(); i++) {
-            HighlightRequest req = requests.get(i);
+    private static List<ProductHighlight> toHighlights(List<HighlightRequest> requests) {
+        List<Indexed<HighlightRequest>> ordered = ordered(requests, HighlightRequest::getSortOrder);
+        List<ProductHighlight> highlights = new ArrayList<>();
+        for (Indexed<HighlightRequest> item : ordered) {
+            HighlightRequest req = item.value();
             String content = AdminMutationValidators.trimToNull(req.getContent());
             if (content == null) continue;
-            ProductHighlightEntity highlight = new ProductHighlightEntity();
-            highlight.setProduct(entity);
-            highlight.setKind(kind);
-            highlight.setSortOrder(req.getSortOrder() != null ? req.getSortOrder() : i);
-            highlight.setContent(content);
-            highlight.setContentEn(AdminMutationValidators.trimToNull(req.getContentEn()));
-            target.add(highlight);
+            highlights.add(new ProductHighlight(content, AdminMutationValidators.trimToNull(req.getContentEn())));
         }
+        return highlights;
+    }
+
+    private record Indexed<T>(T value, int index, Integer sortOrder) {
+    }
+
+    private interface SortOrderReader<T> {
+        Integer sortOrder(T value);
+    }
+
+    private static <T> List<Indexed<T>> ordered(List<T> requests, SortOrderReader<T> sortOrderReader) {
+        if (requests == null || requests.isEmpty()) {
+            return List.of();
+        }
+        List<Indexed<T>> indexed = new ArrayList<>();
+        for (int i = 0; i < requests.size(); i++) {
+            T request = requests.get(i);
+            indexed.add(new Indexed<>(request, i, sortOrderReader.sortOrder(request)));
+        }
+        indexed.sort(Comparator
+                .comparing((Indexed<T> item) -> item.sortOrder() == null ? item.index() : item.sortOrder())
+                .thenComparingInt(Indexed::index));
+        return indexed;
     }
 
     public static boolean hasGalleryRequests(List<GalleryImageRequest> requests) {

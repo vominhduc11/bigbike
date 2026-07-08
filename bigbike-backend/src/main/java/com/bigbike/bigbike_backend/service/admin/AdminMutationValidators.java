@@ -7,6 +7,7 @@ import com.bigbike.bigbike_backend.api.error.PublishGateException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.math.BigDecimal;
@@ -200,9 +201,12 @@ final class AdminMutationValidators {
     /**
      * Collects every media URL already present in a stored block list — structured
      * {@code ImageBlock}/{@code FeatureBlock} urls plus inline {@code <img src>} inside raw-HTML
-     * block fields (paragraph/callout/feature/suitability/sizeGuide). Used to grandfather legacy
-     * hotlinks when a product/article is edited, mirroring the gallery/video legacy tolerance
-     * (MEDIA_RULE_002 / MEDIA_RULE_003) so old imported content stays editable.
+     * block fields (paragraph/callout/feature), VI **and** EN (V326: each block carries both
+     * languages inline, so a pasted image can hide in either {@code html} or {@code htmlEn}). Used to
+     * grandfather legacy hotlinks when a product/article is edited, mirroring the gallery/video
+     * legacy tolerance (MEDIA_RULE_002 / MEDIA_RULE_003) so old imported content stays editable.
+     * Since V327/V328, {@code suitability}/{@code sizeGuide} are no longer block types here — see
+     * {@link #suitabilitySectionMediaUrls} / {@link #sizeGuideSectionMediaUrls} for their own scan.
      */
     static Set<String> collectBlockMediaUrls(List<DescriptionBlock> blocks) {
         Set<String> urls = new HashSet<>();
@@ -222,11 +226,12 @@ final class AdminMutationValidators {
                 }
             }
             urls.addAll(extractInlineImageSrcs(blockRawHtml(block)));
+            urls.addAll(extractInlineImageSrcs(blockRawHtmlEn(block)));
         }
         return urls;
     }
 
-    /** Raw-HTML payload of the block types that carry free HTML, or {@code null} for the rest. */
+    /** Raw-HTML (VI) payload of the block types that carry free HTML, or {@code null} for the rest. */
     static String blockRawHtml(DescriptionBlock block) {
         if (block instanceof DescriptionBlock.ParagraphBlock b) {
             return b.getHtml();
@@ -237,13 +242,43 @@ final class AdminMutationValidators {
         if (block instanceof DescriptionBlock.FeatureBlock b) {
             return b.getHtml();
         }
-        if (block instanceof DescriptionBlock.SuitabilityBlock b) {
-            return b.getHtml();
+        return null;
+    }
+
+    /** English sibling of {@link #blockRawHtml} (V326 inline bilingual fields), or {@code null}. */
+    static String blockRawHtmlEn(DescriptionBlock block) {
+        if (block instanceof DescriptionBlock.ParagraphBlock b) {
+            return b.getHtmlEn();
         }
-        if (block instanceof DescriptionBlock.SizeGuideBlock b) {
-            return b.getHtml();
+        if (block instanceof DescriptionBlock.CalloutBlock b) {
+            return b.getHtmlEn();
+        }
+        if (block instanceof DescriptionBlock.FeatureBlock b) {
+            return b.getHtmlEn();
         }
         return null;
+    }
+
+    /**
+     * Media URLs already present in the standalone "Phù hợp với ai" field (V327/V328) — the
+     * {@code html}/{@code htmlEn} free-HTML source, used to grandfather legacy hotlinks the same
+     * way {@link #collectBlockMediaUrls} does for the 4 remaining descriptionBlocks types.
+     */
+    static Set<String> suitabilitySectionMediaUrls(com.bigbike.bigbike_backend.domain.catalog.SuitabilitySection section) {
+        Set<String> urls = new HashSet<>();
+        if (section == null) return urls;
+        urls.addAll(extractInlineImageSrcs(section.getHtml()));
+        urls.addAll(extractInlineImageSrcs(section.getHtmlEn()));
+        return urls;
+    }
+
+    /** Same as {@link #suitabilitySectionMediaUrls} but for the standalone "Bảng size" field. */
+    static Set<String> sizeGuideSectionMediaUrls(com.bigbike.bigbike_backend.domain.catalog.SizeGuideSection section) {
+        Set<String> urls = new HashSet<>();
+        if (section == null) return urls;
+        urls.addAll(extractInlineImageSrcs(section.getHtml()));
+        urls.addAll(extractInlineImageSrcs(section.getHtmlEn()));
+        return urls;
     }
 
     /** All inline {@code <img src>} values in a raw-HTML fragment (empty set when blank). */
@@ -300,43 +335,29 @@ final class AdminMutationValidators {
             return;
         }
 
-        // ARCHIVED, PENDING and PRIVATE are legacy/WordPress-import values.
-        // They are NOT valid target states for admin API mutations.
-        // Use HIDDEN for non-public products/content, DRAFT for unpublished.
-        if (to == PublishStatus.ARCHIVED || to == PublishStatus.PENDING || to == PublishStatus.PRIVATE) {
+        // HIDDEN/ARCHIVED/PENDING/PRIVATE are legacy values (WordPress import artifacts, plus the
+        // former active HIDDEN state, retired 2026-07-07). None are valid target states for admin
+        // API mutations.
+        if (to.isLegacy()) {
             errors.add(new ApiErrorDetail(
                     field,
                     "RESERVED_PUBLISH_STATUS",
                     "Publish status " + to + " is reserved and cannot be set via the admin API. " +
-                    "Use DRAFT for unpublished content or HIDDEN for suppressed content."
+                    "Use DRAFT for unpublished content."
             ));
             return;
         }
 
-        // Active transitions: DRAFT ↔ PUBLISHED ↔ HIDDEN, all → TRASH, TRASH → DRAFT.
-        // Legacy source states (ARCHIVED/PENDING/PRIVATE) still have escape paths so
-        // any remaining DB records can be moved to active states.
+        // Active transitions: DRAFT <-> PUBLISHED (both directions), both -> TRASH, TRASH -> DRAFT.
+        // Legacy source states (HIDDEN/ARCHIVED/PENDING/PRIVATE) share one consistent escape path:
+        // DRAFT, or straight to TRASH like any other active state — so any remaining pre-migration
+        // DB record can still be edited or soft-deleted.
         boolean allowed = switch (from) {
-            case DRAFT -> to == PublishStatus.PUBLISHED
-                    || to == PublishStatus.HIDDEN
-                    || to == PublishStatus.TRASH;
-            case PUBLISHED -> to == PublishStatus.HIDDEN
-                    || to == PublishStatus.TRASH;
-            case HIDDEN -> to == PublishStatus.PUBLISHED
-                    || to == PublishStatus.DRAFT
-                    || to == PublishStatus.TRASH;
+            case DRAFT -> to == PublishStatus.PUBLISHED || to == PublishStatus.TRASH;
+            case PUBLISHED -> to == PublishStatus.DRAFT || to == PublishStatus.TRASH;
             case TRASH -> to == PublishStatus.DRAFT;
-            // Legacy escape paths — allow moving remaining DB records to active states
-            case ARCHIVED -> to == PublishStatus.HIDDEN
-                    || to == PublishStatus.DRAFT
-                    || to == PublishStatus.TRASH;
-            case PENDING -> to == PublishStatus.PUBLISHED
-                    || to == PublishStatus.DRAFT
-                    || to == PublishStatus.TRASH;
-            case PRIVATE -> to == PublishStatus.PUBLISHED
-                    || to == PublishStatus.DRAFT
-                    || to == PublishStatus.HIDDEN
-                    || to == PublishStatus.TRASH;
+            case HIDDEN, ARCHIVED, PENDING, PRIVATE ->
+                    to == PublishStatus.DRAFT || to == PublishStatus.TRASH;
         };
 
         if (!allowed) {
@@ -354,22 +375,85 @@ final class AdminMutationValidators {
         }
     }
 
-    static void validatePublishReadiness(ProductEntity entity, List<ApiErrorDetail> errors) {
+    /**
+     * PRODUCT_RULE_005 — required-field matrix, branched on has-variants and on whether
+     * images are required (publish) or not (draft). Runs post-merge (after {@code
+     * applyProductPatch}/{@code applyVariants}), so {@code entity} already reflects the
+     * final PATCH-merged state. Called from {@code createProduct}/{@code updateProduct}
+     * (requireImages = target status is PUBLISHED) and {@code updateProductPublishStatus}
+     * (requireImages = true, via {@link #validatePublishReadiness}).
+     */
+    static void validateProductFieldsRequired(ProductEntity entity, boolean requireImages, List<ApiErrorDetail> errors) {
         if (trimToNull(entity.getName()) == null) {
-            errors.add(new ApiErrorDetail("name", REQUIRED, "Product name is required to publish."));
+            errors.add(new ApiErrorDetail("name", REQUIRED, "Product name is required."));
+        }
+        if (trimToNull(entity.getSlug()) == null) {
+            errors.add(new ApiErrorDetail("slug", REQUIRED, "Slug is required."));
         }
         if (entity.getCategory() == null) {
-            errors.add(new ApiErrorDetail("categoryId", REQUIRED, "Category is required to publish."));
+            errors.add(new ApiErrorDetail("categoryId", REQUIRED, "Category is required."));
         }
         if (entity.getBrand() == null) {
-            errors.add(new ApiErrorDetail("brandId", REQUIRED, "Brand is required to publish."));
+            errors.add(new ApiErrorDetail("brandId", REQUIRED, "Brand is required."));
         }
-        if (trimToNull(entity.getImageUrl()) == null && trimToNull(entity.getImageId()) == null) {
+        if (trimToNull(entity.getGender()) == null) {
+            errors.add(new ApiErrorDetail("gender", REQUIRED, "Gender is required."));
+        }
+
+        boolean hasVariants = entity.getVariants() != null && !entity.getVariants().isEmpty();
+
+        if (!hasVariants) {
+            if (trimToNull(entity.getSku()) == null) {
+                errors.add(new ApiErrorDetail("sku", REQUIRED, "SKU is required when the product has no variants."));
+            }
+            if (entity.getRetailPrice() == null || entity.getRetailPrice().compareTo(BigDecimal.ZERO) <= 0) {
+                errors.add(new ApiErrorDetail(
+                        "retailPrice", REQUIRED, "Retail price must be greater than 0 when the product has no variants."));
+            }
+        }
+
+        if (requireImages && trimToNull(entity.getImageUrl()) == null && trimToNull(entity.getImageId()) == null) {
             errors.add(new ApiErrorDetail("imageUrl", REQUIRED, "A main product image is required to publish."));
         }
-        if (entity.getRetailPrice() == null || entity.getRetailPrice().compareTo(BigDecimal.ZERO) <= 0) {
-            errors.add(new ApiErrorDetail("retailPrice", REQUIRED, "Retail price must be greater than 0 to publish."));
+
+        if (hasVariants) {
+            // Owner decision 2026-07-07 (PRODUCT_RULE_013): the product's own retailPrice, when
+            // valid, is the shared/default price a variant without its own retailPrice falls back to
+            // (VariantPricing.regularPrice/salePrice) — so per-variant retailPrice is only required
+            // when the product has no such shared price to fall back to.
+            boolean hasSharedPrice = entity.getRetailPrice() != null && entity.getRetailPrice().compareTo(BigDecimal.ZERO) > 0;
+            validateVariantFieldsRequired(entity.getVariants(), requireImages, hasSharedPrice, errors);
         }
+    }
+
+    private static void validateVariantFieldsRequired(
+            List<ProductVariantEntity> variants, boolean requireImages, boolean hasSharedPrice,
+            List<ApiErrorDetail> errors) {
+        for (int i = 0; i < variants.size(); i++) {
+            ProductVariantEntity variant = variants.get(i);
+            String prefix = "variants[" + i + "].";
+            if (trimToNull(variant.getSku()) == null) {
+                errors.add(new ApiErrorDetail(prefix + "sku", REQUIRED, "Variant SKU is required."));
+            }
+            boolean hasOwnRetailPrice = variant.getRetailPrice() != null && variant.getRetailPrice().compareTo(BigDecimal.ZERO) > 0;
+            if (!hasOwnRetailPrice && !hasSharedPrice) {
+                errors.add(new ApiErrorDetail(prefix + "retailPrice", REQUIRED, "Variant retail price must be greater than 0."));
+            }
+            // A variant with no retailPrice of its own is not "self-priced" (VariantPricing.
+            // hasOwnPrice) — it always falls back to the product's whole price pair, so a salePrice
+            // submitted alone would be silently ignored rather than applied.
+            if (!hasOwnRetailPrice && variant.getSalePrice() != null) {
+                errors.add(new ApiErrorDetail(prefix + "salePrice", "INVALID_VALUE",
+                        "salePrice cannot be set on a variant that has no retailPrice of its own."));
+            }
+            if (requireImages && trimToNull(variant.getImageUrl()) == null) {
+                errors.add(new ApiErrorDetail(prefix + "imageUrl", REQUIRED, "A variant color image is required to publish."));
+            }
+        }
+    }
+
+    static void validatePublishReadiness(ProductEntity entity, List<ApiErrorDetail> errors) {
+        validateProductFieldsRequired(entity, true, errors);
     }
 
     static void throwIfPublishErrors(List<ApiErrorDetail> errors) {

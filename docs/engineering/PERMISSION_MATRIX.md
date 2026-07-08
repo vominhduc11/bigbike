@@ -16,6 +16,16 @@
 
 `inventory.*` is listed in `PermissionCatalog` (`roles.groupProducts`), so it is grantable to custom roles via the Roles UI.
 
+### Media Library permissions
+
+| Permission | Granted roles (seed) | Endpoint | Evidence |
+|---|---|---|---|
+| `media.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `EDITOR` | `GET /api/v1/admin/media/**` (list, stats, tags, references, detail) | `V49__create_roles_permissions_tables.sql`, `AdminMediaController.java` |
+| `media.write` | `SUPER_ADMIN` (wildcard), `ADMIN`, `EDITOR` | `POST/PUT/DELETE /api/v1/admin/media/**` (upload, bulk-move, bulk soft-delete, bulk-restore, update, replace, soft-delete, restore) | `V49__create_roles_permissions_tables.sql`, `AdminMediaController.java` |
+| `*` (wildcard — `SUPER_ADMIN` only) | `SUPER_ADMIN` | `POST /api/v1/admin/media/bulk-hard-delete`, `DELETE /api/v1/admin/media/{mediaId}?permanent=true` | `AdminMediaController.java` (`requirePermission("*")`, separate from and stricter than `media.write` — permanent/irreversible delete is gated to the top tier only) |
+
+`SHOP_MANAGER` does **not** hold `media.read`/`media.write` (not seeded in `V49`) — it cannot access the Media Library at all.
+
 ### Catalog / Product permissions
 
 | Permission | Granted roles (seed) | Endpoints | Evidence |
@@ -116,9 +126,8 @@ Status: `CONFIRMED_FROM_CODE` — `AdminAuthService.java`, `AdminLoginAttemptSer
 
 | Channel | Access rule | Status | Evidence |
 |---|---|---|---|
-| `/ws` STOMP CONNECT | native `Authorization` bearer token required | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java` |
-| Admin order topic | only admin connections allowed to connect; current client subscribes to `/topic/admin/orders` | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java`, `adminWebSocket.js` |
-| Allowed WS roles | `ADMIN`, `SUPER_ADMIN` | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java` |
+| `/ws` STOMP CONNECT | native `Authorization` bearer token required; admin account must be `ACTIVE` (DB-driven, cached, evicted on write — see `AdminAccountStatusService`) | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java` |
+| Admin order topic | Requires the `orders.read` permission (DB-driven via `AdminPermissionService.getPermissionsForRole`), not a hardcoded role — any role granted `orders.read` (e.g. `SHOP_MANAGER`) can connect. Rechecked on **both** CONNECT and every SUBSCRIBE, not just at connect time, so a mid-session permission/status change cuts the admin off on their next subscribe. Client subscribes to `/topic/admin/orders`. | `CONFIRMED_FROM_CODE` (fixed 2026-07-06 — previously hardcoded to `ADMIN`/`SUPER_ADMIN` roles and only checked at CONNECT) | `WebSocketConfig.java`, `adminWebSocket.js` |
 
 ## Internal Redirect Caveat
 

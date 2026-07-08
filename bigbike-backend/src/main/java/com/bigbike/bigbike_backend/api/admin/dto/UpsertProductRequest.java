@@ -3,6 +3,8 @@ package com.bigbike.bigbike_backend.api.admin.dto;
 import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.domain.catalog.SizeGuideSection;
+import com.bigbike.bigbike_backend.domain.catalog.SuitabilitySection;
 import lombok.Getter;
 import lombok.Setter;
 import jakarta.validation.Valid;
@@ -64,14 +66,6 @@ public class UpsertProductRequest {
     // They are intentionally absent from this request DTO. Sending them in JSON is ignored
     // because Jackson will find no matching setter. Phase 2D handles rating recomputation.
 
-    @Size(max = 50000, message = "Promotion content is too long.")
-    private String promotionContent;
-    private boolean promotionContentPresent = false;
-
-    @Size(max = 50000, message = "Installation guide is too long.")
-    private String installationGuide;
-    private boolean installationGuidePresent = false;
-
     // pdp_shipping_line / pdp_return_line (V247) gỡ khỏi DTO ở V249; warranty_months /
     // warranty_scope (V175) gỡ hẳn ở V266 cùng module bảo hành. Khối "Mua tại BigBike.vn"
     // từng có field purchaseLines (V249) cũng đã gỡ hẳn ở V276 — khối giờ thuần tự động trên web.
@@ -83,12 +77,6 @@ public class UpsertProductRequest {
     @Size(max = 20000, message = "Size guide is too long.")
     private String sizeGuide;
     private boolean sizeGuidePresent = false;
-
-    // "Hiển thị trên web" (V245) — opaque JSON string {sectionKey: boolean}. Admin serialize, backend lưu
-    // nguyên (như size_guide). Presence-flag: bỏ key → giữ nguyên; gửi null/blank → xoá cấu hình (về legacy).
-    @Size(max = 4000, message = "Section visibility is too long.")
-    private String sectionVisibility;
-    private boolean sectionVisibilityPresent = false;
 
     // "Phù hợp với ai" — JSON array các thẻ [{audience, advice, linkLabel?, linkUrl?}] (V240).
     // Admin serialize JSON; backend lưu opaque (như size_guide). Giới hạn độ dài tổng chuỗi JSON.
@@ -143,15 +131,6 @@ public class UpsertProductRequest {
     private List<VideoRequest> videos;
 
     @Valid
-    @Size(max = 100, message = "Specifications may not have more than 100 items.")
-    private List<SpecificationRequest> specifications;
-
-    /** "Specs Dashboard" stat boxes under the buy area (V235), max 4. Selling-point figures, not specs. */
-    @Valid
-    @Size(max = 4, message = "Spec stats may not have more than 4 items.")
-    private List<SpecStatRequest> specStats;
-
-    @Valid
     @Size(max = 50, message = "FAQs may not have more than 50 items.")
     private List<FaqRequest> faqs;
 
@@ -160,16 +139,7 @@ public class UpsertProductRequest {
     private List<CommitmentRequest> commitments;
 
     @Valid
-    @Size(max = 12, message = "Trust badges may not have more than 12 items.")
-    private List<TrustBadgeRequest> trustBadges;
-
-    @Valid
-    @Size(max = 20, message = "Pros may not have more than 20 items.")
-    private List<HighlightRequest> positiveNotes;
-
-    @Valid
-    @Size(max = 20, message = "Cons may not have more than 20 items.")
-    private List<HighlightRequest> negativeNotes;
+    private HighlightsRequest highlights;
 
     @Valid
     @Size(max = 200, message = "Variants may not have more than 200 items.")
@@ -192,35 +162,25 @@ public class UpsertProductRequest {
     private List<String> accessoryProductIds;
 
     /**
-     * Structured description blocks (V139). Presence-flag pattern:
-     * sending this key (including []) triggers rendering and overwrites both
-     * description_blocks and description. Omitting the key leaves both untouched.
+     * Structured description blocks (V139). Each block carries both languages inline in its own
+     * {@code *En} sibling fields (V326 merge) — there is no separate English array anymore.
+     * Presence-flag pattern: sending this key (including []) triggers rendering and overwrites
+     * {@code description}/{@code description_en}. Omitting the key leaves both untouched.
      */
     @Valid
     @Size(max = 200, message = "descriptionBlocks may not have more than 200 items.")
     private List<DescriptionBlock> descriptionBlocks;
     private boolean descriptionBlocksPresent = false;
 
-    /**
-     * English structured description blocks (V229). Same presence-flag pattern as
-     * {@link #descriptionBlocks}: sending this key (including []) renders the blocks and overwrites
-     * both description_blocks_en and description_en. Omitting the key leaves the English columns
-     * (set via {@code translations.en.description}) untouched.
-     */
+    /** "Phù hợp với ai" (V240, tách khỏi descriptionBlocks ở V327/V328). Presence-flag: {@code null} clears it. */
     @Valid
-    @Size(max = 200, message = "descriptionBlocksEn may not have more than 200 items.")
-    private List<DescriptionBlock> descriptionBlocksEn;
-    private boolean descriptionBlocksEnPresent = false;
+    private SuitabilitySection suitabilitySection;
+    private boolean suitabilitySectionPresent = false;
 
-    /**
-     * Per-product PDP tab configuration (V231). Presence-flag pattern: sending the key (including [])
-     * replaces the stored config; omitting it leaves product_tabs untouched. Sending [] / null clears
-     * the override so the product falls back to the default tab set.
-     */
+    /** "Bảng size" (V246, tách khỏi descriptionBlocks ở V327/V328). Presence-flag: {@code null} clears it. */
     @Valid
-    @Size(max = 30, message = "tabs may not have more than 30 items.")
-    private List<ProductTabRequest> tabs;
-    private boolean tabsPresent = false;
+    private SizeGuideSection sizeGuideSection;
+    private boolean sizeGuideSectionPresent = false;
 
     public void setSku(String sku) {
         this.sku = sku;
@@ -247,16 +207,6 @@ public class UpsertProductRequest {
         this.homepageOrderPresent = true;
     }
 
-    public void setPromotionContent(String promotionContent) {
-        this.promotionContent = promotionContent;
-        this.promotionContentPresent = true;
-    }
-
-    public void setInstallationGuide(String installationGuide) {
-        this.installationGuide = installationGuide;
-        this.installationGuidePresent = true;
-    }
-
     public void setOriginBrandCountry(String originBrandCountry) {
         this.originBrandCountry = originBrandCountry;
         this.originBrandCountryPresent = true;
@@ -265,11 +215,6 @@ public class UpsertProductRequest {
     public void setSizeGuide(String sizeGuide) {
         this.sizeGuide = sizeGuide;
         this.sizeGuidePresent = true;
-    }
-
-    public void setSectionVisibility(String sectionVisibility) {
-        this.sectionVisibility = sectionVisibility;
-        this.sectionVisibilityPresent = true;
     }
 
     public void setSuitabilityAdvisory(String suitabilityAdvisory) {
@@ -317,14 +262,15 @@ public class UpsertProductRequest {
         this.descriptionBlocksPresent = true;
     }
 
-    public void setDescriptionBlocksEn(List<DescriptionBlock> descriptionBlocksEn) {
-        this.descriptionBlocksEn = descriptionBlocksEn;
-        this.descriptionBlocksEnPresent = true;
+    public void setSuitabilitySection(SuitabilitySection suitabilitySection) {
+        this.suitabilitySection = suitabilitySection;
+        this.suitabilitySectionPresent = true;
     }
 
-    public void setTabs(List<ProductTabRequest> tabs) {
-        this.tabs = tabs;
-        this.tabsPresent = true;
+    public void setSizeGuideSection(SizeGuideSection sizeGuideSection) {
+        this.sizeGuideSection = sizeGuideSection;
+        this.sizeGuideSectionPresent = true;
     }
+
 }
 

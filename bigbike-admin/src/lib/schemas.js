@@ -69,15 +69,22 @@ function toInt(value) {
 export function createProductSchema(t, isCreate = false) {
   return z
     .object({
-      slug: isCreate ? slugField(t) : z.string().regex(SLUG_REGEX, t('products.detail.errSlugFormat')).optional().or(z.literal('')),
-      name: isCreate ? z.string().min(1, t('products.detail.errNameRequired')) : z.string().optional(),
-      categoryId: isCreate ? z.string().min(1, t('products.detail.errCategoryRequired')) : z.string().optional(),
-      // Khai báo để superRefine "bắt buộc khi tạo mới" nhìn thấy (z.object strip key lạ).
+      // PRODUCT_RULE_005 (2026-07-07) — name/slug/categoryId luôn bắt buộc (nháp lẫn xuất bản,
+      // tạo mới lẫn sửa) — không còn phân biệt theo isCreate.
+      slug: slugField(t),
+      name: z.string().min(1, t('products.detail.errNameRequired')),
+      categoryId: z.string().min(1, t('products.detail.errCategoryRequired')),
+      // Khai báo để superRefine nhìn thấy (z.object strip key lạ). Requiredness (chỉ khi
+      // không có biến thể) nằm ở superRefine.
       sku: z.string().optional(),
       brandId: z.string().optional(),
       gender: z.string().optional(),
       description: z.string().optional(),
       descriptionBlocks: z.array(z.any()).nullable().optional(),
+      // "Phù hợp với ai" / "Bảng size" (V240/V246, tách khỏi descriptionBlocks ở V327/V328) — object
+      // đơn, không validate cấu trúc sâu (khớp mức lỏng hiện có của descriptionBlocks).
+      suitabilitySection: z.any().nullable().optional(),
+      sizeGuideSection: z.any().nullable().optional(),
       shortDescription: z.string().optional(),
       // "Dán mã HTML" cho khối Thông số kỹ thuật (V255) — vi; bản en ở translations.en.
       specificationsHtml: z.string().max(50000, 'Mã HTML thông số tối đa 50000 ký tự.').nullable().optional(),
@@ -105,20 +112,6 @@ export function createProductSchema(t, isCreate = false) {
         title: z.string(),
         type: z.enum(['youtube', 'tiktok', 'facebook', 'upload']).optional(),
       })).max(20, 'Danh sách video tối đa 20 video.').optional(),
-      specifications: z.array(z.object({
-        _key: z.string().optional(),
-        name: z.string().max(255, 'Tên thông số tối đa 255 ký tự.'),
-        value: z.string().max(2000, 'Giá trị thông số tối đa 2000 ký tự.'),
-        groupName: z.string().max(100, 'Tên nhóm tối đa 100 ký tự.').optional(),
-      })).max(100, 'Thông số kỹ thuật tối đa 100 mục.').optional(),
-      // "Specs Dashboard" — ô số liệu nổi bật dưới khu vực mua hàng (V235); tối đa 4, song ngữ.
-      specStats: z.array(z.object({
-        _key: z.string().optional(),
-        value: z.string().max(60, 'Số liệu tối đa 60 ký tự.'),
-        label: z.string().max(80, 'Nhãn tối đa 80 ký tự.'),
-        valueEn: z.string().max(60).optional(),
-        labelEn: z.string().max(80).optional(),
-      })).max(4, 'Tối đa 4 ô số liệu nổi bật.').optional(),
       faqs: z.array(z.object({
         _key: z.string().optional(),
         question: z.string().max(500, 'Câu hỏi tối đa 500 ký tự.'),
@@ -136,17 +129,15 @@ export function createProductSchema(t, isCreate = false) {
         titleEn: z.string().max(200).optional(),
         subtitleEn: z.string().max(300).optional(),
       })).max(12, 'Cam kết tối đa 12 mục.').optional(),
-      // Dải tin cậy trên tên sản phẩm (V233) — badge {content}; bắt buộc ≥1 khi tạo mới (superRefine).
-      trustBadges: z.array(z.object({
-        _key: z.string().optional(),
-        content: z.string().max(120, 'Nhãn tin cậy tối đa 120 ký tự.').optional(),
-        contentEn: z.string().max(120).optional(),
-      })).max(12, 'Nhãn tin cậy tối đa 12 nhãn.').optional(),
       variants: z.array(z.object({
         name: z.string(),
         // PRODUCT_RULE_SKU_001 — required per-row when the variant is real (has a
         // name); enforced in superRefine so blank scratch rows aren't flagged.
         sku: z.string().optional(),
+        // PRODUCT_RULE_013 (2026-07-06) — required per-row when the variant is real;
+        // once a product has variants, variant price is authoritative for sale.
+        retailPrice: z.string().optional(),
+        salePrice: z.string().optional(),
         imageUrl: z.string().optional(),
         options: z.array(z.object({ name: z.string(), value: z.string() })).optional(),
         gallery: z.array(z.object({
@@ -191,35 +182,33 @@ export function createProductSchema(t, isCreate = false) {
       }).optional(),
     })
     .superRefine((data, ctx) => {
-      // Bắt buộc CHỈ KHI TẠO MỚI ở trạng thái PUBLISHED (không áp dụng khi sửa sản phẩm cũ hoặc lưu nháp).
-      // slug/name/categoryId đã bắt buộc ở khai báo field phía trên; ở đây thêm các trường còn lại.
-      if (isCreate && data.publishStatus === 'PUBLISHED') {
-        const req = (val, message, path) => {
-          if (!String(val ?? '').trim()) {
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message, path })
-          }
+      const req = (val, message, path) => {
+        if (!String(val ?? '').trim()) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message, path })
         }
+      }
+      // PRODUCT_RULE_005 (2026-07-07) — sản phẩm có biến thể khi có ≥1 dòng biến thể thật
+      // (đã đặt tên qua thuộc tính). Xác định 1 lần, dùng cho mọi nhánh bên dưới.
+      const hasVariants = (data.variants ?? []).some((v) => (v?.name ?? '').trim())
+
+      // Bắt buộc mọi lần lưu — nháp lẫn xuất bản, tạo mới lẫn sửa (không còn phân biệt isCreate).
+      req(data.brandId, t('products.detail.errBrandRequired', { defaultValue: 'Vui lòng chọn thương hiệu.' }), ['brandId'])
+      req(data.gender, t('products.detail.errGenderRequired', { defaultValue: 'Vui lòng chọn đối tượng (giới tính).' }), ['gender'])
+      // SKU cấp sản phẩm chỉ bắt buộc khi KHÔNG có biến thể (bắt buộc cả nháp lẫn xuất bản).
+      if (!hasVariants) {
         req(data.sku, t('products.detail.errSkuRequired', { defaultValue: 'Vui lòng nhập mã SKU sản phẩm.' }), ['sku'])
-        req(data.brandId, t('products.detail.errBrandRequired', { defaultValue: 'Vui lòng chọn thương hiệu.' }), ['brandId'])
-        req(data.gender, t('products.detail.errGenderRequired', { defaultValue: 'Vui lòng chọn đối tượng (giới tính).' }), ['gender'])
+      }
+      // Ảnh đại diện sản phẩm chỉ bắt buộc lúc XUẤT BẢN (không bắt buộc lúc lưu nháp).
+      if (data.publishStatus === 'PUBLISHED') {
         req(data.imageUrl, t('products.detail.errImageRequired', { defaultValue: 'Vui lòng chọn ảnh đại diện.' }), ['imageUrl'])
-        req(data.shortDescription, t('products.detail.errShortDescRequired', { defaultValue: 'Vui lòng nhập mô tả ngắn.' }), ['shortDescription'])
-        // PRODUCT_RULE_005/007 — mô tả chi tiết bắt buộc; "có nội dung" mirror đúng logic
-        // `desc.ok` trong getPublishReadiness (block editor rich content HOẶC plain text).
-        const hasDescription = Array.isArray(data.descriptionBlocks)
-          ? data.descriptionBlocks.length > 0
-          : (data.description?.trim().length ?? 0) > 0
-        if (!hasDescription) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errDescRequired', { defaultValue: 'Vui lòng nhập mô tả chi tiết.' }), path: ['description'] })
-        }
       }
 
       const retail = toInt(data.retailPrice)
       const sale = toInt(data.salePrice)
 
-      // retailPrice required on create — variant-level prices are no longer
-      // collected, so the parent product price is the single source of truth.
-      if (isCreate && retail === undefined) {
+      // Giá niêm yết cấp sản phẩm chỉ bắt buộc khi KHÔNG có biến thể (bắt buộc cả nháp lẫn
+      // xuất bản) — khi có biến thể, giá chuyển xuống từng biến thể (PRODUCT_RULE_013).
+      if (!hasVariants && retail === undefined) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errRetailPriceRequired'), path: ['retailPrice'] })
       }
       if (Number.isNaN(retail)) {
@@ -243,14 +232,47 @@ export function createProductSchema(t, isCreate = false) {
         const sku = (v?.sku ?? '').trim()
         if (name && !sku) {
           ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errVariantSkuRequired'), path: ['variants', i, 'sku'] })
-          return
         }
-        if (!sku) return
-        const key = sku.toLowerCase()
-        if (seenSku.has(key)) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errVariantSkuDuplicate'), path: ['variants', i, 'sku'] })
-        } else {
-          seenSku.set(key, i)
+        if (sku) {
+          const key = sku.toLowerCase()
+          if (seenSku.has(key)) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errVariantSkuDuplicate'), path: ['variants', i, 'sku'] })
+          } else {
+            seenSku.set(key, i)
+          }
+        }
+
+        // PRODUCT_RULE_013 (nới lỏng 2026-07-07) — một biến thể không tự có retailPrice sẽ dùng
+        // "giá chung" cấp sản phẩm (retailPrice/salePrice) làm mặc định — nên chỉ bắt buộc
+        // retailPrice riêng khi sản phẩm KHÔNG có giá chung hợp lệ. Mirrors backend
+        // CatalogRequestValidator/AdminMutationValidators.
+        if (name) {
+          const variantRetail = toInt(v?.retailPrice)
+          const variantSale = toInt(v?.salePrice)
+          const hasSharedRetail = Number.isInteger(retail) && retail > 0
+          if (variantRetail === undefined) {
+            if (!hasSharedRetail) {
+              ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.variant.errRetailPriceRequired'), path: ['variants', i, 'retailPrice'] })
+            }
+            // Biến thể không có retailPrice riêng thì không được coi là "tự có giá" — salePrice
+            // riêng của biến thể đó sẽ bị bỏ qua âm thầm (VariantPricing.hasOwnPrice), nên chặn
+            // ngay từ form thay vì để admin tưởng đã áp dụng.
+            if (variantSale !== undefined) {
+              ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.variant.errSalePriceNeedsOwnRetail'), path: ['variants', i, 'salePrice'] })
+            }
+          } else if (Number.isNaN(variantRetail)) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.variant.errRetailPriceInt'), path: ['variants', i, 'retailPrice'] })
+          }
+          if (Number.isNaN(variantSale)) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.variant.errSalePriceInt'), path: ['variants', i, 'salePrice'] })
+          }
+          if (Number.isInteger(variantSale) && Number.isInteger(variantRetail) && variantSale >= variantRetail) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.variant.errSalePriceHigh'), path: ['variants', i, 'salePrice'] })
+          }
+          // PRODUCT_RULE_005 — ảnh đại diện màu biến thể chỉ bắt buộc lúc XUẤT BẢN.
+          if (data.publishStatus === 'PUBLISHED' && !String(v?.imageUrl ?? '').trim()) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.variant.errImageRequired'), path: ['variants', i, 'imageUrl'] })
+          }
         }
       })
       // Short description quality: when filled, require enough text to be
@@ -335,16 +357,6 @@ export function createProductSchema(t, isCreate = false) {
       }
       // English URL slug (V214): optional; when filled must be valid kebab-case ≤ 100.
       validateEnSlug(t, en.slug, ctx)
-
-      // Specifications: rows that have any content must have both name and value.
-      data.specifications?.forEach((s, i) => {
-        const name = (s.name || '').trim()
-        const value = (s.value || '').trim()
-        const group = (s.groupName || '').trim()
-        if (!name && !value && !group) return
-        if (!name) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Vui lòng nhập tên thông số.', path: ['specifications', i, 'name'] })
-        if (!value) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Vui lòng nhập giá trị thông số.', path: ['specifications', i, 'value'] })
-      })
 
       // FAQs: rows that have any content must have both question and answer.
       data.faqs?.forEach((f, i) => {

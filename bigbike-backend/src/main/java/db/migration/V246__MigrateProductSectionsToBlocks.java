@@ -4,6 +4,8 @@ import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
 
@@ -35,6 +37,18 @@ import java.util.Map;
  *       (đã thôi đọc/ghi ở code; có thể drop ở migration sau khi đã kiểm chứng).</li>
  *   <li>Bản EN chỉ thêm khi có nội dung EN — tránh tạo bản dịch giả.</li>
  * </ul>
+ *
+ * <p><b>NOTE (V327/V328 follow-up):</b> {@code suitability}/{@code sizeGuide} block-building below
+ * was originally written against {@code DescriptionBlock.SuitabilityBlock}/{@code SizeGuideBlock}
+ * (removed from the sealed interface at V327/V328, which extracted these 2 types out of
+ * {@code description_blocks} into dedicated columns). Rewritten to build raw {@link ObjectNode}s
+ * instead so this migration still compiles AND still produces the correct
+ * {@code {"type":"suitability",...}} / {@code {"type":"sizeGuide",...}} JSON shape on a from-scratch
+ * DB bootstrap (Flyway replays every migration in version order, so this one still runs before
+ * V327/V328 exist on a fresh database — its output must remain byte-for-byte what V327/V328 expect
+ * to find and extract). Functionally unchanged; this migration already ran against the real DB
+ * before V327/V328 (Java migrations in this repo don't override getChecksum(), so Flyway does not
+ * re-validate their content on later boots).
  */
 public class V246__MigrateProductSectionsToBlocks extends BaseJavaMigration {
 
@@ -88,18 +102,18 @@ public class V246__MigrateProductSectionsToBlocks extends BaseJavaMigration {
                 List<String[]> highlights = highlightsByProduct.getOrDefault(id, List.of());
 
                 // ---- VI ----
-                List<DescriptionBlock> vi = parseBlocks(mapper, row[1]);
+                List<Object> vi = parseBlocks(mapper, row[1]);
                 boolean viChanged = false;
-                if (!hasType(vi, DescriptionBlock.ProsConsBlock.class)) {
-                    DescriptionBlock pc = buildProsCons(highlights, false);
+                if (!hasType(vi, "prosCons")) {
+                    Object pc = buildProsCons(highlights, false);
                     if (pc != null) { vi.add(pc); viChanged = true; }
                 }
-                if (!hasType(vi, DescriptionBlock.SuitabilityBlock.class)) {
-                    DescriptionBlock su = buildSuitability(mapper, row[4]);
+                if (!hasType(vi, "suitability")) {
+                    Object su = buildSuitability(mapper, row[4]);
                     if (su != null) { vi.add(su); viChanged = true; }
                 }
-                if (!hasType(vi, DescriptionBlock.SizeGuideBlock.class)) {
-                    DescriptionBlock sg = buildSizeGuide(row[3]);
+                if (!hasType(vi, "sizeGuide")) {
+                    Object sg = buildSizeGuide(mapper, row[3]);
                     if (sg != null) { vi.add(sg); viChanged = true; }
                 }
                 if (viChanged) {
@@ -110,14 +124,14 @@ public class V246__MigrateProductSectionsToBlocks extends BaseJavaMigration {
                 }
 
                 // ---- EN (chỉ khi có nội dung EN) ----
-                List<DescriptionBlock> en = parseBlocks(mapper, row[2]);
+                List<Object> en = parseBlocks(mapper, row[2]);
                 boolean enChanged = false;
-                if (!hasType(en, DescriptionBlock.ProsConsBlock.class)) {
-                    DescriptionBlock pc = buildProsCons(highlights, true);
+                if (!hasType(en, "prosCons")) {
+                    Object pc = buildProsCons(highlights, true);
                     if (pc != null) { en.add(pc); enChanged = true; }
                 }
-                if (!hasType(en, DescriptionBlock.SuitabilityBlock.class)) {
-                    DescriptionBlock su = buildSuitability(mapper, row[5]);
+                if (!hasType(en, "suitability")) {
+                    Object su = buildSuitability(mapper, row[5]);
                     if (su != null) { en.add(su); enChanged = true; }
                 }
                 // sizeGuide chỉ có tiếng Việt → không thêm khối EN.
@@ -133,14 +147,23 @@ public class V246__MigrateProductSectionsToBlocks extends BaseJavaMigration {
         System.out.printf("[V246] products: %d vi block-lists, %d en block-lists updated%n", viUpdated, enUpdated);
     }
 
-    private List<DescriptionBlock> parseBlocks(ObjectMapper mapper, String json) throws Exception {
+    /** Trả về danh sách phần tử thô — trộn {@link DescriptionBlock} thật (8 loại còn lại trong sealed
+     *  interface) với {@link ObjectNode} thô cho 2 loại đã tách khỏi interface đó (suitability/sizeGuide,
+     *  xem javadoc lớp). Jackson serialize đúng cả 2 dạng khi ghi lại xuống DB. */
+    private List<Object> parseBlocks(ObjectMapper mapper, String json) throws Exception {
         if (json == null || json.isBlank() || "null".equals(json.strip())) return new ArrayList<>();
         List<DescriptionBlock> list = mapper.readValue(json, BLOCK_LIST);
         return list == null ? new ArrayList<>() : new ArrayList<>(list);
     }
 
-    private static boolean hasType(List<DescriptionBlock> blocks, Class<? extends DescriptionBlock> type) {
-        return blocks.stream().anyMatch(type::isInstance);
+    /** {@code typeName} so khớp cả {@link DescriptionBlock#getType()} (phần tử thật) lẫn field "type"
+     *  của {@link ObjectNode} thô (2 loại đã tách khỏi sealed interface). */
+    private static boolean hasType(List<Object> blocks, String typeName) {
+        return blocks.stream().anyMatch(b -> {
+            if (b instanceof DescriptionBlock db) return typeName.equals(db.getType());
+            if (b instanceof JsonNode node) return typeName.equals(node.path("type").asText(null));
+            return false;
+        });
     }
 
     /** Dựng khối prosCons từ product_highlights. {@code en}=true → lấy content_en. Null nếu rỗng. */
@@ -162,27 +185,36 @@ public class V246__MigrateProductSectionsToBlocks extends BaseJavaMigration {
                 .build();
     }
 
-    /** Dựng khối suitability từ JSON thẻ cũ ({@code [{audience,advice}]}). Null nếu rỗng. */
-    private DescriptionBlock buildSuitability(ObjectMapper mapper, String json) throws Exception {
+    /** Dựng khối suitability (raw JSON — xem javadoc lớp) từ JSON thẻ cũ ({@code [{audience,advice}]}).
+     *  Null nếu rỗng. */
+    private ObjectNode buildSuitability(ObjectMapper mapper, String json) throws Exception {
         if (json == null || json.isBlank() || "null".equals(json.strip())) return null;
         JsonNode root = mapper.readTree(json);
         if (root == null || !root.isArray() || root.isEmpty()) return null;
-        List<DescriptionBlock.SuitabilityBlock.SuitabilityCard> cards = new ArrayList<>();
+        ArrayNode cards = mapper.createArrayNode();
         for (JsonNode node : root) {
             String audience = text(node, "audience");
             String advice = text(node, "advice");
             if (audience == null && advice == null) continue;
-            cards.add(DescriptionBlock.SuitabilityBlock.SuitabilityCard.builder()
-                    .audience(audience).advice(advice).build());
+            ObjectNode card = mapper.createObjectNode();
+            card.put("audience", audience);
+            card.put("advice", advice);
+            cards.add(card);
         }
         if (cards.isEmpty()) return null;
-        return DescriptionBlock.SuitabilityBlock.builder().type("suitability").cards(cards).build();
+        ObjectNode block = mapper.createObjectNode();
+        block.put("type", "suitability");
+        block.set("cards", cards);
+        return block;
     }
 
-    /** Dựng khối sizeGuide từ HTML cũ. Null nếu rỗng. */
-    private DescriptionBlock buildSizeGuide(String html) {
+    /** Dựng khối sizeGuide (raw JSON — xem javadoc lớp) từ HTML cũ. Null nếu rỗng. */
+    private ObjectNode buildSizeGuide(ObjectMapper mapper, String html) {
         if (html == null || html.isBlank()) return null;
-        return DescriptionBlock.SizeGuideBlock.builder().type("sizeGuide").html(html.strip()).build();
+        ObjectNode block = mapper.createObjectNode();
+        block.put("type", "sizeGuide");
+        block.put("html", html.strip());
+        return block;
     }
 
     private static String text(JsonNode node, String field) {

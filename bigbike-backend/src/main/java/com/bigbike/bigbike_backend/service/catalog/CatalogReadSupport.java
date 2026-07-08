@@ -4,6 +4,7 @@ import com.bigbike.bigbike_backend.domain.catalog.Brand;
 import com.bigbike.bigbike_backend.domain.catalog.CatalogFacets;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
+import com.bigbike.bigbike_backend.domain.catalog.ProductHighlights;
 import com.bigbike.bigbike_backend.service.common.SortDirection;
 import com.bigbike.bigbike_backend.service.common.SortSpec;
 import java.math.BigDecimal;
@@ -182,8 +183,7 @@ final class CatalogReadSupport {
      *
      * <p>Drops the detail-only payload the storefront catalog list does not
      * render — {@code description}, {@code gallery}, {@code videos},
-     * {@code specifications}, {@code contentBottom}, {@code promotionContent},
-     * {@code seo}. Variants are reduced to stubs (see {@link #toVariantStub}):
+     * {@code contentBottom}, {@code seo}. Variants are reduced to stubs (see {@link #toVariantStub}):
      * the card needs the variant <em>count</em> to choose the buy-box button,
      * but never reads variant internals on a list. {@code shortDescription} is
      * kept — it is the card subtitle. Stock masking already happened upstream
@@ -208,7 +208,6 @@ final class CatalogReadSupport {
                 p.variants() == null
                         ? List.of()
                         : p.variants().stream().map(CatalogReadSupport::toVariantStub).toList(),
-                List.of(),                  // specifications — detail only
                 p.stockState(),
                 p.stockQuantity(),
                 p.forceOutOfStock(),
@@ -217,14 +216,9 @@ final class CatalogReadSupport {
                 p.homepageOrder(),
                 p.rating(),
                 p.ratingCount(),
-                null,                       // promotionContent — detail only
-                null,                       // installationGuide — detail only
                 List.of(),                  // faqs — detail only
                 List.of(),                  // commitments — detail only
-                List.of(),                  // specStats — detail only
-                List.of(),                  // trustBadges — detail only
-                List.of(),                  // positiveNotes — detail only
-                List.of(),                  // negativeNotes — detail only
+                ProductHighlights.EMPTY,    // highlights — detail only
                 null,                       // originBrandCountry — detail only
                 null,                       // sizeGuide — detail only
                 null,                       // suitabilityAdvisory — detail only
@@ -236,8 +230,8 @@ final class CatalogReadSupport {
                 List.of(),                  // relatedProducts — detail only
                 List.of(),                  // accessoryProducts — detail only
                 null,                       // descriptionBlocks — detail only
-                null,                       // tabs — detail only
-                null,                       // sectionVisibility — detail only
+                null,                       // suitabilitySection — detail only
+                null,                       // sizeGuideSection — detail only
                 null,                       // seo — detail only
                 null,                       // translations — admin detail read only
                 p.createdAt(),

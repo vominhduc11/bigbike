@@ -21,7 +21,6 @@ import {
  * sẵn ở server. Tách riêng để page.tsx (server) giữ nguyên kiến trúc ISR/SEO.
  */
 
-type Spec = { name?: string | null; value?: string | null };
 type Faq = { question?: string | null; answer?: string | null };
 
 /** Lấy danh sách câu (content) từ mảng ProductHighlight, bỏ rỗng. */
@@ -84,16 +83,14 @@ export function ProductProsCons({
   );
 }
 
-/** Tab "Thông số kĩ thuật" — bảng spec, đổi theo ngôn ngữ.
- *  V255: nếu có `specificationsHtml` ("Dán mã HTML"), render HTML đó THAY bảng dòng ("html thắng"). */
-export function ProductSpecsTable({ viSpecs, viSpecsHtml = "" }: { viSpecs: Spec[]; viSpecsHtml?: string }) {
+/** Tab "Thông số kĩ thuật" — bảng spec dạng HTML, đổi theo ngôn ngữ. HTML (V255 "Dán mã HTML") là
+ *  nguồn render duy nhất — không còn bảng dòng có cấu trúc để fallback. */
+export function ProductSpecsTable({ viSpecsHtml = "" }: { viSpecsHtml?: string }) {
   const t = useTranslations("Product");
   const locale = useLocale();
-  const enSpecs = useLocalizedField<Spec[]>("specifications");
   const enSpecsHtml = useLocalizedField<string>("specificationsHtml");
 
-  // "HTML thắng": có HTML (EN override khi đổi ngôn ngữ, hoặc bản vi) → render HTML đã sanitize,
-  // bỏ qua bảng dòng tên/giá trị.
+  // "HTML thắng": có HTML (EN override khi đổi ngôn ngữ, hoặc bản vi) → render HTML đã sanitize.
   const specsHtml = locale === "en" ? enSpecsHtml : viSpecsHtml;
   if (specsHtml && specsHtml.trim()) {
     return (
@@ -104,33 +101,9 @@ export function ProductSpecsTable({ viSpecs, viSpecsHtml = "" }: { viSpecs: Spec
     );
   }
 
-  const specs = (locale === "en" ? enSpecs : viSpecs) ?? [];
-
-  if (specs.length === 0) {
-    return (
-      <div className="thong-so-ki-thuat">
-        <p>{t("specsEmpty")}</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="thong-so-ki-thuat overflow-x-auto">
-      <table className="shop_attributes w-full border-collapse text-ui-18 max-md:text-ui-16">
-        <tbody>
-          {specs.map((s, i) => (
-            <tr key={i} className="border-b border-border last:border-b-0 even:bg-muted/30">
-              <th
-                scope="row"
-                className="w-[38%] px-3.5 py-3.5 text-left align-top font-barlow font-semibold uppercase tracking-wide text-muted-foreground md:pl-0"
-              >
-                {s.name}
-              </th>
-              <td className="px-3.5 py-3.5 align-top text-foreground">{s.value}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="thong-so-ki-thuat">
+      <p>{t("specsEmpty")}</p>
     </div>
   );
 }

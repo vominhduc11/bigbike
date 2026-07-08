@@ -4,15 +4,13 @@ import com.bigbike.bigbike_backend.api.admin.dto.CommitmentRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.FaqRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.GalleryImageRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.HighlightRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.HighlightsRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.ImageAssetRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.ImportReportResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.ImportRowResult;
-import com.bigbike.bigbike_backend.api.admin.dto.ProductTabRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.ProductImportRow;
 import com.bigbike.bigbike_backend.api.admin.dto.ProductTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SeoMetaRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.SpecStatRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.SpecificationRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.TrustBadgeRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantOptionRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantRequest;
@@ -23,12 +21,13 @@ import com.bigbike.bigbike_backend.api.error.MutationNotImplementedException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
+import com.bigbike.bigbike_backend.domain.catalog.ProductHighlight;
+import com.bigbike.bigbike_backend.domain.catalog.ProductHighlights;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.migration.wordpress.normalizer.ProductSlugGenerator;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductHighlightEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
@@ -58,11 +57,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Bulk product import/export (JSON). Reuses the real {@link AdminCatalogMutationService}
- * create/update path for commits — this class only parses the JSON file, resolves human-readable
- * references (category/brand slug, SKU-or-slug upsert matching, variant SKU-based identity)
- * into the same {@link UpsertProductRequest} shape the single-product admin API already accepts,
- * then either inspects validation errors without persisting ({@link #validateImport}) or calls
- * the real create/update per row ({@link #commitImport}).
+ * create/update path for commits — this class parses the JSON file as {@link ProductImportRow}
+ * (each bilingual column nested as one VI/EN object), converts every row via {@link
+ * ProductImportRowMapper} into the same {@link UpsertProductRequest} shape the single-product admin
+ * API already accepts, resolves human-readable references (category/brand slug, SKU-or-slug upsert
+ * matching, variant SKU-based identity), then either inspects validation errors without persisting
+ * ({@link #validateImport}) or calls the real create/update per row ({@link #commitImport}).
  *
  * <p>{@link #commitImport} is deliberately NOT {@code @Transactional}: each row's call into
  * {@code adminCatalogMutationService.createProduct}/{@code updateProduct} (a separate Spring bean,
@@ -179,6 +179,7 @@ public class ProductImportService {
         UpsertProductRequest request = row.request;
 
         runBeanValidation(request, errors);
+        checkRequiredSku(request, errors);
         resolveCategoryAndBrand(request, errors);
         resolveRelatedAndAccessoryRefs(request, warnings);
 
@@ -250,6 +251,19 @@ public class ProductImportService {
     private void runBeanValidation(UpsertProductRequest request, List<ApiErrorDetail> errors) {
         for (ConstraintViolation<UpsertProductRequest> violation : validator.validate(request)) {
             errors.add(new ApiErrorDetail(violation.getPropertyPath().toString(), "INVALID_VALUE", violation.getMessage()));
+        }
+    }
+
+    /**
+     * `sku` is documented as mandatory on every import row (product-template/HUONG-DAN.md rule 1) —
+     * it is the stable key {@link #resolveExistingProduct} uses to match a row back to its product
+     * across re-imports. {@code UpsertProductRequest.sku} itself has no {@code @NotBlank} because the
+     * same DTO backs the single-product admin edit form, where a product may legitimately not have a
+     * SKU yet — so the requirement is enforced here, specific to the bulk-import flow, instead.
+     */
+    private void checkRequiredSku(UpsertProductRequest request, List<ApiErrorDetail> errors) {
+        if (AdminMutationValidators.trimToNull(request.getSku()) == null) {
+            errors.add(new ApiErrorDetail("sku", "REQUIRED", "Thiếu SKU sản phẩm."));
         }
     }
 
@@ -353,11 +367,14 @@ public class ProductImportService {
 
     /**
      * New products always start DRAFT regardless of the file (spec requirement). On update, the
-     * file's status passes through EXCEPT it can never resolve to PUBLISHED — {@code updateProduct}
-     * never runs the publish-readiness gate (only the dedicated publish-status endpoint does), so
+     * file's status passes through EXCEPT it can never resolve to PUBLISHED ({@code updateProduct}
+     * never runs the publish-readiness gate — only the dedicated publish-status endpoint does, so
      * blindly honoring "Đã xuất bản" from a file would let an incomplete product go live with zero
-     * field-completeness checking. All other targets (DRAFT/HIDDEN/TRASH) pass through normally and
-     * rely on the existing validatePublishTransition to reject invalid transitions per row.
+     * field-completeness checking) or to a legacy value ({@link PublishStatus#isLegacy()} —
+     * HIDDEN/ARCHIVED/PENDING/PRIVATE, none settable via admin API). Both cases are skipped with an
+     * IGNORED warning, leaving the product's current publishStatus untouched (request.publishStatus
+     * stays null here, so updateProduct falls back to entity.getPublishStatus()). Only DRAFT/TRASH
+     * pass through normally and rely on validatePublishTransition to reject invalid transitions.
      */
     private void applyPublishStatusRule(
             UpsertProductRequest request, boolean isCreate, PublishStatus fileStatus, List<ApiErrorDetail> warnings) {
@@ -371,6 +388,11 @@ public class ProductImportService {
         if (fileStatus == PublishStatus.PUBLISHED) {
             warnings.add(new ApiErrorDetail("publishStatus", "IGNORED",
                     "Trạng thái 'Đã xuất bản' không áp dụng qua nhập file — vào sửa sản phẩm để đăng thủ công."));
+            return;
+        }
+        if (fileStatus.isLegacy()) {
+            warnings.add(new ApiErrorDetail("publishStatus", "IGNORED",
+                    "Trạng thái '" + fileStatus + "' không còn hợp lệ (giá trị cũ/legacy) — giữ nguyên trạng thái hiện tại của sản phẩm."));
             return;
         }
         request.setPublishStatus(fileStatus);
@@ -443,11 +465,11 @@ public class ProductImportService {
     }
 
     /**
-     * translations.en.name is hard-required on every row, so the {@code translations} object is
-     * always built once a row has any English content at all — but {@code applyTranslations} is a
-     * full replace of every EN column at once. Without this backfill, a "just fixing the price"
-     * update file that only fills EN name would silently wipe every other existing EN field
-     * (short description, full description, specs HTML, size guide, SEO) back to blank.
+     * translations.en.name is only required when the row touches the VI name (create, or an update
+     * that sends `name`) — see CatalogRequestValidator. A row that sends a partial `translations.en`
+     * block for an unrelated reason (e.g. just fixing seoTitle) must not have that partial block
+     * silently wipe every other existing EN field — including `name` itself — back to blank, since
+     * {@code applyTranslations} is a full replace of every EN column at once.
      */
     private void backfillTranslationsFromExisting(UpsertProductRequest request, ProductEntity existing) {
         ProductTranslationRequest translations = request.getTranslations();
@@ -455,10 +477,9 @@ public class ProductImportService {
             return;
         }
         ProductTranslationRequest.ProductContentRequest en = translations.getEn();
+        if (en.getName() == null) en.setName(existing.getNameEn());
         if (en.getShortDescription() == null) en.setShortDescription(existing.getShortDescriptionEn());
         if (en.getDescription() == null) en.setDescription(existing.getDescriptionEn());
-        if (en.getPromotionContent() == null) en.setPromotionContent(existing.getPromotionContentEn());
-        if (en.getInstallationGuide() == null) en.setInstallationGuide(existing.getInstallationGuideEn());
         if (en.getSizeGuide() == null) en.setSizeGuide(existing.getSizeGuideEn());
         if (en.getSuitabilityAdvisory() == null) en.setSuitabilityAdvisory(existing.getSuitabilityAdvisoryEn());
         if (en.getSpecificationsHtml() == null) en.setSpecificationsHtml(existing.getSpecificationsHtmlEn());
@@ -683,19 +704,22 @@ public class ProductImportService {
         return resolved.isEmpty() ? null : resolved;
     }
 
-    // ── JSON parsing (array of UpsertProductRequest; categoryId/brandId hold slugs) ─
+    // ── JSON parsing (array of ProductImportRow; categoryId/brandId hold slugs) ─
+    // Each element is immediately converted to the same UpsertProductRequest +
+    // ProductTranslationRequest shape the single-product admin API accepts, via
+    // ProductImportRowMapper — nothing below this point knows about the nested-bilingual shape.
 
     private List<ParsedRow> parseJson(MultipartFile file) {
-        UpsertProductRequest[] array;
+        ProductImportRow[] array;
         try {
-            array = OBJECT_MAPPER.readValue(file.getInputStream(), UpsertProductRequest[].class);
+            array = OBJECT_MAPPER.readValue(file.getInputStream(), ProductImportRow[].class);
         } catch (IOException e) {
             throw ValidationException.fromField("file", "UNREADABLE_FILE",
-                    "File JSON không đúng định dạng — cần là mảng object sản phẩm theo đúng shape UpsertProductRequest.");
+                    "File JSON không đúng định dạng — cần là mảng object sản phẩm theo đúng shape ProductImportRow.");
         }
         List<ParsedRow> rows = new ArrayList<>();
         for (int i = 0; i < array.length; i++) {
-            UpsertProductRequest request = array[i];
+            UpsertProductRequest request = ProductImportRowMapper.toUpsertRequest(array[i]);
             PublishStatus fileStatus = request.getPublishStatus();
             request.setPublishStatus(null);
             String rowKey = firstNonBlank(request.getSku(), request.getSlug(), "item-" + (i + 1));
@@ -719,8 +743,8 @@ public class ProductImportService {
     @Transactional(readOnly = true)
     public byte[] exportCurrentCatalogAsTemplateJson() {
         requireJpaPersistenceEnabled();
-        List<UpsertProductRequest> out = productJpaRepository.findAll().stream()
-                .map(this::toExportRequest)
+        List<ProductImportRow> out = productJpaRepository.findAll().stream()
+                .map(this::toExportRow)
                 .toList();
         return writeExportJson(out);
     }
@@ -735,14 +759,14 @@ public class ProductImportService {
             throw new NotFoundException("Product not found: " + id);
         }
         ProductEntity entity = found.get(0);
-        byte[] json = writeExportJson(List.of(toExportRequest(entity)));
+        byte[] json = writeExportJson(List.of(toExportRow(entity)));
         return new ProductExportFile("product-" + entity.getSku() + ".json", json);
     }
 
     /** Filename + JSON bytes for a single-product export download. */
     public record ProductExportFile(String filename, byte[] content) {}
 
-    private static byte[] writeExportJson(List<UpsertProductRequest> out) {
+    private static byte[] writeExportJson(List<ProductImportRow> out) {
         try {
             return EXPORT_MAPPER.writeValueAsBytes(out);
         } catch (IOException e) {
@@ -751,19 +775,16 @@ public class ProductImportService {
     }
 
     /**
-     * Maps a stored product back into the exact {@link UpsertProductRequest} shape the JSON import
-     * consumes, so "download current catalog → edit → re-import" round-trips. category/brand are
-     * emitted as slug (the import resolves them by slug), related/accessory as SKU. Every rich
-     * content collection is emitted; the {@code *Present} flags are stripped by {@link #EXPORT_MAPPER}
-     * so a downloaded-then-reimported file never accidentally clears an untouched field. Detailed
+     * Maps a stored product back into the {@link ProductImportRow} shape the JSON import consumes,
+     * so "download current catalog → edit → re-import" round-trips. category/brand are emitted as
+     * slug (the import resolves them by slug), related/accessory as SKU. Every bilingual column is
+     * emitted as one nested VI/EN object (omitted entirely when both sides are blank — {@link
+     * #EXPORT_MAPPER} is NON_NULL) instead of a separate {@code translations} block. Detailed
      * description prefers structured blocks, falling back to the legacy HTML string for old rows.
      */
-    private UpsertProductRequest toExportRequest(ProductEntity p) {
-        UpsertProductRequest r = new UpsertProductRequest();
+    private ProductImportRow toExportRow(ProductEntity p) {
+        ProductImportRow r = new ProductImportRow();
         r.setSku(p.getSku());
-        r.setSlug(p.getSlug());
-        r.setName(p.getName());
-        r.setShortDescription(p.getShortDescription());
         r.setCategoryId(p.getCategory() != null ? p.getCategory().getSlug() : null);
         r.setBrandId(p.getBrand() != null ? p.getBrand().getSlug() : null);
         r.setGender(p.getGender());
@@ -775,16 +796,33 @@ public class ProductImportService {
         if (p.getHomepageOrder() != null) {
             r.setHomepageOrder(p.getHomepageOrder());
         }
-        r.setPromotionContent(p.getPromotionContent());
-        r.setInstallationGuide(p.getInstallationGuide());
-        r.setOriginBrandCountry(p.getOriginBrandCountry());
-        r.setSizeGuide(p.getSizeGuide());
-        r.setSectionVisibility(p.getSectionVisibility());
-        r.setSuitabilityAdvisory(p.getSuitabilityAdvisory());
-        r.setSpecificationsHtml(p.getSpecificationsHtml());
-        r.setSpecStatsHtml(p.getSpecStatsHtml());
-        r.setTrustBadgesHtml(p.getTrustBadgesHtml());
-        r.setQuickAnswerSummary(p.getQuickAnswerSummary());
+
+        if (p.getName() != null || p.getNameEn() != null) {
+            r.setName(new ProductImportRow.NameField(p.getName(), p.getNameEn()));
+        }
+        if (p.getSlug() != null || p.getSlugEn() != null) {
+            r.setSlug(new ProductImportRow.SlugField(p.getSlug(), p.getSlugEn()));
+        }
+        // Owner decision 2026-07-07: these product-level bilingual columns always appear on export,
+        // null-filled when the product has no content at all for them, instead of being dropped
+        // entirely — same treatment as the array-element DTOs (FaqRequest, CommitmentRequest, etc.)
+        // and salePrice above. Safe on reimport: ProductImportRowMapper only calls the corresponding
+        // UpsertProductRequest setter per leaf VI/EN value that is non-null, so an all-null object
+        // here behaves exactly like an omitted key (nothing gets touched on update).
+        r.setShortDescription(new ProductImportRow.ShortDescriptionField(
+                p.getShortDescription(), p.getShortDescriptionEn()));
+        r.setSpecificationsHtml(new ProductImportRow.SpecificationsHtmlField(
+                p.getSpecificationsHtml(), p.getSpecificationsHtmlEn()));
+        r.setSpecStatsHtml(new ProductImportRow.SpecStatsHtmlField(
+                p.getSpecStatsHtml(), p.getSpecStatsHtmlEn()));
+        r.setTrustBadgesHtml(new ProductImportRow.TrustBadgesHtmlField(
+                p.getTrustBadgesHtml(), p.getTrustBadgesHtmlEn()));
+        r.setQuickAnswerSummary(new ProductImportRow.QuickAnswerSummaryField(
+                p.getQuickAnswerSummary(), p.getQuickAnswerSummaryEn()));
+        r.setOriginBrandCountry(new ProductImportRow.OriginBrandCountryField(
+                p.getOriginBrandCountry(), p.getOriginBrandCountryEn()));
+        r.setSeo(new ProductImportRow.SeoField(p.getSeoTitle(), p.getSeoTitleEn(),
+                p.getSeoDescription(), p.getSeoDescriptionEn(), p.getSeoCanonicalUrl()));
 
         if (p.getImageUrl() != null) {
             r.setImage(ImageAssetRequest.builder()
@@ -792,16 +830,17 @@ public class ProductImportService {
                     .width(p.getImageWidth()).height(p.getImageHeight()).mimeType(p.getImageMimeType())
                     .build());
         }
-        r.setSeo(buildSeo(p));
-        r.setTranslations(buildTranslations(p));
 
         if (p.getDescriptionBlocks() != null && !p.getDescriptionBlocks().isEmpty()) {
             r.setDescriptionBlocks(p.getDescriptionBlocks());
         } else if (p.getDescription() != null) {
             r.setDescription(p.getDescription());
         }
-        if (p.getDescriptionBlocksEn() != null && !p.getDescriptionBlocksEn().isEmpty()) {
-            r.setDescriptionBlocksEn(p.getDescriptionBlocksEn());
+        if (p.getSuitabilitySection() != null) {
+            r.setSuitabilitySection(p.getSuitabilitySection());
+        }
+        if (p.getSizeGuideSection() != null) {
+            r.setSizeGuideSection(p.getSizeGuideSection());
         }
 
         if (notEmpty(p.getGallery())) {
@@ -817,84 +856,28 @@ public class ProductImportService {
                     .description(v.getDescription()).thumbnailUrl(v.getThumbnailUrl())
                     .sortOrder(v.getSortOrder()).build()).toList());
         }
-        if (notEmpty(p.getSpecifications())) {
-            r.setSpecifications(p.getSpecifications().stream().map(s -> SpecificationRequest.builder()
-                    .name(s.getName()).value(s.getValue()).groupName(s.getGroupName()).sortOrder(s.getSortOrder())
-                    .nameEn(s.getNameEn()).valueEn(s.getValueEn()).groupNameEn(s.getGroupNameEn()).build()).toList());
-        }
-        if (notEmpty(p.getSpecStats())) {
-            r.setSpecStats(p.getSpecStats().stream().map(s -> SpecStatRequest.builder()
-                    .value(s.getValue()).label(s.getLabel()).sortOrder(s.getSortOrder())
-                    .valueEn(s.getValueEn()).labelEn(s.getLabelEn()).build()).toList());
-        }
         if (notEmpty(p.getFaqs())) {
             r.setFaqs(p.getFaqs().stream().map(f -> FaqRequest.builder()
-                    .question(f.getQuestion()).answer(f.getAnswer()).sortOrder(f.getSortOrder())
-                    .questionEn(f.getQuestionEn()).answerEn(f.getAnswerEn()).build()).toList());
+                    .question(f.question()).answer(f.answer())
+                    .questionEn(f.questionEn()).answerEn(f.answerEn()).build()).toList());
         }
         if (notEmpty(p.getCommitments())) {
             r.setCommitments(p.getCommitments().stream().map(c -> CommitmentRequest.builder()
-                    .icon(c.getIcon()).title(c.getTitle()).subtitle(c.getSubtitle()).sortOrder(c.getSortOrder())
-                    .titleEn(c.getTitleEn()).subtitleEn(c.getSubtitleEn()).build()).toList());
+                    .icon(c.icon()).title(c.title()).subtitle(c.subtitle())
+                    .titleEn(c.titleEn()).subtitleEn(c.subtitleEn()).build()).toList());
         }
-        if (notEmpty(p.getTrustBadges())) {
-            r.setTrustBadges(p.getTrustBadges().stream().map(t -> TrustBadgeRequest.builder()
-                    .content(t.getContent()).sortOrder(t.getSortOrder()).contentEn(t.getContentEn()).build()).toList());
-        }
-        if (notEmpty(p.getHighlights())) {
-            r.setPositiveNotes(highlightsByKind(p, ProductHighlightEntity.KIND_PRO));
-            r.setNegativeNotes(highlightsByKind(p, ProductHighlightEntity.KIND_CON));
+        if (hasHighlights(p.getHighlights())) {
+            r.setHighlights(HighlightsRequest.builder()
+                    .positiveNotes(highlightRequests(p.getHighlights().positiveNotes()))
+                    .negativeNotes(highlightRequests(p.getHighlights().negativeNotes()))
+                    .build());
         }
         if (notEmpty(p.getVariants())) {
             r.setVariants(p.getVariants().stream().map(this::toVariantRequest).toList());
         }
-        if (notEmpty(p.getProductTabs())) {
-            r.setTabs(p.getProductTabs().stream().map(t -> ProductTabRequest.builder()
-                    .id(t.id()).type(t.type()).enabled(t.enabled()).sortOrder(t.sortOrder())
-                    .label(t.label()).labelEn(t.labelEn()).blocks(t.blocks()).blocksEn(t.blocksEn()).build()).toList());
-        }
         r.setRelatedProductIds(skusOf(p.getRelatedProducts()));
         r.setAccessoryProductIds(skusOf(p.getAccessoryProducts()));
         return r;
-    }
-
-    private SeoMetaRequest buildSeo(ProductEntity p) {
-        boolean hasSeo = p.getSeoTitle() != null || p.getSeoDescription() != null
-                || p.getSeoCanonicalUrl() != null || p.getSeoOgImageUrl() != null;
-        if (!hasSeo) {
-            return null;
-        }
-        ImageAssetRequest og = p.getSeoOgImageUrl() == null ? null : ImageAssetRequest.builder()
-                .url(p.getSeoOgImageUrl()).alt(p.getSeoOgImageAlt())
-                .width(p.getSeoOgImageWidth()).height(p.getSeoOgImageHeight()).mimeType(p.getSeoOgImageMimeType())
-                .build();
-        return SeoMetaRequest.builder()
-                .title(p.getSeoTitle()).description(p.getSeoDescription()).canonicalUrl(p.getSeoCanonicalUrl())
-                .ogImage(og).build();
-    }
-
-    private ProductTranslationRequest buildTranslations(ProductEntity p) {
-        if (p.getNameEn() == null) {
-            return null;
-        }
-        ProductTranslationRequest.ProductContentRequest en = ProductTranslationRequest.ProductContentRequest.builder()
-                .slug(p.getSlugEn())
-                .name(p.getNameEn())
-                .shortDescription(p.getShortDescriptionEn())
-                .description(p.getDescriptionEn())
-                .promotionContent(p.getPromotionContentEn())
-                .installationGuide(p.getInstallationGuideEn())
-                .sizeGuide(p.getSizeGuideEn())
-                .suitabilityAdvisory(p.getSuitabilityAdvisoryEn())
-                .specificationsHtml(p.getSpecificationsHtmlEn())
-                .specStatsHtml(p.getSpecStatsHtmlEn())
-                .trustBadgesHtml(p.getTrustBadgesHtmlEn())
-                .quickAnswerSummary(p.getQuickAnswerSummaryEn())
-                .seoTitle(p.getSeoTitleEn())
-                .seoDescription(p.getSeoDescriptionEn())
-                .originBrandCountry(p.getOriginBrandCountryEn())
-                .build();
-        return new ProductTranslationRequest(en);
     }
 
     private VariantRequest toVariantRequest(ProductVariantEntity v) {
@@ -920,11 +903,18 @@ public class ProductImportService {
         return vr;
     }
 
-    private List<HighlightRequest> highlightsByKind(ProductEntity p, String kind) {
-        List<HighlightRequest> out = p.getHighlights().stream()
-                .filter(h -> kind.equals(h.getKind()))
+    private static boolean hasHighlights(ProductHighlights highlights) {
+        return highlights != null
+                && (notEmpty(highlights.positiveNotes()) || notEmpty(highlights.negativeNotes()));
+    }
+
+    private List<HighlightRequest> highlightRequests(List<ProductHighlight> highlights) {
+        if (highlights == null) {
+            return null;
+        }
+        List<HighlightRequest> out = highlights.stream()
                 .map(h -> HighlightRequest.builder()
-                        .content(h.getContent()).contentEn(h.getContentEn()).sortOrder(h.getSortOrder()).build())
+                        .content(h.content()).contentEn(h.contentEn()).build())
                 .toList();
         return out.isEmpty() ? null : out;
     }

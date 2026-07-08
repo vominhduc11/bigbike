@@ -340,7 +340,7 @@ class PublicReadApiTest {
 
     // ── Product list-view projection — list omits detail-only payload ─────────────
     // Guards the "Cắt mạnh" list response: GET /api/v1/products must drop
-    // description/gallery/specifications and variant internals (options/gallery),
+    // description/gallery/specificationsHtml and variant internals (options/gallery),
     // while keeping the variant *count* the storefront card relies on.
 
     @Test
@@ -354,7 +354,7 @@ class PublicReadApiTest {
         mockMvc.perform(get("/api/v1/products/" + slug))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.description").value("Detail-only long description"))
-                .andExpect(jsonPath("$.data.specifications.length()").value(1))
+                .andExpect(jsonPath("$.data.specificationsHtml").exists())
                 .andExpect(jsonPath("$.data.variants.length()").value(1));
 
         // List endpoint: detail-only fields stripped, variant count preserved.
@@ -370,7 +370,7 @@ class PublicReadApiTest {
                 // not serialized as an explicit null key.
                 .andExpect(jsonPath(node + ".description").doesNotExist())
                 .andExpect(jsonPath(node + ".gallery.length()").value(0))
-                .andExpect(jsonPath(node + ".specifications.length()").value(0))
+                .andExpect(jsonPath(node + ".specificationsHtml").doesNotExist())
                 .andExpect(jsonPath(node + ".seo").doesNotExist())
                 // variant kept as a stub: count is correct, internals stripped
                 .andExpect(jsonPath(node + ".variants.length()").value(1))
@@ -393,14 +393,8 @@ class PublicReadApiTest {
         p.setShortDescription("Short card subtitle");
         p.setDescription("Detail-only long description");
 
-        com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecificationEntity spec =
-                new com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecificationEntity();
-        // id is @GeneratedValue(IDENTITY) — must not be set manually.
-        spec.setProduct(p);
-        spec.setName("Chất liệu");
-        spec.setValue("Sợi carbon");
-        spec.setSortOrder(0);
-        p.setSpecifications(new java.util.ArrayList<>(java.util.List.of(spec)));
+        p.setSpecificationsHtml("<table class=\"shop_attributes\"><tbody><tr><th scope=\"row\">Chất liệu</th>"
+                + "<td>Sợi carbon</td></tr></tbody></table>");
 
         com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity variant =
                 new com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity();

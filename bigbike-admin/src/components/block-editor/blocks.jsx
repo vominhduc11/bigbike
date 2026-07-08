@@ -30,11 +30,13 @@ export function BlockControls({ disabled, onDuplicate, onRemove }) {
   )
 }
 
-export function HeadingBlockEditor({ block, onChange, disabled }) {
+export function HeadingBlockEditor({ block, onChange, disabled, contentLang = 'vi' }) {
   const { t } = useTranslation()
+  const isEn = contentLang === 'en'
+  const fText = isEn ? 'textEn' : 'text'
   return (
     <div className="flex gap-2 flex-1">
-      <Select value={String(block.level)} onValueChange={(v) => onChange({ level: Number(v) })} disabled={disabled}>
+      <Select value={String(block.level)} onValueChange={(v) => onChange({ level: Number(v) })} disabled={disabled || isEn}>
         <SelectTrigger className="w-44 shrink-0">
           <SelectValue />
         </SelectTrigger>
@@ -46,8 +48,8 @@ export function HeadingBlockEditor({ block, onChange, disabled }) {
       <Input
         className="flex-1 font-bold"
         placeholder={t('products.detail.blocks.headingTextPlaceholder')}
-        value={block.text || ''}
-        onChange={(e) => onChange({ text: e.target.value })}
+        value={block[fText] || ''}
+        onChange={(e) => onChange({ [fText]: e.target.value })}
         disabled={disabled}
         maxLength={500}
       />
@@ -55,15 +57,17 @@ export function HeadingBlockEditor({ block, onChange, disabled }) {
   )
 }
 
-export function ParagraphBlockEditor({ block, onChange, disabled, productMode }) {
+export function ParagraphBlockEditor({ block, onChange, disabled, productMode, contentLang = 'vi' }) {
+  const isEn = contentLang === 'en'
+  const fHtml = isEn ? 'htmlEn' : 'html'
   // Mô tả sản phẩm (productMode) giữ tab "Mã HTML"; bài viết Tin tức chỉ dùng trình soạn trực quan.
   const Editor = productMode ? RichTextEditorWithSource : RichTextEditor
   return (
     <div className="flex-1">
       <Editor
-        key={block._key}
-        value={block.html || ''}
-        onChange={(html) => onChange({ html })}
+        key={`${block._key}-${contentLang}`}
+        value={block[fHtml] || ''}
+        onChange={(html) => onChange({ [fHtml]: html })}
         disabled={disabled}
         enableImagePicker
       />
@@ -71,16 +75,24 @@ export function ParagraphBlockEditor({ block, onChange, disabled, productMode })
   )
 }
 
-export function ListBlockEditor({ block, onChange, disabled }) {
+export function ListBlockEditor({ block, onChange, disabled, contentLang = 'vi' }) {
   const { t } = useTranslation()
+  const isEn = contentLang === 'en'
   const items = block.items || ['']
+  const itemsEn = block.itemsEn || []
+  const displayItems = isEn ? items.map((_, i) => itemsEn[i] || '') : items
 
   function updateItem(i, value) {
+    if (isEn) {
+      const nextEn = items.map((_, idx) => (idx === i ? value : (itemsEn[idx] || '')))
+      onChange({ itemsEn: nextEn })
+      return
+    }
     const next = items.map((it, idx) => idx === i ? value : it)
     onChange({ items: next })
   }
   function addItem() {
-    onChange({ items: [...items, ''] })
+    onChange({ items: [...items, ''], itemsEn: itemsEn.length ? [...itemsEn, ''] : itemsEn })
   }
   async function removeItem(i) {
     if ((items[i] || '').trim()) {
@@ -88,12 +100,13 @@ export function ListBlockEditor({ block, onChange, disabled }) {
       if (!confirmed) return
     }
     const next = items.filter((_, idx) => idx !== i)
-    onChange({ items: next.length === 0 ? [''] : next })
+    const nextEn = itemsEn.filter((_, idx) => idx !== i)
+    onChange({ items: next.length === 0 ? [''] : next, itemsEn: nextEn })
   }
 
   return (
     <div className="flex-1 flex flex-col gap-2">
-      <Select value={block.style} onValueChange={(v) => onChange({ style: v })} disabled={disabled}>
+      <Select value={block.style} onValueChange={(v) => onChange({ style: v })} disabled={disabled || isEn}>
         <SelectTrigger className="w-44">
           <SelectValue />
         </SelectTrigger>
@@ -103,7 +116,7 @@ export function ListBlockEditor({ block, onChange, disabled }) {
         </SelectContent>
       </Select>
       <div className="flex flex-col gap-1">
-        {items.map((item, i) => (
+        {displayItems.map((item, i) => (
           <div key={i} className="flex gap-1 items-center">
             <span className="text-muted-foreground text-sm w-5 text-center shrink-0">
               {block.style === 'numbered' ? `${i + 1}.` : '•'}
@@ -117,20 +130,22 @@ export function ListBlockEditor({ block, onChange, disabled }) {
               maxLength={2000}
             />
             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
-              onClick={() => removeItem(i)} disabled={disabled}
+              onClick={() => removeItem(i)} disabled={disabled || isEn}
               aria-label={t('products.detail.blocks.listRemoveItem')}>✕</Button>
           </div>
         ))}
       </div>
-      <Button variant="outline" size="sm" onClick={addItem} disabled={disabled} className="self-start">
+      <Button variant="outline" size="sm" onClick={addItem} disabled={disabled || isEn} className="self-start">
         + {t('products.detail.blocks.listAddItem')}
       </Button>
     </div>
   )
 }
 
-export function ImageBlockEditor({ block, onChange, disabled, onPickImage }) {
+export function ImageBlockEditor({ block, onChange, disabled, onPickImage, contentLang = 'vi' }) {
   const { t } = useTranslation()
+  const isEn = contentLang === 'en'
+  const fCaption = isEn ? 'captionEn' : 'caption'
   return (
     <div className="flex-1 flex flex-col gap-2">
       <div className="flex gap-2 items-start">
@@ -138,12 +153,12 @@ export function ImageBlockEditor({ block, onChange, disabled, onPickImage }) {
           <div className="relative shrink-0">
             <img src={block.url} alt={block.alt || ''} className="h-24 w-36 object-cover rounded-sm border border-border" />
             <Button variant="outline" size="sm" className="mt-1 w-36 text-xs"
-              onClick={onPickImage} disabled={disabled}>
+              onClick={onPickImage} disabled={disabled || isEn}>
               {t('products.detail.blocks.imageChange')}
             </Button>
           </div>
         ) : (
-          <Button variant="outline" size="sm" onClick={onPickImage} disabled={disabled} className="h-24 w-36 flex flex-col gap-1 text-xs">
+          <Button variant="outline" size="sm" onClick={onPickImage} disabled={disabled || isEn} className="h-24 w-36 flex flex-col gap-1 text-xs">
             <span className="text-2xl">🖼</span>
             {t('products.detail.blocks.imagePick')}
           </Button>
@@ -151,8 +166,8 @@ export function ImageBlockEditor({ block, onChange, disabled, onPickImage }) {
         <div className="flex-1 flex flex-col gap-2">
           <Input
             placeholder={t('products.detail.blocks.imageCaptionPlaceholder')}
-            value={block.caption || ''}
-            onChange={(e) => onChange({ caption: e.target.value })}
+            value={block[fCaption] || ''}
+            onChange={(e) => onChange({ [fCaption]: e.target.value })}
             disabled={disabled}
             maxLength={500}
           />
@@ -162,11 +177,13 @@ export function ImageBlockEditor({ block, onChange, disabled, onPickImage }) {
   )
 }
 
-export function VideoBlockEditor({ block, onChange, disabled, onPickVideo }) {
+export function VideoBlockEditor({ block, onChange, disabled, onPickVideo, contentLang = 'vi' }) {
   const { t } = useTranslation()
+  const isEn = contentLang === 'en'
+  const fCaption = isEn ? 'captionEn' : 'caption'
   return (
     <div className="flex-1 flex flex-col gap-2">
-      <Select value={block.provider} onValueChange={(v) => onChange({ provider: v, url: '' })} disabled={disabled}>
+      <Select value={block.provider} onValueChange={(v) => onChange({ provider: v, url: '' })} disabled={disabled || isEn}>
         <SelectTrigger className="w-44">
           <SelectValue />
         </SelectTrigger>
@@ -182,7 +199,7 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo }) {
           placeholder={t('products.detail.blocks.videoUrlPlaceholder')}
           value={block.url || ''}
           onChange={(e) => onChange({ url: e.target.value })}
-          disabled={disabled}
+          disabled={disabled || isEn}
           maxLength={2000}
         />
       ) : block.provider === 'tiktok' ? (
@@ -190,7 +207,7 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo }) {
           placeholder={t('products.detail.blocks.tiktokUrlPlaceholder')}
           value={block.url || ''}
           onChange={(e) => onChange({ url: e.target.value })}
-          disabled={disabled}
+          disabled={disabled || isEn}
           maxLength={2000}
         />
       ) : block.provider === 'facebook' ? (
@@ -198,7 +215,7 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo }) {
           placeholder={t('products.detail.blocks.facebookUrlPlaceholder')}
           value={block.url || ''}
           onChange={(e) => onChange({ url: e.target.value })}
-          disabled={disabled}
+          disabled={disabled || isEn}
           maxLength={2000}
         />
       ) : (
@@ -207,19 +224,19 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo }) {
             placeholder="URL video đã tải lên"
             value={block.url || ''}
             onChange={(e) => onChange({ url: e.target.value })}
-            disabled={disabled}
+            disabled={disabled || isEn}
             maxLength={2000}
             className="flex-1"
           />
-          <Button variant="outline" size="sm" onClick={onPickVideo} disabled={disabled} className="shrink-0">
+          <Button variant="outline" size="sm" onClick={onPickVideo} disabled={disabled || isEn} className="shrink-0">
             {t('products.detail.blocks.videoPick')}
           </Button>
         </div>
       )}
       <Input
         placeholder={t('products.detail.blocks.videoCaptionPlaceholder')}
-        value={block.caption || ''}
-        onChange={(e) => onChange({ caption: e.target.value })}
+        value={block[fCaption] || ''}
+        onChange={(e) => onChange({ [fCaption]: e.target.value })}
         disabled={disabled}
         maxLength={500}
       />
@@ -227,11 +244,13 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo }) {
   )
 }
 
-export function CalloutBlockEditor({ block, onChange, disabled }) {
+export function CalloutBlockEditor({ block, onChange, disabled, contentLang = 'vi' }) {
   const { t } = useTranslation()
+  const isEn = contentLang === 'en'
+  const fHtml = isEn ? 'htmlEn' : 'html'
   return (
     <div className="flex-1 flex flex-col gap-2">
-      <Select value={block.variant} onValueChange={(v) => onChange({ variant: v })} disabled={disabled}>
+      <Select value={block.variant} onValueChange={(v) => onChange({ variant: v })} disabled={disabled || isEn}>
         <SelectTrigger className="w-44">
           <SelectValue />
         </SelectTrigger>
@@ -242,9 +261,9 @@ export function CalloutBlockEditor({ block, onChange, disabled }) {
         </SelectContent>
       </Select>
       <RichTextEditor
-        key={block._key}
-        value={block.html || ''}
-        onChange={(html) => onChange({ html })}
+        key={`${block._key}-${contentLang}`}
+        value={block[fHtml] || ''}
+        onChange={(html) => onChange({ [fHtml]: html })}
         disabled={disabled}
         enableImagePicker={false}
       />
@@ -252,19 +271,32 @@ export function CalloutBlockEditor({ block, onChange, disabled }) {
   )
 }
 
-export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, productMode }) {
+export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, productMode, contentLang = 'vi' }) {
   const { t } = useTranslation()
+  const isEn = contentLang === 'en'
+  const fCaption = isEn ? 'captionEn' : 'caption'
+  const fSubheading = isEn ? 'subheadingEn' : 'subheading'
+  const fHeading = isEn ? 'headingEn' : 'heading'
+  const fHtml = isEn ? 'htmlEn' : 'html'
   const items = block.items || ['']
+  const itemsEn = block.itemsEn || []
+  const displayItems = isEn ? items.map((_, i) => itemsEn[i] || '') : items
 
   function updateItem(i, value) {
+    if (isEn) {
+      const nextEn = items.map((_, idx) => (idx === i ? value : (itemsEn[idx] || '')))
+      onChange({ itemsEn: nextEn })
+      return
+    }
     onChange({ items: items.map((it, idx) => idx === i ? value : it) })
   }
   function addItem() {
-    onChange({ items: [...items, ''] })
+    onChange({ items: [...items, ''], itemsEn: itemsEn.length ? [...itemsEn, ''] : itemsEn })
   }
   function removeItem(i) {
     const next = items.filter((_, idx) => idx !== i)
-    onChange({ items: next.length === 0 ? [''] : next })
+    const nextEn = itemsEn.filter((_, idx) => idx !== i)
+    onChange({ items: next.length === 0 ? [''] : next, itemsEn: nextEn })
   }
 
   // Sản phẩm: chỉ trái/phải (không "tự đảo"); Content: giữ cả auto.
@@ -277,7 +309,7 @@ export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, pro
       {/* Vị trí ảnh */}
       <div className="flex items-center gap-2">
         <span className="text-xs text-muted-foreground shrink-0">{t('products.detail.blocks.featureSideLabel')}</span>
-        <Select value={sideValue} onValueChange={(v) => onChange({ side: v })} disabled={disabled}>
+        <Select value={sideValue} onValueChange={(v) => onChange({ side: v })} disabled={disabled || isEn}>
           <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
           <SelectContent>
             {!productMode && <SelectItem value="auto">{t('products.detail.blocks.featureSideAuto')}</SelectItem>}
@@ -293,12 +325,12 @@ export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, pro
           <div className="relative shrink-0">
             <img src={block.url} alt={block.alt || ''} className="h-24 w-36 object-cover rounded-sm border border-border" />
             <Button variant="outline" size="sm" className="mt-1 w-36 text-xs"
-              onClick={onPickImage} disabled={disabled}>
+              onClick={onPickImage} disabled={disabled || isEn}>
               {t('products.detail.blocks.imageChange')}
             </Button>
           </div>
         ) : (
-          <Button variant="outline" size="sm" onClick={onPickImage} disabled={disabled} className="h-24 w-36 flex flex-col gap-1 text-xs">
+          <Button variant="outline" size="sm" onClick={onPickImage} disabled={disabled || isEn} className="h-24 w-36 flex flex-col gap-1 text-xs">
             <span className="text-2xl">🖼</span>
             {t('products.detail.blocks.imagePick')}
           </Button>
@@ -306,8 +338,8 @@ export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, pro
         <div className="flex-1 flex flex-col gap-2">
           <Input
             placeholder={t('products.detail.blocks.imageCaptionPlaceholder')}
-            value={block.caption || ''}
-            onChange={(e) => onChange({ caption: e.target.value })}
+            value={block[fCaption] || ''}
+            onChange={(e) => onChange({ [fCaption]: e.target.value })}
             disabled={disabled}
             maxLength={500}
           />
@@ -317,8 +349,8 @@ export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, pro
       <Input
         className="text-xs uppercase tracking-wide text-primary"
         placeholder={t('products.detail.blocks.featureSubheadingPlaceholder')}
-        value={block.subheading || ''}
-        onChange={(e) => onChange({ subheading: e.target.value })}
+        value={block[fSubheading] || ''}
+        onChange={(e) => onChange({ [fSubheading]: e.target.value })}
         disabled={disabled}
         maxLength={500}
       />
@@ -327,24 +359,24 @@ export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, pro
       <Input
         className="font-bold"
         placeholder={t('products.detail.blocks.featureHeadingPlaceholder')}
-        value={block.heading || ''}
-        onChange={(e) => onChange({ heading: e.target.value })}
+        value={block[fHeading] || ''}
+        onChange={(e) => onChange({ [fHeading]: e.target.value })}
         disabled={disabled}
         maxLength={500}
       />
 
       {/* Đoạn mô tả */}
       <RichTextEditor
-        key={block._key}
-        value={block.html || ''}
-        onChange={(html) => onChange({ html })}
+        key={`${block._key}-${contentLang}`}
+        value={block[fHtml] || ''}
+        onChange={(html) => onChange({ [fHtml]: html })}
         disabled={disabled}
         enableImagePicker={false}
       />
 
       {/* Danh sách điểm nổi bật */}
       <div className="flex flex-col gap-2">
-        <Select value={block.listStyle || 'bulleted'} onValueChange={(v) => onChange({ listStyle: v })} disabled={disabled}>
+        <Select value={block.listStyle || 'bulleted'} onValueChange={(v) => onChange({ listStyle: v })} disabled={disabled || isEn}>
           <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="bulleted">{t('products.detail.blocks.listStyleBulleted')}</SelectItem>
@@ -352,7 +384,7 @@ export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, pro
           </SelectContent>
         </Select>
         <div className="flex flex-col gap-1">
-          {items.map((item, i) => (
+          {displayItems.map((item, i) => (
             <div key={i} className="flex gap-1 items-center">
               <span className="text-muted-foreground text-sm w-5 text-center shrink-0">
                 {block.listStyle === 'numbered' ? `${i + 1}.` : '•'}
@@ -366,12 +398,12 @@ export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, pro
                 maxLength={2000}
               />
               <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
-                onClick={() => removeItem(i)} disabled={disabled}
+                onClick={() => removeItem(i)} disabled={disabled || isEn}
                 aria-label={t('products.detail.blocks.listRemoveItem')}>✕</Button>
             </div>
           ))}
         </div>
-        <Button variant="outline" size="sm" onClick={addItem} disabled={disabled} className="self-start">
+        <Button variant="outline" size="sm" onClick={addItem} disabled={disabled || isEn} className="self-start">
           + {t('products.detail.blocks.listAddItem')}
         </Button>
       </div>
@@ -440,29 +472,33 @@ function isGeneratedSuitabilityHtml(html) {
  *  - Cấu trúc → HTML: `html` đã được merge cập nhật sẵn.
  *  - Cho phép CSS inline khi dán HTML (sanitizeHtml admin đã mở `style`).
  */
-export function SuitabilityBlockEditor({ block, onChange, disabled }) {
+export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang = 'vi' }) {
   const { t } = useTranslation()
+  const isEn = contentLang === 'en'
+  const fTitle = isEn ? 'titleEn' : 'title'
+  const fHtml = isEn ? 'htmlEn' : 'html'
   const [mode, setMode] = useState(() =>
-    ((block.html || '').trim() && !isGeneratedSuitabilityHtml(block.html)) ? 'html' : 'structured',
+    ((block[fHtml] || '').trim() && !isGeneratedSuitabilityHtml(block[fHtml])) ? 'html' : 'structured',
   )
   const seedCards = () => {
-    const parsed = parseSuitabilityCards(block.html)
+    const parsed = parseSuitabilityCards(block[fHtml])
     if (parsed.length) return parsed
     if (block.cards && block.cards.length) return block.cards.map((c) => ({ ...emptySuitabilityCard(), ...c }))
     return [emptySuitabilityCard()]
   }
   const [cards, setCards] = useState(seedCards)
 
-  // Ghi thẻ → merge vào html (giữ CSS). html là field được lưu; bỏ ghi `cards` xuống dữ liệu.
+  // Ghi thẻ → merge vào html/htmlEn theo ngôn ngữ đang xem (giữ CSS). `cards` không lưu, chỉ dùng
+  // để nạp lại state cục bộ khi mở lại chế độ có cấu trúc.
   function commit(nextCards) {
     setCards(nextCards)
-    onChange({ html: mergeSuitabilityIntoHtml(nextCards, block.html), cards: undefined })
+    onChange({ [fHtml]: mergeSuitabilityIntoHtml(nextCards, block[fHtml]), cards: undefined })
   }
   function changeMode(next) {
     if (next === mode) return
     // Vào tab có cấu trúc: nạp lại thẻ từ html hiện tại (bỏ CSS, chỉ lấy chữ).
     if (next === 'structured') {
-      const parsed = parseSuitabilityCards(block.html)
+      const parsed = parseSuitabilityCards(block[fHtml])
       setCards(parsed.length ? parsed : [emptySuitabilityCard()])
     }
     setMode(next)
@@ -480,15 +516,15 @@ export function SuitabilityBlockEditor({ block, onChange, disabled }) {
     commit(next.length === 0 ? [emptySuitabilityCard()] : next)
   }
 
-  const html = block.html || ''
+  const html = block[fHtml] || ''
 
   return (
     <div className="flex-1 flex flex-col gap-3">
       <Input
         className="font-bold"
         placeholder={t('products.detail.blocks.sectionTitlePlaceholder')}
-        value={block.title || ''}
-        onChange={(e) => onChange({ title: e.target.value })}
+        value={block[fTitle] || ''}
+        onChange={(e) => onChange({ [fTitle]: e.target.value })}
         disabled={disabled}
         maxLength={500}
       />
@@ -540,7 +576,7 @@ export function SuitabilityBlockEditor({ block, onChange, disabled }) {
             className="font-mono text-xs"
             placeholder={t('products.detail.suitability.htmlPlaceholder')}
             value={html}
-            onChange={(e) => onChange({ html: e.target.value, cards: undefined })}
+            onChange={(e) => onChange({ [fHtml]: e.target.value, cards: undefined })}
             disabled={disabled}
             rows={8}
             maxLength={20000}
@@ -583,22 +619,25 @@ function isStructuredHtml(html) {
  * chỉnh (không round-trip được) → mở tab HTML để khỏi mất; bảng có cấu trúc → mở tab có cấu trúc.
  * State cục bộ là nguồn sự thật khi đang sửa (reseed khi remount theo block._key ở SortableList).
  */
-export function SizeGuideBlockEditor({ block, onChange, disabled }) {
+export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 'vi' }) {
   const { t } = useTranslation()
-  const [mode, setMode] = useState(() => (isStructuredHtml(block.html) ? 'structured' : 'html'))
-  const [model, setModel] = useState(() => parseSizeGuide(block.html))
+  const isEn = contentLang === 'en'
+  const fTitle = isEn ? 'titleEn' : 'title'
+  const fHtml = isEn ? 'htmlEn' : 'html'
+  const [mode, setMode] = useState(() => (isStructuredHtml(block[fHtml]) ? 'structured' : 'html'))
+  const [model, setModel] = useState(() => parseSizeGuide(block[fHtml]))
 
   function changeMode(next) {
     if (next === mode) return
     // Vào tab có cấu trúc: nạp lại model từ HTML hiện tại (kể cả HTML vừa dán).
-    if (next === 'structured') setModel(parseSizeGuide(block.html))
+    if (next === 'structured') setModel(parseSizeGuide(block[fHtml]))
     setMode(next)
   }
 
-  // Merge model vào html hiện có (giữ CSS, chỉ đổi chữ). html là field được lưu & web render.
+  // Merge model vào html/htmlEn theo ngôn ngữ đang xem (giữ CSS, chỉ đổi chữ).
   function commit(next) {
     setModel(next)
-    onChange({ html: mergeSizeGuideIntoHtml(next, block.html) })
+    onChange({ [fHtml]: mergeSizeGuideIntoHtml(next, block[fHtml]) })
   }
   const setNote = (note) => commit({ ...model, note })
   const renameColumn = (ci, label) =>
@@ -647,8 +686,8 @@ export function SizeGuideBlockEditor({ block, onChange, disabled }) {
       <Input
         className="font-bold"
         placeholder={t('products.detail.blocks.sectionTitlePlaceholder')}
-        value={block.title || ''}
-        onChange={(e) => onChange({ title: e.target.value })}
+        value={block[fTitle] || ''}
+        onChange={(e) => onChange({ [fTitle]: e.target.value })}
         disabled={disabled}
         maxLength={500}
       />
@@ -759,8 +798,8 @@ export function SizeGuideBlockEditor({ block, onChange, disabled }) {
           <Textarea
             className="font-mono text-xs"
             placeholder={t('products.detail.sizeGuide.htmlPlaceholder')}
-            value={block.html || ''}
-            onChange={(e) => onChange({ html: e.target.value })}
+            value={block[fHtml] || ''}
+            onChange={(e) => onChange({ [fHtml]: e.target.value })}
             disabled={disabled}
             rows={8}
             maxLength={20000}
@@ -771,10 +810,10 @@ export function SizeGuideBlockEditor({ block, onChange, disabled }) {
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {t('products.detail.sizeGuide.previewLabel')}
             </label>
-            {(block.html || '').trim() ? (
+            {(block[fHtml] || '').trim() ? (
               <div
                 className="size-guide-preview rounded-sm border border-border bg-surface p-3 overflow-x-auto"
-                dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.html) }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(block[fHtml]) }}
               />
             ) : (
               <p className="list-editor-empty">{t('products.detail.sizeGuide.previewEmpty')}</p>
@@ -796,15 +835,16 @@ export function BlockTypeLabel({ type }) {
   )
 }
 
-export function BlockCard({ block, disabled, sortable, onUpdate, onRemove, onDuplicate, onPickImage, onPickVideo, onAltBlur, productMode }) {
+export function BlockCard({ block, disabled, structDisabled, contentLang, sortable, onUpdate, onRemove, onDuplicate, onPickImage, onPickVideo, onAltBlur, productMode }) {
   const { t } = useTranslation()
+  const dragDisabled = structDisabled ?? disabled
   return (
     <div
       ref={sortable?.setNodeRef}
       style={{ ...sortable?.style, opacity: sortable?.isDragging ? 0.5 : undefined }}
       className="flex gap-2 p-3 border border-border rounded-sm bg-background hover:bg-muted/30 transition-colors"
     >
-      {!disabled && sortable && (
+      {!dragDisabled && sortable && (
         <button
           type="button"
           {...sortable.handleProps}
@@ -817,19 +857,17 @@ export function BlockCard({ block, disabled, sortable, onUpdate, onRemove, onDup
       )}
       <BlockTypeLabel type={block.type} />
       <div className="flex-1 min-w-0">
-        {block.type === 'heading'   && <HeadingBlockEditor   block={block} onChange={onUpdate} disabled={disabled} />}
-        {block.type === 'paragraph' && <ParagraphBlockEditor block={block} onChange={onUpdate} disabled={disabled} productMode={productMode} />}
-        {block.type === 'list'      && <ListBlockEditor      block={block} onChange={onUpdate} disabled={disabled} />}
-        {block.type === 'image'     && <ImageBlockEditor     block={block} onChange={onUpdate} disabled={disabled} onPickImage={onPickImage} onAltBlur={onAltBlur} />}
-        {block.type === 'video'     && <VideoBlockEditor     block={block} onChange={onUpdate} disabled={disabled} onPickVideo={onPickVideo} />}
-        {block.type === 'callout'   && <CalloutBlockEditor   block={block} onChange={onUpdate} disabled={disabled} />}
-        {block.type === 'feature'   && <FeatureBlockEditor   block={block} onChange={onUpdate} disabled={disabled} onPickImage={onPickImage} onAltBlur={onAltBlur} productMode={productMode} />}
-        {block.type === 'suitability' && <SuitabilityBlockEditor block={block} onChange={onUpdate} disabled={disabled} />}
-        {block.type === 'sizeGuide'   && <SizeGuideBlockEditor   block={block} onChange={onUpdate} disabled={disabled} />}
+        {block.type === 'heading'   && <HeadingBlockEditor   block={block} onChange={onUpdate} disabled={disabled} contentLang={contentLang} />}
+        {block.type === 'paragraph' && <ParagraphBlockEditor block={block} onChange={onUpdate} disabled={disabled} productMode={productMode} contentLang={contentLang} />}
+        {block.type === 'list'      && <ListBlockEditor      block={block} onChange={onUpdate} disabled={disabled} contentLang={contentLang} />}
+        {block.type === 'image'     && <ImageBlockEditor     block={block} onChange={onUpdate} disabled={disabled} onPickImage={onPickImage} onAltBlur={onAltBlur} contentLang={contentLang} />}
+        {block.type === 'video'     && <VideoBlockEditor     block={block} onChange={onUpdate} disabled={disabled} onPickVideo={onPickVideo} contentLang={contentLang} />}
+        {block.type === 'callout'   && <CalloutBlockEditor   block={block} onChange={onUpdate} disabled={disabled} contentLang={contentLang} />}
+        {block.type === 'feature'   && <FeatureBlockEditor   block={block} onChange={onUpdate} disabled={disabled} onPickImage={onPickImage} onAltBlur={onAltBlur} productMode={productMode} contentLang={contentLang} />}
         {block.type === 'divider'   && <DividerBlockEditor />}
       </div>
       <BlockControls
-        disabled={disabled}
+        disabled={dragDisabled}
         onDuplicate={onDuplicate}
         onRemove={onRemove}
       />

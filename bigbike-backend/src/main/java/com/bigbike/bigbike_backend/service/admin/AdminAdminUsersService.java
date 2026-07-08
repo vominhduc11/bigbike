@@ -8,6 +8,7 @@ import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminRoleJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
+import com.bigbike.bigbike_backend.service.auth.AdminAccountStatusService;
 import com.bigbike.bigbike_backend.service.auth.AdminInviteService;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
@@ -49,6 +50,7 @@ public class AdminAdminUsersService {
     private final PaginationService paginationService;
     private final PasswordService passwordService;
     private final AdminInviteService adminInviteService;
+    private final AdminAccountStatusService adminAccountStatusService;
 
     public PageResult<Map<String, Object>> listAdminUsers(int page, int size, String q, String roleFilter, String statusFilter) {
         int normalizedPage = Math.max(1, page);
@@ -235,6 +237,12 @@ public class AdminAdminUsersService {
         boolean statusChanged = !Objects.equals(beforeStatus, saved.getStatus());
         boolean displayNameChanged = !Objects.equals(beforeDisplayName, saved.getDisplayName());
         boolean anyAuditWritten = false;
+
+        // Invalidate the cached role/status snapshot so a lock/suspend/demote takes effect on this
+        // admin's very next request instead of surviving until their access token expires.
+        if (roleChanged || statusChanged) {
+            adminAccountStatusService.evict(id);
+        }
 
         if (roleChanged) {
             auditLogWriter.save(buildAudit(actorId, clientIp, userAgent, "ADMIN_USER_ROLE_CHANGED", id,

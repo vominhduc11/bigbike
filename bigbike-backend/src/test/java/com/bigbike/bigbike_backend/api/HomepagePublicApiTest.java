@@ -46,7 +46,7 @@ class HomepagePublicApiTest {
 
     @Test
     void listFeaturedProducts_excludesNonFeatured() throws Exception {
-        // prod_kyt_nxrace is HIDDEN and not in FEATURED_GRID — should not appear
+        // prod_kyt_nxrace is DRAFT (not PUBLISHED) and not in FEATURED_GRID — should not appear
         mockMvc.perform(get("/api/v1/products")
                         .param("homepage_block", "FEATURED_GRID"))
                 .andExpect(status().isOk())

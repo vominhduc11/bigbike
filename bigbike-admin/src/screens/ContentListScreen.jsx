@@ -234,11 +234,6 @@ export function ContentListScreen({ navigate, canUpdate }) {
               disabled: bulkBusy,
             },
             {
-              label: t('content.bulkHide', { defaultValue: 'Ẩn' }),
-              onClick: () => handleBulkPublishStatus('HIDDEN', 'content.bulkHideConfirm', 'content.bulkHideTitle', 'content.bulkHideCta'),
-              disabled: bulkBusy,
-            },
-            {
               label: t('content.bulkTrash', { defaultValue: 'Chuyển vào thùng rác' }),
               tone: 'danger',
               onClick: handleBulkTrash,
@@ -471,7 +466,6 @@ export function ContentListScreen({ navigate, canUpdate }) {
             { value: 'ALL', label: t('content.filterPublish') },
             { value: 'DRAFT', label: t('status.publish.DRAFT') },
             { value: 'PUBLISHED', label: t('status.publish.PUBLISHED') },
-            { value: 'HIDDEN', label: t('status.publish.HIDDEN') },
             { value: 'TRASH', label: t('status.publish.TRASH') },
           ]}
         />

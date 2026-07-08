@@ -9,12 +9,10 @@ import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.ProductCommitment;
-import com.bigbike.bigbike_backend.domain.catalog.TrustBadge;
 import com.bigbike.bigbike_backend.domain.catalog.ProductFaq;
 import com.bigbike.bigbike_backend.domain.catalog.ProductHighlight;
+import com.bigbike.bigbike_backend.domain.catalog.ProductHighlights;
 import com.bigbike.bigbike_backend.domain.catalog.ProductPrice;
-import com.bigbike.bigbike_backend.domain.catalog.ProductSpecification;
-import com.bigbike.bigbike_backend.domain.catalog.ProductSpecStat;
 import com.bigbike.bigbike_backend.domain.catalog.ProductVariant;
 import com.bigbike.bigbike_backend.domain.catalog.ProductVariantOption;
 import com.bigbike.bigbike_backend.domain.catalog.VideoAsset;
@@ -22,13 +20,7 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductGalleryImageEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductHighlightEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGalleryImageEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecificationEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecStatEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductCommitmentEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductTrustBadgeEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductFaqEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantOptionEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVideoEntity;
@@ -41,10 +33,12 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRep
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.service.pricing.VariantPricing;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
+import java.math.BigDecimal;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -67,8 +61,9 @@ import org.springframework.transaction.annotation.Transactional;
 import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.isPresent;
 import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.normalizeVariantToken;
 import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.pick;
-import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.pickBlocks;
-import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.resolveTabs;
+import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.resolveDescriptionBlocksForPublic;
+import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.resolveSizeGuideSectionForPublic;
+import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.resolveSuitabilitySectionForPublic;
 import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.toBrandTranslations;
 import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.toCategoryTranslations;
 import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.toImageAsset;
@@ -84,15 +79,9 @@ import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSuppo
 @RequiredArgsConstructor
 public class JpaCatalogReadRepository implements CatalogReadRepository {
 
-    private static final Comparator<ProductHighlightEntity> HIGHLIGHT_ORDER = Comparator.comparingInt(ProductHighlightEntity::getSortOrder);
     private static final Comparator<ProductGalleryImageEntity> GALLERY_ORDER = Comparator.comparingInt(ProductGalleryImageEntity::getSortOrder);
     private static final Comparator<ProductVariantGalleryImageEntity> VARIANT_GALLERY_ORDER = Comparator.comparingInt(ProductVariantGalleryImageEntity::getSortOrder);
     private static final Comparator<ProductVideoEntity> VIDEO_ORDER = Comparator.comparingInt(ProductVideoEntity::getSortOrder);
-    private static final Comparator<ProductSpecificationEntity> SPEC_ORDER = Comparator.comparingInt(ProductSpecificationEntity::getSortOrder);
-    private static final Comparator<ProductFaqEntity> FAQ_ORDER = Comparator.comparingInt(ProductFaqEntity::getSortOrder);
-    private static final Comparator<ProductCommitmentEntity> COMMITMENT_ORDER = Comparator.comparingInt(ProductCommitmentEntity::getSortOrder);
-    private static final Comparator<ProductSpecStatEntity> SPEC_STAT_ORDER = Comparator.comparingInt(ProductSpecStatEntity::getSortOrder);
-    private static final Comparator<ProductTrustBadgeEntity> TRUST_BADGE_ORDER = Comparator.comparingInt(ProductTrustBadgeEntity::getSortOrder);
     private static final Comparator<ProductVariantEntity> VARIANT_ORDER = Comparator.comparingInt(ProductVariantEntity::getSortOrder);
     private static final Comparator<ProductVariantOptionEntity> VARIANT_OPTION_ORDER = Comparator.comparingInt(ProductVariantOptionEntity::getSortOrder);
 
@@ -331,7 +320,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getCurrency()
                 ),
                 List.of(),
-                List.of(),
                 entity.getStockState(),
                 null, // stockQuantity never exposed — boolean availability model (2026-06-23)
                 entity.getForceOutOfStock(),
@@ -340,14 +328,9 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getHomepageOrder(),
                 entity.getRating(),
                 entity.getRatingCount(),
-                null,                       // promotionContent — detail only
-                null,                       // installationGuide — detail only
                 List.of(),                  // faqs — detail only
                 List.of(),                  // commitments — detail only
-                List.of(),                  // specStats — detail only
-                List.of(),                  // trustBadges — detail only
-                List.of(),                  // positiveNotes — detail only
-                List.of(),                  // negativeNotes — detail only
+                ProductHighlights.EMPTY,    // highlights — detail only
                 null,                       // originBrandCountry — detail only
                 null,                       // sizeGuide — detail only
                 null,                       // suitabilityAdvisory — detail only
@@ -359,8 +342,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 List.of(),                  // relatedProducts — detail only
                 List.of(),                  // accessoryProducts — detail only
                 null,                       // descriptionBlocks — detail only
-                null,                       // tabs — detail only
-                null,                       // sectionVisibility — detail only
+                null,                       // suitabilitySection — detail only
+                null,                       // sizeGuideSection — detail only
                 null,                       // seo — detail only
                 null,                       // translations — detail only (admin detail read)
                 entity.getCreatedAt(),
@@ -370,7 +353,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     /**
      * Storefront list/facets projection: same shape as {@link #toDomainListItem} (no
-     * gallery/videos/specifications/faqs/commitments/specStats/trustBadges/highlights/
+     * gallery/videos/faqs/commitments/highlights/
      * related/accessory) but ALSO carries variant + options — {@code toListView()} strips
      * options back out for the final list response, but facet computation (color/gender
      * buckets) and color filtering need them on the way in. Variant gallery is skipped
@@ -408,7 +391,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getCurrency()
                 ),
                 toVariantsForListing(entity, locale),
-                List.of(),
                 entity.getStockState(),
                 null, // stockQuantity — public never sees a count
                 entity.getForceOutOfStock(),
@@ -417,14 +399,9 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getHomepageOrder(),
                 entity.getRating(),
                 entity.getRatingCount(),
-                null,                       // promotionContent — detail only
-                null,                       // installationGuide — detail only
                 List.of(),                  // faqs — detail only
                 List.of(),                  // commitments — detail only
-                List.of(),                  // specStats — detail only
-                List.of(),                  // trustBadges — detail only
-                List.of(),                  // positiveNotes — detail only
-                List.of(),                  // negativeNotes — detail only
+                ProductHighlights.EMPTY,    // highlights — detail only
                 null,                       // originBrandCountry — detail only
                 null,                       // sizeGuide — detail only
                 null,                       // suitabilityAdvisory — detail only
@@ -436,8 +413,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 List.of(),                  // relatedProducts — detail only
                 List.of(),                  // accessoryProducts — detail only
                 null,                       // descriptionBlocks — detail only
-                null,                       // tabs — detail only
-                null,                       // sectionVisibility — detail only
+                null,                       // suitabilitySection — detail only
+                null,                       // sizeGuideSection — detail only
                 null,                       // seo — detail only
                 null,                       // translations — admin detail read only
                 entity.getCreatedAt(),
@@ -451,17 +428,20 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         }
         return entity.getVariants().stream()
                 .sorted(VARIANT_ORDER)
-                .map(v -> toVariantForListing(v, locale))
+                .map(v -> toVariantForListing(v, entity, locale))
                 .toList();
     }
 
     /** Same as {@link #toVariant} but skips gallery — list/facets never render variant media. */
-    private ProductVariant toVariantForListing(ProductVariantEntity entity, String locale) {
-        ProductPrice price = entity.getRetailPrice() == null
+    private ProductVariant toVariantForListing(ProductVariantEntity entity, ProductEntity product, String locale) {
+        // PRODUCT_RULE_013: a variant without its own retailPrice falls back to the product's shared
+        // retailPrice/salePrice (VariantPricing) — same rule used by cart/checkout pricing.
+        BigDecimal effectiveRetail = VariantPricing.regularPrice(product, entity);
+        ProductPrice price = effectiveRetail == null
                 ? null
                 : new ProductPrice(
-                        entity.getRetailPrice(),
-                        entity.getSalePrice(),
+                        effectiveRetail,
+                        VariantPricing.salePrice(product, entity),
                         entity.getCurrency() == null ? "VND" : entity.getCurrency()
                 );
 
@@ -775,7 +755,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getCurrency()
                 ),
                 toVariants(entity, publicView, locale),
-                toSpecifications(entity, publicView, locale),
                 entity.getStockState(),
                 productStockQty,
                 entity.getForceOutOfStock(),
@@ -784,14 +763,9 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getHomepageOrder(),
                 entity.getRating(),
                 entity.getRatingCount(),
-                pick(entity.getPromotionContent(), entity.getPromotionContentEn(), locale),
-                pick(entity.getInstallationGuide(), entity.getInstallationGuideEn(), locale),
                 toFaqs(entity, publicView, locale),
                 toCommitments(entity, publicView, locale),
-                toSpecStats(entity, publicView, locale),
-                toTrustBadges(entity, publicView, locale),
-                toHighlights(entity, ProductHighlightEntity.KIND_PRO, publicView, locale),
-                toHighlights(entity, ProductHighlightEntity.KIND_CON, publicView, locale),
+                toHighlights(entity, publicView, locale),
                 pick(entity.getOriginBrandCountry(), entity.getOriginBrandCountryEn(), locale),
                 entity.getSizeGuide(),
                 pick(entity.getSuitabilityAdvisory(), entity.getSuitabilityAdvisoryEn(), locale),
@@ -802,9 +776,15 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getGender(),
                 toRelatedProducts(entity, publicView, locale),
                 toAccessoryProducts(entity, publicView, locale),
-                pickBlocks(entity.getDescriptionBlocks(), entity.getDescriptionBlocksEn(), locale),
-                resolveTabs(entity, publicView, locale),
-                entity.getSectionVisibility(),
+                publicView
+                        ? resolveDescriptionBlocksForPublic(entity.getDescriptionBlocks(), locale)
+                        : entity.getDescriptionBlocks(),
+                publicView
+                        ? resolveSuitabilitySectionForPublic(entity.getSuitabilitySection(), locale)
+                        : entity.getSuitabilitySection(),
+                publicView
+                        ? resolveSizeGuideSectionForPublic(entity.getSizeGuideSection(), locale)
+                        : entity.getSizeGuideSection(),
                 toSeoMeta(
                         pick(entity.getSeoTitle(), entity.getSeoTitleEn(), locale),
                         pick(entity.getSeoDescription(), entity.getSeoDescriptionEn(), locale),
@@ -984,114 +964,67 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     /**
-     * Ưu/Nhược điểm (V175) đã resolve theo locale, lọc theo {@code kind} (PRO/CON). Nguồn dữ liệu là
-     * bảng con {@code product_highlights} — khối đứng RIÊNG dưới mô tả, ngoài tab (ưu/nhược điểm tách
-     * khỏi mô tả). Trả mảng cho schema.org positiveNotes/negativeNotes; {@code contentEn} (admin only).
+     * Ưu/Nhược điểm (V175) resolved theo locale. Nguồn dữ liệu là 1 field JSONB duy nhất
+     * ({@code products.highlights}) đã pre-split sẵn thành {@code positiveNotes}/{@code negativeNotes}
+     * (V331/V332 — không còn lọc theo {@code kind} trên 1 bảng con phẳng). {@code contentEn} (admin only).
      */
-    private List<ProductHighlight> toHighlights(ProductEntity entity, String kind, boolean publicView, String locale) {
-        if (entity.getHighlights() == null) {
+    private ProductHighlights toHighlights(ProductEntity entity, boolean publicView, String locale) {
+        ProductHighlights source = entity.getHighlights();
+        if (source == null) {
+            return ProductHighlights.EMPTY;
+        }
+        return new ProductHighlights(
+                toHighlightList(source.positiveNotes(), publicView, locale),
+                toHighlightList(source.negativeNotes(), publicView, locale));
+    }
+
+    private List<ProductHighlight> toHighlightList(List<ProductHighlight> items, boolean publicView, String locale) {
+        if (items == null) {
             return List.of();
         }
-        return entity.getHighlights().stream()
-                .filter(item -> kind.equals(item.getKind()))
-                .sorted(HIGHLIGHT_ORDER)
+        return items.stream()
                 .map(item -> new ProductHighlight(
-                        pick(item.getContent(), item.getContentEn(), locale),
-                        publicView ? null : item.getContentEn()
+                        pick(item.content(), item.contentEn(), locale),
+                        publicView ? null : item.contentEn()
                 ))
                 .toList();
     }
 
     /**
-     * Resolved spec content for the requested locale. On admin reads
-     * ({@code publicView == false}) the raw English values ride along in the
-     * {@code *En} fields so the editor can show both languages.
+     * Product FAQ entries (V133) resolved for the requested locale, read from the
+     * {@code products.faqs} JSONB column (V331/V332). On admin reads the raw English
+     * values ride along in the {@code *En} fields.
      */
-    private List<ProductSpecification> toSpecifications(ProductEntity entity, boolean publicView, String locale) {
-        if (entity.getSpecifications() == null) {
-            return List.of();
-        }
-        return entity.getSpecifications().stream()
-                .sorted(SPEC_ORDER)
-                .map(item -> new ProductSpecification(
-                        pick(item.getName(), item.getNameEn(), locale),
-                        pick(item.getValue(), item.getValueEn(), locale),
-                        pick(item.getGroupName(), item.getGroupNameEn(), locale),
-                        publicView ? null : item.getNameEn(),
-                        publicView ? null : item.getValueEn(),
-                        publicView ? null : item.getGroupNameEn()
-                ))
-                .toList();
-    }
-
-    /**
-     * "Specs Dashboard" stat boxes (V235) resolved for the requested locale. On admin
-     * reads the raw English values ride along in the {@code *En} fields.
-     */
-    private List<ProductSpecStat> toSpecStats(ProductEntity entity, boolean publicView, String locale) {
-        if (entity.getSpecStats() == null) {
-            return List.of();
-        }
-        return entity.getSpecStats().stream()
-                .sorted(SPEC_STAT_ORDER)
-                .map(item -> new ProductSpecStat(
-                        pick(item.getValue(), item.getValueEn(), locale),
-                        pick(item.getLabel(), item.getLabelEn(), locale),
-                        publicView ? null : item.getValueEn(),
-                        publicView ? null : item.getLabelEn()
-                ))
-                .toList();
-    }
-
     private List<ProductFaq> toFaqs(ProductEntity entity, boolean publicView, String locale) {
         if (entity.getFaqs() == null) {
             return List.of();
         }
         return entity.getFaqs().stream()
-                .sorted(FAQ_ORDER)
                 .map(item -> new ProductFaq(
-                        pick(item.getQuestion(), item.getQuestionEn(), locale),
-                        pick(item.getAnswer(), item.getAnswerEn(), locale),
-                        publicView ? null : item.getQuestionEn(),
-                        publicView ? null : item.getAnswerEn()
+                        pick(item.question(), item.questionEn(), locale),
+                        pick(item.answer(), item.answerEn(), locale),
+                        publicView ? null : item.questionEn(),
+                        publicView ? null : item.answerEn()
                 ))
                 .toList();
     }
 
     /**
-     * Per-product commitment rows (V232) resolved for the requested locale. On
-     * admin reads the raw English values ride along in the {@code *En} fields.
+     * Per-product commitment rows (V232) resolved for the requested locale, read from
+     * the {@code products.commitments} JSONB column (V331/V332). On admin reads the raw
+     * English values ride along in the {@code *En} fields.
      */
     private List<ProductCommitment> toCommitments(ProductEntity entity, boolean publicView, String locale) {
         if (entity.getCommitments() == null) {
             return List.of();
         }
         return entity.getCommitments().stream()
-                .sorted(COMMITMENT_ORDER)
                 .map(item -> new ProductCommitment(
-                        item.getIcon(),
-                        pick(item.getTitle(), item.getTitleEn(), locale),
-                        pick(item.getSubtitle(), item.getSubtitleEn(), locale),
-                        publicView ? null : item.getTitleEn(),
-                        publicView ? null : item.getSubtitleEn()
-                ))
-                .toList();
-    }
-
-
-    /**
-     * Per-product trust badges (V233) resolved for the requested locale. On admin
-     * reads the raw English value rides along in {@code contentEn}; public reads null it.
-     */
-    private List<TrustBadge> toTrustBadges(ProductEntity entity, boolean publicView, String locale) {
-        if (entity.getTrustBadges() == null) {
-            return List.of();
-        }
-        return entity.getTrustBadges().stream()
-                .sorted(TRUST_BADGE_ORDER)
-                .map(item -> new TrustBadge(
-                        pick(item.getContent(), item.getContentEn(), locale),
-                        publicView ? null : item.getContentEn()
+                        item.icon(),
+                        pick(item.title(), item.titleEn(), locale),
+                        pick(item.subtitle(), item.subtitleEn(), locale),
+                        publicView ? null : item.titleEn(),
+                        publicView ? null : item.subtitleEn()
                 ))
                 .toList();
     }
@@ -1132,17 +1065,20 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         }
         List<ProductVariant> variants = entity.getVariants().stream()
                 .sorted(VARIANT_ORDER)
-                .map(v -> toVariant(v, publicView, locale))
+                .map(v -> toVariant(v, entity, publicView, locale))
                 .toList();
         return withColorScopedVariantMedia(variants);
     }
 
-    private ProductVariant toVariant(ProductVariantEntity entity, boolean publicView, String locale) {
-        ProductPrice price = entity.getRetailPrice() == null
+    private ProductVariant toVariant(ProductVariantEntity entity, ProductEntity product, boolean publicView, String locale) {
+        // PRODUCT_RULE_013: a variant without its own retailPrice falls back to the product's shared
+        // retailPrice/salePrice (VariantPricing) — same rule used by cart/checkout pricing.
+        BigDecimal effectiveRetail = VariantPricing.regularPrice(product, entity);
+        ProductPrice price = effectiveRetail == null
                 ? null
                 : new ProductPrice(
-                        entity.getRetailPrice(),
-                        entity.getSalePrice(),
+                        effectiveRetail,
+                        VariantPricing.salePrice(product, entity),
                         entity.getCurrency() == null ? "VND" : entity.getCurrency()
                 );
 

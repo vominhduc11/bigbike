@@ -54,7 +54,7 @@ public class AdminAuthService {
         // Account lockout: refuse while the cool-down window is active, without touching the password.
         if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(Instant.now())) {
             auditLogin(user.getId(), "ADMIN_LOGIN_FAILED", email, "ACCOUNT_LOCKED", clientIp, userAgent);
-            throw new UnauthorizedException(
+            throw new UnauthorizedException("ACCOUNT_LOCKED",
                     "Account is temporarily locked due to too many failed login attempts. Please try again later.");
         }
 

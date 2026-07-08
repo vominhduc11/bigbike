@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.service.admin;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.bigbike.bigbike_backend.api.admin.dto.GalleryImageRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.HighlightsRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.CategoryTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.BrandTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertBrandRequest;
@@ -147,6 +148,12 @@ public class AdminCatalogMutationService {
         entity.setUpdatedAt(now);
 
         applyProductPatch(entity, request, slug, category, brand, true);
+
+        List<ApiErrorDetail> readinessErrors = new ArrayList<>();
+        AdminMutationValidators.validateProductFieldsRequired(
+                entity, entity.getPublishStatus() == PublishStatus.PUBLISHED, readinessErrors);
+        AdminMutationValidators.throwIfPublishErrors(readinessErrors);
+
         productJpaRepository.save(entity);
         auditLog("PRODUCT_CREATED", "PRODUCT", adminId, null, productJson(entity));
         revalidateProduct(entity, null);
@@ -207,6 +214,12 @@ public class AdminCatalogMutationService {
 
         entity.setUpdatedAt(Instant.now());
         applyProductPatch(entity, request, slug, category, brand, false);
+
+        List<ApiErrorDetail> readinessErrors = new ArrayList<>();
+        AdminMutationValidators.validateProductFieldsRequired(
+                entity, nextPublishStatus == PublishStatus.PUBLISHED, readinessErrors);
+        AdminMutationValidators.throwIfPublishErrors(readinessErrors);
+
         productJpaRepository.save(entity);
         auditLog("PRODUCT_UPDATED", "PRODUCT", adminId, before, productJson(entity));
         if (!previousSlug.equals(entity.getSlug())) {
@@ -258,9 +271,11 @@ public class AdminCatalogMutationService {
 
     /**
      * Soft-delete a product by transitioning publishStatus → TRASH.
-     * Goes through the validator so we don't bypass invariants (PUBLISHED→TRASH,
-     * DRAFT→TRASH etc. are explicitly allowed in validatePublishTransition).
-     * Idempotent: re-deleting a TRASH product is a no-op.
+     * Goes through the validator so we don't bypass invariants. A PUBLISHED product cannot jump
+     * straight to TRASH under the validator (PUBLISHED only allows DRAFT/TRASH as *targets*) —
+     * instead it is sequenced through DRAFT first, in the same transaction/request, invisibly to
+     * the admin (single click, no intermediate UI state, owner decision 2026-07-07). Idempotent:
+     * re-deleting a TRASH product is a no-op.
      */
     @Transactional
     public Product softDeleteProduct(String productId, UUID adminId) {
@@ -274,12 +289,21 @@ public class AdminCatalogMutationService {
                     .orElseThrow(() -> new NotFoundException("Product not found."));
         }
 
+        String before = productJson(entity);
+
+        if (entity.getPublishStatus() == PublishStatus.PUBLISHED) {
+            List<ApiErrorDetail> draftErrors = new ArrayList<>();
+            AdminMutationValidators.validatePublishTransition(
+                    entity.getPublishStatus(), PublishStatus.DRAFT, "publishStatus", draftErrors);
+            AdminMutationValidators.throwIfErrors(draftErrors);
+            entity.setPublishStatus(PublishStatus.DRAFT);
+        }
+
         List<ApiErrorDetail> errors = new ArrayList<>();
         AdminMutationValidators.validatePublishTransition(
                 entity.getPublishStatus(), PublishStatus.TRASH, "publishStatus", errors);
         AdminMutationValidators.throwIfErrors(errors);
 
-        String before = productJson(entity);
         entity.setPublishStatus(PublishStatus.TRASH);
         entity.setUpdatedAt(Instant.now());
         productJpaRepository.save(entity);
@@ -716,12 +740,6 @@ public class AdminCatalogMutationService {
         }
         // Phase 2D: review moderation owns rating cache recomputation, so
         // product mutations must not write rating/ratingCount directly.
-        if (create || request.isPromotionContentPresent()) {
-            entity.setPromotionContent(AdminMutationValidators.trimToNull(request.getPromotionContent()));
-        }
-        if (create || request.isInstallationGuidePresent()) {
-            entity.setInstallationGuide(AdminMutationValidators.trimToNull(request.getInstallationGuide()));
-        }
 
         // Shipping / return (pdp_shipping_line, pdp_return_line) gỡ khỏi tầng ứng dụng ở V249;
         // cột DB giữ dormant. warranty_months / warranty_scope gỡ hẳn ở V266 cùng module bảo hành.
@@ -731,9 +749,6 @@ public class AdminCatalogMutationService {
         }
         if (create || request.isSizeGuidePresent()) {
             entity.setSizeGuide(AdminMutationValidators.trimToNull(request.getSizeGuide()));
-        }
-        if (create || request.isSectionVisibilityPresent()) {
-            entity.setSectionVisibility(AdminMutationValidators.trimToNull(request.getSectionVisibility()));
         }
         if (create || request.isSuitabilityAdvisoryPresent()) {
             entity.setSuitabilityAdvisory(AdminMutationValidators.trimToNull(request.getSuitabilityAdvisory()));
@@ -754,13 +769,24 @@ public class AdminCatalogMutationService {
             entity.setGender(AdminMutationValidators.trimToNull(request.getGender()));
         }
 
-        // descriptionBlocks presence flag: sending the key (even []) renders + overwrites both columns.
-        // Omitting the key leaves description_blocks and description untouched.
+        // descriptionBlocks presence flag: sending the key (even []) renders + overwrites the block
+        // column and the legacy flat `description` HTML column. Omitting the key leaves both
+        // untouched. The EN flat-HTML render (description_en) happens further below, AFTER
+        // applyTranslations, so it can win over a free-typed translations.en.description.
         if (request.isDescriptionBlocksPresent()) {
             List<com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock> blocks = request.getDescriptionBlocks();
             entity.setDescriptionBlocks(blocks == null || blocks.isEmpty() ? null : blocks);
             String renderedHtml = descriptionBlockRenderer.renderBlocksToHtml(blocks);
             entity.setDescription(renderedHtml.isBlank() ? null : renderedHtml);
+        }
+
+        // "Phù hợp với ai" / "Bảng size" (V240/V246, tách khỏi descriptionBlocks ở V327/V328) — 2 field
+        // độc lập, không còn render vào cột phẳng description/description_en (xem DescriptionBlockRenderer).
+        if (create || request.isSuitabilitySectionPresent()) {
+            entity.setSuitabilitySection(request.getSuitabilitySection());
+        }
+        if (create || request.isSizeGuideSectionPresent()) {
+            entity.setSizeGuideSection(request.getSizeGuideSection());
         }
 
         if (create || request.isImagePresent()) {
@@ -783,21 +809,16 @@ public class AdminCatalogMutationService {
             applyTranslations(entity, request.getTranslations());
         }
 
-        // descriptionBlocksEn presence flag (V229): mirror the Vietnamese pipeline. Runs AFTER
-        // applyTranslations so the rendered English HTML overrides description_en (which
-        // applyTranslations set from translations.en.description). Omitting the key leaves the
-        // English columns untouched (legacy HTML-authored English keeps working).
-        if (request.isDescriptionBlocksEnPresent()) {
-            List<com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock> blocksEn = request.getDescriptionBlocksEn();
-            entity.setDescriptionBlocksEn(blocksEn == null || blocksEn.isEmpty() ? null : blocksEn);
+        // V326: each block now carries both languages inline, so the same descriptionBlocks array
+        // drives the EN flat-HTML render too — resolved per-field with VI fallback (DescriptionBlock
+        // .resolveForLocale), same policy as every other bilingual field. Runs AFTER
+        // applyTranslations so this wins over a free-typed translations.en.description.
+        if (request.isDescriptionBlocksPresent()) {
+            List<com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock> blocksEn =
+                    com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock.resolveForLocale(
+                            request.getDescriptionBlocks(), "en");
             String renderedEn = descriptionBlockRenderer.renderBlocksToHtml(blocksEn);
             entity.setDescriptionEn(renderedEn.isBlank() ? null : renderedEn);
-        }
-
-        // Cấu hình tab PDP theo sản phẩm (V231) — presence flag: gửi key (kể cả []/null) thì thay/clear;
-        // bỏ key thì giữ nguyên. Lưu canonical: label/blocks = vi, labelEn/blocksEn = en.
-        if (request.isTabsPresent()) {
-            entity.setProductTabs(mapTabs(request.getTabs()));
         }
 
         if (request.getGallery() != null) {
@@ -812,40 +833,26 @@ public class AdminCatalogMutationService {
             entity.setVideos(new ArrayList<>());
         }
 
-        if (request.getSpecifications() != null) {
-            applySpecifications(entity, request.getSpecifications());
-        } else if (create) {
-            entity.setSpecifications(new ArrayList<>());
-        }
-
         if (request.getFaqs() != null) {
             applyFaqs(entity, request.getFaqs());
         } else if (create) {
-            entity.setFaqs(new ArrayList<>());
-        }
-
-        if (request.getSpecStats() != null) {
-            applySpecStats(entity, request.getSpecStats());
-        } else if (create) {
-            entity.setSpecStats(new ArrayList<>());
+            entity.setFaqs(List.of());
         }
 
         if (request.getCommitments() != null) {
             applyCommitments(entity, request.getCommitments());
         } else if (create) {
-            entity.setCommitments(new ArrayList<>());
+            entity.setCommitments(List.of());
         }
 
-        if (request.getTrustBadges() != null) {
-            applyTrustBadges(entity, request.getTrustBadges());
-        } else if (create) {
-            entity.setTrustBadges(new ArrayList<>());
-        }
-
-        // Ưu/Nhược điểm (V175): full-replace như faqs. Hai mảng gộp vào 1 bảng con
-        // (kind PRO/CON). Sửa khi BẤT KỲ mảng nào có mặt trong request.
-        if (request.getPositiveNotes() != null || request.getNegativeNotes() != null || create) {
-            applyHighlights(entity, request.getPositiveNotes(), request.getNegativeNotes());
+        // Ưu/Nhược điểm (V175, field lồng `highlights` từ 2026-07-07): full-replace như faqs.
+        // Hai mảng gộp vào 1 JSONB column. Sửa khi request có gửi `highlights`;
+        // mỗi mảng con vẫn null-check độc lập trong applyHighlights.
+        HighlightsRequest highlightsReq = request.getHighlights();
+        if (highlightsReq != null || create) {
+            applyHighlights(entity,
+                    highlightsReq != null ? highlightsReq.getPositiveNotes() : null,
+                    highlightsReq != null ? highlightsReq.getNegativeNotes() : null);
         }
 
         if (request.getVariants() != null) {

@@ -227,7 +227,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
 
   const handleTogglePublish = useCallback((product) => {
     if (!canUpdate) return
-    const nextStatus = product.publishStatus === 'PUBLISHED' ? 'HIDDEN' : 'PUBLISHED'
+    const nextStatus = product.publishStatus === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED'
     if (nextStatus === 'PUBLISHED') {
       const hasName = !!product.name
       const hasBrand = !!product.brand?.name
@@ -506,7 +506,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
                   {canUpdate && !isTrashed && (
                     <button type="button" disabled={togglingPublishId === product.id} onClick={() => { handleCloseMenu(); handleTogglePublish(product) }}>
                       {isPublished ? <EyeOff size={13} /> : <Eye size={13} />}
-                      {isPublished ? t('products.unpublishAction', { defaultValue: 'Ẩn' }) : t('products.publishAction', { defaultValue: 'Xuất bản' })}
+                      {isPublished ? t('products.unpublishAction', { defaultValue: 'Chuyển về Nháp' }) : t('products.publishAction', { defaultValue: 'Xuất bản' })}
                     </button>
                   )}
                   {canUpdate && (
@@ -787,7 +787,6 @@ export function ProductListScreen({ navigate, canUpdate }) {
             { value: 'ALL', label: t('products.filterPublish') },
             { value: 'DRAFT', label: t('status.publish.DRAFT') },
             { value: 'PUBLISHED', label: t('status.publish.PUBLISHED') },
-            { value: 'HIDDEN', label: t('status.publish.HIDDEN') },
             { value: 'TRASH', label: t('status.publish.TRASH') },
           ]}
         />

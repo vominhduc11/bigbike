@@ -74,29 +74,30 @@ class ProductImportRoundTripTest {
                 [
                   {
                     "sku": "%s",
-                    "slug": "%s",
-                    "name": "Round Trip %s",
+                    "slug": { "slugVI": "%s" },
+                    "name": { "nameVI": "Round Trip %s", "nameEN": "Round Trip EN %s" },
                     "categoryId": "mu-bao-hiem",
                     "brandId": "ls2",
                     "gender": "Unisex",
                     "retailPrice": 2500000,
                     "salePrice": 2300000,
                     "currency": "VND",
-                    "shortDescription": "<p>Mô tả ngắn</p>",
-                    "translations": { "en": { "name": "Round Trip EN %s", "shortDescription": "<p>Short EN</p>" } },
-                    "seo": { "title": "SEO %s", "description": "SEO desc" },
+                    "shortDescription": { "shortDescriptionVI": "<p>Mô tả ngắn</p>", "shortDescriptionEN": "<p>Short EN</p>" },
+                    "seo": { "titleVI": "SEO %s", "descriptionVI": "SEO desc" },
                     "image": { "url": "%s/products/%s.jpg", "alt": "Ảnh đại diện" },
                     "gallery": [ { "mediaType": "image", "url": "%s/products/%s-g1.jpg", "alt": "G1", "sortOrder": 0 } ],
                     "descriptionBlocks": [
                       { "type": "heading", "level": 2, "text": "Tiêu đề" },
                       { "type": "paragraph", "html": "<p>Nội dung chi tiết</p>" }
                     ],
-                    "specStats": [ { "value": "35h", "label": "Pin", "sortOrder": 0 } ],
-                    "trustBadges": [ { "content": "Bảo hành 24 tháng", "sortOrder": 0 } ],
+                    "specStatsHtml": { "specStatsHtmlVI": "<div>35h – Pin</div>" },
+                    "trustBadgesHtml": { "trustBadgesHtmlVI": "<div>Bảo hành 24 tháng</div>" },
                     "commitments": [ { "icon": "shield-check", "title": "Chính hãng", "subtitle": "100%%", "sortOrder": 0 } ],
                     "faqs": [ { "question": "Câu hỏi?", "answer": "<p>Trả lời</p>", "sortOrder": 0 } ],
-                    "positiveNotes": [ { "content": "Ưu điểm 1", "sortOrder": 0 } ],
-                    "negativeNotes": [ { "content": "Nhược điểm 1", "sortOrder": 0 } ],
+                    "highlights": {
+                      "positiveNotes": [ { "content": "Ưu điểm 1", "sortOrder": 0 } ],
+                      "negativeNotes": [ { "content": "Nhược điểm 1", "sortOrder": 0 } ]
+                    },
                     "variants": [
                       { "sku": "%s-M", "retailPrice": 2500000, "isAvailable": true, "options": [ { "optionName": "Size", "optionValue": "M" } ] },
                       { "sku": "%s-L", "retailPrice": 2600000, "isAvailable": true, "options": [ { "optionName": "Size", "optionValue": "L" } ] }
@@ -148,5 +149,127 @@ class ProductImportRoundTripTest {
         assertThat(variantIdBySku(after))
                 .as("variant ids preserved across export → re-import")
                 .isEqualTo(variantIdsBefore);
+    }
+
+    /**
+     * Regression test for the bug HUONG-DAN.md documents as the intended behavior but the validator
+     * previously violated: an update-only file that touches an unrelated field (retailPrice) and
+     * omits {@code name}/{@code translations} entirely must not error on the missing EN name, and
+     * must not wipe the product's already-saved English name back to blank.
+     */
+    @Test
+    void updateFileOmittingNameAndTranslationsKeepsExistingEnglishName() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String sku = "RT2-" + suffix;
+        String slug = "roundtrip2-" + suffix;
+        String enName = "Round Trip Two EN " + suffix;
+
+        String createArray = """
+                [
+                  {
+                    "sku": "%s",
+                    "slug": { "slugVI": "%s" },
+                    "name": { "nameVI": "Round Trip Two %s", "nameEN": "%s" },
+                    "categoryId": "mu-bao-hiem",
+                    "brandId": "ls2",
+                    "gender": "Unisex",
+                    "retailPrice": 1000000
+                  }
+                ]
+                """.formatted(sku, slug, suffix, enName);
+        ImportReportResponse createReport =
+                productImportService.commitImport(jsonFile(createArray), Set.of(), DEV_ADMIN_ID);
+        assertThat(createReport.errorCount()).isZero();
+
+        String updateArray = """
+                [
+                  { "sku": "%s", "categoryId": "mu-bao-hiem", "retailPrice": 1200000 }
+                ]
+                """.formatted(sku);
+        ImportReportResponse update =
+                productImportService.commitImport(jsonFile(updateArray), Set.of(), DEV_ADMIN_ID);
+        assertThat(update.errorCount())
+                .as("update-only file omitting name/translations must not error on EN name")
+                .isZero();
+
+        JsonNode after = findBySku(productImportService.exportCurrentCatalogAsTemplateJson(), sku);
+        assertThat(after).isNotNull();
+        assertThat(after.path("name").path("nameEN").asText())
+                .as("existing English name is preserved when the update file doesn't touch it")
+                .isEqualTo(enName);
+        assertThat(after.path("retailPrice").asDouble())
+                .as("the field the file did touch was actually updated")
+                .isEqualTo(1200000.0);
+    }
+
+    /** product-template/HUONG-DAN.md rule 1: {@code sku} is mandatory on every import row. */
+    @Test
+    void rowWithoutSkuIsRejected() {
+        String array = """
+                [
+                  { "categoryId": "mu-bao-hiem",
+                    "name": { "nameVI": "No Sku Product", "nameEN": "No Sku Product EN" },
+                    "retailPrice": 500000 }
+                ]
+                """;
+        ImportReportResponse report = productImportService.validateImport(jsonFile(array));
+        assertThat(report.errorCount()).isEqualTo(1);
+        ImportRowResult row = report.rows().get(0);
+        assertThat(row.errors()).anyMatch(e -> "sku".equals(e.field()) && "REQUIRED".equals(e.code()));
+    }
+
+    /**
+     * PRODUCT_RULE_009: legacy publishStatus values (HIDDEN/ARCHIVED/PENDING/PRIVATE) in an
+     * update-existing-product import row must be skipped with a WARNING (IGNORED), never applied
+     * and never a hard row ERROR — matching how PUBLISHED is already handled. Regression test for
+     * the bug where these values previously flowed to validatePublishTransition and errored the
+     * whole row instead of warning-and-skipping (fixed alongside HIDDEN retirement, 2026-07-07).
+     */
+    @Test
+    void legacyPublishStatusOnUpdateImportIsIgnoredWithWarningNotError() {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String sku = "RT3-" + suffix;
+        String slug = "roundtrip3-" + suffix;
+
+        String createArray = """
+                [
+                  {
+                    "sku": "%s",
+                    "slug": { "slugVI": "%s" },
+                    "name": { "nameVI": "Round Trip Three %s", "nameEN": "Round Trip Three EN %s" },
+                    "categoryId": "mu-bao-hiem",
+                    "brandId": "ls2",
+                    "gender": "Unisex",
+                    "retailPrice": 900000
+                  }
+                ]
+                """.formatted(sku, slug, suffix, suffix);
+        ImportReportResponse createReport =
+                productImportService.commitImport(jsonFile(createArray), Set.of(), DEV_ADMIN_ID);
+        assertThat(createReport.errorCount()).isZero();
+
+        for (String legacyStatus : new String[] {"HIDDEN", "ARCHIVED", "PENDING", "PRIVATE"}) {
+            String updateArray = """
+                    [
+                      { "sku": "%s", "categoryId": "mu-bao-hiem", "retailPrice": 950000, "publishStatus": "%s" }
+                    ]
+                    """.formatted(sku, legacyStatus);
+            ImportReportResponse update =
+                    productImportService.commitImport(jsonFile(updateArray), Set.of(), DEV_ADMIN_ID);
+
+            assertThat(update.errorCount())
+                    .as(legacyStatus + " must not error the row")
+                    .isZero();
+            ImportRowResult row = update.rows().get(0);
+            assertThat(row.status()).as(legacyStatus + " row status").isEqualTo("WARNING");
+            assertThat(row.warnings())
+                    .as(legacyStatus + " produces an IGNORED warning on publishStatus")
+                    .anyMatch(w -> "publishStatus".equals(w.field()) && "IGNORED".equals(w.code()));
+
+            assertThat(productJpaRepository.findBySlug(slug))
+                    .as(legacyStatus + " must not overwrite the product's current publishStatus")
+                    .hasValueSatisfying(entity ->
+                            assertThat(entity.getPublishStatus()).isEqualTo(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.DRAFT));
+        }
     }
 }

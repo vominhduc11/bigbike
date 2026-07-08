@@ -1,10 +1,10 @@
 import { Check } from "lucide-react";
 
-import type { DescriptionBlock } from "@/lib/contracts/public";
+import type { DescriptionBlock, SizeGuideSection, SuitabilitySection } from "@/lib/contracts/public";
 import { resolveMediaUrl } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { facebookEmbedUrl, getTikTokId, isFacebookVideoUrl, tiktokEmbedUrl } from "../product-gallery/media";
-import type { FeatureBlockT, SizeGuideBlockT, SuitabilityBlockT } from "./grouping";
+import type { FeatureBlockT } from "./grouping";
 
 function youTubeId(url: string): string | null {
   const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
@@ -215,51 +215,22 @@ function BlockTitle({ text }: { text?: string }) {
   );
 }
 
-/** Khối "Phù hợp với ai" (V246) — danh sách thẻ tư vấn (đối tượng đậm → lời khuyên).
- *  Chế độ "dán HTML": khi block.html non-blank thì render html (sanitize) THAY cho cards. */
-export function SuitabilityBlockView({ block }: { block: SuitabilityBlockT }) {
-  const rawHtml = (block.html ?? "").trim();
-  if (rawHtml) {
-    // html là nguồn render; cho phép CSS inline để admin tự chỉnh giao diện khi dán HTML.
-    const html = sanitizeRichHtml(rawHtml, { allowInlineStyles: true });
-    if (!html) return null;
-    return (
-      <div className="flex flex-col gap-4">
-        <BlockTitle text={block.title} />
-        <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: html }} />
-      </div>
-    );
-  }
-  const cards = (block.cards ?? []).filter(
-    (c) => (c.audience ?? "").trim() || (c.advice ?? "").trim(),
-  );
-  if (cards.length === 0) return null;
+/** Khối "Phù hợp với ai" (V246) — HTML tự do (danh sách thẻ tư vấn), sanitize trước khi render. */
+export function SuitabilityBlockView({ block }: { block: SuitabilitySection }) {
+  // html là nguồn render; cho phép CSS inline để admin tự chỉnh giao diện khi dán HTML.
+  const html = block.html ? sanitizeRichHtml(block.html, { allowInlineStyles: true }) : "";
+  if (!html) return null;
   return (
     // gap-4 = khoảng tiêu đề→nội dung, đồng nhất với TextStack/FeatureBody (16px mọi loại khối).
     <div className="flex flex-col gap-4">
       <BlockTitle text={block.title} />
-      <div className="flex flex-col gap-3">
-        {cards.map((card, index) => {
-          const audience = (card.audience ?? "").trim();
-          const advice = (card.advice ?? "").trim();
-          return (
-            <div
-              key={index}
-              className="border-l-4 border-l-brand bg-secondary px-4 py-3 text-18 max-md:text-ui-16 leading-relaxed text-muted-foreground"
-            >
-              {audience && <strong className="font-bold text-foreground">{audience}</strong>}
-              {audience && advice && <span> → </span>}
-              {advice && <span>{advice}</span>}
-            </div>
-          );
-        })}
-      </div>
+      <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: html }} />
     </div>
   );
 }
 
 /** Khối "Bảng size" (V246) — HTML tự do (thường là bảng), sanitize trước khi render. */
-export function SizeGuideBlockView({ block }: { block: SizeGuideBlockT }) {
+export function SizeGuideBlockView({ block }: { block: SizeGuideSection }) {
   // html là nguồn render; cho phép CSS inline để admin tự chỉnh giao diện khi dán HTML.
   const html = block.html ? sanitizeRichHtml(block.html, { allowInlineStyles: true }) : "";
   if (!html) return null;

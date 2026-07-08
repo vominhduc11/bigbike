@@ -4,10 +4,10 @@ import type { ReactNode } from "react";
 
 import { useLocale } from "next-intl";
 import { useLocalizedField } from "@/components/i18n/LocalizedContent";
-import type { DescriptionBlock } from "@/lib/contracts/public";
+import type { DescriptionBlock, SizeGuideSection, SuitabilitySection } from "@/lib/contracts/public";
 import { resolveMediaUrl } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
-import { groupBlocks, featureHasText, featureHasImage, type Group, type SizeGuideBlockT, type SuitabilityBlockT } from "./description-blocks/grouping";
+import { groupBlocks, featureHasText, featureHasImage, type Group } from "./description-blocks/grouping";
 import {
   FeatureBody,
   MediaBlock,
@@ -65,10 +65,6 @@ export function DescriptionBlocksView({ blocks }: { blocks: DescriptionBlock[] }
             <TextStack blocks={g.blocks} />
           ) : g.kind === "media" ? (
             <MediaBlock block={g.media} />
-          ) : g.kind === "suitability" ? (
-            <SuitabilityBlockView block={g.block} />
-          ) : g.kind === "sizeGuide" ? (
-            <SizeGuideBlockView block={g.block} />
           ) : featureHasText(g.block) && featureHasImage(g.block) ? (
             // Đủ ảnh + chữ → 2 cột so le trái/phải (chỉ desktop; mobile xếp dọc).
             <div className="grid items-center gap-6 md:grid-cols-2 md:gap-10">
@@ -127,12 +123,10 @@ export function ProductDescriptionBlocks({
   /** Nội dung thay thế khi không có khối nào (mô tả HTML legacy — tự đổi ngôn ngữ). */
   fallback: ReactNode;
 }) {
-  // Đổi sang EN: lấy khối bản EN từ payload localized; rỗng → dùng khối VI (prop).
-  // Lọc bỏ suitability/sizeGuide (đã tách thành section riêng, xem ProductSuitabilitySection/
-  // ProductSizeGuideSection bên dưới) — nếu không, EN sẽ render các khối này 2 lần vì payload EN
-  // là mảng đầy đủ chưa lọc, khác với `blocks` (VI) đã được ProductView lọc sẵn trước khi truyền vào.
-  const enBlocksRaw = useLocalizedField<DescriptionBlock[]>("descriptionBlocks");
-  const enBlocks = enBlocksRaw?.filter((b) => b.type !== "suitability" && b.type !== "sizeGuide");
+  // Đổi sang EN: lấy khối bản EN từ payload localized; rỗng → dùng khối VI (prop). Từ V327/V328,
+  // suitability/sizeGuide không còn nằm trong descriptionBlocks nữa (field riêng, xem
+  // ProductSuitabilitySection/ProductSizeGuideSection bên dưới) — không cần lọc lại ở đây.
+  const enBlocks = useLocalizedField<DescriptionBlock[]>("descriptionBlocks");
   const locale = useLocale();
   const active = locale === "en" ? enBlocks : blocks;
 
@@ -143,44 +137,32 @@ export function ProductDescriptionBlocks({
 }
 
 /**
- * Khối "Phù hợp với ai" (#7) và "Bảng size" (#8) — TÁCH RA khỏi luồng mô tả tự do để render thành
- * SECTION RIÊNG ở vị trí cố định theo canonical layout (PDP_CONTENT_GUIDE §0b), thay vì để admin chèn
- * lẫn vào giữa mô tả. Dùng chung bộ render khối (Suitability/SizeGuideBlockView) và cùng cơ chế đổi
- * ngôn ngữ: bản EN lấy qua `useLocalizedField("descriptionBlocks")` rồi LỌC theo type; chưa có EN
- * (server/SSR) → dùng khối VI (prop, đã lọc sẵn ở ProductView) → giữ nội dung trong HTML cho SEO.
+ * Khối "Phù hợp với ai" (#7) và "Bảng size" (#8) — SECTION RIÊNG ở vị trí cố định theo canonical
+ * layout (PDP_CONTENT_GUIDE §0b), field riêng trên `Product` (không còn nằm trong descriptionBlocks
+ * từ V327/V328). Dùng chung bộ render khối (Suitability/SizeGuideBlockView) và cùng cơ chế đổi ngôn
+ * ngữ: bản EN lấy qua `useLocalizedField` trực tiếp trên field mới; chưa có EN (server/SSR) → dùng
+ * section VI (prop) → giữ nội dung trong HTML cho SEO.
  */
-export function ProductSuitabilitySection({ blocks }: { blocks: DescriptionBlock[] }) {
-  const enBlocks = useLocalizedField<DescriptionBlock[]>("descriptionBlocks");
+export function ProductSuitabilitySection({ section }: { section: SuitabilitySection | null }) {
+  const enSection = useLocalizedField<SuitabilitySection>("suitabilitySection");
   const locale = useLocale();
-  const items = (
-    locale === "en"
-      ? (enBlocks ?? []).filter((b) => b.type === "suitability")
-      : blocks
-  ) as SuitabilityBlockT[];
-  if (items.length === 0) return null;
+  const active = locale === "en" ? enSection : section;
+  if (!active) return null;
   return (
     <div className="pdp-desc-rich flex flex-col gap-8">
-      {items.map((b, i) => (
-        <SuitabilityBlockView key={i} block={b} />
-      ))}
+      <SuitabilityBlockView block={active} />
     </div>
   );
 }
 
-export function ProductSizeGuideSection({ blocks }: { blocks: DescriptionBlock[] }) {
-  const enBlocks = useLocalizedField<DescriptionBlock[]>("descriptionBlocks");
+export function ProductSizeGuideSection({ section }: { section: SizeGuideSection | null }) {
+  const enSection = useLocalizedField<SizeGuideSection>("sizeGuideSection");
   const locale = useLocale();
-  const items = (
-    locale === "en"
-      ? (enBlocks ?? []).filter((b) => b.type === "sizeGuide")
-      : blocks
-  ) as SizeGuideBlockT[];
-  if (items.length === 0) return null;
+  const active = locale === "en" ? enSection : section;
+  if (!active) return null;
   return (
     <div className="pdp-desc-rich flex flex-col gap-8">
-      {items.map((b, i) => (
-        <SizeGuideBlockView key={i} block={b} />
-      ))}
+      <SizeGuideBlockView block={active} />
     </div>
   );
 }

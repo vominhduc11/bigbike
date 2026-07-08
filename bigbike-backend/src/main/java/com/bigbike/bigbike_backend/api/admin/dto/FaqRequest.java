@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.api.admin.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,18 +16,24 @@ import lombok.Setter;
 @AllArgsConstructor
 public class FaqRequest {
 
+    // question/questionEn and answer/answerEn are bilingual pairs — ALWAYS so export (EXPORT_MAPPER
+    // is NON_NULL by default) still emits both sides, null-filling whichever is blank.
+    @JsonInclude(JsonInclude.Include.ALWAYS)
     @Size(max = 500, message = "FAQ question is too long.")
     private String question;
 
+    @JsonInclude(JsonInclude.Include.ALWAYS)
     @Size(max = 20000, message = "FAQ answer is too long.")
     private String answer;
 
     private Integer sortOrder;
 
     // Optional English content (V136). Not required — English is optional per PRODUCT_RULE_001.
+    @JsonInclude(JsonInclude.Include.ALWAYS)
     @Size(max = 500, message = "FAQ English question is too long.")
     private String questionEn;
 
+    @JsonInclude(JsonInclude.Include.ALWAYS)
     @Size(max = 20000, message = "FAQ English answer is too long.")
     private String answerEn;
 }

@@ -6,6 +6,7 @@ import { ProductView } from "@/components/catalog/ProductView";
 import { PreviewGuard } from "@/components/preview/PreviewGuard";
 import { fetchPublicSettings } from "@/lib/api/client-api";
 import type { Product, PublicSiteSetting } from "@/lib/contracts/public";
+import { withFlatHighlights } from "@/lib/contracts/public";
 import { env } from "@/env";
 
 // Origin của app admin — chỉ nhận postMessage từ đây (chống frame lạ chèn dữ liệu).
@@ -53,7 +54,7 @@ export default function ProductPreviewPage() {
       if (ADMIN_ORIGIN && event.origin !== ADMIN_ORIGIN) return;
       const inbound = event.data as PreviewInbound | undefined;
       if (!inbound || inbound.type !== "bigbike-preview" || !inbound.data) return;
-      setProduct(inbound.data);
+      setProduct(withFlatHighlights(inbound.data));
     }
 
     window.addEventListener("message", handleMessage);

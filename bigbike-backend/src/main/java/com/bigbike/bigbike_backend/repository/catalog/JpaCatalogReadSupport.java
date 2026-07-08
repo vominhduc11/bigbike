@@ -5,11 +5,12 @@ import com.bigbike.bigbike_backend.domain.catalog.CategoryTranslations;
 import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
-import com.bigbike.bigbike_backend.domain.catalog.ProductTab;
 import com.bigbike.bigbike_backend.domain.catalog.ProductTranslations;
 import com.bigbike.bigbike_backend.domain.catalog.ProductVariant;
 import com.bigbike.bigbike_backend.domain.catalog.ProductVariantOption;
 import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
+import com.bigbike.bigbike_backend.domain.catalog.SizeGuideSection;
+import com.bigbike.bigbike_backend.domain.catalog.SuitabilitySection;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
@@ -52,42 +53,25 @@ final class JpaCatalogReadSupport {
     }
 
     /**
-     * Locale variant of {@link #pick} for structured description blocks (V229). English blocks are
-     * used only when present and non-empty; otherwise falls back to the Vietnamese blocks.
+     * Locale-resolve a bilingual-inline description block list (V326) for PUBLIC reads. Delegates to
+     * {@link DescriptionBlock#resolveForLocale} (shared with the write-side EN HTML rendering in
+     * {@code AdminCatalogMutationService}) — resolved value in the base field, {@code *En} nulled
+     * out, same convention as {@code toFaqs}/{@code toCommitments}/{@code toHighlights}. Admin reads
+     * should use the raw block list from the entity directly instead, since both languages already
+     * live inline on each block.
      */
-    static List<DescriptionBlock> pickBlocks(
-            List<DescriptionBlock> base, List<DescriptionBlock> en, String locale) {
-        if (LOCALE_EN.equals(locale) && en != null && !en.isEmpty()) {
-            return en;
-        }
-        return base;
+    static List<DescriptionBlock> resolveDescriptionBlocksForPublic(List<DescriptionBlock> blocks, String locale) {
+        return DescriptionBlock.resolveForLocale(blocks, locale);
     }
 
-    /**
-     * Per-product PDP tabs (V231). Null entity value → null (web falls back to the default tab set).
-     * Public reads resolve each tab's label/blocks for the locale and drop the raw English; admin reads
-     * keep the raw bilingual tabs so the editor can show both languages.
-     */
-    static List<ProductTab> resolveTabs(ProductEntity entity, boolean publicView, String locale) {
-        List<ProductTab> tabs = entity.getProductTabs();
-        if (tabs == null) {
-            return null;
-        }
-        if (!publicView) {
-            return tabs;
-        }
-        return tabs.stream()
-                .map(t -> new ProductTab(
-                        t.id(),
-                        t.type(),
-                        t.enabled(),
-                        t.sortOrder(),
-                        pick(t.label(), t.labelEn(), locale),
-                        null,
-                        pickBlocks(t.blocks(), t.blocksEn(), locale),
-                        null
-                ))
-                .toList();
+    /** Same convention as {@link #resolveDescriptionBlocksForPublic} but for the standalone "Phù hợp với ai" field (V327/V328). */
+    static SuitabilitySection resolveSuitabilitySectionForPublic(SuitabilitySection section, String locale) {
+        return SuitabilitySection.resolveForLocale(section, locale);
+    }
+
+    /** Same convention as {@link #resolveDescriptionBlocksForPublic} but for the standalone "Bảng size" field (V327/V328). */
+    static SizeGuideSection resolveSizeGuideSectionForPublic(SizeGuideSection section, String locale) {
+        return SizeGuideSection.resolveForLocale(section, locale);
     }
 
     static CategoryTranslations toCategoryTranslations(CategoryEntity entity) {
@@ -126,12 +110,9 @@ final class JpaCatalogReadSupport {
      * shape is unchanged and the admin editor can detect "no translation yet".
      */
     static ProductTranslations toTranslations(ProductEntity entity) {
-        List<DescriptionBlock> descriptionBlocksEn = entity.getDescriptionBlocksEn();
         boolean anyEnglish = isPresent(entity.getNameEn())
                 || isPresent(entity.getShortDescriptionEn())
                 || isPresent(entity.getDescriptionEn())
-                || isPresent(entity.getPromotionContentEn())
-                || isPresent(entity.getInstallationGuideEn())
                 || isPresent(entity.getSuitabilityAdvisoryEn())
                 || isPresent(entity.getSpecificationsHtmlEn())
                 || isPresent(entity.getSpecStatsHtmlEn())
@@ -140,7 +121,9 @@ final class JpaCatalogReadSupport {
                 || isPresent(entity.getSeoTitleEn())
                 || isPresent(entity.getSeoDescriptionEn())
                 || isPresent(entity.getOriginBrandCountryEn())
-                || (descriptionBlocksEn != null && !descriptionBlocksEn.isEmpty());
+                || hasAnyBlockTranslation(entity.getDescriptionBlocks())
+                || hasSuitabilitySectionTranslation(entity.getSuitabilitySection())
+                || hasSizeGuideSectionTranslation(entity.getSizeGuideSection());
         if (!anyEnglish) {
             return null;
         }
@@ -148,8 +131,6 @@ final class JpaCatalogReadSupport {
                 entity.getNameEn(),
                 entity.getShortDescriptionEn(),
                 entity.getDescriptionEn(),
-                entity.getPromotionContentEn(),
-                entity.getInstallationGuideEn(),
                 entity.getSuitabilityAdvisoryEn(),
                 entity.getSpecificationsHtmlEn(),
                 entity.getSpecStatsHtmlEn(),
@@ -157,9 +138,36 @@ final class JpaCatalogReadSupport {
                 entity.getQuickAnswerSummaryEn(),
                 entity.getSeoTitleEn(),
                 entity.getSeoDescriptionEn(),
-                descriptionBlocksEn,
                 entity.getOriginBrandCountryEn()
         ));
+    }
+
+    /** True if any block carries non-blank English content in any of its {@code *En} fields. */
+    private static boolean hasAnyBlockTranslation(List<DescriptionBlock> blocks) {
+        if (blocks == null) return false;
+        for (DescriptionBlock block : blocks) {
+            if (block instanceof DescriptionBlock.HeadingBlock b && isPresent(b.getTextEn())) return true;
+            if (block instanceof DescriptionBlock.ParagraphBlock b && isPresent(b.getHtmlEn())) return true;
+            if (block instanceof DescriptionBlock.ListBlock b && b.getItemsEn() != null && !b.getItemsEn().isEmpty()) return true;
+            if (block instanceof DescriptionBlock.ImageBlock b && (isPresent(b.getAltEn()) || isPresent(b.getCaptionEn()))) return true;
+            if (block instanceof DescriptionBlock.VideoBlock b && isPresent(b.getCaptionEn())) return true;
+            if (block instanceof DescriptionBlock.CalloutBlock b && isPresent(b.getHtmlEn())) return true;
+            if (block instanceof DescriptionBlock.FeatureBlock b && (isPresent(b.getAltEn()) || isPresent(b.getCaptionEn())
+                    || isPresent(b.getSubheadingEn()) || isPresent(b.getHeadingEn()) || isPresent(b.getHtmlEn())
+                    || (b.getItemsEn() != null && !b.getItemsEn().isEmpty()))) return true;
+        }
+        return false;
+    }
+
+    /** True if the standalone "Phù hợp với ai" field (V327/V328) carries any non-blank English content. */
+    private static boolean hasSuitabilitySectionTranslation(SuitabilitySection section) {
+        if (section == null) return false;
+        return isPresent(section.getTitleEn()) || isPresent(section.getHtmlEn());
+    }
+
+    /** True if the standalone "Bảng size" field (V327/V328) carries any non-blank English content. */
+    private static boolean hasSizeGuideSectionTranslation(SizeGuideSection section) {
+        return section != null && (isPresent(section.getTitleEn()) || isPresent(section.getHtmlEn()));
     }
 
     static boolean isPresent(String value) {

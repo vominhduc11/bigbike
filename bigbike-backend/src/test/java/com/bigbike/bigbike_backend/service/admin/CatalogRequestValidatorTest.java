@@ -90,6 +90,89 @@ class CatalogRequestValidatorTest {
     }
 
     @Test
+    void validateProductRequest_create_missingNameAndSlug_stillFlaggedHere() {
+        UpsertProductRequest request = new UpsertProductRequest();
+        request.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.DRAFT);
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        validator.validateProductRequest(request, null, true, false, errors);
+
+        assertThat(errors.stream().map(ApiErrorDetail::field))
+                .contains("slug", "name");
+    }
+
+    @Test
+    void validateProductRequest_create_missingRetailPriceAndCategoryId_deferredToPostMergeCheck() {
+        // PRODUCT_RULE_005 (2026-07-07) — retailPrice/categoryId requiredness moved out of this
+        // request-level validator into AdminMutationValidators.validateProductFieldsRequired,
+        // which runs post-merge (conditional on has-variants). This layer must no longer flag
+        // them, or a has-variants product with no product-level price/category-at-request-time
+        // would be incorrectly blocked before the post-merge check even runs.
+        UpsertProductRequest request = new UpsertProductRequest();
+        request.setSlug("test-slug");
+        request.setName("Test Product");
+        request.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.DRAFT);
+        request.setTranslations(validTranslation());
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        validator.validateProductRequest(request, null, true, false, errors);
+
+        assertThat(errors.stream().map(ApiErrorDetail::field))
+                .doesNotContain("retailPrice", "categoryId");
+    }
+
+    @Test
+    void validateProductRequest_variantMissingRetailPrice_productHasSharedRetailPrice_notFlagged() {
+        // PRODUCT_RULE_013 (2026-07-07) — a variant without its own retailPrice falls back to the
+        // product's shared retailPrice, so it must not be flagged REQUIRED when the product has one.
+        UpsertProductRequest request = createBaseRequest(); // retailPrice = TEN
+
+        VariantRequest vReq = new VariantRequest();
+        vReq.setSku("VAR-1");
+        request.setVariants(Collections.singletonList(vReq));
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        validator.validateProductRequest(request, null, true, false, errors);
+
+        assertThat(errors.stream().map(ApiErrorDetail::field))
+                .doesNotContain("variants[0].retailPrice");
+    }
+
+    @Test
+    void validateProductRequest_variantMissingRetailPrice_productHasNoSharedRetailPrice_stillFlagged() {
+        UpsertProductRequest request = createBaseRequest();
+        request.setRetailPrice(null); // no shared price to fall back to
+
+        VariantRequest vReq = new VariantRequest();
+        vReq.setSku("VAR-1");
+        request.setVariants(Collections.singletonList(vReq));
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        validator.validateProductRequest(request, null, true, false, errors);
+
+        assertThat(errors.stream().map(ApiErrorDetail::field))
+                .contains("variants[0].retailPrice");
+    }
+
+    @Test
+    void validateProductRequest_variantSalePriceWithoutOwnRetailPrice_isRejected() {
+        // A variant with no retailPrice of its own is not "self-priced" (VariantPricing.hasOwnPrice)
+        // — a salePrice submitted alone would be silently ignored, so it must be rejected instead.
+        UpsertProductRequest request = createBaseRequest(); // has a shared retailPrice
+
+        VariantRequest vReq = new VariantRequest();
+        vReq.setSku("VAR-1");
+        vReq.setSalePrice(BigDecimal.ONE);
+        request.setVariants(Collections.singletonList(vReq));
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        validator.validateProductRequest(request, null, true, false, errors);
+
+        assertThat(errors.stream().map(ApiErrorDetail::field))
+                .contains("variants[0].salePrice");
+    }
+
+    @Test
     void validateProductRequest_newOutsideMinioGalleryUrl_isRejected() {
         UpsertProductRequest request = createBaseRequest();
 
@@ -162,6 +245,7 @@ class CatalogRequestValidatorTest {
 
         VariantRequest vReq = new VariantRequest();
         vReq.setSku("VAR-SKU-1");
+        vReq.setRetailPrice(BigDecimal.TEN);
         VariantOptionRequest opt = new VariantOptionRequest();
         opt.setOptionName("color");
         opt.setOptionValue("Red");
@@ -191,6 +275,7 @@ class CatalogRequestValidatorTest {
         ProductEntity current = new ProductEntity();
         ProductVariantEntity existingVariant = new ProductVariantEntity();
         existingVariant.setId("existing-var-id");
+        existingVariant.setRetailPrice(BigDecimal.TEN);
         ProductVariantGalleryImageEntity existingImg = new ProductVariantGalleryImageEntity();
         existingImg.setImageUrl("https://cdn.external.vn/uploads/xe.jpg");
         existingImg.setMediaType("image");

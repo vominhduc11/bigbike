@@ -255,6 +255,14 @@ public class AdminInventoryService {
                     "Cannot change availability for a trashed product.");
         }
 
+        // Guard: a product with variants has no single "product toggle" — each variant has its own
+        // availability, aggregated up via InventoryPolicyService. Setting stockState directly here
+        // would bypass that aggregate and let it drift out of sync with the variants.
+        if (product.getVariants() != null && !product.getVariants().isEmpty()) {
+            throw ValidationException.fromField("productId", "HAS_VARIANTS",
+                    "Cannot toggle availability directly on a product that has variants; toggle each variant instead.");
+        }
+
         product.setStockState(available
                 ? ProductStockState.IN_STOCK
                 : ProductStockState.OUT_OF_STOCK);
