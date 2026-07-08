@@ -10,28 +10,8 @@ import { TagInput } from './TagInput'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { REFERENCE_TYPE_KEYS, formatBytes } from './media-picker/pickerUtils'
 
-const REFERENCE_TYPE_KEYS = {
-  PRODUCT: 'media.referenceType.PRODUCT',
-  PRODUCT_GALLERY: 'media.referenceType.PRODUCT_GALLERY',
-  PRODUCT_VARIANT: 'media.referenceType.PRODUCT_VARIANT',
-  PRODUCT_VARIANT_GALLERY: 'media.referenceType.PRODUCT_VARIANT_GALLERY',
-  CATEGORY: 'media.referenceType.CATEGORY',
-  BRAND: 'media.referenceType.BRAND',
-  HOME_VIDEO: 'media.referenceType.HOME_VIDEO',
-  CONTENT: 'media.referenceType.CONTENT',
-  CONTENT_PRODUCT_IMG: 'media.referenceType.CONTENT_PRODUCT_IMG',
-  CONTENT_SEO_OG: 'media.referenceType.CONTENT_SEO_OG',
-  SLIDER_DESKTOP: 'media.referenceType.SLIDER_DESKTOP',
-  SLIDER_MOBILE: 'media.referenceType.SLIDER_MOBILE',
-}
-
-function formatBytes(bytes) {
-  if (!bytes) return '—'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
 
 function formatDate(iso) {
   if (!iso) return '—'

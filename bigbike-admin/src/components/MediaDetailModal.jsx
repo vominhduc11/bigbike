@@ -4,29 +4,9 @@ import { updateMedia } from '../lib/adminApi'
 import { useMediaReferences } from '../lib/useMediaReferences'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { IconClose } from './media-picker/pickerIcons'
+import { REFERENCE_TYPE_KEYS } from './media-picker/pickerUtils'
 
-function IconClose() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-      <path d="M18 6 6 18M6 6l12 12" />
-    </svg>
-  )
-}
-
-const REFERENCE_TYPE_KEYS = {
-  PRODUCT: 'media.referenceType.PRODUCT',
-  PRODUCT_GALLERY: 'media.referenceType.PRODUCT_GALLERY',
-  PRODUCT_VARIANT: 'media.referenceType.PRODUCT_VARIANT',
-  PRODUCT_VARIANT_GALLERY: 'media.referenceType.PRODUCT_VARIANT_GALLERY',
-  CATEGORY: 'media.referenceType.CATEGORY',
-  BRAND: 'media.referenceType.BRAND',
-  HOME_VIDEO: 'media.referenceType.HOME_VIDEO',
-  CONTENT: 'media.referenceType.CONTENT',
-  CONTENT_PRODUCT_IMG: 'media.referenceType.CONTENT_PRODUCT_IMG',
-  CONTENT_SEO_OG: 'media.referenceType.CONTENT_SEO_OG',
-  SLIDER_DESKTOP: 'media.referenceType.SLIDER_DESKTOP',
-  SLIDER_MOBILE: 'media.referenceType.SLIDER_MOBILE',
-}
 
 /**
  * Modal for editing altText / title of a media item,

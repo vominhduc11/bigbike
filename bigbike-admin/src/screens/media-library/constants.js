@@ -19,13 +19,7 @@ export const DEFAULT_QUERY = {
   page: 1, pageSize: 24,
 }
 
-export function formatBytes(bytes) {
-  if (!bytes) return '—'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
-}
+export { formatBytes } from '../../components/media-picker/pickerUtils'
 
 export function formatNumber(n) {
   return new Intl.NumberFormat('vi-VN').format(n ?? 0)
