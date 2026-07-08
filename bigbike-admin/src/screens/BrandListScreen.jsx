@@ -291,7 +291,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
       label: t('brands.colBrand'),
       render: (brand) => (
         <div className="product-cell">
-          <span className="thumb">
+          <span className="bb-product-thumb">
             {brand.logo?.url ? (
               <img
                 src={brand.logo.url}

@@ -1,42 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { normalizePublishStatus, normalizeStockState } from '../lib/contracts'
-
-const ORDER_STATUS_TONE = {
-  PENDING:    'warning',
-  ON_HOLD:    'warning',
-  PROCESSING: 'info',
-  COMPLETED:  'success',
-  CANCELLED:  'neutral',
-  FAILED:     'danger',
-  UNKNOWN:    'muted',
-}
-
-const PAYMENT_STATUS_TONE = {
-  PENDING:   'warning',
-  UNPAID:    'warning',
-  PAID:      'success',
-  CANCELLED: 'neutral',
-  FAILED:    'danger',
-  UNKNOWN:   'muted',
-}
-
-function toneFromPublish(status) {
-  switch (status) {
-    case 'PUBLISHED': return 'success'
-    case 'DRAFT':     return 'info'
-    case 'HIDDEN':    return 'warning'
-    case 'TRASH':     return 'danger'
-    default:          return 'muted'
-  }
-}
-
-function toneFromStock(status) {
-  switch (status) {
-    case 'IN_STOCK':     return 'success'
-    case 'OUT_OF_STOCK': return 'danger'
-    default:             return 'muted'
-  }
-}
+import { ORDER_STATUS_TONE, PAYMENT_STATUS_TONE, toneFromPublish, toneFromStock } from '../lib/statusTone'
 
 function Badge({ tone = 'muted', className, children }) {
   return (

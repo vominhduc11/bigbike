@@ -42,7 +42,7 @@ export function TableHead({ className, scope = 'col', ...props }) {
     <th
       scope={scope}
       className={cn(
-        'h-10 px-3 text-left align-middle text-xs font-semibold text-muted-foreground sticky top-0 z-10 bg-surface-muted [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
+        'h-11 px-3 text-left align-middle text-xs font-semibold text-muted-foreground sticky top-0 z-10 bg-surface-muted [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
         className
       )}
       {...props}
@@ -54,7 +54,7 @@ export function TableCell({ className, ...props }) {
   return (
     <td
       className={cn(
-        'px-3 py-2 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
+        'px-3 py-3 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
         className
       )}
       {...props}

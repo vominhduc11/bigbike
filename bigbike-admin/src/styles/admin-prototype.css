@@ -202,7 +202,7 @@
   justify-content: center;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--bb-r-control);
   color: var(--bb-text-secondary);
   cursor: pointer;
   position: relative;
@@ -327,7 +327,7 @@
   padding: 0 12px;
   font-size: 13px;
   font-weight: 500;
-  border-radius: 6px;
+  border-radius: var(--bb-r-control);
   border: 1px solid transparent;
   background: transparent;
   color: var(--bb-text);
@@ -368,7 +368,7 @@
   color: var(--bb-danger);
 }
 .bb-btn-danger-ghost:hover:not(:disabled) { background: var(--bb-danger-bg); }
-.bb-btn-sm { height: 26px; padding: 0 8px; font-size: 12px; border-radius: 5px; }
+.bb-btn-sm { height: 26px; padding: 0 8px; font-size: 12px; border-radius: var(--bb-r-xs); }
 .bb-btn-lg { height: 38px; padding: 0 16px; font-size: 13.5px; }
 
 /* ─── Focus visible (a11y — WCAG 2.4.7 Focus Visible, Level A) ──────────────────
@@ -439,7 +439,7 @@
   height: 34px;
   padding: 0 10px;
   border: 1px solid var(--bb-border-strong);
-  border-radius: 6px;
+  border-radius: var(--bb-r-control);
   background: var(--bb-surface);
   font-size: 13px;
   color: var(--bb-text);
@@ -470,7 +470,7 @@
 .bb-card {
   background: var(--bb-surface);
   border: 1px solid var(--bb-border);
-  border-radius: 8px;
+  border-radius: var(--bb-r-card);
   box-shadow: var(--bb-sh-xs);
 }
 .bb-card-header {
@@ -504,7 +504,7 @@
 .bb-kpi {
   background: var(--bb-surface);
   border: 1px solid var(--bb-border);
-  border-radius: 8px;
+  border-radius: var(--bb-r-card);
   padding: 12px 16px;
   display: flex;
   flex-direction: column;
@@ -588,7 +588,7 @@
 .bb-skeleton-block {
   background: var(--bb-surface);
   border: 1px solid var(--bb-border);
-  border-radius: 8px;
+  border-radius: var(--bb-r-card);
   animation: bb-pulse 1.8s ease-in-out infinite;
 }
 @keyframes bb-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
@@ -597,7 +597,7 @@
 .bb-dash-tooltip {
   background: var(--bb-surface);
   border: 1px solid var(--bb-border);
-  border-radius: 6px;
+  border-radius: var(--bb-r-control);
   padding: 8px 12px;
   font-size: 12.5px;
   box-shadow: var(--bb-sh-sm);
@@ -614,7 +614,7 @@
 .bb-filter-bar {
   background: var(--bb-surface);
   border: 1px solid var(--bb-border);
-  border-radius: 8px;
+  border-radius: var(--bb-r-card);
   padding: 10px 12px;
   margin-bottom: 12px;
   display: flex;
@@ -672,7 +672,7 @@
 .bb-table-wrap {
   background: var(--bb-surface);
   border: 1px solid var(--bb-border);
-  border-radius: 8px;
+  border-radius: var(--bb-r-card);
   /* responsive: was overflow:hidden which clipped wide tables on small screens;
      overflow:auto lets them scroll sideways; max-height biến vùng bảng thành khung
      cuộn dọc riêng để dòng tiêu đề sticky (T6). Bảng ngắn (< max-height) không hiện
@@ -785,7 +785,7 @@
   padding: 56px 24px;
   background: var(--bb-surface);
   border: 1px dashed var(--bb-border-strong);
-  border-radius: 8px;
+  border-radius: var(--bb-r-card);
 }
 
 .bb-state h4 { font-size: 14px; font-weight: 600; margin: 0 0 4px; color: var(--bb-text); }
@@ -803,7 +803,7 @@
   align-items: flex-start;
   gap: 10px;
   padding: 10px 12px;
-  border-radius: 6px;
+  border-radius: var(--bb-r-control);
   border: 1px solid;
   font-size: 12.5px;
   margin-bottom: 12px;
@@ -828,7 +828,7 @@
   border: 1px solid var(--bb-border);
   background: var(--bb-surface);
   color: var(--bb-text);
-  border-radius: 5px;
+  border-radius: var(--bb-r-control);
   font-size: 12px;
   cursor: pointer;
   display: inline-flex;
@@ -857,7 +857,7 @@
 }
 .bb-product-thumb {
   width: 36px; height: 36px;
-  border-radius: 6px;
+  border-radius: var(--bb-r-thumb);
   background: var(--bb-surface-raised);
   display: flex;
   align-items: center;
@@ -875,6 +875,15 @@
 .bb-row-link { display: contents; color: inherit; text-decoration: none; cursor: pointer; }
 .bb-row-link:hover { color: var(--bb-primary); }
 
+/* Vạch màu trái theo trạng thái — opt-in qua rowClassName của AdminTable.
+   Đặt trên td:first-child để nằm ở mép trái dòng (kể cả khi cột đầu là checkbox). */
+.bb-row-accent--success td:first-child { border-left: 3px solid var(--bb-success); }
+.bb-row-accent--warning td:first-child { border-left: 3px solid var(--bb-warning); }
+.bb-row-accent--danger  td:first-child { border-left: 3px solid var(--bb-danger); }
+.bb-row-accent--info    td:first-child { border-left: 3px solid var(--bb-info); }
+.bb-row-accent--neutral td:first-child { border-left: 3px solid var(--bb-neutral); }
+.bb-row-accent--muted   td:first-child { border-left: 3px solid var(--bb-text-muted); }
+
 /* Row action dropdown menu */
 .bb-row-menu {
   position: absolute;
@@ -882,7 +891,7 @@
   right: 0;
   background: var(--bb-surface);
   border: 1px solid var(--bb-border);
-  border-radius: 8px;
+  border-radius: var(--bb-r-control);
   box-shadow: var(--bb-sh-md);
   z-index: 50;
   min-width: 160px;
@@ -1177,7 +1186,7 @@ dl.bb-info-grid dd { color: var(--bb-text); }
   width: 220px;
   background: var(--bb-surface);
   border: 1px solid var(--bb-border);
-  border-radius: 8px;
+  border-radius: var(--bb-r-control);
   box-shadow: var(--bb-sh-md);
   z-index: var(--admin-z-popup);
   overflow: hidden;

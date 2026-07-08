@@ -105,7 +105,7 @@ export function AdminTable({
       <TableBody>
         {loading
           ? Array.from({ length: pageSize }, (_, i) => (
-              <TableRow key={i} className="h-11 hover:bg-transparent animate-pulse">
+              <TableRow key={i} className="h-12 hover:bg-transparent animate-pulse">
                 {selectable && (
                   <TableCell>
                     <div className="h-4 w-4 rounded-xs bg-surface-muted" />
@@ -129,7 +129,7 @@ export function AdminTable({
               return (
                 <TableRow
                   key={row.id}
-                  className={cn('h-11', extraClass, rowClickable && 'cursor-pointer')}
+                  className={cn('h-12', extraClass, rowClickable && 'cursor-pointer')}
                   onClick={rowClickable ? (e) => {
                     // Ctrl/Cmd/Shift-click → mở tab mới; còn lại điều hướng cùng tab.
                     if (href && (e.metaKey || e.ctrlKey || e.shiftKey)) { e.preventDefault(); openTab(href); return }

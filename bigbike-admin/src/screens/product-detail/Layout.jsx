@@ -98,28 +98,7 @@ export function RoleBadge({ role }) {
   return null
 }
 
-// Section card wrapper — matches CategoryDetail/BrandDetail "card-head + card-body" pattern.
-// Required sections get a subtle red asterisk after the title instead of a loud "BẮT BUỘC" badge.
-export function SectionCard({ title, badge, required, children }) {
-  return (
-    <div className="bb-card">
-      <div className="bb-card-header">
-        <h3>
-          {title}
-          {required && (
-            <span
-              className="ml-1 text-[var(--admin-color-status-danger-text)]"
-              aria-label="bắt buộc"
-              title="Bắt buộc"
-            >*</span>
-          )}
-        </h3>
-        {badge}
-      </div>
-      <div className="bb-card-body">{children}</div>
-    </div>
-  )
-}
+// SectionCard đã chuyển sang component dùng chung: src/components/SectionCard.jsx
 
 // Inline assignment guide — replaces the icon-only Popover in the header.
 // Thin adapter over the shared, purely-presentational AssignmentBanner (same component the

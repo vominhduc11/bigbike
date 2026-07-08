@@ -11,6 +11,7 @@ import { AdminTable } from '../components/AdminTable'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { FilterChips } from '../components/FilterChips'
 import { PublishStatusBadge } from '../components/StatusBadge'
+import { publishRowAccent } from '../lib/statusTone'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { RecentItemsChips } from '../components/RecentItemsChips'
 import { StatePanel } from '../components/StatePanel'
@@ -276,7 +277,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
       skeletonWidth: '80%',
       render: (item) => (
         <div className="product-cell">
-          <span className="thumb">
+          <span className="bb-product-thumb">
             {item.coverImage?.url ? (
               <img
                 src={item.coverImage.url}
@@ -532,6 +533,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
               onRowClick={(item) => navigate(`/admin/content/${item.type.toLowerCase()}/${item.id}`)}
               rowHref={(item) => `/admin/content/${item.type.toLowerCase()}/${item.id}`}
               mobileCard={mobileCard}
+              rowClassName={(item) => publishRowAccent(item.publishStatus)}
               sortKey={sortField}
               sortDir={sortDir}
               onSortChange={handleSortChange}

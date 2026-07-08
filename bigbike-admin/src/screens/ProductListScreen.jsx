@@ -16,6 +16,7 @@ import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { RecentItemsChips } from '../components/RecentItemsChips'
 import { AdminTable } from '../components/AdminTable'
 import { PublishStatusBadge } from '../components/StatusBadge'
+import { publishRowAccent } from '../lib/statusTone'
 import { showConfirm } from '../lib/confirm'
 import { ApiClientError, exportProductImportTemplate, exportProductsCsv, fetchBrands, fetchCategoryTree, fetchProductDetail, fetchProducts, publishProduct, restoreProduct, softDeleteProduct, permanentDeleteProduct } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
@@ -904,6 +905,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
               onRowClick={(product) => navigate(`/admin/products/${product.id}`)}
               rowHref={(product) => `/admin/products/${product.id}`}
               mobileCard={mobileCard}
+              rowClassName={(product) => publishRowAccent(product.publishStatus)}
             />
           </div>
           {state.status === 'success' && pagination && (

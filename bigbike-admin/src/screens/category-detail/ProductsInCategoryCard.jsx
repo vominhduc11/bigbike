@@ -52,7 +52,7 @@ export function ProductsInCategoryCard({ item, productsList, productsTotal, navi
                       <tr key={p.id} onClick={() => navigate(`/admin/products/${p.id}`)}>
                         <td>
                           <div className="product-cell">
-                            <span className="thumb">
+                            <span className="bb-product-thumb">
                               {p.image?.url ? (
                                 <img src={p.image.url} alt={p.image.alt || p.name} loading="lazy" referrerPolicy="no-referrer"
                                   style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -77,7 +77,7 @@ export function ProductsInCategoryCard({ item, productsList, productsTotal, navi
                   key={p.id}
                   title={(
                     <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span className="thumb" style={{ width: 32, height: 32, flexShrink: 0 }}>
+                      <span className="bb-product-thumb" style={{ width: 32, height: 32, flexShrink: 0 }}>
                         {p.image?.url ? (
                           <img src={p.image.url} alt={p.image.alt || p.name} loading="lazy" referrerPolicy="no-referrer"
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

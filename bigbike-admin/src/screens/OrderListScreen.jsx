@@ -18,6 +18,7 @@ import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { showConfirm } from '../lib/confirm'
 import { StatusBadge } from '../components/StatusBadge'
+import { orderRowAccent } from '../lib/statusTone'
 import { useAdminList } from '../lib/useAdminList'
 import { useColumnVisibility } from '../lib/useColumnVisibility'
 import { useDebounce } from '../lib/useDebounce'
@@ -404,6 +405,7 @@ export function OrderListScreen({ navigate, canUpdate }) {
               onRowClick={(order) => navigate(`/admin/orders/${order.id}`)}
               rowHref={(order) => `/admin/orders/${order.id}`}
               mobileCard={mobileCard}
+              rowClassName={(order) => orderRowAccent(order.orderStatus)}
               sortKey={sortKey}
               sortDir={sortDir}
               onSortChange={handleSortChange}

@@ -51,7 +51,7 @@ import {
   toSlug,
 } from './content-detail/constants'
 import { ContentAssignmentBanner } from './content-detail/ContentAssignmentBanner'
-import { SectionCard } from './content-detail/SectionCard'
+import { SectionCard } from '../components/SectionCard'
 import { FormField as Field } from '../components/layout/FormField'
 
 // Module chỉ còn quản lý BÀI VIẾT (ARTICLE). Trang thông tin tĩnh + trình dựng /huong-dan đã gỡ

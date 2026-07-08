@@ -221,6 +221,15 @@
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
 }
 
+/* Nền kính mờ khi trình duyệt hỗ trợ backdrop-filter (fallback: nền đục ở khối trên) */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .sticky-action-bar {
+    background: var(--admin-color-surface-glass);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+}
+
 .sticky-action-bar-info {
   flex: 1;
   min-width: 200px;

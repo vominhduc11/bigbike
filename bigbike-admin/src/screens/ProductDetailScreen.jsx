@@ -112,10 +112,10 @@ import {
 import {
   RelatedProductRow,
   RoleBadge,
-  SectionCard,
   CollapsibleGroup,
   AssignmentBanner,
 } from './product-detail/Layout'
+import { SectionCard } from '../components/SectionCard'
 import { FormField as Field } from '../components/layout/FormField'
 import { AssignmentConfigContext } from './product-detail/constants'
 

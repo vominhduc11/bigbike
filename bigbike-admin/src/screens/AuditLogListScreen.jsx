@@ -434,7 +434,7 @@ export function AuditLogListScreen() {
               sortKey={sort.key}
               sortDir={sort.dir}
               onSortChange={handleSortChange}
-              rowClassName={(r) => `audit-table-row${DANGEROUS_ACTIONS.has(r.action) ? ' audit-row-danger' : ''}`}
+              rowClassName={(r) => `audit-table-row${DANGEROUS_ACTIONS.has(r.action) ? ' bb-row-accent--danger' : ''}`}
             />
           </div>
 

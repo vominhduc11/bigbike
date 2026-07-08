@@ -20,6 +20,8 @@
   --admin-color-surface-hover:    #f3f4f6;
   /* "Selected" surfaces follow primary (orange), not brand red */
   --admin-color-surface-selected: var(--admin-color-primary-subtle);
+  /* Glass — nền bán trong suốt cho sticky action bar (backdrop-filter blur) */
+  --admin-color-surface-glass:    rgba(255, 255, 255, 0.85);
 
   /* ─── Rating stars ───────────────────────────────────────────────────── */
   --admin-color-rating-star: #fbbf24;
@@ -111,6 +113,11 @@
   --admin-radius-lg:   16px;
   --admin-radius-full: 9999px;
 
+  /* Semantic radius — dùng cho từng nhóm component (đừng hardcode px) */
+  --admin-radius-card:    var(--admin-radius-md);  /* card / panel / KPI / table-wrap / filter-bar */
+  --admin-radius-control: var(--admin-radius-sm);  /* button / input / select / menu / dropdown */
+  --admin-radius-thumb:   var(--admin-radius-xs);  /* ảnh thumbnail trong dòng bảng */
+
   /* ─── Shadows ───────────────────────────────────────────────────────────── */
   --admin-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
   --admin-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -186,6 +193,7 @@
   --bb-surface-raised:  var(--admin-color-surface-raised);
   --bb-surface-hover:   var(--admin-color-surface-hover);
   --bb-surface-selected:var(--admin-color-surface-selected);
+  --bb-surface-glass:   var(--admin-color-surface-glass);
   --bb-sidebar:         var(--admin-color-background-sidebar);
   --bb-sidebar-hover:   #1a2230;
   --bb-sidebar-active:  #20293a;
@@ -244,6 +252,9 @@
   --bb-r-md:   var(--admin-radius-md);
   --bb-r-lg:   var(--admin-radius-lg);
   --bb-r-pill: var(--admin-radius-full);
+  --bb-r-card:    var(--admin-radius-card);
+  --bb-r-control: var(--admin-radius-control);
+  --bb-r-thumb:   var(--admin-radius-thumb);
 
   --bb-sh-xs: var(--admin-shadow-xs);
   --bb-sh-sm: var(--admin-shadow-sm);
@@ -252,7 +263,7 @@
 
   --bb-sidebar-w:  248px;
   --bb-topbar-h:   56px;
-  --bb-row-h:      44px;
+  --bb-row-h:      48px;
 
   /* Max width of the centred content column. Below ~1750px viewport the content
      fills the available space; on large / ultra-wide monitors (4xl) it caps here
@@ -291,6 +302,7 @@
   --admin-color-surface-muted:    #1c2128;
   --admin-color-surface-raised:   #21262d;
   --admin-color-surface-hover:    #21262d;
+  --admin-color-surface-glass:    rgba(22, 27, 34, 0.85);
 
   /* ─── Rank badges ─── */
   --admin-rank-1-bg:   rgba(251, 191, 36, 0.15);

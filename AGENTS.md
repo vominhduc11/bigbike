@@ -365,8 +365,8 @@ Tailwind utility classes / CSS variables     ← text-primary, bg-brand, var(--a
 - **Màu**: **Primary = đỏ `#FF0C09`** (dark `#FF5A4D`) dùng chung cho cả CTA/active/selected/focus/link và brand chrome (logo, sidebar active, nav badge, notification pip), cùng giá trị đỏ thương hiệu chính thức của `bigbike-web`. Thương hiệu đỏ `--admin-color-brand-red` (`--bb-brand`) giờ là alias thuần của primary color. Danger giữ token danger riêng. Tham chiếu qua CSS variable / Tailwind token, không hardcode hex.
 - **Font**: `Inter` (body/UI/content), `Oswald` (display — số KPI, wordmark, tiêu đề H1), `JetBrains Mono` (mã/SKU/ID). Đã cài qua `@fontsource`. Không dùng Exo/Bungee trong admin.
 - **Scale / spacing**: type scale + thang 4px theo `admin-tokens.css` (`--admin-text-*`, `--admin-space-*`).
-- **Border radius**: theo token bo `--admin-radius-*` (xs 5 / sm 8 / md 12 / lg 16 px); `rounded-full` chỉ cho phần tử thực sự tròn. Admin **không** dùng `rounded-none` mặc định như web.
-- **Visual style**: operational/data-first — dense, readable, table/form/filter centric. Không hero/campaign visuals trong operational screens (trừ module preview cụ thể yêu cầu).
+- **Border radius**: theo token bo `--admin-radius-*` (xs 5 / sm 8 / md 12 / lg 16 px). Dùng **token ngữ nghĩa** cho từng nhóm component, **không hardcode px**: `--admin-radius-card` (= md 12px) cho card/panel/`bb-table-wrap`/KPI/filter-bar; `--admin-radius-control` (= sm 8px) cho button/input/select/menu/dropdown/pagination; `--admin-radius-thumb` (= xs 5px) cho ảnh thumbnail trong dòng bảng. `rounded-full` chỉ cho phần tử thực sự tròn. Admin **không** dùng `rounded-none` mặc định như web.
+- **Visual style**: operational/data-first — readable, table/form/filter centric, **cân bằng thoáng** (roomier: dòng bảng cao `48px` / `--bb-row-h`, cell `py-3`; card/thẻ bo mềm `--admin-radius-card` 12px). Không ép "dense" đến mức chật; vẫn giữ dữ liệu-trước, **không** hero/campaign visuals trong operational screens (trừ module preview cụ thể yêu cầu).
 
 #### Visual consistency check (cho cả 2 app)
 
@@ -547,6 +547,12 @@ grep -rn "ten-class" bigbike-web    --include="*.jsx" --include="*.tsx" --includ
 | `src/styles/admin-tokens.css` | Design tokens | `--bb-*`, `--admin-*` CSS variables | Active |
 
 **Đặc biệt với `bb-*` class**: Phần lớn `bb-*` đang được dùng nặng (`bb-sidebar`, `bb-nav-link`, `bb-kpi`, `bb-card`, `bb-table`, `bb-btn`, `bb-screen-header`, …). Một số đã được xác nhận dead và xóa (tháng 5/2026): `bb-search`, `bb-checkbox`, `bb-radio`, `bb-switch`, `bb-tabs`, `bb-detail-grid`, `bb-detail-grid-wide`, `bb-timeline`. Không xóa thêm mà không grep.
+
+**Đợt đồng bộ giao diện (redesign roomier/softer, 7/2026):**
+- **Bo góc token-hoá**: `.bb-card` (+ KPI/filter-bar/table-wrap/state) dùng `--bb-r-card` (12px); `.bb-btn`/`.bb-icon-btn`/`.bb-input`/`.bb-select`/menu/dropdown dùng `--bb-r-control` (8px); `.bb-product-thumb` + `.thumbnail-wrap` dùng `--admin-radius-thumb` (5px). shadcn `ui/button|input|select` (trigger) cũng trỏ `--admin-radius-control` để đồng bộ với `bb-btn`. Không còn hardcode px bo góc trong các class này.
+- **Vạch màu trái theo trạng thái**: `.bb-row-accent--{success|warning|danger|info|neutral}` (đặt `border-left` trên `td:first-child`) — opt-in qua `rowClassName` của `AdminTable`, tái dùng tone-map trong `components/StatusBadge.jsx` để đồng màu với chấm badge cùng dòng. Thay cho `.audit-row-danger` cũ.
+- **Sticky action bar glass**: `.sticky-action-bar` (trong `admin-layout.css`) dùng `--admin-color-surface-glass` + `backdrop-filter: blur` (trong `@supports`, có fallback nền đục).
+- **`SectionCard` dùng chung**: đặt tại `src/components/SectionCard.jsx` (props `{title, badge, required, children}`, tiêu đề `<h3>`). Không copy bản riêng ở từng screen (đã gỡ 2 bản trùng ở `product-detail/` và `content-detail/`).
 
 #### Khi thêm class mới vào file CSS
 

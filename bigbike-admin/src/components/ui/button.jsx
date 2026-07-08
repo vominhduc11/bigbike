@@ -18,9 +18,9 @@ const buttonVariants = cva(
       },
       size: {
         sm:   'h-7 px-3 text-xs rounded-[var(--admin-radius-xs)]',
-        md:   'h-9 px-4 text-sm rounded-[var(--admin-radius-xs)]',
-        lg:   'h-10 px-6 text-base rounded-[var(--admin-radius-sm)]',
-        icon: 'h-9 w-9 rounded-[var(--admin-radius-xs)]',
+        md:   'h-9 px-4 text-sm rounded-[var(--admin-radius-control)]',
+        lg:   'h-10 px-6 text-base rounded-[var(--admin-radius-control)]',
+        icon: 'h-9 w-9 rounded-[var(--admin-radius-control)]',
       },
     },
     defaultVariants: { variant: 'default', size: 'md' },
