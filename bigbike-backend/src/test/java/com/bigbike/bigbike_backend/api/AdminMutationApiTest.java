@@ -446,6 +446,7 @@ class AdminMutationApiTest {
         create.setSalePrice(new BigDecimal("2300000"));
         create.setCurrency("VND");
         create.setPublishStatus(PublishStatus.DRAFT);
+        create.setSku("phase1-variant-price-" + suffix);
         create.setTranslations(new ProductTranslationRequest(
                 ProductTranslationRequest.ProductContentRequest.builder()
                         .name("Phase 1 Variant Price Product EN " + suffix)

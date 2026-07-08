@@ -88,6 +88,9 @@ class AdminReadApiTest {
         create.setSlug(slug);
         create.setName("Phase 3 Read SEO Product " + suffix);
         create.setCategoryId("cat_helmet");
+        create.setBrandId("brand_ls2");
+        create.setGender("Unisex");
+        create.setSku("SKU-" + suffix);
         create.setRetailPrice(new BigDecimal("2500000"));
         create.setPublishStatus(PublishStatus.DRAFT);
         create.setTranslations(new ProductTranslationRequest(
@@ -127,6 +130,9 @@ class AdminReadApiTest {
         create.setSlug(slug);
         create.setName("Trash List Product " + suffix);
         create.setCategoryId("cat_helmet");
+        create.setBrandId("brand_ls2");
+        create.setGender("Unisex");
+        create.setSku("SKU-" + suffix);
         create.setRetailPrice(new BigDecimal("1250000"));
         create.setPublishStatus(PublishStatus.DRAFT);
         create.setTranslations(new ProductTranslationRequest(
@@ -163,6 +169,8 @@ class AdminReadApiTest {
         create.setName("Publish Then Trash Product " + suffix);
         create.setCategoryId("cat_helmet");
         create.setBrandId("brand_ls2");
+        create.setGender("Unisex");
+        create.setSku("SKU-" + suffix);
         create.setRetailPrice(new BigDecimal("1250000"));
         create.setPublishStatus(PublishStatus.DRAFT);
         ImageAssetRequest image = new ImageAssetRequest();

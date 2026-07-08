@@ -92,7 +92,7 @@ Evidence:
 
 | Field | DB column | Role | Required? |
 |---|---|---|---|
-| `product.sku` | `products.sku varchar(100)` | **Product-level SKU** — labeled plainly "SKU" in the admin UI (renamed 2026-07-07 from "Model code / group code"). Not used as the selling code when variants exist. | **Required when the product has no variants** (draft and publish alike, `PRODUCT_RULE_005`); not required once the product has ≥1 variant. Column stays nullable (no unique constraint) — the requirement is write-time, not a schema `NOT NULL`. |
+| `product.sku` | `products.sku varchar(100)` | **Product-level SKU** — labeled plainly "SKU" in the admin UI (renamed 2026-07-07 from "Model code / group code"). Not used as the selling code when variants exist. | **Always required** (draft and publish alike, `PRODUCT_RULE_005`), regardless of whether the product has variants. Column stays nullable (no unique constraint) — the requirement is write-time, not a schema `NOT NULL`. |
 | `variant.sku` | `product_variants.sku varchar(100)` | **Selling SKU** — the code used in cart, checkout, and inventory to identify the actual unit sold. | **Required + globally unique** on the admin upsert API (`@NotBlank` + case-insensitive uniqueness; see `BUSINESS_RULES.md` → `PRODUCT_RULE_SKU_001`). Enforced by partial unique index `ux_product_variants_sku_lower` on `lower(sku)` (V244). Column stays nullable (index ignores nulls) so the requirement is write-time, not a schema `NOT NULL`. |
 
 When snapshotting line items into cart/order, the system uses `variant.sku` first, falling back to `product.sku`. This fallback supports products that have no variants (where `product.sku` is the selling code) and legacy variants whose `sku` is still null (created before the requirement / WP-import).

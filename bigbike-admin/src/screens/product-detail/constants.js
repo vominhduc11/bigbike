@@ -127,9 +127,8 @@ export function getPublishReadiness(form, t) {
     { id: 'brand',     label: t('products.detail.checklist.brand'),     ok: Boolean(form.brandId),                                                  required: true  },
     { id: 'gender',    label: t('products.detail.checklist.gender', { defaultValue: 'Đối tượng' }), ok: Boolean(form.gender?.trim()),                required: true  },
     { id: 'image',     label: t('products.detail.checklist.image'),     ok: Boolean(form.imageUrl?.trim()),                                         required: true  },
-    // SKU/giá cấp sản phẩm: bắt buộc CHỈ KHI không có biến thể — khi có biến thể coi như đã
-    // thoả (giá/SKU chuyển xuống từng biến thể, xem PRODUCT_RULE_013/PRODUCT_RULE_SKU_001).
-    { id: 'sku',       label: t('products.detail.checklist.sku', { defaultValue: 'Mã SKU' }), ok: hasVariants || Boolean(form.sku?.trim()),          required: !hasVariants },
+    // SKU cấp sản phẩm: luôn luôn bắt buộc.
+    { id: 'sku',       label: t('products.detail.checklist.sku', { defaultValue: 'Mã SKU' }), ok: Boolean(form.sku?.trim()),          required: true },
     { id: 'price',     label: t('products.detail.checklist.price'),     ok: hasVariants || (Boolean(form.retailPrice?.trim()) && Number(form.retailPrice) > 0), required: true },
     // Ảnh đại diện màu: bắt buộc cho MỖI biến thể thật khi sản phẩm có biến thể.
     { id: 'variantImages', label: t('products.detail.checklist.variantImages', { defaultValue: 'Ảnh đại diện màu (từng biến thể)' }), ok: !hasVariants || realVariants.every((v) => Boolean(v.imageUrl?.trim())), required: hasVariants },

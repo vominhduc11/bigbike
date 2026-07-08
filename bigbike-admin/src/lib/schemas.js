@@ -194,10 +194,8 @@ export function createProductSchema(t, isCreate = false) {
       // Bắt buộc mọi lần lưu — nháp lẫn xuất bản, tạo mới lẫn sửa (không còn phân biệt isCreate).
       req(data.brandId, t('products.detail.errBrandRequired', { defaultValue: 'Vui lòng chọn thương hiệu.' }), ['brandId'])
       req(data.gender, t('products.detail.errGenderRequired', { defaultValue: 'Vui lòng chọn đối tượng (giới tính).' }), ['gender'])
-      // SKU cấp sản phẩm chỉ bắt buộc khi KHÔNG có biến thể (bắt buộc cả nháp lẫn xuất bản).
-      if (!hasVariants) {
-        req(data.sku, t('products.detail.errSkuRequired', { defaultValue: 'Vui lòng nhập mã SKU sản phẩm.' }), ['sku'])
-      }
+      // SKU cấp sản phẩm luôn bắt buộc (bắt buộc cả nháp lẫn xuất bản).
+      req(data.sku, t('products.detail.errSkuRequired', { defaultValue: 'Vui lòng nhập mã SKU sản phẩm.' }), ['sku'])
       // Ảnh đại diện sản phẩm chỉ bắt buộc lúc XUẤT BẢN (không bắt buộc lúc lưu nháp).
       if (data.publishStatus === 'PUBLISHED') {
         req(data.imageUrl, t('products.detail.errImageRequired', { defaultValue: 'Vui lòng chọn ảnh đại diện.' }), ['imageUrl'])

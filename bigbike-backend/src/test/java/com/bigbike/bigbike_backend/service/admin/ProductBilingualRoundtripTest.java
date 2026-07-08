@@ -39,8 +39,10 @@ class ProductBilingualRoundtripTest {
     @Autowired ProductMutationService mutationService;
     @Autowired CatalogReadRepository readRepository;
     @Autowired CategoryJpaRepository categoryRepo;
+    @Autowired com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository brandRepo;
 
     private CategoryEntity category;
+    private com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity brand;
 
     @BeforeEach
     void setup() {
@@ -53,6 +55,15 @@ class ProductBilingualRoundtripTest {
             c.setUpdatedAt(Instant.now());
             return categoryRepo.save(c);
         });
+        brand = brandRepo.findBySlug("test-brand-bilingual").orElseGet(() -> {
+            com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity b = new com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity();
+            b.setId("test-brand-bilingual");
+            b.setSlug("test-brand-bilingual");
+            b.setName("Test Brand Bilingual");
+            b.setCreatedAt(Instant.now());
+            b.setUpdatedAt(Instant.now());
+            return brandRepo.save(b);
+        });
     }
 
     private UpsertProductRequest baseProduct(String slug, String name) {
@@ -60,8 +71,15 @@ class ProductBilingualRoundtripTest {
         req.setSlug(slug);
         req.setName(name);
         req.setCategoryId(category.getId());
+        req.setBrandId(brand.getId());
+        req.setGender("Unisex");
+        req.setSku("SKU-" + slug);
         req.setRetailPrice(new BigDecimal("1000000"));
         req.setPublishStatus(PublishStatus.PUBLISHED);
+        com.bigbike.bigbike_backend.api.admin.dto.ImageAssetRequest img = new com.bigbike.bigbike_backend.api.admin.dto.ImageAssetRequest();
+        img.setUrl("http://localhost:9000/bigbike-media/products/test.jpg");
+        img.setAlt("test");
+        req.setImage(img);
         return req;
     }
 

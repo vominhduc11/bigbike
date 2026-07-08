@@ -433,12 +433,13 @@ final class AdminMutationValidators {
             errors.add(new ApiErrorDetail("gender", REQUIRED, "Gender is required."));
         }
 
+        if (trimToNull(entity.getSku()) == null) {
+            errors.add(new ApiErrorDetail("sku", REQUIRED, "SKU is required."));
+        }
+
         boolean hasVariants = entity.getVariants() != null && !entity.getVariants().isEmpty();
 
         if (!hasVariants) {
-            if (trimToNull(entity.getSku()) == null) {
-                errors.add(new ApiErrorDetail("sku", REQUIRED, "SKU is required when the product has no variants."));
-            }
             if (entity.getRetailPrice() == null || entity.getRetailPrice().compareTo(BigDecimal.ZERO) <= 0) {
                 errors.add(new ApiErrorDetail(
                         "retailPrice", REQUIRED, "Retail price must be greater than 0 when the product has no variants."));
@@ -491,6 +492,10 @@ final class AdminMutationValidators {
 
     static void throwIfPublishErrors(List<ApiErrorDetail> errors) {
         if (!errors.isEmpty()) {
+            System.err.println("--- PUBLISH GATE ERRORS ---");
+            for (ApiErrorDetail err : errors) {
+                System.err.println("Field: " + err.field() + ", Code: " + err.code() + ", Message: " + err.message());
+            }
             throw new PublishGateException(List.copyOf(errors));
         }
     }

@@ -248,9 +248,8 @@ class AdminMutationValidatorsTest {
     }
 
     @Test
-    void validateProductFieldsRequired_hasVariants_productSkuAndPriceNotRequired() {
+    void validateProductFieldsRequired_hasVariants_productPriceNotRequired() {
         ProductEntity entity = completeCoreEntity();
-        entity.setSku(null);
         entity.setRetailPrice(null);
         entity.setVariants(List.of(completeVariant()));
         List<ApiErrorDetail> errors = new ArrayList<>();
@@ -261,9 +260,20 @@ class AdminMutationValidatorsTest {
     }
 
     @Test
-    void validateProductFieldsRequired_hasVariants_draft_flagsMissingVariantSkuAndPriceButNotImage() {
+    void validateProductFieldsRequired_hasVariants_productSkuIsRequired() {
         ProductEntity entity = completeCoreEntity();
         entity.setSku(null);
+        entity.setVariants(List.of(completeVariant()));
+        List<ApiErrorDetail> errors = new ArrayList<>();
+
+        AdminMutationValidators.validateProductFieldsRequired(entity, false, errors);
+
+        assertThat(fields(errors)).containsExactly("sku");
+    }
+
+    @Test
+    void validateProductFieldsRequired_hasVariants_draft_flagsMissingVariantSkuAndPriceButNotImage() {
+        ProductEntity entity = completeCoreEntity();
         entity.setRetailPrice(null);
         ProductVariantEntity variant = new ProductVariantEntity();
         variant.setId("var_1");
@@ -312,7 +322,6 @@ class AdminMutationValidatorsTest {
     @Test
     void validateProductFieldsRequired_hasVariants_publish_requiresVariantImageToo() {
         ProductEntity entity = completeCoreEntity();
-        entity.setSku(null);
         entity.setRetailPrice(null);
         entity.setImageUrl("http://localhost:9000/bigbike-media/products/ls2-ff800/main.jpg");
         ProductVariantEntity variant = completeVariant();

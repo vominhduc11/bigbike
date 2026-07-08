@@ -68,20 +68,22 @@ describe('createProductSchema — PRODUCT_RULE_005 required-field matrix', () =>
     expect(pathsOf(result)).toContain('brandId')
   })
 
-  it('has variants: product-level sku/retailPrice are NOT required', () => {
+  it('has variants: product-level retailPrice is NOT required, but sku IS required', () => {
     const schema = createProductSchema(t, true)
     const result = schema.safeParse(baseForm({
       sku: '',
       retailPrice: '',
       variants: [{ name: 'Đỏ - M', sku: 'VAR-1', retailPrice: '100000', imageUrl: '' }],
     }))
-    expect(result.success).toBe(true)
+    expect(result.success).toBe(false)
+    expect(pathsOf(result)).toContain('sku')
+    expect(pathsOf(result)).not.toContain('retailPrice')
   })
 
   it('has variants / draft: each real variant still requires its own sku + retailPrice, but not imageUrl', () => {
     const schema = createProductSchema(t, true)
     const result = schema.safeParse(baseForm({
-      sku: '', retailPrice: '',
+      retailPrice: '',
       variants: [{ name: 'Đỏ - M', sku: '', retailPrice: '' }],
     }))
     expect(result.success).toBe(false)
@@ -93,7 +95,7 @@ describe('createProductSchema — PRODUCT_RULE_005 required-field matrix', () =>
   it('PRODUCT_RULE_013 (2026-07-07): a variant with no retailPrice falls back to a valid product-level shared retailPrice — not required', () => {
     const schema = createProductSchema(t, true)
     const result = schema.safeParse(baseForm({
-      sku: '', retailPrice: '100000', // valid shared price at product level
+      retailPrice: '100000', // valid shared price at product level
       variants: [{ name: 'Đỏ - M', sku: 'VAR-1', retailPrice: '' }],
     }))
     expect(result.success).toBe(true)
@@ -102,7 +104,7 @@ describe('createProductSchema — PRODUCT_RULE_005 required-field matrix', () =>
   it('PRODUCT_RULE_013: a variant with no retailPrice AND no valid shared product retailPrice is still flagged', () => {
     const schema = createProductSchema(t, true)
     const result = schema.safeParse(baseForm({
-      sku: '', retailPrice: '', // no shared price to fall back to
+      retailPrice: '', // no shared price to fall back to
       variants: [{ name: 'Đỏ - M', sku: 'VAR-1', retailPrice: '' }],
     }))
     expect(result.success).toBe(false)
@@ -112,7 +114,7 @@ describe('createProductSchema — PRODUCT_RULE_005 required-field matrix', () =>
   it('PRODUCT_RULE_013: a variant salePrice without its own retailPrice is rejected (would be silently ignored)', () => {
     const schema = createProductSchema(t, true)
     const result = schema.safeParse(baseForm({
-      sku: '', retailPrice: '100000', // valid shared price — variant retailPrice itself is optional
+      retailPrice: '100000', // valid shared price — variant retailPrice itself is optional
       variants: [{ name: 'Đỏ - M', sku: 'VAR-1', retailPrice: '', salePrice: '50000' }],
     }))
     expect(result.success).toBe(false)
@@ -125,7 +127,7 @@ describe('createProductSchema — PRODUCT_RULE_005 required-field matrix', () =>
   it('has variants / publish: each real variant also requires its own imageUrl', () => {
     const schema = createProductSchema(t, true)
     const result = schema.safeParse(baseForm({
-      sku: '', retailPrice: '', publishStatus: 'PUBLISHED', imageUrl: '/media/main.jpg',
+      retailPrice: '', publishStatus: 'PUBLISHED', imageUrl: '/media/main.jpg',
       variants: [{ name: 'Đỏ - M', sku: 'VAR-1', retailPrice: '100000', imageUrl: '' }],
     }))
     expect(result.success).toBe(false)
@@ -135,7 +137,7 @@ describe('createProductSchema — PRODUCT_RULE_005 required-field matrix', () =>
   it('has variants / publish complete: passes', () => {
     const schema = createProductSchema(t, true)
     const result = schema.safeParse(baseForm({
-      sku: '', retailPrice: '', publishStatus: 'PUBLISHED', imageUrl: '/media/main.jpg',
+      retailPrice: '', publishStatus: 'PUBLISHED', imageUrl: '/media/main.jpg',
       variants: [{ name: 'Đỏ - M', sku: 'VAR-1', retailPrice: '100000', imageUrl: '/media/red.jpg' }],
     }))
     expect(result.success).toBe(true)

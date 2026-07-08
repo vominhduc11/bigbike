@@ -48,9 +48,11 @@ class VariantGalleryRoundtripTest {
     @Autowired ProductVariantJpaRepository variantRepo;
     @Autowired AttributeJpaRepository attributeRepo;
     @Autowired AttributeValueJpaRepository attributeValueRepo;
+    @Autowired com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository brandRepo;
     @PersistenceContext EntityManager entityManager;
 
     private CategoryEntity category;
+    private com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity brand;
 
     @BeforeEach
     void setup() {
@@ -63,20 +65,24 @@ class VariantGalleryRoundtripTest {
             c.setUpdatedAt(Instant.now());
             return categoryRepo.save(c);
         });
+        brand = brandRepo.findBySlug("test-brand-vgallery").orElseGet(() -> {
+            com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity b = new com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity();
+            b.setId("test-brand-vgallery");
+            b.setSlug("test-brand-vgallery");
+            b.setName("Test Brand VGallery");
+            b.setCreatedAt(Instant.now());
+            b.setUpdatedAt(Instant.now());
+            return brandRepo.save(b);
+        });
     }
 
     @Test
     void variantGallery_persistsAndIsReadBack() {
         // -- 1. Create product with one variant carrying a 3-image gallery --
-        UpsertProductRequest create = new UpsertProductRequest();
-        create.setSlug("vgallery-product-1");
-        create.setName("VGallery Product 1");
-        create.setCategoryId(category.getId());
-        create.setRetailPrice(new BigDecimal("1000000"));
-        create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        UpsertProductRequest create = createProductRequest("vgallery-product-1", "VGallery Product 1");
         create.setTranslations(englishName("VGallery Product 1 EN"));
 
-        VariantRequest variant = new VariantRequest();
+        VariantRequest variant = variantRequest();
         variant.setIsAvailable(true);
         variant.setRetailPrice(BigDecimal.TEN);
         variant.setOptions(List.of(option("Color", "Red"), option("Size", "M")));
@@ -108,15 +114,10 @@ class VariantGalleryRoundtripTest {
     @Test
     void variantGallery_isReplacedOnUpdateAndReadBack() {
         // -- Initial save with 2 images --
-        UpsertProductRequest create = new UpsertProductRequest();
-        create.setSlug("vgallery-product-2");
-        create.setName("VGallery Product 2");
-        create.setCategoryId(category.getId());
-        create.setRetailPrice(new BigDecimal("1000000"));
-        create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        UpsertProductRequest create = createProductRequest("vgallery-product-2", "VGallery Product 2");
         create.setTranslations(englishName("VGallery Product 2 EN"));
 
-        VariantRequest v1 = new VariantRequest();
+        VariantRequest v1 = variantRequest();
         v1.setIsAvailable(true);
         v1.setRetailPrice(BigDecimal.TEN);
         v1.setOptions(List.of(option("Color", "Black"), option("Size", "L")));
@@ -130,15 +131,10 @@ class VariantGalleryRoundtripTest {
         String variantId = saved.variants().get(0).id();
 
         // -- Update with 4 different images, reusing the same variant ID --
-        UpsertProductRequest update = new UpsertProductRequest();
-        update.setSlug("vgallery-product-2");
-        update.setName("VGallery Product 2");
-        update.setCategoryId(category.getId());
-        update.setRetailPrice(new BigDecimal("1000000"));
-        update.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        UpsertProductRequest update = createProductRequest("vgallery-product-2", "VGallery Product 2");
         update.setTranslations(englishName("VGallery Product 2 EN"));
 
-        VariantRequest v2 = new VariantRequest();
+        VariantRequest v2 = variantRequest();
         v2.setId(variantId);
         v2.setIsAvailable(true);
         v2.setRetailPrice(BigDecimal.TEN);
@@ -169,12 +165,7 @@ class VariantGalleryRoundtripTest {
 
     @Test
     void variantGallery_isSharedByColorAcrossSizes() {
-        UpsertProductRequest create = new UpsertProductRequest();
-        create.setSlug("vgallery-product-color-scope");
-        create.setName("VGallery Product Color Scope");
-        create.setCategoryId(category.getId());
-        create.setRetailPrice(new BigDecimal("1000000"));
-        create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        UpsertProductRequest create = createProductRequest("vgallery-product-color-scope", "VGallery Product Color Scope");
         create.setTranslations(englishName("VGallery Product Color Scope EN"));
 
         VariantRequest redS = variant("Red", "S");
@@ -200,12 +191,7 @@ class VariantGalleryRoundtripTest {
 
     @Test
     void variantImage_isSharedByColorAcrossSizes() {
-        UpsertProductRequest create = new UpsertProductRequest();
-        create.setSlug("vimage-product-color-scope");
-        create.setName("VImage Product Color Scope");
-        create.setCategoryId(category.getId());
-        create.setRetailPrice(new BigDecimal("1000000"));
-        create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        UpsertProductRequest create = createProductRequest("vimage-product-color-scope", "VImage Product Color Scope");
         create.setTranslations(englishName("VImage Product Color Scope EN"));
 
         // Cover image is explicit imageUrl from variant request of same color. Red-S
@@ -235,12 +221,7 @@ class VariantGalleryRoundtripTest {
 
     @Test
     void variantImage_isReplacedOnUpdateAcrossSizes() {
-        UpsertProductRequest create = new UpsertProductRequest();
-        create.setSlug("vimage-product-update");
-        create.setName("VImage Product Update");
-        create.setCategoryId(category.getId());
-        create.setRetailPrice(new BigDecimal("1000000"));
-        create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        UpsertProductRequest create = createProductRequest("vimage-product-update", "VImage Product Update");
         create.setTranslations(englishName("VImage Product Update EN"));
 
         VariantRequest greenS = variant("Green", "S");
@@ -254,12 +235,7 @@ class VariantGalleryRoundtripTest {
         String idM = saved.variants().get(1).id();
 
         // Update: change the image via Green/M this time
-        UpsertProductRequest update = new UpsertProductRequest();
-        update.setSlug("vimage-product-update");
-        update.setName("VImage Product Update");
-        update.setCategoryId(category.getId());
-        update.setRetailPrice(new BigDecimal("1000000"));
-        update.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        UpsertProductRequest update = createProductRequest("vimage-product-update", "VImage Product Update");
         update.setTranslations(englishName("VImage Product Update EN"));
 
         VariantRequest updatedS = variant("Green", "S");
@@ -283,15 +259,10 @@ class VariantGalleryRoundtripTest {
 
     @Test
     void variantImage_isNullForVariantWithoutColor() {
-        UpsertProductRequest create = new UpsertProductRequest();
-        create.setSlug("vimage-product-no-color");
-        create.setName("VImage Product No Color");
-        create.setCategoryId(category.getId());
-        create.setRetailPrice(new BigDecimal("1000000"));
-        create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        UpsertProductRequest create = createProductRequest("vimage-product-no-color", "VImage Product No Color");
         create.setTranslations(englishName("VImage Product No Color EN"));
 
-        VariantRequest sizeOnly = new VariantRequest();
+        VariantRequest sizeOnly = variantRequest();
         sizeOnly.setIsAvailable(true);
         sizeOnly.setRetailPrice(BigDecimal.TEN);
         sizeOnly.setOptions(List.of(option("Size", "M")));
@@ -314,12 +285,7 @@ class VariantGalleryRoundtripTest {
         // inconsistent rows across same-color siblings. Bypass the mutation
         // service to plant that inconsistency, then verify the read path
         // collapses it back to a single color-scoped image.
-        UpsertProductRequest create = new UpsertProductRequest();
-        create.setSlug("vimage-legacy-inconsistent");
-        create.setName("VImage Legacy Inconsistent");
-        create.setCategoryId(category.getId());
-        create.setRetailPrice(new BigDecimal("1000000"));
-        create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        UpsertProductRequest create = createProductRequest("vimage-legacy-inconsistent", "VImage Legacy Inconsistent");
         create.setTranslations(englishName("VImage Legacy Inconsistent EN"));
 
         VariantRequest yellowS = variant("Yellow", "S");
@@ -366,15 +332,10 @@ class VariantGalleryRoundtripTest {
 
     @Test
     void readRepository_returnsNullImageForNoColorVariant() {
-        UpsertProductRequest create = new UpsertProductRequest();
-        create.setSlug("vimage-no-color-read");
-        create.setName("VImage No Color Read");
-        create.setCategoryId(category.getId());
-        create.setRetailPrice(new BigDecimal("1000000"));
-        create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        UpsertProductRequest create = createProductRequest("vimage-no-color-read", "VImage No Color Read");
         create.setTranslations(englishName("VImage No Color Read EN"));
 
-        VariantRequest sizeOnly = new VariantRequest();
+        VariantRequest sizeOnly = variantRequest();
         sizeOnly.setIsAvailable(true);
         sizeOnly.setRetailPrice(BigDecimal.TEN);
         sizeOnly.setOptions(List.of(option("Size", "XL")));
@@ -399,14 +360,9 @@ class VariantGalleryRoundtripTest {
 
     @Test
     void variantGallery_requiresColorOption() {
-        UpsertProductRequest create = new UpsertProductRequest();
-        create.setSlug("vgallery-product-no-color");
-        create.setName("VGallery Product No Color");
-        create.setCategoryId(category.getId());
-        create.setRetailPrice(new BigDecimal("1000000"));
-        create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        UpsertProductRequest create = createProductRequest("vgallery-product-no-color", "VGallery Product No Color");
 
-        VariantRequest sizeOnly = new VariantRequest();
+        VariantRequest sizeOnly = variantRequest();
         sizeOnly.setIsAvailable(true);
         sizeOnly.setRetailPrice(BigDecimal.TEN);
         sizeOnly.setOptions(List.of(option("Size", "M")));
@@ -445,15 +401,10 @@ class VariantGalleryRoundtripTest {
         entityManager.flush();
 
         // -- 1. Create using the SLUG as the option value (no attributeValueId) --
-        UpsertProductRequest create = new UpsertProductRequest();
-        create.setSlug("mw-color-product");
-        create.setName("MW Color Product");
-        create.setCategoryId(category.getId());
-        create.setRetailPrice(new BigDecimal("1000000"));
-        create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        UpsertProductRequest create = createProductRequest("mw-color-product", "MW Color Product");
         create.setTranslations(englishName("MW Color Product EN"));
 
-        VariantRequest v1 = new VariantRequest();
+        VariantRequest v1 = variantRequest();
         v1.setIsAvailable(true);
         v1.setRetailPrice(BigDecimal.TEN);
         v1.setOptions(List.of(option("test-color-mw", "den-bong")));
@@ -478,15 +429,10 @@ class VariantGalleryRoundtripTest {
                 .isNull();
 
         // -- 2. Re-save sending the LABEL back (the edit-reload round-trip) --
-        UpsertProductRequest update = new UpsertProductRequest();
-        update.setSlug("mw-color-product");
-        update.setName("MW Color Product");
-        update.setCategoryId(category.getId());
-        update.setRetailPrice(new BigDecimal("1000000"));
-        update.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        UpsertProductRequest update = createProductRequest("mw-color-product", "MW Color Product");
         update.setTranslations(englishName("MW Color Product EN"));
 
-        VariantRequest v2 = new VariantRequest();
+        VariantRequest v2 = variantRequest();
         v2.setId(variantId);
         v2.setIsAvailable(true);
         v2.setRetailPrice(BigDecimal.TEN);
@@ -536,15 +482,10 @@ class VariantGalleryRoundtripTest {
         entityManager.flush();
 
         // -- Create with the explicit attributeValueId (the admin dictionary pick) --
-        UpsertProductRequest create = new UpsertProductRequest();
-        create.setSlug("dedup-color-product");
-        create.setName("Dedup Color Product");
-        create.setCategoryId(category.getId());
-        create.setRetailPrice(new BigDecimal("1000000"));
-        create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        UpsertProductRequest create = createProductRequest("dedup-color-product", "Dedup Color Product");
         create.setTranslations(englishName("Dedup Color Product EN"));
 
-        VariantRequest v1 = new VariantRequest();
+        VariantRequest v1 = variantRequest();
         v1.setIsAvailable(true);
         v1.setRetailPrice(BigDecimal.TEN);
         v1.setOptions(List.of(colorOption("test-color-dedup", "xam-2", "test-color-dedup-xam-2")));
@@ -560,15 +501,10 @@ class VariantGalleryRoundtripTest {
 
         // -- Re-save sending the LABEL back plus the round-tripped id (what the admin
         //    form does). The label alone would not relink; the explicit id does. --
-        UpsertProductRequest update = new UpsertProductRequest();
-        update.setSlug("dedup-color-product");
-        update.setName("Dedup Color Product");
-        update.setCategoryId(category.getId());
-        update.setRetailPrice(new BigDecimal("1000000"));
-        update.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        UpsertProductRequest update = createProductRequest("dedup-color-product", "Dedup Color Product");
         update.setTranslations(englishName("Dedup Color Product EN"));
 
-        VariantRequest v2 = new VariantRequest();
+        VariantRequest v2 = variantRequest();
         v2.setId(variantId);
         v2.setIsAvailable(true);
         v2.setRetailPrice(BigDecimal.TEN);
@@ -625,15 +561,10 @@ class VariantGalleryRoundtripTest {
         //    is exactly what the non-color Input in VariantEditors.jsx sends). Path
         //    2/3 auto-links to the XXL dictionary entry by slug match, and the read
         //    response hands the admin form that id back for round-tripping. --
-        UpsertProductRequest create = new UpsertProductRequest();
-        create.setSlug("stale-size-product");
-        create.setName("Stale Size Product");
-        create.setCategoryId(category.getId());
-        create.setRetailPrice(new BigDecimal("1000000"));
-        create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        UpsertProductRequest create = createProductRequest("stale-size-product", "Stale Size Product");
         create.setTranslations(englishName("Stale Size Product EN"));
 
-        VariantRequest v1 = new VariantRequest();
+        VariantRequest v1 = variantRequest();
         v1.setIsAvailable(true);
         v1.setRetailPrice(BigDecimal.TEN);
         v1.setOptions(List.of(option("test-size-stale", "XXL")));
@@ -659,15 +590,10 @@ class VariantGalleryRoundtripTest {
         //    SAME stale attributeValueId the read handed back for "XXL" - exactly
         //    what onUpdate({ value: e.target.value }) without clearing
         //    attributeValueId produces. --
-        UpsertProductRequest update = new UpsertProductRequest();
-        update.setSlug("stale-size-product");
-        update.setName("Stale Size Product");
-        update.setCategoryId(category.getId());
-        update.setRetailPrice(new BigDecimal("1000000"));
-        update.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        UpsertProductRequest update = createProductRequest("stale-size-product", "Stale Size Product");
         update.setTranslations(englishName("Stale Size Product EN"));
 
-        VariantRequest v2 = new VariantRequest();
+        VariantRequest v2 = variantRequest();
         v2.setId(variantId);
         v2.setIsAvailable(true);
         v2.setRetailPrice(BigDecimal.TEN);
@@ -732,15 +658,10 @@ class VariantGalleryRoundtripTest {
         entityManager.flush();
 
         // Create normally with "XXL" so the row legitimately links to the XXL entry.
-        UpsertProductRequest create = new UpsertProductRequest();
-        create.setSlug("corrupt-size-product");
-        create.setName("Corrupt Size Product");
-        create.setCategoryId(category.getId());
-        create.setRetailPrice(new BigDecimal("1000000"));
-        create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        UpsertProductRequest create = createProductRequest("corrupt-size-product", "Corrupt Size Product");
         create.setTranslations(englishName("Corrupt Size Product EN"));
 
-        VariantRequest v1 = new VariantRequest();
+        VariantRequest v1 = variantRequest();
         v1.setIsAvailable(true);
         v1.setRetailPrice(BigDecimal.TEN);
         v1.setOptions(List.of(option("test-size-corrupt", "XXL")));
@@ -779,7 +700,7 @@ class VariantGalleryRoundtripTest {
     }
 
     private VariantRequest variant(String color, String size) {
-        VariantRequest variant = new VariantRequest();
+        VariantRequest variant = variantRequest();
         variant.setIsAvailable(true);
         variant.setRetailPrice(BigDecimal.TEN);
         variant.setOptions(List.of(option("Color", color), option("Size", size)));
@@ -811,14 +732,32 @@ class VariantGalleryRoundtripTest {
                 ProductTranslationRequest.ProductContentRequest.builder().name(name).build());
     }
 
+    private UpsertProductRequest createProductRequest(String slug, String name) {
+        UpsertProductRequest req = new UpsertProductRequest();
+        req.setSlug(slug);
+        req.setName(name);
+        req.setCategoryId(category.getId());
+        req.setBrandId(brand.getId());
+        req.setGender("Unisex");
+        req.setSku("SKU-" + slug);
+        req.setRetailPrice(new BigDecimal("1000000"));
+        req.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        com.bigbike.bigbike_backend.api.admin.dto.ImageAssetRequest image = new com.bigbike.bigbike_backend.api.admin.dto.ImageAssetRequest();
+        image.setUrl("http://localhost:9000/bigbike-media/products/test.jpg");
+        image.setAlt("test");
+        req.setImage(image);
+        return req;
+    }
+
+    private VariantRequest variantRequest() {
+        VariantRequest v = new VariantRequest();
+        v.setSku("VAR-" + UUID.randomUUID().toString().substring(0, 8));
+        return v;
+    }
+
     @Test
     void variantImage_usesExplicitImageUrl() {
-        UpsertProductRequest create = new UpsertProductRequest();
-        create.setSlug("vimage-explicit-image-url");
-        create.setName("VImage Explicit ImageUrl");
-        create.setCategoryId(category.getId());
-        create.setRetailPrice(new BigDecimal("1000000"));
-        create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        UpsertProductRequest create = createProductRequest("vimage-explicit-image-url", "VImage Explicit ImageUrl");
         create.setTranslations(englishName("VImage Explicit ImageUrl EN"));
 
         VariantRequest redS = variant("Red", "S");
@@ -835,12 +774,7 @@ class VariantGalleryRoundtripTest {
 
     @Test
     void variantGallery_readPath_noImage_whenNoneSet() {
-        UpsertProductRequest create = new UpsertProductRequest();
-        create.setSlug("vimage-no-image-when-none-set");
-        create.setName("VImage No Image When None Set");
-        create.setCategoryId(category.getId());
-        create.setRetailPrice(new BigDecimal("1000000"));
-        create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        UpsertProductRequest create = createProductRequest("vimage-no-image-when-none-set", "VImage No Image When None Set");
         create.setTranslations(englishName("VImage No Image When None Set EN"));
 
         VariantRequest greenS = variant("Green", "S");

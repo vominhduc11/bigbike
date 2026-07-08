@@ -132,22 +132,24 @@ export function ProductSpecsTable({ viSpecsHtml = "" }: { viSpecsHtml?: string }
       <div
         ref={containerRef}
         className={cn(
-          "thong-so-ki-thuat overflow-x-auto transition-all duration-300 ease-in-out",
-          clamped && !isExpanded && "max-h-[280px] overflow-hidden"
+          "thong-so-ki-thuat overflow-x-auto transition-[max-height] duration-500 ease-in-out relative",
+          clamped ? (isExpanded ? "max-h-[3000px]" : "max-h-[280px] overflow-hidden") : ""
         )}
       >
         <div dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(specsHtml, { allowInlineStyles: true }) }} />
+        
+        {clamped && (
+          <div
+            className={cn(
+              "absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[var(--bb-bg-page)] via-[var(--bb-bg-page)]/95 to-transparent pointer-events-none transition-opacity duration-300",
+              isExpanded ? "opacity-0" : "opacity-100"
+            )}
+          />
+        )}
       </div>
 
       {clamped && (
-        <div
-          className={cn(
-            "flex justify-center",
-            !isExpanded
-              ? "absolute bottom-0 left-0 right-0 pt-24 pb-4 bg-gradient-to-t from-[var(--bb-bg-page)] via-[var(--bb-bg-page)]/95 to-transparent"
-              : "mt-6"
-          )}
-        >
+        <div className="mt-6 flex justify-center">
           <button
             type="button"
             onClick={() => setIsExpanded((v) => !v)}
