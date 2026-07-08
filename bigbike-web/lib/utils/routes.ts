@@ -17,7 +17,7 @@ if (
 
 function getActiveLocale(): Locale {
   if (typeof window !== "undefined") {
-    return globalThis.__NEXT_LOCALE__ || "vi";
+    return (globalThis.__NEXT_LOCALE__ as Locale) || "vi";
   }
   return "vi";
 }
@@ -160,6 +160,11 @@ export function toArticleListPath(locale?: Locale): string {
   return currentLocale === "en" ? "/news/" : "/tin-tuc/";
 }
 
+export function toCategoryListPath(locale?: Locale): string {
+  const currentLocale = locale || getActiveLocale();
+  return currentLocale === "en" ? "/categories/" : "/danh-muc-san-pham/";
+}
+
 export function toPagePath(slug: string, locale?: Locale): string {
   const currentLocale = locale || getActiveLocale();
   const p = `/${slug}/`;
@@ -199,6 +204,20 @@ export function toLoginPath(returnTo?: string, locale?: Locale): string {
     return `${base}?tiep=${encodeURIComponent(translatedReturnTo)}`;
   }
   return base;
+}
+
+/**
+ * Like toLoginPath but skips appending the returnTo when it is itself
+ * an auth page (login, register, etc.) — prevents auth → auth redirect loops.
+ */
+export function getSafeLoginHref(returnTo: string | undefined, locale?: Locale): string {
+  const currentLocale = locale || getActiveLocale();
+  const base = translatePath("/dang-nhap/", currentLocale);
+  if (!returnTo || isAuthRoute(returnTo)) {
+    return base;
+  }
+  const translatedReturnTo = translatePath(returnTo, currentLocale);
+  return `${base}?tiep=${encodeURIComponent(translatedReturnTo)}`;
 }
 
 export function toForgotPasswordPath(token?: string, locale?: Locale): string {
@@ -246,6 +265,53 @@ export function isAuthRoute(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
   const p = pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
   return (AUTH_ROUTE_PATHS as readonly string[]).includes(p);
+}
+
+type LocalizedRouteResult =
+  | { action: "redirect"; url: string }
+  | { action: "rewrite"; url: string }
+  | { action: "passthrough" };
+
+/**
+ * Determines what the proxy/middleware should do with a given request path.
+ *
+ * - "redirect":   Browser should navigate to `url` (307).
+ * - "rewrite":    Serve content from `url` transparently (URL bar unchanged).
+ *                 Used when EN display paths (e.g. /cart/) map to VI physical
+ *                 files (e.g. /gio-hang/) in the Next.js app directory.
+ * - "passthrough": No action needed.
+ */
+export function getLocalizedRoute(
+  pathnameWithSearch: string,
+  locale: Locale,
+): LocalizedRouteResult {
+  const qIdx = pathnameWithSearch.indexOf("?");
+  const search = qIdx >= 0 ? pathnameWithSearch.slice(qIdx) : "";
+  const pathname = qIdx >= 0 ? pathnameWithSearch.slice(0, qIdx) : pathnameWithSearch;
+
+  if (locale === "en") {
+    // Is this an EN display URL that has a VI physical equivalent?
+    // (e.g. /cart/ → /gio-hang/, /categories/slug/ → /danh-muc-san-pham/slug/)
+    const viEquivalent = translatePath(pathname, "vi");
+    if (viEquivalent !== pathname) {
+      // Rewrite: serve the VI physical file while keeping the EN URL in the browser.
+      return { action: "rewrite", url: viEquivalent + search };
+    }
+    // Is this a VI path that should be displayed as EN?
+    // (e.g. /gio-hang/ when locale is EN → redirect to /cart/)
+    const enEquivalent = translatePath(pathname, "en");
+    if (enEquivalent !== pathname) {
+      return { action: "redirect", url: enEquivalent + search };
+    }
+    return { action: "passthrough" };
+  } else {
+    // VI locale: any EN display path should redirect to its VI equivalent.
+    const viEquivalent = translatePath(pathname, "vi");
+    if (viEquivalent !== pathname) {
+      return { action: "redirect", url: viEquivalent + search };
+    }
+    return { action: "passthrough" };
+  }
 }
 
 

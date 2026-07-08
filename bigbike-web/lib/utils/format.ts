@@ -96,7 +96,7 @@ function parseUrl(value: string): URL | null {
   }
 }
 
- function isSafePublicHref(value: string | null | undefined): boolean {
+ export function isSafePublicHref(value: string | null | undefined): boolean {
   const normalized = trimToNull(value);
   if (!normalized || hasUnsafePrefix(normalized)) {
     return false;
@@ -106,6 +106,10 @@ function parseUrl(value: string): URL | null {
   }
   const parsed = parseUrl(normalized);
   return Boolean(parsed && parsed.protocol === "https:" && parsed.hostname && !parsed.username && !parsed.password);
+}
+
+export function isValidVnPhone(value: string): boolean {
+  return /^0[35789]\d{8}$/.test(value);
 }
 
 export function toSafePublicHref(value: string | null | undefined, fallback: string): string {

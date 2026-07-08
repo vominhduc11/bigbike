@@ -78,7 +78,7 @@ describe("Route Localization Utility Tests", () => {
 
   describe("getLocalizedRoute actions", () => {
     it("should redirect VI static path to EN if cookie is en", () => {
-      const res = getLocalizedRoute("/gio-hang/", "en");
+      const res = getLocalizedRoute("/gio-hang/", "en") as { action: string; url: string };
       expect(res.action).toBe("redirect");
       expect(res.url).toBe("/cart/");
     });
@@ -89,29 +89,29 @@ describe("Route Localization Utility Tests", () => {
     });
 
     it("should redirect EN static path to VI if cookie is vi", () => {
-      const res = getLocalizedRoute("/cart/", "vi");
+      const res = getLocalizedRoute("/cart/", "vi") as { action: string; url: string };
       expect(res.action).toBe("redirect");
       expect(res.url).toBe("/gio-hang/");
     });
 
     it("should rewrite EN static path to VI internally if cookie is en", () => {
-      const res = getLocalizedRoute("/cart/", "en");
+      const res = getLocalizedRoute("/cart/", "en") as { action: string; url: string };
       expect(res.action).toBe("rewrite");
       expect(res.url).toBe("/gio-hang/");
     });
 
     it("should rewrite EN category/news paths with custom slug to VI physical paths", () => {
-      const catRes = getLocalizedRoute("/categories/waterproof-armor/", "en");
+      const catRes = getLocalizedRoute("/categories/waterproof-armor/", "en") as { action: string; url: string };
       expect(catRes.action).toBe("rewrite");
       expect(catRes.url).toBe("/danh-muc-san-pham/waterproof-armor/");
 
-      const newsRes = getLocalizedRoute("/news/new-article/", "en");
+      const newsRes = getLocalizedRoute("/news/new-article/", "en") as { action: string; url: string };
       expect(newsRes.action).toBe("rewrite");
       expect(newsRes.url).toBe("/tin-tuc/new-article/");
     });
 
     it("should redirect EN category/news paths to VI physical paths if cookie is vi", () => {
-      const catRes = getLocalizedRoute("/categories/waterproof-armor/", "vi");
+      const catRes = getLocalizedRoute("/categories/waterproof-armor/", "vi") as { action: string; url: string };
       expect(catRes.action).toBe("redirect");
       expect(catRes.url).toBe("/danh-muc-san-pham/waterproof-armor/");
     });

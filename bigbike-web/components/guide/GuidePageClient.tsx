@@ -32,7 +32,7 @@ type GuidePageClientProps = {
   subSegments?: string[];
   initialLayout: StaticGuideLayout;
   initialEntries: StaticGuideEntry[];
-  initialPage: LocalizedStaticPage;
+  initialPage: LocalizedStaticPage | null;
 };
 
 export function buildEntryPath(segment: string): string {

@@ -121,14 +121,14 @@ export type OrderAddress = {
   addressLine2: string | null
 }
 
- type OrderShippingItem = {
+ export type OrderShippingItem = {
   id: string
   methodCode: string | null
   methodTitle: string
   amount: number
 }
 
- type OrderPayment = {
+ export type OrderPayment = {
   id: string
   paymentMethod: string
   status: string

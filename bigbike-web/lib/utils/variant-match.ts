@@ -133,3 +133,18 @@ export function findColorPreviewVariant(
     findMatchingVariant(variants, colorSelection)
   );
 }
+
+/**
+ * Finds a preview variant using the full selection (all attributes, not just color).
+ * Prefers available variants but falls back to out-of-stock when needed.
+ * Returns null when nothing has been picked.
+ */
+export function findPreviewVariant(
+  variants: ProductVariant[],
+  selection: Record<string, string>,
+): ProductVariant | null {
+  return (
+    findMatchingVariant(variants, selection, { onlyAvailable: true }) ??
+    findMatchingVariant(variants, selection)
+  );
+}

@@ -82,7 +82,7 @@ export function submitCheckout(payload: CheckoutPayload, idempotencyKey?: string
   return clientRequest("POST", "/api/v1/checkout", payload, extra);
 }
 
- type PublicSetting = { settingKey: string; settingValue: string };
+ export type PublicSetting = { settingKey: string; settingValue: string };
 
 /**
  * List endpoint — parsed directly (not via `clientRequest`) so a `data: null`/missing
