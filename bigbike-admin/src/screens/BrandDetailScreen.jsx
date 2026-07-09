@@ -476,8 +476,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
             <button
               type="button"
 
-              className="bb-btn bb-btn-secondary"
-              style={{ color: 'var(--bb-danger)' }}
+              className="bb-btn bb-btn-secondary bb-danger-action"
               disabled={isSubmitting}
               onClick={async () => {
                 const confirmed = await showConfirm(
@@ -514,9 +513,9 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
       </div>
 
       {draftRecovery && (
-        <div className="flex flex-wrap items-center gap-2 px-3 py-1.5 mb-4 bg-[var(--admin-color-status-info-bg)] border border-[var(--admin-color-status-info-border)] text-[var(--admin-color-status-info-text)] text-xs">
+        <div className="bb-alert info center wrap">
           <Save size={14} className="shrink-0" />
-          <span className="flex-1 truncate">
+          <span className="bb-alert-main truncate">
             <strong>{t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}</strong>
             {' · '}{formatDateTime(new Date(draftRecovery.ts).toISOString())}
           </span>

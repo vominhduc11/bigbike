@@ -28,14 +28,16 @@ export default function AiHtmlBrief({ promptKey = 'products.detail.aiBrief.promp
   return (
     <div className="rounded-sm border border-border bg-surface-raised">
       <div className="flex items-center gap-2 px-2 py-1.5">
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => setOpen((v) => !v)}
-          className="flex flex-1 items-center gap-1.5 text-left text-xs font-medium text-foreground"
+          className="h-auto flex-1 justify-start gap-1.5 px-0 py-0 text-left text-xs font-medium text-foreground hover:bg-transparent"
         >
           {open ? <ChevronDown className="size-3.5 shrink-0" /> : <ChevronRight className="size-3.5 shrink-0" />}
           {t('products.detail.aiBrief.title')}
-        </button>
+        </Button>
         <Button type="button" size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={handleCopy}>
           <Copy className="size-3.5" />
           {t('products.detail.aiBrief.copy')}

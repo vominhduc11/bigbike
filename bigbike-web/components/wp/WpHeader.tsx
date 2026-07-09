@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { getLocale } from "next-intl/server";
 import type { HeaderNavNode } from "@/components/layout/header-nav/shared";
 import { listPublicSettings } from "@/lib/api/public-api";
 import { Tr } from "@/components/i18n/Tr";
@@ -8,6 +7,7 @@ import { pickSetting } from "@/lib/utils/settings";
 import { WpCartLink } from "./WpCartLink";
 import { WpHeaderUser } from "./WpHeaderUser";
 import { WpLangSwitch } from "./WpLangSwitch";
+import { WpLocalizedSetting } from "./WpLocalizedSetting";
 import { WpMenuClient } from "./WpMenuClient";
 
 const T = "/wp-content/themes/bigbike";
@@ -92,8 +92,11 @@ function filterMenuNodes(nodes: HeaderNavNode[]): HeaderNavNode[] {
  * (địa chỉ / SĐT) lấy từ settings công khai, KHÔNG hardcode. */
 export async function WpHeader({ menuNodes }: { menuNodes: HeaderNavNode[] }) {
   const filteredMenuNodes = filterMenuNodes(menuNodes);
-  const locale = await getLocale();
-  const settings = (await listPublicSettings(locale)).data ?? [];
+  const [settingsVi, settingsEn] = await Promise.all([
+    listPublicSettings("vi"),
+    listPublicSettings("en"),
+  ]);
+  const settings = settingsVi.data ?? [];
   const address = pickSetting(settings, ["contact_address"]);
   const phones = [
     pickSetting(settings, ["hotline"]),
@@ -101,6 +104,7 @@ export async function WpHeader({ menuNodes }: { menuNodes: HeaderNavNode[] }) {
     pickSetting(settings, ["hotline_3"]),
   ].filter(Boolean);
   const shopDescription = pickSetting(settings, ["footer_description"]);
+  const shopDescriptionEn = pickSetting(settingsEn.data ?? [], ["footer_description"]);
   // Giờ mở cửa lấy từ settings (admin sửa được), fallback copy theme khi trống.
   const hours = {
     weekday: pickSetting(settings, ["opening_hours_weekday"]),
@@ -198,7 +202,13 @@ export async function WpHeader({ menuNodes }: { menuNodes: HeaderNavNode[] }) {
             <img src={`${T}/images/logo-1.png`} alt="logo bigbike" />
           </div>
           <div className="desc">
-            <p>{shopDescription || <Tr ns="Header" k="shopInfoDefaultDescription" />}</p>
+            <p>
+              <WpLocalizedSetting
+                vi={shopDescription}
+                en={shopDescriptionEn}
+                fallback={<Tr ns="Header" k="shopInfoDefaultDescription" />}
+              />
+            </p>
           </div>
           <WpContactMe address={address} phones={phones} hours={hours} />
         </div>

@@ -132,8 +132,8 @@ export function ProductSpecsTable({ viSpecsHtml = "" }: { viSpecsHtml?: string }
       <div
         ref={containerRef}
         className={cn(
-          "thong-so-ki-thuat overflow-x-auto transition-[max-height] duration-500 ease-in-out relative",
-          clamped ? (isExpanded ? "max-h-[3000px]" : "max-h-[280px] overflow-hidden") : ""
+          "thong-so-ki-thuat overflow-x-auto overflow-y-hidden transition-[max-height] duration-500 ease-in-out relative",
+          clamped ? (isExpanded ? "max-h-[3000px]" : "max-h-[280px]") : ""
         )}
       >
         <div dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(specsHtml, { allowInlineStyles: true }) }} />

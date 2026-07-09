@@ -61,17 +61,17 @@ export function LoginScreen() {
       {/* Left panel — brand */}
       <div className="bb-login-left">
         <div>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--bb-text-onsidebar-dim)', marginBottom: 20 }}>
+          <p className="bb-login-brand-kicker">
             BigBike
           </p>
           <h1>
             <span className="brand-dot" />
             Admin
           </h1>
-          <p style={{ marginTop: 16, maxWidth: 280 }}>{t('auth.loginTagline', 'Quản lý toàn bộ hoạt động kinh doanh của BigBike tại đây.')}</p>
+          <p className="bb-login-tagline">{t('auth.loginTagline', 'Quản lý toàn bộ hoạt động kinh doanh của BigBike tại đây.')}</p>
         </div>
-        <div style={{ marginTop: 'auto', paddingTop: 48 }}>
-          <p style={{ fontSize: 12, color: 'var(--bb-text-onsidebar-dim)' }}>
+        <div className="bb-login-foot">
+          <p>
             © {new Date().getFullYear()} BigBike. {t('auth.allRightsReserved', 'Bảo lưu mọi quyền.')}
           </p>
         </div>
@@ -84,7 +84,7 @@ export function LoginScreen() {
           <p className="subtitle">{t('auth.subtitle')}</p>
 
           {hasError ? (
-            <div id={errorId} role="alert" style={{ marginBottom: 20 }}>
+            <div id={errorId} role="alert" className="bb-login-error">
               <StatePanel
                 tone="danger"
                 title={t('auth.loginError')}
@@ -95,14 +95,14 @@ export function LoginScreen() {
             </div>
           ) : null}
 
-          <form onSubmit={onSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <p style={{ fontSize: 12, color: 'var(--bb-text-muted)', margin: 0 }}>
-              <span aria-hidden="true" style={{ color: 'var(--bb-danger)' }}>*</span> {t('common.requiredLegend', 'Bắt buộc')}
+          <form onSubmit={onSubmit} noValidate className="bb-auth-form">
+            <p className="bb-required-legend">
+              <span aria-hidden="true" className="bb-required-mark">*</span> {t('common.requiredLegend', 'Bắt buộc')}
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <label htmlFor={emailId} style={{ fontSize: 13, fontWeight: 500, color: 'var(--bb-text)' }}>
+            <div className="bb-auth-field">
+              <label htmlFor={emailId} className="bb-auth-label">
                 {t('auth.email')}
-                <span aria-hidden="true" style={{ color: 'var(--bb-danger)' }}> *</span>
+                <span aria-hidden="true" className="bb-required-mark"> *</span>
               </label>
               <input
                 id={emailId}
@@ -120,16 +120,15 @@ export function LoginScreen() {
               />
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <label htmlFor={passwordId} style={{ fontSize: 13, fontWeight: 500, color: 'var(--bb-text)' }}>
+            <div className="bb-auth-field">
+              <div className="bb-auth-label-row">
+                <label htmlFor={passwordId} className="bb-auth-label">
                   {t('auth.password')}
-                  <span aria-hidden="true" style={{ color: 'var(--bb-danger)' }}> *</span>
+                  <span aria-hidden="true" className="bb-required-mark"> *</span>
                 </label>
                 <button
                   type="button"
                   className="bb-btn bb-btn-ghost bb-btn-sm"
-                  style={{ fontSize: 12 }}
                   onClick={() => setShowForgot((v) => !v)}
                   aria-expanded={showForgot}
                   aria-controls={forgotId}
@@ -158,8 +157,7 @@ export function LoginScreen() {
             {showForgot ? (
               <div
                 id={forgotId}
-                className="bb-alert info"
-                style={{ fontSize: 13, lineHeight: 1.6 }}
+                className="bb-alert info bb-alert-readable"
               >
                 {t('auth.forgotPasswordNote')}
               </div>
@@ -167,10 +165,9 @@ export function LoginScreen() {
 
             <button
               type="submit"
-              className="bb-btn bb-btn-primary bb-btn-lg"
+              className="bb-btn bb-btn-primary bb-btn-lg bb-btn-full"
               disabled={submitting}
               aria-busy={submitting || undefined}
-              style={{ width: '100%' }}
             >
               {submitting ? (
                 <>
@@ -183,9 +180,9 @@ export function LoginScreen() {
             </button>
           </form>
 
-          <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--bb-border)', textAlign: 'center', fontSize: 12, color: 'var(--bb-text-muted)' }}>
+          <div className="bb-login-support">
             {t('auth.supportContact')}:{' '}
-            <a href={`mailto:${contactEmail}`} style={{ fontWeight: 600, color: 'var(--bb-primary)' }}>
+            <a href={`mailto:${contactEmail}`} className="bb-login-support-link">
               {contactEmail}
             </a>
           </div>

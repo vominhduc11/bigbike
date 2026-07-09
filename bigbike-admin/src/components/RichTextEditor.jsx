@@ -22,8 +22,10 @@ import { cn } from '@/lib/utils'
 
 function ToolbarButton({ onClick, active, disabled, title, children }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="icon"
       onMouseDown={(e) => { e.preventDefault(); onClick() }}
       disabled={disabled}
       title={title}
@@ -37,7 +39,7 @@ function ToolbarButton({ onClick, active, disabled, title, children }) {
       )}
     >
       {children}
-    </button>
+    </Button>
   )
 }
 
@@ -241,7 +243,7 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
         <Divider />
         <span className="inline-flex h-8 items-center gap-1 px-1" title={t('richEditor.textColor', { defaultValue: 'Màu chữ' })}>
           <Baseline size={14} className="text-muted-foreground" />
-          <input
+          <Input
             type="color"
             aria-label={t('richEditor.textColor', { defaultValue: 'Màu chữ' })}
             className="h-[20px] w-[24px] cursor-pointer rounded-xs border border-border bg-transparent p-0"
@@ -252,7 +254,7 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
         </span>
         <span className="inline-flex h-8 items-center gap-1 px-1" title={t('richEditor.bgColor', { defaultValue: 'Tô nền chữ' })}>
           <Highlighter size={14} className="text-muted-foreground" />
-          <input
+          <Input
             type="color"
             aria-label={t('richEditor.bgColor', { defaultValue: 'Tô nền chữ' })}
             className="h-[20px] w-[24px] cursor-pointer rounded-xs border border-border bg-transparent p-0"

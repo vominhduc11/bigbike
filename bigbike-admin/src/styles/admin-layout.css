@@ -189,7 +189,11 @@
   border-top: 1px solid var(--admin-color-border-subtle);
 }
 
-.mobile-card-actions .btn { flex: 1; min-width: 0; }
+.mobile-card-actions .btn,
+.mobile-card-actions .bb-btn {
+  flex: 1;
+  min-width: 0;
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Responsive table → cards switch

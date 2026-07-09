@@ -537,23 +537,23 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
         {/* Banners — read-only */}
         {!canUpdate && (
-          <div className="flex items-center gap-2 px-4 py-2 bg-[var(--admin-color-status-warning-bg)] border border-[var(--admin-color-status-warning-border)] text-[var(--admin-color-status-warning-text)] text-sm">
+          <div className="bb-alert warning center">
             <Lock size={16} />
             <span>{t('content.detail.permissionDesc')}</span>
           </div>
         )}
 
         {state.warning && (
-          <div className="flex items-center gap-2 px-4 py-2 bg-[var(--admin-color-status-warning-bg)] border border-[var(--admin-color-status-warning-border)] text-[var(--admin-color-status-warning-text)] text-sm">
+          <div className="bb-alert warning center">
             <AlertCircle size={16} />
-            <div className="flex-1">{state.warning}</div>
+            <div className="bb-alert-main">{state.warning}</div>
           </div>
         )}
 
         {draftRecovery && (
-          <div className="flex flex-wrap items-center gap-2 px-3 py-1.5 bg-[var(--admin-color-status-info-bg)] border border-[var(--admin-color-status-info-border)] text-[var(--admin-color-status-info-text)] text-xs">
+          <div className="bb-alert info center wrap">
             <Save size={14} className="shrink-0" />
-            <span className="flex-1 truncate">
+            <span className="bb-alert-main truncate">
               <strong>{t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}</strong>
               {' · '}{formatDateTime(new Date(draftRecovery.ts).toISOString())}
             </span>

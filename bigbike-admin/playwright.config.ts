@@ -58,8 +58,8 @@ export default defineConfig({
         // Build faithfully to the container (same VITE_* build args as the
         // Dockerfile) so the WS client uses same-origin /ws and media URLs
         // resolve. Reused if a preview is already serving PREVIEW_PORT.
-        command: `VITE_ADMIN_API_BASE=/api/v1 VITE_MINIO_INTERNAL_ORIGIN=http://minio:9000 npm run build && npx vite preview --config e2e/vite.preview.config.ts`,
-        url: `http://127.0.0.1:${PREVIEW_PORT}/`,
+        command: `node ./e2e/scripts/preview-server.mjs`,
+        url: `http://localhost:${PREVIEW_PORT}/`,
         timeout: 180_000,
         reuseExistingServer: true,
         stdout: 'pipe',

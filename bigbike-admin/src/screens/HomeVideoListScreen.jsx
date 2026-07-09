@@ -133,13 +133,8 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
       {(sortable) => (
     <div
       ref={sortable.setNodeRef}
-      style={{
-        ...sortable.style,
-        opacity: video.isActive === false && !selected ? 0.55 : (sortable.isDragging ? 0.4 : 1),
-        ...(selected ? { borderColor: 'var(--admin-color-primary)', background: 'var(--admin-color-surface-selected)' } : {}),
-        display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 16px', flexWrap: 'wrap',
-      }}
-      className="bb-card"
+      style={sortable.style}
+      className={`bb-card bb-slider-card bb-slider-card-body ${video.isActive === false && !selected ? 'is-inactive' : ''} ${sortable.isDragging ? 'is-dragging' : ''} ${selected ? 'is-selected' : ''}`}
     >
       {canUpdate && (
         <div className="flex items-center gap-1 shrink-0">
@@ -152,7 +147,7 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
             <button
               type="button"
               {...sortable.handleProps}
-              className="bg-transparent border-none cursor-grab px-1 py-0.5 text-muted-foreground touch-none"
+              className="bb-related-grip"
               aria-label={t('homeVideos.dragToReorder')}
             >
               <GripVertical size={16} />
@@ -180,29 +175,25 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
         </div>
       </button>
 
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div className="font-bold text-sm mb-1" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {displayTitle}
-        </div>
-        <div className="text-xs bb-muted" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {video.videoUrl}
-        </div>
-        <div className="mt-1">
+      <div className="bb-slider-copy">
+        <div className="bb-slider-title-row">
+          <span className="bb-slider-title">{displayTitle}</span>
           <span className={`bb-badge ${video.isActive ? 'bb-badge-success' : 'bb-badge-neutral'}`}>
             {video.isActive ? t('homeVideos.statusVisible') : t('homeVideos.statusHidden')}
           </span>
         </div>
+        <div className="bb-slider-meta">{video.videoUrl}</div>
       </div>
 
       {canUpdate && (
-        <div className="flex gap-2" style={{ flexShrink: 0 }}>
+        <div className="bb-slider-actions">
           <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={() => onToggleActive(video)}>
             {video.isActive ? t('homeVideos.hideAction') : t('homeVideos.showAction')}
           </button>
           <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={() => onEdit(video)}>
             {t('common.edit')}
           </button>
-          <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" style={{ color: 'var(--bb-danger)' }} onClick={() => onDelete(video.id)}>
+          <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm bb-danger-action" onClick={() => onDelete(video.id)}>
             {t('common.delete')}
           </button>
         </div>

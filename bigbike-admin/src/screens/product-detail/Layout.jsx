@@ -27,37 +27,38 @@ export function RelatedProductRow({ chip, canEdit, onRemove, t, sortable }) {
   return (
     <div
       ref={sortable?.setNodeRef}
-      style={{ ...sortable?.style, opacity: sortable?.isDragging ? 0.4 : 1 }}
-      className="flex items-center gap-2 sm:gap-3 p-2 border border-border bg-background"
+      style={sortable?.style}
+      className={cn('bb-related-row', sortable?.isDragging && 'is-dragging')}
     >
       {canEdit && sortable && (
         <button
           type="button"
           {...sortable.handleProps}
-          className="flex-shrink-0 text-muted-foreground hover:text-foreground cursor-grab touch-none"
+          className="bb-related-grip"
           aria-label={t('products.detail.relatedDragHint')}
         >
           <GripVertical size={16} />
         </button>
       )}
       {chip.imageUrl ? (
-        <img
-          src={resolveDisplayUrl(chip.imageUrl)}
-          alt=""
-          referrerPolicy="no-referrer"
-          loading="lazy"
-          className="w-10 h-10 sm:w-12 sm:h-12 object-cover flex-shrink-0 border border-border"
-        />
+        <span className="bb-related-thumb">
+          <img
+            src={resolveDisplayUrl(chip.imageUrl)}
+            alt=""
+            referrerPolicy="no-referrer"
+            loading="lazy"
+          />
+        </span>
       ) : (
-        <div className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 border border-border bg-muted flex items-center justify-center text-muted-foreground">
+        <div className="bb-related-thumb">
           <ImageOff size={16} />
         </div>
       )}
-      <span className="flex-1 min-w-0 truncate text-sm font-medium" title={chip.name}>{chip.name}</span>
+      <span className="bb-related-title" title={chip.name}>{chip.name}</span>
       {canEdit && (
         <button
           type="button"
-          className="flex-shrink-0 p-1.5 text-muted-foreground hover:text-destructive"
+          className="bb-related-remove"
           onClick={() => onRemove(chip.id)}
           aria-label={t('products.detail.relatedRemove', { name: chip.name })}
         >
@@ -71,31 +72,13 @@ export function RelatedProductRow({ chip, canEdit, onRemove, t, sortable }) {
 export function RoleBadge({ role }) {
   const { t } = useTranslation()
   const label = useRoleLabel(role, t)
-  if (role === 'content') {
-    return (
-      <span
-        className="inline-flex items-center text-xs uppercase tracking-wide px-1.5 py-0.5 border rounded-xs"
-        style={{ color: 'var(--admin-color-primary)', borderColor: 'var(--admin-color-primary)' }}
-      >{label}</span>
-    )
-  }
-  if (role === 'seo') {
-    return (
-      <span
-        className="inline-flex items-center text-xs uppercase tracking-wide px-1.5 py-0.5 border rounded-xs"
-        style={{ color: 'var(--admin-color-status-warning-text)', borderColor: 'var(--admin-color-status-warning-text)' }}
-      >{label}</span>
-    )
-  }
-  if (role === 'manager') {
-    return (
-      <span
-        className="inline-flex items-center text-xs uppercase tracking-wide px-1.5 py-0.5 border rounded-xs"
-        style={{ color: 'var(--admin-color-text-primary)', borderColor: 'var(--admin-color-text-primary)' }}
-      >{label}</span>
-    )
-  }
-  return null
+  const tone = {
+    content: 'bb-role-badge--content',
+    seo: 'bb-role-badge--seo',
+    manager: 'bb-role-badge--manager',
+  }[role]
+  if (!tone) return null
+  return <span className={cn('bb-role-badge', tone)}>{label}</span>
 }
 
 // SectionCard đã chuyển sang component dùng chung: src/components/SectionCard.jsx
@@ -123,33 +106,32 @@ export function AssignmentBanner({ t }) {
 export function CollapsibleGroup({ title, hint, open, onToggle, errorCount = 0, children }) {
   const panelId = useId()
   return (
-    <section className="flex flex-col gap-4">
+    <section className="bb-section-group">
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={open}
         aria-controls={panelId}
-        className="flex items-center gap-2.5 w-full text-left px-3 py-2.5 border bg-surface-muted hover:bg-muted/60 transition-colors"
-        style={errorCount ? { borderColor: 'var(--admin-color-status-danger-border)' } : undefined}
+        className={cn('bb-section-group-toggle', errorCount > 0 && 'has-error')}
       >
         <ChevronDown
           size={18}
           aria-hidden="true"
           className={cn('shrink-0 text-muted-foreground transition-transform', !open && '-rotate-90')}
         />
-        <span className="font-semibold uppercase tracking-wide text-sm text-foreground">{title}</span>
+        <span className="bb-section-group-title">{title}</span>
         {hint && (
-          <span className="text-xs font-normal normal-case text-muted-foreground hidden sm:inline">· {hint}</span>
+          <span className="bb-section-group-hint hidden sm:inline">· {hint}</span>
         )}
         {errorCount > 0 && (
-          <span className="ml-auto text-xs font-bold" style={{ color: 'var(--admin-color-status-danger-text)' }}>
+          <span className="bb-section-group-error">
             <span aria-hidden="true">{errorCount} lỗi</span>
             <span className="sr-only">{errorCount} lỗi cần sửa</span>
           </span>
         )}
       </button>
       {open && (
-        <div id={panelId} className="flex flex-col gap-6">
+        <div id={panelId} className="bb-section-group-body">
           {children}
         </div>
       )}

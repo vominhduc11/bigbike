@@ -30,6 +30,26 @@ export default defineConfig({
       output: {
         codeSplitting: {
           groups: [
+            {
+              name: 'vendor-react',
+              test: /node_modules[\\/](react|react-dom|scheduler|react-redux|redux|redux-thunk|@reduxjs|@tanstack)[\\/]/,
+            },
+            {
+              name: 'vendor-editor',
+              test: /node_modules[\\/](@tiptap|prosemirror|orderedmap)[\\/]/,
+            },
+            {
+              name: 'vendor-ui',
+              test: /node_modules[\\/](@radix-ui|lucide-react|class-variance-authority|clsx|tailwind-merge)[\\/]/,
+            },
+            {
+              name: 'vendor-dnd',
+              test: /node_modules[\\/](@dnd-kit)[\\/]/,
+            },
+            {
+              name: 'vendor-charts',
+              test: /node_modules[\\/](recharts|d3-[^\\/]+)[\\/]/,
+            },
             { name: 'vendor', test: /node_modules/ },
           ],
         },

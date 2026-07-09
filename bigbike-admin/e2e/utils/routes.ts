@@ -23,16 +23,12 @@ export const LIST_ROUTES: AdminRoute[] = [
   { path: '/admin/dashboard',               id: 'dashboard',           label: 'Tổng quan',                group: 'sales',    kind: 'dashboard' },
   { path: '/admin/orders',                  id: 'orders',              label: 'Đơn hàng',                 group: 'sales',    kind: 'list' },
   { path: '/admin/customers',               id: 'customers',           label: 'Khách hàng',               group: 'sales',    kind: 'list' },
-  { path: '/admin/newsletter-subscribers',  id: 'newsletter',          label: 'Đăng ký nhận tin',         group: 'sales',    kind: 'list' },
-  { path: '/admin/returns',                 id: 'returns',             label: 'Trả hàng / hoàn tiền',     group: 'sales',    kind: 'list' },
   { path: '/admin/reviews',                 id: 'reviews',             label: 'Đánh giá',                 group: 'sales',    kind: 'list' },
   // ── products ────────────────────────────────────────────
   { path: '/admin/products',                id: 'products',            label: 'Sản phẩm',                 group: 'products', kind: 'list' },
   { path: '/admin/featured-products',       id: 'featured-products',   label: 'Sản phẩm nổi bật',         group: 'products', kind: 'workspace' },
-  { path: '/admin/serials',                 id: 'serials',             label: 'Serial / IMEI',            group: 'products', kind: 'list' },
   { path: '/admin/categories',              id: 'categories',          label: 'Danh mục',                 group: 'products', kind: 'list' },
   { path: '/admin/brands',                  id: 'brands',              label: 'Thương hiệu',              group: 'products', kind: 'list' },
-  { path: '/admin/attributes',              id: 'attributes',          label: 'Thuộc tính',               group: 'products', kind: 'list' },
   // ── content ─────────────────────────────────────────────
   { path: '/admin/content',                 id: 'content',             label: 'Nội dung',                 group: 'content',  kind: 'list' },
   { path: '/admin/sliders',                 id: 'sliders',             label: 'Slider',                   group: 'content',  kind: 'list' },

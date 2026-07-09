@@ -43,19 +43,19 @@ function OrderDetailSkeleton() {
   return (
     <div>
       <div className="bb-screen-header">
-        <div className="bb-screen-title" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="bb-screen-title bb-stack-xs">
           <SkeletonBlock height={28} />
           <SkeletonBlock height={16} />
         </div>
       </div>
-      <div style={{ marginBottom: 16 }}><SkeletonBlock height={84} /></div>
+      <div className="mb-4"><SkeletonBlock height={84} /></div>
       <div className="bb-grid-2-1">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="bb-stack">
           <SkeletonBlock height={220} />
           <SkeletonBlock height={140} />
           <SkeletonBlock height={140} />
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="bb-stack">
           <SkeletonBlock height={180} />
           <SkeletonBlock height={160} />
           <SkeletonBlock height={140} />
@@ -286,9 +286,9 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
     <div>
       <div className="bb-screen-header">
         <div className="bb-screen-title">
-          <h1 style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <h1 className="bb-heading-inline">
             {t('orders.detail.eyebrow')}{' '}
-            <span className="mono" style={{ color: 'var(--bb-primary)' }}>
+            <span className="mono bb-heading-key">
               {formatText(order.orderNumber, `#${orderId}`)}
             </span>
             <StatusBadge type="order" status={order.orderStatus} />
@@ -310,11 +310,11 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
       {/* Action panel */}
       {canUpdate && (
-        <div className="bb-card" style={{ marginBottom: 16, borderLeft: '3px solid var(--bb-primary)' }}>
-          <div className="bb-card-body" style={{ display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
-            <div style={{ flex: '1 1 auto', minWidth: 240 }}>
-              <div style={{ fontWeight: 700, marginBottom: 8 }}>{t('orders.detail.orderStatus')}</div>
-              <div className="bb-muted" style={{ fontSize: 12.5 }}>
+        <div className="bb-card bb-action-panel">
+          <div className="bb-card-body">
+            <div className="bb-action-panel-main">
+              <div className="bb-action-panel-title">{t('orders.detail.orderStatus')}</div>
+              <div className="bb-action-panel-copy">
                 {transitionsError
                   ? t('orders.detail.transitionsLoadError')
                   : allowedTransitions.length === 0
@@ -322,7 +322,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     : t('orders.detail.selectActionHint')}
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <div className="bb-action-panel-actions">
               {allowedTransitions.map((s) => {
                 const cfg = ORDER_STATUS_ACTION[s] ?? { variant: 'secondary' }
                 const isPrimary = cfg.variant === 'primary' || cfg.variant === 'success'
@@ -349,13 +349,8 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           </div>
           {!['CANCELLED', 'FAILED'].includes(order.orderStatus)
             && (PAYMENT_TRANSITIONS[order.paymentStatus] ?? []).length > 0 && (
-            <div style={{
-              padding: '12px 16px',
-              borderTop: '1px solid var(--bb-border-faint)',
-              background: 'var(--bb-surface-muted)',
-              display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-            }}>
-              <span style={{ fontSize: 12, color: 'var(--bb-text-muted)', fontWeight: 600 }}>{t('orders.detail.paymentStatus')}</span>
+            <div className="bb-action-strip">
+              <span className="bb-action-strip-label">{t('orders.detail.paymentStatus')}</span>
               {(PAYMENT_TRANSITIONS[order.paymentStatus] ?? []).map((s) => (
                 <button
                   key={s}
@@ -376,9 +371,9 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
       <div className="bb-grid-2-1">
         {/* Left column */}
-        <div>
+        <div className="bb-stack">
           {/* Items */}
-          <div className="bb-card" style={{ marginBottom: 16 }}>
+          <div className="bb-card">
             <div className="bb-card-header">
               <h3>{t('orders.detail.items')} ({(order.items ?? []).length})</h3>
             </div>
@@ -402,12 +397,12 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                       {(order.items ?? []).map((item) => (
                         <tr key={item.id}>
                           <td>
-                            <div style={{ fontWeight: 600 }}>{formatText(item.productName)}</div>
+                            <div className="font-semibold">{formatText(item.productName)}</div>
                             {item.variantName && <div className="bb-cell-sub">{item.variantName}</div>}
                           </td>
                           <td className="num">{formatCurrencyVnd(item.unitPrice)}</td>
                           <td className="num">×{item.quantity}</td>
-                          <td className="num" style={{ fontWeight: 700 }}>{formatCurrencyVnd(item.lineTotal)}</td>
+                          <td className="num font-bold">{formatCurrencyVnd(item.lineTotal)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -430,24 +425,24 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                 </MobileCardList>
                 </>
               )}
-              <div style={{ padding: '12px 16px', borderTop: '1px solid var(--bb-border-faint)', background: 'var(--bb-surface-muted)' }}>
-                <dl className="bb-info-grid" style={{ gridTemplateColumns: '1fr auto', maxWidth: 360, marginLeft: 'auto', gap: '4px 24px', fontSize: 13 }}>
-                  <dt style={{ textTransform: 'none', fontSize: 13, letterSpacing: 0, fontWeight: 400 }}>{t('orders.detail.subtotal')}</dt>
-                  <dd style={{ textAlign: 'right' }}>{formatCurrencyVnd(order.subtotal)}</dd>
+              <div className="bb-total-panel">
+                <dl className="bb-info-grid bb-total-grid">
+                  <dt>{t('orders.detail.subtotal')}</dt>
+                  <dd>{formatCurrencyVnd(order.subtotal)}</dd>
                   {order.shippingFee > 0 && (
                     <>
-                      <dt style={{ textTransform: 'none', fontSize: 13, letterSpacing: 0, fontWeight: 400 }}>{t('orders.detail.shippingFee')}</dt>
-                      <dd style={{ textAlign: 'right' }}>{formatCurrencyVnd(order.shippingFee)}</dd>
+                      <dt>{t('orders.detail.shippingFee')}</dt>
+                      <dd>{formatCurrencyVnd(order.shippingFee)}</dd>
                     </>
                   )}
                   {order.discount > 0 && (
                     <>
-                      <dt style={{ textTransform: 'none', fontSize: 13, letterSpacing: 0, fontWeight: 400 }}>{t('orders.detail.discount')}</dt>
-                      <dd style={{ textAlign: 'right', color: 'var(--bb-danger)' }}>-{formatCurrencyVnd(order.discount)}</dd>
+                      <dt>{t('orders.detail.discount')}</dt>
+                      <dd className="text-danger">-{formatCurrencyVnd(order.discount)}</dd>
                     </>
                   )}
-                  <dt style={{ textTransform: 'none', fontWeight: 700, fontSize: 15, paddingTop: 8 }}>{t('orders.detail.total')}</dt>
-                  <dd style={{ textAlign: 'right', fontSize: 18, fontWeight: 800, color: 'var(--bb-primary)', paddingTop: 8 }}>
+                  <dt className="bb-total-label">{t('orders.detail.total')}</dt>
+                  <dd className="bb-total-value">
                     {formatCurrencyVnd(order.total)}
                   </dd>
                 </dl>
@@ -457,7 +452,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
           {/* Payments */}
           {(order.payments ?? []).length > 0 && (
-            <div className="bb-card" style={{ marginBottom: 16 }}>
+            <div className="bb-card">
               <div className="bb-card-header"><h3>{t('orders.detail.payments')}</h3></div>
               <div className="bb-card-body--flush">
                 <div className="hide-on-mobile">
@@ -502,16 +497,16 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           )}
 
           {/* Notes */}
-          <div className="bb-card" style={{ marginBottom: 16 }}>
+          <div className="bb-card">
             <div className="bb-card-header"><h3>{t('orders.detail.notes')}</h3></div>
             <div className="bb-card-body">
               {(order.notes ?? []).length === 0 ? (
                 <p className="bb-muted">{t('orders.detail.noNotes')}</p>
               ) : (
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 12px' }}>
+                <ul className="bb-list-clean bb-list-spaced">
                   {(order.notes ?? []).map((note, i) => (
-                    <li key={note.id ?? i} style={{ borderBottom: '1px solid var(--bb-border-faint)', padding: '8px 0', fontSize: 13 }}>
-                      <span className="bb-muted" style={{ marginRight: 8 }}>
+                    <li key={note.id ?? i} className="bb-list-item">
+                      <span className="bb-muted mr-2">
                         {note.createdAt ? formatDateTime(note.createdAt) : ''}
                       </span>
                       {note.content}
@@ -530,7 +525,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     className="resize-y"
                   />
                   <div className="flex items-center gap-4">
-                    <label className="flex items-center gap-2 text-sm" style={{ cursor: 'pointer' }}>
+                    <label className="flex cursor-pointer items-center gap-2 text-sm">
                       <Checkbox
                         checked={noteCustomerVisible}
                         onCheckedChange={(checked) => setNoteCustomerVisible(checked)}
@@ -548,14 +543,14 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           </div>
 
           {/* Audit trail — lịch sử thao tác trên đơn (status/payment/fulfillment/note/refund) */}
-          <div className="bb-card" style={{ marginBottom: 16 }}>
+          <div className="bb-card">
             <div className="bb-card-header"><h3>{t('orders.audit.title')}</h3></div>
             <div className="bb-card-body">
               {auditQuery.isLoading ? (
                 <p className="bb-muted">{t('orders.audit.loading')}</p>
               ) : auditQuery.isError ? (
                 <div className="flex items-center gap-3 flex-wrap">
-                  <p className="bb-muted" style={{ margin: 0 }}>{t('orders.audit.error')}</p>
+                  <p className="bb-muted m-0">{t('orders.audit.error')}</p>
                   <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={() => auditQuery.refetch()}>
                     {t('common.retry')}
                   </button>
@@ -563,16 +558,16 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
               ) : (auditQuery.data ?? []).length === 0 ? (
                 <p className="bb-muted">{t('orders.audit.empty')}</p>
               ) : (
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                <ul className="bb-list-clean">
                   {(auditQuery.data ?? []).map((entry, i) => (
-                    <li key={entry.id ?? i} style={{ borderBottom: '1px solid var(--bb-border-faint)', padding: '8px 0', fontSize: 13 }}>
+                    <li key={entry.id ?? i} className="bb-list-item">
                       <div className="flex items-center justify-between gap-2">
-                        <span style={{ fontWeight: 600 }}>
+                        <span className="bb-list-title">
                           {t(`orders.audit.action.${entry.action}`, { defaultValue: entry.action })}
                         </span>
                         <span className="bb-muted">{entry.createdAt ? formatDateTime(entry.createdAt) : ''}</span>
                       </div>
-                      <div className="bb-muted" style={{ marginTop: 4 }}>
+                      <div className="bb-list-meta">
                         {entry.actorType}{entry.ipAddress ? ` · ${entry.ipAddress}` : ''}
                       </div>
                     </li>
@@ -584,9 +579,9 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
         </div>
 
         {/* Right column */}
-        <div>
+        <div className="bb-stack">
           {/* Customer */}
-          <div className="bb-card" style={{ marginBottom: 16 }}>
+          <div className="bb-card">
             <div className="bb-card-header"><h3>{t('orders.detail.customerInfo')}</h3></div>
             <div className="bb-card-body">
               <dl className="bb-info-grid">
@@ -613,7 +608,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                 {order.customerNote && (
                   <>
                     <dt>{t('orders.detail.customerNote')}</dt>
-                    <dd style={{ whiteSpace: 'pre-wrap', fontWeight: 600 }}>{order.customerNote}</dd>
+                    <dd className="bb-prewrap-strong">{order.customerNote}</dd>
                   </>
                 )}
               </dl>
@@ -622,12 +617,12 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
           {/* Fulfillment */}
           {order.fulfillmentType === 'DELIVERY' && (
-            <div className="bb-card" style={{ marginBottom: 16 }}>
+            <div className="bb-card">
               <div className="bb-card-header"><h3>{t('orders.detail.fulfillment')}</h3></div>
               <div className="bb-card-body">
                 <dl className="bb-info-grid">
                   <dt>{t('orders.detail.fulfillmentStatusLabel')}</dt>
-                  <dd style={{ fontWeight: 600 }}>{ffStatusLabel}</dd>
+                  <dd className="font-semibold">{ffStatusLabel}</dd>
                   {order.trackingNumber && (
                     <>
                       <dt>{t('orders.detail.colRma', { defaultValue: 'Mã vận đơn' })}</dt>
@@ -645,8 +640,8 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                 </dl>
 
                 {canUpdate && (
-                  <div style={{ marginTop: 12 }}>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <div className="mt-3">
+                    <div className="bb-detail-actions">
                       {(order.fulfillmentStatus == null || order.fulfillmentStatus === 'UNFULFILLED') && (
                         <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" disabled={fulfillmentSaving}
                           onClick={() => handleFulfillmentUpdate('PROCESSING')}>
@@ -668,7 +663,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     </div>
                     {showShipForm && (
                       <form
-                        style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}
+                        className="bb-detail-form"
                         onSubmit={(e) => { e.preventDefault(); handleFulfillmentUpdate('SHIPPED') }}
                       >
                         <div className="flex flex-col gap-1">
@@ -692,12 +687,12 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                           />
                         </div>
                         {trackingError ? (
-                          <p id="ship-tracking-error" role="alert" className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--bb-danger)' }}>
+                          <p id="ship-tracking-error" role="alert" className="bb-error-inline">
                             <AlertCircle size={13} aria-hidden="true" />
                             {trackingError}
                           </p>
                         ) : (
-                          <p className="bb-muted" style={{ fontSize: 12 }}>{t('orders.detail.trackingHint')}</p>
+                          <p className="bb-muted text-xs">{t('orders.detail.trackingHint')}</p>
                         )}
                         <Input
                           type="text"
@@ -706,7 +701,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                           onChange={(e) => setShippingCarrier(e.target.value)}
                           disabled={fulfillmentSaving}
                         />
-                        <div style={{ display: 'flex', gap: 8 }}>
+                        <div className="bb-detail-form-actions">
                           <button type="submit" className="bb-btn bb-btn-primary bb-btn-sm" disabled={fulfillmentSaving}>
                             {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffConfirmShip')}
                           </button>

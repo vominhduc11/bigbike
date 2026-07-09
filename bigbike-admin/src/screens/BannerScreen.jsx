@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { FolderTree, FileText, ImageIcon, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { FolderTree, FileText, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { StatePanel } from '../components/StatePanel'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -50,8 +50,7 @@ function previewSrc(url, { themeAsset = false } = {}) {
 function BannerPreview({ bg, illustration, title }) {
   return (
     <div
-      className="relative w-full overflow-hidden rounded-[var(--admin-radius-md)] border border-[var(--bb-border)] bg-[var(--bb-sidebar)]"
-      style={{ aspectRatio: '1920 / 460' }}
+      className="bb-banner-preview"
     >
       {bg.src ? (
         <img src={bg.src} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
@@ -80,11 +79,7 @@ function SourceBadge({ source, t }) {
   const isDefault = source === 'default'
   return (
     <span
-      className="bb-badge"
-      style={{
-        background: isDefault ? 'var(--bb-warning-bg)' : 'var(--bb-surface-muted)',
-        color: isDefault ? 'var(--bb-warning)' : 'var(--bb-text-muted)',
-      }}
+      className={`bb-badge ${isDefault ? 'bb-badge-warning' : 'bb-badge-muted'}`}
     >
       {isDefault ? t('banners.usingDefault') : t('banners.usingFallback')}
     </span>
@@ -95,7 +90,7 @@ function SourceBadge({ source, t }) {
 function ImageField({ label, hint, value, onChange, recommend, disabled, badge, error }) {
   return (
     <div className="form-field">
-      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <span className="bb-row">
         {label}
         {badge}
       </span>
@@ -112,7 +107,7 @@ function TextField({ label, value, valueEn, onChange, onChangeEn, onBlur, disabl
       <span>{label}</span>
       <Input value={value} onChange={(e) => onChange(e.target.value)} onBlur={onBlur} disabled={disabled} aria-invalid={error ? true : undefined} />
       {error && <small className="field-error" role="alert">{error}</small>}
-      <span className="hint" style={{ marginTop: 6 }}>{t('banners.englishLabel')}</span>
+      <span className="hint mt-1.5">{t('banners.englishLabel')}</span>
       <Input value={valueEn} onChange={(e) => onChangeEn(e.target.value)} disabled={disabled} className="mt-1" aria-invalid={errorEn ? true : undefined} />
       {errorEn && <small className="field-error" role="alert">{errorEn}</small>}
     </div>
@@ -141,10 +136,10 @@ function PageBannerCard({ page, get, getEn, set, setEn, defaults, canUpdate, t, 
 
   return (
     <div className="bb-card">
-      <div className="bb-card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+      <div className="bb-card-header">
         <h3>{page.title}</h3>
       </div>
-      <div className="bb-card-body" style={{ display: 'grid', gap: 16 }}>
+      <div className="bb-card-body bb-form-grid">
         <BannerPreview bg={bg} illustration={illustration} title={get(k('title')) || page.title} />
 
         <TextField
@@ -159,7 +154,7 @@ function PageBannerCard({ page, get, getEn, set, setEn, defaults, canUpdate, t, 
           errorEn={errorsEn[k('title')]}
         />
 
-        <div style={{ display: 'grid', gap: 16 }} className="md:grid-cols-2">
+        <div className="bb-form-grid bb-form-grid-2">
           <ImageField
             label={t('banners.fieldBgDesktop')}
             hint={t('banners.hintBgDesktop')}
@@ -181,7 +176,7 @@ function PageBannerCard({ page, get, getEn, set, setEn, defaults, canUpdate, t, 
           />
         </div>
 
-        <div style={{ display: 'grid', gap: 16 }} className="md:grid-cols-2">
+        <div className="bb-form-grid bb-form-grid-2">
           <ImageField
             label={t('banners.fieldIllustration')}
             hint={t('banners.hintIllustration')}
@@ -203,9 +198,9 @@ function DefaultsCard({ get, set, canUpdate, t, errors }) {
   return (
     <div className="bb-card">
       <div className="bb-card-header"><h3>{t('banners.defaultsTitle')}</h3></div>
-      <div className="bb-card-body" style={{ display: 'grid', gap: 16 }}>
-        <p className="bb-muted" style={{ fontSize: 13, margin: 0 }}>{t('banners.defaultsDesc')}</p>
-        <div style={{ display: 'grid', gap: 16 }} className="md:grid-cols-2">
+      <div className="bb-card-body bb-form-grid">
+        <p className="bb-muted m-0 text-sm">{t('banners.defaultsDesc')}</p>
+        <div className="bb-form-grid bb-form-grid-2">
           <ImageField
             label={t('banners.defaultBg')}
             hint={t('banners.hintBgDesktop')}
@@ -235,25 +230,25 @@ function CrossLinksCard({ navigate, t }) {
   return (
     <div className="bb-card">
       <div className="bb-card-header"><h3>{t('banners.elsewhereTitle')}</h3></div>
-      <div className="bb-card-body" style={{ display: 'grid', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-            <FolderTree size={18} style={{ marginTop: 4, color: 'var(--bb-text-muted)' }} />
+      <div className="bb-card-body bb-link-card-list">
+        <div className="bb-link-card-item">
+          <div className="bb-link-card-copy">
+            <FolderTree size={18} className="bb-link-card-icon" />
             <div>
-              <div style={{ fontWeight: 600, fontSize: 13 }}>{t('banners.categoryLinkTitle')}</div>
-              <div className="bb-muted" style={{ fontSize: 12 }}>{t('banners.categoryLinkDesc')}</div>
+              <div className="bb-link-card-title">{t('banners.categoryLinkTitle')}</div>
+              <div className="bb-link-card-desc">{t('banners.categoryLinkDesc')}</div>
             </div>
           </div>
           <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={() => navigate('/admin/categories')}>
             {t('banners.openCategories')}
           </button>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-            <FileText size={18} style={{ marginTop: 4, color: 'var(--bb-text-muted)' }} />
+        <div className="bb-link-card-item">
+          <div className="bb-link-card-copy">
+            <FileText size={18} className="bb-link-card-icon" />
             <div>
-              <div style={{ fontWeight: 600, fontSize: 13 }}>{t('banners.contentLinkTitle')}</div>
-              <div className="bb-muted" style={{ fontSize: 12 }}>{t('banners.contentLinkDesc')}</div>
+              <div className="bb-link-card-title">{t('banners.contentLinkTitle')}</div>
+              <div className="bb-link-card-desc">{t('banners.contentLinkDesc')}</div>
             </div>
           </div>
           <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={() => navigate('/admin/content')}>
@@ -401,7 +396,7 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false }) 
   return (
     <div>
       {embedded ? (
-        <p className="bb-muted" style={{ marginTop: 0, marginBottom: 16 }}>{t('banners.description')}</p>
+        <p className="bb-muted mb-4 mt-0">{t('banners.description')}</p>
       ) : (
         <div className="bb-screen-header">
           <div className="bb-screen-title">
@@ -414,7 +409,7 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false }) 
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
 
-      <div style={{ display: 'grid', gap: 24 }}>
+      <div className="bb-stack">
         {PAGES.map((page) => (
           <PageBannerCard
             key={page.prefix}
@@ -436,29 +431,21 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false }) 
 
       {canUpdate && (dirtyKeys.length > 0 || saveSuccess) && (
         <div
-          className="bb-card"
-          style={{
-            position: 'sticky', bottom: 16, marginTop: 16, display: 'flex',
-            alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 16px',
-          }}
+          className="bb-card bb-save-bar"
         >
           <span
-            className="bb-muted"
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13,
-              color: saveError ? 'var(--bb-danger)' : undefined,
-            }}
+            className={`bb-save-bar-status ${saveError ? 'danger' : ''}`}
             role={saveError ? 'alert' : undefined}
           >
             {saveError ? (
-              <><AlertCircle size={14} style={{ color: 'var(--bb-danger)' }} /> {saveError}</>
+              <><AlertCircle size={14} /> {saveError}</>
             ) : saveSuccess ? (
-              <><CheckCircle2 size={15} style={{ color: 'var(--bb-success)' }} /> {t('banners.saveSuccess')}</>
+              <><CheckCircle2 size={15} className="text-success" /> {t('banners.saveSuccess')}</>
             ) : (
               <><AlertCircle size={14} /> {t('banners.unsavedCount', { count: dirtyKeys.length })}</>
             )}
           </span>
-          <div className="flex gap-2">
+          <div className="bb-save-bar-actions">
             {dirtyKeys.length > 0 && (
               <Button variant="secondary" size="sm" onClick={handleDiscard} disabled={saving}>
                 {t('common.cancel')}

@@ -96,14 +96,14 @@ export function AcceptInviteScreen() {
     <div className="bb-login-shell">
       <div className="bb-login-left">
         <div>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--bb-text-onsidebar-dim)', marginBottom: 20 }}>
+          <p className="bb-login-brand-kicker">
             BigBike
           </p>
           <h1><span className="brand-dot" />Admin</h1>
-          <p style={{ marginTop: 16, maxWidth: 280 }}>{t('acceptInvite.tagline')}</p>
+          <p className="bb-login-tagline">{t('acceptInvite.tagline')}</p>
         </div>
-        <div style={{ marginTop: 'auto', paddingTop: 48 }}>
-          <p style={{ fontSize: 12, color: 'var(--bb-text-onsidebar-dim)' }}>
+        <div className="bb-login-foot">
+          <p>
             © {new Date().getFullYear()} BigBike.
           </p>
         </div>
@@ -118,16 +118,16 @@ export function AcceptInviteScreen() {
           )}
 
           {phase === 'invalid' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="bb-login-stack">
               <StatePanel tone="danger" title={t('acceptInvite.invalidTitle')} description={error} />
-              <a href="/" className="bb-btn bb-btn-primary bb-btn-lg" style={{ width: '100%', textAlign: 'center' }}>
+              <a href="/" className="bb-btn bb-btn-primary bb-btn-lg bb-btn-full">
                 {t('acceptInvite.goToLogin')}
               </a>
             </div>
           )}
 
           {phase === 'network-error' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="bb-login-stack">
               <StatePanel
                 tone="danger"
                 title={t('acceptInvite.networkErrorTitle')}
@@ -135,16 +135,16 @@ export function AcceptInviteScreen() {
                 actionLabel={t('common.retry')}
                 onAction={runValidate}
               />
-              <a href="/" className="bb-btn bb-btn-secondary bb-btn-lg" style={{ width: '100%', textAlign: 'center' }}>
+              <a href="/" className="bb-btn bb-btn-secondary bb-btn-lg bb-btn-full">
                 {t('acceptInvite.goToLogin')}
               </a>
             </div>
           )}
 
           {phase === 'done' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="bb-login-stack">
               <StatePanel tone="success" title={t('acceptInvite.doneTitle')} description={t('acceptInvite.doneDesc')} />
-              <a href="/" className="bb-btn bb-btn-primary bb-btn-lg" style={{ width: '100%', textAlign: 'center' }}>
+              <a href="/" className="bb-btn bb-btn-primary bb-btn-lg bb-btn-full">
                 {t('acceptInvite.goToLogin')}
               </a>
             </div>
@@ -154,15 +154,15 @@ export function AcceptInviteScreen() {
             <>
               <p className="subtitle">{t('acceptInvite.subtitle', { email })}</p>
               {error ? (
-                <div role="alert" style={{ marginBottom: 16 }}>
+                <div role="alert" className="bb-login-error compact">
                   <StatePanel tone="danger" title={t('acceptInvite.errorTitle')} description={error} />
                 </div>
               ) : null}
-              <form onSubmit={onSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <label htmlFor={pwId} className="bb-label" style={{ fontSize: 13, fontWeight: 500, color: 'var(--bb-text)' }}>
+              <form onSubmit={onSubmit} noValidate className="bb-auth-form">
+                <div className="bb-auth-field">
+                  <label htmlFor={pwId} className="bb-auth-label">
                     {t('acceptInvite.passwordLabel')}
-                    <span className="req" aria-hidden="true"> *</span>
+                    <span className="bb-required-mark" aria-hidden="true"> *</span>
                   </label>
                   <input
                     id={pwId}
@@ -181,15 +181,15 @@ export function AcceptInviteScreen() {
                     className="bb-input"
                   />
                   {touched.password && passwordError ? (
-                    <span id={`${pwId}-error`} role="alert" style={{ fontSize: 12, color: 'var(--bb-danger)' }}>
+                    <span id={`${pwId}-error`} role="alert" className="bb-field-error">
                       {passwordError}
                     </span>
                   ) : null}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <label htmlFor={confirmId} className="bb-label" style={{ fontSize: 13, fontWeight: 500, color: 'var(--bb-text)' }}>
+                <div className="bb-auth-field">
+                  <label htmlFor={confirmId} className="bb-auth-label">
                     {t('acceptInvite.confirmLabel')}
-                    <span className="req" aria-hidden="true"> *</span>
+                    <span className="bb-required-mark" aria-hidden="true"> *</span>
                   </label>
                   <input
                     id={confirmId}
@@ -208,15 +208,15 @@ export function AcceptInviteScreen() {
                     className="bb-input"
                   />
                   {touched.confirm && confirmError ? (
-                    <span id={`${confirmId}-error`} role="alert" style={{ fontSize: 12, color: 'var(--bb-danger)' }}>
+                    <span id={`${confirmId}-error`} role="alert" className="bb-field-error">
                       {confirmError}
                     </span>
                   ) : null}
                 </div>
-                <p style={{ fontSize: 12, color: 'var(--bb-text-muted)', margin: 0 }}>
-                  <span aria-hidden="true" style={{ color: 'var(--bb-danger)' }}>*</span> {t('common.requiredLegend', { defaultValue: 'Bắt buộc' })}
+                <p className="bb-required-legend">
+                  <span aria-hidden="true" className="bb-required-mark">*</span> {t('common.requiredLegend', { defaultValue: 'Bắt buộc' })}
                 </p>
-                <button type="submit" className="bb-btn bb-btn-primary bb-btn-lg" disabled={submitting} aria-busy={submitting || undefined} style={{ width: '100%' }}>
+                <button type="submit" className="bb-btn bb-btn-primary bb-btn-lg bb-btn-full" disabled={submitting} aria-busy={submitting || undefined}>
                   {submitting ? (
                     <>
                       <Loader2 className="animate-spin" size={16} aria-hidden="true" />
@@ -226,7 +226,7 @@ export function AcceptInviteScreen() {
                     t('acceptInvite.submit')
                   )}
                 </button>
-                <a href="/" className="bb-btn bb-btn-secondary bb-btn-lg" style={{ width: '100%', textAlign: 'center' }}>
+                <a href="/" className="bb-btn bb-btn-secondary bb-btn-lg bb-btn-full">
                   {t('acceptInvite.goToLogin')}
                 </a>
               </form>

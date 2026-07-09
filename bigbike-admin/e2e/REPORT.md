@@ -11,11 +11,11 @@
 | Hạng mục | Giá trị |
 |---|---|
 | Test runner | `@playwright/test@1.60.0`, Chromium-only (admin là internal tool) |
-| Target verify chính | **Local production preview** `http://127.0.0.1:4280` (vite build → vite preview từ source hiện tại) |
+| Target verify chính | **Local production preview** `http://localhost:4280` (vite build → vite preview từ source hiện tại) |
 | Target spot-check | **Live production** `http://103.1.236.148:4000` (nginx serve, build cũ hơn source vài dòng CSS) |
 | Backend | thật, `localhost:8080` (healthy); MinIO `localhost:9000` |
 | Tài khoản | `admin@bigbike.vn` / `admin123` → SUPER_ADMIN, `permissions: ["*"]` (mọi route truy cập được) |
-| Build args (khớp Dockerfile) | `VITE_ADMIN_API_BASE=/api/v1 VITE_MINIO_INTERNAL_ORIGIN=http://minio:9000` |
+| Build/preview command | `node ./e2e/scripts/preview-server.mjs` |
 | Workers | `1` (refresh token rate-limit 30/phút theo IP; access token chỉ ở memory) |
 | Chiến lược auth | 1 login/worker + chuyền cookie giữa test; điều hướng **SPA in-app** (`navigateSpa` = pushState+popstate) để gần như không tốn refresh; `apiLogin` có backoff khi gặp 429 |
 | Proxy preview | `e2e/vite.preview.config.ts` rewrite `Origin/Referer` → `http://localhost:4000` (backend chặn Origin lạ = 403); forward `/api`, `/ws`, `/media`, `/media-proxy` |
@@ -54,8 +54,8 @@
 
 **33 route** (29 list/index + 4 form create) — mirror `NAV_GROUP_DEFS` + `parseRoute()` trong `src/App.jsx`.
 
-- **Sales (9):** dashboard, orders, pos, customers, newsletter-subscribers, returns, receivables, reviews, coupons
-- **Products (8):** products, featured-products, inventory, serials, warranties, categories, brands, attributes
+- **Sales:** dashboard, orders, customers, reviews
+- **Products:** products, featured-products, categories, brands
 - **Content (7):** content, sliders, home-videos, home-highlights, redirects, menus, media
 - **Reports (1):** reports
 - **System (5):** shipping, settings, admin-users, roles, audit-logs
@@ -129,8 +129,7 @@ Trước fix: responsive fail 6 viewport. Sau fix: **9/9 xanh**, smoke vẫn 6/6
 
 ```bash
 # Build production mới + (re)start preview 4280
-VITE_ADMIN_API_BASE=/api/v1 VITE_MINIO_INTERNAL_ORIGIN=http://minio:9000 npm run build
-pkill -f "vite preview"; npm run preview:e2e &        # rồi: curl -s 127.0.0.1:4280
+node ./e2e/scripts/preview-server.mjs
 
 npx playwright test                     # full suite (auth+smoke+responsive+effects+visual)
 npx playwright test responsive          # = npm run test:e2e:responsive

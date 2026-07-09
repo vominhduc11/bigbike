@@ -56,21 +56,18 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sorta
   const productLabel = contentLang === 'en'
     ? (slider.productNameEn || slider.productName || t('sliders.productUnnamed', { defaultValue: 'Sản phẩm đã liên kết' }))
     : (slider.productName || t('sliders.productUnnamed', { defaultValue: 'Sản phẩm đã liên kết' }))
-  const dragOpacity = sortable?.isDragging ? 0.4 : 1
-
   return (
     <div
       ref={sortable?.setNodeRef}
-      style={{ ...sortable?.style, opacity: slider.isActive === false ? 0.55 : dragOpacity }}
-      className="bb-card"
+      style={sortable?.style}
+      className={`bb-card bb-slider-card ${slider.isActive === false ? 'is-inactive' : ''} ${sortable?.isDragging ? 'is-dragging' : ''}`}
     >
-      <div className="bb-card-body" style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 16px', flexWrap: 'wrap' }}>
+      <div className="bb-card-body bb-slider-card-body">
         {canUpdate && sortable && (
           <button
             type="button"
             {...sortable.handleProps}
-            className="bb-icon-btn"
-            style={{ cursor: 'grab', touchAction: 'none', flexShrink: 0 }}
+            className="bb-icon-btn bb-slider-drag"
             title={t('sliders.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
             aria-label={t('sliders.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
           >
@@ -78,13 +75,13 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sorta
           </button>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
+        <div className="bb-slider-media-stack">
           {slider.desktopImage?.url && (
             <img
               src={slider.desktopImage.url}
               alt={slider.desktopImage.alt || ''}
               title="Desktop"
-              style={{ width: 100, height: 52, objectFit: 'cover', borderRadius: 6 }}
+              className="bb-slider-thumb bb-slider-thumb--desktop"
             />
           )}
           {slider.mobileImage?.url && (
@@ -92,33 +89,33 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sorta
               src={slider.mobileImage.url}
               alt={slider.mobileImage.alt || ''}
               title="Mobile"
-              style={{ width: 60, height: 32, objectFit: 'cover', borderRadius: 6 }}
+              className="bb-slider-thumb bb-slider-thumb--mobile"
             />
           )}
         </div>
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="flex items-center gap-2 mb-2" style={{ flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 700, fontSize: 14 }}>#{slider.sortOrder} · {locationLabel(t, slider.location)}</span>
+        <div className="bb-slider-copy">
+          <div className="bb-slider-title-row">
+            <span className="bb-slider-title">#{slider.sortOrder} · {locationLabel(t, slider.location)}</span>
             <span className={`bb-badge ${slider.isActive !== false ? 'bb-badge-success' : 'bb-badge-neutral'}`}>
               <span className="dot" />
               {slider.isActive !== false ? t('sliders.statusActive') : t('sliders.statusInactive')}
             </span>
           </div>
           {slider.externalLink && (
-            <p className="bb-muted" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0, fontSize: 12 }}>
+            <p className="bb-slider-meta">
               {t('sliders.linkLabel')} {slider.externalLink}
             </p>
           )}
           {slider.productId && (
-            <p className="bb-muted" style={{ margin: 0, fontSize: 12 }}>
+            <p className="bb-slider-meta">
               {t('sliders.productLabel')} {productLabel}
             </p>
           )}
         </div>
 
         {canUpdate && (
-          <div className="flex gap-2" style={{ flexShrink: 0, alignItems: 'flex-start' }}>
+          <div className="bb-slider-actions">
             <button
               type="button"
               className="bb-btn bb-btn-secondary bb-btn-sm"
@@ -140,8 +137,7 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sorta
             </button>
             <button
               type="button"
-              className="bb-btn bb-btn-secondary bb-btn-sm"
-              style={{ color: 'var(--bb-danger)' }}
+              className="bb-btn bb-btn-secondary bb-btn-sm bb-danger-action"
               disabled={deleting}
               aria-busy={deleting}
               onClick={() => onDelete(slider.id)}
@@ -507,12 +503,12 @@ export function SliderListScreen({ canUpdate }) {
           <div className="bb-card-header"><h2>{editingId ? t('sliders.editFormTitle') : t('sliders.formTitle')}</h2></div>
           <form onSubmit={handleSubmit} className="bb-card-body">
             {formError && <p className="mb-3 text-danger">{formError}</p>}
-            <p className="bb-muted mb-3" style={{ fontSize: 12 }}>
+            <p className="bb-muted mb-3 text-xs">
               <span className="text-danger" aria-hidden="true">*</span> {t('sliders.requiredLegend', { defaultValue: 'Bắt buộc' })}
             </p>
             <div className="bb-grid-2">
               {/* F10: nhóm 9 trường thành 4 khối có tiêu đề thay vì 1 lưới phẳng. */}
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground" style={{ gridColumn: '1 / -1' }}>
+              <div className="bb-form-section-label">
                 {t('sliders.sectionPosition', { defaultValue: 'Vị trí & thứ tự' })}
               </div>
               <label className="form-field">
@@ -536,17 +532,16 @@ export function SliderListScreen({ canUpdate }) {
               </label>
               {/* V2: bỏ marginTop:22 canh thủ công — checkbox giờ đứng riêng 1 hàng full-width, không cần canh theo ô cạnh bên. */}
               <label
-                className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit"
-                style={{ gridColumn: '1 / -1' }}
+                className="form-field-wide flex w-fit cursor-pointer items-center gap-2.5 border border-border p-2.5 text-sm hover:bg-muted"
               >
                 <Checkbox checked={form.isActive} onCheckedChange={(checked) => setForm((p) => ({ ...p, isActive: checked === true }))} />
                 <span>{t('sliders.formIsActive')}</span>
               </label>
 
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground border-t border-border pt-3 mt-1" style={{ gridColumn: '1 / -1' }}>
+              <div className="bb-form-section-label with-divider">
                 {t('sliders.sectionDesktopImage', { defaultValue: 'Ảnh desktop' })}
               </div>
-              <div className="form-field" style={{ gridColumn: '1 / -1' }}>
+              <div className="form-field form-field-wide">
                 <span>{t('sliders.formDesktopUrl')}</span>
                 <ImageUrlInput
                   value={form.desktopImageUrl}
@@ -556,10 +551,10 @@ export function SliderListScreen({ canUpdate }) {
                 <span className="hint">{t('sliders.formDesktopUrlHint')}</span>
               </div>
 
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground border-t border-border pt-3 mt-1" style={{ gridColumn: '1 / -1' }}>
+              <div className="bb-form-section-label with-divider">
                 {t('sliders.sectionMobileImage', { defaultValue: 'Ảnh mobile' })}
               </div>
-              <div className="form-field" style={{ gridColumn: '1 / -1' }}>
+              <div className="form-field form-field-wide">
                 <span>{t('sliders.formMobileUrl')}</span>
                 <ImageUrlInput
                   value={form.mobileImageUrl}
@@ -569,10 +564,10 @@ export function SliderListScreen({ canUpdate }) {
                 <span className="hint">{t('sliders.formMobileUrlHint')}</span>
               </div>
 
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground border-t border-border pt-3 mt-1" style={{ gridColumn: '1 / -1' }}>
+              <div className="bb-form-section-label with-divider">
                 {t('sliders.sectionLink', { defaultValue: 'Liên kết' })}
               </div>
-              <label className="form-field" style={{ gridColumn: '1 / -1' }}>
+              <label className="form-field form-field-wide">
                 <span>
                   {t('sliders.formExternalLink')}
                   <span className="text-danger ml-0.5" aria-hidden="true">*</span>
@@ -587,10 +582,10 @@ export function SliderListScreen({ canUpdate }) {
                 <span className="hint">{t('sliders.formExternalLinkRequiredHint', { defaultValue: 'Bắt buộc nhập link ngoài hoặc chọn sản phẩm liên kết bên dưới.' })}</span>
                 <span className="hint">{t('sliders.formExternalLinkHint')}</span>
               </label>
-              <div className="form-field" style={{ gridColumn: '1 / -1' }}>
+              <div className="form-field form-field-wide">
                 <span>{t('sliders.formProduct', { defaultValue: 'Sản phẩm liên kết' })}</span>
                 {form.productId ? (
-                  <div className="flex items-center gap-2" style={{ flexWrap: 'wrap' }}>
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="bb-badge bb-badge-neutral">
                       {form.productName || form.productId}
                     </span>
@@ -616,7 +611,7 @@ export function SliderListScreen({ canUpdate }) {
                 <span className="hint">{t('sliders.formProductHint', { defaultValue: 'Chọn sản phẩm để banner trỏ tới trang sản phẩm đó. Có thể để trống nếu đã nhập link ngoài.' })}</span>
               </div>
               {linkTouched && linkFieldError && (
-                <small className="field-error" style={{ gridColumn: '1 / -1' }} role="alert">{linkFieldError}</small>
+                <small className="field-error form-field-wide" role="alert">{linkFieldError}</small>
               )}
             </div>
             <div className="mt-4 flex gap-2">

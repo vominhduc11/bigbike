@@ -279,9 +279,9 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
 
       {draftRecovery && (
-        <div className="flex flex-wrap items-center gap-2 px-3 py-1.5 mb-4 bg-[var(--admin-color-status-info-bg)] border border-[var(--admin-color-status-info-border)] text-[var(--admin-color-status-info-text)] text-xs">
+        <div className="bb-alert info center wrap">
           <Save size={14} className="shrink-0" />
-          <span className="flex-1 truncate">
+          <span className="bb-alert-main truncate">
             <strong>{t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}</strong>
             {' · '}{formatDateTime(new Date(draftRecovery.ts).toISOString())}
           </span>
@@ -334,7 +334,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                     aria-current={isActive ? 'true' : undefined}
                   >
                     <Icon size={15} />
-                    <span style={{ flex: 1 }}>{tabLabel('PUBLIC_HERO', t)}</span>
+                    <span className="flex-1">{tabLabel('PUBLIC_HERO', t)}</span>
                   </button>
                 )
               }
@@ -352,7 +352,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                     aria-current={isActive ? 'true' : undefined}
                   >
                     <Icon size={15} />
-                    <span style={{ flex: 1 }}>{tabLabel('PRODUCT_ASSIGN', t)}</span>
+                    <span className="flex-1">{tabLabel('PRODUCT_ASSIGN', t)}</span>
                   </button>
                 )
               }
@@ -374,7 +374,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                   aria-current={isActive ? 'true' : undefined}
                 >
                   <Icon size={15} />
-                  <span style={{ flex: 1 }}>{label}</span>
+                  <span className="flex-1">{label}</span>
                   {dirtyInGroup > 0 && (
                     <span className="bb-badge bb-badge-warning" aria-label={t('settings.tabChangeCount', { count: dirtyInGroup })}>
                       {dirtyInGroup}

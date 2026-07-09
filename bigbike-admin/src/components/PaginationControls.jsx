@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 // Windowed page-number list: always keeps page 1 + the last page visible, a window of
 // up to 5 pages around the current one, and 'ellipsis' markers where pages are skipped.
@@ -41,59 +43,62 @@ export function PaginationControls({ pagination, onPageChange }) {
 
       <div className="bb-row flex-wrap">
         {totalPages > 3 && (
-          <form onSubmit={handleJump} className="bb-row" style={{ gap: 6 }}>
-            <span style={{ fontSize: 12, color: 'var(--bb-text-muted)', whiteSpace: 'nowrap' }}>
+          <form onSubmit={handleJump} className="bb-row gap-1.5">
+            <span className="whitespace-nowrap text-xs text-muted-foreground">
               {t('pagination.jumpTo')}
             </span>
-            <input
+            <Input
               type="number"
               min={1}
               max={totalPages}
               value={jumpInput}
               onChange={(e) => setJumpInput(e.target.value)}
-              className="bb-input"
-              style={{ width: 52, height: 26, fontSize: 12, textAlign: 'center' }}
+              className="bb-input h-[26px] w-[52px] px-1 text-center text-xs"
               aria-label={t('pagination.jumpTo')}
             />
-            <button type="submit" className="bb-btn bb-btn-secondary bb-btn-sm" disabled={!jumpInput}>
+            <Button type="submit" variant="secondary" size="sm" className="bb-btn bb-btn-secondary bb-btn-sm" disabled={!jumpInput}>
               →
-            </button>
+            </Button>
           </form>
         )}
 
         <div className="bb-pagination">
-          <button
-            className="bb-btn bb-btn-secondary bb-btn-sm"
-            style={{ height: 28 }}
+          <Button
+            variant="secondary"
+            size="sm"
+            className="bb-btn bb-btn-secondary bb-btn-sm h-7"
             onClick={() => onPageChange(page - 1)}
             disabled={page <= 1}
           >
             {t('pagination.previous')}
-          </button>
+          </Button>
 
           {buildPageList(page, totalPages).map((p, i) =>
             p === 'ellipsis' ? (
               <span key={`ellipsis-${i}`} className="info" aria-hidden="true">…</span>
             ) : (
-              <button
+              <Button
                 key={p}
+                variant="secondary"
+                size="sm"
                 className={p === page ? 'active' : ''}
                 onClick={() => onPageChange(p)}
                 aria-current={p === page ? 'page' : undefined}
               >
                 {p}
-              </button>
+              </Button>
             )
           )}
 
-          <button
-            className="bb-btn bb-btn-secondary bb-btn-sm"
-            style={{ height: 28 }}
+          <Button
+            variant="secondary"
+            size="sm"
+            className="bb-btn bb-btn-secondary bb-btn-sm h-7"
             onClick={() => onPageChange(page + 1)}
             disabled={page >= totalPages}
           >
             {t('pagination.next')}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

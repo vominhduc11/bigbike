@@ -1,7 +1,7 @@
-import { getLocale } from "next-intl/server";
 import { Tr } from "@/components/i18n/Tr";
 import { telHref } from "@/lib/utils/format";
 import { WpFooterMenuLinks } from "./WpFooterMenuLinks";
+import { WpLocalizedSetting } from "./WpLocalizedSetting";
 import { listPublicSettings } from "@/lib/api/public-api";
 import { pickSetting } from "@/lib/utils/settings";
 
@@ -21,10 +21,10 @@ const T = "/wp-content/themes/bigbike";
  * đổi ở Cài đặt sẽ cập nhật các nơi đó nhưng KHÔNG còn cập nhật footer.
  *
  * vi/en: `i18n/request.ts` cố định locale server là "vi" (route tĩnh ISR, không đọc
- * cookie) nên `isEn` dưới đây LUÔN false trong production hiện tại — nhánh `.en` giữ
- * lại để tự chạy đúng nếu sau này đổi cơ chế đọc locale theo request. 5 link menu
- * (`WpFooterMenuLinks`) là ngoại lệ: client component, đổi ngôn ngữ được ngay khi bấm
- * nút chuyển vi/en (cùng cơ chế menu header) vì đọc `useLocale()` phía client.
+ * cookie) nên component server này luôn fetch settings ở CẢ 2 ngôn ngữ (vi + en) rồi
+ * giao việc chọn hiển thị cho client component `WpLocalizedSetting`/`WpFooterMenuLinks`
+ * (đọc `useLocale()` phía client, đổi ngay khi bấm nút chuyển vi/en, không cần tải
+ * lại trang).
  */
 const FOOTER_HOTLINES = ["0906 902 404", "0764 640 679 - Mrs. Thư / Zalo"];
 const FOOTER_EMAIL = "bigbikevnshop@gmail.com";
@@ -97,10 +97,12 @@ const titleStyle: React.CSSProperties = {
 
 /** Footer WordPress bigbike.vn — port 1:1 từ footer.php. */
 export async function WpFooter() {
-  const locale = await getLocale();
-
-  const settings = (await listPublicSettings(locale)).data ?? [];
-  const settingDescription = pickSetting(settings, ["footer_description"]);
+  const [settingsVi, settingsEn] = await Promise.all([
+    listPublicSettings("vi"),
+    listPublicSettings("en"),
+  ]);
+  const settingDescription = pickSetting(settingsVi.data ?? [], ["footer_description"]);
+  const settingDescriptionEn = pickSetting(settingsEn.data ?? [], ["footer_description"]);
 
   return (
     <footer data-bb-focus="general_brand">
@@ -134,7 +136,13 @@ export async function WpFooter() {
             <div className="col-md-5">
               <div className="information">
                 <div className="information--item">
-                  <p>{settingDescription || <Tr ns="Footer" k="description" />}</p>
+                  <p>
+                    <WpLocalizedSetting
+                      vi={settingDescription}
+                      en={settingDescriptionEn}
+                      fallback={<Tr ns="Footer" k="description" />}
+                    />
+                  </p>
                 </div>
                 <div className="row">
                   <div className="col-md-7">

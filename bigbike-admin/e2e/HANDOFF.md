@@ -9,15 +9,15 @@ Kiểm thử toàn diện UI/UX, responsive, transition/effect, runtime/network 
 
 ## 1. Sự thật môi trường (đã verify — TUÂN THỦ, đừng dò lại từ đầu)
 - **Máy này CHÍNH LÀ `103.1.236.148`.** `http://103.1.236.148:4000` = container Docker `bigbike-admin` local (nginx serve **production build**), nhưng build trong image cũ hơn source hiện tại một chút (chỉ lệch vài dòng CSS). **Không tự `docker compose up/build/restart`** — phải xin phép user.
-- **Target test chính = LOCAL PRODUCTION PREVIEW** từ source hiện tại: `http://127.0.0.1:4280` (vite build → vite preview). Đây là nơi verify fix.
+- **Target test chính = LOCAL PRODUCTION PREVIEW** từ source hiện tại: `http://localhost:4280` (vite build → vite preview). Đây là nơi verify fix.
 - **Backend thật** `localhost:8080` (healthy), **MinIO** `localhost:9000`. Đăng nhập: `admin@bigbike.vn` / `admin123` → role **SUPER_ADMIN**, `permissions: ["*"]` (mọi route truy cập được).
 - **BUILD PHẢI có biến** giống Dockerfile, nếu không WebSocket sẽ trỏ sai host:
-  `VITE_ADMIN_API_BASE=/api/v1 VITE_MINIO_INTERNAL_ORIGIN=http://minio:9000 npm run build`
+  `node ./e2e/scripts/preview-server.mjs`
 - **Backend chặn Origin lạ (403)** → preview proxy (`e2e/vite.preview.config.ts`) đã rewrite `Origin/Referer` thành `http://localhost:4000`. Proxy cũng forward `/api`, `/ws`, `/media`, `/media-proxy`.
 - **Rate limit theo IP**: LOGIN **5/phút**, REFRESH **30/phút**. Access token chỉ ở memory (mất khi reload), refresh cookie **dùng 1 lần** (xoay vòng + revoke cookie cũ).
 - **Chiến lược auth (đã làm)**: 1 login/worker + **chuyền cookie giữa các test**, `workers=1`, điều hướng bằng **SPA in-app** (`navigateSpa` = pushState + popstate) để gần như **không tốn refresh**. Dùng `apiLogin` có backoff khi gặp 429.
 - **App là SPA routing tự viết trong `src/App.jsx`** (không react-router), shell render bằng **class prototype `bb-*`** (`src/styles/admin-prototype.css`).
-- ⚠️ **Preview server phải đang chạy** ở 4280. Nếu phiên mới: `cd bigbike-admin && (build trước) && npm run preview:e2e &` rồi `curl 127.0.0.1:4280` kiểm tra. (Playwright `webServer` cũng tự build+preview nếu 4280 trống.)
+- ⚠️ **Preview server phải đang chạy** ở 4280. Nếu phiên mới: `cd bigbike-admin && node ./e2e/scripts/preview-server.mjs` rồi kiểm tra `http://localhost:4280`. (Playwright `webServer` cũng tự build+preview nếu 4280 trống.)
 
 ## 2. Đã làm xong (PASS)
 - Cài `@playwright/test@1.60.0` (Chromium 1223 đã cache sẵn). Thêm scripts: `test:e2e[:ui|:debug|:report|:responsive|:effects|:admin]`, `preview:e2e`. `eslint.config.js` đã ignore `e2e`.
@@ -55,8 +55,7 @@ Kiểm thử toàn diện UI/UX, responsive, transition/effect, runtime/network 
 ## 5. Lệnh hay dùng (chạy trong `bigbike-admin/`)
 ```bash
 # Build production mới + (re)start preview 4280
-VITE_ADMIN_API_BASE=/api/v1 VITE_MINIO_INTERNAL_ORIGIN=http://minio:9000 npm run build
-pkill -f "vite preview"; npm run preview:e2e &   # rồi: curl -s -o /dev/null -w "%{http_code}" 127.0.0.1:4280
+node ./e2e/scripts/preview-server.mjs
 
 npx playwright test                 # full
 npx playwright test responsive      # = test:e2e:responsive

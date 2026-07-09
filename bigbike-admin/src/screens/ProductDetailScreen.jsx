@@ -866,7 +866,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   function tabErrorBadge(count) {
     if (!count) return undefined
     return (
-      <span style={{ color: 'var(--admin-color-status-danger-text)', fontWeight: 700 }}>
+      <span className="font-bold text-danger">
         <span aria-hidden="true">{count}</span>
         <span className="sr-only">
           {t('products.detail.errorsInTab', { count, defaultValue: '{{count}} lỗi' })}
@@ -893,9 +893,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   // ── Save-bar derivations ────────────────────────────────────────────────────
   const saveDotState = isSubmitting ? 'saving' : savedFlash ? 'saved-flash' : isDirty ? 'dirty' : 'saved'
   const saveDotClass =
-    saveDotState === 'saving'      ? 'bg-[var(--admin-color-status-info-text)] animate-pulse'
-    : saveDotState === 'dirty'     ? 'bg-[var(--admin-color-status-warning-text)] animate-pulse'
-    :                                'bg-[var(--admin-color-status-success-text)]'
+    saveDotState === 'saving'      ? 'bg-info animate-pulse'
+    : saveDotState === 'dirty'     ? 'bg-warning animate-pulse'
+    :                                'bg-success'
   const saveLabel = isSubmitting
     ? t('products.detail.savingShort', { defaultValue: 'Đang lưu...' })
     : isDirty
@@ -977,29 +977,31 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
         {/* Banners — read-only / draft-recovery */}
         {!canUpdate && (
-          <div className="flex items-center gap-2 px-4 py-2 bg-[var(--admin-color-status-warning-bg)] border border-[var(--admin-color-status-warning-border)] text-[var(--admin-color-status-warning-text)] text-sm">
-            <Lock size={16} />
+          <div className="bb-alert warning tight center">
+            <Lock size={16} className="shrink-0" />
             <span>{t('products.detail.permissionDesc')}</span>
           </div>
         )}
 
         {state.warning && (
-          <div className="flex items-center gap-2 px-4 py-2 bg-[var(--admin-color-status-warning-bg)] border border-[var(--admin-color-status-warning-border)] text-[var(--admin-color-status-warning-text)] text-sm">
-            <AlertCircle size={16} />
-            <div className="flex-1">{state.warning}</div>
+          <div className="bb-alert warning tight">
+            <AlertCircle size={16} className="shrink-0" />
+            <div className="bb-alert-main">{state.warning}</div>
           </div>
         )}
 
         {draftRecovery && (
-          <div className="flex flex-wrap items-center gap-2 px-3 py-1.5 bg-[var(--admin-color-status-info-bg)] border border-[var(--admin-color-status-info-border)] text-[var(--admin-color-status-info-text)] text-xs">
+          <div className="bb-alert info tight center wrap">
             <Save size={14} className="shrink-0" />
-            <span className="flex-1 truncate">
+            <span className="bb-alert-main truncate">
               <strong>{t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}</strong>
               {' · '}{formatDateTime(new Date(draftRecovery.ts).toISOString())}
             </span>
-            <button
+            <Button
               type="button"
-              className="text-xs font-semibold underline hover:no-underline"
+              variant="link"
+              size="sm"
+              className="h-auto px-0 py-0 text-xs font-semibold"
               onClick={() => {
                 setForm(draftRecovery.form)
                 setIsDirty(true)
@@ -1009,14 +1011,16 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               }}
             >
               {t('products.detail.draftRestore', { defaultValue: 'Khôi phục' })}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="text-xs underline hover:no-underline"
+              variant="link"
+              size="sm"
+              className="h-auto px-0 py-0 text-xs font-normal"
               onClick={() => { clearFormFromStorage(autosaveKey); setDraftRecovery(null) }}
             >
               {t('products.detail.draftDiscard', { defaultValue: 'Bỏ qua' })}
-            </button>
+            </Button>
           </div>
         )}
 
@@ -1047,7 +1051,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           {/* F2: chú thích dấu bắt buộc — chỉ hiện khi tạo mới (lúc các trường thật sự bắt buộc). */}
           {isCreate && (
             <p className="text-xs text-muted-foreground">
-              <span className="text-[var(--admin-color-status-danger-text)]">*</span>
+              <span className="text-danger">*</span>
               {' '}
               {t('products.detail.requiredLegend', { defaultValue: 'Bắt buộc' })}
             </p>
@@ -1241,7 +1245,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 title={t('products.detail.gallerySectionTitle')}
                 badge={
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                    <span className="bb-count-pill">
                       {form.gallery.length} {t('products.detail.galleryUnit', { defaultValue: 'ảnh' })}
                     </span>
                     <RoleBadge role="content" />
@@ -1261,7 +1265,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 title={t('products.detail.sectionTrustBadges', { defaultValue: 'Dải tin cậy (trên tên sản phẩm)' })}
                 badge={
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                    <span className="bb-count-pill">
                       {parseTrustBadgesFromHtml(langValue('trustBadges')).length} {t('products.detail.trustBadges.unit', { defaultValue: 'nhãn' })}
                     </span>
                     <RoleBadge role="content" />
@@ -1272,7 +1276,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   {t('products.detail.trustBadges.hint', { defaultValue: 'Các nhãn ngắn hiển thị NGAY TRÊN tên sản phẩm (vd "Chính hãng", "BH 2 năm", "Freeship"). Để trống → web ẩn dải. Mỗi sản phẩm tự nhập riêng.' })}
                 </p>
                 {validationErrors.trustBadges && (
-                  <p className="field-error text-xs text-[var(--admin-color-status-danger-text)] font-semibold mb-2 flex items-center gap-1" role="alert">
+                  <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
                     <AlertCircle size={13} className="shrink-0" />
                     {validationErrors.trustBadges}
                   </p>
@@ -1288,7 +1292,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               {/* ── Card: Giá & trạng thái ── */}
               <SectionCard title={t('products.detail.sectionPricing')} required badge={<RoleBadge role="manager" />}>
                 {form.variants.length > 0 && (
-                  <div className="flex items-start gap-2 mb-4 p-3 bg-[var(--admin-color-status-info-bg)] border border-[var(--admin-color-status-info-border)] text-[var(--admin-color-status-info-text)] text-sm">
+                  <div className="bb-alert info tight">
                     <Info size={14} className="mt-0.5 shrink-0" />
                     <span>{t('products.detail.variantPricingHint')}</span>
                   </div>
@@ -1427,7 +1431,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 title={t('products.detail.variantSectionTitle')}
                 badge={
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                    <span className="bb-count-pill">
                       {form.variants.length} {t('products.detail.variantUnit', { defaultValue: 'biến thể' })}
                     </span>
                     <RoleBadge role="content" />
@@ -1449,7 +1453,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 title={t('products.detail.sectionCommitments')}
                 badge={
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                    <span className="bb-count-pill">
                       {form.commitments.length} {t('products.detail.commitments.unit', { defaultValue: 'dòng' })}
                     </span>
                     <RoleBadge role="content" />
@@ -1458,7 +1462,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               >
                 <p className="text-xs text-muted-foreground mb-2">{t('products.detail.commitments.hint')}</p>
                 {validationErrors.commitments && (
-                  <p className="field-error text-xs text-[var(--admin-color-status-danger-text)] font-semibold mb-2 flex items-center gap-1" role="alert">
+                  <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
                     <AlertCircle size={13} className="shrink-0" />
                     {validationErrors.commitments}
                   </p>
@@ -1476,7 +1480,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 title={t('products.detail.sectionSpecStats')}
                 badge={
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                    <span className="bb-count-pill">
                       {parseSpecStatsFromHtml(langValue('specStats')).length} / 4
                     </span>
                     <RoleBadge role="content" />
@@ -1485,7 +1489,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               >
                 <p className="text-xs text-muted-foreground mb-2">{t('products.detail.specStats.hint')}</p>
                 {validationErrors.specStats && (
-                  <p className="field-error text-xs text-[var(--admin-color-status-danger-text)] font-semibold mb-2 flex items-center gap-1" role="alert">
+                  <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
                     <AlertCircle size={13} className="shrink-0" />
                     {validationErrors.specStats}
                   </p>
@@ -1524,7 +1528,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   className={validationErrors.quickAnswerSummary ? 'border-danger' : undefined}
                 />
                 {validationErrors.quickAnswerSummary && (
-                  <span className="text-xs text-[var(--admin-color-status-danger-text)] font-semibold mt-2 block">
+                  <span className="mt-2 block text-xs font-semibold text-danger">
                     {validationErrors.quickAnswerSummary}
                   </span>
                 )}
@@ -1560,7 +1564,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   <div>
                     <div className="text-sm font-medium mb-2">{t('products.detail.highlights.prosTitle', { defaultValue: 'Ưu điểm' })}</div>
                     {validationErrors.positiveNotes && (
-                      <p className="field-error text-xs text-[var(--admin-color-status-danger-text)] font-semibold mb-2 flex items-center gap-1" role="alert">
+                      <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
                         <AlertCircle size={13} className="shrink-0" />
                         {validationErrors.positiveNotes}
                       </p>
@@ -1577,7 +1581,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   <div>
                     <div className="text-sm font-medium mb-2">{t('products.detail.highlights.consTitle', { defaultValue: 'Nhược điểm' })}</div>
                     {validationErrors.negativeNotes && (
-                      <p className="field-error text-xs text-[var(--admin-color-status-danger-text)] font-semibold mb-2 flex items-center gap-1" role="alert">
+                      <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
                         <AlertCircle size={13} className="shrink-0" />
                         {validationErrors.negativeNotes}
                       </p>
@@ -1600,8 +1604,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 badge={
                   <div className="flex items-center gap-1.5">
                     <span
-                      className="text-xs font-bold tabular-nums px-2 py-0.5 border border-border text-muted-foreground"
-                      style={relatedAtMax ? { color: 'var(--admin-color-status-warning-text)', borderColor: 'var(--admin-color-status-warning-text)' } : undefined}
+                      className={cn('bb-count-pill bb-count-pill--bordered', relatedAtMax && 'bb-count-pill--warning')}
                     >
                       {form.relatedProductIds.length} / {RELATED_PRODUCTS_MAX}
                     </span>
@@ -1649,10 +1652,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                       disabled={relatedAtMax}
                     />
                     {relatedAtMax && (
-                      <p
-                        className="text-xs mt-2"
-                        style={{ color: 'var(--admin-color-status-warning-text)' }}
-                      >
+                      <p className="mt-2 text-xs text-warning">
                         {t('products.detail.relatedLimitHint', { max: RELATED_PRODUCTS_MAX })}
                       </p>
                     )}
@@ -1711,7 +1711,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 title={t('products.detail.specsSectionTitle')}
                 badge={
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                    <span className="bb-count-pill">
                       {t('products.detail.specCount', { count: parseSpecsFromHtml(langValue('specifications')).length })}
                     </span>
                     <RoleBadge role="content" />
@@ -1731,7 +1731,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 title={t('products.detail.sectionFaqs')}
                 badge={
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                    <span className="bb-count-pill">
                       {form.faqs.length} {t('products.detail.faqs.unit', { defaultValue: 'câu hỏi' })}
                     </span>
                     <RoleBadge role="content" />
@@ -1740,7 +1740,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               >
                 <p className="text-xs text-muted-foreground mb-2">{t('products.detail.faqs.hint')}</p>
                 {validationErrors.faqs && (
-                  <p className="field-error text-xs text-[var(--admin-color-status-danger-text)] font-semibold mb-2 flex items-center gap-1" role="alert">
+                  <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
                     <AlertCircle size={13} className="shrink-0" />
                     {validationErrors.faqs}
                   </p>
@@ -1759,7 +1759,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 title={t('products.detail.videoSectionTitle')}
                 badge={
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                    <span className="bb-count-pill">
                       {form.videos.length} video
                     </span>
                     <RoleBadge role="content" />
@@ -1788,8 +1788,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 badge={
                   <div className="flex items-center gap-1.5">
                     <span
-                      className="text-xs font-bold tabular-nums px-2 py-0.5 border border-border text-muted-foreground"
-                      style={accessoryAtMax ? { color: 'var(--admin-color-status-warning-text)', borderColor: 'var(--admin-color-status-warning-text)' } : undefined}
+                      className={cn('bb-count-pill bb-count-pill--bordered', accessoryAtMax && 'bb-count-pill--warning')}
                     >
                       {form.accessoryProductIds.length} / {RELATED_PRODUCTS_MAX}
                     </span>
@@ -1837,10 +1836,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                       disabled={accessoryAtMax}
                     />
                     {accessoryAtMax && (
-                      <p
-                        className="text-xs mt-2"
-                        style={{ color: 'var(--admin-color-status-warning-text)' }}
-                      >
+                      <p className="mt-2 text-xs text-warning">
                         {t('products.detail.accessoryLimitHint', { max: RELATED_PRODUCTS_MAX })}
                       </p>
                     )}
@@ -1868,7 +1864,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     <div className="text-lg leading-snug text-google-title break-words mb-1">
                       {(form.seoTitle || form.name || t('products.detail.serpTitleFallback', { defaultValue: 'Tiêu đề sản phẩm trên Google' })).slice(0, 60)}
                     </div>
-                    <div className="text-sm leading-relaxed text-[#4d5156] break-words">
+                    <div className="text-sm leading-relaxed text-muted-foreground break-words">
                       {form.seoDescription || form.shortDescription || t('products.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn về sản phẩm sẽ hiển thị ở đây.' })}
                     </div>
                   </div>
@@ -1942,7 +1938,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                       <Check size={14} />
                       {t('products.detail.seoChecklist', { defaultValue: 'Checklist SEO' })}
                     </span>
-                    <span className="font-mono font-bold text-sm text-[var(--admin-color-status-success-text)]">
+                    <span className="font-mono text-sm font-bold text-success">
                       {seoPassed} / {seoChecks.length}
                     </span>
                   </div>
@@ -1952,7 +1948,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                         <span className={cn(
                           'w-4 h-4 flex items-center justify-center',
                           c.ok
-                            ? 'bg-[var(--admin-color-status-success-bg)] text-[var(--admin-color-status-success-text)]'
+                            ? 'bg-success-bg text-success'
                             : 'bg-muted',
                         )}>
                           {c.ok ? <Check size={11} /> : null}

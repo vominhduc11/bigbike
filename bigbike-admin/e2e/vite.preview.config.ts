@@ -10,22 +10,21 @@ import { defineConfig } from 'vite'
  * build config untouched.
  *
  * Origin allow-list: the backend rejects unknown Origins server-side with 403.
- * The preview origin (127.0.0.1:4280) is not on the list, so we rewrite the
- * Origin/Referer on proxied API + WS requests to an allowed production value.
+ * The preview origin (localhost:4280) is not on the list, so we rewrite the
+ * Origin/Referer on proxied API + WS requests to an allowed admin origin.
  * Browser→preview calls are same-origin (no browser CORS), so this only affects
  * what the backend's server-side filter sees — faithfully reproducing prod,
  * where the admin is genuinely served from an allowed origin.
  *
- * Default matches this VPS's current BIGBIKE_CORS_ALLOWED_ORIGINS (root .env) —
- * public IP only, no `localhost` entry. Override with E2E_BACKEND_ORIGIN if that
- * allow-list ever changes (e.g. a different host/IP).
+ * Default matches the local root .env admin origin. Override with
+ * E2E_BACKEND_ORIGIN when auditing a deployment with a different allow-list.
  *
  * Targets are host-mapped Docker ports: backend 8080, MinIO 9000.
  * `/media-proxy` is listed before `/media` so the regex contexts don't overlap.
  */
 const BACKEND = 'http://localhost:8080'
 const MINIO = 'http://localhost:9000'
-const ALLOWED_ORIGIN = process.env.E2E_BACKEND_ORIGIN || 'http://103.1.236.148:4000'
+const ALLOWED_ORIGIN = process.env.E2E_BACKEND_ORIGIN || 'http://localhost:4000'
 
 function spoofOrigin(proxy: any) {
   const set = (req: any) => {
@@ -39,6 +38,7 @@ function spoofOrigin(proxy: any) {
 export default defineConfig({
   build: { outDir: 'dist' },
   preview: {
+    host: 'localhost',
     port: 4280,
     strictPort: true,
     proxy: {

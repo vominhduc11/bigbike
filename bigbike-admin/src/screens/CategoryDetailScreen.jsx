@@ -553,13 +553,12 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             <a
               href="/admin/categories"
               onClick={(e) => { e.preventDefault(); navigate('/admin/categories') }}
-              className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--bb-primary)]"
-              style={{ cursor: 'pointer' }}
+              className="cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--bb-primary)]"
             >
               ← {t('categories.detail.backToList')}
             </a>
           </p>
-          <h1 style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <h1 className="flex flex-wrap items-center gap-3">
             {isCreate ? t('categories.detail.createTitle') : t('categories.detail.editTitle')}
             {!isCreate && state.item && <StatusBadge type="visibility" status={state.item.isVisible} />}
           </h1>
@@ -569,22 +568,21 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             </p>
           )}
           {!isCreate && state.item && (
-            <div className="flex items-center gap-3 mt-2" style={{ flexWrap: 'wrap' }}>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
               {productsTotal > 0 && (
-                <span className="bb-muted flex items-center gap-1" style={{ fontSize: 12 }}>
+                <span className="bb-muted flex items-center gap-1 text-xs">
                   <Package size={13} aria-hidden="true" />
                   {t('categories.detail.productCount', { count: productsTotal })}
                 </span>
               )}
               {state.item.updatedAt && (
-                <span className="bb-muted" style={{ fontSize: 12 }} title={`${t('common.lastUpdated')} ${formatDateTime(state.item.updatedAt)}`}>
+                <span className="bb-muted text-xs" title={`${t('common.lastUpdated')} ${formatDateTime(state.item.updatedAt)}`}>
                   {t('common.lastUpdated')} {formatRelativeTime(state.item.updatedAt, t)}
                 </span>
               )}
               <button
                 type="button"
-                className="bb-muted flex items-center gap-1"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12 }}
+                className="bb-muted flex cursor-pointer items-center gap-1 border-0 bg-transparent text-xs"
                 onClick={handleCopyId}
                 title={t('categories.detail.copyId')}
               >
@@ -625,9 +623,9 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
       </div>
 
       {draftRecovery && (
-        <div className="flex flex-wrap items-center gap-2 px-3 py-1.5 mb-4 bg-[var(--admin-color-status-info-bg)] border border-[var(--admin-color-status-info-border)] text-[var(--admin-color-status-info-text)] text-xs">
+        <div className="bb-alert info center wrap">
           <Save size={14} className="shrink-0" />
-          <span className="flex-1 truncate">
+          <span className="bb-alert-main truncate">
             <strong>{t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}</strong>
             {' · '}{formatDateTime(new Date(draftRecovery.ts).toISOString())}
           </span>
@@ -675,11 +673,11 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
       {!isCreate && canUpdate && !menuNoticeDismissed && (
         <div
-          className="flex items-start justify-between gap-3 mb-4 p-3 bg-[var(--admin-color-status-info-bg)] border border-[var(--admin-color-status-info-border)] text-[var(--admin-color-status-info-text)] text-sm"
+          className="bb-alert info wrap justify-between"
         >
           <div>
             <strong>{t('categories.detail.menuNoticeTitle')}</strong>
-            <p style={{ margin: '4px 0 6px' }}>{t('categories.detail.menuNoticeDesc')}</p>
+            <p className="mb-1.5 mt-1">{t('categories.detail.menuNoticeDesc')}</p>
             <div className="flex gap-2">
               <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={() => navigate('/admin/menus')}>
                 {t('categories.detail.menuNoticeAction')}
