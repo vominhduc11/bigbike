@@ -720,8 +720,8 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
      `.sub-menu{display:none}` của wp-theme-*.css (load sau globals).
      Màu/viền dùng token khớp đúng WP live: chữ nghỉ gray-500 (#6f6f6f) =
      --bb-text-secondary, hover đỏ tươi (#ff0c09) = --bb-brand-primary, viền
-     gray-200 (≈#dfdfdf) = --bb-border-subtle; font kế thừa nav (Barlow
-     Condensed) thay Oswald đã gỡ. */
+     gray-200 (≈#dfdfdf) = --bb-border-subtle; font kế thừa nav
+     (Barlow Condensed). */
   body .container .navigation ul .navigation--item > .sub-menu,
   body .container .navigation ul .navigation--item > .sub-menu li > .sub-menu {
     display: block;
@@ -978,7 +978,32 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
    `@starting-style + transition: display allow-discrete` keeps the slide-in
    animation from the right via the WP-parity timing (Chrome 117+, Safari 17.4+,
    Firefox 129+). Older browsers degrade gracefully to instant show/hide. */
+@media (max-width: 1260px) {
+  @supports (transition-behavior: allow-discrete) {
+    body .container .navigation.js-navigation {
+      transition-property: transform, opacity, visibility, display !important;
+      transition-duration: 1s, 1s, 1s, 1s !important;
+      transition-timing-function: ease, ease, ease, ease !important;
+      transition-behavior: allow-discrete;
+    }
 
+    body .container .navigation.js-navigation:not(.active) {
+      display: none !important;
+    }
+
+    body .container .navigation.js-navigation.active {
+      display: block !important;
+    }
+
+    @starting-style {
+      body .container .navigation.js-navigation.active {
+        transform: translate(100%, 0);
+        opacity: 0;
+        visibility: hidden;
+      }
+    }
+  }
+}
 
 
 
@@ -1188,6 +1213,10 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.bb-main-banner .swiper {
+  overflow: hidden;
 }
 
 /* Swiper wrapper phải là flex row để các slide không stack dọc */
@@ -1806,6 +1835,26 @@ body:has(.bb-account-layout) .bb-breadcrumb {
 
 /* -- bb-* auth & content page supplements ---------------- */
 .bb-auth-footer { text-align: center; margin-top: var(--bb-space-4); color: var(--bb-text-secondary); font-size: var(--bb-text-sm); }
+
+.bb-page--auth .bb-auth-wrap .form-control:focus,
+.bb-page--auth .bb-auth-wrap .form-control:focus-visible,
+.bb-auth-wrap .form-control:focus,
+.bb-auth-wrap .form-control:focus-visible,
+.user-activity .user-activity-content .form-control:focus,
+.user-activity .user-activity-content .form-control:focus-visible {
+  border-color: var(--bb-link-text) !important;
+  outline: var(--bb-focus-outline) !important;
+  outline-offset: 2px !important;
+  box-shadow: var(--bb-focus-ring) !important;
+}
+
+.bb-page--auth .bb-auth-wrap :where(a, button, [role="checkbox"]):focus-visible,
+.bb-auth-wrap :where(a, button, [role="checkbox"]):focus-visible,
+.user-activity .user-activity-content :where(a, button, [role="checkbox"]):focus-visible {
+  outline: var(--bb-focus-outline) !important;
+  outline-offset: 3px !important;
+  box-shadow: var(--bb-focus-ring) !important;
+}
 
 .bb-sidebar-heading { margin-bottom: var(--bb-space-4); font-size: var(--bb-text-lg); }
 
@@ -3082,8 +3131,7 @@ body:has(.bb-home) {
   min-height: 2.6em;
 }
 /* PDP type scale §điểm nhấn — tên sản phẩm (h1) = 32px, đồng bậc Display với giá.
-   Theme WP gốc đặt `.title h1` = Oswald 30px / line-height 3.75rem (Oswald đã gỡ →
-   fallback Arial, line-height ~52px quá lỏng). Override scoped đặc hiệu hơn → THẮNG. */
+   Theme WP gốc đặt `.title h1` khá lỏng; override scoped đặc hiệu hơn → THẮNG. */
 .bb-wp-pdp-page .product-information .title h1 {
   font-size: 32px; /* desktop — thang PDP §điểm nhấn */
   line-height: 1.2;
@@ -3519,6 +3567,11 @@ html.overlay {
   width: auto;
   height: auto;
   max-width: 100%;
+}
+
+body .banner-ads > .container > .row {
+  margin-right: 0 !important;
+  margin-left: 0 !important;
 }
 
 .bb-home .content-bottom {

@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { resendEmailVerification, verifyEmail } from "@/lib/api/client-api";
 import { useAuth } from "@/lib/auth/auth-store";
+import { Button } from "@/components/ui/button";
 
 type Status = "idle" | "loading" | "success" | "error" | "missing";
 type ResendStatus = "idle" | "sending" | "sent" | "error";
@@ -73,7 +74,7 @@ export function VerifyEmailContent() {
                   <p className="m-0">{t("successMessage")}</p>
                 </div>
                 <div className="form-submit form-group">
-                  <button type="button" onClick={() => router.push("/tai-khoan/")}>{t("successCta")}</button>
+                  <Button type="button" size="auth" onClick={() => router.push("/tai-khoan/")}>{t("successCta")}</Button>
                 </div>
               </>
             )}
@@ -93,9 +94,9 @@ export function VerifyEmailContent() {
                       </p>
                     ) : (
                       <div className="form-submit form-group">
-                        <button type="button" onClick={handleResend} disabled={resendStatus === "sending"}>
+                        <Button type="button" size="auth" onClick={handleResend} disabled={resendStatus === "sending"}>
                           {resendStatus === "sending" ? t("resending") : t("resend")}
-                        </button>
+                        </Button>
                         {resendStatus === "error" && <p className="mt-2 text-ui-16 max-md:text-ui-14 text-destructive">{resendMsg}</p>}
                       </div>
                     )}
@@ -122,9 +123,9 @@ export function VerifyEmailContent() {
                 </div>
                 {isLoggedIn ? (
                   <div className="form-submit form-group">
-                    <button type="button" onClick={handleResend} disabled={resendStatus === "sending"}>
+                    <Button type="button" size="auth" onClick={handleResend} disabled={resendStatus === "sending"}>
                       {resendStatus === "sending" ? t("resending") : t("resend")}
-                    </button>
+                    </Button>
                   </div>
                 ) : (
                   <p className="m-0">

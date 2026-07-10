@@ -1864,7 +1864,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     <div className="text-lg leading-snug text-google-title break-words mb-1">
                       {(form.seoTitle || form.name || t('products.detail.serpTitleFallback', { defaultValue: 'Tiêu đề sản phẩm trên Google' })).slice(0, 60)}
                     </div>
-                    <div className="text-sm leading-relaxed text-muted-foreground break-words">
+                    <div className="text-sm leading-relaxed text-google-description break-words">
                       {form.seoDescription || form.shortDescription || t('products.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn về sản phẩm sẽ hiển thị ở đây.' })}
                     </div>
                   </div>

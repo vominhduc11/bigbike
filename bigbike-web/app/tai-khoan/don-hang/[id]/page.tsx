@@ -1,20 +1,16 @@
 import { WpAccountShell } from "@/components/wp/WpAccountShell";
-import { OrderDetailContent } from "./OrderDetailContent";
+import { OrderDetailContentIsland } from "./OrderDetailContentIsland";
 
-type Props = {
-  params: Promise<{ id: string }>;
-};
+export const dynamic = "force-static";
 
-/**
- * Chi tiết đơn hàng — port từ woocommerce/myaccount/view-order.php.
- * Server component await params (Next 15 Promise) rồi bọc WpAccountShell + nội dung client.
- */
-export default async function OrderDetailPage({ params }: Props) {
-  const { id } = await params;
+export async function generateStaticParams() {
+  return [];
+}
 
+export default function OrderDetailPage() {
   return (
-    <WpAccountShell loginRedirect={`/tai-khoan/don-hang/${id}/`}>
-      <OrderDetailContent orderId={id} />
+    <WpAccountShell>
+      <OrderDetailContentIsland />
     </WpAccountShell>
   );
 }

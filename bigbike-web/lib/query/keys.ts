@@ -6,8 +6,8 @@ export const queryKeys = {
   order: (id: string) => ["customer", "order", id] as const,
   productDetail: (slug: string) => ["product", "detail", slug] as const,
   /**
-   * fetchPublicSettings(locale) — shared by every EN-locale-swap consumer
-   * (HomeLocalizedSettings, PolicyPageClient, ...) so React Query dedupes them into
+   * fetchPublicSettings(locale) — shared by EN-locale-swap client consumers
+   * (for example HomeLocalizedSettings) so React Query dedupes them into
    * one request per locale instead of one per component with its own ad-hoc key.
    */
   publicSettings: (locale: string) => ["public-settings", locale] as const,

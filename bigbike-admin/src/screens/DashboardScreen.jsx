@@ -506,7 +506,7 @@ export function DashboardScreen({ navigate }) {
                               <div className="flex flex-col">
                                 <button
                                   type="button"
-                                  className="bg-transparent border-0 p-0 font-[inherit] text-[length:inherit] cursor-pointer hover:underline focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-2 text-left"
+                                  className="bg-transparent border-0 p-0 font-mono text-xs cursor-pointer hover:underline focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-2 text-left"
                                   style={{ color: 'var(--bb-primary)' }}
                                   onClick={() => navigate(`/admin/orders/${order.id}`)}
                                 >

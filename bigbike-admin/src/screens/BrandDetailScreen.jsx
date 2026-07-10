@@ -695,7 +695,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                 <div className="text-lg leading-snug text-google-title break-words mb-1">
                   {(seoTitleVal || nameVal || t('brands.detail.seoPreviewFallbackTitle', { defaultValue: 'Tiêu đề thương hiệu' })).slice(0, 60)}
                 </div>
-                <div className="text-sm leading-relaxed text-[#4d5156] break-words">
+                <div className="text-sm leading-relaxed text-google-description break-words">
                   {seoDescVal || t('brands.detail.seoPreviewFallbackDesc', { defaultValue: 'Mô tả ngắn về thương hiệu sẽ hiển thị ở đây.' })}
                 </div>
               </div>

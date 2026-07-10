@@ -471,6 +471,7 @@ export function ProductGallery({
                       altFallback={altFallback}
                       width={220}
                       height={220}
+                      loading={index === 0 ? "eager" : "lazy"}
                       className="w-full h-full object-contain"
                     />
                   </div>

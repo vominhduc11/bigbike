@@ -6,11 +6,12 @@ import { useLocale, useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerCustomer } from "@/lib/api/client-api";
-import { refreshAuth } from "@/lib/auth/auth-store";
+import { markCustomerAuthenticated, refreshAuth } from "@/lib/auth/auth-store";
 import { createRegisterSchema, type RegisterFormValues } from "@/lib/schemas/auth";
 import { toAccountPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 import { FormRootError } from "@/components/ui/FormRootError";
+import { Button } from "@/components/ui/button";
 import { WpAuthField } from "@/components/wp/WpAuthField";
 import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
 
@@ -40,6 +41,7 @@ export function RegisterForm({ returnTo }: { returnTo?: string }) {
   async function onSubmit(values: RegisterFormValues) {
     try {
       await registerCustomer(values.email, values.password, values.fullName, undefined, values.phone);
+      markCustomerAuthenticated();
       await refreshAuth();
       setConfirmedEmail(values.email);
       setRegistered(true);
@@ -63,9 +65,9 @@ export function RegisterForm({ returnTo }: { returnTo?: string }) {
               </p>
             )}
             <div className="form-submit form-group">
-              <button type="button" onClick={() => router.push(resolvedReturnTo)}>
+              <Button type="button" size="auth" onClick={() => router.push(resolvedReturnTo)}>
                 {t("successCta")}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -138,9 +140,9 @@ export function RegisterForm({ returnTo }: { returnTo?: string }) {
                 </div>
               </div>
               <div className="form-submit form-group">
-                <button type="submit" disabled={isSubmitting}>
+                <Button type="submit" size="auth" disabled={isSubmitting}>
                   {isSubmitting ? t("submitting") : t("submit")}
-                </button>
+                </Button>
               </div>
             </div>
           </div>

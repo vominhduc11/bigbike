@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { getLocale } from "next-intl/server";
 import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
 import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
@@ -9,6 +10,7 @@ import { toBrandListPath, toHomePath } from "@/lib/utils/routes";
 import { readDefaultHeroAssets, readHeroSettings } from "@/lib/utils/page-hero";
 import { resolveMediaUrl, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { WpBrandListClient } from "./WpBrandListClient";
+import { WpBrandListDefault } from "./WpBrandListDefault";
 
 // Shell + hero. Lưới thương hiệu view MẶC ĐỊNH (trang 1, sắp xếp tên A→Z) fetch sẵn ở
 // server (revalidate theo tag "brands") và truyền xuống → nằm trong HTML server (SEO).
@@ -70,10 +72,19 @@ export default async function BrandListPage() {
         <div id="main-content">
           <div className="container">
             <div className="pwb-all-brands pt-40 pb-40">
-              <WpBrandListClient
-                initialBrands={brandsResult.data}
-                initialPagination={brandsResult.pagination}
-              />
+              <Suspense
+                fallback={
+                  <WpBrandListDefault
+                    brands={brandsResult.data}
+                    pagination={brandsResult.pagination}
+                  />
+                }
+              >
+                <WpBrandListClient
+                  initialBrands={brandsResult.data}
+                  initialPagination={brandsResult.pagination}
+                />
+              </Suspense>
             </div>
           </div>
         </div>

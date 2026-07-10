@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
 import { WpCatalogClient } from "@/components/wp/WpCatalogClient";
+import { WpCatalogDefault } from "@/components/wp/WpCatalogDefault";
 import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
 import { getCatalogFacets, listBrands, listCategories, listProducts, listPublicSettings } from "@/lib/api/public-api";
 import { DEFAULT_PRODUCT_PAGE_SIZE, DEFAULT_PRODUCT_SORT } from "@/lib/constants/catalog";
@@ -72,15 +74,28 @@ export default async function ProductListPage() {
 
         <div id="main-content">
           <div className="container">
-            <WpCatalogClient
-              canonicalPath={canonicalPath}
-              brands={brandsResult.data}
-              categories={filterCategories}
-              facets={facetsResult.data}
-              initialProducts={productsResult.data}
-              initialPagination={productsResult.pagination}
-              includeCategoryParam
-            />
+            <Suspense
+              fallback={
+                <WpCatalogDefault
+                  canonicalPath={canonicalPath}
+                  brands={brandsResult.data}
+                  categories={filterCategories}
+                  facets={facetsResult.data}
+                  products={productsResult.data}
+                  pagination={productsResult.pagination}
+                />
+              }
+            >
+              <WpCatalogClient
+                canonicalPath={canonicalPath}
+                brands={brandsResult.data}
+                categories={filterCategories}
+                facets={facetsResult.data}
+                initialProducts={productsResult.data}
+                initialPagination={productsResult.pagination}
+                includeCategoryParam
+              />
+            </Suspense>
           </div>
         </div>
       </div>

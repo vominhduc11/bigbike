@@ -9,7 +9,7 @@ export function Toast({ toast, onClose }) {
       role={isSuccess ? 'status' : 'alert'}
       aria-live={isSuccess ? 'polite' : 'assertive'}
       className={cn(
-        'fixed top-20 right-6 z-[9000] flex items-center gap-2 max-w-sm px-5 py-3 rounded-sm text-sm font-medium shadow-md border',
+        'fixed top-20 right-6 z-[var(--admin-z-toast)] flex items-center gap-2 max-w-sm px-5 py-3 rounded-sm text-sm font-medium shadow-md border',
         isSuccess
           ? 'bg-success-bg text-success border-success-border'
           : 'bg-danger-bg text-danger border-danger-border'

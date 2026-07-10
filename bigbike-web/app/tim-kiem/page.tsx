@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
 import { WpCatalogClient } from "@/components/wp/WpCatalogClient";
@@ -71,15 +72,17 @@ export default async function SearchPage() {
 
         <div id="main-content">
           <div className="container">
-            <WpCatalogClient
-              canonicalPath={SEARCH_PATH}
-              brands={brandsResult.data}
-              categories={filterCategories}
-              facets={facetsResult.data}
-              includeCategoryParam
-              queryParamKeys={["s", "q"]}
-              requireQuery
-            />
+            <Suspense fallback={null}>
+              <WpCatalogClient
+                canonicalPath={SEARCH_PATH}
+                brands={brandsResult.data}
+                categories={filterCategories}
+                facets={facetsResult.data}
+                includeCategoryParam
+                queryParamKeys={["s", "q"]}
+                requireQuery
+              />
+            </Suspense>
           </div>
         </div>
       </div>

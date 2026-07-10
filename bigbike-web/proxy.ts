@@ -14,13 +14,14 @@ const API_BASE_URL =
 
 // TTL for the in-process L1 cache. Default is 30 s — low enough that stale
 // entries after an admin change expire quickly.
-// NOTE: WebRevalidationService calls revalidateTag("redirects") after each admin
-// mutation, but that only clears Next.js ISR/fetch cache, NOT this in-process Map.
-// The only way to force-expire an entry is to wait for TTL or restart the worker.
+// Admin redirect mutations also call the internal clear endpoint below, so this
+// TTL is only a fallback if cross-replica invalidation fails.
 const TTL_SECONDS = Number.parseInt(
   process.env.BIGBIKE_REDIRECT_CACHE_TTL_SECONDS ?? "30",
   10,
 );
+const REDIRECT_CACHE_CLEAR_PATH = "/_internal/redirect-cache/clear";
+const REDIRECT_CACHE_CLEAR_SECRET = process.env.REVALIDATE_SECRET ?? process.env.WEB_REVALIDATE_SECRET ?? "";
 
 // Shared secret sent to backend internal endpoints.
 // Must match BIGBIKE_INTERNAL_TOKEN on the backend side.
@@ -65,6 +66,12 @@ function l1Set(key: string, value: RedirectLookup | null): void {
     if (first !== undefined) l1Cache.delete(first);
   }
   l1Cache.set(key, { value, expiresAt: Date.now() + TTL_SECONDS * 1_000 });
+}
+
+function clearRedirectL1Cache(): number {
+  const size = l1Cache.size;
+  l1Cache.clear();
+  return size;
 }
 
 type RedirectLookup = {
@@ -150,6 +157,18 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   const pathname = request.nextUrl.pathname;
   const search = request.nextUrl.search;
 
+  if (pathname === REDIRECT_CACHE_CLEAR_PATH || pathname === `${REDIRECT_CACHE_CLEAR_PATH}/`) {
+    if (request.method !== "POST") {
+      return NextResponse.json({ error: "Method Not Allowed" }, { status: 405 });
+    }
+    const secret = request.headers.get("x-revalidate-secret");
+    if (!REDIRECT_CACHE_CLEAR_SECRET || secret !== REDIRECT_CACHE_CLEAR_SECRET) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const entries = clearRedirectL1Cache();
+    return NextResponse.json({ cleared: true, entries });
+  }
+
   // 1. Get locale from cookie NEXT_LOCALE
   const localeCookie = request.cookies.get("NEXT_LOCALE")?.value;
   const locale = resolveLocale(localeCookie);
@@ -178,15 +197,11 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     currentPathname = rewriteUrl.pathname;
   }
 
-  // Forward the current pathname to server components so Root Layout can hide the
-  // default bigbike-web shell on routes ported to the WordPress theme.
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("x-pathname", currentPathname);
   const forward = () => {
     if (isRewritten && rewriteUrl) {
-      return NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } });
+      return NextResponse.rewrite(rewriteUrl);
     }
-    return NextResponse.next({ request: { headers: requestHeaders } });
+    return NextResponse.next();
   };
 
   if (

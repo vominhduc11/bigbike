@@ -6,7 +6,7 @@ import type { OrderAddress, OrderDetail } from "@/lib/contracts/commerce";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import { sectionHeading } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
-import { formatAddress, formatVnd } from "@/lib/utils/format";
+import { formatAddress, formatVnd, telHref, zaloHref } from "@/lib/utils/format";
 import { resolveBankTransfer } from "@/lib/utils/orders";
 
 type Props = {
@@ -14,6 +14,7 @@ type Props = {
   orderKey?: string;
   order: OrderDetail | null;
   settingsRecord: Record<string, string>;
+  isLoading?: boolean;
 };
 
 /**
@@ -23,8 +24,9 @@ type Props = {
  * dựng hẳn ở client để `useTranslations` đổi đúng theo `NEXT_LOCALE` — mirror pattern
  * `OrderDetailContent`/`WpCheckoutClient` (xem AGENTS.md §6 — client component + next-intl).
  */
-export function OrderConfirmView({ orderNumber, orderKey, order, settingsRecord }: Props) {
+export function OrderConfirmView({ orderNumber, orderKey, order, settingsRecord, isLoading = false }: Props) {
   const t = useTranslations("OrderConfirm");
+  const tCommon = useTranslations("Common");
 
   if (!orderNumber || !orderKey) {
     return (
@@ -35,6 +37,9 @@ export function OrderConfirmView({ orderNumber, orderKey, order, settingsRecord 
   }
 
   const settings = new Map(Object.entries(settingsRecord));
+  const hotline = pickOrderConfirmSetting(settings, ["hotline"]);
+  const zalo = resolveZaloContact(settings);
+  const storeAddress = pickOrderConfirmSetting(settings, ["contact_address"]);
 
   return (
     <OrderShell>
@@ -46,46 +51,125 @@ export function OrderConfirmView({ orderNumber, orderKey, order, settingsRecord 
           <OrderDetails order={order} />
           <CustomerDetails order={order} />
 
-          {/* Hotline Bar */}
-          <div className="bb-oc-hotline-bar">
-            <span>{t("hotlineUrgentPrompt")}</span>
-            <span><strong>0906902404</strong></span>
-            <span>{t("hotlineOr")}</span>
-            <span><strong>Zalo 0764640679</strong> (Mrs. Thư)</span>
-          </div>
+          <HotlineBar hotline={hotline} zalo={zalo} />
 
           {/* CTA Buttons */}
           <div className="space-y-3">
-            <a
-              href="https://zalo.me/0764640679"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bb-oc-btn-zalo"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="22" height="22" className="mr-2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
-              {t("zaloCtaUrgent")}
-            </a>
+            <ZaloSupportButton zalo={zalo} />
             <Link href="/" className="bb-oc-btn-continue">
               ← {t("continueShopping")}
             </Link>
           </div>
 
-          {/* Footer note */}
-          <p className="text-ui-13 text-muted-foreground text-center mt-6 leading-relaxed">
-            BigBike.vn · 79/30/52 Âu Cơ, Phường Hòa Bình, TP. Hồ Chí Minh<br />
-            {t("footerHours")}
-          </p>
+          <StoreFooterNote address={storeAddress} />
         </>
       ) : (
         <>
           <ThankYouHero message={t("receivedNotice")} />
-          <OrderLoadFallback orderNumber={orderNumber} />
+          {isLoading ? (
+            <p className="mx-auto mt-3 max-w-[420px] text-center text-ui-18 max-md:text-ui-16 leading-6 text-muted-foreground">
+              {tCommon("loading")}
+            </p>
+          ) : (
+            <OrderLoadFallback orderNumber={orderNumber} />
+          )}
         </>
       )}
     </OrderShell>
   );
+}
+
+type ZaloContact = {
+  hrefValue: string;
+  label: string;
+};
+
+function HotlineBar({ hotline, zalo }: { hotline: string; zalo: ZaloContact | null }) {
+  const t = useTranslations("OrderConfirm");
+  if (!hotline && !zalo) return null;
+
+  return (
+    <div className="bb-oc-hotline-bar">
+      {hotline && (
+        <>
+          <span>{t("hotlineUrgentPrompt")}</span>
+          <span>
+            <a href={telHref(hotline)}>
+              <strong>{hotline}</strong>
+            </a>
+          </span>
+        </>
+      )}
+      {hotline && zalo && <span>{t("hotlineOr")}</span>}
+      {zalo && (
+        <span>
+          <a href={zaloHref(zalo.hrefValue)} target="_blank" rel="noopener noreferrer">
+            <strong>{formatZaloDisplay(zalo.label)}</strong>
+          </a>
+        </span>
+      )}
+    </div>
+  );
+}
+
+function ZaloSupportButton({ zalo }: { zalo: ZaloContact | null }) {
+  const t = useTranslations("OrderConfirm");
+  if (!zalo) return null;
+
+  return (
+    <a
+      href={zaloHref(zalo.hrefValue)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="bb-oc-btn-zalo"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="22" height="22" className="mr-2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      {t("zaloCtaUrgent")}
+    </a>
+  );
+}
+
+function StoreFooterNote({ address }: { address: string }) {
+  const t = useTranslations("OrderConfirm");
+
+  return (
+    <p className="text-ui-13 text-muted-foreground text-center mt-6 leading-relaxed">
+      {address ? (
+        <>
+          BigBike.vn · {address}
+          <br />
+        </>
+      ) : null}
+      {t("footerHours")}
+    </p>
+  );
+}
+
+function pickOrderConfirmSetting(settings: Map<string, string>, keys: string[]): string {
+  for (const key of keys) {
+    const value = settings.get(key)?.trim();
+    if (value) return value;
+  }
+  return "";
+}
+
+function resolveZaloContact(settings: Map<string, string>): ZaloContact | null {
+  const hrefValue = pickOrderConfirmSetting(settings, ["zalo_url", "hotline_2", "hotline"]);
+  const rawLabel = pickOrderConfirmSetting(settings, ["zalo_display", "hotline_2", "hotline", "zalo_url"]);
+  const label = rawLabel ? stripZaloUrl(rawLabel) : stripZaloUrl(hrefValue);
+  if (!hrefValue && !label) return null;
+  return { hrefValue: hrefValue || label, label: label || hrefValue };
+}
+
+function stripZaloUrl(value: string): string {
+  if (!/^https?:\/\//i.test(value)) return value;
+  return value.replace(/[^\d]/g, "") || value;
+}
+
+function formatZaloDisplay(label: string): string {
+  return /\bzalo\b/i.test(label) ? label : `Zalo ${label}`;
 }
 
 // WP-parity: order-received là endpoint của trang checkout trong WooCommerce.

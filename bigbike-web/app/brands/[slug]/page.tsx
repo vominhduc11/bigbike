@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
 import { WpCatalogClient } from "@/components/wp/WpCatalogClient";
+import { WpCatalogDefault } from "@/components/wp/WpCatalogDefault";
 import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
 import { AltSlugRegistrar } from "@/components/i18n/AltSlugProvider";
 import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
@@ -103,6 +105,14 @@ export default async function BrandDetailPage({ params }: BrandDetailPageProps) 
   const brandDescriptionHtml = brand.description?.trim()
     ? sanitizeRichHtml(brand.description, { rewriteMediaUrls: true })
     : null;
+  const beforeGridNode = brandDescriptionHtml ? (
+    <LHtml
+      field="description"
+      viHtml={brandDescriptionHtml}
+      className="desc"
+      rewriteMediaUrls
+    />
+  ) : undefined;
 
   const heroBreadcrumb: WpCategoryCrumb[] = [
     { label: "Bigbike.vn", href: toHomePath() },
@@ -133,25 +143,30 @@ export default async function BrandDetailPage({ params }: BrandDetailPageProps) 
 
           <div id="main-content">
             <div className="container">
-              <WpCatalogClient
-                canonicalPath={canonicalPath}
-                brands={brandsResult.data}
-                categories={filterCategories}
-                facets={facetsResult.data}
-                beforeGridNode={
-                  brandDescriptionHtml ? (
-                    <LHtml
-                      field="description"
-                      viHtml={brandDescriptionHtml}
-                      className="desc"
-                      rewriteMediaUrls
-                    />
-                  ) : undefined
+              <Suspense
+                fallback={
+                  <WpCatalogDefault
+                    canonicalPath={canonicalPath}
+                    brands={brandsResult.data}
+                    categories={filterCategories}
+                    facets={facetsResult.data}
+                    beforeGridNode={beforeGridNode}
+                    products={productsResult.data}
+                    pagination={productsResult.pagination}
+                  />
                 }
-                routeBrandSlug={brand.slug}
-                initialProducts={productsResult.data}
-                initialPagination={productsResult.pagination}
-              />
+              >
+                <WpCatalogClient
+                  canonicalPath={canonicalPath}
+                  brands={brandsResult.data}
+                  categories={filterCategories}
+                  facets={facetsResult.data}
+                  beforeGridNode={beforeGridNode}
+                  routeBrandSlug={brand.slug}
+                  initialProducts={productsResult.data}
+                  initialPagination={productsResult.pagination}
+                />
+              </Suspense>
             </div>
           </div>
         </div>

@@ -1,17 +1,13 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { readSingleSearchParam } from "@/lib/utils/query";
-import { isSafeReturnTo } from "@/lib/utils/auth";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import { Tr } from "@/components/i18n/Tr";
 import { LoginForm } from "./LoginForm";
+import { LoginFormIsland } from "./LoginFormIsland";
 
 const AUTH_CSS = "/wp-content/themes/bigbike/css/wp-theme-auth.css?v=1";
-
-type LoginPageProps = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-};
 
 export const metadata: Metadata = buildPublicMetadata({
   title: "Đăng nhập",
@@ -20,19 +16,7 @@ export const metadata: Metadata = buildPublicMetadata({
   noIndex: true,
 });
 
-/**
- * Đăng nhập — port từ page-templates/page-login.php (KHÔNG hero):
- * `.user-activity > .container > .login > .user-activity-content > [title + form]`.
- * Server component bọc WpStaticShell (header/footer WP) + form client.
- */
-export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const params = await searchParams;
-  const rawReturnTo = readSingleSearchParam(params.tiep) ?? "";
-  // Không có query "tiep" hợp lệ → để LoginForm (client) tự tính đích mặc định
-  // theo đúng locale hiện tại của khách, vì server luôn render "vi" tĩnh (xem
-  // i18n/request.ts) nên không thể xác định đúng locale ở đây.
-  const returnTo = isSafeReturnTo(rawReturnTo) ? rawReturnTo : undefined;
-
+export default function LoginPage() {
   return (
     <WpStaticShell title="" breadcrumb={[]} showHero={false} mainClassName="" cssHref={AUTH_CSS}>
       <div className="user-activity">
@@ -46,7 +30,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                   <Link href="/dang-ky/"><Tr ns="Auth" k="here" /></Link>
                 </p>
               </div>
-              <LoginForm returnTo={returnTo} />
+              <Suspense fallback={<LoginForm />}>
+                <LoginFormIsland />
+              </Suspense>
             </div>
           </div>
         </div>

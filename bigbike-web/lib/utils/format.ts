@@ -30,6 +30,7 @@ export function formatVnd(value: number | null | undefined): string {
 
 const LEGACY_CDN_PREFIX = "https://cdn.bigbike.vn/uploads/";
 const WP_UPLOADS_PROXY = "/wp-content/uploads/";
+const WP_CONTENT_PROXY = "/wp-content/";
 const MINIO_UPLOADS_SUBPATH = "/wp-uploads/";
 const MEDIA_PROXY_PREFIX = "/media-proxy/";
 const MEDIA_PREFIX = "/media/";
@@ -48,11 +49,17 @@ export function resolveMediaUrl(url: string | null | undefined): string | null |
   if (url.startsWith(LEGACY_CDN_PREFIX)) {
     return WP_UPLOADS_PROXY + url.slice(LEGACY_CDN_PREFIX.length);
   }
+  if (url.startsWith(`${MEDIA_PROXY_PREFIX}wp-uploads/`)) {
+    return WP_UPLOADS_PROXY + url.slice(`${MEDIA_PROXY_PREFIX}wp-uploads/`.length);
+  }
   if (url.startsWith(MEDIA_PROXY_PREFIX)) {
     return MEDIA_PREFIX + url.slice(MEDIA_PROXY_PREFIX.length);
   }
-  if (/^https:\/\/(?:www\.)?bigbike\.vn\/wp-content\/uploads\//.test(url)) {
+  if (/^https?:\/\/(?:www\.)?bigbike\.vn\/wp-content\//.test(url)) {
     const parsed = new URL(url);
+    if (parsed.pathname.startsWith(WP_CONTENT_PROXY)) {
+      return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    }
     return `${parsed.pathname}${parsed.search}${parsed.hash}`;
   }
   if (url.startsWith("http") && url.includes(MINIO_UPLOADS_SUBPATH)) {
@@ -63,14 +70,14 @@ export function resolveMediaUrl(url: string | null | undefined): string | null |
 }
 
 /**
- * Re-attach the absolute BigBike origin to a same-origin `/wp-content/` path.
- * Complements {@link resolveMediaUrl} (which strips the origin down to a
- * same-origin path); the two are composed at call sites as
- * `toLegacyWpMediaUrl(resolveMediaUrl(src))`. Falsy input collapses to null.
+ * Keep legacy WP media on the current origin.
+ *
+ * Older call sites compose this as `toLegacyWpMediaUrl(resolveMediaUrl(src))`;
+ * returning the normalized path avoids hotlinking `https://bigbike.vn`.
  */
 export function toLegacyWpMediaUrl(src: string | null | undefined): string | null {
   if (!src) return null;
-  return src.startsWith("/wp-content/") ? `${PUBLIC_BASE_URL}${src}` : src;
+  return resolveMediaUrl(src) ?? null;
 }
 
 function trimToNull(value: string | null | undefined): string | null {

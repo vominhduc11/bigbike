@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.service.web;
 
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -24,6 +25,8 @@ public class WebRevalidationService {
 
     private final boolean enabled;
     private final List<String> revalidateUrls;
+    private final boolean redirectCacheClearEnabled;
+    private final List<String> redirectCacheClearUrls;
     private final String secret;
     private final RestClient restClient;
     private final OrderLineItemJpaRepository lineItemRepo;
@@ -32,15 +35,30 @@ public class WebRevalidationService {
     public WebRevalidationService(
             @Value("${bigbike.web.revalidate-url:}") String revalidateUrl,
             @Value("${bigbike.web.revalidate-secret:}") String secret,
+            @Value("${bigbike.web.redirect-cache-clear-url:}") String redirectCacheClearUrl,
+            @Value("${bigbike.web.revalidate-expected-replicas:0}") int expectedReplicaCount,
             OrderLineItemJpaRepository lineItemRepo,
             ProductJpaRepository productRepo) {
-        this.revalidateUrls = Arrays.stream(revalidateUrl.split(","))
-                .map(String::trim)
-                .filter(u -> !u.isBlank())
-                .toList();
+        this.revalidateUrls = parseUrls(revalidateUrl);
+        List<String> configuredRedirectCacheClearUrls = parseUrls(redirectCacheClearUrl);
+        this.redirectCacheClearUrls = configuredRedirectCacheClearUrls.isEmpty()
+                ? this.revalidateUrls.stream()
+                        .map(WebRevalidationService::deriveRedirectCacheClearUrl)
+                        .filter(u -> u != null && !u.isBlank())
+                        .toList()
+                : configuredRedirectCacheClearUrls;
         this.secret = secret.trim();
         this.enabled = !this.revalidateUrls.isEmpty() && !this.secret.isBlank();
-        log.info("WebRevalidationService enabled={} urls={}", this.enabled, this.revalidateUrls);
+        this.redirectCacheClearEnabled = !this.redirectCacheClearUrls.isEmpty() && !this.secret.isBlank();
+        validateReplicaFanout(expectedReplicaCount);
+        log.info(
+                "WebRevalidationService enabled={} urls={} redirectCacheClearEnabled={} redirectCacheClearUrls={} expectedReplicas={}",
+                this.enabled,
+                this.revalidateUrls,
+                this.redirectCacheClearEnabled,
+                this.redirectCacheClearUrls,
+                expectedReplicaCount
+        );
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(3_000);
         factory.setReadTimeout(5_000);
@@ -70,6 +88,28 @@ public class WebRevalidationService {
         }
 
         dispatch(tagList);
+    }
+
+    public void revalidateRedirects() {
+        revalidate("redirects");
+        clearRedirectCache();
+    }
+
+    public void clearRedirectCache() {
+        if (!redirectCacheClearEnabled) return;
+
+        Runnable action = this::dispatchRedirectCacheClear;
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    action.run();
+                }
+            });
+            return;
+        }
+
+        action.run();
     }
 
     /**
@@ -114,6 +154,12 @@ public class WebRevalidationService {
         }
     }
 
+    private void dispatchRedirectCacheClear() {
+        for (String url : redirectCacheClearUrls) {
+            CompletableFuture.runAsync(() -> dispatchRedirectCacheClearToUrl(url));
+        }
+    }
+
     private void dispatchToUrl(String url, List<String> tagList) {
         int[] delaysMs = {1_000, 3_000};
         for (int attempt = 0; attempt <= delaysMs.length; attempt++) {
@@ -140,6 +186,37 @@ public class WebRevalidationService {
                 } else {
                     log.error("Web revalidation failed after {} attempts url={} tags={}: {}",
                             delaysMs.length + 1, url, tagList, e.getMessage());
+                }
+            }
+        }
+    }
+
+    private void dispatchRedirectCacheClearToUrl(String url) {
+        int[] delaysMs = {1_000, 3_000};
+        for (int attempt = 0; attempt <= delaysMs.length; attempt++) {
+            try {
+                restClient.post()
+                        .uri(url)
+                        .header("x-revalidate-secret", secret)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{}")
+                        .retrieve()
+                        .toBodilessEntity();
+                log.info("Web redirect L1 cache clear succeeded url={} (attempt {})", url, attempt + 1);
+                return;
+            } catch (Exception e) {
+                if (attempt < delaysMs.length) {
+                    log.warn("Web redirect L1 cache clear attempt {}/{} failed url={}: {} - retrying in {}ms",
+                            attempt + 1, delaysMs.length + 1, url, e.getMessage(), delaysMs[attempt]);
+                    try {
+                        Thread.sleep(delaysMs[attempt]);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                } else {
+                    log.error("Web redirect L1 cache clear failed after {} attempts url={}: {}",
+                            delaysMs.length + 1, url, e.getMessage());
                 }
             }
         }
@@ -190,6 +267,44 @@ public class WebRevalidationService {
 
     private static String trimToNull(String s) {
         return s == null || s.isBlank() ? null : s.trim();
+    }
+
+    private void validateReplicaFanout(int expectedReplicaCount) {
+        if (expectedReplicaCount <= 0) return;
+
+        if (this.secret.isBlank()) {
+            throw new IllegalStateException(
+                    "bigbike.web.revalidate-expected-replicas is set, but WEB_REVALIDATE_SECRET is blank.");
+        }
+        if (this.revalidateUrls.size() < expectedReplicaCount) {
+            throw new IllegalStateException(
+                    "WEB_REVALIDATE_URL must list every web replica /api/revalidate URL. expected="
+                            + expectedReplicaCount + " actual=" + this.revalidateUrls.size());
+        }
+        if (this.redirectCacheClearUrls.size() < expectedReplicaCount) {
+            throw new IllegalStateException(
+                    "WEB_REDIRECT_CACHE_CLEAR_URL must list every web replica redirect-cache clear URL "
+                            + "or be omitted so it can be derived from WEB_REVALIDATE_URL. expected="
+                            + expectedReplicaCount + " actual=" + this.redirectCacheClearUrls.size());
+        }
+    }
+
+    private static List<String> parseUrls(String raw) {
+        return Arrays.stream((raw == null ? "" : raw).split(","))
+                .map(String::trim)
+                .filter(u -> !u.isBlank())
+                .toList();
+    }
+
+    private static String deriveRedirectCacheClearUrl(String revalidateUrl) {
+        try {
+            URI uri = URI.create(revalidateUrl.trim());
+            return new URI(uri.getScheme(), uri.getAuthority(), "/_internal/redirect-cache/clear", null, null)
+                    .toString();
+        } catch (Exception e) {
+            log.warn("Could not derive redirect cache clear URL from revalidate URL={}: {}", revalidateUrl, e.getMessage());
+            return null;
+        }
     }
 
     private record RevalidateBody(List<String> tags) {}

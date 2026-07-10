@@ -225,7 +225,7 @@
 .bb-user-chip .avatar {
   width: 26px; height: 26px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #e8281e, #b01810);
+  background: linear-gradient(135deg, var(--bb-brand), var(--bb-brand-active));
   color: #fff;
   display: inline-flex;
   align-items: center;
@@ -363,7 +363,11 @@
   border-color: var(--bb-danger);
   color: #fff;
 }
-.bb-btn-danger:hover:not(:disabled) { background: #991b1b; border-color: #991b1b; }
+.bb-btn-danger:hover:not(:disabled) {
+  background: var(--bb-danger);
+  border-color: var(--bb-danger);
+  filter: brightness(0.92);
+}
 .bb-btn-danger-ghost {
   background: transparent;
   color: var(--bb-danger);
@@ -395,7 +399,7 @@
   position: absolute;
   left: 8px;
   top: -48px;
-  z-index: 1000;
+  z-index: var(--admin-z-toast);
   padding: 8px 14px;
   background: var(--bb-primary);
   color: #fff;
@@ -791,7 +795,10 @@
   font-family: inherit;
 }
 .bb-bulk-bar .bulk-btn:hover { background: rgba(255,255,255,0.08); }
-.bb-bulk-bar .bulk-btn.danger { color: #ff8a85; border-color: rgba(255,138,133,0.4); }
+.bb-bulk-bar .bulk-btn.danger {
+  color: var(--bb-danger);
+  border-color: color-mix(in srgb, var(--bb-danger) 40%, transparent);
+}
 /* F7: nút hành động hàng loạt thiếu trạng thái :disabled — không có phản hồi
    thị giác khi đang xử lý (bulkBusy). */
 .bb-bulk-bar .bulk-btn:disabled { opacity: .5; cursor: not-allowed; }
@@ -1408,7 +1415,7 @@
   border: 1px solid var(--bb-border);
   border-radius: var(--bb-r-control);
   box-shadow: var(--bb-sh-md);
-  z-index: 50;
+  z-index: var(--admin-z-popup);
   min-width: 160px;
   padding: 4px;
   display: flex;

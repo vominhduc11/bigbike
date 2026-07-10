@@ -1,5 +1,6 @@
 import { X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { Button } from '@/components/ui/button'
 
 /**
  * BulkActionBar — thanh hành động hàng loạt khi chọn nhiều dòng.
@@ -30,9 +31,9 @@ export function BulkActionBar({
     <div className="bb-bulk-bar" role="region" aria-label={t('common.bulkActions', { defaultValue: 'Hành động hàng loạt' })}>
       <span className="count">{countLabel}</span>
       {showSelectAll && (
-        <button type="button" className="bulk-btn" onClick={onSelectAllMatching}>
+        <Button type="button" variant="ghost" size="sm" className="bulk-btn" onClick={onSelectAllMatching}>
           {t('common.selectAllMatching', { count: totalMatching, defaultValue: `Chọn tất cả ${totalMatching} kết quả khớp` })}
-        </button>
+        </Button>
       )}
       {allMatchingSelected && typeof totalMatching === 'number' && (
         <span className="text-xs text-muted-foreground">
@@ -42,25 +43,29 @@ export function BulkActionBar({
       <span className="sep" />
       <div className="bb-row" style={{ gap: 6 }}>
         {actions.map((action, index) => (
-          <button
+          <Button
             key={index}
             type="button"
+            variant={action.tone === 'danger' ? 'danger' : 'ghost'}
+            size="sm"
             className={`bulk-btn${action.tone === 'danger' ? ' danger' : ''}`}
             onClick={action.onClick}
             disabled={action.disabled}
           >
             {action.label}
-          </button>
+          </Button>
         ))}
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           className="bulk-btn"
           onClick={onClear}
           aria-label={close}
           title={close}
         >
           <X size={13} />
-        </button>
+        </Button>
       </div>
     </div>
   )

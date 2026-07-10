@@ -25,6 +25,7 @@ type ArticleSummary = {
 };
 
 const EMPTY = { products: [] as ProductSummary[], articles: [] as ArticleSummary[] };
+const DEFAULT_LIMIT = 6;
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -35,7 +36,7 @@ export async function GET(req: Request) {
   try {
     const url = new URL(`${BACKEND}/api/v1/search-suggest`);
     url.searchParams.set("q", q);
-    url.searchParams.set("limit", "10");
+    url.searchParams.set("limit", String(DEFAULT_LIMIT));
     if (lang) url.searchParams.set("lang", lang);
 
     const res = await fetch(url.toString(), {

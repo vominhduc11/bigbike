@@ -31,6 +31,7 @@ type MediaImageProps = {
   /** Next.js 16 renamed next/image's `priority` prop to `preload` (`priority` is
    *  deprecated but still an alias) — named to match here. */
   preload?: boolean;
+  loading?: "eager" | "lazy";
   /** Responsive sizes hint so next/image picks an appropriately scaled source
    *  for grid cells (without it, next/image assumes 100vw and over-fetches). */
   sizes?: string;
@@ -43,6 +44,7 @@ export function MediaImage({
   width = 1200,
   height = 1200,
   preload = false,
+  loading,
   sizes,
 }: MediaImageProps) {
   const src = resolveMediaUrl(image?.url?.trim());
@@ -69,6 +71,7 @@ export function MediaImage({
       height={image?.height ?? height}
       className={className}
       preload={preload}
+      loading={preload ? "eager" : loading ?? "lazy"}
       sizes={sizes}
     />
   );

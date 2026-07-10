@@ -41,12 +41,29 @@ export type ContactInfo = {
 };
 
 /* Brand palette — khớp WP gốc (đỏ #ff0c09 = .information--item h3) */
-const RED = "#ff0c09";
-const TEXT = "#111111";
-const MUTED = "#6f6f6f";
-const FAINT = "#999999";
-const BORDER = "#dfdfdf";
-const TILE_BG = "#f7f7f7";
+const COLORS = {
+  red: "var(--bb-brand-primary)",
+  text: "var(--bb-text-primary)",
+  muted: "var(--bb-text-secondary)",
+  faint: "var(--bb-text-disabled)",
+  border: "var(--bb-border-subtle)",
+  borderDefault: "var(--bb-border-default)",
+  surface: "var(--bb-bg-surface)",
+  surfaceRaised: "var(--bb-bg-surface-raised)",
+  inverse: "var(--bb-text-inverse)",
+  successBg: "var(--bb-state-success-bg)",
+  successText: "var(--bb-state-success-text)",
+  dangerBg: "var(--bb-state-danger-bg)",
+} as const;
+
+// Third-party brand colours for social-channel icon tiles.
+const SOCIAL_BRAND_COLORS = {
+  zalo: "var(--bb-color-zalo)",
+  facebook: "#1877F2",
+  tiktok: "#010101",
+  shopee: "#EE4D2D",
+  youtube: "#FF0000",
+} as const;
 
 function getVietnamTime() {
   const d = new Date();
@@ -104,7 +121,7 @@ function ColHeader({ icon, children }: { icon: ReactNode; children: ReactNode })
         gap: 8,
         marginBottom: 20,
         paddingBottom: 12,
-        borderBottom: `2px solid ${RED}`,
+        borderBottom: `2px solid ${COLORS.red}`,
       }}
     >
       {icon}
@@ -113,7 +130,7 @@ function ColHeader({ icon, children }: { icon: ReactNode; children: ReactNode })
         style={{
           margin: 0,
           fontWeight: 700,
-          color: TEXT,
+          color: COLORS.text,
           textTransform: "uppercase",
           letterSpacing: "0.06em",
           fontFamily: "var(--bb-font-cta), sans-serif",
@@ -144,8 +161,8 @@ function InfoRow({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: TILE_BG,
-          border: `1px solid ${BORDER}`,
+          background: COLORS.surfaceRaised,
+          border: `1px solid ${COLORS.border}`,
         }}
       >
         {icon}
@@ -155,7 +172,7 @@ function InfoRow({
           className="text-ui-12"
           style={{
             marginBottom: 4,
-            color: FAINT,
+            color: COLORS.faint,
             textTransform: "uppercase",
             letterSpacing: "0.05em",
             fontWeight: 600,
@@ -192,10 +209,10 @@ function SocialLink({
         alignItems: "center",
         gap: 12,
         padding: "10px 12px",
-        border: `1px solid ${BORDER}`,
-        background: "#fff",
+        border: `1px solid ${COLORS.border}`,
+        background: COLORS.surface,
         textDecoration: "none",
-        color: TEXT,
+        color: COLORS.text,
       }}
     >
       <span
@@ -207,7 +224,7 @@ function SocialLink({
           alignItems: "center",
           justifyContent: "center",
           background: bg,
-          color: "#fff",
+          color: COLORS.inverse,
           fontWeight: 700,
           fontSize: 14,
         }}
@@ -215,38 +232,38 @@ function SocialLink({
         {icon}
       </span>
       <span style={{ minWidth: 0, flex: 1 }}>
-        <span className="text-ui-16 max-md:text-ui-14" style={{ display: "block", fontWeight: 700, color: TEXT }}>
+        <span className="text-ui-16 max-md:text-ui-14" style={{ display: "block", fontWeight: 700, color: COLORS.text }}>
           {name}
         </span>
         {sub && (
-          <span className="text-ui-14" style={{ display: "block", color: FAINT, marginTop: 2 }}>
+          <span className="text-ui-14" style={{ display: "block", color: COLORS.faint, marginTop: 2 }}>
             {sub}
           </span>
         )}
       </span>
-      <ChevronRight size={14} color="#cecece" style={{ flexShrink: 0, marginLeft: "auto" }} />
+      <ChevronRight size={14} color={COLORS.borderDefault} style={{ flexShrink: 0, marginLeft: "auto" }} />
     </a>
   );
 }
 
 /* Brand glyphs (logo nền tảng — màu thương hiệu riêng, không tokenise được) */
 const FbIcon = (
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="#fff" aria-hidden="true">
+  <svg viewBox="0 0 24 24" width="16" height="16" fill={COLORS.inverse} aria-hidden="true">
     <path d="M12 2.04c-5.5 0-9.96 4.46-9.96 9.96 0 4.41 3.21 8.08 7.44 8.81V15.4H7.9v-3.4h1.58v-2.6c0-1.56.93-2.42 2.35-2.42.68 0 1.39.12 1.39.12v1.53h-.78c-.77 0-1.01.48-1.01.97V12h1.72l-.28 3.4h-1.44v5.41c4.23-.73 7.44-4.4 7.44-8.81 0-5.5-4.46-9.96-9.96-9.96z" />
   </svg>
 );
 const TiktokIcon = (
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="#fff" aria-hidden="true">
+  <svg viewBox="0 0 24 24" width="16" height="16" fill={COLORS.inverse} aria-hidden="true">
     <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.98a8.2 8.2 0 004.79 1.54V7.07a4.85 4.85 0 01-1.02-.38z" />
   </svg>
 );
 const ShopeeIcon = (
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="#fff" aria-hidden="true">
+  <svg viewBox="0 0 24 24" width="16" height="16" fill={COLORS.inverse} aria-hidden="true">
     <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.9 18 9 18h12v-2H9.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63H19c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0023.43 5H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z" />
   </svg>
 );
 const YoutubeIcon = (
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="#fff" aria-hidden="true">
+  <svg viewBox="0 0 24 24" width="16" height="16" fill={COLORS.inverse} aria-hidden="true">
     <path d="M21.58 7.19c-.23-.86-.91-1.54-1.77-1.77C18.25 5 12 5 12 5s-6.25 0-7.81.42c-.86.23-1.54.91-1.77 1.77C2 8.75 2 12 2 12s0 3.25.42 4.81c.23.86.91 1.54 1.77 1.77C5.75 19 12 19 12 19s6.25 0 7.81-.42c.86-.23 1.54-.91 1.77-1.77C22 15.25 22 12 22 12s0-3.25-.42-4.81zM10 15V9l5.2 3-5.2 3z" />
   </svg>
 );
@@ -311,7 +328,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
             marginBottom: 30,
             height: 420,
             overflow: "hidden",
-            background: "#e8e4de",
+            background: COLORS.surfaceRaised,
           }}
         >
           <iframe
@@ -329,8 +346,8 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                 position: "absolute",
                 bottom: 16,
                 left: 20,
-                background: "#fff",
-                border: `1px solid ${BORDER}`,
+                background: COLORS.surface,
+                border: `1px solid ${COLORS.border}`,
                 padding: "8px 12px",
                 display: "flex",
                 alignItems: "center",
@@ -344,25 +361,25 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                   width: 34,
                   height: 34,
                   borderRadius: "50%",
-                  background: RED,
+                  background: COLORS.red,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   flexShrink: 0,
                 }}
               >
-                <MapPin size={16} color="#fff" />
+                <MapPin size={16} color={COLORS.inverse} />
               </span>
               <span>
                 <span
                   className="text-ui-12"
-                  style={{ color: FAINT, display: "block", fontWeight: 600 }}
+                  style={{ color: COLORS.faint, display: "block", fontWeight: 600 }}
                 >
                   {vi ? "Cửa hàng chính" : "Main store"}
                 </span>
                 <strong
                   className="text-ui-14"
-                  style={{ color: TEXT, display: "block", lineHeight: 1.4, fontWeight: 700 }}
+                  style={{ color: COLORS.text, display: "block", lineHeight: 1.4, fontWeight: 700 }}
                 >
                   {mainAddr}
                 </strong>
@@ -381,8 +398,8 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                 position: "absolute",
                 bottom: 16,
                 right: 20,
-                background: RED,
-                color: "#fff",
+                background: COLORS.red,
+                color: COLORS.inverse,
                 padding: "8px 12px",
                 fontWeight: 700,
                 display: "flex",
@@ -392,7 +409,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                 boxShadow: "0 2px 6px rgba(0,0,0,.2)",
               }}
             >
-              <ExternalLink size={13} color="#fff" />
+              <ExternalLink size={13} color={COLORS.inverse} />
               <span>{vi ? "Xem trên Maps" : "Open in Maps"}</span>
             </a>
           )}
@@ -403,11 +420,11 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
           1 cột trên điện thoại → 2 cột từ md (768px) giống col-md-6 cũ. */}
       <div
         className="grid grid-cols-1 md:grid-cols-2"
-        style={{ gap: 1, background: BORDER, borderTop: `1px solid ${BORDER}` }}
+        style={{ gap: 1, background: COLORS.border, borderTop: `1px solid ${COLORS.border}` }}
       >
         {/* CỘT TRÁI: thông tin cửa hàng */}
-        <div style={{ background: "#fff", padding: 20 }}>
-          <ColHeader icon={<Store size={18} color={RED} />}>
+        <div style={{ background: COLORS.surface, padding: 20 }}>
+          <ColHeader icon={<Store size={18} color={COLORS.red} />}>
             {vi ? "Thông tin cửa hàng" : "Store information"}
           </ColHeader>
 
@@ -415,7 +432,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
             {/* Giờ làm việc */}
             {hasHours && (
               <InfoRow
-                icon={<Clock size={16} color={RED} />}
+                icon={<Clock size={16} color={COLORS.red} />}
                 label={vi ? "Giờ làm việc" : "Opening hours"}
               >
                 <div
@@ -428,20 +445,20 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                 >
                   {contact.hoursWeekday && (
                     <>
-                      <span style={{ color: MUTED }}>{vi ? "T2 – T7" : "Mon – Sat"}</span>
-                      <span style={{ color: TEXT, fontWeight: 700 }}>{contact.hoursWeekday}</span>
+                      <span style={{ color: COLORS.muted }}>{vi ? "T2 – T7" : "Mon – Sat"}</span>
+                      <span style={{ color: COLORS.text, fontWeight: 700 }}>{contact.hoursWeekday}</span>
                     </>
                   )}
                   {contact.hoursWeekend && (
                     <>
-                      <span style={{ color: MUTED }}>{vi ? "Chủ nhật" : "Sunday"}</span>
-                      <span style={{ color: TEXT, fontWeight: 700 }}>{contact.hoursWeekend}</span>
+                      <span style={{ color: COLORS.muted }}>{vi ? "Chủ nhật" : "Sunday"}</span>
+                      <span style={{ color: COLORS.text, fontWeight: 700 }}>{contact.hoursWeekend}</span>
                     </>
                   )}
                   {contact.hoursHoliday && (
                     <>
-                      <span style={{ color: MUTED }}>{vi ? "Lễ / Tết" : "Holidays"}</span>
-                      <span style={{ color: TEXT, fontWeight: 700 }}>{contact.hoursHoliday}</span>
+                      <span style={{ color: COLORS.muted }}>{vi ? "Lễ / Tết" : "Holidays"}</span>
+                      <span style={{ color: COLORS.text, fontWeight: 700 }}>{contact.hoursHoliday}</span>
                     </>
                   )}
                 </div>
@@ -456,8 +473,8 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                       marginTop: 10,
                       padding: "3px 10px",
                       fontWeight: 700,
-                      background: isOpenNow ? "#e8f7ed" : "#fff0f0",
-                      color: isOpenNow ? "#1a7a3c" : RED,
+                      background: isOpenNow ? COLORS.successBg : COLORS.dangerBg,
+                      color: isOpenNow ? COLORS.successText : COLORS.red,
                     }}
                   >
                     <span
@@ -465,7 +482,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                         width: 7,
                         height: 7,
                         borderRadius: "50%",
-                        background: isOpenNow ? "#1a7a3c" : RED,
+                        background: isOpenNow ? COLORS.successText : COLORS.red,
                         display: "inline-block",
                       }}
                     />
@@ -484,17 +501,17 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
             {/* Địa chỉ */}
             {contact.address && (
               <InfoRow
-                icon={<MapPin size={16} color={RED} />}
+                icon={<MapPin size={16} color={COLORS.red} />}
                 label={vi ? "Địa chỉ" : "Address"}
               >
                 <div
                   className="text-ui-16 max-md:text-ui-14"
-                  style={{ color: TEXT, fontWeight: 700, lineHeight: 1.4 }}
+                  style={{ color: COLORS.text, fontWeight: 700, lineHeight: 1.4 }}
                 >
                   {mainAddr}
                 </div>
                 {subAddr && (
-                  <div className="text-ui-14" style={{ marginTop: 2, color: MUTED }}>
+                  <div className="text-ui-14" style={{ marginTop: 2, color: COLORS.muted }}>
                     {subAddr}
                   </div>
                 )}
@@ -503,17 +520,17 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
 
             {/* Hotline */}
             {contact.hotline && (
-              <InfoRow icon={<Phone size={16} color={RED} />} label="Hotline">
-                <div className="text-ui-18 max-md:text-ui-16" style={{ color: TEXT, fontWeight: 700 }}>
-                  <a href={telHref(contact.hotline)} style={{ color: TEXT, textDecoration: "none" }}>
+              <InfoRow icon={<Phone size={16} color={COLORS.red} />} label="Hotline">
+                <div className="text-ui-18 max-md:text-ui-16" style={{ color: COLORS.text, fontWeight: 700 }}>
+                  <a href={telHref(contact.hotline)} style={{ color: COLORS.text, textDecoration: "none" }}>
                     {contact.hotline}
                   </a>
                   {contact.hotline2 && (
                     <>
-                      <span style={{ margin: "0 6px", color: "#cecece" }}>·</span>
+                      <span style={{ margin: "0 6px", color: COLORS.borderDefault }}>·</span>
                       <a
                         href={telHref(contact.hotline2)}
-                        style={{ color: TEXT, textDecoration: "none" }}
+                        style={{ color: COLORS.text, textDecoration: "none" }}
                       >
                         {contact.hotline2}
                       </a>
@@ -521,10 +538,10 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                   )}
                   {contact.hotline3 && (
                     <>
-                      <span style={{ margin: "0 6px", color: "#cecece" }}>·</span>
+                      <span style={{ margin: "0 6px", color: COLORS.borderDefault }}>·</span>
                       <a
                         href={telHref(contact.hotline3)}
-                        style={{ color: TEXT, textDecoration: "none" }}
+                        style={{ color: COLORS.text, textDecoration: "none" }}
                       >
                         {contact.hotline3}
                       </a>
@@ -532,13 +549,13 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                   )}
                 </div>
                 {zaloPhone && contact.zaloUrl && (
-                  <div className="text-ui-14" style={{ marginTop: 4, color: MUTED }}>
+                  <div className="text-ui-14" style={{ marginTop: 4, color: COLORS.muted }}>
                     {vi ? "Zalo: " : "Zalo: "}
                     <a
                       href={contact.zaloUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ fontWeight: 600, color: TEXT, textDecoration: "none" }}
+                      style={{ fontWeight: 600, color: COLORS.text, textDecoration: "none" }}
                     >
                       {zaloPhone} · Mrs. Thư
                     </a>
@@ -550,8 +567,8 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
         </div>
 
         {/* CỘT PHẢI: kênh liên hệ trực tuyến */}
-        <div style={{ background: "#fff", padding: 20 }}>
-          <ColHeader icon={<MessageSquare size={18} color={RED} />}>
+        <div style={{ background: COLORS.surface, padding: 20 }}>
+          <ColHeader icon={<MessageSquare size={18} color={COLORS.red} />}>
             {vi ? "Liên hệ trực tuyến" : "Contact online"}
           </ColHeader>
 
@@ -559,7 +576,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
             {contact.zaloUrl && (
               <SocialLink
                 href={contact.zaloUrl}
-                bg="#0068FF"
+                bg={SOCIAL_BRAND_COLORS.zalo}
                 icon={<span>Z</span>}
                 name="Zalo · Mrs. Thư"
                 sub={vi ? "Tư vấn nhanh nhất" : "Fastest response"}
@@ -568,7 +585,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
             {contact.facebookUrl && (
               <SocialLink
                 href={contact.facebookUrl}
-                bg="#1877F2"
+                bg={SOCIAL_BRAND_COLORS.facebook}
                 icon={FbIcon}
                 name="Facebook"
                 sub={getSocialHandle(contact.facebookUrl, "facebook")}
@@ -577,7 +594,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
             {contact.tiktokUrl && (
               <SocialLink
                 href={contact.tiktokUrl}
-                bg="#010101"
+                bg={SOCIAL_BRAND_COLORS.tiktok}
                 icon={TiktokIcon}
                 name="TikTok"
                 sub={getSocialHandle(contact.tiktokUrl, "tiktok")}
@@ -586,7 +603,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
             {contact.shopeeUrl && (
               <SocialLink
                 href={contact.shopeeUrl}
-                bg="#EE4D2D"
+                bg={SOCIAL_BRAND_COLORS.shopee}
                 icon={ShopeeIcon}
                 name="Shopee"
                 sub={getSocialHandle(contact.shopeeUrl, "shopee")}
@@ -595,7 +612,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
             {contact.youtubeUrl && (
               <SocialLink
                 href={contact.youtubeUrl}
-                bg="#FF0000"
+                bg={SOCIAL_BRAND_COLORS.youtube}
                 icon={YoutubeIcon}
                 name="YouTube"
                 sub={getSocialHandle(contact.youtubeUrl, "youtube")}
@@ -610,18 +627,18 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
         className="grid grid-cols-3"
         style={{
           gap: 1,
-          background: BORDER,
-          borderTop: `1px solid ${BORDER}`,
-          borderBottom: `1px solid ${BORDER}`,
+          background: COLORS.border,
+          borderTop: `1px solid ${COLORS.border}`,
+          borderBottom: `1px solid ${COLORS.border}`,
         }}
       >
         {stats.map((stat) => (
-          <div key={stat.label} style={{ background: "#fff", padding: "16px 8px", textAlign: "center" }}>
+          <div key={stat.label} style={{ background: COLORS.surface, padding: "16px 8px", textAlign: "center" }}>
             <div
               className="text-ui-24 max-md:text-ui-22"
               style={{
                 fontWeight: 700,
-                color: RED,
+                color: COLORS.red,
                 lineHeight: 1.2,
                 fontFamily: "var(--bb-font-cta), sans-serif",
               }}
@@ -632,7 +649,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
               className="text-ui-12"
               style={{
                 marginTop: 3,
-                color: FAINT,
+                color: COLORS.faint,
                 textTransform: "uppercase",
                 fontWeight: 600,
                 letterSpacing: "0.04em",

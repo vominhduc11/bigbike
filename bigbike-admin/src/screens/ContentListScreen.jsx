@@ -496,7 +496,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
         <StatePanel
           tone="danger"
           title={t('content.loadError')}
-          description={state.error || 'Unknown content list error.'}
+          description={state.error || t('common.unknownError')}
           actionLabel={t('common.retry')}
           onAction={() => state.refetch()}
         />

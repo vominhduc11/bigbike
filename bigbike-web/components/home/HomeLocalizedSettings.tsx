@@ -23,9 +23,8 @@ import { sanitizeRichHtml } from "@/lib/utils/html";
  * xem DATA_CONTRACT.md "public_home keys — removed"); bản EN truyền thẳng qua prop `*En` và
  * chọn theo `useLocale()`, không gọi API.
  *
- * `HomeContentBottom` dùng `queryKeys.publicSettings(locale)` — key này cũng dùng chung với
- * `PolicyPageClient` nên chuyển trang chủ ↔ trang chính sách trong cùng phiên không phải gọi
- * lại API.
+ * `HomeContentBottom` dùng `queryKeys.publicSettings(locale)` để tất cả client consumer cần
+ * settings theo locale dùng chung một React Query cache key.
  */
 export function useEnSettingLookup(): (key: string) => string | undefined {
   const locale = useLocale();

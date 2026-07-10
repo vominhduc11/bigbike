@@ -67,6 +67,7 @@
   --color-google-title:            var(--admin-color-google-title);
   --color-google-url:              var(--admin-color-google-url);
   --color-google-crumb:            var(--admin-color-google-crumb);
+  --color-google-description:      var(--admin-color-google-description);
 
   /* Surface tokens */
   --color-surface:                 var(--admin-color-surface-base);
@@ -372,7 +373,7 @@ a {
 
 .form-field {
   display: grid;
-  gap: 5px;
+  gap: var(--admin-space-1);
 }
 
 .form-field span,
@@ -1443,14 +1444,14 @@ a {
   position: fixed;
   inset: 0;
   background: var(--admin-color-overlay);
-  z-index: 1000;
+  z-index: var(--admin-z-overlay);
 }
 
 .mpicker-modal {
   position: fixed;
   inset: 0;
   margin: auto;
-  z-index: 1001;
+  z-index: var(--admin-z-modal);
   width: min(960px, calc(100vw - 2rem));
   height: min(680px, calc(100vh - 2rem));
   background: var(--admin-color-surface-base);
@@ -2556,7 +2557,7 @@ a {
 .audit-mobile-filter-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1100;
+  z-index: var(--admin-z-modal);
   background: var(--admin-color-overlay);
   display: flex;
   align-items: flex-end;
@@ -2836,17 +2837,13 @@ a {
   .medialib-layout { flex-direction: column; }
 }
 
-/* Reserve room on the right when the detail panel is open so the grid doesn't slide under it.
-   .mediadetail-panel (below) has no responsive override — it's always a fixed 420px right
-   rail up to the 1920px breakpoint required by L1, so this padding must stay reserved through
-   1280px/1440px too. Only drop it on genuinely narrow/mobile viewports, where the panel's own
-   `max-width: 100vw` already turns it into a near-fullscreen overlay that content can't sit beside. */
+/* Reserve room beside the detail rail only on desktop-width layouts. */
 .medialib-panel-open {
   padding-right: 432px;
   transition: padding-right 0.18s ease-out;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .medialib-panel-open { padding-right: 0; }
 }
 
@@ -3392,7 +3389,7 @@ a {
   background: var(--c-surface);
   border-left: 1px solid var(--c-border);
   box-shadow: -8px 0 24px rgba(0, 0, 0, 0.08);
-  z-index: 30;
+  z-index: var(--admin-z-modal);
   display: flex;
   flex-direction: column;
   animation: medialib-slide-in 0.18s ease-out;

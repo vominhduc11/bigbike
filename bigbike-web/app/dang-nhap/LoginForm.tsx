@@ -4,14 +4,16 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginCustomer } from "@/lib/api/client-api";
-import { refreshAuth, useAuth } from "@/lib/auth/auth-store";
+import { markCustomerAuthenticated, refreshAuth, useAuth } from "@/lib/auth/auth-store";
 import { createLoginSchema, type LoginFormValues } from "@/lib/schemas/auth";
 import { toAccountPath, toForgotPasswordPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 import { FormRootError } from "@/components/ui/FormRootError";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { WpAuthField } from "@/components/wp/WpAuthField";
 import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
 
@@ -37,6 +39,7 @@ export function LoginForm({ returnTo }: { returnTo?: string }) {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
     setError,
   } = useForm<LoginFormValues>({
@@ -47,6 +50,7 @@ export function LoginForm({ returnTo }: { returnTo?: string }) {
   async function onSubmit(values: LoginFormValues) {
     try {
       await loginCustomer(values.login, values.password, values.remember);
+      markCustomerAuthenticated();
       await refreshAuth();
       router.push(resolvedReturnTo);
     } catch (err: unknown) {
@@ -87,9 +91,23 @@ export function LoginForm({ returnTo }: { returnTo?: string }) {
 
           <div className="row">
             <div className="col-md-6">
-              <div className="form-group form-checkbox">
-                <input type="checkbox" id="remember-me" {...register("remember")} />
-                <label htmlFor="remember-me">{t("remember")}</label>
+              <div className="form-group flex items-center gap-2">
+                <Controller
+                  name="remember"
+                  control={control}
+                  render={({ field }) => (
+                    <Checkbox
+                      id="remember-me"
+                      checked={field.value}
+                      onCheckedChange={(checked) => field.onChange(checked === true)}
+                      onBlur={field.onBlur}
+                      ref={field.ref}
+                    />
+                  )}
+                />
+                <label htmlFor="remember-me" className="!mb-0 cursor-pointer select-none">
+                  {t("remember")}
+                </label>
               </div>
             </div>
             <div className="col-md-6">
@@ -100,9 +118,9 @@ export function LoginForm({ returnTo }: { returnTo?: string }) {
           </div>
 
           <div className="form-submit form-group">
-            <button type="submit" disabled={isSubmitting}>
+            <Button type="submit" size="auth" disabled={isSubmitting}>
               {isSubmitting ? t("submitting") : t("submit")}
-            </button>
+            </Button>
           </div>
         </form>
 

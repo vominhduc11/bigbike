@@ -15,7 +15,7 @@ export function WpAccountShell({
   loginRedirect,
 }: {
   children: React.ReactNode;
-  loginRedirect: string;
+  loginRedirect?: string;
 }) {
   return (
     <>

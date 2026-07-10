@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { oauthAuthorizeUrl } from "@/lib/api/client-api";
+import { markCustomerAuthenticated } from "@/lib/auth/auth-store";
 
 function FacebookIcon() {
   // Trắng — đặt trên nền xanh Facebook đặc.
@@ -44,6 +45,7 @@ export function SocialLoginButtons({ returnTo }: { returnTo: string }) {
     <div className="mt-6 flex flex-col gap-3">
       <a
         href={oauthAuthorizeUrl("facebook", returnTo)}
+        onClick={markCustomerAuthenticated}
         className={`${baseClass} bg-blue! text-white! hover:bg-blue/90!`}
       >
         <FacebookIcon />
@@ -51,6 +53,7 @@ export function SocialLoginButtons({ returnTo }: { returnTo: string }) {
       </a>
       <a
         href={oauthAuthorizeUrl("google", returnTo)}
+        onClick={markCustomerAuthenticated}
         className={`${baseClass} border border-border-default bg-white! text-black! hover:border-black hover:bg-black/[0.04]!`}
       >
         <GoogleIcon />

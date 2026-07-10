@@ -15,12 +15,12 @@ describe("formatVnd", () => {
     expect(formatVnd(100000)).toBe("100.000 đ");
   });
 
-  it("returns 'Lien he' for null", () => {
-    expect(formatVnd(null)).toBe("Liên hệ");
+  it("returns dash for null", () => {
+    expect(formatVnd(null)).toBe("—");
   });
 
-  it("returns 'Lien he' for undefined", () => {
-    expect(formatVnd(undefined)).toBe("Liên hệ");
+  it("returns dash for undefined", () => {
+    expect(formatVnd(undefined)).toBe("—");
   });
 
   it("handles zero", () => {
@@ -30,11 +30,11 @@ describe("formatVnd", () => {
 
 describe("safeText", () => {
   it("returns fallback for empty string", () => {
-    expect(safeText("")).toBe("Đang cập nhật");
+    expect(safeText("")).toBe("—");
   });
 
   it("returns fallback for null", () => {
-    expect(safeText(null)).toBe("Đang cập nhật");
+    expect(safeText(null)).toBe("—");
   });
 
   it("trims whitespace and returns value", () => {
@@ -135,10 +135,10 @@ describe("formatDate", () => {
   });
 
   it("returns fallback for null", () => {
-    expect(formatDate(null)).toBe("Đang cập nhật");
+    expect(formatDate(null)).toBe("—");
   });
 
   it("returns fallback for invalid date", () => {
-    expect(formatDate("not-a-date")).toBe("Đang cập nhật");
+    expect(formatDate("not-a-date")).toBe("—");
   });
 });

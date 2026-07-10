@@ -872,7 +872,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
         <StatePanel
           tone="danger"
           title={t('products.loadError')}
-          description={state.error || 'Unknown error while loading products.'}
+          description={state.error || t('common.unknownError')}
           actionLabel={t('common.retry')}
           onAction={() => state.refetch()}
         />

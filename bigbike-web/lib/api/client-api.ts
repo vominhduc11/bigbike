@@ -415,6 +415,22 @@ export async function fetchMyOrder(orderId: string): Promise<OrderDetail> {
 
 // ── Email verification ────────────────────────────────────────────────────────
 
+export async function fetchOrderLookup(orderNumber: string, orderKey: string): Promise<OrderDetail | null> {
+  const qs = new URLSearchParams({ orderNumber, orderKey });
+  const res = await fetch(`${API_BASE_URL}/api/v1/orders/lookup?${qs.toString()}`, {
+    method: "GET",
+    credentials: "include",
+    headers: { Accept: "application/json" },
+    cache: "no-store",
+  });
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) {
+    const msg = (payload as { error?: { message?: string } } | null)?.error?.message ?? `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  return (payload as { data?: OrderDetail } | null)?.data ?? null;
+}
+
 export function verifyEmail(token: string): Promise<void> {
   return clientRequest<void>("POST", `/api/v1/customer/auth/verify-email?token=${encodeURIComponent(token)}`);
 }

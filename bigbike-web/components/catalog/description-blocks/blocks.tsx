@@ -6,6 +6,8 @@ import { sanitizeRichHtml } from "@/lib/utils/html";
 import { facebookEmbedUrl, getTikTokId, isFacebookVideoUrl, tiktokEmbedUrl } from "../product-gallery/media";
 import type { FeatureBlockT } from "./grouping";
 
+const PDP_RICH_HTML_OPTS = { allowInlineStyles: true, rewriteMediaUrls: true } as const;
+
 function youTubeId(url: string): string | null {
   const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
   return m ? m[1] : null;
@@ -96,7 +98,7 @@ function TextBlock({ block }: { block: DescriptionBlock }) {
     case "paragraph": {
       const html = block.html?.trim();
       if (!html) return null;
-      return <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html, { allowInlineStyles: true }) }} />;
+      return <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html, PDP_RICH_HTML_OPTS) }} />;
     }
     case "list": {
       const items = (block.items ?? []).map((it) => (it ?? "").trim()).filter(Boolean);
@@ -129,7 +131,7 @@ function TextBlock({ block }: { block: DescriptionBlock }) {
       if (!html) return null;
       return (
         <div className="border-l-4 border-brand bg-muted px-4 py-3">
-          <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html, { allowInlineStyles: true }) }} />
+          <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html, PDP_RICH_HTML_OPTS) }} />
         </div>
       );
     }
@@ -164,7 +166,7 @@ export function FeatureBody({ block }: { block: FeatureBlockT }) {
           {subheading ? (
             // Tiêu đề phụ (eyebrow) — nhãn nhỏ in hoa màu brand, phía trên tiêu đề chính.
             // text-ui-14 = 14px CỐ ĐỊNH (thang PDP §nhỏ; không dùng text-caption rem vì gốc 14px → 12.25px).
-            <p className="!mb-0 font-heading text-ui-14 max-md:text-ui-12 font-bold uppercase tracking-[0.2em] text-brand">
+            <p className="!mb-0 font-heading text-ui-14 max-md:text-ui-12 font-bold uppercase tracking-display text-brand">
               {subheading}
             </p>
           ) : null}
@@ -177,7 +179,7 @@ export function FeatureBody({ block }: { block: FeatureBlockT }) {
           ) : null}
         </div>
       ) : null}
-      {html ? <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html, { allowInlineStyles: true }) }} /> : null}
+      {html ? <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html, PDP_RICH_HTML_OPTS) }} /> : null}
       {items.length > 0 ? (
         block.listStyle === "numbered" ? (
           <ol className="flex list-none flex-col gap-2 text-ui-18 max-md:text-ui-16 leading-snug">
@@ -218,7 +220,7 @@ function BlockTitle({ text }: { text?: string }) {
 /** Khối "Phù hợp với ai" (V246) — HTML tự do (danh sách thẻ tư vấn), sanitize trước khi render. */
 export function SuitabilityBlockView({ block }: { block: SuitabilitySection }) {
   // html là nguồn render; cho phép CSS inline để admin tự chỉnh giao diện khi dán HTML.
-  const html = block.html ? sanitizeRichHtml(block.html, { allowInlineStyles: true }) : "";
+  const html = block.html ? sanitizeRichHtml(block.html, PDP_RICH_HTML_OPTS) : "";
   if (!html) return null;
   return (
     // gap-4 = khoảng tiêu đề→nội dung, đồng nhất với TextStack/FeatureBody (16px mọi loại khối).
@@ -232,7 +234,7 @@ export function SuitabilityBlockView({ block }: { block: SuitabilitySection }) {
 /** Khối "Bảng size" (V246) — HTML tự do (thường là bảng), sanitize trước khi render. */
 export function SizeGuideBlockView({ block }: { block: SizeGuideSection }) {
   // html là nguồn render; cho phép CSS inline để admin tự chỉnh giao diện khi dán HTML.
-  const html = block.html ? sanitizeRichHtml(block.html, { allowInlineStyles: true }) : "";
+  const html = block.html ? sanitizeRichHtml(block.html, PDP_RICH_HTML_OPTS) : "";
   if (!html) return null;
   return (
     // gap-4 = khoảng tiêu đề→nội dung, đồng nhất với TextStack/FeatureBody (16px mọi loại khối).

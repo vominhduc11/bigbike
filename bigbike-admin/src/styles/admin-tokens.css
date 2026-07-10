@@ -79,6 +79,7 @@
   --admin-color-google-title: #1a0dab;
   --admin-color-google-url:   #5f6368;
   --admin-color-google-crumb: #70757a;
+  --admin-color-google-description: #4d5156;
 
   /* ─── Typography ────────────────────────────────────────────────────────── */
   --admin-font-body:    Inter, system-ui, -apple-system, sans-serif;

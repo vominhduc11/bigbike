@@ -44,5 +44,5 @@ export function VideoThumbPreview({ video }: { video: VideoAsset }) {
       />
     );
   }
-  return <div className="w-full h-full bg-neutral-800" />;
+  return <div className="w-full h-full bg-surface-dark" />;
 }

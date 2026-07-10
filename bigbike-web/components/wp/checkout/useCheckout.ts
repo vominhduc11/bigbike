@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { generateId } from "@/lib/utils";
 import { submitCheckout } from "@/lib/api/client-api";
+import { hasCustomerSessionHint, useAuth } from "@/lib/auth/auth-store";
 import { useCart } from "@/lib/cart-context";
 import { useAddresses, useCartQuery, useProfile } from "@/lib/query/hooks";
 import type { PriceChange } from "@/lib/contracts/commerce";
@@ -28,6 +29,7 @@ export function useCheckout() {
   const locale = useLocale() as Locale;
   const router = useRouter();
   const { refreshCount } = useCart();
+  const auth = useAuth();
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -40,8 +42,10 @@ export function useCheckout() {
   const hasPrefilledRef = useRef(false);
 
   const { data: cart, isLoading: cartLoading, error: cartError } = useCartQuery();
-  const { data: profile } = useProfile();
-  const { data: addresses } = useAddresses();
+  const shouldLoadCustomer =
+    auth.status === "authenticated" || (auth.status === "loading" && hasCustomerSessionHint());
+  const { data: profile } = useProfile({ enabled: shouldLoadCustomer });
+  const { data: addresses } = useAddresses({ enabled: shouldLoadCustomer });
 
   const {
     register,

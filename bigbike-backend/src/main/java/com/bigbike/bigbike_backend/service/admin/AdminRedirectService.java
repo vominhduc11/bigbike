@@ -122,7 +122,7 @@ public class AdminRedirectService {
 
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "REDIRECT_CREATED", "REDIRECT", entity.getId(), null, snapshot(entity)));
-        webRevalidationService.revalidate("redirects");
+        webRevalidationService.revalidateRedirects();
 
         return redirectMapper.toResponse(entity);
     }
@@ -181,7 +181,7 @@ public class AdminRedirectService {
 
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "REDIRECT_UPDATED", "REDIRECT", entity.getId(), before, snapshot(entity)));
-        webRevalidationService.revalidate("redirects");
+        webRevalidationService.revalidateRedirects();
 
         return redirectMapper.toResponse(entity);
     }
@@ -194,7 +194,7 @@ public class AdminRedirectService {
         redirectRepo.delete(entity);
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "REDIRECT_DELETED", "REDIRECT", entity.getId(), before, null));
-        webRevalidationService.revalidate("redirects");
+        webRevalidationService.revalidateRedirects();
     }
 
     private String normalizeSourcePattern(String value) {

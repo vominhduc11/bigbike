@@ -4,6 +4,8 @@ import { X as XIcon, Hash } from 'lucide-react'
 import { fetchMediaTags } from '../lib/adminApi'
 import { DropdownPopover } from './DropdownPopover'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 /**
  * Multi-tag input with prefix-based autocomplete from {@code GET /admin/media/tags}.
@@ -79,30 +81,30 @@ export function TagInput({ value, onChange, placeholder, disabled }) {
               <Hash size={10} />
               {tg}
               {!disabled && (
-                <button type="button" onClick={() => removeTag(tg)} aria-label={t('common.removeTag', { tag: tg })}
-                  className="bg-white/20 border-none cursor-pointer w-3.5 h-3.5 rounded-full text-white inline-flex items-center justify-center p-0">
+                <Button type="button" variant="ghost" size="icon" onClick={() => removeTag(tg)} aria-label={t('common.removeTag', { tag: tg })}
+                  className="!h-3.5 !w-3.5 !rounded-full !p-0 bg-white/20 border-none text-white hover:bg-white/30 hover:text-white">
                   <XIcon size={9} />
-                </button>
+                </Button>
               )}
             </span>
           ))}
-          <input type="text" value={input} disabled={disabled}
+          <Input type="text" value={input} disabled={disabled}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKeyDown}
             onFocus={() => setShowSugg(true)}
             onBlur={() => setTimeout(() => setShowSugg(false), 150)}
             placeholder={tags.length === 0 ? placeholder : ''}
-            className="flex-1 min-w-[80px] border-none outline-none bg-transparent text-sm py-0.5 px-1" />
+            className="h-auto min-w-20 flex-1 border-0 bg-transparent px-1 py-0.5 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0" />
         </div>
       }
     >
       <ul className="list-none p-1">
         {suggestions.slice(0, 10).map((s) => (
           <li key={s}>
-            <button type="button" onMouseDown={(e) => { e.preventDefault(); addTag(s) }}
-              className="flex items-center gap-1 w-full px-2 py-1 text-xs cursor-pointer rounded-xs bg-transparent border-none hover:bg-surface-muted">
+            <Button type="button" variant="ghost" size="sm" onMouseDown={(e) => { e.preventDefault(); addTag(s) }}
+              className="!h-auto flex w-full items-center justify-start gap-1 rounded-xs border-none bg-transparent px-2 py-1 text-xs hover:bg-surface-muted">
               <Hash size={12} /> {s}
-            </button>
+            </Button>
           </li>
         ))}
       </ul>

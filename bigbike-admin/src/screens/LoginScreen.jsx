@@ -1,9 +1,10 @@
 import { useEffect, useId, useState } from 'react'
-import { Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { StatePanel } from '../components/StatePanel'
 import { ApiClientError, fetchPublicSettings } from '../lib/adminApi'
 import { useAuth } from '../lib/auth'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 export function LoginScreen() {
   const { login } = useAuth()
@@ -104,7 +105,7 @@ export function LoginScreen() {
                 {t('auth.email')}
                 <span aria-hidden="true" className="bb-required-mark"> *</span>
               </label>
-              <input
+              <Input
                 id={emailId}
                 type="email"
                 autoComplete="email"
@@ -126,17 +127,19 @@ export function LoginScreen() {
                   {t('auth.password')}
                   <span aria-hidden="true" className="bb-required-mark"> *</span>
                 </label>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   className="bb-btn bb-btn-ghost bb-btn-sm"
                   onClick={() => setShowForgot((v) => !v)}
                   aria-expanded={showForgot}
                   aria-controls={forgotId}
                 >
                   {t('auth.forgotPassword')}
-                </button>
+                </Button>
               </div>
-              <input
+              <Input
                 id={passwordId}
                 type="password"
                 autoComplete="current-password"
@@ -163,21 +166,16 @@ export function LoginScreen() {
               </div>
             ) : null}
 
-            <button
+            <Button
               type="submit"
+              size="lg"
+              loading={submitting}
               className="bb-btn bb-btn-primary bb-btn-lg bb-btn-full"
               disabled={submitting}
               aria-busy={submitting || undefined}
             >
-              {submitting ? (
-                <>
-                  <Loader2 className="animate-spin" size={16} aria-hidden="true" />
-                  {t('auth.loggingIn')}
-                </>
-              ) : (
-                t('auth.login')
-              )}
-            </button>
+              {submitting ? t('auth.loggingIn') : t('auth.login')}
+            </Button>
           </form>
 
           <div className="bb-login-support">

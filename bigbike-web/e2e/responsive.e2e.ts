@@ -55,8 +55,15 @@ for (const route of KEY_ROUTES) {
 
         if (vp.kind === "mobile") {
           const bottomNav = page.locator("nav.bb-bottom-nav");
-          await expect(bottomNav, `mobile bottom nav should be visible @ ${vp.name}`).toBeVisible();
-          await expectBarFits(page, "nav.bb-bottom-nav", `bottom nav @ ${vp.name}`);
+          const stickyPurchaseBar = page.locator(".bb-pdp-sticky-cta.is-visible").first();
+          const stickyBarVisible = await stickyPurchaseBar.isVisible().catch(() => false);
+
+          if (stickyBarVisible) {
+            await expectBarFits(page, ".bb-pdp-sticky-cta.is-visible", `PDP sticky purchase bar @ ${vp.name}`);
+          } else {
+            await expect(bottomNav, `mobile bottom nav should be visible @ ${vp.name}`).toBeVisible();
+            await expectBarFits(page, "nav.bb-bottom-nav", `bottom nav @ ${vp.name}`);
+          }
         }
       });
     }

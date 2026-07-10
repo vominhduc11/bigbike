@@ -1,3 +1,4 @@
+import { forwardRef } from 'react'
 import { Slot } from '@radix-ui/react-slot'
 import { cva } from 'class-variance-authority'
 import { Loader2 } from 'lucide-react'
@@ -27,7 +28,7 @@ const buttonVariants = cva(
   }
 )
 
-export function Button({
+const Button = forwardRef(function Button({
   className,
   variant,
   size,
@@ -37,7 +38,7 @@ export function Button({
   children,
   type = 'button',
   ...props
-}) {
+}, ref) {
   const Comp = asChild ? Slot : 'button'
   // asChild forwards to a single child element (Radix Slot) — Slot rejects
   // multiple children, so we can't inject a sibling spinner. Pass children
@@ -48,6 +49,7 @@ export function Button({
   const hideChildren = showSpinner && size === 'icon'
   return (
     <Comp
+      ref={ref}
       type={asChild ? undefined : type}
       className={cn(buttonVariants({ variant, size, className }))}
       disabled={disabled || loading}
@@ -62,6 +64,7 @@ export function Button({
       )}
     </Comp>
   )
-}
+})
 
 export { buttonVariants }
+export { Button }

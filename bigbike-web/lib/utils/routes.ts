@@ -106,8 +106,8 @@ export function translatePath(pathname: string, targetLocale: Locale): string {
       if (seg1) mapped.push(seg1, ...remaining);
     }
     else if (seg0 === "search") mapped = ["tim-kiem"];
-    else if (seg0 === "categories") mapped = ["danh-muc-san-pham", ...remaining];
-    else if (seg0 === "news") mapped = ["tin-tuc", ...remaining];
+    else if (seg0 === "categories") mapped = ["danh-muc-san-pham", ...segments.slice(1)];
+    else if (seg0 === "news") mapped = ["tin-tuc", ...segments.slice(1)];
   }
 
   if (!mapped) return pathname;

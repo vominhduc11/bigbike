@@ -753,7 +753,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                     <div className="text-lg leading-snug text-google-title break-words mb-1">
                       {(langValue('seoTitle') || form.title || t('content.detail.serpTitleFallback', { defaultValue: 'Tiêu đề trên Google' })).slice(0, 60)}
                     </div>
-                    <div className="text-sm leading-relaxed text-[#4d5156] break-words">
+                    <div className="text-sm leading-relaxed text-google-description break-words">
                       {langValue('seoDescription') || form.excerpt || t('content.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn sẽ hiển thị ở đây.' })}
                     </div>
                   </div>

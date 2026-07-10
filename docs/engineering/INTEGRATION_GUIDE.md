@@ -26,13 +26,21 @@ endpoint (header `x-revalidate-secret`) so admin content edits invalidate the ma
 cache entries immediately, instead of waiting for the page's time-based `revalidate` window.
 `CONFIRMED_FROM_CODE`
 
-- Config: `bigbike.web.revalidate-url`, `bigbike.web.revalidate-secret` (Docker env
-  `WEB_REVALIDATE_URL`, `WEB_REVALIDATE_SECRET`). Disabled when either is blank.
+- Config: `bigbike.web.revalidate-url`, `bigbike.web.revalidate-secret`
+  (Docker env `WEB_REVALIDATE_URL`, `WEB_REVALIDATE_SECRET`). Disabled when either is blank.
+  `bigbike.web.redirect-cache-clear-url` (`WEB_REDIRECT_CACHE_CLEAR_URL`) is optional; when
+  blank it is derived from every revalidate URL as `/_internal/redirect-cache/clear`.
+  `bigbike.web.revalidate-expected-replicas` (`WEB_REVALIDATE_EXPECTED_REPLICAS`) is a
+  multi-replica fail-safe: if set above 0, backend startup fails unless the configured
+  revalidate/redirect-clear URL fan-out covers every web replica.
 - Fires **after transaction commit** (`afterCommit`), async, retry at 1s/3s.
 - The web side reads these same tags on its server `fetch` calls in
   `bigbike-web/lib/api/public-api.ts`.
 - **Contract rule:** every cache tag the web reads MUST have a backend emitter below —
   otherwise that content only refreshes on its time-based TTL, never on edit.
+- Redirect admin mutations call `revalidateRedirects()`: this emits the `redirects` tag and
+  immediately clears the web proxy L1 redirect Map through the internal clear endpoint. The
+  redirect cache TTL is only a fallback.
 
 Tag map — catalog / commerce / home cluster (entity mutation → tags emitted):
 
@@ -48,9 +56,13 @@ Tag map — catalog / commerce / home cluster (entity mutation → tags emitted)
 > `home-highlights` is emitted both when the block is saved and when any product/category
 > it may display is edited. Brand edits do not touch the block.
 >
-> Content / settings / slider / menu / home-video mutations emit their own entity tags
-> (`articles`, `pages`, `settings`, `sliders`, `menus`, `home-videos`) from their
+> Article mutations emit `articles` and `article:<slug>`. Settings, slider, menu and
+> home-video mutations emit `settings`, `sliders`, `menus` and `home-videos` from their
 > respective admin services, read by the matching `public-api.ts` functions.
+>
+> Static hardcoded pages under `bigbike-web/lib/content/static-pages.*` are build-time SSG
+> content. They intentionally have no `pages` cache tag and are not included in startup
+> revalidation.
 
 ## Media Integration Policy
 

@@ -41,6 +41,12 @@ When migrating from IP:port to a domain, swap the public values in `.env.vps` fo
 - Web and admin have container healthchecks. `CONFIRMED_FROM_CONFIG`
 - The web container self-revalidates its storefront ISR cache on startup via `docker-entrypoint.mjs`: after `next build` bakes a data snapshot into the prerendered pages, the entrypoint waits for the server then POSTs the catalog/content tags to `/api/revalidate` so a fresh start serves backend-fresh data. This runs on every container start — including partial `docker compose up --no-deps` rebuilds — and replaces the former external `bigbike-web-init` one-shot container. `CONFIRMED_FROM_CONFIG`
 - Backend mail sending is optional when SMTP env vars are empty. `CONFIRMED_FROM_CONFIG`
+- Multi-replica ISR currently uses deploy-time fan-out, not a shared Next.js cache handler. If
+  more than one `bigbike-web` replica is deployed, `WEB_REVALIDATE_URL` must list every
+  replica's `/api/revalidate` URL. Leave `WEB_REDIRECT_CACHE_CLEAR_URL` blank to derive every
+  replica's `/_internal/redirect-cache/clear` endpoint, or list each clear endpoint explicitly.
+  Set `WEB_REVALIDATE_EXPECTED_REPLICAS=N` so backend startup fails when the fan-out is
+  incomplete instead of leaving one replica silently stale. `CONFIRMED_FROM_CONFIG`
 - CORS must be set explicitly through `BIGBIKE_CORS_ALLOWED_ORIGINS`. `CONFIRMED_FROM_CONFIG`
 - All service ports (Postgres, MinIO, Backend, Web, Admin) are bound to `127.0.0.1` — public traffic must arrive via the nginx reverse proxy, never directly. `CONFIRMED_FROM_CONFIG`
 - `SPRING_PROFILES_ACTIVE` for staging/production must not include `mock`; placeholder auth is explicitly limited to dev/mock behavior in `AuthController` and `DevAdminAuthService`. `CONFIRMED_FROM_CODE`

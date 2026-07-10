@@ -23,7 +23,7 @@ const BASE = `http://127.0.0.1:${PORT}`;
 // expiring those refreshes the brand/colour/gender/price filter counts too.
 const TAGS = [
   "products", "categories", "brands", "articles", "settings",
-  "menus", "pages", "home-videos", "home-highlights", "sliders",
+  "menus", "home-videos", "home-highlights", "sliders",
 ];
 
 const server = spawn("node", ["server.js"], { stdio: "inherit" });

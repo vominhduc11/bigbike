@@ -3,6 +3,7 @@ import { ChevronDown, LogOut, Maximize2, Menu, Minimize2, X } from 'lucide-react
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../lib/auth'
 import { useNavBadges } from '../lib/useNavBadges'
+import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { ConfirmDialogProvider } from './ConfirmDialog'
 import { GlobalSearch } from './GlobalSearch'
@@ -280,9 +281,11 @@ export function AdminShell({
         <div className="bb-main">
           <header className="bb-topbar">
             {/* Hamburger — mobile only (hidden on ≥900px via CSS) */}
-            <button
+            <Button
               ref={hamburgerRef}
               type="button"
+              variant="ghost"
+              size="icon"
               className="bb-icon-btn bb-hamburger"
               onClick={() => setSidebarOpen((v) => !v)}
               aria-label={sidebarOpen ? t('common.close') : t('nav.openMenu')}
@@ -290,7 +293,7 @@ export function AdminShell({
               aria-controls="bb-mobile-sidebar"
             >
               {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
+            </Button>
 
             {pageTitle && <div className="bb-topbar-title">{pageTitle}</div>}
 
@@ -315,8 +318,10 @@ export function AdminShell({
 
             {/* Focus-mode toggle — only on form routes */}
             {formRoute && (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 className="bb-icon-btn"
                 onClick={toggleFocus}
                 aria-pressed={focusMode}
@@ -325,14 +330,15 @@ export function AdminShell({
                   : t('app.focusEnterTooltip', { defaultValue: 'Bật chế độ tập trung — ẩn sidebar/topbar (F11)' })}
               >
                 {focusMode ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-              </button>
+              </Button>
             )}
 
             {/* User dropdown */}
             <div ref={userMenuRef} style={{ position: 'relative' }}>
-              <button
+              <Button
                 ref={userChipRef}
                 type="button"
+                variant="ghost"
                 className="bb-user-chip"
                 onClick={() => setUserMenuOpen((v) => !v)}
                 aria-expanded={userMenuOpen}
@@ -344,7 +350,7 @@ export function AdminShell({
                   <span className="role">{formatRoles(user.roles)}</span>
                 </span>
                 <ChevronDown size={13} aria-hidden="true" />
-              </button>
+              </Button>
 
               {userMenuOpen && (
                 <div className="bb-user-dropdown" role="menu">
@@ -357,15 +363,16 @@ export function AdminShell({
                     <span className="bb-user-dropdown-lang-label">Ngôn ngữ nội dung</span>
                     <LanguageSwitcher />
                   </div>
-                  <button
+                  <Button
                     type="button"
                     role="menuitem"
+                    variant="ghost"
                     className="bb-user-dropdown-item danger"
                     onClick={() => { setUserMenuOpen(false); logout() }}
                   >
                     <LogOut size={14} aria-hidden="true" />
                     {t('common.logout')}
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -379,8 +386,9 @@ export function AdminShell({
 
       {/* Focus-mode exit FAB */}
       {focusActive && (
-        <button
+        <Button
           type="button"
+          variant="ghost"
           className="bb-focus-fab"
           onClick={toggleFocus}
           title={t('app.focusExitTooltip', { defaultValue: 'Thoát chế độ tập trung (F11)' })}
@@ -388,7 +396,7 @@ export function AdminShell({
           <Minimize2 size={14} />
           <span>{t('app.focusExit', { defaultValue: 'Thoát tập trung' })}</span>
           <kbd>F11</kbd>
-        </button>
+        </Button>
       )}
 
       <ConfirmDialogProvider />

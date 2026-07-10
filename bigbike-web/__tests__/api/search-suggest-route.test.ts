@@ -52,8 +52,8 @@ describe("GET /api/search-suggest", () => {
     expect(json.products[0].slug).toBe("xe-dap-abc");
   });
 
-  it("returns empty products for short query (< 2 chars) without hitting backend", async () => {
-    const req = new Request("http://localhost/api/search-suggest?q=x");
+  it("returns empty products for blank query without hitting backend", async () => {
+    const req = new Request("http://localhost/api/search-suggest?q=%20");
     const res = await GET(req);
     const json = await res.json() as { products: unknown[] };
     expect(json.products).toHaveLength(0);

@@ -57,21 +57,22 @@ export function WpAccountNav({
   loginRedirect,
 }: {
   children: ReactNode;
-  loginRedirect: string;
+  loginRedirect?: string;
 }) {
   const t = useTranslations("Account");
   const tNav = useTranslations("Account.nav");
   const locale = useLocale() as Locale;
   const router = useRouter();
   const pathname = usePathname();
+  const resolvedLoginRedirect = loginRedirect ?? pathname ?? "/tai-khoan/";
   const auth = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     if (auth.status === "anonymous") {
-      router.replace(toLoginPath(loginRedirect, locale));
+      router.replace(toLoginPath(resolvedLoginRedirect, locale));
     }
-  }, [auth.status, router, loginRedirect, locale]);
+  }, [auth.status, router, resolvedLoginRedirect, locale]);
 
   const localizedNav = NAV.map((item) => ({
     ...item,

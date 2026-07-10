@@ -11,6 +11,7 @@ import {
   removeCartItem,
   updateCartItem,
 } from "@/lib/api/client-api";
+import { hasCustomerSessionHint } from "@/lib/auth/auth-store";
 import { queryKeys } from "./keys";
 
 // ── Cart ────────────────────────────────────────────────────────────────────
@@ -45,18 +46,26 @@ export function useRemoveCartItem() {
 
 // ── Customer ────────────────────────────────────────────────────────────────
 
-export function useProfile() {
+type CustomerQueryOptions = {
+  enabled?: boolean;
+};
+
+export function useProfile(options: CustomerQueryOptions = {}) {
+  const enabled = options.enabled ?? hasCustomerSessionHint();
   return useQuery({
     queryKey: queryKeys.profile(),
     queryFn: fetchMe,
+    enabled,
     retry: false,
   });
 }
 
-export function useAddresses() {
+export function useAddresses(options: CustomerQueryOptions = {}) {
+  const enabled = options.enabled ?? hasCustomerSessionHint();
   return useQuery({
     queryKey: queryKeys.addresses(),
     queryFn: fetchMyAddresses,
+    enabled,
     retry: false,
   });
 }

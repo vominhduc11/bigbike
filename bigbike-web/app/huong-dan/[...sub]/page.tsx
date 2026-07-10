@@ -2,14 +2,16 @@ import type { Metadata } from "next";
 import { getLocale } from "next-intl/server";
 import { GuidePage, resolveGuideMeta } from "../GuidePage";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
+import { getGuideLayout } from "@/lib/content/static-pages";
 
 type Props = {
   params: Promise<{ sub: string[] }>;
 };
 
-// ISR on-demand: trang hướng dẫn (CMS) → KHÔNG prebuild lúc build.
+export const dynamicParams = false;
+
 export async function generateStaticParams() {
-  return [];
+  return getGuideLayout("vi").entries.map((entry) => ({ sub: [entry.pathSegment] }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

@@ -9,21 +9,8 @@ import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 
 type Props = { articles: Article[] };
 
-const LEGACY_BODY_UPLOAD_PREFIXES = [
-  "https://bigbike.vn/wp-content/uploads/",
-  "https://www.bigbike.vn/wp-content/uploads/",
-  "http://bigbike.vn/wp-content/uploads/",
-  "http://www.bigbike.vn/wp-content/uploads/",
-];
-
 function normalizeLegacyUploadUrl(url: string | null | undefined): string | null {
-  if (!url) return null;
-  for (const prefix of LEGACY_BODY_UPLOAD_PREFIXES) {
-    if (url.startsWith(prefix)) {
-      return `/wp-content/uploads/${url.slice(prefix.length)}`;
-    }
-  }
-  return resolveMediaUrl(url) ?? null;
+  return resolveMediaUrl(url?.trim()) ?? null;
 }
 
 function expandForSwiperLoop(articles: Article[]): Article[] {

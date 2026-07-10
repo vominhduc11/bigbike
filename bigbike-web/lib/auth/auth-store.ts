@@ -14,6 +14,7 @@ type Listener = (state: AuthState) => void;
 const listeners = new Set<Listener>();
 let state: AuthState = { status: "loading" };
 let inflight: Promise<void> | null = null;
+const CUSTOMER_AUTH_HINT_KEY = "bb_customer_authenticated";
 
 function setState(next: AuthState) {
   state = next;
@@ -31,28 +32,64 @@ function setState(next: AuthState) {
   };
 }
 
+function readCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${escaped}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function hasClientAuthMarker(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(CUSTOMER_AUTH_HINT_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function markCustomerAuthenticated(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(CUSTOMER_AUTH_HINT_KEY, "1");
+  } catch {
+    /* storage may be unavailable in private contexts */
+  }
+}
+
+function clearCustomerAuthMarker(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(CUSTOMER_AUTH_HINT_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 /**
- * Cookie `bb_csrf` (non-httpOnly) chỉ được backend set khi đăng nhập thành công
- * và bị xoá khi logout (xem `config/CustomerAuthCookies`). Không có nó nghĩa là
- * khách chắc chắn chưa đăng nhập — bỏ qua call `/customer/me` để guest không phát
- * sinh một request 401 (đúng nghiệp vụ nhưng thừa) bị trình duyệt log ra console.
+ * `bb_csrf` is also issued for guest carts, so it is not sufficient by itself.
+ * Use the client auth marker after login/register/OAuth start; otherwise only
+ * treat csrf as a session hint when the public guest-cart cookie is absent.
  */
-function hasSessionHint(): boolean {
+export function hasCustomerSessionHint(): boolean {
   if (typeof document === "undefined") return false;
-  return /(?:^|;\s*)bb_csrf=[^;]/.test(document.cookie);
+  if (hasClientAuthMarker()) return true;
+  return Boolean(readCookie("bb_csrf") && !readCookie("bb_guest_id"));
 }
 
 export function refreshAuth(): Promise<void> {
   if (inflight) return inflight;
-  if (!hasSessionHint()) {
+  if (!hasCustomerSessionHint()) {
     setState({ status: "anonymous" });
     return Promise.resolve();
   }
   inflight = fetchMe()
     .then((profile) => {
+      markCustomerAuthenticated();
       setState({ status: "authenticated", profile });
     })
     .catch(() => {
+      clearCustomerAuthMarker();
       setState({ status: "anonymous" });
     })
     .finally(() => {
@@ -71,6 +108,7 @@ export async function performLogout(): Promise<void> {
   } catch {
     /* ignore */
   }
+  clearCustomerAuthMarker();
   setAnonymous();
 }
 

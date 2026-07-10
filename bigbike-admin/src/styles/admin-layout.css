@@ -10,7 +10,7 @@
      - .seg-tabs*    (segmented tabs)
      - .mobile-card* (mobile list-as-card layout)
      - .sticky-action-bar (sticky bottom action bar for forms / detail screens)
-     - .form-field*  (label + control + helper text for modals)
+     - .form-field-label (label text helper for legacy form-field blocks)
      - .info-grid    (label/value grid inside detail sections)
      - .show-on-*, .hide-on-* responsive utilities
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -72,9 +72,9 @@
 }
 
 .seg-tabs-tab.is-active {
-  background: var(--admin-color-surface-base);
-  color: var(--admin-color-text-primary);
-  box-shadow: var(--admin-shadow-xs);
+  background: var(--admin-color-primary-subtle);
+  color: var(--admin-color-primary-subtle-text);
+  box-shadow: inset 0 0 0 1px var(--admin-color-primary-muted);
 }
 
 .seg-tabs-count {
@@ -254,13 +254,6 @@
    Form field — label + control + helper/error
    Used inside modals and detail forms.
    ═══════════════════════════════════════════════════════════════════════════ */
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: var(--admin-space-3);
-}
-
 .form-field-label {
   font-size: var(--admin-text-sm);
   font-weight: 600;
@@ -483,10 +476,10 @@
 }
 
 .settings-nav button.active {
-  background: var(--admin-color-surface-base);
-  color: var(--admin-color-text-primary);
+  background: var(--admin-color-primary-subtle);
+  color: var(--admin-color-primary-subtle-text);
   font-weight: 600;
-  box-shadow: var(--admin-shadow-xs);
+  box-shadow: inset 0 0 0 1px var(--admin-color-primary-muted);
 }
 
 .settings-nav button.active::before {

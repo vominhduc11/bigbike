@@ -175,8 +175,12 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   const rating = product.rating ?? null;
   const ratingCount = product.ratingCount ?? null;
 
-  const descriptionHtml = product.description ? sanitizeRichHtml(product.description) : "";
-  const contentBottomHtml = product.contentBottom ? sanitizeRichHtml(product.contentBottom) : "";
+  const descriptionHtml = product.description
+    ? sanitizeRichHtml(product.description, { rewriteMediaUrls: true })
+    : "";
+  const contentBottomHtml = product.contentBottom
+    ? sanitizeRichHtml(product.contentBottom, { rewriteMediaUrls: true })
+    : "";
   // "Quick Answer" (trả lời nhanh, V300) — đoạn tóm tắt AIO, blockquote #3 ngay sau Specs Dashboard.
   const quickAnswer = safeText(product.quickAnswerSummary, "");
 

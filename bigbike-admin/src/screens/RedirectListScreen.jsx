@@ -52,18 +52,21 @@ const EMPTY_FORM = {
   legacyId: '',
 }
 
-const STATUS_CODE_LABELS = {
-  301: '301 Permanent',
-  302: '302 Temporary',
-  307: '307 Temporary',
-  308: '308 Permanent',
+function normalizeStatusCodeLabel(value, t) {
+  const labels = {
+    301: t('redirects.statusCode301', { defaultValue: '301 vĩnh viễn' }),
+    302: t('redirects.statusCode302', { defaultValue: '302 tạm thời' }),
+    307: t('redirects.statusCode307', { defaultValue: '307 tạm thời' }),
+    308: t('redirects.statusCode308', { defaultValue: '308 vĩnh viễn' }),
+  }
+  return labels[value] || String(value || '')
 }
 
 function normalizeRedirectTypeLabel(value, t) {
   const labels = {
-    PERMANENT: t('redirects.typePermanent', { defaultValue: 'Permanent' }),
-    TEMPORARY: t('redirects.typeTemporary', { defaultValue: 'Temporary' }),
-    CUSTOM: t('redirects.typeCustom', { defaultValue: 'Custom' }),
+    PERMANENT: t('redirects.typePermanent', { defaultValue: 'Vĩnh viễn' }),
+    TEMPORARY: t('redirects.typeTemporary', { defaultValue: 'Tạm thời' }),
+    CUSTOM: t('redirects.typeCustom', { defaultValue: 'Tùy chỉnh' }),
   }
   return labels[value] || value || t('common.notFound')
 }
@@ -150,9 +153,9 @@ export function RedirectListScreen({ canUpdate }) {
     mutationFn: (redirectId) => deleteRedirect(redirectId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['redirects'] })
-      toast.success(t('redirects.deleteSuccess', { defaultValue: 'Redirect deleted.' }))
+      toast.success(t('redirects.deleteSuccess', { defaultValue: 'Đã xóa chuyển hướng.' }))
     },
-    onError: (err) => toast.error(err?.message || t('redirects.deleteError', { defaultValue: 'Failed to delete redirect.' })),
+    onError: (err) => toast.error(err?.message || t('redirects.deleteError', { defaultValue: 'Không thể xóa chuyển hướng.' })),
   })
 
   // O4: toggle nhanh Bật/Tắt ngay trên bảng — cập nhật lạc quan (onMutate + rollback),
@@ -293,10 +296,10 @@ export function RedirectListScreen({ canUpdate }) {
   const handleDelete = useCallback(async (redirect) => {
     const confirmed = await showConfirm(
       t('redirects.deleteConfirm', {
-        defaultValue: `Delete redirect "${redirect.sourcePattern}"?`,
+        defaultValue: `Xóa chuyển hướng "${redirect.sourcePattern}"?`,
         source: redirect.sourcePattern,
       }),
-      t('redirects.deleteConfirmTitle', { defaultValue: 'Delete redirect' }),
+      t('redirects.deleteConfirmTitle', { defaultValue: 'Xóa chuyển hướng' }),
     )
     if (!confirmed) return
     deleteMutation.mutate(redirect.id)
@@ -430,7 +433,7 @@ export function RedirectListScreen({ canUpdate }) {
     {
       key: 'statusCode',
       label: t('redirects.colStatusCode', { defaultValue: 'Trạng thái' }),
-      render: (redirect) => STATUS_CODE_LABELS[redirect.statusCode] || String(redirect.statusCode || ''),
+      render: (redirect) => normalizeStatusCodeLabel(redirect.statusCode, t),
     },
     {
       key: 'enabled',
@@ -465,7 +468,7 @@ export function RedirectListScreen({ canUpdate }) {
     status: enabledBadge(redirect),
     meta: [
       { label: t('redirects.colType', { defaultValue: 'Loại' }), value: normalizeRedirectTypeLabel(redirect.redirectType, t) },
-      { label: t('redirects.colStatusCode', { defaultValue: 'Trạng thái' }), value: STATUS_CODE_LABELS[redirect.statusCode] || String(redirect.statusCode || '') },
+      { label: t('redirects.colStatusCode', { defaultValue: 'Trạng thái' }), value: normalizeStatusCodeLabel(redirect.statusCode, t) },
       { label: t('redirects.colHits', { defaultValue: 'Lượt' }), value: redirect.hitCount ?? 0 },
       { label: t('redirects.colUpdated', { defaultValue: 'Cập nhật' }), value: formatDateTime(redirect.updatedAt) },
     ],
@@ -533,9 +536,9 @@ export function RedirectListScreen({ canUpdate }) {
                 <Select value={form.redirectType} onValueChange={(val) => setForm((p) => ({ ...p, redirectType: val }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PERMANENT">Permanent</SelectItem>
-                    <SelectItem value="TEMPORARY">Temporary</SelectItem>
-                    <SelectItem value="CUSTOM">Custom</SelectItem>
+                    <SelectItem value="PERMANENT">{t('redirects.typePermanent', { defaultValue: 'Vĩnh viễn' })}</SelectItem>
+                    <SelectItem value="TEMPORARY">{t('redirects.typeTemporary', { defaultValue: 'Tạm thời' })}</SelectItem>
+                    <SelectItem value="CUSTOM">{t('redirects.typeCustom', { defaultValue: 'Tùy chỉnh' })}</SelectItem>
                   </SelectContent>
                 </Select>
               </label>
@@ -544,10 +547,10 @@ export function RedirectListScreen({ canUpdate }) {
                 <Select value={form.statusCode} onValueChange={(val) => setForm((p) => ({ ...p, statusCode: val }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="301">301 Permanent</SelectItem>
-                    <SelectItem value="302">302 Temporary</SelectItem>
-                    <SelectItem value="307">307 Temporary</SelectItem>
-                    <SelectItem value="308">308 Permanent</SelectItem>
+                    <SelectItem value="301">{t('redirects.statusCode301', { defaultValue: '301 vĩnh viễn' })}</SelectItem>
+                    <SelectItem value="302">{t('redirects.statusCode302', { defaultValue: '302 tạm thời' })}</SelectItem>
+                    <SelectItem value="307">{t('redirects.statusCode307', { defaultValue: '307 tạm thời' })}</SelectItem>
+                    <SelectItem value="308">{t('redirects.statusCode308', { defaultValue: '308 vĩnh viễn' })}</SelectItem>
                   </SelectContent>
                 </Select>
               </label>

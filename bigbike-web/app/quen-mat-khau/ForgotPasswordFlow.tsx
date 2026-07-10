@@ -15,6 +15,7 @@ import {
 import { toLoginPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 import { FormRootError } from "@/components/ui/FormRootError";
+import { Button } from "@/components/ui/button";
 import { WpAuthField } from "@/components/wp/WpAuthField";
 
 type ForgotPasswordFlowProps = {
@@ -79,9 +80,9 @@ function RequestResetForm() {
               error={errors.login}
             />
             <div className="form-submit form-group">
-              <button type="submit" disabled={isSubmitting}>
+              <Button type="submit" size="auth" disabled={isSubmitting}>
                 {isSubmitting ? t("submitting") : t("submit")}
-              </button>
+              </Button>
             </div>
           </form>
         </div>
@@ -126,9 +127,9 @@ function ResetPasswordForm({ token }: { token: string }) {
         <div className="row">
           <div className="col-12">
             <div className="form-submit form-group">
-              <button type="button" onClick={() => router.push(toLoginPath(undefined, locale))}>
+              <Button type="button" size="auth" onClick={() => router.push(toLoginPath(undefined, locale))}>
                 {t("loginNow")}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -165,9 +166,9 @@ function ResetPasswordForm({ token }: { token: string }) {
               error={errors.confirm}
             />
             <div className="form-submit form-group">
-              <button type="submit" disabled={isSubmitting}>
+              <Button type="submit" size="auth" disabled={isSubmitting}>
                 {isSubmitting ? t("submitting") : t("submit")}
-              </button>
+              </Button>
             </div>
           </form>
         </div>

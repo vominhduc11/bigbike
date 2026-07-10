@@ -231,14 +231,14 @@ export function ProductDescriptionTab({ viHtml }: { viHtml: string }) {
       </div>
     );
   }
-  return <LHtml field="description" viHtml={viHtml} className="wyswyg" />;
+  return <LHtml field="description" viHtml={viHtml} className="wyswyg" rewriteMediaUrls />;
 }
 
 
 /** Nội dung dài SEO cuối trang (contentBottom) — rich HTML, đổi theo ngôn ngữ.
  *  Fallback về bản VI render sẵn ở server khi payload EN không có field này. */
 export function ProductContentBottom({ viHtml }: { viHtml: string }) {
-  return <LHtml field="contentBottom" viHtml={viHtml} className="wyswyg" />;
+  return <LHtml field="contentBottom" viHtml={viHtml} className="wyswyg" rewriteMediaUrls />;
 }
 
 // Phù hợp với ai · Bảng size (V246): KHỐI trong mô tả — render bởi SuitabilityBlockView /

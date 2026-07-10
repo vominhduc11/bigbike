@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
 import { listArticles, listContentCategories, listPublicSettings } from "@/lib/api/public-api";
@@ -7,6 +8,7 @@ import { resolveMediaUrl, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { readDefaultHeroAssets, readHeroSettings } from "@/lib/utils/page-hero";
 import { toArticleListPath, toHomePath } from "@/lib/utils/routes";
 import { WpArticleListClient } from "./WpArticleListClient";
+import { WpArticleListDefault } from "./WpArticleListDefault";
 import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
 import { Tr } from "@/components/i18n/Tr";
 
@@ -70,11 +72,22 @@ export default async function ArticleListPage() {
 
         <div id="main-content">
           <div className="container">
-            <WpArticleListClient
-              categories={sidebarCategories}
-              initialArticles={articlesResult.data}
-              initialPagination={articlesResult.pagination}
-            />
+            <Suspense
+              fallback={
+                <WpArticleListDefault
+                  categories={sidebarCategories}
+                  articles={articlesResult.data}
+                  pagination={articlesResult.pagination}
+                  locale={locale}
+                />
+              }
+            >
+              <WpArticleListClient
+                categories={sidebarCategories}
+                initialArticles={articlesResult.data}
+                initialPagination={articlesResult.pagination}
+              />
+            </Suspense>
           </div>
         </div>
       </div>

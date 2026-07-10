@@ -19,7 +19,7 @@ import { toArticleListPath, toArticlePath, toHomePath } from "@/lib/utils/routes
 import { isValidSlug } from "@/lib/utils/slug";
 import { Tr } from "@/components/i18n/Tr";
 import { AltSlugRegistrar } from "@/components/i18n/AltSlugProvider";
-import { ArticleView } from "./ArticleView";
+import { ArticleViewDefault } from "./ArticleViewDefault";
 
 // ISR on-demand: bài viết là dữ liệu admin quản lý → KHÔNG prebuild lúc build. Trả [] để
 // sinh khi truy cập lần đầu + revalidate theo tag article:{slug}/articles khi admin sửa.
@@ -146,8 +146,9 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: articleJsonLd }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
       <AltSlugRegistrar kind="article" viSlug={article.slug} enSlug={article.slugEn ?? null} />
-      <ArticleView
+      <ArticleViewDefault
         article={article}
+        locale={locale}
         heroBgUrl={heroBgUrl}
         heroMobileBgUrl={heroMobileBgUrl}
         heroIllustrationUrl={heroIllustrationUrl}

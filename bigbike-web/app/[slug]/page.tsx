@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
-import { getStaticPage } from "@/lib/content/static-pages";
+import { getStaticPage, staticPageSlugs } from "@/lib/content/static-pages";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
@@ -12,6 +12,12 @@ import { isValidSlug } from "@/lib/utils/slug";
 type StaticPageDetailProps = {
   params: Promise<{ slug: string }>;
 };
+
+export const dynamicParams = false;
+
+export async function generateStaticParams() {
+  return staticPageSlugs().map((slug) => ({ slug }));
+}
 
 export async function generateMetadata({ params }: StaticPageDetailProps): Promise<Metadata> {
   const [{ slug }, locale, t] = await Promise.all([

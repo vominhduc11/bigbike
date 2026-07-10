@@ -1,13 +1,20 @@
 "use client";
 
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { isWpOrderbyValue, productSortToWpOrderby } from "@/lib/utils/catalog-sort";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 /**
- * woocommerce_catalog_ordering — port 1:1 từ theme WP (form.woocommerce-ordering
- * + select.form-control). Native select để CSS theme tô đúng (.form-select arrow).
- * Đổi giá trị → điều hướng giữ nguyên các filter khác, reset trang.
+ * WooCommerce catalog ordering shell keeps the legacy form wrapper while using
+ * the shared Radix/shadcn select for tokenized focus and keyboard behavior.
  */
 const SORT_OPTIONS = [
   { value: "menu_order", labelKey: "default" },
@@ -18,6 +25,71 @@ const SORT_OPTIONS = [
 ] as const;
 
 export function WpCategorySort({ current }: { current: string }) {
+  const t = useTranslations("Catalog");
+  const selectedValue = isWpOrderbyValue(current) ? current : productSortToWpOrderby(current);
+
+  return (
+    <Suspense fallback={<WpCategorySortStatic selectedValue={selectedValue} sortLabel={t("sortLabel")} />}>
+      <WpCategorySortInner current={current} />
+    </Suspense>
+  );
+}
+
+function WpCategorySortStatic({
+  selectedValue,
+  sortLabel,
+}: {
+  selectedValue: string;
+  sortLabel: string;
+}) {
+  const t = useTranslations("Catalog");
+  return (
+    <form className="woocommerce-ordering" method="get">
+      <div className="form-group d-inline-block">
+        <Select name="orderby" defaultValue={selectedValue} disabled>
+          <SelectTrigger aria-label={sortLabel} className="text-left font-cta text-ui-14 font-semibold uppercase">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SORT_OPTIONS.map(({ value, labelKey }) => (
+              <SelectItem key={value} value={value}>
+                {t(`sort.${labelKey}`)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </form>
+  );
+}
+
+function WpCategorySortSelect({
+  selectedValue,
+  sortLabel,
+  onValueChange,
+}: {
+  selectedValue: string;
+  sortLabel: string;
+  onValueChange: (value: string) => void;
+}) {
+  const t = useTranslations("Catalog");
+  return (
+    <Select name="orderby" value={selectedValue} onValueChange={onValueChange}>
+      <SelectTrigger aria-label={sortLabel} className="text-left font-cta text-ui-14 font-semibold uppercase">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {SORT_OPTIONS.map(({ value, labelKey }) => (
+          <SelectItem key={value} value={value}>
+            {t(`sort.${labelKey}`)}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function WpCategorySortInner({ current }: { current: string }) {
   const t = useTranslations("Catalog");
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -39,20 +111,12 @@ export function WpCategorySort({ current }: { current: string }) {
 
   return (
     <form className="woocommerce-ordering" method="get" onSubmit={(e) => e.preventDefault()}>
-      <div className="form-group form-select d-inline-block">
-        <select
-          name="orderby"
-          className="form-control text-left"
-          aria-label={t("sortLabel")}
-          value={selectedValue}
-          onChange={(e) => handleChange(e.target.value)}
-        >
-          {SORT_OPTIONS.map(({ value, labelKey }) => (
-            <option key={value} value={value}>
-              {t(`sort.${labelKey}`)}
-            </option>
-          ))}
-        </select>
+      <div className="form-group d-inline-block">
+        <WpCategorySortSelect
+          selectedValue={selectedValue}
+          sortLabel={t("sortLabel")}
+          onValueChange={handleChange}
+        />
       </div>
     </form>
   );

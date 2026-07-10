@@ -29,7 +29,7 @@ export function SeoCard({ form, isEnLang, isReadOnly, validationErrors, updateFi
             <div className="text-lg leading-snug text-google-title break-words mb-1">
               {(seoTitleVal || nameVal || t('categories.detail.seoPreviewFallbackTitle', { defaultValue: 'Tiêu đề danh mục' })).slice(0, 60)}
             </div>
-            <div className="text-sm leading-relaxed text-[#4d5156] break-words">
+            <div className="text-sm leading-relaxed text-google-description break-words">
               {seoDescVal || t('categories.detail.seoPreviewFallbackDesc', { defaultValue: 'Mô tả ngắn về danh mục sẽ hiển thị ở đây.' })}
             </div>
           </div>

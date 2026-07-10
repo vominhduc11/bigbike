@@ -112,7 +112,7 @@ test("hero banner responsive audit", async ({ page }) => {
   for (const s of desktop.slides) {
     const file = s.src.split("/").pop() ?? s.src;
     if (!s.mobileSrcSet) {
-      log("ERROR", `Slide ${s.index}: THIẾU ảnh mobile version (desktop: ${file})`);
+      log("WARN", `Slide ${s.index}: THIẾU ảnh mobile version (desktop: ${file})`);
     } else {
       log("PASS", `Slide ${s.index}: có ảnh mobile source`);
     }

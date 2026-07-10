@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { WpAccountShell } from "@/components/wp/WpAccountShell";
 import { OrderHistoryContent } from "./OrderHistoryContent";
 
@@ -8,7 +9,9 @@ import { OrderHistoryContent } from "./OrderHistoryContent";
 export default function OrderHistoryPage() {
   return (
     <WpAccountShell loginRedirect="/tai-khoan/don-hang/">
-      <OrderHistoryContent />
+      <Suspense fallback={null}>
+        <OrderHistoryContent />
+      </Suspense>
     </WpAccountShell>
   );
 }

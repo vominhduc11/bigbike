@@ -27,9 +27,15 @@ import { telHref } from "@/lib/utils/format";
  */
 
 const THEME = "/wp-content/themes/bigbike";
-const TEXT = "#3a3a3a";
-const MUTED = "#6f6f6f";
-const RED = "#ff0c09";
+const COLORS = {
+  text: "var(--bb-color-footer-top)",
+  textPrimary: "var(--bb-text-primary)",
+  muted: "var(--bb-text-secondary)",
+  red: "var(--bb-brand-primary)",
+  surface: "var(--bb-bg-surface)",
+  inverse: "var(--bb-text-inverse)",
+  shadow: "var(--bb-shadow-lg)",
+} as const;
 
 export type AboutBrandLogo = {
   id: string;
@@ -58,14 +64,14 @@ function ServiceTile({
   body: string;
   highlight: boolean;
 }) {
-  const fg = highlight ? "#fff" : TEXT;
+  const fg = highlight ? COLORS.inverse : COLORS.text;
   return (
     <div
       className="md:min-h-[360px]"
       style={{
         padding: 28,
-        boxShadow: "0 0 30px rgba(0,0,0,.16)",
-        background: highlight ? RED : "#fff",
+        boxShadow: COLORS.shadow,
+        background: highlight ? COLORS.red : COLORS.surface,
         color: fg,
       }}
     >
@@ -98,11 +104,11 @@ function ContactItem({
 }) {
   return (
     <div className="md:px-5" style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-      <span style={{ flexShrink: 0, color: RED, marginTop: 2 }}>{icon}</span>
+      <span style={{ flexShrink: 0, color: COLORS.red, marginTop: 2 }}>{icon}</span>
       <div style={{ minWidth: 0 }}>
         <div
           className="text-ui-16"
-          style={{ fontWeight: 700, color: "#000", marginBottom: 8 }}
+          style={{ fontWeight: 700, color: COLORS.textPrimary, marginBottom: 8 }}
         >
           {label}
         </div>
@@ -134,10 +140,10 @@ export function AboutPageContent({
     (para) => para.trim().length > 0
   );
   const facebookHandle = contact.facebookUrl.replace(/^https?:\/\/(www\.)?/, "");
-  const linkStyle = { color: TEXT, textDecoration: "none" } as const;
+  const linkStyle = { color: COLORS.text, textDecoration: "none" } as const;
 
   return (
-    <div style={{ color: TEXT, marginBottom: 80 }}>
+    <div style={{ color: COLORS.text, marginBottom: 80 }}>
       {/* ROW 1 — intro: tiêu đề + dẫn + logo hãng */}
       <div className="grid grid-cols-1 md:grid-cols-12" style={{ gap: 30 }}>
         <div className="md:col-span-4">
@@ -149,7 +155,7 @@ export function AboutPageContent({
           </h2>
           <p
             className="text-ui-22 max-md:text-ui-18 font-cta"
-            style={{ margin: "16px 0 0", textTransform: "uppercase", lineHeight: 1.25, color: TEXT }}
+            style={{ margin: "16px 0 0", textTransform: "uppercase", lineHeight: 1.25, color: COLORS.text }}
           >
             {t("tagline")}
           </p>
@@ -160,7 +166,7 @@ export function AboutPageContent({
             <p
               key={i}
               className="text-ui-16 max-md:text-ui-14"
-              style={{ margin: "0 0 20px", lineHeight: 1.6, color: MUTED }}
+              style={{ margin: "0 0 20px", lineHeight: 1.6, color: COLORS.muted }}
             >
               {para}
             </p>
@@ -199,7 +205,7 @@ export function AboutPageContent({
           >
             {t("qualityHeading")}
           </h2>
-          <p className="text-ui-16 max-md:text-ui-14" style={{ margin: 0, lineHeight: 1.6, color: MUTED }}>
+          <p className="text-ui-16 max-md:text-ui-14" style={{ margin: 0, lineHeight: 1.6, color: COLORS.muted }}>
             {t("qualityBody")}
           </p>
         </div>
@@ -224,10 +230,10 @@ export function AboutPageContent({
         >
           {t("connectHeading")}
         </h2>
-        <p className="text-ui-16 max-md:text-ui-14" style={{ margin: "12px 0 0", lineHeight: 1.6, color: MUTED }}>
+        <p className="text-ui-16 max-md:text-ui-14" style={{ margin: "12px 0 0", lineHeight: 1.6, color: COLORS.muted }}>
           {t("connect1")}
         </p>
-        <p className="text-ui-16 max-md:text-ui-14" style={{ margin: "6px 0 0", lineHeight: 1.6, color: MUTED }}>
+        <p className="text-ui-16 max-md:text-ui-14" style={{ margin: "6px 0 0", lineHeight: 1.6, color: COLORS.muted }}>
           {t("connect2")}
         </p>
 
@@ -237,7 +243,7 @@ export function AboutPageContent({
         >
           {contact.address && (
             <ContactItem icon={<Store size={28} strokeWidth={1.5} aria-hidden="true" />} label={t("storeLabel")}>
-              <p className="text-ui-16 max-md:text-ui-14" style={{ margin: 0, color: TEXT, lineHeight: 1.6 }}>
+              <p className="text-ui-16 max-md:text-ui-14" style={{ margin: 0, color: COLORS.text, lineHeight: 1.6 }}>
                 {contact.address}
               </p>
             </ContactItem>

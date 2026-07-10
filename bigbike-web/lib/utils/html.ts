@@ -46,7 +46,11 @@ export function sanitizeRichHtml(
 function rewriteLegacyMediaUrls(html: string): string {
   return html
     .replace(/https:\/\/cdn\.bigbike\.vn\/uploads\//g, "/wp-content/uploads/")
-    .replace(/https?:\/\/(?:www\.)?bigbike\.vn\/wp-content\/uploads\//g, "/wp-content/uploads/")
+    .replace(/https?:\/\/(?:www\.)?bigbike\.vn\/wp-content\//g, "/wp-content/")
+    .replace(
+      /(?:https?:\/\/(?:localhost(?::\d+)?|127\.0\.0\.1(?::\d+)?|(?:www\.)?bigbike\.vn))?\/media-proxy\/wp-uploads\//g,
+      "/wp-content/uploads/",
+    )
     .replace(
       /https?:\/\/(?:localhost|127\.0\.0\.1|minio):9000\/bigbike-media\/wp-uploads\//g,
       "/media/wp-uploads/",

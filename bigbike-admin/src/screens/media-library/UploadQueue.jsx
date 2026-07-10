@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { X as XIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 
 // Upload queue panel — floating progress list for in-flight media uploads.
 // Behaviour identical to the inline component it replaced; state lives in the
@@ -9,7 +10,7 @@ export function UploadQueue({ queue, onDismiss }) {
   const { t } = useTranslation()
   const pending = queue.filter((u) => u.status === 'uploading' || u.status === 'pending').length
   return (
-    <div className="fixed bottom-4 right-4 z-50 bg-surface border border-border rounded-md shadow-xl w-[360px] max-w-[calc(100vw-2rem)] max-h-[360px] overflow-y-auto">
+    <div className="fixed bottom-4 right-4 z-[var(--admin-z-toast)] bg-surface border border-border rounded-md shadow-xl w-[360px] max-w-[calc(100vw-2rem)] max-h-[360px] overflow-y-auto">
       <div className="px-3 py-2 border-b border-border font-bold text-sm">
         {pending > 0 ? t('media.uploading') + ` (${pending})` : t('media.uploadComplete', { count: queue.length })}
       </div>
@@ -17,10 +18,10 @@ export function UploadQueue({ queue, onDismiss }) {
         <div key={u.id} className="px-3 py-2 border-b border-border text-xs">
           <div className="flex justify-between items-center gap-1.5">
             <span className="truncate flex-1" title={u.name}>{u.name}</span>
-            <button type="button" onClick={() => onDismiss(u.id)} aria-label="Dismiss"
-              className="bg-transparent border-none cursor-pointer p-0.5 text-muted-foreground">
+            <Button type="button" variant="ghost" size="icon" onClick={() => onDismiss(u.id)} aria-label={t('notifications.close')}
+              className="!h-5 !w-5 !p-0.5 bg-transparent border-none text-muted-foreground">
               <XIcon size={12} />
-            </button>
+            </Button>
           </div>
           {u.status === 'error' ? (
             <p className="text-danger mt-1 mb-0 text-xs">{u.error}</p>

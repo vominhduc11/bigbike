@@ -37,6 +37,29 @@ async function prep(page: Page, path: string, vp: { width: number; height: numbe
   await page.waitForTimeout(500);
 }
 
+function headerSearchTrigger(page: Page): Locator {
+  return page.locator("button.bb-wp-search-trigger, button.bb-header-search-trigger").first();
+}
+
+function searchDialog(page: Page): Locator {
+  return page.getByRole("dialog").filter({ has: page.getByRole("combobox") }).first();
+}
+
+function featuredProductCard(page: Page): Locator {
+  return page
+    .locator(".product .swiper-slide .product--item")
+    .filter({ has: page.locator(".product--item-cart") })
+    .first();
+}
+
+function mobileMenuTrigger(page: Page): Locator {
+  return page.locator(".hammer-menu-mb").first();
+}
+
+async function clickMobileMenuTrigger(page: Page): Promise<void> {
+  await mobileMenuTrigger(page).evaluate((el) => (el as HTMLElement).click());
+}
+
 test.describe("Visual — chrome", () => {
   test("header @desktop", async ({ page }) => {
     await prep(page, "/", DESKTOP);
@@ -75,7 +98,7 @@ test.describe("Visual — chrome", () => {
 
   test("featured product card", async ({ page }) => {
     await prep(page, "/", DESKTOP);
-    const card = page.locator(".bb-fp-item").first();
+    const card = featuredProductCard(page);
     await card.scrollIntoViewIfNeeded();
     await page.waitForTimeout(200);
     await expect(card).toHaveScreenshot("product-card-featured.png", { mask: dynamicMasks(page) });
@@ -85,20 +108,20 @@ test.describe("Visual — chrome", () => {
 test.describe("Visual — overlays", () => {
   test("search overlay @desktop", async ({ page }) => {
     await prep(page, "/", DESKTOP);
-    await page.locator("button.bb-header-search-trigger").first().click();
+    await headerSearchTrigger(page).click();
     await page.waitForTimeout(500);
     await disableAnimations(page);
-    await expect(page.locator(".bb-header-search-panel").first()).toHaveScreenshot("search-overlay-desktop.png", {
+    await expect(searchDialog(page)).toHaveScreenshot("search-overlay-desktop.png", {
       mask: dynamicMasks(page),
     });
   });
 
   test("mobile menu drawer", async ({ page }) => {
     await prep(page, "/", MOBILE);
-    await page.locator("nav.bb-bottom-nav").getByRole("button", { name: "Mở danh mục" }).click();
+    await clickMobileMenuTrigger(page);
     await page.waitForTimeout(500);
     await disableAnimations(page);
-    await expect(page.locator(".bb-mobile-header-drawer").first()).toHaveScreenshot("mobile-menu-drawer.png", {
+    await expect(page.locator("header .navigation").first()).toHaveScreenshot("mobile-menu-drawer.png", {
       mask: dynamicMasks(page),
     });
   });

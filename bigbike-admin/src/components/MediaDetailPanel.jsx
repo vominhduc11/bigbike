@@ -140,9 +140,9 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
     <aside className="mediadetail-panel" role="complementary" aria-label={t('media.editTitle')}>
       <header className="mediadetail-header">
         <h3 className="mediadetail-heading">{t('media.editTitle')}</h3>
-        <button type="button" onClick={attemptClose} aria-label={t('common.close')} className="mediadetail-close-btn">
+        <Button type="button" variant="ghost" size="icon" onClick={attemptClose} aria-label={t('common.close')} className="mediadetail-close-btn">
           <XIcon size={18} />
-        </button>
+        </Button>
       </header>
 
       <div className="mediadetail-body">
@@ -178,6 +178,7 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
 
           {canUpdate && !isTrash && isImage && (
             <>
+              {/* Raw hidden file input is required to trigger the OS file picker. */}
               <input ref={replaceInputRef} type="file" accept="image/*"
                 className="hidden" onChange={handleReplaceFile} />
               <Button variant="outline" size="sm" onClick={handleReplaceClick}
