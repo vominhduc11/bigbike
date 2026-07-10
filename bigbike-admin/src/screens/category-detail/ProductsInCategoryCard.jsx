@@ -1,15 +1,62 @@
 import { useTranslation } from 'react-i18next'
 import { Package } from 'lucide-react'
 import { PublishStatusBadge } from '../../components/StatusBadge'
-import { MobileCardList, MobileCard } from '../../components/layout/MobileCardList'
+import { AdminTable } from '../../components/AdminTable'
 
 export function ProductsInCategoryCard({ item, productsList, productsTotal, navigate, isLoading = false }) {
   const { t } = useTranslation()
+
+  const openProduct = (p) => navigate(`/admin/products/${p.id}`)
+
+  // Thumbnail dùng chung cho bảng (desktop) và thẻ (mobile). Kích thước/bo/cover
+  // do CSS `.bb-product-thumb` + `.bb-product-thumb img` lo — không cần inline style.
+  const productThumb = (p, extraClass) => (
+    <span className={`bb-product-thumb${extraClass ? ` ${extraClass}` : ''}`}>
+      {p.image?.url ? (
+        <img src={p.image.url} alt={p.image.alt || p.name} loading="lazy" referrerPolicy="no-referrer" />
+      ) : <Package size={16} />}
+    </span>
+  )
+
+  const columns = [
+    {
+      key: 'product',
+      label: t('categories.detail.productsColName', { defaultValue: 'Sản phẩm' }),
+      render: (p) => (
+        <div className="product-cell">
+          {productThumb(p)}
+          <div className="info">
+            <div className="name">{p.name}</div>
+            <div className="sku">{p.sku || p.slug}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      label: t('categories.detail.productsColStatus', { defaultValue: 'Trạng thái' }),
+      align: 'right',
+      render: (p) => <PublishStatusBadge value={p.publishStatus} />,
+    },
+  ]
+
+  const mobileCard = (p) => ({
+    title: (
+      <span className="flex items-center gap-1.5">
+        {productThumb(p, 'shrink-0')}
+        {p.name}
+      </span>
+    ),
+    subtitle: p.sku || p.slug,
+    status: <PublishStatusBadge value={p.publishStatus} />,
+    onClick: () => openProduct(p),
+  })
+
   return (
     <div className="bb-card mb-4">
       <div className="bb-card-header">
         <div>
-          <h2>{t('categories.detail.productsSectionTitle', { count: productsTotal })}</h2>
+          <h3>{t('categories.detail.productsSectionTitle', { count: productsTotal })}</h3>
           <p className="sub">{t('categories.detail.productsSectionDesc')}</p>
         </div>
         {productsTotal > 0 && (
@@ -32,7 +79,7 @@ export function ProductsInCategoryCard({ item, productsList, productsTotal, navi
             <div className="h-10 w-2/3 rounded-sm bg-surface-muted" />
           </div>
         ) : productsList.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '24px 16px', color: 'var(--bb-text-muted)' }}>
+          <div className="text-center px-4 py-6 text-muted-foreground">
             <p>{t('categories.detail.productsEmpty')}</p>
             <button
               type="button"
@@ -43,56 +90,12 @@ export function ProductsInCategoryCard({ item, productsList, productsTotal, navi
             </button>
           </div>
         ) : (
-          <>
-            <div className="hide-on-mobile">
-              <div className="bb-table-wrap">
-                <table className="bb-table">
-                  <tbody>
-                    {productsList.map((p) => (
-                      <tr key={p.id} onClick={() => navigate(`/admin/products/${p.id}`)}>
-                        <td>
-                          <div className="product-cell">
-                            <span className="bb-product-thumb">
-                              {p.image?.url ? (
-                                <img src={p.image.url} alt={p.image.alt || p.name} loading="lazy" referrerPolicy="no-referrer"
-                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              ) : <Package size={16} />}
-                            </span>
-                            <div className="info">
-                              <div className="name">{p.name}</div>
-                              <div className="sku">{p.sku || p.slug}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="col-actions"><PublishStatusBadge value={p.publishStatus} /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <MobileCardList>
-              {productsList.map((p) => (
-                <MobileCard
-                  key={p.id}
-                  title={(
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span className="bb-product-thumb" style={{ width: 32, height: 32, flexShrink: 0 }}>
-                        {p.image?.url ? (
-                          <img src={p.image.url} alt={p.image.alt || p.name} loading="lazy" referrerPolicy="no-referrer"
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : <Package size={16} />}
-                      </span>
-                      {p.name}
-                    </span>
-                  )}
-                  subtitle={p.sku || p.slug}
-                  status={<PublishStatusBadge value={p.publishStatus} />}
-                  onClick={() => navigate(`/admin/products/${p.id}`)}
-                />
-              ))}
-            </MobileCardList>
-          </>
+          <AdminTable
+            columns={columns}
+            rows={productsList}
+            onRowClick={openProduct}
+            mobileCard={mobileCard}
+          />
         )}
       </div>
     </div>

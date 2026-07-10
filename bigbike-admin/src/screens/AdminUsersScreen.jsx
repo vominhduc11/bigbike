@@ -529,7 +529,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
     const name = u.displayName || u.email
     return {
       title: (
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span className="flex items-center gap-2">
           <span className={`inline-flex items-center justify-center size-8 rounded-full text-xs font-bold flex-shrink-0 ${AVATAR_COLORS[(u._idx ?? 0) % AVATAR_COLORS.length]}`}>
             {(name || '?').charAt(0).toUpperCase()}
           </span>
@@ -577,24 +577,20 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
       {listState.warning ? <ReadOnlyBanner warning={listState.warning} /> : null}
 
       {inviteInfo && (
-        <div className="flex items-start gap-3 rounded-md border border-info bg-info-bg p-3 text-sm">
-          <Mail size={16} className="mt-0.5 shrink-0 text-info" />
-          <div className="flex-1">
-            {inviteInfo.error
-              ? <span className="text-danger">{inviteInfo.error}</span>
-              : inviteInfo.emailSent
-                ? <span>{t('adminUsers.inviteSent', { email: inviteInfo.email })}</span>
-                : (
-                  <div className="flex flex-col gap-1">
-                    <span>{t('adminUsers.inviteNotEmailed', { email: inviteInfo.email })}</span>
-                    {inviteInfo.inviteUrl && (
-                      <code className="break-all rounded bg-muted px-2 py-1 text-xs">{inviteInfo.inviteUrl}</code>
-                    )}
-                  </div>
-                )}
-          </div>
-          <button type="button" className="bb-icon-btn" title={t('common.close')} aria-label={t('common.close')} onClick={() => setInviteInfo(null)}>×</button>
-        </div>
+        <Alert tone="info" icon={Mail} dismissible onDismiss={() => setInviteInfo(null)}>
+          {inviteInfo.error
+            ? <span className="text-danger">{inviteInfo.error}</span>
+            : inviteInfo.emailSent
+              ? <span>{t('adminUsers.inviteSent', { email: inviteInfo.email })}</span>
+              : (
+                <div className="flex flex-col gap-1">
+                  <span>{t('adminUsers.inviteNotEmailed', { email: inviteInfo.email })}</span>
+                  {inviteInfo.inviteUrl && (
+                    <code className="break-all rounded bg-muted px-2 py-1 text-xs">{inviteInfo.inviteUrl}</code>
+                  )}
+                </div>
+              )}
+        </Alert>
       )}
 
       <div className="bb-filter-bar">

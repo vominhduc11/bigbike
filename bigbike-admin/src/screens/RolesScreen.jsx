@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Shield, ChevronLeft, Plus } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { fetchRoles, fetchPermissionCatalog, updateRolePermissions, createRole, deleteRole } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
@@ -260,14 +260,14 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
         <div className="roles-layout" aria-hidden="true">
           <div className="roles-sidebar p-3 flex flex-col gap-2">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="bb-skeleton-block" style={{ height: 44 }} />
+              <div key={i} className="bb-skeleton-block h-11" />
             ))}
           </div>
           <div className="roles-detail px-6 py-5 flex flex-col gap-3">
-            <div className="bb-skeleton-block" style={{ height: 28, width: '40%' }} />
-            <div className="bb-skeleton-block" style={{ height: 56 }} />
+            <div className="bb-skeleton-block h-7 w-2/5" />
+            <div className="bb-skeleton-block h-14" />
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="bb-skeleton-block" style={{ height: 64 }} />
+              <div key={i} className="bb-skeleton-block h-16" />
             ))}
           </div>
         </div>
@@ -286,18 +286,13 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
 
       {/* Empty */}
       {!loading && !loadError && roles.length === 0 && (
-        <div className="p-12 text-center text-muted-foreground flex flex-col items-center">
-          <Shield size={40} className="mb-3 opacity-30" aria-hidden />
-          <p className="m-0 font-semibold">{t('roles.empty')}</p>
-          <p className="mt-1 m-0 text-sm">{t('roles.emptyDesc')}</p>
-          {canUpdate && (
-            <Button size="sm" onClick={() => setShowCreateDialog(true)}
-              className="mt-4 flex items-center gap-1.5">
-              <Plus size={14} aria-hidden />
-              {t('roles.createRoleBtn')}
-            </Button>
-          )}
-        </div>
+        <StatePanel
+          tone="neutral"
+          title={t('roles.empty')}
+          description={t('roles.emptyDesc')}
+          actionLabel={canUpdate ? t('roles.createRoleBtn') : undefined}
+          onAction={canUpdate ? () => setShowCreateDialog(true) : undefined}
+        />
       )}
 
       {/* Two-panel layout */}

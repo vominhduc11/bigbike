@@ -10,7 +10,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-import { Search, X, Plus, AlertTriangle } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useDragSensors } from '../components/Sortable'
 import { toast } from '@/lib/toast'
 import {
@@ -28,6 +28,8 @@ import { formatText } from '../lib/formatters'
 import { useSaveShortcut } from '@/lib/useSaveShortcut'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { FilterSearchInput } from '../components/FilterSearchInput'
+import { Alert } from '@/components/ui/alert'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -534,12 +536,11 @@ export function MenuScreen({ canUpdate }) {
         tabIndex={0}
       >
         {slotMissing ? (
-          <div className="menu-slot-missing">
-            <AlertTriangle size={18} />
-            <div>
+          <div className="p-6">
+            <Alert tone="warning">
               <strong>{t('menus.slotMissingTitle', { location: selectedSlot.location })}</strong>
-              <p>{t('menus.slotMissingDesc')}</p>
-            </div>
+              <p className="mt-0.5">{t('menus.slotMissingDesc')}</p>
+            </Alert>
           </div>
         ) : detailLoading ? (
           <div className="p-6">
@@ -574,26 +575,12 @@ export function MenuScreen({ canUpdate }) {
             {/* Search toolbar */}
             {menuItems.length > 0 && (
               <div className="menu-panel-toolbar">
-                <div className="menu-search-box">
-                  <span className="menu-search-icon"><Search size={14} /></span>
-                  <input
-                    type="search"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Tìm theo tên hoặc URL..."
-                    aria-label="Tìm kiếm mục menu"
-                  />
-                  {search && (
-                    <button
-                      type="button"
-                      className="menu-search-clear"
-                      onClick={() => setSearch('')}
-                      aria-label="Xoá tìm kiếm"
-                    >
-                      <X size={13} />
-                    </button>
-                  )}
-                </div>
+                <FilterSearchInput
+                  value={search}
+                  onChange={setSearch}
+                  placeholder="Tìm theo tên hoặc URL..."
+                  ariaLabel="Tìm kiếm mục menu"
+                />
               </div>
             )}
 
@@ -616,21 +603,17 @@ export function MenuScreen({ canUpdate }) {
 
             {/* Items table */}
             {menuItems.length === 0 ? (
-              <div className="px-5 py-8 text-center">
-                <p className="text-muted-foreground text-sm mb-3">
-                  {t('menus.noItems')}
-                </p>
-                {canUpdate && (
-                  <Button onClick={openAddItem}>
-                    <Plus size={14} />
-                    {t('menus.addItem')}
-                  </Button>
-                )}
-              </div>
+              <StatePanel
+                tone="neutral"
+                title={t('menus.noItems')}
+                actionLabel={canUpdate ? t('menus.addItem') : undefined}
+                onAction={canUpdate ? openAddItem : undefined}
+              />
             ) : filteredFlatItems.length === 0 ? (
-              <div className="px-5 py-6 text-sm text-muted-foreground">
-                Không tìm thấy mục nào phù hợp với &ldquo;{search}&rdquo;.
-              </div>
+              <StatePanel
+                tone="neutral"
+                title={`Không tìm thấy mục nào phù hợp với “${search}”.`}
+              />
             ) : (
               <DndContext
                 sensors={sensors}

@@ -60,7 +60,7 @@ export function SettingField({
 
   return (
     <div className="form-field">
-      <label id={labelId} htmlFor={controlId} style={{ display: 'flex', alignItems: 'center', gap: 'var(--admin-space-2)' }}>
+      <label id={labelId} htmlFor={controlId} className="flex items-center gap-2">
         {label}
         {isDirty && (
           <span
@@ -70,14 +70,7 @@ export function SettingField({
         )}
       </label>
       {where && (
-        <span
-          className="bb-muted"
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 'var(--admin-space-1)',
-            fontSize: 'var(--admin-text-xs)', marginTop: 'calc(-1 * var(--admin-space-1) / 2)',
-            marginBottom: 'var(--admin-space-2)',
-          }}
-        >
+        <span className="bb-muted inline-flex items-center gap-1 text-xs -mt-0.5 mb-2">
           <MapPin size={12} aria-hidden="true" /> {where}
         </span>
       )}
@@ -142,16 +135,14 @@ export function SettingField({
         )
       ) : isHtml ? (
         <div
-          className="text-sm"
-          style={{ padding: '8px 12px', background: 'var(--admin-color-surface-muted)', borderRadius: 7 }}
+          className="text-sm px-3 py-2 bg-surface-muted rounded-sm"
           dangerouslySetInnerHTML={{ __html: sanitizeHtml(activeRawValue) || `<em>${t('settings.htmlEmpty')}</em>` }}
         />
       ) : isImage && rawValue ? (
-        <img src={rawValue} alt="" style={{ maxWidth: 240, borderRadius: 8 }} loading="lazy" />
+        <img src={rawValue} alt="" className="max-w-60 rounded-sm" loading="lazy" />
       ) : (
         <div
-          className="text-sm"
-          style={{ padding: '8px 12px', background: 'var(--admin-color-surface-muted)', borderRadius: 7 }}
+          className="text-sm px-3 py-2 bg-surface-muted rounded-sm"
         >
           {activeRawValue || <em className="muted">{t('settings.valueEmpty')}</em>}
         </div>
@@ -161,11 +152,7 @@ export function SettingField({
         <span
           id={errorId}
           role="alert"
-          className="bb-muted"
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 'var(--admin-space-1)',
-            color: 'var(--bb-danger)',
-          }}
+          className="inline-flex items-center gap-1 text-danger"
         >
           <AlertCircle size={13} aria-hidden="true" /> {error}
         </span>

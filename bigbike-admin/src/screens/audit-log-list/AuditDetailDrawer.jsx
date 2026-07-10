@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Modal } from '../../components/layout'
 import { formatDateTimeWithSeconds } from '../../lib/formatters'
 import { Badge } from '@/components/ui/badge'
+import { Alert } from '@/components/ui/alert'
 import { DANGEROUS_ACTIONS, DANGEROUS_VALUES, toBadgeVariant, tryParse } from './constants'
 import { DetailRow } from './cells'
 
@@ -61,9 +62,7 @@ export function AuditDetailDrawer({ log, onClose }) {
       <div className="-mx-5 -my-4">
         <div className="audit-drawer-body">
           {isDangerous && (
-            <div className="audit-danger-banner">
-              ⚠ {t('auditLog.drawerDangerBanner')}
-            </div>
+            <Alert tone="danger">{t('auditLog.drawerDangerBanner')}</Alert>
           )}
 
           <div className="audit-detail-section">

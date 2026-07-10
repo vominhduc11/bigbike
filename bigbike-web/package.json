@@ -18,6 +18,8 @@
     "test:e2e:report": "playwright show-report",
     "test:e2e:responsive": "playwright test responsive",
     "test:e2e:visual": "playwright test visual",
+    "test:e2e:visual:gate": "playwright test visual --grep-invert @advisory",
+    "test:e2e:visual:advisory": "playwright test visual --grep @advisory",
     "test:e2e:effects": "playwright test effects",
     "etl:start": "docker-compose -f scripts/extract-wp-data/docker-compose.etl.yml up -d",
     "etl:run": "tsx scripts/extract-wp-data/extract.ts",

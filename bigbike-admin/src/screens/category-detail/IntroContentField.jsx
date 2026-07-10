@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ArrowDown, ArrowUp, Plus, X as XIcon } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { Alert } from '@/components/ui/alert'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { parseIntro, serializeIntro, emptyFaq } from '@/lib/categoryIntro'
@@ -63,9 +64,9 @@ export function IntroContentField({ value, onChange, disabled, lang = 'vi' }) {
   return (
     <div className="flex flex-col gap-4">
       {model._legacy && (
-        <p className="rounded-[var(--admin-radius-xs)] border border-warning-border bg-warning-bg px-3 py-2 text-xs text-warning">
+        <Alert tone="warning" size="sm">
           {t('categories.detail.introLegacyWarning')}
-        </p>
+        </Alert>
       )}
 
       {/* Phần 1: Giới thiệu + thương hiệu */}

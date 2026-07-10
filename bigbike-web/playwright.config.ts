@@ -6,7 +6,7 @@ export default defineConfig({
   snapshotPathTemplate: "{testDir}/__screenshots__/{testFilePath}/{arg}{ext}",
   timeout: 90000,
   use: {
-    baseURL: "http://localhost:3001",
+    baseURL: process.env.PW_BASE_URL || "http://localhost:3001",
     actionTimeout: 30000,
   },
   projects: [

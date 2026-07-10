@@ -30,7 +30,7 @@ export const PUBLIC_ROUTES: RouteDef[] = [
 
 /** Real deep-link slugs (harvested from live sitemap / listing pages). */
 export const SAMPLE = {
-  product: "/product/ao-giap-bao-ho-mua-he-ls2-garda-air/",
+  product: "/product/agv-k1s/",
   category: "/danh-muc-san-pham/ao-bao-ho-tui-khi/",
   brand: "/brands/alpinestars/",
   news: "/tin-tuc/cach-chon-balo-phuot/",

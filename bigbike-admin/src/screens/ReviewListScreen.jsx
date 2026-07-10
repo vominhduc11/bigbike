@@ -337,7 +337,7 @@ export function ReviewListScreen({ navigate, canUpdate }) {
       {/* Summary + attention cards */}
       <div className="bb-grid-2-1 mb-4">
         <div className="bb-card">
-          <div className="bb-card-header"><h2>{t('reviews.summaryTitle', { defaultValue: 'Tổng quan đánh giá' })}</h2></div>
+          <div className="bb-card-header"><h3>{t('reviews.summaryTitle', { defaultValue: 'Tổng quan đánh giá' })}</h3></div>
           <div className="bb-card-body">
             <div className="flex gap-4 items-start">
               <div className="text-center shrink-0">
@@ -363,7 +363,7 @@ export function ReviewListScreen({ navigate, canUpdate }) {
         </div>
 
         <div className="bb-card">
-          <div className="bb-card-header"><h2>{t('reviews.needsAction', { defaultValue: 'Cần xử lý' })}</h2></div>
+          <div className="bb-card-header"><h3>{t('reviews.needsAction', { defaultValue: 'Cần xử lý' })}</h3></div>
           <div className="bb-card-body">
             <div className="dash-attention-list">
               <div className="dash-attention-item dash-attention-item--warning">

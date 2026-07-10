@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import {
   Calendar, Info, TrendingUp, TrendingDown, Minus,
-  ChevronUp, ChevronDown, ChevronsUpDown,
   CircleDollarSign, Wallet, RotateCcw, PiggyBank, ShoppingBag, Receipt,
 } from 'lucide-react'
 import { toast } from '@/lib/toast'
@@ -14,6 +13,7 @@ import {
 import { useUrlSyncedState } from '../lib/useUrlSyncedState'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { AdminTable } from '../components/AdminTable'
 import { ExportButton } from '../components/ExportButton'
 import { fetchAnalytics, exportOrdersCsv, exportProductsCsv, exportCustomersCsv } from '../lib/adminApi'
 import { formatCurrencyVnd } from '../lib/formatters'
@@ -58,7 +58,7 @@ function SkeletonBlock({ height = 120 }) {
 }
 
 // Ranked table card — bb-* classes; sort client-side trên cột số (top-N ≤ 1000 dòng).
-function RankTable({ title, rows, cols, noDataLabel, sortLabel }) {
+function RankTable({ title, rows, cols, noDataLabel }) {
   const [sortKey, setSortKey] = useState(null)
   const [sortDir, setSortDir] = useState('desc')
 
@@ -75,73 +75,34 @@ function RankTable({ title, rows, cols, noDataLabel, sortLabel }) {
     })
   }, [rows, cols, sortKey, sortDir])
 
-  const onSort = (key) => {
-    if (sortKey === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
-    } else {
-      setSortKey(key)
-      setSortDir('desc')
-    }
-  }
+  // Cột `#` (số thứ tự) bơm sẵn vào row vì AdminTable render chỉ nhận row (không index).
+  const columns = [
+    { key: '_idx', label: '#', render: (r) => r._idx },
+    ...cols.map((c) => ({
+      key: c.key,
+      label: c.label,
+      align: c.right ? 'right' : undefined,
+      sortable: c.sortable,
+      render: c.render,
+    })),
+  ]
+  const indexedRows = sortedRows.map((r, i) => ({ ...r, id: r.id ?? i, _idx: i + 1 }))
 
   return (
     <div className="bb-card">
-      <div className="bb-card-header"><h2>{title}</h2></div>
+      <div className="bb-card-header"><h3>{title}</h3></div>
       <div className="bb-card-body bb-card-body--flush">
-        <div className="bb-table-wrap">
-          <table className="bb-table">
-            <thead>
-              <tr>
-                <th scope="col" style={{ width: 36 }}>#</th>
-                {cols.map((c) => {
-                  if (!c.sortable) {
-                    return (
-                      <th key={c.key} scope="col" className={c.right ? 'num' : undefined}>{c.label}</th>
-                    )
-                  }
-                  const active = sortKey === c.key
-                  const ariaSort = active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'
-                  return (
-                    <th
-                      key={c.key}
-                      scope="col"
-                      className={`sortable${active ? ' sorted' : ''}${c.right ? ' num' : ''}`}
-                      aria-sort={ariaSort}
-                      tabIndex={0}
-                      role="button"
-                      aria-label={sortLabel ? `${sortLabel}: ${c.label}` : c.label}
-                      onClick={() => onSort(c.key)}
-                      onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); onSort(c.key) } }}
-                    >
-                      {c.label}
-                      <span className="sort-ind" aria-hidden="true">
-                        {active
-                          ? (sortDir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)
-                          : <ChevronsUpDown size={12} />}
-                      </span>
-                    </th>
-                  )
-                })}
-              </tr>
-            </thead>
-            <tbody>
-              {sortedRows.length === 0 ? (
-                <tr>
-                  <td colSpan={cols.length + 1} className="text-center bb-muted" style={{ fontSize: 14 }}>{noDataLabel}</td>
-                </tr>
-              ) : sortedRows.map((row, idx) => (
-                <tr key={row.id ?? idx}>
-                  <td className="bb-muted">{idx + 1}</td>
-                  {cols.map((c) => (
-                    <td key={c.key} className={c.right ? 'num' : undefined}>
-                      {c.render ? c.render(row) : row[c.key]}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {sortedRows.length === 0 ? (
+          <StatePanel tone="neutral" title={noDataLabel} />
+        ) : (
+          <AdminTable
+            columns={columns}
+            rows={indexedRows}
+            sortKey={sortKey}
+            sortDir={sortDir}
+            onSortChange={(key, dir) => { setSortKey(key); setSortDir(dir) }}
+          />
+        )}
       </div>
     </div>
   )
@@ -498,7 +459,7 @@ export function ReportsScreen() {
 
           {/* Revenue trend chart */}
           <div className="bb-card mb-4">
-            <div className="bb-card-header"><h2>{t('reports.chartDailyRevenue')}</h2></div>
+            <div className="bb-card-header"><h3>{t('reports.chartDailyRevenue')}</h3></div>
             <div className="bb-card-body">
               {state.data.dailyRevenue?.length > 1 ? (
                 <ResponsiveContainer width="100%" height={240}>
@@ -548,7 +509,7 @@ export function ReportsScreen() {
           {/* Top products bar chart */}
           {state.data.topProducts?.length > 0 && (
             <div className="bb-card mb-4">
-              <div className="bb-card-header"><h2>{t('reports.chartTopProducts')}</h2></div>
+              <div className="bb-card-header"><h3>{t('reports.chartTopProducts')}</h3></div>
               <div className="bb-card-body">
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart

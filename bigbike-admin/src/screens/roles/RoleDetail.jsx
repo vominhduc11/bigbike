@@ -1,4 +1,4 @@
-import { Shield, Pencil, Check, AlertTriangle, Info, Trash2 } from 'lucide-react'
+import { Shield, Pencil, Check, AlertTriangle, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
@@ -82,10 +82,9 @@ export function RoleDetail({
 
       {/* View-only note */}
       {!canUpdate && !isSuperAdmin && (
-        <div className="flex items-center gap-2 px-3.5 py-2.5 mb-4 rounded-xs bg-surface-muted border border-border text-sm text-muted-foreground">
-          <Info size={14} className="shrink-0" aria-hidden />
+        <Alert tone="info" size="sm" className="mb-4">
           {t('roles.noEditPermission')}
-        </div>
+        </Alert>
       )}
 
       {/* Super admin — business-friendly explanation */}
