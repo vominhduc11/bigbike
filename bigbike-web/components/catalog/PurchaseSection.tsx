@@ -14,7 +14,6 @@ import { useLocalizedField, LHtml } from "@/components/i18n/LocalizedContent";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { MobileStickyPurchaseBar } from "@/components/catalog/MobileStickyPurchaseBar";
 import { openWriteReviewDialog } from "@/components/catalog/writeReviewBus";
-import { Badge } from "@/components/ui/badge";
 import { VariantPicker } from "./purchase/VariantPicker";
 import { QuantityStepper } from "./purchase/QuantityStepper";
 import { CommitmentsList } from "./purchase/CommitmentsList";
@@ -264,9 +263,19 @@ export function PurchaseSection({
                 {showOld ? <del className="font-body text-body text-muted-foreground">{formatVndNumber(retail)} ₫</del> : null}
               </p>
             </div>
-            <Badge variant={isOutOfStock ? "stock-out" : "stock-in"} className="min-h-11 px-8">
-              {isOutOfStock ? tb("stockOut") : tb("stockIn")}
-            </Badge>
+            <div className="status">
+              <p
+                className={[
+                  "stock relative m-0 h-[42px] w-full max-w-[190px] border-0 bg-transparent px-8 text-center font-cta text-button font-semibold uppercase leading-none text-white",
+                  "after:absolute after:inset-0 after:z-0 after:h-[42px] after:w-full after:[transform:skewX(-20deg)] after:transition-colors after:duration-normal",
+                  isOutOfStock ? "out-of-stock after:bg-brand" : "in-stock after:bg-foreground",
+                ].join(" ")}
+              >
+                <span className="relative z-[2] block leading-[42px]">
+                  {isOutOfStock ? tb("stockOut") : tb("stockIn")}
+                </span>
+              </p>
+            </div>
           </div>
           <RatingBlock
             hasReviews={hasReviews}

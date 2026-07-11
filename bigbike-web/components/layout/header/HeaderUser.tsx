@@ -4,7 +4,7 @@ import { LogOut, UserCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import type { Locale } from "@/i18n/locale";
@@ -19,12 +19,47 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
   const auth = useAuth();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isAuthed = auth.status === "authenticated";
   const displayName = isAuthed ? auth.profile.displayName ?? "" : "";
+
+  function clearCloseTimer() {
+    if (!closeTimerRef.current) return;
+    clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = null;
+  }
+
+  function openMenu() {
+    clearCloseTimer();
+    setMenuOpen(true);
+  }
+
+  function closeMenu() {
+    clearCloseTimer();
+    setMenuOpen(false);
+  }
+
+  function scheduleCloseMenu() {
+    clearCloseTimer();
+    closeTimerRef.current = setTimeout(() => {
+      setMenuOpen(false);
+      closeTimerRef.current = null;
+    }, 120);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+      }
+    };
+  }, []);
 
   async function handleLogout() {
     if (loggingOut) return;
     setLoggingOut(true);
+    closeMenu();
     await performLogout();
     setLoggingOut(false);
     router.push("/");
@@ -59,29 +94,54 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
   }
 
   return (
-    <div className="group relative h-full">
+    <div
+      className="relative h-full"
+      onMouseEnter={openMenu}
+      onMouseLeave={scheduleCloseMenu}
+      onFocus={openMenu}
+      onBlur={(event) => {
+        const nextTarget = event.relatedTarget;
+        if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) {
+          scheduleCloseMenu();
+        }
+      }}
+    >
       <Button
         type="button"
         variant="ghost"
         size="icon"
         aria-label={t("account")}
+        aria-expanded={menuOpen}
+        aria-haspopup="menu"
+        onClick={openMenu}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            closeMenu();
+          }
+        }}
         className={cn(iconBtn, "h-[80px]! min-h-[80px]! px-[20px]! hover:not-disabled:scale-100")}
       >
         <UserCircle size={18} strokeWidth={1.75} aria-hidden />
       </Button>
-      <div className="invisible absolute right-[-50px] top-[80px] w-[275px] translate-y-[10px] bg-white p-[30px] opacity-0 shadow-[0_0_6px_rgba(0,0,0,0.64)] transition-[opacity,transform,visibility] duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+      <div
+        role="menu"
+        className={cn(
+          "pointer-events-none invisible absolute right-[-50px] top-[80px] z-[var(--bb-z-dropdown)] w-[275px] bg-white p-[30px] opacity-0 shadow-[0_0_6px_rgba(0,0,0,0.64)] transition-[opacity,visibility] duration-300",
+          menuOpen && "pointer-events-auto visible opacity-100",
+        )}
+      >
         <span className="absolute right-[60px] top-[-18px] h-0 w-0 border-x-[18px] border-b-[18px] border-x-transparent border-b-white" aria-hidden />
         <div className="flex flex-col gap-5">
           <Button asChild variant="primary" size="auth">
-            <Link href={isAuthed ? toAccountPath(locale) : toRegisterPath(locale)}>
+            <Link href={isAuthed ? toAccountPath(locale) : toRegisterPath(locale)} role="menuitem" onClick={closeMenu}>
               {isAuthed ? t("account") : t("register")}
             </Link>
           </Button>
           {isAuthed ? (
-            <Button type="button" variant="dark" size="auth" onClick={() => void handleLogout()} disabled={loggingOut}>{t("logout")}</Button>
+            <Button type="button" role="menuitem" variant="dark" size="auth" onClick={() => void handleLogout()} disabled={loggingOut}>{t("logout")}</Button>
           ) : (
             <Button asChild variant="dark" size="auth">
-              <Link href={toLoginPath(undefined, locale)}>{t("login")}</Link>
+              <Link href={toLoginPath(undefined, locale)} role="menuitem" onClick={closeMenu}>{t("login")}</Link>
             </Button>
           )}
         </div>

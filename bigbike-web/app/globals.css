@@ -278,6 +278,18 @@
   animation-name: bb-sheet-out-bottom;
 }
 
+[data-bb-sheet-content][data-header-mobile-menu][data-state="open"][data-side="right"] {
+  animation-name: bb-mobile-menu-in-right;
+  animation-duration: 520ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-bb-sheet-content][data-header-mobile-menu][data-state="closed"][data-side="right"] {
+  animation-name: bb-mobile-menu-out-right;
+  animation-duration: 260ms;
+  animation-timing-function: var(--bb-ease-standard);
+}
+
 @keyframes bb-sheet-overlay-in {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -328,10 +340,40 @@
   to { transform: translate3d(0, 100%, 0); }
 }
 
+@keyframes bb-mobile-menu-in-right {
+  from { opacity: 0.96; transform: translate3d(100%, 0, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes bb-mobile-menu-out-right {
+  from { opacity: 1; transform: translate3d(0, 0, 0); }
+  to { opacity: 0.96; transform: translate3d(100%, 0, 0); }
+}
+
+@keyframes bb-mobile-menu-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes bb-mobile-menu-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   [data-bb-sheet-overlay],
   [data-bb-sheet-content] {
     animation-duration: 1ms;
+  }
+
+  [data-bb-sheet-content][data-header-mobile-menu][data-state="open"] {
+    animation-name: bb-mobile-menu-fade-in !important;
+    animation-duration: var(--bb-duration-fast) !important;
+  }
+
+  [data-bb-sheet-content][data-header-mobile-menu][data-state="closed"] {
+    animation-name: bb-mobile-menu-fade-out !important;
+    animation-duration: var(--bb-duration-fast) !important;
   }
 }
 
@@ -1937,6 +1979,25 @@ html { scrollbar-gutter: stable; }
    bị quy tắc unlayered này đè (xem memory wp_css_overrides_tailwind_layer). */
 .bb-pdp-anchor-nav { scrollbar-width: none; }
 .bb-pdp-anchor-nav::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+/* Mobile header menu scrolls normally, but hides its scrollbar so expanding
+   submenu rows do not shift the drawer content horizontally. */
+[data-header-mobile-menu] {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+[data-header-mobile-menu]::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* Header panels lock page scroll manually. Keep the stable gutter on <html>,
+   but do not let <body> reserve a second gutter while overflow is hidden. */
+html[data-bb-header-panel] body {
+  scrollbar-gutter: auto !important;
+}
 
 /* Radix Dialog/Sheet uses react-remove-scroll, which compensates for the
    scrollbar by adding margin-right to body. The root already reserves that

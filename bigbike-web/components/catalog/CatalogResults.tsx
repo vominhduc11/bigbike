@@ -45,8 +45,8 @@ export function CatalogResults({
     <div className="min-w-0">
       <div className="pb-10">
         <div className="sticky top-[var(--bb-header-height)] z-20 bg-background py-4 md:static md:top-auto">
-          <div className="grid grid-cols-2 items-center md:flex md:justify-between md:gap-6">
-            <div className="order-3 col-span-2 mt-4 font-semibold md:order-1 md:mt-0">
+          <div className="-mx-4 grid grid-cols-2 items-center sm:-mx-6 md:mx-0 md:flex md:justify-between md:gap-6">
+            <div className="order-3 col-span-2 mt-4 px-4 font-semibold sm:px-6 md:order-1 md:mt-0 md:px-0">
               {pagination?.totalItems != null ? t("productCountLabel", { count: pagination.totalItems }) : null}
             </div>
             <div className="order-2 md:order-2">

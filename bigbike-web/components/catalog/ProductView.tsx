@@ -109,16 +109,18 @@ function MobileTrustLine({ product }: { product: Product }) {
   const locale = useLocale();
   const enTrustHtml = useLocalizedField<string>("trustBadges");
   const trustBadgesResolvedHtml = locale === "en" ? enTrustHtml ?? "" : product.trustBadges ?? "";
+  const hasTrustBadges = trustBadgesResolvedHtml.trim().length > 0;
 
-  if (trustBadgesResolvedHtml.trim()) {
-    return (
-      <div
-        className="md:hidden max-md:mt-4 max-md:mb-4 mb-11 bb-trust-badges-html"
-        dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(trustBadgesResolvedHtml, { allowInlineStyles: true }) }}
-      />
-    );
-  }
-  return null;
+  return (
+    <div className="pt-4 md:hidden" aria-hidden={hasTrustBadges ? undefined : true}>
+      {hasTrustBadges ? (
+        <div
+          className="mb-4 bb-trust-badges-html"
+          dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(trustBadgesResolvedHtml, { allowInlineStyles: true }) }}
+        />
+      ) : null}
+    </div>
+  );
 }
 
 export function ProductView({ product, settings, previewMode = false }: ProductViewProps) {

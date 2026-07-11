@@ -161,11 +161,14 @@ function ChatOverlay({
   useEffect(() => {
     const prevBody = document.body.style.overflow;
     const prevHtml = document.documentElement.style.overflow;
+    const prevBodyScrollbarGutter = document.body.style.scrollbarGutter;
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
+    document.body.style.scrollbarGutter = "auto";
     return () => {
       document.body.style.overflow = prevBody;
       document.documentElement.style.overflow = prevHtml;
+      document.body.style.scrollbarGutter = prevBodyScrollbarGutter;
     };
   }, []);
 

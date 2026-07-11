@@ -197,8 +197,19 @@ function MobileMenuList({
               </Button>
             ) : null}
             {hasChildren ? (
-              <div data-header-submenu hidden={!open}>
-                <MobileMenuList nodes={node.children} locale={locale} expanded={expanded} toggleNode={toggleNode} onNavigate={onNavigate} depth={depth + 1} />
+              <div
+                data-header-submenu
+                data-state={open ? "open" : "closed"}
+                aria-hidden={!open}
+                inert={!open}
+                className={cn(
+                  "grid overflow-hidden transition-[grid-template-rows,opacity] duration-[var(--bb-duration-slow)] ease-[var(--bb-ease-standard)]",
+                  open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+                )}
+              >
+                <div className="min-h-0 overflow-hidden">
+                  <MobileMenuList nodes={node.children} locale={locale} expanded={expanded} toggleNode={toggleNode} onNavigate={onNavigate} depth={depth + 1} />
+                </div>
               </div>
             ) : null}
           </li>
