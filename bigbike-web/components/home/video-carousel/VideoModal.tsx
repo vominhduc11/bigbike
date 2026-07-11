@@ -251,7 +251,7 @@ export function VideoModal({
         </div>
         {title && (
           <div className="px-4 py-3">
-            <p className="m-0 font-body text-body font-semibold text-white">{title}</p>
+            <p className="m-0 font-body text-a4-content font-semibold text-white">{title}</p>
           </div>
         )}
       </div>

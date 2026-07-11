@@ -44,10 +44,10 @@ function ServiceTile({
       )}
     >
       <img src={image} alt={title} className="mb-6 block h-auto max-w-full" />
-      <h3 className="mb-4 font-cta text-ui-16 font-bold uppercase leading-snug">
+      <h3 className="mb-4 font-cta text-a4-content font-bold uppercase leading-snug">
         {title}
       </h3>
-      <p className="m-0 text-ui-16 leading-relaxed">{body}</p>
+      <p className="m-0 text-a4-content leading-relaxed">{body}</p>
     </div>
   );
 }
@@ -65,7 +65,7 @@ function ContactItem({
     <div className="flex items-start gap-4 md:px-5">
       <span className="mt-0.5 shrink-0 text-brand">{icon}</span>
       <div className="min-w-0">
-        <div className="mb-2 text-ui-16 font-bold text-foreground">{label}</div>
+        <div className="mb-2 text-a4-content font-bold text-foreground">{label}</div>
         {children}
       </div>
     </div>
@@ -96,17 +96,17 @@ export function AboutPageContent({
     <div className="mb-20 text-foreground">
       <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
         <div className="md:col-span-4">
-          <h2 className="m-0 font-cta text-4xl font-medium uppercase leading-tight max-md:text-2xl">
+          <h2 className="m-0 font-cta text-a1-title font-medium uppercase leading-tight">
             {t("kicker")}
           </h2>
-          <p className="m-0 mt-4 font-cta text-xl uppercase leading-snug text-foreground">
+          <p className="m-0 mt-4 font-cta text-a3-section uppercase leading-snug text-foreground">
             {t("tagline")}
           </p>
         </div>
 
         <div className="md:col-span-5">
           {intro.map((paragraph, index) => (
-            <p key={index} className="mb-5 text-ui-16 leading-relaxed text-muted-foreground last:mb-0">
+            <p key={index} className="mb-5 text-a4-content leading-relaxed text-muted-foreground last:mb-0">
               {paragraph}
             </p>
           ))}
@@ -132,10 +132,10 @@ export function AboutPageContent({
 
       <div className="mt-20 grid grid-cols-1 gap-8 md:grid-cols-3">
         <div className="max-w-sm">
-          <h2 className="mb-5 font-cta text-xl font-medium uppercase leading-snug">
+          <h2 className="mb-5 font-cta text-a3-section font-medium uppercase leading-snug">
             {t("qualityHeading")}
           </h2>
-          <p className="m-0 text-ui-16 leading-relaxed text-muted-foreground">{t("qualityBody")}</p>
+          <p className="m-0 text-a4-content leading-relaxed text-muted-foreground">{t("qualityBody")}</p>
         </div>
         <div className="flex flex-col gap-8">
           {services.slice(0, 2).map((tile, index) => <ServiceTile key={index} {...tile} />)}
@@ -146,26 +146,26 @@ export function AboutPageContent({
       </div>
 
       <div className="mt-20">
-        <h2 className="mb-4 font-cta text-xl font-medium uppercase leading-snug">{t("connectHeading")}</h2>
-        <p className="m-0 mt-3 text-ui-16 leading-relaxed text-muted-foreground">{t("connect1")}</p>
-        <p className="m-0 mt-2 text-ui-16 leading-relaxed text-muted-foreground">{t("connect2")}</p>
+        <h2 className="mb-4 font-cta text-a3-section font-medium uppercase leading-snug">{t("connectHeading")}</h2>
+        <p className="m-0 mt-3 text-a4-content leading-relaxed text-muted-foreground">{t("connect1")}</p>
+        <p className="m-0 mt-2 text-a4-content leading-relaxed text-muted-foreground">{t("connect2")}</p>
 
         <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3 md:divide-x md:divide-border">
           {contact.address ? (
             <ContactItem icon={<Store size={28} strokeWidth={1.5} aria-hidden="true" />} label={t("storeLabel")}>
-              <p className="m-0 text-ui-16 leading-relaxed text-foreground">{contact.address}</p>
+              <p className="m-0 text-a4-content leading-relaxed text-foreground">{contact.address}</p>
             </ContactItem>
           ) : null}
 
           {contact.hotline || contact.hotline2 ? (
             <ContactItem icon={<Phone size={28} strokeWidth={1.5} aria-hidden="true" />} label={t("hotlineLabel")}>
               {contact.hotline ? (
-                <p className="m-0 text-ui-16 leading-relaxed">
+                <p className="m-0 text-a4-content leading-relaxed">
                   <a href={telHref(contact.hotline)} className="text-foreground hover:text-brand">{contact.hotline}</a>
                 </p>
               ) : null}
               {contact.hotline2 ? (
-                <p className="m-0 mt-1 text-ui-16 leading-relaxed">
+                <p className="m-0 mt-1 text-a4-content leading-relaxed">
                   <a href={telHref(contact.hotline2)} className="text-foreground hover:text-brand">{contact.hotline2}</a>
                 </p>
               ) : null}
@@ -174,7 +174,7 @@ export function AboutPageContent({
 
           {contact.facebookUrl ? (
             <ContactItem icon={<Share2 size={28} strokeWidth={1.5} aria-hidden="true" />} label={t("facebookLabel")}>
-              <p className="m-0 text-ui-16 leading-relaxed">
+              <p className="m-0 text-a4-content leading-relaxed">
                 <a href={contact.facebookUrl} target="_blank" rel="noopener noreferrer" className="text-foreground hover:text-brand">
                   {facebookHandle}
                 </a>

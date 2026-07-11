@@ -49,8 +49,8 @@ export function CommitmentsList({ commitments }: { commitments: ProductCommitmen
               return <Icon className="size-6 shrink-0 text-brand" strokeWidth={1.75} aria-hidden="true" />;
             })()}
             <div className="min-w-0">
-              <strong className="block font-body text-base font-semibold leading-snug text-foreground">{c.title}</strong>
-              {c.subtitle ? <span className="mt-1 block text-sm leading-snug text-muted-foreground">{c.subtitle}</span> : null}
+              <strong className="block font-body text-a4-content font-semibold leading-snug text-foreground">{c.title}</strong>
+              {c.subtitle ? <span className="mt-1 block text-a5-meta leading-snug text-muted-foreground">{c.subtitle}</span> : null}
             </div>
           </li>
         ) : null,

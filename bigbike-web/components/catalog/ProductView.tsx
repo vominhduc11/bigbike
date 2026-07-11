@@ -296,7 +296,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
                 // Câu dẫn nối — biến 2 phần thành MỘT mạch: khách vừa đọc nhược điểm/giá → mời xem lựa
                 // chọn khác NGAY trong cùng khối (giữ ở lại site). Thay tiêu đề lớn "Sản phẩm tương tự"
                 // (vốn đọc thành chủ đề tách biệt). Khi KHÔNG có ưu/nhược điểm thì dùng tiêu đề thường.
-                <p className="!mb-0 flex items-start gap-2 text-18 max-md:text-ui-16 font-medium text-foreground">
+                <p className="!mb-0 flex items-start gap-2 text-a4-content font-medium text-foreground">
                   <span aria-hidden className="font-bold text-brand">→</span>
                   <Tr ns="Product" k="relatedBridge" />
                 </p>
@@ -400,7 +400,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
           không ảnh hưởng; đặt đầu khối cho dễ thấy. */}
       <ReadingProgressBar />
       <div className="mx-auto w-full max-w-[1200px] px-4">
-        <nav className="hidden py-8 text-ui-14 text-muted-foreground md:block" aria-label="Breadcrumb">
+        <nav className="hidden py-8 text-a5-meta text-muted-foreground md:block" aria-label="Breadcrumb">
           <ol className="m-0 flex list-none flex-wrap items-center gap-1 p-0">
             <li>
               <Link href="/" className="font-semibold hover:text-brand">
@@ -461,7 +461,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
             sau Specs Dashboard, trước "Tính năng chi tiết". Tự ẩn khi rỗng, không gate visibility. */}
         {quickAnswer ? (
           <section className="my-10">
-            <blockquote className="border-l-4 border-brand bg-muted px-5 py-4 text-18 leading-relaxed text-foreground">
+            <blockquote className="border-l-4 border-brand bg-muted px-5 py-4 text-a4-content leading-relaxed text-foreground">
               <LText field="quickAnswerSummary">{quickAnswer}</LText>
             </blockquote>
           </section>

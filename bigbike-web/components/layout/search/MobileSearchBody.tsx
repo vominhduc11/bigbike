@@ -47,7 +47,7 @@ export function MobileSearchBody({
             <p className="m-0">{t("recentLabel")}</p>
             <button
               type="button"
-              className="cursor-pointer border-0 bg-transparent px-0 py-1 font-body text-ui-13 text-brand-on-dark"
+              className="cursor-pointer border-0 bg-transparent px-0 py-1 font-body text-b4-action text-brand-on-dark"
               onClick={clearAll}
             >
               {t("recentClear")}
@@ -113,8 +113,8 @@ export function MobileSearchBody({
               className={mGridCard}
               onClick={handleClose}
             >
-              <span className="font-cta text-ui-13 font-semibold uppercase">{cat.name}</span>
-              <small className="font-cta text-ui-10 tracking-normal text-muted-foreground">BIGBIKE</small>
+              <span className="font-cta text-a5-meta font-semibold uppercase">{cat.name}</span>
+              <small className="font-cta text-b5-label tracking-normal text-muted-foreground">BIGBIKE</small>
             </Link>
           ))}
         </div>

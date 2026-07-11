@@ -30,7 +30,7 @@ export function CheckoutAddressFields({
   const t = useTranslations("Checkout");
   const reqMark = <span className="text-brand">*</span>;
   const fieldClass = "flex flex-col gap-1.5";
-  const labelClass = "font-body text-caption font-bold text-foreground";
+  const labelClass = "font-body text-a5-meta font-bold text-foreground";
 
   return (
     <>
@@ -96,7 +96,7 @@ export function CheckoutAddressFields({
           {...register("addressLine1")}
         />
         {idPrefix === "billing" && (
-          <p className="m-0 text-caption text-muted-foreground">{t("addressExampleHint")}</p>
+          <p className="m-0 text-a5-meta text-muted-foreground">{t("addressExampleHint")}</p>
         )}
         <FieldError message={errors.addressLine1?.message} />
       </div>

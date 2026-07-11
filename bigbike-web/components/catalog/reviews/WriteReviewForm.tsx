@@ -152,13 +152,13 @@ export function WriteReviewForm({
   return (
     <div className={cn(isDialog ? "px-5 pb-5 pt-4" : "border border-border p-6")}>
       {!isDialog && (
-        <h3 className="m-0 mb-5 font-body text-ui-20 max-md:text-ui-18 font-semibold uppercase tracking-wide text-[var(--bb-text-primary)]">
+        <h3 className="m-0 mb-5 font-body text-a3-section font-semibold uppercase tracking-wide text-[var(--bb-text-primary)]">
           {t("formTitle")}
         </h3>
       )}
 
       {done ? (
-        <p className="m-0 border border-border bg-muted px-4 py-3 text-ui-14 max-md:text-ui-12 text-[var(--bb-text-primary)]">
+        <p className="m-0 border border-border bg-muted px-4 py-3 text-a5-meta text-[var(--bb-text-primary)]">
           {t("thanks")}
         </p>
       ) : (
@@ -176,7 +176,7 @@ export function WriteReviewForm({
           />
 
           <div className="flex flex-col gap-1.5">
-            <Label className="text-ui-14 max-md:text-ui-12 font-semibold text-[var(--bb-text-primary)]">
+            <Label className="text-a5-meta font-semibold text-[var(--bb-text-primary)]">
               {t("formStars")} <span className="text-brand">*</span>
             </Label>
             <StarRatingInput value={rating} onChange={setRating} />
@@ -185,7 +185,7 @@ export function WriteReviewForm({
           <div className="flex flex-col gap-1.5">
             <Label
               htmlFor="review-author"
-              className="text-ui-14 max-md:text-ui-12 font-semibold text-[var(--bb-text-primary)]"
+              className="text-a5-meta font-semibold text-[var(--bb-text-primary)]"
             >
               {t("formName")} <span className="text-brand">*</span>
             </Label>
@@ -204,7 +204,7 @@ export function WriteReviewForm({
           <div className="flex flex-col gap-1.5">
             <Label
               htmlFor="review-email"
-              className="text-ui-14 max-md:text-ui-12 font-semibold text-[var(--bb-text-primary)]"
+              className="text-a5-meta font-semibold text-[var(--bb-text-primary)]"
             >
               {t("formEmail")}
             </Label>
@@ -220,7 +220,7 @@ export function WriteReviewForm({
           <div className="flex flex-col gap-1.5">
             <Label
               htmlFor="review-comment"
-              className="text-ui-14 max-md:text-ui-12 font-semibold text-[var(--bb-text-primary)]"
+              className="text-a5-meta font-semibold text-[var(--bb-text-primary)]"
             >
               {t("formComment")}
             </Label>
@@ -236,10 +236,10 @@ export function WriteReviewForm({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label className="text-ui-14 max-md:text-ui-12 font-semibold text-[var(--bb-text-primary)]">
+            <Label className="text-a5-meta font-semibold text-[var(--bb-text-primary)]">
               {t("formPhotos")}
             </Label>
-            <p className="m-0 text-ui-14 max-md:text-ui-12 text-muted-foreground">{t("formPhotosHint")}</p>
+            <p className="m-0 text-a5-meta text-muted-foreground">{t("formPhotosHint")}</p>
 
             {photos.length > 0 && (
               <ul className="mt-1 flex flex-wrap gap-2 p-0 m-0 list-none">
@@ -255,7 +255,7 @@ export function WriteReviewForm({
                       )}
                     />
                     {photo.status === "uploading" && (
-                      <span className="absolute inset-0 flex items-center justify-center bg-background/50 text-ui-14 max-md:text-ui-12 text-muted-foreground">
+                      <span className="absolute inset-0 flex items-center justify-center bg-background/50 text-a5-meta text-muted-foreground">
                         …
                       </span>
                     )}
@@ -263,7 +263,7 @@ export function WriteReviewForm({
                       type="button"
                       onClick={() => removePhoto(photo.id)}
                       aria-label={t("removePhoto")}
-                      className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center bg-[var(--bb-text-primary)] text-ui-11 leading-none text-white outline-none focus-visible:outline-2 focus-visible:outline-ring"
+                      className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center bg-[var(--bb-text-primary)] text-b5-label leading-none text-white outline-none focus-visible:outline-2 focus-visible:outline-ring"
                     >
                       ×
                     </button>
@@ -294,10 +294,10 @@ export function WriteReviewForm({
                 {t("addPhoto")}
               </Button>
             )}
-            {photoError && <p className="m-0 text-ui-14 max-md:text-ui-12 text-brand">{photoError}</p>}
+            {photoError && <p className="m-0 text-a5-meta text-brand">{photoError}</p>}
           </div>
 
-          {error && <p className="m-0 text-ui-14 max-md:text-ui-12 text-brand">{error}</p>}
+          {error && <p className="m-0 text-a5-meta text-brand">{error}</p>}
 
           <Button type="submit" disabled={submitting || uploading} className="w-full">
             {submitting ? t("submitting") : t("submit")}

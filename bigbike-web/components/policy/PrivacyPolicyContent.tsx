@@ -115,7 +115,7 @@ const PROTECT: Bi[] = [
 
 function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <h2 className="mb-4 font-cta text-ui-22 font-bold uppercase leading-title tracking-wide text-brand">
+    <h2 className="mb-4 font-cta text-a2-page font-bold uppercase leading-title tracking-wide text-brand">
       {children}
     </h2>
   );
@@ -135,9 +135,9 @@ export function PrivacyPolicyContent({ locale }: { locale: string }) {
   const lang: Lang = locale === "en" ? "en" : "vi";
 
   return (
-    <div className="max-w-none text-ui-16 max-md:text-ui-14 leading-body text-foreground">
+    <div className="max-w-none text-a4-content leading-body text-foreground">
       {/* Intro */}
-      <p className="mb-6 text-ui-18 max-md:text-ui-16 leading-body">{t(lang, COPY.intro)}</p>
+      <p className="mb-6 text-a4-content leading-body">{t(lang, COPY.intro)}</p>
 
       {/* 1. Thông tin thu thập */}
       <SectionTitle>{t(lang, COPY.s1Title)}</SectionTitle>
@@ -154,13 +154,13 @@ export function PrivacyPolicyContent({ locale }: { locale: string }) {
         {[...ANALYTICS, t(lang, ANALYTICS_GENERIC)].map((label, i) => (
           <span
             key={i}
-            className="inline-block border border-border bg-secondary px-3 py-1 text-ui-14 font-bold text-foreground"
+            className="inline-block border border-border bg-secondary px-3 py-1 text-a5-meta font-bold text-foreground"
           >
             {label}
           </span>
         ))}
       </div>
-      <p className="mb-6 text-ui-14 leading-snug text-muted-foreground">{t(lang, COPY.s3Note)}</p>
+      <p className="mb-6 text-a5-meta leading-snug text-muted-foreground">{t(lang, COPY.s3Note)}</p>
 
       {/* 4. Chia sẻ bên thứ ba */}
       <SectionTitle>{t(lang, COPY.s4Title)}</SectionTitle>
@@ -196,7 +196,7 @@ export function PrivacyPolicyContent({ locale }: { locale: string }) {
       <SectionTitle>{t(lang, COPY.s6Title)}</SectionTitle>
       <Bullets lang={lang} items={PROTECT} />
 
-      <p className="text-ui-14 leading-snug text-muted-foreground">{t(lang, COPY.footerNote)}</p>
+      <p className="text-a5-meta leading-snug text-muted-foreground">{t(lang, COPY.footerNote)}</p>
     </div>
   );
 }

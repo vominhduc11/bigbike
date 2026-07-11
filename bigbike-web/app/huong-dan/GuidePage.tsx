@@ -79,7 +79,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
       >
         <StaticSidebarLayout sidebarItems={sidebarItems} sidebarEmptyLabel={t("emptyMenu")}>
           {entries.length === 0 ? (
-            <p className="text-ui-16 max-md:text-ui-14 text-muted-foreground">{t("emptyMenu")}</p>
+            <p className="text-a4-content text-muted-foreground">{t("emptyMenu")}</p>
           ) : (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:gap-6">
               {entries.map((entry) => (
@@ -89,11 +89,11 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
                   className="group block border border-border bg-white p-6 no-underline transition-colors hover:border-foreground"
                 >
                   <EntryIcon icon={entry.icon} label={entry.title} />
-                  <h2 className="m-0 mb-2 text-h4 font-semibold uppercase tracking-wide text-foreground">
+                  <h2 className="m-0 mb-2 text-a4-content font-semibold uppercase tracking-wide text-foreground">
                     {entry.title}
                   </h2>
                   {entry.description ? (
-                    <p className="m-0 text-ui-16 max-md:text-ui-14 leading-relaxed text-muted-foreground">{entry.description}</p>
+                    <p className="m-0 text-a4-content leading-relaxed text-muted-foreground">{entry.description}</p>
                   ) : null}
                 </Link>
               ))}

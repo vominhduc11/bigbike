@@ -58,15 +58,15 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
           />
         </div>
         <div className="relative pt-[41px] px-5 pb-[30px] flex flex-col gap-2 flex-1 bg-card max-md:pt-[34px] max-md:px-[14px] max-md:pb-[18px]">
-          <span className="absolute -top-[21px] left-0 z-[2] inline-flex items-center h-[42px] min-w-[168px] pl-[22px] pr-[28px] bg-brand text-white font-cta text-ui-14 font-semibold tracking-normal uppercase whitespace-nowrap rounded-none [clip-path:polygon(0_0,100%_0,calc(100%-18px)_100%,0_100%)]">
+          <span className="absolute -top-[21px] left-0 z-[2] inline-flex items-center h-[42px] min-w-[168px] pl-[22px] pr-[28px] bg-brand text-white font-cta text-b5-label font-semibold tracking-normal uppercase whitespace-nowrap rounded-none [clip-path:polygon(0_0,100%_0,calc(100%-18px)_100%,0_100%)]">
             {publishedDate}
           </span>
           <div className="flex flex-col gap-2 flex-1">
             <p className={categoryBadge}>{category}</p>
-            <h3 className="font-body text-h4 font-semibold text-foreground normal-case leading-[1.2] m-0 [transition:color_0.14s] line-clamp-2 group-hover:text-brand">
+            <h3 className="font-body text-a4-content font-semibold text-foreground normal-case leading-[1.2] m-0 [transition:color_0.14s] line-clamp-2 group-hover:text-brand">
               {title}
             </h3>
-            <p className="text-ui-16 max-md:text-ui-14 text-muted-foreground leading-[1.55] m-0 min-h-[104px] line-clamp-4 max-md:min-h-0 max-md:line-clamp-3">
+            <p className="text-a4-content text-muted-foreground leading-[1.55] m-0 min-h-[104px] line-clamp-4 max-md:min-h-0 max-md:line-clamp-3">
               {excerpt}
             </p>
           </div>
@@ -96,7 +96,7 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
       <div
         className="relative pt-[41px] px-[34px] pb-[30px] flex flex-col gap-2 flex-1 bg-card justify-center"
       >
-        <span className="absolute -top-[21px] left-0 z-[2] inline-flex items-center h-[42px] min-w-[168px] pl-[22px] pr-[28px] bg-brand text-white font-body text-ui-14 font-bold tracking-wide uppercase whitespace-nowrap [clip-path:polygon(0_0,100%_0,calc(100%-18px)_100%,0_100%)]">
+        <span className="absolute -top-[21px] left-0 z-[2] inline-flex items-center h-[42px] min-w-[168px] pl-[22px] pr-[28px] bg-brand text-white font-body text-b5-label font-bold tracking-wide uppercase whitespace-nowrap [clip-path:polygon(0_0,100%_0,calc(100%-18px)_100%,0_100%)]">
           {publishedDate}
         </span>
         <div className="flex flex-col gap-2 flex-1">
@@ -104,16 +104,16 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
             {category}
           </p>
           <h3
-            className="font-body text-h4 font-semibold text-foreground normal-case leading-[1.2] m-0 transition-colors duration-300 group-hover:text-brand line-clamp-3"
+            className="font-body text-a4-content font-semibold text-foreground normal-case leading-[1.2] m-0 transition-colors duration-300 group-hover:text-brand line-clamp-3"
           >
             {title}
           </h3>
           <p
-            className="text-ui-16 max-md:text-ui-14 text-muted-foreground leading-body m-0"
+            className="text-a4-content text-muted-foreground leading-body m-0"
           >
             {excerpt}
           </p>
-          <span className="mt-auto pt-[6px] text-muted-foreground text-ui-14 max-md:text-ui-12 font-bold tracking-display uppercase transition-colors duration-300 group-hover:text-brand">
+          <span className="mt-auto pt-[6px] text-muted-foreground text-b4-action font-bold tracking-display uppercase transition-colors duration-300 group-hover:text-brand">
             {t("articleReadMore")}
           </span>
         </div>

@@ -23,7 +23,7 @@ export async function BrandListDefault({
   const t = await getTranslations("Catalog");
 
   if (brands.length === 0) {
-    return <p className="border border-border bg-card p-4 text-ui-16 text-muted-foreground">{t("brandListEmpty")}</p>;
+    return <p className="border border-border bg-card p-4 text-a4-content text-muted-foreground">{t("brandListEmpty")}</p>;
   }
 
   return (
@@ -49,10 +49,10 @@ export async function BrandListDefault({
                       className="max-h-16 w-auto max-w-full object-contain transition-transform duration-200 group-hover:scale-105"
                     />
                   ) : (
-                    <span className="text-2xl font-bold tracking-wide text-muted-foreground">{initials}</span>
+                    <span className="text-a2-page font-bold tracking-wide text-muted-foreground">{initials}</span>
                   )}
                 </span>
-                <span className="text-center text-ui-14 font-semibold uppercase tracking-wide text-foreground">
+                <span className="text-center text-a5-meta font-semibold uppercase tracking-wide text-foreground">
                   {name}
                 </span>
               </Link>

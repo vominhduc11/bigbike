@@ -57,7 +57,7 @@ export function OrderConfirmView({ orderNumber, orderKey, order, settingsRecord,
           {/* CTA Buttons */}
           <div className="space-y-3">
             <ZaloSupportButton zalo={zalo} />
-            <Link href="/" className="block w-full border-2 border-foreground bg-card px-6 py-3.5 text-center font-cta text-ui-18 font-bold uppercase text-foreground hover:bg-secondary">
+            <Link href="/" className="block w-full border-2 border-foreground bg-card px-6 py-3.5 text-center font-cta text-b4-action font-bold uppercase text-foreground hover:bg-secondary">
               ← {t("continueShopping")}
             </Link>
           </div>
@@ -68,7 +68,7 @@ export function OrderConfirmView({ orderNumber, orderKey, order, settingsRecord,
         <>
           <ThankYouHero message={t("receivedNotice")} />
           {isLoading ? (
-            <p className="mx-auto mt-3 max-w-[420px] text-center text-ui-18 max-md:text-ui-16 leading-6 text-muted-foreground">
+            <p className="mx-auto mt-3 max-w-[420px] text-center text-a4-content leading-6 text-muted-foreground">
               {tCommon("loading")}
             </p>
           ) : (
@@ -90,7 +90,7 @@ function HotlineBar({ hotline, zalo }: { hotline: string; zalo: ZaloContact | nu
   if (!hotline && !zalo) return null;
 
   return (
-    <div className="mb-4 flex flex-wrap items-center justify-center gap-3 bg-surface-dark px-5 py-4 text-ui-14 text-white">
+    <div className="mb-4 flex flex-wrap items-center justify-center gap-3 bg-surface-dark px-5 py-4 text-a5-meta text-white">
       {hotline && (
         <>
           <span>{t("hotlineUrgentPrompt")}</span>
@@ -122,7 +122,7 @@ function ZaloSupportButton({ zalo }: { zalo: ZaloContact | null }) {
       href={zaloHref(zalo.hrefValue)}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex w-full items-center justify-center gap-2 bg-blue px-6 py-4 font-cta text-xl font-bold uppercase text-white hover:bg-blue/90"
+      className="flex w-full items-center justify-center gap-2 bg-blue px-6 py-4 font-cta text-a3-section font-bold uppercase text-white hover:bg-blue/90"
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="22" height="22" className="mr-2">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -136,7 +136,7 @@ function StoreFooterNote({ address }: { address: string }) {
   const t = useTranslations("OrderConfirm");
 
   return (
-    <p className="text-ui-13 text-muted-foreground text-center mt-6 leading-relaxed">
+    <p className="text-a5-meta text-muted-foreground text-center mt-6 leading-relaxed">
       {address ? (
         <>
           BigBike.vn · {address}
@@ -200,8 +200,8 @@ function SuccessBanner({ orderNumber }: { orderNumber: string }) {
       <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand">
         <svg viewBox="0 0 24 24" className="h-8 w-8 fill-white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
       </div>
-      <h1 className="mb-2 font-cta text-3xl font-bold uppercase tracking-wide text-white max-sm:text-2xl">{t("successTitle")}</h1>
-      <p className="m-0 text-ui-16 text-white/70">{t("orderCode")} <strong className="font-cta text-xl text-brand">#{orderNumber}</strong></p>
+      <h1 className="mb-2 font-cta text-a1-title font-bold uppercase tracking-wide text-white">{t("successTitle")}</h1>
+      <p className="m-0 text-a4-content text-white/70">{t("orderCode")} <strong className="font-cta text-a3-section text-brand">#{orderNumber}</strong></p>
     </div>
   );
 }
@@ -212,24 +212,24 @@ function NextSteps({ phone }: { phone: string }) {
   const richBold = { b: (chunks: React.ReactNode) => <strong>{chunks}</strong> };
   return (
     <div className="mb-4 border border-border border-l-4 border-l-brand bg-secondary p-5 text-left">
-      <p className="mb-3 font-cta text-ui-18 font-bold uppercase tracking-wide text-brand">{t("nextStepsTitle")}</p>
+      <p className="mb-3 font-cta text-a4-content font-bold uppercase tracking-wide text-brand">{t("nextStepsTitle")}</p>
       <div className="mb-3.5 flex items-start gap-3.5">
-        <div className="flex h-8 w-8 min-w-8 items-center justify-center bg-brand font-cta text-ui-18 font-bold text-white">1</div>
-        <div className="pt-1 text-ui-16 leading-relaxed text-foreground [&>strong]:mb-0.5 [&>strong]:block">
+        <div className="flex h-8 w-8 min-w-8 items-center justify-center bg-brand font-cta text-a4-content font-bold text-white">1</div>
+        <div className="pt-1 text-a4-content leading-relaxed text-foreground [&>strong]:mb-0.5 [&>strong]:block">
           <strong>{t("step1Title")}</strong>
           {t.rich("step1Body", { ...richBold, phone })}
         </div>
       </div>
       <div className="mb-3.5 flex items-start gap-3.5">
-        <div className="flex h-8 w-8 min-w-8 items-center justify-center bg-brand font-cta text-ui-18 font-bold text-white">2</div>
-        <div className="pt-1 text-ui-16 leading-relaxed text-foreground [&>strong]:mb-0.5 [&>strong]:block">
+        <div className="flex h-8 w-8 min-w-8 items-center justify-center bg-brand font-cta text-a4-content font-bold text-white">2</div>
+        <div className="pt-1 text-a4-content leading-relaxed text-foreground [&>strong]:mb-0.5 [&>strong]:block">
           <strong>{t("step2Title")}</strong>
           {t("step2Body")}
         </div>
       </div>
       <div className="flex items-start gap-3.5">
-        <div className="flex h-8 w-8 min-w-8 items-center justify-center bg-brand font-cta text-ui-18 font-bold text-white">3</div>
-        <div className="pt-1 text-ui-16 leading-relaxed text-foreground [&>strong]:mb-0.5 [&>strong]:block">
+        <div className="flex h-8 w-8 min-w-8 items-center justify-center bg-brand font-cta text-a4-content font-bold text-white">3</div>
+        <div className="pt-1 text-a4-content leading-relaxed text-foreground [&>strong]:mb-0.5 [&>strong]:block">
           <strong>{t("step3Title")}</strong>
           {t("step3Body")}
         </div>
@@ -248,7 +248,7 @@ function ThankYouHero({ message }: { message: string }) {
           <path d="M20 6 9 17l-5-5" />
         </svg>
       </span>
-      <p className="m-0 font-cta text-ui-24 font-semibold uppercase text-foreground max-md:text-ui-22">
+      <p className="m-0 font-cta text-a2-page font-semibold uppercase text-foreground">
         {message}
       </p>
     </div>
@@ -262,11 +262,11 @@ function OrderLoadFallback({ orderNumber }: { orderNumber: string }) {
   const t = useTranslations("OrderConfirm");
   return (
     <div className="mx-auto max-w-[480px] text-center">
-      <p className="m-0 text-ui-14 max-md:text-ui-12 uppercase leading-6 text-muted-foreground">
+      <p className="m-0 text-a5-meta uppercase leading-6 text-muted-foreground">
         {t("orderCode")}{" "}
         <strong className="block normal-case text-foreground">{orderNumber}</strong>
       </p>
-      <p className="mx-auto mt-3 max-w-[420px] text-ui-18 max-md:text-ui-16 leading-6 text-muted-foreground">
+      <p className="mx-auto mt-3 max-w-[420px] text-a4-content leading-6 text-muted-foreground">
         {t("loadFailed")}
       </p>
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
@@ -284,7 +284,7 @@ function OrderDetails({ order }: { order: OrderDetail }) {
 
   return (
     <div className="border border-border bg-card p-6 max-sm:p-4">
-      <p className="mb-5 border-b-2 border-brand pb-3 font-cta text-xl font-bold uppercase tracking-wide text-foreground">{t("orderDetailsTitle")}</p>
+      <p className="mb-5 border-b-2 border-brand pb-3 font-cta text-a3-section font-bold uppercase tracking-wide text-foreground">{t("orderDetailsTitle")}</p>
 
       <div className="space-y-4">
         {order.lineItems.map((item) => (
@@ -304,44 +304,44 @@ function OrderDetails({ order }: { order: OrderDetail }) {
               )}
             </div>
             <div className="min-w-0 flex-1 text-left">
-              <p className="m-0 mb-1 line-clamp-2 text-ui-14 font-medium leading-snug text-foreground">{item.productName}</p>
-              <p className="m-0 text-ui-12 text-muted-foreground">
+              <p className="m-0 mb-1 line-clamp-2 text-a5-meta font-medium leading-snug text-foreground">{item.productName}</p>
+              <p className="m-0 text-b5-label text-muted-foreground">
                 {item.variantName ? `${item.variantName} · ` : ""}{t("qtyAbbrev")}: {item.quantity}
               </p>
-              <p className="m-0 text-ui-14 font-bold text-foreground">{formatVnd(item.lineTotal)}</p>
+              <p className="m-0 text-a5-meta font-bold text-foreground">{formatVnd(item.lineTotal)}</p>
             </div>
           </div>
         ))}
       </div>
 
       <div className="mt-4 text-left">
-        <div className="mb-2.5 flex items-center justify-between text-ui-14 text-foreground">
+        <div className="mb-2.5 flex items-center justify-between text-a5-meta text-foreground">
           <span>{t("subtotalLabel")}</span>
           <span>{formatVnd(order.subtotalAmount)}</span>
         </div>
 
         {order.discountAmount > 0 && (
-          <div className="mb-2.5 flex items-center justify-between text-ui-14 text-foreground">
+          <div className="mb-2.5 flex items-center justify-between text-a5-meta text-foreground">
             <span>{t("discountLabel")}</span>
             <span className="text-brand font-semibold">-{formatVnd(order.discountAmount)}</span>
           </div>
         )}
 
-        <div className="mb-2.5 flex items-center justify-between text-ui-14 text-foreground">
+        <div className="mb-2.5 flex items-center justify-between text-a5-meta text-foreground">
           <span>{t("shippingLabel")}</span>
           <span className="text-state-success-text font-bold uppercase">{t("shippingFree")}</span>
         </div>
 
         {paymentMethod && (
-          <div className="mb-2.5 flex items-center justify-between text-ui-14 text-foreground">
+          <div className="mb-2.5 flex items-center justify-between text-a5-meta text-foreground">
             <span>{t("paymentMethodLabel")}</span>
             <span>{legacyPaymentMethodLabel(paymentMethod, t)}</span>
           </div>
         )}
 
-        <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-ui-14 font-bold text-foreground">
+        <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-a5-meta font-bold text-foreground">
           <span>{t("totalLabel")}</span>
-          <span className="font-cta text-xl text-brand">{formatVnd(order.totalAmount)}</span>
+          <span className="font-cta text-a3-section text-brand">{formatVnd(order.totalAmount)}</span>
         </div>
       </div>
     </div>
@@ -363,7 +363,7 @@ function BankTransferInfo({ order, settings }: { order: OrderDetail; settings: M
   return (
     <section>
       <h2 className={cn(sectionHeading, "m-0 mb-4")}>{t("bankTitle")}</h2>
-      <div className="border border-border p-4 text-ui-18 max-md:text-ui-16 leading-7 text-foreground">
+      <div className="border border-border p-4 text-a4-content leading-7 text-foreground">
         {configured ? (
           <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
             <dt className="text-muted-foreground">{t("bankHolder")}</dt>
@@ -417,8 +417,8 @@ function CustomerDetails({ order }: { order: OrderDetail }) {
 
   return (
     <div className="border border-border bg-card p-6 max-sm:p-4">
-      <p className="mb-5 border-b-2 border-brand pb-3 font-cta text-xl font-bold uppercase tracking-wide text-foreground">{t("customerDetailsTitle")}</p>
-      <table className="w-full border-collapse text-left text-ui-16">
+      <p className="mb-5 border-b-2 border-brand pb-3 font-cta text-a3-section font-bold uppercase tracking-wide text-foreground">{t("customerDetailsTitle")}</p>
+      <table className="w-full border-collapse text-left text-a4-content">
         <tbody>
           <tr>
             <td className="w-32 border-b border-border py-2.5 pr-3 align-top text-muted-foreground">{t("recipientLabel")}</td>

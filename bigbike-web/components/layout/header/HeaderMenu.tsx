@@ -94,7 +94,7 @@ export function HeaderMenu({ initialNodes, variant, onNavigate }: HeaderMenuProp
                 target={node.openInNewTab ? "_blank" : undefined}
                 rel={node.openInNewTab ? "noopener" : undefined}
                 onClick={() => setSuppressedId(node.id)}
-                className="flex h-full items-center px-[30px] font-cta text-nav font-semibold uppercase text-white! no-underline! transition-colors hover:text-brand-on-dark! focus-visible:text-brand-on-dark!"
+                className="flex h-full items-center px-[30px] font-cta text-b4-action font-semibold uppercase text-white! no-underline! transition-colors hover:text-brand-on-dark! focus-visible:text-brand-on-dark!"
               >
                 {node.label}
               </Link>
@@ -128,7 +128,7 @@ function DesktopSubmenu({ nodes, locale, depth }: { nodes: HeaderNavNode[]; loca
               itemGroups[Math.min(depth, itemGroups.length - 1)],
             )}
           >
-            <Link href={href} className="flex items-center px-6 py-[14px] font-body text-caption font-semibold normal-case text-muted-foreground! no-underline! hover:text-brand-on-dark!">
+            <Link href={href} className="flex items-center px-6 py-[14px] font-body text-a5-meta font-semibold normal-case text-muted-foreground! no-underline! hover:text-brand-on-dark!">
               {node.iconUrl ? (
                 <span
                   className={`${submenuIcon} mr-2 align-middle`}
@@ -177,7 +177,7 @@ function MobileMenuList({
               className={cn(
                 "flex min-h-[52px] items-center pr-[70px] text-white! no-underline!",
                 mobileIndent[Math.min(depth, mobileIndent.length - 1)],
-                depth === 0 ? "py-[15px] font-cta text-body font-semibold uppercase" : "py-[12px] font-body text-caption",
+                depth === 0 ? "py-[15px] font-cta text-b4-action font-semibold uppercase" : "py-[12px] font-body text-a5-meta",
               )}
             >
               {node.label}

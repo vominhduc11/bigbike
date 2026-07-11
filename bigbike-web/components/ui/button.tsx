@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
   // Base: uppercase, system font (font-cta), radius 0, min 44px touch target
-  "inline-flex items-center justify-center gap-2 min-h-[44px] px-8 py-4 border border-transparent font-cta text-button font-semibold uppercase tracking-normal transition-[background-color,border-color,color,transform] duration-[var(--bb-duration-fast)] ease-[var(--bb-ease-standard)] cursor-pointer select-none outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-[3px] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-60 aria-disabled:pointer-events-none aria-disabled:cursor-not-allowed aria-disabled:opacity-60 hover:not-disabled:scale-[1.02]",
+  "inline-flex items-center justify-center gap-2 min-h-[44px] px-8 py-4 border border-transparent font-cta text-b4-action font-semibold uppercase tracking-normal transition-[background-color,border-color,color,transform] duration-[var(--bb-duration-fast)] ease-[var(--bb-ease-standard)] cursor-pointer select-none outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-[3px] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-60 aria-disabled:pointer-events-none aria-disabled:cursor-not-allowed aria-disabled:opacity-60 hover:not-disabled:scale-[1.02]",
   {
     variants: {
       variant: {
@@ -23,10 +23,10 @@ const buttonVariants = cva(
           "bg-destructive text-destructive-foreground border-destructive hover:opacity-90",
       },
       size: {
-        sm: "min-h-[36px] px-4 py-2 text-caption",
-        md: "min-h-[44px] px-8 py-4 text-button",
-        lg: "min-h-[52px] px-10 py-4 text-ui-18",
-        auth: "min-h-[52px] w-full py-0 text-caption hover:not-disabled:scale-100",
+        sm: "min-h-[36px] px-4 py-2 text-b4-action",
+        md: "min-h-[44px] px-8 py-4 text-b4-action",
+        lg: "min-h-[52px] px-10 py-4 text-b4-action",
+        auth: "min-h-[52px] w-full py-0 text-b4-action hover:not-disabled:scale-100",
         icon: "min-h-[44px] w-[44px] px-0 py-0",
       },
     },

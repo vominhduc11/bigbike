@@ -50,9 +50,9 @@ export function PaginationNav({ page, totalPages, baseHref = "", variant = "defa
     // Inline Tailwind port of the legacy .bb-archive-pagination rules. The unlayered
     // CSS set 20px/40px padding, beating the old (now-dropped) pb-40/pt-20 utilities,
     // so the effective rhythm is pt-5/pb-10. 1.5rem font + 1.2 line-height per WP parity.
-    const itemCls = "inline-block px-2 text-ui-24 font-semibold";
+    const itemCls = "inline-block px-2 text-a2-page font-semibold";
     const linkBase =
-      "inline-flex items-center justify-center px-2.5 py-2.5 text-ui-24 leading-[1.2] no-underline";
+      "inline-flex items-center justify-center px-2.5 py-2.5 text-a2-page leading-[1.2] no-underline";
     // WP-parity: căn trái trên mobile (WP `.woocommerce-pagination` mobile), phải ở desktop.
     return (
       <nav className="m-0 pb-10 pt-5 text-left md:text-right" aria-label={t("paginationAria")}>
@@ -119,7 +119,7 @@ export function PaginationNav({ page, totalPages, baseHref = "", variant = "defa
       <div className="flex items-center gap-1 flex-wrap">
         {pages.map((p, i) =>
           p === "..." ? (
-            <span key={`ellipsis-${i}`} className="inline-flex h-9 min-w-7 items-center justify-center text-caption text-muted-foreground">...</span>
+            <span key={`ellipsis-${i}`} className="inline-flex h-9 min-w-7 items-center justify-center text-a5-meta text-muted-foreground">...</span>
           ) : onPageChange ? (
             <button
               key={p}

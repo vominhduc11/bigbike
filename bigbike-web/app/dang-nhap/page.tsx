@@ -18,7 +18,7 @@ export default function LoginPage() {
   return (
     <AuthPageFrame>
       <AuthTitleBlock title={<Tr ns="Auth" k="tabLogin" />}>
-        <p className="m-0 text-ui-16 text-foreground">
+        <p className="m-0 text-a4-content text-foreground">
           <Tr ns="Auth" k="newMemberPrompt" />{" "}
           <Link href="/dang-ky/" className="font-semibold text-foreground underline">
             <Tr ns="Auth" k="here" />

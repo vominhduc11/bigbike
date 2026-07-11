@@ -77,7 +77,7 @@ export function ArticleListClient({
   return (
     <>
       {showCategoryIntro ? (
-        <div className="pb-15 text-ui-16 leading-relaxed text-foreground">
+        <div className="pb-15 text-a4-content leading-relaxed text-foreground">
           <p className="m-0 text-justify">{t("contentTop")}</p>
         </div>
       ) : null}
@@ -107,7 +107,7 @@ export function ArticleListClient({
               ))}
             </div>
           ) : articles.length === 0 ? (
-            <p className="border border-border bg-card p-4 text-ui-16 text-muted-foreground">{emptyNotice}</p>
+            <p className="border border-border bg-card p-4 text-a4-content text-muted-foreground">{emptyNotice}</p>
           ) : (
             <>
               <div className="relative">
@@ -141,7 +141,7 @@ export function ArticleListClient({
       </div>
 
       {showCategoryIntro ? (
-        <div className="pb-15 pt-25 text-ui-16 leading-relaxed text-foreground">
+        <div className="pb-15 pt-25 text-a4-content leading-relaxed text-foreground">
           <p className="m-0 text-justify">{t("contentBottom")}</p>
         </div>
       ) : null}

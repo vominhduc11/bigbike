@@ -11,7 +11,7 @@ import type { FeatureBlockT } from "./grouping";
 const PDP_RICH_HTML_OPTS = { allowInlineStyles: true, rewriteMediaUrls: true } as const;
 const PDP_RICH_CONTENT_CLASS = cn(
   richContentClassName,
-  "text-ui-18 leading-tight [&_p:last-child]:mb-0",
+  "text-a4-content leading-tight [&_p:last-child]:mb-0",
 );
 
 function youTubeId(url: string): string | null {
@@ -33,7 +33,7 @@ export function MediaBlock({ block }: { block: DescriptionBlock }) {
           className="w-full border border-border object-cover"
         />
         {block.caption ? (
-          <figcaption className="mt-2 text-ui-14 max-md:text-ui-12 italic text-muted-foreground">{block.caption}</figcaption>
+          <figcaption className="mt-2 text-a5-meta italic text-muted-foreground">{block.caption}</figcaption>
         ) : null}
       </figure>
     );
@@ -76,7 +76,7 @@ export function MediaBlock({ block }: { block: DescriptionBlock }) {
           )}
         </div>
         {block.caption ? (
-          <figcaption className="mt-2 text-ui-14 max-md:text-ui-12 italic text-muted-foreground">{block.caption}</figcaption>
+          <figcaption className="mt-2 text-a5-meta italic text-muted-foreground">{block.caption}</figcaption>
         ) : null}
       </figure>
     );
@@ -91,11 +91,11 @@ function TextBlock({ block }: { block: DescriptionBlock }) {
       if (!text) return null;
       const small = block.level === 3;
       return small ? (
-        <h3 className="font-heading text-ui-20 max-md:text-ui-18 font-bold uppercase leading-tight text-foreground">{text}</h3>
+        <h3 className="font-heading text-a3-section font-bold uppercase leading-tight text-foreground">{text}</h3>
       ) : (
         // Thanh nhấn đỏ DỌC bên trái, tự cao bằng cả khối tiêu đề (self-stretch) — cân đối với tiêu đề
         // dài nhiều dòng, không còn căn giữa lệch theo dòng đầu như trước.
-        <h2 className="flex gap-3 font-heading text-ui-20 max-md:text-ui-18 font-bold uppercase leading-tight text-foreground">
+        <h2 className="flex gap-3 font-heading text-a3-section font-bold uppercase leading-tight text-foreground">
           <span className="w-1 shrink-0 self-stretch bg-brand" aria-hidden />
           <span>{text}</span>
         </h2>
@@ -111,7 +111,7 @@ function TextBlock({ block }: { block: DescriptionBlock }) {
       if (items.length === 0) return null;
       if (block.style === "numbered") {
         return (
-          <ol className="flex list-none flex-col gap-2 text-ui-18 max-md:text-ui-16 leading-snug">
+          <ol className="flex list-none flex-col gap-2 text-a4-content leading-snug">
             {items.map((it, idx) => (
               <li key={idx} className="flex gap-2.5 text-foreground">
                 <span className="font-heading font-bold text-brand">{idx + 1}.</span>
@@ -122,7 +122,7 @@ function TextBlock({ block }: { block: DescriptionBlock }) {
         );
       }
       return (
-        <ul className="flex list-none flex-col gap-2 text-ui-18 max-md:text-ui-16 leading-snug">
+        <ul className="flex list-none flex-col gap-2 text-a4-content leading-snug">
           {items.map((it, idx) => (
             <li key={idx} className="flex gap-2.5 text-foreground">
               <Check className="mt-1 h-4 w-4 shrink-0 text-brand" aria-hidden />
@@ -171,14 +171,14 @@ export function FeatureBody({ block }: { block: FeatureBlockT }) {
         <div className="flex flex-col gap-1.5">
           {subheading ? (
             // Tiêu đề phụ (eyebrow) — nhãn nhỏ in hoa màu brand, phía trên tiêu đề chính.
-            // text-ui-14 = 14px CỐ ĐỊNH (thang PDP §nhỏ; không dùng text-caption rem vì gốc 14px → 12.25px).
-            <p className="!mb-0 font-heading text-ui-14 max-md:text-ui-12 font-bold uppercase tracking-display text-brand">
+            // text-a5-meta = 14px CỐ ĐỊNH (thang PDP §nhỏ; không dùng text-a5-meta rem vì gốc 14px → 12.25px).
+            <p className="!mb-0 font-heading text-a5-meta font-bold uppercase tracking-display text-brand">
               {subheading}
             </p>
           ) : null}
           {heading ? (
-            // text-ui-20 = 20px CỐ ĐỊNH — thang PDP §tiêu đề phụ (heading trong mô tả), trên nội dung 18px.
-            <h2 className="flex gap-3 font-heading text-ui-20 max-md:text-ui-18 font-bold uppercase leading-tight text-foreground">
+            // text-a3-section = 20px CỐ ĐỊNH — thang PDP §tiêu đề phụ (heading trong mô tả), trên nội dung 18px.
+            <h2 className="flex gap-3 font-heading text-a3-section font-bold uppercase leading-tight text-foreground">
               <span className="w-1 shrink-0 self-stretch bg-brand" aria-hidden />
               <span>{heading}</span>
             </h2>
@@ -188,7 +188,7 @@ export function FeatureBody({ block }: { block: FeatureBlockT }) {
       {html ? <div className={PDP_RICH_CONTENT_CLASS} dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html, PDP_RICH_HTML_OPTS) }} /> : null}
       {items.length > 0 ? (
         block.listStyle === "numbered" ? (
-          <ol className="flex list-none flex-col gap-2 text-ui-18 max-md:text-ui-16 leading-snug">
+          <ol className="flex list-none flex-col gap-2 text-a4-content leading-snug">
             {items.map((it, idx) => (
               <li key={idx} className="flex gap-2.5 text-foreground">
                 <span className="font-heading font-bold text-brand">{idx + 1}.</span>
@@ -197,7 +197,7 @@ export function FeatureBody({ block }: { block: FeatureBlockT }) {
             ))}
           </ol>
         ) : (
-          <ul className="flex list-none flex-col gap-2 text-ui-18 max-md:text-ui-16 leading-snug">
+          <ul className="flex list-none flex-col gap-2 text-a4-content leading-snug">
             {items.map((it, idx) => (
               <li key={idx} className="flex gap-2.5 text-foreground">
                 <Check className="mt-1 h-4 w-4 shrink-0 text-brand" aria-hidden />
@@ -216,7 +216,7 @@ function BlockTitle({ text }: { text?: string }) {
   const t = (text ?? "").trim();
   if (!t) return null;
   return (
-    <h2 className="flex gap-3 font-heading text-ui-20 max-md:text-ui-18 font-bold uppercase leading-tight text-foreground">
+    <h2 className="flex gap-3 font-heading text-a3-section font-bold uppercase leading-tight text-foreground">
       <span className="w-1 shrink-0 self-stretch bg-brand" aria-hidden />
       <span>{t}</span>
     </h2>

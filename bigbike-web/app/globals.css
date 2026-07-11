@@ -102,69 +102,18 @@
   --font-body: var(--bb-font-body);
   --font-cta: var(--bb-font-cta);
 
-  /* Font-size utilities for WP-parity exact sizes (text-9 … text-40).
-     Base scale (text-xs/sm/base/lg/xl/2xl/3xl) uses Tailwind defaults. */
-  --text-9: var(--bb-text-9);
-  --text-10: var(--bb-text-10);
-  --text-11: var(--bb-text-11);
-  --text-13: var(--bb-text-13);
-  --text-15: var(--bb-text-15);
-  --text-17: var(--bb-text-17);
-  --text-18: var(--bb-text-18);
-  --text-20: var(--bb-text-20);
-  --text-22: var(--bb-text-22);
-  --text-26: var(--bb-text-26);
-  --text-32: var(--bb-text-32);
-  --text-40: var(--bb-text-40);
-  --text-50: var(--bb-text-50);
-
-  /* Fixed-px UI text scale: text-ui-N = exactly N px. The "fixed" text group
-     (TYPOGRAPHY §10) — buttons, badges, prices, steppers, dense panel labels —
-     where size must NOT scale. Names are accurate px (unlike legacy --text-9/13/22
-     above, whose names drifted from values). Use instead of raw `text-[Npx]`. */
-  --text-ui-9: 9px;
-  --text-ui-10: 10px;
-  --text-ui-11: 11px;
-  --text-ui-12: 12px;
-  --text-ui-13: 13px;
-  --text-ui-14: 14px;
-  --text-ui-15: 15px;
-  --text-ui-16: 16px;
-  --text-ui-17: 17px;
-  --text-ui-18: 18px;
-  --text-ui-20: 20px;
-  --text-ui-21: 21px; /* WP PDP price/labels: 1.5rem on WP 14px base = 21px */
-  --text-ui-22: 22px;
-  --text-ui-24: 24px;
-  --text-ui-26: 26px;
-  --text-ui-30: 30px;
-  --text-ui-32: 32px; /* PDP scale §display: tên SP + giá + điểm đánh giá */
-  --text-ui-35: 35px;
-
-  /* Responsive heading tokens — scale theo breakpoint qua brand-tokens.css.
-     Dùng text-h1/h2/hero/section-title/news-title cho heading thay vì size cố định. */
-  --text-hero: var(--bb-text-hero);
-  /* H1/H2/H3 utilities → canonical fluid --fs-* (TYPOGRAPHY §0.1.A, §7.2).
-     Legacy --bb-text-h1/h2/h3 chỉ còn cho WP-parity raw-var, KHÔNG qua utility. */
-  --text-h1: var(--fs-h1);
-  --text-h2: var(--fs-h2);
-  --text-h3: var(--fs-h3);
-  --text-section-title: var(--bb-text-section-title);
-  --text-news-title: var(--bb-text-news-title);
-  --text-product-title: var(--bb-text-product-title);
-  --text-footer-slogan: var(--bb-text-footer-slogan);
-
-  /* Fluid type scale canonical — docs/TYPOGRAPHY.md. Tailwind utilities map tới
-     --fs-* clamp tokens. Dùng cho component mới / refactor: text-display, text-h4,
-     text-body, text-body-lg, text-button, text-caption, text-overline. */
-  --text-display-xl: var(--fs-display-xl);
-  --text-display: var(--fs-display);
-  --text-h4: var(--fs-h4);
-  --text-body-lg: var(--fs-body-lg);
-  --text-body: var(--fs-body);
-  --text-button: var(--fs-button);
-  --text-caption: var(--fs-caption);
-  --text-overline: var(--fs-overline);
+  /* Canonical 11-group typography. Each utility is responsive through its source
+     token, so call sites never add breakpoint-specific text-size classes. */
+  --text-b1-display: var(--bb-text-b1-display);
+  --text-b2-contact: var(--bb-text-b2-contact);
+  --text-b3-promo: var(--bb-text-b3-promo);
+  --text-b4-action: var(--bb-text-b4-action);
+  --text-b5-label: var(--bb-text-b5-label);
+  --text-a1-title: var(--bb-text-a1-title);
+  --text-a2-page: var(--bb-text-a2-page);
+  --text-a3-section: var(--bb-text-a3-section);
+  --text-a4-content: var(--bb-text-a4-content);
+  --text-a5-meta: var(--bb-text-a5-meta);
 
   /* Letter-spacing tối thiểu (TYPOGRAPHY §7.6): normal mặc định, wide cho uppercase
      nav/button/kicker, display cho eyebrow nổi bật. Override Tailwind built-in tracking-wide
@@ -395,8 +344,8 @@ body {
   background: var(--bb-bg-page);
   color: var(--bb-text-primary);
   font-family: var(--bb-font-body);
-  /* 16px cố định (WP-parity) — docs/TYPOGRAPHY.md. Sàn ≥16px → tránh iOS auto-zoom. */
-  font-size: var(--fs-body);
+  /* A4: 16px mobile / 18px desktop; mobile floor prevents iOS auto-zoom. */
+  font-size: var(--bb-text-a4-content);
   line-height: var(--bb-line-body);
   font-weight: var(--bb-font-weight-regular);
   /* Giữ chỗ thanh cuộn khi modal/dialog mở (overflow: hidden) để tránh layout shift. */
@@ -448,7 +397,7 @@ body {
 
 .bb-page h1 {
   font-family: var(--bb-font-body);
-  font-size: var(--fs-h1);
+  font-size: var(--bb-text-a1-title);
   letter-spacing: 0.01em;
   line-height: 1.08;
   margin: 0;
@@ -522,7 +471,7 @@ body {
   gap: var(--bb-space-3);
   color: var(--bb-text-primary);
   font-family: var(--bb-font-body);
-  font-size: var(--bb-text-base);
+  font-size: var(--bb-text-a4-content);
   line-height: var(--bb-line-body);
   min-width: 0;
   overflow-wrap: break-word;
@@ -552,15 +501,15 @@ body {
   overflow-wrap: break-word;
 }
 
-.bb-richtext h1 { font-size: var(--fs-h2); }
-.bb-richtext h2 { font-size: var(--fs-h3); }
-.bb-richtext h3 { font-size: var(--bb-text-h3); }
+.bb-richtext h1 { font-size: var(--bb-text-a1-title); }
+.bb-richtext h2 { font-size: var(--bb-text-a2-page); }
+.bb-richtext h3 { font-size: var(--bb-text-a3-section); }
 .bb-richtext h4,
 .bb-richtext h5,
 .bb-richtext h6 {
   font-family: var(--bb-font-cta);
   color: var(--bb-text-primary);
-  font-size: var(--bb-text-h3);
+  font-size: var(--bb-text-a4-content);
   font-weight: 600;
   line-height: 1.25;
   text-transform: uppercase;
@@ -650,10 +599,6 @@ body:has(.bb-product-page) .bb-main {
   .bb-page > [data-bb-rail] > header:first-child {
     padding: var(--bb-space-6);
   }
-
-  .bb-page h1 {
-    font-size: var(--fs-h1); /* WP page banner = 24px */
-  }
 }
 
 /* Auth page modifier — compact layout, elevated bg so white card stands out */
@@ -667,7 +612,7 @@ body:has(.bb-product-page) .bb-main {
   margin: 0 0 8px;
   color: var(--bb-text-primary);
   font-family: var(--bb-font-body);
-  font-size: var(--bb-text-32);
+  font-size: var(--bb-text-a2-page);
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: 0;
@@ -839,7 +784,6 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
     display: block;
     padding: 14px 24px;
     color: var(--bb-text-secondary);
-    font-size: 14px;
     font-weight: 600;
     text-transform: none;
     white-space: normal;
@@ -1350,12 +1294,12 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 
 .bb-seo-content h1,
 .bb-seo-content .bb-seo-content-body > h2:first-child {
-  font-size: var(--fs-h2);
+  font-size: var(--bb-text-a2-page);
   line-height: 48px;
 }
 
 .bb-seo-content h2 {
-  font-size: var(--fs-body-lg); /* 18px — WP .seo-block-content h2 span */
+  font-size: var(--bb-text-a4-content); /* 18px — WP .seo-block-content h2 span */
   line-height: 36px;
 }
 
@@ -1363,7 +1307,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 .bb-seo-content h4,
 .bb-seo-content h5,
 .bb-seo-content h6 {
-  font-size: var(--fs-body); /* 16px — WP .seo-block-content h3 */
+  font-size: var(--bb-text-a4-content); /* 16px — WP .seo-block-content h3 */
   line-height: 27px;
 }
 
@@ -1379,7 +1323,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 
 .bb-seo-content p {
   color: #000000;
-  font-size: var(--fs-body); /* 16px — WP .content-bottom.wyswyg p = 16px */
+  font-size: var(--bb-text-a4-content); /* 16px — WP .content-bottom.wyswyg p = 16px */
   line-height: 24px;
   margin: 0 0 14px;
   text-align: justify;
@@ -1393,7 +1337,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 
 .bb-seo-content ul {
   color: var(--bb-text-primary);
-  font-size: var(--fs-caption); /* 14px — WP .seo-block-content li */
+  font-size: var(--bb-text-a5-meta); /* 14px — WP .seo-block-content li */
   line-height: 24px;
   list-style: disc;
   margin: 0 0 14px;
@@ -1434,23 +1378,23 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 @keyframes bb-toast-in { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 
 /* -- Breadcrumb -------------------------------------------- */
-.bb-breadcrumb { max-width: var(--bb-container-wide); margin: 0 auto; padding: 16px 24px; font-size: var(--bb-text-base); letter-spacing: 0; text-transform: none; color: #717171; display: flex; flex-wrap: wrap; align-items: center; }
+.bb-breadcrumb { max-width: var(--bb-container-wide); margin: 0 auto; padding: 16px 24px; font-size: var(--bb-text-a5-meta); letter-spacing: 0; text-transform: none; color: #717171; display: flex; flex-wrap: wrap; align-items: center; }
 .bb-breadcrumb a { color: #717171; font-weight: 600; text-decoration: none; cursor: pointer; }
 .bb-breadcrumb a:hover { color: var(--bb-text-brand); }
 .bb-breadcrumb .sep { margin: 0 10px; color: var(--bb-text-brand); }
 
 /* -- Page head -------------------------------------------- */
 .bb-page-head { max-width: var(--bb-container-wide); margin: 32px auto 28px; padding: 0 24px; border-bottom: 1px solid var(--bb-border-subtle); padding-bottom: 22px; }
-.bb-page-head .kicker { font-size: var(--bb-text-sm); letter-spacing: 0.18em; text-transform: uppercase; color: var(--bb-text-brand); font-weight: 700; display: block; margin-bottom: 8px; }
-.bb-page-head h1 { font-family: var(--bb-font-body); text-transform: uppercase; font-size: var(--fs-h1); letter-spacing: 0.01em; line-height: 1.1; margin: 0; color: var(--bb-text-primary); overflow-wrap: anywhere; }
-.bb-page-head .sub { color: var(--bb-text-muted); font-size: var(--fs-caption); margin-top: 8px; }
+.bb-page-head .kicker { font-size: var(--bb-text-b5-label); letter-spacing: 0.18em; text-transform: uppercase; color: var(--bb-text-brand); font-weight: 700; display: block; margin-bottom: 8px; }
+.bb-page-head h1 { font-family: var(--bb-font-body); text-transform: uppercase; font-size: var(--bb-text-a1-title); letter-spacing: 0.01em; line-height: 1.1; margin: 0; color: var(--bb-text-primary); overflow-wrap: anywhere; }
+.bb-page-head .sub { color: var(--bb-text-muted); font-size: var(--bb-text-a5-meta); margin-top: 8px; }
 /* No horizontal emblem-clearance: .bb-page-head is only rendered by loading
    skeletons (no real page uses it — the real catalog/category/brand pages use
    PageHero, whose banner already covers the hanging logo). Keep it left-aligned
    so the skeleton matches the post-load layout. */
 
 /* -- Category Hero Banner — breadcrumb + title (dùng trong PageHero/Breadcrumb) -- */
-.bb-cat-hero-breadcrumb { display: flex; align-items: center; gap: 8px; font-size: var(--bb-text-sm); letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 14px; overflow: hidden; min-width: 0; }
+.bb-cat-hero-breadcrumb { display: flex; align-items: center; gap: 8px; font-size: var(--bb-text-a5-meta); letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 14px; overflow: hidden; min-width: 0; }
 .bb-cat-hero-breadcrumb a { color: rgba(255,255,255,0.5); text-decoration: none; transition: color 140ms; white-space: nowrap; flex-shrink: 0; }
 .bb-cat-hero-breadcrumb a:hover { color: var(--bb-brand-primary-on-dark); }
 .bb-cat-hero-breadcrumb span[aria-hidden] { color: var(--bb-brand-primary-on-dark); white-space: nowrap; flex-shrink: 0; }
@@ -1474,7 +1418,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   border-radius: 8px 8px 0 0;
 }
 .bb-ci-eyebrow {
-  font-size: 13px;
+  font-size: var(--bb-text-b5-label);
   color: var(--bb-text-muted);
   text-transform: uppercase;
   letter-spacing: .06em;
@@ -1482,7 +1426,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   display: block;
 }
 .bb-ci-h2 {
-  font-size: 20px;
+  font-size: var(--bb-text-a3-section);
   font-weight: bold;
   color: var(--bb-text-primary) !important;
   line-height: 1.3;
@@ -1490,7 +1434,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   font-family: var(--bb-font-body);
 }
 .bb-ci-body {
-  font-size: 15px;
+  font-size: var(--bb-text-a4-content);
   color: var(--bb-text-secondary);
   line-height: 1.6;
   margin-bottom: 0;
@@ -1502,7 +1446,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   margin-top: 10px;
 }
 .bb-ci-pill {
-  font-size: 13px;
+  font-size: var(--bb-text-b5-label);
   padding: 4px 12px;
   border-radius: 4px;
   background: var(--bb-bg-surface);
@@ -1519,7 +1463,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 }
 .bb-ci-b-head {
   padding: 10px 16px;
-  font-size: 13px;
+  font-size: var(--bb-text-b5-label);
   font-weight: bold;
   text-transform: uppercase;
   letter-spacing: .06em;
@@ -1546,7 +1490,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   border-radius: 50%;
   background: var(--bb-bg-surface-raised);
   border: 1px solid var(--bb-border-subtle);
-  font-size: 11px;
+  font-size: var(--bb-text-b5-label);
   font-weight: bold;
   display: inline-flex;
   align-items: center;
@@ -1556,13 +1500,13 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   margin-top: 1px;
 }
 .bb-ci-qt {
-  font-size: 15px;
+  font-size: var(--bb-text-a4-content);
   font-weight: bold;
   color: var(--bb-text-primary) !important;
   line-height: 1.35;
 }
 .bb-ci-at {
-  font-size: 14px;
+  font-size: var(--bb-text-a4-content);
   color: var(--bb-text-secondary);
   line-height: 1.55;
   padding-left: 26px;
@@ -1583,7 +1527,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   gap: 10px;
 }
 .bb-ci-ct {
-  font-size: 15px;
+  font-size: var(--bb-text-a5-meta);
   color: var(--bb-text-muted);
 }
 .bb-ci-btn {
@@ -1596,7 +1540,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   border: none;
   border-radius: 6px;
   padding: 12px 24px;
-  font-size: 16px;
+  font-size: var(--bb-text-b4-action);
   font-weight: bold;
   width: 100%;
   text-decoration: none;
@@ -1620,14 +1564,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 
 /* Desktop: CTA nằm ngang */
 @media (min-width: 600px) {
-  .bb-ci-h2 {
-    font-size: 24px;
-  }
-  .bb-ci-qt {
-    font-size: 16px;
-  }
   .bb-ci-at {
-    font-size: 15px;
     padding-left: 28px;
   }
   .bb-ci-c {
@@ -1723,7 +1660,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   margin: 0;
   color: #000;
   font-family: var(--bb-font-body);
-  font-size: var(--fs-h1); /* WP page banner = 24px */
+  font-size: var(--bb-text-a1-title); /* WP page banner = 24px */
   line-height: 1.2;
   font-weight: 600;
   text-transform: uppercase; /* match loaded H1 + TYPOGRAPHY §5 (h1 = UPPER); was none-on-desktop, causing loaded≠loading */
@@ -1807,7 +1744,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   background: var(--bb-action-primary);
   color: #fff;
   font-family: var(--bb-font-cta);
-  font-size: var(--bb-text-sm);
+  font-size: var(--bb-text-b4-action);
   font-weight: 600;
   line-height: 52px;
   text-decoration: none;
@@ -1833,20 +1770,20 @@ body:has(.bb-account-layout) .bb-breadcrumb {
 .bb-order-card { background: var(--bb-bg-surface); border: 1px solid var(--bb-border-subtle); border-radius: var(--bb-radius-none); margin-bottom: 14px; overflow: hidden; }
 .bb-order-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background: var(--bb-bg-surface-raised); border-bottom: 1px solid var(--bb-border-subtle); gap: 14px; flex-wrap: wrap; }
 .bb-order-head .meta { display: flex; gap: 22px; }
-.bb-order-head .meta div { font-size: var(--bb-text-sm); color: var(--bb-text-muted); letter-spacing: 0.1em; text-transform: uppercase; }
-.bb-order-head .meta b { display: block; font-size: var(--bb-text-sm); color: var(--bb-text-primary); font-weight: 700; margin-top: 3px; letter-spacing: 0.04em; text-transform: none; font-family: monospace; }
+.bb-order-head .meta div { font-size: var(--bb-text-b5-label); color: var(--bb-text-muted); letter-spacing: 0.1em; text-transform: uppercase; }
+.bb-order-head .meta b { display: block; font-size: var(--bb-text-a5-meta); color: var(--bb-text-primary); font-weight: 700; margin-top: 3px; letter-spacing: 0.04em; text-transform: none; font-family: monospace; }
 .bb-order-body { display: flex; padding: 16px 20px; gap: 18px; align-items: center; }
 /* Clickable return cards */
 /* Return detail overlay */
 
 /* -- Order success page ------------------------------------ */
 .bb-success { max-width: 720px; margin: 60px auto; padding: 0 24px; text-align: center; }
-.bb-success .kicker { font-size: var(--bb-text-sm); letter-spacing: 0.2em; text-transform: uppercase; color: var(--bb-text-brand); font-weight: 700; margin-bottom: 10px; }
-.bb-success h1 { font-family: var(--bb-font-body); font-size: var(--bb-text-40); letter-spacing: 0.01em; text-transform: uppercase; margin: 0 0 10px 0; }
+.bb-success .kicker { font-size: var(--bb-text-b5-label); letter-spacing: 0.2em; text-transform: uppercase; color: var(--bb-text-brand); font-weight: 700; margin-bottom: 10px; }
+.bb-success h1 { font-family: var(--bb-font-body); font-size: var(--bb-text-a2-page); letter-spacing: 0.01em; text-transform: uppercase; margin: 0 0 10px 0; }
 .bb-success p { color: var(--bb-text-muted); margin: 0 0 28px 0; }
 .bb-success .order-card { background: var(--bb-bg-surface); border: 1px solid var(--bb-border-subtle); border-radius: var(--bb-radius-none); padding: 22px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; text-align: left; margin-bottom: 22px; }
-.bb-success .order-card .label { font-size: var(--bb-text-sm); letter-spacing: 0.14em; text-transform: uppercase; color: var(--bb-text-muted); margin-bottom: 6px; }
-.bb-success .order-card b { display: block; font-family: var(--bb-font-body); font-size: var(--bb-text-base); color: var(--bb-text-primary); letter-spacing: 0.02em; }
+.bb-success .order-card .label { font-size: var(--bb-text-b5-label); letter-spacing: 0.14em; text-transform: uppercase; color: var(--bb-text-muted); margin-bottom: 6px; }
+.bb-success .order-card b { display: block; font-family: var(--bb-font-body); font-size: var(--bb-text-a4-content); color: var(--bb-text-primary); letter-spacing: 0.02em; }
 .bb-success .order-card b.red { color: var(--bb-text-brand); }
 /* WP `.woocommerce-order-overview` parity - flexbox list, separator vertical bars */
 .bb-success .cta-row { display: flex; gap: 10px; justify-content: center; }
@@ -1862,7 +1799,7 @@ body:has(.bb-account-layout) .bb-breadcrumb {
 /* -- Shared utility: pagination controls ------------------ */
 /* WP parity: .pagination ul li = 1.5rem@14 = 21px → 1.3125rem@16 */
 .bb-pagination-page {
-  font-size: 1.3125rem;
+  font-size: var(--bb-text-a3-section);
   font-weight: 600;
   color: var(--bb-text-primary);
   padding: 5px 10px;
@@ -1887,7 +1824,7 @@ body:has(.bb-account-layout) .bb-breadcrumb {
    grey band (legacy WP product page parity). */
 
 /* -- bb-* auth & content page supplements ---------------- */
-.bb-auth-footer { text-align: center; margin-top: var(--bb-space-4); color: var(--bb-text-secondary); font-size: var(--bb-text-sm); }
+.bb-auth-footer { text-align: center; margin-top: var(--bb-space-4); color: var(--bb-text-secondary); font-size: var(--bb-text-a5-meta); }
 
 .bb-page--auth .bb-auth-wrap .form-control:focus,
 .bb-page--auth .bb-auth-wrap .form-control:focus-visible,
@@ -1909,7 +1846,7 @@ body:has(.bb-account-layout) .bb-breadcrumb {
   box-shadow: var(--bb-focus-ring) !important;
 }
 
-.bb-sidebar-heading { margin-bottom: var(--bb-space-4); font-size: var(--bb-text-lg); }
+.bb-sidebar-heading { margin-bottom: var(--bb-space-4); font-size: var(--bb-text-a3-section); }
 
 
 
@@ -1929,7 +1866,7 @@ body:has(.bb-account-layout) .bb-breadcrumb {
 /* -- Checkout ---------------------------------------------- */
 
 /* -- Product / cart thumbnail text ------------------------ */
-.bb-thumb-initials { font-family: var(--bb-font-body); font-size: var(--bb-text-sm); color: var(--bb-text-muted); text-transform: uppercase; }
+.bb-thumb-initials { font-family: var(--bb-font-body); font-size: var(--bb-text-a5-meta); color: var(--bb-text-muted); text-transform: uppercase; }
 
 /* -- Order confirmation ------------------------------------ */
 
@@ -2248,34 +2185,27 @@ img, picture, video, svg, canvas { max-width: 100%; }
 .bb-blog-listing-parity .no-results {
   padding-bottom: 60px;
 }
-@media (max-width: 767px) {
-}
 
 /* Tiêu đề mục trong Tài khoản (.account-title h3) — theme đặt ~14px (quá nhỏ cho vai
    trò tiêu đề). Nâng về §tiêu đề khối 24px (mobile 22px). Scope `.account-dashboard`
    đủ đặc hiệu để thắng rule theme. */
 .account-dashboard .account-title h3 {
-  font-size: 24px;
+  font-size: var(--bb-text-a2-page);
   line-height: 1.2;
-}
-@media (max-width: 767px) {
-  .account-dashboard .account-title h3 {
-    font-size: 22px;
-  }
 }
 
 .bb-blog-listing-parity .no-results .page-title {
   margin: 0 0 16px;
   color: var(--bb-text-primary);
   font-family: var(--bb-font-body);
-  font-size: var(--fs-h2);
+  font-size: var(--bb-text-a2-page);
   font-weight: 600;
   line-height: 1.3;
 }
 
 .bb-blog-listing-parity .no-results p {
   margin: 0 0 1rem;
-  font-size: var(--fs-body);
+  font-size: var(--bb-text-a4-content);
   line-height: 1.6;
 }
 
@@ -2467,13 +2397,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
 html,
 body {
   background: var(--bb-bg-page);
-}
-
-body {
-  color: var(--bb-text-primary);
-  font-family: var(--bb-font-body);
-  font-size: var(--bb-text-base);
-  line-height: var(--bb-line-body);
 }
 
 a {
@@ -2715,15 +2638,7 @@ input[type="checkbox"] {
    52×52px red square fixed bottom-right
    ========================================================= */
 
-/* =========================================================
-   RESPONSIVE TYPOGRAPHY — fluid body text scale
-   Áp dụng cho các .bb-* class dạng raw px cố định.
-   Canonical breakpoints: 576px (tablet) / 992px (desktop).
-   ========================================================= */
-
-/* Gỡ override @992px (font-size:15px) cho .bb-page-head .sub — base đã là
-   var(--fs-caption) fluid; cap 15px chặn chữ scale lên ở 3xl/4xl
-   (TYPOGRAPHY §6 "một token = một clamp()"). */
+/* Typography is responsive only through the ten A/B tokens at 768px. */
 
 /* Homepage product carousel: legacy WP parity for page-home.php #main-product-slide. */
 
@@ -2765,7 +2680,7 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
 
 .bb-article-detail-parity #table-of-content .toc-title {
   color: #000000;
-  font-size: 0.875rem;
+  font-size: var(--bb-text-a5-meta);
   font-weight: 600;
   line-height: 1.5625rem;
 }
@@ -2809,7 +2724,7 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
 .bb-article-detail-parity .bb-article-detail-page .bb-article-wyswyg {
   color: #000000;
   font-family: var(--bb-font-body);
-  font-size: 0.875rem;
+  font-size: var(--bb-text-a5-meta);
   line-height: 1.5625rem;
 }
 
@@ -2878,7 +2793,7 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
   background: #f5f5f5;
   color: #6f6f6f;
   font-family: var(--bb-font-body);
-  font-size: var(--bb-text-sm);
+  font-size: var(--bb-text-a5-meta);
 }
 
 @media (max-width: 767px) {
@@ -2892,7 +2807,7 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
   min-width: 0;
   color: #000;
   font-family: var(--bb-font-body);
-  font-size: var(--fs-body);
+  font-size: var(--bb-text-a4-content);
   line-height: 1.5;
   overflow-wrap: anywhere;
   word-break: normal;
@@ -2929,12 +2844,12 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
   font-family: var(--bb-font-cta);
 }
 
-.bb-article-detail-page .bb-article-wyswyg h1 { font-size: 2.5rem; }
-.bb-article-detail-page .bb-article-wyswyg h2 { font-size: 2rem; }
-.bb-article-detail-page .bb-article-wyswyg h3 { font-size: 1.75rem; }
-.bb-article-detail-page .bb-article-wyswyg h4 { font-size: 1.5rem; }
-.bb-article-detail-page .bb-article-wyswyg h5 { font-size: 1.25rem; }
-.bb-article-detail-page .bb-article-wyswyg h6 { font-size: 1rem; }
+.bb-article-detail-page .bb-article-wyswyg h1 { font-size: var(--bb-text-a1-title); }
+.bb-article-detail-page .bb-article-wyswyg h2 { font-size: var(--bb-text-a2-page); }
+.bb-article-detail-page .bb-article-wyswyg h3 { font-size: var(--bb-text-a3-section); }
+.bb-article-detail-page .bb-article-wyswyg h4 { font-size: var(--bb-text-a4-content); }
+.bb-article-detail-page .bb-article-wyswyg h5 { font-size: var(--bb-text-a4-content); }
+.bb-article-detail-page .bb-article-wyswyg h6 { font-size: var(--bb-text-a4-content); }
 
 .bb-article-detail-page .bb-article-wyswyg a {
   color: #000;
@@ -2963,7 +2878,7 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
 .bb-article-detail-page .bb-article-wyswyg figcaption {
   margin: 0.5rem 0 1rem;
   color: #6f6f6f;
-  font-size: var(--fs-caption);
+  font-size: var(--bb-text-a5-meta);
   text-align: center;
 }
 
@@ -3039,8 +2954,6 @@ body:has(.bb-home) {
   70% { opacity: 0; }
   100% { transform: scale(2.2); opacity: 0; }
 }
-@media (min-width: 768px) {
-}
 
 /* Khung chờ (loading skeleton) render `.bb-breadcrumb` ngay đầu trang trên nền
    phẳng (không hero) → cũng bị logo che trong lúc tải, gây "nhảy" khi vào trang
@@ -3052,21 +2965,9 @@ body:has(.bb-home) {
     margin-top: 60px;
   }
 }
-@media (max-width: 767px) {
-  /* Mobile: thu hẹp khoảng hở dưới tiêu đề section (PHỤ KIỆN BÁN KÈM / Sản phẩm
-     tương tự…) — 20px trên mobile nhìn quá thưa so với khung hẹp, nhưng 0 lại dính
-     sát nội dung bên dưới (vd lưới "Mua tại BigBike.vn"). Chừa khoảng hở nhỏ 12px. */
-}
 /* PDP type scale §điểm nhấn — tên sản phẩm (h1) = 32px, đồng bậc Display với giá.
    Theme WP gốc đặt `.title h1` khá lỏng; override scoped đặc hiệu hơn → THẮNG. */
 /* "Sản phẩm đã xem gần đây" (.block-title) — mobile 22px khớp .pdp-section-head. */
-@media (max-width: 767px) {
-  /* Tên sản phẩm (h1) mobile = 30px (desktop 32, −2). */
-}
-@media (min-width: 768px) {
-  /* "Sản phẩm đã xem gần đây" dùng `.block-title` (không qua .pdp-section-head) —
-     kéo về cùng 24px để hai kiểu tiêu đề khối không đá nhau trên cùng trang. */
-}
 
 /* FAQ accordion nằm trong panel tab `.wyswyg` (mobile xếp dọc các panel). Theme WP
    (UNLAYERED) gán `.wyswyg h3{margin-bottom:30px}` + `.wyswyg p{margin-bottom:30px}` →
@@ -3104,10 +3005,8 @@ body:has(.bb-home) {
   }
 }
 
-/* Mô tả sản phẩm dạng khối (ProductDescriptionBlocks): chữ thường (đoạn văn / danh sách / ghi chú /
-   khối ảnh-chữ) = 18px CỐ ĐỊNH.
-   Dùng --text-18 (18px tuyệt đối) thay vì --fs-body-lg (1.125rem): trang WP đặt cỡ gốc = 14px nên
-   token rem co lại còn 15.75px, không ra 18px như tên gọi.
+/* Mô tả sản phẩm dạng khối (ProductDescriptionBlocks): đoạn văn, danh sách,
+   ghi chú và khối ảnh-chữ đều dùng nhóm A4.
    !important: theme WP nạp `.wyswyg{font-size:.875rem}` + `body .wyswyg{16px}` UNLAYERED, thắng mọi
    rule layered của Tailwind v4 bất kể specificity → phải !important mới đè (WP rule không !important). */
 /* `:not([style*="font-size"])`: phần tử admin TỰ đặt cỡ chữ inline (qua trình soạn / dán HTML có CSS)
@@ -3116,7 +3015,7 @@ body:has(.bb-home) {
 .pdp-desc-rich .wyswyg:not([style*="font-size"]),
 .pdp-desc-rich .wyswyg p:not([style*="font-size"]),
 .pdp-desc-rich .wyswyg li:not([style*="font-size"]) {
-  font-size: var(--text-18) !important;
+  font-size: var(--bb-text-a4-content) !important;
 }
 .pdp-desc-rich .wyswyg p {
   margin-bottom: 16px;
@@ -3150,13 +3049,12 @@ body:has(.bb-home) {
    nếu không, luật .wyswyg p{16px} (theme WP, unlayered) kéo cột giá trị nhỏ hơn header. Đồng cỡ
    với th để bảng dán HTML hiển thị nhất quán như bảng nhập có cấu trúc. */
 
-/* Bảng "Thông số kỹ thuật" (.shop_attributes) — cỡ chữ CỐ ĐỊNH: cả cột tên (th) và cột
-   giá trị (td) đều 16px. Dùng --bb-text-base (px tuyệt đối) thay token rem: trang WP đặt cỡ
-   gốc 14px nên token rem co lại, không ra đúng px như tên gọi. Đặt rule scoped ở đây
+/* Bảng "Thông số kỹ thuật" (.shop_attributes): cả cột tên (th) và cột giá trị (td)
+   dùng nhóm A4. Đặt rule scoped ở đây
    (specificity cao hơn 1 utility class) để chắc thắng cascade, đồng bộ cách .pdp-desc-rich xử lý. */
 .thong-so-ki-thuat .shop_attributes th,
 .thong-so-ki-thuat .shop_attributes td {
-  font-size: var(--bb-text-base);
+  font-size: var(--bb-text-a4-content);
 }
 /* Bảng thông số là khối tự đủ — bỏ lề cuối 1rem mà theme WP gán cho mọi <table>. Khung cuộn ngang
    `.thong-so-ki-thuat` (overflow) "nhốt" lề này lại nên nó không tự triệt tiêu, làm khoảng trống DƯỚI
@@ -3198,8 +3096,6 @@ body:has(.bb-home) {
    (7fr) + info (5fr) cramped: title wrapped to 5 lines and the breadcrumb sat
    under the diagonal logo emblem. Threshold moved so PDP gets the mobile/tablet
    treatment up to the desktop boundary at 1024. */
-@media (max-width: 1023px) {
-}
 
 /* ---------------------------------------------------------
    PDP Anchor Nav + Sticky CTA (mobile) — migrated to inline Tailwind in
@@ -3315,7 +3211,7 @@ html.overlay {
 .bb-home .about-bigbike .block-content p {
   margin: 0;
   color: #6f6f6f;
-  font-size: var(--fs-body);
+  font-size: var(--bb-text-a4-content);
   line-height: 1.6;
 }
 
@@ -3361,7 +3257,7 @@ body .banner-ads > .container > .row {
 
 .bb-home .content-bottom.wyswyg p,
 .bb-home .content-bottom.wyswyg li {
-  font-size: var(--fs-body);
+  font-size: var(--bb-text-a4-content);
   line-height: 24px;
 }
 
@@ -3381,12 +3277,12 @@ body .banner-ads > .container > .row {
 }
 
 .bb-home .content-bottom.wyswyg h1 {
-  font-size: var(--fs-h2);
+  font-size: var(--bb-text-a2-page);
   line-height: 48px;
 }
 
 .bb-home .content-bottom.wyswyg h2 {
-  font-size: var(--fs-h3);
+  font-size: var(--bb-text-a3-section);
   line-height: 36px;
 }
 
@@ -3394,7 +3290,7 @@ body .banner-ads > .container > .row {
 .bb-home .content-bottom.wyswyg h4,
 .bb-home .content-bottom.wyswyg h5,
 .bb-home .content-bottom.wyswyg h6 {
-  font-size: var(--fs-h4);
+  font-size: var(--bb-text-a4-content);
   line-height: 27px;
 }
 
@@ -3698,14 +3594,12 @@ body .banner-ads > .container > .row {
 
   .bb-page h1,
   .bb-page-head h1 {
-    font-size: var(--fs-h1);
     line-height: 1.08;
   }
 
   
 
   .bb-page-head .sub {
-    font-size: var(--fs-caption);
     line-height: 1.5;
   }
 
@@ -3761,8 +3655,7 @@ body .banner-ads > .container > .row {
     min-height: 210px;
   }
 
-  .bb-blog-listing-parity .page-title h1 {
-    font-size: var(--fs-h1); /* WP page banner = 24px mọi màn hình */
+  .bb-blog-listing-parity .page-title h1 { /* WP page banner = 24px mọi màn hình */
     line-height: 1.2;
   }
 
@@ -3772,7 +3665,6 @@ body .banner-ads > .container > .row {
 
   .bb-article-detail-parity .blog-content,
   .bb-article-detail-parity .bb-article-wyswyg {
-    font-size: var(--fs-body);
     line-height: 1.7;
   }
 
@@ -3784,8 +3676,7 @@ body .banner-ads > .container > .row {
     margin-top: 0;
   }
 
-  .bb-cart-heading-row h1 {
-    font-size: var(--fs-h1); /* WP page banner = 24px mọi màn hình */
+  .bb-cart-heading-row h1 { /* WP page banner = 24px mọi màn hình */
     line-height: 1.2;
     text-transform: uppercase;
   }
@@ -3811,16 +3702,14 @@ body .banner-ads > .container > .row {
 
   .bb-checkout-page .check-out-title h1 {
     margin: 0;
-    font-family: var(--bb-font-body);
-    font-size: var(--fs-h1); /* WP page banner = 24px mọi màn hình */
+    font-family: var(--bb-font-body); /* WP page banner = 24px mọi màn hình */
     font-weight: 600;
     line-height: 1.2;
     text-transform: uppercase;
   }
 
   .bb-checkout-page label,
-  .bb-checkout-label {
-    font-size: 14px; /* WP .form-group label = 14px (was 13) */
+  .bb-checkout-label { /* WP .form-group label = 14px (was 13) */
     line-height: 1.35;
   }
 
@@ -3860,7 +3749,6 @@ body .banner-ads > .container > .row {
 
   .bb-page--auth .bb-auth-wrap h1,
   .bb-auth-wrap h1 {
-    font-size: var(--fs-h1);
     line-height: 1.12;
     text-transform: uppercase;
   }
@@ -3879,7 +3767,6 @@ body .banner-ads > .container > .row {
 
   .bb-breadcrumb {
     padding: 12px var(--bb-mobile-page-x);
-    font-size: var(--bb-text-sm);
   }
 
   .bb-success {
@@ -3889,14 +3776,11 @@ body .banner-ads > .container > .row {
   body > footer .bg-footer-top a {
     min-width: 0;
     gap: 12px;
-    /* Hotline/email = WP .contact-infor--item 2.143rem ≈ 30px, no mobile shrink.
-       (Trước đây để var(--fs-h3)=20px → nhỏ hơn WP; đồng bộ về text-ui-30.) */
-    font-size: var(--text-ui-30);
+    /* Hotline/email uses B2; this media query only adjusts layout spacing. */
   }
 
   /* Nav links (accordion) and social links are NOT hotline numbers — reset to body size */
   body > footer .bg-footer-top ul a {
-    font-size: 1rem;
     gap: 0;
   }
 
@@ -4058,7 +3942,6 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
   .bb-home .content-bottom.wyswyg h1,
   .bb-home .content-bottom.wyswyg h2 {
     max-width: 100%;
-    font-size: var(--fs-h2);
     line-height: 1.08;
     overflow-wrap: normal;
     text-wrap: balance;
@@ -4100,13 +3983,7 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
   body:has(.bb-page--auth) > footer .bg-footer-top h2,
   body:has(.bb-account-layout) > footer .bg-footer-top h2 {
     margin-bottom: 24px;
-    font-size: var(--fs-h2);
     line-height: 1.12;
-  }
-
-  body:has(.bb-page--auth) > footer .bg-footer-top a,
-  body:has(.bb-account-layout) > footer .bg-footer-top a {
-    font-size: var(--fs-h3);
   }
 
   body:has(.bb-page--auth) > footer .bg-black,
@@ -4136,27 +4013,23 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
   }
 
   .bb-home .content-bottom.bb-seo-content h1,
-  .bb-home .content-bottom.bb-seo-content .bb-seo-content-body > h2:first-child {
-    font-size: var(--fs-h2); /* 24px — đồng bộ base, WP-parity */
+  .bb-home .content-bottom.bb-seo-content .bb-seo-content-body > h2:first-child { /* 24px — đồng bộ base, WP-parity */
     line-height: 1.2;
   }
 
-  .bb-home .content-bottom.bb-seo-content h2 {
-    font-size: var(--fs-body-lg); /* 18px — WP seo h2 */
+  .bb-home .content-bottom.bb-seo-content h2 { /* 18px — WP seo h2 */
     line-height: 1.25;
   }
 
   .bb-home .content-bottom.bb-seo-content h3,
   .bb-home .content-bottom.bb-seo-content h4,
   .bb-home .content-bottom.bb-seo-content h5,
-  .bb-home .content-bottom.bb-seo-content h6 {
-    font-size: var(--fs-body); /* 16px — WP seo h3 */
+  .bb-home .content-bottom.bb-seo-content h6 { /* 16px — WP seo h3 */
     line-height: 1.3;
   }
 
   .bb-home .content-bottom.bb-seo-content p,
-  .bb-home .content-bottom.bb-seo-content li {
-    font-size: var(--fs-caption); /* 14px — WP seo p/li */
+  .bb-home .content-bottom.bb-seo-content li { /* 14px — WP seo p/li */
     line-height: 1.7;
   }
 
@@ -4175,9 +4048,7 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
     overflow-wrap: anywhere;
   }
 
-  /* Footer contact (tel/mailto) stays a uniform 30px on mobile too — WP
-     .contact-infor--item = 2.143rem (≈30px) with no mobile shrink. Base
-     text-ui-30 now applies at all widths (was fs-h3/fs-h4 here). */
+  /* Footer contact typography remains controlled by B2; no size override here. */
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -4300,11 +4171,6 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
 }
 
 /* WP-parity archive + PDP containers (Bootstrap 1140px base) */
-@media (min-width: 1536px) {
-}
-
-@media (min-width: 1920px) {
-}
 
 
 
@@ -4414,7 +4280,7 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
 }
 .bb-co-field label {
   display: block;
-  font-size: 15px;
+  font-size: var(--bb-text-a5-meta);
   font-weight: 700;
   color: var(--bb-text-primary);
   margin-bottom: 6px;
@@ -4430,7 +4296,7 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
   padding: 12px 14px;
   border: 1px solid var(--bb-border-subtle);
   font-family: var(--bb-font-body);
-  font-size: 16px;
+  font-size: var(--bb-text-a4-content);
   color: var(--bb-text-primary);
   background: var(--bb-bg-surface);
   outline: none;
@@ -4448,7 +4314,7 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
   min-height: 80px;
 }
 .bb-co-field .hint {
-  font-size: 13px;
+  font-size: var(--bb-text-a5-meta);
   color: var(--bb-text-muted);
   margin-top: 4px;
 }
@@ -4491,11 +4357,11 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
 }
 .bb-co-cod-text strong {
   display: block;
-  font-size: 17px;
+  font-size: var(--bb-text-a4-content);
   color: var(--bb-text-primary);
 }
 .bb-co-cod-text span {
-  font-size: 14px;
+  font-size: var(--bb-text-a5-meta);
   color: var(--bb-text-muted);
 }
 .bb-co-cod-check {
@@ -4523,7 +4389,7 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
   margin-bottom: 20px;
 }
 .bb-co-confirm-row label {
-  font-size: 15px;
+  font-size: var(--bb-text-a5-meta);
   color: var(--bb-text-primary);
   line-height: 1.5;
   cursor: pointer;
@@ -4536,7 +4402,7 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
   color: var(--bb-text-inverse) !important;
   border: none;
   font-family: var(--bb-font-cta);
-  font-size: 22px;
+  font-size: var(--bb-text-b4-action);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -4555,7 +4421,7 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
 }
 
 .bb-co-btn-sub {
-  font-size: 13px;
+  font-size: var(--bb-text-a5-meta);
   color: var(--bb-text-muted);
   text-align: center;
   margin-top: 8px;
@@ -4571,7 +4437,7 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
   gap: 10px;
   padding: 10px 0;
   border-bottom: 1px solid var(--bb-border-subtle);
-  font-size: 14px;
+  font-size: var(--bb-text-a5-meta);
   color: var(--bb-text-primary);
 }
 .bb-co-trust-row:last-child {
@@ -4596,7 +4462,7 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
   background: var(--bb-color-blue);
   color: var(--bb-text-inverse) !important;
   font-family: var(--bb-font-cta);
-  font-size: 17px;
+  font-size: var(--bb-text-b4-action);
   font-weight: 700;
   text-transform: uppercase;
   text-decoration: none;
@@ -4612,12 +4478,12 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
 .archive.tax-product_cat {
   /* Banner title & breadcrumb */
   .page-title h1 {
-    font-size: 32px !important;
+    font-size: var(--bb-text-a1-title) !important;
     line-height: 1.2;
     font-weight: 600;
   }
   .page-title .breadcrumb {
-    font-size: 14px !important;
+    font-size: var(--bb-text-a5-meta) !important;
   }
 
   /* Category top description */
@@ -4628,19 +4494,19 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
     color: var(--bb-text-primary);
   }
   .desc p, .desc li {
-    font-size: 18px !important; /* §nội dung - PDP scale */
+    font-size: var(--bb-text-a4-content) !important; /* §nội dung - PDP scale */
     line-height: 1.65;
     color: var(--bb-text-secondary);
   }
   .desc h2 {
-    font-size: 24px !important; /* §tiêu đề khối - PDP scale */
+    font-size: var(--bb-text-a2-page) !important; /* §tiêu đề khối - PDP scale */
     font-weight: 600;
     color: var(--bb-text-primary);
     margin-top: 20px;
     margin-bottom: 10px;
   }
   .desc h3 {
-    font-size: 20px !important; /* §tiêu đề phụ - PDP scale */
+    font-size: var(--bb-text-a3-section) !important; /* §tiêu đề phụ - PDP scale */
     font-weight: 600;
     color: var(--bb-text-primary);
     margin-top: 16px;
@@ -4649,45 +4515,45 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
 
   /* Product Grid Item */
   .product--item-title {
-    font-size: 18px !important; /* matches PDP body text */
+    font-size: var(--bb-text-a4-content) !important; /* matches PDP body text */
     line-height: 1.35;
   }
   .product--item-title a {
-    font-size: 18px !important;
+    font-size: var(--bb-text-a4-content) !important;
     color: var(--bb-text-primary) !important;
     font-weight: 600;
   }
   .product--item-price p {
-    font-size: 16px !important; /* matches PDP price standard */
+    font-size: var(--bb-text-a4-content) !important; /* matches PDP price standard */
     font-weight: 600;
     color: var(--bb-brand-primary) !important;
   }
   .product--item-price p.old {
-    font-size: 14px !important;
+    font-size: var(--bb-text-a5-meta) !important;
     color: var(--bb-text-muted) !important;
     text-decoration: line-through;
     font-weight: normal;
     margin-left: 8px;
   }
   .product--item-cart a {
-    font-size: 15px !important;
+    font-size: var(--bb-text-b4-action) !important;
   }
 
   /* Sidebar widgets */
   .widget--title h3 {
-    font-size: 20px !important; /* §tiêu đề phụ — tiêu đề widget sidebar */
+    font-size: var(--bb-text-a3-section) !important; /* §tiêu đề phụ — tiêu đề widget sidebar */
     font-weight: 600;
     color: var(--bb-text-primary);
   }
   .woocommerce-widget-layered-nav-list li a,
   .woocommerce-widget-layered-nav-list li a span,
   .product-categories li a {
-    font-size: 16px !important;
+    font-size: var(--bb-text-a4-content) !important;
     color: var(--bb-text-secondary) !important;
     position: relative !important;
   }
   .product-categories .children li a {
-    font-size: 15px !important;
+    font-size: var(--bb-text-a5-meta) !important;
   }
   .product-categories li a:has(.submenu-icon) {
     padding-left: 47px !important;
@@ -4698,7 +4564,7 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
     font-weight: bold;
   }
   .woocommerce-widget-layered-nav-list li .count {
-    font-size: 14px !important;
+    font-size: var(--bb-text-a5-meta) !important;
     color: var(--bb-text-muted);
   }
   .woocommerce-widget-layered-nav-list li,
@@ -4713,56 +4579,27 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
   /* Sort and Count top bar */
   .product-list-filter {
     .result {
-      font-size: 15px !important;
+      font-size: var(--bb-text-a5-meta) !important;
     }
     .orderby {
-      font-size: 15px !important;
+      font-size: var(--bb-text-b4-action) !important;
     }
   }
   
   /* Pagination */
   .bb-pagination li a,
   .bb-pagination li span {
-    font-size: 15px !important;
+    font-size: var(--bb-text-a3-section) !important;
   }
 }
 
 /* Mobile responsive adjustments */
 @media (max-width: 767px) {
   .archive.tax-product_cat {
-    .page-title h1 {
-      font-size: 24px !important;
-    }
-    .desc p, .desc li {
-      font-size: 16px !important;
-    }
-    .desc h2 {
-      font-size: 20px !important;
-    }
-    .desc h3 {
-      font-size: 18px !important;
-    }
-    .product--item-title,
-    .product--item-title a {
-      font-size: 15px !important;
-    }
-    .product--item-price p {
-      font-size: 15px !important;
-    }
-    .product--item-price p.old {
-      font-size: 13px !important;
-    }
-    .widget--title h3 {
-      font-size: 18px !important;
-    }
     .woocommerce-widget-layered-nav-list li a,
     .woocommerce-widget-layered-nav-list li a span,
     .product-categories li a {
-      font-size: 15px !important;
       position: relative !important;
-    }
-    .product-categories .children li a {
-      font-size: 14px !important;
     }
     .product-categories li a:has(.submenu-icon) {
       padding-left: 47px !important;

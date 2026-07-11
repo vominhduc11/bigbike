@@ -37,36 +37,30 @@ export const accountSidebar =
   "sticky top-[calc(var(--bb-header-height)_+_24px)] [align-self:start] min-w-0 max-[1024px]:static";
 
 /* ── Shared typography bundles (were `.bb-*` leaf classes in globals.css) ──────
- * Direct-applied text-style classes with no contextual overrides. Font-size
- * tokens use the `text-<n>` @theme utilities (sm/base/xs/26 map 1:1 to the
- * --bb-text-* px/clamp values); `text-muted-foreground` == --bb-text-muted,
- * `text-brand` == --bb-text-brand, `tracking-display/wide` == the --bb-tracking-*. */
+ * Every font size maps to one canonical A/B group from docs/TYPOGRAPHY.md. */
 
 /** Form field label (was `.bb-field-label`). */
-export const fieldLabel = "text-caption font-bold uppercase tracking-display text-muted-foreground";
+export const fieldLabel = "text-a5-meta font-bold uppercase tracking-display text-muted-foreground";
 /** Section eyebrow / kicker — the small uppercase label above a section title.
  * Compose with spacing, e.g. `cn(sectionEyebrow, "mb-3")`. */
 export const sectionEyebrow =
-  "text-[var(--bb-text-muted)] font-body text-[length:var(--bb-text-section-kicker)] tracking-[0] font-bold leading-[var(--bb-line-section-kicker)] uppercase";
-/** Primary section heading (h2-level), fluid 30→50px. The ONE canonical section
- * title — unified from the prior split (`text-26` here vs the home inline
- * `--bb-text-section-title`). Compose with spacing, e.g. `cn(sectionHeading, "mb-4")`. */
+  "font-body text-b5-label tracking-normal font-bold leading-title uppercase text-muted-foreground";
+/** Primary section heading (h2-level), group A1. Compose with spacing, e.g.
+ * `cn(sectionHeading, "mb-4")`. */
 export const sectionHeading =
-  "m-0 font-body text-[length:var(--bb-text-section-title)] font-semibold leading-[1.2] tracking-normal uppercase text-foreground";
+  "m-0 font-body text-a1-title font-semibold leading-title tracking-normal uppercase text-foreground";
 /** Smaller section subheading (was `.bb-section-subheading`). */
-export const sectionSubheading = "font-body text-body font-semibold uppercase text-foreground";
+export const sectionSubheading = "font-body text-a4-content font-semibold uppercase text-foreground";
 /** Empty/error state title (was `.bb-state-title`). */
-export const stateTitle = "m-0 font-body text-body font-semibold uppercase text-foreground";
+export const stateTitle = "m-0 font-body text-a3-section font-semibold uppercase text-foreground";
 /** Inline meta label (was `.bb-meta-label`). */
-export const metaLabel = "text-caption uppercase tracking-display text-muted-foreground";
+export const metaLabel = "text-a5-meta uppercase tracking-display text-muted-foreground";
 /** Table column header (was `.bb-table-header`). */
-export const tableHeader = "font-body text-overline font-semibold uppercase tracking-wide";
+export const tableHeader = "font-body text-b5-label font-semibold uppercase tracking-wide";
 /** Detail value cell (was `.bb-detail-table-cell`). */
-export const detailTableCell = "mt-[3px] block text-caption font-bold normal-case tracking-wide text-foreground";
-/** Category badge text (was `.bb-category-badge`). Fixed px (`text-ui-*`): the
- * sole consumer (ArticleCard) renders on the WP background (html font-size:14px),
- * where rem `text-caption` would shrink to ~12.25px. */
-export const categoryBadge = "m-0 text-ui-14 max-md:text-ui-12 font-bold uppercase tracking-display text-brand";
+export const detailTableCell = "mt-[3px] block text-a5-meta font-bold normal-case tracking-wide text-foreground";
+/** Category badge text (was `.bb-category-badge`), group B5. */
+export const categoryBadge = "m-0 text-b5-label font-bold uppercase tracking-display text-brand";
 
 /** Header action icon button (was `.bb-user-control .bb-icon-btn` /
  * `.bb-site-header .bb-cart-icon-link`): full-height transparent square button,
@@ -76,7 +70,7 @@ export const categoryBadge = "m-0 text-ui-14 max-md:text-ui-12 font-bold upperca
  * per-button visibility classes (e.g. `hidden md:inline-flex`). */
 export const iconBtn =
   "inline-flex items-center justify-center h-full min-h-[var(--bb-header-height)] w-auto py-0 px-[clamp(10px,0.9vw,16px)] 4xl:px-5 " +
-  "!text-white bg-transparent border-none rounded-none text-ui-18 leading-none cursor-pointer no-underline " +
+  "!text-white bg-transparent border-none rounded-none text-b4-action leading-none cursor-pointer no-underline " +
   "transition-[color,background] duration-fast ease-[var(--bb-ease-standard)] " +
   // `!` on hover color: the cart link is an <a>, so the unlayered global `a:hover`
   // (brand red #cc0906) would otherwise beat this; rgba (not the /opacity form) to

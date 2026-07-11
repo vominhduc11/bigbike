@@ -7,20 +7,19 @@ export const SEARCH_PATH = "/tim-kiem/";
 // — layer/overlay/panel/form/input + transitions/keyframe — stays in globals.css
 // per the CLAUDE.md keyframe/complex-pseudo exemption). Search reds use
 // --bb-brand-primary (#ff0c09) → text-brand-on-dark (the exact-value token).
-// 3xl/4xl (≥1920 / ≥2560): the fixed search labels/chips bump one text-ui step +
-// padding grows, so the panel doesn't look lost on showroom-wide screens. Exception
-// to the §10 "nhóm chữ cố định" rule, documented in docs/TYPOGRAPHY.md §8.
+// 3xl/4xl (≥1920 / ≥2560) may widen spacing only. Typography never scales
+// outside the canonical 768px token switch.
 export const preLabelRow =
   "flex items-center justify-between border-b border-border bg-card px-4 pt-2 pb-1 3xl:px-5 4xl:px-6";
 export const preLabel =
-  "font-cta text-ui-10 font-bold uppercase tracking-normal text-muted-foreground 3xl:text-ui-11 4xl:text-ui-12";
+  "font-cta text-b5-label font-bold uppercase tracking-normal text-muted-foreground";
 export const preChips = "flex flex-wrap gap-1.5 px-4 pb-3 pt-2.5 3xl:gap-2 3xl:px-5 4xl:px-6";
 export const preChip =
-  "inline-flex cursor-pointer items-center gap-[5px] border border-border bg-card px-3 py-[5px] font-cta text-ui-12 font-semibold uppercase text-foreground transition-colors duration-fast hover:text-brand-on-dark focus-visible:text-brand-on-dark focus-visible:outline-none 3xl:px-3.5 3xl:py-1.5 3xl:text-ui-13 4xl:px-[18px] 4xl:py-2 4xl:text-ui-14";
+  "inline-flex cursor-pointer items-center gap-[5px] border border-border bg-card px-3 py-[5px] font-cta text-b4-action font-semibold uppercase text-foreground transition-colors duration-fast hover:text-brand-on-dark focus-visible:text-brand-on-dark focus-visible:outline-none 3xl:px-3.5 3xl:py-1.5 4xl:px-[18px] 4xl:py-2";
 export const resultItem =
   "flex cursor-pointer items-center gap-3 border-b border-border px-4 py-2.5 text-foreground no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none 3xl:gap-4 3xl:px-5 3xl:py-3 4xl:px-6 4xl:py-3.5";
 export const resultsLabel =
-  "m-0 border-b border-border bg-card px-4 pt-2 pb-1 font-cta text-ui-10 font-bold uppercase tracking-normal text-muted-foreground 3xl:px-5 3xl:text-ui-11 4xl:px-6 4xl:text-ui-12";
+  "m-0 border-b border-border bg-card px-4 pt-2 pb-1 font-cta text-b5-label font-bold uppercase tracking-normal text-muted-foreground 3xl:px-5 4xl:px-6";
 
 // Mobile-only search body (≤767). The dark 9437 layer is fully overridden by the
 // "whole-site refactor pass" to LIGHT, so these are the merged light values; the
@@ -33,7 +32,7 @@ export const mBody =
   "block md:hidden flex-none min-h-0 overflow-y-auto bg-background px-6 pt-[18px] pb-[calc(24px_+_env(safe-area-inset-bottom))] text-foreground [-webkit-overflow-scrolling:touch]";
 export const mSection = "mb-[22px]";
 export const mLabel =
-  "m-0 mb-2 font-cta text-ui-11 font-semibold uppercase tracking-normal text-muted-foreground";
+  "m-0 mb-2 font-cta text-b5-label font-semibold uppercase tracking-normal text-muted-foreground";
 export const mList = "grid [&_svg]:text-muted-foreground";
 export const mListBtn =
   "flex min-h-11 cursor-pointer items-center gap-3 border-b border-border bg-transparent p-0 text-left font-body text-foreground " +
@@ -42,7 +41,7 @@ export const mRecentRemove =
   "flex h-7 w-7 min-h-11 shrink-0 cursor-pointer items-center justify-center border-b border-border bg-transparent p-0 " +
   mFocusRing;
 export const mChip =
-  "inline-flex min-h-11 cursor-pointer items-center gap-1.5 border border-border bg-card px-[14px] py-0 font-cta text-ui-13 font-medium uppercase text-foreground [&>svg]:text-brand-on-dark " +
+  "inline-flex min-h-11 cursor-pointer items-center gap-1.5 border border-border bg-card px-[14px] py-0 font-cta text-b4-action font-medium uppercase text-foreground [&>svg]:text-brand-on-dark " +
   mFocusRing;
 export const mGridCard =
   "grid min-h-11 cursor-pointer gap-0.5 border border-border bg-card px-3 py-2.5 text-left font-body text-foreground no-underline " +
@@ -101,16 +100,12 @@ export const sClose =
   "max-md:min-w-[var(--bb-touch-target)] max-md:items-center max-md:justify-center max-md:[transform:none] max-md:text-[color:var(--bb-text-inverse)]";
 export const sInput =
   // `!` mirrors the legacy !important — guarantees these win over the shadcn Input
-  // base regardless of twMerge grouping of the arbitrary properties. Font-size MUST
-  // be an arbitrary length (`text-[24px]`, not the named `text-ui-24`): the Input
-  // wrapper runs className through cn()/twMerge, which mis-classifies the unknown
-  // `text-ui-*` token as a text-COLOR class and collapses it with `text-white!`,
-  // silently dropping the color (→ dark text on the black bar). Arbitrary lengths
-  // are recognized as the font-size group, so color + size both survive.
-  "h-full [border:none]! bg-transparent! [padding:0_48px_0_34px]! [box-shadow:none]! text-white! text-[24px]! 3xl:text-[28px]! 4xl:text-[32px]! " +
+  // base regardless of twMerge grouping. A4 keeps search input at 16px on mobile
+  // (preventing iOS zoom) and 18px on desktop, including ultra-wide screens.
+  "h-full [border:none]! bg-transparent! [padding:0_48px_0_34px]! [box-shadow:none]! text-white! text-a4-content! " +
   "placeholder:text-white placeholder:opacity-100 placeholder:font-normal focus-visible:outline-none " +
   "max-md:h-[var(--bb-touch-target)]! max-md:[border:1px_solid_rgba(255,255,255,0.18)]! max-md:bg-[var(--bb-bg-surface)]! " +
-  "max-md:[padding:0_12px]! max-md:text-[color:var(--bb-text-primary)]! max-md:text-[16px]! max-md:leading-none! " +
+  "max-md:[padding:0_12px]! max-md:text-[color:var(--bb-text-primary)]! max-md:leading-none! " +
   "max-md:min-w-0 max-md:placeholder:text-[color:var(--bb-text-secondary)]";
 export const sResults =
   "absolute top-full left-[-40px] right-[-40px] z-[1] bg-white [border-top:2px_solid_var(--bb-brand-primary)] " +

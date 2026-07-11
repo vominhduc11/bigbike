@@ -13,7 +13,7 @@ export function OrderDetailContentIsland() {
     return (
       <>
         <AccountSectionHeading title="Đơn hàng" />
-        <p className="mb-4 text-ui-16 max-md:text-ui-14 text-brand">Không tìm thấy mã đơn hàng.</p>
+        <p className="mb-4 text-a4-content text-brand">Không tìm thấy mã đơn hàng.</p>
       </>
     );
   }

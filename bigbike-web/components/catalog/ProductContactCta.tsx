@@ -79,7 +79,7 @@ export function ProductContactCta({
     <section className="mt-16 mb-12 max-md:mt-6 max-md:mb-0">
       <div className="flex flex-col gap-7 border border-border border-t-2 border-t-brand bg-card px-8 py-7 md:flex-row md:items-center md:justify-between md:gap-12 max-md:px-5 max-md:py-6">
         <div className="min-w-0 max-md:text-center">
-          <h3 className="!m-0 font-cta text-ui-20 max-md:text-ui-18 leading-title text-foreground">
+          <h3 className="!m-0 font-cta text-a3-section leading-title text-foreground">
             {t.rich("headline", {
               productName: displayName,
               siteName,
@@ -89,7 +89,7 @@ export function ProductContactCta({
           </h3>
 
           {address && (
-            <p className="mt-2 !mb-0 flex items-start gap-2 text-18 max-md:text-ui-16 leading-body break-words text-muted-foreground max-md:justify-center">
+            <p className="mt-2 !mb-0 flex items-start gap-2 text-a4-content leading-body break-words text-muted-foreground max-md:justify-center">
               <MapPin className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden="true" />
               <span>{address}</span>
             </p>
@@ -100,7 +100,7 @@ export function ProductContactCta({
           <button
             type="button"
             onClick={scrollToBuyBox}
-            className="inline-flex items-center justify-center gap-2.5 !bg-brand px-7 py-3.5 font-cta text-ui-20 max-md:text-ui-18 font-bold !text-white transition-colors hover:!bg-brand-active max-md:w-full"
+            className="inline-flex items-center justify-center gap-2.5 !bg-brand px-7 py-3.5 font-cta text-b4-action font-bold !text-white transition-colors hover:!bg-brand-active max-md:w-full"
           >
             <ShoppingCart className="size-5" aria-hidden="true" />
             {t("buyNow")}
@@ -110,7 +110,7 @@ export function ProductContactCta({
               href={zaloHref(zaloUrl)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2.5 border-2 !border-zalo !bg-white px-7 py-3.5 font-cta text-ui-20 max-md:text-ui-18 font-bold !text-zalo transition-colors hover:!bg-zalo-soft max-md:w-full"
+              className="inline-flex items-center justify-center gap-2.5 border-2 !border-zalo !bg-white px-7 py-3.5 font-cta text-b4-action font-bold !text-zalo transition-colors hover:!bg-zalo-soft max-md:w-full"
             >
               <MessageCircle className="size-5" aria-hidden="true" />
               {zaloNumber || t("zaloLink")}

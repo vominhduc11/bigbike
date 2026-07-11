@@ -120,7 +120,7 @@ function AccordionPanel({ value, title, children }: { value: string; title: Reac
     >
       <AccordionTrigger
         className={cn(
-          "group min-h-11 w-full gap-2 py-0 pr-[30px] text-left font-cta text-ui-16 font-medium uppercase! text-brand-on-dark hover:text-brand-inverse min-[992px]:mb-[15px]! min-[992px]:pointer-events-none",
+          "group min-h-11 w-full gap-2 py-0 pr-[30px] text-left font-cta text-b4-action font-medium uppercase! text-brand-on-dark hover:text-brand-inverse min-[992px]:mb-[15px]! min-[992px]:pointer-events-none",
           value === "social" ? "mb-[22px]!" : "mb-[19px]!",
         )}
         indicator={
@@ -136,7 +136,7 @@ function AccordionPanel({ value, title, children }: { value: string; title: Reac
         forceMount
         data-footer-content
         panelClassName="min-[992px]:!h-auto"
-        className="pb-0 text-ui-16"
+        className="pb-0 text-a4-content"
       >
         {children}
       </AccordionContent>
@@ -159,19 +159,19 @@ export async function Footer() {
         <Container variant="blog" className="px-[15px]!">
           <div className="grid grid-cols-1 gap-x-[30px] md:grid-cols-12">
             <div className="md:col-span-7">
-              <h2 className="mb-[40px]! font-cta text-footer-slogan font-semibold uppercase leading-[var(--bb-line-footer-slogan)]">
+              <h2 className="mb-[40px]! font-cta text-b1-display font-semibold uppercase leading-title">
                 <Tr ns="Footer" k="taglineLong" />
               </h2>
               <div className="mb-[30px] flex flex-col gap-0">
                 {FOOTER_HOTLINES.map((phone) => (
-                  <p key={phone} className="m-0! flex items-center gap-[29px] font-cta text-ui-30 font-semibold">
+                  <p key={phone} className="m-0! flex items-center gap-[29px] font-cta text-b2-contact font-semibold">
                     <Phone className="h-[24px] w-[24px] shrink-0 text-brand-on-dark" aria-hidden />
                     <a href={telHref(phone)} className="text-white! no-underline!">
                       {phone}
                     </a>
                   </p>
                 ))}
-                <p className="m-0! flex items-center gap-[29px] font-cta text-ui-30 font-semibold">
+                <p className="m-0! flex items-center gap-[29px] font-cta text-b2-contact font-semibold">
                   <a
                     href={`mailto:${FOOTER_EMAIL}`}
                     className="flex items-center gap-[29px] text-white! no-underline!"
@@ -180,14 +180,14 @@ export async function Footer() {
                     {FOOTER_EMAIL}
                   </a>
                 </p>
-                <p className="m-0! flex items-start gap-[29px] font-cta text-ui-30 font-semibold">
+                <p className="m-0! flex items-start gap-[29px] font-cta text-b2-contact font-semibold">
                   <MapPin className="mt-1 h-[24px] w-[24px] shrink-0 text-brand-on-dark" aria-hidden />
                   <Tr ns="Footer" k="address" />
                 </p>
               </div>
             </div>
             <div className="md:col-span-5">
-              <p className="mb-[27px]! text-ui-16 leading-[25px]">
+              <p className="mb-[27px]! text-a4-content leading-[25px]">
                 <LocalizedSetting
                   vi={settingDescription}
                   en={settingDescriptionEn}
@@ -266,14 +266,14 @@ export async function Footer() {
               width="200"
               height="74"
             />
-            <p className="mb-0 mt-[3px]! text-ui-16 leading-[20px]! text-[color:var(--bb-text-footer-legal)]">
+            <p className="mb-0 mt-[3px]! text-a4-content leading-[20px]! text-[color:var(--bb-text-footer-legal)]">
               <Tr ns="Footer" k="businessRegistration" />
             </p>
           </a>
         </Container>
         <div className="bg-black">
           <Container variant="blog" className="grid min-h-[85px] grid-cols-3 items-center px-[15px]! py-[15px]">
-            <p className="col-span-2 m-0 text-ui-14 leading-5">
+            <p className="col-span-2 m-0 text-a5-meta leading-5">
               Copyright © {new Date().getFullYear()}. All Rights Reserved.
             </p>
             <Link href="/" className="justify-self-end">

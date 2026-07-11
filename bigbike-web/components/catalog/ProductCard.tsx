@@ -70,7 +70,7 @@ export function ProductCard({ product, className, layout = "grid" }: ProductCard
             data-product-sale
             className="absolute left-0 top-5 flex h-8 w-20 items-center justify-center bg-[url('/brand/product-sale-ticket.svg')] bg-left-top bg-no-repeat"
           >
-            <span className="-rotate-[20deg] font-cta text-ui-18 font-semibold leading-7 text-white">
+            <span className="-rotate-[20deg] font-cta text-b3-promo font-semibold leading-7 text-white">
               {discountPercent}%
             </span>
           </div>
@@ -80,7 +80,7 @@ export function ProductCard({ product, className, layout = "grid" }: ProductCard
           asChild
           variant="dark"
           data-product-card-action
-          className="absolute inset-x-0 bottom-0 h-[47px] translate-y-full rounded-none px-4 font-body text-caption transition-transform duration-300 group-hover:translate-y-0 group-focus-within:translate-y-0"
+          className="absolute inset-x-0 bottom-0 h-[47px] translate-y-full rounded-none px-4 font-body text-b4-action transition-transform duration-300 group-hover:translate-y-0 group-focus-within:translate-y-0"
         >
           <LocalizedLink kind="product" viSlug={product.slug} enSlug={product.slugEn}>
             {t("cardSelect").toUpperCase()}
@@ -91,7 +91,7 @@ export function ProductCard({ product, className, layout = "grid" }: ProductCard
       <div className="flex flex-1 flex-col">
         <h3
           className={cn(
-            "m-0 font-body text-body font-semibold uppercase",
+            "m-0 font-body text-a4-content font-semibold uppercase",
             layout === "grid"
               ? "line-clamp-2 min-h-10 leading-tight"
               : "h-6 min-h-6 truncate leading-normal",
@@ -107,7 +107,7 @@ export function ProductCard({ product, className, layout = "grid" }: ProductCard
           </LocalizedLink>
         </h3>
 
-        <div className="mt-3.5 flex flex-wrap items-baseline gap-x-5 gap-y-1 font-body text-caption font-semibold leading-normal text-brand">
+        <div className="mt-3.5 flex flex-wrap items-baseline gap-x-5 gap-y-1 font-body text-a5-meta font-semibold leading-normal text-brand">
           <span>{formatVndNumber(current)} {"\u20ab"}</span>
           {isSale ? (
             <span data-product-old-price className="text-border-default line-through">
@@ -117,7 +117,7 @@ export function ProductCard({ product, className, layout = "grid" }: ProductCard
         </div>
 
         {hasReviews ? (
-          <div className="mt-2 text-ui-18">
+          <div className="mt-2 text-a4-content">
             <RatingStars value={product.rating} />
           </div>
         ) : null}

@@ -33,7 +33,7 @@ function ReviewComment({ text }: { text: string }) {
       <p
         ref={ref}
         className={cn(
-          "text-ui-18 max-md:text-ui-16 leading-relaxed text-[var(--bb-text-primary)] [overflow-wrap:anywhere]",
+          "text-a4-content leading-relaxed text-[var(--bb-text-primary)] [overflow-wrap:anywhere]",
           !expanded && "line-clamp-5",
         )}
       >
@@ -44,7 +44,7 @@ function ReviewComment({ text }: { text: string }) {
           type="button"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
-          className="mt-1 text-ui-14 max-md:text-ui-12 font-semibold text-brand outline-none hover:underline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+          className="mt-1 text-b4-action font-semibold text-brand outline-none hover:underline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
         >
           {expanded ? t("showLess") : t("showMore")}
         </button>
@@ -102,16 +102,16 @@ export function ReviewCard({ review }: { review: Review }) {
     <li className="flex gap-4 border-b border-border py-5 first:pt-0">
       <span
         aria-hidden="true"
-        className="flex h-10 w-10 shrink-0 items-center justify-center bg-muted font-body text-ui-18 max-md:text-ui-16 font-semibold text-[var(--bb-text-primary)]"
+        className="flex h-10 w-10 shrink-0 items-center justify-center bg-muted font-body text-a4-content font-semibold text-[var(--bb-text-primary)]"
       >
         {initial}
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-          <strong className="min-w-0 text-ui-20 max-md:text-ui-18 font-semibold text-[var(--bb-text-primary)] [overflow-wrap:anywhere]">
+          <strong className="min-w-0 text-a3-section font-semibold text-[var(--bb-text-primary)] [overflow-wrap:anywhere]">
             {review.authorName}
           </strong>
-          <time dateTime={review.createdAt} className="shrink-0 text-ui-14 max-md:text-ui-12 text-muted-foreground">
+          <time dateTime={review.createdAt} className="shrink-0 text-b5-label text-muted-foreground">
             <LocalDate value={review.createdAt} dateStyle="slashPad" />
           </time>
         </div>

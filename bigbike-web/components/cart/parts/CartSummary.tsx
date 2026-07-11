@@ -22,7 +22,7 @@ export function CartSummary({
   return (
     <aside className="md:col-span-4">
       <div className="border border-border bg-background p-6 md:sticky md:top-[96px]">
-          <h2 className="mb-6 font-cta text-3xl font-semibold uppercase">{t("totalsHeading")}</h2>
+          <h2 className="mb-6 font-cta text-a1-title font-semibold uppercase">{t("totalsHeading")}</h2>
 
           <div className="flex justify-between gap-4 border-b border-border py-4">
             <span>{t("subtotal")}</span>
@@ -43,13 +43,13 @@ export function CartSummary({
             </div>
           ) : (
             <div className="border-b border-border py-4">
-              <p className="m-0 text-caption italic leading-snug text-muted-foreground">{t("shippingPending")}</p>
+              <p className="m-0 text-a5-meta italic leading-snug text-muted-foreground">{t("shippingPending")}</p>
             </div>
           )}
 
         <div className="flex items-baseline justify-between gap-4 py-6">
-          <strong className="font-cta text-xl uppercase">{t("total")}</strong>
-          <strong className="font-cta text-3xl text-brand">{formatVnd(cart.totals.totalAmount)}</strong>
+          <strong className="font-cta text-a3-section uppercase">{t("total")}</strong>
+          <strong className="font-cta text-a1-title text-brand">{formatVnd(cart.totals.totalAmount)}</strong>
         </div>
 
         {hasUnavailable ? (

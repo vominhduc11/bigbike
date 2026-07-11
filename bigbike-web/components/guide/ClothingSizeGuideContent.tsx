@@ -193,7 +193,7 @@ const PANTS_ROWS = [
 
 function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <h2 className="mb-4 mt-8 font-cta text-ui-22 font-bold uppercase leading-title tracking-wide text-brand first:mt-0">
+    <h2 className="mb-4 mt-8 font-cta text-a2-page font-bold uppercase leading-title tracking-wide text-brand first:mt-0">
       {children}
     </h2>
   );
@@ -203,9 +203,9 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
   const lang: Lang = locale === "en" ? "en" : "vi";
 
   return (
-    <div className="max-w-none text-ui-16 max-md:text-ui-14 leading-body text-foreground">
+    <div className="max-w-none text-a4-content leading-body text-foreground">
       {/* Lead */}
-      <p className="mb-6 border-l-4 border-border bg-secondary p-4 text-ui-18 max-md:text-ui-16 leading-body">
+      <p className="mb-6 border-l-4 border-border bg-secondary p-4 text-a4-content leading-body">
         {t(lang, COPY.intro)}
       </p>
 
@@ -214,7 +214,7 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
       <ol className="mb-4 space-y-3">
         {GLOVE_STEPS.map((s, i) => (
           <li key={i} className="flex gap-4 border border-border p-4">
-            <span className="font-cta text-ui-22 font-bold leading-none text-brand">{i + 1}</span>
+            <span className="font-cta text-a2-page font-bold leading-none text-brand">{i + 1}</span>
             <div className="leading-body">
               <strong className="text-foreground">{t(lang, s.title)}</strong>
               <br />
@@ -224,7 +224,7 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
         ))}
       </ol>
       <div className="mb-3 overflow-x-auto">
-        <table className="w-full border-collapse text-ui-16 max-md:text-ui-14">
+        <table className="w-full border-collapse text-a4-content">
           <thead>
             <tr className="bg-secondary">
               <th className="w-1/6 border border-border p-3 text-left font-bold">{t(lang, COPY.colSize)}</th>
@@ -243,7 +243,7 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
           </tbody>
         </table>
       </div>
-      <p className="mb-8 text-ui-14 leading-snug text-muted-foreground">{t(lang, COPY.gloveNote)}</p>
+      <p className="mb-8 text-a5-meta leading-snug text-muted-foreground">{t(lang, COPY.gloveNote)}</p>
 
       <hr className="border-none border-t border-border my-6" />
 
@@ -252,7 +252,7 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
       <ol className="mb-4 space-y-3">
         {BOOT_STEPS.map((s, i) => (
           <li key={i} className="flex gap-4 border border-border p-4">
-            <span className="font-cta text-ui-22 font-bold leading-none text-brand">{i + 1}</span>
+            <span className="font-cta text-a2-page font-bold leading-none text-brand">{i + 1}</span>
             <div className="leading-body">
               <strong className="text-foreground">{t(lang, s.title)}</strong>
               <br />
@@ -262,7 +262,7 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
         ))}
       </ol>
       <div className="mb-3 overflow-x-auto">
-        <table className="w-full border-collapse text-ui-16 max-md:text-ui-14">
+        <table className="w-full border-collapse text-a4-content">
           <thead>
             <tr className="bg-secondary">
               <th className="w-1/5 border border-border p-3 text-left font-bold">{t(lang, COPY.colSizeEu)}</th>
@@ -282,7 +282,7 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
         </table>
       </div>
       <div className="mb-8 border border-border border-l-4 border-l-brand bg-white p-4">
-        <p className="m-0 leading-body font-body text-ui-15 max-md:text-ui-14">
+        <p className="m-0 leading-body font-body text-a5-meta">
           {t(lang, COPY.bootNote)}
         </p>
       </div>
@@ -295,7 +295,7 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
       <ol className="mb-4 space-y-3">
         {JACKET_STEPS.map((s, i) => (
           <li key={i} className="flex gap-4 border border-border p-4">
-            <span className="font-cta text-ui-22 font-bold leading-none text-brand">{i + 1}</span>
+            <span className="font-cta text-a2-page font-bold leading-none text-brand">{i + 1}</span>
             <div className="leading-body">
               <strong className="text-foreground">{t(lang, s.title)}</strong>
               <br />
@@ -305,7 +305,7 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
         ))}
       </ol>
       <div className="mb-3 overflow-x-auto">
-        <table className="w-full border-collapse text-ui-16 max-md:text-ui-14">
+        <table className="w-full border-collapse text-a4-content">
           <thead>
             <tr className="bg-secondary">
               <th className="w-1/6 border border-border p-3 text-left font-bold">{t(lang, COPY.colSize)}</th>
@@ -326,7 +326,7 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
           </tbody>
         </table>
       </div>
-      <p className="mb-8 text-ui-14 leading-snug text-muted-foreground">{t(lang, COPY.jacketNote)}</p>
+      <p className="mb-8 text-a5-meta leading-snug text-muted-foreground">{t(lang, COPY.jacketNote)}</p>
 
       <hr className="border-none border-t border-border my-6" />
 
@@ -336,7 +336,7 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
       <ol className="mb-4 space-y-3">
         {PANTS_STEPS.map((s, i) => (
           <li key={i} className="flex gap-4 border border-border p-4">
-            <span className="font-cta text-ui-22 font-bold leading-none text-brand">{i + 1}</span>
+            <span className="font-cta text-a2-page font-bold leading-none text-brand">{i + 1}</span>
             <div className="leading-body">
               <strong className="text-foreground">{t(lang, s.title)}</strong>
               <br />
@@ -346,7 +346,7 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
         ))}
       </ol>
       <div className="mb-3 overflow-x-auto">
-        <table className="w-full border-collapse text-ui-16 max-md:text-ui-14">
+        <table className="w-full border-collapse text-a4-content">
           <thead>
             <tr className="bg-secondary">
               <th className="w-1/6 border border-border p-3 text-left font-bold">{t(lang, COPY.colSize)}</th>
@@ -367,9 +367,9 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
           </tbody>
         </table>
       </div>
-      <p className="mb-4 text-ui-14 leading-snug text-muted-foreground">{t(lang, COPY.pantsNote)}</p>
+      <p className="mb-4 text-a5-meta leading-snug text-muted-foreground">{t(lang, COPY.pantsNote)}</p>
       <div className="mb-8 border border-border border-l-4 border-l-brand bg-white p-4">
-        <p className="m-0 leading-body font-body text-ui-15 max-md:text-ui-14">
+        <p className="m-0 leading-body font-body text-a5-meta">
           <strong className="text-brand">{t(lang, { vi: "Mặc thử trước khi mua:", en: "Try on before buying:" })}</strong>{" "}
           {t(lang, COPY.pantsHighlight)}
         </p>
@@ -399,7 +399,7 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
             </a>
           </span>
         </div>
-        <div className="text-ui-14 text-muted-foreground leading-normal border-t border-border/50 pt-3">
+        <div className="text-a5-meta text-muted-foreground leading-normal border-t border-border/50 pt-3">
           <strong>{t(lang, COPY.workingTimeLabel)}:</strong> {t(lang, COPY.workingTimeValue)}
         </div>
       </div>

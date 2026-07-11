@@ -72,8 +72,8 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
         {isAuthed ? (
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="m-0! font-cta text-body font-semibold uppercase text-white">HEY YO! <span>{displayName}</span></p>
-              <Link href={toAccountPath(locale)} className="text-caption text-white/70 no-underline!">{t("account")}</Link>
+              <p className="m-0! font-cta text-a4-content font-semibold uppercase text-white">HEY YO! <span>{displayName}</span></p>
+              <Link href={toAccountPath(locale)} className="text-a5-meta text-white/70 no-underline!">{t("account")}</Link>
             </div>
             <Button type="button" variant="ghost" size="icon" onClick={() => void handleLogout()} disabled={loggingOut} aria-label={t("logout")} className="text-white hover:not-disabled:scale-100">
               <LogOut className="h-6 w-6" aria-hidden />
@@ -82,7 +82,7 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
         ) : (
           <div className="flex min-h-11 items-center gap-5 text-white">
             <UserCircle className="h-10 w-10 shrink-0" aria-hidden />
-            <div className="text-body">
+            <div className="text-a4-content">
               <Link href={toRegisterPath(locale)} className="text-white! no-underline!">{t("register")}</Link>
               <span className="px-2">/</span>
               <Link href={toLoginPath(undefined, locale)} className="text-white! no-underline!">{t("login")}</Link>

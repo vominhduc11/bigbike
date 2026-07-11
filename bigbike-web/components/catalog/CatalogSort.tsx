@@ -45,7 +45,7 @@ function CatalogSortSelect({
     >
       <SelectTrigger
         aria-label={sortLabel}
-        className="h-[52px]! w-full rounded-none border-border px-5 text-left font-cta text-ui-14 font-semibold uppercase md:min-w-[200px]"
+        className="h-[52px]! w-full rounded-none border-border px-5 text-left font-cta text-b4-action font-semibold uppercase md:min-w-[200px]"
       >
         <SelectValue />
       </SelectTrigger>

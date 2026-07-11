@@ -20,7 +20,7 @@ function isHomePath(pathname: string) {
 // else is inlined. Colors resolve the dark→light reskin to the last-effective layer:
 // bg-surface-dark, mobile-shell-border, text-inverse-muted, brand-on-dark (active).
 const labelCls =
-  "text-overline leading-none max-w-full overflow-hidden text-ellipsis whitespace-nowrap max-[375px]:text-ui-10";
+  "text-b5-label leading-none max-w-full overflow-hidden text-ellipsis whitespace-nowrap";
 
 function tabClass(active: boolean) {
   return cn(
@@ -93,7 +93,7 @@ export function MobileBottomNav() {
           <div className="relative">
             <ShoppingCart size={22} aria-hidden />
             {badge != null && (
-              <span className="absolute -right-2 -top-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-surface-dark bg-brand px-1 text-ui-10 font-bold leading-none text-white">
+              <span className="absolute -right-2 -top-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-surface-dark bg-brand px-1 text-b5-label font-bold leading-none text-white">
                 {badge > 99 ? "99+" : badge}
               </span>
             )}

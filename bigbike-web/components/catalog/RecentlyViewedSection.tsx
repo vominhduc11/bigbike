@@ -72,7 +72,7 @@ export function RecentlyViewedSection({ currentProductId, currentProduct }: Prop
   return (
     <section className="py-10">
       <div className="mb-10 text-center">
-        <h2 id="recently-viewed-heading" className="font-cta text-2xl font-bold uppercase text-foreground">
+        <h2 id="recently-viewed-heading" className="font-cta text-a3-section font-bold uppercase text-foreground">
           {tRecent("heading")}
         </h2>
       </div>

@@ -55,7 +55,7 @@ export function MediaImage({
   if (!src) {
     return (
       <div
-        className={`flex w-full min-h-[200px] items-center justify-center border-b border-border bg-secondary p-4 text-center text-caption text-muted-foreground ${className ?? ""}`}
+        className={`flex w-full min-h-[200px] items-center justify-center border-b border-border bg-secondary p-4 text-center text-a5-meta text-muted-foreground ${className ?? ""}`}
         aria-label={alt}
       >
         <span>{alt}</span>

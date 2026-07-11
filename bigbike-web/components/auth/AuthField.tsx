@@ -32,11 +32,11 @@ export function AuthField({
 }: AuthFieldProps) {
   return (
     <div className={cn("mb-8", groupClassName)}>
-      <label htmlFor={id} className="mb-2 block text-ui-14 text-foreground">
+      <label htmlFor={id} className="mb-2 block text-a5-meta text-foreground">
         {label}<span className="text-brand">*</span>
       </label>
       <Input
-        className="h-13 w-full px-5 text-ui-14"
+        className="h-13 w-full px-5 text-a5-meta"
         id={id}
         type={type}
         autoComplete={autoComplete}
@@ -44,7 +44,7 @@ export function AuthField({
         aria-invalid={!!error}
         {...registration}
       />
-      {error && <p role="alert" className="mt-2 text-ui-14 max-md:text-ui-12 text-destructive">{error.message}</p>}
+      {error && <p role="alert" className="mt-2 text-a5-meta text-destructive">{error.message}</p>}
     </div>
   );
 }

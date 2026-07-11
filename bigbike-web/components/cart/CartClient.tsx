@@ -153,7 +153,7 @@ export function CartClient() {
           </div>
         )}
         <div className="border border-border bg-secondary p-8 text-center" role="status">
-          <p className="m-0 font-cta text-2xl font-semibold uppercase">{t("emptyMessage")}</p>
+          <p className="m-0 font-cta text-a2-page font-semibold uppercase">{t("emptyMessage")}</p>
           <Button asChild variant="dark" className="mt-6 rounded-none">
             <Link href={continueHref}>{t("returnToShop")}</Link>
           </Button>
@@ -172,7 +172,7 @@ export function CartClient() {
 
       <div className="grid gap-8 md:grid-cols-12">
         <div className="min-w-0 md:col-span-8">
-          <h2 className="mb-6 font-cta text-3xl font-semibold uppercase">{t("cartHeading")}</h2>
+          <h2 className="mb-6 font-cta text-a2-page font-semibold uppercase">{t("cartHeading")}</h2>
 
           <div className="divide-y divide-border border-y border-border" role="list">
             {cart.items.map((item) => (

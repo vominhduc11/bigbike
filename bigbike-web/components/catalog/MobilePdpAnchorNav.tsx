@@ -220,7 +220,7 @@ export function MobilePdpAnchorNav({
           data-id={item.id}
           className={cn(
             "flex-none [scroll-snap-align:start] py-2.5 px-3.5 border-b-2 bg-transparent",
-            "font-body text-overline font-bold uppercase tracking-normal whitespace-nowrap cursor-pointer -mb-px min-h-11",
+            "font-body text-b4-action font-bold uppercase tracking-normal whitespace-nowrap cursor-pointer -mb-px min-h-11",
             activeId === item.id
               ? "text-brand border-b-brand"
               : "text-muted-foreground border-b-transparent",

@@ -38,10 +38,10 @@ export function ReviewsPlaceholder({
         <StarIcon filled className="h-7 w-7" />
       </span>
       <div className="flex flex-col gap-1.5">
-        <p className="m-0 font-cta text-20 max-md:text-ui-18 font-semibold uppercase tracking-wide text-[var(--bb-text-primary)]">
+        <p className="m-0 font-cta text-a3-section font-semibold uppercase tracking-wide text-[var(--bb-text-primary)]">
           {title}
         </p>
-        {description && <p className="m-0 text-18 max-md:text-ui-16 text-muted-foreground">{description}</p>}
+        {description && <p className="m-0 text-a4-content text-muted-foreground">{description}</p>}
       </div>
       {action}
     </div>

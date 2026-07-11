@@ -109,7 +109,7 @@ export function ProductTrustCard({
       <PdpSectionHeading
         title={<Tr ns="Product" k="trustBlockTitle" />}
         end={
-          <div className="inline-flex shrink-0 items-center gap-1.5 text-ui-14 font-semibold text-success">
+          <div className="inline-flex shrink-0 items-center gap-1.5 text-a5-meta font-semibold text-success">
             <BadgeCheck className="size-4" strokeWidth={2} aria-hidden="true" />
             <Tr ns="Product" k="trustVerified" />
           </div>
@@ -135,12 +135,12 @@ export function ProductTrustCard({
                   <Icon className={`size-3.5 ${cell.tone === "red" ? "text-brand" : "text-foreground"}`} strokeWidth={1.8} />
                 </span>
                 <span
-                  className={`font-body text-ui-18 max-md:text-ui-16 font-semibold ${cell.tone === "red" ? "text-brand" : "text-foreground"}`}
+                  className={`font-body text-a4-content font-semibold ${cell.tone === "red" ? "text-brand" : "text-foreground"}`}
                 >
                   {cell.value}
                 </span>
                 {cell.label ? (
-                  <span className="text-ui-14 max-md:text-ui-12 uppercase tracking-wide text-muted-foreground">{cell.label}</span>
+                  <span className="text-a5-meta uppercase tracking-wide text-muted-foreground">{cell.label}</span>
                 ) : null}
               </div>
             );
@@ -157,14 +157,14 @@ export function ProductTrustCard({
               // (xem [[project_bigbike_web_wp_css_overrides_tailwind_layer]]). Phải ép !important.
               <a
                 href={telHref(hotline)}
-                className="inline-flex items-center gap-2 font-body text-ui-20 max-md:text-ui-18 font-semibold !text-brand transition-colors hover:!text-brand-hover"
+                className="inline-flex items-center gap-2 font-body text-a3-section font-semibold !text-brand transition-colors hover:!text-brand-hover"
               >
                 <Phone className="size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
                 {hotline}
               </a>
             ) : null}
             {hoursLine || zaloDisplay ? (
-              <span className="text-ui-14 leading-snug text-muted-foreground">
+              <span className="text-a5-meta leading-snug text-muted-foreground">
                 {hoursLine}
                 {hoursLine && zaloDisplay ? <br /> : null}
                 {zaloDisplay ? (
@@ -175,7 +175,7 @@ export function ProductTrustCard({
               </span>
             ) : null}
             {contactAddress ? (
-              <span className="inline-flex items-start gap-2 text-ui-14 text-muted-foreground">
+              <span className="inline-flex items-start gap-2 text-a5-meta text-muted-foreground">
                 <MapPin className="mt-0.5 size-3.5 shrink-0" strokeWidth={2} aria-hidden="true" />
                 {contactAddress}
               </span>

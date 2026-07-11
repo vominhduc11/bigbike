@@ -14,7 +14,7 @@ import { telHref } from "@/lib/utils/format";
  * Trang nằm trong StaticPageShell; các quy tắc bên dưới giữ nguyên bố cục đã được duyệt.
  * trần UNLAYERED `a{color:#007bff}`, `p{margin-bottom:1rem}`… Tailwind v4 nằm trong @layer
  * nên LUÔN thua rule unlayered → màu/đậm/khoảng cách/link sẽ bị đè. Inline style thắng mọi
- * rule unlayered nên màu/viền/spacing/link đặt qua `style`. Chỉ CỠ CHỮ (text-ui-*) và LƯỚI
+ * rule unlayered nên màu/viền/spacing/link đặt qua `style`. Chỉ CỠ CHỮ (nhóm A/B) và LƯỚI
  * responsive (grid + md:) dùng Tailwind — đây là các thuộc tính WP không nhắm tới element
  * trần nên không bị đè, đồng thời cho phép co theo màn hình giống trang chủ / PDP.
  *
@@ -126,7 +126,7 @@ function ColHeader({ icon, children }: { icon: ReactNode; children: ReactNode })
     >
       {icon}
       <h2
-        className="text-ui-22 max-md:text-ui-18"
+        className="text-a3-section"
         style={{
           margin: 0,
           fontWeight: 700,
@@ -169,7 +169,7 @@ function InfoRow({
       </div>
       <div style={{ minWidth: 0, flex: 1 }}>
         <div
-          className="text-ui-12"
+          className="text-b5-label"
           style={{
             marginBottom: 4,
             color: COLORS.faint,
@@ -226,17 +226,17 @@ function SocialLink({
           background: bg,
           color: COLORS.inverse,
           fontWeight: 700,
-          fontSize: 14,
+          fontSize: "var(--bb-text-a5-meta)",
         }}
       >
         {icon}
       </span>
       <span style={{ minWidth: 0, flex: 1 }}>
-        <span className="text-ui-16 max-md:text-ui-14" style={{ display: "block", fontWeight: 700, color: COLORS.text }}>
+        <span className="text-a4-content" style={{ display: "block", fontWeight: 700, color: COLORS.text }}>
           {name}
         </span>
         {sub && (
-          <span className="text-ui-14" style={{ display: "block", color: COLORS.faint, marginTop: 2 }}>
+          <span className="text-a5-meta" style={{ display: "block", color: COLORS.faint, marginTop: 2 }}>
             {sub}
           </span>
         )}
@@ -372,13 +372,13 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
               </span>
               <span>
                 <span
-                  className="text-ui-12"
+                  className="text-b5-label"
                   style={{ color: COLORS.faint, display: "block", fontWeight: 600 }}
                 >
                   {vi ? "Cửa hàng chính" : "Main store"}
                 </span>
                 <strong
-                  className="text-ui-14"
+                  className="text-a5-meta"
                   style={{ color: COLORS.text, display: "block", lineHeight: 1.4, fontWeight: 700 }}
                 >
                   {mainAddr}
@@ -393,7 +393,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={vi ? "Mở Google Maps" : "Open in Google Maps"}
-              className="text-ui-13"
+              className="text-a5-meta"
               style={{
                 position: "absolute",
                 bottom: 16,
@@ -436,7 +436,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                 label={vi ? "Giờ làm việc" : "Opening hours"}
               >
                 <div
-                  className="text-ui-16 max-md:text-ui-14"
+                  className="text-a4-content"
                   style={{
                     display: "grid",
                     gridTemplateColumns: "auto 1fr",
@@ -465,7 +465,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                 {/* Badge mở/đóng cửa — chỉ render sau mount (tránh hydration mismatch) */}
                 {mounted && (
                   <div
-                    className="text-ui-12"
+                    className="text-b5-label"
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
@@ -505,13 +505,13 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                 label={vi ? "Địa chỉ" : "Address"}
               >
                 <div
-                  className="text-ui-16 max-md:text-ui-14"
+                  className="text-a4-content"
                   style={{ color: COLORS.text, fontWeight: 700, lineHeight: 1.4 }}
                 >
                   {mainAddr}
                 </div>
                 {subAddr && (
-                  <div className="text-ui-14" style={{ marginTop: 2, color: COLORS.muted }}>
+                  <div className="text-a5-meta" style={{ marginTop: 2, color: COLORS.muted }}>
                     {subAddr}
                   </div>
                 )}
@@ -521,7 +521,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
             {/* Hotline */}
             {contact.hotline && (
               <InfoRow icon={<Phone size={16} color={COLORS.red} />} label="Hotline">
-                <div className="text-ui-18 max-md:text-ui-16" style={{ color: COLORS.text, fontWeight: 700 }}>
+                <div className="text-a4-content" style={{ color: COLORS.text, fontWeight: 700 }}>
                   <a href={telHref(contact.hotline)} style={{ color: COLORS.text, textDecoration: "none" }}>
                     {contact.hotline}
                   </a>
@@ -549,7 +549,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                   )}
                 </div>
                 {zaloPhone && contact.zaloUrl && (
-                  <div className="text-ui-14" style={{ marginTop: 4, color: COLORS.muted }}>
+                  <div className="text-a5-meta" style={{ marginTop: 4, color: COLORS.muted }}>
                     {vi ? "Zalo: " : "Zalo: "}
                     <a
                       href={contact.zaloUrl}
@@ -635,7 +635,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
         {stats.map((stat) => (
           <div key={stat.label} style={{ background: COLORS.surface, padding: "16px 8px", textAlign: "center" }}>
             <div
-              className="text-ui-24 max-md:text-ui-22"
+              className="text-a2-page"
               style={{
                 fontWeight: 700,
                 color: COLORS.red,
@@ -646,7 +646,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
               {stat.value}
             </div>
             <div
-              className="text-ui-12"
+              className="text-b5-label"
               style={{
                 marginTop: 3,
                 color: COLORS.faint,

@@ -75,20 +75,20 @@ function ContactDetails({ contact, dark = false }: { contact: HeaderContact; dar
 
   return (
     <section className={cn("mt-[70px]", dark && "mt-0 border-t border-white/20 py-[30px]")}>
-      <h2 className={cn("m-0 font-cta text-ui-30 font-bold uppercase", dark ? "text-white" : "text-foreground")}>
+      <h2 className={cn("m-0 font-cta text-b2-contact font-bold uppercase", dark ? "text-white" : "text-foreground")}>
         {t("shopInfoContactHeading")}
       </h2>
       <ul className="m-0 list-none p-0">
         <li className="mt-[30px] flex items-start gap-4">
           <Clock className="h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
-          <div className={cn("text-body leading-6", dark ? "text-white/80" : "text-foreground")}>
+          <div className={cn("text-a4-content leading-6", dark ? "text-white/80" : "text-foreground")}>
             {hours.map((value) => <p key={value} className="m-0!">{value}</p>)}
           </div>
         </li>
         {contact.address ? (
           <li className="mt-[30px] flex items-start gap-4">
             <MapPin className="h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
-            <div className={cn("text-body leading-6", dark ? "text-white/80" : "text-foreground")}>
+            <div className={cn("text-a4-content leading-6", dark ? "text-white/80" : "text-foreground")}>
               <p className="m-0! font-semibold">{t("wpContactStore")}</p>
               <p className="m-0!">{contact.address}</p>
             </div>
@@ -97,7 +97,7 @@ function ContactDetails({ contact, dark = false }: { contact: HeaderContact; dar
         {contact.phones.length > 0 ? (
           <li className="mt-[30px] flex items-start gap-4">
             <Phone className="h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
-            <div className={cn("text-body leading-6", dark ? "text-white/80" : "text-foreground")}>
+            <div className={cn("text-a4-content leading-6", dark ? "text-white/80" : "text-foreground")}>
               {contact.phones.map((phone) => <p key={phone} className="m-0!">{phone}</p>)}
             </div>
           </li>
@@ -250,7 +250,7 @@ export function HeaderClient({ menuNodes, contact }: HeaderClientProps) {
           </Button>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/brand/header-mark.png" alt="BigBike" width="150" />
-          <p className="mb-0 mt-[30px] text-caption leading-6 text-muted-foreground">
+          <p className="mb-0 mt-[30px] text-a5-meta leading-6 text-muted-foreground">
             <LocalizedSetting
               vi={contact.descriptionVi}
               en={contact.descriptionEn}

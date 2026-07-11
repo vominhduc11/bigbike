@@ -339,10 +339,10 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
 
   return (
     <div className="mb-8 border border-border bg-white p-6 max-w-xl">
-      <h3 className="m-0 mb-2 font-cta text-ui-20 font-bold uppercase tracking-wide text-brand">
+      <h3 className="m-0 mb-2 font-cta text-a3-section font-bold uppercase tracking-wide text-brand">
         {isEn ? "Apparel Size Calculator" : "Công cụ tính size trang phục bảo hộ"}
       </h3>
-      <p className="m-0 mb-6 text-ui-14 text-muted-foreground leading-relaxed">
+      <p className="m-0 mb-6 text-a5-meta text-muted-foreground leading-relaxed">
         {isEn
           ? "Select the item type and enter your measurements to calculate your size."
           : "Nhập số đo để biết ngay size phù hợp. Đơn vị: cm (áo/quần/găng) hoặc mm (giày)."}
@@ -366,7 +366,7 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
                 setActiveTab(tab);
                 clearResults(tab);
               }}
-              className={`pb-3 px-4 font-cta text-ui-14 font-bold uppercase tracking-wide cursor-pointer transition-all duration-[var(--bb-duration-fast)] ${
+              className={`pb-3 px-4 font-cta text-b4-action font-bold uppercase tracking-wide cursor-pointer transition-all duration-[var(--bb-duration-fast)] ${
                 isActive
                   ? "text-brand border-b-2 border-brand"
                   : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"
@@ -383,7 +383,7 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
         <div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <div>
-              <label htmlFor="ao-nguc" className="block text-ui-14 text-muted-foreground mb-1 font-cta uppercase tracking-wide">
+              <label htmlFor="ao-nguc" className="block text-a5-meta text-muted-foreground mb-1 font-cta uppercase tracking-wide">
                 {isEn ? "Chest circumference (cm)" : "Vòng ngực (cm)"}
               </label>
               <Input
@@ -394,12 +394,12 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
                 placeholder="e.g. 92"
                 inputMode="numeric"
               />
-              <p className="m-0 mt-1 text-ui-12 text-muted-foreground">
+              <p className="m-0 mt-1 text-b5-label text-muted-foreground">
                 {isEn ? "Widest part, breathe normally" : "Qua phần rộng nhất, thở bình thường"}
               </p>
             </div>
             <div>
-              <label htmlFor="ao-eo" className="block text-ui-14 text-muted-foreground mb-1 font-cta uppercase tracking-wide">
+              <label htmlFor="ao-eo" className="block text-a5-meta text-muted-foreground mb-1 font-cta uppercase tracking-wide">
                 {isEn ? "Waist circumference (cm)" : "Vòng eo (cm)"}
               </label>
               <Input
@@ -410,7 +410,7 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
                 placeholder="e.g. 78"
                 inputMode="numeric"
               />
-              <p className="m-0 mt-1 text-ui-12 text-muted-foreground">
+              <p className="m-0 mt-1 text-b5-label text-muted-foreground">
                 {isEn ? "Narrowest part, 2-3cm above navel" : "Phần nhỏ nhất, trên rốn 2–3cm"}
               </p>
             </div>
@@ -426,23 +426,23 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
           </div>
 
           {errors.ao && (
-            <div className="border border-brand bg-brand-soft/10 border-l-4 border-l-brand p-4 text-ui-14 text-brand mb-4 font-body">
+            <div className="border border-brand bg-brand-soft/10 border-l-4 border-l-brand p-4 text-a5-meta text-brand mb-4 font-body">
               {errors.ao}
             </div>
           )}
 
           {aoResult && (
             <div className="border border-border p-5 bg-muted">
-              <div className="font-cta text-display font-bold text-brand leading-none mb-1">
+              <div className="font-cta text-b1-display font-bold text-brand leading-none mb-1">
                 {aoResult.size}
               </div>
-              <div className="text-ui-14 text-muted-foreground mb-4 font-body">
+              <div className="text-a5-meta text-muted-foreground mb-4 font-body">
                 {aoResult.basis}
               </div>
-              <div className="text-ui-14 font-bold uppercase tracking-wide text-foreground mb-2 font-cta">
+              <div className="text-a5-meta font-bold uppercase tracking-wide text-foreground mb-2 font-cta">
                 {aoResult.note}
               </div>
-              <div className="border-l-3 border-brand pl-4 py-1 text-ui-14 text-foreground leading-relaxed font-body">
+              <div className="border-l-3 border-brand pl-4 py-1 text-a5-meta text-foreground leading-relaxed font-body">
                 <p className="m-0">
                   {isEn
                     ? "Komine and Taichi are usually 1 size smaller than European sizing — consider trying one size up if purchasing these brands."
@@ -466,7 +466,7 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
         <div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <div>
-              <label htmlFor="quan-hong" className="block text-ui-14 text-muted-foreground mb-1 font-cta uppercase tracking-wide">
+              <label htmlFor="quan-hong" className="block text-a5-meta text-muted-foreground mb-1 font-cta uppercase tracking-wide">
                 {isEn ? "Hip circumference (cm)" : "Vòng hông (cm)"}
               </label>
               <Input
@@ -477,12 +477,12 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
                 placeholder="e.g. 92"
                 inputMode="numeric"
               />
-              <p className="m-0 mt-1 text-ui-12 text-muted-foreground">
+              <p className="m-0 mt-1 text-b5-label text-muted-foreground">
                 {isEn ? "Widest part of hips + buttocks" : "Qua phần rộng nhất của hông + mông"}
               </p>
             </div>
             <div>
-              <label htmlFor="quan-dui" className="block text-ui-14 text-muted-foreground mb-1 font-cta uppercase tracking-wide">
+              <label htmlFor="quan-dui" className="block text-a5-meta text-muted-foreground mb-1 font-cta uppercase tracking-wide">
                 {isEn ? "Thigh circumference (cm)" : "Vòng đùi (cm)"}
               </label>
               <Input
@@ -493,7 +493,7 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
                 placeholder="e.g. 58"
                 inputMode="numeric"
               />
-              <p className="m-0 mt-1 text-ui-12 text-muted-foreground">
+              <p className="m-0 mt-1 text-b5-label text-muted-foreground">
                 {isEn ? "Thickest part of thigh, below groin" : "Phần to nhất của đùi, ngay dưới bẹn"}
               </p>
             </div>
@@ -509,23 +509,23 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
           </div>
 
           {errors.quan && (
-            <div className="border border-brand bg-brand-soft/10 border-l-4 border-l-brand p-4 text-ui-14 text-brand mb-4 font-body">
+            <div className="border border-brand bg-brand-soft/10 border-l-4 border-l-brand p-4 text-a5-meta text-brand mb-4 font-body">
               {errors.quan}
             </div>
           )}
 
           {quanResult && (
             <div className="border border-border p-5 bg-muted">
-              <div className="font-cta text-display font-bold text-brand leading-none mb-1">
+              <div className="font-cta text-b1-display font-bold text-brand leading-none mb-1">
                 {quanResult.size}
               </div>
-              <div className="text-ui-14 text-muted-foreground mb-4 font-body">
+              <div className="text-a5-meta text-muted-foreground mb-4 font-body">
                 {quanResult.basis}
               </div>
-              <div className="text-ui-14 font-bold uppercase tracking-wide text-foreground mb-2 font-cta">
+              <div className="text-a5-meta font-bold uppercase tracking-wide text-foreground mb-2 font-cta">
                 {isEn ? "RIDING PANTS" : "QUẦN GIÁP BẢO HỘ"}
               </div>
-              <div className="border-l-3 border-brand pl-4 py-1 text-ui-14 text-foreground leading-relaxed font-body">
+              <div className="border-l-3 border-brand pl-4 py-1 text-a5-meta text-foreground leading-relaxed font-body">
                 <p className="m-0">
                   {isEn
                     ? "When trying on: verify that knee armor sits properly when seated in a riding position. The armor should not slip down below the kneecap."
@@ -548,7 +548,7 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
       {activeTab === "gang" && (
         <div>
           <div className="mb-6">
-            <label htmlFor="gang-tay" className="block text-ui-14 text-muted-foreground mb-1 font-cta uppercase tracking-wide">
+            <label htmlFor="gang-tay" className="block text-a5-meta text-muted-foreground mb-1 font-cta uppercase tracking-wide">
               {isEn ? "Hand circumference (cm)" : "Vòng bàn tay (cm)"}
             </label>
             <Input
@@ -559,7 +559,7 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
               placeholder="e.g. 20"
               inputMode="numeric"
             />
-            <p className="m-0 mt-1 text-ui-12 text-muted-foreground">
+            <p className="m-0 mt-1 text-b5-label text-muted-foreground">
               {isEn
                 ? "Across knuckles of 4 fingers, excluding thumb, fingers naturally relaxed"
                 : "Qua gốc 4 ngón, không tính ngón cái, bàn tay xòe tự nhiên"}
@@ -576,23 +576,23 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
           </div>
 
           {errors.gang && (
-            <div className="border border-brand bg-brand-soft/10 border-l-4 border-l-brand p-4 text-ui-14 text-brand mb-4 font-body">
+            <div className="border border-brand bg-brand-soft/10 border-l-4 border-l-brand p-4 text-a5-meta text-brand mb-4 font-body">
               {errors.gang}
             </div>
           )}
 
           {gangResult && (
             <div className="border border-border p-5 bg-muted">
-              <div className="font-cta text-display font-bold text-brand leading-none mb-1">
+              <div className="font-cta text-b1-display font-bold text-brand leading-none mb-1">
                 {gangResult.size}
               </div>
-              <div className="text-ui-14 text-muted-foreground mb-4 font-body">
+              <div className="text-a5-meta text-muted-foreground mb-4 font-body">
                 {gangResult.basis}
               </div>
-              <div className="text-ui-14 font-bold uppercase tracking-wide text-foreground mb-2 font-cta">
+              <div className="text-a5-meta font-bold uppercase tracking-wide text-foreground mb-2 font-cta">
                 {gangResult.note}
               </div>
-              <div className="border-l-3 border-brand pl-4 py-1 text-ui-14 text-foreground leading-relaxed font-body">
+              <div className="border-l-3 border-brand pl-4 py-1 text-a5-meta text-foreground leading-relaxed font-body">
                 <p className="m-0">
                   {isEn
                     ? "Taichi and Komine are usually 1 size smaller than European sizing — consider taking one size larger than calculated above."
@@ -615,7 +615,7 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
       {activeTab === "giay" && (
         <div>
           <div className="mb-6">
-            <label htmlFor="giay-mm" className="block text-ui-14 text-muted-foreground mb-1 font-cta uppercase tracking-wide">
+            <label htmlFor="giay-mm" className="block text-a5-meta text-muted-foreground mb-1 font-cta uppercase tracking-wide">
               {isEn ? "Foot length (mm)" : "Chiều dài bàn chân (mm)"}
             </label>
             <Input
@@ -626,7 +626,7 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
               placeholder="e.g. 260"
               inputMode="numeric"
             />
-            <p className="m-0 mt-1 text-ui-12 text-muted-foreground">
+            <p className="m-0 mt-1 text-b5-label text-muted-foreground">
               {isEn
                 ? "From heel to longest toe. Measure both feet, use the larger value."
                 : "Từ gót đến đầu ngón dài nhất. Đo cả 2 chân, lấy số lớn hơn."}
@@ -643,26 +643,26 @@ export default function ClothingSizeTool({ locale }: ClothingSizeToolProps) {
           </div>
 
           {errors.giay && (
-            <div className="border border-brand bg-brand-soft/10 border-l-4 border-l-brand p-4 text-ui-14 text-brand mb-4 font-body">
+            <div className="border border-brand bg-brand-soft/10 border-l-4 border-l-brand p-4 text-a5-meta text-brand mb-4 font-body">
               {errors.giay}
             </div>
           )}
 
           {giayResult && (
             <div className="border border-border p-5 bg-muted">
-              <div className="font-cta text-display font-bold text-brand leading-none mb-1">
+              <div className="font-cta text-b1-display font-bold text-brand leading-none mb-1">
                 EU {giayResult.eu}
               </div>
-              <div className="text-ui-14 text-muted-foreground mb-3 font-body">
+              <div className="text-a5-meta text-muted-foreground mb-3 font-body">
                 {giayResult.basis}
               </div>
-              <div className="text-ui-14 font-bold uppercase tracking-wide text-foreground mb-1 font-cta">
+              <div className="text-a5-meta font-bold uppercase tracking-wide text-foreground mb-1 font-cta">
                 {isEn ? "Suggested riding boot size" : "Gợi ý giày bảo hộ"}
               </div>
-              <div className="text-ui-16 font-bold text-brand mb-4 font-body">
+              <div className="text-a4-content font-bold text-brand mb-4 font-body">
                 {giayResult.suggest}
               </div>
-              <div className="border-l-3 border-brand pl-4 py-1 text-ui-14 text-foreground leading-relaxed font-body">
+              <div className="border-l-3 border-brand pl-4 py-1 text-a5-meta text-foreground leading-relaxed font-body">
                 <p className="m-0">
                   {isEn
                     ? "Riding boots should be 0.5–1 size larger than regular shoes to accommodate thick socks and allow ankle movement when braking."

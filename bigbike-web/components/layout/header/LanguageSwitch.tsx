@@ -48,7 +48,7 @@ export function LanguageSwitch() {
     <div className="flex h-[80px] items-center px-[20px]">
       {LOCALES.map((code, index) => (
         <span key={code} className="inline-flex items-center">
-          {index > 0 ? <span className="select-none px-1 text-overline text-white/40">/</span> : null}
+          {index > 0 ? <span className="select-none px-1 text-b5-label text-white/40">/</span> : null}
           <Button
             type="button"
             variant="ghost"
@@ -57,7 +57,7 @@ export function LanguageSwitch() {
             disabled={isPending}
             aria-pressed={code === locale}
             className={cn(
-              "min-h-11 px-1 py-0 text-overline text-white hover:bg-transparent hover:text-white hover:not-disabled:scale-100",
+              "min-h-11 px-1 py-0 text-b5-label text-white hover:bg-transparent hover:text-white hover:not-disabled:scale-100",
               code === locale ? "font-bold opacity-100" : "opacity-60",
             )}
           >

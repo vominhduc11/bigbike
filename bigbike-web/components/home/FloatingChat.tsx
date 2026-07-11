@@ -38,7 +38,7 @@ const fabHaloRing =
 // "Bạn cần hỗ trợ?" pill — cyan box up-left of the FAB, shown in both closed and open
 // states (WP sudovn parity). Hidden on mobile to avoid covering the bottom nav.
 const chatTitlePill =
-  "bg-[var(--bb-chat-title-bg)] !rounded-[3px] px-[5px] py-0.5 text-[var(--bb-color-white)] text-ui-13 font-[Arial,sans-serif] whitespace-nowrap relative bottom-[42px] right-[70px] max-md:hidden";
+  "bg-[var(--bb-chat-title-bg)] !rounded-[3px] px-[5px] py-0.5 text-[var(--bb-color-white)] text-a5-meta font-[Arial,sans-serif] whitespace-nowrap relative bottom-[42px] right-[70px] max-md:hidden";
 // WP .sudovn-btn-social-item: padding .5rem 1rem, color #333, hover #f2f2f2; icon
 // margin-right 5px (= gap). The #333 text overrides the global blue <a> link colour.
 // hover:!text keeps the row text #333 — overrides the global `a:hover` brand-red rule
@@ -50,7 +50,7 @@ const chatItemIcon =
   "shrink-0 inline-flex [&_svg]:block [&_svg]:w-10 [&_svg]:h-10 [&_img]:block [&_img]:w-10 [&_img]:h-10";
 // WP .sudovn-btn-social-item-label: font-size 1.1em, line-height 40px, color #333; value in <strong> (bold)
 const chatItemLabel =
-  "min-w-0 m-0 text-[1.1em] leading-10 break-words text-[var(--bb-chat-text)] [&_strong]:font-bold";
+  "min-w-0 m-0 text-a4-content leading-10 break-words text-[var(--bb-chat-text)] [&_strong]:font-bold";
 
 type FloatingChatProps = {
   hotline?: string;

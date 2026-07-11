@@ -58,7 +58,7 @@ export function VideoCard({ video, onPlay, compact = false }: { video: HomeVideo
           />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 bg-brand" aria-hidden="true">
-            <span className="font-body text-h3 font-bold uppercase tracking-display text-white/80">
+            <span className="font-body text-a3-section font-bold uppercase tracking-display text-white/80">
               BIGBIKE
             </span>
           </div>
@@ -69,7 +69,7 @@ export function VideoCard({ video, onPlay, compact = false }: { video: HomeVideo
             mọi card vẫn cao bằng nhau vì khung ảnh cố định 9:16. */}
         {title && (
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] bg-gradient-to-t from-black/90 via-black/45 to-transparent px-3 pb-3 pt-10 min-[600px]:px-4 min-[600px]:pb-4">
-            <p className="m-0 overflow-hidden normal-case font-body text-caption font-semibold leading-title text-white line-clamp-2">
+            <p className="m-0 overflow-hidden normal-case font-body text-a5-meta font-semibold leading-title text-white line-clamp-2">
               {title}
             </p>
           </div>

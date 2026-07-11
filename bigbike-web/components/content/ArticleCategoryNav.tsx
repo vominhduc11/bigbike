@@ -22,7 +22,7 @@ export function ArticleCategoryNav({
 
   return (
     <aside className="md:col-span-3">
-      <h2 className="mb-3 border-b border-border pb-3 font-cta text-xl font-bold uppercase text-foreground">
+      <h2 className="mb-3 border-b border-border pb-3 font-cta text-a3-section font-bold uppercase text-foreground">
         {heading}
       </h2>
       <nav aria-label={heading}>
@@ -40,12 +40,12 @@ export function ArticleCategoryNav({
                   href={href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex min-h-12 items-center justify-between gap-3 py-3 font-body text-ui-14 font-semibold text-foreground hover:text-brand",
+                    "flex min-h-12 items-center justify-between gap-3 py-3 font-body text-a5-meta font-semibold text-foreground hover:text-brand",
                     active && "text-brand",
                   )}
                 >
                   <span>{category.name}</span>
-                  <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-secondary px-2 py-1 text-ui-12 text-muted-foreground">
+                  <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-secondary px-2 py-1 text-b5-label text-muted-foreground">
                     {category.articleCount}
                   </span>
                 </Link>

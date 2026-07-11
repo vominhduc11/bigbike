@@ -130,74 +130,19 @@
   --bb-font-body: Arial, Helvetica, "Helvetica Neue", sans-serif;
   --bb-font-cta:  var(--font-barlow-condensed), Arial, Helvetica, "Helvetica Neue", sans-serif;
 
-  /* ── Type scale — WP-parity FIXED (đã gỡ toàn bộ clamp fluid) ───────────────
-     Mô hình mới (2026-06-08): cỡ chữ CỐ ĐỊNH theo px thực của site WordPress gốc,
-     neo root 16px → rem@16 = px_WP / 16 (WP neo root 14px nên px_WP = rem_WP × 14).
-     KHÔNG fluid, KHÔNG vw, KHÔNG scale theo màn lớn — chữ giữ nguyên cỡ từ desktop
-     trở lên, khớp đúng những gì WP cũ render. Chỉ section-title nhảy bậc một lần
-     @768px (xem --bb-text-section-title bên dưới). Xem docs/TYPOGRAPHY.md.
-     Dùng qua Tailwind: text-overline / text-caption / text-button / text-body /
-     text-body-lg / text-h4…h1 / text-display / text-display-xl. */
-  --fs-overline:   0.75rem;    /* 12px — nhãn nhỏ / eyebrow */
-  --fs-caption:    0.875rem;   /* 14px — meta / desc / excerpt (WP 14px) */
-  --fs-button:     1rem;       /* 16px — CTA phụ */
-  --fs-body:       1rem;       /* 16px — body (WP body = 16px) */
-  --fs-body-lg:    1.125rem;   /* 18px — lead */
-  --fs-h4:         1.125rem;   /* 18px — card / sub-heading */
-  --fs-h3:         1.25rem;    /* 20px — sub-heading */
-  --fs-h2:         1.5rem;     /* 24px — heading (WP cụm heading ~24px) */
-  --fs-h1:         1.5rem;     /* 24px — page banner/title: WP body .page-title h1 = 24px ở MỌI màn hình */
-  --fs-display:    2.5rem;     /* 40px — display (trang trí, không có WP equivalent) */
-  --fs-display-xl: 5rem;       /* 80px — display-xl (trang trí: số 404…) */
-
-  --bb-text-xs: 12px;
-  --bb-text-sm: 14px;
-  --bb-text-base: 16px;
-  --bb-text-md: 16px;
-  --bb-text-lg: 18px;
-  --bb-text-xl: 20px;
-
-  /* WP-parity exact font sizes — token hóa các cỡ chữ lệch scale chuẩn.
-     Expose thành Tailwind utility text-9 … text-50 trong globals.css @theme.
-     Tất cả CỐ ĐỊNH (đã gỡ clamp) — khớp px thực của WP, không scale theo màn. */
-  --bb-text-9: 12px;
-  --bb-text-10: 12px;
-  --bb-text-11: 12px;
-  --bb-text-13: 14px;
-  --bb-text-15: 15px;
-  --bb-text-17: 17px;
-  --bb-text-18: 18px;
-  --bb-text-20: 20px;
-  /* Header primary nav (system font, uppercase) — WP header .navigation = 16px, cố định. */
-  --bb-text-nav: 1rem;       /* 16px (WP) */
-  --bb-text-22: 1.125rem;    /* 18px */
-  --bb-text-26: 1.25rem;     /* 20px */
-  --bb-text-32: 1.5rem;      /* 24px */
-  --bb-text-40: 1.625rem;    /* 26px */
-  --bb-text-50: 1.875rem;    /* 30px */
-
-  /* Heading tokens — WP-parity CỐ ĐỊNH (đã gỡ clamp). Riêng section-title nhảy bậc
-     một lần @768px: 24px (mobile, WP body .block-title h3 @≤767) → 35px (≥768). */
-  --bb-text-hero: 1.125rem;          /* 18px */
-  --bb-text-section-title: 1.5rem;   /* 24px mobile (WP); → 35px @≥768 (override @media bên dưới) */
-  --bb-line-section-title: 1.2;
-  --bb-text-section-kicker: 1rem;    /* 16px (WP .block-title p.sub-title) */
-  --bb-line-section-kicker: var(--bb-line-snug); /* ~1.2 ≈ WP lh 19px trên 16px */
-  --bb-text-news-title: 20px;
-  --bb-line-news-title: var(--bb-line-snug);
-  --bb-text-product-title: 16px;    /* WP .product--item-title a = 16px */
-  --bb-line-product-title: 1.25;
-  /* WP footer slogan markup is <h2 class="slogan-bigbike">; the 48px rule targets
-     `.newletters form h3` { font-size: 3.429rem; line-height: 4.143rem;
-     font-family: Barlow Condensed; font-weight: 500; text-transform: uppercase }.
-     WP html root = 14px → 3.429rem = 48px (no mobile shrink). Web root = 16px,
-     so 48px = 3rem. Line-height 4.143rem/14 = 58px ≈ 1.2 (leading-title). */
-  --bb-text-footer-slogan: 48px;       /* 48px — WP .newletters form h3 render */
-  --bb-line-footer-slogan: 1.2;
-  --bb-text-footer-slogan-mobile: 48px;
-  --bb-text-h1: 1.5rem;      /* 24px (legacy, đồng bộ page banner) */
-  --bb-text-h2: 1.125rem;    /* 18px */
-  --bb-text-h3: 18px;
+  /* Canonical 11-group typography — mobile values. Every readable/functional
+     text size maps to exactly one A/B token. The ten tokens switch once at 768px;
+     only the decorative 404 (group D) may use clamp(). See docs/TYPOGRAPHY.md. */
+  --bb-text-b1-display: 1.875rem;  /* 30px mobile → 40px desktop */
+  --bb-text-b2-contact: 1.5rem;    /* 24px mobile → 30px desktop */
+  --bb-text-b3-promo: 1rem;        /* 16px mobile → 18px desktop */
+  --bb-text-b4-action: 1rem;       /* 16px mobile = desktop */
+  --bb-text-b5-label: 0.6875rem;   /* 11px mobile → 12px desktop */
+  --bb-text-a1-title: 1.625rem;     /* 26px mobile → 32px desktop */
+  --bb-text-a2-page: 1.25rem;       /* 20px mobile → 24px desktop */
+  --bb-text-a3-section: 1.125rem;   /* 18px mobile → 20px desktop */
+  --bb-text-a4-content: 1rem;       /* 16px mobile → 18px desktop */
+  --bb-text-a5-meta: 0.8125rem;     /* 13px mobile → 14px desktop */
 
   --bb-font-weight-regular: 400;
   --bb-font-weight-medium: 500;
@@ -314,7 +259,7 @@
 .bb-richtext {
   color: var(--bb-text-primary);
   font-family: var(--bb-font-body);
-  font-size: var(--bb-text-base);
+  font-size: var(--bb-text-a4-content);
   line-height: 24.003px;
 }
 
@@ -344,9 +289,9 @@
   text-transform: uppercase;
 }
 
-.bb-richtext h2 { font-size: var(--bb-text-h2); }
-.bb-richtext h3 { font-size: var(--bb-text-h3); }
-.bb-richtext h4 { font-size: var(--bb-text-lg); }
+.bb-richtext h2 { font-size: var(--bb-text-a2-page); }
+.bb-richtext h3 { font-size: var(--bb-text-a3-section); }
+.bb-richtext h4 { font-size: var(--bb-text-a4-content); }
 .bb-richtext p { margin-bottom: var(--bb-space-4); }
 .bb-richtext a {
   color: var(--bb-link-text);
@@ -368,7 +313,7 @@
   width: 100%;
   border-collapse: collapse;
   margin-bottom: var(--bb-space-6);
-  font-size: var(--bb-text-sm);
+  font-size: var(--bb-text-a5-meta);
 }
 .bb-richtext th,
 .bb-richtext td {
@@ -396,8 +341,7 @@
 
 @media (max-width: 575px) {
   :root {
-    /* Type tokens đều CỐ ĐỊNH (WP-parity); breakpoint type duy nhất là 768px cho
-       section-title (xem dưới). Ở tier này chỉ còn spacing (--bb-section-y) đổi. */
+    /* Mốc legacy này chỉ đổi spacing; typography chỉ đổi tại 768px. */
     --bb-section-y: 2rem;
   }
 }
@@ -408,13 +352,19 @@
   }
 }
 
-/* WP-parity type breakpoint — DUY NHẤT một mốc 768px (Bootstrap md của WP).
-   Section title (.block-title h3): WP render 24px ở mobile (≤767) → 35px ở desktop
-   (≥768). Mọi token type khác CỐ ĐỊNH, không nhảy bậc, không scale theo màn lớn
-   (kể cả ≥1920/2560) — đúng cách WP cũ hiển thị. */
+/* Typography breakpoint duy nhất: all ten A/B tokens switch at 768px. */
 @media (min-width: 768px) {
   :root {
-    --bb-text-section-title: 2.1875rem; /* 35px — WP body .block-title h3 (desktop) */
+    --bb-text-b1-display: 2.5rem;    /* 40px */
+    --bb-text-b2-contact: 1.875rem;  /* 30px */
+    --bb-text-b3-promo: 1.125rem;    /* 18px */
+    --bb-text-b4-action: 1rem;       /* 16px */
+    --bb-text-b5-label: 0.75rem;     /* 12px */
+    --bb-text-a1-title: 2rem;         /* 32px */
+    --bb-text-a2-page: 1.5rem;        /* 24px */
+    --bb-text-a3-section: 1.25rem;    /* 20px */
+    --bb-text-a4-content: 1.125rem;   /* 18px */
+    --bb-text-a5-meta: 0.875rem;      /* 14px */
   }
 }
 

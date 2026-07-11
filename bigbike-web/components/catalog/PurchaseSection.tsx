@@ -249,24 +249,24 @@ export function PurchaseSection({
             />
           ) : null}
           {eyebrow ? (
-            <p className="mb-0 font-heading text-ui-14 leading-none max-md:text-ui-12 font-medium uppercase tracking-wider text-brand">
+            <p className="mb-0 font-heading text-a5-meta leading-none font-medium uppercase tracking-wider text-brand">
               {eyebrow}
             </p>
           ) : null}
           <div itemProp="name">
-            <h1 className="mb-5 font-body text-3xl font-semibold uppercase leading-tight text-foreground">{name}</h1>
+            <h1 className="mb-5 font-body text-a1-title font-semibold uppercase leading-tight text-foreground">{name}</h1>
           </div>
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
               <p className="m-0 flex flex-wrap items-baseline gap-x-3">
-                <span className="font-body text-ui-32 font-bold leading-tight text-brand max-md:text-ui-30">{formatVndNumber(current)} ₫</span>
-                {showOld ? <del className="font-body text-body text-muted-foreground">{formatVndNumber(retail)} ₫</del> : null}
+                <span className="font-body text-a1-title font-bold leading-tight text-brand">{formatVndNumber(current)} ₫</span>
+                {showOld ? <del className="font-body text-a4-content text-muted-foreground">{formatVndNumber(retail)} ₫</del> : null}
               </p>
             </div>
             <div className="status">
               <p
                 className={[
-                  "stock relative m-0 h-[42px] w-full max-w-[190px] border-0 bg-transparent px-8 text-center font-cta text-button font-semibold uppercase leading-none text-white",
+                  "stock relative m-0 h-[42px] w-full max-w-[190px] border-0 bg-transparent px-8 text-center font-cta text-b4-action font-semibold uppercase leading-none text-white",
                   "after:absolute after:inset-0 after:z-0 after:h-[42px] after:w-full after:[transform:skewX(-20deg)] after:transition-colors after:duration-normal",
                   isOutOfStock ? "out-of-stock after:bg-brand" : "in-stock after:bg-foreground",
                 ].join(" ")}
@@ -286,7 +286,7 @@ export function PurchaseSection({
           />
 
           {shortDescriptionHtml ? (
-            <div className="mt-6 font-body text-body leading-7 text-foreground [&_p]:mb-4 [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:pl-6">
+            <div className="mt-6 font-body text-a4-content leading-7 text-foreground [&_p]:mb-4 [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:pl-6">
               <LHtml
                 field="shortDescription"
                 viHtml={shortDescriptionHtml}

@@ -54,12 +54,12 @@ export function ProductProsCons({
     <div className="grid gap-6 md:grid-cols-2">
       {positive.length > 0 && (
         <div className="border-t-2 border-t-pros-accent bg-pros-accent/[0.07] p-5">
-          <h3 className="mb-3 font-heading text-20 max-md:text-ui-18 font-bold uppercase tracking-wide text-pros-accent">
+          <h3 className="mb-3 font-heading text-a3-section font-bold uppercase tracking-wide text-pros-accent">
             {t("prosTitle")}
           </h3>
           <ul className="flex flex-col gap-2">
             {positive.map((note, index) => (
-              <li key={index} className="flex gap-2 text-18 max-md:text-ui-16 text-foreground">
+              <li key={index} className="flex gap-2 text-a4-content text-foreground">
                 <Check className="mt-1 h-4 w-4 shrink-0 text-pros-accent" aria-hidden />
                 <span>{note}</span>
               </li>
@@ -69,12 +69,12 @@ export function ProductProsCons({
       )}
       {negative.length > 0 && (
         <div className="border-t-2 border-t-cons-accent bg-cons-accent/[0.06] p-5">
-          <h3 className="mb-3 font-heading text-20 max-md:text-ui-18 font-bold uppercase tracking-wide text-cons-accent">
+          <h3 className="mb-3 font-heading text-a3-section font-bold uppercase tracking-wide text-cons-accent">
             {t("consTitle")}
           </h3>
           <ul className="flex flex-col gap-2">
             {negative.map((note, index) => (
-              <li key={index} className="flex gap-2 text-18 max-md:text-ui-16 text-muted-foreground">
+              <li key={index} className="flex gap-2 text-a4-content text-muted-foreground">
                 <X className="mt-1 h-4 w-4 shrink-0 text-cons-accent" aria-hidden />
                 <span>{note}</span>
               </li>
@@ -155,7 +155,7 @@ export function ProductSpecsTable({ viSpecsHtml = "" }: { viSpecsHtml?: string }
             type="button"
             onClick={() => setIsExpanded((v) => !v)}
             aria-expanded={isExpanded}
-            className="flex items-center gap-1.5 border border-brand bg-[var(--bb-bg-page)] px-6 py-2.5 text-ui-14 font-cta font-bold uppercase tracking-wider text-brand transition-all duration-[var(--bb-duration-fast)] hover:bg-brand hover:text-white cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-ring"
+            className="flex items-center gap-1.5 border border-brand bg-[var(--bb-bg-page)] px-6 py-2.5 text-b4-action font-cta font-bold uppercase tracking-wider text-brand transition-all duration-[var(--bb-duration-fast)] hover:bg-brand hover:text-white cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-ring"
           >
             {isExpanded ? (
               <>
@@ -197,12 +197,12 @@ export function ProductFaqs({ viFaqs }: { viFaqs: Faq[] }) {
           <AccordionTrigger className="group gap-3 text-left normal-case hover:text-brand data-[state=open]:text-brand">
             <span className="flex min-w-0 flex-1 items-center gap-3">
               <span
-                className="shrink-0 font-cta text-ui-18 max-md:text-ui-16 font-bold leading-snug tabular-nums text-muted-foreground transition-colors group-hover:text-brand group-data-[state=open]:text-brand"
+                className="shrink-0 font-cta text-a4-content font-bold leading-snug tabular-nums text-muted-foreground transition-colors group-hover:text-brand group-data-[state=open]:text-brand"
                 aria-hidden
               >
                 {String(i + 1).padStart(2, "0")}
               </span>
-              <span className="text-ui-20 max-md:text-ui-18 font-semibold leading-snug">{faq.question}</span>
+              <span className="text-a3-section font-semibold leading-snug">{faq.question}</span>
             </span>
           </AccordionTrigger>
           <AccordionContent>

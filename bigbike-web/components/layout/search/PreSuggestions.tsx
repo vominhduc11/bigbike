@@ -34,7 +34,7 @@ export function PreSuggestions({
         <>
           <div className={preLabelRow}>
             <span className={preLabel}>{t("recentLabel")}</span>
-            <button type="button" className="cursor-pointer border-none bg-transparent p-0 text-ui-12 text-brand-on-dark hover:underline 3xl:text-ui-13 4xl:text-ui-14" onClick={clearAll}>
+            <button type="button" className="cursor-pointer border-none bg-transparent p-0 text-b5-label text-brand-on-dark hover:underline" onClick={clearAll}>
               {t("recentClear")}
             </button>
           </div>
@@ -42,7 +42,7 @@ export function PreSuggestions({
             <div key={item} className="flex items-center border-b border-border transition-colors duration-fast last-of-type:border-b-0 hover:bg-card">
               <button
                 type="button"
-                className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 border-none bg-transparent py-[9px] pl-4 pr-2 text-left font-body text-caption text-foreground hover:text-brand-on-dark focus-visible:text-brand-on-dark focus-visible:outline-none"
+                className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 border-none bg-transparent py-[9px] pl-4 pr-2 text-left font-body text-b4-action text-foreground hover:text-brand-on-dark focus-visible:text-brand-on-dark focus-visible:outline-none"
                 onClick={() => runSearch(item)}
               >
                 <Clock size={14} aria-hidden className="shrink-0 text-muted-foreground" />

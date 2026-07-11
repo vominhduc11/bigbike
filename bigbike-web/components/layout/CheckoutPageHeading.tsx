@@ -11,9 +11,9 @@ import Link from "next/link";
 export function CheckoutPageHeading({ title }: { title: ReactNode }) {
   return (
     <header className="mt-16">
-      <h1 className="m-0 font-cta text-4xl font-semibold uppercase md:text-5xl">{title}</h1>
+      <h1 className="m-0 font-cta text-a2-page font-semibold uppercase">{title}</h1>
       <nav className="mt-3" aria-label="Breadcrumb">
-        <ol className="m-0 flex list-none items-center p-0 text-caption text-muted-foreground">
+        <ol className="m-0 flex list-none items-center p-0 text-a5-meta text-muted-foreground">
           <li><Link href="/" className="font-semibold text-muted-foreground! no-underline! hover:text-brand!">Bigbike.vn</Link></li>
           <li className="before:mx-1 before:content-['/']"><span property="name">{title}</span></li>
         </ol>

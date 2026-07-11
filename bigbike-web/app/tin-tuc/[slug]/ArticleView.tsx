@@ -82,7 +82,7 @@ export function ArticleView({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={BLOG_THUMBNAIL} alt="" className="h-auto w-full" />
 
-          <div className="my-5 flex flex-wrap items-center gap-2 text-ui-14 text-muted-foreground">
+          <div className="my-5 flex flex-wrap items-center gap-2 text-a5-meta text-muted-foreground">
             <p className="m-0">
               <Link href={categoryHref} className="font-semibold text-brand hover:underline">
                 {categoryLabel}
@@ -107,7 +107,7 @@ export function ArticleView({
           />
 
           <div className="mt-8 flex flex-wrap items-center gap-6 border-y border-border py-5">
-            <p className="m-0 font-body text-ui-16 font-semibold uppercase text-muted-foreground">
+            <p className="m-0 font-body text-a4-content font-semibold uppercase text-muted-foreground">
               <Tr ns="Blog" k="shareWord" />
             </p>
             <a href={facebookShareHref} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-muted-foreground hover:text-brand">
@@ -134,7 +134,7 @@ export function ArticleView({
       {related.length > 0 ? (
         <section id="related" className="border-t border-border py-15">
           <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
-            <h2 className="mb-6 font-cta text-3xl font-bold uppercase text-foreground">
+            <h2 className="mb-6 font-cta text-a1-title font-bold uppercase text-foreground">
               <Tr ns="Blog" k="relatedSectionHeading" />
             </h2>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -158,7 +158,7 @@ function ArticleSidebarWidget({ title, articles }: { title: ReactNode; articles:
 
   return (
     <section className="mb-8 p-4">
-      <h2 className="mb-5 font-cta text-xl font-bold uppercase text-foreground">{title}</h2>
+      <h2 className="mb-5 font-cta text-a3-section font-bold uppercase text-foreground">{title}</h2>
       <div>
         {articles.map((article) => <ArticleSidebarItem key={article.id} article={article} />)}
       </div>
@@ -179,16 +179,16 @@ function ArticleSidebarItem({ article }: { article: Article }) {
         <ArticleImage src={imageUrl} fallbackSrc={fallbackUrl} alt={title} className="aspect-video h-full w-full object-cover" />
       </LocalizedLink>
       <div className="w-3/5 min-w-0 p-3">
-        <div className="mb-1 text-ui-12 text-muted-foreground">
+        <div className="mb-1 text-b5-label text-muted-foreground">
           <p className="m-0 font-semibold text-brand">{categoryLabel}</p>
           {date ? <p className="m-0"><LocalDate value={date} dateStyle="long" /></p> : null}
         </div>
-        <h3 className="mb-1 font-body text-ui-14 font-semibold leading-5 text-foreground">
+        <h3 className="mb-1 font-body text-a5-meta font-semibold leading-5 text-foreground">
           <LocalizedLink kind="article" viSlug={article.slug} enSlug={article.slugEn} className="text-foreground hover:text-brand">
             {title}
           </LocalizedLink>
         </h3>
-        <p className="m-0 line-clamp-2 text-ui-12 text-muted-foreground">{makeExcerpt(article, 70)}</p>
+        <p className="m-0 line-clamp-2 text-b5-label text-muted-foreground">{makeExcerpt(article, 70)}</p>
       </div>
     </article>
   );

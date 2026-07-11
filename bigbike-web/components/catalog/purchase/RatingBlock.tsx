@@ -22,7 +22,7 @@ export function RatingBlock({
 
   if (!hasReviews) {
     return (
-      <div className="mt-5 font-body text-body text-muted-foreground">
+      <div className="mt-5 font-body text-a4-content text-muted-foreground">
         <p className="m-0">
           {tb("noReviews")} —{" "}
           <a href="#reviews" onClick={onOpenWriteReview} className="text-brand! underline-offset-2 hover:underline">
@@ -34,11 +34,11 @@ export function RatingBlock({
   }
 
   return (
-    <div className="mt-5 font-body text-body text-muted-foreground" itemProp="aggregateRating" itemScope itemType="https://schema.org/AggregateRating">
+    <div className="mt-5 font-body text-a4-content text-muted-foreground" itemProp="aggregateRating" itemScope itemType="https://schema.org/AggregateRating">
       {/* Sao vẽ bằng React (RatingStars) — KHÔNG để rỗng chờ plugin home.min.js
           vì script đó chỉ chạy lúc tải nguyên trang, điều hướng nội bộ vào PDP sẽ
-          mất sao. text-ui-18 = 18px khớp starSize cũ và thẻ sản phẩm. */}
-      <span className="text-ui-18">
+          mất sao. text-a4-content = 18px khớp starSize cũ và thẻ sản phẩm. */}
+      <span className="text-a4-content">
         <RatingStars value={rating} />
       </span>
       <br />

@@ -29,7 +29,7 @@ const TONE_CLASS: Record<FormNoticeTone, string> = {
  */
 export function FormNotice({ tone, className, children }: FormNoticeProps) {
   return (
-    <div className={cn("border p-[12px_16px] text-caption", TONE_CLASS[tone], className)}>
+    <div className={cn("border p-[12px_16px] text-a5-meta", TONE_CLASS[tone], className)}>
       {children}
     </div>
   );

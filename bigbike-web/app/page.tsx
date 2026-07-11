@@ -265,10 +265,10 @@ export default async function HomePage() {
                           ) : null}
                         </Link>
                       </div>
-                      <h3 className="relative z-[1] mb-10 max-w-3/5 font-body text-ui-18 font-semibold leading-5 text-foreground">
+                      <h3 className="relative z-[1] mb-10 max-w-3/5 font-body text-a4-content font-semibold leading-5 text-foreground">
                         <Link href={href} className="text-foreground hover:text-brand">{h.productName}</Link>
                       </h3>
-                      <Link className="relative z-[1] inline-flex items-center gap-1 font-body text-ui-16 font-semibold text-brand" href={href}>
+                      <Link className="relative z-[1] inline-flex items-center gap-1 font-body text-a4-content font-semibold text-brand" href={href}>
                         <Tr ns="Home" k="buyNow" /> <ChevronRight className="h-4 w-4" aria-hidden="true" />
                       </Link>
                   </article>

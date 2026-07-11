@@ -29,7 +29,7 @@ export function NotFoundActions() {
           type="search"
           name="q"
           placeholder={t("searchPlaceholder")}
-          className="flex-1 border-0 rounded-none bg-transparent h-12 min-h-0 text-caption focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="flex-1 border-0 rounded-none bg-transparent h-12 min-h-0 text-a5-meta focus-visible:ring-0 focus-visible:ring-offset-0"
           aria-label={t("searchInputAriaLabel")}
         />
         <Button type="submit" variant="primary" className="rounded-none h-12 shrink-0 w-full sm:w-auto">

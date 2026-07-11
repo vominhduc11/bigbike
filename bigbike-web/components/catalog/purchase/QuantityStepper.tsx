@@ -20,7 +20,7 @@ export function QuantityStepper({
   return (
     <div>
       <div className="flex flex-wrap items-center gap-4">
-        <label htmlFor="bb-qty" className="min-w-24 font-cta text-body font-semibold uppercase text-foreground">
+        <label htmlFor="bb-qty" className="min-w-24 font-cta text-a4-content font-semibold uppercase text-foreground">
           {tb("quantity")}
         </label>
         <div className="inline-flex items-stretch border border-border-control">
@@ -42,7 +42,7 @@ export function QuantityStepper({
             value={quantity}
             onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
             aria-label={tb("quantity")}
-            className="h-[52px]! min-h-0 w-16 rounded-none border-y-0 border-x border-border-control px-1 py-0 text-center text-2xl font-semibold [appearance:textfield] focus:shadow-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            className="h-[52px]! min-h-0 w-16 rounded-none border-y-0 border-x border-border-control px-1 py-0 text-center text-a2-page font-semibold [appearance:textfield] focus:shadow-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           />
           <Button
             type="button"

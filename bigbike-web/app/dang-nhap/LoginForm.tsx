@@ -101,14 +101,14 @@ export function LoginForm({ returnTo }: { returnTo?: string }) {
                     />
                   )}
                 />
-                <label htmlFor="remember-me" className="cursor-pointer select-none text-ui-14">
+                <label htmlFor="remember-me" className="cursor-pointer select-none text-a5-meta">
                   {t("remember")}
                 </label>
               </div>
               <div className="flex min-h-11 items-center md:justify-end">
                 <Link
                   href={toForgotPasswordPath(undefined, locale)}
-                  className="text-ui-14 font-medium text-muted-foreground underline hover:no-underline"
+                  className="text-a5-meta font-medium text-muted-foreground underline hover:no-underline"
                 >
                   {t("forgotPassword")}
                 </Link>

@@ -53,9 +53,9 @@ export function RegisterForm({ returnTo }: { returnTo?: string }) {
   if (registered) {
     return (
       <div className="text-center">
-            <h2 className="mb-3 font-cta text-2xl font-bold uppercase">{t("successHeading")}</h2>
+            <h2 className="mb-3 font-cta text-a2-page font-bold uppercase">{t("successHeading")}</h2>
             {confirmedEmail && (
-              <p className="mb-8 text-ui-16">
+              <p className="mb-8 text-a4-content">
                 {t.rich("successDescription", {
                   email: confirmedEmail,
                   strong: (chunks) => <strong>{chunks}</strong>,

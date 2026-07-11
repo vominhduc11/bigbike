@@ -48,7 +48,7 @@ function navIsActive(
 export function AccountSectionHeading({ title }: { title: string }) {
   return (
     <div className="mb-6 border-b border-border pb-3">
-      <h1 className="font-cta text-2xl font-bold uppercase leading-tight text-foreground">
+      <h1 className="font-cta text-a2-page font-bold uppercase leading-tight text-foreground">
         {title}
       </h1>
     </div>
@@ -137,7 +137,7 @@ export function AccountNav({
   return (
     <AccountRefreshContext.Provider value={refreshProfile}>
       <AccountContext.Provider value={profile}>
-        <nav className="py-8 text-ui-14 text-muted-foreground" aria-label={t("breadcrumbAccount")}>
+        <nav className="py-8 text-a5-meta text-muted-foreground" aria-label={t("breadcrumbAccount")}>
           <ol className="m-0 flex list-none flex-wrap items-center gap-1 p-0">
             <li>
               <Link href="/" className="font-semibold hover:text-brand">
@@ -167,10 +167,10 @@ export function AccountNav({
         <div className="grid gap-8 pb-10 md:grid-cols-4">
           <aside>
             <div className="relative mb-8 pr-10">
-              <h2 className="font-body text-ui-16 font-semibold text-foreground">{displayName}</h2>
-              <p className="m-0 truncate text-ui-14 text-foreground">Email: {profile.email}</p>
+              <h2 className="font-body text-a4-content font-semibold text-foreground">{displayName}</h2>
+              <p className="m-0 truncate text-a5-meta text-foreground">Email: {profile.email}</p>
               {profile.phone ? (
-                <p className="m-0 truncate text-ui-14 text-foreground">SĐT: {profile.phone}</p>
+                <p className="m-0 truncate text-a5-meta text-foreground">SĐT: {profile.phone}</p>
               ) : null}
               <Button
                 type="button"
@@ -193,7 +193,7 @@ export function AccountNav({
                     <li key={item.href} className="border-b border-border py-7 last:border-b-0">
                       <Link
                         href={item.href}
-                        className={`font-body text-ui-14 font-semibold hover:text-brand ${active ? "text-brand" : "text-foreground"}`}
+                        className={`font-body text-a5-meta font-semibold hover:text-brand ${active ? "text-brand" : "text-foreground"}`}
                         aria-current={active ? "page" : undefined}
                       >
                         {tNav(item.labelKey)}
@@ -207,7 +207,7 @@ export function AccountNav({
                     variant="ghost"
                     onClick={handleLogout}
                     disabled={loggingOut}
-                    className="h-auto min-h-0 p-0 font-body text-ui-14 font-semibold text-foreground hover:bg-transparent hover:text-brand"
+                    className="h-auto min-h-0 p-0 font-body text-b4-action font-semibold text-foreground hover:bg-transparent hover:text-brand"
                   >
                     {loggingOut ? t("loggingOut") : t("logout")}
                   </Button>

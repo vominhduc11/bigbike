@@ -6,11 +6,8 @@
  * window.getComputedStyle() for all required CSS properties, and
  * compares against the typography baseline.
  *
- * BASELINE (updated): migrated to the MD typography system —
- * docs/TYPOGRAPHY.md (superfamily Barlow). Display/heading expect
- * "Barlow Condensed" (Oswald removed); body is fluid 16→18px.
- * Selector-level px sizes (.bb-section-title, .bb-product-name, …)
- * are still on their WP-parity values pending incremental migration.
+ * BASELINE: canonical 11-group system in docs/TYPOGRAPHY.md.
+ * Font sizes switch exactly once at 768px; no ultra-wide scaling.
  *
  * Usage:
  *   BASE_URL=http://localhost:3000 node scripts/verify-typography-computed.mjs
@@ -117,10 +114,19 @@ const EXPECTED_CHECKS = [
     checks: [
       {
         prop: "font-size",
-        expected: "17",
+        expected: "16",
         matchType: "approx",
-        tolerance: 1.6,
-        note: "MD fluid --fs-body: 16px @375 → 18px @1440 (rem-based)",
+        tolerance: 0.1,
+        viewport: ["375px"],
+        note: "A4 mobile = 16px",
+      },
+      {
+        prop: "font-size",
+        expected: "18",
+        matchType: "approx",
+        tolerance: 0.1,
+        viewport: ["768px", "1440px"],
+        note: "A4 desktop = 18px",
       },
       {
         prop: "color",
@@ -130,16 +136,25 @@ const EXPECTED_CHECKS = [
       },
       {
         prop: "line-height",
-        expected: "25.5",
+        expected: "24",
         matchType: "approx",
-        tolerance: 2,
-        note: "line-height 1.5 × fluid body (16→18px) → 24→27px",
+        tolerance: 0.2,
+        viewport: ["375px"],
+        note: "A4 mobile line-height 1.5 × 16px",
+      },
+      {
+        prop: "line-height",
+        expected: "27",
+        matchType: "approx",
+        tolerance: 0.2,
+        viewport: ["768px", "1440px"],
+        note: "A4 desktop line-height 1.5 × 18px",
       },
       {
         prop: "font-family",
-        expected: "Barlow",
+        expected: "Arial",
         matchType: "contains",
-        note: "WP main.css body{font-family:Barlow}",
+        note: "Nhóm A dùng Arial/Helvetica",
       },
       {
         prop: "font-weight",
@@ -157,9 +172,9 @@ const EXPECTED_CHECKS = [
     checks: [
       {
         prop: "font-family",
-        expected: "Barlow",
+        expected: "Arial",
         matchType: "contains",
-        note: "Inherits from body",
+        note: "Liên kết nội dung kế thừa nhóm A",
       },
     ],
   },
@@ -179,10 +194,10 @@ const EXPECTED_CHECKS = [
       },
       {
         prop: "font-size",
-        expected: "18.288",
+        expected: "16",
         matchType: "approx",
-        tolerance: 1,
-        note: "WP 1.143rem × 16px = 18.288px",
+        tolerance: 0.1,
+        note: "B4 = 16px ở cả hai phía breakpoint",
       },
       {
         prop: "font-weight",

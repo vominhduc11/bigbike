@@ -48,7 +48,7 @@ export function HomeCategoryGrid({ initialCategories }: { initialCategories: Cat
                   <span className="block">
                     <img src={img} className="mx-auto h-auto max-h-40 w-auto max-w-full object-contain transition duration-300 group-hover:brightness-0 group-hover:invert" alt="" loading="lazy" />
                   </span>
-                  <span className="mt-8 block font-cta text-ui-16 font-semibold uppercase text-foreground group-hover:text-white">{c.name}</span>
+                  <span className="mt-8 block font-cta text-a4-content font-semibold uppercase text-foreground group-hover:text-white">{c.name}</span>
                   <ChevronRight className="mx-auto mt-0 h-0 w-6 text-foreground opacity-0 transition-all duration-300 group-hover:mt-8 group-hover:h-6 group-hover:text-white group-hover:opacity-100" aria-hidden="true" />
                 </span>
               </LocalizedLink>

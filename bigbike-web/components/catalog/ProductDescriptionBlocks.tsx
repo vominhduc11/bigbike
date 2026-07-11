@@ -78,7 +78,7 @@ export function DescriptionBlocksView({ blocks }: { blocks: DescriptionBlock[] }
                     className="aspect-[4/3] w-full border border-border object-cover"
                   />
                   {g.block.caption ? (
-                    <figcaption className="mt-2 text-ui-14 max-md:text-ui-12 italic text-muted-foreground">
+                    <figcaption className="mt-2 text-a5-meta italic text-muted-foreground">
                       {g.block.caption}
                     </figcaption>
                   ) : null}
@@ -102,7 +102,7 @@ export function DescriptionBlocksView({ blocks }: { blocks: DescriptionBlock[] }
                 className="aspect-[4/3] w-full border border-border object-cover"
               />
               {g.block.caption ? (
-                <figcaption className="mt-2 text-ui-14 max-md:text-ui-12 italic text-muted-foreground">
+                <figcaption className="mt-2 text-a5-meta italic text-muted-foreground">
                   {g.block.caption}
                 </figcaption>
               ) : null}

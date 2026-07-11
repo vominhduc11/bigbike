@@ -35,16 +35,16 @@ export default async function NotFoundPage() {
         <div className="max-w-[720px] mx-auto pt-10 pb-20 flex flex-col gap-7 text-center">
           <div className="flex justify-center select-none" aria-hidden="true">
             <div className="relative">
-              {/* bespoke: display-only ghost text, no token at this scale */}
+              {/* Nhóm D: ngoại lệ trang trí nền duy nhất được dùng clamp(). */}
               <span className="font-body font-bold text-[clamp(7rem,22vw,14rem)] leading-none tracking-normal text-foreground/[0.07] select-none">
                 404
               </span>
-              <span className="absolute inset-0 flex items-center justify-center font-body font-bold text-display-xl leading-none tracking-normal text-brand">
+              <span className="absolute inset-0 flex items-center justify-center font-body font-bold text-b1-display leading-none tracking-normal text-brand">
                 404
               </span>
             </div>
           </div>
-          <p className="text-body text-muted-foreground">{t("description")}</p>
+          <p className="text-a4-content text-muted-foreground">{t("description")}</p>
 
           <NotFoundActions />
 

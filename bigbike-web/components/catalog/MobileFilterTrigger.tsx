@@ -12,7 +12,7 @@ export function MobileFilterTrigger() {
     <Button
       type="button"
       variant="outline"
-      className="order-1 h-[52px] w-full justify-between rounded-none border-border px-5 font-cta text-caption font-semibold uppercase md:hidden"
+      className="order-1 h-[52px] w-full justify-between rounded-none border-border px-5 font-cta text-b4-action font-semibold uppercase md:hidden"
       onClick={() => window.dispatchEvent(new CustomEvent(CATALOG_FILTER_OPEN_EVENT))}
     >
       {t("filterMobileHeading")}

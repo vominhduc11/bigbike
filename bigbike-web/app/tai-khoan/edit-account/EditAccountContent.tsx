@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { FormNotice } from "@/components/ui/FormNotice";
 
 // 2020-mockup field label: gray, sentence-case.
-const LEGACY_LABEL = "text-ui-14 max-md:text-ui-12 text-muted-foreground";
+const LEGACY_LABEL = "text-a5-meta text-muted-foreground";
 
 function ReqMark() {
   return <span className="text-brand">*</span>;
@@ -79,7 +79,7 @@ export function EditAccountContent() {
     <>
       <AccountSectionHeading title={tNav("info")} />
 
-      <p className="mb-5 text-ui-16 max-md:text-ui-14 leading-relaxed text-muted-foreground">
+      <p className="mb-5 text-a4-content leading-relaxed text-muted-foreground">
         {t("intro")}
       </p>
 
@@ -104,8 +104,8 @@ export function EditAccountContent() {
 
 
         <fieldset className="mt-5 border-0 p-0">
-          <legend className="mb-3 text-ui-14 max-md:text-ui-12 text-muted-foreground">{t("changePassword")}</legend>
-          <p className="mb-3 text-ui-16 max-md:text-ui-14 text-muted-foreground">
+          <legend className="mb-3 text-a5-meta text-muted-foreground">{t("changePassword")}</legend>
+          <p className="mb-3 text-a4-content text-muted-foreground">
             {t("changePasswordHint")}
           </p>
           <div className="grid grid-cols-1 gap-x-6 gap-y-[18px] md:grid-cols-2 xl:gap-x-8">
@@ -137,7 +137,7 @@ export function EditAccountContent() {
               />
             </div>
           </div>
-          {passwordError && <p className="mt-2 text-ui-16 max-md:text-ui-14 text-destructive">{passwordError}</p>}
+          {passwordError && <p className="mt-2 text-a4-content text-destructive">{passwordError}</p>}
         </fieldset>
 
         <Button type="submit" variant="primary" disabled={saving} className="mt-6 w-full sm:w-auto sm:min-w-[160px]">

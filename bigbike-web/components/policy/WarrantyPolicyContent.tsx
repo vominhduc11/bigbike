@@ -204,7 +204,7 @@ function steps(lang: Lang, contact: WarrantyContact): { title: Bi; body: ReactNo
 
 function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <h2 className="mb-4 font-cta text-ui-22 font-bold uppercase leading-title tracking-wide text-brand">
+    <h2 className="mb-4 font-cta text-a2-page font-bold uppercase leading-title tracking-wide text-brand">
       {children}
     </h2>
   );
@@ -212,7 +212,7 @@ function SectionTitle({ children }: { children: ReactNode }) {
 
 function SubLabel({ children }: { children: ReactNode }) {
   return (
-    <p className="mb-2 font-cta text-ui-18 font-bold uppercase tracking-wide text-foreground">
+    <p className="mb-2 font-cta text-a4-content font-bold uppercase tracking-wide text-foreground">
       {children}
     </p>
   );
@@ -252,15 +252,15 @@ export function WarrantyPolicyContent({
   ].filter(Boolean) as { label: string; value: ReactNode }[];
 
   return (
-    <div className="max-w-none text-ui-16 max-md:text-ui-14 leading-body text-foreground">
+    <div className="max-w-none text-a4-content leading-body text-foreground">
       {/* Intro */}
-      <p className="mb-6 text-ui-18 max-md:text-ui-16 leading-body">{t(lang, COPY.intro)}</p>
+      <p className="mb-6 text-a4-content leading-body">{t(lang, COPY.intro)}</p>
 
       {/* 1. Điều kiện */}
       <SectionTitle>{t(lang, COPY.s1Title)}</SectionTitle>
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <div className="border border-border p-4">
-          <p className="mb-3 flex items-center gap-2 font-cta text-ui-18 font-bold uppercase tracking-wide text-foreground">
+          <p className="mb-3 flex items-center gap-2 font-cta text-a4-content font-bold uppercase tracking-wide text-foreground">
             <Check className="size-5 shrink-0 text-pros-accent" aria-hidden /> {t(lang, COPY.covered)}
           </p>
           <ul className="list-disc space-y-2 pl-5 leading-snug">
@@ -270,7 +270,7 @@ export function WarrantyPolicyContent({
           </ul>
         </div>
         <div className="border border-border p-4">
-          <p className="mb-3 flex items-center gap-2 font-cta text-ui-18 font-bold uppercase tracking-wide text-foreground">
+          <p className="mb-3 flex items-center gap-2 font-cta text-a4-content font-bold uppercase tracking-wide text-foreground">
             <X className="size-5 shrink-0 text-cons-accent" aria-hidden /> {t(lang, COPY.notCovered)}
           </p>
           <ul className="list-disc space-y-2 pl-5 leading-snug">
@@ -295,7 +295,7 @@ export function WarrantyPolicyContent({
       {/* Mũ bảo hiểm */}
       <SubLabel>{t(lang, COPY.helmets)}</SubLabel>
       <div className="mb-6 overflow-x-auto">
-        <table className="w-full border-collapse text-ui-16 max-md:text-ui-14">
+        <table className="w-full border-collapse text-a4-content">
           <thead>
             <tr className="bg-secondary">
               <th className="w-1/5 border border-border p-3 text-left font-bold">{t(lang, COPY.colBrand)}</th>
@@ -308,7 +308,7 @@ export function WarrantyPolicyContent({
               <tr key={r.brand}>
                 <td className="border border-border p-3 align-top font-bold">{r.brand}</td>
                 <td className="border border-border p-3 align-top">{t(lang, r.period)}</td>
-                <td className="border border-border p-3 align-top text-ui-14 text-muted-foreground">
+                <td className="border border-border p-3 align-top text-a5-meta text-muted-foreground">
                   {r.note.map((n, i) => (
                     <span key={i} className="block">{t(lang, n)}</span>
                   ))}
@@ -321,11 +321,11 @@ export function WarrantyPolicyContent({
 
       {/* Áo / Găng / Giày */}
       <SubLabel>{t(lang, COPY.apparel)}</SubLabel>
-      <p className="mb-2 text-ui-14 text-muted-foreground">
+      <p className="mb-2 text-a5-meta text-muted-foreground">
         {t(lang, COPY.appliesTo)} <span className="text-brand">{t(lang, COPY.hevikNote)}</span>
       </p>
       <div className="mb-6 overflow-x-auto">
-        <table className="w-full border-collapse text-ui-16 max-md:text-ui-14">
+        <table className="w-full border-collapse text-a4-content">
           <thead>
             <tr className="bg-secondary">
               <th className="border border-border p-3 text-left font-bold">{t(lang, COPY.colItem)}</th>
@@ -346,7 +346,7 @@ export function WarrantyPolicyContent({
       {/* Balo / Túi */}
       <SubLabel>{t(lang, COPY.bags)}</SubLabel>
       <div className="mb-6 overflow-x-auto">
-        <table className="w-full border-collapse text-ui-16 max-md:text-ui-14">
+        <table className="w-full border-collapse text-a4-content">
           <thead>
             <tr className="bg-secondary">
               <th className="border border-border p-3 text-left font-bold">{t(lang, COPY.colItem)}</th>
@@ -369,7 +369,7 @@ export function WarrantyPolicyContent({
       <ol className="mb-6 space-y-3">
         {steps(lang, contact).map((s, i) => (
           <li key={i} className="flex gap-4 border border-border p-4">
-            <span className="font-cta text-ui-22 font-bold leading-none text-brand">{i + 1}</span>
+            <span className="font-cta text-a2-page font-bold leading-none text-brand">{i + 1}</span>
             <div className="leading-body">
               <strong className="text-foreground">{t(lang, s.title)}</strong>
               <br />
@@ -382,7 +382,7 @@ export function WarrantyPolicyContent({
       {/* 4. Liên hệ */}
       <SectionTitle>{t(lang, COPY.s4Title)}</SectionTitle>
       <div className="mb-4 overflow-x-auto">
-        <table className="w-full border-collapse text-ui-16 max-md:text-ui-14">
+        <table className="w-full border-collapse text-a4-content">
           <tbody>
             {contactRows.map((row, i) => (
               <tr key={i}>
@@ -394,7 +394,7 @@ export function WarrantyPolicyContent({
         </table>
       </div>
 
-      <p className="text-ui-14 leading-snug text-muted-foreground">{t(lang, COPY.footerNote)}</p>
+      <p className="text-a5-meta leading-snug text-muted-foreground">{t(lang, COPY.footerNote)}</p>
     </div>
   );
 }

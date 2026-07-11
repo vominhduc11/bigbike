@@ -116,7 +116,7 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
                   </Button>
                   {ratingFilter !== null && (
                     <>
-                      <span className="text-caption text-muted-foreground">
+                      <span className="text-a5-meta text-muted-foreground">
                         {t("filterActive", { count: ratingFilter })}
                       </span>
                       <Button
@@ -132,7 +132,7 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="shrink-0 text-caption text-muted-foreground">{t("sortLabel")}</span>
+                  <span className="shrink-0 text-a5-meta text-muted-foreground">{t("sortLabel")}</span>
                   <Select value={sort} onValueChange={(value) => handleSortChange(value as SortKey)}>
                     <SelectTrigger className="w-[180px] min-h-[40px]" aria-label={t("sortLabel")}>
                       <SelectValue />

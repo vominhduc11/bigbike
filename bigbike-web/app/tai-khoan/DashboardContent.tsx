@@ -33,7 +33,7 @@ export function DashboardContent() {
       <AccountSectionHeading title={tNav("dashboard")} />
       {profile?.emailVerified === false && (
         <div className="mb-6 border border-[var(--bb-danger)]/30 bg-[var(--bb-danger)]/5 px-4 py-3">
-          <p className="m-0 text-ui-16 max-md:text-ui-14 font-semibold text-foreground">{t("emailNotVerified")}</p>
+          <p className="m-0 text-a4-content font-semibold text-foreground">{t("emailNotVerified")}</p>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <Button
               type="button"
@@ -45,12 +45,12 @@ export function DashboardContent() {
               {resendState === "sent" ? t("emailVerifySent") : t("emailVerifyResend")}
             </Button>
             {resendState === "error" && (
-              <span className="text-ui-16 max-md:text-ui-14 text-[var(--bb-danger)]">{t("emailVerifyError")}</span>
+              <span className="text-a4-content text-[var(--bb-danger)]">{t("emailVerifyError")}</span>
             )}
           </div>
         </div>
       )}
-      <div className="space-y-4 text-ui-16 leading-relaxed text-foreground">
+      <div className="space-y-4 text-a4-content leading-relaxed text-foreground">
         <p>
           {t.rich("dashboardGreeting", {
             name: displayName,

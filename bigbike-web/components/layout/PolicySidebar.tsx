@@ -17,7 +17,7 @@ export function PolicySidebar({
   return (
     <aside className="md:col-span-3">
       {items.length === 0 ? (
-        <p className="text-ui-16 text-muted-foreground">{emptyLabel}</p>
+        <p className="text-a4-content text-muted-foreground">{emptyLabel}</p>
       ) : (
         <nav aria-label={emptyLabel}>
           <ul className="m-0 list-none p-0">
@@ -40,7 +40,7 @@ export function PolicySidebar({
                   href={item.href}
                   aria-current={item.current ? "page" : undefined}
                   className={cn(
-                    "font-cta text-ui-16 font-semibold uppercase text-foreground hover:text-brand",
+                    "font-cta text-b4-action font-semibold uppercase text-foreground hover:text-brand",
                     item.current && "text-brand",
                   )}
                 >

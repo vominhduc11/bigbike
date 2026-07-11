@@ -60,7 +60,7 @@ export function PageHero({
 
       <div className="relative z-10 mx-auto flex min-h-[250px] w-full max-w-[1200px] items-center px-[15px] md:min-h-[450px]">
         <div className="w-full md:w-1/2">
-          <h1 className="m-0 font-cta text-2xl font-semibold leading-normal text-white!">
+          <h1 className="m-0 font-cta text-a2-page font-semibold leading-normal text-white!">
             {titleNode ?? title}
           </h1>
           <nav className="mt-2" aria-label="Breadcrumb">
@@ -70,7 +70,7 @@ export function PageHero({
                 return (
                   <li
                     key={`${crumb.label}-${index}`}
-                    className="hidden items-center text-caption text-white! before:mx-1 before:content-['/'] first:inline-flex! first:before:hidden last:inline-flex! md:inline-flex!"
+                    className="hidden items-center text-a5-meta text-white! before:mx-1 before:content-['/'] first:inline-flex! first:before:hidden last:inline-flex! md:inline-flex!"
                   >
                     {href ? (
                       <Link href={href} className="font-semibold text-white! no-underline! hover:text-brand!">

@@ -29,7 +29,7 @@ export async function ArticleListDefault({
 
   return (
     <>
-      <div className="pb-15 text-ui-16 leading-relaxed text-foreground">
+      <div className="pb-15 text-a4-content leading-relaxed text-foreground">
         <p className="m-0 text-justify">{t("contentTop")}</p>
       </div>
 
@@ -44,7 +44,7 @@ export async function ArticleListDefault({
 
         <div className={hasMultipleCategories ? "min-w-0 md:col-span-9" : "min-w-0 md:col-span-12"}>
           {articles.length === 0 ? (
-            <p className="border border-border bg-card p-4 text-ui-16 text-muted-foreground">{t("listEmpty")}</p>
+            <p className="border border-border bg-card p-4 text-a4-content text-muted-foreground">{t("listEmpty")}</p>
           ) : (
             <>
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -62,7 +62,7 @@ export async function ArticleListDefault({
         </div>
       </div>
 
-      <div className="pb-15 pt-25 text-ui-16 leading-relaxed text-foreground">
+      <div className="pb-15 pt-25 text-a4-content leading-relaxed text-foreground">
         <p className="m-0 text-justify">{t("contentBottom")}</p>
       </div>
     </>

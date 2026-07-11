@@ -72,7 +72,7 @@ export function CheckoutClient() {
   if (!cart || cart.items.length === 0) {
     return (
       <div className="py-10 text-center" role="status">
-        <p className="font-cta text-2xl font-semibold uppercase">{tCart("emptyHeading")}</p>
+        <p className="font-cta text-a2-page font-semibold uppercase">{tCart("emptyHeading")}</p>
         <p className="mb-6 text-muted-foreground">{t("emptyDescription")}</p>
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Button asChild className="rounded-none"><Link href={toProductListPath(locale)}>{t("continueShopping")}</Link></Button>
@@ -118,7 +118,7 @@ export function CheckoutClient() {
           
           {/* Card 1: Thông tin nhận hàng */}
           <section className="border border-border bg-background p-6">
-            <h2 className="mb-6 font-cta text-2xl font-semibold uppercase">{t("step1Title")}</h2>
+            <h2 className="mb-6 font-cta text-a2-page font-semibold uppercase">{t("step1Title")}</h2>
 
             <div className="space-y-4">
               <CheckoutAddressFields
@@ -135,7 +135,7 @@ export function CheckoutClient() {
               />
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="order_comments" className="font-body text-caption font-bold text-foreground">
+                <label htmlFor="order_comments" className="font-body text-a5-meta font-bold text-foreground">
                   {t("noteLabel")} <span className="optional">{t("noteOptional")}</span>
                 </label>
                 <Textarea
@@ -153,7 +153,7 @@ export function CheckoutClient() {
           {/* Địa chỉ giao hàng khác (nếu cần) */}
           <section className="border border-border bg-background p-6">
             <div>
-              <label className="inline-flex! cursor-pointer items-center gap-2 font-bold select-none text-ui-15">
+              <label className="inline-flex! cursor-pointer items-center gap-2 font-bold select-none text-a5-meta">
                 <Checkbox
                   checked={shipToDifferent}
                   onCheckedChange={(checked) => setShipToDifferent(checked === true)}
@@ -165,7 +165,7 @@ export function CheckoutClient() {
 
             {shipToDifferent && (
               <div className="mt-6">
-                <h3 className="mb-4 font-cta text-ui-18 max-md:text-ui-16 font-semibold uppercase">{t("shippingAddressTitle")}</h3>
+                <h3 className="mb-4 font-cta text-a4-content font-semibold uppercase">{t("shippingAddressTitle")}</h3>
                 <div className="space-y-4">
                   <CheckoutAddressFields
                     idPrefix="shipping"
@@ -186,7 +186,7 @@ export function CheckoutClient() {
 
           {/* Card 2: Phương thức thanh toán */}
           <section className="border border-border bg-background p-6">
-            <h2 className="mb-6 font-cta text-2xl font-semibold uppercase">{t("paymentMethodTitle")}</h2>
+            <h2 className="mb-6 font-cta text-a2-page font-semibold uppercase">{t("paymentMethodTitle")}</h2>
             
             <CodPaymentBlock />
 
@@ -202,7 +202,7 @@ export function CheckoutClient() {
             >
               {submitting ? t("placingOrder") : "ĐẶT HÀNG - SHOP SẼ GỌI XÁC NHẬN"}
             </Button>
-            <p className="mb-0 mt-3 text-center text-caption text-muted-foreground">
+            <p className="mb-0 mt-3 text-center text-a5-meta text-muted-foreground">
               Shop xác nhận trong 1-2 giờ làm việc. Hotline: 0906902404
             </p>
           </section>

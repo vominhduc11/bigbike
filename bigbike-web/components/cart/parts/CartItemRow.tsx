@@ -33,12 +33,12 @@ export function CartItemRow({
         {item.image?.url ? (
           <MediaImage image={item.image} altFallback={item.productName} width={130} height={130} className="h-24 w-24 object-contain md:h-[130px] md:w-[130px]" />
         ) : (
-          <span className="flex h-24 w-24 items-center justify-center bg-secondary font-cta text-2xl font-semibold md:h-[130px] md:w-[130px]">{item.productName.slice(0, 2)}</span>
+          <span className="flex h-24 w-24 items-center justify-center bg-secondary font-cta text-a2-page font-semibold md:h-[130px] md:w-[130px]">{item.productName.slice(0, 2)}</span>
         )}
       </div>
 
       <div className="min-w-0">
-        <h3 className="m-0 font-cta text-xl font-semibold uppercase">{item.productName}</h3>
+        <h3 className="m-0 font-cta text-a3-section font-semibold uppercase">{item.productName}</h3>
         {item.variantName ? <p className="mb-0 mt-2 text-muted-foreground">{item.variantName}</p> : null}
         <p className="mb-0 mt-2 font-semibold text-brand">{item.quantity} x {formatVnd(item.unitPrice)} = {formatVnd(item.lineTotal)}</p>
         {!item.available && <p className="mb-0 mt-2 font-semibold text-destructive">{t("backorderNotice")}</p>}

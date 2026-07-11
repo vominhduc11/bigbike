@@ -1,236 +1,98 @@
-# BIGBIKE-WEB — Typography System
+# BIGBIKE-WEB — Hệ thống Typography
 
-Tài liệu chuẩn (source of truth) cho typography của `bigbike-web`. Đây là bản đã **áp dụng vào repo** (Tailwind v4 `@theme inline`, token `--bb-font-*` + `--fs-*`), hợp nhất từ tài liệu thiết kế gốc `BIGBIKE_TYPOGRAPHY`.
+Tài liệu này là nguồn sự thật chi tiết cho typography của `bigbike-web`. Từ ngày 2026-07-11, toàn bộ chữ trong website được chuẩn hoá về **11 nhóm cố định**: A1–A5, B1–B5 và nhóm trang trí D.
 
-Root = 16px. Cỡ chữ **CỐ ĐỊNH theo px thực của WordPress gốc** (rem neo 16px), **KHÔNG `clamp()`/`vw`**, không scale theo màn lớn — khớp đúng những gì site WP cũ render (cập nhật 2026-06-08, WP-parity). Breakpoint type **duy nhất = 768px** (Bootstrap md của WP), chỉ áp cho *section title*.
+## 1. Nguyên tắc nền
 
----
+- Giữ đúng hai phông đang có: **Arial / Helvetica** và **Barlow Condensed**. Không dùng Oswald hoặc thêm phông khác.
+- Nhóm A dùng Arial/Helvetica cho tiêu đề trang và nội dung. Nhóm B dùng Barlow Condensed cho chức năng/nhấn và luôn viết IN HOA.
+- Mỗi nhóm có đúng một cỡ mobile và một cỡ desktop. Sang mobile chỉ đổi cỡ, không đổi phông.
+- Breakpoint cỡ chữ duy nhất là `768px`: `<768px` dùng cỡ mobile, `≥768px` dùng cỡ desktop.
+- Các breakpoint 375px, 600px, 991px, 1920px, 2560px và màn siêu rộng không được thay đổi cỡ chữ. Chúng chỉ được thay đổi bố cục hoặc lưới.
+- Mọi đoạn chữ phải thuộc đúng một nhóm. Không có cỡ chữ tự do, thang `text-ui-*`, cỡ Tailwind mặc định hoặc `font-size` hardcode ngoài token nhóm.
+- Ngoại lệ duy nhất được co giãn là số “404” mờ, không phải chữ đọc, thuộc nhóm D.
 
-## 1. Bộ phông chữ — hybrid: Barlow Condensed + font hệ thống
+## 2. Bảng 11 nhóm chữ
 
-Hệ thống dùng **Barlow Condensed** cho display/heading/CTA/nav, và **font hệ thống Arial/Helvetica** cho body/link — parity với WP cũ (WP dùng Bootstrap Reboot default = Arial/Helvetica cho body text).
+| Nhóm | Vai trò | Phông cố định | Mobile `<768px` | Desktop `≥768px` | Dùng cho |
+|---|---|---|---:|---:|---|
+| B1 | Trang trí / Display | Barlow Condensed, IN HOA | 30px | 40px | Slogan footer, chữ hero trang trí, số kết quả bảng size |
+| B2 | Liên hệ lớn | Barlow Condensed, IN HOA | 24px | 30px | Hotline/email lớn ở footer, “Thông tin cửa hàng” |
+| B3 | Badge nhấn / % giảm | Barlow Condensed, IN HOA | 16px | 18px | Nhãn “-20%”, nhãn giảm giá nổi bật |
+| B4 | Nút · Menu · Tab | Barlow Condensed, IN HOA | 16px | 16px | Nút bấm, menu chính, tab, nhãn Còn/Hết hàng |
+| B5 | Nhãn nhỏ / Eyebrow / Badge | Barlow Condensed, IN HOA | 11px | 12px | Chữ dẫn nhỏ, badge, ngày đăng, nhãn thanh đáy, SKU |
+| A1 | Tiêu đề lớn H1 | Arial / Helvetica | 26px | 32px | Tiêu đề khối lớn; tên và giá lớn trên trang sản phẩm |
+| A2 | Tiêu đề trang H2 | Arial / Helvetica | 20px | 24px | Giỏ hàng, thanh toán, tài khoản, đăng nhập, thông báo thành công |
+| A3 | Tiêu đề khối H3 | Arial / Helvetica | 18px | 20px | Tiêu đề khối trong trang, hộp thoại, sidebar |
+| A4 | Nội dung + tiêu đề nhỏ | Arial / Helvetica | 16px | 18px | Đoạn văn, mô tả, tên bài/sản phẩm/card, ô nhập |
+| A5 | Chú thích / Meta | Arial / Helvetica | 13px | 14px | Breadcrumb, phụ đề, nhãn form, giá phụ/giá gạch, bộ đếm |
+| D | Trang trí nền | Phông tại thành phần | `clamp()` | `clamp()` | Chỉ số “404” mờ trong `app/not-found.tsx` |
 
-| Vai trò | Phông | Nguồn | Đặc tính |
+Giá được phân nhóm theo cấp độ nơi hiển thị: giá lớn trên trang sản phẩm = A1; tổng tiền giỏ hàng = A2 hoặc A3; giá trong một dòng = A4; giá trên card = A5.
+
+## 3. Token nguồn — `styles/brand-tokens.css`
+
+Mười token dưới đây là nguồn cỡ chữ duy nhất. Giá trị mobile khai báo tại `:root`; mỗi token đổi đúng một lần trong `@media (min-width: 768px)`.
+
+```css
+--bb-text-b1-display: 1.875rem;  /* 30px → 40px */
+--bb-text-b2-contact: 1.5rem;    /* 24px → 30px */
+--bb-text-b3-promo: 1rem;        /* 16px → 18px */
+--bb-text-b4-action: 1rem;       /* 16px → 16px */
+--bb-text-b5-label: 0.6875rem;   /* 11px → 12px */
+--bb-text-a1-title: 1.625rem;     /* 26px → 32px */
+--bb-text-a2-page: 1.25rem;       /* 20px → 24px */
+--bb-text-a3-section: 1.125rem;   /* 18px → 20px */
+--bb-text-a4-content: 1rem;       /* 16px → 18px */
+--bb-text-a5-meta: 0.8125rem;     /* 13px → 14px */
+```
+
+`body` và mọi ô nhập dùng A4. Cỡ mobile 16px bảo đảm trình duyệt iOS không tự phóng to khi người dùng nhập liệu.
+
+## 4. Tailwind v4 utilities — `app/globals.css`
+
+Dự án dùng Tailwind v4 với `@theme inline`, không có `tailwind.config`. Token nguồn được expose thành utility theo vai trò:
+
+| Utility | Nhóm | Utility | Nhóm |
 |---|---|---|---|
-| Display / Heading / Nav / Button / Label | **Barlow Condensed** | next/font/google | Condensed grotesque, thể thao — dùng kèm `UPPERCASE` |
-| Body / Nội dung / Link | **Arial, Helvetica, "Helvetica Neue", sans-serif** | Hệ thống | Parity WP cũ — không tải webfont cho body |
-| Icon | icomoon | self-host | Giữ nguyên |
+| `text-b1-display` | B1 | `text-a1-title` | A1 |
+| `text-b2-contact` | B2 | `text-a2-page` | A2 |
+| `text-b3-promo` | B3 | `text-a3-section` | A3 |
+| `text-b4-action` | B4 | `text-a4-content` | A4 |
+| `text-b5-label` | B5 | `text-a5-meta` | A5 |
 
-Cả hai font đều hỗ trợ đầy đủ dấu tiếng Việt.
+Không gắn `md:text-*`: chính token CSS tự đổi tại 768px. Một thành phần chỉ dùng một utility nhóm ở mọi kích thước màn hình.
 
----
+## 5. Quy tắc sử dụng
 
-## 2. Cài đặt — `app/fonts.ts`
+- Nhóm B phải đi với phông Barlow Condensed và chữ IN HOA; nhóm A đi với Arial/Helvetica.
+- Form input, textarea và select luôn dùng A4.
+- Không dùng `text-[Npx]`, `text-[…em]`, cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-2xl`, `text-3xl`, `text-4xl`, `text-5xl`) hoặc token số `text-ui-*`.
+- Không hardcode `font-size` bằng px trong CSS nếu vai trò đã thuộc một nhóm.
+- Không tạo override cỡ chữ tại 375px, 600px, 991px, 1920px, 2560px hoặc quy tắc giảm riêng 2px cho trang sản phẩm.
+- Không phóng chữ ở ô tìm kiếm/gợi ý trên màn lớn; chỉ được nới khung.
+- Nút chat nổi dùng A4. Số “404” giữ `clamp()` và phải có `aria-hidden`, `select-none`.
+- Tiếng Việt phải đủ dấu; mọi file dùng UTF-8 không BOM.
 
-`next/font` tự self-host Barlow Condensed (không gọi runtime Google), preload, sinh fallback metric-adjusted chống CLS. Font tĩnh → bắt buộc khai báo `weight`. Body/link dùng font hệ thống — không cần load Barlow Regular.
+## 6. Phông chữ
 
-Weight thực nạp:
-- **Barlow Condensed**: `500` footer slogan · `600` heading/nav/CTA · `700` h1/h2/display.
-
-```ts
-// app/fonts.ts
-import { Barlow_Condensed } from "next/font/google";
-
-export const barlowCondensed = Barlow_Condensed({
-  subsets: ["latin", "vietnamese"],
-  weight: ["500", "600", "700"],
-  display: "swap",
-  variable: "--font-barlow-condensed",
-});
-```
-
-Gắn biến vào `<html>` trong `app/layout.tsx`:
-
-```tsx
-<html lang={locale} className={`${barlowCondensed.variable} h-full antialiased`}>
-```
-
-`lang="vi"` để trình duyệt ngắt dòng đúng tiếng Việt.
-
----
-
-## 3. Token (CSS variables)
-
-### Font family — `styles/brand-tokens.css`
+Barlow Condensed được self-host bằng `next/font` trong `app/fonts.ts`. Arial/Helvetica dùng font hệ thống. Cả hai hỗ trợ tiếng Việt.
 
 ```css
 --bb-font-display: var(--font-barlow-condensed), "Barlow Condensed", "Arial Narrow", sans-serif;
 --bb-font-heading: var(--font-barlow-condensed), "Barlow Condensed", "Arial Narrow", sans-serif;
---bb-font-body:    Arial, Helvetica, "Helvetica Neue", sans-serif;
---bb-font-link:    Arial, Helvetica, "Helvetica Neue", sans-serif;
---bb-font-cta:     var(--font-barlow-condensed), "Barlow Condensed", sans-serif;
---bb-font-nav:     var(--font-barlow-condensed), "Barlow Condensed", sans-serif;
+--bb-font-body: Arial, Helvetica, "Helvetica Neue", sans-serif;
+--bb-font-link: Arial, Helvetica, "Helvetica Neue", sans-serif;
+--bb-font-cta: var(--font-barlow-condensed), "Barlow Condensed", sans-serif;
+--bb-font-nav: var(--font-barlow-condensed), "Barlow Condensed", sans-serif;
 ```
 
-### Size — cố định WP-parity (`--fs-*`), `styles/brand-tokens.css`
+Việc chuẩn hoá này chỉ đổi cỡ chữ. Không tự ý đổi phông đang dùng tại từng thành phần ngoài phạm vi nhiệm vụ.
 
-**Một token = một giá trị cố định** (rem neo 16px = px_WP / 16). KHÔNG `clamp()`, KHÔNG `vw`, không scale theo màn. Chữ giữ nguyên cỡ từ desktop trở lên — đúng cách WP cũ render.
+## 7. Kiểm tra trước khi hoàn thành
 
-```css
---fs-overline:   0.75rem;    /* 12px */
---fs-caption:    0.875rem;   /* 14px — meta/desc (WP 14px) */
---fs-button:     1rem;       /* 16px */
---bb-text-nav:   1rem;       /* 16px — header .navigation (WP) */
---fs-body:       1rem;       /* 16px — body (WP body = 16px) */
---fs-body-lg:    1.125rem;   /* 18px */
---fs-h4:         1.125rem;   /* 18px */
---fs-h3:         1.25rem;    /* 20px */
---fs-h2:         1.5rem;     /* 24px */
---fs-h1:         1.5rem;     /* 24px — page banner (WP body .page-title h1 = 24px mọi màn hình) */
---fs-display:    2.5rem;     /* 40px — trang trí */
---fs-display-xl: 5rem;       /* 80px — trang trí (404) */
-```
+- Tìm kiếm toàn repo xác nhận không còn cỡ arbitrary, cỡ Tailwind mặc định hoặc token cỡ cũ đang được tham chiếu.
+- Xác nhận chỉ `@media (min-width: 768px)` thay đổi mười token nhóm.
+- Build sạch và kiểm tra trực quan trang chủ, sản phẩm, giỏ/thanh toán, tin tức và tài khoản ở hai phía breakpoint 768px.
 
-`body` dùng `var(--fs-body)` = 16px (rem-based, **không** hardcode px). 16px đảm bảo form input không bị iOS auto-zoom khi focus.
-
-**Section title nhảy bậc một lần @768px** (WP `body .block-title h3`):
-
-```css
---bb-text-section-title: 1.5rem;              /* 24px mobile (≤767) */
-@media (min-width: 768px) {
-  :root { --bb-text-section-title: 2.1875rem; } /* 35px desktop (≥768) */
-}
-```
-
----
-
-## 4. Tailwind utilities (Tailwind v4 — `app/globals.css` `@theme inline`)
-
-Dự án dùng Tailwind v4: token expose qua `@theme inline`, **không** có `tailwind.config.ts`.
-
-```css
-@theme inline {
-  --font-display: var(--bb-font-display);   /* font-display = Arial/Helvetica */
-  --font-body:    var(--bb-font-body);
-
-  /* fixed WP-parity scale → text-display, text-h4, text-body, text-button, text-caption, text-overline… */
-  --text-display-xl: var(--fs-display-xl);
-  --text-display:    var(--fs-display);
-  --text-h4:         var(--fs-h4);
-  --text-body-lg:    var(--fs-body-lg);
-  --text-body:       var(--fs-body);
-  --text-button:     var(--fs-button);
-  --text-caption:    var(--fs-caption);
-  --text-overline:   var(--fs-overline);
-}
-```
-
-Dùng: `text-display`, `text-h1`…`text-h4`, `text-body`, `text-button`, `text-caption`, `text-overline`. Weight áp qua utility: `font-bold` (700) / `font-semibold` (600).
-
----
-
-## 5. Bảng Type Scale (lõi)
-
-Cỡ CỐ ĐỊNH (WP-parity) — không scale theo màn. Chỉ `section-title` nhảy bậc @768px.
-
-| Token | px (WP) | LH | Weight | Transform | Dùng cho |
-|---|---:|---|---|---|---|
-| `display-xl` | 80 | 1.0 | 700 | UPPER | Trang trí (số 404) |
-| `display` | 40 | 1.05 | 700 | UPPER | Hero trang trí |
-| `h1` | **24** | 1.2 | 600 | UPPER | Tiêu đề trang / page banner (WP `body .page-title h1` = 24px mọi màn hình) |
-| `section-title` | **24 → 35 @768** | 1.2 | 600 | UPPER | Tiêu đề section (WP `body .block-title h3`) |
-| `h2` | 24 | 1.2 | 600 | UPPER | Heading |
-| `h3` | 20 | 1.2 | 600 | UPPER | Sub-heading |
-| `h4` | 18 | 1.25 | 600 | — | Card / sub-heading |
-| `body-lg` | 18 | 1.5 | 400 | none | Lead |
-| `body` | 16 | 1.5 | 400 | none | Văn bản chính, **form input** (WP body 16px) |
-| `kicker` (section) | 16 | 1.2 | 600 | UPPER | Eyebrow section (WP `.block-title p.sub-title`) |
-| `button` | 16 | 1.2 | 600 | UPPER | Nút / CTA phụ |
-| `caption` | 14 | 1.4 | 400 | none | Chú thích, meta, desc (WP 14px) |
-| `overline` | 12 | 1.4 | 600 | UPPER | Badge, label nhỏ |
-| `footer-slogan` | 16 | 1.2 | 500 | UPPER | Slogan footer — WP markup là `<h2 class="slogan-bigbike">`; rule 48px chỉ áp `.newletters form h3` nên h2 slogan fallback về `h2{16px}` → render thực = 16px (sửa 2026-06-08) |
-
-> Phông chữ: xem §1 (đang được cập nhật riêng). Cột Family đã bỏ khỏi bảng này để bảng chỉ nói về **cỡ** (WP-parity).
-
----
-
-## 6. Quy tắc bắt buộc
-
-- **KHÔNG `clamp()`, KHÔNG `vw`, KHÔNG fluid** cho cỡ chữ — cỡ CỐ ĐỊNH theo px thực của WP (rem neo 16px). Không scale theo màn lớn (kể cả ≥1920/2560).
-- **Breakpoint type duy nhất = 768px**, CHỈ cho `section-title` (24 → 35px). Mọi token khác cố định, không nhảy bậc theo breakpoint.
-- **`rem`-based cho type đọc** (WCAG zoom-safe). Nhãn/UI cố định dùng `text-ui-N` (px chính xác).
-- **Form input ≥ 16px** (`body`) — tránh iOS auto-zoom.
-- Ngoại lệ giữ `vw`/`clamp`: **chữ trang trí** (`select-none`, opacity thấp) — watermark `PageHero.tsx`, số "404" nền `not-found.tsx`, `.bb-promo-bg-text`.
-- Heading / nav / nút / eyebrow → **Barlow Condensed** + `UPPERCASE`.
-- Nội dung đọc / body / link → **Arial/Helvetica** (font hệ thống, parity WP cũ), chữ thường, line-height ≥ 1.5.
-- Không dùng Barlow Regular — body đã là Arial. Không dùng Oswald.
-
----
-
-## 7. Tiếng Việt (UPPERCASE heading)
-
-Heading `UPPERCASE` + Condensed + line-height thấp (1.0–1.2): dấu trên chữ hoa (Ặ, Ẫ, Ự, Ỹ, Ằ) dễ bị clip mép trên. Khi gặp: nới line-height nhẹ hoặc thêm `padding-top` nhỏ — không giảm dưới ngưỡng vỡ nhịp dọc. Giữ `lang="vi"`.
-
----
-
-## 8. Trạng thái migration (transitional)
-
-Đã áp dụng:
-
-- ✅ Body/link → font hệ thống Arial/Helvetica (parity WP cũ — WP không set font-family cho body).
-- ✅ Display/heading/CTA/nav → Barlow Condensed (BigBike design system).
-- ✅ Chỉ load Barlow Condensed qua next/font — không load Barlow Regular (body đã là Arial).
-- ✅ Gỡ Oswald hoàn toàn.
-- ✅ **WP-parity de-fluidization (2026-06-08):** gỡ TOÀN BỘ `clamp()`/`vw` khỏi thang chữ. Mọi token `--fs-*` + `--bb-text-*` (nav/22/26/32/40/50/hero/section-kicker/footer-slogan/h1/h2) → **cố định** theo px thực WP (rem neo 16px).
-- ✅ `body` → `var(--fs-body)` = **16px cố định** (WP body 16px).
-- ✅ **Page banner** (`--fs-h1`, `.bb-page-head h1`, `.bb-cat-hero-title`) = **24px cố định mọi màn hình** — đúng cách WP render (`body .page-title h1` đè cỡ lớn xuống 24px).
-- ✅ **Section title** (`--bb-text-section-title`) = 24px (≤767) → **35px @768** (WP `body .block-title h3`) — breakpoint type DUY NHẤT.
-- ✅ Component bypass đã gỡ fluid: `.bb-cat-hero-title` (globals), iconBtn (`text-ui-18`), homepage category/exp/news card titles (`text-ui-N`).
-- ✅ **Hết `clamp()`/`vw` trong thang chữ** — chỉ còn 2 chữ trang trí cố ý (PageHero watermark, số 404).
-
-Ngoại lệ cố ý giữ `vw` thuần — **chữ trang trí** (không phải text đọc, `pointer-events:none`/`select-none`, opacity ~0.06–0.07, cỡ 128–220px): `.bb-promo-bg-text` (globals.css), watermark trong `PageHero.tsx`, số "404" mờ nền trong `not-found.tsx`.
-
-### Quy tắc khi migrate px cố định (đang làm dần)
-
-**CHỈ chuyển sang token loại text này** (đổi size nhẹ, fluid, zoom-safe):
-- Body/đoạn văn đọc 16px → `--fs-body`; caption/meta phụ (muted/secondary, **không** uppercase) 13–14px → `--fs-caption`; heading → `--fs-h1…h4`.
-
-**GIỮ NGUYÊN px** (token sẽ méo size hoặc sai vai trò):
-- Nhãn / kicker / badge / button / CTA **UPPERCASE** (có `letter-spacing` + `text-transform: uppercase`) — token button(15→16)/overline(12→13) lệch size, hoặc đây là nhãn cố định cố ý.
-- Badge/label **≤ 11px** — không có token dưới 12px; map sẽ phóng to.
-- Breadcrumb, số (rating/giá), avatar initials, size phục vụ layout/icon.
-
-Đã rà toàn bộ `globals.css` (248 → ~206 khai báo px), chuyển ~42 chỗ text đọc:
-- **caption** (`--fs-caption`): review meta, entity-desc, page-head .sub, cat-seo-prose, catalog-count, news-excerpt, search result/empty/suggestion, info-desc, mobile account/contact, error message, figcaption, FAQ answer, woocommerce-info, product desc, block-title paragraph.
-- **body** (`--fs-body`): seo-content p/ul, blog body text, no-results, hero subtitle, wp-tabs content, about paragraph, content-bottom prose, article-detail body.
-- **heading** (`--fs-h1…h4`): seo-content + content-bottom h1–h6, checkout section title, related-products title, và **tiêu đề product/category/slide** (product-name, fp-title, archive-product-title, home-category-title, category item-title, videos-slide desc, exp-slide-title).
-
-Còn lại (~195 px) **GIỮ NGUYÊN có chủ đích**: nhãn/kicker/badge/button/CTA uppercase, giá, rating, breadcrumb, input, icon, số, avatar initials, related-product title (compact 14px), và override px theo breakpoint. Trong `home-news-parity.css`: section heading (`.block-title h2`), card title (`.title-post`) và excerpt đã **token-hóa sang single `clamp()`/`--fs-body`** (gỡ override `font-size` theo @media 768/1920/2560/mobile, đúng §6); chỉ còn `.news-date p` (badge UPPERCASE) giữ px theo WP-parity.
-
----
-
-## 9. Section header pattern — eyebrow + title (class dùng chung)
-
-Mọi **section header** (cặp subtitle/kicker + tiêu đề section) trên toàn site dùng **hai class chung** trong [`lib/ui-classes.ts`](../lib/ui-classes.ts) — không viết inline mỗi nơi một kiểu:
-
-| Vai trò | Class | Giá trị canonical |
-|---|---|---|
-| Subtitle / kicker / eyebrow | `sectionEyebrow` | `text-[var(--bb-text-muted)]` (xám muted) · `font-cta` · `text-[length:var(--bb-text-section-kicker)]` (**16px** cố định, WP) · `tracking-[0.15em]` · `font-black` · `leading-none` · `uppercase` |
-| Tiêu đề section (h2-level) | `sectionHeading` | `font-heading` · `text-[length:var(--bb-text-section-title)]` (**24px → 35px @768**, WP) · `font-semibold` · `leading-[1.2]` · `tracking-normal` · `uppercase` · `text-foreground` |
-
-**Lưu ý chốt:** tiêu đề section dùng token `--bb-text-section-title` (**24 → 35px @768**, WP `body .block-title h3`), **không** dùng `text-h2` (24px cố định). Kicker = `--bb-text-section-kicker` (**16px**, WP `.sub-title`), thống nhất **một màu xám muted**.
-
-Dùng: `className={sectionHeading}` hoặc `cn(sectionHeading, "mb-4")`; `className={cn(sectionEyebrow, "mb-3")}`. **Ngoại lệ có chủ đích — KHÔNG ép theo:** tiêu đề rail compact trong trang chi tiết (RecentlyViewed dùng `text-h4`, related products), tên bài trong card bài viết (giữ `normal-case`), và các biến thể card/giá/nút khác cỡ theo ngữ cảnh. (Tiêu đề **khối** blog — "Danh mục tin tức", "Có thể bạn quan tâm" — đã chuyển sang `sectionHeading` IN HOA 30→50 cho khớp toàn site.)
-
----
-
-## 10. Hai nhóm chữ — "mọi chữ phải thuộc một nhóm"
-
-Mọi text trong dự án thuộc **đúng một** trong hai nhóm; không có giá trị tùy tiện lạc lõng ngoài hai nhóm này:
-
-1. **Nhóm chữ đọc (WP-parity cố định)** — heading, section title/eyebrow, body, lead, caption, meta. **Bắt buộc** dùng token (`text-h1…h4`, `text-body`, `text-caption`, `text-overline`, `--bb-text-section-title`/`-kicker`) hoặc class chung trong `lib/ui-classes.ts`. Cỡ cố định theo WP, **không** `clamp()`/`vw`/hardcode px-hex.
-2. **Nhóm chữ cố định (UI vận hành)** — nút/CTA, badge, giá, ô nhập số (stepper giỏ hàng), nhãn dày đặc trong panel (search, mobile cart sheet), breadcrumb, pagination, số/rating. Kích thước cần chính xác, **không** co giãn. Dùng bộ token **`text-ui-N`** (`text-ui-9/10/11/12/13/14/15/16/17/18/20/21/22/24/26/30/35`) — **tên đúng px** (`text-ui-14` = đúng 14px). `text-ui-21` = giá/nhãn PDP (WP 1.5rem trên base 14px = 21px). **Không** viết raw `text-[Npx]` trong className nữa.
-
-**Màu chữ:** luôn dùng token (`text-foreground` = đen brand, `text-muted-foreground` = xám, `text-brand`…). **Cấm** hex hardcode (`text-[#6f6f6f]`) và màu Tailwind mặc định (`text-red-500`). *Ngoại lệ cơ chế giữ nguyên:* `FloatingChat` (widget chat) và `MobileHeaderMenu` (drawer mobile light-on-dark) còn dùng hex/px theo cơ chế riêng — đã ghi nhận.
-
-**⚠️ Hai bộ token số — đừng nhầm:**
-- **`text-ui-N`** (mới, trong `@theme inline`): **= đúng N px cố định.** Dùng cho nhóm chữ cố định.
-- **`text-9/10/11/13/22/26…`** (legacy, từ `--bb-text-*`): tên **SAI** giá trị (`text-13`=14px, `text-22`=18px — nay đều cố định, không còn clamp). Chỉ còn vài chỗ cũ dùng; **không dùng cho code mới** — thay bằng `text-ui-N` (cố định) hoặc token chữ đọc.
-
-**Ngoại lệ còn raw `text-[…]` có chủ đích:** vài giá trị rem lẻ kế thừa WooCommerce ở trang giỏ hàng (`1.429rem`/`1.714rem`/`1em` — stepper số lượng) không khớp thang px chẵn → giữ nguyên; và `FloatingChat` (cơ chế chat).
-
-**Ngoại lệ scale-lên ở 3xl/4xl — bảng gợi ý tìm kiếm (search panel):** Tuy thuộc nhóm chữ cố định, panel tìm kiếm desktop (`SearchToggle.tsx`) được phép **phóng to cả khung lẫn chữ ở ≥3xl (1920px) và ≥4xl (2560px)** để không lọt thỏm trên màn lớn — khung mở rộng `770 → 940 → 1120px`, ô nhập `24 → 28 → 32px`, và các nhãn/chip/giá/tiêu đề gợi ý tăng một bậc `text-ui-N` mỗi mốc (dùng biến thể `3xl:`/`4xl:`). Đây là exception có chủ đích **chỉ cho riêng panel này** — không áp cho nhãn cố định ở nơi khác. (Các dòng "đọc" trong panel — lịch sử tìm kiếm, tên sản phẩm — vẫn dùng `text-caption` fluid nên đã tự scale.)
-
----
-
-*Source of truth typography cho bigbike-web. Mô hình: cỡ chữ CỐ ĐỊNH theo px thực của WordPress gốc (WP-parity), root 16px, KHÔNG `clamp()`/`vw`/scale-theo-màn. Breakpoint type duy nhất = 768px (chỉ section title). Cập nhật 2026-06-08.*
+*Source of truth typography cho `bigbike-web`. Mô hình: 11 nhóm, một breakpoint 768px, một phông cố định cho mỗi nhóm. Cập nhật 2026-07-11.*

@@ -59,7 +59,7 @@ type CatalogSidebarProps = {
 function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="m-0 pb-4 font-cta text-ui-24 font-semibold uppercase text-foreground">
+      <h2 className="m-0 pb-4 font-cta text-a2-page font-semibold uppercase text-foreground">
         {title}
       </h2>
       {children}
@@ -301,7 +301,7 @@ export function CatalogSidebar({
                     <Link className={cn(filterLinkClass, active && "text-brand!")} rel="nofollow" href={active ? queryHref({ filter_gender: undefined }) : queryHref({ filter_gender: gender.key })}>
                       {gender.label}
                     </Link>
-                    {gender.count != null ? <span className="text-caption text-muted-foreground">({gender.count})</span> : null}
+                    {gender.count != null ? <span className="text-a5-meta text-muted-foreground">({gender.count})</span> : null}
                   </li>
                 );
               })}
@@ -318,7 +318,7 @@ export function CatalogSidebar({
                   <Link className={cn(filterLinkClass, active && "text-brand!")} rel="nofollow" href={active ? queryHref({ filter_color: undefined }) : queryHref({ filter_color: color.key })}>
                     {color.label}
                   </Link>
-                  {color.count != null ? <span className="text-caption text-muted-foreground">({color.count})</span> : null}
+                  {color.count != null ? <span className="text-a5-meta text-muted-foreground">({color.count})</span> : null}
                 </li>
               );
             })}
@@ -354,7 +354,7 @@ export function CatalogSidebar({
       </aside>
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="right" className="w-full! max-w-[310px]! overflow-y-auto p-6!">
-          <SheetTitle className="mb-6 border-b border-border pb-5 font-cta text-ui-24 font-semibold uppercase">
+          <SheetTitle className="mb-6 border-b border-border pb-5 font-cta text-a2-page font-semibold uppercase">
             {t("filterMobileHeading")}
           </SheetTitle>
           <SheetDescription className="sr-only">{t("filterMobileHeading")}</SheetDescription>

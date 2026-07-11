@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center gap-1 min-h-[24px] px-2 py-1 rounded-none font-body text-caption font-bold leading-none uppercase tracking-normal",
+  "inline-flex items-center gap-1 min-h-[24px] px-2 py-1 rounded-none font-body text-b5-label font-bold leading-none uppercase tracking-normal",
   {
     variants: {
       variant: {
@@ -11,11 +11,11 @@ const badgeVariants = cva(
         primary: "bg-primary text-primary-foreground",
         secondary: "bg-secondary text-secondary-foreground",
         outline: "bg-transparent text-foreground border border-border",
-        sale: "bg-primary text-primary-foreground",
+        sale: "bg-primary text-primary-foreground text-b3-promo",
         "stock-in":
-          "bg-[var(--bb-state-success-bg)] text-state-success-text border border-[var(--bb-state-success-border)]",
-        "stock-low": "bg-[var(--bb-state-warning)] text-foreground",
-        "stock-out": "bg-primary text-primary-foreground",
+          "bg-[var(--bb-state-success-bg)] text-state-success-text border border-[var(--bb-state-success-border)] text-b4-action",
+        "stock-low": "bg-[var(--bb-state-warning)] text-foreground text-b4-action",
+        "stock-out": "bg-primary text-primary-foreground text-b4-action",
         preorder: "bg-info text-info-foreground",
         destructive: "bg-destructive text-destructive-foreground",
         info: "bg-info/10 text-info border border-info/30",

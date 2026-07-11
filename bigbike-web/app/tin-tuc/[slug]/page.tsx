@@ -112,7 +112,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
           />
           <div id="main-content">
             <div className="mx-auto w-full max-w-[1200px] px-4 py-10 sm:px-6">
-              <p className="border border-border bg-card p-4 text-ui-16 text-muted-foreground"><Tr ns="Blog" k="loadFailed" /></p>
+              <p className="border border-border bg-card p-4 text-a4-content text-muted-foreground"><Tr ns="Blog" k="loadFailed" /></p>
             </div>
           </div>
       </div>

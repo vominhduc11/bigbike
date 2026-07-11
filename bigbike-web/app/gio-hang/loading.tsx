@@ -8,8 +8,8 @@ export default function CartLoading() {
     <div id="main-content" className="bb-cart-page" aria-busy="true">
       <Container>
         <div className="mt-5">
-          <h1 className="m-0 font-cta text-2xl font-semibold uppercase text-foreground"><Tr ns="Cart" k="title" /></h1>
-          <nav className="py-8 text-ui-14 text-muted-foreground" aria-label="Breadcrumb">
+          <h1 className="m-0 font-cta text-a2-page font-semibold uppercase text-foreground"><Tr ns="Cart" k="title" /></h1>
+          <nav className="py-8 text-a5-meta text-muted-foreground" aria-label="Breadcrumb">
             <ol className="m-0 flex list-none items-center gap-1 p-0">
               <li><Link href="/" className="font-semibold hover:text-brand">Bigbike.vn</Link></li>
               <li aria-hidden>/</li>

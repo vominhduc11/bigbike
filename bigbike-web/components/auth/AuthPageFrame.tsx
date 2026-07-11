@@ -31,7 +31,7 @@ export function AuthTitleBlock({
 }) {
   return (
     <header className={cn("mb-8", centered && "text-center")}>
-      <h1 className="mb-2 font-cta text-3xl font-bold uppercase leading-tight text-foreground">
+      <h1 className="mb-2 font-cta text-a2-page font-bold uppercase leading-tight text-foreground">
         {title}
       </h1>
       {children}

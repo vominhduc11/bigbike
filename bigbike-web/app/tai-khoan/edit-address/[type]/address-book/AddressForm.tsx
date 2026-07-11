@@ -10,7 +10,7 @@ import { VnAddressFields } from "@/components/ui/VnAddressFields";
 import { FormNotice } from "@/components/ui/FormNotice";
 
 // 2020-mockup field label: gray, sentence-case, red asterisk appended.
-const LEGACY_LABEL = "text-ui-14 max-md:text-ui-12 text-muted-foreground";
+const LEGACY_LABEL = "text-a5-meta text-muted-foreground";
 
 function ReqMark() {
   return <span className="text-brand">*</span>;
@@ -100,7 +100,7 @@ export function AddressForm({ editing, accountEmail, saving, error, onSubmit }: 
         </div>
         <div className="sm:col-span-2 grid grid-cols-1 gap-x-6 gap-y-[18px] sm:grid-cols-3 xl:gap-x-8">
           {vnError && (
-            <p className="sm:col-span-3 text-ui-16 max-md:text-ui-14 text-destructive">{vnError}</p>
+            <p className="sm:col-span-3 text-a4-content text-destructive">{vnError}</p>
           )}
           <VnAddressFields
             value={vnAddress}
@@ -116,7 +116,7 @@ export function AddressForm({ editing, accountEmail, saving, error, onSubmit }: 
         {/* Default-address toggle only on "add" — the 2020 edit modal has none;
             an existing address is made default via the card's "Đặt mặc định" button. */}
         {!editing && (
-          <label className="flex items-center gap-2 text-ui-14 max-md:text-ui-12 text-muted-foreground">
+          <label className="flex items-center gap-2 text-a5-meta text-muted-foreground">
             <Checkbox name="isDefault" defaultChecked={false} />
             {t("setDefault")}
           </label>

@@ -30,7 +30,7 @@ export default function GlobalRouteError({
           aria-live="assertive"
         >
           <h1 className="m-0">{t("heading")}</h1>
-          <p className="m-0 text-caption text-muted-foreground">{t("description")}</p>
+          <p className="m-0 text-a5-meta text-muted-foreground">{t("description")}</p>
           <Button type="button" variant="primary" onClick={unstable_retry}>
             {t("retry")}
           </Button>

@@ -60,7 +60,7 @@ export function VerifyEmailContent() {
             {status === "loading" && (
               <div role="status">
                 <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-brand" aria-hidden="true" />
-                <h1 className="mb-2 font-cta text-3xl font-bold uppercase">{t("loadingTitle")}</h1>
+                <h1 className="mb-2 font-cta text-a1-title font-bold uppercase">{t("loadingTitle")}</h1>
                 <p className="m-0">{t("loadingMessage")}</p>
               </div>
             )}
@@ -85,7 +85,7 @@ export function VerifyEmailContent() {
                 {isLoggedIn ? (
                   <>
                     {resendStatus === "sent" ? (
-                      <p className="m-0 border border-[var(--bb-state-success-border)] bg-[var(--bb-state-success-bg)] p-3 text-ui-16 max-md:text-ui-14 text-state-success-text">
+                      <p className="m-0 border border-[var(--bb-state-success-border)] bg-[var(--bb-state-success-bg)] p-3 text-a4-content text-state-success-text">
                         {resendMsg}
                       </p>
                     ) : (
@@ -93,7 +93,7 @@ export function VerifyEmailContent() {
                         <Button type="button" size="auth" onClick={handleResend} disabled={resendStatus === "sending"}>
                           {resendStatus === "sending" ? t("resending") : t("resend")}
                         </Button>
-                        {resendStatus === "error" && <p className="mt-2 text-ui-16 max-md:text-ui-14 text-destructive">{resendMsg}</p>}
+                        {resendStatus === "error" && <p className="mt-2 text-a4-content text-destructive">{resendMsg}</p>}
                       </div>
                     )}
                     <p className="m-0">
@@ -128,11 +128,11 @@ export function VerifyEmailContent() {
                   </p>
                 )}
                 {resendStatus === "sent" && (
-                  <p className="mt-4 border border-[var(--bb-state-success-border)] bg-[var(--bb-state-success-bg)] p-3 text-ui-16 max-md:text-ui-14 text-state-success-text">
+                  <p className="mt-4 border border-[var(--bb-state-success-border)] bg-[var(--bb-state-success-bg)] p-3 text-a4-content text-state-success-text">
                     {resendMsg}
                   </p>
                 )}
-                {resendStatus === "error" && <p className="mt-4 text-ui-16 max-md:text-ui-14 text-destructive">{resendMsg}</p>}
+                {resendStatus === "error" && <p className="mt-4 text-a4-content text-destructive">{resendMsg}</p>}
               </>
             )}
     </div>

@@ -59,8 +59,8 @@ export function SuggestionResults({
                   <div className="h-12 w-12 shrink-0 object-contain 3xl:h-14 3xl:w-14 4xl:h-16 4xl:w-16" aria-hidden />
                 )}
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <span className="truncate text-caption font-medium text-foreground">{product.name}</span>
-                  <span className="text-ui-13 font-bold text-brand-on-dark 3xl:text-ui-14 4xl:text-ui-16">
+                  <span className="truncate text-a5-meta font-medium text-foreground">{product.name}</span>
+                  <span className="text-a5-meta font-bold text-brand-on-dark">
                     {formatVnd(product.price?.salePrice ?? product.price?.retailPrice)}
                   </span>
                 </div>
@@ -79,9 +79,9 @@ export function SuggestionResults({
                     onClick={handleClose}
                   >
                     <div className="flex min-w-0 flex-1 flex-col gap-1">
-                      <span className="text-ui-13 font-normal text-foreground line-clamp-2 3xl:text-ui-14 4xl:text-ui-16">{article.title}</span>
+                      <span className="text-a5-meta font-normal text-foreground line-clamp-2">{article.title}</span>
                       {article.category?.name && (
-                        <span className="text-ui-11 font-semibold uppercase tracking-normal text-brand-on-dark 3xl:text-ui-12 4xl:text-ui-13">
+                        <span className="text-b5-label font-semibold uppercase tracking-normal text-brand-on-dark">
                           {article.category.name}
                         </span>
                       )}
@@ -94,14 +94,14 @@ export function SuggestionResults({
           {/* "View all" always visible at bottom, never scrolls away */}
           <Link
             href={`${SEARCH_PATH}?s=${encodeURIComponent(trimmedQuery)}`}
-            className="md:flex-none flex items-center justify-center px-4 py-[13px] font-cta text-ui-13 font-semibold uppercase tracking-normal text-brand-on-dark no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none [border-top:1px_solid_var(--bb-color-border)] 3xl:text-ui-14 4xl:py-4 4xl:text-ui-16"
+            className="md:flex-none flex items-center justify-center px-4 py-[13px] font-cta text-b4-action font-semibold uppercase tracking-normal text-brand-on-dark no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none [border-top:1px_solid_var(--bb-color-border)] 4xl:py-4"
             onClick={handleClose}
           >
             {t("viewAllResultsBtn", { query: trimmedQuery })}
           </Link>
         </>
       ) : (
-        <div className="px-4 py-5 text-center text-caption text-muted-foreground">
+        <div className="px-4 py-5 text-center text-a5-meta text-muted-foreground">
           <p className="m-0 mb-2">{t("noMatchText", { query: trimmedQuery })}</p>
           <Link
             href={`${SEARCH_PATH}?s=${encodeURIComponent(trimmedQuery)}`}

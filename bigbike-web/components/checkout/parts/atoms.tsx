@@ -5,7 +5,7 @@ import { ZaloIcon } from "@/components/ui/ZaloIcon";
 
 export function CheckoutStepTitle({ step, children }: { step?: number; children: React.ReactNode }) {
   return (
-    <div className="mb-6 font-cta text-2xl font-semibold uppercase">
+    <div className="mb-6 font-cta text-a2-page font-semibold uppercase">
       {step == null ? (
         <h3 className="m-0">{children}</h3>
       ) : (
@@ -20,7 +20,7 @@ export function CheckoutStepTitle({ step, children }: { step?: number; children:
 
 export function FieldError({ message }: { message?: string }) {
   if (!message) return null;
-  return <p className="m-0 mt-1 text-ui-14 max-md:text-ui-12 text-brand">{message}</p>;
+  return <p className="m-0 mt-1 text-a5-meta text-brand">{message}</p>;
 }
 
 export function CodPaymentBlock() {
@@ -32,7 +32,7 @@ export function CodPaymentBlock() {
       </div>
       <div className="min-w-0 flex-1 text-left">
         <strong className="block">{t("paymentMethod.COD")}</strong>
-        <span className="mt-1 block text-caption text-muted-foreground">{t("codSubtitle")}</span>
+        <span className="mt-1 block text-a5-meta text-muted-foreground">{t("codSubtitle")}</span>
       </div>
       <div className="flex h-6 w-6 items-center justify-center bg-brand">
         <svg viewBox="0 0 24 24" className="w-[13px] h-[13px] fill-white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
@@ -57,7 +57,7 @@ export function CheckoutConfirmRow({
         onCheckedChange={(c) => onCheckedChange(c === true)}
         className="mt-1 h-5 w-5 shrink-0 border-black data-[state=checked]:bg-black data-[state=checked]:text-white rounded-none"
       />
-      <label htmlFor="confirm-cb" className="select-none text-ui-15 leading-relaxed text-foreground cursor-pointer">
+      <label htmlFor="confirm-cb" className="select-none text-a5-meta leading-relaxed text-foreground cursor-pointer">
         {t.rich("confirmNotice", { strong: (chunks) => <strong className="text-black">{chunks}</strong> })}
       </label>
     </div>
@@ -67,7 +67,7 @@ export function CheckoutConfirmRow({
 export function TrustMini() {
   const t = useTranslations("Checkout");
   return (
-    <div className="mt-5 space-y-2 border-t border-border pt-5 text-left text-caption text-muted-foreground">
+    <div className="mt-5 space-y-2 border-t border-border pt-5 text-left text-a5-meta text-muted-foreground">
       <div className="flex items-center gap-2">
         <div className="h-1.5 w-1.5 rotate-45 bg-brand" />
         <span>{t("trustShipping")}</span>
@@ -94,7 +94,7 @@ export function ZaloSupportBlock() {
   const t = useTranslations("Checkout");
   return (
     <aside className="border border-border bg-secondary p-5 text-center">
-      <p className="text-ui-15 text-foreground mb-2.5 font-semibold">{t("zaloSupportTitle")}</p>
+      <p className="text-a5-meta text-foreground mb-2.5 font-semibold">{t("zaloSupportTitle")}</p>
       <Button asChild variant="outline" className="w-full rounded-none border-zalo text-zalo hover:text-zalo">
         <a href="https://zalo.me/0764640679" target="_blank" rel="noopener noreferrer">
           <ZaloIcon className="h-5 w-5" aria-hidden />
@@ -103,7 +103,7 @@ export function ZaloSupportBlock() {
       </Button>
       {/* Tên nhân viên tư vấn + SĐT — dữ liệu doanh nghiệp (legacy storefront phone number), giữ
           nguyên không dịch (allowlist trong check-no-runtime-business-data.mjs). */}
-      <p className="text-ui-13 text-muted-foreground mt-2">Mrs. Thư · 0764640679</p>
+      <p className="text-a5-meta text-muted-foreground mt-2">Mrs. Thư · 0764640679</p>
     </aside>
   );
 }

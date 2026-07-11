@@ -18,13 +18,13 @@ export default function RegisterPage() {
   return (
     <AuthPageFrame wide>
       <AuthTitleBlock title={<Tr ns="Auth" k="tabRegister" />}>
-        <p className="m-0 text-ui-16 text-foreground">
+        <p className="m-0 text-a4-content text-foreground">
           <Tr ns="Auth" k="haveAccountPrompt" />{" "}
           <Link href="/dang-nhap/" className="font-semibold text-foreground underline">
             <Tr ns="Auth" k="here" />
           </Link>
         </p>
-        <p className="m-0 mt-1 text-ui-16 text-foreground"><Tr ns="Auth" k="fillInfoPrompt" /></p>
+        <p className="m-0 mt-1 text-a4-content text-foreground"><Tr ns="Auth" k="fillInfoPrompt" /></p>
       </AuthTitleBlock>
       <Suspense fallback={<RegisterForm />}>
         <RegisterFormIsland />

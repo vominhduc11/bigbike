@@ -102,7 +102,7 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
     return (
       <div id="main-content">
         <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
-          <p className="border border-border bg-card p-4 text-ui-16 text-muted-foreground"><Tr ns="Catalog" k="categoryLoadFailed" /></p>
+          <p className="border border-border bg-card p-4 text-a4-content text-muted-foreground"><Tr ns="Catalog" k="categoryLoadFailed" /></p>
         </div>
       </div>
     );

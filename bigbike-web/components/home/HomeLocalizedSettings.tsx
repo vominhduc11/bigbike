@@ -77,8 +77,8 @@ export function HomeBlockHeading({
 
   return (
     <div className={className}>
-      {sub ? <p className="mb-2 font-body text-ui-16 font-semibold text-muted-foreground">{sub}</p> : null}
-      {heading ? <h2 className="font-body text-4xl font-semibold uppercase leading-tight text-foreground max-md:text-2xl">{heading}</h2> : null}
+      {sub ? <p className="mb-2 font-body text-a4-content font-semibold text-muted-foreground">{sub}</p> : null}
+      {heading ? <h2 className="font-body text-a1-title font-semibold uppercase leading-tight text-foreground">{heading}</h2> : null}
     </div>
   );
 }
@@ -108,8 +108,8 @@ export function HomeAboutSection({
     <section className="py-10">
       <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
         <div className="mb-10 text-center">
-          {sub ? <p className="mb-2 font-body text-ui-16 font-semibold text-muted-foreground">{sub}</p> : null}
-          {heading ? <h2 className="font-body text-4xl font-semibold uppercase leading-tight text-foreground max-md:text-2xl">{heading}</h2> : null}
+          {sub ? <p className="mb-2 font-body text-a4-content font-semibold text-muted-foreground">{sub}</p> : null}
+          {heading ? <h2 className="font-body text-a1-title font-semibold uppercase leading-tight text-foreground">{heading}</h2> : null}
         </div>
         {html ? (
           <RichContent html={html} className="mx-auto max-w-4xl text-center text-muted-foreground" />
@@ -142,10 +142,10 @@ export function HomeExperienceHeading({
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
       <div className="pb-10 text-center">
-        {sub ? <p className="mb-2 font-body text-ui-16 font-semibold text-muted-foreground">{sub}</p> : null}
-        {heading ? <h2 className="font-body text-4xl font-semibold uppercase leading-tight text-foreground max-md:text-2xl">{heading}</h2> : null}
+        {sub ? <p className="mb-2 font-body text-a4-content font-semibold text-muted-foreground">{sub}</p> : null}
+        {heading ? <h2 className="font-body text-a1-title font-semibold uppercase leading-tight text-foreground">{heading}</h2> : null}
         {body ? (
-          <p className="mx-auto mt-8 max-w-4xl text-ui-16 leading-relaxed text-foreground">{body}</p>
+          <p className="mx-auto mt-8 max-w-4xl text-a4-content leading-relaxed text-foreground">{body}</p>
         ) : null}
       </div>
     </div>

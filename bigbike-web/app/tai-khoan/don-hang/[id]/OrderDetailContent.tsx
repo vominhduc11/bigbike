@@ -57,8 +57,8 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
     return (
       <>
         <AccountSectionHeading title={t("detailHeading")} />
-        <p className="mb-4 text-ui-16 max-md:text-ui-14 text-brand">{error || t("notFound")}</p>
-        <Link href={toOrderHistoryPath(locale)} className={cn(bbLink, "text-ui-14 max-md:text-ui-12")}>
+        <p className="mb-4 text-a4-content text-brand">{error || t("notFound")}</p>
+        <Link href={toOrderHistoryPath(locale)} className={cn(bbLink, "text-a5-meta")}>
           {t("backToHistory")}
         </Link>
       </>
@@ -73,7 +73,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
     <>
       <AccountSectionHeading title={t("detailHeading")} />
 
-      <p className="mb-2 text-ui-16 max-md:text-ui-14 leading-relaxed text-foreground">
+      <p className="mb-2 text-a4-content leading-relaxed text-foreground">
         {t("orderSummary", {
           orderNumber: order.orderNumber,
           date: fmtDate(order.placedAt, "slashPad", "—"),
@@ -82,7 +82,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
       </p>
 
       {order.fulfillmentStatus && (
-        <p className="mb-5 text-ui-16 max-md:text-ui-14 text-muted-foreground">
+        <p className="mb-5 text-a4-content text-muted-foreground">
           <strong className="text-foreground">{t("fulfillmentLabel")}:</strong>{" "}
           {fulfillmentStatusLabelWithT(order.fulfillmentStatus, t)}
         </p>
@@ -90,7 +90,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
 
       <h2 className={cn(sectionSubheading, "mb-3")}>{t("invoice")}</h2>
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-left text-ui-16 max-md:text-ui-14">
+        <table className="w-full border-collapse text-left text-a4-content">
           <thead>
             <tr className="border-b border-border">
               <th className="py-3 pr-4 font-semibold text-foreground">{t("colProduct")}</th>
@@ -146,33 +146,33 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
         <section>
           <h2 className={cn(sectionSubheading, "mb-3")}>{t("billingAddress")}</h2>
           {billingAddress ? (
-            <div className="text-ui-16 max-md:text-ui-14 leading-relaxed text-muted-foreground">
+            <div className="text-a4-content leading-relaxed text-muted-foreground">
               <p className="m-0 font-semibold text-foreground">{safeText(billingAddress.fullName, "—")}</p>
               {billingAddress.phone && <p className="m-0">{billingAddress.phone}</p>}
               {billingAddress.email && <p className="m-0">{billingAddress.email}</p>}
               <p className="m-0">{formatAddress([billingAddress.addressLine1, billingAddress.ward, billingAddress.district, billingAddress.province])}</p>
             </div>
           ) : (
-            <p className="m-0 text-ui-16 max-md:text-ui-14 text-muted-foreground">—</p>
+            <p className="m-0 text-a4-content text-muted-foreground">—</p>
           )}
         </section>
 
         <section>
           <h2 className={cn(sectionSubheading, "mb-3")}>{t("shippingAddress")}</h2>
           {shippingAddress ? (
-            <div className="text-ui-16 max-md:text-ui-14 leading-relaxed text-muted-foreground">
+            <div className="text-a4-content leading-relaxed text-muted-foreground">
               <p className="m-0 font-semibold text-foreground">{safeText(shippingAddress.fullName, "—")}</p>
               {shippingAddress.phone && <p className="m-0">{shippingAddress.phone}</p>}
               {shippingAddress.email && <p className="m-0">{shippingAddress.email}</p>}
               <p className="m-0">{formatAddress([shippingAddress.addressLine1, shippingAddress.ward, shippingAddress.district, shippingAddress.province])}</p>
             </div>
           ) : (
-            <p className="m-0 text-ui-16 max-md:text-ui-14 text-muted-foreground">—</p>
+            <p className="m-0 text-a4-content text-muted-foreground">—</p>
           )}
         </section>
       </div>
 
-      <div className="mt-6 text-ui-16 max-md:text-ui-14 text-muted-foreground">
+      <div className="mt-6 text-a4-content text-muted-foreground">
         <p className="m-0">
           <strong className="text-foreground">{t("method")}:</strong>{" "}
           {paymentMethod ? paymentMethodLabelWithT(paymentMethod, tCheckout) : "—"}
@@ -181,7 +181,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
 
       {canCancel && (
         <div className="mt-8 border-t border-border pt-6">
-          <p className="mb-3 text-ui-16 max-md:text-ui-14 text-muted-foreground">{t("cancelDescription")}</p>
+          <p className="mb-3 text-a4-content text-muted-foreground">{t("cancelDescription")}</p>
           <Button
             type="button"
             variant="destructive"
@@ -191,7 +191,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
             {cancelMutation.isPending ? t("cancelInProgress") : t("cancelTrigger")}
           </Button>
           {cancelMutation.isError && (
-            <p className="mt-2 text-ui-16 max-md:text-ui-14 text-brand">
+            <p className="mt-2 text-a4-content text-brand">
               {(cancelMutation.error as Error)?.message || t("cancelFailed")}
             </p>
           )}
@@ -199,7 +199,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
       )}
 
       <div className="mt-6">
-        <Link href={toOrderHistoryPath(locale)} className={cn(bbLink, "text-ui-14 max-md:text-ui-12")}>
+        <Link href={toOrderHistoryPath(locale)} className={cn(bbLink, "text-a5-meta")}>
           {t("backToHistory")}
         </Link>
       </div>

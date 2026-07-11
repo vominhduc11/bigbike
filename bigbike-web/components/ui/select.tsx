@@ -16,7 +16,7 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex w-full items-center justify-between min-h-[48px] px-4 py-3 bg-white border border-border-control rounded-none font-body text-body text-foreground placeholder:text-muted-foreground transition-[border-color,box-shadow] duration-[var(--bb-duration-fast)] hover:border-border-control-hover focus:border-ring focus:outline-none focus:shadow-[var(--bb-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 [&>span]:line-clamp-1",
+      "flex w-full items-center justify-between min-h-[48px] px-4 py-3 bg-white border border-border-control rounded-none font-body text-a4-content text-foreground placeholder:text-muted-foreground transition-[border-color,box-shadow] duration-[var(--bb-duration-fast)] hover:border-border-control-hover focus:border-ring focus:outline-none focus:shadow-[var(--bb-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 [&>span]:line-clamp-1",
       className,
     )}
     {...props}
@@ -94,7 +94,7 @@ const SelectLabel = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.Label
     ref={ref}
-    className={cn("px-3 py-1.5 text-caption font-semibold font-body uppercase text-muted-foreground", className)}
+    className={cn("px-3 py-1.5 text-a5-meta font-semibold font-body uppercase text-muted-foreground", className)}
     {...props}
   />
 ));
@@ -107,7 +107,7 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-default select-none items-center py-2 pl-8 pr-3 text-caption font-body text-foreground outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-60",
+      "relative flex w-full cursor-default select-none items-center py-2 pl-8 pr-3 text-a5-meta font-body text-foreground outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-60",
       className,
     )}
     {...props}
