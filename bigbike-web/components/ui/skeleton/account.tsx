@@ -16,7 +16,7 @@ import {
   SkelTitle,
 } from "./primitives";
 
-/** Checkout — breadcrumb + page-head + stepper + 2-col form+summary */
+/** Checkout - breadcrumb + page-head + stepper + 2-col form+summary. */
 export function CheckoutSkeleton() {
   return (
     <SkeletonRoot labelKey="checkout">
@@ -88,7 +88,7 @@ export function CheckoutSkeleton() {
 }
 
 
-/** Full Account layout (sidebar + main) — used when AccountShell hasn't loaded yet */
+/** Full account layout (sidebar + main) used before AccountShell loads. */
 export function AccountLayoutSkeleton({ rows = 3 }: { rows?: number }) {
   return (
     <SkeletonRoot labelKey="accountPage" className="bb-account-layout">
@@ -124,7 +124,7 @@ export function AccountLayoutSkeleton({ rows = 3 }: { rows?: number }) {
 }
 
 
-/** Order detail — header + summary card + items + totals + addresses */
+/** Order detail - header + summary card + items + totals + addresses. */
 export function OrderDetailSkeleton() {
   return (
     <SkeletonRoot labelKey="orderDetail">
@@ -148,14 +148,14 @@ export function OrderDetailSkeleton() {
 export function OrderConfirmSkeleton() {
   return (
     <SkeletonRoot labelKey="orderConfirm">
-      <div className="bb-success">
+      <div className="mx-auto flex w-full max-w-[680px] flex-col items-center px-4 py-10 text-center md:py-16">
         <SkelCircle size={88} />
-        <div className={skelStack} style={{ marginTop: 22, alignItems: "center" }}>
+        <div className={`${skelStack} mt-6 items-center`}>
           <SkelText w={120} />
           <SkelTitle w="60%" h="2.2em" />
           <SkelText w="80%" />
         </div>
-        <div className="order-card" style={{ marginTop: 22 }}>
+        <div className="mt-6 grid w-full grid-cols-1 gap-4 border border-border bg-card p-6 text-left sm:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className={skelStack}>
               <SkelText w="50%" />
@@ -163,7 +163,7 @@ export function OrderConfirmSkeleton() {
             </div>
           ))}
         </div>
-        <div className="cta-row" style={{ marginTop: 22 }}>
+        <div className="mt-6 flex w-full flex-col justify-center gap-3 sm:flex-row">
           <SkelButton w={180} />
           <SkelButton w={200} />
         </div>

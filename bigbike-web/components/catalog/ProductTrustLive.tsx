@@ -8,7 +8,7 @@ import { formatVnd } from "@/lib/utils/format";
 import { Tr } from "@/components/i18n/Tr";
 
 // Giá + tồn kho cho khối "Mua tại BigBike.vn" (#12). Trước đây khối này đọc giá/tồn TĨNH
-// lúc dựng trang nên LỆCH với khu mua hàng chính (WpPurchaseSection): không tính giảm giá,
+// lúc dựng trang nên LỆCH với khu mua hàng chính (PurchaseSection): không tính giảm giá,
 // không tính trạng thái "tắt bán thủ công" → có thể hiện "Còn hàng"/giá gốc trong khi nút
 // mua đã "Hết hàng"/giá khuyến mãi. Ở đây dùng CHUNG nguồn thời gian thực: cùng queryKey
 // ["product-snapshot", slug, locale] nên react-query chia sẻ cache, KHÔNG fetch thừa.

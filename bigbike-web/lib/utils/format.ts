@@ -31,6 +31,10 @@ export function formatVnd(value: number | null | undefined): string {
 const LEGACY_CDN_PREFIX = "https://cdn.bigbike.vn/uploads/";
 const WP_UPLOADS_PROXY = "/wp-content/uploads/";
 const WP_CONTENT_PROXY = "/wp-content/";
+const LEGACY_THEME_HELMET_PATH = "/wp-content/themes/bigbike/images/mu-bao-hiem.png";
+const LEGACY_THEME_PAGE_TITLE_BG_PATH = "/wp-content/themes/bigbike/images/page-title-bg.png";
+const CATALOG_HELMET_ASSET = "/brand/catalog/mu-bao-hiem.png";
+const PAGE_TITLE_BG_ASSET = "/brand/page-title-bg.png";
 const MINIO_UPLOADS_SUBPATH = "/wp-uploads/";
 const MEDIA_PROXY_PREFIX = "/media-proxy/";
 const MEDIA_PREFIX = "/media/";
@@ -46,6 +50,12 @@ const SAFE_YOUTUBE_HOSTS = new Set([
 
 export function resolveMediaUrl(url: string | null | undefined): string | null | undefined {
   if (!url) return url;
+  if (url.split(/[?#]/, 1)[0].endsWith(LEGACY_THEME_HELMET_PATH)) {
+    return CATALOG_HELMET_ASSET;
+  }
+  if (url.split(/[?#]/, 1)[0].endsWith(LEGACY_THEME_PAGE_TITLE_BG_PATH)) {
+    return PAGE_TITLE_BG_ASSET;
+  }
   if (url.startsWith(LEGACY_CDN_PREFIX)) {
     return WP_UPLOADS_PROXY + url.slice(LEGACY_CDN_PREFIX.length);
   }

@@ -2,10 +2,9 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
-import { WpCatalogClient } from "@/components/wp/WpCatalogClient";
-import { WpCatalogDefault } from "@/components/wp/WpCatalogDefault";
-import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
+import { PageHero, type PageHeroCrumb } from "@/components/layout/PageHero";
+import { CatalogClient } from "@/components/catalog/CatalogClient";
+import { CatalogDefault } from "@/components/catalog/CatalogDefault";
 import { AltSlugRegistrar } from "@/components/i18n/AltSlugProvider";
 import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
 import { Tr } from "@/components/i18n/Tr";
@@ -17,6 +16,7 @@ import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/forma
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toCategoryPath, toHomePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
+import { richContentClassName } from "@/components/layout/RichContent";
 
 // ISR on-demand: danh mục là dữ liệu admin quản lý → KHÔNG prebuild lúc build. Shell
 // (thông tin danh mục, sidebar) + lưới sản phẩm view MẶC ĐỊNH (page 1, sort mặc định,
@@ -101,8 +101,8 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
   if (!categoryResult.data) {
     return (
       <div id="main-content">
-        <div className="container">
-          <p className="woocommerce-info"><Tr ns="Catalog" k="categoryLoadFailed" /></p>
+        <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+          <p className="border border-border bg-card p-4 text-ui-16 text-muted-foreground"><Tr ns="Catalog" k="categoryLoadFailed" /></p>
         </div>
       </div>
     );
@@ -134,11 +134,12 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
     <LHtml
       field="introContent"
       viHtml={categoryIntroHtml}
+      className={richContentClassName}
       rewriteMediaUrls
     />
   ) : undefined;
 
-  const heroBreadcrumb: WpCategoryCrumb[] = [
+  const heroBreadcrumb: PageHeroCrumb[] = [
     { label: "Bigbike.vn", href: toHomePath() },
     ...(parentCategory
       ? [
@@ -159,13 +160,12 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
 
   return (
     <>
-      <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-category.css?v=2" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
 
       <LocalizedContentProvider kind="category" slug={category.slug}>
         <AltSlugRegistrar kind="category" viSlug={category.slug} enSlug={category.slugEn ?? null} />
-        <div className="archive tax-product_cat post-type-archive-product">
-          <WpCategoryHero
+        <div>
+          <PageHero
             title={categoryName}
             titleNode={<LText field="name">{categoryName}</LText>}
             breadcrumb={heroBreadcrumb}
@@ -175,10 +175,10 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
           />
 
           <div id="main-content">
-            <div className="container">
+            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
               <Suspense
                 fallback={
-                  <WpCatalogDefault
+                  <CatalogDefault
                     canonicalPath={canonicalPath}
                     brands={brandsResult.data}
                     categories={filterCategories}
@@ -189,7 +189,7 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
                   />
                 }
               >
-                <WpCatalogClient
+                <CatalogClient
                   canonicalPath={canonicalPath}
                   brands={brandsResult.data}
                   categories={filterCategories}

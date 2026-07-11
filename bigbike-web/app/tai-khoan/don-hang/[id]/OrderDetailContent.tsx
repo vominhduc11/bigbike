@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { WpAccountSectionHeading } from "@/components/wp/WpAccountNav";
+import { AccountSectionHeading } from "@/components/account/AccountNav";
 import { Button } from "@/components/ui/button";
 import { useCancelOrder, useOrder } from "@/lib/query/hooks";
 import { formatAddress, formatVnd, fulfillmentStatusLabelWithT, orderStatusLabelWithT, paymentMethodLabelWithT, safeText } from "@/lib/utils/format";
@@ -40,7 +40,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
   if (isLoading) {
     return (
       <>
-        <WpAccountSectionHeading title={t("detailHeading")} />
+        <AccountSectionHeading title={t("detailHeading")} />
         {/* Cùng hình khối (200/160/140px) mà OrderDetailSkeleton dùng cho lần điều
             hướng đầu — bỏ khối tiêu đề của nó vì tiêu đề thật đã render ở trên. */}
         <div className={skelStack} role="status" aria-busy="true">
@@ -56,7 +56,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
   if (error || !order) {
     return (
       <>
-        <WpAccountSectionHeading title={t("detailHeading")} />
+        <AccountSectionHeading title={t("detailHeading")} />
         <p className="mb-4 text-ui-16 max-md:text-ui-14 text-brand">{error || t("notFound")}</p>
         <Link href={toOrderHistoryPath(locale)} className={cn(bbLink, "text-ui-14 max-md:text-ui-12")}>
           {t("backToHistory")}
@@ -71,7 +71,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
 
   return (
     <>
-      <WpAccountSectionHeading title={t("detailHeading")} />
+      <AccountSectionHeading title={t("detailHeading")} />
 
       <p className="mb-2 text-ui-16 max-md:text-ui-14 leading-relaxed text-foreground">
         {t("orderSummary", {

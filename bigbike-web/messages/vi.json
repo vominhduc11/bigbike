@@ -1167,7 +1167,7 @@
     "orderConfirm": "Đang xác nhận đơn hàng",
     "contact": "Đang tải trang liên hệ"
   },
-  "CartWp": {
+  "CartPage": {
     "emptyMessage": "Chưa có sản phẩm nào trong giỏ hàng.",
     "returnToShop": "Quay trở lại cửa hàng",
     "cartHeading": "GIỎ HÀNG CỦA BẠN",
@@ -1214,7 +1214,7 @@
     "relatedTitle": "Sản phẩm tương tự",
     "experienceAria": "Góc trải nghiệm BigBike"
   },
-  "WpUser": {
+  "HeaderUser": {
     "account": "TÀI KHOẢN",
     "register": "ĐĂNG KÝ",
     "login": "ĐĂNG NHẬP",

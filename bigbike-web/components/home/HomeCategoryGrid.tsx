@@ -7,15 +7,14 @@ import { fetchPublicCategoryList } from "@/lib/api/client-api";
 import { resolveMediaUrl } from "@/lib/utils/format";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import type { Category } from "@/lib/contracts/public";
+import { ChevronRight } from "lucide-react";
 
 /* eslint-disable @next/next/no-img-element */
-
-const T = "/wp-content/themes/bigbike";
 
 /**
  * Lưới danh mục trang chủ — server render `vi` (initialCategories) cho SEO/ISR; khi khách
  * đổi sang EN thì refetch danh mục (showOnHomepage) theo lang ở client và thay tên. Giữ
- * nguyên DOM/class WP để CSS theme tô đúng.
+ * nguyên dữ liệu và thứ tự do admin cấu hình.
  */
 export function HomeCategoryGrid({ initialCategories }: { initialCategories: Category[] }) {
   const locale = useLocale();
@@ -33,24 +32,24 @@ export function HomeCategoryGrid({ initialCategories }: { initialCategories: Cat
   if (categories.length === 0) return null;
 
   return (
-    <div className="product-category-list mb-10">
-      <div className="row">
+    <div className="mb-10 mt-32 max-md:mt-18">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
         {categories.map((c) => {
-          const img = resolveMediaUrl((c.image ?? c.icon)?.url?.trim()) || `${T}/images/Union-2.png`;
+          const img = resolveMediaUrl((c.image ?? c.icon)?.url?.trim()) || "/brand/home/category-fallback.png";
           return (
-            <div className="col-6 col-md-3 col-sm-4 item" key={c.id}>
+            <div className="border border-border text-center" key={c.id}>
               <LocalizedLink
                 kind="category"
                 viSlug={c.slug}
                 enSlug={c.slugEn}
-                className="row align-items-center"
+                className="group relative flex h-72 items-center justify-center overflow-hidden bg-card before:absolute before:inset-0 before:bg-[url('/brand/home/category-hover.jpg')] before:bg-cover before:bg-center before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100"
               >
-                <span className="col-12">
-                  <span className="img">
-                    <img src={img} className="lazy mx-auto" alt="" width={1} height={1} loading="lazy" />
+                <span className="relative z-[1] block w-full px-4">
+                  <span className="block">
+                    <img src={img} className="mx-auto h-auto max-h-40 w-auto max-w-full object-contain transition duration-300 group-hover:brightness-0 group-hover:invert" alt="" loading="lazy" />
                   </span>
-                  <span className="desc">{c.name}</span>
-                  <i className="fal fa-chevron-circle-right" />
+                  <span className="mt-8 block font-cta text-ui-16 font-semibold uppercase text-foreground group-hover:text-white">{c.name}</span>
+                  <ChevronRight className="mx-auto mt-0 h-0 w-6 text-foreground opacity-0 transition-all duration-300 group-hover:mt-8 group-hover:h-6 group-hover:text-white group-hover:opacity-100" aria-hidden="true" />
                 </span>
               </LocalizedLink>
             </div>

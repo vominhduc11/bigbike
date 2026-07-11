@@ -1167,7 +1167,7 @@
     "orderConfirm": "Confirming order",
     "contact": "Loading contact page"
   },
-  "CartWp": {
+  "CartPage": {
     "emptyMessage": "There are no products in your cart yet.",
     "returnToShop": "Return to shop",
     "cartHeading": "YOUR CART",
@@ -1214,7 +1214,7 @@
     "relatedTitle": "Similar products",
     "experienceAria": "BigBike experience corner"
   },
-  "WpUser": {
+  "HeaderUser": {
     "account": "ACCOUNT",
     "register": "REGISTER",
     "login": "SIGN IN",

@@ -14,7 +14,7 @@ import type { Locale } from "@/i18n/locale";
 import { FormRootError } from "@/components/ui/FormRootError";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { WpAuthField } from "@/components/wp/WpAuthField";
+import { AuthField } from "@/components/auth/AuthField";
 import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
 
 /**
@@ -63,14 +63,12 @@ export function LoginForm({ returnTo }: { returnTo?: string }) {
   if (auth.status === "authenticated") return null;
 
   return (
-    <div className="row">
-      <div className="col-12">
+    <div>
         <FormRootError message={errors.root?.message} />
 
-        <form className="login-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-          <WpAuthField
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <AuthField
             id="login-username"
-            groupClassName="login-email"
             label={t("emailLabel")}
             autoComplete="username"
             placeholder={t("emailPlaceholder")}
@@ -78,9 +76,8 @@ export function LoginForm({ returnTo }: { returnTo?: string }) {
             error={errors.login}
           />
 
-          <WpAuthField
+          <AuthField
             id="login-password"
-            groupClassName="login-password"
             type="password"
             label={t("passwordLabel")}
             autoComplete="current-password"
@@ -89,9 +86,8 @@ export function LoginForm({ returnTo }: { returnTo?: string }) {
             error={errors.password}
           />
 
-          <div className="row">
-            <div className="col-md-6">
-              <div className="form-group flex items-center gap-2">
+          <div className="mb-8 grid gap-4 md:grid-cols-2">
+              <div className="flex min-h-11 items-center gap-2">
                 <Controller
                   name="remember"
                   control={control}
@@ -105,19 +101,21 @@ export function LoginForm({ returnTo }: { returnTo?: string }) {
                     />
                   )}
                 />
-                <label htmlFor="remember-me" className="!mb-0 cursor-pointer select-none">
+                <label htmlFor="remember-me" className="cursor-pointer select-none text-ui-14">
                   {t("remember")}
                 </label>
               </div>
-            </div>
-            <div className="col-md-6">
-              <div className="forgot-password-link text-right">
-                <Link href={toForgotPasswordPath(undefined, locale)}>{t("forgotPassword")}</Link>
+              <div className="flex min-h-11 items-center md:justify-end">
+                <Link
+                  href={toForgotPasswordPath(undefined, locale)}
+                  className="text-ui-14 font-medium text-muted-foreground underline hover:no-underline"
+                >
+                  {t("forgotPassword")}
+                </Link>
               </div>
-            </div>
           </div>
 
-          <div className="form-submit form-group">
+          <div>
             <Button type="submit" size="auth" disabled={isSubmitting}>
               {isSubmitting ? t("submitting") : t("submit")}
             </Button>
@@ -125,7 +123,6 @@ export function LoginForm({ returnTo }: { returnTo?: string }) {
         </form>
 
         <SocialLoginButtons returnTo={resolvedReturnTo} />
-      </div>
     </div>
   );
 }

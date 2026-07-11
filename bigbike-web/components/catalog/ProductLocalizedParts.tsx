@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Check, X, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { richContentClassName } from "@/components/layout/RichContent";
 import { useLocalizedField } from "@/components/i18n/LocalizedContent";
 import { LHtml } from "@/components/i18n/LocalizedContent";
 import { sanitizeRichHtml } from "@/lib/utils/html";
@@ -183,7 +184,7 @@ export function ProductFaqs({ viFaqs }: { viFaqs: Faq[] }) {
 
   if (faqs.length === 0) {
     return (
-      <div className="wyswyg">
+      <div className={richContentClassName}>
         <p>{t("faqsEmpty")}</p>
       </div>
     );
@@ -206,7 +207,7 @@ export function ProductFaqs({ viFaqs }: { viFaqs: Faq[] }) {
           </AccordionTrigger>
           <AccordionContent>
             <div
-              className="wyswyg pl-9 text-muted-foreground"
+              className={cn(richContentClassName, "pl-9 text-muted-foreground")}
               dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(faq.answer ?? "", { allowInlineStyles: true }) }}
             />
           </AccordionContent>
@@ -226,19 +227,19 @@ export function ProductDescriptionTab({ viHtml }: { viHtml: string }) {
     : viHtml.trim().length > 0;
   if (!hasContent) {
     return (
-      <div className="wyswyg">
+      <div className={richContentClassName}>
         <p>{t("descriptionEmpty")}</p>
       </div>
     );
   }
-  return <LHtml field="description" viHtml={viHtml} className="wyswyg" rewriteMediaUrls />;
+  return <LHtml field="description" viHtml={viHtml} className={richContentClassName} rewriteMediaUrls />;
 }
 
 
 /** Nội dung dài SEO cuối trang (contentBottom) — rich HTML, đổi theo ngôn ngữ.
  *  Fallback về bản VI render sẵn ở server khi payload EN không có field này. */
 export function ProductContentBottom({ viHtml }: { viHtml: string }) {
-  return <LHtml field="contentBottom" viHtml={viHtml} className="wyswyg" rewriteMediaUrls />;
+  return <LHtml field="contentBottom" viHtml={viHtml} className={richContentClassName} rewriteMediaUrls />;
 }
 
 // Phù hợp với ai · Bảng size (V246): KHỐI trong mô tả — render bởi SuitabilityBlockView /
@@ -262,7 +263,7 @@ export function ProductVideosSection({ videos }: { videos: VideoAsset[] }) {
 
   if (videos.length === 0) {
     return (
-      <div className="wyswyg">
+      <div className={richContentClassName}>
         <p>{t("videosEmpty")}</p>
       </div>
     );

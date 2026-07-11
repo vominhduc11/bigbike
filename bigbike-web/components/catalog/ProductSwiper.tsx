@@ -9,7 +9,8 @@ import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
 import "swiper/css/pagination";
 import type { Product } from "@/lib/contracts/public";
-import { WpProductSwipeItem } from "@/components/wp/WpProductSwipeItem";
+import { ProductCard } from "@/components/catalog/ProductCard";
+import { Button } from "@/components/ui/button";
 import { BB_BREAKPOINTS } from "@/lib/ui/breakpoints";
 import { cn } from "@/lib/utils";
 
@@ -32,7 +33,7 @@ const ARROW_BTN =
 
 /**
  * Carousel sản phẩm dùng chung — chuẩn lấy từ "SẢN PHẨM NỔI BẬT" ở trang chủ:
- * thẻ {@link WpProductSwipeItem} (ảnh + tên đậm + giá + sao + overlay giỏ hàng),
+ * thẻ sản phẩm (ảnh + tên đậm + giá + sao + overlay giỏ hàng),
  * mũi tên trong rãnh + chấm phân trang. Dựng bằng swiper/react để chạy độc lập
  * ở mọi trang (không lệ thuộc script Swiper legacy chỉ chạy ở trang chủ).
  *
@@ -55,14 +56,16 @@ export function ProductSwiper({ products, className, autoHeight = false }: Props
   return (
     <div className={cn("product relative", className)}>
       {!isLocked && (
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           className={cn(ARROW_BTN, "-left-5 min-[1440px]:-left-[60px]")}
           onClick={() => swiperRef.current?.slidePrev()}
           aria-label={t("scrollPrev")}
         >
           <ChevronLeft strokeWidth={1.5} />
-        </button>
+        </Button>
       )}
 
       <div className="w-full overflow-hidden">
@@ -95,21 +98,23 @@ export function ProductSwiper({ products, className, autoHeight = false }: Props
         >
           {products.map((p) => (
             <SwiperSlide key={p.id} className="h-auto">
-              <WpProductSwipeItem product={p} wrapperClassName="" />
+              <ProductCard product={p} layout="carousel" />
             </SwiperSlide>
           ))}
         </Swiper>
       </div>
 
       {!isLocked && (
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           className={cn(ARROW_BTN, "-right-5 min-[1440px]:-right-[60px]")}
           onClick={() => swiperRef.current?.slideNext()}
           aria-label={t("scrollNext")}
         >
           <ChevronRight strokeWidth={1.5} />
-        </button>
+        </Button>
       )}
 
       {/* Chấm phân trang chuẩn design-system (đồng bộ .bb-article-pagination):

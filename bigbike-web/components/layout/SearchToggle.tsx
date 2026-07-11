@@ -32,7 +32,7 @@ import { MobileSearchBody } from "./search/MobileSearchBody";
 type SearchToggleProps = {
   popularCategories?: PopularCategory[];
   // Khi false: chỉ dựng panel/overlay, KHÔNG render nút trigger riêng. Dùng cho
-  // route WP — nút bấm là WpSearchIcon trong header, SearchToggle chỉ là "panel host".
+  // route storefront — nút bấm là HeaderSearchButton trong header, SearchToggle chỉ là "panel host".
   renderTrigger?: boolean;
 };
 
@@ -139,7 +139,7 @@ export function SearchToggle({
     <div
       className={cn(
         "relative max-md:static max-md:order-2 max-md:ml-auto",
-        // Panel host trên route WP: header WP đặt cứng `height:80px` (px tuyệt đối,
+        // Panel host trên route storefront: header WP đặt cứng `height:80px` (px tuyệt đối,
         // theme gốc). Nhưng --bb-header-height = 5rem, mà root font-size trên trang WP
         // là 14px → 5rem chỉ ra 70px. Lệch 10px: thanh tìm kiếm (70px) thấp hơn header
         // (80px) nên dropdown (mốc top = 70px) đè lên 10px mép dưới header. Ghim token
@@ -198,7 +198,7 @@ export function SearchToggle({
 
             <Input
               ref={inputRef}
-              type="text"
+              type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={t("inputPlaceholder")}

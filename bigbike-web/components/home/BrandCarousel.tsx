@@ -26,8 +26,8 @@ export function BrandCarousel({ brands }: Props) {
   if (brands.length === 0) return null;
 
   return (
-    <div className="partner-slide pt-120 pb-120">
-      <div className="container">
+    <section className="py-30">
+      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
         <Swiper
           // KHÔNG đặt `swiper-container`: home.min.js `partnerSlide()` gọi
           // `new Swiper(".partner-slide .swiper-container")` → double-init đè lên Swiper
@@ -58,13 +58,13 @@ export function BrandCarousel({ brands }: Props) {
                 <Link href={`/brands/${b.slug}`}>
                   {/* Logo tải trực tiếp — thiếu logo thì dùng placeholder dùng chung. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={logo ?? "/wp/logo-1.png"} alt={b.name} width={1} height={1} loading="lazy" />
+                  <img src={logo ?? "/wp/logo-1.png"} alt={b.name} className="mx-auto h-auto w-auto max-w-full object-contain" loading="lazy" />
                 </Link>
               </SwiperSlide>
             );
           })}
         </Swiper>
       </div>
-    </div>
+    </section>
   );
 }

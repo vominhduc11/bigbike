@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
-import { WpStaticShell } from "@/components/wp/WpStaticShell";
+import { StaticPageShell } from "@/components/layout/StaticPageShell";
 import { ContactPageContent, type ContactInfo } from "@/components/contact/ContactPageContent";
 import { listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
@@ -49,14 +49,10 @@ export default async function ContactPage() {
   const title = t("titleFallback");
 
   return (
-    <WpStaticShell title={title} breadcrumb={[]} showHero={false} mainClassName="pb-40 contact-page">
-      <div className="container">
-        <div className="row">
-          <div className="col-md-12">
-            <ContactPageContent contact={contact} />
-          </div>
-        </div>
+    <StaticPageShell title={title} breadcrumb={[]} showHero={false} mainClassName="pb-10">
+      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+        <ContactPageContent contact={contact} />
       </div>
-    </WpStaticShell>
+    </StaticPageShell>
   );
 }

@@ -1,4 +1,4 @@
-import { WpAccountShell } from "@/components/wp/WpAccountShell";
+import { AccountShell } from "@/components/layout/AccountShell";
 import { OrderDetailContentIsland } from "./OrderDetailContentIsland";
 
 export const dynamic = "force-static";
@@ -9,8 +9,8 @@ export async function generateStaticParams() {
 
 export default function OrderDetailPage() {
   return (
-    <WpAccountShell>
+    <AccountShell>
       <OrderDetailContentIsland />
-    </WpAccountShell>
+    </AccountShell>
   );
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
-import { WpStaticShell } from "@/components/wp/WpStaticShell";
+import { StaticPageShell } from "@/components/layout/StaticPageShell";
 import { AboutPageContent, type AboutBrandLogo } from "@/components/about/AboutPageContent";
 import { listBrands, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
@@ -50,28 +50,24 @@ export default async function AboutPage() {
     .filter((b): b is AboutBrandLogo => b !== null);
 
   return (
-    <WpStaticShell
+    <StaticPageShell
       title={pageTitle}
       breadcrumb={[
         { label: "Bigbike.vn", href: toHomePath() },
         { label: pageTitle },
       ]}
     >
-      <div className="container">
-        <div className="row">
-          <div className="col-md-12">
-            <AboutPageContent
-              brands={brands}
-              contact={{
-                address: setting("contact_address"),
-                hotline: setting("hotline"),
-                hotline2: setting("hotline_2"),
-                facebookUrl: setting("facebook_url"),
-              }}
-            />
-          </div>
-        </div>
+      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+        <AboutPageContent
+          brands={brands}
+          contact={{
+            address: setting("contact_address"),
+            hotline: setting("hotline"),
+            hotline2: setting("hotline_2"),
+            facebookUrl: setting("facebook_url"),
+          }}
+        />
       </div>
-    </WpStaticShell>
+    </StaticPageShell>
   );
 }

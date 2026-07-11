@@ -53,13 +53,13 @@ test.describe("Search results @1440", () => {
 test.describe("PDP gallery @1440", () => {
   test("clicking a thumbnail switches the main image", async ({ page }) => {
     await gotoAndSettle(page, SAMPLE.product);
-    const thumbs = page.locator("button.bb-wp-gallery-thumb");
+    const thumbs = page.locator("[data-product-gallery-thumb]");
     const n = await thumbs.count();
     if (n < 2) {
       test.skip(true, "Sample product has a single gallery image");
       return;
     }
-    const mainImg = page.locator(".bb-wp-gallery-main img").first();
+    const mainImg = page.locator("[data-product-gallery-main] img").first();
     const src1 = await mainImg.getAttribute("src");
 
     await thumbs.nth(1).click();

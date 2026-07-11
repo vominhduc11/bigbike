@@ -1,4 +1,4 @@
-import type { WpCategoryFilterState } from "@/components/wp/WpCategorySidebar";
+import type { CatalogFilterState } from "@/components/catalog/CatalogSidebar";
 import {
   DEFAULT_PRODUCT_PAGE_SIZE as DEFAULT_PAGE_SIZE,
   DEFAULT_PRODUCT_SORT as DEFAULT_SORT,
@@ -6,11 +6,11 @@ import {
   PRODUCT_SORT_VALUES,
 } from "@/lib/constants/catalog";
 import {
-  DEFAULT_WP_ORDERBY,
-  isWpOrderbyValue,
-  productSortToWpOrderby,
+  DEFAULT_CATALOG_ORDERBY,
+  isCatalogOrderbyValue,
+  productSortToOrderby,
   wpOrderbyToProductSort,
-  type WpOrderbyValue,
+  type CatalogOrderbyValue,
 } from "@/lib/utils/catalog-sort";
 import {
   buildQueryString,
@@ -53,12 +53,12 @@ const ORDERBY_INVALID_MESSAGE = "orderby không hợp lệ.";
   page: number;
   size: number;
   productSort: string;
-  orderbyCurrent: WpOrderbyValue;
+  orderbyCurrent: CatalogOrderbyValue;
   validationErrors: string[];
   /** Giá trị đã parse, dùng cho lời gọi listProducts / getCatalogFacets. */
   filters: CatalogListFilters;
-  /** Shape `current` cho WpCategorySidebar (category undefined nếu trang không lọc category). */
-  currentFilters: WpCategoryFilterState;
+  /** Shape `current` cho CatalogSidebar (category undefined nếu trang không lọc category). */
+  currentFilters: CatalogFilterState;
   /** Dựng href phân trang giữ nguyên filter hiện tại, theo path canonical của trang. */
   buildPaginationHref: (canonicalPath: string) => string;
 };
@@ -103,12 +103,12 @@ export function parseCatalogListParams(
     field: "max_price",
   });
   const orderbyParam = readSingleSearchParam(params.orderby);
-  const orderbyError = orderbyParam && !isWpOrderbyValue(orderbyParam) ? ORDERBY_INVALID_MESSAGE : null;
+  const orderbyError = orderbyParam && !isCatalogOrderbyValue(orderbyParam) ? ORDERBY_INVALID_MESSAGE : null;
   const sortParsed = parseSortParam(params.sort, PRODUCT_SORT_VALUES, DEFAULT_SORT);
-  const orderbyCurrent = isWpOrderbyValue(orderbyParam)
+  const orderbyCurrent = isCatalogOrderbyValue(orderbyParam)
     ? orderbyParam
-    : productSortToWpOrderby(sortParsed.value ?? DEFAULT_SORT);
-  const productSort = isWpOrderbyValue(orderbyParam)
+    : productSortToOrderby(sortParsed.value ?? DEFAULT_SORT);
+  const productSort = isCatalogOrderbyValue(orderbyParam)
     ? wpOrderbyToProductSort(orderbyParam, DEFAULT_SORT)
     : sortParsed.value;
 
@@ -138,7 +138,7 @@ export function parseCatalogListParams(
     maxPrice: maxPriceParsed.value,
   };
 
-  const currentFilters: WpCategoryFilterState = {
+  const currentFilters: CatalogFilterState = {
     q: filters.q,
     category: filters.category,
     brand: filters.brand,
@@ -151,7 +151,7 @@ export function parseCatalogListParams(
   const buildPaginationHref = (canonicalPath: string) =>
     `${canonicalPath}${buildQueryString({
       size: sizeParsed.value !== DEFAULT_PAGE_SIZE ? sizeParsed.value : undefined,
-      orderby: orderbyCurrent !== DEFAULT_WP_ORDERBY ? orderbyCurrent : undefined,
+      orderby: orderbyCurrent !== DEFAULT_CATALOG_ORDERBY ? orderbyCurrent : undefined,
       ...(includeCategory ? { category: filters.category } : {}),
       "pwb-brand": filters.brand,
       q: filters.q,

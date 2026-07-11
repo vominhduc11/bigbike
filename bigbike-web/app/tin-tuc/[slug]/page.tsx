@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
-import { WpCategoryHero } from "@/components/wp/WpCategoryHero";
-import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
+import { PageHero } from "@/components/layout/PageHero";
 import { getArticleBySlug, listArticles, listPublicSettings } from "@/lib/api/public-api";
 import type { Article } from "@/lib/contracts/public";
 import {
@@ -19,7 +18,7 @@ import { toArticleListPath, toArticlePath, toHomePath } from "@/lib/utils/routes
 import { isValidSlug } from "@/lib/utils/slug";
 import { Tr } from "@/components/i18n/Tr";
 import { AltSlugRegistrar } from "@/components/i18n/AltSlugProvider";
-import { ArticleViewDefault } from "./ArticleViewDefault";
+import { ArticleView } from "./ArticleView";
 
 // ISR on-demand: bài viết là dữ liệu admin quản lý → KHÔNG prebuild lúc build. Trả [] để
 // sinh khi truy cập lần đầu + revalidate theo tag article:{slug}/articles khi admin sửa.
@@ -98,10 +97,8 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
   if (!result.data) {
     const errorTitle = t("articleNotFoundTitle");
     return (
-      <>
-        <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-news.css?v=4" />
-        <div className="single single-post">
-          <WpCategoryHero
+      <div>
+          <PageHero
             title={errorTitle}
             breadcrumb={[
               { label: "Bigbike.vn", href: toHomePath() },
@@ -114,12 +111,11 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
             illustrationAlt={errorTitle}
           />
           <div id="main-content">
-            <div className="container">
-              <p className="woocommerce-info"><Tr ns="Blog" k="loadFailed" /></p>
+            <div className="mx-auto w-full max-w-[1200px] px-4 py-10 sm:px-6">
+              <p className="border border-border bg-card p-4 text-ui-16 text-muted-foreground"><Tr ns="Blog" k="loadFailed" /></p>
             </div>
           </div>
-        </div>
-      </>
+      </div>
     );
   }
 
@@ -146,9 +142,8 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: articleJsonLd }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
       <AltSlugRegistrar kind="article" viSlug={article.slug} enSlug={article.slugEn ?? null} />
-      <ArticleViewDefault
+      <ArticleView
         article={article}
-        locale={locale}
         heroBgUrl={heroBgUrl}
         heroMobileBgUrl={heroMobileBgUrl}
         heroIllustrationUrl={heroIllustrationUrl}

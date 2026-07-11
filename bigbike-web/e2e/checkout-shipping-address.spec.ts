@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 /**
  * E2E cho luồng "Giao tới địa chỉ khác địa chỉ thanh toán" trên trang Đặt hàng.
  *
- * Form checkout (WpCheckoutClient) render bất kể giỏ rỗng — không redirect khi giỏ
+ * Form checkout (CheckoutClient) render bất kể giỏ rỗng - không redirect khi giỏ
  * trống — nên test chỉ cần mở /dat-hang/ rồi bật/tắt checkbox. Theo convention của
  * bộ e2e hiện có: nếu form không render (môi trường chưa dựng đủ stack) thì SKIP nhẹ
  * nhàng thay vì fail.

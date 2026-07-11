@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Check, Loader2, Mail, MapPin, Phone, Plus, SquarePen, Trash2 } from "lucide-react";
-import { WpAccountSectionHeading, useWpAccount } from "@/components/wp/WpAccountNav";
+import { AccountSectionHeading, useAccount } from "@/components/account/AccountNav";
 import { createAddress, deleteAddress, fetchMyAddresses, updateAddress } from "@/lib/api/client-api";
 import type { CustomerAddress, SaveAddressPayload } from "@/lib/contracts/commerce";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ const ADDRESSES_PAGE_SIZE = 6;
 export function AddressBookContent() {
   const t = useTranslations("Account.addresses");
   const tNav = useTranslations("Account.nav");
-  const profile = useWpAccount();
+  const profile = useAccount();
   const router = useRouter();
   const accountEmail = profile?.email ?? "";
 
@@ -144,7 +144,7 @@ export function AddressBookContent() {
 
   return (
     <>
-      <WpAccountSectionHeading title={tNav("addresses")} />
+      <AccountSectionHeading title={tNav("addresses")} />
 
       {notice && (
         <FormNotice tone="success" className="mb-4">{notice}</FormNotice>
@@ -214,39 +214,44 @@ export function AddressBookContent() {
                         {t("defaultBadge")}
                       </span>
                     ) : (
-                      <button
+                      <Button
                         type="button"
+                        variant="link"
                         onClick={() => handleSetDefault(addr)}
                         disabled={isPending}
-                        className="inline-flex min-h-11 items-center gap-1.5 text-ui-14 max-md:text-ui-12 font-bold uppercase tracking-wide text-discount hover:underline disabled:pointer-events-none disabled:opacity-50"
+                        className="min-h-11 gap-1.5 px-0 text-ui-14 font-bold uppercase tracking-wide text-discount"
                       >
                         {isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />}
                         {t("setDefaultButton")}
-                      </button>
+                      </Button>
                     )}
                     <div className="flex items-center gap-1">
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="icon"
                         onClick={() => openEdit(addr)}
                         aria-label={t("editAria")}
                         disabled={isPending}
-                        className="flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-brand disabled:pointer-events-none disabled:opacity-50"
+                        className="h-11 w-11 text-muted-foreground hover:text-brand"
                       >
                         <SquarePen className="h-[18px] w-[18px]" aria-hidden />
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="icon"
                         onClick={() => handleDelete(addr)}
                         aria-label={t("deleteAria")}
                         disabled={isPending}
-                        className="flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-brand disabled:pointer-events-none disabled:opacity-50"
+                        className="h-11 w-11 text-muted-foreground hover:text-brand"
                       >
                         {isPending ? (
                           <Loader2 className="h-[18px] w-[18px] animate-spin" aria-hidden />
                         ) : (
                           <Trash2 className="h-[18px] w-[18px]" aria-hidden />
                         )}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -261,14 +266,15 @@ export function AddressBookContent() {
             onPageChange={setAddrPage}
           />
 
-          <button
+          <Button
             type="button"
+            variant="link"
             onClick={openAdd}
-            className="mt-5 inline-flex min-h-11 items-center gap-2 text-ui-14 max-md:text-ui-12 font-bold uppercase tracking-wide text-brand hover:underline"
+            className="mt-5 min-h-11 gap-2 px-0 text-ui-14 font-bold uppercase tracking-wide text-brand"
           >
             <Plus className="h-4 w-4" aria-hidden />
             {t("addNew")}
-          </button>
+          </Button>
 
           {addresses.length === 0 && (
             <p className="mt-3 text-ui-16 max-md:text-ui-14 text-muted-foreground">{t("empty")}</p>

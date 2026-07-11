@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { WpAccountSectionHeading, useWpAccount } from "@/components/wp/WpAccountNav";
+import { AccountSectionHeading, useAccount } from "@/components/account/AccountNav";
 import { resendEmailVerification } from "@/lib/api/client-api";
 import { Button } from "@/components/ui/button";
 
@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 export function DashboardContent() {
   const t = useTranslations("Account");
   const tNav = useTranslations("Account.nav");
-  const profile = useWpAccount();
+  const profile = useAccount();
   const displayName = profile?.displayName ?? profile?.email?.split("@")[0] ?? tNav("dashboard");
   const [resendState, setResendState] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
@@ -30,7 +30,7 @@ export function DashboardContent() {
 
   return (
     <>
-      <WpAccountSectionHeading title={tNav("dashboard")} />
+      <AccountSectionHeading title={tNav("dashboard")} />
       {profile?.emailVerified === false && (
         <div className="mb-6 border border-[var(--bb-danger)]/30 bg-[var(--bb-danger)]/5 px-4 py-3">
           <p className="m-0 text-ui-16 max-md:text-ui-14 font-semibold text-foreground">{t("emailNotVerified")}</p>
@@ -50,7 +50,7 @@ export function DashboardContent() {
           </div>
         </div>
       )}
-      <div className="main-account">
+      <div className="space-y-4 text-ui-16 leading-relaxed text-foreground">
         <p>
           {t.rich("dashboardGreeting", {
             name: displayName,

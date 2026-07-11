@@ -3,10 +3,16 @@ import { Check } from "lucide-react";
 import type { DescriptionBlock, SizeGuideSection, SuitabilitySection } from "@/lib/contracts/public";
 import { resolveMediaUrl } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
+import { richContentClassName } from "@/components/layout/RichContent";
+import { cn } from "@/lib/utils";
 import { facebookEmbedUrl, getTikTokId, isFacebookVideoUrl, tiktokEmbedUrl } from "../product-gallery/media";
 import type { FeatureBlockT } from "./grouping";
 
 const PDP_RICH_HTML_OPTS = { allowInlineStyles: true, rewriteMediaUrls: true } as const;
+const PDP_RICH_CONTENT_CLASS = cn(
+  richContentClassName,
+  "text-ui-18 leading-tight [&_p:last-child]:mb-0",
+);
 
 function youTubeId(url: string): string | null {
   const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
@@ -98,7 +104,7 @@ function TextBlock({ block }: { block: DescriptionBlock }) {
     case "paragraph": {
       const html = block.html?.trim();
       if (!html) return null;
-      return <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html, PDP_RICH_HTML_OPTS) }} />;
+      return <div className={PDP_RICH_CONTENT_CLASS} dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html, PDP_RICH_HTML_OPTS) }} />;
     }
     case "list": {
       const items = (block.items ?? []).map((it) => (it ?? "").trim()).filter(Boolean);
@@ -131,7 +137,7 @@ function TextBlock({ block }: { block: DescriptionBlock }) {
       if (!html) return null;
       return (
         <div className="border-l-4 border-brand bg-muted px-4 py-3">
-          <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html, PDP_RICH_HTML_OPTS) }} />
+          <div className={PDP_RICH_CONTENT_CLASS} dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html, PDP_RICH_HTML_OPTS) }} />
         </div>
       );
     }
@@ -179,7 +185,7 @@ export function FeatureBody({ block }: { block: FeatureBlockT }) {
           ) : null}
         </div>
       ) : null}
-      {html ? <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html, PDP_RICH_HTML_OPTS) }} /> : null}
+      {html ? <div className={PDP_RICH_CONTENT_CLASS} dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html, PDP_RICH_HTML_OPTS) }} /> : null}
       {items.length > 0 ? (
         block.listStyle === "numbered" ? (
           <ol className="flex list-none flex-col gap-2 text-ui-18 max-md:text-ui-16 leading-snug">
@@ -226,7 +232,7 @@ export function SuitabilityBlockView({ block }: { block: SuitabilitySection }) {
     // gap-4 = khoảng tiêu đề→nội dung, đồng nhất với TextStack/FeatureBody (16px mọi loại khối).
     <div className="flex flex-col gap-4">
       <BlockTitle text={block.title} />
-      <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: html }} />
+      <div className={PDP_RICH_CONTENT_CLASS} dangerouslySetInnerHTML={{ __html: html }} />
     </div>
   );
 }
@@ -240,7 +246,7 @@ export function SizeGuideBlockView({ block }: { block: SizeGuideSection }) {
     // gap-4 = khoảng tiêu đề→nội dung, đồng nhất với TextStack/FeatureBody (16px mọi loại khối).
     <div className="flex flex-col gap-4">
       <BlockTitle text={block.title} />
-      <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: html }} />
+      <div className={PDP_RICH_CONTENT_CLASS} dangerouslySetInnerHTML={{ __html: html }} />
     </div>
   );
 }

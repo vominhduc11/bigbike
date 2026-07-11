@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
-import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
-import { WpCatalogClient } from "@/components/wp/WpCatalogClient";
-import { WpCatalogDefault } from "@/components/wp/WpCatalogDefault";
-import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
+import { PageHero, type PageHeroCrumb } from "@/components/layout/PageHero";
+import { CatalogClient } from "@/components/catalog/CatalogClient";
+import { CatalogDefault } from "@/components/catalog/CatalogDefault";
 import { getCatalogFacets, listBrands, listCategories, listProducts, listPublicSettings } from "@/lib/api/public-api";
 import { DEFAULT_PRODUCT_PAGE_SIZE, DEFAULT_PRODUCT_SORT } from "@/lib/constants/catalog";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
@@ -14,7 +13,7 @@ import { toHomePath, toProductListPath } from "@/lib/utils/routes";
 
 // Shell + hero lấy từ settings (admin quản lý, revalidate theo tag "settings"). Lưới
 // sản phẩm view MẶC ĐỊNH (page 1, sort mặc định, chưa lọc) fetch sẵn ở server và
-// truyền xuống WpCatalogClient → nằm trong HTML server (SEO). Khi khách lọc/sắp xếp/
+// truyền xuống CatalogClient → nằm trong HTML server (SEO). Khi khách lọc/sắp xếp/
 // sang trang, client tiếp quản fetch theo searchParams.
 export async function generateMetadata(): Promise<Metadata> {
   const tCatalog = await getTranslations("Catalog");
@@ -49,7 +48,7 @@ export default async function ProductListPage() {
   const heroIllustrationUrl = toLegacyWpMediaUrl(
     resolveMediaUrl(heroSettings.illustrationUrl?.trim()) || defaultHero.defaultIllustrationUrl?.trim(),
   );
-  const heroBreadcrumb: WpCategoryCrumb[] = [
+  const heroBreadcrumb: PageHeroCrumb[] = [
     { label: "Bigbike.vn", href: toHomePath() },
     { label: heroTitle },
   ];
@@ -58,11 +57,8 @@ export default async function ProductListPage() {
   const canonicalPath = toProductListPath();
 
   return (
-    <>
-      <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-category.css?v=2" />
-
-      <div className="archive post-type-archive-product">
-        <WpCategoryHero
+    <div>
+        <PageHero
           focusId="hero_products hero_default"
           title={heroTitle}
           breadcrumb={heroBreadcrumb}
@@ -73,10 +69,10 @@ export default async function ProductListPage() {
         />
 
         <div id="main-content">
-          <div className="container">
+          <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
             <Suspense
               fallback={
-                <WpCatalogDefault
+                <CatalogDefault
                   canonicalPath={canonicalPath}
                   brands={brandsResult.data}
                   categories={filterCategories}
@@ -86,7 +82,7 @@ export default async function ProductListPage() {
                 />
               }
             >
-              <WpCatalogClient
+              <CatalogClient
                 canonicalPath={canonicalPath}
                 brands={brandsResult.data}
                 categories={filterCategories}
@@ -98,7 +94,6 @@ export default async function ProductListPage() {
             </Suspense>
           </div>
         </div>
-      </div>
-    </>
+    </div>
   );
 }

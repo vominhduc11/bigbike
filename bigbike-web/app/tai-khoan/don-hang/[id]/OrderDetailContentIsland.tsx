@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { WpAccountSectionHeading } from "@/components/wp/WpAccountNav";
+import { AccountSectionHeading } from "@/components/account/AccountNav";
 import { OrderDetailContent } from "./OrderDetailContent";
 
 export function OrderDetailContentIsland() {
@@ -12,7 +12,7 @@ export function OrderDetailContentIsland() {
   if (!orderId) {
     return (
       <>
-        <WpAccountSectionHeading title="Đơn hàng" />
+        <AccountSectionHeading title="Đơn hàng" />
         <p className="mb-4 text-ui-16 max-md:text-ui-14 text-brand">Không tìm thấy mã đơn hàng.</p>
       </>
     );

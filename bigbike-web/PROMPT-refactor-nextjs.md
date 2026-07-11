@@ -1,5 +1,7 @@
 # Prompt: Refactor `bigbike-web` về đúng chất Next.js (gỡ lớp port WordPress)
 
+> **Trạng thái hoàn tất (2026-07-11):** Lớp WordPress theme port đã được gỡ khỏi mã ứng dụng. Không còn `Wp*`, `bb-wp-*`, theme loader, bundle `wp-theme-*.css`, `components/wp/` hoặc `public/wp-content/themes/`. Nội dung bên dưới được giữ làm hồ sơ yêu cầu và bối cảnh trước refactor; không dùng các mục "còn lại" làm trạng thái hiện hành.
+
 > Dán toàn bộ nội dung dưới đây cho Claude Code khi mở tại thư mục `bigbike-web`.
 
 ---

@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { OrderAddress, OrderDetail } from "@/lib/contracts/commerce";
-import { WpStaticShell } from "@/components/wp/WpStaticShell";
+import { StaticPageShell } from "@/components/layout/StaticPageShell";
 import { sectionHeading } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
 import { formatAddress, formatVnd, telHref, zaloHref } from "@/lib/utils/format";
 import { resolveBankTransfer } from "@/lib/utils/orders";
+import { Button } from "@/components/ui/button";
 
 type Props = {
   orderNumber?: string;
@@ -22,7 +23,7 @@ type Props = {
  * (server render `vi`, client chỉ đổi phần DỮ LIỆU qua LocalizedContentProvider), trang này KHÔNG có
  * lý do giữ ISR/SSG (searchParams-dependent, tra cứu đơn theo mã+key mỗi lần, `noIndex: true`), nên
  * dựng hẳn ở client để `useTranslations` đổi đúng theo `NEXT_LOCALE` — mirror pattern
- * `OrderDetailContent`/`WpCheckoutClient` (xem AGENTS.md §6 — client component + next-intl).
+ * `OrderDetailContent`/`CheckoutClient` (xem AGENTS.md §6 — client component + next-intl).
  */
 export function OrderConfirmView({ orderNumber, orderKey, order, settingsRecord, isLoading = false }: Props) {
   const t = useTranslations("OrderConfirm");
@@ -56,7 +57,7 @@ export function OrderConfirmView({ orderNumber, orderKey, order, settingsRecord,
           {/* CTA Buttons */}
           <div className="space-y-3">
             <ZaloSupportButton zalo={zalo} />
-            <Link href="/" className="bb-oc-btn-continue">
+            <Link href="/" className="block w-full border-2 border-foreground bg-card px-6 py-3.5 text-center font-cta text-ui-18 font-bold uppercase text-foreground hover:bg-secondary">
               ← {t("continueShopping")}
             </Link>
           </div>
@@ -89,13 +90,13 @@ function HotlineBar({ hotline, zalo }: { hotline: string; zalo: ZaloContact | nu
   if (!hotline && !zalo) return null;
 
   return (
-    <div className="bb-oc-hotline-bar">
+    <div className="mb-4 flex flex-wrap items-center justify-center gap-3 bg-surface-dark px-5 py-4 text-ui-14 text-white">
       {hotline && (
         <>
           <span>{t("hotlineUrgentPrompt")}</span>
           <span>
-            <a href={telHref(hotline)}>
-              <strong>{hotline}</strong>
+            <a href={telHref(hotline)} className="text-white">
+              <strong className="text-brand">{hotline}</strong>
             </a>
           </span>
         </>
@@ -103,8 +104,8 @@ function HotlineBar({ hotline, zalo }: { hotline: string; zalo: ZaloContact | nu
       {hotline && zalo && <span>{t("hotlineOr")}</span>}
       {zalo && (
         <span>
-          <a href={zaloHref(zalo.hrefValue)} target="_blank" rel="noopener noreferrer">
-            <strong>{formatZaloDisplay(zalo.label)}</strong>
+          <a href={zaloHref(zalo.hrefValue)} target="_blank" rel="noopener noreferrer" className="text-white">
+            <strong className="text-brand">{formatZaloDisplay(zalo.label)}</strong>
           </a>
         </span>
       )}
@@ -121,7 +122,7 @@ function ZaloSupportButton({ zalo }: { zalo: ZaloContact | null }) {
       href={zaloHref(zalo.hrefValue)}
       target="_blank"
       rel="noopener noreferrer"
-      className="bb-oc-btn-zalo"
+      className="flex w-full items-center justify-center gap-2 bg-blue px-6 py-4 font-cta text-xl font-bold uppercase text-white hover:bg-blue/90"
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="22" height="22" className="mr-2">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -178,17 +179,16 @@ function OrderShell({ children }: { children: React.ReactNode }) {
   const t = useTranslations("OrderConfirm");
   const title = t("pageTitle");
   return (
-    <WpStaticShell
+    <StaticPageShell
       title={title}
       breadcrumb={[{ label: "Bigbike.vn", href: "/" }, { label: title }]}
       showHero={false}
       mainClassName="bb-checkout-page"
-      cssHref="/wp-content/themes/bigbike/css/wp-theme-checkout.css?v=4"
     >
-      <div className="bb-oc-wrap">
+      <div className="mx-auto max-w-[680px] px-4 py-8 max-sm:px-3 max-sm:py-4">
         {children}
       </div>
-    </WpStaticShell>
+    </StaticPageShell>
   );
 }
 
@@ -196,12 +196,12 @@ function OrderShell({ children }: { children: React.ReactNode }) {
 function SuccessBanner({ orderNumber }: { orderNumber: string }) {
   const t = useTranslations("OrderConfirm");
   return (
-    <div className="bb-oc-success-banner">
-      <div className="bb-oc-success-icon">
-        <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+    <div className="mb-6 bg-surface-dark px-6 py-7 text-center">
+      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand">
+        <svg viewBox="0 0 24 24" className="h-8 w-8 fill-white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
       </div>
-      <h1 className="bb-oc-success-title">{t("successTitle")}</h1>
-      <p className="bb-oc-order-code">{t("orderCode")} <strong>#{orderNumber}</strong></p>
+      <h1 className="mb-2 font-cta text-3xl font-bold uppercase tracking-wide text-white max-sm:text-2xl">{t("successTitle")}</h1>
+      <p className="m-0 text-ui-16 text-white/70">{t("orderCode")} <strong className="font-cta text-xl text-brand">#{orderNumber}</strong></p>
     </div>
   );
 }
@@ -211,25 +211,25 @@ function NextSteps({ phone }: { phone: string }) {
   const t = useTranslations("OrderConfirm");
   const richBold = { b: (chunks: React.ReactNode) => <strong>{chunks}</strong> };
   return (
-    <div className="bb-oc-next-step text-left">
-      <p className="bb-oc-next-step-title">{t("nextStepsTitle")}</p>
-      <div className="bb-oc-step-row">
-        <div className="bb-oc-step-num">1</div>
-        <div className="bb-oc-step-content">
+    <div className="mb-4 border border-border border-l-4 border-l-brand bg-secondary p-5 text-left">
+      <p className="mb-3 font-cta text-ui-18 font-bold uppercase tracking-wide text-brand">{t("nextStepsTitle")}</p>
+      <div className="mb-3.5 flex items-start gap-3.5">
+        <div className="flex h-8 w-8 min-w-8 items-center justify-center bg-brand font-cta text-ui-18 font-bold text-white">1</div>
+        <div className="pt-1 text-ui-16 leading-relaxed text-foreground [&>strong]:mb-0.5 [&>strong]:block">
           <strong>{t("step1Title")}</strong>
           {t.rich("step1Body", { ...richBold, phone })}
         </div>
       </div>
-      <div className="bb-oc-step-row">
-        <div className="bb-oc-step-num">2</div>
-        <div className="bb-oc-step-content">
+      <div className="mb-3.5 flex items-start gap-3.5">
+        <div className="flex h-8 w-8 min-w-8 items-center justify-center bg-brand font-cta text-ui-18 font-bold text-white">2</div>
+        <div className="pt-1 text-ui-16 leading-relaxed text-foreground [&>strong]:mb-0.5 [&>strong]:block">
           <strong>{t("step2Title")}</strong>
           {t("step2Body")}
         </div>
       </div>
-      <div className="bb-oc-step-row">
-        <div className="bb-oc-step-num">3</div>
-        <div className="bb-oc-step-content">
+      <div className="flex items-start gap-3.5">
+        <div className="flex h-8 w-8 min-w-8 items-center justify-center bg-brand font-cta text-ui-18 font-bold text-white">3</div>
+        <div className="pt-1 text-ui-16 leading-relaxed text-foreground [&>strong]:mb-0.5 [&>strong]:block">
           <strong>{t("step3Title")}</strong>
           {t("step3Body")}
         </div>
@@ -248,7 +248,7 @@ function ThankYouHero({ message }: { message: string }) {
           <path d="M20 6 9 17l-5-5" />
         </svg>
       </span>
-      <p className="woocommerce-notice woocommerce-notice--success woocommerce-thankyou-order-received m-0 font-heading text-ui-24 max-md:text-ui-22 font-semibold uppercase text-foreground">
+      <p className="m-0 font-cta text-ui-24 font-semibold uppercase text-foreground max-md:text-ui-22">
         {message}
       </p>
     </div>
@@ -270,12 +270,8 @@ function OrderLoadFallback({ orderNumber }: { orderNumber: string }) {
         {t("loadFailed")}
       </p>
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-        <Link className="button" href="/">
-          {t("continueShopping")}
-        </Link>
-        <Link className="button wc-backward" href="/tai-khoan/don-hang">
-          {t("viewMyOrders")}
-        </Link>
+        <Button asChild><Link href="/">{t("continueShopping")}</Link></Button>
+        <Button asChild variant="outline"><Link href="/tai-khoan/don-hang">{t("viewMyOrders")}</Link></Button>
       </div>
     </div>
   );
@@ -287,13 +283,13 @@ function OrderDetails({ order }: { order: OrderDetail }) {
   const paymentMethod = order.payments[0]?.paymentMethod ?? "";
 
   return (
-    <div className="bb-co-card">
-      <p className="bb-co-card-title">{t("orderDetailsTitle")}</p>
+    <div className="border border-border bg-card p-6 max-sm:p-4">
+      <p className="mb-5 border-b-2 border-brand pb-3 font-cta text-xl font-bold uppercase tracking-wide text-foreground">{t("orderDetailsTitle")}</p>
 
       <div className="space-y-4">
         {order.lineItems.map((item) => (
-          <div key={item.id} className="summary-item text-left">
-            <div className="item-img">
+          <div key={item.id} className="mb-3 flex items-center gap-3 border-b border-border pb-3 text-left last:mb-0 last:border-b-0">
+            <div className="h-12 w-12 shrink-0 border border-border bg-secondary">
               {item.productThumbnailUrl ? (
                 <span
                   role="img"
@@ -307,45 +303,45 @@ function OrderDetails({ order }: { order: OrderDetail }) {
                 </svg>
               )}
             </div>
-            <div className="item-info">
-              <p className="item-name">{item.productName}</p>
-              <p className="item-meta">
+            <div className="min-w-0 flex-1 text-left">
+              <p className="m-0 mb-1 line-clamp-2 text-ui-14 font-medium leading-snug text-foreground">{item.productName}</p>
+              <p className="m-0 text-ui-12 text-muted-foreground">
                 {item.variantName ? `${item.variantName} · ` : ""}{t("qtyAbbrev")}: {item.quantity}
               </p>
-              <p className="item-price">{formatVnd(item.lineTotal)}</p>
+              <p className="m-0 text-ui-14 font-bold text-foreground">{formatVnd(item.lineTotal)}</p>
             </div>
           </div>
         ))}
       </div>
 
       <div className="mt-4 text-left">
-        <div className="price-row">
+        <div className="mb-2.5 flex items-center justify-between text-ui-14 text-foreground">
           <span>{t("subtotalLabel")}</span>
           <span>{formatVnd(order.subtotalAmount)}</span>
         </div>
 
         {order.discountAmount > 0 && (
-          <div className="price-row">
+          <div className="mb-2.5 flex items-center justify-between text-ui-14 text-foreground">
             <span>{t("discountLabel")}</span>
             <span className="text-brand font-semibold">-{formatVnd(order.discountAmount)}</span>
           </div>
         )}
 
-        <div className="price-row">
+        <div className="mb-2.5 flex items-center justify-between text-ui-14 text-foreground">
           <span>{t("shippingLabel")}</span>
           <span className="text-state-success-text font-bold uppercase">{t("shippingFree")}</span>
         </div>
 
         {paymentMethod && (
-          <div className="price-row">
+          <div className="mb-2.5 flex items-center justify-between text-ui-14 text-foreground">
             <span>{t("paymentMethodLabel")}</span>
             <span>{legacyPaymentMethodLabel(paymentMethod, t)}</span>
           </div>
         )}
 
-        <div className="price-row total">
+        <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-ui-14 font-bold text-foreground">
           <span>{t("totalLabel")}</span>
-          <span className="val">{formatVnd(order.totalAmount)}</span>
+          <span className="font-cta text-xl text-brand">{formatVnd(order.totalAmount)}</span>
         </div>
       </div>
     </div>
@@ -365,7 +361,7 @@ function BankTransferInfo({ order, settings }: { order: OrderDetail; settings: M
   const transferNote = `BIGBIKE ${order.orderNumber}`;
 
   return (
-    <section className="woocommerce-bank-details">
+    <section>
       <h2 className={cn(sectionHeading, "m-0 mb-4")}>{t("bankTitle")}</h2>
       <div className="border border-border p-4 text-ui-18 max-md:text-ui-16 leading-7 text-foreground">
         {configured ? (
@@ -420,26 +416,26 @@ function CustomerDetails({ order }: { order: OrderDetail }) {
   ]);
 
   return (
-    <div className="bb-co-card">
-      <p className="bb-co-card-title">{t("customerDetailsTitle")}</p>
-      <table className="bb-oc-info-table text-left">
+    <div className="border border-border bg-card p-6 max-sm:p-4">
+      <p className="mb-5 border-b-2 border-brand pb-3 font-cta text-xl font-bold uppercase tracking-wide text-foreground">{t("customerDetailsTitle")}</p>
+      <table className="w-full border-collapse text-left text-ui-16">
         <tbody>
           <tr>
-            <td>{t("recipientLabel")}</td>
-            <td>{billingAddress.fullName}</td>
+            <td className="w-32 border-b border-border py-2.5 pr-3 align-top text-muted-foreground">{t("recipientLabel")}</td>
+            <td className="border-b border-border py-2.5 font-bold text-foreground">{billingAddress.fullName}</td>
           </tr>
           <tr>
-            <td>{t("phoneFieldLabel")}</td>
-            <td>{billingAddress.phone}</td>
+            <td className="w-32 border-b border-border py-2.5 pr-3 align-top text-muted-foreground">{t("phoneFieldLabel")}</td>
+            <td className="border-b border-border py-2.5 font-bold text-foreground">{billingAddress.phone}</td>
           </tr>
           <tr>
-            <td>{t("addressFieldLabel")}</td>
-            <td>{addressText}</td>
+            <td className="w-32 border-b border-border py-2.5 pr-3 align-top text-muted-foreground">{t("addressFieldLabel")}</td>
+            <td className="border-b border-border py-2.5 font-bold text-foreground">{addressText}</td>
           </tr>
           {order.customerNote && (
             <tr>
-              <td>{t("noteFieldLabel")}</td>
-              <td className="font-normal text-muted-foreground italic">{order.customerNote}</td>
+              <td className="w-32 py-2.5 pr-3 align-top text-muted-foreground">{t("noteFieldLabel")}</td>
+              <td className="py-2.5 font-normal italic text-muted-foreground">{order.customerNote}</td>
             </tr>
           )}
         </tbody>

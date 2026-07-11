@@ -1,81 +1,36 @@
 import { getTranslations } from "next-intl/server";
-import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
+import { PageHero } from "@/components/layout/PageHero";
+import { Skeleton } from "@/components/ui/skeleton";
 
-/**
- * Skeleton listing tin tức — khớp shell WP (.page-title + .container .row)
- * để không nháy layout khi điều hướng. Header/footer do trang tự render.
- */
 export default async function ArticleListLoading() {
-  const t = await getTranslations("Common");
+  const [tCommon, tBlog] = await Promise.all([
+    getTranslations("Common"),
+    getTranslations("Blog"),
+  ]);
 
   return (
-    <>
-      <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-news.css?v=4" />
-      <div className="archive category" aria-label={t("loading")}>
-        <div
-          className="page-title"
-          style={{ backgroundImage: "url('/wp-content/themes/bigbike/images/page-title-bg.png')" }}
-        >
-          <div className="container">
-            <div className="row align-items-center">
-              <div className="col-md-6">
-                <div className="h-[3.5rem] w-2/3 max-w-[28rem] bg-white/15" />
+    <div aria-label={tCommon("loading")} aria-busy="true">
+      <PageHero title={tBlog("title")} breadcrumb={[]} />
+      <div className="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-8 px-4 py-10 sm:px-6 md:grid-cols-12">
+        <aside className="space-y-4 md:col-span-3">
+          <Skeleton className="h-7 w-40 rounded-none" />
+          {Array.from({ length: 6 }).map((_, index) => (
+            <Skeleton key={index} className="h-12 w-full rounded-none" />
+          ))}
+        </aside>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:col-span-9 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div key={index} className="border border-border bg-card">
+              <Skeleton className="aspect-video w-full rounded-none" />
+              <div className="space-y-3 p-5 pt-8">
+                <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="h-5 w-11/12" />
+                <Skeleton className="h-4 w-4/5" />
               </div>
             </div>
-          </div>
-        </div>
-
-        <div id="main-content">
-          <div className="container">
-            <div className="row">
-              <div className="col-md-3">
-                <div className="widget">
-                  <div className="widget--title">
-                    <div className="h-6 w-40 bg-black/10" />
-                  </div>
-                  <div className="widget--body">
-                    <div className="product-category">
-                      <ul>
-                        {Array.from({ length: 6 }).map((_, i) => (
-                          <li key={i}>
-                            <div className="h-4 w-3/4 bg-black/10" />
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="col-md-9">
-                <div className="news-list">
-                  <div className="row">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <div className="col-md-4 col-sm-6 col-12" key={i}>
-                        <div className="news--item">
-                          <div className="news--item-thumbnail">
-                            <div className="aspect-[16/9] w-full bg-black/10" />
-                          </div>
-                          <div className="news--item-desc">
-                            <div className="news-date">
-                              <div className="h-3 w-20 bg-black/10" />
-                            </div>
-                            <div className="news--item-inside">
-                              <div className="mb-2.5 h-4 w-11/12 bg-black/10" />
-                              <div className="h-3 w-full bg-black/10" />
-                              <div className="mt-1.5 h-3 w-4/5 bg-black/10" />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
-    </>
+    </div>
   );
 }

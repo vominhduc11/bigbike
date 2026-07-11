@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { WpAccountSectionHeading, useWpAccount, useWpAccountRefresh } from "@/components/wp/WpAccountNav";
+import { AccountSectionHeading, useAccount, useAccountRefresh } from "@/components/account/AccountNav";
 import { updateCustomerProfile } from "@/lib/api/client-api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,8 +18,8 @@ function ReqMark() {
 export function EditAccountContent() {
   const t = useTranslations("Account.edit");
   const tNav = useTranslations("Account.nav");
-  const profile = useWpAccount();
-  const refreshProfile = useWpAccountRefresh();
+  const profile = useAccount();
+  const refreshProfile = useAccountRefresh();
 
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -77,7 +77,7 @@ export function EditAccountContent() {
 
   return (
     <>
-      <WpAccountSectionHeading title={tNav("info")} />
+      <AccountSectionHeading title={tNav("info")} />
 
       <p className="mb-5 text-ui-16 max-md:text-ui-14 leading-relaxed text-muted-foreground">
         {t("intro")}

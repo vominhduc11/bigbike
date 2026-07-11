@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
-import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
-import { WpCatalogClient } from "@/components/wp/WpCatalogClient";
-import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
+import { PageHero, type PageHeroCrumb } from "@/components/layout/PageHero";
+import { CatalogClient } from "@/components/catalog/CatalogClient";
 import { getCatalogFacets, listBrands, listCategories, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { resolveMediaUrl, toLegacyWpMediaUrl } from "@/lib/utils/format";
@@ -13,7 +12,7 @@ import { toHomePath } from "@/lib/utils/routes";
 const SEARCH_PATH = "/tim-kiem/";
 
 // Trang tìm kiếm: shell tĩnh (hero + sidebar), KẾT QUẢ tìm theo searchParams (s/q + filter)
-// render ở CLIENT qua WpCatalogClient (requireQuery — chỉ fetch khi có từ khoá). noIndex.
+// render ở CLIENT qua CatalogClient (requireQuery — chỉ fetch khi có từ khoá). noIndex.
 export async function generateMetadata(): Promise<Metadata> {
   const tSearch = await getTranslations("Search");
   return buildPublicMetadata({
@@ -49,7 +48,7 @@ export default async function SearchPage() {
   const heroIllustrationUrl = toLegacyWpMediaUrl(
     resolveMediaUrl(defaultHero.defaultIllustrationUrl?.trim()),
   );
-  const heroBreadcrumb: WpCategoryCrumb[] = [
+  const heroBreadcrumb: PageHeroCrumb[] = [
     { label: "Bigbike.vn", href: toHomePath() },
     { label: heroTitle },
   ];
@@ -57,11 +56,8 @@ export default async function SearchPage() {
   const filterCategories = (categoriesResult.data ?? []).filter((c) => c.isVisible);
 
   return (
-    <>
-      <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-category.css?v=2" />
-
-      <div className="archive post-type-archive-product">
-        <WpCategoryHero
+    <div>
+        <PageHero
           title={heroTitle}
           breadcrumb={heroBreadcrumb}
           bgUrl={heroBgUrl}
@@ -71,9 +67,9 @@ export default async function SearchPage() {
         />
 
         <div id="main-content">
-          <div className="container">
+          <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
             <Suspense fallback={null}>
-              <WpCatalogClient
+              <CatalogClient
                 canonicalPath={SEARCH_PATH}
                 brands={brandsResult.data}
                 categories={filterCategories}
@@ -85,7 +81,6 @@ export default async function SearchPage() {
             </Suspense>
           </div>
         </div>
-      </div>
-    </>
+    </div>
   );
 }

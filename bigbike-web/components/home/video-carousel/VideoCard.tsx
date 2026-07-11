@@ -51,7 +51,7 @@ export function VideoCard({ video, onPlay, compact = false }: { video: HomeVideo
             alt={safeText(video.thumbnail?.alt, ariaTitle)}
             fill
             // !h-full thắng rule WP của trang chủ `body img{height:auto!important}`
-            // (wp-theme-home.css) — nếu không ảnh fill bị ép height:auto và sụp xuống.
+            // Nếu bỏ kích thước này, ảnh fill bị ép height:auto và sụp xuống.
             className="!h-full object-cover opacity-90 transition-transform duration-300 group-hover:scale-[1.03]"
             sizes="(max-width: 479px) calc(100vw - 30px), (max-width: 767px) 48vw, (max-width: 1199px) 32vw, 240px"
             onError={() => setThumbIdx((prev) => prev + 1)}

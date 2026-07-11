@@ -7,9 +7,9 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { getGuideLayout, getStaticPage, type StaticGuideEntry } from "@/lib/content/static-pages";
-import { WpStaticShell } from "@/components/wp/WpStaticShell";
-import { WpStaticSidebarLayout } from "@/components/wp/WpStaticSidebarLayout";
-import type { WpStaticSidebarItem } from "@/components/wp/WpStaticSidebar";
+import { StaticPageShell } from "@/components/layout/StaticPageShell";
+import { StaticSidebarLayout } from "@/components/layout/StaticSidebarLayout";
+import type { PolicySidebarItem } from "@/components/layout/PolicySidebar";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toHomePath } from "@/lib/utils/routes";
@@ -17,13 +17,14 @@ import HelmetSizeTool from "@/components/guide/HelmetSizeTool";
 import ClothingSizeTool from "@/components/guide/ClothingSizeTool";
 import { HelmetSizeGuideContent } from "@/components/guide/HelmetSizeGuideContent";
 import { ClothingSizeGuideContent } from "@/components/guide/ClothingSizeGuideContent";
+import { RichContent } from "@/components/layout/RichContent";
 
 type GuidePageProps = {
   subSegments?: string[];
 };
 
-const GUIDE_HERO_BG = "/wp-content/themes/bigbike/images/policy1.png";
-const GUIDE_HERO_ILLUSTRATION = "/wp-content/themes/bigbike/images/policy.png";
+const GUIDE_HERO_BG = "/brand/guide/policy-bg.png";
+const GUIDE_HERO_ILLUSTRATION = "/brand/guide/policy.png";
 
 const ICONS: Record<string, LucideIcon> = {
   BookOpen, ShoppingCart, Ruler, Hand, HardHat, ShieldCheck, Wrench, Info, HelpCircle, FileText,
@@ -67,7 +68,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
   if (isRoot) {
     const sidebarItems = buildSidebar(entries, "/huong-dan/");
     return (
-      <WpStaticShell
+      <StaticPageShell
         title={heroTitle}
         heroBgUrl={GUIDE_HERO_BG}
         heroIllustrationUrl={GUIDE_HERO_ILLUSTRATION}
@@ -76,7 +77,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
           { label: t("breadcrumb") },
         ]}
       >
-        <WpStaticSidebarLayout sidebarItems={sidebarItems} sidebarEmptyLabel={t("emptyMenu")}>
+        <StaticSidebarLayout sidebarItems={sidebarItems} sidebarEmptyLabel={t("emptyMenu")}>
           {entries.length === 0 ? (
             <p className="text-ui-16 max-md:text-ui-14 text-muted-foreground">{t("emptyMenu")}</p>
           ) : (
@@ -98,8 +99,8 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
               ))}
             </div>
           )}
-        </WpStaticSidebarLayout>
-      </WpStaticShell>
+        </StaticSidebarLayout>
+      </StaticPageShell>
     );
   }
 
@@ -131,18 +132,15 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
     <div className="flex flex-col gap-8">
       {sizeTool}
       {customContentNode ?? (
-        <div
-          className="static-page wyswyg"
-          dangerouslySetInnerHTML={{
-            __html: sanitizeRichHtml(page.body, { allowInlineStyles: true, allowStyleTags: true }),
-          }}
+        <RichContent
+          html={sanitizeRichHtml(page.body, { allowInlineStyles: true, allowStyleTags: true })}
         />
       )}
     </div>
   );
 
   return (
-    <WpStaticShell
+    <StaticPageShell
       title={page.heroTitle ?? pageTitle}
       heroBgUrl={GUIDE_HERO_BG}
       heroIllustrationUrl={GUIDE_HERO_ILLUSTRATION}
@@ -152,16 +150,16 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
         { label: pageTitle },
       ]}
     >
-      <WpStaticSidebarLayout
+      <StaticSidebarLayout
         sidebarItems={sidebarItems}
         sidebarEmptyLabel={t("emptyMenu")}
         bodyNode={bodyNode}
       />
-    </WpStaticShell>
+    </StaticPageShell>
   );
 }
 
-function buildSidebar(entries: StaticGuideEntry[], currentPath: string): WpStaticSidebarItem[] {
+function buildSidebar(entries: StaticGuideEntry[], currentPath: string): PolicySidebarItem[] {
   return entries.map((entry) => {
     const href = buildEntryPath(entry.pathSegment);
     return { label: entry.title, href, current: href === currentPath };

@@ -23,7 +23,7 @@ function scrollToBuyBox() {
     document.getElementById("pdp-overview");
   if (!target) return;
   const header =
-    document.querySelector<HTMLElement>("header.headroom") ??
+    document.querySelector<HTMLElement>("[data-bb-header]") ??
     document.querySelector<HTMLElement>(".bb-site-header");
   const offset = (header?.offsetHeight ?? 80) + 12;
   const y = target.getBoundingClientRect().top + window.scrollY - offset;
@@ -66,7 +66,7 @@ export function ProductContactCta({
   zaloUrl,
 }: ProductContactCtaProps) {
   const t = useTranslations("Product.contact");
-  // Component này nằm trong LocalizedContentProvider (WpPurchaseSection/ProductView) nên đọc
+  // Component này nằm trong LocalizedContentProvider (PurchaseSection/ProductView) nên đọc
   // trực tiếp bản EN qua useLocalizedField; `productName` truyền vào chỉ là bản vi fallback
   // (ProductView tính trước khi vào provider nên không tự đổi ngôn ngữ được).
   const locale = useLocale();

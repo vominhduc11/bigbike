@@ -2,11 +2,9 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { toForgotPasswordPath } from "@/lib/utils/routes";
-import { WpStaticShell } from "@/components/wp/WpStaticShell";
+import { AuthPageFrame } from "@/components/auth/AuthPageFrame";
 import ForgotPasswordFlow from "./ForgotPasswordFlow";
 import { ForgotPasswordFlowIsland } from "./ForgotPasswordFlowIsland";
-
-const AUTH_CSS = "/wp-content/themes/bigbike/css/wp-theme-auth.css?v=1";
 
 export const metadata: Metadata = buildPublicMetadata({
   title: "Quên mật khẩu",
@@ -17,18 +15,10 @@ export const metadata: Metadata = buildPublicMetadata({
 
 export default function ForgotPasswordPage() {
   return (
-    <WpStaticShell title="" breadcrumb={[]} showHero={false} mainClassName="" cssHref={AUTH_CSS}>
-      <div className="user-activity">
-        <div className="container">
-          <div className="login">
-            <div className="user-activity-content">
-              <Suspense fallback={<ForgotPasswordFlow />}>
-                <ForgotPasswordFlowIsland />
-              </Suspense>
-            </div>
-          </div>
-        </div>
-      </div>
-    </WpStaticShell>
+    <AuthPageFrame>
+      <Suspense fallback={<ForgotPasswordFlow />}>
+        <ForgotPasswordFlowIsland />
+      </Suspense>
+    </AuthPageFrame>
   );
 }

@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { WpStaticShell } from "@/components/wp/WpStaticShell";
+import { StaticPageShell } from "@/components/layout/StaticPageShell";
 import { Container } from "@/components/layout/Container";
 import { ArticleCard } from "@/components/content/ArticleCard";
 import { listArticles } from "@/lib/api/public-api";
@@ -18,12 +18,12 @@ export default async function NotFoundPage() {
   ]);
   const recent = recentResult.data ?? [];
 
-  // Dùng đúng hero chung của site (.page-title qua WpStaticShell) như mọi trang tĩnh
+  // Dùng đúng hero chung của site (.page-title qua StaticPageShell) như mọi trang tĩnh
   // khác — tiêu đề căn trái + breadcrumb dưới + ảnh minh hoạ mặc định bên phải. Shell
   // tự nạp bundle CSS theme (cùng href) để F5 thẳng vào /404 không mất style header/footer.
   // text-center chỉ đặt trên thân 404 bên dưới, KHÔNG để rớt vào hero.
   return (
-    <WpStaticShell
+    <StaticPageShell
       title={t("pageTitle")}
       breadcrumb={[
         { label: tBreadcrumb("home"), href: toHomePath() },
@@ -60,6 +60,6 @@ export default async function NotFoundPage() {
           )}
         </div>
       </Container>
-    </WpStaticShell>
+    </StaticPageShell>
   );
 }

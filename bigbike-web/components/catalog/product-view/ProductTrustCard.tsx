@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useLocalizedField } from "@/components/i18n/LocalizedContent";
 import { TrustLivePrice, TrustLiveStock } from "@/components/catalog/ProductTrustLive";
 import { PdpSectionHeading } from "@/components/catalog/product-view/PdpSection";
-import { COMMITMENT_ICON_MAP } from "@/components/wp/purchase/CommitmentsList";
+import { COMMITMENT_ICON_MAP } from "@/components/catalog/purchase/CommitmentsList";
 import { telHref, zaloHref } from "@/lib/utils/format";
 import type { Product, ProductCommitment } from "@/lib/contracts/public";
 
@@ -135,7 +135,7 @@ export function ProductTrustCard({
                   <Icon className={`size-3.5 ${cell.tone === "red" ? "text-brand" : "text-foreground"}`} strokeWidth={1.8} />
                 </span>
                 <span
-                  className={`font-barlow text-ui-18 max-md:text-ui-16 font-semibold ${cell.tone === "red" ? "text-brand" : "text-foreground"}`}
+                  className={`font-body text-ui-18 max-md:text-ui-16 font-semibold ${cell.tone === "red" ? "text-brand" : "text-foreground"}`}
                 >
                   {cell.value}
                 </span>
@@ -152,12 +152,12 @@ export function ProductTrustCard({
         <div className="flex flex-col gap-4 border border-t-0 border-border bg-secondary p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-start gap-x-6 gap-y-2">
             {hotline ? (
-              // wp-theme-product.css định nghĩa `a{color:#007bff;background-color:transparent}` KHÔNG
+              // Quy tắc liên kết cũ không được làm đổi màu nút hành động này.
               // nằm trong @layer → thắng mọi utility Tailwind bất kể specificity trên MỌI <a> của trang
               // (xem [[project_bigbike_web_wp_css_overrides_tailwind_layer]]). Phải ép !important.
               <a
                 href={telHref(hotline)}
-                className="inline-flex items-center gap-2 font-barlow text-ui-20 max-md:text-ui-18 font-semibold !text-brand transition-colors hover:!text-brand-hover"
+                className="inline-flex items-center gap-2 font-body text-ui-20 max-md:text-ui-18 font-semibold !text-brand transition-colors hover:!text-brand-hover"
               >
                 <Phone className="size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
                 {hotline}

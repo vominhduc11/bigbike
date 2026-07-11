@@ -7,10 +7,11 @@ import { listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { PrivacyPolicyContent } from "@/components/policy/PrivacyPolicyContent";
 import { WarrantyPolicyContent, type WarrantyContact } from "@/components/policy/WarrantyPolicyContent";
-import { WpStaticShell } from "@/components/wp/WpStaticShell";
-import { WpStaticSidebarLayout } from "@/components/wp/WpStaticSidebarLayout";
-import type { WpStaticSidebarItem } from "@/components/wp/WpStaticSidebar";
+import { StaticPageShell } from "@/components/layout/StaticPageShell";
+import { StaticSidebarLayout } from "@/components/layout/StaticSidebarLayout";
+import type { PolicySidebarItem } from "@/components/layout/PolicySidebar";
 import { sanitizeRichHtml } from "@/lib/utils/html";
+import { RichContent } from "@/components/layout/RichContent";
 import { pickSetting } from "@/lib/utils/settings";
 import { toHomePath } from "@/lib/utils/routes";
 
@@ -77,17 +78,14 @@ export default async function PolicyPage({ params }: Props) {
     bodyNode = <PrivacyPolicyContent locale={locale} />;
   } else {
     bodyNode = (
-      <div
-        className="static-page wyswyg"
-        dangerouslySetInnerHTML={{
-          __html: sanitizeRichHtml(page.body, { allowInlineStyles: true, allowStyleTags: true }),
-        }}
+      <RichContent
+        html={sanitizeRichHtml(page.body, { allowInlineStyles: true, allowStyleTags: true })}
       />
     );
   }
 
   return (
-    <WpStaticShell
+    <StaticPageShell
       title={page.heroTitle ?? pageTitle}
       breadcrumb={[
         { label: tBreadcrumb("home"), href: toHomePath() },
@@ -95,12 +93,12 @@ export default async function PolicyPage({ params }: Props) {
         { label: pageTitle },
       ]}
     >
-      <WpStaticSidebarLayout sidebarItems={sidebarItems} bodyNode={bodyNode} />
-    </WpStaticShell>
+      <StaticSidebarLayout sidebarItems={sidebarItems} bodyNode={bodyNode} />
+    </StaticPageShell>
   );
 }
 
-function buildStaticSidebarItems(locale: string, currentSlug: string): WpStaticSidebarItem[] {
+function buildStaticSidebarItems(locale: string, currentSlug: string): PolicySidebarItem[] {
   const privacyPage = getStaticPage(PRIVACY_SLUG, locale);
   const warrantyPage = getStaticPage(WARRANTY_SLUG, locale);
   const returnPage = getStaticPage("chinh-sach-doi-tra-hang", locale);

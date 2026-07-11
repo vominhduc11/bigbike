@@ -5,7 +5,6 @@ import { getLocale } from "next-intl/server";
 
 import { HomeAnalytics } from "@/components/home/HomeAnalytics";
 import { Tr } from "@/components/i18n/Tr";
-import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { ExperienceCarousel } from "@/components/home/ExperienceCarousel";
 import { HomeVideoCarousel } from "@/components/home/HomeVideoCarousel";
 import { BrandCarousel } from "@/components/home/BrandCarousel";
@@ -13,13 +12,13 @@ import { HeroSlider, type HeroSlide } from "@/components/home/HeroSlider";
 import { HomeFeaturedProducts } from "@/components/home/HomeFeaturedProducts";
 import { HomeCategoryGrid } from "@/components/home/HomeCategoryGrid";
 import { HomeNewsList } from "@/components/home/HomeNewsList";
+import { ChevronRight } from "lucide-react";
 import {
   HomeAboutSection,
   HomeBlockHeading,
   HomeContentBottom,
   HomeExperienceHeading,
 } from "@/components/home/HomeLocalizedSettings";
-import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
 import type { HomeSlider } from "@/lib/contracts/public";
 import {
   listArticles,
@@ -52,7 +51,6 @@ import type { HomeVideo } from "@/lib/contracts/public";
 // ISR: render tĩnh + revalidate on-demand theo tag (home/products/sliders…) do backend
 // WebRevalidationService phát khi admin đổi nội dung. Bỏ force-dynamic để không SSR.
 
-const T = "/wp-content/themes/bigbike";
 const HOME_ORG_LOGO = "/wp/logo.png";
 const DEFAULT_SITE_NAME = "BigBike";
 
@@ -62,7 +60,7 @@ const DEFAULT_SITE_NAME = "BigBike";
 const PROMO_TITLE = "LS2 DUAL SPORT MX436 PIONEER";
 const PROMO_OFF = "20% OFF";
 const PROMO_HREF = "/san-pham";
-const PROMO_IMAGE_SRC = `${T}/images/banner-ads.jpg`;
+const PROMO_IMAGE_SRC = "/brand/home/promo-banner.jpg";
 const PROMO_ALT = `${PROMO_TITLE} — ${PROMO_OFF}`;
 
 const EXP_SUBTITLE_VI = "GÓC TRẢI NGHIỆM CÙNG BIGBIKE";
@@ -242,10 +240,6 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* CSS theme WP nạp từ public/ (không qua Turbopack — file minified làm bundler nghẽn).
-          WpThemeStylesheet tự gỡ bundle trang cũ khi điều hướng client → mọi trang hiển thị
-          nhất quán như khi F5 (React Float KHÔNG tự gỡ stylesheet giữa các route). */}
-      <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-home.css?v=2" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdOrg }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdWeb }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdLocalBusiness }} />
@@ -255,41 +249,34 @@ export default async function HomePage() {
 
       {/* ===== 2. Category list (3 sản phẩm nổi bật) ===== */}
       {homeHighlights.length > 0 && (
-        <div className="category-list">
-          <div className="container">
-            <div className="row">
+        <section className="py-15">
+          <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
               {homeHighlights.map((h) => {
                 const img = toLegacyWpMediaUrl(resolveMediaUrl(h.productImageUrl));
                 const href = toProductPath(h.productSlug);
                 return (
-                  <div className="col-md-4" key={h.slot}>
-                    <div className="item">
-                      <div className="item--thumbnail">
+                  <article className="relative h-75 overflow-hidden border border-border bg-card p-8 uppercase" key={h.slot}>
+                      <div className="absolute bottom-0 right-8">
                         <Link href={href}>
                           {img ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={img} loading="lazy" className="-swiper-lazy lazy" alt={h.productName} />
+                            <img src={img} loading="lazy" className="max-h-45 w-auto max-w-full object-contain" alt={h.productName} />
                           ) : null}
                         </Link>
                       </div>
-                      {h.categoryName ? (
-                        <LocalizedLink kind="category" viSlug={h.categorySlug} enSlug={null} className="item--category">
-                          {h.categoryName}
-                        </LocalizedLink>
-                      ) : null}
-                      <h3 className="item--title">
-                        <Link href={href}>{h.productName}</Link>
+                      <h3 className="relative z-[1] mb-10 max-w-3/5 font-body text-ui-18 font-semibold leading-5 text-foreground">
+                        <Link href={href} className="text-foreground hover:text-brand">{h.productName}</Link>
                       </h3>
-                      <Link className="item--btn" href={href}>
-                        <Tr ns="Home" k="buyNow" /> <i className="fal fa-chevron-right" />
+                      <Link className="relative z-[1] inline-flex items-center gap-1 font-body text-ui-16 font-semibold text-brand" href={href}>
+                        <Tr ns="Home" k="buyNow" /> <ChevronRight className="h-4 w-4" aria-hidden="true" />
                       </Link>
-                    </div>
-                  </div>
+                  </article>
                 );
               })}
             </div>
           </div>
-        </div>
+        </section>
       )}
 
       {/* ===== 3. About bigbike (client localizer: swap EN settings sau khi đổi ngôn ngữ) ===== */}
@@ -303,10 +290,10 @@ export default async function HomePage() {
       />
 
       {/* ===== 4. Product list + category grid ===== */}
-      <div className="product-list pt-40 pb-40">
-        <div className="container">
+      <section className="py-10">
+        <div className="mx-auto w-full max-w-[1200px] px-4">
           <HomeBlockHeading
-            className="block-title text-center mb-40"
+            className="mb-10 text-center"
             kicker={FEATURED_KICKER_VI}
             kickerEn={FEATURED_KICKER_EN}
             title={FEATURED_TITLE_VI}
@@ -316,25 +303,21 @@ export default async function HomePage() {
 
           <HomeCategoryGrid initialCategories={categories} />
         </div>
-      </div>
+      </section>
 
       {/* ===== 5. Banner ads ===== */}
-      <div className="banner-ads pt-60">
-        <div className="container">
-          <div className="row">
-            <div className="col-md-12">
-              <a href={PROMO_HREF} title={PROMO_TITLE}>
+      <section className="pt-15">
+        <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+              <Link href={PROMO_HREF} title={PROMO_TITLE} className="block">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="lazy" src={PROMO_IMAGE_SRC} alt={PROMO_ALT} loading="lazy" />
-              </a>
-            </div>
-          </div>
+                <img className="h-auto w-full" src={PROMO_IMAGE_SRC} alt={PROMO_ALT} loading="lazy" />
+              </Link>
         </div>
-      </div>
+      </section>
 
       {/* ===== 6. Content carousel (trải nghiệm/review) ===== */}
       {expArticles.length > 0 && (
-        <div className="content-carousel pt-100">
+        <section className="pt-25">
           <HomeExperienceHeading
             subtitle={EXP_SUBTITLE_VI}
             subtitleEn={EXP_SUBTITLE_EN}
@@ -343,18 +326,18 @@ export default async function HomePage() {
             desc={EXP_DESC_VI}
             descEn={EXP_DESC_EN}
           />
-          <div className="container mw-1920">
+          <div className="w-full">
             <ExperienceCarousel articles={expArticles} />
           </div>
-        </div>
+        </section>
       )}
 
       {/* ===== 7. News ===== */}
       {newsArticles.length > 0 && (
-        <div className="news bb-home-news-parity pt-60 pb-60">
-          <div className="container">
+        <section className="py-15">
+          <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
             <HomeBlockHeading
-              className="block-title text-center pb-40"
+              className="pb-10 text-center"
               kicker={NEWS_KICKER_VI}
               kickerEn={NEWS_KICKER_EN}
               title={NEWS_TITLE_VI}
@@ -362,19 +345,19 @@ export default async function HomePage() {
             />
             <HomeNewsList initialArticles={newsArticles} />
           </div>
-        </div>
+        </section>
       )}
 
       {/* ===== 8. Videos slide ===== */}
       {homeVideos.length > 0 && (
-        <section className="relative overflow-hidden bg-surface-dark py-[90px] max-md:py-[60px]">
+        <section className="relative overflow-hidden bg-surface-dark py-24 max-md:py-15">
           <div
             aria-hidden
             className="absolute inset-0 bg-cover bg-center bg-no-repeat [background-image:url('/wp/video-bg.jpg')] [filter:brightness(1.2)]"
           />
           <div className="relative z-[1] mx-auto w-full max-w-[var(--bb-container-xl)] px-4 md:px-6">
             <HomeBlockHeading
-              className="block-title text-center white pb-40"
+              className="pb-10 text-center [&_h2]:!text-white"
               title={VIDEOS_TITLE_VI}
               titleEn={VIDEOS_TITLE_EN}
             />

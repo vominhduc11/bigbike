@@ -265,6 +265,7 @@ export function ProductGallery({
       <div className="relative min-w-0">
         <div
           ref={mainBoxRef}
+          data-product-gallery-main
           // Ảnh chính LUÔN lấp đầy chiều ngang khu vực của nó (square theo bề rộng) ở
           // mọi kích thước — không giới hạn px/canh giữa, nên khi responsive không còn
           // khoảng trắng hai bên.
@@ -414,13 +415,13 @@ export function ProductGallery({
               const active = index === activeIndex;
               // Tile = square thumbnail frame. Border lives on this wrapper <div>
               // (not the <img>), so it sidesteps the global `img{border-style:none}`
-              // rule from wp-theme-product.css without needing a !border-solid hack.
+              // rule from the previous cascade without needing a !border-solid hack.
               // Border width stays a constant 2px (color toggles) → no layout shift
               // when the active thumb changes; box-border keeps the frame inside the
               // fixed slide box. Inner padding gives a clean white gutter so the red
               // active border never touches the product image.
-              // !box-border (important): the WP-era Swiper CSS sets
-              // `.swiper-wrapper{box-sizing:content-box}` and the WP reset makes
+              // !box-border (important): the legacy Swiper CSS sets
+              // `.swiper-wrapper{box-sizing:content-box}` and the legacy reset makes
               // box-sizing INHERIT, so the slide + this tile would otherwise compute
               // as content-box — the 2px border then grows the tile PAST the rail's
               // overflow:hidden edge and the right border gets clipped. Forcing
@@ -444,6 +445,8 @@ export function ProductGallery({
                 return (
                   <SwiperSlide
                     key={itemKey(item, index)}
+                    data-product-gallery-thumb
+                    aria-pressed={active}
                     className={slideClass}
                     onClick={() => mainRef.current?.slideTo(index)}
                   >
@@ -462,6 +465,8 @@ export function ProductGallery({
               return (
                 <SwiperSlide
                   key={itemKey(item, index)}
+                  data-product-gallery-thumb
+                  aria-pressed={active}
                   className={slideClass}
                   onClick={() => mainRef.current?.slideTo(index)}
                 >

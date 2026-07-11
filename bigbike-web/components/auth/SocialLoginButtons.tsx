@@ -8,7 +8,7 @@ function FacebookIcon() {
   // Trắng — đặt trên nền xanh Facebook đặc.
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" className="shrink-0">
-      <path fill="#fff" d="M14 13.5h2.5l1-4H14v-2c0-1.03 0-2 2-2h1.5V2.14c-.33-.04-1.57-.14-2.88-.14C11.9 2 10 3.66 10 6.7v2.8H7v4h3V22h4v-8.5z" />
+      <path fill="currentColor" d="M14 13.5h2.5l1-4H14v-2c0-1.03 0-2 2-2h1.5V2.14c-.33-.04-1.57-.14-2.88-.14C11.9 2 10 3.66 10 6.7v2.8H7v4h3V22h4v-8.5z" />
     </svg>
   );
 }
@@ -39,14 +39,14 @@ export function SocialLoginButtons({ returnTo }: { returnTo: string }) {
   // `!` (Tailwind v4 important) để thắng reset toàn cục của theme WP
   // (`a{color:#007bff;background-color:transparent}` nạp sau Tailwind).
   const baseClass =
-    "flex h-[52px] w-full items-center justify-center gap-3 text-ui-16 max-md:text-ui-14 font-semibold transition-colors no-underline!";
+    "flex h-13 w-full items-center justify-center gap-3 text-ui-16 font-semibold no-underline transition-colors";
 
   return (
     <div className="mt-6 flex flex-col gap-3">
       <a
         href={oauthAuthorizeUrl("facebook", returnTo)}
         onClick={markCustomerAuthenticated}
-        className={`${baseClass} bg-blue! text-white! hover:bg-blue/90!`}
+        className={`${baseClass} bg-blue text-white hover:bg-blue/90`}
       >
         <FacebookIcon />
         <span>{t("facebook")}</span>
@@ -54,7 +54,7 @@ export function SocialLoginButtons({ returnTo }: { returnTo: string }) {
       <a
         href={oauthAuthorizeUrl("google", returnTo)}
         onClick={markCustomerAuthenticated}
-        className={`${baseClass} border border-border-default bg-white! text-black! hover:border-black hover:bg-black/[0.04]!`}
+        className={`${baseClass} border border-border-default bg-white text-black hover:border-black hover:bg-black/5`}
       >
         <GoogleIcon />
         <span>{t("google")}</span>

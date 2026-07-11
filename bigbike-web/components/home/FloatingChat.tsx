@@ -76,7 +76,7 @@ function IconHotline() {
   return (
     // eslint-disable-next-line @next/next/no-img-element -- tiny static WP-parity icon, no optimization needed
     <img
-      src="/wp-content/themes/bigbike/images/chat-hotline.png"
+      src="/brand/home/chat-hotline.png"
       width="40"
       height="40"
       alt=""
@@ -102,7 +102,7 @@ function IconMessenger() {
   return (
     // eslint-disable-next-line @next/next/no-img-element -- tiny static WP-parity icon, no optimization needed
     <img
-      src="/wp-content/themes/bigbike/images/chat-messenger.png"
+      src="/brand/home/chat-messenger.png"
       width="40"
       height="40"
       alt=""

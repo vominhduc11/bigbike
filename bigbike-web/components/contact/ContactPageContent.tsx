@@ -11,7 +11,7 @@ import { telHref } from "@/lib/utils/format";
  * mỗi dòng có ô icon, tiêu đề cột là icon + chữ IN HOA gạch chân đỏ, hàng chỉ số ở dưới.
  *
  * ⚠️ TẠI SAO DÙNG INLINE STYLE THAY VÌ CLASS TAILWIND?
- * Trang nằm dưới `wp-theme-static.css` (nạp bởi WpStaticShell) — file này có rule element
+ * Trang nằm trong StaticPageShell; các quy tắc bên dưới giữ nguyên bố cục đã được duyệt.
  * trần UNLAYERED `a{color:#007bff}`, `p{margin-bottom:1rem}`… Tailwind v4 nằm trong @layer
  * nên LUÔN thua rule unlayered → màu/đậm/khoảng cách/link sẽ bị đè. Inline style thắng mọi
  * rule unlayered nên màu/viền/spacing/link đặt qua `style`. Chỉ CỠ CHỮ (text-ui-*) và LƯỚI

@@ -2,10 +2,9 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { getLocale } from "next-intl/server";
-import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
-import { WpCatalogClient } from "@/components/wp/WpCatalogClient";
-import { WpCatalogDefault } from "@/components/wp/WpCatalogDefault";
-import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
+import { PageHero, type PageHeroCrumb } from "@/components/layout/PageHero";
+import { CatalogClient } from "@/components/catalog/CatalogClient";
+import { CatalogDefault } from "@/components/catalog/CatalogDefault";
 import { AltSlugRegistrar } from "@/components/i18n/AltSlugProvider";
 import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
 import { Tr } from "@/components/i18n/Tr";
@@ -17,6 +16,7 @@ import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/forma
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toBrandListPath, toBrandPath, toHomePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
+import { richContentClassName } from "@/components/layout/RichContent";
 
 // ISR on-demand: thương hiệu là dữ liệu admin quản lý → KHÔNG prebuild lúc build. Trả [] để
 // sinh khi truy cập lần đầu + revalidate theo tag brand:{slug}/brands khi admin sửa.
@@ -88,8 +88,8 @@ export default async function BrandDetailPage({ params }: BrandDetailPageProps) 
   if (!brandResult.data) {
     return (
       <div id="main-content">
-        <div className="container">
-          <p className="woocommerce-info"><Tr ns="Catalog" k="brandDetailLoadFailed" /></p>
+        <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+          <p className="border border-border bg-card p-4 text-ui-16 text-muted-foreground"><Tr ns="Catalog" k="brandDetailLoadFailed" /></p>
         </div>
       </div>
     );
@@ -109,12 +109,12 @@ export default async function BrandDetailPage({ params }: BrandDetailPageProps) 
     <LHtml
       field="description"
       viHtml={brandDescriptionHtml}
-      className="desc"
+      className={richContentClassName}
       rewriteMediaUrls
     />
   ) : undefined;
 
-  const heroBreadcrumb: WpCategoryCrumb[] = [
+  const heroBreadcrumb: PageHeroCrumb[] = [
     { label: "Bigbike.vn", href: toHomePath() },
     { label: "Thương hiệu", href: toBrandListPath() },
     { label: brandName, labelNode: <LText field="name">{brandName}</LText> },
@@ -126,13 +126,12 @@ export default async function BrandDetailPage({ params }: BrandDetailPageProps) 
 
   return (
     <>
-      <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-category.css?v=2" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
 
       <LocalizedContentProvider kind="brand" slug={brand.slug}>
         <AltSlugRegistrar kind="brand" viSlug={brand.slug} enSlug={brand.slugEn ?? null} />
-        <div className="archive tax-pwb-brand post-type-archive-product">
-          <WpCategoryHero
+        <div>
+          <PageHero
             title={brandName}
             titleNode={<LText field="name">{brandName}</LText>}
             breadcrumb={heroBreadcrumb}
@@ -142,10 +141,10 @@ export default async function BrandDetailPage({ params }: BrandDetailPageProps) 
           />
 
           <div id="main-content">
-            <div className="container">
+            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
               <Suspense
                 fallback={
-                  <WpCatalogDefault
+                  <CatalogDefault
                     canonicalPath={canonicalPath}
                     brands={brandsResult.data}
                     categories={filterCategories}
@@ -156,7 +155,7 @@ export default async function BrandDetailPage({ params }: BrandDetailPageProps) 
                   />
                 }
               >
-                <WpCatalogClient
+                <CatalogClient
                   canonicalPath={canonicalPath}
                   brands={brandsResult.data}
                   categories={filterCategories}

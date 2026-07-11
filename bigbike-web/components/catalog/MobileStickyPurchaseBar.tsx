@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { zaloHref } from "@/lib/utils/format";
 import { ZaloIcon } from "@/components/ui/ZaloIcon";
+import { Button } from "@/components/ui/button";
 
 type MobileStickyPurchaseBarProps = {
   addToCartLabel: string;
@@ -24,7 +25,7 @@ export function MobileStickyPurchaseBar({
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
-    const target = document.querySelector<HTMLElement>(".bb-wp-buttons-row");
+    const target = document.querySelector<HTMLElement>("[data-purchase-actions]");
     if (!target) return;
 
     observerRef.current = new IntersectionObserver(
@@ -42,7 +43,7 @@ export function MobileStickyPurchaseBar({
 
   // Mirror inline add-to-cart disabled state (e.g. variant not yet picked).
   useEffect(() => {
-    const btn = document.querySelector<HTMLButtonElement>(".js-bb-add-to-cart");
+    const btn = document.querySelector<HTMLButtonElement>("[data-purchase-add]");
     if (!btn) return;
 
     const sync = () => setAddToCartDisabled(btn.disabled);
@@ -54,7 +55,7 @@ export function MobileStickyPurchaseBar({
   }, []);
 
   function handleAddToCart() {
-    const btn = document.querySelector<HTMLButtonElement>(".js-bb-add-to-cart");
+    const btn = document.querySelector<HTMLButtonElement>("[data-purchase-add]");
 
     if (btn && !btn.disabled) {
       btn.click();
@@ -62,7 +63,7 @@ export function MobileStickyPurchaseBar({
     }
 
     // Button disabled = variant not yet selected; scroll to variant section
-    const variantEl = document.querySelector<HTMLElement>(".bb-wp-pdp .size");
+    const variantEl = document.querySelector<HTMLElement>("[data-variant-picker]");
     if (variantEl) {
       const y = variantEl.getBoundingClientRect().top + window.scrollY - 100;
       window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
@@ -70,7 +71,7 @@ export function MobileStickyPurchaseBar({
     }
 
     // Fallback: scroll to top of info column
-    const infoEl = document.querySelector<HTMLElement>(".bb-wp-pdp-info-col");
+    const infoEl = document.querySelector<HTMLElement>("[data-purchase-info]");
     if (infoEl) {
       const y = infoEl.getBoundingClientRect().top + window.scrollY - 80;
       window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
@@ -107,11 +108,12 @@ export function MobileStickyPurchaseBar({
     >
       {/* Hết hàng thì bỏ nút thêm giỏ; nút Tư vấn Zalo (flex-1) tự chiếm full ngang. */}
       {!outOfStock ? (
-        <button
+        <Button
           type="button"
+          variant="primary"
           className={cn(
             BASE_BTN,
-            "flex-[3] border-none bg-brand text-white",
+            "flex-[3] rounded-none border-none bg-brand text-white",
             addToCartDisabled && "opacity-50 cursor-not-allowed",
           )}
           onClick={handleAddToCart}
@@ -120,24 +122,29 @@ export function MobileStickyPurchaseBar({
           tabIndex={visible ? 0 : -1}
         >
           {addToCartLabel}
-        </button>
+        </Button>
       ) : null}
 
-      <a
-        href={zaloUrl ? zaloHref(zaloUrl) : "#"}
-        target={zaloUrl ? "_blank" : undefined}
-        rel={zaloUrl ? "noopener noreferrer" : undefined}
+      <Button
+        asChild
+        variant="outline"
         className={cn(
           BASE_BTN,
           // Kiểu Zalo phụ: nền trắng, viền + chữ + LOGO xanh Zalo (logo lấy currentColor).
-          "flex-[2] border border-zalo bg-white text-zalo hover:bg-zalo-soft flex items-center justify-center gap-2 no-underline",
+          "flex-[2] rounded-none border border-zalo bg-white text-zalo hover:bg-zalo-soft hover:text-zalo",
         )}
-        aria-label={zaloLabel}
-        tabIndex={visible ? 0 : -1}
       >
-        <ZaloIcon className="size-5 shrink-0" />
-        {zaloLabel}
-      </a>
+        <a
+          href={zaloUrl ? zaloHref(zaloUrl) : "#"}
+          target={zaloUrl ? "_blank" : undefined}
+          rel={zaloUrl ? "noopener noreferrer" : undefined}
+          aria-label={zaloLabel}
+          tabIndex={visible ? 0 : -1}
+        >
+          <ZaloIcon className="size-5 shrink-0" />
+          {zaloLabel}
+        </a>
+      </Button>
     </div>
   );
 }

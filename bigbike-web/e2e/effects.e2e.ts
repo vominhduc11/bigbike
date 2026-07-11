@@ -32,7 +32,7 @@ async function expectClosedAndUnlocked(page: Page, label: string): Promise<void>
 }
 
 function headerSearchTrigger(page: Page) {
-  return page.locator("button.bb-wp-search-trigger, button.bb-header-search-trigger").first();
+  return page.locator("button.bb-header-search-trigger").first();
 }
 
 function searchDialog(page: Page) {
@@ -44,17 +44,17 @@ function searchInput(page: Page) {
 }
 
 function mobileMenuTrigger(page: Page) {
-  return page.locator(".hammer-menu-mb").first();
+  return page.locator("[data-header-mobile-trigger]").first();
 }
 
 async function clickMobileMenuTrigger(page: Page) {
-  await mobileMenuTrigger(page).evaluate((el) => (el as HTMLElement).click());
+  await mobileMenuTrigger(page).click();
 }
 
 function featuredProductCard(page: Page) {
   return page
-    .locator(".product .swiper-slide .product--item")
-    .filter({ has: page.locator(".product--item-cart") })
+    .locator(".swiper-slide [data-product-card]")
+    .filter({ has: page.locator("[data-product-card-action]") })
     .first();
 }
 
@@ -87,25 +87,25 @@ test.describe("Effects — desktop @1440", () => {
     await expectClosedAndUnlocked(page, "search (close button)");
   });
 
-  test("nav dropdown opens on hover (WP-style sub-menu)", async ({ page }) => {
+  test("nav dropdown opens on hover", async ({ page }) => {
     await gotoAndSettle(page, "/");
-    // Mục cấp 1 có submenu ("Tất cả sản phẩm") — dropdown WP hiện khi hover (CSS-only,
+    // Mục cấp 1 có submenu ("Tất cả sản phẩm") — dropdown hiện khi hover (CSS-only,
     // khớp bigbike.vn live). Skip nếu menu hiện tại không có mục con nào.
     const parent = page
-      .locator("header .header-nav > .navigation--item.menu-item-has-children")
+      .locator("[data-header-desktop-menu] > ul > [data-header-menu-item-with-children]")
       .first();
     if ((await parent.count()) === 0) {
       test.skip(true, "No parent menu item with children in current nav data");
       return;
     }
-    const submenu = parent.locator(".sub-menu").first();
+    const submenu = parent.locator("[data-header-submenu]").first();
     await expect(submenu).toBeHidden();
 
     await parent.hover();
     await expect(submenu).toBeVisible();
 
     // Rời chuột sang logo → dropdown đóng lại (không kẹt scroll-lock).
-    await page.locator("header .logo").first().hover();
+    await page.locator("[data-header-logo]").first().hover();
     await expect(submenu).toBeHidden();
     expect(await isScrollLocked(page), "scroll lock stuck after dropdown close").toBeFalsy();
   });
@@ -115,7 +115,7 @@ test.describe("Effects — desktop @1440", () => {
     const card = featuredProductCard(page);
     await expect(card).toBeVisible();
     await card.scrollIntoViewIfNeeded();
-    const cta = card.locator(".product--item-cart").first();
+    const cta = card.locator("[data-product-card-action]").first();
     await expect(cta).toHaveCount(1);
 
     await expect(cta).toBeVisible();
@@ -165,15 +165,15 @@ test.describe("Effects — mobile @390", () => {
     await expect(trigger).toBeVisible();
     await clickMobileMenuTrigger(page);
 
-    const drawer = page.locator("header .navigation").first();
-    await expect(drawer).toHaveClass(/active/);
+    const drawer = page.locator("[data-header-mobile-menu]").first();
+    await expect(drawer).toBeVisible();
     expect(await isScrollLocked(page), "background should be scroll-locked while drawer open").toBeTruthy();
 
-    const branch = drawer.locator(".navigation--item.menu-item-has-children .arrow").first();
+    const branch = drawer.locator("[data-header-submenu-trigger]").first();
     if ((await branch.count()) > 0 && await branch.isVisible().catch(() => false)) {
       await branch.click();
       await page.waitForTimeout(300);
-      await expect(branch.locator("xpath=..")).toHaveClass(/active/);
+      await expect(branch).toHaveAttribute("aria-expanded", "true");
     }
 
     await clickMobileMenuTrigger(page);

@@ -16,7 +16,8 @@ import { toLoginPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 import { FormRootError } from "@/components/ui/FormRootError";
 import { Button } from "@/components/ui/button";
-import { WpAuthField } from "@/components/wp/WpAuthField";
+import { AuthField } from "@/components/auth/AuthField";
+import { AuthTitleBlock } from "@/components/auth/AuthPageFrame";
 
 type ForgotPasswordFlowProps = {
   token?: string | null;
@@ -50,13 +51,9 @@ function RequestResetForm() {
   if (success) {
     return (
       <>
-        <div className="user-activity-content-title mb-[30px]">
-          <h1 className="mb-2">{t("title")}</h1>
-        </div>
-        <div className="row">
-          <div className="col-12">
+        <AuthTitleBlock title={t("title")} />
+        <div>
             <p className="m-0">{t("sentDescription")}</p>
-          </div>
         </div>
       </>
     );
@@ -64,28 +61,25 @@ function RequestResetForm() {
 
   return (
     <>
-      <div className="user-activity-content-title mb-[30px]">
-        <h1 className="mb-2">{t("title")}</h1>
+      <AuthTitleBlock title={t("title")}>
         <p className="m-0">{t("subtitle")}</p>
-      </div>
-      <div className="row">
-        <div className="col-12">
+      </AuthTitleBlock>
+      <div>
           <FormRootError message={errors.root?.message} />
-          <form className="login-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-            <WpAuthField
+          <form onSubmit={handleSubmit(onSubmit)} noValidate>
+            <AuthField
               id="forgot-login"
               label={t("emailLabel")}
               autoComplete="username"
               registration={register("login")}
               error={errors.login}
             />
-            <div className="form-submit form-group">
+            <div>
               <Button type="submit" size="auth" disabled={isSubmitting}>
                 {isSubmitting ? t("submitting") : t("submit")}
               </Button>
             </div>
           </form>
-        </div>
       </div>
     </>
   );
@@ -120,18 +114,15 @@ function ResetPasswordForm({ token }: { token: string }) {
   if (success) {
     return (
       <>
-        <div className="user-activity-content-title mb-[30px] text-center">
-          <h1 className="mb-2">{t("successHeading")}</h1>
+        <AuthTitleBlock title={t("successHeading")} centered>
           <p className="m-0">{t("successDescription")}</p>
-        </div>
-        <div className="row">
-          <div className="col-12">
-            <div className="form-submit form-group">
+        </AuthTitleBlock>
+        <div>
+            <div>
               <Button type="button" size="auth" onClick={() => router.push(toLoginPath(undefined, locale))}>
                 {t("loginNow")}
               </Button>
             </div>
-          </div>
         </div>
       </>
     );
@@ -139,15 +130,13 @@ function ResetPasswordForm({ token }: { token: string }) {
 
   return (
     <>
-      <div className="user-activity-content-title mb-[30px]">
-        <h1 className="mb-2">{tForgot("title")}</h1>
+      <AuthTitleBlock title={tForgot("title")}>
         <p className="m-0">{t("subtitle")}</p>
-      </div>
-      <div className="row">
-        <div className="col-12">
+      </AuthTitleBlock>
+      <div>
           <FormRootError message={errors.root?.message} />
-          <form className="login-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-            <WpAuthField
+          <form onSubmit={handleSubmit(onSubmit)} noValidate>
+            <AuthField
               id="reset-password"
               type="password"
               autoComplete="new-password"
@@ -156,7 +145,7 @@ function ResetPasswordForm({ token }: { token: string }) {
               registration={register("password")}
               error={errors.password}
             />
-            <WpAuthField
+            <AuthField
               id="reset-confirm"
               type="password"
               autoComplete="new-password"
@@ -165,13 +154,12 @@ function ResetPasswordForm({ token }: { token: string }) {
               registration={register("confirm")}
               error={errors.confirm}
             />
-            <div className="form-submit form-group">
+            <div>
               <Button type="submit" size="auth" disabled={isSubmitting}>
                 {isSubmitting ? t("submitting") : t("submit")}
               </Button>
             </div>
           </form>
-        </div>
       </div>
     </>
   );

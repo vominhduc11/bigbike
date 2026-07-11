@@ -14,7 +14,7 @@ export const DEFAULT_PRODUCT_SORT = "createdAt:desc";
 /**
  * Giá trị `sort` hợp lệ cho danh sách sản phẩm. Đặt ở module constants (client-safe)
  * thay vì trong public-api — vì parseCatalogListParams dùng nó CHẠY Ở CLIENT
- * (WpCatalogClient); import từ public-api sẽ kéo cả module server (truy cập env
+ * (CatalogClient); import từ public-api sẽ kéo cả module server (truy cập env
  * server-side) vào client bundle và gây lỗi runtime.
  */
 export const PRODUCT_SORT_VALUES = [

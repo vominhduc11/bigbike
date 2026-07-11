@@ -67,7 +67,7 @@ export default function ProductPreviewPage() {
 
   if (!product) {
     return (
-      <div className="container py-20 text-center text-muted-foreground">
+      <div className="mx-auto w-full max-w-[1200px] px-4 py-20 text-center text-muted-foreground sm:px-6">
         Đang chờ dữ liệu xem trước…
       </div>
     );

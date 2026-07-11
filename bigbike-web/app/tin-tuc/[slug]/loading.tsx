@@ -1,85 +1,43 @@
 import { getTranslations } from "next-intl/server";
-import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
+import { PageHero } from "@/components/layout/PageHero";
+import { Skeleton } from "@/components/ui/skeleton";
 
-/**
- * Skeleton bài viết — khớp shell WP single.php (.page-title + .blog +
- * sidebar widget) để không nháy layout. Header/footer do trang tự render.
- */
 export default async function ArticleDetailLoading() {
-  const t = await getTranslations("Common");
+  const [tCommon, tBlog] = await Promise.all([
+    getTranslations("Common"),
+    getTranslations("Blog"),
+  ]);
 
   return (
-    <>
-      <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-news.css?v=4" />
-      <div key="blog-detail-loading-root" className="single single-post" aria-label={t("loading")}>
-        <div
-          className="page-title"
-          style={{ backgroundImage: "url('/wp-content/themes/bigbike/images/page-title-bg.png')" }}
-        >
-          <div className="container">
-            <div className="row align-items-center">
-              <div className="col-md-6">
-                <div className="h-[3.5rem] w-3/4 max-w-[32rem] bg-white/15" />
-              </div>
-            </div>
+    <div aria-label={tCommon("loading")} aria-busy="true">
+      <PageHero title={tBlog("title")} breadcrumb={[]} />
+      <div className="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-8 px-4 py-10 sm:px-6 md:grid-cols-12">
+        <article className="space-y-6 md:col-span-8">
+          <Skeleton className="aspect-video w-full rounded-none" />
+          <Skeleton className="h-4 w-48 rounded-none" />
+          <div className="space-y-3">
+            {Array.from({ length: 10 }).map((_, index) => (
+              <Skeleton key={index} className="h-3 rounded-none" style={{ width: `${95 - (index % 4) * 8}%` }} />
+            ))}
           </div>
-        </div>
-
-        <div id="main-content">
-          <div className="container">
-            <div className="row">
-              <div className="col-md-8">
-                <div className="blog">
-                  <div className="blog-thumbnail" key="blog-thumbnail-skeleton">
-                    <div className="aspect-[16/9] w-full bg-black/10" />
-                  </div>
-                  <div className="blog-meta">
-                    <div className="h-4 w-48 bg-black/10" />
-                  </div>
-                  <div className="mt-6 space-y-3">
-                    {Array.from({ length: 10 }).map((_, i) => (
-                      <div key={i} className="h-3 bg-black/10" style={{ width: `${95 - (i % 4) * 8}%` }} />
-                    ))}
+        </article>
+        <aside className="space-y-8 md:col-span-4">
+          {Array.from({ length: 2 }).map((_, group) => (
+            <div key={group} className="space-y-4">
+              <Skeleton className="h-7 w-40 rounded-none" />
+              {Array.from({ length: 3 }).map((__, index) => (
+                <div key={index} className="flex gap-3 border-b border-border pb-4">
+                  <Skeleton className="aspect-video w-2/5 rounded-none" />
+                  <div className="w-3/5 space-y-2">
+                    <Skeleton className="h-3 w-1/2 rounded-none" />
+                    <Skeleton className="h-4 w-full rounded-none" />
                   </div>
                 </div>
-              </div>
-
-              <div className="col-md-4">
-                {Array.from({ length: 2 }).map((_, w) => (
-                  <div className="widget" key={w}>
-                    <div className="widget--title">
-                      <div className="h-7 w-40 bg-black/10" />
-                    </div>
-                    <div className="widget--body">
-                      <div className="news-list">
-                        <div className="row">
-                          {Array.from({ length: 3 }).map((_, i) => (
-                            <div className="col-md-12" key={i}>
-                              <div className="news--item">
-                                <div className="news--item-thumbnail">
-                                  <div className="aspect-[16/9] w-full bg-black/10" />
-                                </div>
-                                <div className="news--item-desc">
-                                  <div className="news-date">
-                                    <div className="h-3 w-24 bg-black/10" />
-                                  </div>
-                                  <div className="news--item-inside">
-                                    <div className="h-4 w-11/12 bg-black/10" />
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              ))}
             </div>
-          </div>
-        </div>
+          ))}
+        </aside>
       </div>
-    </>
+    </div>
   );
 }

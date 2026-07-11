@@ -118,7 +118,7 @@ Quy tắc:
 
 Token cỡ chữ expose thành Tailwind utility trong `app/globals.css` (`@theme inline`). Heading cấp trang phải dùng **utility token** — KHÔNG dùng `text-2xl`/`text-3xl` Tailwind cố định hay arbitrary `text-[26px]`.
 
-> **Quy tắc đồng bộ cỡ chữ (2026-06-19):** Mọi component React/shadcn **không-WP** (`components/ui|catalog|content|layout` không phải `Wp*`, các trang `app/` không port WP) **KHÔNG** dùng scale built-in của Tailwind (`text-xs/sm/base/lg/xl/2xl/3xl…`) hay arbitrary `text-[Npx]`. Mỗi vai trò map về đúng 1 token: meta/eyebrow→`text-overline` (12), caption/phụ→`text-caption` (14), body/input→`text-body` (16), nút/CTA→`text-button` (16), card/dialog/h4→`text-h4` (18), sub-heading→`text-h3` (20), heading→`text-h2`/`text-h1` (24), số hiển thị lớn→`text-display`; control cố định không phải heading (stepper, nút lg, avatar) dùng `text-ui-*`. **Ngoại lệ giữ nguyên (WP-parity):** `components/wp/*`, `ProductCard`, và markup port WP (`wp-`/`wyswyg`/`bb-wp-`/`woocommerce`) giữ cỡ gốc; cỡ trang trí bespoke (`PageHero` watermark, `404`, `SearchToggle`) giữ `clamp()`/`text-ui-*`.
+> **Quy tắc đồng bộ cỡ chữ (2026-07-10):** Mọi component React/shadcn trong `components/ui|catalog|content|layout` và các trang `app/` **KHÔNG** dùng arbitrary `text-[Npx]` khi đã có token tương đương. Mỗi vai trò map về đúng 1 token: meta/eyebrow→`text-overline` (12), caption/phụ→`text-caption` (14), body/input→`text-body` (16), nút/CTA→`text-button` (16), card/dialog/h4→`text-h4` (18), sub-heading→`text-h3` (20), heading→`text-h2`/`text-h1` (24), số hiển thị lớn→`text-display`; control cố định không phải heading (stepper, nút lg, avatar) dùng `text-ui-*`. Cỡ trang trí riêng (`PageHero` watermark, `404`, `SearchToggle`) được giữ `clamp()`/`text-ui-*` khi cần bảo toàn tỷ lệ đã duyệt.
 
 **Canonical scale (dùng cho component mới / refactor)** — map tới `--fs-*` (cố định, WP-parity):
 
@@ -154,7 +154,7 @@ Token cỡ chữ expose thành Tailwind utility trong `app/globals.css` (`@theme
 
 ### Thang chữ trang chi tiết sản phẩm — PDP type scale (2026-06-20)
 
-PDP (`app/product/[slug]`, scope `.bb-wp-pdp-page`) gom về **5 bậc cố định** trên desktop (modular ~1,25), thay cho mớ 9 cỡ rời rạc trước đó. Vì PDP nạp `wp-theme-product.css` neo **root 14px** → token `rem` co nhỏ (vd `text-body-lg`→15,75px, `text-caption`→12,25px), nên thang này dùng **token cố định px** `text-ui-*` để đạt đúng px desktop:
+PDP (`app/product/[slug]`, scope `.bb-product-page`) gom về **5 bậc cố định** trên desktop (modular ~1,25), thay cho mớ 9 cỡ rời rạc trước đó. Thang này dùng token `text-ui-*` để giữ đúng kích thước đã được xác minh trên desktop:
 
 | Bậc | Utility | px | Dùng cho |
 |---|---|---:|---|
@@ -165,10 +165,10 @@ PDP (`app/product/[slug]`, scope `.bb-wp-pdp-page`) gom về **5 bậc cố đ�
 | Chữ nhỏ | `text-ui-14` | 14 | Eyebrow, figcaption, nhãn số liệu, ngày/meta review, nhãn form |
 
 - **Mobile (`max-md:`, <768px) = mỗi bậc −2px:** 30 / 22 / 18 / 16 / 12. Áp qua biến thể `max-md:text-ui-*` trên từng phần tử (giá giữ `!`, checkmark giữ `after:`); phần CSS-driven (`.product_title` 32→30, `.pdp-section-head .title` + `.block-title` 24→22) xử lý trong `app/globals.css`.
-- Tiêu đề khối 24/22px là **deviation có chủ đích** khỏi WP-parity (trang chủ vẫn 35px); override scoped `.bb-wp-pdp-page` trong `app/globals.css` nên trang chủ không ảnh hưởng.
+- Tiêu đề khối 24/22px là ngoại lệ có chủ đích (trang chủ vẫn 35px); quy tắc được giới hạn trong `.bb-product-page` nên không ảnh hưởng trang chủ.
 - Phần tử chỉ-mobile (sticky bar, anchor nav, heading tab `md:hidden`) KHÔNG nằm trong thang desktop này.
 
-**Trang Tin tức** (scope `.bb-wp-news-page` — gắn ở `app/tin-tuc/page.tsx` + `ArticleView.tsx`) áp cùng tinh thần, qua CSS scoped trong `app/globals.css` (vì markup dùng class WP `.title-post`/`.wyswyg`…): tên bài (`.title-post`) + widget title 20→18px, ngày/chuyên mục (`.news-date`/`.blog-meta`) 14→12px, thân bài (`.blog-content.wyswyg`) 18→16px, h2/h3 trong bài 24/20→22/18px. Tiêu đề hero dùng chung mọi archive nên GIỮ NGUYÊN. **Tài khoản:** `.account-title h3` nâng 14→24px (mobile 22px). Các trang khác (giỏ hàng/thanh toán/đăng nhập/tĩnh) GIỮ WP-parity.
+**Trang Tin tức** áp cùng tinh thần: tên bài và tiêu đề khối 18px, ngày/chuyên mục 12px, thân bài 16px, h2/h3 trong bài 22/18px. Tiêu đề hero dùng chung mọi archive nên giữ nguyên. **Tài khoản:** tiêu đề trang 24px (mobile 22px). Các trang giỏ hàng, thanh toán, đăng nhập và trang tĩnh giữ tỷ lệ hiển thị đã được duyệt.
 
 ---
 
@@ -193,7 +193,7 @@ PDP (`app/product/[slug]`, scope `.bb-wp-pdp-page`) gom về **5 bậc cố đ�
 
 ### Category Tiles (lưới danh mục trang chủ)
 
-- Component: ô danh mục `WpCategoryListItem` dùng **chung một thiết kế** cho mọi breakpoint — chỉ responsive (co số cột + kích thước tile), không có layout mobile riêng.
+- Component: ô danh mục `CategoryListItem` dùng **chung một thiết kế** cho mọi breakpoint - chỉ responsive (co số cột + kích thước tile), không có layout mobile riêng.
 - Cột theo breakpoint: 2 (mobile) · 3 (≥ 600) · 4 (≥ 768 desktop) · **6 (4xl ≥ 2560)**. Số cột là ước của 12 danh mục để hàng luôn đầy (12 item ở 4xl = 6 × 2 hàng).
 - Divider: đường kẻ 1px grey `#CECECE` vẽ bằng **border trên từng tile** (border-right + border-bottom) + border top/left trên grid — **không** dùng nền xám lấp `gap`. Hàng cuối thiếu item sẽ không sinh mảng xám.
 - Tile: nền trắng, cao 290px (mobile co còn 170px), radius `0`, không shadow ở trạng thái nghỉ.
@@ -220,6 +220,7 @@ PDP (`app/product/[slug]`, scope `.bb-wp-pdp-page`) gom về **5 bậc cố đ�
 - Bottom bar nền `#000000`.
 - Heading trắng, link `#CECECE`, hover đỏ.
 - Divider `#333333`.
+- Nội dung pháp lý trên nền xám dùng token `--bb-text-footer-legal`.
 
 ### Hero / Impact Sections
 
@@ -261,7 +262,7 @@ Container max-width: `--bb-container-xl` co giãn theo tier — `75rem` (1200px)
 
 Mọi trang/component đều **nới đều** theo content rail ở `3xl`/`4xl`, không trang nào để dải trống hai bên hay lệch với phần còn lại. Các surface cũ ghim ở Bootstrap `.container` 1140px (header, footer, giỏ hàng, thanh toán, tài khoản, tin tức, trang tĩnh, home) nay bám `var(--bb-container-xl)` qua rule `body .container { max-width: var(--bb-container-xl) }` đặt trong block `UNIFORM ULTRA-WIDE EXPANSION` của `globals.css`.
 
-**Ràng buộc tuyệt đối:** block này **chỉ chứa media query `min-width:1920px` và `min-width:2560px`** — không tác động bất kỳ breakpoint nào ≤ `2xl`. Lấy hệ token `2xl→3xl→4xl` làm chuẩn cho đích width (1600/2240). Selector dùng `body .…` để thắng specificity của `wp-theme-*.css` (nạp sau `globals.css`, unlayered).
+**Ràng buộc tuyệt đối:** block này **chỉ chứa media query `min-width:1920px` và `min-width:2560px`**; không tác động bất kỳ breakpoint nào ≤ `2xl`. Lấy hệ token `2xl→3xl→4xl` làm chuẩn cho đích width (1600/2240). Selector `body .…` được giữ để cô lập quy tắc màn hình rộng khỏi các phạm vi khác.
 
 Densify lưới (giữ kích thước tile ~constant, đặt cùng block):
 
@@ -276,11 +277,11 @@ Densify lưới (giữ kích thước tile ~constant, đặt cùng block):
 Cap để giữ chất lượng khi container rộng:
 - **Cột chữ (prose):** `.blog-content.wyswyg` (bài viết) và `.col-md-9 > .static-page.wyswyg` (trang tĩnh có sidebar) cap `1000px`/`1100px` để dòng không quá dài. Trang `gioi-thieu`/`lien-he` (`.static-page.wyswyg` full-width `col-md-12`) **không** cap.
 - **Sidebar tài khoản:** `.account-dashboard > .row > .col-md-3` cap `320px`/`360px` (khớp tỉ lệ `.bb-account-layout`), content lấy phần còn lại.
-- **PDP:** trang sản phẩm gắn class `.bb-wp-pdp-page` trên `#main-content`; mọi `.container` của nó **chốt 1600px ở `4xl`** (`body .bb-wp-pdp-page .container`), nối tiếp ngoại lệ rail 1600 bên dưới.
+- **PDP:** trang sản phẩm gắn class `.bb-product-page` trên `#main-content`; mọi rail của nó **chốt 1600px ở `4xl`**, nối tiếp ngoại lệ rail 1600 bên dưới.
 
 `bb-product-archive` / `bb-search-results-page` trong `globals.css` là **dead CSS** (không gắn vào markup) — giữ lại theo policy migration WP, **không** dùng làm hook cho rule mới; grid thật dùng Bootstrap `.col-md-3.col-6` trong `.product-list`.
 
-> **Ngoại lệ — trang chi tiết sản phẩm (`/product/[slug]`):** toàn bộ các rail của trang **chốt tối đa 1600px ở `4xl`** thay vì 2240px — gồm breadcrumb (`.bb-wp-pdp .bb-breadcrumb` trong `globals.css`), khối tổng quan ảnh+mua hàng, tabs mô tả, và carousel sản phẩm liên quan — để mọi mép trái/phải canh thẳng nhau. Lý do chốt 1600 thay vì 2240: nếu nới tới 2240px sẽ sinh dải trắng rất lớn quanh khu ảnh, vỡ tỉ lệ. Trong khối tổng quan, khu ảnh **lấp đầy cột 7fr** (bỏ giới hạn cứng 640px + bỏ căn-giữa ở `≥1025px`) nên mép trái ảnh thẳng hàng breadcrumb/tabs; cột thumbnail dùng slide cao cố định 100px với `slidesPerView:"auto"`, **co theo số ảnh thật**: chiều cao thanh được tính bằng JS = `min(tổng-chiều-cao-thumbnail, chiều-cao-ảnh)` theo bậc 470/598/738px (đặt inline để Swiper có chiều cao xác định mà cuộn được khi tràn — `height:auto` sẽ khiến Swiper tưởng luôn vừa và không cuộn). `self-start` chặn grid kéo giãn thanh. Nút cuộn lên/xuống chỉ hiện khi thumbnail thực sự tràn (`showThumbArrows = tổng-chiều-cao > chiều-cao-ảnh`), không phải lúc nào cũng hiện. Carousel liên quan giữ tối đa 4 cột (bỏ mức 5 cột ở `4xl`) cho khớp container 1600px. Đây là ngoại lệ có chủ đích của riêng trang sản phẩm, không áp cho các trang khác.
+> **Ngoại lệ - trang chi tiết sản phẩm (`/product/[slug]`):** toàn bộ các rail của trang **chốt tối đa 1600px ở `4xl`** thay vì 2240px, gồm breadcrumb, khối tổng quan ảnh+mua hàng, tabs mô tả và carousel sản phẩm liên quan, để mọi mép trái/phải canh thẳng nhau. Lý do chốt 1600 thay vì 2240: nếu nới tới 2240px sẽ sinh dải trắng rất lớn quanh khu ảnh, vỡ tỉ lệ. Trong khối tổng quan, khu ảnh **lấp đầy cột 7fr** nên mép trái ảnh thẳng hàng breadcrumb/tabs; cột thumbnail dùng slide cao cố định 100px với `slidesPerView:"auto"`, **co theo số ảnh thật**: chiều cao thanh được tính bằng JS = `min(tổng-chiều-cao-thumbnail, chiều-cao-ảnh)` theo bậc 470/598/738px để Swiper có chiều cao xác định và cuộn được khi tràn. `self-start` chặn grid kéo giãn thanh. Nút cuộn chỉ hiện khi thumbnail thực sự tràn. Carousel liên quan giữ tối đa 4 cột cho khớp container 1600px. Đây là ngoại lệ có chủ đích của riêng trang sản phẩm, không áp cho các trang khác.
 
 > **Quy tắc:** Rule mới phải dùng Tailwind prefix (`sm:`/`md:`/`lg:`/`xl:`/`2xl:`/`3xl:`/`4xl:`) hoặc các giá trị pixel tương ứng trong media query. Không thêm breakpoint ad-hoc mới ngoài 7 tier trên. Khi thêm class `4xl:`, kiểm tra rằng container/grid cha cũng đã có rule tương ứng để tránh layout lệch ở viewport ≥ 2560px.
 

@@ -1,12 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import Script from "next/script";
-import { fontBarlow, fontBarlowCondensed } from "./fonts";
+import { fontBarlowCondensed } from "./fonts";
 import "./globals.css";
-import { WpHeader } from "@/components/wp/WpHeader";
-import { WpFooter } from "@/components/wp/WpFooter";
-import { WpThemeInteractions } from "@/components/wp/WpThemeInteractions";
-import { WpMobileMenuController } from "@/components/wp/WpMobileMenuController";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 import type { HeaderNavNode } from "@/components/layout/header-nav/shared";
 import { getPublicMenu } from "@/lib/api/public-api";
 import { buildPublicMenuTree } from "@/lib/utils/public-menu";
@@ -24,7 +22,7 @@ import { HeaderUiProvider } from "@/components/layout/HeaderUiContext";
 import { AltSlugProvider } from "@/components/i18n/AltSlugProvider";
 import { env } from "@/env";
 
-const FAVICON_BASE = "/wp-content/themes/bigbike/favicon";
+const FAVICON_BASE = "/brand/favicon";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://bigbike.vn"),
@@ -77,18 +75,17 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Toàn bộ storefront dùng shell theme WP (mọi route đã port — xem lib/wp-theme-routes).
   // Shell render MỘT LẦN ở layout, KHÔNG đọc pathname/cookie ở server (giữ layout tĩnh để
   // route đạt ISR/SSG). Menu nạp bằng locale canonical `vi` (ISR theo tag "menus").
-  // Footer không còn nạp menu động — nội dung hardcode trong WpFooter (2026-07-03).
-  let wpPrimaryNodes: HeaderNavNode[] = [];
+  // Footer không còn nạp menu động — nội dung hardcode trong Footer (2026-07-03).
+  let primaryNodes: HeaderNavNode[] = [];
   const primaryMenuResult = await getPublicMenu("primary", DEFAULT_LOCALE);
-  wpPrimaryNodes = primaryMenuResult.data?.items?.length
+  primaryNodes = primaryMenuResult.data?.items?.length
     ? buildPublicMenuTree(primaryMenuResult.data.items)
     : [];
   return (
-    <html lang={DEFAULT_LOCALE} className={`h-full antialiased ${fontBarlowCondensed.variable} ${fontBarlow.variable}`} suppressHydrationWarning>
-      <body className="bb-theme min-h-full flex flex-col" suppressHydrationWarning>
+    <html lang={DEFAULT_LOCALE} className={`h-full antialiased ${fontBarlowCondensed.variable}`} suppressHydrationWarning>
+      <body className="bb-theme min-h-full flex flex-col pt-0!" suppressHydrationWarning>
         {GTM_ID && (
           <Script
             id="gtm-init"
@@ -114,25 +111,21 @@ export default async function RootLayout({
             <HeaderUiProvider>
               <CartProvider>
                 <AltSlugProvider>
-                  <WpHeader menuNodes={wpPrimaryNodes} />
+                  <Header menuNodes={primaryNodes} />
                   <main className="bb-main">{children}</main>
                   <div className="block md:hidden">
                     <MobileBottomNav />
                   </div>
-                  {/* SiteHeader (chứa SearchToggle) không còn render — gắn panel tìm kiếm
-                      React như "panel host" ở MỌI breakpoint, để cả WpSearchIcon (header
-                      desktop/tablet) lẫn nút Tìm kiếm ở bottom nav (mobile) mở được panel.
-                      renderTrigger={false} để không render nút trigger trùng WpSearchIcon.
+                  {/* Gắn panel tìm kiếm React như "panel host" ở mọi breakpoint để cả header
+                      desktop/tablet lẫn nút Tìm kiếm ở bottom nav (mobile) mở được panel.
+                      renderTrigger={false} để không render nút trigger trùng.
                       Bọc Suspense vì SearchToggle dùng useSearchParams — bắt buộc khi trang
                       render tĩnh (ISR/SSG), nếu không build sẽ bail CSR toàn trang. */}
                   <Suspense fallback={null}>
                     <SearchToggle renderTrigger={false} />
                   </Suspense>
                   <MobileCartSheet />
-                  <WpFooter />
-                  {/* React thay jQuery/home.min.js: hamburger/drawer/headroom/scrollToTop/accordion. */}
-                  <WpThemeInteractions />
-                  <WpMobileMenuController />
+                  <Footer />
                   <SettingsFocusScroller />
                   <div className="bb-floating-chat-anchor fixed z-[660] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+80px)] md:bottom-[max(24px,env(safe-area-inset-bottom))] right-[max(16px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))] pointer-events-none [&>*]:pointer-events-auto [[data-scroll-locked]_&]:hidden">
                     <FloatingChatLoader />

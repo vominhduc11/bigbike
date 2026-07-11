@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { OrderListItem } from "@/lib/contracts/commerce";
 import { useOrders } from "@/lib/query/hooks";
-import { WpAccountSectionHeading } from "@/components/wp/WpAccountNav";
+import { AccountSectionHeading } from "@/components/account/AccountNav";
 import { PaginationNav } from "@/components/ui/PaginationNav";
 import { formatVnd, orderStatusLabelWithT } from "@/lib/utils/format";
 import { LocalDate } from "@/components/i18n/LocalDate";
@@ -44,7 +44,7 @@ export function OrderHistoryContent() {
 
   return (
     <>
-      <WpAccountSectionHeading title={tNav("orders")} />
+      <AccountSectionHeading title={tNav("orders")} />
 
       <nav className="mb-5 flex flex-wrap gap-2" aria-label={t("filterAll")}>
         <Link href={filterHref()} className={chipCls(!statusFilter)}>

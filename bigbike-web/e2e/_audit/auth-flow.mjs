@@ -74,7 +74,7 @@ try {
   }
   out.steps.addBtnDisabled = disabled;
   // tap targets of in-page buttons
-  out.steps.pdpButtons = await page.$$eval(".bb-wp-buttons-row button", (bs) => bs.map((b) => { const r = b.getBoundingClientRect(); return { t: b.textContent.trim().slice(0, 18), w: Math.round(r.width), h: Math.round(r.height) }; }));
+  out.steps.pdpButtons = await page.$$eval("[data-purchase-actions] button", (bs) => bs.map((b) => { const r = b.getBoundingClientRect(); return { t: b.textContent.trim().slice(0, 18), w: Math.round(r.width), h: Math.round(r.height) }; }));
   if (!disabled) {
     await page.click(addSel);
     await page.waitForTimeout(2500);

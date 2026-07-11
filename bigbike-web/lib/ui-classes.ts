@@ -47,7 +47,7 @@ export const fieldLabel = "text-caption font-bold uppercase tracking-display tex
 /** Section eyebrow / kicker — the small uppercase label above a section title.
  * Compose with spacing, e.g. `cn(sectionEyebrow, "mb-3")`. */
 export const sectionEyebrow =
-  "text-[var(--bb-text-muted)] font-barlow text-[length:var(--bb-text-section-kicker)] tracking-[0] font-bold leading-[var(--bb-line-section-kicker)] uppercase";
+  "text-[var(--bb-text-muted)] font-body text-[length:var(--bb-text-section-kicker)] tracking-[0] font-bold leading-[var(--bb-line-section-kicker)] uppercase";
 /** Primary section heading (h2-level), fluid 30→50px. The ONE canonical section
  * title — unified from the prior split (`text-26` here vs the home inline
  * `--bb-text-section-title`). Compose with spacing, e.g. `cn(sectionHeading, "mb-4")`. */
@@ -90,7 +90,7 @@ export const iconBtn =
 /** Submenu category icon (was `.bb-submenu-icon`): a 20×16 mask-image glyph that
  * paints with currentColor, so it follows the parent link's text color (white →
  * brand-red on hover). The mask-image URL is set inline per item. Used by the
- * catalog sidebar filter (WpCategorySidebar). */
+ * catalog sidebar filter (CatalogSidebar). */
 export const submenuIcon =
   "inline-block shrink-0 w-5 h-4 bg-current " +
   "[mask-repeat:no-repeat] [mask-position:center] [mask-size:contain] " +

@@ -54,19 +54,19 @@ const allowlist = [
     labels: new Set(["legacy storefront phone number", "legacy storefront address fragment"]),
   },
   {
-    file: path.join(projectRoot, "components", "wp", "checkout", "atoms.tsx"),
+    file: path.join(projectRoot, "components", "checkout", "parts", "atoms.tsx"),
     labels: new Set(["legacy storefront phone number", "legacy storefront address fragment"]),
   },
   {
-    file: path.join(projectRoot, "components", "wp", "checkout", "CheckoutAddressFields.tsx"),
+    file: path.join(projectRoot, "components", "checkout", "parts", "CheckoutAddressFields.tsx"),
     labels: new Set(["legacy storefront address fragment"]),
   },
   {
-    file: path.join(projectRoot, "components", "wp", "WpCheckoutClient.tsx"),
+    file: path.join(projectRoot, "components", "checkout", "CheckoutClient.tsx"),
     labels: new Set(["legacy storefront phone number"]),
   },
   {
-    file: path.join(projectRoot, "components", "wp", "WpFooter.tsx"),
+    file: path.join(projectRoot, "components", "layout", "Footer.tsx"),
     labels: new Set([
       "legacy storefront email",
       "legacy storefront phone number",

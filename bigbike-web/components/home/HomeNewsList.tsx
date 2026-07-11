@@ -14,7 +14,7 @@ import type { Article } from "@/lib/contracts/public";
 
 /**
  * Khối "Tin tức" trang chủ — server render `vi` (initialArticles) cho SEO/ISR; đổi sang EN
- * thì refetch bài mới nhất (category tin-tuc) theo lang ở client. Giữ DOM/class WP.
+ * thì refetch bài mới nhất (category tin-tuc) theo lang ở client.
  */
 export function HomeNewsList({ initialArticles }: { initialArticles: Article[] }) {
   const locale = useLocale();
@@ -32,42 +32,39 @@ export function HomeNewsList({ initialArticles }: { initialArticles: Article[] }
   if (newsArticles.length === 0) return null;
 
   return (
-    <div className="news-list">
-      <div className="row">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
         {newsArticles.map((a) => {
           const img = toLegacyWpMediaUrl(resolveMediaUrl(a.coverImage?.url?.trim()));
           const title = safeText(a.title, "");
           return (
-            <div className="col-md-4 col-sm-6" key={a.id}>
-              <div className="news--item">
-                <div className="news--item-thumbnail">
-                  <LocalizedLink kind="article" viSlug={a.slug} enSlug={a.slugEn} className="lazy">
-                    {img ? <img src={img} alt={title} className="lazy" loading="lazy" /> : null}
+            <article className="bg-card shadow-sm" key={a.id}>
+                <div className="aspect-video overflow-hidden text-center">
+                  <LocalizedLink kind="article" viSlug={a.slug} enSlug={a.slugEn} className="block h-full">
+                    {img ? <img src={img} alt={title} className="h-full w-full object-cover" loading="lazy" /> : null}
                   </LocalizedLink>
                 </div>
-                <div className="news--item-desc">
-                  <div className="news-date">
-                    <p><LocalDate value={a.publishedAt ?? a.createdAt} dateStyle="slash" /></p>
+                <div className="relative">
+                  <div className="absolute -top-5 left-0 flex h-10 items-stretch">
+                    <p className="m-0 bg-brand pl-5 pr-2 font-body text-ui-14 font-semibold uppercase leading-10 text-white"><LocalDate value={a.publishedAt ?? a.createdAt} dateStyle="slash" /></p>
+                    <span className="-ml-2 block w-6 skew-x-[-20deg] bg-brand" aria-hidden="true" />
                   </div>
-                  <div className="news--item-inside">
-                    <p className="title-post">
-                      <LocalizedLink kind="article" viSlug={a.slug} enSlug={a.slugEn}>
+                  <div className="px-5 pb-8 pt-10">
+                    <h3 className="mb-6 font-body text-xl font-semibold leading-6 text-foreground">
+                      <LocalizedLink kind="article" viSlug={a.slug} enSlug={a.slugEn} className="text-foreground hover:text-brand">
                         {title}
                       </LocalizedLink>
-                    </p>
-                    <p>{resolveWpNewsExcerpt(a)}</p>
+                    </h3>
+                    <p className="m-0 text-ui-16 leading-5 text-foreground">{resolveNewsExcerpt(a)}</p>
                   </div>
                 </div>
-              </div>
-            </div>
+            </article>
           );
         })}
-      </div>
     </div>
   );
 }
 
-function truncateWpExcerpt(text: string, maxLength = 120): string {
+function truncateExcerpt(text: string, maxLength = 120): string {
   if (text.length <= maxLength) return text;
   const ending = "…";
   const cut = text.lastIndexOf(" ", maxLength - ending.length);
@@ -75,9 +72,9 @@ function truncateWpExcerpt(text: string, maxLength = 120): string {
   return `${text.slice(0, pos).trimEnd()}${ending}`;
 }
 
-function resolveWpNewsExcerpt(article: Article): string {
+function resolveNewsExcerpt(article: Article): string {
   const manualExcerpt = article.excerpt?.trim();
-  if (manualExcerpt) return truncateWpExcerpt(manualExcerpt);
+  if (manualExcerpt) return truncateExcerpt(manualExcerpt);
   const bodyText = article.body ? stripHtmlToText(article.body) : "";
-  return bodyText ? truncateWpExcerpt(bodyText) : "";
+  return bodyText ? truncateExcerpt(bodyText) : "";
 }

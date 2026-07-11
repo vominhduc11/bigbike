@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { WpStaticShell } from "@/components/wp/WpStaticShell";
+import { StaticPageShell } from "@/components/layout/StaticPageShell";
 import { getStaticPage, staticPageSlugs } from "@/lib/content/static-pages";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
+import { RichContent } from "@/components/layout/RichContent";
 import { toHomePath, toPagePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 
@@ -73,25 +74,18 @@ export default async function StaticPageDetail({ params }: StaticPageDetailProps
   // page.php: .page-title (banner + breadcrumb) + #main-content > .container > .row
   // > .col-md-12 > .static-page.wyswyg.
   return (
-    <WpStaticShell
+    <StaticPageShell
       title={page.heroTitle ?? pageTitle}
       breadcrumb={[
         { label: tBreadcrumb("home"), href: toHomePath() },
         { label: pageTitle },
       ]}
     >
-      <div className="container">
-        <div className="row">
-          <div className="col-md-12">
-            <div
-              className="static-page wyswyg"
-              dangerouslySetInnerHTML={{
-                __html: sanitizeRichHtml(page.body, { allowInlineStyles: true, allowStyleTags: true }),
-              }}
-            />
-          </div>
-        </div>
+      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+        <RichContent
+          html={sanitizeRichHtml(page.body, { allowInlineStyles: true, allowStyleTags: true })}
+        />
       </div>
-    </WpStaticShell>
+    </StaticPageShell>
   );
 }

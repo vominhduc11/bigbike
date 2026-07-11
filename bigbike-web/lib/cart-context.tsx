@@ -32,7 +32,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const locale = useLocale() as Locale;
   const qc = useQueryClient();
   // Single shared cache for the whole app (queryKeys.cart()) — the same query
-  // WpCartClient, MobileCartSheet and useCheckout now all read/write. Sửa/xoá
+  // CartClient, MobileCartSheet and useCheckout now all read/write. Sửa/xoá
   // ở bất kỳ đâu (mutation gọi qc.setQueryData(queryKeys.cart(), ...)) tự động
   // cập nhật số ở đây, không cần refreshCount() riêng của từng nơi nữa.
   const cartQuery = useCartQuery();

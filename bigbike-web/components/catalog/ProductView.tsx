@@ -7,8 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { listPublicSettings } from "@/lib/api/public-api";
 
 import { DEFAULT_LOCALE } from "@/i18n/locale";
-import { WpPurchaseSection } from "@/components/wp/WpPurchaseSection";
-import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
+import { PurchaseSection } from "@/components/catalog/PurchaseSection";
 import { LText, LocalizedContentProvider, useLocalizedField } from "@/components/i18n/LocalizedContent";
 import { Tr } from "@/components/i18n/Tr";
 import {
@@ -61,7 +60,7 @@ type ProductViewProps = {
  * toCategorySummary/toBrandSummary — cùng cơ chế pick() với các field khác). `ProductView`
  * tạo ra `LocalizedContentProvider` bên dưới nên KHÔNG thể gọi `useLocalizedField` ngay
  * trong thân hàm của chính nó (chạy trước khi provider tồn tại) — phải tách một component
- * con thật sự nằm TRONG cây con của provider, giống cách `LText`/`WpPurchaseSection` làm.
+ * con thật sự nằm TRONG cây con của provider, giống cách `LText`/`PurchaseSection` làm.
  */
 function LocalizedTaxonomyName({ field, viName }: { field: "brand" | "category"; viName: string }) {
   const locale = useLocale();
@@ -102,7 +101,7 @@ function LocalizedProductSwiper({
 
 /**
  * Dòng tin cậy MOBILE thay chỗ breadcrumb (breadcrumb ẩn <768px) — logic y hệt bản gốc trên
- * tên sản phẩm (WpPurchaseSection). Tách thành component riêng (không gọi hook thẳng trong
+ * tên sản phẩm (PurchaseSection). Tách thành component riêng (không gọi hook thẳng trong
  * ProductView) vì `useLocalizedField` cần đứng DƯỚI LocalizedContentProvider trong cây React
  * để đọc đúng context bản EN — ProductView là cha của Provider nên gọi hook ở đó luôn ra rỗng.
  */
@@ -155,7 +154,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   const hoursWeekday = pickSetting(activeSettings, ["opening_hours_weekday"]);
   const hoursWeekend = pickSetting(activeSettings, ["opening_hours_weekend"]);
   // Khối cam kết dưới nút mua hàng (V232) + dải tin cậy trên tên sản phẩm (V233) giờ quản theo
-  // TỪNG sản phẩm (product.commitments / product.trustBadges) — WpPurchaseSection tự đọc thẳng
+  // TỪNG sản phẩm (product.commitments / product.trustBadges) — PurchaseSection tự đọc thẳng
   // từ product, không còn lấy từ settings.
   const gallery = safeArray(product.gallery);
   // Canonical layout (PDP_CONTENT_GUIDE §0b): "Phù hợp với ai" (#7) và "Bảng size" (#8) là SECTION RIÊNG,
@@ -394,43 +393,50 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   }
 
   const inner = (
-    <div id="main-content" className="bb-wp-pdp-page">
+    <div id="main-content" className="bb-product-page pt-0 md:pt-15">
       {/* Vạch tiến độ đọc — chỉ mobile (khớp mockup). Fixed top nên vị trí trong DOM
           không ảnh hưởng; đặt đầu khối cho dễ thấy. */}
       <ReadingProgressBar />
-      <div className="container">
-        <div className="breadcrumb max-md:hidden">
-          <ul>
+      <div className="mx-auto w-full max-w-[1200px] px-4">
+        <nav className="hidden py-8 text-ui-14 text-muted-foreground md:block" aria-label="Breadcrumb">
+          <ol className="m-0 flex list-none flex-wrap items-center gap-1 p-0">
             <li>
-              <Link href="/" className="home">
+              <Link href="/" className="font-semibold hover:text-brand">
                 <span property="name">Bigbike.vn</span>
               </Link>
             </li>
             {brand ? (
-              <li>
-                <LocalizedLink kind="brand" viSlug={brand.slug} enSlug={brand.slugEn} className="taxonomy">
-                  <span property="name"><LocalizedTaxonomyName field="brand" viName={brand.name} /></span>
-                </LocalizedLink>
-              </li>
+              <>
+                <li aria-hidden>/</li>
+                <li>
+                  <LocalizedLink kind="brand" viSlug={brand.slug} enSlug={brand.slugEn} className="font-semibold hover:text-brand">
+                    <span property="name"><LocalizedTaxonomyName field="brand" viName={brand.name} /></span>
+                  </LocalizedLink>
+                </li>
+              </>
             ) : category ? (
-              <li>
-                <LocalizedLink kind="category" viSlug={category.slug} enSlug={category.slugEn} className="taxonomy">
-                  <span property="name"><LocalizedTaxonomyName field="category" viName={category.name} /></span>
-                </LocalizedLink>
-              </li>
+              <>
+                <li aria-hidden>/</li>
+                <li>
+                  <LocalizedLink kind="category" viSlug={category.slug} enSlug={category.slugEn} className="font-semibold hover:text-brand">
+                    <span property="name"><LocalizedTaxonomyName field="category" viName={category.name} /></span>
+                  </LocalizedLink>
+                </li>
+              </>
             ) : null}
+            <li aria-hidden>/</li>
             <li>
-              <span className="post post-product current-item">
+              <span>
                 <LText field="name">{name}</LText>
               </span>
             </li>
-          </ul>
-        </div>
+          </ol>
+        </nav>
 
         <MobileTrustLine product={product} />
 
-        <div id="pdp-overview" className="product-detail product sidebar">
-          <WpPurchaseSection
+        <div id="pdp-overview">
+          <PurchaseSection
             product={product}
             gallery={gallery}
             rating={rating}
@@ -476,7 +482,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
         {/* Nội dung dài SEO (contentBottom) — dưới lưới sản phẩm gợi ý; chỉ render khi admin có nhập.
             Không thuộc panel "Hiển thị trên web" (admin không soạn ở form sản phẩm) → chỉ gate theo nội dung. */}
         {contentBottomHtml ? (
-          <section className="product-content-bottom mb-40">
+          <section className="mb-10">
             <ProductContentBottom viHtml={contentBottomHtml} />
           </section>
         ) : null}
@@ -499,7 +505,6 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
 
   return (
     <>
-      <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-product.css?v=11" />
       {previewMode ? (
         inner
       ) : (

@@ -6,6 +6,7 @@ import { DEFAULT_LOCALE } from "@/i18n/locale";
 import { fetchPublicSettings } from "@/lib/api/client-api";
 import { queryKeys } from "@/lib/query/keys";
 import { sanitizeRichHtml } from "@/lib/utils/html";
+import { RichContent } from "@/components/layout/RichContent";
 
 /**
  * Khối SEO cuối trang chủ (`home_content_bottom_html`) lấy chữ từ `site_settings` — admin
@@ -76,8 +77,8 @@ export function HomeBlockHeading({
 
   return (
     <div className={className}>
-      {sub ? <p className="sub-title">{sub}</p> : null}
-      {heading ? <h3>{heading}</h3> : null}
+      {sub ? <p className="mb-2 font-body text-ui-16 font-semibold text-muted-foreground">{sub}</p> : null}
+      {heading ? <h2 className="font-body text-4xl font-semibold uppercase leading-tight text-foreground max-md:text-2xl">{heading}</h2> : null}
     </div>
   );
 }
@@ -104,17 +105,17 @@ export function HomeAboutSection({
   const html = useLocalizedText(viHtml, enHtml);
 
   return (
-    <div className="about-bigbike">
-      <div className="container">
-        <div className="block-title text-center mb-40">
-          {sub ? <p className="sub-title">{sub}</p> : null}
-          {heading ? <h3>{heading}</h3> : null}
+    <section className="py-10">
+      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+        <div className="mb-10 text-center">
+          {sub ? <p className="mb-2 font-body text-ui-16 font-semibold text-muted-foreground">{sub}</p> : null}
+          {heading ? <h2 className="font-body text-4xl font-semibold uppercase leading-tight text-foreground max-md:text-2xl">{heading}</h2> : null}
         </div>
         {html ? (
-          <div className="block-content text-center" dangerouslySetInnerHTML={{ __html: html }} />
+          <RichContent html={html} className="mx-auto max-w-4xl text-center text-muted-foreground" />
         ) : null}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -139,16 +140,12 @@ export function HomeExperienceHeading({
   const body = useLocalizedText(desc, descEn);
 
   return (
-    <div className="container">
-      <div className="block-title text-center pb-40">
-        {sub ? <p className="sub-title">{sub}</p> : null}
-        {heading ? <h3>{heading}</h3> : null}
+    <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+      <div className="pb-10 text-center">
+        {sub ? <p className="mb-2 font-body text-ui-16 font-semibold text-muted-foreground">{sub}</p> : null}
+        {heading ? <h2 className="font-body text-4xl font-semibold uppercase leading-tight text-foreground max-md:text-2xl">{heading}</h2> : null}
         {body ? (
-          <div className="row pt-30">
-            <div className="col-md-8 offset-md-2">
-              <div className="block-title--content">{body}</div>
-            </div>
-          </div>
+          <p className="mx-auto mt-8 max-w-4xl text-ui-16 leading-relaxed text-foreground">{body}</p>
         ) : null}
       </div>
     </div>
@@ -164,8 +161,10 @@ export function HomeContentBottom({ viHtml }: { viHtml: string }) {
   const html = enHtml ? sanitizeRichHtml(enHtml, RICH_HTML_OPTS) : viHtml;
 
   return (
-    <div className="content-bottom wyswyg">
-      <div className="container" dangerouslySetInnerHTML={{ __html: html }} />
-    </div>
+    <section className="bg-secondary py-8">
+      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+        <RichContent html={html} />
+      </div>
+    </section>
   );
 }

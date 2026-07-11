@@ -1,14 +1,14 @@
-import { WpAccountShell } from "@/components/wp/WpAccountShell";
+import { AccountShell } from "@/components/layout/AccountShell";
 import { DashboardContent } from "./DashboardContent";
 
 /**
  * Tài khoản (bảng điều khiển) — port từ page-templates/page-profile.php.
- * Server component bọc WpAccountShell (header/footer/container WP) + nội dung client.
+ * Server component bọc AccountShell (header/footer/container WP) + nội dung client.
  */
 export default function AccountIndexPage() {
   return (
-    <WpAccountShell loginRedirect="/tai-khoan/">
+    <AccountShell loginRedirect="/tai-khoan/">
       <DashboardContent />
-    </WpAccountShell>
+    </AccountShell>
   );
 }

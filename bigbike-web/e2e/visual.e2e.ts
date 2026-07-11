@@ -38,7 +38,7 @@ async function prep(page: Page, path: string, vp: { width: number; height: numbe
 }
 
 function headerSearchTrigger(page: Page): Locator {
-  return page.locator("button.bb-wp-search-trigger, button.bb-header-search-trigger").first();
+  return page.locator("button.bb-header-search-trigger").first();
 }
 
 function searchDialog(page: Page): Locator {
@@ -46,18 +46,15 @@ function searchDialog(page: Page): Locator {
 }
 
 function featuredProductCard(page: Page): Locator {
-  return page
-    .locator(".product .swiper-slide .product--item")
-    .filter({ has: page.locator(".product--item-cart") })
-    .first();
+  return page.locator(".swiper-slide [data-product-card]").first();
 }
 
 function mobileMenuTrigger(page: Page): Locator {
-  return page.locator(".hammer-menu-mb").first();
+  return page.locator("[data-header-mobile-trigger]").first();
 }
 
 async function clickMobileMenuTrigger(page: Page): Promise<void> {
-  await mobileMenuTrigger(page).evaluate((el) => (el as HTMLElement).click());
+  await mobileMenuTrigger(page).click();
 }
 
 test.describe("Visual — chrome", () => {
@@ -101,7 +98,9 @@ test.describe("Visual — chrome", () => {
     const card = featuredProductCard(page);
     await card.scrollIntoViewIfNeeded();
     await page.waitForTimeout(200);
-    await expect(card).toHaveScreenshot("product-card-featured.png", { mask: dynamicMasks(page) });
+    await expect(card).toHaveScreenshot("product-card-featured.png", {
+      mask: [card.locator("img")],
+    });
   });
 });
 
@@ -121,7 +120,7 @@ test.describe("Visual — overlays", () => {
     await clickMobileMenuTrigger(page);
     await page.waitForTimeout(500);
     await disableAnimations(page);
-    await expect(page.locator("header .navigation").first()).toHaveScreenshot("mobile-menu-drawer.png", {
+    await expect(page.locator("[data-header-mobile-menu]").first()).toHaveScreenshot("mobile-menu-drawer.png", {
       mask: dynamicMasks(page),
     });
   });

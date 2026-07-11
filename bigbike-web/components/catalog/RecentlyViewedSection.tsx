@@ -70,13 +70,13 @@ export function RecentlyViewedSection({ currentProductId, currentProduct }: Prop
 
   // Dùng chung ProductSwiper (chuẩn carousel sản phẩm trang chủ).
   return (
-    <div className="product-list pt-40 pb-40">
-      <div className="container">
-        <div className="block-title text-center mb-40">
-          <h3 id="recently-viewed-heading">{tRecent("heading")}</h3>
-        </div>
-        <ProductSwiper products={items.map(toCardProduct)} autoHeight />
+    <section className="py-10">
+      <div className="mb-10 text-center">
+        <h2 id="recently-viewed-heading" className="font-cta text-2xl font-bold uppercase text-foreground">
+          {tRecent("heading")}
+        </h2>
       </div>
-    </div>
+      <ProductSwiper products={items.map(toCardProduct)} autoHeight />
+    </section>
   );
 }

@@ -47,18 +47,21 @@ const sheetVariants = cva(
 
 interface SheetContentProps
   extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
-    VariantProps<typeof sheetVariants> {}
+    VariantProps<typeof sheetVariants> {
+  overlayClassName?: string;
+  showClose?: boolean;
+}
 
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, ...props }, ref) => {
+>(({ side = "right", className, children, overlayClassName, showClose = true, ...props }, ref) => {
   const resolvedSide = side ?? "right";
   const t = useTranslations("Common");
 
   return (
     <SheetPortal>
-      <SheetOverlay />
+      <SheetOverlay className={overlayClassName} />
       <SheetPrimitive.Content
         ref={ref}
         data-bb-sheet-content=""
@@ -66,10 +69,12 @@ const SheetContent = React.forwardRef<
         className={cn(sheetVariants({ side: resolvedSide }), className)}
         {...props}
       >
-        <SheetPrimitive.Close className="absolute right-4 top-4 rounded-none opacity-90 transition-opacity hover:opacity-100 focus:outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 disabled:pointer-events-none">
-          <X className="h-5 w-5" aria-hidden />
-          <span className="sr-only">{t("close")}</span>
-        </SheetPrimitive.Close>
+        {showClose ? (
+          <SheetPrimitive.Close className="absolute right-4 top-4 rounded-none opacity-90 transition-opacity hover:opacity-100 focus:outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 disabled:pointer-events-none">
+            <X className="h-5 w-5" aria-hidden />
+            <span className="sr-only">{t("close")}</span>
+          </SheetPrimitive.Close>
+        ) : null}
         {children}
       </SheetPrimitive.Content>
     </SheetPortal>

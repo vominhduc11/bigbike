@@ -1,4 +1,4 @@
- const WP_ORDERBY_VALUES = [
+ const CATALOG_ORDERBY_VALUES = [
   "menu_order",
   "popularity",
   "date",
@@ -6,16 +6,16 @@
   "price-desc",
 ] as const;
 
-export type WpOrderbyValue = (typeof WP_ORDERBY_VALUES)[number];
+export type CatalogOrderbyValue = (typeof CATALOG_ORDERBY_VALUES)[number];
 
-export const DEFAULT_WP_ORDERBY: WpOrderbyValue = "menu_order";
+export const DEFAULT_CATALOG_ORDERBY: CatalogOrderbyValue = "menu_order";
 
-export function isWpOrderbyValue(value: string | null | undefined): value is WpOrderbyValue {
-  return WP_ORDERBY_VALUES.includes(value as WpOrderbyValue);
+export function isCatalogOrderbyValue(value: string | null | undefined): value is CatalogOrderbyValue {
+  return CATALOG_ORDERBY_VALUES.includes(value as CatalogOrderbyValue);
 }
 
 export function wpOrderbyToProductSort(
-  orderby: WpOrderbyValue | null | undefined,
+  orderby: CatalogOrderbyValue | null | undefined,
   defaultSort: string,
 ): string {
   switch (orderby) {
@@ -32,7 +32,7 @@ export function wpOrderbyToProductSort(
   }
 }
 
-export function productSortToWpOrderby(sort: string | null | undefined): WpOrderbyValue {
+export function productSortToOrderby(sort: string | null | undefined): CatalogOrderbyValue {
   switch (sort) {
     case "price:asc":
       return "price";
@@ -40,6 +40,6 @@ export function productSortToWpOrderby(sort: string | null | undefined): WpOrder
       return "price-desc";
     case "createdAt:desc":
     default:
-      return DEFAULT_WP_ORDERBY;
+      return DEFAULT_CATALOG_ORDERBY;
   }
 }

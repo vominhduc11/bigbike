@@ -12,7 +12,7 @@ import { toAccountPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 import { FormRootError } from "@/components/ui/FormRootError";
 import { Button } from "@/components/ui/button";
-import { WpAuthField } from "@/components/wp/WpAuthField";
+import { AuthField } from "@/components/auth/AuthField";
 import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
 
 /**
@@ -52,40 +52,33 @@ export function RegisterForm({ returnTo }: { returnTo?: string }) {
 
   if (registered) {
     return (
-      <div className="row">
-        <div className="col-12">
-          <div className="text-center">
-            <h2 className="mb-3">{t("successHeading")}</h2>
+      <div className="text-center">
+            <h2 className="mb-3 font-cta text-2xl font-bold uppercase">{t("successHeading")}</h2>
             {confirmedEmail && (
-              <p className="mb-[30px]">
+              <p className="mb-8 text-ui-16">
                 {t.rich("successDescription", {
                   email: confirmedEmail,
                   strong: (chunks) => <strong>{chunks}</strong>,
                 })}
               </p>
             )}
-            <div className="form-submit form-group">
+            <div>
               <Button type="button" size="auth" onClick={() => router.push(resolvedReturnTo)}>
                 {t("successCta")}
               </Button>
             </div>
-          </div>
-        </div>
       </div>
     );
   }
 
   return (
-    <div className="row">
-      <div className="col-12">
+    <div>
         <FormRootError message={errors.root?.message} />
 
-        <form className="form" onSubmit={handleSubmit(onSubmit)} noValidate>
-          <div className="row">
-            <div className="col-md-12">
-              <div className="row">
-                <div className="col-md-6">
-                  <WpAuthField
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+              <div className="grid grid-cols-1 gap-x-6 md:grid-cols-2">
+                <div>
+                  <AuthField
                     id="reg-fullName"
                     label={t("fullNameLabel")}
                     autoComplete="name"
@@ -94,8 +87,8 @@ export function RegisterForm({ returnTo }: { returnTo?: string }) {
                     error={errors.fullName}
                   />
                 </div>
-                <div className="col-md-6">
-                  <WpAuthField
+                <div>
+                  <AuthField
                     id="reg-email"
                     type="email"
                     label={t("emailLabel")}
@@ -105,8 +98,8 @@ export function RegisterForm({ returnTo }: { returnTo?: string }) {
                     error={errors.email}
                   />
                 </div>
-                <div className="col-md-12">
-                  <WpAuthField
+                <div className="md:col-span-2">
+                  <AuthField
                     id="reg-phone"
                     type="tel"
                     label={t("phoneLabel")}
@@ -116,8 +109,8 @@ export function RegisterForm({ returnTo }: { returnTo?: string }) {
                     error={errors.phone}
                   />
                 </div>
-                <div className="col-md-6">
-                  <WpAuthField
+                <div>
+                  <AuthField
                     id="reg-password"
                     type="password"
                     label={t("passwordLabel")}
@@ -127,8 +120,8 @@ export function RegisterForm({ returnTo }: { returnTo?: string }) {
                     error={errors.password}
                   />
                 </div>
-                <div className="col-md-6">
-                  <WpAuthField
+                <div>
+                  <AuthField
                     id="reg-confirm"
                     type="password"
                     label={t("confirmLabel")}
@@ -139,17 +132,14 @@ export function RegisterForm({ returnTo }: { returnTo?: string }) {
                   />
                 </div>
               </div>
-              <div className="form-submit form-group">
+              <div className="md:col-span-2">
                 <Button type="submit" size="auth" disabled={isSubmitting}>
                   {isSubmitting ? t("submitting") : t("submit")}
                 </Button>
-              </div>
-            </div>
           </div>
         </form>
 
         <SocialLoginButtons returnTo={resolvedReturnTo} />
-      </div>
     </div>
   );
 }

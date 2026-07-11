@@ -26,7 +26,7 @@ function tabClass(active: boolean) {
   return cn(
     "relative flex flex-col items-center justify-center gap-1 px-1 min-h-[58px] min-w-0 [flex:1_1_0] " +
       "border-none bg-transparent cursor-pointer touch-manipulation font-cta tracking-normal " +
-      // `!` defeats the legacy unlayered wp-theme `a{color:#007bff}` that otherwise
+      // `!` defeats the legacy unlayered legacy theme `a{color:#007bff}` that otherwise
       // paints every tab bootstrap-blue and erases the active/inactive distinction.
       "text-white/50! transition-colors duration-150",
     active && "text-[color:var(--bb-brand-primary-on-dark)]!",
@@ -55,7 +55,7 @@ export function MobileBottomNav() {
   const cartActive = isPanelOpen("cart");
   const cartRouteActive = pathname.startsWith("/gio-hang");
   const homeActive = isHomePath(pathname);
-  // Khi chưa đăng nhập, bấm Tài khoản sẽ bị đẩy sang /dang-nhap (WpAccountNav). Từ thanh
+  // Khi chưa đăng nhập, bấm Tài khoản sẽ bị đẩy sang /dang-nhap (AccountNav). Từ thanh
   // dưới, chỉ nút Tài khoản dẫn tới các trang auth → giữ tab này sáng để không "mất active".
   const accountActive = pathname.startsWith("/tai-khoan") || isAuthRoute(pathname);
 

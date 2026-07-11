@@ -12,7 +12,7 @@ export type AnchorNavItem = {
 type Props = {
   items: AnchorNavItem[];
   /** Element mà khi nó cuộn khỏi tầm nhìn (lên trên) thì hiện thanh nav. Mặc định
-   *  khối mua của layout cũ; trang WP (tab) truyền ".bb-wp-pdp". Đặt phần tử ở ĐẦU
+   *  khối mua của layout cũ; trang sản phẩm truyền ".bb-product-page". Đặt phần tử ở ĐẦU
    *  trang để tránh hiện nhầm lúc tải (lúc đó nó còn trong viewport → ẩn). */
   triggerSelector?: string;
   /** Controlled mode (layout tab WP): cha giữ active + xử lý chọn. Khi truyền
@@ -32,11 +32,11 @@ type Props = {
 
 export function MobilePdpAnchorNav({
   items,
-  triggerSelector = ".bb-wp-pdp-layout",
+  triggerSelector = ".bb-pdp-layout",
   activeId: controlledActiveId,
   onSelect,
   scrollTargetSelector,
-  headerSelector = "header.headroom",
+  headerSelector = "[data-bb-header]",
   stickyInline = false,
 }: Props) {
   const t = useTranslations("A11y");
@@ -185,7 +185,7 @@ export function MobilePdpAnchorNav({
       // lọt ra desktop (chỉ được phép xuất hiện ở mobile). `top` đặt runtime bằng mép dưới
       // header thật (style inline), CSS var chỉ là fallback frame đầu. Hiệu ứng reveal:
       // thanh TRƯỢT XUỐNG TỪ SAU HEADER (-translate-y-full → 0) kèm fade. Header WP là nền
-      // ĐEN ĐẶC, z-index:10 (xem `header{…z-index:10}` trong app/globals.css + wp-theme-*.css)
+      // ĐEN ĐẶC, z-index:10 (xem quy tắc header tương ứng trong app/globals.css).
       // → thanh PHẢI có z THẤP HƠN 10 (đặt `z-[9]`) để chui SAU header và bị header che kín
       // khi trượt. Trước đây để `z-40` (cao hơn header) nên thanh ĐÈ LÊN header, lúc trượt/
       // lúc header headroom đang slide thì hở ra cảnh chồng chữ lên logo/menu — KHÔNG dùng lại.

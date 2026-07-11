@@ -34,7 +34,7 @@ export const SAMPLE = {
   category: "/danh-muc-san-pham/ao-bao-ho-tui-khi/",
   brand: "/brands/alpinestars/",
   news: "/tin-tuc/cach-chon-balo-phuot/",
-  policy: "/chinh-sach/doi-tra/",
+  policy: "/chinh-sach/chinh-sach-doi-tra-hang/",
 } as const;
 
 export const DYNAMIC_ROUTES: RouteDef[] = [
