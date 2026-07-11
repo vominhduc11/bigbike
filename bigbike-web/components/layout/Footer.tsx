@@ -102,8 +102,11 @@ function SocialSvgIcon({ name, label }: { name: keyof typeof BRAND_ICON_PATH; la
  * Accordion "Thông tin"/"Mạng xã hội" — dưới 992px: collapsible thật, mở mặc định
  * (đóng được khi bấm). Từ 992px: theme gốc buộc luôn mở + ẩn icon (2 panel xếp
  * cạnh nhau chỉ từ 992px trở lên — 768–991px vẫn xếp dọc, xem `AccordionPrimitive.Root`
- * className `min-[992px]:grid-cols-12`). forceMount để nội dung luôn có trong DOM,
- * ẩn/hiện bằng class thay vì unmount.
+ * className `min-[992px]:grid-cols-12`). forceMount để nội dung luôn có trong DOM
+ * (SEO + desktop luôn mở), sổ/thu bằng animation trượt height (`animate-accordion-up/down`)
+ * thay vì `display:none` — trạng thái đóng giữ height 0 nhờ `animation-fill-mode: forwards`
+ * (xem `[data-footer-content][data-state="closed"]` trong globals.css). Desktop ≥992px ép
+ * `!h-auto` để luôn hiện đủ, không phụ thuộc animation.
  */
 function AccordionPanel({ value, title, children }: { value: string; title: ReactNode; children: ReactNode }) {
   return (
@@ -132,7 +135,7 @@ function AccordionPanel({ value, title, children }: { value: string; title: Reac
       <AccordionContent
         forceMount
         data-footer-content
-        panelClassName="data-[state=closed]:hidden min-[992px]:!block"
+        panelClassName="min-[992px]:!h-auto"
         className="pb-0 text-ui-16"
       >
         {children}
@@ -208,40 +211,40 @@ export async function Footer() {
                         <a
                           rel="nofollow"
                           href={FOOTER_SOCIAL_LINKS.facebook}
-                          className="flex items-center gap-[20px] text-white! no-underline!"
+                          className="flex items-center gap-[20px]! text-white! no-underline!"
                         >
                           <SocialSvgIcon name="facebook" label="Facebook" />
-                          {facebookLabel(FOOTER_SOCIAL_LINKS.facebook)}
+                          <span>{facebookLabel(FOOTER_SOCIAL_LINKS.facebook)}</span>
                         </a>
                       </li>
                       <li>
                         <a
                           rel="nofollow"
                           href={FOOTER_SOCIAL_LINKS.youtube}
-                          className="flex items-center gap-[20px] text-white! no-underline!"
+                          className="flex items-center gap-[20px]! text-white! no-underline!"
                         >
                           <SocialSvgIcon name="youtube" label="YouTube" />
-                          {socialLabel(FOOTER_SOCIAL_LINKS.youtube, "yt", "YouTube")}
+                          <span>{socialLabel(FOOTER_SOCIAL_LINKS.youtube, "yt", "YouTube")}</span>
                         </a>
                       </li>
                       <li>
                         <a
                           rel="nofollow"
                           href={FOOTER_SOCIAL_LINKS.tiktok}
-                          className="flex items-center gap-[20px] text-white! no-underline!"
+                          className="flex items-center gap-[20px]! text-white! no-underline!"
                         >
                           <SocialSvgIcon name="tiktok" label="TikTok" />
-                          {socialLabel(FOOTER_SOCIAL_LINKS.tiktok, "tiktok", "TikTok")}
+                          <span>{socialLabel(FOOTER_SOCIAL_LINKS.tiktok, "tiktok", "TikTok")}</span>
                         </a>
                       </li>
                       <li>
                         <a
                           rel="nofollow"
                           href={FOOTER_SOCIAL_LINKS.shopee}
-                          className="flex items-center gap-[20px] text-white! no-underline!"
+                          className="flex items-center gap-[20px]! text-white! no-underline!"
                         >
                           <SocialSvgIcon name="shopee" label="Shopee" />
-                          {socialLabel(FOOTER_SOCIAL_LINKS.shopee, "shopee", "Shopee")}
+                          <span>{socialLabel(FOOTER_SOCIAL_LINKS.shopee, "shopee", "Shopee")}</span>
                         </a>
                       </li>
                     </ul>

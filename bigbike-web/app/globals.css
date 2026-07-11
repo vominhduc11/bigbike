@@ -216,6 +216,20 @@
   to { height: 0; }
 }
 
+/* Footer accordion (mobile <992px) dùng forceMount → nội dung không unmount khi
+   đóng. Nếu để mặc định, sau khi `accordion-up` chạy xong height sẽ trả về auto và
+   danh sách "nhảy" hiện lại. Giữ trạng thái cuối (height 0) bằng animation-fill-mode:
+   forwards — CHỈ cho trạng thái đóng để lúc mở (accordion-down) vẫn về height auto tự
+   nhiên, tránh kẹt chiều cao khi tải trang. Xem Footer.tsx `[data-footer-content]`. */
+[data-footer-content][data-state="closed"] {
+  animation-fill-mode: forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-footer-content] {
+    animation-duration: 1ms !important;
+  }
+}
+
 /* shadcn Sheet motion. Kept explicit because the imported animate utilities
    are not emitted reliably by the current Tailwind build. */
 [data-bb-sheet-overlay] {
