@@ -132,7 +132,7 @@ export function HeaderClient({ menuNodes, contact }: HeaderClientProps) {
       >
         <div className="mx-auto flex h-full w-full max-w-[1750px] items-center px-4 md:px-6">
           <div className="flex h-full min-w-0 flex-1 items-start min-[1261px]:w-1/6 min-[1261px]:flex-none">
-            <Link href="/" data-header-logo className="relative flex h-full items-center">
+            <Link href="/" data-header-logo className="relative flex h-full items-start">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={scrolled ? "/brand/header-mark.png" : "/brand/header-logo.png"}

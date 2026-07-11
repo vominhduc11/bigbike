@@ -169,7 +169,14 @@ export function CartClient() {
   }
 
   return (
-    <div data-cart-content className="pb-24 md:pb-0">
+    <div
+      data-cart-content
+      /* Mobile: footer ẩn (FooterMobileGate) + thanh tổng tiền dính đáy
+         (data-cart-mobile-checkout ≈ nút 52px + py-3 12px + border 1px +
+         max(12px,safe) ≈ 65px + safe). Chừa theo "vùng an toàn" đáy máy + 12px
+         thở để thanh không che nội dung trên iPhone tai thỏ. */
+      className="[padding-bottom:calc(64px+max(12px,env(safe-area-inset-bottom))+12px)] md:pb-0"
+    >
       {error && (
         <div className="mb-6 border border-destructive bg-accent p-5 text-destructive" role="alert">
           {error}
@@ -178,8 +185,6 @@ export function CartClient() {
 
       <div className="grid gap-8 md:grid-cols-12">
         <div className="min-w-0 md:col-span-8">
-          <h2 className="mb-6 font-cta text-a2-page font-semibold uppercase">{t("cartHeading")}</h2>
-
           <div className="divide-y divide-border border-y border-border" role="list">
             {cart.items.map((item) => (
               <CartItemRow

@@ -1170,7 +1170,6 @@
   "CartPage": {
     "emptyMessage": "There are no products in your cart yet.",
     "returnToShop": "Return to shop",
-    "cartHeading": "YOUR CART",
     "continueShopping": "CONTINUE SHOPPING",
     "checkoutSubmit": "PLACE ORDER",
     "totalsHeading": "Cart totals",

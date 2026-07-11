@@ -3399,6 +3399,15 @@ body .banner-ads > .container > .row {
     padding-bottom: 30px;
   }
 
+  /* Trang chi tiết SP mobile: footer bị ẩn (FooterMobileGate) và thanh mua hàng
+     dính đáy (.bb-pdp-sticky-cta = border 1px + pt 12px + nút h-14 56px + đáy
+     max(8px,safe) ≈ 69px + safe) đè lên nội dung cuối (dải liên hệ/số điện thoại).
+     Chừa đúng chiều cao thanh + 12px thở để không che. Thanh luôn mount trên PDP
+     nên :has đóng vai marker; media query đã giới hạn ≤767px. */
+  body:has(.bb-pdp-sticky-cta) .bb-main {
+    padding-bottom: calc(69px + max(8px, env(safe-area-inset-bottom)) + 12px);
+  }
+
   body > footer {
     padding-bottom: calc(var(--bb-mobile-nav-height) + env(safe-area-inset-bottom));
   }
