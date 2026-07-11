@@ -128,11 +128,11 @@ export function HeaderClient({ menuNodes, contact }: HeaderClientProps) {
       <header
         data-bb-header
         data-scrolled={scrolled ? "true" : "false"}
-        className="fixed inset-x-0 top-0 z-[var(--bb-z-header)] h-[80px] bg-black text-white"
+        className="fixed inset-x-0 top-0 z-[var(--bb-z-header)] h-[60px] bg-black text-white md:h-[80px]"
       >
-        <div className="mx-auto flex h-full w-full max-w-[1750px] items-center px-[15px]">
+        <div className="mx-auto flex h-full w-full max-w-[1750px] items-center px-4 md:px-6">
           <div className="flex h-full min-w-0 flex-1 items-start min-[1261px]:w-1/6 min-[1261px]:flex-none">
-            <Link href="/" data-header-logo className="relative flex h-full items-start">
+            <Link href="/" data-header-logo className="relative flex h-full items-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={scrolled ? "/brand/header-mark.png" : "/brand/header-logo.png"}
@@ -148,7 +148,7 @@ export function HeaderClient({ menuNodes, contact }: HeaderClientProps) {
                 src="/brand/header-mark.png"
                 alt="BigBike"
                 width="150"
-                className="mt-[23px] w-[80px] min-[501px]:mt-[15px] min-[501px]:w-[150px] min-[1261px]:hidden"
+                className="my-auto w-20 min-[501px]:w-[150px] min-[1261px]:hidden"
               />
             </Link>
           </div>
@@ -174,7 +174,7 @@ export function HeaderClient({ menuNodes, contact }: HeaderClientProps) {
                 aria-label={mobileMenuOpen ? "Đóng menu" : "Mở menu"}
                 aria-expanded={mobileMenuOpen}
                 onClick={() => togglePanel("mobile-menu")}
-                className={cn(iconBtn, "h-[80px]! min-h-[80px]! px-[10px]! hover:not-disabled:scale-100 min-[1261px]:hidden!")}
+                className={cn(iconBtn, "h-[60px]! min-h-[60px]! px-[10px]! hover:not-disabled:scale-100 md:h-[80px]! md:min-h-[80px]! min-[1261px]:hidden!")}
               >
                 <HamburgerIcon open={mobileMenuOpen} />
               </Button>
@@ -194,7 +194,7 @@ export function HeaderClient({ menuNodes, contact }: HeaderClientProps) {
           </div>
         </div>
       </header>
-      <div className="h-[80px]" aria-hidden />
+      <div className="h-[60px] md:h-[80px]" aria-hidden />
 
       <Sheet
         modal={false}
@@ -213,9 +213,9 @@ export function HeaderClient({ menuNodes, contact }: HeaderClientProps) {
             }
           }}
           showClose={false}
-          overlayClassName="top-[80px]!"
+          overlayClassName="top-[60px]! md:top-[80px]!"
           data-header-mobile-menu
-          className="bottom-0! top-[80px]! h-[calc(100dvh-80px)]! w-full! max-w-[500px]! gap-0 overflow-y-auto border-none! bg-black! p-0! text-white"
+          className="bottom-0! top-[60px]! h-[calc(100dvh-60px)]! w-full! max-w-[500px]! gap-0 overflow-y-auto border-none! bg-black! p-0! text-white md:top-[80px]! md:h-[calc(100dvh-80px)]!"
         >
           <SheetTitle className="sr-only">Menu chính</SheetTitle>
           <SheetDescription className="sr-only">Điều hướng và thông tin cửa hàng BigBike</SheetDescription>

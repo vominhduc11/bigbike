@@ -1203,6 +1203,7 @@
     "increaseQty": "Tăng số lượng",
     "adding": "ĐANG THÊM...",
     "addToCart": "THÊM VÀO GIỎ HÀNG",
+    "addToCartShort": "THÊM VÀO GIỎ",
     "buyNow": "Mua ngay",
     "addToCartFailed": "Không thêm được vào giỏ",
     "mobileAddToCart": "Thêm vào giỏ",

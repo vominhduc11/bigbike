@@ -58,7 +58,8 @@ describe("CartSummary", () => {
       },
     } as Cart;
     render(<CartSummary cart={cart} hasUnavailable={false} />);
-    expect(screen.getAllByText("6.100.000 đ").length).toBeGreaterThan(0);
-    expect(screen.getByRole("link", { name: "checkoutSubmit" })).toHaveAttribute("href", "/dat-hang");
+    expect(screen.getAllByText(/6\.100\.000\sđ/).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: "checkoutSubmit" })).toHaveLength(2);
+    expect(screen.getAllByRole("link", { name: "checkoutSubmit" })[0]).toHaveAttribute("href", "/dat-hang");
   });
 });

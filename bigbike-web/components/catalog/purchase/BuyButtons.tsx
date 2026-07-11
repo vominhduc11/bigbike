@@ -35,7 +35,7 @@ export function BuyButtons({
           type="button"
           variant="primary"
           data-purchase-add
-        className="h-[52px] w-full rounded-none px-4 font-body text-b4-action"
+        className="h-[52px] w-full whitespace-nowrap rounded-none px-4 font-body text-b4-action"
           disabled={!canBuy || adding}
           onClick={onAdd}
         >
@@ -43,7 +43,17 @@ export function BuyButtons({
               nên thay `<i fal fa-shopping-cart>` cũ. !flex + justify-center + gap-2.5
               căn icon/chữ giống hệt nút Zalo để 2 nút thẳng hàng. */}
           <ShoppingCart className="size-5 shrink-0" />
-          {adding ? tb("adding") : tb("addToCart")}
+          {/* Nút chiếm 60% ngang → nhãn đầy đủ "THÊM VÀO GIỎ HÀNG" tràn/rớt 2 dòng
+              trên mobile hẹp. whitespace-nowrap giữ 1 dòng; nhãn rút gọn "THÊM VÀO
+              GIỎ" dưới sm, nhãn đầy đủ từ sm+ (nút đủ rộng). */}
+          {adding ? (
+            tb("adding")
+          ) : (
+            <>
+              <span className="sm:hidden">{tb("addToCartShort")}</span>
+              <span className="hidden sm:inline">{tb("addToCart")}</span>
+            </>
+          )}
         </Button>
       </div>
       <div className="min-w-0 flex-[2]">

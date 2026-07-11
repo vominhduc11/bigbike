@@ -35,7 +35,7 @@ export function CheckoutSummary({
             </div>
             <div className="min-w-0 flex-1">
               <p className="m-0 font-semibold uppercase">{item.productName}</p>
-              <p className="mb-0 mt-1 text-a5-meta text-muted-foreground">
+              <p className="mb-0 mt-1 font-cta text-b5-label font-semibold uppercase text-muted-foreground">
                 {item.variantName ? `${item.variantName}. ` : ""}{t("qtyAbbrev")}: {item.quantity}
               </p>
               <p className="mb-0 mt-2 font-semibold text-brand">{formatVnd(item.lineTotal)}</p>

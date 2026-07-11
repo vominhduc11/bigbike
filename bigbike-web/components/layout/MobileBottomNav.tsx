@@ -24,7 +24,7 @@ const labelCls =
 
 function tabClass(active: boolean) {
   return cn(
-    "relative flex flex-col items-center justify-center gap-1 px-1 min-h-[58px] min-w-0 [flex:1_1_0] " +
+    "relative flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 px-1 [flex:1_1_0] " +
       "border-none bg-transparent cursor-pointer touch-manipulation font-cta tracking-normal " +
       // `!` defeats the legacy unlayered legacy theme `a{color:#007bff}` that otherwise
       // paints every tab bootstrap-blue and erases the active/inactive distinction.
@@ -44,9 +44,9 @@ export function MobileBottomNav() {
   const { cartCount } = useCart();
   const { openPanel, isPanelOpen } = useHeaderUi();
 
-  // Ẩn thanh điều hướng khi đang đặt hàng: giảm điểm thoát giữa chừng và tránh các
-  // nút nổi chồng nhau ở đáy màn hình điện thoại (checkout tập trung).
-  if (pathname.startsWith("/dat-hang") || pathname.startsWith("/don-hang")) return null;
+  // Transaction pages reserve this area for their primary action instead of
+  // showing a second fixed bar underneath it.
+  if (pathname.startsWith("/gio-hang") || pathname.startsWith("/dat-hang") || pathname.startsWith("/don-hang")) return null;
 
   const badge = cartCount != null && cartCount > 0 ? cartCount : null;
   // Tab Giỏ hàng mở khung xem nhanh (MobileCartSheet) thay vì sang thẳng trang —
@@ -67,17 +67,17 @@ export function MobileBottomNav() {
         "[box-shadow:0_-10px_24px_rgba(0,0,0,0.24)]",
         "[transition:opacity_var(--bb-duration-normal)_var(--bb-ease-standard),transform_var(--bb-duration-normal)_var(--bb-ease-standard),visibility_var(--bb-duration-normal)_var(--bb-ease-standard)]",
       )}
-      style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom))" }}
+      style={{ paddingBottom: "max(4px, env(safe-area-inset-bottom))" }}
       aria-label={t("primaryNavigation")}
     >
-      <div className="flex justify-between gap-0.5 px-1.5 pt-1.5 pb-1">
+      <div className="flex justify-between gap-0.5 px-2 py-1">
         <Link
           href={toHomePath()}
           className={tabClass(homeActive)}
           aria-current={homeActive ? "page" : undefined}
         >
           {homeActive && <ActiveBar />}
-          <Home size={22} aria-hidden />
+          <Home size={20} aria-hidden />
           <span className={cn(labelCls,homeActive ? "font-semibold" : "font-medium")}>
             {t("fallbackNav.home")}
           </span>
@@ -91,9 +91,9 @@ export function MobileBottomNav() {
         >
           {(cartActive || cartRouteActive) && <ActiveBar />}
           <div className="relative">
-            <ShoppingCart size={22} aria-hidden />
+            <ShoppingCart size={20} aria-hidden />
             {badge != null && (
-              <span className="absolute -right-2 -top-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-surface-dark bg-brand px-1 text-b5-label font-bold leading-none text-white">
+              <span className="absolute -right-2 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-surface-dark bg-brand px-0.5 text-b5-label font-bold leading-none text-white">
                 {badge > 99 ? "99+" : badge}
               </span>
             )}
@@ -109,7 +109,7 @@ export function MobileBottomNav() {
           aria-current={accountActive ? "page" : undefined}
         >
           {accountActive && <ActiveBar />}
-          <User size={22} aria-hidden />
+          <User size={20} aria-hidden />
           <span className={cn(labelCls,accountActive ? "font-semibold" : "font-medium")}>
             {t("mobileAccountLink")}
           </span>

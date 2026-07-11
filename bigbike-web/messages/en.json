@@ -1203,6 +1203,7 @@
     "increaseQty": "Increase quantity",
     "adding": "ADDING...",
     "addToCart": "ADD TO CART",
+    "addToCartShort": "ADD TO CART",
     "buyNow": "Buy now",
     "addToCartFailed": "Could not add to cart",
     "mobileAddToCart": "Add to cart",

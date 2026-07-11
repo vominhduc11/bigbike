@@ -5,6 +5,7 @@ import { fontBarlowCondensed } from "./fonts";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { FooterMobileGate } from "@/components/layout/FooterMobileGate";
 import type { HeaderNavNode } from "@/components/layout/header-nav/shared";
 import { getPublicMenu } from "@/lib/api/public-api";
 import { buildPublicMenuTree } from "@/lib/utils/public-menu";
@@ -125,7 +126,9 @@ export default async function RootLayout({
                     <SearchToggle renderTrigger={false} />
                   </Suspense>
                   <MobileCartSheet />
-                  <Footer />
+                  <FooterMobileGate>
+                    <Footer />
+                  </FooterMobileGate>
                   <SettingsFocusScroller />
                   <div className="bb-floating-chat-anchor fixed z-[660] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+80px)] md:bottom-[max(24px,env(safe-area-inset-bottom))] right-[max(16px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))] pointer-events-none [&>*]:pointer-events-auto [[data-scroll-locked]_&]:hidden">
                     <FloatingChatLoader />

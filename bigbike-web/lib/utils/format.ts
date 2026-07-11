@@ -25,7 +25,9 @@ export function formatVnd(value: number | null | undefined): string {
     return "—";
   }
 
-  return formatVndNumber(safeValue) + " đ";
+  // Keep the currency marker attached to its amount so it never wraps onto a
+  // line by itself in compact mobile layouts.
+  return formatVndNumber(safeValue) + "\u00a0đ";
 }
 
 const LEGACY_CDN_PREFIX = "https://cdn.bigbike.vn/uploads/";

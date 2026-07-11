@@ -169,7 +169,7 @@ export function CartClient() {
   }
 
   return (
-    <div data-cart-content>
+    <div data-cart-content className="pb-24 md:pb-0">
       {error && (
         <div className="mb-6 border border-destructive bg-accent p-5 text-destructive" role="alert">
           {error}

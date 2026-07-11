@@ -180,7 +180,7 @@ export function MobileCartSheet() {
                         {item.productName}
                       </h3>
                       {item.variantName ? (
-                        <p className={cn(lineMeta, "capitalize text-[var(--bb-text-inverse-muted)]")}>{item.variantName}</p>
+                        <p className={cn(lineMeta, "font-cta font-semibold uppercase text-[var(--bb-text-inverse-muted)]")}>{item.variantName}</p>
                       ) : null}
                       {!item.available ? (
                         <p className={cn(lineMeta, "text-brand-on-dark")}>{t("unavailableLine")}</p>

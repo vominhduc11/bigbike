@@ -12,7 +12,7 @@ import {
 
 describe("formatVnd", () => {
   it("formats a positive integer", () => {
-    expect(formatVnd(100000)).toBe("100.000 đ");
+    expect(formatVnd(100000)).toBe("100.000\u00a0đ");
   });
 
   it("returns dash for null", () => {
@@ -24,7 +24,7 @@ describe("formatVnd", () => {
   });
 
   it("handles zero", () => {
-    expect(formatVnd(0)).toBe("0 đ");
+    expect(formatVnd(0)).toBe("0\u00a0đ");
   });
 });
 

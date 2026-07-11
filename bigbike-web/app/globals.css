@@ -3377,7 +3377,7 @@ body .banner-ads > .container > .row {
 
 @media (max-width: 767px) {
   :root {
-    --bb-mobile-nav-height: 4.75rem;
+    --bb-mobile-nav-height: 3.75rem;
     --bb-mobile-shell-bg: var(--bb-bg-surface-dark-2);
     --bb-mobile-shell-surface: var(--bb-bg-surface-dark);
     --bb-mobile-shell-surface-2: var(--bb-bg-surface-dark-3);
@@ -3554,7 +3554,7 @@ body .banner-ads > .container > .row {
     --bb-mobile-page-x: 14px;
     --bb-mobile-section-y: 32px;
     --bb-mobile-card-gap: 12px;
-    --bb-mobile-nav-height: 4.75rem;
+    --bb-mobile-nav-height: 3.75rem;
   }
 
   body,
@@ -3854,7 +3854,7 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
 
   :root {
     --bb-mobile-page-x: 24px;
-    --bb-mobile-nav-height: 4.75rem;
+    --bb-mobile-nav-height: 3.75rem;
     --bb-mobile-panel-z: calc(var(--bb-z-modal) + 20);
   }
 
