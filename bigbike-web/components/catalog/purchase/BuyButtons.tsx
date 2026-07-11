@@ -21,7 +21,7 @@ export function BuyButtons({
 }) {
   const tb = useTranslations("PdpBuyBox");
   return (
-    <div data-purchase-actions className="mt-5 flex flex-nowrap gap-2.5">
+    <div data-purchase-actions className="mt-6 flex flex-nowrap gap-2.5">
       <div className="min-w-0 flex-[3]">
         {/* Hook class React riêng (js-bb-add-to-cart), KHÔNG dùng
             `js-add-to-cart-btn`: JS theme WP cũ (home.min.js) bám vào
@@ -56,7 +56,7 @@ export function BuyButtons({
         <Button
           asChild
           variant="outline"
-        className="h-[52px] w-full rounded-none border-2 border-zalo bg-white px-3 font-body text-b4-action text-zalo hover:bg-zalo-soft hover:text-zalo"
+        className="h-[52px] w-full whitespace-nowrap rounded-none border-2 border-zalo bg-white px-3 font-body text-b4-action text-zalo hover:bg-zalo-soft hover:text-zalo"
         >
           <a
             href={zaloUrl ? zaloHref(zaloUrl) : "#"}
@@ -64,7 +64,7 @@ export function BuyButtons({
             rel={zaloUrl ? "noopener noreferrer" : undefined}
           >
             <ZaloIcon className="size-5 shrink-0" />
-            {tb("zaloConsult")}
+            {tb("mobileZaloConsult")}
           </a>
         </Button>
       </div>

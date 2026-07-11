@@ -34,7 +34,7 @@ export function VariantPicker({
   onPick: (attr: string, value: string) => void;
 }) {
   return (
-    <div data-variant-picker className="space-y-4">
+    <div data-variant-picker className="space-y-6">
       {attributeNames.map((attr) => {
         const color = isColorAttribute(attr);
         const opts = distinctOptions(variants, attr);
@@ -45,7 +45,7 @@ export function VariantPicker({
         // "pa_color", nên gắn thêm class theo LOẠI thuộc tính (isColorAttribute).
         return (
           <fieldset key={attr}>
-            <legend className="font-cta text-a5-meta font-semibold uppercase leading-none text-foreground">{attr}</legend>
+            <legend className="mb-3 font-cta text-a4-content font-semibold uppercase leading-none text-foreground">{attr}</legend>
               <div className="flex flex-wrap gap-2.5">
                 {opts.map((o) => {
                   const checked = selectedOptions[attr] === o.value;
@@ -68,6 +68,9 @@ export function VariantPicker({
                     <div
                       className={cn(
                         "relative",
+                        // Ô chữ (Size…) giãn đều lấp hết bề ngang cột để khớp với
+                        // hàng nút mua bên dưới; ô màu là ẢNH vuông cố định — giữ nguyên.
+                        !color && "min-w-[64px] flex-1 basis-0",
                         !optInStock && !checked && "opacity-45",
                         !optSelectable && !checked && "cursor-not-allowed",
                       )}
@@ -94,6 +97,7 @@ export function VariantPicker({
                         htmlFor={`${slug}-${o.value}`}
                         className={cn(
                           "flex min-h-[52px] cursor-pointer items-center justify-center border border-border-control bg-white px-5 font-body text-a4-content font-semibold uppercase text-foreground transition-colors hover:border-brand peer-focus-visible:outline-2 peer-focus-visible:outline-ring peer-focus-visible:outline-offset-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
+                          !color && "w-full",
                           color && "h-[52px] w-[52px] bg-cover bg-center p-0",
                           checked && "border-brand text-brand ring-1 ring-brand",
                         )}
