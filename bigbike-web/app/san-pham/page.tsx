@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { PageHero, type PageHeroCrumb } from "@/components/layout/PageHero";
+import { Container } from "@/components/layout/Container";
 import { CatalogClient } from "@/components/catalog/CatalogClient";
 import { CatalogDefault } from "@/components/catalog/CatalogDefault";
 import { getCatalogFacets, listBrands, listCategories, listProducts, listPublicSettings } from "@/lib/api/public-api";
@@ -69,7 +70,7 @@ export default async function ProductListPage() {
         />
 
         <div id="main-content">
-          <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+          <Container>
             <Suspense
               fallback={
                 <CatalogDefault
@@ -92,7 +93,7 @@ export default async function ProductListPage() {
                 includeCategoryParam
               />
             </Suspense>
-          </div>
+          </Container>
         </div>
     </div>
   );

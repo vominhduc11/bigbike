@@ -5,6 +5,7 @@ import { useLocale } from "next-intl";
 import type { ReactNode } from "react";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { PageHero, type PageHeroCrumb } from "@/components/layout/PageHero";
+import { Container } from "@/components/layout/Container";
 import { richContentClassName } from "@/components/layout/RichContent";
 import { ArticleCard } from "@/components/content/ArticleCard";
 import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
@@ -77,7 +78,8 @@ export function ArticleView({
         illustrationAlt={articleTitle}
       />
 
-      <div id="main-content" className="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-8 px-4 py-10 sm:px-6 md:grid-cols-12">
+      <div id="main-content">
+        <Container className="grid grid-cols-1 gap-8 pb-10 md:grid-cols-12">
         <article className={hasSidebar ? "min-w-0 md:col-span-8" : "min-w-0 md:col-span-12"}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={BLOG_THUMBNAIL} alt="" className="h-auto w-full" />
@@ -129,18 +131,19 @@ export function ArticleView({
             <ArticleSidebarWidget title={<Tr ns="Blog" k="latestNews" />} articles={newest} />
           </aside>
         ) : null}
+        </Container>
       </div>
 
       {related.length > 0 ? (
         <section id="related" className="border-t border-border py-15">
-          <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+          <Container>
             <h2 className="mb-6 font-cta text-a1-title font-bold uppercase text-foreground">
               <Tr ns="Blog" k="relatedSectionHeading" />
             </h2>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {related.map((item) => <ArticleCard key={item.id} article={item} />)}
             </div>
-          </div>
+          </Container>
         </section>
       ) : null}
     </div>

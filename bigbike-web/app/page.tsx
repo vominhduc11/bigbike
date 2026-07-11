@@ -9,6 +9,7 @@ import { ExperienceCarousel } from "@/components/home/ExperienceCarousel";
 import { HomeVideoCarousel } from "@/components/home/HomeVideoCarousel";
 import { BrandCarousel } from "@/components/home/BrandCarousel";
 import { HeroSlider, type HeroSlide } from "@/components/home/HeroSlider";
+import { Container } from "@/components/layout/Container";
 import { HomeFeaturedProducts } from "@/components/home/HomeFeaturedProducts";
 import { HomeCategoryGrid } from "@/components/home/HomeCategoryGrid";
 import { HomeNewsList } from "@/components/home/HomeNewsList";
@@ -250,7 +251,7 @@ export default async function HomePage() {
       {/* ===== 2. Category list (3 sản phẩm nổi bật) ===== */}
       {homeHighlights.length > 0 && (
         <section className="py-15">
-          <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+          <Container>
             <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
               {homeHighlights.map((h) => {
                 const img = toLegacyWpMediaUrl(resolveMediaUrl(h.productImageUrl));
@@ -275,7 +276,7 @@ export default async function HomePage() {
                 );
               })}
             </div>
-          </div>
+          </Container>
         </section>
       )}
 
@@ -291,7 +292,7 @@ export default async function HomePage() {
 
       {/* ===== 4. Product list + category grid ===== */}
       <section className="py-10">
-        <div className="mx-auto w-full max-w-[1200px] px-4">
+        <Container>
           <HomeBlockHeading
             className="mb-10 text-center"
             kicker={FEATURED_KICKER_VI}
@@ -302,17 +303,17 @@ export default async function HomePage() {
           <HomeFeaturedProducts initialProducts={carouselProducts} />
 
           <HomeCategoryGrid initialCategories={categories} />
-        </div>
+        </Container>
       </section>
 
       {/* ===== 5. Banner ads ===== */}
       <section className="pt-15">
-        <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
-              <Link href={PROMO_HREF} title={PROMO_TITLE} className="block">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="h-auto w-full" src={PROMO_IMAGE_SRC} alt={PROMO_ALT} loading="lazy" />
-              </Link>
-        </div>
+        <Container>
+          <Link href={PROMO_HREF} title={PROMO_TITLE} className="block">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="h-auto w-full" src={PROMO_IMAGE_SRC} alt={PROMO_ALT} loading="lazy" />
+          </Link>
+        </Container>
       </section>
 
       {/* ===== 6. Content carousel (trải nghiệm/review) ===== */}
@@ -335,7 +336,7 @@ export default async function HomePage() {
       {/* ===== 7. News ===== */}
       {newsArticles.length > 0 && (
         <section className="py-15">
-          <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+          <Container>
             <HomeBlockHeading
               className="pb-10 text-center"
               kicker={NEWS_KICKER_VI}
@@ -344,7 +345,7 @@ export default async function HomePage() {
               titleEn={NEWS_TITLE_EN}
             />
             <HomeNewsList initialArticles={newsArticles} />
-          </div>
+          </Container>
         </section>
       )}
 

@@ -540,8 +540,7 @@ body {
   }
 }
 
-body:has([data-page-hero]) .bb-main,
-body:has(.bb-product-page) .bb-main {
+body:has([data-page-hero]) .bb-main {
   padding-top: 0;
 }
 
@@ -913,17 +912,17 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
    logo-1 (ngang, nhỏ) ẩn sẵn dưới dạng absolute, fade-in khi cuộn. */
 
 
-/* Account + PDP pages: push main content below the logo emblem's vertical extent
-   so the hanging emblem gets its own clear zone above the breadcrumb instead of
-   covering it (the PDP breadcrumb's left edge shifts with its wide max-width, so a
-   horizontal-padding-only fix is unreliable — this vertical offset is robust at any
-   viewport). Logo ~172px tall (206px at ≥1920px); header 80px → ~92px overflow.
-   This is intentional: the emblem gets its own breathing space on the page. */
+/* Hero-less pages: push main content below the logo emblem's vertical extent so
+   the hanging emblem gets its own clear zone above the breadcrumb/heading instead
+   of covering it. Any shell rendered WITHOUT a PageHero banner emits `.bb-heroless`
+   (StaticPageShell heroless variant, AccountShell, ProductView) so the clearance is
+   automatic — no per-page class allowlist. Hero pages (data-page-hero) skip this:
+   the banner already covers the emblem. This vertical offset is robust at any
+   viewport (a horizontal-padding-only fix is unreliable — the breadcrumb's left
+   edge shifts with its rail width). Logo ~172px tall (206px at ≥1920px); header
+   80px → ~92px overflow. Intentional: the emblem gets its own breathing space. */
 @media (min-width: 768px) {
-  body:has(.bb-account-layout) .bb-main,
-  body:has(.bb-cart-page) .bb-main,
-  body:has(.bb-checkout-page) .bb-main,
-  body:has(.bb-compare-page) .bb-main {
+  body:has(.bb-heroless) .bb-main {
     padding-top: calc(var(--bb-header-stack) + 92px);
   }
 }
@@ -4105,11 +4104,8 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
   }
   body:has(.bb-account-layout) .bb-breadcrumb { max-width: 1560px; }
 
-  /* Account + PDP logo-emblem clearance: logo grows to ~206px tall at 3xl, header = 88px → 118px overflow */
-  body:has(.bb-account-layout) .bb-main,
-  body:has(.bb-cart-page) .bb-main,
-  body:has(.bb-checkout-page) .bb-main,
-  body:has(.bb-compare-page) .bb-main {
+  /* Hero-less logo-emblem clearance: logo grows to ~206px tall at 3xl, header = 88px → 118px overflow */
+  body:has(.bb-heroless) .bb-main {
     padding-top: calc(var(--bb-header-stack) + 118px);
   }
 
@@ -4150,11 +4146,8 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
   }
   body:has(.bb-account-layout) .bb-breadcrumb { max-width: 2200px; }
 
-  /* Account + PDP logo-emblem clearance: logo stays ~206px tall at 4xl, header grows to 96px → 110px overflow */
-  body:has(.bb-account-layout) .bb-main,
-  body:has(.bb-cart-page) .bb-main,
-  body:has(.bb-checkout-page) .bb-main,
-  body:has(.bb-compare-page) .bb-main {
+  /* Hero-less logo-emblem clearance: logo stays ~206px tall at 4xl, header grows to 96px → 110px overflow */
+  body:has(.bb-heroless) .bb-main {
     padding-top: calc(var(--bb-header-stack) + 110px);
   }
 

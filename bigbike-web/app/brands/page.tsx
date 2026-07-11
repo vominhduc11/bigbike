@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getLocale } from "next-intl/server";
 import { PageHero, type PageHeroCrumb } from "@/components/layout/PageHero";
+import { Container } from "@/components/layout/Container";
 import { Tr } from "@/components/i18n/Tr";
 import { listBrands, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
@@ -65,20 +66,22 @@ export default async function BrandListPage() {
           illustrationAlt={heroSettings.imageAlt ?? heroTitle}
         />
 
-        <div id="main-content" className="mx-auto w-full max-w-[1200px] px-4 py-10 sm:px-6">
-              <Suspense
-                fallback={
-                  <BrandListDefault
-                    brands={brandsResult.data}
-                    pagination={brandsResult.pagination}
-                  />
-                }
-              >
-                <BrandListClient
-                  initialBrands={brandsResult.data}
-                  initialPagination={brandsResult.pagination}
+        <div id="main-content">
+          <Container>
+            <Suspense
+              fallback={
+                <BrandListDefault
+                  brands={brandsResult.data}
+                  pagination={brandsResult.pagination}
                 />
-              </Suspense>
+              }
+            >
+              <BrandListClient
+                initialBrands={brandsResult.data}
+                initialPagination={brandsResult.pagination}
+              />
+            </Suspense>
+          </Container>
         </div>
     </div>
   );

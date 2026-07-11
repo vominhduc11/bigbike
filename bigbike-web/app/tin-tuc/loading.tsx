@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { PageHero } from "@/components/layout/PageHero";
+import { Container } from "@/components/layout/Container";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default async function ArticleListLoading() {
@@ -11,7 +12,7 @@ export default async function ArticleListLoading() {
   return (
     <div aria-label={tCommon("loading")} aria-busy="true">
       <PageHero title={tBlog("title")} breadcrumb={[]} />
-      <div className="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-8 px-4 py-10 sm:px-6 md:grid-cols-12">
+      <Container className="grid grid-cols-1 gap-8 pb-10 md:grid-cols-12">
         <aside className="space-y-4 md:col-span-3">
           <Skeleton className="h-7 w-40 rounded-none" />
           {Array.from({ length: 6 }).map((_, index) => (
@@ -30,7 +31,7 @@ export default async function ArticleListLoading() {
             </div>
           ))}
         </div>
-      </div>
+      </Container>
     </div>
   );
 }

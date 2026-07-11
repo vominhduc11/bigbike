@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import { PageHero } from "@/components/layout/PageHero";
+import { Container } from "@/components/layout/Container";
 import { getArticleBySlug, listArticles, listPublicSettings } from "@/lib/api/public-api";
 import type { Article } from "@/lib/contracts/public";
 import {
@@ -111,9 +112,9 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
             illustrationAlt={errorTitle}
           />
           <div id="main-content">
-            <div className="mx-auto w-full max-w-[1200px] px-4 py-10 sm:px-6">
+            <Container className="pb-10">
               <p className="border border-border bg-card p-4 text-a4-content text-muted-foreground"><Tr ns="Blog" k="loadFailed" /></p>
-            </div>
+            </Container>
           </div>
       </div>
     );

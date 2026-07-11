@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { ArticleView } from "@/app/tin-tuc/[slug]/ArticleView";
+import { Container } from "@/components/layout/Container";
 import { PreviewGuard } from "@/components/preview/PreviewGuard";
 import type { Article } from "@/lib/contracts/public";
 import { env } from "@/env";
@@ -38,9 +39,9 @@ export default function ArticlePreviewPage() {
 
   if (!article) {
     return (
-      <div className="mx-auto w-full max-w-[1200px] px-4 py-20 text-center text-muted-foreground sm:px-6">
+      <Container className="py-20 text-center text-muted-foreground">
         Đang chờ dữ liệu xem trước…
-      </div>
+      </Container>
     );
   }
 

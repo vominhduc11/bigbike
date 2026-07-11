@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { ProductView } from "@/components/catalog/ProductView";
+import { Container } from "@/components/layout/Container";
 import { PreviewGuard } from "@/components/preview/PreviewGuard";
 import { fetchPublicSettings } from "@/lib/api/client-api";
 import type { Product, PublicSiteSetting } from "@/lib/contracts/public";
@@ -67,9 +68,9 @@ export default function ProductPreviewPage() {
 
   if (!product) {
     return (
-      <div className="mx-auto w-full max-w-[1200px] px-4 py-20 text-center text-muted-foreground sm:px-6">
+      <Container className="py-20 text-center text-muted-foreground">
         Đang chờ dữ liệu xem trước…
-      </div>
+      </Container>
     );
   }
 

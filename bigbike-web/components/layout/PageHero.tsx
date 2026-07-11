@@ -5,6 +5,7 @@ import { useLocale } from "next-intl";
 import type { ReactNode } from "react";
 
 import { DEFAULT_LOCALE } from "@/i18n/locale";
+import { Container } from "@/components/layout/Container";
 
 /* eslint-disable @next/next/no-img-element */
 
@@ -58,7 +59,7 @@ export function PageHero({
         />
       ) : null}
 
-      <div className="relative z-10 mx-auto flex min-h-[250px] w-full max-w-[1200px] items-center px-[15px] md:min-h-[450px]">
+      <Container className="relative z-10 flex min-h-[250px] items-center md:min-h-[450px]">
         <div className="w-full md:w-1/2">
           <h1 className="m-0 font-cta text-a2-page font-semibold leading-normal text-white!">
             {titleNode ?? title}
@@ -93,7 +94,7 @@ export function PageHero({
             className="max-h-[400px] w-auto object-contain"
           />
         </div>
-      </div>
+      </Container>
     </section>
   );
 }

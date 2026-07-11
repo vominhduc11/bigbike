@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { StaticPageShell } from "@/components/layout/StaticPageShell";
+import { Container } from "@/components/layout/Container";
 import { ContactPageContent, type ContactInfo } from "@/components/contact/ContactPageContent";
 import { listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
@@ -50,9 +51,9 @@ export default async function ContactPage() {
 
   return (
     <StaticPageShell title={title} breadcrumb={[]} showHero={false} mainClassName="pb-10">
-      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+      <Container>
         <ContactPageContent contact={contact} />
-      </div>
+      </Container>
     </StaticPageShell>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { StaticPageShell } from "@/components/layout/StaticPageShell";
+import { Container } from "@/components/layout/Container";
 import { AboutPageContent, type AboutBrandLogo } from "@/components/about/AboutPageContent";
 import { listBrands, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
@@ -57,7 +58,7 @@ export default async function AboutPage() {
         { label: pageTitle },
       ]}
     >
-      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+      <Container>
         <AboutPageContent
           brands={brands}
           contact={{
@@ -67,7 +68,7 @@ export default async function AboutPage() {
             facebookUrl: setting("facebook_url"),
           }}
         />
-      </div>
+      </Container>
     </StaticPageShell>
   );
 }

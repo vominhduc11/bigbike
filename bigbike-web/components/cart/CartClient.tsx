@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ShoppingCart } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCartQuery, useRemoveCartItem, useUpdateCartItem } from "@/lib/query/hooks";
@@ -134,7 +134,7 @@ export function CartClient() {
         <div className="border border-destructive bg-accent p-5 text-destructive" role="alert">
           {error || (cartQuery.error instanceof Error ? cartQuery.error.message : t("loadFailed"))}
         </div>
-        <Button asChild variant="dark" className="mt-6 rounded-none">
+        <Button asChild variant="primary" className="mt-6 rounded-none">
           <Link href={continueHref}>{t("returnToShop")}</Link>
         </Button>
       </>
@@ -152,9 +152,15 @@ export function CartClient() {
             {error}
           </div>
         )}
-        <div className="border border-border bg-secondary p-8 text-center" role="status">
+        <div className="grid justify-items-center border border-border bg-secondary px-6 py-14 text-center" role="status">
+          <span
+            className="mb-5 inline-flex h-16 w-16 items-center justify-center border border-border bg-background text-muted-foreground"
+            aria-hidden="true"
+          >
+            <ShoppingCart size={30} strokeWidth={1.5} />
+          </span>
           <p className="m-0 font-cta text-a2-page font-semibold uppercase">{t("emptyMessage")}</p>
-          <Button asChild variant="dark" className="mt-6 rounded-none">
+          <Button asChild variant="primary" className="mt-6 rounded-none">
             <Link href={continueHref}>{t("returnToShop")}</Link>
           </Button>
         </div>

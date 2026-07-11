@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function CartLoading() {
   return (
-    <div id="main-content" className="bb-cart-page" aria-busy="true">
+    <div id="main-content" className="bb-cart-page bb-heroless" aria-busy="true">
       <Container>
         <div className="mt-5">
           <h1 className="m-0 font-cta text-a2-page font-semibold uppercase text-foreground"><Tr ns="Cart" k="title" /></h1>

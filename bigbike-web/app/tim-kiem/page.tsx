@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { PageHero, type PageHeroCrumb } from "@/components/layout/PageHero";
+import { Container } from "@/components/layout/Container";
 import { CatalogClient } from "@/components/catalog/CatalogClient";
 import { getCatalogFacets, listBrands, listCategories, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
@@ -67,7 +68,7 @@ export default async function SearchPage() {
         />
 
         <div id="main-content">
-          <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+          <Container>
             <Suspense fallback={null}>
               <CatalogClient
                 canonicalPath={SEARCH_PATH}
@@ -79,7 +80,7 @@ export default async function SearchPage() {
                 requireQuery
               />
             </Suspense>
-          </div>
+          </Container>
         </div>
     </div>
   );

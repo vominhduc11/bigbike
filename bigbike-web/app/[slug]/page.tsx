@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { StaticPageShell } from "@/components/layout/StaticPageShell";
+import { Container } from "@/components/layout/Container";
 import { getStaticPage, staticPageSlugs } from "@/lib/content/static-pages";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeText } from "@/lib/utils/format";
@@ -81,11 +82,11 @@ export default async function StaticPageDetail({ params }: StaticPageDetailProps
         { label: pageTitle },
       ]}
     >
-      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+      <Container>
         <RichContent
           html={sanitizeRichHtml(page.body, { allowInlineStyles: true, allowStyleTags: true })}
         />
-      </div>
+      </Container>
     </StaticPageShell>
   );
 }

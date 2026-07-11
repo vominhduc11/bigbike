@@ -7,6 +7,7 @@ import { fetchPublicSettings } from "@/lib/api/client-api";
 import { queryKeys } from "@/lib/query/keys";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { RichContent } from "@/components/layout/RichContent";
+import { Container } from "@/components/layout/Container";
 
 /**
  * Khối SEO cuối trang chủ (`home_content_bottom_html`) lấy chữ từ `site_settings` — admin
@@ -106,7 +107,7 @@ export function HomeAboutSection({
 
   return (
     <section className="py-10">
-      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+      <Container>
         <div className="mb-10 text-center">
           {sub ? <p className="mb-2 font-body text-a4-content font-semibold text-muted-foreground">{sub}</p> : null}
           {heading ? <h2 className="font-body text-a1-title font-semibold uppercase leading-tight text-foreground">{heading}</h2> : null}
@@ -114,7 +115,7 @@ export function HomeAboutSection({
         {html ? (
           <RichContent html={html} className="mx-auto max-w-4xl text-center text-muted-foreground" />
         ) : null}
-      </div>
+      </Container>
     </section>
   );
 }
@@ -140,7 +141,7 @@ export function HomeExperienceHeading({
   const body = useLocalizedText(desc, descEn);
 
   return (
-    <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+    <Container>
       <div className="pb-10 text-center">
         {sub ? <p className="mb-2 font-body text-a4-content font-semibold text-muted-foreground">{sub}</p> : null}
         {heading ? <h2 className="font-body text-a1-title font-semibold uppercase leading-tight text-foreground">{heading}</h2> : null}
@@ -148,7 +149,7 @@ export function HomeExperienceHeading({
           <p className="mx-auto mt-8 max-w-4xl text-a4-content leading-relaxed text-foreground">{body}</p>
         ) : null}
       </div>
-    </div>
+    </Container>
   );
 }
 
@@ -162,9 +163,9 @@ export function HomeContentBottom({ viHtml }: { viHtml: string }) {
 
   return (
     <section className="bg-secondary py-8">
-      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+      <Container>
         <RichContent html={html} />
-      </div>
+      </Container>
     </section>
   );
 }

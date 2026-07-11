@@ -395,7 +395,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   }
 
   const inner = (
-    <div id="main-content" className="bb-product-page pt-0 md:pt-15">
+    <div id="main-content" className="bb-product-page bb-heroless">
       {/* Vạch tiến độ đọc — chỉ mobile (khớp mockup). Fixed top nên vị trí trong DOM
           không ảnh hưởng; đặt đầu khối cho dễ thấy. */}
       <ReadingProgressBar />

@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { PageHero, type PageHeroCrumb } from "@/components/layout/PageHero";
+import { Container } from "@/components/layout/Container";
 import { CatalogClient } from "@/components/catalog/CatalogClient";
 import { CatalogDefault } from "@/components/catalog/CatalogDefault";
 import { AltSlugRegistrar } from "@/components/i18n/AltSlugProvider";
@@ -99,10 +100,17 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
   }
 
   if (!categoryResult.data) {
+    const fallbackTitle = tCatalog("categoryFallback");
     return (
-      <div id="main-content">
-        <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
-          <p className="border border-border bg-card p-4 text-a4-content text-muted-foreground"><Tr ns="Catalog" k="categoryLoadFailed" /></p>
+      <div>
+        <PageHero
+          title={fallbackTitle}
+          breadcrumb={[{ label: "Bigbike.vn", href: toHomePath() }, { label: fallbackTitle }]}
+        />
+        <div id="main-content">
+          <Container>
+            <p className="border border-border bg-card p-4 text-a4-content text-muted-foreground"><Tr ns="Catalog" k="categoryLoadFailed" /></p>
+          </Container>
         </div>
       </div>
     );
@@ -175,7 +183,7 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
           />
 
           <div id="main-content">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+            <Container>
               <Suspense
                 fallback={
                   <CatalogDefault
@@ -200,7 +208,7 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
                   initialPagination={productsResult.pagination}
                 />
               </Suspense>
-            </div>
+            </Container>
           </div>
         </div>
       </LocalizedContentProvider>

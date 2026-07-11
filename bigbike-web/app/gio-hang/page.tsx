@@ -1,4 +1,5 @@
 import { StaticPageShell } from "@/components/layout/StaticPageShell";
+import { Container } from "@/components/layout/Container";
 import { CheckoutPageHeading } from "@/components/layout/CheckoutPageHeading";
 import { CartClient } from "@/components/cart/CartClient";
 import { Tr } from "@/components/i18n/Tr";
@@ -22,16 +23,13 @@ export default function CartPage() {
       showHero={false}
       mainClassName="bb-cart-page"
     >
-      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
-        {/* mt-20 theo page-cart.php; trên desktop đẩy thêm để h1 vượt qua đáy
-            logo nghiêng của header WP (logo kéo xuống ~130px, trang này không có
-            hero che như các route khác). Mobile logo nhỏ/căn giữa nên giữ mt-20. */}
+      <Container>
         <CheckoutPageHeading title={<Tr ns="Cart" k="title" />} />
 
         <div className="pb-15 max-md:pb-7">
           <CartClient />
         </div>
-      </div>
+      </Container>
     </StaticPageShell>
   );
 }

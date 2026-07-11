@@ -1,4 +1,5 @@
 import { StaticPageShell } from "@/components/layout/StaticPageShell";
+import { Container } from "@/components/layout/Container";
 import { CheckoutPageHeading } from "@/components/layout/CheckoutPageHeading";
 import { CheckoutClient } from "@/components/checkout/CheckoutClient";
 import { Tr } from "@/components/i18n/Tr";
@@ -21,13 +22,13 @@ export default function CheckoutPage() {
       showHero={false}
       mainClassName="bb-checkout-page"
     >
-      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+      <Container>
         <CheckoutPageHeading title={<Tr ns="Checkout" k="title" />} />
 
         <div className="pb-15">
           <CheckoutClient />
         </div>
-      </div>
+      </Container>
     </StaticPageShell>
   );
 }

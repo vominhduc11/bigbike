@@ -5,6 +5,7 @@ import Link from "next/link";
 import "swiper/css";
 import type { Brand } from "@/lib/contracts/public";
 import { resolveMediaUrl } from "@/lib/utils/format";
+import { Container } from "@/components/layout/Container";
 
 type Props = { brands: Brand[] };
 
@@ -27,7 +28,7 @@ export function BrandCarousel({ brands }: Props) {
 
   return (
     <section className="py-30">
-      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+      <Container>
         <Swiper
           // KHÔNG đặt `swiper-container`: home.min.js `partnerSlide()` gọi
           // `new Swiper(".partner-slide .swiper-container")` → double-init đè lên Swiper
@@ -64,7 +65,7 @@ export function BrandCarousel({ brands }: Props) {
             );
           })}
         </Swiper>
-      </div>
+      </Container>
     </section>
   );
 }

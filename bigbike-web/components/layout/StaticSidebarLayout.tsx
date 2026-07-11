@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Container } from "@/components/layout/Container";
 import { PolicySidebar, type PolicySidebarItem } from "@/components/layout/PolicySidebar";
 import { RichContent } from "@/components/layout/RichContent";
 import { sanitizeRichHtml } from "@/lib/utils/html";
@@ -19,7 +20,7 @@ export function StaticSidebarLayout({
   children,
 }: StaticSidebarLayoutProps) {
   return (
-    <div className="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-8 px-4 sm:px-6 md:grid-cols-12">
+    <Container className="grid grid-cols-1 gap-8 md:grid-cols-12">
       <PolicySidebar items={sidebarItems} emptyLabel={sidebarEmptyLabel} />
       <div className="min-w-0 md:col-span-9">
         {bodyNode != null ? (
@@ -30,6 +31,6 @@ export function StaticSidebarLayout({
           <RichContent>{children}</RichContent>
         )}
       </div>
-    </div>
+    </Container>
   );
 }

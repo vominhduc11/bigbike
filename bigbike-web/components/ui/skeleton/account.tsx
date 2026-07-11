@@ -91,7 +91,7 @@ export function CheckoutSkeleton() {
 /** Full account layout (sidebar + main) used before AccountShell loads. */
 export function AccountLayoutSkeleton({ rows = 3 }: { rows?: number }) {
   return (
-    <SkeletonRoot labelKey="accountPage" className="bb-account-layout">
+    <SkeletonRoot labelKey="accountPage" className="bb-account-layout bb-heroless">
       <aside className={accountSidebar}>
         <div style={{ padding: "24px 22px", borderBottom: "1px solid var(--bb-border-subtle)" }}>
           <SkelCircle size={56} />

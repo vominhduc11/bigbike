@@ -185,11 +185,18 @@ Cấm dùng cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-
 ## Layout
 
 - Spacing theo thang 4px.
-- Container tối đa 1200px.
-- Desktop padding 24px; tablet 24px; mobile 16px.
+- **Outer page rail = component `<Container>`** (`components/layout/Container.tsx`, token `--bb-container-xl`): mặc định 1200px, tự nới 1360/1600/2240 ở 2xl/3xl/4xl. Dùng `<Container>` cho MỌI rail ngoài của trang — KHÔNG hardcode `mx-auto w-full max-w-[1200px] px-4 sm:px-6`. Grid có sidebar: `<Container className="grid …">`.
+- Desktop padding 24px; tablet 24px; mobile 16px (qua token `--bb-page-padding-*` / `--bb-mobile-page-x`).
 - Product grid: desktop 3 cột, tablet 2 cột, mobile 1 cột.
 - Section spacing: desktop 72px, tablet 52px, mobile 32px.
 - Touch target tối thiểu 44px.
+
+### Page frame: hero vs hero-less (né logo header)
+
+Header có logo-emblem thò xuống body ~92px (≥768px) · ~118px (3xl) · ~110px (4xl) khi ở đầu trang chưa cuộn. Hai biến thể khung xử lý việc này:
+
+- **Hero**: render `<PageHero>` (banner tối 250/450px tự che logo). PageHero phát `data-page-hero` → `body:has([data-page-hero]) .bb-main { padding-top: 0 }`.
+- **Hero-less**: KHÔNG banner. Mọi shell hero-less phát class **`bb-heroless`** trên phần tử gốc → `body:has(.bb-heroless) .bb-main` cấp `padding-top = header-stack + overhang` (tự động theo tier). Đây là cơ chế **duy nhất** — KHÔNG dùng allowlist class thủ công. Shell đã phát sẵn: `StaticPageShell` (khi `showHero={false}`), `AccountShell`, `ProductView`; loading twin tương ứng (`gio-hang/loading`, account skeleton) cũng phải phát. Trang hero-less mới → dùng một trong các shell này (hoặc phát `bb-heroless`) là được né logo sẵn. Né theo chiều DỌC, nội dung vẫn căn trái tự nhiên.
 
 ---
 
@@ -212,7 +219,7 @@ Container max-width: `--bb-container-xl` co giãn theo tier — `75rem` (1200px)
 
 ### Uniform ultra-wide expansion (phương án B — toàn site, chỉ `3xl`/`4xl`)
 
-Mọi trang/component đều **nới đều** theo content rail ở `3xl`/`4xl`, không trang nào để dải trống hai bên hay lệch với phần còn lại. Các surface cũ ghim ở Bootstrap `.container` 1140px (header, footer, giỏ hàng, thanh toán, tài khoản, tin tức, trang tĩnh, home) nay bám `var(--bb-container-xl)` qua rule `body .container { max-width: var(--bb-container-xl) }` đặt trong block `UNIFORM ULTRA-WIDE EXPANSION` của `globals.css`.
+Mọi trang/component đều **nới đều** theo content rail ở `3xl`/`4xl`, không trang nào để dải trống hai bên hay lệch với phần còn lại. Các surface cũ ghim ở Bootstrap `.container` 1140px (header, footer, giỏ hàng, thanh toán, tài khoản, tin tức, trang tĩnh, home) nay bám `var(--bb-container-xl)` qua rule `body .container { max-width: var(--bb-container-xl) }` đặt trong block `UNIFORM ULTRA-WIDE EXPANSION` của `globals.css`. Các rail viết bằng Tailwind cũng nới đều nhờ đã đổi sang component `<Container>` (cùng token `--bb-container-xl`) — KHÔNG còn hardcode `max-w-[1200px]` cho rail ngoài (ngoại lệ: trang sản phẩm, xem dưới; và `<PageHero>` đã dùng chung `<Container>` để mép hero canh thẳng body).
 
 **Ràng buộc tuyệt đối:** block này **chỉ chứa media query `min-width:1920px` và `min-width:2560px`**; không tác động bất kỳ breakpoint nào ≤ `2xl`. Lấy hệ token `2xl→3xl→4xl` làm chuẩn cho đích width (1600/2240). Selector `body .…` được giữ để cô lập quy tắc màn hình rộng khỏi các phạm vi khác.
 
@@ -229,11 +236,11 @@ Densify lưới (giữ kích thước tile ~constant, đặt cùng block):
 Cap để giữ chất lượng khi container rộng:
 - **Cột chữ (prose):** `.blog-content.wyswyg` (bài viết) và `.col-md-9 > .static-page.wyswyg` (trang tĩnh có sidebar) cap `1000px`/`1100px` để dòng không quá dài. Trang `gioi-thieu`/`lien-he` (`.static-page.wyswyg` full-width `col-md-12`) **không** cap.
 - **Sidebar tài khoản:** `.account-dashboard > .row > .col-md-3` cap `320px`/`360px` (khớp tỉ lệ `.bb-account-layout`), content lấy phần còn lại.
-- **PDP:** trang sản phẩm gắn class `.bb-product-page` trên `#main-content`; mọi rail của nó **chốt 1600px ở `4xl`**, nối tiếp ngoại lệ rail 1600 bên dưới.
+- **PDP:** trang sản phẩm gắn class `.bb-product-page` (+ `.bb-heroless` để né logo) trên `#main-content`. Rail nội dung chốt **`max-w-[1200px]` cố định ở mọi tier** (quyết định owner 2026-07-11 — KHÔNG nới ở ultra-wide, giữ tỉ lệ gallery ảnh, mọi mép trong trang canh thẳng ở 1200). Đây là ngoại lệ có chủ đích: các trang khác nới đều, riêng PDP giữ 1200.
 
 `bb-product-archive` / `bb-search-results-page` trong `globals.css` là **dead CSS** (không gắn vào markup) — giữ lại theo policy migration WP, **không** dùng làm hook cho rule mới; grid thật dùng Bootstrap `.col-md-3.col-6` trong `.product-list`.
 
-> **Ngoại lệ - trang chi tiết sản phẩm (`/product/[slug]`):** toàn bộ các rail của trang **chốt tối đa 1600px ở `4xl`** thay vì 2240px, gồm breadcrumb, khối tổng quan ảnh+mua hàng, tabs mô tả và carousel sản phẩm liên quan, để mọi mép trái/phải canh thẳng nhau. Lý do chốt 1600 thay vì 2240: nếu nới tới 2240px sẽ sinh dải trắng rất lớn quanh khu ảnh, vỡ tỉ lệ. Trong khối tổng quan, khu ảnh **lấp đầy cột 7fr** nên mép trái ảnh thẳng hàng breadcrumb/tabs; cột thumbnail dùng slide cao cố định 100px với `slidesPerView:"auto"`, **co theo số ảnh thật**: chiều cao thanh được tính bằng JS = `min(tổng-chiều-cao-thumbnail, chiều-cao-ảnh)` theo bậc 470/598/738px để Swiper có chiều cao xác định và cuộn được khi tràn. `self-start` chặn grid kéo giãn thanh. Nút cuộn chỉ hiện khi thumbnail thực sự tràn. Carousel liên quan giữ tối đa 4 cột cho khớp container 1600px. Đây là ngoại lệ có chủ đích của riêng trang sản phẩm, không áp cho các trang khác.
+> **Ngoại lệ - trang chi tiết sản phẩm (`/product/[slug]`):** toàn bộ các rail của trang **chốt `max-w-[1200px]` cố định ở mọi tier** (KHÔNG nới ở ultra-wide — quyết định owner 2026-07-11), gồm breadcrumb, khối tổng quan ảnh+mua hàng, tabs mô tả và carousel sản phẩm liên quan, để mọi mép trái/phải canh thẳng nhau. Lý do giữ 1200 thay vì nới: nới rộng sẽ sinh dải trắng lớn quanh khu ảnh, vỡ tỉ lệ gallery. Trong khối tổng quan, khu ảnh **lấp đầy cột 7fr** nên mép trái ảnh thẳng hàng breadcrumb/tabs; cột thumbnail dùng slide cao cố định 100px với `slidesPerView:"auto"`, **co theo số ảnh thật**: chiều cao thanh được tính bằng JS = `min(tổng-chiều-cao-thumbnail, chiều-cao-ảnh)` theo bậc 470/598/738px để Swiper có chiều cao xác định và cuộn được khi tràn. `self-start` chặn grid kéo giãn thanh. Nút cuộn chỉ hiện khi thumbnail thực sự tràn. Carousel liên quan giữ tối đa 4 cột cho khớp rail 1200px. Đây là ngoại lệ có chủ đích của riêng trang sản phẩm (khác các trang nới đều), phần rail né logo qua `.bb-heroless`.
 
 > **Quy tắc:** Rule mới phải dùng Tailwind prefix (`sm:`/`md:`/`lg:`/`xl:`/`2xl:`/`3xl:`/`4xl:`) hoặc các giá trị pixel tương ứng trong media query. Không thêm breakpoint ad-hoc mới ngoài 7 tier trên. Khi thêm class `4xl:`, kiểm tra rằng container/grid cha cũng đã có rule tương ứng để tránh layout lệch ở viewport ≥ 2560px.
 

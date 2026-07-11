@@ -1,4 +1,5 @@
 import { AccountNav } from "@/components/account/AccountNav";
+import { Container } from "@/components/layout/Container";
 
 export function AccountShell({
   children,
@@ -7,11 +8,12 @@ export function AccountShell({
   children: React.ReactNode;
   loginRedirect?: string;
 }) {
+  // Hero-less: `bb-heroless` triggers the shared logo-emblem clearance in globals.css.
   return (
-    <div id="main-content">
-      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+    <div id="main-content" className="bb-heroless">
+      <Container>
         <AccountNav loginRedirect={loginRedirect}>{children}</AccountNav>
-      </div>
+      </Container>
     </div>
   );
 }
