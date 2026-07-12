@@ -44,10 +44,11 @@ const SEGMENT_BADGE_CLASSES = {
 }
 
 function SegmentBadge({ segment }) {
+  const { t } = useTranslation()
   const cls = SEGMENT_BADGE_CLASSES[segment] ?? 'text-muted-foreground bg-surface-muted'
   return (
     <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold tracking-wide ${cls}`}>
-      {segment}
+      {t(`customers.segment.${segment}`, { defaultValue: segment })}
     </span>
   )
 }
@@ -245,15 +246,21 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
         <DetailSection title={t('customers.detail.sectionStatus')}>
           <label>
             {t('customers.detail.accountStatus')}
-            <Select
-              value={customer.status}
-              onValueChange={handleStatusChange}
-              disabled={!canUpdate || saving}
-            ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-              {CUSTOMER_STATUSES.map((s) => (
-                <SelectItem key={s} value={s}>{t(`status.customer.${s}`, { defaultValue: s })}</SelectItem>
-              ))}
-            </SelectContent></Select>
+            {/* Trạng thái ngoài nhóm set-được (vd PENDING "chờ duyệt") → huy hiệu chỉ-đọc,
+                không để Select trống trông như lỗi (audit P0-5). */}
+            {(canUpdate && CUSTOMER_STATUSES.includes(customer.status)) ? (
+              <Select
+                value={customer.status}
+                onValueChange={handleStatusChange}
+                disabled={saving}
+              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                {CUSTOMER_STATUSES.map((s) => (
+                  <SelectItem key={s} value={s}>{t(`status.customer.${s}`, { defaultValue: s })}</SelectItem>
+                ))}
+              </SelectContent></Select>
+            ) : (
+              <div className="mt-1"><StatusBadge type="customer" status={customer.status} /></div>
+            )}
           </label>
         </DetailSection>
 

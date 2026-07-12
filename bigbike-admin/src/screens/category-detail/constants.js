@@ -16,17 +16,8 @@ export function countDescendants(rootId, allCategories) {
   return count
 }
 
-export function toSlug(text) {
-  return text
-    .toLowerCase()
-    .replace(/đ/g, 'd')
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/[^a-z0-9\s]/g, '')
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-}
+// Slugify dùng chung — tách sang src/lib/slug.js (khử trùng lặp với Brand/Content).
+export { toSlug } from '../../lib/slug'
 
 export function buildEmptyForm() {
   return {

@@ -57,9 +57,21 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
   const [mediaPickerIndex, setMediaPickerIndex] = useState(null)
   const [videoPickerIndex, setVideoPickerIndex] = useState(null)
   const getMediaAltSync = useMediaAltSyncList()
+  // Trạng thái thu gọn per-khối (P2-19) — chỉ ở UI, keyed theo _key. KHÔNG đưa vào
+  // model lưu (_key đã bị strip trước khi lưu) nên không làm bẩn payload/contract.
+  const [collapsedKeys, setCollapsedKeys] = useState(() => new Set())
 
   function addBlock(type, preset) {
     onChange([...blocks, createBlock(type, preset)])
+  }
+
+  function toggleCollapsed(key) {
+    setCollapsedKeys((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
   }
 
   function updateBlock(index, patch) {
@@ -78,6 +90,13 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
     const copy = { ...blocks[index], _key: generateId() }
     const next = [...blocks]
     next.splice(index + 1, 0, copy)
+    onChange(next)
+  }
+
+  // Chèn khối mới ngay dưới khối hiện tại (P2-19) — cùng khuôn splice như duplicate.
+  function insertBlock(index, type, preset) {
+    const next = [...blocks]
+    next.splice(index + 1, 0, createBlock(type, preset))
     onChange(next)
   }
 
@@ -116,6 +135,10 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
             structDisabled={structDisabled}
             contentLang={contentLang}
             productMode={productMode}
+            collapsed={collapsedKeys.has(block._key)}
+            onToggleCollapse={() => toggleCollapsed(block._key)}
+            insertMenu={menu}
+            onInsertBelow={(type, preset) => insertBlock(index, type, preset)}
             onUpdate={(patch) => updateBlock(index, patch)}
             onRemove={() => removeBlock(index)}
             onDuplicate={() => duplicateBlock(index)}

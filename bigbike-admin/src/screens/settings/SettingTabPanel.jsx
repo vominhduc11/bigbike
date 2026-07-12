@@ -24,7 +24,7 @@ export function SettingTabPanel({
           return (
             <div key={sec}>
               <div className="flex items-center justify-between gap-2 mt-4 mb-3 pb-2 border-b border-border">
-                <span className="font-semibold text-[13px]">{meta?.title || 'Khác'}</span>
+                <span className="font-semibold text-[length:var(--admin-text-sm)]">{meta?.title || 'Khác'}</span>
                 {meta?.internal ? (
                   <span className="bb-muted inline-flex items-center gap-1 text-xs whitespace-nowrap">
                     <Lock size={12} /> Nội bộ

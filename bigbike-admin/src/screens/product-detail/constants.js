@@ -915,18 +915,19 @@ export const TAB_SECTIONS = {
   seo:     ['seo'],
 }
 
-// Within the "product" tab the sections are split into 3 collapsible groups that
-// mirror the storefront product-page flow (the owner's "thứ tự đầy đủ trang sản phẩm"
-// reference): `buyArea` = đầu trang (ảnh/giá/biến thể/cam kết/ô số liệu), `body` = thân
-// trang (mô tả → ưu-nhược → tương tự → phù hợp → bảng size → thông số → FAQ → video),
-// `closing` = cuối trang (bán kèm). Field originBrandCountry ("Thương hiệu (nước)") vẫn
-// hiển thị trong khối "Mua tại BigBike.vn" cuối trang PDP, nhưng NHẬP LIỆU admin đã
-// chuyển lên card "Thông tin cơ bản" (cạnh Thương hiệu) cho tiện gõ khi tạo SP mới —
-// form KHÔNG còn mirror 1:1 vị trí hiển thị của field này.
-// `buyArea` (required) opens by default; the two optional groups start collapsed.
-// Keys/order mirror the render order in ProductDetailScreen (canonical PDP order §0b).
+// Within the "product" tab the sections are split into collapsible groups. To fight the
+// "too many fields at once" overwhelm (audit P0-1), the default-open group `buyArea` now
+// holds ONLY the truly-required core (thông tin cơ bản, ảnh đại diện, giá & trạng thái,
+// biến thể) — the four optional enhancement cards (gallery, dải tin cậy, cam kết, ô số
+// liệu) moved into `enhance`, which starts collapsed. `body` (thân trang) and `closing`
+// (cuối trang) also start collapsed so the form opens short. Field originBrandCountry
+// ("Thương hiệu (nước)") vẫn hiển thị ở khối "Mua tại BigBike.vn" cuối trang PDP nhưng
+// NHẬP LIỆU admin nằm ở card "Thông tin cơ bản" — form KHÔNG mirror 1:1 vị trí hiển thị.
+// Only `buyArea` opens by default; the three optional groups start collapsed.
+// Keys/order mirror the render order in ProductDetailScreen.
 export const PRODUCT_GROUPS = {
-  buyArea: ['basic', 'media', 'gallery', 'trustBadges', 'pricing', 'variants', 'commitments', 'specStats'],
+  buyArea: ['basic', 'media', 'pricing', 'variants'],
+  enhance: ['gallery', 'trustBadges', 'commitments', 'specStats'],
   body:    ['description', 'highlights', 'related', 'specs', 'faqs', 'videos'],
   closing: ['accessories'],
 }

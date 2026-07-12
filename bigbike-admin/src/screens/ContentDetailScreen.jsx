@@ -52,6 +52,7 @@ import {
 } from './content-detail/constants'
 import { ContentAssignmentBanner } from './content-detail/ContentAssignmentBanner'
 import { SectionCard } from '../components/SectionCard'
+import { CollapsibleSection } from '../components/CollapsibleSection'
 import { FormField as Field } from '../components/layout/FormField'
 
 // Module chỉ còn quản lý BÀI VIẾT (ARTICLE). Trang thông tin tĩnh + trình dựng /huong-dan đã gỡ
@@ -281,6 +282,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
   // ── Tab navigation state (replaces TOC sidebar) ───────────────────────────
   const [activeTab, setActiveTab] = useState('content')
+  const [seoAdvancedOpen, setSeoAdvancedOpen] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
 
   const isEnLang = contentLang === 'en'
@@ -793,49 +795,60 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                     />
                   </Field>
 
-                  <Field full label={t('content.detail.seoCanonicalUrl', { defaultValue: 'URL canonical' })} error={validationErrors.seoCanonicalUrl}>
-                    <Input
-                      value={form.seoCanonicalUrl}
-                      onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
-                      onBlur={() => validateFieldOnBlur('seoCanonicalUrl')}
-                      disabled={isReadOnly}
-                      placeholder="https://bigbike.vn/..."
-                      className={validationErrors.seoCanonicalUrl ? 'border-danger' : undefined}
-                    />
-                  </Field>
-
-                  <Field
-                    full
-                    label={t('content.detail.seoOgImageUrl', { defaultValue: 'SEO OG image URL' })}
-                    helper={t('content.detail.seoOgImageUrlHint', { defaultValue: 'Ảnh chia sẻ MXH, 1200×630px.' })}
-                    error={validationErrors.seoOgImageUrl}
-                  >
-                    <ImageUrlInput
-                      value={form.seoOgImageUrl}
-                      onChange={(url) => updateField('seoOgImageUrl', url)}
-                      alt={form.seoOgImageAlt}
-                      onAltChange={(alt) => updateField('seoOgImageAlt', alt)}
-                      disabled={isReadOnly}
-                      error={validationErrors['seoOgImageUrl']}
-                      recommend={IMAGE_RECO.cover}
-                    />
-                  </Field>
                 </div>
 
-                {/* noindex toggle — chỉ bài viết */}
-                {isArticle && (
-                  <div className="mt-4 flex flex-col gap-1.5">
-                    <label className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
-                      <Checkbox
-                        checked={form.seoNoIndex}
-                        onCheckedChange={(checked) => updateField('seoNoIndex', checked === true)}
+                {/* Tùy chọn nâng cao: canonical + ảnh chia sẻ + noindex — thu gọn sẵn (P2-4) */}
+                <CollapsibleSection
+                  title={t('content.detail.seoAdvanced', { defaultValue: 'Tùy chọn nâng cao' })}
+                  hint={t('content.detail.seoAdvancedHint', { defaultValue: 'URL canonical, ảnh chia sẻ, chặn lập chỉ mục' })}
+                  open={seoAdvancedOpen}
+                  onToggle={() => setSeoAdvancedOpen((v) => !v)}
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Field full label={t('content.detail.seoCanonicalUrl', { defaultValue: 'URL canonical' })} error={validationErrors.seoCanonicalUrl}>
+                      <Input
+                        value={form.seoCanonicalUrl}
+                        onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
+                        onBlur={() => validateFieldOnBlur('seoCanonicalUrl')}
                         disabled={isReadOnly}
+                        placeholder="https://bigbike.vn/..."
+                        className={validationErrors.seoCanonicalUrl ? 'border-danger' : undefined}
                       />
-                      <span>{t('content.detail.seoNoIndex')}</span>
-                    </label>
-                    <span className="text-xs text-muted-foreground">{t('content.detail.seoNoIndexHint')}</span>
+                    </Field>
+
+                    <Field
+                      full
+                      label={t('content.detail.seoOgImageUrl', { defaultValue: 'SEO OG image URL' })}
+                      helper={t('content.detail.seoOgImageUrlHint', { defaultValue: 'Ảnh chia sẻ MXH, 1200×630px.' })}
+                      error={validationErrors.seoOgImageUrl}
+                    >
+                      <ImageUrlInput
+                        value={form.seoOgImageUrl}
+                        onChange={(url) => updateField('seoOgImageUrl', url)}
+                        alt={form.seoOgImageAlt}
+                        onAltChange={(alt) => updateField('seoOgImageAlt', alt)}
+                        disabled={isReadOnly}
+                        error={validationErrors['seoOgImageUrl']}
+                        recommend={IMAGE_RECO.cover}
+                      />
+                    </Field>
                   </div>
-                )}
+
+                  {/* noindex toggle — chỉ bài viết */}
+                  {isArticle && (
+                    <div className="mt-4 flex flex-col gap-1.5">
+                      <label className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
+                        <Checkbox
+                          checked={form.seoNoIndex}
+                          onCheckedChange={(checked) => updateField('seoNoIndex', checked === true)}
+                          disabled={isReadOnly}
+                        />
+                        <span>{t('content.detail.seoNoIndex')}</span>
+                      </label>
+                      <span className="text-xs text-muted-foreground">{t('content.detail.seoNoIndexHint')}</span>
+                    </div>
+                  )}
+                </CollapsibleSection>
 
                 {/* SEO checklist */}
                 <div className="mt-4 p-3 border border-border bg-muted/30">

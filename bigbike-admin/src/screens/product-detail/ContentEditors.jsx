@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { GripVertical } from 'lucide-react'
+import { Check, Film, GripVertical, ImageIcon, Play, Plus, X } from 'lucide-react'
 import { MediaPickerModal } from '../../components/MediaPickerModal'
 import { VideoPickerModal } from '../../components/VideoPickerModal'
 import { MediaRequirementHint } from '../../components/MediaRequirementHint'
@@ -63,8 +63,10 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
         <div className="gallery-card-thumb relative bg-black">
           {posterUrl
             ? <img src={posterUrl} alt="" loading="eager" />
-            : <span className="gallery-thumb-status">🎬</span>}
-          <span className="absolute inset-0 flex items-center justify-center text-white text-2xl pointer-events-none">▶</span>
+            : <span className="gallery-thumb-status"><Film size={22} aria-hidden="true" /></span>}
+          <span className="absolute inset-0 flex items-center justify-center text-white pointer-events-none">
+            <Play size={28} fill="currentColor" aria-hidden="true" />
+          </span>
           {!disabled && sortable && (
             <button
               type="button"
@@ -84,7 +86,7 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
               onClick={(e) => { e.stopPropagation(); onRemove() }}
               aria-label={t('products.detail.gallery.removeImage')}
             >
-              ✕
+              <X size={14} aria-hidden="true" />
             </button>
           )}
         </div>
@@ -102,27 +104,24 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
             </Button>
           </div>
           {provider === 'youtube' ? (
-            <input
+            <Input
               type="text"
-              className="gallery-card-alt-input"
               placeholder={t('products.detail.gallery.videoUrlPlaceholder', { defaultValue: 'Dán link YouTube' })}
               value={item.videoUrl || ''}
               onChange={(e) => onUpdate({ videoUrl: e.target.value })}
               disabled={disabled}
             />
           ) : provider === 'tiktok' ? (
-            <input
+            <Input
               type="text"
-              className="gallery-card-alt-input"
               placeholder={t('products.detail.gallery.tiktokUrlPlaceholder', { defaultValue: 'Dán link TikTok đầy đủ' })}
               value={item.videoUrl || ''}
               onChange={(e) => onUpdate({ videoUrl: e.target.value })}
               disabled={disabled}
             />
           ) : provider === 'facebook' ? (
-            <input
+            <Input
               type="text"
-              className="gallery-card-alt-input"
               placeholder={t('products.detail.gallery.facebookUrlPlaceholder', { defaultValue: 'Dán link video Facebook (công khai)' })}
               value={item.videoUrl || ''}
               onChange={(e) => onUpdate({ videoUrl: e.target.value })}
@@ -159,26 +158,17 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
     )
   }
 
-  const thumbState = trimmed ? 'ok' : 'empty'
-
   return (
     <div
       ref={sortable?.setNodeRef}
       style={{ ...sortable?.style, opacity: sortable?.isDragging ? 0.4 : undefined }}
       className={`gallery-card${urlError ? ' gallery-card--error' : ''}`}
     >
-      <div
-        className="gallery-card-thumb"
-        role="button"
-        tabIndex={disabled ? -1 : 0}
-        onClick={() => !disabled && setPickerOpen(true)}
-        onKeyDown={(e) => e.key === 'Enter' && !disabled && setPickerOpen(true)}
-        aria-label={t('products.detail.gallery.pickImage')}
-      >
-        {thumbState === 'ok' && <img src={displayUrl} alt="" loading="eager" />}
-        {thumbState === 'loading' && <span className="gallery-thumb-status">⋯</span>}
-        {thumbState === 'error' && <span className="gallery-thumb-status gallery-thumb-error">!</span>}
-        {thumbState === 'empty' && <span className="gallery-thumb-status">🖼</span>}
+      {/* Thumb chỉ để xem — mở picker qua nút bên dưới (tránh lồng nút trong nút, a11y). */}
+      <div className="gallery-card-thumb">
+        {trimmed
+          ? <img src={displayUrl} alt="" loading="eager" />
+          : <span className="gallery-thumb-status"><ImageIcon size={22} aria-hidden="true" /></span>}
         {!disabled && sortable && (
           <button
             type="button"
@@ -198,7 +188,7 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
             onClick={(e) => { e.stopPropagation(); onRemove() }}
             aria-label={t('products.detail.gallery.removeImage')}
           >
-            ✕
+            <X size={14} aria-hidden="true" />
           </button>
         )}
 
@@ -275,7 +265,7 @@ export function GalleryEditor({ items, onChange, disabled, validationErrors = {}
         )}
         footer={!disabled && (
           <button type="button" className="gallery-card-add" onClick={addItem}>
-            <span className="gallery-add-icon">+</span>
+            <span className="gallery-add-icon"><Plus size={20} aria-hidden="true" /></span>
             <span>{t('products.detail.gallery.addImage')}</span>
           </button>
         )}
@@ -305,7 +295,7 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
     onChange(items.map((item, i) => i === index ? { ...item, ...patch } : item))
   }
   function addItem() {
-    onChange([...items, { url: '', title: '', description: '', type: 'youtube', thumbnailUrl: '' }])
+    onChange([...items, { _key: generateId(), url: '', title: '', description: '', type: 'youtube', thumbnailUrl: '' }])
   }
   async function removeItem(index) {
     const hasContent = Boolean((items[index]?.url || '').trim())
@@ -323,7 +313,10 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
         const urlError = validationErrors[`videos.${index}.url`]
         const ytId = type === 'youtube' ? extractYouTubeId(item.url) : null
         return (
-          <div key={item.url || `video-${index}`} className="list-editor-row">
+          // Khoá ổn định: dùng _key gán lúc thêm; item cũ (chưa có _key) rơi về index —
+          // đều KHÔNG đổi khi gõ link nên con trỏ không nhảy (audit P1-10). Trước đây khoá
+          // theo item.url (chính ô đang gõ) làm React remount dòng sau mỗi ký tự.
+          <div key={item._key ?? `video-${index}`} className="list-editor-row">
             <div className="list-editor-fields">
               <div className="flex gap-1 p-1 bg-muted w-fit">
                 <Button
@@ -424,12 +417,12 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
                         disabled={disabled}
                         aria-label={t('products.detail.video.removeSelectedVideo')}
                       >
-                        ✕
+                        <X size={14} aria-hidden="true" />
                       </Button>
                     )}
                     {item.url && (
                       <span className="truncate max-w-xs text-xs text-muted-foreground">
-                        ✓ {item.url.split('/').pop()}
+                        <Check size={14} aria-hidden="true" /> {item.url.split('/').pop()}
                       </span>
                     )}
                   </div>
@@ -466,7 +459,7 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
               disabled={disabled}
               aria-label={t('products.detail.video.removeVideo')}
             >
-              ✕
+              <X size={14} aria-hidden="true" />
             </Button>
           </div>
         )
@@ -612,7 +605,7 @@ export function SpecificationsEditor({ disabled, html = '', onHtmlChange }) {
             disabled={disabled}
             aria-label={t('products.detail.specs.removeSpec')}
           >
-            ✕
+            <X size={14} aria-hidden="true" />
           </Button>
         </div>
       )}
@@ -706,7 +699,7 @@ export function HighlightsEditor({ items, onChange, disabled, contentLang = 'vi'
               disabled={disabled || isEn}
               aria-label={t('products.detail.highlights.remove', { defaultValue: 'Xóa mục' })}
             >
-              ✕
+              <X size={14} aria-hidden="true" />
             </Button>
           </div>
         )}
@@ -792,7 +785,7 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
               disabled={disabled || isEn}
               aria-label={t('products.detail.faqs.removeFaq')}
             >
-              ✕
+              <X size={14} aria-hidden="true" />
             </Button>
           </div>
         )

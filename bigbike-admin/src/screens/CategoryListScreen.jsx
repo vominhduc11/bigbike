@@ -48,6 +48,7 @@ import {
 } from './category-list/constants'
 import { CategoryEmptyState } from './category-list/CategoryEmptyState'
 import { CategoryFlatTableHead, CategoryTreeTableHead } from './category-list/CategoryTableHead'
+import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 
 // Wrap matched substring(s) in <mark> for live search highlighting.
 function highlightMatch(text, term) {
@@ -335,6 +336,49 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     }
   }
 
+  // Bulk khôi phục / xóa vĩnh viễn khi đang xem Thùng rác — bọc API single-item
+  // sẵn có (restoreCategory / hardDeleteCategory), cùng khuôn runBulkVisibility.
+  // Chạy tuần tự vì xóa vĩnh viễn cha kéo theo con (như runBulkVisibility).
+  async function runBulkTrash(action) {
+    if (!canUpdate || bulkProgress) return
+    const byId = new Map(allItems.map((c) => [c.id, c]))
+    const ids = Array.from(selectedIds).filter((id) => byId.has(id))
+    if (ids.length === 0) return
+
+    if (action === 'permanentDelete') {
+      const confirmed = await showConfirm(
+        t('categories.bulkPermanentDeleteConfirm', { count: ids.length, defaultValue: `Xóa vĩnh viễn {{count}} danh mục đã chọn cùng toàn bộ danh mục con? Hành vi này không thể khôi phục.` }),
+        t('categories.bulkPermanentDeleteTitle', { defaultValue: 'Xóa vĩnh viễn các danh mục đã chọn?' }),
+        { variant: 'danger', confirmLabel: t('common.permanentDelete') },
+      )
+      if (!confirmed) return
+    }
+
+    const apiFn = action === 'restore' ? restoreCategory : hardDeleteCategory
+    setBulkProgress({ done: 0, total: ids.length })
+    let success = 0
+    let failed = 0
+    for (let i = 0; i < ids.length; i++) {
+      try {
+        await apiFn(ids[i])
+        success += 1
+      } catch (err) {
+        failed += 1
+        const cat = byId.get(ids[i])
+        toast.error(`${cat?.name || ids[i]}: ${err.message || t('common.error')}`)
+      }
+      setBulkProgress({ done: i + 1, total: ids.length })
+    }
+    setBulkProgress(null)
+    clearSelection()
+    queryClient.invalidateQueries({ queryKey: ['categories'] })
+    queryClient.invalidateQueries({ queryKey: ['categories', 'tree'] })
+    const summary = t('categories.bulkResult', { success, failed })
+    if (failed === 0) toast.success(summary)
+    else if (success === 0) toast.error(summary)
+    else toast.warning(summary)
+  }
+
   function updateQuery(partial, options = { resetPage: false }) {
     setQuery((previous) => {
       const next = { ...previous, ...partial }
@@ -577,6 +621,81 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     </th>
   ) : null
 
+  // Nút thao tác dòng danh mục — dùng chung cho bảng (.cat-actions) và thẻ mobile (P2-2).
+  const renderCategoryRowActions = (category) => (
+    <>
+      {category.slug && (
+        <Button asChild variant="ghost" size="icon">
+          <a
+            href={`${STOREFRONT_BASE}/${category.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={t('categories.viewOnSite')}
+            aria-label={t('categories.viewOnSite')}
+          >
+            <ExternalLink size={14} aria-hidden="true" />
+          </a>
+        </Button>
+      )}
+      {canUpdate && !query.deleted && (
+        <Button variant="ghost" size="icon" onClick={() => handleDuplicate(category)} title={t('categories.duplicate')} aria-label={t('categories.duplicate')}>
+          <Copy size={14} aria-hidden="true" />
+        </Button>
+      )}
+      {canUpdate && !query.deleted && (
+        <Button
+          variant="outline"
+          size="sm"
+          className={category.isVisible ? 'text-destructive hover:text-destructive' : 'text-success hover:text-success'}
+          disabled={toggleVisibilityMutation.isPending || Boolean(bulkProgress)}
+          onClick={() => handleToggleVisibility(category)}
+          title={category.isVisible ? t('categories.hideAction') : t('categories.restoreAction')}
+        >
+          {togglingId === category.id
+            ? '…'
+            : category.isVisible
+              ? t('categories.unpublishAction')
+              : t('categories.republishAction')}
+        </Button>
+      )}
+      {canUpdate && category.id !== 'uncategorized' && !query.deleted && (
+        <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleSoftDelete(category)}>
+          {t('common.delete')}
+        </Button>
+      )}
+      {canUpdate && query.deleted && (
+        <>
+          <Button variant="outline" size="sm" className="text-success hover:text-success" onClick={() => handleRestore(category)}>
+            {t('products.restore')}
+          </Button>
+          <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => handlePermanentDelete(category)}>
+            {t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' })}
+          </Button>
+        </>
+      )}
+    </>
+  )
+
+  // Thẻ mobile cho 1 danh mục — thay bảng cuộn ngang trên điện thoại (P2-2).
+  // Kéo-thả sắp xếp vẫn chỉ ở desktop; mobile hiển thị dạng danh sách phẳng.
+  const mobileCategoryCard = (category) => {
+    const breadcrumb = breadcrumbMap.get(category.id) || category.name
+    const hasActions = Boolean(category.slug) || canUpdate
+    return (
+      <MobileCard
+        key={category.id}
+        title={formatText(category.name)}
+        subtitle={breadcrumb && breadcrumb !== category.name ? breadcrumb : (category.slug ? `/${category.slug}` : undefined)}
+        status={<StatusBadge type="visibility" status={category.isVisible} />}
+        meta={[
+          { label: t('categories.colUpdated'), value: formatDateTime(category.updatedAt) },
+        ]}
+        onClick={() => navigate(`/admin/categories/${category.id}`)}
+        actions={hasActions ? renderCategoryRowActions(category) : undefined}
+      />
+    )
+  }
+
   const renderCategoryRow = (category, depth = 0, sortableProps = null) => {
     const hasChildren = useTreeMode && treeRows.some((r) => r.parentId === category.id && r._depth > 0)
     const isExpanded = expandedIds.has(category.id)
@@ -701,77 +820,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
         {/* Actions */}
         <td className="align-right">
           <div className="cat-actions">
-            {category.slug && (
-              <Button asChild variant="ghost" size="icon">
-                <a
-                  href={`${STOREFRONT_BASE}/${category.slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title={t('categories.viewOnSite')}
-                  aria-label={t('categories.viewOnSite')}
-                >
-                  <ExternalLink size={14} aria-hidden="true" />
-                </a>
-              </Button>
-            )}
-            {/* F11: Nhân bản — song song với nút tương tự trên Sản phẩm. */}
-            {canUpdate && !query.deleted && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handleDuplicate(category)}
-                title={t('categories.duplicate')}
-                aria-label={t('categories.duplicate')}
-              >
-                <Copy size={14} aria-hidden="true" />
-              </Button>
-            )}
-            {canUpdate && !query.deleted && (
-              <Button
-                variant="outline"
-                size="sm"
-                className={category.isVisible ? 'text-destructive hover:text-destructive' : 'text-success hover:text-success'}
-                disabled={toggleVisibilityMutation.isPending || Boolean(bulkProgress)}
-                onClick={() => handleToggleVisibility(category)}
-                title={category.isVisible ? t('categories.hideAction') : t('categories.restoreAction')}
-              >
-                {togglingId === category.id
-                  ? '…'
-                  : category.isVisible
-                    ? t('categories.unpublishAction')
-                    : t('categories.republishAction')}
-              </Button>
-            )}
-            {canUpdate && category.id !== 'uncategorized' && !query.deleted && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-destructive hover:text-destructive"
-                onClick={() => handleSoftDelete(category)}
-              >
-                {t('common.delete')}
-              </Button>
-            )}
-            {canUpdate && query.deleted && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-success hover:text-success"
-                  onClick={() => handleRestore(category)}
-                >
-                  {t('products.restore')}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => handlePermanentDelete(category)}
-                >
-                  {t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' })}
-                </Button>
-              </>
-            )}
+            {renderCategoryRowActions(category)}
           </div>
         </td>
       </tr>
@@ -828,14 +877,13 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           <p className="bb-muted">{t('categories.description')}</p>
         </div>
         <div className="bb-screen-actions">
-          <button
+          <Button
             type="button"
-            className="bb-btn bb-btn-primary"
             onClick={() => navigate('/admin/categories/new')}
             disabled={!canUpdate}
           >
             <Plus size={14} />{canUpdate ? t('categories.create') : t('common.noPermission')}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -945,12 +993,12 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               {t('categories.treeTotalCount', { count: allItems.length, defaultValue: `${allItems.length} danh mục` })}
             </span>
             <div style={{ display: 'flex', gap: 4 }}>
-              <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={expandAll}>
+              <Button type="button" variant="ghost" size="sm" onClick={expandAll}>
                 {t('categories.expandAll')}
-              </button>
-              <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={collapseAll}>
+              </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={collapseAll}>
                 {t('categories.collapseAll')}
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -981,19 +1029,33 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           : null}
         onClear={clearSelection}
         closeLabel={t('categories.bulkClear')}
-        actions={[
-          {
-            label: t('categories.bulkShow'),
-            onClick: () => runBulkVisibility(true),
-            disabled: Boolean(bulkProgress),
-          },
-          {
-            label: t('categories.bulkHide'),
-            tone: 'danger',
-            onClick: () => runBulkVisibility(false),
-            disabled: Boolean(bulkProgress),
-          },
-        ]}
+        actions={query.deleted
+          ? [
+            {
+              label: t('products.restore'),
+              onClick: () => runBulkTrash('restore'),
+              disabled: Boolean(bulkProgress),
+            },
+            {
+              label: t('common.permanentDelete'),
+              tone: 'danger',
+              onClick: () => runBulkTrash('permanentDelete'),
+              disabled: Boolean(bulkProgress),
+            },
+          ]
+          : [
+            {
+              label: t('categories.bulkShow'),
+              onClick: () => runBulkVisibility(true),
+              disabled: Boolean(bulkProgress),
+            },
+            {
+              label: t('categories.bulkHide'),
+              tone: 'danger',
+              onClick: () => runBulkVisibility(false),
+              disabled: Boolean(bulkProgress),
+            },
+          ]}
       />
 
       {/* ── Tree mode ── */}
@@ -1023,7 +1085,8 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               onCreate={() => navigate('/admin/categories/new')}
             />
           ) : (
-            <div className="table-scroll-wrap">
+            <>
+            <div className="table-scroll-wrap hide-on-mobile">
               <DndContext
                 sensors={dndSensors}
                 collisionDetection={closestCenter}
@@ -1047,6 +1110,10 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                 </SortableContext>
               </DndContext>
             </div>
+            <MobileCardList>
+              {visibleTreeRows.map((cat) => mobileCategoryCard(cat))}
+            </MobileCardList>
+            </>
           )}
         </div>
       )}
@@ -1076,7 +1143,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
 
           {flatModeStatus === 'loading' || (flatModeStatus === 'success' && flatItems.length > 0) ? (
             <>
-              <div className="table-scroll-wrap">
+              <div className="table-scroll-wrap hide-on-mobile">
                 <table className="admin-table cat-tree-table cat-table-flat">
                   <caption className="sr-only">{t('categories.tableCaption')}</caption>
                   <CategoryFlatTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenColumnKeys} />
@@ -1093,6 +1160,11 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                   </tbody>
                 </table>
               </div>
+              {flatModeStatus === 'success' && flatItems.length > 0 && (
+                <MobileCardList>
+                  {flatItems.map((cat) => mobileCategoryCard(cat))}
+                </MobileCardList>
+              )}
               {flatModeStatus === 'success' && (
                 <PaginationControls
                   pagination={paginatedState.pagination}

@@ -1,23 +1,8 @@
 import { useTranslation } from 'react-i18next'
-import { formatDateTime } from '../../lib/formatters'
+import { AlertTriangle, Check, X } from 'lucide-react'
 import { Modal } from '../../components/layout'
 import { Button } from '@/components/ui/button'
 import { getPublishReadiness } from './constants'
-
-// ── Draft recovery banner ──────────────────────────────────────────────────────
-
-export function DraftRecoveryBanner({ ts, onRestore, onDiscard }) {
-  const { t } = useTranslation()
-  return (
-    <div className="draft-recovery-banner">
-      <span>{t('products.detail.draftRecovery.found', { time: formatDateTime(new Date(ts).toISOString()) })}</span>
-      <div className="draft-recovery-actions">
-        <Button size="sm" onClick={onRestore}>{t('products.detail.draftRecovery.restore')}</Button>
-        <Button variant="outline" size="sm" onClick={onDiscard}>{t('products.detail.draftRecovery.discard')}</Button>
-      </div>
-    </div>
-  )
-}
 
 // ── Publish quality checklist modal ───────────────────────────────────────────
 
@@ -31,7 +16,7 @@ export function PublishChecklistModal({ form, onConfirm, onCancel }) {
 
   const renderItem = (item) => (
     <li key={item.id} className={`checklist-item ${item.ok ? 'checklist-ok' : item.required ? 'checklist-error' : 'checklist-warn'}`}>
-      <span className="checklist-icon" aria-hidden="true">{item.ok ? '✓' : item.required ? '✕' : '⚠'}</span>
+      <span className="checklist-icon" aria-hidden="true">{item.ok ? <Check size={15} /> : item.required ? <X size={15} /> : <AlertTriangle size={15} />}</span>
       <span>{item.label}</span>
     </li>
   )

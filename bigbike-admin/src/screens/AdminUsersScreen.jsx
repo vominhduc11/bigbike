@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
-import { AlertCircle, CheckCircle2, Eye, EyeOff, Mail, Pencil, UserPlus } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Lock, Mail, Pencil, UserCheck, UserPlus } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { AdminTable } from '../components/AdminTable'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
@@ -15,12 +15,14 @@ import { StatePanel } from '../components/StatePanel'
 import { createAdminUser, fetchAdminUsers, fetchRoles, resendAdminInvite, updateAdminUser, mapValidationErrors } from '../lib/adminApi'
 import { formatDateTime } from '../lib/formatters'
 import { showConfirm } from '../lib/confirm'
+import { toast } from '@/lib/toast'
 import { useDebounce } from '../lib/useDebounce'
 import { useColumnVisibility } from '../lib/useColumnVisibility'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '../components/PasswordInput'
 
 const INITIAL_QUERY = { search: '', page: 1, pageSize: 20, role: '', status: '' }
 
@@ -82,35 +84,21 @@ function UserStatusBadge({ status, t }) {
 }
 
 function PasswordField({ value, onChange, onBlur, placeholder, label, hint, error }) {
-  const [show, setShow] = useState(false)
   const inputId = useId()
   const errorId = `${inputId}-error`
   return (
     <label className="au-field">
       <span className="au-field-label">{label}</span>
-      <div className="au-field-row">
-        <Input
-          id={inputId}
-          type={show ? 'text' : 'password'}
-          value={value}
-          onChange={onChange}
-          onBlur={onBlur}
-          placeholder={placeholder}
-          autoComplete="new-password"
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error ? errorId : undefined}
-        />
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setShow((s) => !s)}
-          aria-label={show ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-          className="shrink-0 whitespace-nowrap"
-        >
-          {show ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
-        </Button>
-      </div>
+      <PasswordInput
+        id={inputId}
+        value={value}
+        onChange={onChange}
+        onBlur={onBlur}
+        placeholder={placeholder}
+        autoComplete="new-password"
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
+      />
       {error ? (
         <span id={errorId} className="flex items-center gap-1 text-xs text-danger" role="alert">
           <AlertCircle size={13} aria-hidden="true" className="shrink-0" />
@@ -393,6 +381,27 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
     }
   }
 
+  // Kích hoạt / khoá tài khoản ngay trên dòng — 1 chạm thay vì mở drawer 4 bước.
+  // Dùng lại đúng cập nhật trạng thái của drawer (updateAdminUser) + xác nhận khi khoá.
+  async function handleToggleStatus(user) {
+    const activating = user.status !== 'ACTIVE'
+    if (!activating) {
+      const ok = await showConfirm(
+        t('adminUsers.confirmDisable'),
+        t('adminUsers.confirmSensitiveTitle'),
+        { variant: 'danger', confirmLabel: t('adminUsers.actionLock') },
+      )
+      if (!ok) return
+    }
+    try {
+      const r = await updateAdminUser(user.id, { status: activating ? 'ACTIVE' : 'DISABLED' })
+      setListState((p) => ({ ...p, items: p.items.map((x) => (x.id === user.id ? r.item : x)) }))
+      toast.success(activating ? t('adminUsers.activatedToast') : t('adminUsers.lockedToast'))
+    } catch (err) {
+      toast.error(err.message || t('common.error'))
+    }
+  }
+
   // ── Derived ──────────────────────────────────────────────────────────────
   const isSelf = editUser != null && currentUserId != null && editUser.id === currentUserId
   const hasFilters = searchInput.trim() !== '' || roleFilter !== '' || statusFilter !== ''
@@ -451,6 +460,20 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
   }, [listState.items, sort])
 
   const isLoading = listState.status === 'loading' && (listState.items || []).length === 0
+
+  // Nút kích hoạt/khoá dùng chung cho cả bảng và thẻ mobile. Ẩn với tài khoản chờ
+  // kích hoạt (INVITED — chưa nhận lời mời) và với chính tài khoản đang đăng nhập.
+  const statusToggleButton = (u) => {
+    if (u.status === 'INVITED') return null
+    if (currentUserId != null && u.id === currentUserId) return null
+    const activating = u.status !== 'ACTIVE'
+    const label = activating ? t('adminUsers.actionActivate') : t('adminUsers.actionLock')
+    return (
+      <button type="button" className="bb-icon-btn" title={label} aria-label={label} onClick={() => handleToggleStatus(u)}>
+        {activating ? <UserCheck size={14} /> : <Lock size={14} />}
+      </button>
+    )
+  }
 
   const columns = [
     {
@@ -513,6 +536,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
                   <Mail size={14} />
                 </button>
               )}
+              {statusToggleButton(u)}
               <button type="button" className="bb-icon-btn" title={t('common.edit')} aria-label={t('common.edit')} onClick={() => openEdit(u)}>
                 <Pencil size={14} />
               </button>
@@ -549,6 +573,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
               <Mail size={14} />
             </button>
           )}
+          {statusToggleButton(u)}
           <button type="button" className="bb-icon-btn" title={t('common.edit')} aria-label={t('common.edit')} onClick={() => openEdit(u)}>
             <Pencil size={14} />
           </button>
@@ -567,9 +592,9 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
         </div>
         {canUpdate && (
           <div className="bb-screen-actions">
-            <button type="button" className="bb-btn bb-btn-primary" onClick={openCreate}>
+            <Button type="button" onClick={openCreate}>
               <UserPlus size={14} />{t('adminUsers.createBtn')}
-            </button>
+            </Button>
           </div>
         )}
       </div>

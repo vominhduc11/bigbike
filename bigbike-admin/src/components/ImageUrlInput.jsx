@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { X } from 'lucide-react'
 import { MediaPickerModal } from './MediaPickerModal'
 import { MediaRequirementHint } from './MediaRequirementHint'
 import { Button } from '@/components/ui/button'
@@ -64,7 +65,7 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, err
             disabled={disabled}
             aria-label={t('imageInput.removeImage')}
           >
-            ✕
+            <X size={16} aria-hidden="true" />
           </Button>
         )}
       </div>

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, ArrowRight } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
@@ -16,6 +16,7 @@ import { recordRecentItem } from '../lib/useRecentItems'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
 import {
   PAYMENT_TRANSITIONS, REASON_REQUIRED, addressLine, sameAddress,
   ORDER_STATUS_ACTION, getOrderStatusLabel, PAYMENT_ACTION_LABEL,
@@ -300,9 +301,9 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           </p>
         </div>
         <div className="bb-screen-actions">
-          <button type="button" className="bb-btn bb-btn-secondary" onClick={() => navigate(`/admin/orders${readListQuery()}`)}>
+          <Button type="button" variant="secondary" onClick={() => navigate(`/admin/orders${readListQuery()}`)}>
             {t('orders.detail.backToList')}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -329,21 +330,22 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                 const isDanger = cfg.variant === 'destructive'
                 const isPending = pendingAction === `status:${s}`
                 return (
-                  <button
+                  <Button
                     key={s}
                     type="button"
-                    className={`bb-btn ${isDanger ? 'bb-btn-danger-ghost' : isPrimary ? 'bb-btn-primary' : 'bb-btn-secondary'}`}
+                    variant={isDanger ? 'ghost' : isPrimary ? 'default' : 'secondary'}
+                    className={isDanger ? 'text-danger' : undefined}
                     disabled={saving}
                     onClick={() => handleStatusChange(s)}
                   >
-                    {isPending ? t('orders.detail.savingShort') : <>→ {getOrderStatusLabel(s, order, t)}</>}
-                  </button>
+                    {isPending ? t('orders.detail.savingShort') : <><ArrowRight size={14} aria-hidden="true" />{getOrderStatusLabel(s, order, t)}</>}
+                  </Button>
                 )
               })}
               {transitionsError && (
-                <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={() => setTransitionsKey((k) => k + 1)}>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setTransitionsKey((k) => k + 1)}>
                   {t('common.retry')}
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -352,18 +354,101 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
             <div className="bb-action-strip">
               <span className="bb-action-strip-label">{t('orders.detail.paymentStatus')}</span>
               {(PAYMENT_TRANSITIONS[order.paymentStatus] ?? []).map((s) => (
-                <button
+                <Button
                   key={s}
                   type="button"
-                  className={`bb-btn bb-btn-secondary bb-btn-sm${s === 'CANCELLED' ? ' bb-btn-danger-ghost' : ''}`}
+                  variant={s === 'CANCELLED' ? 'ghost' : 'secondary'}
+                  size="sm"
+                  className={s === 'CANCELLED' ? 'text-danger' : undefined}
                   disabled={saving}
                   onClick={() => handlePaymentStatusChange(s)}
                 >
                   {pendingAction === `payment:${s}`
                     ? t('orders.detail.savingShort')
                     : PAYMENT_ACTION_LABEL[s] ? t(PAYMENT_ACTION_LABEL[s]) : s}
-                </button>
+                </Button>
               ))}
+            </div>
+          )}
+          {/* Giao hàng — gom cùng khu hành động với trạng thái đơn & thanh toán (audit) */}
+          {order.fulfillmentType === 'DELIVERY' && !['CANCELLED', 'FAILED'].includes(order.orderStatus) && (
+            <div className="bb-action-strip">
+              <span className="bb-action-strip-label">{t('orders.detail.fulfillment')}</span>
+              {(order.fulfillmentStatus == null || order.fulfillmentStatus === 'UNFULFILLED') && (
+                <Button type="button" variant="secondary" size="sm" disabled={fulfillmentSaving}
+                  onClick={() => handleFulfillmentUpdate('PROCESSING')}>
+                  {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffStartPreparing')}
+                </Button>
+              )}
+              {order.fulfillmentStatus === 'PROCESSING' && (
+                <Button type="button" variant="secondary" size="sm" disabled={fulfillmentSaving}
+                  onClick={() => setShowShipForm((p) => !p)}>
+                  {t('orders.detail.ffMarkShipped')}
+                </Button>
+              )}
+              {order.fulfillmentStatus === 'SHIPPED' && (
+                <Button type="button" size="sm" disabled={fulfillmentSaving}
+                  onClick={() => handleFulfillmentUpdate('DELIVERED')}>
+                  {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffMarkDelivered')}
+                </Button>
+              )}
+              {(order.fulfillmentStatus === 'DELIVERED' || order.fulfillmentStatus === 'SHIPPED') && (
+                <span className="bb-muted text-xs">{ffStatusLabel}</span>
+              )}
+            </div>
+          )}
+          {/* Form nhập vận đơn — mở ngay tại khu hành động khi bấm "Giao hàng" (không phải cuộn xuống) */}
+          {order.fulfillmentType === 'DELIVERY' && showShipForm && (
+            <div className="bb-action-strip">
+              <form
+                className="bb-detail-form w-full"
+                onSubmit={(e) => { e.preventDefault(); handleFulfillmentUpdate('SHIPPED') }}
+              >
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="ship-tracking-input" className="text-sm font-medium">
+                    {t('orders.detail.trackingLabel')} *
+                  </label>
+                  <p className="text-xs text-muted-foreground">
+                    <span className="text-danger" aria-hidden="true">*</span> {t('common.requiredLegend', { defaultValue: 'Bắt buộc' })}
+                  </p>
+                  <Input
+                    id="ship-tracking-input"
+                    type="text"
+                    placeholder={t('orders.detail.trackingPlaceholder')}
+                    value={trackingNumber}
+                    onChange={(e) => { setTrackingNumber(e.target.value); if (trackingError) setTrackingError('') }}
+                    onBlur={() => { if (!trackingNumber.trim()) setTrackingError(t('orders.detail.trackingRequiredError')) }}
+                    disabled={fulfillmentSaving}
+                    required
+                    aria-invalid={trackingError ? true : undefined}
+                    aria-describedby={trackingError ? 'ship-tracking-error' : undefined}
+                  />
+                </div>
+                {trackingError ? (
+                  <p id="ship-tracking-error" role="alert" className="bb-error-inline">
+                    <AlertCircle size={13} aria-hidden="true" />
+                    {trackingError}
+                  </p>
+                ) : (
+                  <p className="bb-muted text-xs">{t('orders.detail.trackingHint')}</p>
+                )}
+                <Input
+                  type="text"
+                  placeholder={t('orders.detail.carrierPlaceholder')}
+                  value={shippingCarrier}
+                  onChange={(e) => setShippingCarrier(e.target.value)}
+                  disabled={fulfillmentSaving}
+                />
+                <div className="bb-detail-form-actions">
+                  <Button type="submit" size="sm" disabled={fulfillmentSaving}>
+                    {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffConfirmShip')}
+                  </Button>
+                  <Button type="button" variant="secondary" size="sm" disabled={fulfillmentSaving}
+                    onClick={() => { setShowShipForm(false); setTrackingNumber(''); setShippingCarrier(''); setTrackingError('') }}>
+                    {t('common.cancel')}
+                  </Button>
+                </div>
+              </form>
             </div>
           )}
         </div>
@@ -533,9 +618,9 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                       />
                       {t('orders.detail.noteCustomerVisible')}
                     </label>
-                    <button type="submit" className="bb-btn bb-btn-primary bb-btn-sm" disabled={submittingNote || !noteContent.trim()}>
+                    <Button type="submit" size="sm" disabled={submittingNote || !noteContent.trim()}>
                       {submittingNote ? t('orders.detail.savingShort') : t('orders.detail.submitNote')}
-                    </button>
+                    </Button>
                   </div>
                 </form>
               )}
@@ -551,9 +636,9 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
               ) : auditQuery.isError ? (
                 <div className="flex items-center gap-3 flex-wrap">
                   <p className="bb-muted m-0">{t('orders.audit.error')}</p>
-                  <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={() => auditQuery.refetch()}>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => auditQuery.refetch()}>
                     {t('common.retry')}
-                  </button>
+                  </Button>
                 </div>
               ) : (auditQuery.data ?? []).length === 0 ? (
                 <p className="bb-muted">{t('orders.audit.empty')}</p>
@@ -568,7 +653,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                         <span className="bb-muted">{entry.createdAt ? formatDateTime(entry.createdAt) : ''}</span>
                       </div>
                       <div className="bb-list-meta">
-                        {entry.actorType}{entry.ipAddress ? ` · ${entry.ipAddress}` : ''}
+                        {t(`orders.audit.actor.${entry.actorType}`, { defaultValue: entry.actorType })}{entry.ipAddress ? ` · ${entry.ipAddress}` : ''}
                       </div>
                     </li>
                   ))}
@@ -638,82 +723,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     </>
                   )}
                 </dl>
-
-                {canUpdate && (
-                  <div className="mt-3">
-                    <div className="bb-detail-actions">
-                      {(order.fulfillmentStatus == null || order.fulfillmentStatus === 'UNFULFILLED') && (
-                        <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" disabled={fulfillmentSaving}
-                          onClick={() => handleFulfillmentUpdate('PROCESSING')}>
-                          {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffStartPreparing')}
-                        </button>
-                      )}
-                      {order.fulfillmentStatus === 'PROCESSING' && (
-                        <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" disabled={fulfillmentSaving}
-                          onClick={() => setShowShipForm((p) => !p)}>
-                          {t('orders.detail.ffMarkShipped')}
-                        </button>
-                      )}
-                      {order.fulfillmentStatus === 'SHIPPED' && (
-                        <button type="button" className="bb-btn bb-btn-primary bb-btn-sm" disabled={fulfillmentSaving}
-                          onClick={() => handleFulfillmentUpdate('DELIVERED')}>
-                          {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffMarkDelivered')}
-                        </button>
-                      )}
-                    </div>
-                    {showShipForm && (
-                      <form
-                        className="bb-detail-form"
-                        onSubmit={(e) => { e.preventDefault(); handleFulfillmentUpdate('SHIPPED') }}
-                      >
-                        <div className="flex flex-col gap-1">
-                          <label htmlFor="ship-tracking-input" className="text-sm font-medium">
-                            {t('orders.detail.trackingLabel')} *
-                          </label>
-                          <p className="text-xs text-muted-foreground">
-                            <span className="text-danger" aria-hidden="true">*</span> {t('common.requiredLegend', { defaultValue: 'Bắt buộc' })}
-                          </p>
-                          <Input
-                            id="ship-tracking-input"
-                            type="text"
-                            placeholder={t('orders.detail.trackingPlaceholder')}
-                            value={trackingNumber}
-                            onChange={(e) => { setTrackingNumber(e.target.value); if (trackingError) setTrackingError('') }}
-                            onBlur={() => { if (!trackingNumber.trim()) setTrackingError(t('orders.detail.trackingRequiredError')) }}
-                            disabled={fulfillmentSaving}
-                            required
-                            aria-invalid={trackingError ? true : undefined}
-                            aria-describedby={trackingError ? 'ship-tracking-error' : undefined}
-                          />
-                        </div>
-                        {trackingError ? (
-                          <p id="ship-tracking-error" role="alert" className="bb-error-inline">
-                            <AlertCircle size={13} aria-hidden="true" />
-                            {trackingError}
-                          </p>
-                        ) : (
-                          <p className="bb-muted text-xs">{t('orders.detail.trackingHint')}</p>
-                        )}
-                        <Input
-                          type="text"
-                          placeholder={t('orders.detail.carrierPlaceholder')}
-                          value={shippingCarrier}
-                          onChange={(e) => setShippingCarrier(e.target.value)}
-                          disabled={fulfillmentSaving}
-                        />
-                        <div className="bb-detail-form-actions">
-                          <button type="submit" className="bb-btn bb-btn-primary bb-btn-sm" disabled={fulfillmentSaving}>
-                            {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffConfirmShip')}
-                          </button>
-                          <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" disabled={fulfillmentSaving}
-                            onClick={() => { setShowShipForm(false); setTrackingNumber(''); setShippingCarrier(''); setTrackingError('') }}>
-                            {t('common.cancel')}
-                          </button>
-                        </div>
-                      </form>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
           )}

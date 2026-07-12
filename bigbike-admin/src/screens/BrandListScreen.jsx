@@ -12,6 +12,7 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { AdminTable } from '../components/AdminTable'
+import { Button } from '@/components/ui/button'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { FilterChips } from '../components/FilterChips'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
@@ -192,6 +193,52 @@ export function BrandListScreen({ navigate, canUpdate }) {
     else toast.warning(summary)
   }
 
+  // ── Bulk khôi phục / xóa vĩnh viễn (khi đang xem Thùng rác) ─────────────
+  // Bọc API single-item sẵn có (restoreBrand / permanentDeleteBrand) qua
+  // Promise.allSettled — cùng khuôn với runBulkVisibility, không đổi backend.
+  async function runBulkTrash(action) {
+    if (!canUpdate || bulkProgress) return
+    const byId = new Map(items.map((b) => [b.id, b]))
+    const ids = selectedIds.filter((id) => byId.has(id))
+    if (ids.length === 0) return
+
+    if (action === 'permanentDelete') {
+      const ok = await showConfirm(
+        t('brands.bulkPermanentDeleteConfirm', { count: ids.length, defaultValue: `Xóa vĩnh viễn {{count}} thương hiệu đã chọn? Thao tác này không thể hoàn tác.` }),
+        t('brands.bulkPermanentDeleteTitle', { defaultValue: 'Xóa vĩnh viễn các thương hiệu đã chọn?' }),
+        { variant: 'danger', confirmLabel: t('common.permanentDelete') },
+      )
+      if (!ok) return
+    }
+
+    const apiFn = action === 'restore' ? restoreBrand : permanentDeleteBrand
+    setBulkProgress({ done: 0, total: ids.length })
+    let success = 0
+    let failed = 0
+    await Promise.allSettled(
+      ids.map((id) =>
+        apiFn(id)
+          .then(() => { success += 1 })
+          .catch((err) => {
+            failed += 1
+            const brand = byId.get(id)
+            toast.error(`${brand?.name || id}: ${err.message || t('common.error')}`)
+          })
+          .finally(() => {
+            setBulkProgress((prev) => ({ done: (prev?.done ?? 0) + 1, total: ids.length }))
+          })
+      )
+    )
+    setBulkProgress(null)
+    setSelectedIds([])
+    queryClient.invalidateQueries({ queryKey: ['brands'] })
+    if (action === 'permanentDelete') queryClient.invalidateQueries({ queryKey: ['products'] })
+    const summary = t('brands.bulkResult', { success, failed, defaultValue: `Đã cập nhật {{success}} thương hiệu, {{failed}} lỗi.` })
+    if (failed === 0) toast.success(summary)
+    else if (success === 0) toast.error(summary)
+    else toast.warning(summary)
+  }
+
   const handleSoftDelete = async (brand) => {
     const confirmed = await showConfirm(
       t('brands.deleteConfirm', { name: brand.name, defaultValue: `Bạn có chắc chắn muốn xóa thương hiệu ${brand.name}? Các sản phẩm của thương hiệu này sẽ bị hủy liên kết.` }),
@@ -285,6 +332,46 @@ export function BrandListScreen({ navigate, canUpdate }) {
     })
   }
 
+  // Nút thao tác dòng — dùng chung cho cột "actions" (desktop) và thẻ mobile,
+  // để điện thoại có đủ hành động nhanh như bảng (P2-2).
+  const renderRowActions = (brand) => {
+    const isTrashed = !brand.isVisible
+    return (
+      <>
+        {!isTrashed && (
+          <button type="button" className="bb-icon-btn" title={t('common.edit')} aria-label={t('common.edit')} onClick={() => navigate(`/admin/brands/${brand.id}`)}>
+            <Pencil size={14} />
+          </button>
+        )}
+        {canUpdate && !isTrashed && (
+          <button type="button" className="bb-icon-btn" title={t('brands.duplicate')} aria-label={t('brands.duplicate')} onClick={() => handleDuplicate(brand)}>
+            <Copy size={14} />
+          </button>
+        )}
+        {canUpdate && !isTrashed && (
+          <button type="button" className="bb-icon-btn" title={brand.isVisible ? t('brands.hideAction') : t('brands.showAction')} aria-label={brand.isVisible ? t('brands.hideAction') : t('brands.showAction')} disabled={toggleVisibilityMutation.isPending && togglingVisibilityId === brand.id} onClick={() => handleToggleVisibility(brand)}>
+            {brand.isVisible ? <EyeOff size={14} /> : <Eye size={14} />}
+          </button>
+        )}
+        {canUpdate && !isTrashed && (
+          <button type="button" className="bb-icon-btn danger" title={t('common.delete')} aria-label={t('common.delete')} onClick={() => handleSoftDelete(brand)}>
+            <Trash2 size={14} />
+          </button>
+        )}
+        {canUpdate && isTrashed && (
+          <>
+            <button type="button" className="bb-icon-btn" title={t('products.restore')} aria-label={t('products.restore')} onClick={() => handleRestore(brand)}>
+              <Undo2 size={14} />
+            </button>
+            <button type="button" className="bb-icon-btn danger" title={t('common.permanentDelete')} aria-label={t('common.permanentDelete')} onClick={() => handlePermanentDelete(brand)}>
+              <Trash2 size={14} />
+            </button>
+          </>
+        )}
+      </>
+    )
+  }
+
   const columns = [
     {
       key: 'brand',
@@ -332,82 +419,11 @@ export function BrandListScreen({ navigate, canUpdate }) {
       key: 'actions',
       label: '',
       align: 'right',
-      render: (brand) => {
-        const isTrashed = !brand.isVisible
-        return (
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
-            {!isTrashed && (
-              <button
-                type="button"
-                className="bb-icon-btn"
-                title={t('common.edit')}
-                aria-label={t('common.edit')}
-                onClick={() => navigate(`/admin/brands/${brand.id}`)}
-              >
-                <Pencil size={14} />
-              </button>
-            )}
-            {/* F11: Nhân bản — song song với nút tương tự trên Sản phẩm/Danh mục. */}
-            {canUpdate && !isTrashed && (
-              <button
-                type="button"
-                className="bb-icon-btn"
-                title={t('brands.duplicate')}
-                aria-label={t('brands.duplicate')}
-                onClick={() => handleDuplicate(brand)}
-              >
-                <Copy size={14} />
-              </button>
-            )}
-            {/* O4: toggle nhanh Hiển thị/Ẩn ngay trên bảng, không cần mở trang chi tiết. */}
-            {canUpdate && !isTrashed && (
-              <button
-                type="button"
-                className="bb-icon-btn"
-                title={brand.isVisible ? t('brands.hideAction') : t('brands.showAction')}
-                aria-label={brand.isVisible ? t('brands.hideAction') : t('brands.showAction')}
-                disabled={toggleVisibilityMutation.isPending && togglingVisibilityId === brand.id}
-                onClick={() => handleToggleVisibility(brand)}
-              >
-                {brand.isVisible ? <EyeOff size={14} /> : <Eye size={14} />}
-              </button>
-            )}
-            {canUpdate && !isTrashed && (
-              <button
-                type="button"
-                className="bb-icon-btn danger"
-                title={t('common.delete')}
-                aria-label={t('common.delete')}
-                onClick={() => handleSoftDelete(brand)}
-              >
-                <Trash2 size={14} />
-              </button>
-            )}
-            {canUpdate && isTrashed && (
-              <>
-                <button
-                  type="button"
-                  className="bb-icon-btn"
-                  title={t('products.restore')}
-                  aria-label={t('products.restore')}
-                  onClick={() => handleRestore(brand)}
-                >
-                  <Undo2 size={14} />
-                </button>
-                <button
-                  type="button"
-                  className="bb-icon-btn danger"
-                  title={t('common.permanentDelete')}
-                  aria-label={t('common.permanentDelete')}
-                  onClick={() => handlePermanentDelete(brand)}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </>
-            )}
-          </div>
-        )
-      },
+      render: (brand) => (
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
+          {renderRowActions(brand)}
+        </div>
+      ),
     },
   ]
 
@@ -423,6 +439,8 @@ export function BrandListScreen({ navigate, canUpdate }) {
       { label: t('brands.colUpdated'), value: formatDateTime(brand.updatedAt) },
     ],
     onClick: () => navigate(`/admin/brands/${brand.id}`),
+    // P2-2: hành động nhanh trên thẻ mobile (edit không cần canUpdate; nút trash cần canUpdate).
+    actions: (brand.isVisible || canUpdate) ? renderRowActions(brand) : undefined,
   })
 
   return (
@@ -434,14 +452,13 @@ export function BrandListScreen({ navigate, canUpdate }) {
           <p className="bb-muted">{t('brands.description')}</p>
         </div>
         <div className="bb-screen-actions">
-          <button
+          <Button
             type="button"
-            className="bb-btn bb-btn-primary"
             onClick={() => navigate('/admin/brands/new')}
             disabled={!canUpdate}
           >
             <Plus size={14} />{canUpdate ? t('brands.create') : t('common.noPermission')}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -501,19 +518,33 @@ export function BrandListScreen({ navigate, canUpdate }) {
           : null}
         onClear={() => setSelectedIds([])}
         closeLabel={t('common.deselect', { defaultValue: 'Bỏ chọn' })}
-        actions={[
-          {
-            label: t('brands.bulkShow', { defaultValue: 'Hiện các thương hiệu đã chọn' }),
-            onClick: () => runBulkVisibility(true),
-            disabled: Boolean(bulkProgress),
-          },
-          {
-            label: t('brands.bulkHide', { defaultValue: 'Ẩn các thương hiệu đã chọn' }),
-            tone: 'danger',
-            onClick: () => runBulkVisibility(false),
-            disabled: Boolean(bulkProgress),
-          },
-        ]}
+        actions={query.visibility === 'HIDDEN'
+          ? [
+            {
+              label: t('products.restore'),
+              onClick: () => runBulkTrash('restore'),
+              disabled: Boolean(bulkProgress),
+            },
+            {
+              label: t('common.permanentDelete'),
+              tone: 'danger',
+              onClick: () => runBulkTrash('permanentDelete'),
+              disabled: Boolean(bulkProgress),
+            },
+          ]
+          : [
+            {
+              label: t('brands.bulkShow', { defaultValue: 'Hiện các thương hiệu đã chọn' }),
+              onClick: () => runBulkVisibility(true),
+              disabled: Boolean(bulkProgress),
+            },
+            {
+              label: t('brands.bulkHide', { defaultValue: 'Ẩn các thương hiệu đã chọn' }),
+              tone: 'danger',
+              onClick: () => runBulkVisibility(false),
+              disabled: Boolean(bulkProgress),
+            },
+          ]}
       />
 
       {state.status === 'error' ? (

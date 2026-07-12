@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { X } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -28,7 +29,7 @@ export function MobileFilterDrawer({ query, searchInput, onSearch, setSearchInpu
       <div className="audit-mobile-filter-sheet">
         <div className="audit-mobile-filter-header">
           <strong>{t('auditLog.mobileFilterLabel')}</strong>
-          <Button variant="outline" size="icon" onClick={onClose} aria-label={t('auditLog.drawerClose')}>✕</Button>
+          <Button variant="outline" size="icon" onClick={onClose} aria-label={t('auditLog.drawerClose')}><X size={16} aria-hidden="true" /></Button>
         </div>
         <div className="audit-mobile-filter-body">
           <label>

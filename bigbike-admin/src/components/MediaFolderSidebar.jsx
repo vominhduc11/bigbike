@@ -10,6 +10,7 @@ import {
   updateMediaFolder,
 } from '../lib/adminApi'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
 /**
  * Left-rail sidebar with three sections:
@@ -178,14 +179,20 @@ export function MediaFolderSidebar({
 }
 
 function FolderInput({ defaultValue = '', placeholder, onSubmit, onCancel }) {
+  const { t } = useTranslation()
   const [value, setValue] = useState(defaultValue)
+  // Explicit Lưu/Huỷ so a rename isn't lost by clicking away, and doesn't require
+  // discovering that Enter saves. Escape still cancels for keyboard users.
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(value) }}
       className="mediafolder-edit-form">
       <Input autoFocus type="text" value={value} onChange={(e) => setValue(e.target.value)}
-        onBlur={() => { if (!value.trim()) onCancel() }}
         onKeyDown={(e) => { if (e.key === 'Escape') onCancel() }} placeholder={placeholder}
-        className="text-xs py-1 px-2"  />
+        className="text-xs py-1 px-2" />
+      <div className="flex items-center gap-1.5 mt-1.5">
+        <Button type="submit" size="sm" disabled={!value.trim()}>{t('common.save')}</Button>
+        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>{t('common.cancel')}</Button>
+      </div>
     </form>
   )
 }

@@ -163,6 +163,8 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     setUploadQueue((q) => [...q, ...queue])
 
     // Sequential upload to keep server happy and progress trackable
+    let succeeded = 0
+    let failed = 0
     for (const item of queue) {
       setUploadQueue((q) => q.map((u) => u.id === item.id ? { ...u, status: 'uploading' } : u))
       try {
@@ -170,14 +172,20 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           setUploadQueue((q) => q.map((u) => u.id === item.id ? { ...u, progress: pct } : u))
         })
         setUploadQueue((q) => q.map((u) => u.id === item.id ? { ...u, status: 'done', progress: 100 } : u))
+        succeeded += 1
       } catch (err) {
         setUploadQueue((q) => q.map((u) => u.id === item.id ? { ...u, status: 'error', error: err.message } : u))
-        toast.error(t('media.uploadError') + ': ' + (err.message || ''))
+        failed += 1
       }
     }
     // Refresh list once everyone done
     setQuery((p) => ({ ...p }))
-    toast.success(t('media.uploadComplete', { count: queue.length }))
+    // Báo đúng số thành công / lỗi thay vì luôn "hoàn tất N" kể cả khi có lỗi (P1-12).
+    if (failed === 0) {
+      toast.success(t('media.uploadComplete', { count: succeeded }))
+    } else {
+      toast.warning(t('media.uploadPartial', { ok: succeeded, fail: failed, defaultValue: 'Lên {{ok}} tệp, {{fail}} lỗi.' }))
+    }
     // Auto-clear successful uploads after 3s
     setTimeout(() => setUploadQueue((q) => q.filter((u) => u.status !== 'done')), 3000)
   }
@@ -413,10 +421,10 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
             <>
               <input ref={fileInputRef} type="file" multiple accept={ALLOWED_MIME.join(',')}
                 className="hidden" onChange={handleFileChange} />
-              <button type="button" className="bb-btn bb-btn-primary" onClick={() => fileInputRef.current?.click()}>
+              <Button type="button" onClick={() => fileInputRef.current?.click()}>
                 <Upload size={14} />
                 {t('common.upload')}
-              </button>
+              </Button>
             </>
           )}
         </div>

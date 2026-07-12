@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { normalizePublishStatus, normalizeStockState } from '../lib/contracts'
-import { ORDER_STATUS_TONE, PAYMENT_STATUS_TONE, toneFromPublish, toneFromStock } from '../lib/statusTone'
+import { ORDER_STATUS_TONE, PAYMENT_STATUS_TONE, CUSTOMER_STATUS_TONE, FULFILLMENT_STATUS_TONE, toneFromPublish, toneFromStock } from '../lib/statusTone'
 
 function Badge({ tone = 'muted', className, children }) {
   return (
@@ -26,6 +26,12 @@ export function StatusBadge({ status, type = 'order', className }) {
     const key = status ? 'VISIBLE' : 'HIDDEN'
     tone = key === 'VISIBLE' ? 'success' : 'neutral'
     label = key === 'VISIBLE' ? t('common.visible') : t('common.hidden')
+  } else if (type === 'customer') {
+    tone = CUSTOMER_STATUS_TONE[status] ?? 'muted'
+    label = t(`status.customer.${status}`, { defaultValue: status })
+  } else if (type === 'fulfillment') {
+    tone = FULFILLMENT_STATUS_TONE[status] ?? 'muted'
+    label = t(`status.fulfillment.${status}`, { defaultValue: status })
   }
 
   return <Badge tone={tone} className={className}>{label}</Badge>

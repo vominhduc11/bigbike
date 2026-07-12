@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { Shield, Pencil, Check, AlertTriangle, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from './Badge'
 import { PermGroup } from './PermGroup'
 import { RoleSummaryCard } from './RoleSummaryCard'
@@ -9,9 +11,10 @@ import { buildCatalogHelpers, getRoleDisplayName } from './constants'
 
 export function RoleDetail({
   role, canUpdate, editMode, draft, isDirty, saving, catalog,
-  onStartEdit, onCancelEdit, onRequestSave, onToggle, onDeleteRole,
+  onStartEdit, onCancelEdit, onRequestSave, onToggle, onToggleGroup, onDeleteRole,
 }) {
   const { t } = useTranslation()
+  const [showCodes, setShowCodes] = useState(false)
   const isSuperAdmin = role.id === 'SUPER_ADMIN'
   const activePerms = (editMode && draft) ? draft : new Set(role.permissions)
   const { knownKeys: KNOWN_PERM_KEYS, sensitiveKeys: SENSITIVE_PERMS } = buildCatalogHelpers(catalog)
@@ -97,6 +100,14 @@ export function RoleDetail({
         </div>
       )}
 
+      {/* Hiện/ẩn mã kỹ thuật (P2-7) — mặc định ẩn để bảng quyền bớt nhiễu */}
+      {!isSuperAdmin && (
+        <label className="flex items-center justify-end gap-2 mb-2 text-xs text-muted-foreground cursor-pointer">
+          <Checkbox checked={showCodes} onCheckedChange={(c) => setShowCodes(c === true)} className="w-3.5 h-3.5" />
+          {t('roles.showPermCodes', { defaultValue: 'Hiện mã kỹ thuật' })}
+        </label>
+      )}
+
       {/* Permission groups */}
       {catalog.map(group => (
         <PermGroup
@@ -105,6 +116,8 @@ export function RoleDetail({
           activePerms={activePerms}
           editMode={editMode}
           onToggle={onToggle}
+          onBulk={onToggleGroup}
+          showCodes={showCodes}
           isSuperAdmin={isSuperAdmin}
         />
       ))}

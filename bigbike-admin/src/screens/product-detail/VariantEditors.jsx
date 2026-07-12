@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
-import { ChevronDown, ChevronUp, Copy, ImageIcon, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Copy, ImageIcon, MoreHorizontal, Pencil, Plus, Trash2, X } from 'lucide-react'
 import {
   createAttribute,
   createAttributeValue,
@@ -78,6 +78,19 @@ function deriveVariantName(options) {
     .filter((o) => (o.value || '').trim())
     .map((o) => o.value.trim())
     .join(' - ')
+}
+
+// Turn an attribute value into an ASCII SKU token: strip Vietnamese diacritics,
+// đ→d, drop non-alphanumerics, uppercase. "Đen" → "DEN", "Size M" → "SIZEM".
+// Used by the matrix wizard to auto-fill SKUs from a shared prefix so the owner
+// no longer has to type a code on every generated row (audit P0-4).
+function skuToken(value) {
+  return (value || '')
+    .normalize('NFD')
+    .replace(/[đ]/g, 'd')
+    .replace(/[Đ]/g, 'D')
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toUpperCase()
 }
 
 // Rename an attribute's display name. The code/key stays immutable (shown
@@ -635,7 +648,7 @@ function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled, conte
         disabled={disabled}
         aria-label={t('products.detail.variant.removeOption')}
       >
-        ✕
+        <X size={14} aria-hidden="true" />
       </Button>
     </div>
   )
@@ -1481,6 +1494,11 @@ export function VariantMatrixWizard({ onGenerate, onClose }) {
     { name: t('products.detail.matrix.defaultColor'), values: '' },
     { name: t('products.detail.matrix.defaultSize'), values: '' },
   ])
+  // Optional smart-defaults applied to every generated variant so the owner doesn't have
+  // to type a SKU / price on each row afterwards (audit P0-4). Both opt-in: leave blank to
+  // keep the old behaviour (empty sku/price).
+  const [skuPrefix, setSkuPrefix] = useState('')
+  const [sharedPrice, setSharedPrice] = useState('')
 
   function updateAttr(i, field, value) {
     setAttributes((prev) => prev.map((a, idx) => idx === i ? { ...a, [field]: value } : a))
@@ -1511,17 +1529,23 @@ export function VariantMatrixWizard({ onGenerate, onClose }) {
     if (!parsed.length) return
     if (estimatedCount > MATRIX_HARD_CAP) return
     const combos = cartesian(parsed.map((a) => a.values.map((v) => ({ name: a.name, value: v }))))
-    const newVariants = combos.map((combo) => ({
-      _key: generateId(),
-      id: '',
-      sku: '',
-      name: deriveVariantName(combo),
-      retailPrice: '',
-      salePrice: '',
-      isAvailable: true,
-      options: combo.map((o) => ({ name: o.name, value: o.value })),
-      gallery: [],
-    }))
+    const prefix = skuPrefix.trim()
+    const price = sharedPrice.replace(/\D/g, '')
+    const newVariants = combos.map((combo) => {
+      const tokens = combo.map((o) => skuToken(o.value)).filter(Boolean)
+      return {
+        _key: generateId(),
+        id: '',
+        // Auto-fill SKU only when a prefix is given; else keep old empty behaviour.
+        sku: prefix ? [prefix, ...tokens].join('-').slice(0, 100) : '',
+        name: deriveVariantName(combo),
+        retailPrice: price,
+        salePrice: '',
+        isAvailable: true,
+        options: combo.map((o) => ({ name: o.name, value: o.value })),
+        gallery: [],
+      }
+    })
     onGenerate(newVariants)
     onClose()
   }
@@ -1579,7 +1603,7 @@ export function VariantMatrixWizard({ onGenerate, onClose }) {
                 disabled={attributes.length <= 1}
                 aria-label={t('products.detail.variant.removeOption')}
               >
-                ✕
+                <X size={16} aria-hidden="true" />
               </Button>
             </div>
             <p className="text-xs text-muted-foreground ml-0">
@@ -1602,6 +1626,55 @@ export function VariantMatrixWizard({ onGenerate, onClose }) {
       >
         + {t('products.detail.variant.addOption')}
       </Button>
+
+      {/* Điền sẵn (tùy chọn): mã hàng + giá — để không phải gõ tay từng biến thể (P0-4) */}
+      <div className="mt-4 rounded-[var(--admin-radius-control)] border border-border bg-muted/40 p-3">
+        <p className="text-sm font-medium mb-2">
+          {t('products.detail.matrix.smartFillTitle', { defaultValue: 'Điền sẵn cho tất cả biến thể (tùy chọn)' })}
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground">
+              {t('products.detail.matrix.skuPrefixLabel', { defaultValue: 'Tiền tố mã hàng' })}
+            </label>
+            <Input
+              value={skuPrefix}
+              onChange={(e) => setSkuPrefix(e.target.value)}
+              placeholder={t('products.detail.matrix.skuPrefixPlaceholder', { defaultValue: 'vd: AGV-K1S' })}
+              className="font-mono"
+              maxLength={80}
+            />
+            {skuPrefix.trim() && parsed.length > 0 ? (
+              <p className="text-xs text-muted-foreground">
+                {t('products.detail.matrix.skuSamplePreview', {
+                  defaultValue: 'Ví dụ mã: {{sku}}',
+                  sku: [skuPrefix.trim(), ...parsed.map((a) => skuToken(a.values[0])).filter(Boolean)].join('-'),
+                })}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                {t('products.detail.matrix.skuPrefixHelp', { defaultValue: 'Tự tạo mã hàng theo mẫu: tiền tố + giá trị thuộc tính. Để trống nếu muốn tự nhập sau.' })}
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground">
+              {t('products.detail.matrix.sharedPriceLabel', { defaultValue: 'Giá bán chung' })}
+            </label>
+            <Input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={formatPrice(sharedPrice)}
+              onChange={(e) => setSharedPrice(e.target.value.replace(/\D/g, ''))}
+              placeholder={t('products.detail.matrix.sharedPricePlaceholder', { defaultValue: 'vd: 5.900.000' })}
+            />
+            <p className="text-xs text-muted-foreground">
+              {t('products.detail.matrix.sharedPriceHelp', { defaultValue: 'Áp cùng một giá cho mọi biến thể (sửa từng dòng sau nếu cần). Để trống nếu giá khác nhau.' })}
+            </p>
+          </div>
+        </div>
+      </div>
 
       {estimatedCount > 0 && (
         <p className={`text-sm mt-3 ${estimatedCount > MATRIX_HARD_CAP ? 'text-danger font-medium' : estimatedCount > 50 ? 'text-warning font-medium' : 'text-muted-foreground'}`}>

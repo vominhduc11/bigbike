@@ -104,6 +104,7 @@ export function AssignmentBanner({ t }) {
 // title and a danger-coloured error count on the right when a contained section fails
 // validation. Children are unmounted while collapsed to keep the form light.
 export function CollapsibleGroup({ title, hint, open, onToggle, errorCount = 0, children }) {
+  const { t } = useTranslation()
   const panelId = useId()
   return (
     <section className="bb-section-group">
@@ -125,8 +126,8 @@ export function CollapsibleGroup({ title, hint, open, onToggle, errorCount = 0, 
         )}
         {errorCount > 0 && (
           <span className="bb-section-group-error">
-            <span aria-hidden="true">{errorCount} lỗi</span>
-            <span className="sr-only">{errorCount} lỗi cần sửa</span>
+            <span aria-hidden="true">{t('products.detail.groupErrorCount', { count: errorCount, defaultValue: '{{count}} lỗi' })}</span>
+            <span className="sr-only">{t('products.detail.groupErrorCountFull', { count: errorCount, defaultValue: '{{count}} lỗi cần sửa' })}</span>
           </span>
         )}
       </button>

@@ -16,6 +16,7 @@ import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { RecentItemsChips } from '../components/RecentItemsChips'
 import { AdminTable } from '../components/AdminTable'
 import { PublishStatusBadge } from '../components/StatusBadge'
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { publishRowAccent } from '../lib/statusTone'
 import { showConfirm } from '../lib/confirm'
 import { ApiClientError, exportProductImportTemplate, exportProductsCsv, fetchBrands, fetchCategoryTree, fetchProductDetail, fetchProducts, publishProduct, restoreProduct, softDeleteProduct, permanentDeleteProduct } from '../lib/adminApi'
@@ -46,7 +47,6 @@ export function ProductListScreen({ navigate, canUpdate }) {
   const [deletingId, setDeletingId] = useState(null)
   const [restoringId, setRestoringId] = useState(null)
   const [togglingPublishId, setTogglingPublishId] = useState(null)
-  const [openMenu, setOpenMenu] = useState(null)
   const [selected, setSelected] = useState(() => new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
@@ -90,23 +90,6 @@ export function ProductListScreen({ navigate, canUpdate }) {
     setSelected(new Set())
     setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
-
-  useEffect(() => {
-    if (!openMenu) return
-    const onClick = (e) => {
-      if (!e.target.closest('.bb-row-menu') && !e.target.closest('[data-row-menu-trigger]')) setOpenMenu(null)
-    }
-    document.addEventListener('click', onClick)
-    return () => document.removeEventListener('click', onClick)
-  }, [openMenu])
-
-  // Functional update (not reading `openMenu` from closure) + useCallback([]) so this
-  // handler's identity stays stable across renders instead of changing on every
-  // openMenu toggle.
-  const handleToggleMenu = useCallback((id) => {
-    setOpenMenu((prev) => (prev === id ? null : id))
-  }, [])
-  const handleCloseMenu = useCallback(() => setOpenMenu(null), [])
 
   const handleDuplicate = useCallback(async (product) => {
     try {
@@ -491,64 +474,61 @@ export function ProductListScreen({ navigate, canUpdate }) {
         const isTrashed = product.publishStatus === 'TRASH'
         const isBusy = deletingId === product.id || restoringId === product.id
         const isPublished = product.publishStatus === 'PUBLISHED'
-        const isMenuOpen = openMenu === product.id
         const detailPath = `/admin/products/${product.id}`
         return (
-          <div onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
             <button type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => navigate(detailPath)}>
               <Pencil size={14} />
             </button>
-            <div style={{ position: 'relative', display: 'inline-block' }}>
+            {/* P1-1: bật/tắt xuất bản ngay trên dòng (1 chạm) — đồng bộ với Danh mục/Thương hiệu */}
+            {canUpdate && !isTrashed && (
               <button
                 type="button"
                 className="bb-icon-btn"
-                data-row-menu-trigger
-                title={t('common.actions')}
-                onClick={() => handleToggleMenu(product.id)}
+                disabled={togglingPublishId === product.id}
+                title={isPublished ? t('products.unpublishAction', { defaultValue: 'Chuyển về Nháp' }) : t('products.publishAction', { defaultValue: 'Xuất bản' })}
+                onClick={() => handleTogglePublish(product)}
               >
-                <MoreHorizontal size={15} />
+                {isPublished ? <EyeOff size={14} /> : <Eye size={14} />}
               </button>
-              {isMenuOpen && (
-                <div className="bb-row-menu">
-                  <button type="button" onClick={() => { handleCloseMenu(); navigate(detailPath) }}>
-                    <Pencil size={13} />{t('common.edit')}
-                  </button>
-                  <button type="button" onClick={() => { handleCloseMenu(); window.open(detailPath, '_blank', 'noopener') }}>
-                    <ExternalLink size={13} />{t('common.openInNewTab')}
-                  </button>
-                  {canUpdate && !isTrashed && (
-                    <button type="button" disabled={togglingPublishId === product.id} onClick={() => { handleCloseMenu(); handleTogglePublish(product) }}>
-                      {isPublished ? <EyeOff size={13} /> : <Eye size={13} />}
-                      {isPublished ? t('products.unpublishAction', { defaultValue: 'Chuyển về Nháp' }) : t('products.publishAction', { defaultValue: 'Xuất bản' })}
-                    </button>
-                  )}
-                  {canUpdate && (
-                    <button type="button" onClick={() => { handleCloseMenu(); handleDuplicate(product) }}>
-                      <Copy size={13} />{t('products.duplicate')}
-                    </button>
-                  )}
-                  {canUpdate && isTrashed && (
-                    <>
-                      <button type="button" disabled={isBusy} onClick={() => { handleCloseMenu(); handleRestore(product) }}>
-                        <Undo2 size={13} />{restoringId === product.id ? t('products.restoringLabel') : t('products.restore')}
-                      </button>
-                      <hr />
-                      <button type="button" className="danger" disabled={isBusy} onClick={() => { handleCloseMenu(); handlePermanentDelete(product) }}>
-                        <Trash2 size={13} />{t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' })}
-                      </button>
-                    </>
-                  )}
-                  {canUpdate && !isTrashed && (
-                    <>
-                      <hr />
-                      <button type="button" className="danger" disabled={isBusy} onClick={() => { handleCloseMenu(); handleDelete(product) }}>
-                        <Trash2 size={13} />{deletingId === product.id ? t('products.deletingLabel') : t('common.delete')}
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
+            )}
+            {/* P1-2: menu chuẩn (Radix) — điều hướng bàn phím, Escape đóng, quản lý focus */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button type="button" className="bb-icon-btn" title={t('common.actions')}>
+                  <MoreHorizontal size={15} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => window.open(detailPath, '_blank', 'noopener')}>
+                  <ExternalLink size={13} className="mr-2" />{t('common.openInNewTab')}
+                </DropdownMenuItem>
+                {canUpdate && (
+                  <DropdownMenuItem onSelect={() => handleDuplicate(product)}>
+                    <Copy size={13} className="mr-2" />{t('products.duplicate')}
+                  </DropdownMenuItem>
+                )}
+                {canUpdate && isTrashed && (
+                  <>
+                    <DropdownMenuItem disabled={isBusy} onSelect={() => handleRestore(product)}>
+                      <Undo2 size={13} className="mr-2" />{restoringId === product.id ? t('products.restoringLabel') : t('products.restore')}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem disabled={isBusy} onSelect={() => handlePermanentDelete(product)} className="text-danger focus:text-danger">
+                      <Trash2 size={13} className="mr-2" />{t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' })}
+                    </DropdownMenuItem>
+                  </>
+                )}
+                {canUpdate && !isTrashed && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem disabled={isBusy} onSelect={() => handleDelete(product)} className="text-danger focus:text-danger">
+                      <Trash2 size={13} className="mr-2" />{deletingId === product.id ? t('products.deletingLabel') : t('common.delete')}
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )
       },
@@ -707,26 +687,25 @@ export function ProductListScreen({ navigate, canUpdate }) {
               toast.success(t('export.success'))
             }}
           >
-            {t('common.exportJson', { defaultValue: 'Xuất JSON' })}
+            {t('products.exportTemplate', { defaultValue: 'Tải mẫu nhập sản phẩm' })}
           </ExportButton>
-          <button
+          <Button
             type="button"
-            className="bb-btn bb-btn-secondary"
+            variant="secondary"
             onClick={() => setImportOpen(true)}
             disabled={!canUpdate}
             title={!canUpdate ? t('products.requirePermission') : undefined}
           >
             {t('products.importFromFile')}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="bb-btn bb-btn-primary"
             onClick={() => navigate('/admin/products/new')}
             disabled={!canUpdate}
             title={!canUpdate ? t('products.requirePermission') : undefined}
           >
             <Plus size={14} />{canUpdate ? t('products.create') : t('common.noPermission')}
-          </button>
+          </Button>
         </div>
       </div>
 

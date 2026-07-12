@@ -1214,15 +1214,9 @@ a {
 }
 
 .gallery-thumb-status {
-  font-size: 24px;
   color: var(--admin-color-text-muted);
   user-select: none;
-}
-
-.gallery-thumb-error {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--admin-color-status-danger-text);
+  display: inline-flex;
 }
 
 .gallery-card-remove {
@@ -1880,25 +1874,6 @@ a {
 
 .skel-row td { padding: var(--admin-space-3); }
 
-/* ─── Draft recovery banner ─────────────────────────────────────────────────*/
-.draft-recovery-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--admin-space-3);
-  padding: var(--admin-space-3) var(--admin-space-4);
-  background: var(--admin-color-status-warning-bg);
-  border: 1px solid var(--admin-color-status-warning-border);
-  border-radius: var(--admin-radius-md);
-  margin-bottom: var(--admin-space-4);
-  font-size: var(--admin-text-sm);
-  color: var(--admin-color-status-warning-text);
-}
-.draft-recovery-actions {
-  display: flex;
-  gap: var(--admin-space-2);
-  flex-shrink: 0;
-}
 @keyframes modalIn {
   from { opacity: 0; transform: translateY(8px) scale(0.97); }
   to   { opacity: 1; transform: none; }
@@ -2633,15 +2608,6 @@ a {
   color: var(--admin-color-text-muted);
 }
 
-.au-field-row {
-  display: flex;
-  gap: var(--admin-space-2);
-  align-items: center;
-}
-.au-field-row input {
-  flex: 1;
-  min-width: 0;
-}
 
 /* ── Drawer subsections ──────────────────────────────────────────────────── */
 .au-drawer-section {

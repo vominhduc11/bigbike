@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Award, BadgeCheck, Clock, CreditCard, Gift, Headphones, MapPin, Package, RefreshCw, ShieldCheck, Truck, Wrench,
+  Award, BadgeCheck, Clock, CreditCard, Gift, Headphones, MapPin, Package, RefreshCw, ShieldCheck, Truck, Wrench, X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -114,7 +114,7 @@ export function CommitmentEditor({ items, onChange, disabled, contentLang = 'vi'
             disabled={disabled || isEn}
             aria-label={t('products.detail.commitments.removeRow')}
           >
-            ✕
+            <X size={14} aria-hidden="true" />
           </Button>
         </div>
         )}
@@ -221,7 +221,7 @@ export function TrustBadgesEditor({ disabled, html = '', onHtmlChange }) {
                 disabled={disabled}
                 aria-label={t('products.detail.trustBadges.remove', { defaultValue: 'Xóa nhãn' })}
               >
-                ✕
+                <X size={14} aria-hidden="true" />
               </Button>
             </div>
           )}
@@ -365,7 +365,7 @@ export function SpecStatEditor({ disabled, html = '', onHtmlChange }) {
             disabled={disabled}
             aria-label={t('products.detail.specStats.removeRow')}
           >
-            ✕
+            <X size={14} aria-hidden="true" />
           </Button>
         </div>
       )}

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
@@ -98,7 +98,7 @@ function SlotCard({ slotNumber, product, onProductChange, disabled }) {
               onClick={() => onProductChange(null)}
               aria-label={t('homeHighlights.clearSlot')}
             >
-              ✕
+              <X size={16} aria-hidden="true" />
             </button>
           )}
         </div>

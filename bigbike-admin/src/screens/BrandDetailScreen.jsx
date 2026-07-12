@@ -12,36 +12,25 @@ import {
 import { showConfirm } from '../lib/confirm'
 import { recordRecentItem } from '../lib/useRecentItems'
 import { formatDateTime } from '../lib/formatters'
+import { toSlug } from '../lib/slug'
 import { useContentLang } from '../lib/contentLang'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { clearNavGuard } from '@/lib/navigationGuard'
-import { Loader2, Save } from 'lucide-react'
+import { ArrowLeft, Loader2, Save } from 'lucide-react'
 
 import { createBrandSchema, zodErrors } from '../lib/schemas'
 import { StatePanel } from '../components/StatePanel'
 import { FormField } from '../components/layout/FormField'
 import { ImageUrlInput } from '../components/ImageUrlInput'
+import { SeoCard } from '../components/SeoCard'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { RichTextEditor } from '../components/RichTextEditor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 
 const STOREFRONT_BASE = `${import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn'}/brands`
 
-// Slugify cho gợi ý đường dẫn tiếng Anh (bỏ dấu, kebab-case). Khớp toSlug của CategoryDetailScreen.
-function toSlug(text) {
-  return String(text || '')
-    .toLowerCase()
-    .replace(/đ/g, 'd')
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/[^a-z0-9\s]/g, '')
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-}
 
 function buildEmptyForm() {
   return {
@@ -179,6 +168,10 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
   const [validationErrors, setValidationErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [enSlugManuallyEdited, setEnSlugManuallyEdited] = useState(false)
+  // Khi TẠO MỚI, gõ tên tự gợi ý đường dẫn (giống Danh mục) cho tới khi admin tự sửa
+  // đường dẫn. Chế độ SỬA không đụng slug hiện có (tránh đổi URL đã lập chỉ mục).
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
+  const [seoOpen, setSeoOpen] = useState(false)
 
   // F9: autosave / khôi phục bản nháp — cùng cơ chế localStorage với Sản phẩm/Nội dung.
   const autosaveKey = getAutosaveKey(brandId, isCreate)
@@ -328,6 +321,27 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     })
   }
 
+  // Chế độ tiếng Việt: gõ tên tự gợi ý đường dẫn (chỉ khi tạo mới & chưa sửa tay slug).
+  function handleNameChange(value) {
+    setForm((previous) => {
+      const next = { ...previous, name: value }
+      if (isCreate && !slugManuallyEdited) next.slug = toSlug(value)
+      return next
+    })
+    setValidationErrors((previous) => {
+      if (!previous.name && !previous.slug) return previous
+      const next = { ...previous }
+      delete next.name
+      delete next.slug
+      return next
+    })
+  }
+
+  function handleSlugChange(value) {
+    setSlugManuallyEdited(true)
+    updateField('slug', value)
+  }
+
   // Chế độ tiếng Anh: gõ tên EN tự gợi ý slug EN (khi chưa sửa tay); xoá để sửa tự do.
   function handleEnNameChange(value) {
     setForm((previous) => {
@@ -463,8 +477,9 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
             <a
               href="/admin/brands"
               onClick={(e) => { e.preventDefault(); navigate('/admin/brands') }}
+              className="inline-flex items-center gap-1"
             >
-              ← {t('brands.detail.backToList')}
+              <ArrowLeft size={14} aria-hidden="true" /> {t('brands.detail.backToList')}
             </a>
           </p>
           <h1>{isCreate ? t('brands.detail.createTitle') : t('brands.detail.editTitle')}</h1>
@@ -473,10 +488,10 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
         <div className="bb-screen-actions">
           {!isCreate && canUpdate && (
 
-            <button
+            <Button
               type="button"
-
-              className="bb-btn bb-btn-secondary bb-danger-action"
+              variant="secondary"
+              className="text-danger"
               disabled={isSubmitting}
               onClick={async () => {
                 const confirmed = await showConfirm(
@@ -490,17 +505,16 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
               }}
             >
               {t('brands.detail.hideBtn')}
-            </button>
+            </Button>
           )}
           {!isEnLang && (
             <span className="bb-muted text-xs">
               {t('brands.detail.formProgress', { filled: requiredFieldsFilled, total: requiredFieldsTotal })}
             </span>
           )}
-          <button
+          <Button
             type="submit"
             form="brand-form"
-            className="bb-btn bb-btn-primary"
             disabled={isReadOnly || !isDirty}
             aria-busy={isSubmitting || undefined}
           >
@@ -508,7 +522,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
             {isSubmitting
               ? t('common.saving')
               : isCreate ? t('brands.detail.createBtn') : t('brands.detail.saveBtn')}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -577,6 +591,19 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
             ) : null}
             <div className="bb-grid-2">
               <FormField
+                label={t('brands.detail.name').replace(/\s*\*\s*$/, '')}
+                required
+                error={isEnLang ? validationErrors['translations.en.name'] : validationErrors.name}
+              >
+                <Input
+                  value={isEnLang ? (form.translations?.en?.name ?? '') : form.name}
+                  onChange={(e) => isEnLang ? handleEnNameChange(e.target.value) : handleNameChange(e.target.value)}
+                  onBlur={() => handleFieldBlur(isEnLang ? 'translations.en.name' : 'name')}
+                  disabled={isReadOnly}
+                  placeholder={isEnLang ? t('brands.detail.namePlaceholderEn', { defaultValue: 'English name' }) : undefined}
+                />
+              </FormField>
+              <FormField
                 label={<>
                   {t('brands.detail.slug').replace(/\s*\*\s*$/, '')}
                   {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 8 }}>{t('brands.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
@@ -587,24 +614,11 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
               >
                 <Input
                   value={isEnLang ? (form.translations?.en?.slug ?? '') : form.slug}
-                  onChange={(e) => isEnLang ? handleEnSlugChange(e.target.value) : updateField('slug', e.target.value)}
+                  onChange={(e) => isEnLang ? handleEnSlugChange(e.target.value) : handleSlugChange(e.target.value)}
                   onBlur={() => handleFieldBlur(isEnLang ? 'translations.en.slug' : 'slug')}
                   disabled={isReadOnly}
                   placeholder={isEnLang ? t('brands.detail.slugPlaceholderEn', { defaultValue: 'english-url-slug' }) : undefined}
                   style={{ fontFamily: 'var(--admin-font-mono)' }} />
-              </FormField>
-              <FormField
-                label={t('brands.detail.name').replace(/\s*\*\s*$/, '')}
-                required
-                error={isEnLang ? validationErrors['translations.en.name'] : validationErrors.name}
-              >
-                <Input
-                  value={isEnLang ? (form.translations?.en?.name ?? '') : form.name}
-                  onChange={(e) => isEnLang ? handleEnNameChange(e.target.value) : updateField('name', e.target.value)}
-                  onBlur={() => handleFieldBlur(isEnLang ? 'translations.en.name' : 'name')}
-                  disabled={isReadOnly}
-                  placeholder={isEnLang ? t('brands.detail.namePlaceholderEn', { defaultValue: 'English name' }) : undefined}
-                />
               </FormField>
               <label
                 className="flex items-center gap-2 p-2 border border-border text-sm cursor-pointer hover:bg-muted w-fit"
@@ -672,101 +686,23 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
           )}
         </div>
 
-        {/* SEO — hiển thị trên Google & mạng xã hội */}
-        {(() => {
-          const seoTitleVal = isEnLang ? (form.translations?.en?.seoTitle ?? '') : form.seoTitle
-          const seoDescVal = isEnLang ? (form.translations?.en?.seoDescription ?? '') : form.seoDescription
-          const nameVal = isEnLang ? (form.translations?.en?.name ?? '') : form.name
-          const previewSlug = (isEnLang ? (form.translations?.en?.slug || form.slug) : form.slug) || 'duong-dan-thuong-hieu'
-          const previewUrl = form.seoCanonicalUrl.trim() || `${STOREFRONT_BASE}/${previewSlug}`
-          return (
-        <div className="bb-card">
-          <div className="bb-card-header">
-            <div>
-              <h2>{t('brands.detail.sectionSeo', { defaultValue: 'Hiển thị trên Google & mạng xã hội' })}</h2>
-              <p className="sub">{t('brands.detail.sectionSeoDesc', { defaultValue: 'Tinh chỉnh tiêu đề, mô tả và ảnh khi thương hiệu được tìm kiếm hoặc chia sẻ.' })}</p>
-            </div>
-          </div>
-          <div className="bb-card-body">
-            <div className="mb-4 rte-canvas-frame">
-              <div className="p-3 border border-border bg-white">
-                <div className="text-xs text-google-url mb-1">{t('brands.detail.seoPreviewLabel', { defaultValue: 'Xem thử trên Google' })}</div>
-                <div className="text-xs text-google-url break-all mb-1">{previewUrl}</div>
-                <div className="text-lg leading-snug text-google-title break-words mb-1">
-                  {(seoTitleVal || nameVal || t('brands.detail.seoPreviewFallbackTitle', { defaultValue: 'Tiêu đề thương hiệu' })).slice(0, 60)}
-                </div>
-                <div className="text-sm leading-relaxed text-google-description break-words">
-                  {seoDescVal || t('brands.detail.seoPreviewFallbackDesc', { defaultValue: 'Mô tả ngắn về thương hiệu sẽ hiển thị ở đây.' })}
-                </div>
-              </div>
-            </div>
-
-            <div className="bb-grid-2">
-              <div className="form-field" style={{ gridColumn: '1 / -1' }}>
-                <span className="flex items-center justify-between">
-                  <span>
-                    {t('brands.detail.seoTitle', { defaultValue: 'Tiêu đề khi xuất hiện trên Google' })}
-                    {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 8 }}>{t('brands.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
-                  </span>
-                  <span className={`hint ${seoTitleVal.length > 60 ? 'text-danger' : ''}`}>{seoTitleVal.length} / 60</span>
-                </span>
-                <Input
-                  value={seoTitleVal}
-                  onChange={(e) => isEnLang ? updateTranslation('seoTitle', e.target.value) : updateField('seoTitle', e.target.value)}
-                  disabled={isReadOnly}
-                  maxLength={255}
-                  placeholder={t('brands.detail.seoTitlePlaceholder', { defaultValue: 'Để trống sẽ tự dùng tên thương hiệu' })}
-                />
-              </div>
-              <div className="form-field" style={{ gridColumn: '1 / -1' }}>
-                <span className="flex items-center justify-between">
-                  <span>
-                    {t('brands.detail.seoDescription', { defaultValue: 'Mô tả khi xuất hiện trên Google' })}
-                    {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 8 }}>{t('brands.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
-                  </span>
-                  <span className={`hint ${seoDescVal.length > 160 ? 'text-danger' : ''}`}>{seoDescVal.length} / 160</span>
-                </span>
-                <Textarea
-                  rows={3}
-                  value={seoDescVal}
-                  onChange={(e) => isEnLang ? updateTranslation('seoDescription', e.target.value) : updateField('seoDescription', e.target.value)}
-                  disabled={isReadOnly}
-                  placeholder={t('brands.detail.seoDescriptionPlaceholder', { defaultValue: 'Mô tả ngắn hiển thị dưới tiêu đề trên Google' })}
-                />
-              </div>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <FormField
-                  label={t('brands.detail.seoCanonicalUrl', { defaultValue: 'Địa chỉ chuẩn (canonical URL)' })}
-                  error={validationErrors.seoCanonicalUrl}
-                >
-                  <Input
-                    value={form.seoCanonicalUrl}
-                    onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
-                    onBlur={() => handleFieldBlur('seoCanonicalUrl')}
-                    disabled={isReadOnly}
-                    placeholder="https://bigbike.vn/..."
-                  />
-                </FormField>
-              </div>
-              {/* Ảnh chia sẻ mạng xã hội (OG image) — dùng chung cho cả hai ngôn ngữ */}
-              <div className="form-field" data-field="seoOgImageUrl" style={{ gridColumn: '1 / -1' }}>
-                <span>{t('brands.detail.seoOgImageUrl', { defaultValue: 'Ảnh hiển thị khi chia sẻ trên mạng xã hội' })}</span>
-                <ImageUrlInput
-                  value={form.seoOgImageUrl}
-                  onChange={(url) => updateField('seoOgImageUrl', url)}
-                  alt={form.seoOgImageAlt}
-                  onAltChange={(v) => updateField('seoOgImageAlt', v)}
-                  disabled={isReadOnly}
-                  error={validationErrors.seoOgImageUrl}
-                  recommend={IMAGE_RECO.cover}
-                />
-                <span className="hint">{t('brands.detail.seoOgImageUrlHint', { defaultValue: 'Ảnh chia sẻ lên Facebook/Zalo, kích thước 1200×630px.' })}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-          )
-        })()}
+        {/* SEO — thẻ dùng chung, thu gọn sẵn (tùy chọn, chống ngợp form) */}
+        <SeoCard
+          form={form}
+          isEnLang={isEnLang}
+          isReadOnly={isReadOnly}
+          validationErrors={validationErrors}
+          updateField={updateField}
+          updateTranslation={updateTranslation}
+          onFieldBlur={handleFieldBlur}
+          i18nPrefix="brands.detail"
+          descKey="brands.detail.sectionSeoDesc"
+          previewBase={STOREFRONT_BASE}
+          previewSlugDefault="duong-dan-thuong-hieu"
+          collapsible
+          open={seoOpen}
+          onToggle={() => setSeoOpen((v) => !v)}
+        />
       </form>
     </div>
   )

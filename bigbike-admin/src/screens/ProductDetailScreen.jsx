@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
 import {
-  AlertCircle, Check, ChevronDown, Download, Eye, Info, Loader2, Lock, Save, Search as PfSearch, X,
+  AlertCircle, Check, Download, Eye, Info, Loader2, Lock, Save, Search as PfSearch, X,
 } from 'lucide-react'
 
 import {
@@ -45,9 +45,6 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
-} from '@/components/ui/dropdown-menu'
 import { cn, generateId } from '@/lib/utils'
 
 import {
@@ -103,10 +100,7 @@ import {
   VariantsEditor,
   VariantMatrixWizard,
 } from './product-detail/VariantEditors'
-import {
-  DraftRecoveryBanner,
-  PublishChecklistModal,
-} from './product-detail/Modals'
+import { PublishChecklistModal } from './product-detail/Modals'
 // ── Prototype form layout ───────────────────────────────────────────────────────
 
 import {
@@ -771,12 +765,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
 
   // ── Tab navigation state (replaces the old TOC sidebar) ─────────────────────
-  // Two tabs ("product" + "seo"). Inside the product tab, three collapsible groups that
-  // follow the storefront product-page flow — `buyArea` (đầu trang, required) opens by
-  // default, `body` (thân trang) and `closing` (cuối trang) start collapsed so the form
-  // opens short.
+  // Two tabs ("product" + "seo"). Inside the product tab, collapsible groups — only
+  // `buyArea` (required core: thông tin, ảnh, giá, biến thể) opens by default; `enhance`
+  // (tùy chọn nâng cao), `body` (thân trang) and `closing` (cuối trang) start collapsed
+  // so the form opens short (audit P0-1: chống ngợp field).
   const [activeTab, setActiveTab] = useState('product')
-  const [openGroups, setOpenGroups] = useState({ buyArea: true, body: false, closing: false })
+  const [openGroups, setOpenGroups] = useState({ buyArea: true, enhance: false, body: false, closing: false })
   const toggleGroup = (group) => setOpenGroups((prev) => ({ ...prev, [group]: !prev[group] }))
   const [savedFlash, setSavedFlash] = useState(false)
 
@@ -1048,19 +1042,18 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             }
           }}
         >
-          {/* F2: chú thích dấu bắt buộc — chỉ hiện khi tạo mới (lúc các trường thật sự bắt buộc). */}
-          {isCreate && (
-            <p className="text-xs text-muted-foreground">
-              <span className="text-danger">*</span>
-              {' '}
-              {t('products.detail.requiredLegend', { defaultValue: 'Bắt buộc' })}
-            </p>
-          )}
+          {/* Chú thích dấu bắt buộc — hiện cả khi tạo mới lẫn khi sửa (trường bắt buộc vẫn còn
+              trong cả hai chế độ: tên, danh mục, thương hiệu, ảnh, giá khi không biến thể...). */}
+          <p className="text-xs text-muted-foreground">
+            <span className="text-danger">*</span>
+            {' '}
+            {t('products.detail.requiredLegend', { defaultValue: 'Bắt buộc' })}
+          </p>
           {activeTab === 'product' && (
             <>
               <CollapsibleGroup
-                title={t('products.detail.groupBuyArea', { defaultValue: 'Khu mua hàng (đầu trang)' })}
-                hint={t('products.detail.groupBuyAreaHint', { defaultValue: 'Bắt buộc — ảnh, giá, biến thể, ô số liệu' })}
+                title={t('products.detail.groupBuyArea', { defaultValue: 'Thông tin bắt buộc' })}
+                hint={t('products.detail.groupBuyAreaHint', { defaultValue: 'Bắt buộc — thông tin, ảnh đại diện, giá, biến thể' })}
                 open={openGroups.buyArea}
                 onToggle={() => toggleGroup('buyArea')}
                 errorCount={groupCounts.buyArea}
@@ -1240,55 +1233,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 />
               </SectionCard>
 
-              {/* ── Card: Gallery (ảnh phụ) ── */}
-              <SectionCard
-                title={t('products.detail.gallerySectionTitle')}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="bb-count-pill">
-                      {form.gallery.length} {t('products.detail.galleryUnit', { defaultValue: 'ảnh' })}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <GalleryEditor
-                  items={form.gallery}
-                  onChange={(next) => updateField('gallery', next)}
-                  disabled={isReadOnly}
-                  validationErrors={validationErrors}
-                />
-              </SectionCard>
-
-              {/* ── Card: Dải tin cậy (trên tên sản phẩm) (V233) ── */}
-              <SectionCard
-                title={t('products.detail.sectionTrustBadges', { defaultValue: 'Dải tin cậy (trên tên sản phẩm)' })}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="bb-count-pill">
-                      {parseTrustBadgesFromHtml(langValue('trustBadges')).length} {t('products.detail.trustBadges.unit', { defaultValue: 'nhãn' })}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <p className="text-xs text-muted-foreground mb-2">
-                  {t('products.detail.trustBadges.hint', { defaultValue: 'Các nhãn ngắn hiển thị NGAY TRÊN tên sản phẩm (vd "Chính hãng", "BH 2 năm", "Freeship"). Để trống → web ẩn dải. Mỗi sản phẩm tự nhập riêng.' })}
-                </p>
-                {validationErrors.trustBadges && (
-                  <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
-                    <AlertCircle size={13} className="shrink-0" />
-                    {validationErrors.trustBadges}
-                  </p>
-                )}
-                <TrustBadgesEditor
-                  key={`trustbadges-${contentLang}`}
-                  disabled={isReadOnly}
-                  html={langValue('trustBadges')}
-                  onHtmlChange={(v) => langChange('trustBadges', v)}
-                />
-              </SectionCard>
-
               {/* ── Card: Giá & trạng thái ── */}
               <SectionCard title={t('products.detail.sectionPricing')} required badge={<RoleBadge role="manager" />}>
                 {form.variants.length > 0 && (
@@ -1447,8 +1391,65 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   contentLang={contentLang}
                 />
               </SectionCard>
+              </CollapsibleGroup>
 
-              {/* ── Card: Cam kết (dưới nút mua hàng) (V232) — thuộc khu mua hàng (đầu trang) ── */}
+              <CollapsibleGroup
+                title={t('products.detail.groupEnhance', { defaultValue: 'Tùy chọn nâng cao' })}
+                hint={t('products.detail.groupEnhanceHint', { defaultValue: 'Không bắt buộc — gallery, dải tin cậy, cam kết, ô số liệu' })}
+                open={openGroups.enhance}
+                onToggle={() => toggleGroup('enhance')}
+                errorCount={groupCounts.enhance}
+              >
+              {/* ── Card: Gallery (ảnh phụ) ── */}
+              <SectionCard
+                title={t('products.detail.gallerySectionTitle')}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <span className="bb-count-pill">
+                      {form.gallery.length} {t('products.detail.galleryUnit', { defaultValue: 'ảnh' })}
+                    </span>
+                    <RoleBadge role="content" />
+                  </div>
+                }
+              >
+                <GalleryEditor
+                  items={form.gallery}
+                  onChange={(next) => updateField('gallery', next)}
+                  disabled={isReadOnly}
+                  validationErrors={validationErrors}
+                />
+              </SectionCard>
+
+              {/* ── Card: Dải tin cậy (trên tên sản phẩm) (V233) ── */}
+              <SectionCard
+                title={t('products.detail.sectionTrustBadges', { defaultValue: 'Dải tin cậy (trên tên sản phẩm)' })}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <span className="bb-count-pill">
+                      {parseTrustBadgesFromHtml(langValue('trustBadges')).length} {t('products.detail.trustBadges.unit', { defaultValue: 'nhãn' })}
+                    </span>
+                    <RoleBadge role="content" />
+                  </div>
+                }
+              >
+                <p className="text-xs text-muted-foreground mb-2">
+                  {t('products.detail.trustBadges.hint', { defaultValue: 'Các nhãn ngắn hiển thị NGAY TRÊN tên sản phẩm (vd "Chính hãng", "BH 2 năm", "Freeship"). Để trống → web ẩn dải. Mỗi sản phẩm tự nhập riêng.' })}
+                </p>
+                {validationErrors.trustBadges && (
+                  <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
+                    <AlertCircle size={13} className="shrink-0" />
+                    {validationErrors.trustBadges}
+                  </p>
+                )}
+                <TrustBadgesEditor
+                  key={`trustbadges-${contentLang}`}
+                  disabled={isReadOnly}
+                  html={langValue('trustBadges')}
+                  onHtmlChange={(v) => langChange('trustBadges', v)}
+                />
+              </SectionCard>
+
+              {/* ── Card: Cam kết (dưới nút mua hàng) (V232) — nội dung bán hàng (tùy chọn) ── */}
               <SectionCard
                 title={t('products.detail.sectionCommitments')}
                 badge={
@@ -1535,7 +1536,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               </SectionCard>
 
               {/* ── Card: Mô tả chi tiết — trình dựng khối Tính năng (#4). "Phù hợp với ai"/"Bảng size" có card riêng bên dưới ── */}
-              <SectionCard title={t('products.detail.sectionDescription', { defaultValue: 'Mô tả chi tiết' })} required badge={<RoleBadge role="content" />}>
+              <SectionCard title={t('products.detail.sectionDescription', { defaultValue: 'Mô tả chi tiết' })} badge={<RoleBadge role="content" />}>
                 <p className="text-xs text-muted-foreground mb-3">
                   {t('products.detail.descriptionBuilderHint', { defaultValue: 'Trình dựng khối Tính năng chi tiết (chữ, ảnh, ảnh + chữ). Kéo-thả để đổi thứ tự. "Phù hợp với ai" và "Bảng size" nhập ở 2 card riêng bên dưới.' })}
                 </p>
@@ -2012,34 +2013,14 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             {t('products.detail.saveDraft')}
           </Button>
 
-          <div className="flex">
-            <Button
-              type="button"
-              disabled={isReadOnly || isSubmitting || !isDirty}
-              className="rounded-r-none"
-              onClick={() => handleSave(isPublished ? undefined : 'PUBLISHED')}
-            >
-              {isSubmitting && <Loader2 size={14} className="animate-spin mr-1.5" />}
-              {primaryLabel}
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  disabled={isReadOnly || isSubmitting || !isDirty}
-                  className="rounded-l-none border-l border-white/20 px-2"
-                  aria-label={t('products.detail.moreSaveOptions', { defaultValue: 'Thêm tuỳ chọn lưu' })}
-                >
-                  <ChevronDown size={16} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleSave('DRAFT')}>
-                  {t('products.detail.saveDraft')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <Button
+            type="button"
+            disabled={isReadOnly || isSubmitting || !isDirty}
+            onClick={() => handleSave(isPublished ? undefined : 'PUBLISHED')}
+          >
+            {isSubmitting && <Loader2 size={14} className="animate-spin mr-1.5" />}
+            {primaryLabel}
+          </Button>
         </StickyActionBar>
 
         {/* Modals */}

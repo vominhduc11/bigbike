@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { AlertTriangle, Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export function DangerZoneCard({ onHardDelete, pending }) {
   const { t } = useTranslation()
@@ -13,10 +14,10 @@ export function DangerZoneCard({ onHardDelete, pending }) {
           </strong>
           <p className="bb-muted mt-1 text-xs">{t('categories.detail.dangerZoneDesc')}</p>
         </div>
-        <button type="button" className="bb-btn bb-btn-danger" onClick={onHardDelete} disabled={pending} aria-busy={pending || undefined}>
+        <Button type="button" variant="danger" onClick={onHardDelete} disabled={pending} aria-busy={pending || undefined}>
           {pending && <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
           {t('categories.detail.hardDeleteBtn')}
-        </button>
+        </Button>
       </div>
     </div>
   )

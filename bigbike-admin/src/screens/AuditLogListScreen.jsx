@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Download } from 'lucide-react'
+import { Download, X } from 'lucide-react'
 import { AdminTable } from '../components/AdminTable'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { PaginationControls } from '../components/PaginationControls'
@@ -232,9 +232,9 @@ export function AuditLogListScreen() {
           <p className="bb-muted">{t('auditLog.description')}</p>
         </div>
         <div className="bb-screen-actions">
-          <button
+          <Button
             type="button"
-            className="bb-btn bb-btn-secondary"
+            variant="secondary"
             onClick={handleExport}
             disabled={state.items.length === 0}
             title={
@@ -244,7 +244,7 @@ export function AuditLogListScreen() {
             }
           >
             <Download size={14} />{t('auditLog.exportBtn')}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -367,7 +367,7 @@ export function AuditLogListScreen() {
         {query.q && (
           <span className="audit-mobile-search-chip">
             "{query.q}"
-            <button type="button" onClick={() => { setSearchInput(''); updateQuery({ q: '' }, { resetPage: true }) }} aria-label={t('auditLog.resetFilters')}>✕</button>
+            <button type="button" onClick={() => { setSearchInput(''); updateQuery({ q: '' }, { resetPage: true }) }} aria-label={t('auditLog.resetFilters')}><X size={14} aria-hidden="true" /></button>
           </span>
         )}
         {isFiltered && (

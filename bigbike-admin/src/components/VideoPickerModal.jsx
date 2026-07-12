@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
-import { fetchMedia, uploadMedia } from '../lib/adminApi'
+import { fetchMedia, uploadMedia, fetchMediaFolders, fetchMediaTags } from '../lib/adminApi'
 import { useDebounce } from '../lib/useDebounce'
 import { useHasPermission } from '../lib/auth'
 import { MediaRequirementHint, MediaValidationError } from './MediaRequirementHint'
@@ -9,6 +9,7 @@ import { useMediaValidation } from '../lib/useMediaDimensions'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { FilterSelect } from './FilterSelect'
 import { IconClose, IconUpload, IconCheck } from './media-picker/pickerIcons'
 import { formatBytes, mergeMediaCacheItem } from './media-picker/pickerUtils'
 import { useModalFocusTrap, useBodyScrollLock } from './media-picker/useModalBehavior'
@@ -33,6 +34,11 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
   const modalRef = useRef(null)
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 300)
+  // Lọc theo Thư mục/Tag — API fetchMedia đã hỗ trợ folderFilter/tag (không cần backend mới).
+  const [folderFilter, setFolderFilter] = useState('')
+  const [tag, setTag] = useState('')
+  const [folders, setFolders] = useState([])
+  const [tags, setTags] = useState([])
   const [page, setPage] = useState(1)
   const [reloadKey, setReloadKey] = useState(0)
   const [state, setState] = useState({ status: 'loading', items: [], totalPages: 1, error: '' })
@@ -51,11 +57,25 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
   }
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { setPage(1) }, [debouncedSearch])
+  useEffect(() => { setPage(1) }, [debouncedSearch, folderFilter, tag])
+
+  // Nạp danh sách thư mục + tag để lọc (chỉ 1 lần khi mở picker).
+  useEffect(() => {
+    let active = true
+    Promise.all([
+      fetchMediaFolders().catch(() => []),
+      fetchMediaTags().catch(() => []),
+    ]).then(([f, tg]) => {
+      if (!active) return
+      setFolders(f ?? [])
+      setTags(tg ?? [])
+    })
+    return () => { active = false }
+  }, [])
 
   useEffect(() => {
     let active = true
-    fetchMedia({ search: debouncedSearch, mimeType: 'video/', page, pageSize: PAGE_SIZE })
+    fetchMedia({ search: debouncedSearch, mimeType: 'video/', page, pageSize: PAGE_SIZE, folderFilter: folderFilter || undefined, tag: tag || undefined })
       .then((result) => {
         if (!active) return
         const items = result.items ?? []
@@ -77,7 +97,7 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
         })
       })
     return () => { active = false }
-  }, [debouncedSearch, page, reloadKey, t])
+  }, [debouncedSearch, page, reloadKey, t, folderFilter, tag])
 
   useModalFocusTrap({ modalRef, onClose })
   useBodyScrollLock()
@@ -178,12 +198,35 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
             }}
             autoFocus
            />
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <FilterSelect
+              value={folderFilter}
+              onValueChange={setFolderFilter}
+              ariaLabel={t('media.folders')}
+              options={[
+                { value: '', label: t('media.allFolders') },
+                { value: 'NONE', label: t('media.uncategorized') },
+                ...folders.map((f) => ({ value: f.id, label: f.name })),
+              ]}
+            />
+            {tags.length > 0 && (
+              <FilterSelect
+                value={tag}
+                onValueChange={setTag}
+                ariaLabel={t('media.popularTags')}
+                options={[
+                  { value: '', label: t('media.allTags', { defaultValue: 'Tất cả thẻ' }) },
+                  ...tags.map((tg) => ({ value: tg, label: tg })),
+                ]}
+              />
+            )}
+          </div>
         </div>
 
         {uploadError && (
           <div className="mpicker-upload-error">
             {uploadError}
-            <button type="button" onClick={() => setUploadError('')} aria-label={t('homeVideos.picker.dismissError')}>x</button>
+            <button type="button" onClick={() => setUploadError('')} aria-label={t('homeVideos.picker.dismissError')}><IconClose /></button>
           </div>
         )}
 

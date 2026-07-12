@@ -11,7 +11,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-import { AlertCircle, GripVertical, Play, Plus } from 'lucide-react'
+import { AlertCircle, Check, GripVertical, Play, Plus, X } from 'lucide-react'
 import { useDragSensors, SortableRow } from '../components/Sortable'
 import { toast } from '@/lib/toast'
 import {
@@ -90,7 +90,7 @@ function VideoPreviewModal({ video, onClose }) {
           onClick={onClose}
           className="absolute top-2.5 right-3 z-[1] inline-flex min-w-[44px] min-h-[44px] items-center justify-center rounded-xs border-none bg-black/60 text-2xl leading-none cursor-pointer text-white"
           aria-label={t('common.close', { defaultValue: 'Đóng' })}
-        >×</button>
+        ><X size={20} aria-hidden="true" /></button>
 
         <div className="relative pb-[56.25%]">
           {embedUrl ? (
@@ -187,15 +187,15 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
 
       {canUpdate && (
         <div className="bb-slider-actions">
-          <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={() => onToggleActive(video)}>
+          <Button type="button" variant="secondary" size="sm" onClick={() => onToggleActive(video)}>
             {video.isActive ? t('homeVideos.hideAction') : t('homeVideos.showAction')}
-          </button>
-          <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={() => onEdit(video)}>
+          </Button>
+          <Button type="button" variant="secondary" size="sm" onClick={() => onEdit(video)}>
             {t('common.edit')}
-          </button>
-          <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm bb-danger-action" onClick={() => onDelete(video.id)}>
+          </Button>
+          <Button type="button" variant="secondary" size="sm" className="text-danger" onClick={() => onDelete(video.id)}>
             {t('common.delete')}
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -683,13 +683,12 @@ export function HomeVideoListScreen({ canUpdate }) {
         </div>
         {canUpdate && !showForm && (
           <div className="bb-screen-actions">
-            <button
+            <Button
               type="button"
-              className="bb-btn bb-btn-primary"
               onClick={openCreateForm}
             >
               <Plus size={14} />{t('homeVideos.addButton')}
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -847,13 +846,13 @@ export function HomeVideoListScreen({ canUpdate }) {
                     aria-label={t('homeVideos.removeVideo')}
                     disabled={!canUpdate}
                   >
-                    ✕
+                    <X size={14} aria-hidden="true" />
                   </Button>
                 )}
               </div>
               {form.videoUrl ? (
                 <span className="text-xs text-success font-normal">
-                  ✓ {form.videoUrl.split('/').pop()}
+                  <Check size={14} aria-hidden="true" /> {form.videoUrl.split('/').pop()}
                 </span>
               ) : (
                 <span className="text-xs text-muted-foreground font-normal">

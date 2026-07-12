@@ -18,6 +18,7 @@ import { useRecentItems } from '../lib/useRecentItems'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { useQueryClient } from '@tanstack/react-query'
 import { Alert } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
 import { PaginationControls } from '../components/PaginationControls'
 
 const STATUS_OPTIONS = ['ALL', 'APPROVED', 'PENDING', 'SPAM', 'TRASH']
@@ -130,23 +131,23 @@ function ReviewCard({
           </div>
         ) : null}
         <div className="flex flex-wrap gap-2 mt-3">
-          <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={() => navigate(`/admin/reviews/${r.id}`)}>
+          <Button type="button" variant="secondary" size="sm" onClick={() => navigate(`/admin/reviews/${r.id}`)}>
             <Eye size={13} />{t('reviews.view')}
-          </button>
+          </Button>
           {canUpdate && r.status !== 'APPROVED' && (
-            <button type="button" className="bb-btn bb-btn-primary bb-btn-sm" disabled={isPending} onClick={() => onStatusChange(r, 'APPROVED')}>
+            <Button type="button" size="sm" disabled={isPending} onClick={() => onStatusChange(r, 'APPROVED')}>
               {isPending ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{t('reviews.approve')}
-            </button>
+            </Button>
           )}
           {canUpdate && r.status !== 'SPAM' && (
-            <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" style={{ color: 'var(--bb-danger)' }} disabled={isPending} onClick={() => onStatusChange(r, 'SPAM')}>
+            <Button type="button" variant="ghost" size="sm" className="text-danger" disabled={isPending} onClick={() => onStatusChange(r, 'SPAM')}>
               {isPending ? <Loader2 size={13} className="animate-spin" /> : <EyeOff size={13} />}{t('reviews.spam')}
-            </button>
+            </Button>
           )}
           {canUpdate && (
-            <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" style={{ color: 'var(--bb-danger)' }} disabled={isPending} onClick={() => onDelete(r.id)}>
+            <Button type="button" variant="ghost" size="sm" className="text-danger" disabled={isPending} onClick={() => onDelete(r.id)}>
               {t('common.delete')}
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -420,13 +421,14 @@ export function ReviewListScreen({ navigate, canUpdate }) {
           onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
         />
         {isFiltered && (
-          <button
+          <Button
             type="button"
-            className="bb-btn bb-btn-ghost bb-btn-sm"
+            variant="ghost"
+            size="sm"
             onClick={resetFilters}
           >
             {t('common.resetFilters')}
-          </button>
+          </Button>
         )}
       </div>
 

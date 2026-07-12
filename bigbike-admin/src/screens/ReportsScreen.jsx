@@ -2,8 +2,9 @@ import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import {
-  Calendar, Info, TrendingUp, TrendingDown, Minus,
+  Info, TrendingUp, TrendingDown, Minus,
   CircleDollarSign, Wallet, RotateCcw, PiggyBank, ShoppingBag, Receipt,
+  Download, ChevronDown, ArrowRight,
 } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import {
@@ -14,7 +15,11 @@ import { useUrlSyncedState } from '../lib/useUrlSyncedState'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { AdminTable } from '../components/AdminTable'
-import { ExportButton } from '../components/ExportButton'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
+  DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu'
 import { fetchAnalytics, exportOrdersCsv, exportProductsCsv, exportCustomersCsv } from '../lib/adminApi'
 import { formatCurrencyVnd } from '../lib/formatters'
 
@@ -349,7 +354,7 @@ export function ReportsScreen() {
                 max={toLocalDateString(0)}
                 onChange={(e) => setCustomFrom(e.target.value)}
               />
-              <span className="bb-muted" aria-hidden="true" style={{ alignSelf: 'center', fontSize: 14 }}>→</span>
+              <ArrowRight size={14} className="bb-muted self-center shrink-0" aria-hidden="true" />
               <input
                 type="date"
                 className="bb-input"
@@ -360,33 +365,31 @@ export function ReportsScreen() {
               />
             </>
           )}
-          <ExportButton
-            className="bb-btn bb-btn-primary"
-            onExport={() => runExport(() => exportOrdersCsv({ from: exportFrom, to: exportTo }))}
-          >
-            {t('reports.exportOrders')}
-          </ExportButton>
-          <ExportButton
-            title={t('reports.exportAllHint')}
-            onExport={() => runExport(() => exportProductsCsv())}
-          >
-            {t('reports.exportProducts')}
-          </ExportButton>
-          <ExportButton
-            title={t('reports.exportAllHint')}
-            onExport={() => runExport(() => exportCustomersCsv())}
-          >
-            {t('reports.exportCustomers')}
-          </ExportButton>
-          {preset !== 'custom' && (
-            <button type="button" className="bb-btn bb-btn-secondary" onClick={() => setPreset('custom')}>
-              <Calendar size={14} />{t('reports.presetCustom')}
-            </button>
-          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="default">
+                <Download size={14} aria-hidden="true" />
+                {t('reports.exportData')}
+                <ChevronDown size={14} aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuItem onSelect={() => runExport(() => exportOrdersCsv({ from: exportFrom, to: exportTo }))}>
+                {t('reports.exportOrders')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => runExport(() => exportProductsCsv())}>
+                {t('reports.exportProducts')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => runExport(() => exportCustomersCsv())}>
+                {t('reports.exportCustomers')}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="font-normal text-muted-foreground whitespace-normal">
+                {t('reports.exportAllHint')}
+              </DropdownMenuLabel>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      </div>
-      <div className="text-xs bb-muted mb-4 text-right pr-2 select-none pointer-events-none opacity-80">
-        * {t('reports.exportAllHint')}
       </div>
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}

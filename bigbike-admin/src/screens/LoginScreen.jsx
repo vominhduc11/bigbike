@@ -1,10 +1,11 @@
 import { useEffect, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { StatePanel } from '../components/StatePanel'
 import { ApiClientError, fetchPublicSettings } from '../lib/adminApi'
 import { useAuth } from '../lib/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '../components/PasswordInput'
+import { Alert } from '@/components/ui/alert'
 
 export function LoginScreen() {
   const { login } = useAuth()
@@ -85,15 +86,22 @@ export function LoginScreen() {
           <p className="subtitle">{t('auth.subtitle')}</p>
 
           {hasError ? (
-            <div id={errorId} role="alert" className="bb-login-error">
-              <StatePanel
-                tone="danger"
-                title={t('auth.loginError')}
-                description={error}
-                actionLabel={canRetry ? t('common.retry') : undefined}
-                onAction={canRetry ? () => onSubmit() : undefined}
-              />
-            </div>
+            <Alert id={errorId} tone="danger" size="sm" className="mb-4">
+              <div className="flex items-center justify-between gap-3">
+                <span>{error}</span>
+                {canRetry ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onSubmit()}
+                    className="h-auto shrink-0 px-2 py-0.5 text-danger hover:text-danger"
+                  >
+                    {t('common.retry')}
+                  </Button>
+                ) : null}
+              </div>
+            </Alert>
           ) : null}
 
           <form onSubmit={onSubmit} noValidate className="bb-auth-form">
@@ -131,7 +139,6 @@ export function LoginScreen() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="bb-btn bb-btn-ghost bb-btn-sm"
                   onClick={() => setShowForgot((v) => !v)}
                   aria-expanded={showForgot}
                   aria-controls={forgotId}
@@ -139,9 +146,8 @@ export function LoginScreen() {
                   {t('auth.forgotPassword')}
                 </Button>
               </div>
-              <Input
+              <PasswordInput
                 id={passwordId}
-                type="password"
                 autoComplete="current-password"
                 required
                 aria-required="true"
@@ -170,7 +176,7 @@ export function LoginScreen() {
               type="submit"
               size="lg"
               loading={submitting}
-              className="bb-btn bb-btn-primary bb-btn-lg bb-btn-full"
+              className="w-full"
               disabled={submitting}
               aria-busy={submitting || undefined}
             >

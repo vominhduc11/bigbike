@@ -1110,10 +1110,6 @@
   flex-shrink: 0;
   flex-wrap: wrap;
 }
-.bb-danger-action {
-  color: var(--bb-danger);
-}
-
 .bb-link-card-list {
   display: grid;
   gap: 12px;
@@ -1406,42 +1402,6 @@
 .bb-row-accent--neutral td:first-child { border-left: 3px solid var(--bb-neutral); }
 .bb-row-accent--muted   td:first-child { border-left: 3px solid var(--bb-text-muted); }
 
-/* Row action dropdown menu */
-.bb-row-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  background: var(--bb-surface);
-  border: 1px solid var(--bb-border);
-  border-radius: var(--bb-r-control);
-  box-shadow: var(--bb-sh-md);
-  z-index: var(--admin-z-popup);
-  min-width: 160px;
-  padding: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-.bb-row-menu button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  font-size: 13px;
-  color: var(--bb-text);
-  background: transparent;
-  border: 0;
-  border-radius: 5px;
-  cursor: pointer;
-  font-family: inherit;
-  text-align: left;
-  width: 100%;
-}
-.bb-row-menu button:hover { background: var(--bb-surface-hover); }
-.bb-row-menu button.danger { color: var(--bb-danger); }
-.bb-row-menu button.danger:hover { background: var(--bb-danger-bg); }
-.bb-row-menu hr { border: 0; border-top: 1px solid var(--bb-border-faint); margin: 3px 0; }
-
 /* Dashboard specific */
 
 .bb-attention-item {
@@ -1587,12 +1547,6 @@
 }
 .bb-auth-field {
   gap: 8px;
-}
-.bb-login-error {
-  margin-bottom: 20px;
-}
-.bb-login-error.compact {
-  margin-bottom: 16px;
 }
 .bb-required-legend {
   margin: 0;
@@ -1852,7 +1806,9 @@ dl.bb-info-grid dd { color: var(--bb-text); }
   padding: 10px 14px;
   border-bottom: 1px solid var(--bb-border-faint);
 }
-@media (max-width: 900px) {
+/* Cùng điểm ngắt 1024px với chỗ ẩn nút đổi ngôn ngữ trên topbar (index.css) — nếu không,
+   dải 901–1024px (iPad ngang, laptop nhỏ) sẽ mất cả hai bản nút đổi ngôn ngữ (audit P1-7). */
+@media (max-width: 1024px) {
   .bb-user-dropdown-lang { display: flex; }
 }
 .bb-user-dropdown-lang-label {

@@ -24,6 +24,23 @@ export const PAYMENT_STATUS_TONE = {
   UNKNOWN:   'muted',
 }
 
+export const CUSTOMER_STATUS_TONE = {
+  ACTIVE:   'success',
+  PENDING:  'warning',
+  DISABLED: 'neutral',
+  BLOCKED:  'danger',
+  UNKNOWN:  'muted',
+}
+
+export const FULFILLMENT_STATUS_TONE = {
+  UNFULFILLED: 'neutral',
+  PROCESSING:  'info',
+  SHIPPED:     'warning',
+  DELIVERED:   'success',
+  CANCELLED:   'danger',
+  UNKNOWN:     'muted',
+}
+
 export function toneFromPublish(status) {
   switch (status) {
     case 'PUBLISHED': return 'success'

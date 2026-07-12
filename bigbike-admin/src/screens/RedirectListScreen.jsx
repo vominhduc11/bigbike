@@ -485,9 +485,9 @@ export function RedirectListScreen({ canUpdate }) {
         </div>
         {canUpdate && (
           <div className="bb-screen-actions">
-            <button type="button" className="bb-btn bb-btn-primary" onClick={openCreateForm}>
+            <Button type="button" onClick={openCreateForm}>
               <Plus size={14} />{t('redirects.createBtn', { defaultValue: 'Tạo chuyển hướng' })}
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -533,7 +533,15 @@ export function RedirectListScreen({ canUpdate }) {
               </FormField>
               <label className="form-field">
                 <span>{t('redirects.formType', { defaultValue: 'Loại chuyển hướng' })}</span>
-                <Select value={form.redirectType} onValueChange={(val) => setForm((p) => ({ ...p, redirectType: val }))}>
+                <Select
+                  value={form.redirectType}
+                  onValueChange={(val) => setForm((p) => ({
+                    ...p,
+                    redirectType: val,
+                    // Loại tự quyết mã trạng thái; chỉ "Tùy chỉnh" mới cho chọn mã tay.
+                    statusCode: val === 'PERMANENT' ? '301' : val === 'TEMPORARY' ? '302' : p.statusCode,
+                  }))}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="PERMANENT">{t('redirects.typePermanent', { defaultValue: 'Vĩnh viễn' })}</SelectItem>
@@ -541,19 +549,26 @@ export function RedirectListScreen({ canUpdate }) {
                     <SelectItem value="CUSTOM">{t('redirects.typeCustom', { defaultValue: 'Tùy chỉnh' })}</SelectItem>
                   </SelectContent>
                 </Select>
+                {form.redirectType !== 'CUSTOM' && (
+                  <span className="text-xs text-muted-foreground">
+                    {t('redirects.statusAutoHint', { code: form.statusCode, defaultValue: `Mã trạng thái ${form.statusCode} (tự đặt theo loại)` })}
+                  </span>
+                )}
               </label>
-              <label className="form-field">
-                <span>{t('redirects.formStatusCode', { defaultValue: 'Mã trạng thái' })}</span>
-                <Select value={form.statusCode} onValueChange={(val) => setForm((p) => ({ ...p, statusCode: val }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="301">{t('redirects.statusCode301', { defaultValue: '301 vĩnh viễn' })}</SelectItem>
-                    <SelectItem value="302">{t('redirects.statusCode302', { defaultValue: '302 tạm thời' })}</SelectItem>
-                    <SelectItem value="307">{t('redirects.statusCode307', { defaultValue: '307 tạm thời' })}</SelectItem>
-                    <SelectItem value="308">{t('redirects.statusCode308', { defaultValue: '308 vĩnh viễn' })}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </label>
+              {form.redirectType === 'CUSTOM' && (
+                <label className="form-field">
+                  <span>{t('redirects.formStatusCode', { defaultValue: 'Mã trạng thái' })}</span>
+                  <Select value={form.statusCode} onValueChange={(val) => setForm((p) => ({ ...p, statusCode: val }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="301">{t('redirects.statusCode301', { defaultValue: '301 vĩnh viễn' })}</SelectItem>
+                      <SelectItem value="302">{t('redirects.statusCode302', { defaultValue: '302 tạm thời' })}</SelectItem>
+                      <SelectItem value="307">{t('redirects.statusCode307', { defaultValue: '307 tạm thời' })}</SelectItem>
+                      <SelectItem value="308">{t('redirects.statusCode308', { defaultValue: '308 vĩnh viễn' })}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </label>
+              )}
               <label className="form-field">
                 <span>{t('redirects.formLegacyId', { defaultValue: 'Legacy ID' })}</span>
                 <Input type="number" min="0" value={form.legacyId} onChange={(e) => setForm((p) => ({ ...p, legacyId: e.target.value }))} />

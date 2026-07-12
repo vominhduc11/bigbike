@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Package } from 'lucide-react'
 import { PublishStatusBadge } from '../../components/StatusBadge'
 import { AdminTable } from '../../components/AdminTable'
+import { Button } from '@/components/ui/button'
 
 export function ProductsInCategoryCard({ item, productsList, productsTotal, navigate, isLoading = false }) {
   const { t } = useTranslation()
@@ -60,13 +61,14 @@ export function ProductsInCategoryCard({ item, productsList, productsTotal, navi
           <p className="sub">{t('categories.detail.productsSectionDesc')}</p>
         </div>
         {productsTotal > 0 && (
-          <button
+          <Button
             type="button"
-            className="bb-btn bb-btn-ghost bb-btn-sm"
+            variant="ghost"
+            size="sm"
             onClick={() => navigate(`/admin/products?categoryId=${item.id}`)}
           >
             {t('categories.detail.productsViewAll', { count: productsTotal })}
-          </button>
+          </Button>
         )}
       </div>
       <div className="bb-card-body bb-card-body--flush">
@@ -81,13 +83,15 @@ export function ProductsInCategoryCard({ item, productsList, productsTotal, navi
         ) : productsList.length === 0 ? (
           <div className="text-center px-4 py-6 text-muted-foreground">
             <p>{t('categories.detail.productsEmpty')}</p>
-            <button
+            <Button
               type="button"
-              className="bb-btn bb-btn-ghost bb-btn-sm mt-2"
+              variant="ghost"
+              size="sm"
+              className="mt-2"
               onClick={() => navigate(`/admin/products?categoryId=${item.id}`)}
             >
               {t('categories.detail.productsEmptyAddLink')}
-            </button>
+            </Button>
           </div>
         ) : (
           <AdminTable

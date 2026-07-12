@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
-import { AlertCircle, Check, Copy, ExternalLink, Hash, Loader2, Package, Save, X as XIcon } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Check, Copy, ExternalLink, Hash, Loader2, Package, Save, X as XIcon } from 'lucide-react'
 
 import {
   createCategory,
@@ -42,7 +42,8 @@ import {
   loadFormFromStorage,
   clearFormFromStorage,
 } from './category-detail/constants'
-import { SeoCard } from './category-detail/SeoCard'
+import { SeoCard } from '../components/SeoCard'
+import { Button } from '@/components/ui/button'
 import { ProductsInCategoryCard } from './category-detail/ProductsInCategoryCard'
 import { DangerZoneCard } from './category-detail/DangerZoneCard'
 
@@ -57,6 +58,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
   const [enSlugManuallyEdited, setEnSlugManuallyEdited] = useState(false)
+  const [seoOpen, setSeoOpen] = useState(false)
   const [idCopied, setIdCopied] = useState(false)
   const [menuNoticeDismissed, setMenuNoticeDismissed] = useState(() => {
     try { return localStorage.getItem(MENU_NOTICE_DISMISSED_KEY) === '1' }
@@ -517,13 +519,14 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
           actionLabel={t('common.retry', { defaultValue: 'Thử lại' })}
           onAction={() => refetch()}
         />
-        <button
+        <Button
           type="button"
-          className="bb-btn bb-btn-ghost bb-btn-sm focus-visible:ring-2 focus-visible:ring-ring"
+          variant="ghost"
+          size="sm"
           onClick={() => navigate('/admin/categories')}
         >
           {t('categories.detail.backToList')}
-        </button>
+        </Button>
       </div>
     )
   }
@@ -553,9 +556,9 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             <a
               href="/admin/categories"
               onClick={(e) => { e.preventDefault(); navigate('/admin/categories') }}
-              className="cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--bb-primary)]"
+              className="inline-flex items-center gap-1 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--bb-primary)]"
             >
-              ← {t('categories.detail.backToList')}
+              <ArrowLeft size={14} aria-hidden="true" /> {t('categories.detail.backToList')}
             </a>
           </p>
           <h1 className="flex flex-wrap items-center gap-3">
@@ -613,12 +616,12 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               {t('categories.detail.formProgress', { filled: requiredFieldsFilled, total: requiredFieldsTotal })}
             </span>
           )}
-          <button type="submit" form="category-form" className="bb-btn bb-btn-primary" disabled={isReadOnly || !isDirty} aria-busy={isSubmitting || undefined}>
+          <Button type="submit" form="category-form" disabled={isReadOnly || !isDirty} aria-busy={isSubmitting || undefined}>
             {isSubmitting && <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
             {isSubmitting
               ? t('common.saving')
               : isCreate ? t('categories.detail.createBtn') : t('categories.detail.saveBtn')}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -679,12 +682,12 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             <strong>{t('categories.detail.menuNoticeTitle')}</strong>
             <p className="mb-1.5 mt-1">{t('categories.detail.menuNoticeDesc')}</p>
             <div className="flex gap-2">
-              <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={() => navigate('/admin/menus')}>
+              <Button type="button" variant="ghost" size="sm" onClick={() => navigate('/admin/menus')}>
                 {t('categories.detail.menuNoticeAction')}
-              </button>
-              <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={handleDismissMenuNotice}>
+              </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={handleDismissMenuNotice}>
                 {t('categories.detail.menuNoticeDismiss')}
-              </button>
+              </Button>
             </div>
           </div>
           <button
@@ -763,6 +766,40 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   </span>
                 )}
               </label>
+              {/* Ẩn/hiện danh mục đưa lên đầu — tác vụ thường ngày, không phải cuộn qua nội dung + ảnh (P0-2). */}
+              <label className="flex items-center gap-2 p-2 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
+                <Checkbox
+                  checked={form.visible}
+                  onCheckedChange={(checked) => {
+                    const nextVisible = checked === true
+                    setForm((prev) => ({
+                      ...prev,
+                      visible: nextVisible,
+                      showOnHomepage: nextVisible ? prev.showOnHomepage : false,
+                    }))
+                  }}
+                  disabled={isReadOnly}
+                />
+                <span>{t('categories.detail.isVisible')}</span>
+              </label>
+              <label
+                className="flex items-center gap-2 p-2 border border-border text-sm cursor-pointer hover:bg-muted w-fit"
+                style={{ opacity: form.visible ? 1 : 0.5 }}
+              >
+                <Checkbox
+                  checked={form.showOnHomepage}
+                  onCheckedChange={(checked) => updateField('showOnHomepage', checked)}
+                  disabled={isReadOnly || !form.visible}
+                />
+                <span>
+                  {t('categories.detail.showOnHomepage')}
+                  {!form.visible && (
+                    <span className="hint" style={{ display: 'block' }}>
+                      {t('categories.detail.showOnHomepageRequiresVisible')}
+                    </span>
+                  )}
+                </span>
+              </label>
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('categories.detail.introContent')}</span>
                 <IntroContentField
@@ -818,39 +855,6 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                 />
                 <span className="hint">{t('categories.detail.menuIconUrlHint')}</span>
               </div>
-              <label className="flex items-center gap-2 p-2 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
-                <Checkbox
-                  checked={form.visible}
-                  onCheckedChange={(checked) => {
-                    const nextVisible = checked === true
-                    setForm((prev) => ({
-                      ...prev,
-                      visible: nextVisible,
-                      showOnHomepage: nextVisible ? prev.showOnHomepage : false,
-                    }))
-                  }}
-                  disabled={isReadOnly}
-                />
-                <span>{t('categories.detail.isVisible')}</span>
-              </label>
-              <label
-                className="flex items-center gap-2 p-2 border border-border text-sm cursor-pointer hover:bg-muted w-fit"
-                style={{ opacity: form.visible ? 1 : 0.5 }}
-              >
-                <Checkbox
-                  checked={form.showOnHomepage}
-                  onCheckedChange={(checked) => updateField('showOnHomepage', checked)}
-                  disabled={isReadOnly || !form.visible}
-                />
-                <span>
-                  {t('categories.detail.showOnHomepage')}
-                  {!form.visible && (
-                    <span className="hint" style={{ display: 'block' }}>
-                      {t('categories.detail.showOnHomepageRequiresVisible')}
-                    </span>
-                  )}
-                </span>
-              </label>
             </div>
           </div>
         </div>
@@ -890,7 +894,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
           </div>
         </div>
 
-        {/* SEO — hiển thị trên Google & mạng xã hội */}
+        {/* SEO — thu gọn sẵn (tùy chọn, chống ngợp form) */}
         <SeoCard
           form={form}
           isEnLang={isEnLang}
@@ -899,6 +903,13 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
           updateField={updateField}
           updateTranslation={updateTranslation}
           onFieldBlur={validateFieldOnBlur}
+          i18nPrefix="categories.detail"
+          descKey="categories.sectionSeoDesc"
+          previewBase={STOREFRONT_BASE}
+          previewSlugDefault="duong-dan-danh-muc"
+          collapsible
+          open={seoOpen}
+          onToggle={() => setSeoOpen((v) => !v)}
         />
 
         {/* Products in category */}

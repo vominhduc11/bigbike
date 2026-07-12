@@ -2,14 +2,8 @@ import { Pencil, Trash2, RotateCcw, AlertTriangle, Music, FileText, Copy, Eye } 
 import { toast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
 import { formatText } from '../lib/formatters'
+import { formatBytes } from './media-picker/pickerUtils'
 import { Checkbox } from '@/components/ui/checkbox'
-
-function formatSize(bytes) {
-  if (!bytes) return '—'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
 
 const isImage = (m) => m && m.startsWith('image/')
 const isVideo = (m) => m && m.startsWith('video/')
@@ -59,7 +53,7 @@ export function MediaListRow({
         <span className="medialib-list-name-secondary">{media.altText || media.title || '—'}</span>
       </div>
 
-      <span className="text-xs">{formatSize(media.fileSize)}</span>
+      <span className="text-xs">{formatBytes(media.fileSize)}</span>
       <span className="text-xs text-muted-foreground">{dimensions}</span>
       <span className="text-xs text-muted-foreground">{dateStr}</span>
 

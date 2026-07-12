@@ -2,6 +2,9 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Loader2 } from 'lucide-react'
 import { StatePanel } from '../components/StatePanel'
+import { Button } from '@/components/ui/button'
+import { Alert } from '@/components/ui/alert'
+import { PasswordInput } from '../components/PasswordInput'
 import { ApiClientError, acceptAdminInvite, validateAdminInvite } from '../lib/adminApi'
 
 function readToken() {
@@ -154,9 +157,7 @@ export function AcceptInviteScreen() {
             <>
               <p className="subtitle">{t('acceptInvite.subtitle', { email })}</p>
               {error ? (
-                <div role="alert" className="bb-login-error compact">
-                  <StatePanel tone="danger" title={t('acceptInvite.errorTitle')} description={error} />
-                </div>
+                <Alert tone="danger" size="sm" className="mb-4">{error}</Alert>
               ) : null}
               <form onSubmit={onSubmit} noValidate className="bb-auth-form">
                 <div className="bb-auth-field">
@@ -164,9 +165,8 @@ export function AcceptInviteScreen() {
                     {t('acceptInvite.passwordLabel')}
                     <span className="bb-required-mark" aria-hidden="true"> *</span>
                   </label>
-                  <input
+                  <PasswordInput
                     id={pwId}
-                    type="password"
                     autoComplete="new-password"
                     required
                     minLength={8}
@@ -191,9 +191,8 @@ export function AcceptInviteScreen() {
                     {t('acceptInvite.confirmLabel')}
                     <span className="bb-required-mark" aria-hidden="true"> *</span>
                   </label>
-                  <input
+                  <PasswordInput
                     id={confirmId}
-                    type="password"
                     autoComplete="new-password"
                     required
                     minLength={8}
@@ -216,7 +215,7 @@ export function AcceptInviteScreen() {
                 <p className="bb-required-legend">
                   <span aria-hidden="true" className="bb-required-mark">*</span> {t('common.requiredLegend', { defaultValue: 'Bắt buộc' })}
                 </p>
-                <button type="submit" className="bb-btn bb-btn-primary bb-btn-lg bb-btn-full" disabled={submitting} aria-busy={submitting || undefined}>
+                <Button type="submit" size="lg" className="w-full" disabled={submitting} aria-busy={submitting || undefined}>
                   {submitting ? (
                     <>
                       <Loader2 className="animate-spin" size={16} aria-hidden="true" />
@@ -225,7 +224,7 @@ export function AcceptInviteScreen() {
                   ) : (
                     t('acceptInvite.submit')
                   )}
-                </button>
+                </Button>
                 <a href="/" className="bb-btn bb-btn-secondary bb-btn-lg bb-btn-full">
                   {t('acceptInvite.goToLogin')}
                 </a>

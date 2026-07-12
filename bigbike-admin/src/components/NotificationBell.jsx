@@ -43,6 +43,10 @@ export function NotificationBell({ navigate }) {
   const { t, i18n } = useTranslation()
   const [items, setItems] = useState(loadStored)
   const [open, setOpen] = useState(false)
+  // Ids that were unread at the moment the panel was opened. We snapshot them
+  // *before* markAllRead() clears the flags, so the open panel can still show a
+  // per-row "new" marker for this viewing (the bell badge correctly clears).
+  const [seenUnread, setSeenUnread] = useState(() => new Set())
   const wrapRef = useRef(null)
 
   useEffect(() => {
@@ -115,11 +119,16 @@ export function NotificationBell({ navigate }) {
   }, [])
 
   function toggle() {
-    setOpen((wasOpen) => {
-      const next = !wasOpen
-      if (next && unread > 0) markAllRead()
-      return next
-    })
+    if (!open) {
+      // Opening: snapshot which items are unread now, then clear the unread state.
+      if (unread > 0) {
+        setSeenUnread(new Set(items.filter((it) => !it.read).map((it) => it.id)))
+        markAllRead()
+      } else {
+        setSeenUnread(new Set())
+      }
+    }
+    setOpen((wasOpen) => !wasOpen)
   }
 
   function clearAll() {
@@ -175,29 +184,40 @@ export function NotificationBell({ navigate }) {
                 <p className="text-sm text-muted-foreground">{t('notifications.empty')}</p>
               </div>
             ) : (
-              items.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => openOrder(item)}
-                  className="flex w-full items-start gap-3 border-b border-border px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-surface-muted"
-                >
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-sm bg-surface-selected text-primary">
-                    <ShoppingCart size={15} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold text-foreground">
-                      {item.type === 'NEW_ORDER' ? t('notifications.newOrder') : t('notifications.orderUpdate')}
+              items.map((item) => {
+                const fresh = seenUnread.has(item.id)
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => openOrder(item)}
+                    className={`flex w-full items-start gap-3 border-b border-border px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-surface-muted${fresh ? ' bg-surface-selected' : ''}`}
+                  >
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-sm bg-surface-selected text-primary">
+                      <ShoppingCart size={15} />
                     </span>
-                    <span className="block truncate text-xs text-muted-foreground">
-                      {item.orderNumber}{item.customerName ? ` — ${item.customerName}` : ''}
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-1.5">
+                        <span className="block text-sm font-semibold text-foreground">
+                          {item.type === 'NEW_ORDER' ? t('notifications.newOrder') : t('notifications.orderUpdate')}
+                        </span>
+                        {fresh && (
+                          <>
+                            <span className="inline-block size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />
+                            <span className="sr-only">{t('notifications.unread')}</span>
+                          </>
+                        )}
+                      </span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {item.orderNumber}{item.customerName ? ` — ${item.customerName}` : ''}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground">
+                        {item.total ? `${formatCurrencyVnd(item.total)} · ` : ''}{formatWhen(item.at, i18n.language)}
+                      </span>
                     </span>
-                    <span className="mt-0.5 block text-xs text-muted-foreground">
-                      {item.total ? `${formatCurrencyVnd(item.total)} · ` : ''}{formatWhen(item.at, i18n.language)}
-                    </span>
-                  </span>
-                </button>
-              ))
+                  </button>
+                )
+              })
             )}
           </div>
         </div>

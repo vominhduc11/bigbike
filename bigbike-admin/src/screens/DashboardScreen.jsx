@@ -2,6 +2,7 @@ import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import {
+  ArrowRight,
   CircleDollarSign,
   Clock,
   Minus,
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
+import { Button } from '@/components/ui/button'
 import { RecentItemsChips } from '../components/RecentItemsChips'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { formatVndShort, formatRelativeTime } from '../lib/formatters'
@@ -319,7 +321,10 @@ export function DashboardScreen({ navigate }) {
               )}
             >
               <div className="bb-kpi-head">
-                <span>{t('dashboard.kpi.pendingOrders')}</span>
+                <span>
+                  {t('dashboard.kpi.pendingOrders')}
+                  <span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.currentScope')}</span>
+                </span>
                 <span className={`bb-kpi-icon ${data.kpi.pendingOrders > PENDING_WARN_THRESHOLD ? 'danger' : 'warning'}`}>
                   <Clock size={15} />
                 </span>
@@ -338,7 +343,10 @@ export function DashboardScreen({ navigate }) {
               )}
             >
               <div className="bb-kpi-head">
-                <span>{t('dashboard.kpi.activeProducts')}</span>
+                <span>
+                  {t('dashboard.kpi.activeProducts')}
+                  <span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.currentScope')}</span>
+                </span>
                 <span className="bb-kpi-icon success"><Package size={15} /></span>
               </div>
               <div className="bb-kpi-value">{data.kpi.activeProducts.toLocaleString('vi-VN')}</div>
@@ -375,13 +383,14 @@ export function DashboardScreen({ navigate }) {
               <div className="bb-card-header">
                 <h3>{t('dashboard.orderStatusChart.title')}</h3>
                 {pieTotal > 0 && (
-                  <button
+                  <Button
                     type="button"
-                    className="bb-btn bb-btn-ghost bb-btn-sm"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => navigate('/admin/orders')}
                   >
-                    {t('dashboard.orderStatusChart.viewAll')} →
-                  </button>
+                    {t('dashboard.orderStatusChart.viewAll')}<ArrowRight size={14} aria-hidden="true" />
+                  </Button>
                 )}
               </div>
               <div className="bb-card-body">
@@ -458,7 +467,7 @@ export function DashboardScreen({ navigate }) {
                       </div>
                       <span className="bb-attention-count">{item.count}</span>
                       <span className="bb-btn bb-btn-ghost bb-btn-sm" aria-hidden="true">
-                        {item.cta} →
+                        {item.cta}<ArrowRight size={14} aria-hidden="true" />
                       </span>
                     </div>
                   ))}
@@ -476,13 +485,14 @@ export function DashboardScreen({ navigate }) {
               <div className="bb-card-header">
                 <h3>{t('dashboard.recentOrders.title')}</h3>
                 {recentOrders.length > 0 && (
-                  <button
+                  <Button
                     type="button"
-                    className="bb-btn bb-btn-ghost bb-btn-sm"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => navigate('/admin/orders')}
                   >
-                    {t('dashboard.recentOrders.viewAll')} →
-                  </button>
+                    {t('dashboard.recentOrders.viewAll')}<ArrowRight size={14} aria-hidden="true" />
+                  </Button>
                 )}
               </div>
               <div className="bb-card-body--flush">
@@ -561,13 +571,14 @@ export function DashboardScreen({ navigate }) {
               <div className="bb-card-header">
                 <h3>{t('dashboard.topProducts.title')}</h3>
                 {topProducts.length > 0 && (
-                  <button
+                  <Button
                     type="button"
-                    className="bb-btn bb-btn-ghost bb-btn-sm"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => navigate('/admin/products')}
                   >
-                    {t('dashboard.topProducts.viewAll')} →
-                  </button>
+                    {t('dashboard.topProducts.viewAll')}<ArrowRight size={14} aria-hidden="true" />
+                  </Button>
                 )}
               </div>
               <div className="bb-card-body--flush">

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { X } from 'lucide-react'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { formatCurrencyVnd } from '../lib/formatters'
 import { cn } from '@/lib/utils'
@@ -11,38 +12,44 @@ function Toast({ toast, onDismiss, navigate }) {
   const { t } = useTranslation()
   const isNew = toast.type === 'NEW_ORDER'
 
+  // Body is a real <button> so keyboard users can open the order with Enter/Space
+  // (the close <button> stays a sibling — avoids the invalid button-in-button nesting).
+  // The wrapper keeps role="alert"/aria-live so screen readers still announce new orders.
   return (
     <div
       role="alert"
       aria-live="assertive"
       className={cn(
-        'bg-surface border border-border rounded-md shadow-sm py-3 px-3.5 flex gap-3 items-start w-[min(340px,calc(100vw-2rem))] cursor-pointer border-l-4',
+        'bg-surface border border-border rounded-md shadow-sm py-3 px-3.5 flex gap-3 items-start w-[min(340px,calc(100vw-2rem))] border-l-4',
         isNew ? 'border-l-primary' : 'border-l-info'
       )}
-      onClick={() => {
-        onDismiss(toast.id)
-        navigate(`/admin/orders/${toast.orderId}`)
-      }}
     >
-      <div className="flex-1 overflow-hidden">
-        <p className="m-0 font-semibold text-sm text-foreground">
+      <button
+        type="button"
+        onClick={() => {
+          onDismiss(toast.id)
+          navigate(`/admin/orders/${toast.orderId}`)
+        }}
+        className="flex-1 overflow-hidden text-left bg-transparent border-0 p-0 cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <span className="block font-semibold text-sm text-foreground">
           {isNew ? t('notifications.newOrder') : t('notifications.orderUpdate')}
-        </p>
-        <p className="mt-0.5 mb-0 text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">
+        </span>
+        <span className="mt-0.5 block text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">
           {toast.orderNumber} — {toast.customerName}
-        </p>
-        <p className="mt-0.5 mb-0 text-xs text-muted-foreground">
+        </span>
+        <span className="mt-0.5 block text-xs text-muted-foreground">
           {formatCurrencyVnd(toast.total)}
           {!isNew && toast.status ? ` · ${t('status.order.' + toast.status, toast.status)}` : ''}
-        </p>
-      </div>
+        </span>
+      </button>
       <button
         type="button"
         aria-label={t('notifications.close')}
-        onClick={(e) => { e.stopPropagation(); onDismiss(toast.id) }}
-        className="bg-transparent border-none cursor-pointer text-muted-foreground text-base leading-none p-0 shrink-0"
+        onClick={() => onDismiss(toast.id)}
+        className="bg-transparent border-none cursor-pointer text-muted-foreground shrink-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        ✕
+        <X size={16} aria-hidden="true" />
       </button>
     </div>
   )

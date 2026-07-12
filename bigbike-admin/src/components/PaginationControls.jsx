@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -56,8 +57,8 @@ export function PaginationControls({ pagination, onPageChange }) {
               className="bb-input h-[26px] w-[52px] px-1 text-center text-xs"
               aria-label={t('pagination.jumpTo')}
             />
-            <Button type="submit" variant="secondary" size="sm" className="bb-btn bb-btn-secondary bb-btn-sm" disabled={!jumpInput}>
-              →
+            <Button type="submit" variant="secondary" size="sm" disabled={!jumpInput} aria-label={t('pagination.jumpTo')}>
+              <ArrowRight size={14} aria-hidden="true" />
             </Button>
           </form>
         )}
@@ -66,7 +67,7 @@ export function PaginationControls({ pagination, onPageChange }) {
           <Button
             variant="secondary"
             size="sm"
-            className="bb-btn bb-btn-secondary bb-btn-sm h-7"
+            className="h-7"
             onClick={() => onPageChange(page - 1)}
             disabled={page <= 1}
           >
@@ -93,7 +94,7 @@ export function PaginationControls({ pagination, onPageChange }) {
           <Button
             variant="secondary"
             size="sm"
-            className="bb-btn bb-btn-secondary bb-btn-sm h-7"
+            className="h-7"
             onClick={() => onPageChange(page + 1)}
             disabled={page >= totalPages}
           >

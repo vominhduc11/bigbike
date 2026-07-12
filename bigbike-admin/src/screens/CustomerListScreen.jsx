@@ -197,7 +197,9 @@ export function CustomerListScreen({ navigate, canUpdate }) {
     {
       key: 'status',
       label: t('customers.colStatus'),
-      render: (c) => canUpdate ? (
+      // Trạng thái ngoài nhóm set-được (vd PENDING "chờ kích hoạt") → huy hiệu chỉ-đọc,
+      // KHÔNG để Select trống trông như lỗi (audit P0-5).
+      render: (c) => (canUpdate && CUSTOMER_STATUSES.includes(c.status)) ? (
         <Select
           value={c.status}
           onValueChange={(v) => handleStatusChange(c, v)}

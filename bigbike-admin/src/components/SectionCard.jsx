@@ -6,7 +6,10 @@
 // dùng <h2>). Bản <h2> không khớp rule CSS `.bb-card-header h3` nên tiêu đề bị lệch cỡ do preflight
 // reset — nay thống nhất dùng <h3>. Body giữ nguyên `.bb-card-body` (không ép flex-gap) để không
 // đổi layout của các nội dung con vốn tự quản khoảng cách.
+import { useTranslation } from 'react-i18next'
+
 export function SectionCard({ title, badge, required, children }) {
+  const { t } = useTranslation()
   return (
     <div className="bb-card">
       <div className="bb-card-header">
@@ -14,9 +17,9 @@ export function SectionCard({ title, badge, required, children }) {
           {title}
           {required && (
             <span
-              className="ml-1 text-[var(--admin-color-status-danger-text)]"
-              aria-label="bắt buộc"
-              title="Bắt buộc"
+              className="ml-1 text-danger"
+              aria-label={t('common.required')}
+              title={t('common.required')}
             >*</span>
           )}
         </h3>

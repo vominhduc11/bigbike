@@ -66,19 +66,8 @@ export function publishBadgeClass(status) {
   }
 }
 
-// Slugify cho gợi ý đường dẫn tiếng Anh của BÀI VIẾT (bỏ dấu, kebab-case).
-// Khớp toSlug của các màn catalog (Category/Brand DetailScreen).
-export function toSlug(text) {
-  return String(text || '')
-    .toLowerCase()
-    .replace(/đ/g, 'd')
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/[^a-z0-9\s]/g, '')
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-}
+// Slugify dùng chung — tách sang src/lib/slug.js (khử trùng lặp với Category/Brand).
+export { toSlug } from '../../lib/slug'
 
 export function buildEmptyForm(contentType) {
   return {

@@ -8,6 +8,7 @@ import { FilterSearchInput } from '../components/FilterSearchInput'
 import { FileText, Plus, Pencil, Trash2, Undo2 } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { AdminTable } from '../components/AdminTable'
+import { Button } from '@/components/ui/button'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { FilterChips } from '../components/FilterChips'
 import { PublishStatusBadge } from '../components/StatusBadge'
@@ -435,15 +436,14 @@ export function ContentListScreen({ navigate, canUpdate }) {
           <p className="bb-muted">{t('content.description')}</p>
         </div>
         <div className="bb-screen-actions">
-          <button
+          <Button
             type="button"
-            className="bb-btn bb-btn-primary"
             disabled={!canUpdate}
             onClick={() => navigate(createPath)}
           >
             <Plus size={14} />
             {t('content.newArticle')}
-          </button>
+          </Button>
         </div>
       </div>
 

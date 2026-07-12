@@ -239,9 +239,9 @@ function CrossLinksCard({ navigate, t }) {
               <div className="bb-link-card-desc">{t('banners.categoryLinkDesc')}</div>
             </div>
           </div>
-          <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={() => navigate('/admin/categories')}>
+          <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/admin/categories')}>
             {t('banners.openCategories')}
-          </button>
+          </Button>
         </div>
         <div className="bb-link-card-item">
           <div className="bb-link-card-copy">
@@ -251,9 +251,9 @@ function CrossLinksCard({ navigate, t }) {
               <div className="bb-link-card-desc">{t('banners.contentLinkDesc')}</div>
             </div>
           </div>
-          <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={() => navigate('/admin/content')}>
+          <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/admin/content')}>
             {t('banners.openContent')}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -140,6 +140,47 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
     })
   }
 
+  // P2-8: cấp / bỏ cả nhóm quyền trong 1 chạm. Cấp: bật hết quyền THƯỜNG ngay; quyền
+  // NHẠY CẢM chưa bật thì để admin bật riêng (giữ xác nhận từng cái — an toàn). Bỏ: gỡ
+  // hết, nhưng KHÔNG gỡ quyền tự-bảo-vệ khỏi role của chính mình (tránh tự khoá).
+  function handleGroupBulk(group, grant) {
+    if (!editMode || !draft) return
+    const keys = group.permissions.map(p => p.key)
+    if (grant) {
+      const nonSensitive = keys.filter(k => !SENSITIVE_PERMS.has(k))
+      const sensitiveLeft = keys.filter(k => SENSITIVE_PERMS.has(k) && !draft.has(k))
+      setDraft(prev => {
+        const next = new Set(prev)
+        nonSensitive.forEach(k => next.add(k))
+        return next
+      })
+      if (sensitiveLeft.length > 0) {
+        setToast({
+          kind: 'info',
+          msg: t('roles.groupSensitiveSkipped', {
+            count: sensitiveLeft.length,
+            defaultValue: 'Đã cấp các quyền thường. {{count}} quyền nhạy cảm cần bật riêng để xác nhận.',
+          }),
+        })
+      }
+    } else {
+      const keptSelf = isOwnRole && keys.some(k => SELF_PROTECTED_PERMS.has(k) && draft.has(k))
+      setDraft(prev => {
+        const next = new Set(prev)
+        keys.forEach(k => { if (!(isOwnRole && SELF_PROTECTED_PERMS.has(k))) next.delete(k) })
+        return next
+      })
+      if (keptSelf) {
+        setToast({
+          kind: 'info',
+          msg: t('roles.selfLockoutKept', {
+            defaultValue: 'Đã giữ lại quyền quản lý phân quyền của chính bạn để tránh tự khoá.',
+          }),
+        })
+      }
+    }
+  }
+
   function handleConfirmSensitive() {
     if (pendingToggle) applyToggle(pendingToggle.key)
     setPendingToggle(null)
@@ -333,6 +374,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
                 onCancelEdit={handleCancelEdit}
                 onRequestSave={handleRequestSave}
                 onToggle={handleToggle}
+                onToggleGroup={handleGroupBulk}
                 onDeleteRole={() => setDeletingRole(selected)}
               />
             ) : (

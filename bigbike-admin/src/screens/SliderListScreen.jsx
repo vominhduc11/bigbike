@@ -116,9 +116,10 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sorta
 
         {canUpdate && (
           <div className="bb-slider-actions">
-            <button
+            <Button
               type="button"
-              className="bb-btn bb-btn-secondary bb-btn-sm"
+              variant="secondary"
+              size="sm"
               disabled={toggling}
               aria-busy={toggling}
               onClick={() => onToggleActive(slider)}
@@ -126,24 +127,27 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sorta
               {/* N7: nhãn phản ánh ngay trạng thái lạc quan (cache đã đổi); chỉ disable trong lúc chờ. */}
               {/* V5: nhãn "Ẩn/Hiện" đồng nhất với HomeVideoListScreen (homeVideos.hideAction/showAction) thay vì common.enable/disable chung chung. */}
               {slider.isActive !== false ? t('sliders.hideAction', { defaultValue: 'Ẩn' }) : t('sliders.showAction', { defaultValue: 'Hiện' })}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="bb-btn bb-btn-secondary bb-btn-sm"
+              variant="secondary"
+              size="sm"
               disabled={deleting}
               onClick={() => onEdit(slider)}
             >
               {t('common.edit')}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="bb-btn bb-btn-secondary bb-btn-sm bb-danger-action"
+              variant="secondary"
+              size="sm"
+              className="text-danger"
               disabled={deleting}
               aria-busy={deleting}
               onClick={() => onDelete(slider.id)}
             >
               {deleting ? t('common.deleting', { defaultValue: 'Đang xoá...' }) : t('common.delete')}
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -471,13 +475,12 @@ export function SliderListScreen({ canUpdate }) {
         </div>
         {canUpdate && (
           <div className="bb-screen-actions">
-            <button
+            <Button
               type="button"
-              className="bb-btn bb-btn-primary"
               onClick={() => { if (showForm && !editingId) { confirmCloseForm() } else { openAddForm() } }}
             >
               <Plus size={14} />{showForm && !editingId ? t('common.cancel') : t('sliders.addBtn')}
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -567,11 +570,11 @@ export function SliderListScreen({ canUpdate }) {
               <div className="bb-form-section-label with-divider">
                 {t('sliders.sectionLink', { defaultValue: 'Liên kết' })}
               </div>
+              <p className="form-field-wide -mt-1 text-xs text-muted-foreground">
+                {t('sliders.linkGroupHint', { defaultValue: 'Bắt buộc: nhập link ngoài hoặc chọn sản phẩm (chọn 1 trong 2).' })}
+              </p>
               <label className="form-field form-field-wide">
-                <span>
-                  {t('sliders.formExternalLink')}
-                  <span className="text-danger ml-0.5" aria-hidden="true">*</span>
-                </span>
+                <span>{t('sliders.formExternalLink')}</span>
                 <Input
                   placeholder="https://..."
                   value={form.externalLink}
@@ -579,7 +582,6 @@ export function SliderListScreen({ canUpdate }) {
                   onChange={(e) => { setForm((p) => ({ ...p, externalLink: e.target.value })); if (linkFieldError) setLinkFieldError('') }}
                   onBlur={handleLinkBlur}
                 />
-                <span className="hint">{t('sliders.formExternalLinkRequiredHint', { defaultValue: 'Bắt buộc nhập link ngoài hoặc chọn sản phẩm liên kết bên dưới.' })}</span>
                 <span className="hint">{t('sliders.formExternalLinkHint')}</span>
               </label>
               <div className="form-field form-field-wide">

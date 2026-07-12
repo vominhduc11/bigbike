@@ -2,14 +2,29 @@ import { Check, X, AlertTriangle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/components/ui/button'
 import { PERM_LABEL_KEY_MAP } from './constants'
 
-export function PermGroup({ group, activePerms, editMode, onToggle, isSuperAdmin }) {
+export function PermGroup({ group, activePerms, editMode, onToggle, onBulk, isSuperAdmin, showCodes = false }) {
   const { t } = useTranslation()
+  const canBulk = editMode && !isSuperAdmin && typeof onBulk === 'function'
   return (
     <div className="mb-6">
-      <div className="text-xs font-bold tracking-wider uppercase text-muted-foreground py-1.5 border-b-2 border-border mb-1">
-        {t(group.groupKey)}
+      <div className="flex items-center justify-between gap-2 py-1.5 border-b-2 border-border mb-1">
+        <span className="text-xs font-bold tracking-wider uppercase text-muted-foreground">
+          {t(group.groupKey)}
+        </span>
+        {/* P2-8: cấp / bỏ cả nhóm trong 1 chạm (quyền nhạy cảm vẫn bật riêng để xác nhận) */}
+        {canBulk && (
+          <span className="flex items-center gap-1 shrink-0">
+            <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => onBulk(group, true)}>
+              {t('roles.selectAllGroup', { defaultValue: 'Chọn tất cả' })}
+            </Button>
+            <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-xs text-muted-foreground" onClick={() => onBulk(group, false)}>
+              {t('roles.clearGroup', { defaultValue: 'Bỏ chọn' })}
+            </Button>
+          </span>
+        )}
       </div>
 
       {group.permissions.map(perm => {
@@ -61,10 +76,12 @@ export function PermGroup({ group, activePerms, editMode, onToggle, isSuperAdmin
               )}
             </label>
 
-            {/* Technical code — for developers; secondary visual weight */}
-            <span className="roles-perm-code" title={`${t('roles.permCode')}: ${perm.key}`}>
-              {perm.key}
-            </span>
+            {/* Mã kỹ thuật — ẩn mặc định (bật qua "Hiện mã kỹ thuật"); nhãn nghiệp vụ là chính (P2-7) */}
+            {showCodes && (
+              <span className="roles-perm-code" title={`${t('roles.permCode')}: ${perm.key}`}>
+                {perm.key}
+              </span>
+            )}
           </div>
         )
       })}

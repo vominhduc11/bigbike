@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { GripVertical } from 'lucide-react'
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
+import { ChevronDown, Copy, GripVertical, Plus, X } from 'lucide-react'
 import { RichTextEditor } from '../RichTextEditor'
 import { RichTextEditorWithSource } from '../RichTextEditorWithSource'
-import { generateId } from '@/lib/utils'
+import { cn, generateId } from '@/lib/utils'
 import { parseSizeGuide, serializeSizeGuide, mergeSizeGuideIntoHtml } from '../../lib/sizeChart'
 import { parseSuitabilityCards, mergeSuitabilityIntoHtml, emptySuitabilityCard, suitabilityCardHasContent } from '../../lib/suitabilityCards'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
@@ -16,18 +17,46 @@ import AiHtmlBrief from '../AiHtmlBrief'
 import { SortableList, DragHandle } from '../Sortable'
 import { showConfirm } from '../../lib/confirm'
 
-export function BlockControls({ disabled, onDuplicate, onRemove }) {
+export function BlockControls({ disabled, insertMenu, onInsertBelow, onDuplicate, onRemove }) {
   const { t } = useTranslation()
+  const insertLabel = t('products.detail.blocks.insertBelow', { defaultValue: 'Chèn khối bên dưới' })
   return (
     <div className="flex items-center gap-1 shrink-0">
+      {insertMenu && onInsertBelow && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon" className="h-7 w-7" disabled={disabled}
+              aria-label={insertLabel} title={insertLabel}>
+              <Plus size={14} />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {insertMenu.map((entry, i) => (
+              <DropdownMenuItem key={`${entry.type}-${i}`} onClick={() => onInsertBelow(entry.type, entry.preset)}>
+                {t(entry.labelKey)}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
       <Button variant="outline" size="icon" className="h-7 w-7"
         onClick={onDuplicate} disabled={disabled}
-        aria-label={t('products.detail.blocks.duplicate')}>⎘</Button>
+        aria-label={t('products.detail.blocks.duplicate')} title={t('products.detail.blocks.duplicate')}>
+        <Copy size={14} aria-hidden="true" />
+      </Button>
       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
         onClick={onRemove} disabled={disabled}
-        aria-label={t('products.detail.blocks.remove')}>✕</Button>
+        aria-label={t('products.detail.blocks.remove')} title={t('products.detail.blocks.remove')}>
+        <X size={14} aria-hidden="true" />
+      </Button>
     </div>
   )
+}
+
+// Xem trước ngắn khi khối bị thu gọn — lấy field văn bản đầu tiên, bỏ thẻ HTML.
+function collapsedPreview(block) {
+  const raw = block?.heading || block?.text || block?.html || block?.caption || block?.subheading || ''
+  return String(raw).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
 export function HeadingBlockEditor({ block, onChange, disabled, contentLang = 'vi' }) {
@@ -131,7 +160,7 @@ export function ListBlockEditor({ block, onChange, disabled, contentLang = 'vi' 
             />
             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
               onClick={() => removeItem(i)} disabled={disabled || isEn}
-              aria-label={t('products.detail.blocks.listRemoveItem')}>✕</Button>
+              aria-label={t('products.detail.blocks.listRemoveItem')}><X size={14} aria-hidden="true" /></Button>
           </div>
         ))}
       </div>
@@ -399,7 +428,7 @@ export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, pro
               />
               <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
                 onClick={() => removeItem(i)} disabled={disabled || isEn}
-                aria-label={t('products.detail.blocks.listRemoveItem')}>✕</Button>
+                aria-label={t('products.detail.blocks.listRemoveItem')}><X size={14} aria-hidden="true" /></Button>
             </div>
           ))}
         </div>
@@ -447,7 +476,7 @@ export function StringListEditor({ items, onChange, disabled, placeholder, addLa
           />
           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
             onClick={() => removeItem(i)} disabled={disabled}
-            aria-label={t('products.detail.blocks.listRemoveItem')}>✕</Button>
+            aria-label={t('products.detail.blocks.listRemoveItem')}><X size={14} aria-hidden="true" /></Button>
         </div>
       ))}
       <Button variant="outline" size="sm" onClick={addItem} disabled={disabled} className="self-start">
@@ -547,7 +576,7 @@ export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang 
                 <span className="text-xs text-muted-foreground">#{i + 1}</span>
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
                   onClick={() => removeCard(i)} disabled={disabled}
-                  aria-label={t('products.detail.blocks.listRemoveItem')}>✕</Button>
+                  aria-label={t('products.detail.blocks.listRemoveItem')}><X size={14} aria-hidden="true" /></Button>
               </div>
               <Input
                 placeholder={t('products.detail.blocks.suitabilityAudiencePlaceholder')}
@@ -723,7 +752,7 @@ export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 
                     />
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
                       onClick={() => removeColumn(ci)} disabled={disabled || colCount <= 1}
-                      aria-label={t('products.detail.sizeGuide.removeColumn')}>✕</Button>
+                      aria-label={t('products.detail.sizeGuide.removeColumn')}><X size={14} aria-hidden="true" /></Button>
                   </div>
                 ))}
               </div>
@@ -766,7 +795,7 @@ export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 
                   </div>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
                     onClick={() => removeRow(ri)} disabled={disabled}
-                    aria-label={t('products.detail.sizeGuide.removeRow')}>✕</Button>
+                    aria-label={t('products.detail.sizeGuide.removeRow')}><X size={14} aria-hidden="true" /></Button>
                 </div>
               )}
               footer={
@@ -835,9 +864,12 @@ export function BlockTypeLabel({ type }) {
   )
 }
 
-export function BlockCard({ block, disabled, structDisabled, contentLang, sortable, onUpdate, onRemove, onDuplicate, onPickImage, onPickVideo, onAltBlur, productMode }) {
+export function BlockCard({ block, disabled, structDisabled, contentLang, sortable, collapsed, onToggleCollapse, insertMenu, onInsertBelow, onUpdate, onRemove, onDuplicate, onPickImage, onPickVideo, onAltBlur, productMode }) {
   const { t } = useTranslation()
   const dragDisabled = structDisabled ?? disabled
+  const collapseLabel = collapsed
+    ? t('products.detail.blocks.expand', { defaultValue: 'Mở khối' })
+    : t('products.detail.blocks.collapse', { defaultValue: 'Thu gọn khối' })
   return (
     <div
       ref={sortable?.setNodeRef}
@@ -855,19 +887,45 @@ export function BlockCard({ block, disabled, structDisabled, contentLang, sortab
           <GripVertical size={16} />
         </button>
       )}
+      {onToggleCollapse && (
+        <button
+          type="button"
+          onClick={onToggleCollapse}
+          className="shrink-0 self-start pt-1 text-muted-foreground hover:text-foreground"
+          aria-expanded={!collapsed}
+          aria-label={collapseLabel}
+          title={collapseLabel}
+        >
+          <ChevronDown size={16} className={cn('transition-transform', collapsed && '-rotate-90')} aria-hidden="true" />
+        </button>
+      )}
       <BlockTypeLabel type={block.type} />
       <div className="flex-1 min-w-0">
-        {block.type === 'heading'   && <HeadingBlockEditor   block={block} onChange={onUpdate} disabled={disabled} contentLang={contentLang} />}
-        {block.type === 'paragraph' && <ParagraphBlockEditor block={block} onChange={onUpdate} disabled={disabled} productMode={productMode} contentLang={contentLang} />}
-        {block.type === 'list'      && <ListBlockEditor      block={block} onChange={onUpdate} disabled={disabled} contentLang={contentLang} />}
-        {block.type === 'image'     && <ImageBlockEditor     block={block} onChange={onUpdate} disabled={disabled} onPickImage={onPickImage} onAltBlur={onAltBlur} contentLang={contentLang} />}
-        {block.type === 'video'     && <VideoBlockEditor     block={block} onChange={onUpdate} disabled={disabled} onPickVideo={onPickVideo} contentLang={contentLang} />}
-        {block.type === 'callout'   && <CalloutBlockEditor   block={block} onChange={onUpdate} disabled={disabled} contentLang={contentLang} />}
-        {block.type === 'feature'   && <FeatureBlockEditor   block={block} onChange={onUpdate} disabled={disabled} onPickImage={onPickImage} onAltBlur={onAltBlur} productMode={productMode} contentLang={contentLang} />}
-        {block.type === 'divider'   && <DividerBlockEditor />}
+        {collapsed ? (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className="block w-full truncate py-1 text-left text-sm text-muted-foreground hover:text-foreground"
+          >
+            {collapsedPreview(block) || t('products.detail.blocks.collapsedHint', { defaultValue: '(đã thu gọn — bấm để mở)' })}
+          </button>
+        ) : (
+          <>
+            {block.type === 'heading'   && <HeadingBlockEditor   block={block} onChange={onUpdate} disabled={disabled} contentLang={contentLang} />}
+            {block.type === 'paragraph' && <ParagraphBlockEditor block={block} onChange={onUpdate} disabled={disabled} productMode={productMode} contentLang={contentLang} />}
+            {block.type === 'list'      && <ListBlockEditor      block={block} onChange={onUpdate} disabled={disabled} contentLang={contentLang} />}
+            {block.type === 'image'     && <ImageBlockEditor     block={block} onChange={onUpdate} disabled={disabled} onPickImage={onPickImage} onAltBlur={onAltBlur} contentLang={contentLang} />}
+            {block.type === 'video'     && <VideoBlockEditor     block={block} onChange={onUpdate} disabled={disabled} onPickVideo={onPickVideo} contentLang={contentLang} />}
+            {block.type === 'callout'   && <CalloutBlockEditor   block={block} onChange={onUpdate} disabled={disabled} contentLang={contentLang} />}
+            {block.type === 'feature'   && <FeatureBlockEditor   block={block} onChange={onUpdate} disabled={disabled} onPickImage={onPickImage} onAltBlur={onAltBlur} productMode={productMode} contentLang={contentLang} />}
+            {block.type === 'divider'   && <DividerBlockEditor />}
+          </>
+        )}
       </div>
       <BlockControls
         disabled={dragDisabled}
+        insertMenu={insertMenu}
+        onInsertBelow={onInsertBelow}
         onDuplicate={onDuplicate}
         onRemove={onRemove}
       />

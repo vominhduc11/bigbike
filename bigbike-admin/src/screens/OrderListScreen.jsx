@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQueryClient } from '@tanstack/react-query'
-import { SlidersHorizontal } from 'lucide-react'
+import { ArrowRight, SlidersHorizontal } from 'lucide-react'
 import { ExportButton } from '@/components/ExportButton'
 import { toast } from '@/lib/toast'
 import { PageSizeSelect } from '../components/PageSizeSelect'
@@ -18,6 +18,7 @@ import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { showConfirm } from '../lib/confirm'
 import { StatusBadge } from '../components/StatusBadge'
+import { Button } from '@/components/ui/button'
 import { orderRowAccent } from '../lib/statusTone'
 import { useAdminList } from '../lib/useAdminList'
 import { useColumnVisibility } from '../lib/useColumnVisibility'
@@ -231,6 +232,15 @@ export function OrderListScreen({ navigate, canUpdate }) {
       render: (order) => <StatusBadge type="payment" status={order.paymentStatus} />,
     },
     {
+      // Trạng thái giao hàng — biết đơn nào cần đóng gói/giao mà không cần mở chi tiết
+      // (đơn nhận tại cửa hàng hiển thị "—"). UI-only: dữ liệu đã có sẵn trong danh sách.
+      key: 'fulfillmentStatus',
+      label: t('orders.colFulfillment', { defaultValue: 'Giao hàng' }),
+      render: (order) => order.fulfillmentType === 'DELIVERY'
+        ? <StatusBadge type="fulfillment" status={order.fulfillmentStatus || 'UNFULFILLED'} />
+        : <span className="bb-muted">—</span>,
+    },
+    {
       key: 'orderStatus',
       label: t('orders.colStatus'),
       render: (order) => {
@@ -239,17 +249,18 @@ export function OrderListScreen({ navigate, canUpdate }) {
           <div className="flex items-center gap-2 flex-wrap">
             <StatusBadge type="order" status={order.orderStatus} />
             {inlineTargets.map((target) => (
-              <button
+              <Button
                 key={target}
                 type="button"
-                className="bb-btn bb-btn-ghost bb-btn-sm"
+                variant="ghost"
+                size="sm"
                 disabled={!!inlineUpdating[order.id]}
                 onClick={(e) => { e.stopPropagation(); handleInlineStatusChange(order, target) }}
               >
                 {inlineUpdating[order.id] === target
                   ? t('orders.detail.savingShort')
-                  : `→ ${target === 'PROCESSING' ? t('orders.detail.actionProcessing') : t('orders.detail.actionOnHold')}`}
-              </button>
+                  : <><ArrowRight size={14} aria-hidden="true" />{target === 'PROCESSING' ? t('orders.detail.actionProcessing') : t('orders.detail.actionOnHold')}</>}
+              </Button>
             ))}
           </div>
         )
@@ -347,9 +358,9 @@ export function OrderListScreen({ navigate, canUpdate }) {
           onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
         />
         <ColumnVisibilityToggle allColumns={allColumns} hiddenKeys={hiddenKeys} onToggle={toggleColumn} />
-        <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={resetFilters}>
+        <Button type="button" variant="ghost" size="sm" onClick={resetFilters}>
           <SlidersHorizontal size={13} />{t('orders.clearFilters')}
-        </button>
+        </Button>
       </div>
 
       {/* Thanh hành động hàng loạt — chuyển nhiều đơn PENDING/ON_HOLD sang Đang xử lý. */}

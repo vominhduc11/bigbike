@@ -2,14 +2,8 @@ import { Pencil, Trash2, RotateCcw, AlertTriangle, Music, FileText, Copy } from 
 import { toast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
 import { formatText } from '../lib/formatters'
+import { formatBytes } from './media-picker/pickerUtils'
 import { Checkbox } from '@/components/ui/checkbox'
-
-function formatSize(bytes) {
-  if (!bytes) return '—'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
 
 const isImage = (m) => m && m.startsWith('image/')
 const isVideo = (m) => m && m.startsWith('video/')
@@ -25,7 +19,7 @@ export function MediaCard({
   const filename = formatText((media.filename ?? '').split('/').pop())
   const displayName = media.title ? formatText(media.title) : filename
   const dimensions = media.width && media.height ? `${media.width}×${media.height}` : null
-  const meta = [formatSize(media.fileSize), dimensions].filter(Boolean).join(' · ')
+  const meta = [formatBytes(media.fileSize), dimensions].filter(Boolean).join(' · ')
 
   const className = [
     'medialib-card',
