@@ -267,8 +267,13 @@ export function createProductSchema(t, isCreate = false) {
           if (Number.isInteger(variantSale) && Number.isInteger(variantRetail) && variantSale >= variantRetail) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.variant.errSalePriceHigh'), path: ['variants', i, 'salePrice'] })
           }
-          // PRODUCT_RULE_005 — ảnh đại diện màu biến thể chỉ bắt buộc lúc XUẤT BẢN.
-          if (data.publishStatus === 'PUBLISHED' && !String(v?.imageUrl ?? '').trim()) {
+          // PRODUCT_RULE_005 (sửa 2026-07-11) — ảnh đại diện màu chỉ bắt buộc lúc XUẤT BẢN và
+          // CHỈ với biến thể CÓ thuộc tính màu. Biến thể không màu (vd chỉ có Size) không có ô
+          // ảnh trên form nên không được đòi — nếu không, sản phẩm một-màu-nhiều-size không đăng được.
+          const variantHasColor = (v?.options || []).some(
+            (o) => isColorAttributeName(o.name) && String(o.value ?? '').trim(),
+          )
+          if (data.publishStatus === 'PUBLISHED' && variantHasColor && !String(v?.imageUrl ?? '').trim()) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.variant.errImageRequired'), path: ['variants', i, 'imageUrl'] })
           }
         }

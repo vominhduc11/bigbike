@@ -756,6 +756,28 @@ class VariantGalleryRoundtripTest {
     }
 
     @Test
+    void sizeOnlyVariant_publishesWithoutVariantImage() {
+        // PRODUCT_RULE_005 (fix 2026-07-11): a variant with only a Size option (no color) has
+        // no "color representation image" and no image field on the admin form — the publish
+        // gate must NOT demand one, else one-color/multi-size products cannot be published.
+        UpsertProductRequest create = createProductRequest("size-only-publishable", "Size Only Publishable");
+        create.setTranslations(englishName("Size Only Publishable EN"));
+
+        VariantRequest sizeOnly = variantRequest();         // carries a SKU, no image, no gallery
+        sizeOnly.setIsAvailable(true);
+        sizeOnly.setRetailPrice(BigDecimal.TEN);
+        sizeOnly.setOptions(List.of(option("Size", "M")));  // Size only — NO color option
+        create.setVariants(List.of(sizeOnly));
+
+        // Must not throw PublishGateException even though the variant carries no image.
+        Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
+
+        assertThat(saved.publishStatus())
+                .isEqualTo(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        assertThat(saved.variants()).hasSize(1);
+    }
+
+    @Test
     void variantImage_usesExplicitImageUrl() {
         UpsertProductRequest create = createProductRequest("vimage-explicit-image-url", "VImage Explicit ImageUrl");
         create.setTranslations(englishName("VImage Explicit ImageUrl EN"));

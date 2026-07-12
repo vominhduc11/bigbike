@@ -480,7 +480,14 @@ final class AdminMutationValidators {
                 errors.add(new ApiErrorDetail(prefix + "salePrice", "INVALID_VALUE",
                         "salePrice cannot be set on a variant that has no retailPrice of its own."));
             }
-            if (requireImages && trimToNull(variant.getImageUrl()) == null) {
+            // Ảnh đại diện màu chỉ bắt buộc cho biến thể CÓ thuộc tính màu (PRODUCT_RULE_005,
+            // sửa 2026-07-11). Biến thể không màu (vd chỉ có Size) không có ô ảnh trên form và
+            // applyVariants luôn đặt imageUrl=null cho nó — nên không được đòi ảnh, tránh khoá
+            // cứng việc đăng bán sản phẩm một-màu-nhiều-size.
+            boolean variantHasColor = variant.getOptions() != null && variant.getOptions().stream()
+                    .anyMatch(o -> ProductFieldApplier.isColorAttributeName(o.getOptionName())
+                            && trimToNull(o.getOptionValue()) != null);
+            if (requireImages && variantHasColor && trimToNull(variant.getImageUrl()) == null) {
                 errors.add(new ApiErrorDetail(prefix + "imageUrl", REQUIRED, "A variant color image is required to publish."));
             }
         }

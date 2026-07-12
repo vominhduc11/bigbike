@@ -124,21 +124,34 @@ describe('createProductSchema — PRODUCT_RULE_005 required-field matrix', () =>
     expect(paths).not.toContain('variants.0.retailPrice')
   })
 
-  it('has variants / publish: each real variant also requires its own imageUrl', () => {
+  it('has variants / publish: a COLOR variant requires its own imageUrl', () => {
     const schema = createProductSchema(t, true)
     const result = schema.safeParse(baseForm({
       retailPrice: '', publishStatus: 'PUBLISHED', imageUrl: '/media/main.jpg',
-      variants: [{ name: 'Đỏ - M', sku: 'VAR-1', retailPrice: '100000', imageUrl: '' }],
+      variants: [{ name: 'Đỏ - M', sku: 'VAR-1', retailPrice: '100000', imageUrl: '',
+        options: [{ name: 'Màu sắc', value: 'Đỏ' }, { name: 'Size', value: 'M' }] }],
     }))
     expect(result.success).toBe(false)
     expect(pathsOf(result)).toContain('variants.0.imageUrl')
+  })
+
+  it('PRODUCT_RULE_005 (fix 2026-07-11): a SIZE-ONLY variant (no color) does NOT require imageUrl on publish', () => {
+    const schema = createProductSchema(t, true)
+    const result = schema.safeParse(baseForm({
+      retailPrice: '', publishStatus: 'PUBLISHED', imageUrl: '/media/main.jpg',
+      variants: [{ name: 'M', sku: 'VAR-1', retailPrice: '100000', imageUrl: '',
+        options: [{ name: 'Size', value: 'M' }] }],
+    }))
+    expect(result.success).toBe(true)
+    expect(pathsOf(result)).not.toContain('variants.0.imageUrl')
   })
 
   it('has variants / publish complete: passes', () => {
     const schema = createProductSchema(t, true)
     const result = schema.safeParse(baseForm({
       retailPrice: '', publishStatus: 'PUBLISHED', imageUrl: '/media/main.jpg',
-      variants: [{ name: 'Đỏ - M', sku: 'VAR-1', retailPrice: '100000', imageUrl: '/media/red.jpg' }],
+      variants: [{ name: 'Đỏ - M', sku: 'VAR-1', retailPrice: '100000', imageUrl: '/media/red.jpg',
+        options: [{ name: 'Màu sắc', value: 'Đỏ' }, { name: 'Size', value: 'M' }] }],
     }))
     expect(result.success).toBe(true)
   })

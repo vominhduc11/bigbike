@@ -136,7 +136,8 @@ export function getPublishReadiness(form, t) {
   // Publish gate (PRODUCT_RULE_005, viết lại 2026-07-07): name/slug/category/brand/gender/ảnh
   // bắt buộc ở mọi lần đăng, tạo mới lẫn sửa như nhau (không còn phân biệt isCreate). SKU/giá
   // niêm yết cấp sản phẩm chỉ bắt buộc khi KHÔNG có biến thể; khi có biến thể, mỗi biến thể
-  // thật phải có ảnh đại diện màu riêng. Mô tả ngắn/mô tả chi tiết/FAQ/ô số liệu/dải tin cậy
+  // CÓ MÀU phải có ảnh đại diện màu riêng (biến thể không màu, vd chỉ có Size, không cần —
+  // sửa 2026-07-11). Mô tả ngắn/mô tả chi tiết/FAQ/ô số liệu/dải tin cậy
   // không bao giờ bắt buộc — chỉ là nhắc nhở (required:false), không chặn đăng.
   const hasVariants = (form.variants || []).some((v) => v.name?.trim())
   const realVariants = (form.variants || []).filter((v) => v.name?.trim())
@@ -151,8 +152,9 @@ export function getPublishReadiness(form, t) {
     // SKU cấp sản phẩm: luôn luôn bắt buộc.
     { id: 'sku',       label: t('products.detail.checklist.sku', { defaultValue: 'Mã SKU' }), ok: Boolean(form.sku?.trim()),          required: true },
     { id: 'price',     label: t('products.detail.checklist.price'),     ok: hasVariants || (Boolean(form.retailPrice?.trim()) && Number(form.retailPrice) > 0), required: true },
-    // Ảnh đại diện màu: bắt buộc cho MỖI biến thể thật khi sản phẩm có biến thể.
-    { id: 'variantImages', label: t('products.detail.checklist.variantImages', { defaultValue: 'Ảnh đại diện màu (từng biến thể)' }), ok: !hasVariants || realVariants.every((v) => Boolean(v.imageUrl?.trim())), required: hasVariants },
+    // Ảnh đại diện màu: chỉ bắt buộc cho biến thể CÓ màu (sửa 2026-07-11); biến thể không màu
+    // (vd chỉ có Size) không có ô ảnh trên form nên không tính vào gate đăng bán.
+    { id: 'variantImages', label: t('products.detail.checklist.variantImages', { defaultValue: 'Ảnh đại diện màu (từng biến thể)' }), ok: realVariants.filter((v) => getVariantColorValue(v)).every((v) => Boolean(v.imageUrl?.trim())), required: realVariants.some((v) => getVariantColorValue(v)) },
     // Nhắc nhở (không chặn đăng): các phần điền vào thì trang sản phẩm đầy đủ & đẹp hơn.
     // Điều kiện `ok` mirror đúng bộ lọc trong toPayload để khớp cái thực sự được lưu.
     { id: 'shortDesc', label: t('products.detail.checklist.shortDesc'), ok: Boolean(form.shortDescription?.trim()),                                 required: false },
