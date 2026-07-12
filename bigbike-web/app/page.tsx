@@ -97,20 +97,18 @@ export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const settingsResult = await listPublicSettings(locale);
   const settings = settingsResult.data ?? [];
+  // Nhóm setting SEO trang chủ (seo_home_title/description, og_image_url) gỡ hẳn V337
+  // (2026-07-12): title/description rơi về tên shop, không còn og:image mặc định.
   const siteName = pickSetting(settings, ["site_name"]) || DEFAULT_SITE_NAME;
-  const title = pickSetting(settings, ["seo_home_title"]) || siteName;
-  const description = pickSetting(settings, ["seo_home_description"]) || siteName;
-  const ogImage = pickSetting(settings, ["og_image_url"]) || undefined;
 
   return {
     ...buildPublicMetadata({
-      title,
-      description,
+      title: siteName,
+      description: siteName,
       canonicalPath: toHomePath(),
-      ogImage,
       siteName,
     }),
-    title: { absolute: title },
+    title: { absolute: siteName },
   };
 }
 

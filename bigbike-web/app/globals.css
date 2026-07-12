@@ -919,11 +919,38 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
    automatic — no per-page class allowlist. Hero pages (data-page-hero) skip this:
    the banner already covers the emblem. This vertical offset is robust at any
    viewport (a horizontal-padding-only fix is unreliable — the breadcrumb's left
-   edge shifts with its rail width). Logo ~172px tall (206px at ≥1920px); header
-   80px → ~92px overflow. Intentional: the emblem gets its own breathing space. */
+   edge shifts with its rail width).
+
+   The logo is a fixed w-[190px] (~172px tall) at EVERY desktop breakpoint — it
+   never grows — and the header/flow-spacer are always 80px. So the emblem hangs
+   ~92px below the header, and 92px is the correct clearance at every width.
+   Do NOT add var(--bb-header-stack) here: HeaderClient already renders an 80px
+   flow spacer above .bb-main (see the base .bb-main rule's warning), so re-adding
+   the header height produced a blank ~80px band on every hero-less route. */
 @media (min-width: 768px) {
   body:has(.bb-heroless) .bb-main {
-    padding-top: calc(var(--bb-header-stack) + 92px);
+    padding-top: 92px;
+  }
+}
+
+/* PDP-only: thu gọn khoảng trắng đầu trang do logo treo tạo ra. Chỉ nhắm
+   .bb-product-page (đáy nội dung 1200px, biết chắc hình học) — KHÔNG đụng các
+   heroless khác (account/tĩnh giữ nguyên 92px) và KHÔNG đụng mobile (<768px).
+   Selector nặng hơn rule chung (0,3,1 > 0,2,2) nên override thắng bất kể thứ tự.
+   - ≥768px: ở màn hẹp/vừa cột nội dung gần full → breadcrumb vẫn nằm dưới logo.
+     Logo có đáy NHÌN THẤY ở ~162px (= 82px dưới header 80px), 10px cuối trong
+     suốt → hạ 92px xuống 82px để logo vẫn không đè chữ, cắt phần đệm thừa.
+   - ≥1680px: khung 1200px lệch phải, mép trái breadcrumb (~256px) vượt mép phải
+     logo (214px, kể từ ~1596px) → logo treo hẳn ở lề trái trống, không phủ nội
+     dung → bỏ khoảng đẩy, chỉ chừa 24px thở dưới header. */
+@media (min-width: 768px) {
+  body:has(.bb-product-page.bb-heroless) .bb-main {
+    padding-top: 82px;
+  }
+}
+@media (min-width: 1680px) {
+  body:has(.bb-product-page.bb-heroless) .bb-main {
+    padding-top: 24px;
   }
 }
 
@@ -4113,10 +4140,8 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
   }
   body:has(.bb-account-layout) .bb-breadcrumb { max-width: 1560px; }
 
-  /* Hero-less logo-emblem clearance: logo grows to ~206px tall at 3xl, header = 88px → 118px overflow */
-  body:has(.bb-heroless) .bb-main {
-    padding-top: calc(var(--bb-header-stack) + 118px);
-  }
+  /* Hero-less logo-emblem clearance inherits the base 92px — the logo is a fixed
+     w-[190px] and does not grow at 3xl, so no per-breakpoint override is needed. */
 
   /* Header — height token + container rail alignment at 3xl (1600px rail).
      max-width = var(--bb-container-xl) + 2×padding → logo/icon align with content column edges.
@@ -4155,10 +4180,8 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
   }
   body:has(.bb-account-layout) .bb-breadcrumb { max-width: 2200px; }
 
-  /* Hero-less logo-emblem clearance: logo stays ~206px tall at 4xl, header grows to 96px → 110px overflow */
-  body:has(.bb-heroless) .bb-main {
-    padding-top: calc(var(--bb-header-stack) + 110px);
-  }
+  /* Hero-less logo-emblem clearance inherits the base 92px — the logo is a fixed
+     w-[190px] and does not grow at 4xl, so no per-breakpoint override is needed. */
 
   /* Header — height token at 4xl (2240px rail). The header container's max-width is now
      inline Tailwind (SiteHeader.tsx) keyed off var(--bb-container-xl) = 140rem (set in Tier 1). */

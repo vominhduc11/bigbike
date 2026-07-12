@@ -112,10 +112,7 @@ class HomepagePublicApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[*].settingKey", hasItems(
                         "zalo_url",
-                        "hotline",
-                        "seo_home_title",
-                        "seo_home_description",
-                        "og_image_url"
+                        "hotline"
                 )))
                 .andExpect(jsonPath("$.meta.requestId").exists());
     }

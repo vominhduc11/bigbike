@@ -37,7 +37,7 @@ export const IMAGE_RECO = {
   // vừa dùng làm minh hoạ hero trang chi tiết hãng (native-render, giống illustration) — ngữ cảnh
   // sau đòi hỏi cao hơn: giữ khung 400×200 hiện có × 2.
   logo: { idealW: 800, idealH: 400, minW: 800, minH: 400, ratio: null },
-  // Ảnh OG/chia sẻ mạng xã hội (og_image_url, seoOgImageUrl): KHÔNG có khung hiển thị trên
+  // Ảnh OG/chia sẻ mạng xã hội (seoOgImageUrl per-sản phẩm/danh mục/bài viết): KHÔNG có khung hiển thị trên
   // bigbike-web (chỉ nằm trong thẻ <meta og:image>, Facebook/Zalo tự crop) — không áp công thức
   // 2× nội bộ, dùng thẳng chuẩn 1200×630 khuyến nghị của Open Graph (đã đủ nét ở mọi nơi hiển thị).
   cover: { idealW: 1200, idealH: 630, minW: 1200, minH: 630, ratio: [40, 21], ratioTolerance: 0.15 },

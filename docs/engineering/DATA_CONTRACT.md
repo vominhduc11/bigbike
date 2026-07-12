@@ -1462,7 +1462,7 @@ The `GET /api/v1/admin/reports/orders/export` endpoint returns a CSV with the fo
 | `public_product` | **No shared settings.** All product-detail content is per-product now: commitment rows under the buy buttons (`product.commitments`, JSONB on `products`) and the trust-badge row above the title (`product.trustBadges`, HTML-only). The former `product_commitment_*` (V228) and `product_trust_*` keys were removed in V232/V233. | (không có tab — nhóm trống) |
 | `public_hero` | Hero banners for listing pages (`/san-pham`, `/brands`, `/tin-tuc`) — 17 keys (5 per page incl. per-page `illustration_url` + 2 global fallbacks). Managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`), not the generic settings screen. | Banner trang |
 | `promo` | **No rows.** The promo-banner keys (`promo_title`/`promo_off`/`promo_href`/`promo_image_url`) used to live in the `public_home` group — that group was removed entirely in V311 (hardcoded in `bigbike-web`); no `promo` group ever existed in the DB. | (không có tab — nhóm trống) |
-| `seo` | Homepage SEO title/description, OG image, bottom HTML block | SEO website |
+| `seo` | Homepage bottom SEO HTML block (`home_content_bottom_html`). The homepage SEO title/description + OG image (`seo_home_title`/`seo_home_description`/`og_image_url`) were **removed 2026-07-12 (V337)** — see "`seo` — 3 keys removed (V337)" below. | SEO website |
 | `store` | Operational: low-stock threshold | Cửa hàng |
 | `inventory` | **No rows.** The `default_warranty_months` key was removed in V266 (warranty module dropped); `reservation_ttl_minutes` and `serial_inventory_only` in V259 (serial tracking dropped). No `inventory` group remains in the DB. | (không có tab — nhóm trống) |
 | `product_assign` | Editable text of the "Phân công" guide shown on the product AND content/article create/edit screens (shared data) — `product_assign_title` (STRING) + `product_assign_roles` (JSON array, 1–6 dynamic role entries, V318). **Super-admin-only writable** (see below). | Phân công sản phẩm |
@@ -1485,7 +1485,19 @@ The `GET /api/v1/admin/reports/orders/export` endpoint returns a CSV with the fo
 > | Khối giới thiệu | `about_title`, `about_subtitle`, `about_content_html` |
 > | Sản phẩm nổi bật / Tin tức / Video | `home_featured_kicker`, `home_featured_title`, `home_news_kicker`, `home_news_title`, `home_videos_title` |
 >
-> The EN swap for these blocks (client-side, `useLocale()`) now picks between hardcoded VI/EN string constants instead of refetching `GET /api/v1/settings/public` by key — `HomeContentBottom`/`home_content_bottom_html` (group `seo`) is unaffected and still admin-editable. `promo_image_url`'s external hotlink (`https://bigbike.vn/wp-content/themes/bigbike/images/banner-ads.jpg`) was replaced with the already-vendored local asset `bigbike-web/public/wp-content/themes/bigbike/images/banner-ads.jpg` (byte-identical, confirmed by checksum) — no new file added, no more external image host per the MinIO/no-hotlink rule. Same pattern as the `public_about` removal (V274) and `footer_tagline`/`bct_url`/`business_registration` removal (V308) above.
+> The EN swap for these blocks (client-side, `useLocale()`) now picks between hardcoded VI/EN string constants instead of refetching `GET /api/v1/settings/public` by key — the `HomeContentBottom`/`home_content_bottom_html` block (group `seo`) is unaffected and still admin-editable (V337 removed 3 sibling `seo` keys but kept this one, see "`seo` — 3 keys removed" below). `promo_image_url`'s external hotlink (`https://bigbike.vn/wp-content/themes/bigbike/images/banner-ads.jpg`) was replaced with the already-vendored local asset `bigbike-web/public/wp-content/themes/bigbike/images/banner-ads.jpg` (byte-identical, confirmed by checksum) — no new file added, no more external image host per the MinIO/no-hotlink rule. Same pattern as the `public_about` removal (V274) and `footer_tagline`/`bct_url`/`business_registration` removal (V308) above.
+
+### `seo` — 3 keys removed (2026-07-12, V337)
+
+> **Removed (2026-07-12, V337).** Shop-owner decision: **3 of the 4** `seo` keys were dropped — the homepage SEO title, description, and OG/social-share image. These controlled how the homepage appears on Google + when shared; their only consumer was `bigbike-web/app/page.tsx` (`generateMetadata`). After removal the homepage falls back gracefully: `title`/`description` come from `site_name` (was `seo_home_title`/`seo_home_description`) and it emits **no default `og:image`** (was `og_image_url`). Removed together: the 3 `site_settings` rows (`V337__remove_seo_home_settings.sql`), the 3 `SettingDefinitionRegistry` definitions, and their admin `constants.js` entries (`KEY_LABELS_VI`/`KEY_HINTS_VI`/`KEY_RECO`/`KEY_GUIDE`). The 3 removed keys:
+>
+> | Key | Type | What it controlled |
+> |---|---|---|
+> | `seo_home_title` | STRING | Homepage `<title>` (Google/browser tab) |
+> | `seo_home_description` | LONG_TEXT | Homepage meta description (Google snippet) |
+> | `og_image_url` | IMAGE_URL | Default OG/social-share image (1200×630) |
+>
+> **Kept:** `home_content_bottom_html` (HTML — the bottom-of-homepage SEO block) is still admin-editable and is the sole remaining key in the group, so the **"SEO website" admin tab, the `seo` group in `SettingDefinitionRegistry`/`TAB_ORDER`/`TAB_META`/`TRANSLATABLE_GROUPS`, the `group_seo` locale string, and the `HomeContentBottom`/`useEnSettingLookup` web helpers all remain**. Per-entity SEO (category/product/article — `SeoMeta`/`seoOgImageUrl` + the `IMAGE_RECO.cover` recommendation) is a separate concern and is untouched.
 
 ### `public_about` keys — removed (2026-06-24, V274)
 
@@ -1529,7 +1541,7 @@ Migration `V132__cleanup_sepay_and_normalize_inventory_settings.sql`:
 Status: `CONFIRMED_FROM_CODE`
 
 Evidence:
-- `SettingDefinitionRegistry.java` — registers keys for `general`/`contact`/`payment`/`public_hero`/`seo`/`store`/`product_assign` (the `promo`/`tax`/`inventory`/`public_product`/`security`/`public_about`/`public_home` groups have **no** registered keys)
+- `SettingDefinitionRegistry.java` — registers keys for `general`/`contact`/`payment`/`public_hero`/`seo`/`store`/`product_assign` (the `seo` group now has only `home_content_bottom_html` after V337; the `promo`/`tax`/`inventory`/`public_product`/`security`/`public_about`/`public_home` groups have **no** registered keys)
 - `V157__seed_product_assignment_settings.sql` — original 7-key seed; `V318__consolidate_product_assignment_roles.sql` — consolidation to the 2-key JSON shape
 - `AdminProductAssignmentController.java` — `GET /api/v1/admin/product-assignment` (read for the banner, `products.read`)
 - `SettingsScreen.jsx` — `HIDDEN_GROUPS` now includes `product_assign` (bypasses the generic per-field settings flow; rendered instead by the bespoke `AssignmentRolesScreen.jsx`, same pattern as `public_hero`/`BannerScreen.jsx`), explicit `isSuperAdmin` gate on the synthetic tab

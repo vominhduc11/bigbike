@@ -193,10 +193,8 @@ export const KEY_LABELS_VI = {
   zalo_display: 'Chữ hiển thị Zalo (popup liên hệ)',
   // public_product — toàn bộ nội dung PDP giờ quản theo TỪNG sản phẩm (trang sửa sản phẩm):
   // khối "cam kết" dưới nút mua (V232) + dải "tin cậy" trên tên sản phẩm (V233). Không còn setting chung.
-  // seo
-  seo_home_title: 'SEO Title trang chủ (thẻ <title>)',
-  seo_home_description: 'SEO Description trang chủ (meta)',
-  og_image_url: 'Ảnh khi share Facebook (Open Graph)',
+  // seo: 3 ô SEO Title/Description/Ảnh chia sẻ trang chủ gỡ V337 (2026-07-12);
+  // chỉ còn ô nội dung SEO cuối trang chủ.
   home_content_bottom_html: 'Nội dung SEO cuối trang chủ (rich-text)',
   // public_hero — Tất cả sản phẩm
   hero_products_image_url: 'Ảnh hero — trang Tất cả sản phẩm (desktop)',
@@ -221,7 +219,6 @@ export const KEY_LABELS_VI = {
 }
 
 export const KEY_HINTS_VI = {
-  og_image_url:             '1200×630px (chuẩn mạng xã hội).',
   hero_products_image_url:         'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
   hero_products_mobile_image_url:  'Ảnh dọc cho điện thoại, ví dụ 750×1125px. Bỏ trống sẽ dùng ảnh desktop.',
   hero_brands_image_url:           'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
@@ -235,7 +232,6 @@ export const KEY_HINTS_VI = {
 // Chuẩn kích thước khuyến nghị theo từng cấu hình ảnh (so khớp với KEY_HINTS_VI).
 // Key không liệt kê sẽ dùng spec chung (chỉ nhắc khi quá nhỏ, không khóa tỉ lệ).
 export const KEY_RECO = {
-  og_image_url:                    IMAGE_RECO.cover,
   hero_products_image_url:         IMAGE_RECO.bannerWide,
   hero_products_mobile_image_url:  IMAGE_RECO.heroMobile,
   hero_brands_image_url:           IMAGE_RECO.bannerWide,
@@ -268,7 +264,7 @@ export const SECTION_GUIDE = {
   hero_brands:     { title: 'Banner đầu trang Thương hiệu' },
   hero_news:       { title: 'Banner đầu trang Tin tức' },
   hero_default:    { title: 'Banner mặc định — trang listing chưa đặt ảnh riêng' },
-  seo_home:        { title: 'SEO trang chủ (thẻ meta / khi chia sẻ)' },
+  seo_home:        { title: 'Nội dung SEO cuối trang chủ' },
 }
 export const SECTION_ORDER = Object.keys(SECTION_GUIDE)
 
@@ -316,9 +312,7 @@ export const KEY_GUIDE = {
   hero_default_bg_url:           ['hero_default', 'ảnh nền mặc định'],
   hero_default_illustration_url: ['hero_default', 'ảnh minh hoạ mặc định'],
 
-  seo_home_title:           ['seo_home', 'thẻ tiêu đề (tab trình duyệt / Google)'],
-  seo_home_description:     ['seo_home', 'mô tả meta (kết quả Google)'],
-  og_image_url:             ['seo_home', 'ảnh khi chia sẻ mạng xã hội'],
+  // seo_home_title/seo_home_description/og_image_url: 3 ô gỡ V337 — chỉ còn ô dưới.
   home_content_bottom_html: ['seo_home', 'đoạn nội dung cuối trang chủ'],
 
   // product_assign: KHÔNG còn ở đây — xem ghi chú ở KEY_LABELS_VI/HIDDEN_GROUPS phía trên.

@@ -83,17 +83,7 @@ INSERT INTO site_settings (id, setting_key, setting_value, setting_group, is_pub
 SELECT '00000000-0000-0000-0000-000000000108', 'hotline', '"1900 6835"', 'contact', true, 'Hotline', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM site_settings WHERE setting_key = 'hotline');
 
-INSERT INTO site_settings (id, setting_key, setting_value, setting_group, is_public, description, created_at, updated_at)
-SELECT '00000000-0000-0000-0000-000000000113', 'seo_home_title', '"BigBike - Do bao ho xe may"', 'seo', true, 'Home SEO title', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-WHERE NOT EXISTS (SELECT 1 FROM site_settings WHERE setting_key = 'seo_home_title');
-
-INSERT INTO site_settings (id, setting_key, setting_value, setting_group, is_public, description, created_at, updated_at)
-SELECT '00000000-0000-0000-0000-000000000114', 'seo_home_description', '"BigBike cung cap do bao ho xe may chinh hang"', 'seo', true, 'Home SEO description', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-WHERE NOT EXISTS (SELECT 1 FROM site_settings WHERE setting_key = 'seo_home_description');
-
-INSERT INTO site_settings (id, setting_key, setting_value, setting_group, is_public, description, created_at, updated_at)
-SELECT '00000000-0000-0000-0000-000000000115', 'og_image_url', '"https://cdn.bigbike.local/og-image.jpg"', 'seo', true, 'OG image URL', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-WHERE NOT EXISTS (SELECT 1 FROM site_settings WHERE setting_key = 'og_image_url');
+-- Nhóm setting `seo` (SEO trang chủ) gỡ hẳn V337 — không seed nữa.
 
 -- ── Brands ────────────────────────────────────────────────────────────────────
 INSERT INTO brands (id, slug, name, is_visible, created_at, updated_at)

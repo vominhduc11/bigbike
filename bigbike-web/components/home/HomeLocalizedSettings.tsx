@@ -26,7 +26,8 @@ import { Container } from "@/components/layout/Container";
  * chọn theo `useLocale()`, không gọi API.
  *
  * `HomeContentBottom` dùng `queryKeys.publicSettings(locale)` để tất cả client consumer cần
- * settings theo locale dùng chung một React Query cache key.
+ * settings theo locale dùng chung một React Query cache key. (3 ô SEO Title/Description/Ảnh
+ * chia sẻ trang chủ đã gỡ V337 2026-07-12 — xem DATA_CONTRACT.md; ô nội dung cuối trang này giữ lại.)
  */
 export function useEnSettingLookup(): (key: string) => string | undefined {
   const locale = useLocale();

@@ -195,6 +195,41 @@ export function hasGalleryImages(gallery = []) {
   return gallery.some((img) => String(img.url || '').trim() || String(img.videoUrl || '').trim())
 }
 
+// Khi đổi giá trị màu của một biến thể (color-key đổi), quyết định media (ảnh đại diện + gallery)
+// mà biến thể mang theo sau khi đổi — KHÔNG xoá trắng ảnh nữa:
+//  - Nhóm màu đích ĐÃ có biến thể khác mang media → kế thừa media nhóm đó (đồng nhất theo màu).
+//  - Nhóm màu đích CHƯA có media → giữ media hiện có của biến thể, coi là media của nhóm màu mới.
+//  - Bỏ hẳn thuộc tính màu (nextColorKey rỗng) → media trống (khớp withColorScopedMedia cho biến thể không màu).
+export function resolveColorChangeMedia(current, items, key, nextColorKey) {
+  if (!nextColorKey) {
+    return { gallery: [], imageUrl: '', imageAlt: '', imageWidth: null, imageHeight: null, imageMimeType: null }
+  }
+  const siblingGallery = items.find(
+    (v) => v._key !== key && getVariantColorKey(v) === nextColorKey && hasGalleryImages(v.gallery),
+  )?.gallery
+  const siblingImage = items.find(
+    (v) => v._key !== key && getVariantColorKey(v) === nextColorKey && v.imageUrl,
+  )
+  if (siblingGallery || siblingImage) {
+    return {
+      gallery: cloneGallery(siblingGallery || []),
+      imageUrl: siblingImage?.imageUrl || '',
+      imageAlt: siblingImage?.imageAlt || '',
+      imageWidth: siblingImage?.imageWidth ?? null,
+      imageHeight: siblingImage?.imageHeight ?? null,
+      imageMimeType: siblingImage?.imageMimeType ?? null,
+    }
+  }
+  return {
+    gallery: cloneGallery(current.gallery || []),
+    imageUrl: current.imageUrl || '',
+    imageAlt: current.imageAlt || '',
+    imageWidth: current.imageWidth ?? null,
+    imageHeight: current.imageHeight ?? null,
+    imageMimeType: current.imageMimeType ?? null,
+  }
+}
+
 export function withColorScopedMedia(variants = []) {
   const galleryByColor = new Map()
   const imageByColor = new Map()
@@ -905,40 +940,58 @@ export function findGroupForErrors(sectionErrors) {
   return null
 }
 
+// Khóa chuẩn để so bộ thuộc tính giữa các biến thể. Mọi alias màu ("Màu", "Màu sắc",
+// "Color", "Colour", mã legacy...) mà isColorAttributeName nhận diện đều quy về CÙNG một
+// khóa "__color__" — nhờ vậy biến thể legacy khai "Màu" và biến thể mới khai "màu sắc"
+// được coi là cùng một thuộc tính. Thuộc tính khác dùng tên đã normalize làm fallback.
+// KHÔNG so theo attributeValueId (mỗi giá trị màu có id riêng) hay theo value (chỉ so LOẠI
+// thuộc tính, không so giá trị "Đen"/"Đen bóng"/"Trắng").
+export function variantAttributeKey(name) {
+  return isColorAttributeName(name) ? '__color__' : normalizeVariantToken(name)
+}
+
 // Phát hiện biến thể lệch bộ thuộc tính. Mọi biến thể của một sản phẩm nên khai
 // CÙNG tập thuộc tính: web gộp tất cả thuộc tính của mọi biến thể lại rồi bắt khách
 // chọn đủ, nên biến thể thiếu — hoặc DƯ so với phần còn lại — dễ thành hàng không
-// bán được. Tính theo tên thuộc tính có cả tên LẪN giá trị (khớp cách web bỏ qua
-// giá trị trống). Trả về null khi mọi biến thể đồng nhất (hoặc chưa khai gì).
+// bán được. So theo KHÓA CHUẨN (variantAttributeKey) của thuộc tính có cả tên LẪN giá trị
+// (khớp cách web bỏ qua giá trị trống). Trả về null khi mọi biến thể đồng nhất (hoặc chưa
+// khai gì). Thông báo lỗi hiển thị nhãn dễ hiểu (tên gốc gặp đầu tiên cho mỗi khóa).
 export function computeAttrSetWarning(items, t) {
+  // key chuẩn → nhãn hiển thị (tên gốc đầu tiên gặp cho khóa đó).
+  const labelByKey = new Map()
   const sets = items.map((v) =>
     new Set(
       (v.options ?? [])
         .filter((o) => (o.name ?? '').trim() && (o.value ?? '').trim())
-        .map((o) => o.name.trim()),
+        .map((o) => {
+          const key = variantAttributeKey(o.name)
+          if (!labelByKey.has(key)) labelByKey.set(key, o.name.trim())
+          return key
+        }),
     ),
   )
   const union = new Set()
-  sets.forEach((s) => s.forEach((n) => union.add(n)))
+  sets.forEach((s) => s.forEach((k) => union.add(k)))
   if (union.size === 0) return null
 
+  const labelFor = (key) => labelByKey.get(key) || key
   const offenders = []
   items.forEach((v, idx) => {
     const s = sets[idx]
     if (s.size === 0) return // biến thể chưa khai thuộc tính nào (đang nhập) — bỏ qua
-    const missing = [...union].filter((n) => !s.has(n))
+    const missing = [...union].filter((k) => !s.has(k))
     if (missing.length > 0) {
       offenders.push({
         index: idx + 1,
         name:
           (v.name ?? '').trim() ||
           t('products.detail.variant.defaultLabel', { index: idx + 1 }),
-        missing: missing.join(', '),
+        missing: missing.map(labelFor).join(', '),
       })
     }
   })
   if (offenders.length === 0) return null
-  return { attrs: [...union].join(', '), offenders }
+  return { attrs: [...union].map(labelFor).join(', '), offenders }
 }
 
 // Field-prefix groups by section key — single source of truth used by both the

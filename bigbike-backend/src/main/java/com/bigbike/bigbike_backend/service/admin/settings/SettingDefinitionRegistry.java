@@ -205,15 +205,10 @@ public class SettingDefinitionRegistry {
                         .description("Ảnh minh hoạ cut-out mặc định góc phải hero (thay ảnh gear cố định). PNG nền trong, tỷ lệ ~700×600px.").build(),
 
                 // ── SEO ──
-                SettingDefinition.builder("seo_home_title", "seo", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("SEO meta title của trang chủ.").build(),
-                SettingDefinition.builder("seo_home_description", "seo", SettingValueType.LONG_TEXT)
-                        .publicAllowed()
-                        .description("SEO meta description của trang chủ.").build(),
-                SettingDefinition.builder("og_image_url", "seo", SettingValueType.IMAGE_URL)
-                        .publicAllowed()
-                        .description("URL ảnh Open Graph mặc định.").build(),
+                // seo_home_title / seo_home_description / og_image_url: gỡ hẳn V337
+                // (quyết định chủ shop 2026-07-12) — 3 ô "SEO Title/Description/Ảnh chia sẻ"
+                // trang chủ bỏ khỏi admin; web rơi title/description về site_name, bỏ og:image
+                // mặc định. Khác hẳn SEO per-entity (category/product/article) — giữ nguyên.
                 SettingDefinition.builder("home_content_bottom_html", "seo", SettingValueType.HTML)
                         .publicAllowed()
                         .description("Block HTML SEO ở cuối trang chủ.").build(),

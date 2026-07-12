@@ -621,7 +621,7 @@
         ],
         "summary": "Get public site settings",
         "operationId": "getPublicSettings",
-        "description": "Returns all SiteSettings where isPublic=true. Includes homepage keys zalo_url, hotline, promo_title, promo_off, promo_href, promo_image_url, seo_home_title, seo_home_description, og_image_url. No authentication required.",
+        "description": "Returns all SiteSettings where isPublic=true. Includes homepage keys such as zalo_url and hotline. No authentication required.",
         "responses": {
           "200": {
             "description": "Public settings list",
