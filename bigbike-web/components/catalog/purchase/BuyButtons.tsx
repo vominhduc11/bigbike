@@ -35,7 +35,7 @@ export function BuyButtons({
           type="button"
           variant="primary"
           data-purchase-add
-        className="h-[52px] w-full whitespace-nowrap rounded-none px-4 font-body text-b4-action"
+        className="h-[52px] w-full whitespace-nowrap rounded-none px-4 font-cta text-b4-action"
           disabled={!canBuy || adding}
           onClick={onAdd}
         >
@@ -66,7 +66,7 @@ export function BuyButtons({
         <Button
           asChild
           variant="outline"
-        className="h-[52px] w-full whitespace-nowrap rounded-none border-2 border-zalo bg-white px-3 font-body text-b4-action text-zalo hover:bg-zalo-soft hover:text-zalo"
+        className="h-[52px] w-full whitespace-nowrap rounded-none border-2 border-zalo bg-white px-3 font-cta text-b4-action text-zalo hover:bg-zalo-soft hover:text-zalo"
         >
           <a
             href={zaloUrl ? zaloHref(zaloUrl) : "#"}

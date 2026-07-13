@@ -80,7 +80,7 @@ export function ProductCard({ product, className, layout = "grid" }: ProductCard
           asChild
           variant="dark"
           data-product-card-action
-          className="absolute inset-x-0 bottom-0 h-[47px] translate-y-full rounded-none px-4 font-body text-b4-action transition-transform duration-300 group-hover:translate-y-0 group-focus-within:translate-y-0"
+          className="absolute inset-x-0 bottom-0 h-[47px] translate-y-full rounded-none px-4 font-cta text-b4-action transition-transform duration-300 group-hover:translate-y-0 group-focus-within:translate-y-0"
         >
           <LocalizedLink kind="product" viSlug={product.slug} enSlug={product.slugEn}>
             {t("cardSelect").toUpperCase()}

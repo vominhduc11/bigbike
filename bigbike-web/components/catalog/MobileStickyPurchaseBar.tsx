@@ -84,7 +84,7 @@ export function MobileStickyPurchaseBar({
   // Tỉ lệ 60/40: nút giỏ hàng flex-[3], nút Zalo flex-[2] (3:2 = 60:40). Khi hết hàng
   // ẩn nút giỏ, nút Zalo còn lại tự chiếm full ngang (flex-grow lấp hết chỗ trống).
   const BASE_BTN =
-    "h-14 flex items-center justify-center rounded-none font-body text-b4-action font-bold uppercase tracking-normal cursor-pointer active:opacity-85";
+    "h-14 flex items-center justify-center rounded-none font-cta text-b4-action font-bold uppercase tracking-normal cursor-pointer active:opacity-85";
 
   return (
     <div
