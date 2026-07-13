@@ -47,13 +47,18 @@ const RolesScreen        = lazyScreen(() => import('./screens/RolesScreen'),    
 const HomeHighlightsScreen       = lazyScreen(() => import('./screens/HomeHighlightsScreen'),       'HomeHighlightsScreen')
 const FeaturedProductsScreen     = lazyScreen(() => import('./screens/FeaturedProductsScreen'),     'FeaturedProductsScreen')
 
+// Dashboard: backend giới hạn theo VAI TRÒ (ADMIN/SUPER_ADMIN/SHOP_MANAGER) ngoài
+// quyền orders.read — mirror ở frontend để người có orders.read nhưng khác vai trò
+// không thấy mục rồi bị 403 (đồng bộ PERMISSION_MATRIX). Người có quyền '*' vẫn thấy.
+const DASHBOARD_ROLES = ['ADMIN', 'SUPER_ADMIN', 'SHOP_MANAGER']
+
 // ── Grouped navigation definition ────────────────────────────────────────────
 const NAV_GROUP_DEFS = [
   {
     groupKey: 'sales',
     labelKey: 'nav.group.sales',
     items: [
-      { path: '/admin/dashboard',  labelKey: 'nav.dashboard',  permission: 'orders.read',    icon: LayoutDashboard },
+      { path: '/admin/dashboard',  labelKey: 'nav.dashboard',  permission: 'orders.read',    icon: LayoutDashboard, roles: DASHBOARD_ROLES },
       { path: '/admin/orders',     labelKey: 'nav.orders',     permission: 'orders.read',    icon: ShoppingCart },
       { path: '/admin/customers',  labelKey: 'nav.customers',  permission: 'customers.read', icon: Users },
       { path: '/admin/reviews',    labelKey: 'nav.reviews',    permission: 'reviews.read',   icon: Star },
@@ -163,6 +168,12 @@ function parseRoute(pathname) {
   return { kind: 'not-found' }
 }
 
+// Vai trò bắt buộc cho từng route (ngoài permission). Chỉ Dashboard cần, để khớp backend.
+function routeRoles(routeName) {
+  if (routeName === 'dashboard') return DASHBOARD_ROLES
+  return null
+}
+
 function routePermission(routeName) {
   switch (routeName) {
     case 'dashboard':                    return 'orders.read'
@@ -258,6 +269,12 @@ function AdminApp() {
     (permission) => permissions.has('*') || permissions.has(permission),
     [permissions],
   )
+  const userRoles = useMemo(() => authState.user?.roles || [], [authState.user])
+  // Route/nav không khai báo `roles` thì mọi vai trò đều qua; '*' luôn qua.
+  const hasAnyRole = useCallback(
+    (roles) => !roles || roles.length === 0 || permissions.has('*') || roles.some((r) => userRoles.includes(r)),
+    [permissions, userRoles],
+  )
 
   // Build grouped nav — only groups with at least one visible item
   const visibleNavGroups = useMemo(
@@ -266,11 +283,11 @@ function AdminApp() {
         groupKey: group.groupKey,
         label: t(group.labelKey),
         items: group.items
-          .filter((item) => authState.status === 'authenticated' && hasPermission(item.permission))
+          .filter((item) => authState.status === 'authenticated' && hasPermission(item.permission) && hasAnyRole(item.roles))
           .map((item) => ({ path: item.path, label: t(item.labelKey), icon: item.icon })),
       }))
       .filter((group) => group.items.length > 0),
-    [authState.status, hasPermission, t],
+    [authState.status, hasPermission, hasAnyRole, t],
   )
 
   // Active page label for topbar
@@ -282,9 +299,9 @@ function AdminApp() {
   }, [activePath, t])
 
   const fallbackPath = useMemo(() => {
-    const first = NAV_FLAT.find((item) => hasPermission(item.permission))
+    const first = NAV_FLAT.find((item) => hasPermission(item.permission) && hasAnyRole(item.roles))
     return first ? first.path : '/admin/dashboard'
-  }, [hasPermission])
+  }, [hasPermission, hasAnyRole])
 
   // Public, token-gated invite acceptance — rendered regardless of auth state.
   if (pathname === '/accept-invite') {
@@ -331,6 +348,17 @@ function AdminApp() {
     return (
       <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} authMode={authState.mode} pageTitle={activePageLabel}>
         <StatePanel tone="warning" title={t('app.permissionDenied')} description={`${t('app.missingPermission')} ${requiredPermission}`}
+          actionLabel={t('app.goToAllowedModule')} onAction={() => navigate(fallbackPath)} />
+      </AdminShell>
+    )
+  }
+
+  const requiredRoles = routeRoles(route.name)
+  if (requiredRoles && !hasAnyRole(requiredRoles)) {
+    return (
+      <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} authMode={authState.mode} pageTitle={activePageLabel}>
+        <StatePanel tone="warning" title={t('app.permissionDenied')}
+          description={t('app.missingRole', { defaultValue: 'Trang này chỉ dành cho một số vai trò quản trị (Quản trị viên, Quản lý cửa hàng).' })}
           actionLabel={t('app.goToAllowedModule')} onAction={() => navigate(fallbackPath)} />
       </AdminShell>
     )

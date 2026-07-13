@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchMedia, uploadMedia, fetchMediaFolders, fetchMediaTags } from '../lib/adminApi'
+import { showConfirm } from '../lib/confirm'
 import { useDebounce } from '../lib/useDebounce'
 import { useHasPermission } from '../lib/auth'
 import { MediaRequirementHint, MediaValidationError } from './MediaRequirementHint'
@@ -39,6 +40,7 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
   const [tag, setTag] = useState('')
   const [folders, setFolders] = useState([])
   const [tags, setTags] = useState([])
+  const [filtersError, setFiltersError] = useState(false)
   const [page, setPage] = useState(1)
   const [reloadKey, setReloadKey] = useState(0)
   const [state, setState] = useState({ status: 'loading', items: [], totalPages: 1, error: '' })
@@ -59,16 +61,15 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setPage(1) }, [debouncedSearch, folderFilter, tag])
 
-  // Nạp danh sách thư mục + tag để lọc (chỉ 1 lần khi mở picker).
+  // Nạp danh sách thư mục + tag để lọc (chỉ 1 lần khi mở picker). Dùng allSettled
+  // để giữ phần tải được và HIỆN lỗi thay vì nuốt im lặng.
   useEffect(() => {
     let active = true
-    Promise.all([
-      fetchMediaFolders().catch(() => []),
-      fetchMediaTags().catch(() => []),
-    ]).then(([f, tg]) => {
+    Promise.allSettled([fetchMediaFolders(), fetchMediaTags()]).then(([fRes, tRes]) => {
       if (!active) return
-      setFolders(f ?? [])
-      setTags(tg ?? [])
+      if (fRes.status === 'fulfilled') setFolders(fRes.value ?? [])
+      if (tRes.status === 'fulfilled') setTags(tRes.value ?? [])
+      setFiltersError(fRes.status === 'rejected' || tRes.status === 'rejected')
     })
     return () => { active = false }
   }, [])
@@ -87,19 +88,21 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
           error: '',
         })
       })
-      .catch((error) => {
+      .catch(() => {
         if (!active) return
+        // Thông báo thân thiện thay vì message lỗi thô từ máy chủ.
         setState({
           status: 'error',
           items: [],
           totalPages: 1,
-          error: error.message || t('homeVideos.picker.loadError'),
+          error: t('homeVideos.picker.loadError'),
         })
       })
     return () => { active = false }
   }, [debouncedSearch, page, reloadKey, t, folderFilter, tag])
 
-  useModalFocusTrap({ modalRef, onClose })
+  // Escape đi qua attemptClose để hỏi xác nhận khi đang tải lên / đã chọn.
+  useModalFocusTrap({ modalRef, onClose: attemptClose })
   useBodyScrollLock()
 
   async function handleFileChange(event) {
@@ -132,8 +135,9 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
         setPage(1)
         setReloadKey((value) => value + 1)
       }
-    } catch (error) {
-      setUploadError(error.message || t('homeVideos.picker.uploadError'))
+    } catch {
+      // Thông báo thân thiện thay vì message lỗi thô từ máy chủ.
+      setUploadError(t('homeVideos.picker.uploadError'))
     } finally {
       setUploading(false)
       setUploadProgress(0)
@@ -145,6 +149,19 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
     if (selectedUrl && !validation.blocked) onSelect(selectedUrl, mediaCacheRef.current.get(selectedUrl) ?? null)
   }
 
+  // Hỏi xác nhận khi đóng lúc đang tải lên hoặc đã chọn video để tránh mất lựa
+  // chọn / tiến trình. Dùng cho backdrop, nút đóng, Huỷ và Escape.
+  async function attemptClose() {
+    if (uploading || selectedUrl) {
+      const ok = await showConfirm(
+        t('media.picker.closeConfirm', { defaultValue: 'Bạn đang chọn hoặc tải file lên. Đóng sẽ mất lựa chọn và tiến trình đang tải. Tiếp tục?' }),
+        t('media.picker.closeConfirmTitle', { defaultValue: 'Đóng cửa sổ chọn?' }),
+      )
+      if (!ok) return
+    }
+    onClose()
+  }
+
   const canConfirm = Boolean(selectedUrl) && !validation.blocked && validation.status !== 'loading'
 
   const isLoading = state.status === 'loading'
@@ -154,7 +171,7 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
   // sortable card) would become the containing block and trap the overlay.
   return createPortal(
     <>
-      <div className="mpicker-backdrop" onClick={onClose} aria-hidden="true" />
+      <div className="mpicker-backdrop" onClick={attemptClose} aria-hidden="true" />
       <div ref={modalRef} className="mpicker-modal" role="dialog" aria-modal="true" aria-label={t('homeVideos.picker.dialogLabel')}>
         <div className="mpicker-header">
           <h3 className="mpicker-title">{t('homeVideos.picker.title')}</h3>
@@ -181,7 +198,7 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
                 </Button>
               </>
             )}
-            <Button variant="secondary" size="icon" type="button" onClick={onClose} aria-label={t('homeVideos.picker.close')}>
+            <Button variant="secondary" size="icon" type="button" onClick={attemptClose} aria-label={t('homeVideos.picker.close')}>
               <IconClose />
             </Button>
           </div>
@@ -221,6 +238,11 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
               />
             )}
           </div>
+          {filtersError && (
+            <p className="mt-1 text-xs text-danger">
+              {t('media.picker.filtersError', { defaultValue: 'Không tải được danh sách thư mục hoặc thẻ để lọc.' })}
+            </p>
+          )}
         </div>
 
         {uploadError && (
@@ -251,6 +273,7 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
                     type="button"
                     className={`mpicker-item${isSelected ? ' is-selected' : ''}`}
                     onClick={() => setSelectedUrl(isSelected ? null : url)}
+                    aria-pressed={isSelected}
                     title={filename}
                   >
                     <div className="mpicker-thumb mpicker-thumb-video">
@@ -326,7 +349,7 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
             <span className="mpicker-hint">{t('homeVideos.picker.selectHint')}</span>
           )}
           <div className="mpicker-footer-actions">
-            <Button variant="secondary" type="button" onClick={onClose}>{t('common.cancel')}</Button>
+            <Button variant="secondary" type="button" onClick={attemptClose}>{t('common.cancel')}</Button>
             <Button type="button" onClick={handleConfirm} disabled={!canConfirm}>
               {t('homeVideos.picker.confirm')}
             </Button>

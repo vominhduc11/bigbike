@@ -2,7 +2,7 @@ import { Pencil, Trash2, RotateCcw, AlertTriangle, Music, FileText, Copy } from 
 import { toast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
 import { formatText } from '../lib/formatters'
-import { formatBytes } from './media-picker/pickerUtils'
+import { formatBytes, toClipboardUrl } from './media-picker/pickerUtils'
 import { Checkbox } from '@/components/ui/checkbox'
 
 const isImage = (m) => m && m.startsWith('image/')
@@ -31,21 +31,10 @@ export function MediaCard({
   function handleCopyUrl(e) {
     e.stopPropagation()
     if (!media.publicUrl) return
-    const url = window.location.origin + media.publicUrl
-    navigator.clipboard.writeText(url)
+    navigator.clipboard.writeText(toClipboardUrl(media.publicUrl))
       .then(() => toast.success(t('media.urlCopied')))
       .catch(() => toast.error(t('media.copyFailed')))
     onCopyUrl?.()
-  }
-
-  // Thumb is a clickable div (role=button), NOT a real <button>, so it can host
-  // child buttons in the hover overlay without nesting <button> elements.
-  // Keyboard activation is handled via onKeyDown to keep accessibility intact.
-  function onThumbKeyDown(e) {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      onPreview?.()
-    }
   }
 
   return (
@@ -57,16 +46,14 @@ export function MediaCard({
       )}
       {onToggleSelect && (
         <Checkbox checked={selected} onCheckedChange={onToggleSelect}
-          aria-label={t('media.select')}
+          aria-label={t('media.selectNamed', { name: displayName, defaultValue: 'Chọn {{name}}' })}
           onClick={(e) => e.stopPropagation()}
           className="medialib-card-checkbox"  />
       )}
 
-      <div role="button" tabIndex={0}
-        onClick={onPreview}
-        onKeyDown={onThumbKeyDown}
-        aria-label={t('media.preview')}
-        className="medialib-thumb-wrap">
+      {/* Thumb là container KHÔNG tương tác; vùng "mở xem lớn" và vùng "nút thao
+          tác" là hai phần tử ANH EM bên trong, không lồng nút-trong-nút. */}
+      <div className="medialib-thumb-wrap">
         {isImage(media.mimeType) && media.publicUrl ? (
           <img src={media.publicUrl} alt={media.altText || filename} loading="lazy" />
         ) : isVideo(media.mimeType) && media.publicUrl ? (
@@ -78,6 +65,13 @@ export function MediaCard({
               : <FileText size={36} />}
           </div>
         )}
+
+        {/* Vùng điều hướng: nút thật phủ kín thumb để mở xem lớn (Enter/Space
+            chuẩn). Đặt TRƯỚC overlay để overlay (cùng position, đứng sau DOM) xếp
+            trên và nhận click cho các nút thao tác. */}
+        <button type="button" onClick={onPreview}
+          aria-label={t('media.previewNamed', { name: displayName, defaultValue: 'Xem lớn {{name}}' })}
+          className="absolute inset-0 cursor-zoom-in border-0 bg-transparent p-0" />
 
         {(onEdit || onDelete || onRestore || onHardDelete || onCopyUrl) && (
           <div className="medialib-action-overlay">

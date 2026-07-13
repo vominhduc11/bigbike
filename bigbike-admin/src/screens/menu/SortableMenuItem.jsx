@@ -1,4 +1,6 @@
 import { GripVertical, Pencil, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { cn } from '@/lib/utils'
 import { SortableRow } from '../../components/Sortable'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -8,6 +10,7 @@ export function SortableMenuItem({
   item, displayLabel, parentLabel, rootLabel, canUpdate, onEdit, onDelete, isDeleting,
   selected, onToggleSelect, onToggleStatus, isToggling,
 }) {
+  const { t } = useTranslation()
   const isInactive = item.status === 'INACTIVE'
   const itemName = displayLabel ?? item.label ?? ''
 
@@ -16,29 +19,31 @@ export function SortableMenuItem({
       {(sortable) => (
     <tr
       ref={sortable.setNodeRef}
-      style={{ ...sortable.style, opacity: sortable.isDragging ? 0.4 : 1 }}
-      className={isInactive ? 'is-inactive' : ''}
+      style={sortable.style}
+      className={cn(isInactive && 'is-inactive', sortable.isDragging && 'opacity-40')}
     >
       {canUpdate && onToggleSelect && (
         <td className="menu-grip-cell">
           <Checkbox
             checked={Boolean(selected)}
             onCheckedChange={onToggleSelect}
-            aria-label={`Chọn mục ${itemName}`}
+            aria-label={t('menus.selectItemAria', { name: itemName, defaultValue: 'Chọn mục {{name}}' })}
           />
         </td>
       )}
       <td className="menu-grip-cell">
         {canUpdate && (
-          <button
+          <Button
             type="button"
-            className="menu-grab-btn"
-            title="Kéo để sắp xếp (cùng cấp)"
-            aria-label={`Kéo để sắp xếp mục ${itemName}`}
+            variant="ghost"
+            size="icon"
+            className="menu-grab-btn shrink-0 cursor-grab"
+            title={t('menus.dragReorderTitle', { defaultValue: 'Kéo để sắp xếp (cùng cấp)' })}
+            aria-label={t('menus.dragReorderItemAria', { name: itemName, defaultValue: 'Kéo để sắp xếp mục {{name}}' })}
             {...sortable.handleProps}
           >
             <GripVertical size={15} />
-          </button>
+          </Button>
         )}
       </td>
       <td style={{ paddingLeft: `${8 + item.depth * 16}px` }}>
@@ -52,12 +57,16 @@ export function SortableMenuItem({
               checked={!isInactive}
               onCheckedChange={() => onToggleStatus(item)}
               disabled={isToggling}
-              title={isInactive ? 'Bật hiển thị mục này' : 'Ẩn mục này'}
-              aria-label={isInactive ? `Bật hiển thị mục ${itemName}` : `Ẩn mục ${itemName}`}
+              title={isInactive
+                ? t('menus.showItemTitle', { defaultValue: 'Bật hiển thị mục này' })
+                : t('menus.hideItemTitle', { defaultValue: 'Ẩn mục này' })}
+              aria-label={isInactive
+                ? t('menus.showItemAria', { name: itemName, defaultValue: 'Bật hiển thị mục {{name}}' })
+                : t('menus.hideItemAria', { name: itemName, defaultValue: 'Ẩn mục {{name}}' })}
               className="shrink-0"
             />
           ) : (
-            isInactive && <span className="menu-item-badge-inactive">Ẩn</span>
+            isInactive && <span className="menu-item-badge-inactive">{t('menus.itemHiddenBadge', { defaultValue: 'Ẩn' })}</span>
           )}
         </div>
       </td>
@@ -72,10 +81,24 @@ export function SortableMenuItem({
       {canUpdate && (
         <td className="menu-item-actions-cell">
           <div className="menu-row-actions">
-            <Button variant="outline" size="icon" onClick={() => onEdit(item)} title="Chỉnh sửa mục này" aria-label={`Sửa mục ${itemName}`} disabled={isDeleting}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => onEdit(item)}
+              title={t('menus.editItemTitle', { defaultValue: 'Chỉnh sửa mục này' })}
+              aria-label={t('menus.editItemAria', { name: itemName, defaultValue: 'Sửa mục {{name}}' })}
+              disabled={isDeleting}
+            >
               <Pencil size={13} />
             </Button>
-            <Button variant="danger" size="icon" onClick={() => onDelete(item.id)} title="Xoá mục này" aria-label={`Xoá mục ${itemName}`} loading={isDeleting}>
+            <Button
+              variant="danger"
+              size="icon"
+              onClick={() => onDelete(item.id)}
+              title={t('menus.deleteItemActionTitle', { defaultValue: 'Xoá mục này' })}
+              aria-label={t('menus.deleteItemAria', { name: itemName, defaultValue: 'Xoá mục {{name}}' })}
+              loading={isDeleting}
+            >
               <Trash2 size={13} />
             </Button>
           </div>

@@ -41,7 +41,7 @@ export function BulkActionBar({
         </span>
       )}
       <span className="sep" />
-      <div className="bb-row" style={{ gap: 6 }}>
+      <div className="bb-row gap-1.5">
         {actions.map((action, index) => (
           <Button
             key={index}

@@ -16,11 +16,23 @@ export const REFERENCE_TYPE_KEYS = {
 }
 
 export function formatBytes(bytes) {
+  // '—' là ký hiệu "không có giá trị" trung tính (giống nhau ở VI/EN) nên giữ nguyên.
   if (!bytes) return '—'
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
+}
+
+/**
+ * Dựng URL tuyệt đối để copy vào clipboard. CHỈ nối origin khi là đường dẫn tương
+ * đối (vd "/media/..."); URL tuyệt đối (http/https) hoặc data:/blob: giữ nguyên —
+ * tránh biến "https://cdn/..." thành "https://admin.../https://cdn/...".
+ */
+export function toClipboardUrl(path) {
+  if (!path) return ''
+  if (/^(https?:|data:|blob:)/i.test(path)) return path
+  return window.location.origin + path
 }
 
 // Refetch sau khi upload (refreshKey/reloadKey bump) có thể chạy đua với lúc admin

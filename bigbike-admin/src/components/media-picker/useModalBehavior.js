@@ -13,6 +13,12 @@ const FOCUSABLE_SELECTOR = 'button:not([disabled]), [href], input:not([disabled]
  */
 export function useModalFocusTrap({ modalRef, onClose, isSuspendedRef }) {
   const previousFocusRef = useRef(null)
+  // Giữ onClose trong ref: caller thường truyền arrow inline (tham chiếu mới mỗi
+  // render, vd `attemptClose` có guard). Nếu để onClose trong deps, effect
+  // setup/cleanup chạy lại mỗi render → trap khởi tạo lại và cướp focus khỏi ô
+  // tìm kiếm đang gõ. modalRef/isSuspendedRef là ref nên effect chỉ chạy 1 lần.
+  const onCloseRef = useRef(onClose)
+  useEffect(() => { onCloseRef.current = onClose }, [onClose])
 
   useEffect(() => {
     previousFocusRef.current = document.activeElement
@@ -24,7 +30,7 @@ export function useModalFocusTrap({ modalRef, onClose, isSuspendedRef }) {
       if (isSuspendedRef?.current) return
       if (e.key === 'Escape') {
         e.preventDefault()
-        onClose()
+        onCloseRef.current?.()
         return
       }
       if (e.key !== 'Tab') return
@@ -49,7 +55,7 @@ export function useModalFocusTrap({ modalRef, onClose, isSuspendedRef }) {
         previousFocusRef.current.focus()
       }
     }
-  }, [onClose, modalRef, isSuspendedRef])
+  }, [modalRef, isSuspendedRef])
 }
 
 /** Khoá scroll nền trong lúc modal mở, trả lại giá trị cũ khi đóng. */

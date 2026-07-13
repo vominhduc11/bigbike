@@ -17,6 +17,11 @@ import AiHtmlBrief from '../AiHtmlBrief'
 import { SortableList, DragHandle } from '../Sortable'
 import { showConfirm } from '../../lib/confirm'
 
+// Các loại khối có trình sửa riêng trong BlockCard. Khối ngoài tập này (vd dữ liệu cũ như
+// suitability/sizeGuide nay tách card riêng, hoặc loại chưa hỗ trợ) sẽ hiện thẻ giải thích rõ
+// thay vì card trống — nội dung vẫn được giữ nguyên khi lưu.
+const KNOWN_BLOCK_TYPES = new Set(['heading', 'paragraph', 'list', 'image', 'video', 'callout', 'feature', 'divider'])
+
 export function BlockControls({ disabled, insertMenu, onInsertBelow, onDuplicate, onRemove }) {
   const { t } = useTranslation()
   const insertLabel = t('products.detail.blocks.insertBelow', { defaultValue: 'Chèn khối bên dưới' })
@@ -76,6 +81,7 @@ export function HeadingBlockEditor({ block, onChange, disabled, contentLang = 'v
       </Select>
       <Input
         className="flex-1 font-bold"
+        aria-label={t('products.detail.blocks.headingTextPlaceholder')}
         placeholder={t('products.detail.blocks.headingTextPlaceholder')}
         value={block[fText] || ''}
         onChange={(e) => onChange({ [fText]: e.target.value })}
@@ -152,6 +158,7 @@ export function ListBlockEditor({ block, onChange, disabled, contentLang = 'vi' 
             </span>
             <Input
               className="flex-1"
+              aria-label={t('products.detail.blocks.listItemPlaceholder')}
               value={item}
               onChange={(e) => updateItem(i, e.target.value)}
               disabled={disabled}
@@ -194,6 +201,7 @@ export function ImageBlockEditor({ block, onChange, disabled, onPickImage, conte
         )}
         <div className="flex-1 flex flex-col gap-2">
           <Input
+            aria-label={t('products.detail.blocks.imageCaptionPlaceholder')}
             placeholder={t('products.detail.blocks.imageCaptionPlaceholder')}
             value={block[fCaption] || ''}
             onChange={(e) => onChange({ [fCaption]: e.target.value })}
@@ -212,8 +220,10 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo, conte
   const fCaption = isEn ? 'captionEn' : 'caption'
   return (
     <div className="flex-1 flex flex-col gap-2">
-      <Select value={block.provider} onValueChange={(v) => onChange({ provider: v, url: '' })} disabled={disabled || isEn}>
-        <SelectTrigger className="w-44">
+      {/* Đổi nguồn KHÔNG xóa URL đang nhập nữa (tránh mất dữ liệu khi bấm nhầm); admin tự sửa lại
+          đường dẫn cho khớp nguồn mới. */}
+      <Select value={block.provider} onValueChange={(v) => onChange({ provider: v })} disabled={disabled || isEn}>
+        <SelectTrigger className="w-44" aria-label={t('products.detail.blocks.videoProviderLabel', { defaultValue: 'Nguồn video' })}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -225,6 +235,7 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo, conte
       </Select>
       {block.provider === 'youtube' ? (
         <Input
+          aria-label={t('products.detail.blocks.videoUrlLabel', { defaultValue: 'Đường dẫn video' })}
           placeholder={t('products.detail.blocks.videoUrlPlaceholder')}
           value={block.url || ''}
           onChange={(e) => onChange({ url: e.target.value })}
@@ -233,6 +244,7 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo, conte
         />
       ) : block.provider === 'tiktok' ? (
         <Input
+          aria-label={t('products.detail.blocks.videoUrlLabel', { defaultValue: 'Đường dẫn video' })}
           placeholder={t('products.detail.blocks.tiktokUrlPlaceholder')}
           value={block.url || ''}
           onChange={(e) => onChange({ url: e.target.value })}
@@ -241,6 +253,7 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo, conte
         />
       ) : block.provider === 'facebook' ? (
         <Input
+          aria-label={t('products.detail.blocks.videoUrlLabel', { defaultValue: 'Đường dẫn video' })}
           placeholder={t('products.detail.blocks.facebookUrlPlaceholder')}
           value={block.url || ''}
           onChange={(e) => onChange({ url: e.target.value })}
@@ -250,7 +263,8 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo, conte
       ) : (
         <div className="flex gap-2 items-center">
           <Input
-            placeholder="URL video đã tải lên"
+            aria-label={t('products.detail.blocks.videoUrlLabel', { defaultValue: 'Đường dẫn video' })}
+            placeholder={t('products.detail.blocks.videoUploadedUrlPlaceholder', { defaultValue: 'URL video đã tải lên' })}
             value={block.url || ''}
             onChange={(e) => onChange({ url: e.target.value })}
             disabled={disabled || isEn}
@@ -263,6 +277,7 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo, conte
         </div>
       )}
       <Input
+        aria-label={t('products.detail.blocks.videoCaptionPlaceholder')}
         placeholder={t('products.detail.blocks.videoCaptionPlaceholder')}
         value={block[fCaption] || ''}
         onChange={(e) => onChange({ [fCaption]: e.target.value })}
@@ -366,6 +381,7 @@ export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, pro
         )}
         <div className="flex-1 flex flex-col gap-2">
           <Input
+            aria-label={t('products.detail.blocks.imageCaptionPlaceholder')}
             placeholder={t('products.detail.blocks.imageCaptionPlaceholder')}
             value={block[fCaption] || ''}
             onChange={(e) => onChange({ [fCaption]: e.target.value })}
@@ -377,6 +393,7 @@ export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, pro
       {/* Tiêu đề phụ (eyebrow) */}
       <Input
         className="text-xs uppercase tracking-wide text-primary"
+        aria-label={t('products.detail.blocks.featureSubheadingPlaceholder')}
         placeholder={t('products.detail.blocks.featureSubheadingPlaceholder')}
         value={block[fSubheading] || ''}
         onChange={(e) => onChange({ [fSubheading]: e.target.value })}
@@ -387,6 +404,7 @@ export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, pro
       {/* Tiêu đề chính */}
       <Input
         className="font-bold"
+        aria-label={t('products.detail.blocks.featureHeadingPlaceholder')}
         placeholder={t('products.detail.blocks.featureHeadingPlaceholder')}
         value={block[fHeading] || ''}
         onChange={(e) => onChange({ [fHeading]: e.target.value })}
@@ -420,6 +438,7 @@ export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, pro
               </span>
               <Input
                 className="flex-1"
+                aria-label={t('products.detail.blocks.listItemPlaceholder')}
                 value={item}
                 onChange={(e) => updateItem(i, e.target.value)}
                 disabled={disabled}
@@ -468,6 +487,7 @@ export function StringListEditor({ items, onChange, disabled, placeholder, addLa
         <div key={i} className="flex gap-1 items-center">
           <Input
             className="flex-1"
+            aria-label={placeholder}
             value={item}
             onChange={(e) => updateItem(i, e.target.value)}
             disabled={disabled}
@@ -551,6 +571,7 @@ export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang 
     <div className="flex-1 flex flex-col gap-3">
       <Input
         className="font-bold"
+        aria-label={t('products.detail.blocks.sectionTitlePlaceholder')}
         placeholder={t('products.detail.blocks.sectionTitlePlaceholder')}
         value={block[fTitle] || ''}
         onChange={(e) => onChange({ [fTitle]: e.target.value })}
@@ -579,6 +600,7 @@ export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang 
                   aria-label={t('products.detail.blocks.listRemoveItem')}><X size={14} aria-hidden="true" /></Button>
               </div>
               <Input
+                aria-label={t('products.detail.blocks.suitabilityAudiencePlaceholder')}
                 placeholder={t('products.detail.blocks.suitabilityAudiencePlaceholder')}
                 value={card.audience || ''}
                 onChange={(e) => updateCard(i, { audience: e.target.value })}
@@ -586,6 +608,7 @@ export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang 
                 maxLength={500}
               />
               <Input
+                aria-label={t('products.detail.blocks.suitabilityAdvicePlaceholder')}
                 placeholder={t('products.detail.blocks.suitabilityAdvicePlaceholder')}
                 value={card.advice || ''}
                 onChange={(e) => updateCard(i, { advice: e.target.value })}
@@ -714,6 +737,7 @@ export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 
     <div className="flex-1 flex flex-col gap-3">
       <Input
         className="font-bold"
+        aria-label={t('products.detail.blocks.sectionTitlePlaceholder')}
         placeholder={t('products.detail.blocks.sectionTitlePlaceholder')}
         value={block[fTitle] || ''}
         onChange={(e) => onChange({ [fTitle]: e.target.value })}
@@ -772,6 +796,20 @@ export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 
             {model.rows.length === 0 && (
               <p className="list-editor-empty">{t('products.detail.sizeGuide.empty')}</p>
             )}
+            {/* Hàng tiêu đề cột cho ô nhập bên dưới — khớp lưới + chừa chỗ tay kéo/nút xoá để thẳng cột. */}
+            {model.rows.length > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="w-7 shrink-0" aria-hidden="true" />
+                <div className="grid flex-1 gap-2" style={gridStyle}>
+                  {model.columns.map((col, ci) => (
+                    <span key={col._key} className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      {col.label?.trim() || t('products.detail.sizeGuide.columnFallback', { index: ci + 1, defaultValue: 'Cột {{index}}' })}
+                    </span>
+                  ))}
+                </div>
+                <div className="w-7 shrink-0" aria-hidden="true" />
+              </div>
+            )}
             <SortableList
               items={model.rows}
               getId={(it) => it._key}
@@ -785,6 +823,7 @@ export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 
                     {row.cells.map((cell, ci) => (
                       <Input
                         key={model.columns[ci]?._key || ci}
+                        aria-label={model.columns[ci]?.label?.trim() || t('products.detail.sizeGuide.cellPlaceholder')}
                         placeholder={t('products.detail.sizeGuide.cellPlaceholder')}
                         value={cell || ''}
                         onChange={(e) => updateCell(ri, ci, e.target.value)}
@@ -812,6 +851,7 @@ export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 
               {t('products.detail.sizeGuide.noteLabel')}
             </label>
             <Textarea
+              aria-label={t('products.detail.sizeGuide.noteLabel')}
               placeholder={t('products.detail.sizeGuide.notePlaceholder')}
               value={model.note || ''}
               onChange={(e) => setNote(e.target.value)}
@@ -859,7 +899,7 @@ export function BlockTypeLabel({ type }) {
   const key = `products.detail.blocks.blockType${type.charAt(0).toUpperCase()}${type.slice(1)}`
   return (
     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide w-20 shrink-0 pt-1">
-      {t(key)}
+      {t(key, { defaultValue: type })}
     </span>
   )
 }
@@ -919,6 +959,14 @@ export function BlockCard({ block, disabled, structDisabled, contentLang, sortab
             {block.type === 'callout'   && <CalloutBlockEditor   block={block} onChange={onUpdate} disabled={disabled} contentLang={contentLang} />}
             {block.type === 'feature'   && <FeatureBlockEditor   block={block} onChange={onUpdate} disabled={disabled} onPickImage={onPickImage} onAltBlur={onAltBlur} productMode={productMode} contentLang={contentLang} />}
             {block.type === 'divider'   && <DividerBlockEditor />}
+            {!KNOWN_BLOCK_TYPES.has(block.type) && (
+              <div className="rounded-sm border border-dashed border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+                {t('products.detail.blocks.unsupported', {
+                  type: block.type,
+                  defaultValue: 'Khối "{{type}}" không được hỗ trợ trong trình soạn thảo. Nội dung vẫn được giữ nguyên khi lưu.',
+                })}
+              </div>
+            )}
           </>
         )}
       </div>

@@ -20,11 +20,11 @@ export function CategoryTreeTableHead({ canUpdate, selectAllCheckbox, hiddenKeys
       <thead>
         <tr>
           {selectAllCheckbox}
-          <th>{t('categories.colCategory')}</th>
-          {!hiddenKeys.includes('description') && <th>{t('categories.colDescription')}</th>}
-          <th>{t('categories.colVisibility')}</th>
-          {!hiddenKeys.includes('updatedAt') && <th>{t('categories.colUpdated')}</th>}
-          <th className="align-right">{t('categories.colActions')}</th>
+          <th scope="col">{t('categories.colCategory')}</th>
+          {!hiddenKeys.includes('description') && <th scope="col">{t('categories.colDescription')}</th>}
+          <th scope="col">{t('categories.colVisibility')}</th>
+          {!hiddenKeys.includes('updatedAt') && <th scope="col">{t('categories.colUpdated')}</th>}
+          <th scope="col" className="align-right">{t('categories.colActions')}</th>
         </tr>
       </thead>
     </>
@@ -49,12 +49,12 @@ export function CategoryFlatTableHead({ canUpdate, selectAllCheckbox, hiddenKeys
       <thead>
         <tr>
           {selectAllCheckbox}
-          <th>{t('categories.colCategory')}</th>
-          {!hiddenKeys.includes('description') && <th>{t('categories.colDescription')}</th>}
-          <th>{t('categories.colVisibility')}</th>
-          <th className="align-right">{t('categories.colSortOrder')}</th>
-          {!hiddenKeys.includes('updatedAt') && <th>{t('categories.colUpdated')}</th>}
-          <th className="align-right">{t('categories.colActions')}</th>
+          <th scope="col">{t('categories.colCategory')}</th>
+          {!hiddenKeys.includes('description') && <th scope="col">{t('categories.colDescription')}</th>}
+          <th scope="col">{t('categories.colVisibility')}</th>
+          <th scope="col" className="align-right">{t('categories.colSortOrder')}</th>
+          {!hiddenKeys.includes('updatedAt') && <th scope="col">{t('categories.colUpdated')}</th>}
+          <th scope="col" className="align-right">{t('categories.colActions')}</th>
         </tr>
       </thead>
     </>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   DndContext,
   closestCenter,
@@ -135,6 +136,7 @@ export function SortableList({
   // Capitalised local so JSX treats it as a component; also keeps no-unused-vars
   // happy (the project has no eslint-plugin-react to mark JSX-only param usage).
   const Wrapper = as
+  const { t } = useTranslation()
   const [activeId, setActiveId] = useState(null)
   const sensors = useDragSensors(sensorDistance)
   const ids = items.map(getId)
@@ -163,12 +165,30 @@ export function SortableList({
 
   const activeItem = activeId != null ? items.find((it) => getId(it) === activeId) : null
 
+  // Hướng dẫn + thông báo cho trình đọc màn hình (mặc định @dnd-kit là tiếng Anh). Dùng thông điệp
+  // chung, không lộ id nội bộ. Escape đã tự hủy kéo trong KeyboardSensor; onDragCancel reset overlay.
+  const accessibility = {
+    screenReaderInstructions: {
+      draggable: t('common.dnd.instructions', {
+        defaultValue: 'Nhấn phím cách để bắt đầu kéo. Khi đang kéo, dùng phím mũi tên để di chuyển. Nhấn phím cách để thả, hoặc Escape để hủy.',
+      }),
+    },
+    announcements: {
+      onDragStart: () => t('common.dnd.onStart', { defaultValue: 'Đã nhấc phần tử, bắt đầu sắp xếp.' }),
+      onDragOver: () => t('common.dnd.onOver', { defaultValue: 'Phần tử đang được di chuyển.' }),
+      onDragEnd: () => t('common.dnd.onEnd', { defaultValue: 'Đã thả phần tử vào vị trí mới.' }),
+      onDragCancel: () => t('common.dnd.onCancel', { defaultValue: 'Đã hủy kéo, phần tử trở về vị trí cũ.' }),
+    },
+  }
+
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
+      accessibility={accessibility}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
+      onDragCancel={() => setActiveId(null)}
     >
       <SortableContext items={ids} strategy={strategy}>
         <Wrapper className={className}>

@@ -30,13 +30,16 @@ export function AuditDetailDrawer({ log, onClose }) {
     const before = log.beforeData ? tryParse(log.beforeData) : null
     const after  = log.afterData  ? tryParse(log.afterData)  : null
     if (!before || !after || typeof before !== 'object' || typeof after !== 'object' || Array.isArray(before) || Array.isArray(after)) return null
+    // Object/array phải serialize bằng JSON, không để String() ép thành "[object Object]" — nếu không
+    // hai object khác nhau sẽ cùng ra một chuỗi → so sánh nhầm "không thay đổi" và cell hiện sai.
+    const fmt = (v) => (v !== null && typeof v === 'object' ? JSON.stringify(v) : String(v))
     const allKeys = new Set([...Object.keys(before), ...Object.keys(after)])
     const changes = []
     for (const key of allKeys) {
-      if (String(before[key]) !== String(after[key])) {
+      if (fmt(before[key]) !== fmt(after[key])) {
         const mapVal = (v) => {
           if (v === null || v === undefined) return '—'
-          const str = String(v)
+          const str = fmt(v)
           return t(`auditLog.value.${str}`, { defaultValue: str })
         }
         changes.push({
@@ -44,7 +47,9 @@ export function AuditDetailDrawer({ log, onClose }) {
           label: t(`auditLog.field.${key}`, { defaultValue: key }),
           before: mapVal(before[key]),
           after:  mapVal(after[key]),
-          rawAfter: String(after[key] ?? ''),
+          // rawAfter chỉ dùng để dò DANGEROUS_VALUES (giá trị scalar) → giữ nguyên với primitive,
+          // object thì để rỗng để không lọt nhầm vào tập cảnh báo.
+          rawAfter: after[key] !== null && typeof after[key] === 'object' ? '' : String(after[key] ?? ''),
         })
       }
     }

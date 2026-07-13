@@ -5,13 +5,19 @@
  * scroll container and stays visible as the user scrolls. On mobile, action
  * buttons stretch to full width.
  *
- * info: optional left-aligned status/info node (e.g., "Đã lưu lúc 10:23").
+ * ariaLabel: accessible name for the toolbar (screen readers).
+ * info: optional left-aligned status/info node (e.g., "Đã lưu lúc 10:23"). Rendered
+ *       as a polite live region so autosave status is announced.
  * children: action buttons.
  */
-export function StickyActionBar({ info, children }) {
+export function StickyActionBar({ info, children, ariaLabel }) {
   return (
-    <div className="sticky-action-bar" role="toolbar">
-      {info ? <div className="sticky-action-bar-info">{info}</div> : null}
+    <div className="sticky-action-bar" role="toolbar" aria-label={ariaLabel}>
+      {info ? (
+        <div className="sticky-action-bar-info" role="status" aria-live="polite">
+          {info}
+        </div>
+      ) : null}
       {children}
     </div>
   )

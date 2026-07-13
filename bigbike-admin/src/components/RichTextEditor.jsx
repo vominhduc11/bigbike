@@ -33,6 +33,8 @@ function ToolbarButton({ onClick, active, disabled, title, children }) {
       onMouseDown={(e) => { e.preventDefault(); onClick() }}
       disabled={disabled}
       title={title}
+      aria-label={title}
+      aria-pressed={active || undefined}
       className={cn(
         'inline-flex items-center justify-center h-8 w-8 rounded-xs border-none transition-colors',
         active
@@ -53,10 +55,18 @@ function Divider() {
   )
 }
 
+// Đường dẫn hợp lệ cho nút chèn liên kết: http(s), mailto, tel hoặc nội bộ (bắt đầu / hoặc #).
+// Rỗng = gỡ liên kết nên vẫn hợp lệ.
+function isValidLinkHref(url) {
+  const u = (url || '').trim()
+  if (!u) return true
+  return /^(https?:\/\/|mailto:|tel:|\/|#)/i.test(u)
+}
+
 export function RichTextEditor({ value, onChange, placeholder, disabled, hasError, enableImagePicker = false }) {
   const { t } = useTranslation()
   const [imagePickerOpen, setImagePickerOpen] = useState(false)
-  const [linkModal, setLinkModal] = useState({ open: false, value: '' })
+  const [linkModal, setLinkModal] = useState({ open: false, value: '', error: '' })
   const linkInputRef = useCallback((el) => { if (el) el.focus() }, [])
 
   // Chỉ coi là "user sửa" sau khi editor thực sự được focus. TipTap (v3) phát onUpdate
@@ -93,6 +103,13 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
     // Khi paste từ Word: gỡ background-color (highlight Word) và thuộc tính mso-* (Word-specific)
     // khỏi inline style trước khi TipTap parse — giữ lại color, font-weight và các style hợp lệ khác.
     editorProps: {
+      // Đặt tên đọc được + vai trò cho vùng soạn thảo (contenteditable) để trình đọc màn hình
+      // hiểu đây là ô nhập văn bản nhiều dòng, thay vì một vùng vô danh.
+      attributes: {
+        role: 'textbox',
+        'aria-multiline': 'true',
+        'aria-label': placeholder || t('richEditor.editorLabel', { defaultValue: 'Nội dung văn bản' }),
+      },
       transformPastedHTML(html) {
         const div = document.createElement('div')
         div.innerHTML = html
@@ -156,7 +173,7 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
   const handleLink = useCallback(() => {
     if (!editor) return
     const prev = editor.getAttributes('link').href || ''
-    setLinkModal({ open: true, value: prev })
+    setLinkModal({ open: true, value: prev, error: '' })
   }, [editor])
 
   const applyLink = useCallback(() => {
@@ -164,14 +181,17 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
     const url = linkModal.value.trim()
     if (url === '') {
       editor.chain().focus().unsetLink().run()
+    } else if (!isValidLinkHref(url)) {
+      setLinkModal((m) => ({ ...m, error: t('richEditor.linkInvalid', { defaultValue: 'Đường dẫn không hợp lệ. Dùng http(s)://, mailto:, tel: hoặc đường dẫn nội bộ bắt đầu bằng /.' }) }))
+      return
     } else {
       editor.chain().focus().setLink({ href: url }).run()
     }
-    setLinkModal({ open: false, value: '' })
-  }, [editor, linkModal.value])
+    setLinkModal({ open: false, value: '', error: '' })
+  }, [editor, linkModal.value, t])
 
   const cancelLink = useCallback(() => {
-    setLinkModal({ open: false, value: '' })
+    setLinkModal({ open: false, value: '', error: '' })
     editor?.chain().focus().run()
   }, [editor])
 
@@ -189,6 +209,14 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
   useEffect(() => {
     editor?.setEditable(!disabled)
   }, [disabled, editor])
+
+  // Phản ánh trạng thái lỗi lên vùng soạn thảo (aria-invalid) để không chỉ dựa vào viền màu.
+  useEffect(() => {
+    if (!editor) return
+    const dom = editor.view.dom
+    if (hasError) dom.setAttribute('aria-invalid', 'true')
+    else dom.removeAttribute('aria-invalid')
+  }, [hasError, editor])
 
   if (!editor) return null
 
@@ -210,7 +238,11 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
       disabled ? 'bg-surface-muted' : 'bg-surface'
     )}>
       {/* Toolbar */}
-      <div className="flex items-center flex-wrap gap-0.5 py-1.5 px-2.5 border-b border-border bg-surface-muted">
+      <div
+        role="group"
+        aria-label={t('richEditor.toolbarLabel', { defaultValue: 'Thanh công cụ định dạng' })}
+        className="flex items-center flex-wrap gap-0.5 py-1.5 px-2.5 border-b border-border bg-surface-muted"
+      >
         {btn(() => editor.chain().focus().undo().run(), false, t('richEditor.undo'), <Undo size={14} />, !s?.canUndo)}
         {btn(() => editor.chain().focus().redo().run(), false, t('richEditor.redo'), <Redo size={14} />, !s?.canRedo)}
         <Divider />
@@ -349,28 +381,38 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
 
       {/* Link modal */}
       {linkModal.open && (
-        <div className="py-2.5 px-3 border-t border-border bg-surface-muted flex items-center gap-2">
-          <label className="text-xs text-muted-foreground whitespace-nowrap">
-            URL:
-          </label>
-          <Input
-            ref={linkInputRef}
-            type="url"
-            className="flex-1 text-xs"
-            placeholder="https://..."
-            value={linkModal.value}
-            onChange={(e) => setLinkModal((m) => ({ ...m, value: e.target.value }))}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') { e.preventDefault(); applyLink() }
-              if (e.key === 'Escape') cancelLink()
-            }}
-           />
-          <Button type="button" size="sm" onClick={applyLink}>
-            {t('richEditor.apply')}
-          </Button>
-          <Button variant="secondary" type="button" size="sm" onClick={cancelLink}>
-            {t('common.cancel')}
-          </Button>
+        <div className="py-2.5 px-3 border-t border-border bg-surface-muted flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <label htmlFor="rte-link-url" className="text-xs text-muted-foreground whitespace-nowrap">
+              {t('richEditor.linkUrlLabel', { defaultValue: 'Đường dẫn' })}
+            </label>
+            <Input
+              id="rte-link-url"
+              ref={linkInputRef}
+              type="url"
+              className="flex-1 text-xs"
+              placeholder="https://..."
+              value={linkModal.value}
+              aria-invalid={linkModal.error ? true : undefined}
+              aria-describedby={linkModal.error ? 'rte-link-error' : undefined}
+              onChange={(e) => setLinkModal((m) => ({ ...m, value: e.target.value, error: '' }))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') { e.preventDefault(); applyLink() }
+                if (e.key === 'Escape') cancelLink()
+              }}
+             />
+            <Button type="button" size="sm" onClick={applyLink}>
+              {t('richEditor.apply')}
+            </Button>
+            <Button variant="secondary" type="button" size="sm" onClick={cancelLink}>
+              {t('common.cancel')}
+            </Button>
+          </div>
+          {linkModal.error && (
+            <span id="rte-link-error" role="alert" className="text-xs text-danger">
+              {linkModal.error}
+            </span>
+          )}
         </div>
       )}
 

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchMedia, uploadMedia, fetchMediaFolders, fetchMediaTags } from '../lib/adminApi'
+import { showConfirm } from '../lib/confirm'
 import { useDebounce } from '../lib/useDebounce'
 import { useHasPermission } from '../lib/auth'
 import { resolveDisplayUrl } from '../lib/contracts'
@@ -68,6 +69,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
   const [tag, setTag] = useState('')
   const [folders, setFolders] = useState([])
   const [tags, setTags] = useState([])
+  const [filtersError, setFiltersError] = useState(false)
   const [page, setPage] = useState(1)
   const [state, setState] = useState({ status: 'loading', items: [], totalPages: 1 })
   // Single-select: string | null; Multi-select: Set<string>
@@ -89,24 +91,27 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
   const validation = useMediaValidation(kind, !multiSelect ? selectedUrls : null, recommend)
 
   // Reset page on new search / filter.
-  useEffect(() => { setPage(1) }, [debouncedSearch, folderFilter, tag])
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPage(1)
+  }, [debouncedSearch, folderFilter, tag])
 
-  // Nạp danh sách thư mục + tag để lọc (chỉ 1 lần khi mở picker).
+  // Nạp danh sách thư mục + tag để lọc (chỉ 1 lần khi mở picker). Dùng allSettled
+  // để giữ phần tải được và HIỆN lỗi thay vì nuốt im lặng.
   useEffect(() => {
     let active = true
-    Promise.all([
-      fetchMediaFolders().catch(() => []),
-      fetchMediaTags().catch(() => []),
-    ]).then(([f, tg]) => {
+    Promise.allSettled([fetchMediaFolders(), fetchMediaTags()]).then(([fRes, tRes]) => {
       if (!active) return
-      setFolders(f ?? [])
-      setTags(tg ?? [])
+      if (fRes.status === 'fulfilled') setFolders(fRes.value ?? [])
+      if (tRes.status === 'fulfilled') setTags(tRes.value ?? [])
+      setFiltersError(fRes.status === 'rejected' || tRes.status === 'rejected')
     })
     return () => { active = false }
   }, [])
 
   useEffect(() => {
     let active = true
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setState((p) => ({ ...p, status: 'loading' }))
     fetchMedia({ search: debouncedSearch, mimeType: `${kind}/`, page, pageSize: PAGE_SIZE, folderFilter: folderFilter || undefined, tag: tag || undefined })
       .then((r) => {
@@ -128,7 +133,8 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
 
   // While the detail editor is open it owns the keyboard (Escape/Tab); let its own
   // handler manage focus so we don't close the whole picker.
-  useModalFocusTrap({ modalRef, onClose, isSuspendedRef: detailOpenRef })
+  // Escape đi qua attemptClose để hỏi xác nhận khi đang tải lên / đã chọn.
+  useModalFocusTrap({ modalRef, onClose: attemptClose, isSuspendedRef: detailOpenRef })
   useBodyScrollLock()
 
   // ── Upload helpers ──────────────────────────────────────────────────────────
@@ -154,10 +160,13 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
     const uploadedUrls = []
 
     for (const file of valid) {
-      setUploadQueue((q) => [...q, { name: file.name, progress: 0, error: null }])
+      // Khoá theo id duy nhất, KHÔNG theo tên: hai file trùng tên sẽ không còn bị
+      // cập nhật nhầm tiến trình lẫn nhau.
+      const itemId = (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`)
+      setUploadQueue((q) => [...q, { id: itemId, name: file.name, progress: 0, error: null }])
       try {
         const result = await uploadMedia(file, '', (pct) => {
-          setUploadQueue((q) => q.map((item) => item.name === file.name ? { ...item, progress: pct } : item))
+          setUploadQueue((q) => q.map((item) => item.id === itemId ? { ...item, progress: pct } : item))
         })
         const url = result?.item?.publicUrl
         if (url) {
@@ -165,10 +174,11 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
           // isNewUpload tells callers this item has no saved alt/title yet — they
           // should sync the context alt the admin types back into the library.
           mediaCacheRef.current.set(url, { ...result.item, isNewUpload: true })
-          setUploadQueue((q) => q.map((item) => item.name === file.name ? { ...item, progress: 100 } : item))
+          setUploadQueue((q) => q.map((item) => item.id === itemId ? { ...item, progress: 100 } : item))
         }
-      } catch (err) {
-        setUploadQueue((q) => q.map((item) => item.name === file.name ? { ...item, error: err.message || t('media.picker.uploadFailed') } : item))
+      } catch {
+        // Thông báo thân thiện thay vì message lỗi thô.
+        setUploadQueue((q) => q.map((item) => item.id === itemId ? { ...item, error: t('media.picker.uploadFailed') } : item))
       }
     }
 
@@ -269,12 +279,25 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
   const isLoading = state.status === 'loading'
   const canConfirm = hasSelection && (multiSelect || (!validation.blocked && validation.status !== 'loading'))
 
+  // Hỏi xác nhận khi đóng lúc đang tải lên hoặc đã chọn để tránh mất lựa chọn/tiến
+  // trình. Dùng cho backdrop, nút đóng, Huỷ và Escape (qua useModalFocusTrap).
+  async function attemptClose() {
+    if (uploading || hasSelection) {
+      const ok = await showConfirm(
+        t('media.picker.closeConfirm', { defaultValue: 'Bạn đang chọn hoặc tải file lên. Đóng sẽ mất lựa chọn và tiến trình đang tải. Tiếp tục?' }),
+        t('media.picker.closeConfirmTitle', { defaultValue: 'Đóng cửa sổ chọn?' }),
+      )
+      if (!ok) return
+    }
+    onClose()
+  }
+
   // Portal to <body> so the fixed-position backdrop/modal cover the whole
   // viewport. Rendered inline, an ancestor with a transform (e.g. a dnd-kit
   // sortable card) would become the containing block and trap the overlay.
   return createPortal(
     <>
-      <div className="mpicker-backdrop" onClick={onClose} aria-hidden="true" />
+      <div className="mpicker-backdrop" onClick={attemptClose} aria-hidden="true" />
       <div
         ref={modalRef}
         className={`mpicker-modal${isDragOver ? ' mpicker-modal--dragover' : ''}`}
@@ -322,7 +345,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
                 </Button>
               </>
             )}
-            <Button variant="secondary" size="icon" type="button" onClick={onClose} aria-label={t('common.close')}>
+            <Button variant="secondary" size="icon" type="button" onClick={attemptClose} aria-label={t('common.close')}>
               <IconClose />
             </Button>
           </div>
@@ -348,7 +371,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
         {uploadQueue.length > 0 && (
           <div className="mpicker-upload-queue">
             {uploadQueue.map((item) => (
-              <div key={item.name} className={`mpicker-upload-item${item.error ? ' mpicker-upload-item--error' : ''}`}>
+              <div key={item.id} className={`mpicker-upload-item${item.error ? ' mpicker-upload-item--error' : ''}`}>
                 <span className="mpicker-upload-name">{item.name}</span>
                 {item.error
                   ? <span className="mpicker-upload-err">{item.error}</span>
@@ -390,6 +413,11 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
               />
             )}
           </div>
+          {filtersError && (
+            <p className="mt-1 text-xs text-danger">
+              {t('media.picker.filtersError', { defaultValue: 'Không tải được danh sách thư mục hoặc thẻ để lọc.' })}
+            </p>
+          )}
         </div>
 
         {uploadError && (
@@ -405,7 +433,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
             <div className="mpicker-state">{t('common.loading')}</div>
           )}
           {state.status === 'error' && (
-            <div className="mpicker-state mpicker-state-error">{state.error}</div>
+            <div className="mpicker-state mpicker-state-error">{t('media.loadError')}</div>
           )}
           {state.status === 'success' && state.items.length === 0 && (
             <div className="mpicker-state mpicker-state-empty">
@@ -424,6 +452,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
                       type="button"
                       className={`mpicker-item w-full${sel ? ' is-selected' : ''}`}
                       onClick={() => toggleUrl(url)}
+                      aria-pressed={sel}
                       title={media.filename?.split('/').pop() ?? ''}
                     >
                       {url ? (
@@ -503,7 +532,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
             </span>
           )}
           <div className="mpicker-footer-actions">
-            <Button variant="secondary" type="button" onClick={onClose}>
+            <Button variant="secondary" type="button" onClick={attemptClose}>
               {t('common.cancel')}
             </Button>
             <Button

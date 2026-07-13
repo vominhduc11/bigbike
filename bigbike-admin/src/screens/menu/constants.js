@@ -144,6 +144,11 @@ export function isItemFormValid(data) {
   return data.url.trim() !== '' && isValidCustomUrl(data.url)
 }
 
-export const SLOT_CONTEXT_NOTES = {
-  primary: 'Mục này sẽ xuất hiện trên thanh điều hướng đầu trang website. Chỉ mục đang bật và có mục cha đang bật mới hiển thị.',
+// Ghi chú ngữ cảnh cho từng slot — trả KEY i18n + defaultValue để screen resolve qua t()
+// thay vì hardcode chuỗi (constants.js không có React context để gọi t() trực tiếp).
+export const SLOT_CONTEXT_NOTE_KEYS = {
+  primary: {
+    key: 'menus.slotPrimaryContextNote',
+    defaultValue: 'Mục này sẽ xuất hiện trên thanh điều hướng đầu trang website. Chỉ mục đang bật và có mục cha đang bật mới hiển thị.',
+  },
 }

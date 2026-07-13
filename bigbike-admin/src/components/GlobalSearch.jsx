@@ -5,6 +5,9 @@ import { Loader2, Package, Search, ShoppingCart, Users } from 'lucide-react'
 import { fetchCustomers, fetchOrders, fetchProducts } from '../lib/adminApi'
 import { formatCurrencyVnd, formatText } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
+import { useDialogA11y } from '../lib/useDialogA11y'
+import { StatePanel } from './StatePanel'
+import { Button } from '@/components/ui/button'
 
 const MIN_CHARS = 2
 const PER_GROUP = 5
@@ -24,9 +27,10 @@ export function GlobalSearch({ navigate, visiblePaths }) {
   const [term, setTerm] = useState('')
   const [results, setResults] = useState({ orders: [], products: [], customers: [] })
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef(null)
-  const triggerRef = useRef(null)
+  const dialogRef = useRef(null)
   const listRef = useRef(null)
   const reqIdRef = useRef(0)
   const debounced = useDebounce(term, 300)
@@ -35,32 +39,31 @@ export function GlobalSearch({ navigate, visiblePaths }) {
   const canProducts = visiblePaths.has('/admin/products')
   const canCustomers = visiblePaths.has('/admin/customers')
 
+  // Đóng + reset trạng thái. Focus được useDialogA11y trả về phần tử mở trước đó.
   const close = useCallback(() => {
     setOpen(false)
     setTerm('')
     setResults({ orders: [], products: [], customers: [] })
     setActiveIndex(0)
+    setError(false)
   }, [])
 
-  // Đóng + trả focus về nút mở (cho người dùng bàn phím/screen reader).
-  const closeAndRestore = useCallback(() => {
-    close()
-    triggerRef.current?.focus()
-  }, [close])
+  // Trap focus + Tab-cycle + Escape + trả focus về trigger cho hộp thoại tự dựng.
+  useDialogA11y(dialogRef, { active: open, onClose: close })
 
-  // ⌘K / Ctrl+K toggles the palette; Esc closes it.
+  // ⌘K / Ctrl+K toggles the palette. Khi đóng bằng phím tắt cũng reset + trả focus
+  // (qua close() + useDialogA11y), không để lại input/kết quả cũ.
   useEffect(() => {
     function onKey(e) {
       if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
         e.preventDefault()
-        setOpen((o) => !o)
-      } else if (e.key === 'Escape' && open) {
-        closeAndRestore()
+        if (open) close()
+        else setOpen(true)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open, closeAndRestore])
+  }, [open, close])
 
   // Cuộn dòng đang chọn vào tầm nhìn khi điều hướng bằng phím ↑/↓.
   useEffect(() => {
@@ -68,14 +71,8 @@ export function GlobalSearch({ navigate, visiblePaths }) {
     listRef.current?.querySelector(`#bb-search-opt-${activeIndex}`)?.scrollIntoView({ block: 'nearest' })
   }, [activeIndex, open])
 
-  useEffect(() => {
-    if (open) {
-      const id = setTimeout(() => inputRef.current?.focus(), 20)
-      return () => clearTimeout(id)
-    }
-  }, [open])
-
-  // Fan-out search — latest request wins; failures degrade to empty per group.
+  // Fan-out search — latest request wins. Lỗi từng nhóm được ghi nhận (setError) để
+  // phân biệt "không có kết quả" với "gọi API lỗi", thay vì im lặng trả rỗng.
   // All state writes are deferred out of the effect body via queueMicrotask so
   // they don't run as synchronous cascading renders (react-hooks/set-state-in-effect).
   useEffect(() => {
@@ -87,6 +84,7 @@ export function GlobalSearch({ navigate, visiblePaths }) {
       queueMicrotask(() => {
         if (cancelled) return
         setResults({ orders: [], products: [], customers: [] })
+        setError(false)
         setLoading(false)
       })
       return () => { cancelled = true }
@@ -96,14 +94,18 @@ export function GlobalSearch({ navigate, visiblePaths }) {
     queueMicrotask(() => {
       if (cancelled) return
       setLoading(true)
+      setError(false)
       const listQuery = { search: q, page: 1, pageSize: PER_GROUP }
+      let failed = false
+      const onFail = () => { failed = true; return [] }
       Promise.all([
-        canOrders ? fetchOrders(listQuery).then((r) => r.items || []).catch(() => []) : Promise.resolve([]),
-        canProducts ? fetchProducts(listQuery).then((r) => r.items || []).catch(() => []) : Promise.resolve([]),
-        canCustomers ? fetchCustomers(listQuery).then((r) => r.items || []).catch(() => []) : Promise.resolve([]),
+        canOrders ? fetchOrders(listQuery).then((r) => r.items || []).catch(onFail) : Promise.resolve([]),
+        canProducts ? fetchProducts(listQuery).then((r) => r.items || []).catch(onFail) : Promise.resolve([]),
+        canCustomers ? fetchCustomers(listQuery).then((r) => r.items || []).catch(onFail) : Promise.resolve([]),
       ]).then(([orders, products, customers]) => {
         if (myId !== reqIdRef.current) return
         setResults({ orders, products, customers })
+        setError(failed)
         setActiveIndex(0)
         setLoading(false)
       })
@@ -121,14 +123,14 @@ export function GlobalSearch({ navigate, visiblePaths }) {
     }))
     results.products.forEach((p) => rows.push({
       group: 'products', key: `p-${p.id}`, to: `/admin/products/${p.id}`,
-      primary: formatText(p.name), secondary: formatText(p.sku, 'SKU TBD'),
+      primary: formatText(p.name), secondary: formatText(p.sku, t('search.skuTbd', { defaultValue: 'Chưa có SKU' })),
     }))
     results.customers.forEach((c) => rows.push({
       group: 'customers', key: `c-${c.id}`, to: `/admin/customers/${c.id}`,
       primary: formatText(c.fullName), secondary: formatText(c.email || c.phone),
     }))
     return rows
-  }, [results])
+  }, [results, t])
 
   const go = useCallback((to) => { close(); navigate(to) }, [close, navigate])
 
@@ -143,10 +145,6 @@ export function GlobalSearch({ navigate, visiblePaths }) {
       e.preventDefault()
       const hit = flat[activeIndex]
       if (hit) go(hit.to)
-    } else if (e.key === 'Tab') {
-      // Giam focus trong palette — điều hướng bằng ↑/↓ + Enter, không Tab ra nền.
-      e.preventDefault()
-      inputRef.current?.focus()
     }
   }
 
@@ -155,8 +153,8 @@ export function GlobalSearch({ navigate, visiblePaths }) {
 
   return (
     <>
+      {/* Desktop: ô tìm kiếm đầy đủ (ẩn ở <md) */}
       <button
-        ref={triggerRef}
         type="button"
         onClick={() => setOpen(true)}
         className="hidden h-9 w-full max-w-[320px] items-center gap-2 rounded-sm border border-border bg-surface-muted px-3 text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground md:flex"
@@ -167,8 +165,21 @@ export function GlobalSearch({ navigate, visiblePaths }) {
         <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 text-xs font-semibold">⌘K</kbd>
       </button>
 
+      {/* Mobile: nút icon mở panel tìm kiếm (ô đầy đủ ẩn ở <md) */}
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onClick={() => setOpen(true)}
+        aria-label={t('search.open')}
+        className="md:hidden"
+      >
+        <Search size={18} aria-hidden="true" />
+      </Button>
+
       {open && createPortal(
         <div
+          ref={dialogRef}
           className="fixed inset-0 flex items-start justify-center px-4 pt-[12vh]"
           style={{ zIndex: 'var(--z-modal)' }}
           role="dialog"
@@ -178,7 +189,7 @@ export function GlobalSearch({ navigate, visiblePaths }) {
           <div
             className="fixed inset-0"
             style={{ background: 'var(--admin-color-overlay)' }}
-            onClick={closeAndRestore}
+            onClick={close}
             aria-hidden="true"
           />
           <div
@@ -210,7 +221,16 @@ export function GlobalSearch({ navigate, visiblePaths }) {
               {!hasQuery && (
                 <p className="px-3 py-6 text-center text-sm text-muted-foreground">{t('search.hint')}</p>
               )}
-              {hasQuery && !loading && flat.length === 0 && (
+              {hasQuery && !loading && flat.length === 0 && error && (
+                <div className="p-2">
+                  <StatePanel
+                    tone="danger"
+                    title={t('search.errorTitle', { defaultValue: 'Không tìm kiếm được' })}
+                    description={t('search.errorBody', { defaultValue: 'Đã có lỗi khi tìm kiếm. Vui lòng thử lại.' })}
+                  />
+                </div>
+              )}
+              {hasQuery && !loading && flat.length === 0 && !error && (
                 <p className="px-3 py-6 text-center text-sm text-muted-foreground">{t('search.empty')}</p>
               )}
               {hasQuery && groupOrder.map((group) => {

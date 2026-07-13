@@ -30,7 +30,7 @@ export function RoleSidebar({ roles, selectedId, onSelect, editMode, isDirty, ca
               <Badge isSystem={role.isSystem} />
             </div>
             {showDesc && (
-              <div className="text-xs text-muted-foreground pl-[21px] mt-0.5">
+              <div className="text-xs text-muted-foreground pl-5 mt-0.5">
                 {desc}
               </div>
             )}

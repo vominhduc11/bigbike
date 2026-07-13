@@ -12,6 +12,7 @@ import {
   CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
 import { useUrlSyncedState } from '../lib/useUrlSyncedState'
+import { useHasPermission } from '../lib/auth'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { AdminTable } from '../components/AdminTable'
@@ -113,10 +114,20 @@ function RankTable({ title, rows, cols, noDataLabel }) {
   )
 }
 
+// Dựng chuỗi YYYY-MM-DD theo LỊCH ĐỊA PHƯƠNG (year/month/date local, pad 0) — KHÔNG
+// dùng toISOString()/UTC. Backend parse mốc ngày theo Asia/Ho_Chi_Minh (REPORT_RULE_008);
+// dùng UTC làm lệch ngày quanh nửa đêm ở giờ VN.
+function formatLocalYmd(d) {
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 function toLocalDateString(daysAgo) {
   const d = new Date()
   d.setDate(d.getDate() - daysAgo)
-  return d.toISOString().slice(0, 10)
+  return formatLocalYmd(d)
 }
 
 // Dịch khoảng ngày lùi về kỳ liền trước cùng độ dài (để so sánh kỳ-trên-kỳ).
@@ -131,8 +142,8 @@ function shiftRangeBack(from, to) {
   const prevFrom = new Date(prevTo)
   prevFrom.setDate(prevFrom.getDate() - (spanDays - 1))
   return {
-    from: prevFrom.toISOString().slice(0, 10),
-    to: prevTo.toISOString().slice(0, 10),
+    from: formatLocalYmd(prevFrom),
+    to: formatLocalYmd(prevTo),
   }
 }
 
@@ -156,6 +167,8 @@ function makeTrend(current, previous, t) {
 export function ReportsScreen() {
   const { t, i18n } = useTranslation()
   const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
+  const hasPermission = useHasPermission()
+  const canExport = hasPermission('reports.export')
 
   const [query, setQuery] = useUrlSyncedState({ preset: '30d', from: '', to: '' })
 
@@ -209,7 +222,6 @@ export function ReportsScreen() {
     data: currentResult,
     isLoading: isCurrentLoading,
     isError: isCurrentError,
-    error: currentError,
     refetch: refetchCurrent,
   } = useQuery({
     queryKey: ['analytics', from, to],
@@ -239,7 +251,7 @@ export function ReportsScreen() {
       return { status: 'loading', data: null, prev: null, warning: '' }
     }
     if (isCurrentError) {
-      return { status: 'error', data: null, prev: null, warning: '', error: currentError?.message || t('reports.loadError') }
+      return { status: 'error', data: null, prev: null, warning: '', error: t('reports.loadErrorDesc', { defaultValue: 'Không thể tải báo cáo lúc này. Vui lòng thử lại.' }) }
     }
     return {
       status: 'success',
@@ -247,7 +259,7 @@ export function ReportsScreen() {
       prev: prevResult?.data || null,
       warning: currentResult?.warning || '',
     }
-  }, [preset, customFrom, customTo, isRangeValid, isRangeWithinLimit, isCurrentLoading, isCurrentError, currentError, currentResult, prevResult, t])
+  }, [preset, customFrom, customTo, isRangeValid, isRangeWithinLimit, isCurrentLoading, isCurrentError, currentResult, prevResult, t])
 
   const handleRetry = () => {
     if (preset === 'custom' && customFrom && customTo && customFrom > customTo) {
@@ -365,6 +377,7 @@ export function ReportsScreen() {
               />
             </>
           )}
+          {canExport && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button type="button" variant="default">
@@ -374,7 +387,10 @@ export function ReportsScreen() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
-              <DropdownMenuItem onSelect={() => runExport(() => exportOrdersCsv({ from: exportFrom, to: exportTo }))}>
+              <DropdownMenuItem
+                disabled={!shouldFetch}
+                onSelect={() => runExport(() => exportOrdersCsv({ from: exportFrom, to: exportTo }))}
+              >
                 {t('reports.exportOrders')}
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => runExport(() => exportProductsCsv())}>
@@ -389,6 +405,7 @@ export function ReportsScreen() {
               </DropdownMenuLabel>
             </DropdownMenuContent>
           </DropdownMenu>
+          )}
         </div>
       </div>
 

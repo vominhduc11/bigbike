@@ -1,17 +1,29 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { X } from 'lucide-react'
+import { AlertCircle, X } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { useModalFocusTrap, useBodyScrollLock } from '@/components/media-picker/useModalBehavior'
 import { ACTOR_OPTIONS, PRESET_KEYS, RESOURCE_OPTIONS, getDatePreset } from './constants'
 
 export function MobileFilterDrawer({ query, searchInput, onSearch, setSearchInput, onUpdate, onReset, onClose, isFiltered }) {
   const { t } = useTranslation()
+  const sheetRef = useRef(null)
   const [localFrom, setLocalFrom] = useState(query.from)
   const [localTo, setLocalTo]     = useState(query.to)
 
+  // Dialog semantics: khoá scroll nền + bẫy focus + Escape để đóng (trước đây thiếu).
+  useBodyScrollLock()
+  useModalFocusTrap({ modalRef: sheetRef, onClose })
+
+  // Ngày bắt đầu không được sau ngày kết thúc.
+  const dateError = localFrom && localTo && localFrom > localTo
+    ? t('auditLog.dateRangeError', { defaultValue: 'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.' })
+    : ''
+
   function applyDates() {
+    if (dateError) return
     onUpdate({ from: localFrom, to: localTo }, { resetPage: true })
     onClose()
   }
@@ -26,7 +38,13 @@ export function MobileFilterDrawer({ query, searchInput, onSearch, setSearchInpu
 
   return (
     <div className="audit-mobile-filter-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="audit-mobile-filter-sheet">
+      <div
+        ref={sheetRef}
+        className="audit-mobile-filter-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('auditLog.mobileFilterLabel')}
+      >
         <div className="audit-mobile-filter-header">
           <strong>{t('auditLog.mobileFilterLabel')}</strong>
           <Button variant="outline" size="icon" onClick={onClose} aria-label={t('auditLog.drawerClose')}><X size={16} aria-hidden="true" /></Button>
@@ -86,14 +104,19 @@ export function MobileFilterDrawer({ query, searchInput, onSearch, setSearchInpu
           <div className="flex gap-2">
             <label className="flex-1">
               <span>{t('auditLog.filterFrom')}</span>
-              <Input type="date" value={localFrom} onChange={(e) => setLocalFrom(e.target.value)}  />
+              <Input type="date" value={localFrom} onChange={(e) => setLocalFrom(e.target.value)} aria-invalid={dateError ? true : undefined}  />
             </label>
             <label className="flex-1">
               <span>{t('auditLog.filterTo')}</span>
-              <Input type="date" value={localTo} onChange={(e) => setLocalTo(e.target.value)}  />
+              <Input type="date" value={localTo} onChange={(e) => setLocalTo(e.target.value)} aria-invalid={dateError ? true : undefined}  />
             </label>
           </div>
-          <Button className="w-full" onClick={applyDates}>
+          {dateError && (
+            <span className="flex items-center gap-1.5 text-xs text-danger" role="alert">
+              <AlertCircle size={13} aria-hidden="true" /> {dateError}
+            </span>
+          )}
+          <Button className="w-full" onClick={applyDates} disabled={!!dateError}>
             {t('auditLog.mobileFilterApplyDates')}
           </Button>
 

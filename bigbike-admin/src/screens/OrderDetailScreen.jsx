@@ -194,6 +194,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   async function handlePaymentStatusChange(newStatus) {
     const PAYMENT_CONFIRM = {
       PAID: 'orders.detail.confirmPayPaidMessage',
+      UNPAID: 'orders.detail.confirmPayUnpaidMessage',
       CANCELLED: 'orders.detail.confirmPayCancelledMessage',
     }
     if (PAYMENT_CONFIRM[newStatus]) {
@@ -271,7 +272,8 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
     return <OrderDetailSkeleton />
   }
   if (status === 'error') {
-    return <StatePanel tone="danger" title={t('orders.detail.loadError')} description={orderQuery.error?.message}
+    return <StatePanel tone="danger" title={t('orders.detail.loadError')}
+      description={t('orders.detail.loadErrorDesc', { defaultValue: 'Không thể tải chi tiết đơn hàng. Vui lòng thử lại.' })}
       actionLabel={t('common.retry')} onAction={() => orderQuery.refetch()} />
   }
   if (!order) {
@@ -282,6 +284,10 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const ffStatusLabel = order.fulfillmentStatus
     ? t({ UNFULFILLED: 'orders.detail.ffUnfulfilled', PROCESSING: 'orders.detail.ffProcessing', SHIPPED: 'orders.detail.ffShipped', DELIVERED: 'orders.detail.ffDelivered', CANCELLED: 'orders.detail.ffCancelled' }[order.fulfillmentStatus] ?? order.fulfillmentStatus)
     : t('orders.detail.ffNone')
+
+  // Khoá các nút chuyển trạng thái khi đang lưu HOẶC đang làm mới nền (dữ liệu/allowed
+  // transitions có thể sắp thay) — tránh thao tác dựa trên trạng thái cũ.
+  const actionsBusy = saving || orderQuery.isFetching
 
   return (
     <div>
@@ -335,7 +341,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     type="button"
                     variant={isDanger ? 'ghost' : isPrimary ? 'default' : 'secondary'}
                     className={isDanger ? 'text-danger' : undefined}
-                    disabled={saving}
+                    disabled={actionsBusy}
                     onClick={() => handleStatusChange(s)}
                   >
                     {isPending ? t('orders.detail.savingShort') : <><ArrowRight size={14} aria-hidden="true" />{getOrderStatusLabel(s, order, t)}</>}
@@ -360,7 +366,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                   variant={s === 'CANCELLED' ? 'ghost' : 'secondary'}
                   size="sm"
                   className={s === 'CANCELLED' ? 'text-danger' : undefined}
-                  disabled={saving}
+                  disabled={actionsBusy}
                   onClick={() => handlePaymentStatusChange(s)}
                 >
                   {pendingAction === `payment:${s}`
@@ -382,6 +388,8 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
               )}
               {order.fulfillmentStatus === 'PROCESSING' && (
                 <Button type="button" variant="secondary" size="sm" disabled={fulfillmentSaving}
+                  aria-expanded={showShipForm}
+                  aria-controls="ship-form"
                   onClick={() => setShowShipForm((p) => !p)}>
                   {t('orders.detail.ffMarkShipped')}
                 </Button>
@@ -401,6 +409,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           {order.fulfillmentType === 'DELIVERY' && showShipForm && (
             <div className="bb-action-strip">
               <form
+                id="ship-form"
                 className="bb-detail-form w-full"
                 onSubmit={(e) => { e.preventDefault(); handleFulfillmentUpdate('SHIPPED') }}
               >

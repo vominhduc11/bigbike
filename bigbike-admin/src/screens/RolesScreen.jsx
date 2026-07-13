@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { fetchRoles, fetchPermissionCatalog, updateRolePermissions, createRole, deleteRole } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { Button } from '@/components/ui/button'
+import { Alert } from '@/components/ui/alert'
 import { StatePanel } from '@/components/StatePanel'
 import {
   BUILTIN_CATALOG,
@@ -30,6 +31,8 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
   const [catalog, setCatalog]             = useState(BUILTIN_CATALOG)
   const [loading, setLoading]             = useState(true)
   const [loadError, setLoadError]         = useState(null)
+  // Lỗi tải RIÊNG danh mục quyền — không chặn cả trang (vẫn dùng danh mục mặc định).
+  const [catalogError, setCatalogError]   = useState(false)
   const [selectedId, setSelectedId]       = useState(null)
   const [mobileShowDetail, setMobileShowDetail] = useState(false)
   const [editMode, setEditMode]           = useState(false)
@@ -47,14 +50,27 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([fetchRoles(), fetchPermissionCatalog()])
-      .then(([rolesResult, catalogResult]) => {
+    // allSettled: danh mục quyền lỗi KHÔNG được kéo sập cả trang. Danh sách vai trò là
+    // thiết yếu (lỗi → error state); danh mục quyền không tải được thì lùi về danh mục
+    // mặc định (BUILTIN_CATALOG) và chỉ báo cảnh báo mềm.
+    Promise.allSettled([fetchRoles(), fetchPermissionCatalog()])
+      .then(([rolesRes, catalogRes]) => {
         if (cancelled) return
+        if (rolesRes.status === 'rejected') {
+          setLoadError(rolesRes.reason?.message || t('roles.loadError'))
+          return
+        }
+        const rolesResult = rolesRes.value
         setRoles(rolesResult.items)
         if (rolesResult.items.length > 0) setSelectedId(rolesResult.items[0].id)
-        if (catalogResult) setCatalog(catalogResult)
+        if (catalogRes.status === 'fulfilled' && catalogRes.value) {
+          setCatalog(catalogRes.value)
+          setCatalogError(false)
+        } else {
+          setCatalog(BUILTIN_CATALOG)
+          setCatalogError(true)
+        }
       })
-      .catch((e) => { if (!cancelled) setLoadError(e.message || t('roles.loadError')) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [t, reloadKey])
@@ -62,6 +78,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
   function handleRetryLoad() {
     setLoading(true)
     setLoadError(null)
+    setCatalogError(false)
     setReloadKey(k => k + 1)
   }
 
@@ -100,13 +117,26 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
     setMobileShowDetail(true)
   }
 
+  async function handleMobileBack() {
+    if (editMode && isDirty) {
+      if (!await showConfirm(t('roles.discardChanges'), t('roles.discardChangesTitle', { defaultValue: 'Huỷ thay đổi?' }))) return
+    }
+    setMobileShowDetail(false)
+    setEditMode(false)
+    setDraft(null)
+  }
+
   function handleStartEdit() {
     if (!selected) return
     setDraft(new Set(selected.permissions))
     setEditMode(true)
   }
 
-  function handleCancelEdit() {
+  async function handleCancelEdit() {
+    // Dirty guard: bấm Hủy khi có thay đổi chưa lưu phải xác nhận, tránh mất draft.
+    if (isDirty) {
+      if (!await showConfirm(t('roles.discardChanges'), t('roles.discardChangesTitle', { defaultValue: 'Huỷ thay đổi?' }))) return
+    }
     setDraft(null)
     setEditMode(false)
   }
@@ -325,6 +355,13 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
         />
       )}
 
+      {/* Danh mục quyền tải lỗi từng phần — cảnh báo mềm, trang vẫn dùng được */}
+      {!loading && !loadError && catalogError && (
+        <Alert tone="warning" size="sm" className="mb-3">
+          {t('roles.catalogLoadWarning', { defaultValue: 'Không tải được danh mục quyền mới nhất — đang dùng danh sách quyền mặc định, một số quyền có thể chưa đầy đủ. Hãy thử tải lại.' })}
+        </Alert>
+      )}
+
       {/* Empty */}
       {!loading && !loadError && roles.length === 0 && (
         <StatePanel
@@ -343,7 +380,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
           {mobileShowDetail && selected && (
             <Button variant="ghost" size="sm"
               className="roles-back-btn flex items-center gap-1.5 mb-3"
-              onClick={() => { setMobileShowDetail(false); setEditMode(false); setDraft(null) }}
+              onClick={handleMobileBack}
             >
               <ChevronLeft size={16} aria-hidden />
               {t('roles.backToList')}

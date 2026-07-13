@@ -120,8 +120,18 @@ export function BrandListScreen({ navigate, canUpdate }) {
     },
   })
 
-  function handleToggleVisibility(brand) {
+  async function handleToggleVisibility(brand) {
     if (!canUpdate || toggleVisibilityMutation.isPending || bulkProgress) return
+    // Đối xứng với Xóa (vốn đã có confirm): ẩn một thương hiệu khỏi web cũng là hành
+    // động khiến khách không còn thấy — hỏi xác nhận trước. Hiện lại thì không cần hỏi.
+    if (brand.isVisible) {
+      const ok = await showConfirm(
+        t('brands.hideRowConfirm', { name: brand.name, defaultValue: `Ẩn thương hiệu "{{name}}" khỏi website? Khách sẽ không còn thấy thương hiệu này. Bạn có thể hiện lại bất cứ lúc nào.` }),
+        t('brands.hideRowTitle', { defaultValue: 'Ẩn thương hiệu khỏi website?' }),
+        { confirmLabel: t('brands.hideAction'), variant: 'danger' },
+      )
+      if (!ok) return
+    }
     setTogglingVisibilityId(brand.id)
     toggleVisibilityMutation.mutate({ id: brand.id, visible: !brand.isVisible })
   }
@@ -339,33 +349,33 @@ export function BrandListScreen({ navigate, canUpdate }) {
     return (
       <>
         {!isTrashed && (
-          <button type="button" className="bb-icon-btn" title={t('common.edit')} aria-label={t('common.edit')} onClick={() => navigate(`/admin/brands/${brand.id}`)}>
-            <Pencil size={14} />
-          </button>
+          <Button variant="ghost" size="icon" title={t('common.edit')} aria-label={t('common.edit')} onClick={() => navigate(`/admin/brands/${brand.id}`)}>
+            <Pencil size={14} aria-hidden="true" />
+          </Button>
         )}
         {canUpdate && !isTrashed && (
-          <button type="button" className="bb-icon-btn" title={t('brands.duplicate')} aria-label={t('brands.duplicate')} onClick={() => handleDuplicate(brand)}>
-            <Copy size={14} />
-          </button>
+          <Button variant="ghost" size="icon" title={t('brands.duplicate')} aria-label={t('brands.duplicate')} onClick={() => handleDuplicate(brand)}>
+            <Copy size={14} aria-hidden="true" />
+          </Button>
         )}
         {canUpdate && !isTrashed && (
-          <button type="button" className="bb-icon-btn" title={brand.isVisible ? t('brands.hideAction') : t('brands.showAction')} aria-label={brand.isVisible ? t('brands.hideAction') : t('brands.showAction')} disabled={toggleVisibilityMutation.isPending && togglingVisibilityId === brand.id} onClick={() => handleToggleVisibility(brand)}>
-            {brand.isVisible ? <EyeOff size={14} /> : <Eye size={14} />}
-          </button>
+          <Button variant="ghost" size="icon" title={brand.isVisible ? t('brands.hideAction') : t('brands.showAction')} aria-label={brand.isVisible ? t('brands.hideAction') : t('brands.showAction')} disabled={toggleVisibilityMutation.isPending && togglingVisibilityId === brand.id} onClick={() => handleToggleVisibility(brand)}>
+            {brand.isVisible ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
+          </Button>
         )}
         {canUpdate && !isTrashed && (
-          <button type="button" className="bb-icon-btn danger" title={t('common.delete')} aria-label={t('common.delete')} onClick={() => handleSoftDelete(brand)}>
-            <Trash2 size={14} />
-          </button>
+          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" title={t('common.delete')} aria-label={t('common.delete')} onClick={() => handleSoftDelete(brand)}>
+            <Trash2 size={14} aria-hidden="true" />
+          </Button>
         )}
         {canUpdate && isTrashed && (
           <>
-            <button type="button" className="bb-icon-btn" title={t('products.restore')} aria-label={t('products.restore')} onClick={() => handleRestore(brand)}>
-              <Undo2 size={14} />
-            </button>
-            <button type="button" className="bb-icon-btn danger" title={t('common.permanentDelete')} aria-label={t('common.permanentDelete')} onClick={() => handlePermanentDelete(brand)}>
-              <Trash2 size={14} />
-            </button>
+            <Button variant="ghost" size="icon" title={t('products.restore')} aria-label={t('products.restore')} onClick={() => handleRestore(brand)}>
+              <Undo2 size={14} aria-hidden="true" />
+            </Button>
+            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" title={t('common.permanentDelete')} aria-label={t('common.permanentDelete')} onClick={() => handlePermanentDelete(brand)}>
+              <Trash2 size={14} aria-hidden="true" />
+            </Button>
           </>
         )}
       </>
@@ -480,7 +490,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
           options={[
             { value: 'ALL', label: t('brands.filterVisibilityAll', { defaultValue: 'Tất cả trạng thái' }) },
             { value: 'VISIBLE', label: t('common.visible', { defaultValue: 'Đang hiển thị' }) },
-            { value: 'HIDDEN', label: t('brands.filterTrash') },
+            { value: 'HIDDEN', label: t('brands.filterVisibilityHidden', { defaultValue: 'Đã ẩn' }) },
           ]}
         />
         <FilterSelect
@@ -551,7 +561,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
         <StatePanel
           tone="danger"
           title={t('brands.loadError')}
-          description={state.error || 'Unknown brand list error.'}
+          description={state.error || t('brands.loadErrorDesc', { defaultValue: 'Không thể tải danh sách thương hiệu. Vui lòng thử lại.' })}
           actionLabel={t('common.retry')}
           onAction={() => state.refetch()}
         />

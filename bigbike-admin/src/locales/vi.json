@@ -1,6 +1,12 @@
 {
   "common": {
     "columns": "Cột hiển thị",
+    "showAllColumns": "Hiện tất cả cột",
+    "selectAll": "Chọn tất cả",
+    "selectRow": "Chọn hàng",
+    "sortColumn": "Sắp xếp cột",
+    "clearAllFilters": "Xoá tất cả bộ lọc",
+    "removeFilterLabel": "Xoá bộ lọc",
     "recentItems": "Vừa xem gần đây",
     "selectedCount": "{{count}} đã chọn",
     "selectAllMatching": "Chọn tất cả {{count}} kết quả khớp",
@@ -21,6 +27,7 @@
     "create": "Tạo mới",
     "update": "Cập nhật",
     "loading": "Đang tải...",
+    "unknown": "Không xác định",
     "pleaseWait": "Vui lòng chờ...",
     "error": "Lỗi",
     "unknownError": "Đã xảy ra lỗi không xác định.",
@@ -44,6 +51,7 @@
     "notFound": "Không tìm thấy",
     "confirm": "Xác nhận",
     "close": "Đóng",
+    "actionBarLabel": "Thanh thao tác",
     "pageSize": "Số mỗi trang",
     "sort": "Sắp xếp",
     "clear": "Xoá",
@@ -62,7 +70,20 @@
     "rowsPerPage": "Số hàng/trang",
     "removeTag": "Xoá thẻ {{tag}}",
     "dateRangePlaceholder": "Tất cả thời gian",
-    "dateRangeClear": "Xoá bộ lọc ngày"
+    "dateRangeClear": "Xoá bộ lọc ngày",
+    "dnd": {
+      "instructions": "Nhấn phím cách để bắt đầu kéo. Khi đang kéo, dùng phím mũi tên để di chuyển. Nhấn phím cách để thả, hoặc Escape để hủy.",
+      "onStart": "Đã nhấc phần tử, bắt đầu sắp xếp.",
+      "onOver": "Phần tử đang được di chuyển.",
+      "onEnd": "Đã thả phần tử vào vị trí mới.",
+      "onCancel": "Đã hủy kéo, phần tử trở về vị trí cũ."
+    },
+    "tagFetchError": "Không tải được gợi ý thẻ. Bạn vẫn có thể tự nhập thẻ.",
+    "exportCsv": "Xuất CSV",
+    "errorOccurred": "Đã xảy ra lỗi.",
+    "errorLoading": "Không tải được dữ liệu",
+    "exportCsvDone": "Đã tải file CSV",
+    "remove": "Bỏ chọn"
   },
   "notifications": {
     "newOrder": "Đơn hàng mới",
@@ -73,7 +94,10 @@
     "panelTitle": "Thông báo",
     "clearAll": "Xoá tất cả",
     "empty": "Chưa có thông báo nào",
-    "unread": "Chưa đọc"
+    "unread": "Chưa đọc",
+    "syncError": "Không đồng bộ được trạng thái đã đọc.",
+    "loadError": "Không tải được thông báo. Vui lòng thử lại.",
+    "unknownOrder": "Đơn hàng"
   },
   "search": {
     "open": "Mở tìm kiếm nhanh",
@@ -85,7 +109,10 @@
       "orders": "Đơn hàng",
       "products": "Sản phẩm",
       "customers": "Khách hàng"
-    }
+    },
+    "skuTbd": "Chưa có SKU",
+    "errorTitle": "Không tìm kiếm được",
+    "errorBody": "Đã có lỗi khi tìm kiếm. Vui lòng thử lại."
   },
   "theme": {
     "switchToLight": "Chuyển sang chế độ sáng",
@@ -118,7 +145,26 @@
     "htmlPlaceholder": "Nhập hoặc dán mã HTML tại đây...",
     "htmlHint": "Nhập/dán HTML thô (vd bảng hoặc bố cục do AI tạo). Nếu quay lại tab Soạn thảo rồi chỉnh sửa, các thẻ nâng cao như bảng/bố cục có thể bị rút gọn. Mã nguy hiểm luôn bị lọc — phần xem trước bên dưới đúng như khách thấy.",
     "previewLabel": "Xem trước (đúng như hiển thị trên web)",
-    "previewEmpty": "Chưa có nội dung để xem trước."
+    "previewEmpty": "Chưa có nội dung để xem trước.",
+    "editorLabel": "Nội dung văn bản",
+    "linkInvalid": "Đường dẫn không hợp lệ. Dùng http(s)://, mailto:, tel: hoặc đường dẫn nội bộ bắt đầu bằng /.",
+    "toolbarLabel": "Thanh công cụ định dạng",
+    "alignLeft": "Căn trái",
+    "alignCenter": "Căn giữa",
+    "alignRight": "Căn phải",
+    "textColor": "Màu chữ",
+    "bgColor": "Tô nền chữ",
+    "clearColor": "Xóa màu",
+    "insertTable": "Chèn bảng",
+    "addColumn": "Thêm cột",
+    "addRow": "Thêm dòng",
+    "deleteColumn": "Xóa cột",
+    "deleteRow": "Xóa dòng",
+    "deleteTable": "Xóa bảng",
+    "linkUrlLabel": "Đường dẫn",
+    "switchVisualConfirm": "Chuyển sang trình soạn trực quan có thể lược bỏ bảng/bố cục nâng cao khi bạn chỉnh sửa. Tiếp tục?",
+    "switchVisualTitle": "Chuyển chế độ soạn thảo",
+    "htmlSourceLabel": "Mã nguồn HTML"
   },
   "acceptInvite": {
     "title": "Kích hoạt tài khoản quản trị",
@@ -132,6 +178,8 @@
     "errorTitle": "Không thể đặt mật khẩu",
     "passwordTooShort": "Mật khẩu phải có ít nhất 8 ký tự.",
     "passwordMismatch": "Mật khẩu nhập lại không khớp.",
+    "passwordRequired": "Vui lòng nhập mật khẩu.",
+    "confirmRequired": "Vui lòng nhập lại mật khẩu.",
     "acceptFailed": "Không thể kích hoạt. Liên kết có thể đã hết hạn.",
     "missingToken": "Thiếu mã lời mời trong liên kết.",
     "invalidToken": "Lời mời không hợp lệ hoặc đã hết hạn.",
@@ -154,6 +202,10 @@
     "invalidCredentials": "Email hoặc mật khẩu không đúng.",
     "accountLocked": "Tài khoản tạm thời bị khoá do đăng nhập sai quá nhiều lần. Vui lòng thử lại sau.",
     "loginFailed": "Đăng nhập thất bại. Vui lòng thử lại.",
+    "networkError": "Không thể kết nối máy chủ. Vui lòng thử lại.",
+    "emailRequired": "Vui lòng nhập email.",
+    "emailInvalid": "Email không hợp lệ.",
+    "passwordRequired": "Vui lòng nhập mật khẩu.",
     "loginError": "Không thể đăng nhập",
     "forgotPassword": "Quên mật khẩu?",
     "forgotPasswordNote": "Liên hệ quản trị viên hệ thống để đặt lại mật khẩu.",
@@ -193,7 +245,9 @@
     "sidebarLabel": "Thanh điều hướng",
     "mainNav": "Điều hướng chính",
     "openMenu": "Mở menu",
-    "pendingBadge": "{{count}} mục cần xử lý"
+    "pendingBadge": "{{count}} mục cần xử lý",
+    "skipToContent": "Bỏ qua tới nội dung",
+    "contentLangLabel": "Ngôn ngữ nội dung"
   },
   "app": {
     "loadingSession": "Đang tải phiên đăng nhập",
@@ -210,7 +264,11 @@
     "moduleNotAvailableDesc": "Module này không có trong phiên bản hiện tại.",
     "overview": "Tổng quan",
     "createNew": "Tạo mới",
-    "detail": "Chi tiết"
+    "detail": "Chi tiết",
+    "missingRole": "Trang này chỉ dành cho một số vai trò quản trị (Quản trị viên, Quản lý cửa hàng).",
+    "focusExitTooltip": "Thoát chế độ tập trung (F11)",
+    "focusEnterTooltip": "Bật chế độ tập trung — ẩn sidebar/topbar (F11)",
+    "focusExit": "Thoát tập trung"
   },
   "dashboard": {
     "eyebrow": "Tổng quan",
@@ -318,7 +376,8 @@
     "page": "Trang {{page}}/{{total}}",
     "previous": "Trước",
     "next": "Tiếp",
-    "jumpTo": "Đến trang"
+    "jumpTo": "Đến trang",
+    "jumpRange": "Nhập số trang từ 1 đến {{total}}."
   },
   "readOnly": {
     "prefix": "Chế độ chỉ đọc:",
@@ -595,7 +654,11 @@
         "publishNow": "Đăng bán ngay",
         "optionalHeading": "Nên bổ sung để trang đầy đủ & đẹp hơn",
         "blockerMessage": "Còn {{count}} mục bắt buộc chưa điền. Vui lòng quay lại bổ sung.",
-        "warningMessage": "Còn {{count}} phần nên bổ sung để trang sản phẩm đầy đủ và đẹp hơn (không bắt buộc). Bạn vẫn có thể đăng ngay."
+        "warningMessage": "Còn {{count}} phần nên bổ sung để trang sản phẩm đầy đủ và đẹp hơn (không bắt buộc). Bạn vẫn có thể đăng ngay.",
+        "nameEn": "Tên tiếng Anh",
+        "itemDone": "Đạt",
+        "itemMissing": "Chưa đạt (bắt buộc)",
+        "itemOptionalMissing": "Nên bổ sung"
       },
       "assign": {
         "title": "Phân công",
@@ -610,7 +673,17 @@
         "altPlaceholder": "Mô tả ảnh cho SEO/trợ năng (không hiện thành chữ)",
         "altAriaLabel": "Mô tả ảnh cho SEO và trợ năng",
         "addImage": "Thêm ảnh",
-        "dragToReorder": "Kéo để sắp xếp thứ tự hiển thị"
+        "dragToReorder": "Kéo để sắp xếp thứ tự hiển thị",
+        "videoUpload": "Tải lên",
+        "videoUrlPlaceholder": "Dán link YouTube",
+        "tiktokUrlPlaceholder": "Dán link TikTok đầy đủ",
+        "facebookUrlPlaceholder": "Dán link video Facebook (công khai)",
+        "videoChange": "Đổi video",
+        "videoPick": "Chọn video",
+        "thumbChange": "Đổi ảnh đại diện",
+        "thumbPick": "Ảnh đại diện (tuỳ chọn)",
+        "addVideoTitle": "Thêm video vào dải ảnh sản phẩm",
+        "addVideo": "Thêm video"
       },
       "video": {
         "fromLibrary": "Từ thư viện",
@@ -627,7 +700,12 @@
         "removeVideo": "Xoá video",
         "addVideo": "Thêm video",
         "titlePlaceholder": "Tiêu đề video (tuỳ chọn)",
-        "descriptionPlaceholder": "Mô tả ngắn (tuỳ chọn)"
+        "descriptionPlaceholder": "Mô tả ngắn (tuỳ chọn)",
+        "switchProviderConfirm": "Đổi nguồn video sẽ xóa liên kết đã nhập. Bạn có chắc muốn tiếp tục?",
+        "switchProviderTitle": "Đổi nguồn video",
+        "urlLabel": "Liên kết video",
+        "titleLabel": "Tiêu đề video",
+        "descriptionLabel": "Mô tả video"
       },
       "aiBrief": {
         "title": "Yêu cầu cho AI tạo HTML khớp giao diện",
@@ -671,7 +749,8 @@
         "htmlHint": "Bạn được tự định dạng bằng CSS inline — hãy bám đúng phông chữ, màu sắc và khoảng cách của trang sản phẩm, tránh nền/đổ bóng/màu lạ để không lệch giao diện. Chỉ mã nguy hiểm bị lọc. Xem trước bên dưới là kết quả thật sự hiển thị cho khách.",
         "previewLabel": "Xem trước (đúng như hiển thị trên web)",
         "previewEmpty": "Chưa có nội dung để xem trước.",
-        "aiBriefPrompt": "Tạo HTML bảng size cho trang chi tiết sản phẩm BigBike. Yêu cầu bắt buộc:\n- Trả về HTML thuần kèm CSS inline (style=\"...\"). KHÔNG <script>, KHÔNG <style>, không class, không id.\n- Cấu trúc bảng BẮT BUỘC có đủ <thead> và <tbody> — thiếu một trong hai thì tính năng chỉnh sửa có cấu trúc không hoạt động:\n  <table><thead><tr><th>Size</th><th>Vòng đầu (cm)</th></tr></thead><tbody><tr><td>M</td><td>57–58</td></tr>...</tbody></table>\n- Phông chữ: Arial, Helvetica, sans-serif. Cỡ chữ nội dung 14–18px; ô tiêu đề (<th>) đậm.\n- Màu: chữ chính #111111; chữ phụ #6f6f6f; viền 1px solid #dddddd; nền ô tiêu đề #f5f5f5.\n- Góc vuông (border-radius: 0). Khoảng cách bội số 4px. KHÔNG nền tối, đổ bóng, gradient.\n- Nếu có ghi chú đo đạc, đặt trong <p style=\"font-size:18px;color:#6f6f6f;margin-top:8px\"> bên NGOÀI thẻ <table>.\n\nNội dung bảng (thay bằng số liệu sản phẩm):\n[Size / Vòng đầu / ...]\n[M / 57–58 / ...]\n..."
+        "aiBriefPrompt": "Tạo HTML bảng size cho trang chi tiết sản phẩm BigBike. Yêu cầu bắt buộc:\n- Trả về HTML thuần kèm CSS inline (style=\"...\"). KHÔNG <script>, KHÔNG <style>, không class, không id.\n- Cấu trúc bảng BẮT BUỘC có đủ <thead> và <tbody> — thiếu một trong hai thì tính năng chỉnh sửa có cấu trúc không hoạt động:\n  <table><thead><tr><th>Size</th><th>Vòng đầu (cm)</th></tr></thead><tbody><tr><td>M</td><td>57–58</td></tr>...</tbody></table>\n- Phông chữ: Arial, Helvetica, sans-serif. Cỡ chữ nội dung 14–18px; ô tiêu đề (<th>) đậm.\n- Màu: chữ chính #111111; chữ phụ #6f6f6f; viền 1px solid #dddddd; nền ô tiêu đề #f5f5f5.\n- Góc vuông (border-radius: 0). Khoảng cách bội số 4px. KHÔNG nền tối, đổ bóng, gradient.\n- Nếu có ghi chú đo đạc, đặt trong <p style=\"font-size:18px;color:#6f6f6f;margin-top:8px\"> bên NGOÀI thẻ <table>.\n\nNội dung bảng (thay bằng số liệu sản phẩm):\n[Size / Vòng đầu / ...]\n[M / 57–58 / ...]\n...",
+        "columnFallback": "Cột {{index}}"
       },
       "suitability": {
         "modeStructured": "Nhập có cấu trúc",
@@ -688,7 +767,10 @@
         "labelPlaceholder": "Tên chỉ tiêu (vd: Trọng lượng) *",
         "removeRow": "Xoá ô",
         "addRow": "Thêm ô",
-        "aiBriefPrompt": "Tạo HTML cho khối \"Ô số liệu nổi bật\" trên trang chi tiết sản phẩm BigBike. Yêu cầu bắt buộc:\n- Trả về HTML thuần kèm CSS inline (style=\"...\"). KHÔNG <script>, KHÔNG <style>, KHÔNG id.\n- Thẻ bao ngoài PHẢI có class=\"bb-specstats\" (bắt buộc để hệ thống đọc được — ngoại lệ duy nhất được dùng class).\n- Container lưới: <div class=\"bb-specstats\" style=\"display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;border:1px solid #e5e7eb;background:#e5e7eb\">\n- Mỗi ô: <div style=\"display:flex;flex-direction:column;align-items:center;gap:4px;background:#ffffff;padding:24px 16px;text-align:center\">\n- Trong mỗi ô đúng 2 span theo thứ tự:\n  1. Số liệu chính: <span style=\"font-weight:700;font-size:24px;line-height:1;text-transform:uppercase;color:#cc0906\">1.350 gram</span>\n  2. Tên chỉ tiêu: <span style=\"font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#6b7280;opacity:0.72\">Trọng lượng</span>\n- Tối đa 4 ô. KHÔNG nền tối, đổ bóng, gradient.\n\nNội dung các ô (thay bằng số liệu sản phẩm):\n[Ô 1: số liệu / tên chỉ tiêu]\n[Ô 2: ...]\n..."
+        "aiBriefPrompt": "Tạo HTML cho khối \"Ô số liệu nổi bật\" trên trang chi tiết sản phẩm BigBike. Yêu cầu bắt buộc:\n- Trả về HTML thuần kèm CSS inline (style=\"...\"). KHÔNG <script>, KHÔNG <style>, KHÔNG id.\n- Thẻ bao ngoài PHẢI có class=\"bb-specstats\" (bắt buộc để hệ thống đọc được — ngoại lệ duy nhất được dùng class).\n- Container lưới: <div class=\"bb-specstats\" style=\"display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;border:1px solid #e5e7eb;background:#e5e7eb\">\n- Mỗi ô: <div style=\"display:flex;flex-direction:column;align-items:center;gap:4px;background:#ffffff;padding:24px 16px;text-align:center\">\n- Trong mỗi ô đúng 2 span theo thứ tự:\n  1. Số liệu chính: <span style=\"font-weight:700;font-size:24px;line-height:1;text-transform:uppercase;color:#cc0906\">1.350 gram</span>\n  2. Tên chỉ tiêu: <span style=\"font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#6b7280;opacity:0.72\">Trọng lượng</span>\n- Tối đa 4 ô. KHÔNG nền tối, đổ bóng, gradient.\n\nNội dung các ô (thay bằng số liệu sản phẩm):\n[Ô 1: số liệu / tên chỉ tiêu]\n[Ô 2: ...]\n...",
+        "valueLabel": "Số liệu",
+        "labelLabel": "Nhãn số liệu",
+        "maxHint": "Đã đạt tối đa {{max}} ô số liệu. Xóa bớt một ô nếu muốn thêm ô khác."
       },
       "faqs": {
         "empty": "Chưa có câu hỏi. Nhấn \"+ Thêm câu hỏi\" để bắt đầu.",
@@ -725,14 +807,18 @@
           "mapPin": "Cửa hàng",
           "wrench": "Lắp đặt",
           "award": "Chất lượng"
-        }
+        },
+        "titleLabel": "Tiêu đề cam kết",
+        "subtitleLabel": "Mô tả cam kết"
       },
       "trustBadges": {
         "hint": "Các nhãn ngắn hiển thị NGAY TRÊN tên sản phẩm (vd: \"Chính hãng\", \"BH 2 năm\", \"Freeship\"). Để trống → web ẩn dải tin cậy. Mỗi sản phẩm tự nhập riêng.",
         "placeholder": "vd: Chính hãng",
         "add": "Thêm nhãn",
         "unit": "nhãn",
-        "aiBriefPrompt": "Tạo HTML \"Dải tin cậy\" trên trang chi tiết sản phẩm BigBike — dải chạy ngang gồm 2–5 nhãn ngắn (vd: \"Chính hãng\", \"Bảo hành 2 năm\"). Yêu cầu bắt buộc:\n- Trả về HTML thuần kèm CSS inline (style=\"...\"). KHÔNG <script>, KHÔNG <style>, KHÔNG id.\n- Thẻ bao ngoài PHẢI có class=\"bb-trust-badges\" (bắt buộc để hệ thống đọc được — ngoại lệ duy nhất dùng class).\n- Container: <div class=\"bb-trust-badges\" style=\"display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:14px;color:#6b7280\">\n- Mỗi nhãn là 1 span gồm chấm tròn + chữ:\n  <span style=\"display:flex;align-items:center;gap:8px\"><span style=\"height:6px;width:6px;flex:none;background:#cc0906\"></span><span>Chính hãng</span></span>\n- Phông chữ: Arial, Helvetica, sans-serif. KHÔNG nền, đổ bóng, gradient.\n\nDanh sách nhãn (thay bằng nội dung của bạn):\n[nhãn 1]\n[nhãn 2]\n..."
+        "aiBriefPrompt": "Tạo HTML \"Dải tin cậy\" trên trang chi tiết sản phẩm BigBike — dải chạy ngang gồm 2–5 nhãn ngắn (vd: \"Chính hãng\", \"Bảo hành 2 năm\"). Yêu cầu bắt buộc:\n- Trả về HTML thuần kèm CSS inline (style=\"...\"). KHÔNG <script>, KHÔNG <style>, KHÔNG id.\n- Thẻ bao ngoài PHẢI có class=\"bb-trust-badges\" (bắt buộc để hệ thống đọc được — ngoại lệ duy nhất dùng class).\n- Container: <div class=\"bb-trust-badges\" style=\"display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:14px;color:#6b7280\">\n- Mỗi nhãn là 1 span gồm chấm tròn + chữ:\n  <span style=\"display:flex;align-items:center;gap:8px\"><span style=\"height:6px;width:6px;flex:none;background:#cc0906\"></span><span>Chính hãng</span></span>\n- Phông chữ: Arial, Helvetica, sans-serif. KHÔNG nền, đổ bóng, gradient.\n\nDanh sách nhãn (thay bằng nội dung của bạn):\n[nhãn 1]\n[nhãn 2]\n...",
+        "itemLabel": "Nhãn tin cậy",
+        "remove": "Xóa nhãn"
       },
       "quickAnswer": {
         "sectionTitle": "Quick Answer (trả lời nhanh)",
@@ -822,7 +908,11 @@
         "featureHeadingPlaceholder": "Tiêu đề chính...",
         "fallbackTitle": "Mô tả cũ (dạng HTML)",
         "fallbackHint": "Thêm khối mới ở trên để thay thế nội dung này.",
-        "empty": "Chưa có khối nào. Nhấn \"Thêm khối\" để bắt đầu."
+        "empty": "Chưa có khối nào. Nhấn \"Thêm khối\" để bắt đầu.",
+        "videoUrlLabel": "Đường dẫn video",
+        "videoUploadedUrlPlaceholder": "URL video đã tải lên",
+        "unsupported": "Khối \"{{type}}\" không được hỗ trợ trong trình soạn thảo. Nội dung vẫn được giữ nguyên khi lưu.",
+        "fallbackReplacedHint": "Nội dung cũ ở trên sẽ được thay bằng các khối bên dưới sau khi lưu."
       },
       "variant": {
         "optionNamePlaceholder": "Thuộc tính (vd: Màu)",
@@ -915,7 +1005,14 @@
         "rowErrorOptions": "Thuộc tính chưa hợp lệ",
         "rowErrorImage": "Thiếu ảnh màu",
         "attrSetErrorField": "Thiếu thuộc tính: {{missing}}. Mọi biến thể phải cùng bộ thuộc tính.",
-        "attrSetErrorToast": "Các biến thể chưa cùng bộ thuộc tính. Vui lòng sửa cho đồng nhất trước khi lưu."
+        "attrSetErrorToast": "Các biến thể chưa cùng bộ thuộc tính. Vui lòng sửa cho đồng nhất trước khi lưu.",
+        "optionNameLabel": "Tên thuộc tính",
+        "optionValueLabel": "Giá trị thuộc tính",
+        "colorLoadError": "Không tải được danh sách màu. Vui lòng thử tải lại trang.",
+        "attrLoadError": "Không tải được danh sách thuộc tính. Bạn vẫn có thể nhập tay tên và giá trị bên dưới.",
+        "collapseDetails": "Thu gọn",
+        "editDetails": "Sửa chi tiết",
+        "bulkClearSale": "Xóa giá khuyến mãi (đưa về trống) cho các biến thể đã chọn"
       },
       "matrix": {
         "defaultColor": "Màu sắc",
@@ -940,7 +1037,9 @@
         "skuSamplePreview": "Ví dụ mã: {{sku}}",
         "sharedPriceLabel": "Giá bán chung",
         "sharedPricePlaceholder": "vd: 5.900.000",
-        "sharedPriceHelp": "Áp cùng một giá cho mọi biến thể (sửa từng dòng sau nếu cần). Để trống nếu giá khác nhau."
+        "sharedPriceHelp": "Áp cùng một giá cho mọi biến thể (sửa từng dòng sau nếu cần). Để trống nếu giá khác nhau.",
+        "attributeLabel": "Tên thuộc tính",
+        "valuesLabel": "Các giá trị, phân tách bằng dấu phẩy"
       },
       "draftRecovery": {
         "found": "Phát hiện bản nháp chưa lưu lúc {{time}}.",
@@ -1036,8 +1135,40 @@
       "saveClean": "Đã lưu",
       "saveSaving": "Đang lưu...",
       "lastSavedAt": "lúc {{time}}",
-      "savingShort": "Đang lưu..."
-    }
+      "savingShort": "Đang lưu...",
+      "errNameRequiredEn": "Vui lòng nhập tên sản phẩm bằng tiếng Anh.",
+      "draftRestore": "Khôi phục",
+      "draftDiscard": "Bỏ qua",
+      "errorsInTab": "{{count}} lỗi",
+      "seoCheckDesc": "SEO description 140–160 ký tự",
+      "seoCheckSlug": "Slug chữ thường, không dấu, dùng \"-\"",
+      "seoCheckImageAlt": "Ảnh đại diện có alt text",
+      "seoCheckOg": "OG image cho chia sẻ MXH",
+      "seoCheckSchema": "Schema Product (đủ ảnh + giá)",
+      "categoriesLoadError": "Không tải được danh mục. Vui lòng tải lại trang.",
+      "trust": {
+        "originBrand": "Thương hiệu (nước)",
+        "originBrandHint": "Nhập riêng cho từng ngôn ngữ — chuyển tab VI/EN ở góc trên để nhập bản còn lại (vd: \"Nhật Bản\" ở tab VI, \"Japan\" ở tab EN)."
+      },
+      "gender": "Giới tính",
+      "genderPlaceholder": "Không chọn",
+      "variantUnit": "biến thể",
+      "galleryUnit": "ảnh",
+      "suitabilityCard": {
+        "hint": "Các thẻ tư vấn \"đối tượng → lời khuyên\". Hiện thành khối riêng cố định trên trang sản phẩm (ngay sau Ưu/nhược điểm), không phụ thuộc vị trí trong mô tả. Để trống → web ẩn khối.",
+        "addInViFirst": "Tạo khối này ở tab Tiếng Việt trước, rồi quay lại đây để dịch."
+      },
+      "sizeGuideCard": {
+        "hint": "Bảng chọn size (nhập theo cột/dòng hoặc dán HTML). Hiện thành khối riêng cố định trên trang sản phẩm (ngay sau Phù hợp với ai). Để trống → web ẩn khối.",
+        "addInViFirst": "Tạo khối này ở tab Tiếng Việt trước, rồi quay lại đây để dịch."
+      },
+      "seoCanonicalAuto": "Tự sinh theo đường dẫn (slug) — không cần nhập."
+    },
+    "permanentDeleteConfirmTitle": "Xác nhận xóa vĩnh viễn",
+    "permanentDelete": "Xóa vĩnh viễn",
+    "permanentDeleteSuccess": "Xóa vĩnh viễn sản phẩm thành công.",
+    "permanentDeleteError": "Không thể xóa vĩnh viễn sản phẩm.",
+    "activeFilters": "Bộ lọc đang áp dụng"
   },
   "orders": {
     "audit": {
@@ -1087,12 +1218,14 @@
     "colTotal": "Tổng tiền",
     "colDate": "Ngày đặt",
     "viewDetail": "Chi tiết",
+    "readOnlyWarning": "Bạn chỉ có quyền xem đơn hàng. Không thể thay đổi trạng thái đơn.",
     "detail": {
       "eyebrow": "Thương mại / Đơn hàng",
       "orderDate": "Ngày đặt:",
       "backToList": "Danh sách",
       "loading": "Đang tải đơn hàng",
       "loadError": "Lỗi tải đơn hàng",
+      "loadErrorDesc": "Không thể tải chi tiết đơn hàng. Vui lòng thử lại.",
       "notFound": "Không tìm thấy đơn hàng",
       "customerInfo": "Thông tin khách hàng",
       "name": "Tên:",
@@ -1160,6 +1293,7 @@
       "confirmPaymentTitle": "Xác nhận thay đổi thanh toán",
       "confirmPayPaidMessage": "Xác nhận đã nhận đủ tiền cho đơn hàng này?\n\nĐơn sẽ được đánh dấu ĐÃ THANH TOÁN. Chỉ xác nhận khi bạn đã đối chiếu dòng tiền thực tế.",
       "confirmPayCancelledMessage": "Huỷ khoản thanh toán của đơn hàng này?\n\nThao tác này đánh dấu thanh toán là ĐÃ HUỶ.",
+      "confirmPayUnpaidMessage": "Đặt lại đơn về CHƯA THANH TOÁN?\n\nChỉ dùng khi trước đó đánh dấu đã thu tiền nhầm. Hãy chắc chắn khoản tiền thực sự chưa nhận.",
       "fulfillment": "Vận chuyển",
       "fulfillmentStatusLabel": "Trạng thái:",
       "ffUnfulfilled": "Chưa xử lý",
@@ -1189,11 +1323,13 @@
       "confirmCancelTitle": "Huỷ đơn hàng",
       "confirmCancelDesc": "Thao tác này sẽ huỷ đơn và thông báo cho khách hàng. Không thể hoàn tác.",
       "confirmFailedTitle": "Đánh dấu thất bại",
-      "confirmFailedDesc": "Đơn hàng sẽ bị đánh dấu thất bại. Tồn kho sẽ được giải phóng và không thể kích hoạt lại đơn. Thao tác này không thể hoàn tác.",
+      "confirmFailedDesc": "Đơn hàng sẽ bị đánh dấu thất bại và không thể kích hoạt lại. Thao tác này không thể hoàn tác.",
       "reasonLabel": "Lý do",
       "reasonPlaceholder": "Mô tả lý do thực hiện thao tác này...",
       "reasonRequired": "Bắt buộc nhập lý do cho thao tác này."
-    }
+    },
+    "emptyAll": "Chưa có đơn hàng nào",
+    "emptyAllDesc": "Khi có đơn đặt trên website, đơn sẽ hiện ở đây."
   },
   "categories": {
     "eyebrow": "Sản phẩm",
@@ -1375,10 +1511,30 @@
       "systemCategoryTitle": "Danh mục hệ thống",
       "systemCategoryDesc": "\"Chưa phân loại\" là danh mục hệ thống dùng để chứa sản phẩm khi danh mục gốc bị xoá. Không thể đổi tên hoặc xoá danh mục này.",
       "enFieldHint": "(tiếng Anh — tùy chọn)",
-      "namePlaceholderEn": "Tên tiếng Anh (tùy chọn)",
+      "namePlaceholderEn": "Tên tiếng Anh (bắt buộc)",
       "duplicateSuccess": "Đã sao chép từ \"{{name}}\". Vui lòng đặt đường dẫn URL mới.",
-      "formProgress": "{{filled}}/{{total}} mục đã điền"
-    }
+      "formProgress": "{{filled}}/{{total}} mục đã điền",
+      "errNameRequiredEn": "Vui lòng nhập tên danh mục bằng tiếng Anh.",
+      "introFaqRemoveConfirm": "Xoá câu hỏi này? Nội dung câu hỏi và câu trả lời sẽ bị xoá khỏi phần giới thiệu.",
+      "introFaqRemoveTitle": "Xoá câu hỏi thường gặp?",
+      "introFaqCount": "{{count}} câu hỏi",
+      "productsColName": "Sản phẩm",
+      "productsColStatus": "Trạng thái",
+      "productsLoadError": "Không tải được sản phẩm của danh mục.",
+      "productsLoadErrorDesc": "Danh sách có thể chưa đầy đủ. Vui lòng thử lại.",
+      "requiredLegend": "Bắt buộc"
+    },
+    "bulkPermanentDeleteConfirm": "Xóa vĩnh viễn {{count}} danh mục đã chọn cùng toàn bộ danh mục con? Hành vi này không thể khôi phục.",
+    "bulkPermanentDeleteTitle": "Xóa vĩnh viễn các danh mục đã chọn?",
+    "deleteConfirmTitle": "Xác nhận xóa",
+    "deleteSuccess": "Đã chuyển danh mục vào Thùng rác.",
+    "restoreConfirmTitle": "Xác nhận khôi phục",
+    "restoreSuccess": "Khôi phục danh mục thành công.",
+    "permanentDeleteConfirmTitle": "Xác nhận xóa vĩnh viễn",
+    "permanentDeleteSuccess": "Xóa vĩnh viễn danh mục thành công.",
+    "filterTrash": "Trạng thái",
+    "filterActive": "Hoạt động",
+    "filterTrashTab": "Thùng rác"
   },
   "brands": {
     "eyebrow": "Danh mục",
@@ -1469,10 +1625,48 @@
       "errDeleteFailed": "Không thể xoá thương hiệu.",
       "contentLanguageAriaLabel": "Ngôn ngữ nội dung",
       "enFieldHint": "(tiếng Anh — tùy chọn)",
-      "namePlaceholderEn": "Tên tiếng Anh (tùy chọn)",
+      "namePlaceholderEn": "Tên tiếng Anh (bắt buộc)",
       "duplicateSuccess": "Đã sao chép từ \"{{name}}\". Vui lòng đặt đường dẫn URL mới.",
-      "formProgress": "{{filled}}/{{total}} mục đã điền"
-    }
+      "formProgress": "{{filled}}/{{total}} mục đã điền",
+      "errNameRequiredEn": "Vui lòng nhập tên thương hiệu bằng tiếng Anh.",
+      "clearSeoConfirm": "Xóa toàn bộ thông tin SEO đã nhập (tiêu đề, mô tả, canonical, ảnh chia sẻ)? Hệ thống sẽ tự dùng tên và mô tả của thương hiệu.",
+      "clearSeoTitle": "Xóa thông tin SEO?",
+      "clearSeoBtn": "Xóa thông tin SEO",
+      "clearSeoDone": "Đã xóa thông tin SEO.",
+      "enNameMissingTitle": "Thiếu tên tiếng Anh",
+      "switchToEnglish": "Chuyển sang tiếng Anh",
+      "nameHelperEn": "Bắt buộc — dùng cho khách xem bản tiếng Anh.",
+      "namePlaceholderEnRequired": "Nhập tên thương hiệu bằng tiếng Anh",
+      "optionalSection": "Mô tả & hình ảnh",
+      "optionalSectionHint": "Tùy chọn — mô tả, logo, ảnh banner",
+      "descriptionPlaceholder": "Nhập mô tả thương hiệu..."
+    },
+    "hideRowConfirm": "Ẩn thương hiệu \"{{name}}\" khỏi website? Khách sẽ không còn thấy thương hiệu này. Bạn có thể hiện lại bất cứ lúc nào.",
+    "hideRowTitle": "Ẩn thương hiệu khỏi website?",
+    "bulkResult": "Đã cập nhật {{success}} thương hiệu, {{failed}} lỗi.",
+    "bulkPermanentDeleteConfirm": "Xóa vĩnh viễn {{count}} thương hiệu đã chọn? Thao tác này không thể hoàn tác.",
+    "bulkPermanentDeleteTitle": "Xóa vĩnh viễn các thương hiệu đã chọn?",
+    "deleteConfirmTitle": "Xác nhận xóa",
+    "deleteSuccess": "Đã chuyển thương hiệu vào Thùng rác.",
+    "restoreConfirmTitle": "Xác nhận khôi phục",
+    "restoreSuccess": "Khôi phục thương hiệu thành công.",
+    "permanentDeleteConfirmTitle": "Xác nhận xóa vĩnh viễn",
+    "permanentDeleteSuccessWithProducts": "Đã xóa vĩnh viễn thương hiệu. {{count}} sản phẩm bên trong đã được chuyển sang \"Chưa phân loại\".",
+    "permanentDeleteSuccess": "Xóa vĩnh viễn thương hiệu thành công.",
+    "filterChipSearch": "Tìm: \"{{value}}\"",
+    "removeFilter": "Bỏ lọc {{filter}}",
+    "filterChipVisibility": "Trạng thái: {{value}}",
+    "filterChipSort": "Sắp xếp: {{value}}",
+    "filterVisibilityAll": "Tất cả trạng thái",
+    "filterVisibilityHidden": "Đã ẩn",
+    "activeFiltersAria": "Bộ lọc đang áp dụng",
+    "bulkProcessing": "Đang xử lý {{done}}/{{total}}...",
+    "bulkSelectedCount": "Đã chọn {{count}} thương hiệu",
+    "bulkShow": "Hiện các thương hiệu đã chọn",
+    "bulkHide": "Ẩn các thương hiệu đã chọn",
+    "loadErrorDesc": "Không thể tải danh sách thương hiệu. Vui lòng thử lại.",
+    "emptyFiltered": "Không tìm thấy thương hiệu",
+    "emptyFilteredDesc": "Thử thay đổi từ khoá hoặc bộ lọc."
   },
   "content": {
     "eyebrow": "Tin tức",
@@ -1528,7 +1722,7 @@
       "archiveSuccess": "Đã đưa nội dung vào thùng rác.",
       "contentLanguageAriaLabel": "Ngôn ngữ nội dung",
       "enFieldHint": "(tiếng Anh — tùy chọn)",
-      "titlePlaceholderEn": "Tiêu đề tiếng Anh (tùy chọn)",
+      "titlePlaceholderEn": "Tiêu đề tiếng Anh (bắt buộc)",
       "sectionCore": "Thông tin chính",
       "sectionMedia": "Media",
       "sectionSeo": "SEO",
@@ -1579,7 +1773,9 @@
       "tabSeoPublish": "SEO & Hiển thị",
       "tabsAriaLabel": "Phần của nội dung",
       "assign": {
-        "title": "Phân công bài viết"
+        "title": "Phân công bài viết",
+        "loading": "Đang tải thông tin phân công…",
+        "error": "Không tải được thông tin phân công."
       },
       "saveDirty": "Có thay đổi chưa lưu",
       "saveClean": "Đã lưu",
@@ -1592,8 +1788,26 @@
       "homeExperience": "Hiển thị ở \"Góc trải nghiệm\" trang chủ",
       "homeExperienceHint": "Bật để chọn bài này vào băng chuyền \"Góc trải nghiệm cùng BigBike\" ở trang chủ. Hiển thị tối đa 3 bài được chọn (mới nhất trước). Nếu không chọn bài nào, trang chủ tự lấy 3 bài Reviews mới nhất.",
       "seoNoIndex": "Không cho Google lập chỉ mục (noindex)",
-      "seoNoIndexHint": "Bật để báo công cụ tìm kiếm không index bài viết này."
-    }
+      "seoNoIndexHint": "Bật để báo công cụ tìm kiếm không index bài viết này.",
+      "errTitleRequiredEn": "Vui lòng nhập tiêu đề bài viết bằng tiếng Anh.",
+      "bodyPlaceholder": "Nhập nội dung...",
+      "productImageUrl": "Ảnh sản phẩm (overlay carousel)",
+      "productImageUrlHint": "Ảnh PNG nền trong hiển thị chồng lên ảnh bìa trong carousel Góc Trải Nghiệm ở trang chủ."
+    },
+    "articleFallbackTitle": "Bài viết",
+    "deleteConfirmTitle": "Xác nhận xóa",
+    "deleteSuccess": "Đã chuyển bài viết vào Thùng rác.",
+    "restoreConfirmTitle": "Xác nhận khôi phục",
+    "restoreSuccess": "Khôi phục bài viết thành công.",
+    "permanentDeleteConfirmTitle": "Xác nhận xóa vĩnh viễn",
+    "permanentDeleteSuccess": "Xóa vĩnh viễn bài viết thành công.",
+    "bulkRestore": "Khôi phục",
+    "bulkHardDelete": "Xóa vĩnh viễn",
+    "bulkPublish": "Xuất bản",
+    "bulkTrash": "Chuyển vào thùng rác",
+    "activeFilters": "Bộ lọc đang áp dụng",
+    "emptyNoData": "Chưa có bài viết nào",
+    "emptyNoDataDesc": "Bắt đầu bằng cách tạo bài viết đầu tiên."
   },
   "customers": {
     "eyebrow": "Thương mại",
@@ -1647,11 +1861,34 @@
       "registered": "Ngày đăng ký:",
       "statusUpdated": "Đã cập nhật trạng thái tài khoản.",
       "statusConfirmTitle": "Đổi trạng thái tài khoản",
-      "statusConfirmBody": "Chuyển tài khoản sang \"{{status}}\" sẽ chặn khách hàng đăng nhập và mua hàng. Tiếp tục?",
+      "statusConfirmBody": "Đánh dấu tài khoản là \"{{status}}\". Trạng thái này dùng để quản lý nội bộ.",
       "statusConfirmOk": "Đổi trạng thái",
       "orderCount": "Số đơn hàng:",
-      "totalSpent": "Tổng chi tiêu:"
-    }
+      "totalSpent": "Tổng chi tiêu:",
+      "addressBilling": "Thanh toán",
+      "addressShipping": "Giao hàng",
+      "phoneInvalidToast": "Số điện thoại không hợp lệ.",
+      "profileUpdated": "Thông tin đã được cập nhật.",
+      "readOnlyHint": "Bạn chỉ có quyền xem hồ sơ khách hàng. Liên hệ quản trị để được cấp quyền chỉnh sửa.",
+      "emailVerified": "Email xác thực:",
+      "emailNotVerified": "Chưa xác thực",
+      "lastLogin": "Đăng nhập gần nhất:",
+      "sectionAddresses": "Địa chỉ đã lưu",
+      "fieldDisplayName": "Tên hiển thị",
+      "avgOrderValue": "Giá trị đơn TB (AOV)",
+      "segment": "Phân khúc",
+      "firstOrder": "Đơn đầu tiên",
+      "lastOrder": "Đơn gần nhất",
+      "sectionLatestOrders": "Đơn hàng gần đây"
+    },
+    "filterChipSearch": "Tìm: \"{{value}}\"",
+    "removeFilter": "Bỏ bộ lọc {{filter}}",
+    "summaryError": "Không tải được số liệu tổng quan",
+    "summaryErrorDesc": "Số liệu khách hàng tạm thời không tải được. Vui lòng thử lại.",
+    "activeFiltersAria": "Bộ lọc đang áp dụng",
+    "emptyFiltered": "Không tìm thấy khách hàng",
+    "emptyFilteredDesc": "Thử thay đổi từ khoá hoặc bộ lọc.",
+    "filterChipStatus": "Trạng thái"
   },
   "media": {
     "eyebrow": "Media",
@@ -1768,6 +2005,8 @@
     "replacing": "Đang thay...",
     "replaceSuccess": "Đã thay file (URL không đổi)",
     "replaceError": "Không thay được file",
+    "replaceConfirmTitle": "Thay ảnh?",
+    "replaceConfirm": "Ảnh sẽ được thay ở MỌI nơi đang dùng (giữ nguyên URL) và không thể hoàn tác. Tiếp tục?",
     "replaceHint": "Thay file giữ nguyên URL — link đang dùng ở các sản phẩm/bài viết không bị hỏng. Nên thay bằng ảnh cùng tỉ lệ và kích thước bằng hoặc lớn hơn để không bị mờ/méo trên web.",
     "variants": "Phiên bản ảnh",
     "usageUsed": "Đã dùng",
@@ -1799,7 +2038,10 @@
       "multiSelectHint": "Bấm vào ảnh để chọn nhiều",
       "singleSelectHint": "Chọn một ảnh để sử dụng",
       "confirmMulti": "Chọn {{count}} ảnh",
-      "confirmSingle": "Chọn ảnh này"
+      "confirmSingle": "Chọn ảnh này",
+      "closeConfirm": "Bạn đang chọn hoặc tải file lên. Đóng sẽ mất lựa chọn và tiến trình đang tải. Tiếp tục?",
+      "closeConfirmTitle": "Đóng cửa sổ chọn?",
+      "filtersError": "Không tải được danh sách thư mục hoặc thẻ để lọc."
     },
     "referenceType": {
       "PRODUCT": "Sản phẩm",
@@ -1817,7 +2059,14 @@
     },
     "emptyLibraryDesc": "Thư viện chưa có file nào. Tải file lên để bắt đầu.",
     "discardConfirm": "Bạn đang có thay đổi chưa lưu. Đóng sẽ mất các thay đổi đó. Tiếp tục?",
-    "discardConfirmTitle": "Huỷ thay đổi?"
+    "discardConfirmTitle": "Huỷ thay đổi?",
+    "selectNamed": "Chọn {{name}}",
+    "previewNamed": "Xem lớn {{name}}",
+    "tagsError": "Không tải được thẻ",
+    "dismissWhileUploading": "Đang tải lên, chưa thể đóng",
+    "uploadProgress": "Tiến độ tải lên {{name}}",
+    "hardDeleteError": "Không xoá được. File có thể đang được dùng ở nơi khác — hãy gỡ khỏi các nơi đang dùng rồi thử lại.",
+    "viewSwitcherLabel": "Kiểu hiển thị"
   },
   "menus": {
     "eyebrow": "Cài đặt",
@@ -1871,7 +2120,31 @@
     "bulkDeleteBlocked": "{{count}} mục không thể xoá vì còn mục con — hãy xoá hoặc di chuyển mục con ra trước.",
     "bulkDeleteConfirm": "Xoá {{count}} mục menu đã chọn? Khách sẽ không còn thấy các mục này trên menu.",
     "bulkDeleteConfirmTitle": "Xoá nhiều mục menu",
-    "bulkDeleteSuccess": "Đã xoá {{count}} mục menu."
+    "bulkDeleteSuccess": "Đã xoá {{count}} mục menu.",
+    "categoryLoadError": "Không tải được danh sách danh mục để chọn nhanh — bạn vẫn có thể nhập URL thủ công bên dưới.",
+    "urlInvalid": "Lỗi: URL không hợp lệ. Ví dụ: /danh-muc-san-pham/xe-may hoặc https://example.com",
+    "itemAdvancedTitle": "Tùy chọn nâng cao",
+    "itemAdvancedHint": "Tên tiếng Anh, mục cha, trạng thái, mở tab mới",
+    "selectItemAria": "Chọn mục {{name}}",
+    "dragReorderTitle": "Kéo để sắp xếp (cùng cấp)",
+    "dragReorderItemAria": "Kéo để sắp xếp mục {{name}}",
+    "showItemTitle": "Bật hiển thị mục này",
+    "hideItemTitle": "Ẩn mục này",
+    "showItemAria": "Bật hiển thị mục {{name}}",
+    "hideItemAria": "Ẩn mục {{name}}",
+    "itemHiddenBadge": "Ẩn",
+    "editItemTitle": "Chỉnh sửa mục này",
+    "editItemAria": "Sửa mục {{name}}",
+    "deleteItemActionTitle": "Xoá mục này",
+    "deleteItemAria": "Xoá mục {{name}}",
+    "deleteItemConfirmNamed": "Xoá mục \"{{label}}\"? Khách sẽ không còn thấy mục này trên menu.",
+    "searchPlaceholder": "Tìm theo tên hoặc URL...",
+    "searchAria": "Tìm kiếm mục menu",
+    "searchNoMatch": "Không tìm thấy mục nào phù hợp với “{{query}}”.",
+    "itemReorder": "Sắp xếp",
+    "itemActions": "Thao tác",
+    "addItemDialogDesc": "Thêm một mục mới vào thanh điều hướng.",
+    "editItemDialogDesc": "Chỉnh sửa mục điều hướng."
   },
   "sliders": {
     "eyebrow": "Nội dung",
@@ -1925,7 +2198,18 @@
     "locationCategorySidebar": "Cột bên danh mục",
     "locationPromotion": "Khuyến mãi",
     "hideAction": "Ẩn",
-    "showAction": "Hiện"
+    "showAction": "Hiện",
+    "deleteConfirmDetail": "Banner sẽ bị xoá vĩnh viễn và không còn hiển thị trên trang web. Thao tác này không thể hoàn tác.",
+    "sectionPosition": "Vị trí & thứ tự",
+    "sectionDesktopImage": "Ảnh desktop",
+    "sectionMobileImage": "Ảnh mobile",
+    "sectionLink": "Liên kết",
+    "formProduct": "Sản phẩm liên kết",
+    "formProductSearchPlaceholder": "Tìm sản phẩm theo tên hoặc SKU…",
+    "formProductNoResults": "Không tìm thấy sản phẩm phù hợp.",
+    "formProductHint": "Chọn sản phẩm để banner trỏ tới trang sản phẩm đó. Có thể để trống nếu đã nhập link ngoài.",
+    "emptyFilteredLang": "Không có banner tiếng Anh ở vị trí này",
+    "emptyFilteredLangDesc": "Các banner ở vị trí này được gắn sản phẩm chưa có tên tiếng Anh nên bị ẩn ở chế độ tiếng Anh. Chuyển về tiếng Việt để xem, hoặc bổ sung tên tiếng Anh cho sản phẩm."
   },
   "reviews": {
     "eyebrow": "Danh mục",
@@ -1986,8 +2270,18 @@
       "productId": "Mã sản phẩm",
       "openProduct": "Mở chi tiết sản phẩm",
       "statusUpdated": "Đã cập nhật trạng thái đánh giá.",
-      "deleteSuccess": "Đã xoá đánh giá."
-    }
+      "deleteSuccess": "Đã xoá đánh giá.",
+      "readOnlyHint": "Bạn chỉ có quyền xem đánh giá. Liên hệ quản trị để được cấp quyền kiểm duyệt.",
+      "noActionPermission": "Bạn không có quyền kiểm duyệt đánh giá này."
+    },
+    "spamConfirm": "Đánh dấu đánh giá này là spam? Đánh giá sẽ không hiển thị cho khách.",
+    "spamConfirmTitle": "Đánh dấu spam",
+    "selectOne": "Chọn đánh giá này",
+    "summaryScopeHint": "Tính trên trang hiện tại",
+    "emptyAll": "Chưa có đánh giá nào",
+    "emptyAllDesc": "Đánh giá sẽ xuất hiện ở đây khi khách hàng để lại nhận xét cho sản phẩm trên website.",
+    "selectAllOnPage": "Chọn tất cả trên trang này",
+    "bulkError": "Một số đánh giá xử lý không thành công."
   },
   "banners": {
     "eyebrow": "Giao diện",
@@ -2019,7 +2313,9 @@
     "openCategories": "Mở Danh mục",
     "contentLinkTitle": "Banner trang Giới thiệu & trang nội dung",
     "contentLinkDesc": "Đặt khi sửa từng trang trong màn Nội dung.",
-    "openContent": "Mở Nội dung"
+    "openContent": "Mở Nội dung",
+    "discardConfirm": "Huỷ mọi thay đổi chưa lưu? Các chỉnh sửa sẽ bị mất.",
+    "discardConfirmTitle": "Huỷ thay đổi banner"
   },
   "settings": {
     "eyebrow": "Hệ thống",
@@ -2069,8 +2365,15 @@
       "removeConfirmTitle": "Xóa vai trò",
       "removeConfirmMessage": "Xóa vai trò này? Thay đổi chỉ áp dụng sau khi Lưu.",
       "saveError": "Lưu thất bại.",
-      "unsavedHint": "Có thay đổi chưa lưu"
-    }
+      "unsavedHint": "Có thay đổi chưa lưu",
+      "roleNameRequired": "Nhập tên vai trò",
+      "roleUntitled": "Vai trò chưa đặt tên"
+    },
+    "sectionOther": "Khác",
+    "internal": "Nội bộ",
+    "panelSummary": "{{count}} mục cài đặt",
+    "errValueEnRequired": "Vui lòng nhập bản tiếng Anh cho trường này.",
+    "readOnlyHint": "Bạn chỉ có quyền xem cài đặt, không thể chỉnh sửa."
   },
   "adminUsers": {
     "eyebrow": "Hệ thống",
@@ -2131,7 +2434,16 @@
     "confirmRoleChange": "Bạn có chắc muốn thay đổi vai trò của quản trị viên này?",
     "selfEditLocked": "Đây là tài khoản của bạn — không thể tự đổi quyền hoặc tự khoá tài khoản. Vẫn có thể đổi tên hiển thị và mật khẩu.",
     "confirmYes": "Xác nhận",
-    "confirmNo": "Huỷ"
+    "confirmNo": "Huỷ",
+    "discardConfirm": "Bạn có thay đổi chưa lưu. Đóng sẽ mất các thay đổi đó. Tiếp tục?",
+    "discardTitle": "Bỏ thay đổi?",
+    "errPasswordTooShort": "Mật khẩu phải có ít nhất {{min}} ký tự.",
+    "confirmDisableBtn": "Khoá tài khoản",
+    "errEmailRequired": "Vui lòng nhập email.",
+    "errEmailInvalid": "Email không hợp lệ.",
+    "errDisplayNameRequired": "Vui lòng nhập tên hiển thị.",
+    "rolesLoadError": "Không tải được danh sách vai trò tuỳ chỉnh. Danh sách vai trò có thể chưa đầy đủ; thử tải lại trang.",
+    "activeFiltersAria": "Bộ lọc đang áp dụng"
   },
   "auditLog": {
     "eyebrow": "Hệ thống",
@@ -2356,7 +2668,13 @@
       "7d": "7 ngày qua",
       "30d": "30 ngày qua",
       "month": "Tháng này"
-    }
+    },
+    "dateRangeError": "Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.",
+    "exportTooltipPage": "Xuất {{count}} dòng đang hiển thị (chỉ trang này)",
+    "activeFiltersLabel": "Bộ lọc đang áp dụng",
+    "pageScopeNote": "Sắp xếp và xuất dữ liệu chỉ áp dụng cho các dòng trong trang đang xem.",
+    "chipActorType": "Đối tượng",
+    "chipModule": "Mô-đun"
   },
   "reports": {
     "eyebrow": "Phân tích",
@@ -2364,6 +2682,7 @@
     "description": "Doanh thu, sản phẩm và khách hàng theo khoảng thời gian.",
     "loading": "Đang tải dữ liệu…",
     "loadError": "Không tải được báo cáo",
+    "loadErrorDesc": "Không thể tải báo cáo lúc này. Vui lòng thử lại.",
     "preset7d": "7 ngày",
     "preset30d": "30 ngày",
     "preset90d": "90 ngày",
@@ -2403,7 +2722,8 @@
     "customFrom": "Từ ngày",
     "customTo": "Đến ngày",
     "sortBy": "Sắp xếp theo",
-    "colCustomer": "Khách hàng"
+    "colCustomer": "Khách hàng",
+    "notEnoughDataForChart": "Chưa đủ dữ liệu để vẽ biểu đồ."
   },
   "roles": {
     "eyebrow": "Hệ thống",
@@ -2528,7 +2848,13 @@
     "roleLabel_CONTRIBUTOR": "Cộng tác viên",
     "roleLabel_SEO_EDITOR": "SEO chuyên gia",
     "permRedirectsRead": "Xem chuyển hướng",
-    "permRedirectsWrite": "Quản lý chuyển hướng"
+    "permRedirectsWrite": "Quản lý chuyển hướng",
+    "createDiscardConfirm": "Bạn có thay đổi chưa lưu. Đóng sẽ mất các thay đổi đó. Tiếp tục?",
+    "createDiscardTitle": "Bỏ tạo vai trò?",
+    "groupGrantedCount": "{{granted}}/{{total}} quyền",
+    "toastClose": "Đóng thông báo",
+    "discardChangesTitle": "Huỷ thay đổi?",
+    "catalogLoadWarning": "Không tải được danh mục quyền mới nhất — đang dùng danh sách quyền mặc định, một số quyền có thể chưa đầy đủ. Hãy thử tải lại."
   },
   "export": {
     "exportCsv": "Xuất CSV",
@@ -2567,7 +2893,8 @@
     "willRemoveVariants": "sẽ bị xoá",
     "rowCheckboxLabel": "Đưa {{name}} vào lần nhập này",
     "resultSummary": "Đã nhập xong: {{ok}} hợp lệ, {{warn}} cảnh báo, {{err}} lỗi",
-    "error": "Không xử lý được file. Vui lòng thử lại."
+    "error": "Không xử lý được file. Vui lòng thử lại.",
+    "tableCaption": "Kết quả kiểm tra từng dòng sản phẩm trong file nhập"
   },
   "homeVideos": {
     "title": "Video trang chủ",
@@ -2658,7 +2985,20 @@
       "pageInfo": "Trang {{page}} / {{totalPages}}",
       "selectHint": "Chọn một video để sử dụng",
       "confirm": "Chọn video này"
-    }
+    },
+    "previewTitle": "Xem trước video",
+    "unsavedConfirm": "Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?",
+    "unsavedTitle": "Có thay đổi chưa lưu",
+    "searchPlaceholder": "Tìm theo tên video...",
+    "filterAll": "Tất cả",
+    "filterActive": "Đang hiện",
+    "filterHidden": "Đang ẩn",
+    "clearFilter": "Xoá bộ lọc",
+    "noMatch": "Không tìm thấy video",
+    "noMatchDescription": "Thử thay đổi từ khoá hoặc bộ lọc trạng thái.",
+    "selectAll": "Chọn tất cả",
+    "eyebrow": "Nội dung",
+    "description": "Quản lý video hiển thị trên trang chủ."
   },
   "imageInput": {
     "pickFromLibrary": "Chọn từ thư viện",
@@ -2715,7 +3055,13 @@
     "limitReached": "Đã đủ tối đa {{max}} sản phẩm.",
     "emptyHint": "Chưa có sản phẩm nào. Dùng ô tìm kiếm bên dưới để thêm.",
     "dragHandle": "Kéo để sắp xếp",
-    "removeItem": "Xóa khỏi danh sách"
+    "removeItem": "Xóa khỏi danh sách",
+    "unsavedConfirm": "Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?",
+    "langSwitchConfirm": "Bạn có thay đổi chưa lưu. Đổi ngôn ngữ sẽ tải lại danh sách và mất các thay đổi này. Tiếp tục?",
+    "unsavedTitle": "Có thay đổi chưa lưu",
+    "removedFromList": "Đã xóa khỏi danh sách",
+    "emptyTitle": "Chưa có sản phẩm nổi bật",
+    "emptyAction": "Thêm sản phẩm"
   },
   "homeHighlights": {
     "eyebrow": "Nội dung",
@@ -2726,7 +3072,9 @@
     "clearSlot": "Bỏ chọn",
     "saveButton": "Lưu cấu hình",
     "savedSuccess": "Đã lưu cấu hình highlights trang chủ.",
-    "noSlotsError": "Phải chọn ít nhất 1 slot."
+    "noSlotsError": "Phải chọn ít nhất 1 slot.",
+    "slotLabel": "Vị trí {{number}}",
+    "noSlotsHint": "Chọn ít nhất 1 sản phẩm để lưu."
   },
   "redirects": {
     "title": "Chuyển hướng",
@@ -2772,6 +3120,26 @@
     "colHits": "Lượt",
     "colUpdated": "Cập nhật",
     "statusOn": "Bật",
-    "statusOff": "Tắt"
+    "statusOff": "Tắt",
+    "toggleSuccess": "Đã cập nhật trạng thái.",
+    "bulkDeleteConfirmTitle": "Xoá hàng loạt",
+    "unsavedConfirm": "Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?",
+    "unsavedTitle": "Có thay đổi chưa lưu",
+    "filterChipSearch": "Tìm: \"{{value}}\"",
+    "removeFilter": "Bỏ lọc {{filter}}",
+    "filterChipEnabled": "Bật",
+    "filterChipStatusCode": "Mã: {{value}}",
+    "advancedTitle": "Tùy chọn nâng cao",
+    "advancedHint": "Legacy ID, ghi chú",
+    "activeFiltersAria": "Bộ lọc đang áp dụng",
+    "bulkEnable": "Bật",
+    "bulkDisable": "Tắt"
+  },
+  "errorBoundary": {
+    "title": "Đã xảy ra lỗi không mong đợi",
+    "description": "Vui lòng tải lại trang. Nếu lỗi tiếp diễn, hãy liên hệ kỹ thuật viên.",
+    "reload": "Tải lại trang",
+    "goHome": "Về trang chủ",
+    "retry": "Thử lại"
   }
 }

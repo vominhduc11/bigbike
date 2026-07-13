@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
+import { CollapsibleSection } from '../../components/CollapsibleSection'
 import { formatParentOption, formatCategoryOption, buildCategoryMenuUrl, isValidCustomUrl } from './constants'
 
 // Radix Select cấm value rỗng, nên dùng sentinel cho lựa chọn "cấp gốc".
@@ -66,9 +67,14 @@ function MenuCategoryPicker({ value, onChange, options, label, noneLabel }) {
   )
 }
 
-export function ItemForm({ value, onChange, parentOptions, categoryOptions, isNew }) {
+export function ItemForm({ value, onChange, parentOptions, categoryOptions, categoryError, isNew }) {
   const { t } = useTranslation()
   const [labelTouched, setLabelTouched] = useState(false)
+  // F10 chống ngợp: giữ 2 trường cốt lõi (Tên + URL) luôn hiện, gom 4 trường tùy chọn vào
+  // nhóm thu gọn — nhưng tự mở sẵn khi đang sửa mục đã có giá trị tùy chọn để không giấu dữ liệu.
+  const [advancedOpen, setAdvancedOpen] = useState(() =>
+    Boolean(value.labelEn || value.parentId || value.openInNewTab || value.status === 'INACTIVE'),
+  )
   const urlInvalid = value.url.trim() !== '' && !isValidCustomUrl(value.url)
   const labelMissing = value.label.trim() === ''
   const showLabelError = labelTouched && labelMissing
@@ -104,19 +110,8 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, isNe
         )}
       </label>
 
-      {/* Label — English (optional) */}
-      <label className="form-field form-field-wide">
-        {t('menus.itemLabelEn')}
-        <Input
-          value={value.labelEn}
-          onChange={(e) => onChange({ labelEn: e.target.value })}
-          placeholder={t('menus.itemLabelEnPlaceholder')}
-         />
-        <small className="menu-form-hint">{t('menus.itemLabelEnHint')}</small>
-      </label>
-
       {/* Chọn danh mục có sẵn — tự điền URL, khỏi phải nhớ slug */}
-      {categoryOptions?.length > 0 && (
+      {categoryOptions?.length > 0 ? (
         <MenuCategoryPicker
           label={t('menus.itemCategoryPicker')}
           noneLabel={t('menus.itemCategoryPickerNone')}
@@ -124,7 +119,11 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, isNe
           options={categoryOptions}
           onChange={onChange}
         />
-      )}
+      ) : categoryError ? (
+        <p className="form-field-wide menu-form-hint menu-form-hint--warn" role="status">
+          {t('menus.categoryLoadError', { defaultValue: 'Không tải được danh sách danh mục để chọn nhanh — bạn vẫn có thể nhập URL thủ công bên dưới.' })}
+        </p>
+      ) : null}
 
       {/* URL */}
       <label className="form-field form-field-wide" htmlFor="menu-item-url">
@@ -154,38 +153,62 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, isNe
         )}
       </label>
 
-      {/* Parent — bao gồm lựa chọn "cấp gốc" để có thể đưa mục con lên cấp đầu */}
-      <MenuParentSelect
-        label={t('menus.itemParent')}
-        rootLabel={t('menus.parentRoot')}
-        value={value.parentId}
-        options={parentOptions}
-        onChange={(v) => onChange({ parentId: v })}
-      />
+      {/* Tùy chọn nâng cao — thu gọn sẵn: tên tiếng Anh, mục cha, trạng thái, mở tab mới */}
+      <div className="form-field-wide">
+        <CollapsibleSection
+          title={t('menus.itemAdvancedTitle', { defaultValue: 'Tùy chọn nâng cao' })}
+          hint={t('menus.itemAdvancedHint', { defaultValue: 'Tên tiếng Anh, mục cha, trạng thái, mở tab mới' })}
+          open={advancedOpen}
+          onToggle={() => setAdvancedOpen((v) => !v)}
+          keepMounted
+        >
+          <div className="form-grid">
+            {/* Label — English (optional) */}
+            <label className="form-field form-field-wide">
+              {t('menus.itemLabelEn')}
+              <Input
+                value={value.labelEn}
+                onChange={(e) => onChange({ labelEn: e.target.value })}
+                placeholder={t('menus.itemLabelEnPlaceholder')}
+               />
+              <small className="menu-form-hint">{t('menus.itemLabelEnHint')}</small>
+            </label>
 
-      {/* Status */}
-      <label className="form-field">
-        {t('menus.itemStatus')}
-        <Select
-          value={value.status}
-          onValueChange={(val) => onChange({ status: val })}
-        ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-          <SelectItem value="ACTIVE">{t('menus.statusActive')}</SelectItem>
-          <SelectItem value="INACTIVE">{t('menus.statusInactive')}</SelectItem>
-        </SelectContent></Select>
-        {value.status === 'INACTIVE' && (
-          <small className="menu-form-hint menu-form-hint--warn">{t('menus.statusInactiveHint')}</small>
-        )}
-      </label>
+            {/* Parent — bao gồm lựa chọn "cấp gốc" để có thể đưa mục con lên cấp đầu */}
+            <MenuParentSelect
+              label={t('menus.itemParent')}
+              rootLabel={t('menus.parentRoot')}
+              value={value.parentId}
+              options={parentOptions}
+              onChange={(v) => onChange({ parentId: v })}
+            />
 
-      {/* Open in new tab */}
-      <label className="form-checkbox">
-        <Checkbox
-          checked={value.openInNewTab}
-          onCheckedChange={(checked) => onChange({ openInNewTab: checked === true })}
-         />
-        {t('menus.itemOpenInNewTab')}
-      </label>
+            {/* Status */}
+            <label className="form-field">
+              {t('menus.itemStatus')}
+              <Select
+                value={value.status}
+                onValueChange={(val) => onChange({ status: val })}
+              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                <SelectItem value="ACTIVE">{t('menus.statusActive')}</SelectItem>
+                <SelectItem value="INACTIVE">{t('menus.statusInactive')}</SelectItem>
+              </SelectContent></Select>
+              {value.status === 'INACTIVE' && (
+                <small className="menu-form-hint menu-form-hint--warn">{t('menus.statusInactiveHint')}</small>
+              )}
+            </label>
+
+            {/* Open in new tab */}
+            <label className="form-checkbox">
+              <Checkbox
+                checked={value.openInNewTab}
+                onCheckedChange={(checked) => onChange({ openInNewTab: checked === true })}
+               />
+              {t('menus.itemOpenInNewTab')}
+            </label>
+          </div>
+        </CollapsibleSection>
+      </div>
     </div>
   )
 }

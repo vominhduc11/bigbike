@@ -15,6 +15,18 @@ function readToken() {
   }
 }
 
+function derivePasswordError(password, t) {
+  if (!password) return t('acceptInvite.passwordRequired', { defaultValue: 'Vui lòng nhập mật khẩu.' })
+  if (password.length < 8) return t('acceptInvite.passwordTooShort')
+  return ''
+}
+
+function deriveConfirmError(confirm, password, t) {
+  if (!confirm) return t('acceptInvite.confirmRequired', { defaultValue: 'Vui lòng nhập lại mật khẩu.' })
+  if (confirm !== password) return t('acceptInvite.passwordMismatch')
+  return ''
+}
+
 export function AcceptInviteScreen() {
   const { t } = useTranslation()
   const token = readToken()
@@ -30,8 +42,9 @@ export function AcceptInviteScreen() {
   const pwId = useId()
   const confirmId = useId()
 
-  const passwordError = password.length > 0 && password.length < 8 ? t('acceptInvite.passwordTooShort') : ''
-  const confirmError = confirm.length > 0 && confirm !== password ? t('acceptInvite.passwordMismatch') : ''
+  // Lỗi từng ô (gồm cả trường hợp rỗng "bắt buộc"); chỉ HIỆN khi ô đã touched hoặc sau khi bấm gửi.
+  const passwordError = derivePasswordError(password, t)
+  const confirmError = deriveConfirmError(confirm, password, t)
 
   // Tracks whether the screen is still mounted so a late-resolving validate/retry call
   // doesn't setState after unmount (e.g. user navigates away before the request settles).
@@ -49,13 +62,13 @@ export function AcceptInviteScreen() {
       })
       .catch((err) => {
         if (!mountedRef.current) return
-        if (err instanceof ApiClientError) {
-          // Real HTTP response (4xx from the backend) — token genuinely invalid/expired.
+        if (err instanceof ApiClientError && err.status < 500) {
+          // 4xx thật từ backend — token thực sự sai/hết hạn.
           setError(err?.message || t('acceptInvite.invalidToken'))
           setPhase('invalid')
         } else {
-          // Thrown before any HTTP response (offline, DNS, CORS, server down) — distinct
-          // from a broken/expired token, and worth a retry instead of a dead end.
+          // Lỗi trước khi có phản hồi (offline/DNS/CORS) HOẶC lỗi máy chủ 5xx — không phải token hỏng,
+          // nên cho thử lại thay vì báo "token sai" gây hiểu nhầm.
           setError(t('acceptInvite.networkError'))
           setPhase('network-error')
         }
@@ -72,16 +85,19 @@ export function AcceptInviteScreen() {
     runValidate()
   }, [token, t, runValidate])
 
+  // Khi lời mời hợp lệ, đưa con trỏ vào ô mật khẩu để nhập ngay (không phải tìm/bấm thủ công).
+  useEffect(() => {
+    if (phase === 'valid') document.getElementById(pwId)?.focus()
+  }, [phase, pwId])
+
   async function onSubmit(event) {
     event.preventDefault()
     if (submitting) return
     setError('')
-    if (password.length < 8) {
-      setError(t('acceptInvite.passwordTooShort'))
-      return
-    }
-    if (password !== confirm) {
-      setError(t('acceptInvite.passwordMismatch'))
+    // Ô rỗng/không hợp lệ → hiện lỗi ngay dưới ô (touched=true) và focus ô lỗi đầu tiên, không gọi API.
+    if (passwordError || confirmError) {
+      setTouched({ password: true, confirm: true })
+      document.getElementById(passwordError ? pwId : confirmId)?.focus()
       return
     }
     setSubmitting(true)
@@ -89,7 +105,9 @@ export function AcceptInviteScreen() {
       await acceptAdminInvite(token, password)
       setPhase('done')
     } catch (err) {
-      setError(err?.message || t('acceptInvite.acceptFailed'))
+      // Phân biệt lỗi backend (giữ message backend) với lỗi mạng (thông báo thân thiện).
+      if (err instanceof ApiClientError) setError(err?.message || t('acceptInvite.acceptFailed'))
+      else setError(t('acceptInvite.networkError'))
     } finally {
       setSubmitting(false)
     }
@@ -123,9 +141,9 @@ export function AcceptInviteScreen() {
           {phase === 'invalid' && (
             <div className="bb-login-stack">
               <StatePanel tone="danger" title={t('acceptInvite.invalidTitle')} description={error} />
-              <a href="/" className="bb-btn bb-btn-primary bb-btn-lg bb-btn-full">
-                {t('acceptInvite.goToLogin')}
-              </a>
+              <Button asChild size="lg" className="w-full">
+                <a href="/">{t('acceptInvite.goToLogin')}</a>
+              </Button>
             </div>
           )}
 
@@ -138,18 +156,18 @@ export function AcceptInviteScreen() {
                 actionLabel={t('common.retry')}
                 onAction={runValidate}
               />
-              <a href="/" className="bb-btn bb-btn-secondary bb-btn-lg bb-btn-full">
-                {t('acceptInvite.goToLogin')}
-              </a>
+              <Button asChild size="lg" variant="secondary" className="w-full">
+                <a href="/">{t('acceptInvite.goToLogin')}</a>
+              </Button>
             </div>
           )}
 
           {phase === 'done' && (
             <div className="bb-login-stack">
               <StatePanel tone="success" title={t('acceptInvite.doneTitle')} description={t('acceptInvite.doneDesc')} />
-              <a href="/" className="bb-btn bb-btn-primary bb-btn-lg bb-btn-full">
-                {t('acceptInvite.goToLogin')}
-              </a>
+              <Button asChild size="lg" className="w-full">
+                <a href="/">{t('acceptInvite.goToLogin')}</a>
+              </Button>
             </div>
           )}
 
@@ -225,9 +243,9 @@ export function AcceptInviteScreen() {
                     t('acceptInvite.submit')
                   )}
                 </Button>
-                <a href="/" className="bb-btn bb-btn-secondary bb-btn-lg bb-btn-full">
-                  {t('acceptInvite.goToLogin')}
-                </a>
+                <Button asChild size="lg" variant="secondary" className="w-full">
+                  <a href="/">{t('acceptInvite.goToLogin')}</a>
+                </Button>
               </form>
             </>
           )}

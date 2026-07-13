@@ -37,7 +37,10 @@ export function getOrderStatusLabel(targetStatus, order, t) {
     return t('orders.detail.actionBacsConfirm')
   }
   const key = ORDER_STATUS_ACTION[targetStatus]?.labelKey
-  return key ? t(key) : targetStatus
+  if (key) return t(key)
+  // Transition lạ (backend thêm trạng thái mới) → dùng nhãn trạng thái đã dịch nếu có,
+  // chỉ rơi về enum thô khi thật sự chưa có bản dịch.
+  return t(`status.order.${targetStatus}`, { defaultValue: targetStatus })
 }
 
 export const PAYMENT_ACTION_LABEL = {

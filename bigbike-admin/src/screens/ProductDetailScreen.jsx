@@ -198,7 +198,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   // Ô gán Danh mục / Thương hiệu phải liệt kê ĐẦY ĐỦ để gán được cả mục chưa dịch.
   // Lấy danh sách 'vi' đầy đủ; ở EN nạp thêm danh sách 'en' để phủ tên Anh khi có.
   const isEn = contentLang === 'en'
-  const { data: categoriesResultVi } = useQuery({
+  const { data: categoriesResultVi, isError: categoriesLoadError } = useQuery({
     queryKey: ['categories', 'tree', 'vi'],
     queryFn: () => fetchCategoryTree('vi'),
     staleTime: 5 * 60 * 1000,
@@ -1132,7 +1132,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     />
                   </Field>
 
-                  <Field label={t('products.detail.categoryId')} required error={validationErrors.categoryId}>
+                  <Field label={t('products.detail.categoryId')} required error={validationErrors.categoryId || (categoriesLoadError ? t('products.detail.categoriesLoadError', { defaultValue: 'Không tải được danh mục. Vui lòng tải lại trang.' }) : undefined)}>
                     <Select value={form.categoryId} onValueChange={(val) => { if (val) updateField('categoryId', val) }} disabled={isReadOnly}>
                       <SelectTrigger onBlur={() => validateFieldOnBlur('categoryId')}>
                         <SelectValue placeholder={t('products.detail.categoryPlaceholder')}>{selectedCategoryLabel}</SelectValue>
@@ -1675,7 +1675,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </p>
                 ) : (
                   <SuitabilityBlockEditor
-                    key={`suit-${productId ?? 'new'}-${suitabilitySection._key}`}
+                    key={`suit-${productId ?? 'new'}-${suitabilitySection._key}-${contentLang}`}
                     block={suitabilitySection}
                     disabled={isReadOnly}
                     contentLang={contentLang}
@@ -1698,7 +1698,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </p>
                 ) : (
                   <SizeGuideBlockEditor
-                    key={`size-${productId ?? 'new'}-${sizeGuideSection._key}`}
+                    key={`size-${productId ?? 'new'}-${sizeGuideSection._key}-${contentLang}`}
                     block={sizeGuideSection}
                     disabled={isReadOnly}
                     contentLang={contentLang}
@@ -1970,6 +1970,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         </form>
 
         <StickyActionBar
+          ariaLabel={t('common.actionBarLabel', { defaultValue: 'Thanh thao tác' })}
           info={
             <span className="flex items-center gap-2 text-sm">
               <span className={cn('w-2 h-2 rounded-full', saveDotClass)} />

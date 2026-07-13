@@ -1,6 +1,12 @@
 {
   "common": {
     "columns": "Columns",
+    "showAllColumns": "Show all columns",
+    "selectAll": "Select all",
+    "selectRow": "Select row",
+    "sortColumn": "Sort column",
+    "clearAllFilters": "Clear all filters",
+    "removeFilterLabel": "Remove filter",
     "recentItems": "Recently viewed",
     "selectedCount": "{{count}} selected",
     "selectAllMatching": "Select all {{count}} matching results",
@@ -21,6 +27,7 @@
     "create": "Create",
     "update": "Update",
     "loading": "Loading...",
+    "unknown": "Unknown",
     "pleaseWait": "Please wait...",
     "error": "Error",
     "unknownError": "An unknown error occurred.",
@@ -44,6 +51,7 @@
     "notFound": "Not found",
     "confirm": "Confirm",
     "close": "Close",
+    "actionBarLabel": "Action bar",
     "pageSize": "Per page",
     "sort": "Sort",
     "clear": "Clear",
@@ -62,7 +70,20 @@
     "rowsPerPage": "Rows per page",
     "removeTag": "Remove tag {{tag}}",
     "dateRangePlaceholder": "All time",
-    "dateRangeClear": "Clear date filter"
+    "dateRangeClear": "Clear date filter",
+    "dnd": {
+      "instructions": "Press space to start dragging. While dragging, use arrow keys to move. Press space to drop, or Escape to cancel.",
+      "onStart": "Item lifted, sorting started.",
+      "onOver": "Item is being moved.",
+      "onEnd": "Item dropped in its new position.",
+      "onCancel": "Dragging cancelled, the item returned to its original position."
+    },
+    "tagFetchError": "Couldn't load tag suggestions. You can still type tags manually.",
+    "exportCsv": "Export CSV",
+    "errorOccurred": "An error occurred.",
+    "errorLoading": "Couldn't load data",
+    "exportCsvDone": "CSV file downloaded",
+    "remove": "Deselect"
   },
   "notifications": {
     "newOrder": "New order",
@@ -73,7 +94,10 @@
     "panelTitle": "Notifications",
     "clearAll": "Clear all",
     "empty": "No notifications yet",
-    "unread": "Unread"
+    "unread": "Unread",
+    "syncError": "Couldn't sync read status.",
+    "loadError": "Couldn't load notifications. Please try again.",
+    "unknownOrder": "Order"
   },
   "search": {
     "open": "Open quick search",
@@ -85,7 +109,10 @@
       "orders": "Orders",
       "products": "Products",
       "customers": "Customers"
-    }
+    },
+    "skuTbd": "No SKU yet",
+    "errorTitle": "Search failed",
+    "errorBody": "Something went wrong while searching. Please try again."
   },
   "theme": {
     "switchToLight": "Switch to light mode",
@@ -118,7 +145,26 @@
     "htmlPlaceholder": "Enter or paste HTML here...",
     "htmlHint": "Enter/paste raw HTML (e.g. tables or AI-generated layout). If you switch back to the Visual tab and edit, advanced tags like tables/layout may be simplified. Unsafe code is always filtered — the preview below matches what customers see.",
     "previewLabel": "Preview (as shown on the website)",
-    "previewEmpty": "Nothing to preview yet."
+    "previewEmpty": "Nothing to preview yet.",
+    "editorLabel": "Text content",
+    "linkInvalid": "Invalid URL. Use http(s)://, mailto:, tel: or an internal path starting with /.",
+    "toolbarLabel": "Formatting toolbar",
+    "alignLeft": "Align left",
+    "alignCenter": "Align center",
+    "alignRight": "Align right",
+    "textColor": "Text color",
+    "bgColor": "Highlight color",
+    "clearColor": "Clear color",
+    "insertTable": "Insert table",
+    "addColumn": "Add column",
+    "addRow": "Add row",
+    "deleteColumn": "Delete column",
+    "deleteRow": "Delete row",
+    "deleteTable": "Delete table",
+    "linkUrlLabel": "Link",
+    "switchVisualConfirm": "Switching to the visual editor may drop advanced tables/layout when you edit. Continue?",
+    "switchVisualTitle": "Switch editor mode",
+    "htmlSourceLabel": "HTML source"
   },
   "acceptInvite": {
     "title": "Activate admin account",
@@ -132,6 +178,8 @@
     "errorTitle": "Could not set password",
     "passwordTooShort": "Password must be at least 8 characters.",
     "passwordMismatch": "Passwords do not match.",
+    "passwordRequired": "Please enter a password.",
+    "confirmRequired": "Please confirm your password.",
     "acceptFailed": "Could not activate. The link may have expired.",
     "missingToken": "The invite link is missing its token.",
     "invalidToken": "Invite is invalid or has expired.",
@@ -154,6 +202,10 @@
     "invalidCredentials": "Incorrect email or password.",
     "accountLocked": "Account is temporarily locked due to too many failed login attempts. Please try again later.",
     "loginFailed": "Login failed. Please try again.",
+    "networkError": "Cannot reach the server. Please try again.",
+    "emailRequired": "Please enter your email.",
+    "emailInvalid": "Invalid email address.",
+    "passwordRequired": "Please enter your password.",
     "loginError": "Unable to login",
     "forgotPassword": "Forgot password?",
     "forgotPasswordNote": "Contact your system administrator to reset your password.",
@@ -193,7 +245,9 @@
     "sidebarLabel": "Sidebar navigation",
     "mainNav": "Main navigation",
     "openMenu": "Open menu",
-    "pendingBadge": "{{count}} items need attention"
+    "pendingBadge": "{{count}} items need attention",
+    "skipToContent": "Skip to content",
+    "contentLangLabel": "Content language"
   },
   "app": {
     "loadingSession": "Loading session",
@@ -210,7 +264,11 @@
     "moduleNotAvailableDesc": "This module is not available in the current version.",
     "overview": "Overview",
     "createNew": "Create",
-    "detail": "Detail"
+    "detail": "Detail",
+    "missingRole": "This page is available only to certain admin roles (Administrator, Shop Manager).",
+    "focusExitTooltip": "Exit focus mode (F11)",
+    "focusEnterTooltip": "Enter focus mode — hide sidebar/topbar (F11)",
+    "focusExit": "Exit focus"
   },
   "dashboard": {
     "eyebrow": "Overview",
@@ -318,7 +376,8 @@
     "page": "Page {{page}} of {{total}}",
     "previous": "Previous",
     "next": "Next",
-    "jumpTo": "Go to page"
+    "jumpTo": "Go to page",
+    "jumpRange": "Enter a page number from 1 to {{total}}."
   },
   "readOnly": {
     "prefix": "Read-only mode:",
@@ -595,7 +654,11 @@
         "publishNow": "Publish now",
         "optionalHeading": "Add these for a fuller, nicer page",
         "blockerMessage": "{{count}} required item(s) are still missing. Please complete them first.",
-        "warningMessage": "{{count}} section(s) are recommended to make the product page fuller and nicer (optional). You can still publish now."
+        "warningMessage": "{{count}} section(s) are recommended to make the product page fuller and nicer (optional). You can still publish now.",
+        "nameEn": "English name",
+        "itemDone": "Passed",
+        "itemMissing": "Not met (required)",
+        "itemOptionalMissing": "Recommended"
       },
       "assign": {
         "title": "Assignment",
@@ -610,7 +673,17 @@
         "altPlaceholder": "Image description for SEO/accessibility (not visible text)",
         "altAriaLabel": "Image description for SEO and accessibility",
         "addImage": "Add image",
-        "dragToReorder": "Drag to reorder display order"
+        "dragToReorder": "Drag to reorder display order",
+        "videoUpload": "Upload",
+        "videoUrlPlaceholder": "Paste a YouTube link",
+        "tiktokUrlPlaceholder": "Paste the full TikTok link",
+        "facebookUrlPlaceholder": "Paste a public Facebook video link",
+        "videoChange": "Change video",
+        "videoPick": "Select video",
+        "thumbChange": "Change thumbnail",
+        "thumbPick": "Thumbnail (optional)",
+        "addVideoTitle": "Add video to the product gallery",
+        "addVideo": "Add video"
       },
       "video": {
         "fromLibrary": "From library",
@@ -627,7 +700,12 @@
         "removeVideo": "Remove video",
         "addVideo": "Add video",
         "titlePlaceholder": "Video title (optional)",
-        "descriptionPlaceholder": "Short description (optional)"
+        "descriptionPlaceholder": "Short description (optional)",
+        "switchProviderConfirm": "Switching the video source will clear the entered link. Continue?",
+        "switchProviderTitle": "Switch video source",
+        "urlLabel": "Video link",
+        "titleLabel": "Video title",
+        "descriptionLabel": "Video description"
       },
       "aiBrief": {
         "title": "AI brief for on-brand HTML",
@@ -671,7 +749,8 @@
         "htmlHint": "You may style it with inline CSS — match the product page's fonts, colors and spacing, and avoid odd backgrounds/shadows/colors that clash. Only unsafe code is filtered. The preview below is exactly what customers will see.",
         "previewLabel": "Preview (exactly as shown on the web)",
         "previewEmpty": "Nothing to preview yet.",
-        "aiBriefPrompt": "Generate an HTML size chart for a BigBike product detail page. Hard requirements:\n- Return plain HTML with inline CSS only (style=\"...\" attribute). NO <script>, NO <style> tag, no classes, no ids.\n- The table MUST have both <thead> and <tbody> — missing either one breaks the structured-editing feature:\n  <table><thead><tr><th>Size</th><th>Head circ. (cm)</th></tr></thead><tbody><tr><td>M</td><td>57–58</td></tr>...</tbody></table>\n- Font: Arial, Helvetica, sans-serif. Body font size 14–18px; header cells (<th>) bold.\n- Colors: main text #111111; secondary #6f6f6f; border 1px solid #dddddd; header cell background #f5f5f5.\n- Square corners (border-radius: 0). Spacing in multiples of 4px. NO dark backgrounds, box-shadow, gradients.\n- If there is a measuring note, place it in <p style=\"font-size:18px;color:#6f6f6f;margin-top:8px\"> OUTSIDE the <table> tag.\n\nTable content (replace with actual product data):\n[Size / Head circ. / ...]\n[M / 57–58 / ...]\n..."
+        "aiBriefPrompt": "Generate an HTML size chart for a BigBike product detail page. Hard requirements:\n- Return plain HTML with inline CSS only (style=\"...\" attribute). NO <script>, NO <style> tag, no classes, no ids.\n- The table MUST have both <thead> and <tbody> — missing either one breaks the structured-editing feature:\n  <table><thead><tr><th>Size</th><th>Head circ. (cm)</th></tr></thead><tbody><tr><td>M</td><td>57–58</td></tr>...</tbody></table>\n- Font: Arial, Helvetica, sans-serif. Body font size 14–18px; header cells (<th>) bold.\n- Colors: main text #111111; secondary #6f6f6f; border 1px solid #dddddd; header cell background #f5f5f5.\n- Square corners (border-radius: 0). Spacing in multiples of 4px. NO dark backgrounds, box-shadow, gradients.\n- If there is a measuring note, place it in <p style=\"font-size:18px;color:#6f6f6f;margin-top:8px\"> OUTSIDE the <table> tag.\n\nTable content (replace with actual product data):\n[Size / Head circ. / ...]\n[M / 57–58 / ...]\n...",
+        "columnFallback": "Column {{index}}"
       },
       "suitability": {
         "modeStructured": "Structured input",
@@ -688,7 +767,10 @@
         "labelPlaceholder": "Metric name (e.g. Weight) *",
         "removeRow": "Remove box",
         "addRow": "Add box",
-        "aiBriefPrompt": "Generate HTML for the \"Highlight Stat Boxes\" block on a BigBike product detail page. Hard requirements:\n- Return plain HTML with inline CSS only (style=\"...\" attribute). NO <script>, NO <style> tag, no ids.\n- The outer wrapper MUST have class=\"bb-specstats\" (required for the system to parse it — the only class allowed).\n- Grid container: <div class=\"bb-specstats\" style=\"display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;border:1px solid #e5e7eb;background:#e5e7eb\">\n- Each box: <div style=\"display:flex;flex-direction:column;align-items:center;gap:4px;background:#ffffff;padding:24px 16px;text-align:center\">\n- Each box must contain exactly these spans in order:\n  1. Main figure: <span style=\"font-weight:700;font-size:24px;line-height:1;text-transform:uppercase;color:#cc0906\">1,350 grams</span>\n  2. Metric name: <span style=\"font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#6b7280;opacity:0.72\">Weight</span>\n- Maximum 4 boxes. NO dark backgrounds, box-shadow, or gradients.\n\nBox content (replace with actual product figures):\n[Box 1: figure / metric name]\n[Box 2: ...]\n..."
+        "aiBriefPrompt": "Generate HTML for the \"Highlight Stat Boxes\" block on a BigBike product detail page. Hard requirements:\n- Return plain HTML with inline CSS only (style=\"...\" attribute). NO <script>, NO <style> tag, no ids.\n- The outer wrapper MUST have class=\"bb-specstats\" (required for the system to parse it — the only class allowed).\n- Grid container: <div class=\"bb-specstats\" style=\"display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;border:1px solid #e5e7eb;background:#e5e7eb\">\n- Each box: <div style=\"display:flex;flex-direction:column;align-items:center;gap:4px;background:#ffffff;padding:24px 16px;text-align:center\">\n- Each box must contain exactly these spans in order:\n  1. Main figure: <span style=\"font-weight:700;font-size:24px;line-height:1;text-transform:uppercase;color:#cc0906\">1,350 grams</span>\n  2. Metric name: <span style=\"font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#6b7280;opacity:0.72\">Weight</span>\n- Maximum 4 boxes. NO dark backgrounds, box-shadow, or gradients.\n\nBox content (replace with actual product figures):\n[Box 1: figure / metric name]\n[Box 2: ...]\n...",
+        "valueLabel": "Stat value",
+        "labelLabel": "Stat label",
+        "maxHint": "Reached the max of {{max}} stat boxes. Remove one to add another."
       },
       "faqs": {
         "empty": "No questions yet. Click \"+ Add question\" to start.",
@@ -725,14 +807,18 @@
           "mapPin": "Store",
           "wrench": "Installation",
           "award": "Quality"
-        }
+        },
+        "titleLabel": "Commitment title",
+        "subtitleLabel": "Commitment description"
       },
       "trustBadges": {
         "hint": "Short labels shown RIGHT ABOVE the product title (e.g. \"Genuine\", \"2-yr warranty\", \"Free shipping\"). Empty → the trust row is hidden. Entered per product.",
         "placeholder": "e.g. Genuine",
         "add": "Add badge",
         "unit": "badges",
-        "aiBriefPrompt": "Generate HTML for the \"Trust Badges\" strip on a BigBike product detail page — a horizontal row of 2–5 short labels (e.g. \"Genuine\", \"2-year warranty\"). Hard requirements:\n- Return plain HTML with inline CSS only (style=\"...\" attribute). NO <script>, NO <style> tag, no ids.\n- The outer wrapper MUST have class=\"bb-trust-badges\" (required for the system to parse it — the only class allowed).\n- Container: <div class=\"bb-trust-badges\" style=\"display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:14px;color:#6b7280\">\n- Each badge is one span containing a dot and text:\n  <span style=\"display:flex;align-items:center;gap:8px\"><span style=\"height:6px;width:6px;flex:none;background:#cc0906\"></span><span>Genuine</span></span>\n- Font: Arial, Helvetica, sans-serif. NO backgrounds, box-shadow, or gradients.\n\nBadge labels (replace with your content):\n[label 1]\n[label 2]\n..."
+        "aiBriefPrompt": "Generate HTML for the \"Trust Badges\" strip on a BigBike product detail page — a horizontal row of 2–5 short labels (e.g. \"Genuine\", \"2-year warranty\"). Hard requirements:\n- Return plain HTML with inline CSS only (style=\"...\" attribute). NO <script>, NO <style> tag, no ids.\n- The outer wrapper MUST have class=\"bb-trust-badges\" (required for the system to parse it — the only class allowed).\n- Container: <div class=\"bb-trust-badges\" style=\"display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:14px;color:#6b7280\">\n- Each badge is one span containing a dot and text:\n  <span style=\"display:flex;align-items:center;gap:8px\"><span style=\"height:6px;width:6px;flex:none;background:#cc0906\"></span><span>Genuine</span></span>\n- Font: Arial, Helvetica, sans-serif. NO backgrounds, box-shadow, or gradients.\n\nBadge labels (replace with your content):\n[label 1]\n[label 2]\n...",
+        "itemLabel": "Trust badge label",
+        "remove": "Remove badge"
       },
       "quickAnswer": {
         "sectionTitle": "Quick Answer",
@@ -822,7 +908,11 @@
         "featureHeadingPlaceholder": "Main heading...",
         "fallbackTitle": "Legacy description (HTML)",
         "fallbackHint": "Add blocks above to replace this content.",
-        "empty": "No blocks yet. Click \"Add block\" to start."
+        "empty": "No blocks yet. Click \"Add block\" to start.",
+        "videoUrlLabel": "Video link",
+        "videoUploadedUrlPlaceholder": "Uploaded video URL",
+        "unsupported": "The \"{{type}}\" block is not supported in the editor. Its content is preserved on save.",
+        "fallbackReplacedHint": "The old content above will be replaced by the blocks below after saving."
       },
       "variant": {
         "optionNamePlaceholder": "Attribute (e.g. Color)",
@@ -915,7 +1005,14 @@
         "rowErrorOptions": "Invalid attributes",
         "rowErrorImage": "Missing color image",
         "attrSetErrorField": "Missing attribute: {{missing}}. All variants must share the same attribute set.",
-        "attrSetErrorToast": "Variants don't share the same attribute set yet. Please make them consistent before saving."
+        "attrSetErrorToast": "Variants don't share the same attribute set yet. Please make them consistent before saving.",
+        "optionNameLabel": "Attribute name",
+        "optionValueLabel": "Attribute value",
+        "colorLoadError": "Couldn't load the color list. Please reload the page.",
+        "attrLoadError": "Couldn't load the attribute list. You can still type the name and value manually below.",
+        "collapseDetails": "Collapse",
+        "editDetails": "Edit details",
+        "bulkClearSale": "Clear sale price (set empty) for selected variants"
       },
       "matrix": {
         "defaultColor": "Color",
@@ -940,7 +1037,9 @@
         "skuSamplePreview": "Sample SKU: {{sku}}",
         "sharedPriceLabel": "Shared price",
         "sharedPricePlaceholder": "e.g. 5,900,000",
-        "sharedPriceHelp": "Apply one retail price to all variants (edit rows later if needed). Leave blank if prices differ."
+        "sharedPriceHelp": "Apply one retail price to all variants (edit rows later if needed). Leave blank if prices differ.",
+        "attributeLabel": "Attribute name",
+        "valuesLabel": "Values, comma-separated"
       },
       "draftRecovery": {
         "found": "An unsaved draft from {{time}} was found.",
@@ -1036,8 +1135,40 @@
       "saveClean": "Saved",
       "saveSaving": "Saving...",
       "lastSavedAt": "at {{time}}",
-      "savingShort": "Saving..."
-    }
+      "savingShort": "Saving...",
+      "errNameRequiredEn": "Please enter the product name in English.",
+      "draftRestore": "Restore",
+      "draftDiscard": "Discard",
+      "errorsInTab": "{{count}} errors",
+      "seoCheckDesc": "SEO description 140–160 characters",
+      "seoCheckSlug": "Slug lowercase, no accents, uses \"-\"",
+      "seoCheckImageAlt": "Thumbnail has alt text",
+      "seoCheckOg": "OG image for social sharing",
+      "seoCheckSchema": "Product schema (images + price)",
+      "categoriesLoadError": "Couldn't load categories. Please reload the page.",
+      "trust": {
+        "originBrand": "Brand (country)",
+        "originBrandHint": "Enter separately per language — switch the VI/EN tab at the top to fill in the other version (e.g. \"Nhật Bản\" in the VI tab, \"Japan\" in the EN tab)."
+      },
+      "gender": "Gender",
+      "genderPlaceholder": "None",
+      "variantUnit": "variants",
+      "galleryUnit": "images",
+      "suitabilityCard": {
+        "hint": "The \"audience → advice\" cards. Shown as a fixed standalone block on the product page (right after Pros/Cons), independent of position in the description. Leave empty → the web hides the block.",
+        "addInViFirst": "Create this block in the Vietnamese tab first, then come back here to translate."
+      },
+      "sizeGuideCard": {
+        "hint": "Size chart (enter by column/row or paste HTML). Shown as a fixed standalone block on the product page (right after Who it suits). Leave empty → the web hides the block.",
+        "addInViFirst": "Create this block in the Vietnamese tab first, then come back here to translate."
+      },
+      "seoCanonicalAuto": "Auto-generated from the slug — no need to enter."
+    },
+    "permanentDeleteConfirmTitle": "Confirm permanent delete",
+    "permanentDelete": "Delete permanently",
+    "permanentDeleteSuccess": "Product permanently deleted.",
+    "permanentDeleteError": "Couldn't permanently delete the product.",
+    "activeFilters": "Active filters"
   },
   "orders": {
     "audit": {
@@ -1087,12 +1218,14 @@
     "colTotal": "Total",
     "colDate": "Date",
     "viewDetail": "View",
+    "readOnlyWarning": "You have view-only access to orders. You cannot change order status.",
     "detail": {
       "eyebrow": "Commerce / Orders",
       "orderDate": "Order date:",
       "backToList": "Back",
       "loading": "Loading order",
       "loadError": "Error loading order",
+      "loadErrorDesc": "Could not load the order details. Please try again.",
       "notFound": "Order not found",
       "customerInfo": "Customer info",
       "name": "Name:",
@@ -1160,6 +1293,7 @@
       "confirmPaymentTitle": "Confirm payment change",
       "confirmPayPaidMessage": "Confirm full payment received for this order?\n\nThe order will be marked as PAID. Only confirm after you have reconciled the actual cash flow.",
       "confirmPayCancelledMessage": "Cancel the payment for this order?\n\nThis marks the payment as CANCELLED.",
+      "confirmPayUnpaidMessage": "Reset this order to UNPAID?\n\nUse this only if the payment was marked as received by mistake. Make sure the money was not actually received.",
       "fulfillment": "Fulfillment",
       "fulfillmentStatusLabel": "Status:",
       "ffUnfulfilled": "Unfulfilled",
@@ -1189,11 +1323,13 @@
       "confirmCancelTitle": "Cancel order",
       "confirmCancelDesc": "This will cancel the order and notify the customer. This action cannot be undone.",
       "confirmFailedTitle": "Mark as failed",
-      "confirmFailedDesc": "This will mark the order as failed. Stock will be released and the order cannot be reactivated. This action is irreversible.",
+      "confirmFailedDesc": "The order will be marked failed and cannot be reactivated. This action cannot be undone.",
       "reasonLabel": "Reason",
       "reasonPlaceholder": "Describe the reason for this action...",
       "reasonRequired": "A reason is required for this action."
-    }
+    },
+    "emptyAll": "No orders yet",
+    "emptyAllDesc": "When customers place orders on the website, they will appear here."
   },
   "categories": {
     "eyebrow": "Products",
@@ -1375,10 +1511,30 @@
       "systemCategoryTitle": "System category",
       "systemCategoryDesc": "\"Uncategorized\" is a system category that holds products when their original category is deleted. It cannot be renamed or deleted.",
       "enFieldHint": "(English — optional)",
-      "namePlaceholderEn": "English name (optional)",
+      "namePlaceholderEn": "English name (required)",
       "duplicateSuccess": "Copied from \"{{name}}\". Please provide a new URL path.",
-      "formProgress": "{{filled}}/{{total}} fields filled"
-    }
+      "formProgress": "{{filled}}/{{total}} fields filled",
+      "errNameRequiredEn": "Please enter the category name in English.",
+      "introFaqRemoveConfirm": "Remove this question? The question and answer will be removed from the intro.",
+      "introFaqRemoveTitle": "Remove FAQ?",
+      "introFaqCount": "{{count}} questions",
+      "productsColName": "Product",
+      "productsColStatus": "Status",
+      "productsLoadError": "Couldn't load the category's products.",
+      "productsLoadErrorDesc": "The list may be incomplete. Please try again.",
+      "requiredLegend": "Required"
+    },
+    "bulkPermanentDeleteConfirm": "Permanently delete {{count}} selected categories and all their subcategories? This cannot be undone.",
+    "bulkPermanentDeleteTitle": "Permanently delete selected categories?",
+    "deleteConfirmTitle": "Confirm delete",
+    "deleteSuccess": "Category moved to Trash.",
+    "restoreConfirmTitle": "Confirm restore",
+    "restoreSuccess": "Category restored.",
+    "permanentDeleteConfirmTitle": "Confirm permanent delete",
+    "permanentDeleteSuccess": "Category permanently deleted.",
+    "filterTrash": "Status",
+    "filterActive": "Active",
+    "filterTrashTab": "Trash"
   },
   "brands": {
     "eyebrow": "Catalog",
@@ -1469,10 +1625,48 @@
       "errDeleteFailed": "Failed to delete brand.",
       "contentLanguageAriaLabel": "Content language",
       "enFieldHint": "(English — optional)",
-      "namePlaceholderEn": "English name (optional)",
+      "namePlaceholderEn": "English name (required)",
       "duplicateSuccess": "Copied from \"{{name}}\". Please provide a new URL path.",
-      "formProgress": "{{filled}}/{{total}} fields filled"
-    }
+      "formProgress": "{{filled}}/{{total}} fields filled",
+      "errNameRequiredEn": "Please enter the brand name in English.",
+      "clearSeoConfirm": "Clear all entered SEO info (title, description, canonical, share image)? The system will fall back to the brand name and description.",
+      "clearSeoTitle": "Clear SEO info?",
+      "clearSeoBtn": "Clear SEO info",
+      "clearSeoDone": "SEO info cleared.",
+      "enNameMissingTitle": "Missing English name",
+      "switchToEnglish": "Switch to English",
+      "nameHelperEn": "Required — used for customers viewing the English version.",
+      "namePlaceholderEnRequired": "Enter the brand name in English",
+      "optionalSection": "Description & images",
+      "optionalSectionHint": "Optional — description, logo, banner image",
+      "descriptionPlaceholder": "Enter a brand description..."
+    },
+    "hideRowConfirm": "Hide brand \"{{name}}\" from the website? Customers will no longer see it. You can show it again anytime.",
+    "hideRowTitle": "Hide brand from website?",
+    "bulkResult": "Updated {{success}} brands, {{failed}} failed.",
+    "bulkPermanentDeleteConfirm": "Permanently delete {{count}} selected brands? This cannot be undone.",
+    "bulkPermanentDeleteTitle": "Permanently delete selected brands?",
+    "deleteConfirmTitle": "Confirm delete",
+    "deleteSuccess": "Brand moved to Trash.",
+    "restoreConfirmTitle": "Confirm restore",
+    "restoreSuccess": "Brand restored.",
+    "permanentDeleteConfirmTitle": "Confirm permanent delete",
+    "permanentDeleteSuccessWithProducts": "Brand permanently deleted. {{count}} products inside were moved to \"Uncategorized\".",
+    "permanentDeleteSuccess": "Brand permanently deleted.",
+    "filterChipSearch": "Search: \"{{value}}\"",
+    "removeFilter": "Remove filter {{filter}}",
+    "filterChipVisibility": "Status: {{value}}",
+    "filterChipSort": "Sort: {{value}}",
+    "filterVisibilityAll": "All statuses",
+    "filterVisibilityHidden": "Hidden",
+    "activeFiltersAria": "Active filters",
+    "bulkProcessing": "Processing {{done}}/{{total}}...",
+    "bulkSelectedCount": "{{count}} brands selected",
+    "bulkShow": "Show selected brands",
+    "bulkHide": "Hide selected brands",
+    "loadErrorDesc": "Could not load the brand list. Please try again.",
+    "emptyFiltered": "No brands found",
+    "emptyFilteredDesc": "Try changing your search keyword or filters."
   },
   "content": {
     "eyebrow": "News",
@@ -1528,7 +1722,7 @@
       "archiveSuccess": "Content moved to trash.",
       "contentLanguageAriaLabel": "Content language",
       "enFieldHint": "(English — optional)",
-      "titlePlaceholderEn": "English title (optional)",
+      "titlePlaceholderEn": "English title (required)",
       "sectionCore": "Core information",
       "sectionMedia": "Media",
       "sectionSeo": "SEO",
@@ -1579,7 +1773,9 @@
       "tabSeoPublish": "SEO & Publishing",
       "tabsAriaLabel": "Content sections",
       "assign": {
-        "title": "Content assignment"
+        "title": "Content assignment",
+        "loading": "Loading assignment info…",
+        "error": "Couldn't load assignment info."
       },
       "saveDirty": "Unsaved changes",
       "saveClean": "Saved",
@@ -1592,8 +1788,26 @@
       "homeExperience": "Show in homepage \"Experience\" carousel",
       "homeExperienceHint": "Enable to pick this article into the \"Experience with BigBike\" carousel on the homepage. Up to 3 picked articles show (newest first). If none are picked, the homepage falls back to the 3 latest Reviews articles.",
       "seoNoIndex": "Hide from search engines (noindex)",
-      "seoNoIndexHint": "Enable to tell search engines not to index this article."
-    }
+      "seoNoIndexHint": "Enable to tell search engines not to index this article.",
+      "errTitleRequiredEn": "Please enter the article title in English.",
+      "bodyPlaceholder": "Enter content...",
+      "productImageUrl": "Product image (carousel overlay)",
+      "productImageUrlHint": "Transparent PNG shown over the cover image in the homepage Experience carousel."
+    },
+    "articleFallbackTitle": "Article",
+    "deleteConfirmTitle": "Confirm delete",
+    "deleteSuccess": "Article moved to Trash.",
+    "restoreConfirmTitle": "Confirm restore",
+    "restoreSuccess": "Article restored.",
+    "permanentDeleteConfirmTitle": "Confirm permanent delete",
+    "permanentDeleteSuccess": "Article permanently deleted.",
+    "bulkRestore": "Restore",
+    "bulkHardDelete": "Delete permanently",
+    "bulkPublish": "Publish",
+    "bulkTrash": "Move to trash",
+    "activeFilters": "Active filters",
+    "emptyNoData": "No articles yet",
+    "emptyNoDataDesc": "Start by creating your first article."
   },
   "customers": {
     "eyebrow": "Commerce",
@@ -1647,11 +1861,34 @@
       "registered": "Registered:",
       "statusUpdated": "Account status updated.",
       "statusConfirmTitle": "Change account status",
-      "statusConfirmBody": "Switching this account to \"{{status}}\" will block the customer from signing in and purchasing. Continue?",
+      "statusConfirmBody": "Mark the account as \"{{status}}\". This status is used for internal management.",
       "statusConfirmOk": "Change status",
       "orderCount": "Orders:",
-      "totalSpent": "Total spent:"
-    }
+      "totalSpent": "Total spent:",
+      "addressBilling": "Billing",
+      "addressShipping": "Shipping",
+      "phoneInvalidToast": "Invalid phone number.",
+      "profileUpdated": "Profile updated.",
+      "readOnlyHint": "You have view-only access to customer profiles. Contact an administrator for edit access.",
+      "emailVerified": "Email verified:",
+      "emailNotVerified": "Not verified",
+      "lastLogin": "Last login:",
+      "sectionAddresses": "Saved addresses",
+      "fieldDisplayName": "Display name",
+      "avgOrderValue": "Avg order value (AOV)",
+      "segment": "Segment",
+      "firstOrder": "First order",
+      "lastOrder": "Last order",
+      "sectionLatestOrders": "Recent orders"
+    },
+    "filterChipSearch": "Search: \"{{value}}\"",
+    "removeFilter": "Remove filter {{filter}}",
+    "summaryError": "Couldn't load summary figures",
+    "summaryErrorDesc": "Customer figures are temporarily unavailable. Please try again.",
+    "activeFiltersAria": "Active filters",
+    "emptyFiltered": "No customers found",
+    "emptyFilteredDesc": "Try changing your search keyword or filters.",
+    "filterChipStatus": "Status"
   },
   "media": {
     "eyebrow": "Media",
@@ -1768,6 +2005,8 @@
     "replacing": "Replacing...",
     "replaceSuccess": "File replaced (URL unchanged)",
     "replaceError": "Replace failed",
+    "replaceConfirmTitle": "Replace image?",
+    "replaceConfirm": "The image will be replaced EVERYWHERE it is used (same URL) and cannot be undone. Continue?",
     "replaceHint": "Replacement keeps the same URL — links from products/articles still work. Replace with an image of the same ratio and equal or larger size so it stays sharp and undistorted on the website.",
     "variants": "Image variants",
     "usageUsed": "In use",
@@ -1799,7 +2038,10 @@
       "multiSelectHint": "Click images to select multiple",
       "singleSelectHint": "Select one image to use",
       "confirmMulti": "Select {{count}} image(s)",
-      "confirmSingle": "Use this image"
+      "confirmSingle": "Use this image",
+      "closeConfirm": "You are selecting or uploading a file. Closing will lose your selection and upload progress. Continue?",
+      "closeConfirmTitle": "Close the picker?",
+      "filtersError": "Couldn't load folders or tags for filtering."
     },
     "referenceType": {
       "PRODUCT": "Product",
@@ -1817,7 +2059,14 @@
     },
     "emptyLibraryDesc": "The library has no files yet. Upload a file to get started.",
     "discardConfirm": "You have unsaved changes. Closing will discard them. Continue?",
-    "discardConfirmTitle": "Discard changes?"
+    "discardConfirmTitle": "Discard changes?",
+    "selectNamed": "Select {{name}}",
+    "previewNamed": "Enlarge {{name}}",
+    "tagsError": "Couldn't load tags",
+    "dismissWhileUploading": "Uploading — can't dismiss yet",
+    "uploadProgress": "Upload progress for {{name}}",
+    "hardDeleteError": "Delete failed. The file may still be in use — remove it from those places and try again.",
+    "viewSwitcherLabel": "View mode"
   },
   "menus": {
     "eyebrow": "Settings",
@@ -1871,7 +2120,31 @@
     "bulkDeleteBlocked": "{{count}} item(s) cannot be deleted because they still have child items — remove or move the child items out first.",
     "bulkDeleteConfirm": "Delete {{count}} selected menu item(s)? They will no longer appear on the site.",
     "bulkDeleteConfirmTitle": "Delete multiple menu items",
-    "bulkDeleteSuccess": "Deleted {{count}} menu item(s)."
+    "bulkDeleteSuccess": "Deleted {{count}} menu item(s).",
+    "categoryLoadError": "Couldn't load the category list for quick selection — you can still enter a URL manually below.",
+    "urlInvalid": "Error: invalid URL. Example: /danh-muc-san-pham/xe-may or https://example.com",
+    "itemAdvancedTitle": "Advanced options",
+    "itemAdvancedHint": "English name, parent, status, open in new tab",
+    "selectItemAria": "Select item {{name}}",
+    "dragReorderTitle": "Drag to reorder (same level)",
+    "dragReorderItemAria": "Drag to reorder item {{name}}",
+    "showItemTitle": "Show this item",
+    "hideItemTitle": "Hide this item",
+    "showItemAria": "Show item {{name}}",
+    "hideItemAria": "Hide item {{name}}",
+    "itemHiddenBadge": "Hidden",
+    "editItemTitle": "Edit this item",
+    "editItemAria": "Edit item {{name}}",
+    "deleteItemActionTitle": "Delete this item",
+    "deleteItemAria": "Delete item {{name}}",
+    "deleteItemConfirmNamed": "Delete item \"{{label}}\"? Customers will no longer see it in the menu.",
+    "searchPlaceholder": "Search by name or URL...",
+    "searchAria": "Search menu items",
+    "searchNoMatch": "No items match \"{{query}}\".",
+    "itemReorder": "Reorder",
+    "itemActions": "Actions",
+    "addItemDialogDesc": "Add a new item to the navigation bar.",
+    "editItemDialogDesc": "Edit the navigation item."
   },
   "sliders": {
     "eyebrow": "Content",
@@ -1925,7 +2198,18 @@
     "locationCategorySidebar": "Category sidebar",
     "locationPromotion": "Promotion",
     "hideAction": "Hide",
-    "showAction": "Show"
+    "showAction": "Show",
+    "deleteConfirmDetail": "The banner will be permanently deleted and no longer shown on the website. This cannot be undone.",
+    "sectionPosition": "Position & order",
+    "sectionDesktopImage": "Desktop image",
+    "sectionMobileImage": "Mobile image",
+    "sectionLink": "Link",
+    "formProduct": "Linked product",
+    "formProductSearchPlaceholder": "Search products by name or SKU…",
+    "formProductNoResults": "No matching products found.",
+    "formProductHint": "Choose a product for the banner to link to its product page. Leave empty if you already entered an external link.",
+    "emptyFilteredLang": "No English banner in this position",
+    "emptyFilteredLangDesc": "Banners here are linked to products without an English name, so they are hidden in English mode. Switch to Vietnamese to view, or add English names for the products."
   },
   "reviews": {
     "eyebrow": "Catalog",
@@ -1986,8 +2270,18 @@
       "productId": "Product ID",
       "openProduct": "Open product detail",
       "statusUpdated": "Review status updated.",
-      "deleteSuccess": "Review deleted."
-    }
+      "deleteSuccess": "Review deleted.",
+      "readOnlyHint": "You have view-only access to reviews. Contact an administrator for moderation access.",
+      "noActionPermission": "You don't have permission to moderate this review."
+    },
+    "spamConfirm": "Mark this review as spam? It will no longer be shown to customers.",
+    "spamConfirmTitle": "Mark as spam",
+    "selectOne": "Select this review",
+    "summaryScopeHint": "Counted on the current page",
+    "emptyAll": "No reviews yet",
+    "emptyAllDesc": "Reviews appear here when customers leave feedback on products on the website.",
+    "selectAllOnPage": "Select all on this page",
+    "bulkError": "Some reviews could not be processed."
   },
   "banners": {
     "eyebrow": "Appearance",
@@ -2019,7 +2313,9 @@
     "openCategories": "Open Categories",
     "contentLinkTitle": "About page & content page banners",
     "contentLinkDesc": "Set per page on the Content screen.",
-    "openContent": "Open Content"
+    "openContent": "Open Content",
+    "discardConfirm": "Discard all unsaved changes? Your edits will be lost.",
+    "discardConfirmTitle": "Discard banner changes"
   },
   "settings": {
     "eyebrow": "System",
@@ -2069,8 +2365,15 @@
       "removeConfirmTitle": "Remove role",
       "removeConfirmMessage": "Remove this role? The change only applies after you Save.",
       "saveError": "Save failed.",
-      "unsavedHint": "Unsaved changes"
-    }
+      "unsavedHint": "Unsaved changes",
+      "roleNameRequired": "Enter a role name",
+      "roleUntitled": "Untitled role"
+    },
+    "sectionOther": "Other",
+    "internal": "Internal",
+    "panelSummary": "{{count}} settings",
+    "errValueEnRequired": "Please enter the English version for this field.",
+    "readOnlyHint": "You have view-only access to settings."
   },
   "adminUsers": {
     "eyebrow": "System",
@@ -2131,7 +2434,16 @@
     "confirmRoleChange": "Are you sure you want to change this user's role?",
     "selfEditLocked": "This is your own account — you cannot change your own role or disable your account. You can still change the display name and password.",
     "confirmYes": "Confirm",
-    "confirmNo": "Cancel"
+    "confirmNo": "Cancel",
+    "discardConfirm": "You have unsaved changes. Closing will discard them. Continue?",
+    "discardTitle": "Discard changes?",
+    "errPasswordTooShort": "Password must be at least {{min}} characters.",
+    "confirmDisableBtn": "Lock account",
+    "errEmailRequired": "Please enter an email.",
+    "errEmailInvalid": "Invalid email.",
+    "errDisplayNameRequired": "Please enter a display name.",
+    "rolesLoadError": "Couldn't load custom roles. The role list may be incomplete; try reloading.",
+    "activeFiltersAria": "Active filters"
   },
   "auditLog": {
     "eyebrow": "System",
@@ -2356,7 +2668,13 @@
       "7d": "Last 7 days",
       "30d": "Last 30 days",
       "month": "This month"
-    }
+    },
+    "dateRangeError": "Start date must be on or before the end date.",
+    "exportTooltipPage": "Export {{count}} rows shown (current page only)",
+    "activeFiltersLabel": "Active filters",
+    "pageScopeNote": "Sorting and export apply only to rows on the current page.",
+    "chipActorType": "Actor",
+    "chipModule": "Module"
   },
   "reports": {
     "eyebrow": "Analytics",
@@ -2364,6 +2682,7 @@
     "description": "Revenue, products and customers by time period.",
     "loading": "Loading data…",
     "loadError": "Unable to load report",
+    "loadErrorDesc": "Could not load the report right now. Please try again.",
     "preset7d": "7 days",
     "preset30d": "30 days",
     "preset90d": "90 days",
@@ -2403,7 +2722,8 @@
     "customFrom": "From date",
     "customTo": "To date",
     "sortBy": "Sort by",
-    "colCustomer": "Customer"
+    "colCustomer": "Customer",
+    "notEnoughDataForChart": "Not enough data to draw the chart."
   },
   "roles": {
     "eyebrow": "System",
@@ -2528,7 +2848,13 @@
     "roleLabel_EDITOR": "Editor",
     "roleLabel_AUTHOR": "Author",
     "roleLabel_CONTRIBUTOR": "Contributor",
-    "roleLabel_SEO_EDITOR": "SEO Specialist"
+    "roleLabel_SEO_EDITOR": "SEO Specialist",
+    "createDiscardConfirm": "You have unsaved changes. Closing will discard them. Continue?",
+    "createDiscardTitle": "Discard new role?",
+    "groupGrantedCount": "{{granted}}/{{total}} permissions",
+    "toastClose": "Close notification",
+    "discardChangesTitle": "Discard changes?",
+    "catalogLoadWarning": "Couldn't load the latest permission catalog — using the default permission list; some permissions may be incomplete. Please try reloading."
   },
   "export": {
     "exportCsv": "Export CSV",
@@ -2567,7 +2893,8 @@
     "willRemoveVariants": "will be removed",
     "rowCheckboxLabel": "Include {{name}} in this import",
     "resultSummary": "Import finished: {{ok}} OK, {{warn}} warning, {{err}} error",
-    "error": "Could not process the file. Please try again."
+    "error": "Could not process the file. Please try again.",
+    "tableCaption": "Validation result for each product row in the import file"
   },
   "homeVideos": {
     "title": "Home Videos",
@@ -2658,7 +2985,20 @@
       "pageInfo": "Page {{page}} / {{totalPages}}",
       "selectHint": "Choose a video to use",
       "confirm": "Use this video"
-    }
+    },
+    "previewTitle": "Preview video",
+    "unsavedConfirm": "You have unsaved changes. Leaving this page will lose them. Continue?",
+    "unsavedTitle": "Unsaved changes",
+    "searchPlaceholder": "Search by video name...",
+    "filterAll": "All",
+    "filterActive": "Showing",
+    "filterHidden": "Hidden",
+    "clearFilter": "Clear filter",
+    "noMatch": "No videos found",
+    "noMatchDescription": "Try changing the keyword or status filter.",
+    "selectAll": "Select all",
+    "eyebrow": "Content",
+    "description": "Manage videos shown on the homepage."
   },
   "imageInput": {
     "pickFromLibrary": "Choose from library",
@@ -2715,7 +3055,13 @@
     "limitReached": "Maximum of {{max}} products reached.",
     "emptyHint": "No products yet. Use the search field below to add some.",
     "dragHandle": "Drag to reorder",
-    "removeItem": "Remove from list"
+    "removeItem": "Remove from list",
+    "unsavedConfirm": "You have unsaved changes. Leaving this page will lose them. Continue?",
+    "langSwitchConfirm": "You have unsaved changes. Switching language will reload the list and lose these changes. Continue?",
+    "unsavedTitle": "Unsaved changes",
+    "removedFromList": "Removed from list",
+    "emptyTitle": "No featured products yet",
+    "emptyAction": "Add product"
   },
   "homeHighlights": {
     "eyebrow": "Content",
@@ -2726,7 +3072,9 @@
     "clearSlot": "Clear",
     "saveButton": "Save configuration",
     "savedSuccess": "Home highlights configuration saved.",
-    "noSlotsError": "At least one slot must be selected."
+    "noSlotsError": "At least one slot must be selected.",
+    "slotLabel": "Slot {{number}}",
+    "noSlotsHint": "Select at least 1 product to save."
   },
   "redirects": {
     "title": "Redirects",
@@ -2772,6 +3120,26 @@
     "colHits": "Hits",
     "colUpdated": "Updated",
     "statusOn": "On",
-    "statusOff": "Off"
+    "statusOff": "Off",
+    "toggleSuccess": "Status updated.",
+    "bulkDeleteConfirmTitle": "Bulk delete",
+    "unsavedConfirm": "You have unsaved changes. Leaving this page will lose them. Continue?",
+    "unsavedTitle": "Unsaved changes",
+    "filterChipSearch": "Search: \"{{value}}\"",
+    "removeFilter": "Remove filter {{filter}}",
+    "filterChipEnabled": "Enabled",
+    "filterChipStatusCode": "Code: {{value}}",
+    "advancedTitle": "Advanced options",
+    "advancedHint": "Legacy ID, notes",
+    "activeFiltersAria": "Active filters",
+    "bulkEnable": "Enable",
+    "bulkDisable": "Disable"
+  },
+  "errorBoundary": {
+    "title": "An unexpected error occurred",
+    "description": "Please reload the page. If the problem persists, contact technical support.",
+    "reload": "Reload page",
+    "goHome": "Go to home",
+    "retry": "Try again"
   }
 }

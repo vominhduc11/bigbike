@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -29,7 +29,6 @@ import { StatePanel } from '../components/StatePanel'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { FormField } from '../components/layout/FormField'
 import { showConfirm } from '../lib/confirm'
-import { useDialogA11y } from '@/lib/useDialogA11y'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { useSaveShortcut } from '@/lib/useSaveShortcut'
 import { useUrlSyncedState } from '@/lib/useUrlSyncedState'
@@ -40,6 +39,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 
 const EMPTY_FORM = {
   title: '',
@@ -61,36 +61,27 @@ function VideoPreviewModal({ video, onClose }) {
       ? tiktokEmbedUrl(tiktokId)
       : (isAllowedFacebookVideoUrl(video.videoUrl) ? facebookEmbedUrl(video.videoUrl) : null)
 
-  // A3: hộp thoại tự dựng — focus-trap + Escape + trả focus về phần tử trigger khi đóng.
-  const dlgRef = useRef(null)
-  useDialogA11y(dlgRef, { active: true, onClose })
-
-  useEffect(() => {
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
-  }, [])
-
+  // A3: dùng Radix Dialog (ui/dialog) — tự lo focus-trap, Escape, khoá cuộn body và
+  // trả focus về phần tử trigger khi đóng, thay cho hộp thoại tự dựng trước đây.
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-modal flex items-center justify-center bg-black/80"
-    >
-      <div
-        ref={dlgRef}
-        tabIndex={-1}
-        role="dialog"
-        aria-modal="true"
-        aria-label={displayTitle || t('homeVideos.previewTitle', { defaultValue: 'Xem trước video' })}
-        onClick={(e) => e.stopPropagation()}
-        className="relative w-[90vw] max-w-[800px] overflow-hidden rounded-md bg-black outline-none"
+    <Dialog open onOpenChange={(o) => { if (!o) onClose() }}>
+      <DialogContent
+        showClose={false}
+        className="w-[90vw] max-w-[800px] overflow-hidden border-0 bg-black p-0"
       >
-        <button
+        <DialogTitle className="sr-only">
+          {displayTitle || t('homeVideos.previewTitle', { defaultValue: 'Xem trước video' })}
+        </DialogTitle>
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onClick={onClose}
-          className="absolute top-2.5 right-3 z-[1] inline-flex min-w-[44px] min-h-[44px] items-center justify-center rounded-xs border-none bg-black/60 text-2xl leading-none cursor-pointer text-white"
+          className="absolute right-3 top-2.5 z-[1] bg-black/60 text-white hover:bg-black/80 hover:text-white"
           aria-label={t('common.close', { defaultValue: 'Đóng' })}
-        ><X size={20} aria-hidden="true" /></button>
+        >
+          <X size={20} aria-hidden="true" />
+        </Button>
 
         <div className="relative pb-[56.25%]">
           {embedUrl ? (
@@ -116,8 +107,8 @@ function VideoPreviewModal({ video, onClose }) {
             {displayTitle}
           </p>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -336,6 +327,20 @@ export function HomeVideoListScreen({ canUpdate }) {
     setFieldErrors({})
   }
 
+  // F5/F6: Huỷ khi form đang có thay đổi chưa lưu → hỏi xác nhận trước, tránh mất bản nháp.
+  async function handleCancelForm() {
+    if (isDirty) {
+      const ok = await showConfirm(
+        t('homeVideos.unsavedConfirm', {
+          defaultValue: 'Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?',
+        }),
+        t('homeVideos.unsavedTitle', { defaultValue: 'Có thay đổi chưa lưu' }),
+      )
+      if (!ok) return
+    }
+    resetForm()
+  }
+
   // F6: mở form tạo mới — dùng chung cho nút "Thêm video" và hành động trên StatePanel rỗng.
   function openCreateForm() {
     setShowForm(true)
@@ -519,14 +524,23 @@ export function HomeVideoListScreen({ canUpdate }) {
     setIsBulkBusy(true)
     setLocalItems(items.map((video) => (ids.has(video.id) ? { ...video, isActive } : video)))
     try {
-      await Promise.all([...ids].map((id) => updateHomeVideo(id, { isActive })))
+      // allSettled thay cho Promise.all: 1 item lỗi không huỷ cả loạt, và báo đúng
+      // số thành công / thất bại thay vì báo "thành công" khi thực tế lưu một phần.
+      const results = await Promise.allSettled([...ids].map((id) => updateHomeVideo(id, { isActive })))
+      const ok = results.filter((r) => r.status === 'fulfilled').length
+      const fail = results.length - ok
       queryClient.invalidateQueries({ queryKey: ['home-videos'] })
-      setLocalItems(null)
       setSelectedIds(new Set())
-      toast.success(isActive ? t('homeVideos.bulkShowSuccess', { count: ids.size }) : t('homeVideos.bulkHideSuccess', { count: ids.size }))
-    } catch {
-      setLocalItems(previousLocal)
-      toast.error(t('homeVideos.bulkActionError'))
+      if (fail === 0) {
+        setLocalItems(null)
+        toast.success(isActive ? t('homeVideos.bulkShowSuccess', { count: ok }) : t('homeVideos.bulkHideSuccess', { count: ok }))
+      } else if (ok === 0) {
+        setLocalItems(previousLocal)
+        toast.error(t('homeVideos.bulkActionError'))
+      } else {
+        setLocalItems(null)
+        toast.warning(t('homeVideos.bulkPartial', { ok, fail, defaultValue: `Đã cập nhật ${ok} video, ${fail} video lỗi.` }))
+      }
     } finally {
       setIsBulkBusy(false)
     }
@@ -538,13 +552,19 @@ export function HomeVideoListScreen({ canUpdate }) {
     if (!confirmed) return
     setIsBulkBusy(true)
     try {
-      await Promise.all([...selectedIds].map((id) => deleteHomeVideo(id)))
+      const results = await Promise.allSettled([...selectedIds].map((id) => deleteHomeVideo(id)))
+      const ok = results.filter((r) => r.status === 'fulfilled').length
+      const fail = results.length - ok
       queryClient.invalidateQueries({ queryKey: ['home-videos'] })
       setLocalItems(null)
       setSelectedIds(new Set())
-      toast.success(t('homeVideos.bulkDeleteSuccess', { count }))
-    } catch {
-      toast.error(t('homeVideos.bulkActionError'))
+      if (fail === 0) {
+        toast.success(t('homeVideos.bulkDeleteSuccess', { count: ok }))
+      } else if (ok === 0) {
+        toast.error(t('homeVideos.bulkActionError'))
+      } else {
+        toast.warning(t('homeVideos.bulkDeletePartial', { ok, fail, defaultValue: `Đã xoá ${ok} video, ${fail} video lỗi.` }))
+      }
     } finally {
       setIsBulkBusy(false)
     }
@@ -884,7 +904,7 @@ export function HomeVideoListScreen({ canUpdate }) {
             <Button type="submit" loading={isBusy}>
               {editingVideo ? t('homeVideos.saveChanges') : t('homeVideos.save')}
             </Button>
-            <Button type="button" variant="secondary" onClick={resetForm}>
+            <Button type="button" variant="secondary" onClick={handleCancelForm}>
               {t('common.cancel')}
             </Button>
           </div>

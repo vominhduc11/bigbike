@@ -6,10 +6,19 @@ import { cn } from '@/lib/utils'
 // Chống ngợp field: giữ mở phần bắt buộc, gom phần tùy chọn/nâng cao vào đây, đóng
 // sẵn. Tái dùng hệ CSS `bb-section-group` (admin-prototype.css) đã có sẵn — không
 // tạo class mới. Controlled qua `open`/`onToggle`. `hint` hiện chú thích ngắn cạnh
-// tiêu đề; `badge` là slot tuỳ chọn bên phải (vd đếm số mục). Children KHÔNG render
-// khi đóng để form nhẹ.
-export function CollapsibleSection({ title, hint, open, onToggle, badge, children }) {
+// tiêu đề; `badge` là slot tuỳ chọn bên phải (vd đếm số mục).
+//
+// `keepMounted`: khi true, children luôn render nhưng ẩn qua thuộc tính `hidden` lúc
+// đóng — dùng cho section chứa editor có state cục bộ hoặc field có validation, để
+// KHÔNG mất state/không giấu lỗi khi đóng. Mặc định false (unmount khi đóng cho nhẹ).
+export function CollapsibleSection({ title, hint, open, onToggle, badge, keepMounted = false, children }) {
   const panelId = useId()
+  let body = null
+  if (keepMounted) {
+    body = <div id={panelId} className="bb-section-group-body" hidden={!open}>{children}</div>
+  } else if (open) {
+    body = <div id={panelId} className="bb-section-group-body">{children}</div>
+  }
   return (
     <section className="bb-section-group">
       <button
@@ -25,14 +34,10 @@ export function CollapsibleSection({ title, hint, open, onToggle, badge, childre
           className={cn('shrink-0 text-muted-foreground transition-transform', !open && '-rotate-90')}
         />
         <span className="bb-section-group-title">{title}</span>
-        {hint && <span className="bb-section-group-hint hidden sm:inline">· {hint}</span>}
+        {hint && <span className="bb-section-group-hint">· {hint}</span>}
         {badge}
       </button>
-      {open && (
-        <div id={panelId} className="bb-section-group-body">
-          {children}
-        </div>
-      )}
+      {body}
     </section>
   )
 }

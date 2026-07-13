@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
@@ -15,7 +15,7 @@ import {
 } from '../../lib/adminApi'
 import { showConfirm } from '../../lib/confirm'
 import { normalizeVariantToken, isColorAttributeName } from '../../lib/schemas'
-import { Modal } from '../../components/layout'
+import { Modal, MobileCardList, MobileCard } from '../../components/layout'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -436,7 +436,7 @@ function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled, conte
   const [createAttrOpen, setCreateAttrOpen] = useState(false)
 
   // Catalog values for the selected color attribute (e.g. Đen / Đỏ / Xanh lá).
-  const { data: attrValues = [] } = useQuery({
+  const { data: attrValues = [], isError: attrValuesError } = useQuery({
     queryKey: ['attributeValues', attr?.id],
     queryFn: () => fetchAttributeValues(attr.id),
     enabled: isColor && Boolean(attr?.id),
@@ -486,7 +486,7 @@ function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled, conte
             }}
             disabled={disabled}
           >
-            <SelectTrigger>
+            <SelectTrigger aria-label={t('products.detail.variant.optionNameLabel', { defaultValue: 'Tên thuộc tính' })}>
               <SelectValue placeholder={t('products.detail.variant.optionNamePlaceholder')}>
                 {opt.name ? (contentLang === 'en' ? (resolveAttr(attributes, opt.name)?.nameEn || opt.name) : (resolveAttr(attributes, opt.name)?.name || opt.name)) : ''}
               </SelectValue>
@@ -506,6 +506,7 @@ function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled, conte
         ) : (
           <Input
             placeholder={t('products.detail.variant.optionNamePlaceholder')}
+            aria-label={t('products.detail.variant.optionNameLabel', { defaultValue: 'Tên thuộc tính' })}
             value={opt.name}
             onChange={(e) =>
               onUpdate({
@@ -587,7 +588,7 @@ function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled, conte
                   }}
                   disabled={disabled || !attr?.id}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger aria-label={t('products.detail.variant.optionValueLabel', { defaultValue: 'Giá trị thuộc tính' })}>
                     <SelectValue placeholder={t('products.detail.variant.optionValuePlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -615,6 +616,11 @@ function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled, conte
                 </Button>
               )}
             </div>
+            {attrValuesError && (
+              <small className="field-error" role="alert">
+                {t('products.detail.variant.colorLoadError', { defaultValue: 'Không tải được danh sách màu. Vui lòng thử tải lại trang.' })}
+              </small>
+            )}
             {attr?.id && (
               <AttributeValueManagerModal
                 open={managerOpen}
@@ -633,6 +639,7 @@ function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled, conte
           <Input
             className="flex-1"
             placeholder={t('products.detail.variant.optionValuePlaceholder')}
+            aria-label={t('products.detail.variant.optionValueLabel', { defaultValue: 'Giá trị thuộc tính' })}
             value={opt.value}
             onChange={(e) => onUpdate({ value: e.target.value, attributeValueId: null })}
             disabled={disabled}
@@ -657,7 +664,7 @@ function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled, conte
 function VariantOptionsEditor({ options, onChange, disabled, contentLang }) {
   const { t } = useTranslation()
 
-  const { data: attributes = [] } = useQuery({
+  const { data: attributes = [], isError: attributesError } = useQuery({
     queryKey: ['attributes'],
     queryFn: fetchAttributes,
     staleTime: 5 * 60 * 1000,
@@ -677,6 +684,11 @@ function VariantOptionsEditor({ options, onChange, disabled, contentLang }) {
 
   return (
     <div className="variant-options-editor">
+      {attributesError && (
+        <p className="field-error" role="alert">
+          {t('products.detail.variant.attrLoadError', { defaultValue: 'Không tải được danh sách thuộc tính. Bạn vẫn có thể nhập tay tên và giá trị bên dưới.' })}
+        </p>
+      )}
       {options.map((opt, i) => (
         <VariantOptionRow
           key={opt._key ?? i}
@@ -731,6 +743,123 @@ function getVariantRowErrorLabels(fieldErrors, t) {
   return [...new Set(labels.filter(Boolean))]
 }
 
+// Panel chi tiết của một biến thể (thuộc tính + ảnh theo màu) — dùng chung cho hàng bảng
+// (desktop, khi mở rộng) và thẻ trên mobile để không lặp lại markup/logic.
+function VariantDetailFields({ variant, onChange, disabled, fieldErrors = {}, contentLang, label }) {
+  const { t } = useTranslation()
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const updateField = (field, value) => onChange(variant._key, { [field]: value })
+  const colorValue = getVariantColorValue(variant)
+  const hasColor = Boolean(colorValue)
+
+  return (
+    <>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-2">
+          <span className="form-field-label">{t('products.detail.variant.optionsLabel')}</span>
+          <VariantOptionsEditor
+            options={variant.options}
+            onChange={(opts) => updateField('options', opts)}
+            disabled={disabled}
+            contentLang={contentLang}
+          />
+          {Object.entries(fieldErrors)
+            .filter(([key]) => key === 'options' || key.startsWith('options.'))
+            .map(([key, error]) => <small key={key} className="field-error" role="alert">{error}</small>)}
+        </div>
+
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <span className="form-field-label">
+              {hasColor
+                ? t('products.detail.variant.colorGalleryLabelWithValue', { color: colorValue })
+                : t('products.detail.variant.colorGalleryLabel')}
+            </span>
+            <p className="detail-section-desc m-0">
+              {hasColor
+                ? t('products.detail.variant.colorGalleryHintWithColor')
+                : t('products.detail.variant.colorGalleryHintNoColor')}
+            </p>
+            {fieldErrors.gallery && <small className="field-error" role="alert">{fieldErrors.gallery}</small>}
+            {hasColor && (
+              <GalleryEditor
+                items={variant.gallery ?? []}
+                onChange={(next) => updateField('gallery', next)}
+                disabled={disabled}
+                validationErrors={fieldErrors}
+                allowVideo={false}
+              />
+            )}
+          </div>
+
+          {hasColor && (
+            <div className="space-y-2">
+              <span className="form-field-label">{t('products.detail.variant.colorRepresentationImageLabel')}</span>
+              <p className="detail-section-desc m-0">
+                {t('products.detail.variant.colorRepresentationImageHint')}
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setPickerOpen(true)}
+                  disabled={disabled}
+                >
+                  {variant.imageUrl ? t('imageInput.changeImage') : t('imageInput.pickFromLibrary')}
+                </Button>
+                {variant.imageUrl && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-danger hover:bg-danger-bg"
+                    onClick={() => {
+                      onChange(variant._key, {
+                        imageUrl: '',
+                        imageAlt: '',
+                        imageWidth: null,
+                        imageHeight: null,
+                        imageMimeType: null,
+                      })
+                    }}
+                    disabled={disabled}
+                  >
+                    {t('imageInput.removeImage')}
+                  </Button>
+                )}
+              </div>
+              {fieldErrors.imageUrl && <small className="field-error" role="alert">{fieldErrors.imageUrl}</small>}
+              {variant.imageUrl && (
+                <img
+                  src={variant.imageUrl}
+                  alt={variant.imageAlt || label}
+                  className="max-h-40 rounded-[var(--admin-radius-thumb)] border border-border object-contain"
+                />
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+      {pickerOpen && (
+        <MediaPickerModal
+          recommend={IMAGE_RECO.productImage}
+          kind="image"
+          onSelect={(url, media) => {
+            onChange(variant._key, {
+              imageUrl: url,
+              imageAlt: '',
+              imageWidth: media.width,
+              imageHeight: media.height,
+              imageMimeType: media.mimeType,
+            })
+            setPickerOpen(false)
+          }}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
+    </>
+  )
+}
+
 function VariantRow({
   variant,
   index,
@@ -747,7 +876,6 @@ function VariantRow({
   onSelect,
 }) {
   const { t } = useTranslation()
-  const [pickerOpen, setPickerOpen] = useState(false)
 
   function updateField(field, value) {
     onChange(variant._key, { [field]: value })
@@ -757,8 +885,6 @@ function VariantRow({
   const optionSummary = (variant.options || []).filter((o) => o.name && o.value).map((o) => `${o.name}: ${o.value}`).join(', ')
   const errorLabels = getVariantRowErrorLabels(fieldErrors, t)
   const hasErrors = errorLabels.length > 0
-  const colorValue = getVariantColorValue(variant)
-  const hasColor = Boolean(colorValue)
   const galleryImage = (variant.gallery || []).find((item) => item.mediaType !== 'video' && item.url)
   const thumbnailUrl = variant.imageUrl || galleryImage?.url || ''
 
@@ -910,112 +1036,156 @@ function VariantRow({
       {expanded && (
         <TableRow className="bg-surface-muted hover:bg-surface-muted">
           <TableCell colSpan={9} className="border-b border-border p-5">
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div className="space-y-2">
-                <span className="form-field-label">{t('products.detail.variant.optionsLabel')}</span>
-                <VariantOptionsEditor
-                  options={variant.options}
-                  onChange={(opts) => updateField('options', opts)}
-                  disabled={disabled}
-                  contentLang={contentLang}
-                />
-                {Object.entries(fieldErrors)
-                  .filter(([key]) => key === 'options' || key.startsWith('options.'))
-                  .map(([key, error]) => <small key={key} className="field-error" role="alert">{error}</small>)}
-              </div>
-
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <span className="form-field-label">
-                    {hasColor
-                      ? t('products.detail.variant.colorGalleryLabelWithValue', { color: colorValue })
-                      : t('products.detail.variant.colorGalleryLabel')}
-                  </span>
-                  <p className="detail-section-desc m-0">
-                    {hasColor
-                      ? t('products.detail.variant.colorGalleryHintWithColor')
-                      : t('products.detail.variant.colorGalleryHintNoColor')}
-                  </p>
-                  {fieldErrors.gallery && <small className="field-error" role="alert">{fieldErrors.gallery}</small>}
-                  {hasColor && (
-                    <GalleryEditor
-                      items={variant.gallery ?? []}
-                      onChange={(next) => updateField('gallery', next)}
-                      disabled={disabled}
-                      validationErrors={fieldErrors}
-                      allowVideo={false}
-                    />
-                  )}
-                </div>
-
-                {hasColor && (
-                  <div className="space-y-2">
-                    <span className="form-field-label">{t('products.detail.variant.colorRepresentationImageLabel')}</span>
-                    <p className="detail-section-desc m-0">
-                      {t('products.detail.variant.colorRepresentationImageHint')}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setPickerOpen(true)}
-                        disabled={disabled}
-                      >
-                        {variant.imageUrl ? t('imageInput.changeImage') : t('imageInput.pickFromLibrary')}
-                      </Button>
-                      {variant.imageUrl && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-danger hover:bg-danger-bg"
-                          onClick={() => {
-                            onChange(variant._key, {
-                              imageUrl: '',
-                              imageAlt: '',
-                              imageWidth: null,
-                              imageHeight: null,
-                              imageMimeType: null,
-                            })
-                          }}
-                          disabled={disabled}
-                        >
-                          {t('imageInput.removeImage')}
-                        </Button>
-                      )}
-                    </div>
-                    {fieldErrors.imageUrl && <small className="field-error" role="alert">{fieldErrors.imageUrl}</small>}
-                    {variant.imageUrl && (
-                      <img
-                        src={variant.imageUrl}
-                        alt={variant.imageAlt || label}
-                        className="max-h-40 rounded-[var(--admin-radius-thumb)] border border-border object-contain"
-                      />
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-            {pickerOpen && (
-              <MediaPickerModal
-                recommend={IMAGE_RECO.productImage}
-                kind="image"
-                onSelect={(url, media) => {
-                  onChange(variant._key, {
-                    imageUrl: url,
-                    imageAlt: '',
-                    imageWidth: media.width,
-                    imageHeight: media.height,
-                    imageMimeType: media.mimeType,
-                  })
-                  setPickerOpen(false)
-                }}
-                onClose={() => setPickerOpen(false)}
-              />
-            )}
+            <VariantDetailFields
+              variant={variant}
+              onChange={onChange}
+              disabled={disabled}
+              fieldErrors={fieldErrors}
+              contentLang={contentLang}
+              label={label}
+            />
           </TableCell>
         </TableRow>
       )}
     </>
+  )
+}
+
+// Thẻ biến thể cho màn hình hẹp (mobile) — bảng 9 cột không xem/sửa tốt trên điện thoại.
+// Giữ đủ mã SKU, giá niêm yết/khuyến mãi, tình trạng, ảnh và (khi mở) thuộc tính + ảnh theo màu.
+function VariantMobileCard({
+  variant, index, expanded, onToggle, onChange, onRemove, onDuplicate,
+  disabled, fieldErrors = {}, contentLang, selected, onSelect,
+}) {
+  const { t } = useTranslation()
+  const updateField = (field, value) => onChange(variant._key, { [field]: value })
+  const label = (variant.name || '').trim() || t('products.detail.variant.defaultLabel', { index: index + 1 })
+  const optionSummary = (variant.options || []).filter((o) => o.name && o.value).map((o) => `${o.name}: ${o.value}`).join(', ')
+  const errorLabels = getVariantRowErrorLabels(fieldErrors, t)
+  const galleryImage = (variant.gallery || []).find((item) => item.mediaType !== 'video' && item.url)
+  const thumbnailUrl = variant.imageUrl || galleryImage?.url || ''
+
+  const thumb = thumbnailUrl ? (
+    <img src={thumbnailUrl} alt="" className="h-9 w-9 shrink-0 rounded-[var(--admin-radius-thumb)] border border-border object-cover" />
+  ) : (
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--admin-radius-thumb)] border border-dashed border-border text-muted-foreground">
+      <ImageIcon className="size-4" aria-hidden="true" />
+    </span>
+  )
+
+  return (
+    <Fragment>
+      <MobileCard
+        selectable
+        selected={selected}
+        onSelectChange={(checked) => onSelect(variant._key, checked === true)}
+        title={(
+          <span className="flex items-center gap-2">
+            {thumb}
+            <span className="min-w-0">
+              <span className="text-xs font-normal text-muted-foreground">#{index + 1}</span>{' '}
+              {label}
+            </span>
+          </span>
+        )}
+        subtitle={(optionSummary || errorLabels.length > 0) ? (
+          <>
+            {optionSummary}
+            {errorLabels.length > 0 && (
+              <span className="mt-1 block font-medium text-danger" role="alert">{errorLabels.join(' · ')}</span>
+            )}
+          </>
+        ) : undefined}
+        status={(
+          <span className="flex items-center gap-2">
+            <Switch
+              checked={variant.isAvailable}
+              onCheckedChange={(checked) => updateField('isAvailable', checked)}
+              disabled={disabled}
+              aria-label={t('products.detail.variant.isAvailable')}
+            />
+            <span className={variant.isAvailable ? 'text-xs font-medium text-success' : 'text-xs font-medium text-danger'}>
+              {variant.isAvailable ? t('status.stock.IN_STOCK') : t('status.stock.OUT_OF_STOCK')}
+            </span>
+          </span>
+        )}
+        meta={[
+          {
+            label: t('products.detail.variant.columnSku'),
+            value: (
+              <Input
+                value={variant.sku}
+                onChange={(event) => updateField('sku', event.target.value)}
+                disabled={disabled}
+                aria-label={t('products.detail.variant.sku')}
+                aria-invalid={fieldErrors.sku ? true : undefined}
+                className="font-mono"
+              />
+            ),
+          },
+          {
+            label: t('products.detail.variant.columnRetailPrice'),
+            value: (
+              <Input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={formatPrice(variant.retailPrice)}
+                onChange={(event) => updateField('retailPrice', event.target.value.replace(/\D/g, ''))}
+                disabled={disabled}
+                aria-label={t('products.detail.variant.retailPrice')}
+                aria-invalid={fieldErrors.retailPrice ? true : undefined}
+              />
+            ),
+          },
+          {
+            label: t('products.detail.variant.columnSalePrice'),
+            value: (
+              <Input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={formatPrice(variant.salePrice)}
+                onChange={(event) => updateField('salePrice', event.target.value.replace(/\D/g, ''))}
+                disabled={disabled}
+                aria-label={t('products.detail.variant.salePrice')}
+                aria-invalid={fieldErrors.salePrice ? true : undefined}
+              />
+            ),
+          },
+        ]}
+        actions={(
+          <>
+            <Button variant="outline" size="sm" onClick={() => onToggle(variant._key)} aria-expanded={expanded}>
+              {expanded ? <ChevronUp className="size-4" aria-hidden="true" /> : <ChevronDown className="size-4" aria-hidden="true" />}
+              {expanded
+                ? t('products.detail.variant.collapseDetails', { defaultValue: 'Thu gọn' })
+                : t('products.detail.variant.editDetails', { defaultValue: 'Sửa chi tiết' })}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => onDuplicate(variant._key)} disabled={disabled}>
+              <Copy className="size-4" aria-hidden="true" />
+              {t('products.detail.variant.duplicate')}
+            </Button>
+            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => onRemove(variant._key)} disabled={disabled}>
+              <Trash2 className="size-4" aria-hidden="true" />
+              {t('products.detail.variant.remove')}
+            </Button>
+          </>
+        )}
+      />
+      {expanded && (
+        <li className="mobile-card">
+          <VariantDetailFields
+            variant={variant}
+            onChange={onChange}
+            disabled={disabled}
+            fieldErrors={fieldErrors}
+            contentLang={contentLang}
+            label={label}
+          />
+        </li>
+      )}
+    </Fragment>
   )
 }
 
@@ -1029,6 +1199,8 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
   const [bulkPriceOpen, setBulkPriceOpen] = useState(false)
   const [bulkRetailPrice, setBulkRetailPrice] = useState('')
   const [bulkSalePrice, setBulkSalePrice] = useState('')
+  // Cho phép xoá giá khuyến mãi hàng loạt (đưa về trống) — ô nhập giá không thể diễn đạt "để trống".
+  const [bulkClearSale, setBulkClearSale] = useState(false)
 
   // ── Render-count cap (A7) ──────────────────────────────────────────────
   // Chỉ render N dòng đầu (tiền tố items[0..revealCount)) — dù đang lọc hay không.
@@ -1214,18 +1386,20 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
     const selected = new Set(selectedKeys)
     const retailPrice = bulkRetailPrice.replace(/\D/g, '')
     const salePrice = bulkSalePrice.replace(/\D/g, '')
-    if (!retailPrice && !salePrice) return
+    if (!retailPrice && !salePrice && !bulkClearSale) return
     onChange(items.map((variant) => {
       if (!selected.has(variant._key)) return variant
       return {
         ...variant,
         ...(retailPrice ? { retailPrice } : {}),
-        ...(salePrice ? { salePrice } : {}),
+        // bulkClearSale thắng ô nhập: đưa giá khuyến mãi về trống cho biến thể đã chọn.
+        ...(bulkClearSale ? { salePrice: '' } : (salePrice ? { salePrice } : {})),
       }
     }))
     setBulkPriceOpen(false)
     setBulkRetailPrice('')
     setBulkSalePrice('')
+    setBulkClearSale(false)
   }
 
   // ── Filter (rendered only above threshold) ────────────────────────────
@@ -1337,7 +1511,7 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
         ]}
       />
 
-      <Table containerClassName="rounded-[var(--admin-radius-card)] border border-border">
+      <Table containerClassName="hide-on-mobile rounded-[var(--admin-radius-card)] border border-border">
         <TableHeader>
           <TableRow className="hover:bg-surface-muted">
             <TableHead className="w-10 px-1">
@@ -1435,6 +1609,39 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
         )}
       </Table>
 
+      <MobileCardList>
+        {renderedRows.map(({ v, originalIdx }) => {
+          const prefix = `variants.${originalIdx}.`
+          const fieldErrors = Object.fromEntries(
+            Object.entries(validationErrors)
+              .filter(([key]) => key.startsWith(prefix))
+              .map(([key, value]) => [key.slice(prefix.length), value])
+          )
+          return (
+            <VariantMobileCard
+              key={v._key}
+              variant={v}
+              index={originalIdx}
+              expanded={effectiveExpandedKey === v._key}
+              onToggle={toggleExpanded}
+              onChange={updateVariant}
+              onRemove={removeVariant}
+              onDuplicate={duplicateVariant}
+              disabled={disabled}
+              fieldErrors={fieldErrors}
+              contentLang={contentLang}
+              selected={selectedSet.has(v._key)}
+              onSelect={setVariantSelected}
+            />
+          )
+        })}
+        {renderedRows.length === 0 && filterTerm && (
+          <li className="mobile-card text-center text-sm text-muted-foreground">
+            {t('products.detail.variant.filterEmpty', { filter })}
+          </li>
+        )}
+      </MobileCardList>
+
       {remainingCount > 0 && (
         <Button
           variant="outline"
@@ -1452,7 +1659,7 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
         actions={(
           <>
             <Button variant="ghost" onClick={() => setBulkPriceOpen(false)}>{t('common.cancel')}</Button>
-            <Button onClick={applyBulkPrices} disabled={!bulkRetailPrice && !bulkSalePrice}>
+            <Button onClick={applyBulkPrices} disabled={!bulkRetailPrice && !bulkSalePrice && !bulkClearSale}>
               {t('products.detail.variant.bulkApplyPrice')}
             </Button>
           </>
@@ -1478,9 +1685,17 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
               pattern="[0-9]*"
               value={formatPrice(bulkSalePrice)}
               onChange={(event) => setBulkSalePrice(event.target.value.replace(/\D/g, ''))}
+              disabled={bulkClearSale}
             />
           </label>
         </div>
+        <label className="mt-4 flex items-center gap-2 text-sm">
+          <Checkbox
+            checked={bulkClearSale}
+            onCheckedChange={(checked) => setBulkClearSale(checked === true)}
+          />
+          <span>{t('products.detail.variant.bulkClearSale', { defaultValue: 'Xóa giá khuyến mãi (đưa về trống) cho các biến thể đã chọn' })}</span>
+        </label>
       </Modal>
     </div>
   )
@@ -1585,12 +1800,14 @@ export function VariantMatrixWizard({ onGenerate, onClose }) {
             <div className="flex items-center gap-2">
               <Input
                 placeholder={t('products.detail.matrix.attributePlaceholder')}
+                aria-label={t('products.detail.matrix.attributeLabel', { defaultValue: 'Tên thuộc tính' })}
                 value={attr.name}
                 onChange={(e) => updateAttr(i, 'name', e.target.value)}
                 className="flex-1"
               />
               <Input
                 placeholder={t('products.detail.matrix.valuesPlaceholder')}
+                aria-label={t('products.detail.matrix.valuesLabel', { defaultValue: 'Các giá trị, phân tách bằng dấu phẩy' })}
                 value={attr.values}
                 onChange={(e) => updateAttr(i, 'values', e.target.value)}
                 className="flex-[2]"

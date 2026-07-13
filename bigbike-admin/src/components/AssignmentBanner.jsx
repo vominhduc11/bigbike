@@ -1,19 +1,13 @@
 import { Users } from 'lucide-react'
 
-// 6 màu cố định (khớp border-left như trước) — cycle 3 màu cũ sẽ làm vai trò 1 và 4 giống hệt
-// nhau khi có >3 vai trò, nên dùng đủ 6 token trạng thái/thương hiệu sẵn có trong admin-tokens.css.
-const ROLE_COLORS = [
-  'var(--admin-color-primary)',
-  'var(--admin-color-status-warning-text)',
-  'var(--admin-color-text-primary)',
-  'var(--admin-color-status-success-text)',
-  'var(--admin-color-status-info-text)',
-  'var(--admin-color-status-danger-text)',
-]
-
 // Banner phân công dùng chung giữa product-detail và content-detail — thuần hiển thị, không tự
 // fetch. `roles` là mảng { id, name, items } động (1-6, Super Admin quản lý ở Settings), thay cho
 // 3 cột cứng trước đây; layout tự co giãn/xuống dòng thay vì luôn đúng 3 cột.
+//
+// Vạch màu bên trái dùng MỘT tone thương hiệu (primary) cho MỌI vai trò. Các vai trò không mang
+// ý nghĩa trạng thái, nên cycle qua success/warning/danger theo VỊ TRÍ dễ bị đọc nhầm thành
+// "tốt / cảnh báo / lỗi" và còn đổi màu khi thứ tự thay đổi. Tên vai trò (in đậm) mới là thứ
+// phân biệt; màu chỉ là điểm nhấn thương hiệu ổn định, không hàm ý trạng thái.
 export function AssignmentBanner({ title, roles, emptyMessage }) {
   if (!roles || roles.length === 0) {
     return emptyMessage ? (
@@ -29,16 +23,12 @@ export function AssignmentBanner({ title, roles, emptyMessage }) {
         <span>{title}</span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {roles.map((role, index) => (
-          <div
-            key={role.id}
-            className="border-l-[3px] pl-2 py-0.5"
-            style={{ borderColor: ROLE_COLORS[index % ROLE_COLORS.length] }}
-          >
+        {roles.map((role) => (
+          <div key={role.id} className="border-l-4 border-l-primary pl-2 py-0.5">
             <div className="text-xs font-bold uppercase tracking-wide text-foreground mb-0.5">
               {role.name}
             </div>
-            <div className="text-xs leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
+            <div className="text-xs leading-relaxed text-muted-foreground">
               {role.items}
             </div>
           </div>

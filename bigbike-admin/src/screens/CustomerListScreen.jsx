@@ -23,6 +23,7 @@ import { useColumnVisibility } from '../lib/useColumnVisibility'
 import { useDebounce } from '../lib/useDebounce'
 import { useRecentItems } from '../lib/useRecentItems'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
+import { useHasPermission } from '@/lib/auth'
 
 // O4: tái dùng đúng danh sách trạng thái có thể set thủ công của CustomerDetailScreen
 // (giữ local thay vì import chéo giữa 2 screen — mỗi screen là 1 lazy chunk riêng).
@@ -58,6 +59,9 @@ function CustomerStatusBadge({ value }) {
 export function CustomerListScreen({ navigate, canUpdate }) {
   const { t, i18n } = useTranslation()
   const queryClient = useQueryClient()
+  // Q3: chỉ hiện nút Xuất CSV khi tài khoản có quyền xuất báo cáo.
+  const hasPermission = useHasPermission()
+  const canExport = hasPermission('reports.export')
   const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
   const [searchInput, setSearchInput] = useState(() => {
     const params = new URLSearchParams(window.location.search)
@@ -72,7 +76,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
 
   const state = useAdminList(['customers', query], () => fetchCustomers(query))
 
-  const { data: summary } = useQuery({
+  const { data: summary, isError: summaryError, refetch: refetchSummary } = useQuery({
     queryKey: ['customer-summary'],
     queryFn: fetchCustomerSummary,
     staleTime: 60_000,
@@ -94,7 +98,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
       const ok = await showConfirm(
         t('customers.detail.statusConfirmBody', {
           status: label,
-          defaultValue: `Chuyển tài khoản sang "${label}" sẽ chặn khách hàng đăng nhập và mua hàng. Tiếp tục?`,
+          defaultValue: `Đánh dấu tài khoản là "${label}". Trạng thái này dùng để quản lý nội bộ.`,
         }),
         t('customers.detail.statusConfirmTitle', { defaultValue: 'Đổi trạng thái tài khoản' }),
         { confirmLabel: t('customers.detail.statusConfirmOk', { defaultValue: 'Đổi trạng thái' }) },
@@ -176,15 +180,39 @@ export function CustomerListScreen({ navigate, canUpdate }) {
     })
   }
 
+  // O4: control đổi trạng thái dùng chung cho cả bảng (desktop) và thẻ (mobile) để
+  // giữ đúng năng lực chỉnh nhanh trạng thái trên mọi kích thước màn hình.
+  function renderStatusSelect(c) {
+    return (
+      <Select
+        value={c.status}
+        onValueChange={(v) => handleStatusChange(c, v)}
+        disabled={!!statusSaving[c.id]}
+      >
+        <SelectTrigger className="h-8 w-auto" aria-label={t('customers.colStatus')} onClick={(e) => e.stopPropagation()}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent onClick={(e) => e.stopPropagation()}>
+          {CUSTOMER_STATUSES.map((s) => (
+            <SelectItem key={s} value={s}>{t(`status.customer.${s}`, { defaultValue: s })}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    )
+  }
+
   const columns = [
     {
       key: 'customer',
       label: t('customers.colCustomer'),
       render: (c) => {
         const name = formatText(c.fullName)
+        // Chữ cái đại diện lấy từ tên/email thật, không lấy ký tự placeholder "—".
+        const initialSource = (c.fullName || c.email || '').trim()
+        const initial = initialSource ? initialSource.charAt(0).toUpperCase() : '?'
         return (
           <div className="bb-product-cell">
-            <span className="bb-product-thumb">{(name || '?').charAt(0).toUpperCase()}</span>
+            <span className="bb-product-thumb">{initial}</span>
             <span>
               <div>{name}</div>
               <div className="bb-cell-sub">{formatText(c.email)}</div>
@@ -199,22 +227,9 @@ export function CustomerListScreen({ navigate, canUpdate }) {
       label: t('customers.colStatus'),
       // Trạng thái ngoài nhóm set-được (vd PENDING "chờ kích hoạt") → huy hiệu chỉ-đọc,
       // KHÔNG để Select trống trông như lỗi (audit P0-5).
-      render: (c) => (canUpdate && CUSTOMER_STATUSES.includes(c.status)) ? (
-        <Select
-          value={c.status}
-          onValueChange={(v) => handleStatusChange(c, v)}
-          disabled={!!statusSaving[c.id]}
-        >
-          <SelectTrigger className="h-8 w-auto" onClick={(e) => e.stopPropagation()}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent onClick={(e) => e.stopPropagation()}>
-            {CUSTOMER_STATUSES.map((s) => (
-              <SelectItem key={s} value={s}>{t(`status.customer.${s}`, { defaultValue: s })}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      ) : <CustomerStatusBadge value={c.status} />,
+      render: (c) => (canUpdate && CUSTOMER_STATUSES.includes(c.status))
+        ? renderStatusSelect(c)
+        : <CustomerStatusBadge value={c.status} />,
     },
     { key: 'orderCount', label: t('customers.colOrders'), align: 'right', render: (c) => c.orderCount },
     { key: 'totalSpent', label: t('customers.colSpent'), align: 'right', render: (c) => <span className="font-bold">{formatCurrencyVnd(c.totalSpent)}</span> },
@@ -234,6 +249,14 @@ export function CustomerListScreen({ navigate, canUpdate }) {
       { label: t('customers.colSpent'), value: formatCurrencyVnd(c.totalSpent), tone: 'strong' },
       { label: t('customers.colRegistered'), value: formatDateTime(c.createdAt) },
     ],
+    // Parity với bảng desktop: cho đổi nhanh trạng thái ngay trên thẻ mobile (đặt ở
+    // hàng thao tác, nằm ngoài vùng bấm mở chi tiết để không lồng nút).
+    actions: (canUpdate && CUSTOMER_STATUSES.includes(c.status)) ? (
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">{t('customers.colStatus')}</span>
+        {renderStatusSelect(c)}
+      </div>
+    ) : undefined,
     onClick: () => navigate(`/admin/customers/${c.id}`),
   })
 
@@ -245,20 +268,22 @@ export function CustomerListScreen({ navigate, canUpdate }) {
           <h1>{t('customers.title')}</h1>
           <p className="bb-muted">{t('customers.description')}</p>
         </div>
-        <div className="bb-screen-actions">
-          <ExportButton
-            onExport={async () => {
-              try {
-                const r = await exportCustomersCsv({ status: query.status !== 'ALL' ? query.status : undefined })
-                if (r?.truncated) toast.warning(t('export.truncated', { max: r.maxRows }))
-              } catch {
-                throw new Error(t('export.error'))
-              }
-            }}
-          >
-            {t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
-          </ExportButton>
-        </div>
+        {canExport && (
+          <div className="bb-screen-actions">
+            <ExportButton
+              onExport={async () => {
+                try {
+                  const r = await exportCustomersCsv({ status: query.status !== 'ALL' ? query.status : undefined })
+                  if (r?.truncated) toast.warning(t('export.truncated', { max: r.maxRows }))
+                } catch {
+                  throw new Error(t('export.error'))
+                }
+              }}
+            >
+              {t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
+            </ExportButton>
+          </div>
+        )}
       </div>
 
       {/* O9 — Vừa xem gần đây */}
@@ -316,6 +341,15 @@ export function CustomerListScreen({ navigate, canUpdate }) {
             <div className="bb-kpi-foot"><span className="bb-kpi-foot-label">{t('customers.kpi.activeHint')}</span></div>
           </div>
         </div>
+      ) : summaryError ? (
+        // (a) Trước đây summary lỗi để skeleton chạy vô hạn — nay hiện trạng thái lỗi + Thử lại.
+        <StatePanel
+          tone="danger"
+          title={t('customers.summaryError', { defaultValue: 'Không tải được số liệu tổng quan' })}
+          description={t('customers.summaryErrorDesc', { defaultValue: 'Số liệu khách hàng tạm thời không tải được. Vui lòng thử lại.' })}
+          actionLabel={t('common.retry')}
+          onAction={() => refetchSummary()}
+        />
       ) : (
         <div className="bb-kpi-grid bb-kpi-grid-4">
           {[...Array(4)].map((_, i) => (

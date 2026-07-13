@@ -15,6 +15,8 @@ export function RoleDetail({
 }) {
   const { t } = useTranslation()
   const [showCodes, setShowCodes] = useState(false)
+  // Nhóm quyền mặc định thu gọn (chỉ mở nhóm đầu) để chống ngợp — trước đây tất cả mở cùng lúc.
+  const [openGroups, setOpenGroups] = useState(() => new Set(catalog[0] ? [catalog[0].groupKey] : []))
   const isSuperAdmin = role.id === 'SUPER_ADMIN'
   const activePerms = (editMode && draft) ? draft : new Set(role.permissions)
   const { knownKeys: KNOWN_PERM_KEYS, sensitiveKeys: SENSITIVE_PERMS } = buildCatalogHelpers(catalog)
@@ -22,6 +24,15 @@ export function RoleDetail({
   const desc = t(descKey, { defaultValue: role.description || '' })
   const displayName = getRoleDisplayName(role, t)
   const showDesc = desc && desc !== displayName
+
+  function toggleGroup(groupKey) {
+    setOpenGroups(prev => {
+      const next = new Set(prev)
+      if (next.has(groupKey)) next.delete(groupKey)
+      else next.add(groupKey)
+      return next
+    })
+  }
 
   return (
     <div className="roles-detail px-6 py-5">
@@ -108,19 +119,23 @@ export function RoleDetail({
         </label>
       )}
 
-      {/* Permission groups */}
-      {catalog.map(group => (
-        <PermGroup
-          key={group.groupKey}
-          group={group}
-          activePerms={activePerms}
-          editMode={editMode}
-          onToggle={onToggle}
-          onBulk={onToggleGroup}
-          showCodes={showCodes}
-          isSuperAdmin={isSuperAdmin}
-        />
-      ))}
+      {/* Permission groups — thu gọn, mở/đóng từng nhóm */}
+      <div className="flex flex-col gap-3">
+        {catalog.map(group => (
+          <PermGroup
+            key={group.groupKey}
+            group={group}
+            activePerms={activePerms}
+            editMode={editMode}
+            onToggle={onToggle}
+            onBulk={onToggleGroup}
+            showCodes={showCodes}
+            isSuperAdmin={isSuperAdmin}
+            open={openGroups.has(group.groupKey)}
+            onToggleOpen={() => toggleGroup(group.groupKey)}
+          />
+        ))}
+      </div>
 
       {/* Unknown permissions (backend has them but frontend catalog doesn't) */}
       {(() => {

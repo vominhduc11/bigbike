@@ -98,7 +98,12 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
   // Top products in this category — surfaced in a sidebar so editors know
   // who depends on the category before they hide / re-parent it.
-  const { data: productsInCat, isLoading: isProductsInCatLoading } = useQuery({
+  const {
+    data: productsInCat,
+    isLoading: isProductsInCatLoading,
+    isError: isProductsInCatError,
+    refetch: refetchProductsInCat,
+  } = useQuery({
     queryKey: ['products', 'by-category', categoryId, 'top5', 'ALL_INCLUDING_TRASH', contentLang],
     queryFn: () => fetchProducts({ categoryId, pageSize: 5, page: 1, sort: 'updatedAt:desc', publishStatus: 'ALL_INCLUDING_TRASH' }),
     enabled: !isCreate && Boolean(categoryId),
@@ -920,6 +925,8 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             productsTotal={productsTotal}
             navigate={navigate}
             isLoading={isProductsInCatLoading}
+            isError={isProductsInCatError}
+            onRetry={refetchProductsInCat}
           />
         )}
 

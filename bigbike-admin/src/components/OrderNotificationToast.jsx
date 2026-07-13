@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { X } from 'lucide-react'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
@@ -12,13 +12,21 @@ function Toast({ toast, onDismiss, navigate }) {
   const { t } = useTranslation()
   const isNew = toast.type === 'NEW_ORDER'
 
-  // Body is a real <button> so keyboard users can open the order with Enter/Space
-  // (the close <button> stays a sibling — avoids the invalid button-in-button nesting).
-  // The wrapper keeps role="alert"/aria-live so screen readers still announce new orders.
+  // Guard payload thiếu field (WebSocket có thể gửi partial) — không render "undefined".
+  const subtitle = [toast.orderNumber, toast.customerName].filter(Boolean).join(' — ')
+  const meta = []
+  if (toast.total != null && !Number.isNaN(Number(toast.total))) {
+    meta.push(formatCurrencyVnd(toast.total))
+  }
+  if (!isNew && toast.status) {
+    meta.push(t('status.order.' + toast.status, toast.status))
+  }
+
+  // Body là <button> thật để bàn phím mở đơn bằng Enter/Space (nút đóng là sibling —
+  // tránh lồng button-in-button). Thẻ này KHÔNG còn role="alert"/aria-live riêng: cả
+  // stack chung một live region "polite" ở component cha (giảm ồn cho screen reader).
   return (
     <div
-      role="alert"
-      aria-live="assertive"
       className={cn(
         'bg-surface border border-border rounded-md shadow-sm py-3 px-3.5 flex gap-3 items-start w-[min(340px,calc(100vw-2rem))] border-l-4',
         isNew ? 'border-l-primary' : 'border-l-info'
@@ -35,13 +43,16 @@ function Toast({ toast, onDismiss, navigate }) {
         <span className="block font-semibold text-sm text-foreground">
           {isNew ? t('notifications.newOrder') : t('notifications.orderUpdate')}
         </span>
-        <span className="mt-0.5 block text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">
-          {toast.orderNumber} — {toast.customerName}
-        </span>
-        <span className="mt-0.5 block text-xs text-muted-foreground">
-          {formatCurrencyVnd(toast.total)}
-          {!isNew && toast.status ? ` · ${t('status.order.' + toast.status, toast.status)}` : ''}
-        </span>
+        {subtitle ? (
+          <span className="mt-0.5 block text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">
+            {subtitle}
+          </span>
+        ) : null}
+        {meta.length > 0 ? (
+          <span className="mt-0.5 block text-xs text-muted-foreground">
+            {meta.join(' · ')}
+          </span>
+        ) : null}
       </button>
       <button
         type="button"
@@ -59,31 +70,63 @@ export function OrderNotificationToast({ navigate }) {
   const { t } = useTranslation()
   const [toasts, setToasts] = useState([])
   const counterRef = useRef(0)
+  // Theo dõi mọi setTimeout đang chạy để cleanup đầy đủ (unmount) + pause khi hover.
+  const timersRef = useRef(new Map())
 
-  useEffect(() => {
-    const unsubscribe = subscribeAdminWs('/topic/admin/orders', (event) => {
-      const id = ++counterRef.current
-      setToasts((prev) => [
-        { id, ...event },
-        ...prev,
-      ].slice(0, MAX_TOASTS))
-
-      setTimeout(() => {
-        setToasts((prev) => prev.filter((t) => t.id !== id))
-      }, TOAST_DURATION_MS)
-    })
-    return unsubscribe
+  const clearTimer = useCallback((id) => {
+    const handle = timersRef.current.get(id)
+    if (handle !== undefined) {
+      clearTimeout(handle)
+      timersRef.current.delete(id)
+    }
   }, [])
 
-  const dismiss = (id) => setToasts((prev) => prev.filter((t) => t.id !== id))
+  const scheduleTimer = useCallback((id) => {
+    clearTimer(id)
+    const handle = setTimeout(() => {
+      timersRef.current.delete(id)
+      setToasts((prev) => prev.filter((item) => item.id !== id))
+    }, TOAST_DURATION_MS)
+    timersRef.current.set(id, handle)
+  }, [clearTimer])
+
+  useEffect(() => {
+    const timers = timersRef.current
+    const unsubscribe = subscribeAdminWs('/topic/admin/orders', (event) => {
+      const id = ++counterRef.current
+      setToasts((prev) => [{ id, ...event }, ...prev].slice(0, MAX_TOASTS))
+      scheduleTimer(id)
+    })
+    return () => {
+      unsubscribe()
+      timers.forEach((handle) => clearTimeout(handle))
+      timers.clear()
+    }
+  }, [scheduleTimer])
+
+  const dismiss = (id) => {
+    clearTimer(id)
+    setToasts((prev) => prev.filter((item) => item.id !== id))
+  }
 
   if (toasts.length === 0) return null
 
+  // Neo góc TRÊN-phải (dưới topbar) thay vì dưới-phải: tránh che thanh hành động dính
+  // đáy (.sticky-action-bar) khi cuộn tới cuối form. z lấy theo token --admin-z-toast.
+  // Cả stack là MỘT live region polite; rê chuột vào thì tạm dừng đếm giờ tự ẩn.
   return (
     <div
       aria-label={t('notifications.regionLabel')}
-      className="fixed bottom-6 right-6 flex flex-col gap-2 pointer-events-none"
-      style={{ zIndex: 'var(--z-toast)' }}
+      aria-live="polite"
+      aria-relevant="additions"
+      className="fixed top-20 right-6 z-[var(--admin-z-toast)] flex flex-col gap-2 pointer-events-none"
+      onMouseEnter={() => {
+        timersRef.current.forEach((handle) => clearTimeout(handle))
+        timersRef.current.clear()
+      }}
+      onMouseLeave={() => {
+        toasts.forEach((item) => scheduleTimer(item.id))
+      }}
     >
       {toasts.map((toast) => (
         <div key={toast.id} className="pointer-events-auto">

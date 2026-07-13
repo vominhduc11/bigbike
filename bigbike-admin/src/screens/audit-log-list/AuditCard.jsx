@@ -1,20 +1,13 @@
 import { useTranslation } from 'react-i18next'
 import { formatDateTimeWithSeconds } from '../../lib/formatters'
 import { Badge } from '@/components/ui/badge'
-import { DANGEROUS_ACTIONS, toBadgeVariant } from './constants'
+import { DANGEROUS_ACTIONS, toBadgeVariant, getModuleTone, getModuleLabel, getActionLabel } from './constants'
 
 export function AuditCard({ log, onClick }) {
   const { t } = useTranslation()
-  const TONE_MAP = {
-    ORDER: 'info', PRODUCT: 'success', CATEGORY: 'neutral', BRAND: 'neutral',
-    INVENTORY: 'warning', CUSTOMER: 'neutral', SITE_SETTING: 'danger',
-    MEDIA: 'neutral', MENU: 'neutral', CONTENT: 'neutral', ADMIN_ROLE: 'danger', ADMIN_USER: 'neutral',
-  }
-  const moduleTone = TONE_MAP[log.resourceType] || 'neutral'
-  const moduleLabel = t(`auditLog.module.${log.resourceType}`, { defaultValue: log.resourceType || t('auditLog.module.OTHER') })
-  const actionLabel = log.action
-    ? t(`auditLog.action.${log.action}`, { defaultValue: null }) ?? t('auditLog.actionOther', { code: log.action })
-    : '—'
+  const moduleTone = getModuleTone(log.resourceType)
+  const moduleLabel = getModuleLabel(t, log.resourceType)
+  const actionLabel = getActionLabel(t, log.action)
   const actorName = log.actorDisplayName || log.actorEmail || t(`auditLog.actorType.${log.actorType}`, { defaultValue: '' })
   const resourceLabel = log.resourceCode || log.resourceDisplayName || null
   const isDangerous = DANGEROUS_ACTIONS.has(log.action)

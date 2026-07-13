@@ -24,6 +24,7 @@ import { useAdminList } from '../lib/useAdminList'
 import { useColumnVisibility } from '../lib/useColumnVisibility'
 import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
+import { useHasPermission } from '../lib/auth'
 
 const ORDER_STATUS_KEYS = ['PENDING', 'PROCESSING', 'ON_HOLD', 'COMPLETED', 'CANCELLED', 'FAILED']
 const PAYMENT_STATUS_KEYS = ['UNPAID', 'PAID', 'CANCELLED']
@@ -50,6 +51,8 @@ const INITIAL_QUERY = {
 
 export function OrderListScreen({ navigate, canUpdate }) {
   const { t } = useTranslation()
+  const hasPermission = useHasPermission()
+  const canExport = hasPermission('reports.export')
   const queryClient = useQueryClient()
   const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
   const [searchInput, setSearchInput] = useState(() => {
@@ -117,7 +120,9 @@ export function OrderListScreen({ navigate, canUpdate }) {
 
   // O4 — đổi trạng thái ngay trên 1 dòng (không cần lý do/xác nhận).
   async function handleInlineStatusChange(order, newStatus) {
-    if (inlineUpdating[order.id]) return
+    // Khi danh sách đang làm mới nền (stale), khoá thao tác để không đổi trạng thái
+    // dựa trên dữ liệu sắp bị thay.
+    if (inlineUpdating[order.id] || state.isFetching) return
     setInlineUpdating((prev) => ({ ...prev, [order.id]: newStatus }))
     try {
       await updateOrderStatus(order.id, newStatus)
@@ -136,7 +141,7 @@ export function OrderListScreen({ navigate, canUpdate }) {
 
   // O6 — chuyển hàng loạt các đơn đã chọn (đang PENDING/ON_HOLD) sang "Đang xử lý".
   async function runBulkProcessing() {
-    if (!canUpdate || bulkProgress) return
+    if (!canUpdate || bulkProgress || state.isFetching) return
     const byId = new Map(items.map((o) => [o.id, o]))
     const ids = selectedIds.filter((id) => INLINE_STATUS_TARGETS[byId.get(id)?.orderStatus]?.includes('PROCESSING'))
     if (ids.length === 0) {
@@ -207,7 +212,7 @@ export function OrderListScreen({ navigate, canUpdate }) {
       render: (order) => (
         <div className="bb-product-cell">
           <div>
-            <div style={{ fontWeight: 500 }}>{formatText(order.customerName) || formatText(order.customerEmail)}</div>
+            <div style={{ fontWeight: 500 }}>{formatText(order.customerName, '') || formatText(order.customerEmail)}</div>
             <div className="bb-cell-sub">{formatText(order.customerEmail)}</div>
           </div>
         </div>
@@ -254,7 +259,7 @@ export function OrderListScreen({ navigate, canUpdate }) {
                 type="button"
                 variant="ghost"
                 size="sm"
-                disabled={!!inlineUpdating[order.id]}
+                disabled={!!inlineUpdating[order.id] || state.isFetching}
                 onClick={(e) => { e.stopPropagation(); handleInlineStatusChange(order, target) }}
               >
                 {inlineUpdating[order.id] === target
@@ -270,21 +275,42 @@ export function OrderListScreen({ navigate, canUpdate }) {
 
   const { visibleColumns, hiddenKeys, toggle: toggleColumn, allColumns } = useColumnVisibility(columns, 'columns:orders')
 
-  const mobileCard = (order) => ({
-    title: (
-      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        {formatText(order.orderNumber)}
-      </span>
-    ),
-    subtitle: formatText(order.customerName) || formatText(order.customerEmail),
-    status: <StatusBadge type="order" status={order.orderStatus} />,
-    meta: [
-      { label: t('orders.colDate'), value: formatDateTime(order.createdAt) },
-      { label: t('orders.colTotal'), value: formatCurrencyVnd(order.total), tone: 'strong' },
-      { label: t('orders.colPaymentStatus'), value: <StatusBadge type="payment" status={order.paymentStatus} /> },
-    ],
-    onClick: () => navigate(`/admin/orders/${order.id}`),
-  })
+  const mobileCard = (order) => {
+    // O4/O6 mobile parity — cùng nút đổi trạng thái nhanh như desktop, hiện ở khu action
+    // của thẻ (không lồng trong vùng bấm mở chi tiết).
+    const inlineTargets = canUpdate ? (INLINE_STATUS_TARGETS[order.orderStatus] ?? []) : []
+    return {
+      title: (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {formatText(order.orderNumber)}
+        </span>
+      ),
+      subtitle: formatText(order.customerName, '') || formatText(order.customerEmail),
+      status: <StatusBadge type="order" status={order.orderStatus} />,
+      meta: [
+        { label: t('orders.colDate'), value: formatDateTime(order.createdAt) },
+        { label: t('orders.colTotal'), value: formatCurrencyVnd(order.total), tone: 'strong' },
+        { label: t('orders.colPaymentStatus'), value: <StatusBadge type="payment" status={order.paymentStatus} /> },
+      ],
+      onClick: () => navigate(`/admin/orders/${order.id}`),
+      actions: inlineTargets.length > 0
+        ? inlineTargets.map((target) => (
+          <Button
+            key={target}
+            type="button"
+            variant="secondary"
+            size="sm"
+            disabled={!!inlineUpdating[order.id] || state.isFetching}
+            onClick={() => handleInlineStatusChange(order, target)}
+          >
+            {inlineUpdating[order.id] === target
+              ? t('orders.detail.savingShort')
+              : <><ArrowRight size={14} aria-hidden="true" />{target === 'PROCESSING' ? t('orders.detail.actionProcessing') : t('orders.detail.actionOnHold')}</>}
+          </Button>
+        ))
+        : undefined,
+    }
+  }
 
   return (
     <div>
@@ -295,20 +321,25 @@ export function OrderListScreen({ navigate, canUpdate }) {
           <p className="bb-muted">{t('orders.description')}</p>
         </div>
         <div className="bb-screen-actions">
-          <ExportButton
-            onExport={async () => {
-              await exportOrdersCsv({
-                status: query.orderStatus !== 'ALL' ? query.orderStatus : undefined,
-              })
-              toast.success(t('common.exportCsvDone', { defaultValue: 'Đã tải file CSV' }))
-            }}
-          >
-            {t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
-          </ExportButton>
+          {canExport && (
+            <ExportButton
+              onExport={async () => {
+                await exportOrdersCsv({
+                  status: query.orderStatus !== 'ALL' ? query.orderStatus : undefined,
+                })
+                toast.success(t('common.exportCsvDone', { defaultValue: 'Đã tải file CSV' }))
+              }}
+            >
+              {t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
+            </ExportButton>
+          )}
         </div>
       </div>
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
+      {!canUpdate ? (
+        <ReadOnlyBanner warning={t('orders.readOnlyWarning', { defaultValue: 'Bạn chỉ có quyền xem đơn hàng. Không thể thay đổi trạng thái đơn.' })} />
+      ) : null}
 
       {/* Status tabs */}
       <div className="bb-seg" style={{ marginBottom: 12 }} role="tablist" aria-label={t('orders.filterStatus')}>
@@ -375,7 +406,7 @@ export function OrderListScreen({ navigate, canUpdate }) {
           {
             label: t('orders.bulkProcessingAction', { defaultValue: 'Chuyển sang Đang xử lý' }),
             onClick: runBulkProcessing,
-            disabled: Boolean(bulkProgress),
+            disabled: Boolean(bulkProgress) || state.isFetching,
           },
         ]}
       />

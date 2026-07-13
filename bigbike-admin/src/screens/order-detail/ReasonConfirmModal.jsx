@@ -9,6 +9,11 @@ export function ReasonConfirmModal({ targetStatus, onConfirm, onClose, loading =
   const { t } = useTranslation()
   const [reason, setReason] = useState('')
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  // Đang xử lý = parent báo loading HOẶC lần submit này đang chờ (guard nội bộ chặn
+  // double-submit trong khoảng thời gian parent chưa kịp bật loading).
+  const busy = loading || submitting
 
   const isFailed = targetStatus === 'FAILED'
   const title = isFailed ? t('orders.detail.confirmFailedTitle') : t('orders.detail.confirmCancelTitle')
@@ -16,18 +21,23 @@ export function ReasonConfirmModal({ targetStatus, onConfirm, onClose, loading =
     ? t('orders.detail.confirmFailedDesc')
     : t('orders.detail.confirmCancelDesc')
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
-    if (loading) return
+    if (busy) return
     if (!reason.trim()) {
       setError(t('orders.detail.reasonRequired'))
       return
     }
-    onConfirm(reason.trim())
+    setSubmitting(true)
+    try {
+      await onConfirm(reason.trim())
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
-    <Modal open title={title} onClose={loading ? () => {} : onClose}>
+    <Modal open title={title} onClose={busy ? () => {} : onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
         <p className="text-sm text-muted-foreground">{description}</p>
         <p className="text-xs text-muted-foreground">
@@ -44,7 +54,7 @@ export function ReasonConfirmModal({ targetStatus, onConfirm, onClose, loading =
             placeholder={t('orders.detail.reasonPlaceholder')}
             className="resize-y"
             autoFocus
-            disabled={loading}
+            disabled={busy}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? 'reason-confirm-error' : undefined}
           />
@@ -56,11 +66,11 @@ export function ReasonConfirmModal({ targetStatus, onConfirm, onClose, loading =
           )}
         </div>
         <div className="flex gap-2 justify-end">
-          <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={loading}>
+          <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={busy}>
             {t('common.cancel')}
           </Button>
-          <Button type="submit" variant="danger" size="sm" disabled={loading}>
-            {loading ? t('orders.detail.savingShort') : title}
+          <Button type="submit" variant="danger" size="sm" disabled={busy}>
+            {busy ? t('orders.detail.savingShort') : title}
           </Button>
         </div>
       </form>

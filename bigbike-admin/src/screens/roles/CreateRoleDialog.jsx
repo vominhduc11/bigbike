@@ -6,10 +6,21 @@ import { Input } from '@/components/ui/input'
 import { FormField } from '@/components/layout/FormField'
 import { Modal } from '@/components/layout/Modal'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { showConfirm } from '../../lib/confirm'
 import { getRoleDisplayName } from './constants'
 
 // F11 — sentinel cho lựa chọn "không nhân bản" trong Select (Radix không cho value rỗng).
 const CLONE_NONE = '__none__'
+
+// Bỏ dấu tiếng Việt (á→a, đ→d) trước khi tạo mã ID, tránh ID xấu kiểu "QU_N_L" khi
+// tên là "Quản Lý". Chuẩn hoá NFD rồi loại dấu kết hợp + xử lý riêng đ/Đ.
+function stripDiacritics(v) {
+  return v
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+}
 
 export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [] }) {
   const { t } = useTranslation()
@@ -28,13 +39,26 @@ export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [] }) {
   function handleNameChange(v) {
     setName(v)
     if (!idManual) {
-      setId(v.trim().toUpperCase().replace(/\s+/g, '_').replace(/[^A-Z0-9_]/g, ''))
+      setId(stripDiacritics(v).trim().toUpperCase().replace(/\s+/g, '_').replace(/[^A-Z0-9_]/g, ''))
     }
   }
 
   function handleIdChange(v) {
     setIdManual(true)
-    setId(v.toUpperCase().replace(/[^A-Z0-9_]/g, ''))
+    setId(stripDiacritics(v).toUpperCase().replace(/[^A-Z0-9_]/g, ''))
+  }
+
+  // Đóng khi form còn dữ liệu chưa lưu → xác nhận để không mất bản nháp.
+  async function attemptCancel() {
+    const dirty = name.trim() || desc.trim() || cloneFromId !== CLONE_NONE
+    if (dirty) {
+      const ok = await showConfirm(
+        t('roles.createDiscardConfirm', { defaultValue: 'Bạn có thay đổi chưa lưu. Đóng sẽ mất các thay đổi đó. Tiếp tục?' }),
+        t('roles.createDiscardTitle', { defaultValue: 'Bỏ tạo vai trò?' }),
+      )
+      if (!ok) return
+    }
+    onCancel()
   }
 
   function handleSubmit(e) {
@@ -51,7 +75,7 @@ export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [] }) {
   return (
     <Modal
       open
-      onClose={onCancel}
+      onClose={attemptCancel}
       title={
         <span className="flex items-center gap-2.5">
           <Plus size={18} className="text-primary shrink-0" aria-hidden />
@@ -60,7 +84,7 @@ export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [] }) {
       }
       actions={
         <>
-          <Button variant="ghost" size="sm" type="button" onClick={onCancel} disabled={saving}>
+          <Button variant="ghost" size="sm" type="button" onClick={attemptCancel} disabled={saving}>
             {t('roles.cancelBtn')}
           </Button>
           <Button size="sm" type="submit" form="create-role-form" loading={saving} className="flex items-center gap-1.5">

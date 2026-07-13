@@ -34,17 +34,21 @@ export function MediaFolderSidebar({
 }) {
   const { t } = useTranslation()
   const [tags, setTags] = useState([])
+  const [tagsStatus, setTagsStatus] = useState('loading') // 'loading' | 'error' | 'ready'
   const [editingId, setEditingId] = useState(null)
   const [creating, setCreating] = useState(false)
 
   // Tags are local — they don't drive bulk actions, so the sidebar can own them.
+  // Trạng thái tải/lỗi hiển thị rõ ngay trong khu vực tag thay vì chỉ toast rồi im.
   useEffect(() => {
     let active = true
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTagsStatus('loading')
     fetchMediaTags()
-      .then((ts) => { if (active) setTags(ts) })
-      .catch((e) => { if (active) toast.error(e.message || t('common.error')) })
+      .then((ts) => { if (active) { setTags(ts); setTagsStatus('ready') } })
+      .catch(() => { if (active) setTagsStatus('error') })
     return () => { active = false }
-  }, [t])
+  }, [])
 
   async function handleCreate(name) {
     if (!name?.trim()) return
@@ -92,6 +96,7 @@ export function MediaFolderSidebar({
         <ul className="mediafolder-list">
           <li>
             <button type="button" onClick={() => onSelectFolder('')}
+              aria-current={!folderFilter ? 'true' : undefined}
               className={`mediafolder-item ${!folderFilter ? 'mediafolder-is-selected' : ''}`}>
               <FolderOpen size={14} />
               <span>{t('media.allFolders')}</span>
@@ -99,6 +104,7 @@ export function MediaFolderSidebar({
           </li>
           <li>
             <button type="button" onClick={() => onSelectFolder('NONE')}
+              aria-current={folderFilter === 'NONE' ? 'true' : undefined}
               className={`mediafolder-item ${folderFilter === 'NONE' ? 'mediafolder-is-selected' : ''}`}>
               <Inbox size={14} />
               <span>{t('media.uncategorized')}</span>
@@ -136,6 +142,7 @@ export function MediaFolderSidebar({
               ) : (
                 <div className={`mediafolder-item ${folderFilter === f.id ? 'mediafolder-is-selected' : ''} mediafolder-item-hover`}>
                   <button type="button" onClick={() => onSelectFolder(f.id)}
+                    aria-current={folderFilter === f.id ? 'true' : undefined}
                     className="mediafolder-item-btn">
                     <Folder size={14} />
                     <span className="mediafolder-item-label">{f.name}</span>
@@ -160,18 +167,27 @@ export function MediaFolderSidebar({
         </ul>
       </section>
 
-      {tags.length > 0 && (
+      {(tagsStatus !== 'ready' || tags.length > 0) && (
         <section className="mediafolder-section">
           <p className="mediafolder-section-title">{t('media.popularTags')}</p>
-          <div className="mediafolder-tags-wrap">
-            {tags.map((tg) => (
-              <button key={tg} type="button"
-                onClick={() => onSelectTag(tag === tg ? '' : tg)}
-                className={`mediafolder-tag ${tag === tg ? 'mediafolder-tag-selected' : ''}`}>
-                <Hash size={11} /> {tg}
-              </button>
-            ))}
-          </div>
+          {tagsStatus === 'loading' && (
+            <p className="mediafolder-empty" role="status">{t('common.loading')}</p>
+          )}
+          {tagsStatus === 'error' && (
+            <p className="mediafolder-empty">{t('media.tagsError', { defaultValue: 'Không tải được thẻ' })}</p>
+          )}
+          {tagsStatus === 'ready' && tags.length > 0 && (
+            <div className="mediafolder-tags-wrap">
+              {tags.map((tg) => (
+                <button key={tg} type="button"
+                  onClick={() => onSelectTag(tag === tg ? '' : tg)}
+                  aria-pressed={tag === tg}
+                  className={`mediafolder-tag ${tag === tg ? 'mediafolder-tag-selected' : ''}`}>
+                  <Hash size={11} /> {tg}
+                </button>
+              ))}
+            </div>
+          )}
         </section>
       )}
     </aside>
@@ -181,6 +197,8 @@ export function MediaFolderSidebar({
 function FolderInput({ defaultValue = '', placeholder, onSubmit, onCancel }) {
   const { t } = useTranslation()
   const [value, setValue] = useState(defaultValue)
+  // Rename không có placeholder → vẫn cần accessible name cho ô nhập.
+  const accessibleLabel = placeholder || t('media.folderNamePlaceholder')
   // Explicit Lưu/Huỷ so a rename isn't lost by clicking away, and doesn't require
   // discovering that Enter saves. Escape still cancels for keyboard users.
   return (
@@ -188,6 +206,7 @@ function FolderInput({ defaultValue = '', placeholder, onSubmit, onCancel }) {
       className="mediafolder-edit-form">
       <Input autoFocus type="text" value={value} onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Escape') onCancel() }} placeholder={placeholder}
+        aria-label={accessibleLabel}
         className="text-xs py-1 px-2" />
       <div className="flex items-center gap-1.5 mt-1.5">
         <Button type="submit" size="sm" disabled={!value.trim()}>{t('common.save')}</Button>

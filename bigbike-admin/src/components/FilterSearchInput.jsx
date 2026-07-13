@@ -25,7 +25,7 @@ export function FilterSearchInput({ value, onChange, placeholder, ariaLabel, aut
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        aria-label={ariaLabel}
+        aria-label={ariaLabel || placeholder}
         autoFocus={autoFocus}
         className={cn(
           'h-[30px] w-full pl-7 pr-2.5 text-xs shadow-none',

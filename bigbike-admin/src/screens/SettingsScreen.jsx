@@ -277,6 +277,11 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
       </div>
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
+      {/* Không có quyền sửa mà cũng chưa có cảnh báo read-only từ máy chủ: nêu rõ
+          đang ở chế độ chỉ xem để chủ shop không loay hoay tìm nút Lưu. */}
+      {!canUpdate && !state.warning && (
+        <ReadOnlyBanner warning={t('settings.readOnlyHint', { defaultValue: 'Bạn chỉ có quyền xem cài đặt, không thể chỉnh sửa.' })} />
+      )}
 
       {draftRecovery && (
         <div className="bb-alert info center wrap">

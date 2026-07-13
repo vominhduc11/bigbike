@@ -268,7 +268,7 @@ export function FeaturedProductsScreen({ canUpdate }) {
           <Button
             onClick={handleSave}
             loading={saveMutation.isPending}
-            disabled={!canUpdate}
+            disabled={!canUpdate || !isDirty}
           >
             {t('featuredProducts.saveButton')}
           </Button>

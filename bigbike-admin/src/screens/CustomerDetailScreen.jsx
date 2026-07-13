@@ -15,6 +15,7 @@ import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { useQueryClient } from '@tanstack/react-query'
 
 const CUSTOMER_STATUSES = ['ACTIVE', 'DISABLED', 'BLOCKED']
 
@@ -35,6 +36,13 @@ function isPhoneInvalid(phone) {
   const v = (phone || '').trim()
   return v !== '' && !PHONE_PATTERN.test(v)
 }
+// Nhãn loại địa chỉ đã lưu (i18n, có fallback về mã gốc nếu là loại lạ).
+function addressTypeLabel(type, t) {
+  if (type === 'BILLING') return t('customers.detail.addressBilling', { defaultValue: 'Thanh toán' })
+  if (type === 'SHIPPING') return t('customers.detail.addressShipping', { defaultValue: 'Giao hàng' })
+  return type
+}
+
 const SEGMENT_BADGE_CLASSES = {
   VIP:      'text-primary bg-surface-selected',
   LOYAL:    'text-info bg-info-bg',
@@ -67,6 +75,7 @@ function FieldError({ message }) {
 
 export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const [state, setState] = useState({ status: 'loading', customer: null, warning: '' })
   const [saving, setSaving] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -114,13 +123,14 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
   async function handleStatusChange(value) {
     // Radix Select truyền thẳng value (chuỗi), không phải DOM event.
     if (!value || value === state.customer?.status) return
-    // DISABLED/BLOCKED khóa khách khỏi đăng nhập/mua hàng → xác nhận hậu quả trước khi áp dụng.
+    // Q4: DISABLED/BLOCKED là nhãn quản lý nội bộ (lifecycle chưa được xác thực) →
+    // xác nhận bằng câu trung tính, không khẳng định chặn đăng nhập/mua hàng.
     if (value === 'BLOCKED' || value === 'DISABLED') {
       const label = t(`status.customer.${value}`, { defaultValue: value })
       const ok = await showConfirm(
         t('customers.detail.statusConfirmBody', {
           status: label,
-          defaultValue: `Chuyển tài khoản sang "${label}" sẽ chặn khách hàng đăng nhập và mua hàng. Tiếp tục?`,
+          defaultValue: `Đánh dấu tài khoản là "${label}". Trạng thái này dùng để quản lý nội bộ.`,
         }),
         t('customers.detail.statusConfirmTitle', { defaultValue: 'Đổi trạng thái tài khoản' }),
         { confirmLabel: t('customers.detail.statusConfirmOk', { defaultValue: 'Đổi trạng thái' }) },
@@ -139,6 +149,9 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
     try {
       const r = await updateCustomerStatus(customerId, value)
       setState((p) => ({ ...p, customer: r.item }))
+      // Đồng bộ lại danh sách + số liệu tổng quan để trạng thái mới hiển thị khi quay lại.
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
+      queryClient.invalidateQueries({ queryKey: ['customer-summary'] })
       toast.success(t('customers.detail.statusUpdated'))
     } catch (err) {
       if (isOptimistic) {
@@ -172,7 +185,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
   const handleEditSave = useCallback(async (e) => {
     e.preventDefault()
     if (isPhoneInvalid(editForm.phone)) {
-      toast.error('Số điện thoại không hợp lệ.')
+      toast.error(t('customers.detail.phoneInvalidToast', { defaultValue: 'Số điện thoại không hợp lệ.' }))
       return
     }
     setEditSaving(true)
@@ -187,7 +200,9 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
       setState((p) => ({ ...p, customer: r.item }))
       setEditOpen(false)
       setEditBaseline(null)
-      toast.success('Thông tin đã được cập nhật.')
+      // Đồng bộ lại danh sách khách hàng để tên/SĐT vừa sửa hiển thị khi quay lại.
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
+      toast.success(t('customers.detail.profileUpdated', { defaultValue: 'Thông tin đã được cập nhật.' }))
     } catch (err) {
       // F1: gắn thêm lỗi vào đúng ô (vd SĐT trùng) khi backend trả field-level detail,
       // bên cạnh toast — không tự bịa field nếu backend không xác định được.
@@ -199,7 +214,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
     } finally {
       setEditSaving(false)
     }
-  }, [customerId, editForm, t])
+  }, [customerId, editForm, t, queryClient])
 
   // O3: Ctrl/Cmd+S lưu form sửa hồ sơ khi đang mở.
   useSaveShortcut(editOpen, handleEditSave)
@@ -228,6 +243,9 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
       </div>
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
+      {!canUpdate && (
+        <ReadOnlyBanner warning={t('customers.detail.readOnlyHint', { defaultValue: 'Bạn chỉ có quyền xem hồ sơ khách hàng. Liên hệ quản trị để được cấp quyền chỉnh sửa.' })} />
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <DetailSection title={t('customers.detail.sectionAccount')}>
@@ -235,11 +253,13 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
           <p><strong>{t('customers.detail.phone')}</strong> {formatText(customer.phone)}</p>
           <p><strong>{t('customers.detail.registered')}</strong> {formatDateTime(customer.createdAt)}</p>
           <p>
-            <strong>Email xác thực:</strong>{' '}
-            {customer.emailVerifiedAt ? formatDateTime(customer.emailVerifiedAt) : 'Chưa xác thực'}
+            <strong>{t('customers.detail.emailVerified', { defaultValue: 'Email xác thực:' })}</strong>{' '}
+            {customer.emailVerifiedAt
+              ? formatDateTime(customer.emailVerifiedAt)
+              : t('customers.detail.emailNotVerified', { defaultValue: 'Chưa xác thực' })}
           </p>
           {customer.lastLoginAt && (
-            <p><strong>Đăng nhập gần nhất:</strong> {formatDateTime(customer.lastLoginAt)}</p>
+            <p><strong>{t('customers.detail.lastLogin', { defaultValue: 'Đăng nhập gần nhất:' })}</strong> {formatDateTime(customer.lastLoginAt)}</p>
           )}
         </DetailSection>
 
@@ -265,15 +285,15 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
         </DetailSection>
 
         {customer.addresses && customer.addresses.length > 0 && (
-          <DetailSection title="Địa chỉ đã lưu">
+          <DetailSection title={t('customers.detail.sectionAddresses', { defaultValue: 'Địa chỉ đã lưu' })}>
             <div className="flex flex-col gap-3">
               {customer.addresses.map((addr, i) => (
                 <div key={i} className="text-sm border border-border rounded-md p-3">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold">{formatText(addr.fullName)}</span>
+                    <span className="font-semibold break-words">{formatText(addr.fullName)}</span>
                     {addr.type && (
                       <span className="bb-badge bb-badge-neutral text-xs">
-                        {addr.type === 'BILLING' ? 'Thanh toán' : addr.type === 'SHIPPING' ? 'Giao hàng' : addr.type}
+                        {addressTypeLabel(addr.type, t)}
                       </span>
                     )}
                   </div>
@@ -297,10 +317,12 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
           ) : (
             <form onSubmit={handleEditSave} className="flex flex-col gap-3">
               <label>
-                Tên hiển thị
+                {t('customers.detail.fieldDisplayName', { defaultValue: 'Tên hiển thị' })}
+                <OptionalMark t={t} />
                 <Input
                   type="text"
                   value={editForm.displayName}
+                  maxLength={120}
                   onChange={(e) => {
                     setEditForm((p) => ({ ...p, displayName: e.target.value }))
                     if (fieldErrors.displayName) setFieldErrors((p) => ({ ...p, displayName: undefined }))

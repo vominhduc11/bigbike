@@ -13,6 +13,7 @@ import { useContentLang } from '../lib/contentLang'
 import { formatDateTime, formatText } from '../lib/formatters'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { useQueryClient } from '@tanstack/react-query'
 
 const STATUS_VARIANTS = { APPROVED: 'success', PENDING: 'warning', SPAM: 'muted', TRASH: 'muted' }
 
@@ -39,6 +40,7 @@ function ReviewStatusBadge({ review, t }) {
 export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
+  const queryClient = useQueryClient()
   const [state, setState] = useState({ status: 'loading', item: null, warning: '' })
   const [busy, setBusy] = useState(false)
   // Theo dõi đúng nút đang chạy để chỉ nút được bấm hiện spinner (APPROVED/SPAM/DELETE).
@@ -76,11 +78,22 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
   }, [state.item?.id, state.item?.authorName])
 
   const handleStatusChange = useCallback(async (nextStatus) => {
+    if (busy) return
+    // Đánh dấu spam là hành động kiểm duyệt ẩn đánh giá khỏi khách → xác nhận trước.
+    if (nextStatus === 'SPAM') {
+      const confirmed = await showConfirm(
+        t('reviews.spamConfirm', { defaultValue: 'Đánh dấu đánh giá này là spam? Đánh giá sẽ không hiển thị cho khách.' }),
+        t('reviews.spamConfirmTitle', { defaultValue: 'Đánh dấu spam' }),
+      )
+      if (!confirmed) return
+    }
     setBusy(true)
     setPendingAction(nextStatus)
     try {
       const result = await updateReviewStatus(reviewId, nextStatus)
       setState((prev) => ({ ...prev, item: result.item }))
+      // Đồng bộ lại danh sách đánh giá để badge/bộ lọc cập nhật khi quay lại.
+      queryClient.invalidateQueries({ queryKey: ['reviews'] })
       toast.success(t('reviews.detail.statusUpdated'))
     } catch (error) {
       toast.error(error.message || t('reviews.approveError'))
@@ -88,9 +101,10 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
       setBusy(false)
       setPendingAction(null)
     }
-  }, [reviewId, t])
+  }, [busy, reviewId, t, queryClient])
 
   const handleDelete = useCallback(async () => {
+    if (busy) return
     const confirmed = await showConfirm(t('reviews.deleteConfirm'), t('reviews.deleteConfirmTitle'))
     if (!confirmed) return
 
@@ -98,15 +112,17 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
     setPendingAction('DELETE')
     try {
       await deleteReview(reviewId)
+      queryClient.invalidateQueries({ queryKey: ['reviews'] })
       toast.success(t('reviews.detail.deleteSuccess'))
-      navigate('/admin/reviews')
+      // Giữ nguyên bộ lọc/trang đã lưu khi quay lại danh sách sau khi xoá.
+      navigate(`/admin/reviews${readListQuery()}`)
     } catch (error) {
       toast.error(error.message || t('reviews.deleteError'))
     } finally {
       setBusy(false)
       setPendingAction(null)
     }
-  }, [navigate, reviewId, t])
+  }, [busy, navigate, reviewId, t, queryClient])
 
   if (state.status === 'loading') {
     return <StatePanel tone="info" title={t('reviews.detail.loading')} description={t('common.pleaseWait')} />
@@ -119,7 +135,7 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
         title={t('reviews.detail.error')}
         description={state.error}
         actionLabel={t('common.retry')}
-        onAction={loadReview}
+        onAction={() => { setState({ status: 'loading', item: null, warning: '' }); loadReview() }}
       />
     )
   }
@@ -148,7 +164,7 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
         <div className="bb-screen-title">
           <p className="bb-screen-eyebrow">{t('reviews.eyebrow')}</p>
           <h1>{t('reviews.detail.title')}</h1>
-          <p className="bb-muted">{formatText(reviewProductName, review.productId || t('reviews.unknownProduct'))}</p>
+          <p className="bb-muted break-words">{formatText(reviewProductName, review.productId || t('reviews.unknownProduct'))}</p>
         </div>
         <div className="bb-screen-actions">
           <Button variant="secondary" type="button" onClick={() => navigate(`/admin/reviews${readListQuery()}`)}>
@@ -158,6 +174,9 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
       </div>
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
+      {!canUpdate ? (
+        <ReadOnlyBanner warning={t('reviews.detail.readOnlyHint', { defaultValue: 'Bạn chỉ có quyền xem đánh giá. Liên hệ quản trị để được cấp quyền kiểm duyệt.' })} />
+      ) : null}
 
       <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
         <DetailSection title={t('reviews.detail.sectionReview')}>
@@ -193,7 +212,7 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
         </DetailSection>
 
         <DetailSection title={t('reviews.detail.sectionContent')}>
-          <p className="m-0 whitespace-pre-wrap leading-relaxed">
+          <p className="m-0 whitespace-pre-wrap leading-relaxed break-words">
             {formatText(review.body, '(---)')}
           </p>
         </DetailSection>
@@ -233,6 +252,11 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
                 {t('common.delete')}
               </Button>
             ) : null}
+            {!canUpdate ? (
+              <p className="bb-muted text-sm m-0">
+                {t('reviews.detail.noActionPermission', { defaultValue: 'Bạn không có quyền kiểm duyệt đánh giá này.' })}
+              </p>
+            ) : null}
           </div>
         </DetailSection>
       </div>
@@ -242,7 +266,7 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
           items={review.photos.map((url) => ({
             publicUrl: resolveDisplayUrl(url),
             mimeType: 'image/jpeg',
-            filename: url.split('/').pop(),
+            filename: typeof url === 'string' ? url.split('/').pop() : '',
           }))}
           index={photoIndex}
           onClose={() => setPhotoIndex(null)}

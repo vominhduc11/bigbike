@@ -9,6 +9,16 @@ import { cn } from '@/lib/utils'
 
 const ALIGN_CLASS = { right: 'text-right', center: 'text-center', left: 'text-left' }
 
+// Dòng có role="button" + onClick/onKeyDown để mở chi tiết. Khi thao tác phát ra từ một control
+// tương tác con (checkbox chọn dòng, link cột đầu, nút/select trong cột action), Enter/Space/click
+// KHÔNG được vừa chạy control con vừa mở chi tiết. Guard: bỏ qua nếu control tương tác gần nhất
+// không phải chính dòng (currentTarget).
+const ROW_INTERACTIVE_SELECTOR = 'button,a,input,select,textarea,label,[role="checkbox"],[role="button"],[role="menuitem"]'
+function fromInteractiveChild(e) {
+  const el = e.target.closest(ROW_INTERACTIVE_SELECTOR)
+  return el && el !== e.currentTarget
+}
+
 /**
  * AdminTable — shared data table.
  *
@@ -66,7 +76,7 @@ export function AdminTable({
               <Checkbox
                 checked={allSelected ? true : someSelected ? 'indeterminate' : false}
                 onCheckedChange={toggleAll}
-                aria-label="Chọn tất cả"
+                aria-label={t('common.selectAll', { defaultValue: 'Chọn tất cả' })}
               />
             </TableHead>
           )}
@@ -76,27 +86,28 @@ export function AdminTable({
             return (
               <TableHead
                 key={column.key}
-                className={cn(
-                  ALIGN_CLASS[column.align],
-                  canSort && 'cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-[-2px]',
-                  isSorted && 'text-foreground',
-                )}
-                onClick={canSort ? () => handleSort(column) : undefined}
-                onKeyDown={canSort ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort(column) } } : undefined}
-                tabIndex={canSort ? 0 : undefined}
-                role={canSort ? 'button' : undefined}
+                className={cn(ALIGN_CLASS[column.align], isSorted && 'text-foreground')}
                 aria-sort={isSorted ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
               >
-                <span className="inline-flex items-center gap-1">
-                  {column.label}
-                  {canSort && (
+                {canSort ? (
+                  // Nút bấm thật bên trong <th scope="col"> — giữ ngữ nghĩa columnheader
+                  // (không đè role="button" lên <th>), vẫn focus/Enter/Space chuẩn của button.
+                  <button
+                    type="button"
+                    onClick={() => handleSort(column)}
+                    aria-label={t('common.sortColumn', { defaultValue: 'Sắp xếp cột' })}
+                    className="inline-flex cursor-pointer select-none items-center gap-1 rounded-xs focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-[-2px]"
+                  >
+                    {column.label}
                     <span aria-hidden="true" className="opacity-60">
                       {isSorted
                         ? sortDir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />
                         : <ChevronsUpDown size={12} />}
                     </span>
-                  )}
-                </span>
+                  </button>
+                ) : (
+                  <span className="inline-flex items-center gap-1">{column.label}</span>
+                )}
               </TableHead>
             )
           })}
@@ -131,13 +142,17 @@ export function AdminTable({
                   key={row.id}
                   className={cn('h-12', extraClass, rowClickable && 'cursor-pointer')}
                   onClick={rowClickable ? (e) => {
+                    if (fromInteractiveChild(e)) return
                     // Ctrl/Cmd/Shift-click → mở tab mới; còn lại điều hướng cùng tab.
                     if (href && (e.metaKey || e.ctrlKey || e.shiftKey)) { e.preventDefault(); openTab(href); return }
                     if (clickable) onRowClick(row)
                   } : undefined}
                   onAuxClick={href ? (e) => { if (e.button === 1) { e.preventDefault(); openTab(href) } } : undefined}
                   tabIndex={rowClickable ? 0 : undefined}
-                  onKeyDown={rowClickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (clickable) onRowClick(row) } } : undefined}
+                  onKeyDown={rowClickable ? (e) => {
+                    if (fromInteractiveChild(e)) return
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (clickable) onRowClick(row) }
+                  } : undefined}
                   role={rowClickable ? 'button' : undefined}
                 >
                   {selectable && (
@@ -145,7 +160,7 @@ export function AdminTable({
                       <Checkbox
                         checked={selectedIds.includes(row.id)}
                         onCheckedChange={() => toggleOne(row.id)}
-                        aria-label="Chọn hàng"
+                        aria-label={t('common.selectRow', { defaultValue: 'Chọn hàng' })}
                         onClick={(e) => e.stopPropagation()}
                       />
                     </TableCell>
@@ -214,6 +229,9 @@ export function AdminTable({
                   meta={card.meta}
                   actions={card.actions}
                   onClick={card.onClick}
+                  selectable={selectable}
+                  selected={selectedIds.includes(row.id)}
+                  onSelectChange={() => toggleOne(row.id)}
                 />
               )
             })}

@@ -1,9 +1,16 @@
+import { useTranslation } from 'react-i18next'
+
 // Suspense fallback dùng chung khi tải chunk của một screen lazy.
 // Khớp khung layout chung (tiêu đề + thanh lọc + bảng) để tránh giật bố cục
 // so với một panel "đang tải" căn giữa.
 export function ScreenSkeleton() {
+  const { t } = useTranslation()
   return (
-    <div className="animate-pulse" aria-hidden="true">
+    // role=status + text sr-only để trình đọc màn hình biết đang tải; khung skeleton bên dưới
+    // thuần trang trí nên vẫn aria-hidden.
+    <div role="status" aria-live="polite" aria-busy="true">
+      <span className="sr-only">{t('common.loading')}</span>
+      <div className="animate-pulse" aria-hidden="true">
       <div className="mb-5 flex flex-col gap-2">
         <div className="h-3 w-24 rounded-xs bg-surface-muted" />
         <div className="h-7 w-64 rounded-xs bg-surface-muted" />
@@ -23,6 +30,7 @@ export function ScreenSkeleton() {
             <div className="h-4 w-16 rounded-xs bg-surface-muted" />
           </div>
         ))}
+      </div>
       </div>
     </div>
   )

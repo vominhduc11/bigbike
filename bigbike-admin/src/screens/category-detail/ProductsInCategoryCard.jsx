@@ -2,9 +2,10 @@ import { useTranslation } from 'react-i18next'
 import { Package } from 'lucide-react'
 import { PublishStatusBadge } from '../../components/StatusBadge'
 import { AdminTable } from '../../components/AdminTable'
+import { StatePanel } from '../../components/StatePanel'
 import { Button } from '@/components/ui/button'
 
-export function ProductsInCategoryCard({ item, productsList, productsTotal, navigate, isLoading = false }) {
+export function ProductsInCategoryCard({ item, productsList, productsTotal, navigate, isLoading = false, isError = false, onRetry }) {
   const { t } = useTranslation()
 
   const openProduct = (p) => navigate(`/admin/products/${p.id}`)
@@ -79,6 +80,18 @@ export function ProductsInCategoryCard({ item, productsList, productsTotal, navi
             <div className="h-10 w-full rounded-sm bg-surface-muted" />
             <div className="h-10 w-full rounded-sm bg-surface-muted" />
             <div className="h-10 w-2/3 rounded-sm bg-surface-muted" />
+          </div>
+        ) : isError ? (
+          // Trước đây lỗi tải danh sách sản phẩm bị hiểu nhầm thành "Chưa có sản
+          // phẩm". Hiện trạng thái lỗi rõ ràng + nút thử lại để không đọc sai.
+          <div className="p-4">
+            <StatePanel
+              tone="danger"
+              title={t('categories.detail.productsLoadError', { defaultValue: 'Không tải được sản phẩm của danh mục.' })}
+              description={t('categories.detail.productsLoadErrorDesc', { defaultValue: 'Danh sách có thể chưa đầy đủ. Vui lòng thử lại.' })}
+              actionLabel={onRetry ? t('common.retry') : undefined}
+              onAction={onRetry}
+            />
           </div>
         ) : productsList.length === 0 ? (
           <div className="text-center px-4 py-6 text-muted-foreground">

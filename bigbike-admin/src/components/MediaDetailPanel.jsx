@@ -6,11 +6,12 @@ import { fetchMediaFolders, replaceMediaFile, updateMedia } from '../lib/adminAp
 import { useMediaReferences } from '../lib/useMediaReferences'
 import { showConfirm } from '../lib/confirm'
 import { useSaveShortcut } from '@/lib/useSaveShortcut'
+import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { TagInput } from './TagInput'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { REFERENCE_TYPE_KEYS, formatBytes } from './media-picker/pickerUtils'
+import { REFERENCE_TYPE_KEYS, formatBytes, toClipboardUrl } from './media-picker/pickerUtils'
 
 
 function formatDate(iso) {
@@ -52,6 +53,11 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
     folderId !== (media.folderId ?? '') ||
     JSON.stringify(tags) !== JSON.stringify(Array.isArray(media.tags) ? media.tags : [])
 
+  // Cảnh báo khi rời trang lúc đang sửa (mở link tham chiếu → điều hướng cả trang,
+  // reload/đóng tab, hoặc điều hướng nội bộ qua router) — attemptClose chỉ lo nút
+  // Đóng/Huỷ/Esc trong panel.
+  useUnsavedChanges(canUpdate && !isTrash && dirty, t('media.discardConfirm'))
+
   // F6 — nút Đóng (header) / Esc / nút Huỷ (footer) đều đóng ngay lập tức mà
   // không hỏi khi còn thay đổi chưa lưu (dirty). Hỏi xác nhận trước khi đóng,
   // giống điều kiện disable của nút Lưu.
@@ -80,7 +86,8 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
     if (Array.isArray(foldersProp)) return
     fetchMediaFolders()
       .then(setFoldersLocal)
-      .catch((e) => setError(e.message || t('common.error')))
+      // Thông báo thân thiện thay vì message lỗi thô từ máy chủ.
+      .catch(() => setError(t('media.loadError')))
   }, [foldersProp, t])
 
   // ESC to close — cùng đường xác nhận với nút Đóng/Huỷ (attemptClose)
@@ -106,16 +113,16 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
       const result = await updateMedia(media.id, payload)
       onSaved(result.item)
       toast.success(t('media.saveSuccess'))
-    } catch (err) {
-      setError(err.message || t('media.saveError'))
+    } catch {
+      // Thông báo thân thiện thay vì message lỗi thô từ máy chủ.
+      setError(t('media.saveError'))
     } finally { setSaving(false) }
   }
 
   function handleCopyUrl(specificUrl) {
     const path = specificUrl || media.publicUrl
     if (!path) return
-    const url = window.location.origin + path
-    navigator.clipboard.writeText(url)
+    navigator.clipboard.writeText(toClipboardUrl(path))
       .then(() => toast.success(t('media.urlCopied')))
       .catch(() => toast.error(t('media.copyFailed')))
   }
@@ -126,13 +133,22 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
     const file = e.target.files?.[0]
     if (!file) return
     e.target.value = ''
+    // Thay file có hiệu lực ngay ở MỌI nơi đang dùng (giữ nguyên URL) và không hoàn tác được →
+    // bắt buộc xác nhận trước khi upload.
+    const ok = await showConfirm(
+      t('media.replaceConfirm'),
+      t('media.replaceConfirmTitle', { defaultValue: 'Thay ảnh?' }),
+      { variant: 'danger' },
+    )
+    if (!ok) return
     setReplacing(true)
     try {
       const result = await replaceMediaFile(media.id, file)
       onSaved(result.item)
       toast.success(t('media.replaceSuccess'))
-    } catch (err) {
-      toast.error(err.message || t('media.replaceError'))
+    } catch {
+      // Thông báo thân thiện thay vì message lỗi thô từ máy chủ.
+      toast.error(t('media.replaceError'))
     } finally { setReplacing(false) }
   }
 

@@ -257,12 +257,20 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     // Cảnh báo mạnh hơn cho hành động không thể hoàn tác: cho admin thấy số nơi
     // đang dùng file trước khi xoá vĩnh viễn khỏi kho (tiêu chí 7.6).
     let refCount = null
-    try { refCount = (await fetchMediaReferences(media.id)).length } catch { /* không chặn xoá nếu không lấy được tham chiếu */ }
+    let refCheckFailed = false
+    try { refCount = (await fetchMediaReferences(media.id)).length }
+    catch { refCheckFailed = true } // không lấy được tham chiếu — cảnh báo admin chưa kiểm tra được thay vì lặng lẽ cho xoá
     const name = (media.filename ?? '').split('/').pop()
-    const message = refCount && refCount > 0
-      ? t('media.hardDeleteConfirmInUse', { name, count: refCount,
-          defaultValue: `File "${name}" đang được dùng ở ${refCount} nơi. Xoá vĩnh viễn sẽ không thể hoàn tác và có thể làm hỏng các nơi đang dùng. Tiếp tục?` })
-      : t('media.hardDeleteConfirm', { name })
+    let message
+    if (refCount && refCount > 0) {
+      message = t('media.hardDeleteConfirmInUse', { name, count: refCount,
+        defaultValue: `File "${name}" đang được dùng ở ${refCount} nơi. Xoá vĩnh viễn sẽ không thể hoàn tác và có thể làm hỏng các nơi đang dùng. Tiếp tục?` })
+    } else if (refCheckFailed) {
+      message = t('media.hardDeleteConfirmUnverified', { name,
+        defaultValue: `Không kiểm tra được file "${name}" có đang được dùng ở đâu không. Xoá vĩnh viễn KHÔNG thể hoàn tác và có thể làm hỏng nơi đang dùng. Tiếp tục?` })
+    } else {
+      message = t('media.hardDeleteConfirm', { name })
+    }
     const confirmed = await showConfirm(message, t('media.hardDeleteConfirmTitle'))
     if (!confirmed) return
     setDeleting(media.id)
@@ -272,7 +280,9 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
       toast.success(t('media.hardDeleteSuccess'))
     } catch (e) {
       restoreItemLocally(snapshot)
-      toast.error(e.message || t('media.deleteError'))
+      // Server thường chặn xoá vĩnh viễn khi file còn được tham chiếu — nêu rõ lý do
+      // thay vì lỗi xoá chung chung, để admin biết cần gỡ file khỏi nơi đang dùng trước.
+      toast.error(e.message || t('media.hardDeleteError', { defaultValue: 'Không xoá được. File có thể đang được dùng ở nơi khác — hãy gỡ khỏi các nơi đang dùng rồi thử lại.' }))
     }
     finally { setDeleting(null) }
   }
@@ -556,15 +566,18 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           <PageSizeSelect
             value={query.pageSize}
             onChange={(n) => updateQuery({ pageSize: n })}
-            options={[24, 48, 96]}
+            options={PAGE_SIZE_OPTIONS}
           />
-          <div className="medialib-view-switcher" role="tablist">
-            <button type="button" onClick={() => updateQuery({ view: 'grid' }, { resetPage: false })}
+          <div className="medialib-view-switcher" role="tablist"
+            aria-label={t('media.viewSwitcherLabel', { defaultValue: 'Kiểu hiển thị' })}>
+            <button type="button" role="tab" aria-selected={query.view === 'grid'}
+              onClick={() => updateQuery({ view: 'grid' }, { resetPage: false })}
               className={`focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--admin-color-primary)] ${query.view === 'grid' ? 'medialib-is-active' : ''}`}
               title={t('media.viewGrid')} aria-label={t('media.viewGrid')}>
               <GridIcon size={14} />
             </button>
-            <button type="button" onClick={() => updateQuery({ view: 'list' }, { resetPage: false })}
+            <button type="button" role="tab" aria-selected={query.view === 'list'}
+              onClick={() => updateQuery({ view: 'list' }, { resetPage: false })}
               className={`focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--admin-color-primary)] ${query.view === 'list' ? 'medialib-is-active' : ''}`}
               title={t('media.viewList')} aria-label={t('media.viewList')}>
               <ListIcon size={14} />
@@ -664,15 +677,10 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
             </div>
           )}
 
+          {/* Số mỗi trang chỉ còn 1 chỗ duy nhất — bộ chọn ở thanh công cụ phía trên
+              (PageSizeSelect). Bỏ bản lặp cạnh phân trang để tránh 2 control cùng chức năng. */}
           <div className="medialib-pagination-row">
             <PaginationControls pagination={state.pagination} onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))} />
-            <label className="medialib-page-size-wrap">
-              {t('common.pageSize')}
-              <Select value={query.pageSize}
-                onValueChange={(val) => updateQuery({ pageSize: Number(val) })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                {PAGE_SIZE_OPTIONS.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
-              </SelectContent></Select>
-            </label>
           </div>
         </>
       )}

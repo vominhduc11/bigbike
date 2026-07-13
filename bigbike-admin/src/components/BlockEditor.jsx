@@ -12,6 +12,7 @@ import { cn, generateId } from '@/lib/utils'
 import { CONTENT_MENU, PRODUCT_MENU, createBlock } from './block-editor/constants'
 import { BlockCard } from './block-editor/blocks'
 import { showConfirm } from '@/lib/confirm'
+import { sanitizeHtml } from '@/lib/sanitizeHtml'
 import { useMediaAltSyncList } from '@/lib/useMediaAltSync'
 
 const BLOCK_META_KEYS = new Set(['_key', 'type', 'level', 'style', 'side', 'variant', 'provider'])
@@ -100,24 +101,31 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
     onChange(next)
   }
 
-  const showFallback = blocks.length === 0 && fallbackHtml && fallbackHtml.trim().length > 0
+  // Nội dung cũ (HTML legacy) phải HIỂN THỊ liên tục kể cả sau khi admin đã thêm khối mới —
+  // trước đây nó biến mất ngay khi blocks.length > 0, khiến admin tưởng mất nội dung cũ. Giờ luôn
+  // hiện khi có fallbackHtml; nếu đã có khối, đổi chú thích để nói rõ nội dung cũ sẽ được thay thế.
+  const hasFallback = Boolean(fallbackHtml && fallbackHtml.trim().length > 0)
 
   return (
     <div className={cn('flex flex-col gap-2', hasError && 'ring-1 ring-destructive rounded-sm')}>
-      {showFallback && (
+      {hasFallback && (
         <div className="border border-border p-3 bg-muted/40 flex flex-col gap-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             {t('products.detail.blocks.fallbackTitle')}
           </p>
           <div
             className="prose prose-sm max-w-none text-sm text-foreground"
-            dangerouslySetInnerHTML={{ __html: fallbackHtml }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(fallbackHtml) }}
           />
-          <p className="text-xs text-muted-foreground">{t('products.detail.blocks.fallbackHint')}</p>
+          <p className="text-xs text-muted-foreground">
+            {blocks.length > 0
+              ? t('products.detail.blocks.fallbackReplacedHint', { defaultValue: 'Nội dung cũ ở trên sẽ được thay bằng các khối bên dưới sau khi lưu.' })
+              : t('products.detail.blocks.fallbackHint')}
+          </p>
         </div>
       )}
 
-      {blocks.length === 0 && !showFallback && (
+      {blocks.length === 0 && !hasFallback && (
         <p className="text-sm text-muted-foreground py-2">{t('products.detail.blocks.empty')}</p>
       )}
 

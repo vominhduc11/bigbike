@@ -85,7 +85,9 @@ export function CommitmentEditor({ items, onChange, disabled, contentLang = 'vi'
                   <SelectItem key={opt.value} value={opt.value}>
                     <span className="flex items-center gap-2">
                       <opt.Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                      {isEn ? opt.labelEn : t(`products.detail.commitments.icons.${opt.labelKey}`)}
+                      {isEn
+                        ? t(`products.detail.commitments.icons.${opt.labelKey}`, { lng: 'en', defaultValue: opt.labelEn })
+                        : t(`products.detail.commitments.icons.${opt.labelKey}`)}
                     </span>
                   </SelectItem>
                 ))}
@@ -93,6 +95,7 @@ export function CommitmentEditor({ items, onChange, disabled, contentLang = 'vi'
             </Select>
             <Input
               placeholder={t('products.detail.commitments.titlePlaceholder')}
+              aria-label={t('products.detail.commitments.titleLabel', { defaultValue: 'Tiêu đề cam kết' })}
               value={item[fTitle] || ''}
               onChange={(e) => updateItem(index, fTitle, e.target.value)}
               disabled={disabled}
@@ -100,6 +103,7 @@ export function CommitmentEditor({ items, onChange, disabled, contentLang = 'vi'
             />
             <Input
               placeholder={t('products.detail.commitments.subtitlePlaceholder')}
+              aria-label={t('products.detail.commitments.subtitleLabel', { defaultValue: 'Mô tả cam kết' })}
               value={item[fSubtitle] || ''}
               onChange={(e) => updateItem(index, fSubtitle, e.target.value)}
               disabled={disabled}
@@ -207,6 +211,7 @@ export function TrustBadgesEditor({ disabled, html = '', onHtmlChange }) {
               <div className="flex-1">
                 <Input
                   placeholder={t('products.detail.trustBadges.placeholder', { defaultValue: 'vd: Chính hãng' })}
+                  aria-label={t('products.detail.trustBadges.itemLabel', { defaultValue: 'Nhãn tin cậy' })}
                   value={item.content || ''}
                   onChange={(e) => updateItem(index, e.target.value)}
                   disabled={disabled}
@@ -344,6 +349,7 @@ export function SpecStatEditor({ disabled, html = '', onHtmlChange }) {
           <div className="flex flex-1 flex-col gap-2">
             <Input
               placeholder={t('products.detail.specStats.valuePlaceholder')}
+              aria-label={t('products.detail.specStats.valueLabel', { defaultValue: 'Số liệu' })}
               value={item.value || ''}
               onChange={(e) => updateItem(index, 'value', e.target.value)}
               disabled={disabled}
@@ -351,6 +357,7 @@ export function SpecStatEditor({ disabled, html = '', onHtmlChange }) {
             />
             <Input
               placeholder={t('products.detail.specStats.labelPlaceholder')}
+              aria-label={t('products.detail.specStats.labelLabel', { defaultValue: 'Nhãn số liệu' })}
               value={item.label || ''}
               onChange={(e) => updateItem(index, 'label', e.target.value)}
               disabled={disabled}
@@ -370,9 +377,16 @@ export function SpecStatEditor({ disabled, html = '', onHtmlChange }) {
         </div>
       )}
       footer={
-        <Button variant="outline" size="sm" onClick={addItem} disabled={disabled || rows.length >= SPEC_STAT_MAX}>
-          + {t('products.detail.specStats.addRow')}
-        </Button>
+        <div className="flex flex-col gap-1">
+          <Button variant="outline" size="sm" onClick={addItem} disabled={disabled || rows.length >= SPEC_STAT_MAX}>
+            + {t('products.detail.specStats.addRow')}
+          </Button>
+          {rows.length >= SPEC_STAT_MAX && (
+            <p className="text-xs text-muted-foreground">
+              {t('products.detail.specStats.maxHint', { defaultValue: 'Đã đạt tối đa {{max}} ô số liệu. Xóa bớt một ô nếu muốn thêm ô khác.', max: SPEC_STAT_MAX })}
+            </p>
+          )}
+        </div>
       }
     />
       </TabsContent>

@@ -16,6 +16,12 @@ export function StatusBadge({ status, type = 'order', className }) {
   let tone = 'muted'
   let label = status
 
+  // Trạng thái rỗng (null/undefined/'') ở các loại enum → nhãn "Không xác định" thay vì render key thô
+  // ("status.order.undefined") hay chuỗi rỗng. Loại 'visibility' dùng boolean (false = Ẩn là hợp lệ) nên bỏ qua.
+  if (type !== 'visibility' && (status === null || status === undefined || status === '')) {
+    return <Badge tone="muted" className={className}>{t('common.unknown')}</Badge>
+  }
+
   if (type === 'order') {
     tone = ORDER_STATUS_TONE[status] ?? 'muted'
     label = t(`status.order.${status}`, { defaultValue: status })

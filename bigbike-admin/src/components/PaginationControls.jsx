@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -20,6 +20,8 @@ function buildPageList(page, totalPages) {
 export function PaginationControls({ pagination, onPageChange }) {
   const { t } = useTranslation()
   const [jumpInput, setJumpInput] = useState('')
+  const [jumpError, setJumpError] = useState('')
+  const jumpErrId = useId()
 
   if (!pagination) return null
   const { page, totalPages, totalItems } = pagination
@@ -28,9 +30,14 @@ export function PaginationControls({ pagination, onPageChange }) {
   function handleJump(e) {
     e.preventDefault()
     const target = parseInt(jumpInput, 10)
-    if (!isNaN(target) && target >= 1 && target <= totalPages && target !== page) {
-      onPageChange(target)
+    // Số trang không hợp lệ (rỗng/không phải số/ngoài khoảng) → báo lỗi rõ, GIỮ lại ô nhập để sửa,
+    // không xoá im lặng khiến người dùng tưởng đã nhảy trang.
+    if (Number.isNaN(target) || target < 1 || target > totalPages) {
+      setJumpError(t('pagination.jumpRange', { total: totalPages, defaultValue: 'Nhập số trang từ 1 đến {{total}}.' }))
+      return
     }
+    setJumpError('')
+    if (target !== page) onPageChange(target)
     setJumpInput('')
   }
 
@@ -53,13 +60,18 @@ export function PaginationControls({ pagination, onPageChange }) {
               min={1}
               max={totalPages}
               value={jumpInput}
-              onChange={(e) => setJumpInput(e.target.value)}
+              onChange={(e) => { setJumpInput(e.target.value); if (jumpError) setJumpError('') }}
               className="bb-input h-[26px] w-[52px] px-1 text-center text-xs"
               aria-label={t('pagination.jumpTo')}
+              aria-invalid={jumpError ? true : undefined}
+              aria-describedby={jumpError ? jumpErrId : undefined}
             />
             <Button type="submit" variant="secondary" size="sm" disabled={!jumpInput} aria-label={t('pagination.jumpTo')}>
               <ArrowRight size={14} aria-hidden="true" />
             </Button>
+            {jumpError ? (
+              <span id={jumpErrId} role="alert" className="bb-field-error whitespace-nowrap">{jumpError}</span>
+            ) : null}
           </form>
         )}
 

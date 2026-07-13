@@ -24,7 +24,7 @@ export function FilterSelect({ value, onValueChange, options = [], placeholder, 
   return (
     <Select value={toRadix(value)} onValueChange={(v) => onValueChange(fromRadix(v))} disabled={disabled}>
       <SelectTrigger
-        aria-label={ariaLabel}
+        aria-label={ariaLabel || placeholder}
         className={cn(
           'h-[30px] w-auto gap-2 px-2.5 text-xs shadow-none',
           'rounded-[var(--admin-radius-xs)] border-[var(--bb-border-strong)] bg-[var(--bb-surface)] text-[var(--bb-text)]',

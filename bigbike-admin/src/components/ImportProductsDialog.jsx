@@ -49,6 +49,8 @@ export function ImportProductsDialog({ open, onClose }) {
   }
 
   function handleClose() {
+    // Chặn đóng khi đang lưu để không bỏ dở giữa chừng (backdrop/Esc/nút X đều gọi hàm này).
+    if (step === 'committing') return
     reset()
     onClose?.()
   }
@@ -69,7 +71,8 @@ export function ImportProductsDialog({ open, onClose }) {
       setExcludedRowKeys(new Set(result.rows.filter((r) => r.status === 'ERROR').map((r) => r.rowKey)))
       setStep('review')
     } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : (err?.message || t('import.error')))
+      // Chỉ hiện thông báo từ máy chủ (ApiClientError, đã thân thiện); lỗi kỹ thuật khác → thông báo chung.
+      setError(err instanceof ApiClientError ? err.message : t('import.error'))
       setStep('pick')
     }
   }
@@ -87,7 +90,8 @@ export function ImportProductsDialog({ open, onClose }) {
         ok: result.okCount, warn: result.warningCount, err: result.errorCount,
       }))
     } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : (err?.message || t('import.error')))
+      // Chỉ hiện thông báo từ máy chủ (ApiClientError, đã thân thiện); lỗi kỹ thuật khác → thông báo chung.
+      setError(err instanceof ApiClientError ? err.message : t('import.error'))
       setStep('review')
     }
   }
@@ -158,7 +162,7 @@ export function ImportProductsDialog({ open, onClose }) {
       )}
 
       {(step === 'validating' || step === 'committing') && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground py-10 justify-center">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground py-10 justify-center" role="status" aria-live="polite">
           <Loader2 size={16} className="animate-spin" aria-hidden />
           {t(step === 'validating' ? 'import.validating' : 'import.committing')}
         </div>
@@ -166,8 +170,8 @@ export function ImportProductsDialog({ open, onClose }) {
 
       {(step === 'review' || step === 'done') && report && (
         <div className="space-y-3">
-          {error ? <div className="text-sm text-danger">{error}</div> : null}
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+          {error ? <div className="text-sm text-danger" role="alert">{error}</div> : null}
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm" role="status" aria-live="polite">
             <span className="text-success">{t('import.okCount', { count: report.okCount })}</span>
             <span className="text-warning">{t('import.warningCount', { count: report.warningCount })}</span>
             <span className="text-danger">{t('import.errorCount', { count: report.errorCount })}</span>
@@ -177,6 +181,9 @@ export function ImportProductsDialog({ open, onClose }) {
           </div>
           <div className="overflow-x-auto border border-border rounded-md">
             <table className="w-full text-sm">
+              <caption className="sr-only">
+                {t('import.tableCaption', { defaultValue: 'Kết quả kiểm tra từng dòng sản phẩm trong file nhập' })}
+              </caption>
               <thead>
                 <tr className="border-b border-border bg-muted/40 text-left">
                   {step === 'review' && <th className="p-2 w-8" />}

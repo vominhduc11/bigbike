@@ -1,9 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Bell, Check, ShoppingCart } from 'lucide-react'
+import { AlertCircle, Bell, Check, ShoppingCart } from 'lucide-react'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { fetchAdminNotifications, markAllAdminNotificationsRead } from '../lib/adminApi'
 import { formatCurrencyVnd } from '../lib/formatters'
+import { toast } from '../lib/toast'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 const STORAGE_KEY = 'bb-admin-notifications'
 const MAX_ITEMS = 30
@@ -31,6 +40,8 @@ function persist(items) {
 
 function formatWhen(ts, locale) {
   const d = new Date(ts)
+  // Guard: timestamp thiếu/hỏng → không hiện "Invalid Date".
+  if (Number.isNaN(d.getTime())) return '—'
   const time = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
   const sameDay = new Date().toDateString() === d.toDateString()
   return sameDay ? time : `${d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' })} ${time}`
@@ -43,11 +54,13 @@ export function NotificationBell({ navigate }) {
   const { t, i18n } = useTranslation()
   const [items, setItems] = useState(loadStored)
   const [open, setOpen] = useState(false)
+  // Lỗi khi nạp danh sách từ server (V102): dùng để phân biệt "chưa có thông báo"
+  // với "không tải được" thay vì nuốt lỗi im lặng.
+  const [loadError, setLoadError] = useState(false)
   // Ids that were unread at the moment the panel was opened. We snapshot them
   // *before* markAllRead() clears the flags, so the open panel can still show a
   // per-row "new" marker for this viewing (the bell badge correctly clears).
   const [seenUnread, setSeenUnread] = useState(() => new Set())
-  const wrapRef = useRef(null)
 
   useEffect(() => {
     const unsubscribe = subscribeAdminWs('/topic/admin/orders', (event) => {
@@ -70,7 +83,9 @@ export function NotificationBell({ navigate }) {
     let active = true
     fetchAdminNotifications()
       .then(({ items: serverItems }) => {
-        if (!active || serverItems.length === 0) return
+        if (!active) return
+        setLoadError(false)
+        if (serverItems.length === 0) return
         setItems((prev) => {
           const prevByKey = new Map(prev.map((it) => [keyOf(it), it]))
           const merged = new Map()
@@ -88,23 +103,13 @@ export function NotificationBell({ navigate }) {
           return next
         })
       })
-      .catch(() => { /* offline / error: keep showing localStorage items (graceful) */ })
+      .catch(() => {
+        // Trước đây nuốt lỗi hoàn toàn: ô trống trông như "chưa có thông báo".
+        // Vẫn giữ được item trong localStorage, chỉ đánh dấu lỗi để panel báo rõ.
+        if (active) setLoadError(true)
+      })
     return () => { active = false }
   }, [])
-
-  useEffect(() => {
-    if (!open) return
-    function onClickOutside(e) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false)
-    }
-    function onKey(e) { if (e.key === 'Escape') setOpen(false) }
-    document.addEventListener('mousedown', onClickOutside)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onClickOutside)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
 
   const unread = items.reduce((n, it) => n + (it.read ? 0 : 1), 0)
 
@@ -115,12 +120,18 @@ export function NotificationBell({ navigate }) {
       return next
     })
     // Sync to the server so the unread state stays cleared across browsers and reloads.
-    markAllAdminNotificationsRead().catch(() => { /* best-effort, UI already updated */ })
-  }, [])
+    markAllAdminNotificationsRead().catch(() => {
+      // id: gộp toast trùng khi mở lại panel lúc offline (không xếp chồng vô hạn).
+      toast.error(
+        t('notifications.syncError', { defaultValue: 'Không đồng bộ được trạng thái đã đọc.' }),
+        { id: 'notif-sync-error', duration: 6000 },
+      )
+    })
+  }, [t])
 
-  function toggle() {
-    if (!open) {
-      // Opening: snapshot which items are unread now, then clear the unread state.
+  // Radix quản lý focus/keyboard/đóng-mở; chỉ cần chạy logic snapshot khi MỞ.
+  const handleOpenChange = useCallback((next) => {
+    if (next) {
       if (unread > 0) {
         setSeenUnread(new Set(items.filter((it) => !it.read).map((it) => it.id)))
         markAllRead()
@@ -128,100 +139,114 @@ export function NotificationBell({ navigate }) {
         setSeenUnread(new Set())
       }
     }
-    setOpen((wasOpen) => !wasOpen)
-  }
+    setOpen(next)
+  }, [unread, items, markAllRead])
 
+  // Xoá danh sách cục bộ (lịch sử đã đọc trong trình duyệt này). Backend V102 chưa có
+  // endpoint xoá nên đây là thao tác dọn cục bộ; item đã được đánh dấu đã đọc khi mở
+  // panel nên badge không sáng lại. preventDefault để menu không đóng sau khi dọn.
   function clearAll() {
     setItems([])
     persist([])
   }
 
   function openOrder(item) {
-    setOpen(false)
     if (item.orderId) navigate(`/admin/orders/${item.orderId}`)
   }
 
   return (
-    <div ref={wrapRef} className="relative">
-      <button
-        type="button"
-        onClick={toggle}
-        aria-label={t('notifications.bellLabel')}
-        aria-expanded={open}
-        className="relative flex size-9 items-center justify-center rounded-sm text-secondary-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
-      >
-        <Bell size={18} />
-        {unread > 0 && (
-          <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-xs font-bold leading-none text-primary-foreground">
-            {unread > 9 ? '9+' : unread}
-          </span>
-        )}
-      </button>
-
-      {open && (
-        <div
-          role="menu"
-          className="absolute right-0 top-[calc(100%+8px)] w-[340px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-lg border border-border bg-surface"
-          style={{ boxShadow: 'var(--admin-shadow-lg)', zIndex: 'var(--z-popup)' }}
+    <DropdownMenu open={open} onOpenChange={handleOpenChange}>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={t('notifications.bellLabel')}
+          className="relative text-secondary-foreground hover:text-foreground"
         >
-          <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-            <strong className="text-sm font-semibold text-foreground">{t('notifications.panelTitle')}</strong>
-            {items.length > 0 && (
-              <button
-                type="button"
-                onClick={clearAll}
-                className="text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
-              >
-                {t('notifications.clearAll')}
-              </button>
-            )}
-          </div>
+          <Bell size={18} aria-hidden="true" />
+          {unread > 0 && (
+            <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-xs font-bold leading-none text-primary-foreground">
+              {unread > 9 ? '9+' : unread}
+            </span>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
 
-          <div className="max-h-[60vh] overflow-y-auto">
-            {items.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
-                <Check size={22} className="text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">{t('notifications.empty')}</p>
-              </div>
-            ) : (
-              items.map((item) => {
-                const fresh = seenUnread.has(item.id)
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => openOrder(item)}
-                    className={`flex w-full items-start gap-3 border-b border-border px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-surface-muted${fresh ? ' bg-surface-selected' : ''}`}
-                  >
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-sm bg-surface-selected text-primary">
-                      <ShoppingCart size={15} />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-1.5">
-                        <span className="block text-sm font-semibold text-foreground">
-                          {item.type === 'NEW_ORDER' ? t('notifications.newOrder') : t('notifications.orderUpdate')}
-                        </span>
-                        {fresh && (
-                          <>
-                            <span className="inline-block size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />
-                            <span className="sr-only">{t('notifications.unread')}</span>
-                          </>
-                        )}
-                      </span>
-                      <span className="block truncate text-xs text-muted-foreground">
-                        {item.orderNumber}{item.customerName ? ` — ${item.customerName}` : ''}
-                      </span>
-                      <span className="mt-0.5 block text-xs text-muted-foreground">
-                        {item.total ? `${formatCurrencyVnd(item.total)} · ` : ''}{formatWhen(item.at, i18n.language)}
-                      </span>
-                    </span>
-                  </button>
-                )
-              })
-            )}
-          </div>
+      <DropdownMenuContent
+        align="end"
+        sideOffset={8}
+        className="w-[340px] max-w-[calc(100vw-2rem)] overflow-hidden p-0"
+      >
+        <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+          <strong className="text-sm font-semibold text-foreground">{t('notifications.panelTitle')}</strong>
+          {items.length > 0 && (
+            <DropdownMenuItem
+              onSelect={(e) => { e.preventDefault(); clearAll() }}
+              className="h-auto rounded-[var(--admin-radius-control)] px-2 py-1 text-xs font-medium text-muted-foreground focus:text-primary"
+            >
+              {t('notifications.clearAll')}
+            </DropdownMenuItem>
+          )}
         </div>
-      )}
-    </div>
+
+        <div className="max-h-[60vh] overflow-y-auto">
+          {items.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
+              {loadError ? (
+                <>
+                  <AlertCircle size={22} className="text-danger" aria-hidden="true" />
+                  <p className="text-sm text-danger">
+                    {t('notifications.loadError', { defaultValue: 'Không tải được thông báo. Vui lòng thử lại.' })}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Check size={22} className="text-muted-foreground" aria-hidden="true" />
+                  <p className="text-sm text-muted-foreground">{t('notifications.empty')}</p>
+                </>
+              )}
+            </div>
+          ) : (
+            items.map((item) => {
+              const fresh = seenUnread.has(item.id)
+              return (
+                <DropdownMenuItem
+                  key={item.id}
+                  onSelect={() => openOrder(item)}
+                  className={cn(
+                    'flex items-start gap-3 rounded-none border-b border-border px-4 py-3 last:border-b-0',
+                    fresh && 'bg-surface-selected',
+                  )}
+                >
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-sm bg-surface-selected text-primary">
+                    <ShoppingCart size={15} aria-hidden="true" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-1.5">
+                      <span className="block text-sm font-semibold text-foreground">
+                        {item.type === 'NEW_ORDER' ? t('notifications.newOrder') : t('notifications.orderUpdate')}
+                      </span>
+                      {fresh && (
+                        <>
+                          <span className="inline-block size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />
+                          <span className="sr-only">{t('notifications.unread')}</span>
+                        </>
+                      )}
+                    </span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {item.orderNumber || t('notifications.unknownOrder', { defaultValue: 'Đơn hàng' })}
+                      {item.customerName ? ` — ${item.customerName}` : ''}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      {item.total ? `${formatCurrencyVnd(item.total)} · ` : ''}{formatWhen(item.at, i18n.language)}
+                    </span>
+                  </span>
+                </DropdownMenuItem>
+              )
+            })
+          )}
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

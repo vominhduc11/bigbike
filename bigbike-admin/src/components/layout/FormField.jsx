@@ -12,7 +12,10 @@ import { cn } from '@/lib/utils'
  */
 export function FormField({ label, required, helper, error, htmlFor, count, countWarn, full, children }) {
   const autoId = useId()
-  const fieldId = htmlFor || autoId
+  // Nếu control con tự đặt id, ưu tiên id đó để htmlFor của Label khớp đúng control
+  // (tránh Label trỏ vào autoId trong khi control mang id riêng).
+  const childId = isValidElement(children) ? children.props.id : undefined
+  const fieldId = htmlFor || childId || autoId
   const errorId = `${fieldId}-error`
   const helperId = `${fieldId}-helper`
   const describedBy = error ? errorId : helper ? helperId : undefined

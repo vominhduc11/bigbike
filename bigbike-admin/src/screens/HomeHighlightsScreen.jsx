@@ -16,8 +16,6 @@ import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { useSaveShortcut } from '@/lib/useSaveShortcut'
 
-const SLOT_LABELS = { 1: 'Slot 1', 2: 'Slot 2', 3: 'Slot 3' }
-
 // Chữ ký so sánh dirty: chỉ phụ thuộc slot + productId đã chọn (thứ tự cố định 1-2-3).
 function slotsSignature(slots) {
   return [1, 2, 3]
@@ -72,7 +70,7 @@ function SlotCard({ slotNumber, product, onProductChange, disabled }) {
   return (
     <div className="border border-border p-4 flex flex-col gap-3">
       <p className="font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        {SLOT_LABELS[slotNumber]}
+        {t('homeHighlights.slotLabel', { number: slotNumber, defaultValue: 'Vị trí {{number}}' })}
       </p>
 
       {product && (
@@ -92,14 +90,16 @@ function SlotCard({ slotNumber, product, onProductChange, disabled }) {
             )}
           </div>
           {!disabled && (
-            <button
+            <Button
               type="button"
-              className="inline-flex min-w-[44px] min-h-[44px] items-center justify-center rounded-xs text-base text-muted-foreground hover:text-foreground hover:bg-muted flex-shrink-0 -m-2"
+              variant="ghost"
+              size="icon"
+              className="shrink-0 -m-1.5 text-muted-foreground"
               onClick={() => onProductChange(null)}
               aria-label={t('homeHighlights.clearSlot')}
             >
               <X size={16} aria-hidden="true" />
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -162,7 +162,7 @@ export function HomeHighlightsScreen({ canUpdate }) {
       toast.success(t('homeHighlights.savedSuccess'))
     },
     onError(err) {
-      toast.error(err?.message || t('common.errorOccurred'))
+      toast.error(err?.message || t('common.errorOccurred', { defaultValue: 'Đã xảy ra lỗi.' }))
     },
   })
 
@@ -217,7 +217,7 @@ export function HomeHighlightsScreen({ canUpdate }) {
       <Screen>
         <StatePanel
           tone="danger"
-          title={t('common.errorLoading')}
+          title={t('common.errorLoading', { defaultValue: 'Không tải được dữ liệu' })}
           description={error?.message}
           actionLabel={t('common.retry')}
           onAction={refetch}

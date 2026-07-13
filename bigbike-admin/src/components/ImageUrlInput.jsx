@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { X } from 'lucide-react'
 import { MediaPickerModal } from './MediaPickerModal'
 import { MediaRequirementHint } from './MediaRequirementHint'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { resolveDisplayUrl } from '@/lib/contracts'
 import { useMediaAltSync } from '@/lib/useMediaAltSync'
 
@@ -22,7 +21,8 @@ function ImagePreview({ url }) {
   const { t } = useTranslation()
   const [ok, setOk] = useState(false)
   const [loading, setLoading] = useState(false)
-  const trimmed = resolveDisplayUrl(url.trim())
+  // Guard undefined: caller có thể truyền value undefined (form nháp/partial).
+  const trimmed = resolveDisplayUrl((url ?? '').trim())
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -46,6 +46,7 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, err
   const [pickerOpen, setPickerOpen] = useState(false)
   const hasImage = Boolean(value?.trim())
   const { pickAlt } = useMediaAltSync()
+  const errorId = useId()
 
   return (
     <div className="image-url-input">
@@ -54,6 +55,8 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, err
           type="button"
           onClick={() => setPickerOpen(true)}
           disabled={disabled}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
         >
           <IconLibrary />
           {hasImage ? t('imageInput.changeImage') : t('imageInput.pickFromLibrary')}
@@ -69,7 +72,7 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, err
           </Button>
         )}
       </div>
-      {error && <small className="field-error">{error}</small>}
+      {error && <small id={errorId} role="alert" className="field-error">{error}</small>}
       <MediaRequirementHint recommend={recommend} className="mt-1 text-xs text-muted-foreground" />
       <ImagePreview url={value} />
 

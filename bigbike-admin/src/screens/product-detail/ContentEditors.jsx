@@ -305,6 +305,22 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
     }
     onChange(items.filter((_, i) => i !== index))
   }
+  // Đổi nguồn video (YouTube/TikTok/Facebook/Thư viện) phải xoá liên kết cũ vì mỗi nguồn có định
+  // dạng khác nhau — hỏi xác nhận khi ô đang có link để không xoá mất dữ liệu ngoài ý muốn.
+  async function changeType(index, nextType) {
+    const item = items[index]
+    if ((item?.type || 'youtube') === nextType) return
+    if ((item?.url || '').trim()) {
+      const confirmed = await showConfirm(
+        t('products.detail.video.switchProviderConfirm', { defaultValue: 'Đổi nguồn video sẽ xóa liên kết đã nhập. Bạn có chắc muốn tiếp tục?' }),
+        t('products.detail.video.switchProviderTitle', { defaultValue: 'Đổi nguồn video' }),
+      )
+      if (!confirmed) return
+    }
+    updateItem(index, nextType === 'upload'
+      ? { type: 'upload', url: '' }
+      : { type: nextType, url: '', thumbnailUrl: '' })
+  }
 
   return (
     <div className="list-editor">
@@ -323,7 +339,7 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
                   type="button"
                   variant={type === 'youtube' ? 'default' : 'ghost'}
                   size="sm"
-                  onClick={() => updateItem(index, { type: 'youtube', url: '', thumbnailUrl: '' })}
+                  onClick={() => changeType(index, 'youtube')}
                   disabled={disabled}
                 >
                   YouTube
@@ -332,7 +348,7 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
                   type="button"
                   variant={type === 'tiktok' ? 'default' : 'ghost'}
                   size="sm"
-                  onClick={() => updateItem(index, { type: 'tiktok', url: '', thumbnailUrl: '' })}
+                  onClick={() => changeType(index, 'tiktok')}
                   disabled={disabled}
                 >
                   TikTok
@@ -341,7 +357,7 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
                   type="button"
                   variant={type === 'facebook' ? 'default' : 'ghost'}
                   size="sm"
-                  onClick={() => updateItem(index, { type: 'facebook', url: '', thumbnailUrl: '' })}
+                  onClick={() => changeType(index, 'facebook')}
                   disabled={disabled}
                 >
                   Facebook
@@ -350,7 +366,7 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
                   type="button"
                   variant={type === 'upload' ? 'default' : 'ghost'}
                   size="sm"
-                  onClick={() => updateItem(index, { type: 'upload', url: '' })}
+                  onClick={() => changeType(index, 'upload')}
                   disabled={disabled}
                 >
                   {t('products.detail.video.fromLibrary')}
@@ -361,6 +377,7 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
                 <div>
                   <Input className={urlError  ? 'border-danger' : undefined}
                     placeholder={t('products.detail.video.youtubePlaceholder')}
+                    aria-label={t('products.detail.video.urlLabel', { defaultValue: 'Liên kết video' })}
                     value={item.url}
                     onChange={(e) => updateItem(index, { url: e.target.value })}
                     disabled={disabled}
@@ -378,6 +395,7 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
                 <div>
                   <Input className={urlError ? 'border-danger' : undefined}
                     placeholder={t('products.detail.video.tiktokPlaceholder')}
+                    aria-label={t('products.detail.video.urlLabel', { defaultValue: 'Liên kết video' })}
                     value={item.url}
                     onChange={(e) => updateItem(index, { url: e.target.value })}
                     disabled={disabled}
@@ -389,6 +407,7 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
                 <div>
                   <Input className={urlError ? 'border-danger' : undefined}
                     placeholder={t('products.detail.video.facebookPlaceholder')}
+                    aria-label={t('products.detail.video.urlLabel', { defaultValue: 'Liên kết video' })}
                     value={item.url}
                     onChange={(e) => updateItem(index, { url: e.target.value })}
                     disabled={disabled}
@@ -439,6 +458,7 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
               )}
               <Input
                 placeholder={t('products.detail.video.titlePlaceholder')}
+                aria-label={t('products.detail.video.titleLabel', { defaultValue: 'Tiêu đề video' })}
                 value={item.title || ''}
                 onChange={(e) => updateItem(index, { title: e.target.value })}
                 onBlur={(e) => getMediaAltSync(index).flushAltSync(e.target.value)}
@@ -446,6 +466,7 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
               />
               <Input
                 placeholder={t('products.detail.video.descriptionPlaceholder')}
+                aria-label={t('products.detail.video.descriptionLabel', { defaultValue: 'Mô tả video' })}
                 value={item.description || ''}
                 onChange={(e) => updateItem(index, { description: e.target.value })}
                 disabled={disabled}

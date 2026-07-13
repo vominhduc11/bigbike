@@ -102,6 +102,22 @@ export function AdminShell({
   const sidebarRef = useRef(null)
 
   const formRoute = isFormRoute(activePath)
+
+  // Drawer breakpoint (khớp @media max-width:900px trong admin-prototype.css): dưới
+  // ngưỡng này sidebar là drawer trượt; trên ngưỡng là cột cố định luôn hiển thị.
+  const [isDrawerViewport, setIsDrawerViewport] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches,
+  )
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 900px)')
+    const onChange = (e) => setIsDrawerViewport(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  // Drawer đóng trên mobile → loại nội dung sidebar khỏi thứ tự Tab + cây a11y
+  // (chỉ CSS `pointer-events:none` không đủ, phím Tab vẫn lọt vào link ẩn).
+  const drawerHidden = isDrawerViewport && !sidebarOpen
+
   const [focusMode, setFocusMode] = useState(() => {
     try { return localStorage.getItem(FOCUS_MODE_STORAGE_KEY) === '1' } catch { return false }
   })
@@ -192,16 +208,16 @@ export function AdminShell({
   const isLive = authMode === 'live'
 
   function formatRoles(roles) {
-    return roles.map(r => t(`roles.roleLabel_${r}`, { defaultValue: r.replace(/_/g, ' ') })).join(', ')
+    return (roles ?? []).map(r => t(`roles.roleLabel_${r}`, { defaultValue: r.replace(/_/g, ' ') })).join(', ')
   }
 
   const initials = useMemo(() => {
-    const parts = (user.fullName || '').trim().split(/\s+/).filter(Boolean)
+    const parts = (user?.fullName || '').trim().split(/\s+/).filter(Boolean)
     if (parts.length === 0) return 'BB'
     const first = parts[parts.length - 1].charAt(0)
     const second = parts[0].charAt(0)
     return (first + second).toUpperCase()
-  }, [user.fullName])
+  }, [user?.fullName])
 
   return (
     <>
@@ -221,7 +237,14 @@ export function AdminShell({
         {/* Mobile sidebar overlay */}
         <div className="bb-sidebar-overlay" onClick={() => { setSidebarOpen(false); hamburgerRef.current?.focus() }} aria-hidden="true" />
 
-        <aside ref={sidebarRef} id="bb-mobile-sidebar" className="bb-sidebar" aria-label={t('nav.sidebarLabel')}>
+        <aside
+          ref={sidebarRef}
+          id="bb-mobile-sidebar"
+          className="bb-sidebar"
+          aria-label={t('nav.sidebarLabel')}
+          inert={drawerHidden || undefined}
+          aria-hidden={drawerHidden || undefined}
+        >
           <div className="bb-sidebar-brand">
             <span className="bb-brand-mark" aria-hidden="true">BB</span>
             <div className="bb-brand-meta">
@@ -232,9 +255,11 @@ export function AdminShell({
 
           <nav className="bb-sidebar-nav" aria-label={t('nav.mainNav')} onKeyDown={handleSidebarKeyDown}>
             <TooltipProvider delayDuration={400}>
-              {navGroups.map((group) => (
-                <div key={group.groupKey} className="bb-nav-group">
-                  <span className="bb-nav-group-label">{group.label}</span>
+              {navGroups.map((group) => {
+                const groupLabelId = `bb-nav-group-${group.groupKey}`
+                return (
+                <div key={group.groupKey} className="bb-nav-group" role="group" aria-labelledby={groupLabelId}>
+                  <span id={groupLabelId} className="bb-nav-group-label">{group.label}</span>
                   {group.items.map((item) => {
                     const Icon = item.icon
                     const active = isRouteActive(activePath, item.path)
@@ -267,13 +292,14 @@ export function AdminShell({
                     )
                   })}
                 </div>
-              ))}
+                )
+              })}
             </TooltipProvider>
           </nav>
 
           <div className="bb-sidebar-foot">
             <span className={`dot${isLive ? '' : ' offline'}`} aria-hidden="true" />
-            <strong>{user.fullName}</strong>
+            <strong>{user?.fullName}</strong>
             <span>{isLive ? t('auth.connectionLive') : t('auth.connectionOffline')}</span>
           </div>
         </aside>
@@ -346,8 +372,8 @@ export function AdminShell({
               >
                 <span className="avatar" aria-hidden="true">{initials}</span>
                 <span style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-                  <span className="name">{user.fullName}</span>
-                  <span className="role">{formatRoles(user.roles)}</span>
+                  <span className="name">{user?.fullName}</span>
+                  <span className="role">{formatRoles(user?.roles)}</span>
                 </span>
                 <ChevronDown size={13} aria-hidden="true" />
               </Button>
@@ -355,12 +381,12 @@ export function AdminShell({
               {userMenuOpen && (
                 <div className="bb-user-dropdown" role="menu">
                   <div className="bb-user-dropdown-header">
-                    <strong>{user.fullName}</strong>
-                    <span>{user.email || user.roles.join(', ')}</span>
+                    <strong>{user?.fullName}</strong>
+                    <span>{user?.email || (user?.roles ?? []).join(', ')}</span>
                   </div>
                   <hr />
                   <div className="bb-user-dropdown-lang">
-                    <span className="bb-user-dropdown-lang-label">Ngôn ngữ nội dung</span>
+                    <span className="bb-user-dropdown-lang-label">{t('nav.contentLangLabel', { defaultValue: 'Ngôn ngữ nội dung' })}</span>
                     <LanguageSwitcher />
                   </div>
                   <Button

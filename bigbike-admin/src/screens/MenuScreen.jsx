@@ -36,7 +36,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import {
   SYSTEM_SLOTS,
   EMPTY_ITEM,
-  SLOT_CONTEXT_NOTES,
+  SLOT_CONTEXT_NOTE_KEYS,
   safeMenuDetailCache,
   normalizeParentId,
   sameParent,
@@ -123,7 +123,7 @@ export function MenuScreen({ canUpdate }) {
 
   // Danh mục có sẵn cho picker "Chọn danh mục có sẵn" trong ItemForm. Luôn dùng
   // cây 'vi' (giống ô "Mục cha") để không mất option khi UI content-lang đang EN.
-  const { data: categoriesResult } = useQuery({
+  const { data: categoriesResult, isError: categoriesIsError } = useQuery({
     queryKey: ['categories', 'tree', 'vi'],
     queryFn: () => fetchCategoryTree('vi'),
     staleTime: 5 * 60 * 1000,
@@ -148,9 +148,9 @@ export function MenuScreen({ canUpdate }) {
     if (!q) return base
     return base.filter(
       (item) =>
-        item.label.toLowerCase().includes(q) ||
+        (item.label || '').toLowerCase().includes(q) ||
         (item.labelEn || '').toLowerCase().includes(q) ||
-        item.url.toLowerCase().includes(q),
+        (item.url || '').toLowerCase().includes(q),
     )
   }, [flatMenuItems, search])
 
@@ -578,8 +578,8 @@ export function MenuScreen({ canUpdate }) {
                 <FilterSearchInput
                   value={search}
                   onChange={setSearch}
-                  placeholder="Tìm theo tên hoặc URL..."
-                  ariaLabel="Tìm kiếm mục menu"
+                  placeholder={t('menus.searchPlaceholder', { defaultValue: 'Tìm theo tên hoặc URL...' })}
+                  ariaLabel={t('menus.searchAria', { defaultValue: 'Tìm kiếm mục menu' })}
                 />
               </div>
             )}
@@ -612,7 +612,7 @@ export function MenuScreen({ canUpdate }) {
             ) : filteredFlatItems.length === 0 ? (
               <StatePanel
                 tone="neutral"
-                title={`Không tìm thấy mục nào phù hợp với “${search}”.`}
+                title={t('menus.searchNoMatch', { query: search, defaultValue: 'Không tìm thấy mục nào phù hợp với “{{query}}”.' })}
               />
             ) : (
               <DndContext
@@ -625,7 +625,8 @@ export function MenuScreen({ canUpdate }) {
                   strategy={verticalListSortingStrategy}
                 >
                   <div className="menu-table-wrap">
-                    <table className="menu-table">
+                    {/* min-width buộc cuộn ngang trên mobile thay vì ép cột chật (menu-table-wrap đã overflow:auto). */}
+                    <table className="menu-table min-w-[560px]">
                       <colgroup>
                         {canUpdate && <col className="menu-col-check" />}
                         <col className="menu-col-grip" />
@@ -691,6 +692,7 @@ export function MenuScreen({ canUpdate }) {
       {showItemModal && (
         <Modal
           title={`${t('menus.addItem')} — ${formatText(menuDetail?.name ?? '')}`}
+          description={t('menus.addItemDialogDesc', { defaultValue: 'Thêm một mục mới vào thanh điều hướng.' })}
           onClose={closeAddModal}
           footer={
             <>
@@ -704,9 +706,9 @@ export function MenuScreen({ canUpdate }) {
           }
         >
           <form id="add-item-form" onSubmit={handleAddItem}>
-            {SLOT_CONTEXT_NOTES[selectedLocation] && (
+            {SLOT_CONTEXT_NOTE_KEYS[selectedLocation] && (
               <div className="menu-form-context-note">
-                {SLOT_CONTEXT_NOTES[selectedLocation]}
+                {t(SLOT_CONTEXT_NOTE_KEYS[selectedLocation].key, { defaultValue: SLOT_CONTEXT_NOTE_KEYS[selectedLocation].defaultValue })}
               </div>
             )}
             {itemError && (
@@ -719,6 +721,7 @@ export function MenuScreen({ canUpdate }) {
               onChange={(patch) => setNewItem((p) => ({ ...p, ...patch }))}
               parentOptions={parentOptions}
               categoryOptions={categoryTreeOptions}
+              categoryError={categoriesIsError}
               isNew
             />
           </form>
@@ -729,6 +732,7 @@ export function MenuScreen({ canUpdate }) {
       {editItem && (
         <Modal
           title={`${t('common.edit')}: ${pickLabel(editItem)}`}
+          description={t('menus.editItemDialogDesc', { defaultValue: 'Chỉnh sửa mục điều hướng.' })}
           onClose={closeEditModal}
           footer={
             <>
@@ -752,6 +756,7 @@ export function MenuScreen({ canUpdate }) {
               onChange={(patch) => setEditItemForm((p) => ({ ...p, ...patch }))}
               parentOptions={editParentOptions}
               categoryOptions={categoryTreeOptions}
+              categoryError={categoriesIsError}
               isNew={false}
             />
           </form>

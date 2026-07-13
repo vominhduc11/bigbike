@@ -88,6 +88,8 @@ export function DashboardScreen({ navigate }) {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
   const [period, setPeriod] = useState('30d')
+  // Số đếm (đơn/sản phẩm) format theo ngôn ngữ đang chọn — không cứng 'vi-VN'.
+  const numberLocale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
   // O9 — đơn hàng admin vừa xem gần đây, cho phép quay lại nhanh.
   const recentOrderItems = useRecentItems('recent:orders')
 
@@ -135,18 +137,16 @@ export function DashboardScreen({ navigate }) {
     { key: '90d', label: t('dashboard.period90d') },
   ]
 
-  const pieTotal = data
-    ? data.orderStatusBreakdown.reduce((s, d) => s + d.count, 0)
-    : 0
+  // Dữ liệu có thể về thiếu (partial) — mảng breakdown có thể undefined dù `data` tồn tại.
+  const orderStatusBreakdown = data?.orderStatusBreakdown ?? []
+  const pieTotal = orderStatusBreakdown.reduce((s, d) => s + (d.count ?? 0), 0)
 
-  const pieDataWithTotal = data
-    ? data.orderStatusBreakdown.map((d) => ({
-        ...d,
-        name: t(`status.order.${d.status}`, d.status),
-        color: ORDER_STATUS_COLORS[d.status] ?? 'var(--admin-color-text-muted)',
-        total: pieTotal,
-      }))
-    : []
+  const pieDataWithTotal = orderStatusBreakdown.map((d) => ({
+    ...d,
+    name: t(`status.order.${d.status}`, d.status),
+    color: ORDER_STATUS_COLORS[d.status] ?? 'var(--admin-color-text-muted)',
+    total: pieTotal,
+  }))
 
   const revenueData = data?.revenueData ?? []
   const hasRevenue = revenueData.some((d) => d.revenue > 0)
@@ -171,7 +171,7 @@ export function DashboardScreen({ navigate }) {
     return { direction: 'neutral', label: t('dashboard.kpi.ordersDeltaFlat') }
   }
 
-  const pendingOrdersCount = data?.kpi.pendingOrders ?? 0
+  const pendingOrdersCount = data?.kpi?.pendingOrders ?? 0
   const outOfStockCount = invSummary?.outOfStockCount ?? 0
 
   const SEVERITY_RANK = { high: 0, medium: 1, low: 2 }
@@ -283,11 +283,11 @@ export function DashboardScreen({ navigate }) {
                 </span>
                 <span className="bb-kpi-icon brand"><CircleDollarSign size={15} /></span>
               </div>
-              <div className="bb-kpi-value bb-kpi-value--money">{formatVndShort(data.kpi.todayRevenue)}</div>
+              <div className="bb-kpi-value bb-kpi-value--money">{formatVndShort(data.kpi?.todayRevenue)}</div>
               <div className="bb-kpi-foot">
                 <TrendPill {...revenueTrend(data.kpi)} />
                 <span className="bb-kpi-foot-label">
-                  {t('dashboard.kpi.todayPaid', { amount: formatVndShort(data.kpi.todayPaidRevenue) })}
+                  {t('dashboard.kpi.todayPaid', { amount: formatVndShort(data.kpi?.todayPaidRevenue) })}
                 </span>
               </div>
             </div>
@@ -306,7 +306,7 @@ export function DashboardScreen({ navigate }) {
                 </span>
                 <span className="bb-kpi-icon info"><ShoppingBag size={15} /></span>
               </div>
-              <div className="bb-kpi-value">{data.kpi.todayOrders.toLocaleString('vi-VN')}</div>
+              <div className="bb-kpi-value">{(data.kpi?.todayOrders ?? 0).toLocaleString(numberLocale)}</div>
               <div className="bb-kpi-foot">
                 <TrendPill {...ordersTrend(data.kpi)} />
                 <span className="bb-kpi-foot-label">{t('dashboard.kpi.todayOrdersHint')}</span>
@@ -325,11 +325,11 @@ export function DashboardScreen({ navigate }) {
                   {t('dashboard.kpi.pendingOrders')}
                   <span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.currentScope')}</span>
                 </span>
-                <span className={`bb-kpi-icon ${data.kpi.pendingOrders > PENDING_WARN_THRESHOLD ? 'danger' : 'warning'}`}>
+                <span className={`bb-kpi-icon ${(data.kpi?.pendingOrders ?? 0) > PENDING_WARN_THRESHOLD ? 'danger' : 'warning'}`}>
                   <Clock size={15} />
                 </span>
               </div>
-              <div className="bb-kpi-value">{data.kpi.pendingOrders.toLocaleString('vi-VN')}</div>
+              <div className="bb-kpi-value">{(data.kpi?.pendingOrders ?? 0).toLocaleString(numberLocale)}</div>
               <div className="bb-kpi-foot">
                 <span className="bb-kpi-foot-label">{t('dashboard.kpi.pendingOrdersHint')}</span>
               </div>
@@ -349,7 +349,7 @@ export function DashboardScreen({ navigate }) {
                 </span>
                 <span className="bb-kpi-icon success"><Package size={15} /></span>
               </div>
-              <div className="bb-kpi-value">{data.kpi.activeProducts.toLocaleString('vi-VN')}</div>
+              <div className="bb-kpi-value">{(data.kpi?.activeProducts ?? 0).toLocaleString(numberLocale)}</div>
               <div className="bb-kpi-foot">
                 <span className="bb-kpi-foot-label">{t('dashboard.kpi.activeProductsHint')}</span>
               </div>
@@ -399,23 +399,20 @@ export function DashboardScreen({ navigate }) {
                     <Suspense fallback={<SkeletonBlock height={200} />}>
                       <OrderStatusPie pieDataWithTotal={pieDataWithTotal} />
                     </Suspense>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
+                    <div className="flex flex-col gap-2 mt-3">
                       {pieDataWithTotal.map((d) => (
-                        <div
-                          key={d.status}
-                          style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}
-                        >
-                          <span style={{ width: 10, height: 10, borderRadius: 3, background: d.color, flexShrink: 0 }} />
-                          <span style={{ flex: 1, color: 'var(--bb-text-muted)' }}>{d.name}</span>
-                          <span style={{ fontWeight: 700, color: 'var(--bb-text)' }}>
+                        <div key={d.status} className="flex items-center gap-2 text-xs">
+                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: d.color }} />
+                          <span className="flex-1 bb-muted">{d.name}</span>
+                          <span className="font-bold">
                             {d.count}
-                            <span className="bb-muted" style={{ fontWeight: 400, marginLeft: 4 }}>
+                            <span className="bb-muted font-normal ml-1">
                               ({pieTotal > 0 ? Math.round((d.count / pieTotal) * 100) : 0}%)
                             </span>
                           </span>
                         </div>
                       ))}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, marginTop: 4, borderTop: '1px dashed var(--bb-border)', fontSize: 13 }}>
+                      <div className="flex justify-between pt-2 mt-1 text-xs border-t border-dashed border-[color:var(--bb-border)]">
                         <span className="bb-muted">{t('dashboard.orderStatusChart.total')}</span>
                         <strong>{pieTotal}</strong>
                       </div>
@@ -429,7 +426,7 @@ export function DashboardScreen({ navigate }) {
           </div>
 
           {/* Attention items */}
-          <div className="bb-card" style={{ marginBottom: 16 }}>
+          <div className="bb-card mb-4">
             <div className="bb-card-header">
               <div>
                 <h3>{t('dashboard.attention.title')}</h3>
@@ -443,12 +440,16 @@ export function DashboardScreen({ navigate }) {
                   description={t('dashboard.attention.inventoryWarn')}
                 />
               )}
-              {attentionItems.length === 0 ? (
+              {/* Chỉ báo "tất cả đều ổn" khi thực sự nạp được tồn kho. Nếu tồn kho lỗi,
+                  ta không biết có sản phẩm hết hàng hay không → chỉ hiện cảnh báo ở trên,
+                  không khẳng định rỗng. */}
+              {attentionItems.length === 0 && !invIsError && (
                 <SectionEmpty
                   title={t('dashboard.attention.empty')}
                   description={t('dashboard.attention.emptyDesc')}
                 />
-              ) : (
+              )}
+              {attentionItems.length > 0 && (
                 <div>
                   {attentionItems.map((item) => (
                     <div
@@ -528,7 +529,7 @@ export function DashboardScreen({ navigate }) {
                               </div>
                             </td>
                             <td title={order.customerName || order.customerEmail || ''}>
-                              {order.customerName || order.customerEmail}
+                              {order.customerName || order.customerEmail || t('common.unknown')}
                             </td>
                             <td className="num" style={{ fontWeight: 600 }}>{formatVndShort(order.total)}</td>
                             <td><StatusBadge type="order" status={order.orderStatus} /></td>
@@ -543,7 +544,7 @@ export function DashboardScreen({ navigate }) {
                       <MobileCard
                         key={order.id}
                         title={order.orderNumber}
-                        subtitle={`${order.customerName || order.customerEmail} • ${formatRelativeTime(order.placedAt, t)}`}
+                        subtitle={`${order.customerName || order.customerEmail || t('common.unknown')} • ${formatRelativeTime(order.placedAt, t)}`}
                         status={<StatusBadge type="order" status={order.orderStatus} />}
                         meta={[
                           { label: t('dashboard.recentOrders.total'), value: formatVndShort(order.total), tone: 'strong' },
@@ -610,7 +611,7 @@ export function DashboardScreen({ navigate }) {
                                 onClick={() => navigate(`/admin/products/${product.productId}`)}
                               >
                                 <span className="bb-product-thumb"><Package size={18} /></span>
-                                <span title={product.name}>{product.name}</span>
+                                <span title={product.name}>{product.name || t('common.unknown')}</span>
                               </button>
                             </td>
                             <td className="num">{product.units}</td>
@@ -627,7 +628,7 @@ export function DashboardScreen({ navigate }) {
                     {topProducts.map((product, idx) => (
                       <MobileCard
                         key={product.productId}
-                        title={`${idx + 1}. ${product.name}`}
+                        title={`${idx + 1}. ${product.name || t('common.unknown')}`}
                         meta={[
                           { label: t('dashboard.topProducts.units'), value: product.units },
                           { label: t('dashboard.topProducts.revenue'), value: formatVndShort(product.revenue), tone: 'strong' },

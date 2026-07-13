@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AlertCircle, ChevronDown } from 'lucide-react'
 import { ImageUrlInput } from './ImageUrlInput'
@@ -22,12 +23,17 @@ export function SeoCard({
 }) {
   const { t } = useTranslation()
   const p = (key, defaultValue) => t(`${i18nPrefix}.${key}`, { defaultValue })
+  const uid = useId()
+  const errId = (name) => `${uid}-${name}`
 
-  const seoTitleVal = isEnLang ? (form.translations?.en?.seoTitle ?? '') : form.seoTitle
-  const seoDescVal = isEnLang ? (form.translations?.en?.seoDescription ?? '') : form.seoDescription
-  const nameVal = isEnLang ? (form.translations?.en?.name ?? '') : form.name
+  // Guard undefined: partial/nháp form có thể chưa có các field này → tránh crash khi
+  // gọi .trim()/.length và tránh cảnh báo controlled input.
+  const seoTitleVal = (isEnLang ? form.translations?.en?.seoTitle : form.seoTitle) ?? ''
+  const seoDescVal = (isEnLang ? form.translations?.en?.seoDescription : form.seoDescription) ?? ''
+  const nameVal = (isEnLang ? form.translations?.en?.name : form.name) ?? ''
   const previewSlug = (isEnLang ? (form.translations?.en?.slug || form.slug) : form.slug) || previewSlugDefault
-  const previewUrl = form.seoCanonicalUrl.trim() || `${previewBase}/${previewSlug}`
+  const canonicalUrlVal = form.seoCanonicalUrl ?? ''
+  const previewUrl = canonicalUrlVal.trim() || `${previewBase}/${previewSlug}`
 
   const enHint = isEnLang && (
     <span className="hint" style={{ display: 'inline', marginLeft: 8 }}>
@@ -97,9 +103,11 @@ export function SeoCard({
             disabled={isReadOnly}
             maxLength={255}
             placeholder={p('seoTitlePlaceholder', 'Để trống sẽ tự dùng tên')}
+            aria-invalid={validationErrors.seoTitle ? true : undefined}
+            aria-describedby={validationErrors.seoTitle ? errId('seoTitle') : undefined}
           />
           {validationErrors.seoTitle && (
-            <span className="hint text-danger flex items-center gap-1">
+            <span id={errId('seoTitle')} role="alert" className="hint text-danger flex items-center gap-1">
               <AlertCircle size={13} aria-hidden="true" />{validationErrors.seoTitle}
             </span>
           )}
@@ -116,9 +124,11 @@ export function SeoCard({
             onBlur={!isEnLang ? () => onFieldBlur?.('seoDescription') : undefined}
             disabled={isReadOnly}
             placeholder={p('seoDescriptionPlaceholder', 'Mô tả ngắn hiển thị dưới tiêu đề trên Google')}
+            aria-invalid={validationErrors.seoDescription ? true : undefined}
+            aria-describedby={validationErrors.seoDescription ? errId('seoDescription') : undefined}
           />
           {validationErrors.seoDescription && (
-            <span className="hint text-danger flex items-center gap-1">
+            <span id={errId('seoDescription')} role="alert" className="hint text-danger flex items-center gap-1">
               <AlertCircle size={13} aria-hidden="true" />{validationErrors.seoDescription}
             </span>
           )}
@@ -126,14 +136,16 @@ export function SeoCard({
         <label className="form-field">
           <span>{p('seoCanonicalUrl', 'Địa chỉ chuẩn (canonical URL)')}</span>
           <Input
-            value={form.seoCanonicalUrl}
+            value={canonicalUrlVal}
             onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
             onBlur={() => onFieldBlur?.('seoCanonicalUrl')}
             disabled={isReadOnly}
-            placeholder="https://bigbike.vn/..."
+            placeholder={p('seoCanonicalUrlPlaceholder', 'https://bigbike.vn/...')}
+            aria-invalid={validationErrors.seoCanonicalUrl ? true : undefined}
+            aria-describedby={validationErrors.seoCanonicalUrl ? errId('seoCanonicalUrl') : undefined}
           />
           {validationErrors.seoCanonicalUrl && (
-            <span className="hint text-danger flex items-center gap-1">
+            <span id={errId('seoCanonicalUrl')} role="alert" className="hint text-danger flex items-center gap-1">
               <AlertCircle size={13} aria-hidden="true" />{validationErrors.seoCanonicalUrl}
             </span>
           )}

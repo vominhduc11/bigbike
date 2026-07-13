@@ -55,6 +55,41 @@ export function placeholderFor(key) {
   return ''
 }
 
+// Đổi khoá kỹ thuật (vd `home_content_bottom_html`) thành chuỗi dễ đọc khi không có
+// nhãn nghiệp vụ — dùng làm fallback cuối cùng thay vì phơi khoá thô ra giao diện.
+export function humanizeKey(key) {
+  return String(key || '')
+    .replaceAll('_', ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim()
+}
+
+// Nhãn/hint/vị trí của từng ô cài đặt đi qua i18n để chủ shop đọc bằng ngôn ngữ nghiệp
+// vụ, đồng thời cho phép bản dịch tiếng Anh ghi đè. defaultValue giữ nguyên chuỗi tiếng
+// Việt hiện có (KEY_LABELS_VI/KEY_HINTS_VI/KEY_GUIDE) nên UI không đổi khi chưa dịch.
+export function settingLabel(setting, t) {
+  const fallback = KEY_LABELS_VI[setting.key] || setting.description || humanizeKey(setting.key)
+  return t(`settings.keyLabel.${setting.key}`, { defaultValue: fallback })
+}
+
+export function settingHint(setting, t) {
+  const fallback = KEY_HINTS_VI[setting.key]
+  if (!fallback) return ''
+  return t(`settings.keyHint.${setting.key}`, { defaultValue: fallback })
+}
+
+export function settingWhere(setting, t) {
+  const fallback = KEY_GUIDE[setting.key]?.[1]
+  if (!fallback) return ''
+  return t(`settings.keyWhere.${setting.key}`, { defaultValue: fallback })
+}
+
+export function sectionTitle(sec, t) {
+  const meta = SECTION_GUIDE[sec]
+  if (!meta) return t('settings.sectionOther', { defaultValue: 'Khác' })
+  return t(`settings.section.${sec}`, { defaultValue: meta.title })
+}
+
 export function validateValue(key, value) {
   if (!value) return null
   const k = key.toLowerCase()

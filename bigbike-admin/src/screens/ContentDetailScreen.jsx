@@ -926,6 +926,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
         </form>
 
         <StickyActionBar
+          ariaLabel={t('common.actionBarLabel', { defaultValue: 'Thanh thao tác' })}
           info={
             <span className="flex items-center gap-2 text-sm">
               <span className={cn('w-2 h-2 rounded-full', saveDotClass)} />

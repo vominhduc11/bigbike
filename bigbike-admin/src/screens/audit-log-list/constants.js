@@ -49,6 +49,29 @@ export function toBadgeVariant(tone) {
   return tone === 'neutral' ? 'muted' : tone
 }
 
+// ── Nguồn CHUNG cho tone của từng module — trước đây AuditCard và cells.jsx tự khai
+// báo map riêng (lệch nhau, thiếu key). Gom về đây để 2 nơi import cùng 1 nguồn. ──
+export const MODULE_TONE_MAP = {
+  ORDER: 'info', PRODUCT: 'success', CATEGORY: 'neutral', BRAND: 'neutral',
+  INVENTORY: 'warning', CUSTOMER: 'neutral', SITE_SETTING: 'danger',
+  MEDIA: 'neutral', MENU: 'neutral', CONTENT: 'neutral',
+  ADMIN_ROLE: 'danger', ADMIN_USER: 'neutral', REDIRECT: 'warning',
+}
+
+export function getModuleTone(resourceType) {
+  return MODULE_TONE_MAP[resourceType] || 'neutral'
+}
+
+// Nhãn module/hành động dùng chung (fallback thống nhất giữa bảng và thẻ mobile).
+export function getModuleLabel(t, resourceType) {
+  return t(`auditLog.module.${resourceType}`, { defaultValue: resourceType || t('auditLog.module.OTHER') })
+}
+
+export function getActionLabel(t, action) {
+  if (!action) return '—'
+  return t(`auditLog.action.${action}`, { defaultValue: null }) ?? t('auditLog.actionOther', { code: action })
+}
+
 // ── Diff helpers ───────────────────────────────────────────────────────────────
 export function tryParse(str) {
   try { return JSON.parse(str) } catch { return null }

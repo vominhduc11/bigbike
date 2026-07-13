@@ -23,18 +23,24 @@ export const EMPTY_ITEMS = []
 export function buildBreadcrumbMap(items) {
   const byId = new Map(items.map((c) => [c.id, c]))
   const cache = new Map()
-  const getPath = (id) => {
+  // `seen` guards against a corrupt parent chain (e.g. A→B→A after a bad reorder or
+  // stale cache): without it the recursion would loop forever and crash the list.
+  // Each top-level walk gets its own `seen`; hitting an id already on the current
+  // chain stops the walk at that node's own name instead of recursing again.
+  const getPath = (id, seen) => {
     if (cache.has(id)) return cache.get(id)
     const cat = byId.get(id)
     if (!cat) return ''
+    if (seen.has(id)) return cat.name || ''
+    seen.add(id)
     const path = cat.parentId
-      ? `${getPath(cat.parentId)} / ${cat.name}`
+      ? `${getPath(cat.parentId, seen)} / ${cat.name}`
       : cat.name
     cache.set(id, path)
     return path
   }
   const map = new Map()
-  items.forEach((c) => map.set(c.id, getPath(c.id)))
+  items.forEach((c) => map.set(c.id, getPath(c.id, new Set())))
   return map
 }
 

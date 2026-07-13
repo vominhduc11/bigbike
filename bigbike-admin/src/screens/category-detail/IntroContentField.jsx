@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input'
 import { Alert } from '@/components/ui/alert'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
+import { CollapsibleSection } from '@/components/CollapsibleSection'
+import { showConfirm } from '../../lib/confirm'
 import { parseIntro, serializeIntro, emptyFaq } from '@/lib/categoryIntro'
 
 /**
@@ -19,6 +21,13 @@ export function IntroContentField({ value, onChange, disabled, lang = 'vi' }) {
   const [model, setModel] = useState(() => parseIntro(html))
   const [brandInput, setBrandInput] = useState('')
   const lastHtml = useRef(html)
+  // Form dài → thu gọn 2 phần ít dùng hơn (Câu hỏi thường gặp, Nút liên hệ). Mở
+  // sẵn khi đã có nội dung để không giấu dữ liệu; đóng sẵn khi trống. Đọc giá trị
+  // khởi tạo từ `model` (state đã parse sẵn) — không đọc ref trong lúc render.
+  const [faqOpen, setFaqOpen] = useState(() => model.faqs.length > 0)
+  const [ctaOpen, setCtaOpen] = useState(
+    () => Boolean(model.ctaText || model.ctaLabel || model.ctaUrl),
+  )
 
   useEffect(() => {
     if (html !== lastHtml.current) {
@@ -40,7 +49,16 @@ export function IntroContentField({ value, onChange, disabled, lang = 'vi' }) {
   const addFaq = () => commit({ ...model, faqs: [...model.faqs, emptyFaq()] })
   const updateFaq = (i, field, v) =>
     commit({ ...model, faqs: model.faqs.map((f, idx) => (idx === i ? { ...f, [field]: v } : f)) })
-  const removeFaq = (i) => commit({ ...model, faqs: model.faqs.filter((_, idx) => idx !== i) })
+  // Xoá câu hỏi là mất nội dung đã nhập — xác nhận trước (không có Hoàn tác).
+  const removeFaq = async (i) => {
+    const ok = await showConfirm(
+      t('categories.detail.introFaqRemoveConfirm', { defaultValue: 'Xoá câu hỏi này? Nội dung câu hỏi và câu trả lời sẽ bị xoá khỏi phần giới thiệu.' }),
+      t('categories.detail.introFaqRemoveTitle', { defaultValue: 'Xoá câu hỏi thường gặp?' }),
+      { variant: 'danger', confirmLabel: t('common.delete') },
+    )
+    if (!ok) return
+    commit({ ...model, faqs: model.faqs.filter((_, idx) => idx !== i) })
+  }
   const moveFaq = (i, dir) => {
     const j = i + dir
     if (j < 0 || j >= model.faqs.length) return
@@ -136,6 +154,7 @@ export function IntroContentField({ value, onChange, disabled, lang = 'vi' }) {
                   addBrand()
                 }
               }}
+              aria-label={t('categories.detail.introBrands')}
               placeholder={t('categories.detail.introBrandsPlaceholder')}
               disabled={disabled}
               maxLength={60}
@@ -147,9 +166,16 @@ export function IntroContentField({ value, onChange, disabled, lang = 'vi' }) {
         </div>
       </fieldset>
 
-      {/* Phần 2: Câu hỏi thường gặp */}
-      <fieldset className={sectionClass} disabled={disabled}>
-        <legend className={legendClass}>{t('categories.detail.introSectionFaq')}</legend>
+      {/* Phần 2: Câu hỏi thường gặp — thu gọn (form dài) */}
+      <CollapsibleSection
+        title={t('categories.detail.introSectionFaq')}
+        hint={model.faqs.length > 0
+          ? t('categories.detail.introFaqCount', { count: model.faqs.length, defaultValue: '{{count}} câu hỏi' })
+          : undefined}
+        open={faqOpen}
+        onToggle={() => setFaqOpen((v) => !v)}
+      >
+      <fieldset className="flex flex-col gap-3 pt-1" disabled={disabled}>
         {model.faqs.length === 0 && (
           <p className="text-xs text-muted-foreground">{t('categories.detail.introFaqEmpty')}</p>
         )}
@@ -214,10 +240,15 @@ export function IntroContentField({ value, onChange, disabled, lang = 'vi' }) {
           <Plus size={14} aria-hidden="true" /> {t('categories.detail.introFaqAdd')}
         </Button>
       </fieldset>
+      </CollapsibleSection>
 
-      {/* Phần 3: Nút liên hệ */}
-      <fieldset className={sectionClass} disabled={disabled}>
-        <legend className={legendClass}>{t('categories.detail.introSectionCta')}</legend>
+      {/* Phần 3: Nút liên hệ — thu gọn (form dài) */}
+      <CollapsibleSection
+        title={t('categories.detail.introSectionCta')}
+        open={ctaOpen}
+        onToggle={() => setCtaOpen((v) => !v)}
+      >
+      <fieldset className="flex flex-col gap-3 pt-1" disabled={disabled}>
         <label className="flex flex-col gap-1">
           <span className={labelClass}>{t('categories.detail.introCtaText')}</span>
           <Input
@@ -249,6 +280,7 @@ export function IntroContentField({ value, onChange, disabled, lang = 'vi' }) {
           />
         </label>
       </fieldset>
+      </CollapsibleSection>
     </div>
   )
 }

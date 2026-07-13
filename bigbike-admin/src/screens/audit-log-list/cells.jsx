@@ -1,16 +1,11 @@
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
-import { DANGEROUS_ACTIONS, toBadgeVariant } from './constants'
+import { DANGEROUS_ACTIONS, toBadgeVariant, getModuleTone, getModuleLabel, getActionLabel } from './constants'
 
 export function ModuleBadge({ resourceType }) {
   const { t } = useTranslation()
-  const TONE_MAP = {
-    ORDER: 'info', PRODUCT: 'success', CATEGORY: 'neutral', BRAND: 'neutral',
-    INVENTORY: 'warning', CUSTOMER: 'neutral', SITE_SETTING: 'danger',
-    MEDIA: 'neutral', MENU: 'neutral', CONTENT: 'neutral', ADMIN_ROLE: 'danger', ADMIN_USER: 'neutral', REDIRECT: 'warning',
-  }
-  const tone = TONE_MAP[resourceType] || 'neutral'
-  const label = t(`auditLog.module.${resourceType}`, { defaultValue: resourceType || t('auditLog.module.OTHER') })
+  const tone = getModuleTone(resourceType)
+  const label = getModuleLabel(t, resourceType)
   return <Badge variant={toBadgeVariant(tone)}>{label}</Badge>
 }
 
@@ -48,10 +43,8 @@ export function ResourceCell({ log }) {
 export function ActionLabel({ action }) {
   const { t } = useTranslation()
   const isDangerous = DANGEROUS_ACTIONS.has(action)
-  // #9: fall back to raw code in parens rather than generic "other activity"
-  const label = action
-    ? t(`auditLog.action.${action}`, { defaultValue: null }) ?? t('auditLog.actionOther', { code: action })
-    : '—'
+  // #9: fall back to raw code in parens rather than generic "other activity" (helper dùng chung)
+  const label = getActionLabel(t, action)
 
   return (
     <span className={`audit-action-label${isDangerous ? ' audit-action-danger' : ''}`}>

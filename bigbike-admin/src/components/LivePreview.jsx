@@ -2,7 +2,6 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AlertCircle, Eye, Loader2, Monitor, Smartphone, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { useDialogA11y } from '@/lib/useDialogA11y'
 
 /**
  * Khung xem trước "sống" dùng chung cho mọi loại nội dung (sản phẩm, bài viết…).
@@ -36,11 +35,19 @@ export function LivePreview({
   const readyRef = useRef(false)
   const dataRef = useRef(data)
   const frameHostRef = useRef(null)
-  const panelRef = useRef(null)
   const [hostSize, setHostSize] = useState({ width: 0, height: 0 })
 
-  // A3: Escape đóng + focus-trap + trả focus cho slide-over tự dựng (không qua Radix).
-  useDialogA11y(panelRef, { active: open, onClose })
+  // Panel là NON-MODAL: form bên trái vẫn thao tác được khi đang xem preview, nên KHÔNG
+  // trap focus (trap khiến bàn phím không Tab quay lại được form/trigger). Chỉ bắt Escape
+  // để đóng — không cướp/giữ focus trong panel.
+  useEffect(() => {
+    if (!open) return undefined
+    function onKeyDown(e) {
+      if (e.key === 'Escape') onClose?.()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [open, onClose])
 
   // Bắt tay: iframe báo "ready" khi mount → gửi ngay payload hiện tại (đọc qua ref
   // nên không stale, và không setState trong effect).
@@ -108,18 +115,17 @@ export function LivePreview({
     // Không có lớp phủ full-viewport chặn click: panel chỉ chiếm dải bên phải
     // (max 860px), phần form bên trái vẫn thao tác được trong lúc xem preview —
     // đúng tinh thần "live" (xem cập nhật ngay khi gõ, không phải đóng panel mới
-    // sửa tiếp được). Đóng bằng nút X hoặc Escape (useDialogA11y).
+    // sửa tiếp được). Đóng bằng nút X hoặc phím Escape (không trap focus).
     <aside
-      ref={panelRef}
-      tabIndex={-1}
+      aria-label={previewTitle}
       className="fixed inset-y-0 right-0 z-[var(--admin-z-overlay)] flex w-full max-w-[860px] flex-col border-l border-border bg-muted shadow-xl outline-none"
     >
-      <header className="flex items-center gap-2 border-b border-border bg-card px-4 py-2">
+      <header className="flex flex-wrap items-center gap-2 border-b border-border bg-card px-4 py-2">
         <Eye size={16} className="text-primary" />
         <span className="text-sm font-medium">{previewTitle}</span>
         {loading && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
 
-        <div className="ml-auto flex items-center gap-1.5">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
           {/* Ngôn ngữ nội dung — gọi lại dry-run khi đổi */}
           <div className="flex overflow-hidden rounded-md border border-border">
             {['vi', 'en'].map((code) => (
@@ -183,7 +189,8 @@ export function LivePreview({
             {t(`${i18nPrefix}.invalid`, {
               defaultValue: 'Chưa xem trước được — kiểm tra lại các thông tin bắt buộc (ví dụ: danh mục, đường dẫn).',
             })}
-            {error.message ? ` (${error.message})` : ''}
+            {/* Chi tiết kỹ thuật của lỗi chỉ hiện ở môi trường dev; người dùng thật chỉ thấy thông báo thân thiện. */}
+            {import.meta.env?.DEV && error.message ? ` (${error.message})` : ''}
           </span>
         </div>
       )}

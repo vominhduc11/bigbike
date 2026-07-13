@@ -144,6 +144,9 @@ export function getPublishReadiness(form, t) {
 
   const items = [
     { id: 'name',      label: t('products.detail.checklist.name'),      ok: Boolean(form.name?.trim()),                                             required: true  },
+    // Tên tiếng Anh bắt buộc (TRANSLATION_RULE_002, schema chặn khi thiếu) — tính vào checklist đăng
+    // song song với tên tiếng Việt để lỗi "thiếu tên EN" không còn bị ẩn trong tab EN.
+    { id: 'nameEn',    label: t('products.detail.checklist.nameEn', { defaultValue: 'Tên tiếng Anh' }), ok: Boolean(form.translations?.en?.name?.trim()), required: true },
     { id: 'slug',      label: t('products.detail.checklist.slug', { defaultValue: 'Đường dẫn (slug)' }), ok: Boolean(form.slug?.trim()),                required: true  },
     { id: 'category',  label: t('products.detail.checklist.category'),  ok: Boolean(form.categoryId),                                               required: true  },
     { id: 'brand',     label: t('products.detail.checklist.brand'),     ok: Boolean(form.brandId),                                                  required: true  },

@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   displayValue, inputTypeFor, placeholderFor, isTranslatableSetting,
-  KEY_LABELS_VI, KEY_HINTS_VI, KEY_RECO,
+  settingLabel, settingHint, KEY_RECO,
 } from './constants'
 
 export function SettingField({
@@ -38,7 +38,9 @@ export function SettingField({
   const placeholder = isEnLang
     ? t('settings.englishPlaceholder')
     : (placeholderFor(setting.key) || (rawValue ? '' : t('settings.empty')))
-  const label = KEY_LABELS_VI[setting.key] || setting.description || setting.key
+  // Nhãn nghiệp vụ qua i18n — không phơi khoá kỹ thuật/mô tả tiếng Anh thô ra chủ shop.
+  const label = settingLabel(setting, t)
+  const hint = settingHint(setting, t)
   // Id ổn định để liên kết nhãn ↔ ô nhập (click nhãn focus ô, screen reader đọc tên nhãn).
   const controlId = `setting-${setting.key}`
   const labelId = `label-${setting.key}`
@@ -92,8 +94,8 @@ export function SettingField({
               error={error}
               recommend={KEY_RECO[setting.key] || IMAGE_RECO.general}
             />
-            {KEY_HINTS_VI[setting.key] && (
-              <span className="hint">{KEY_HINTS_VI[setting.key]}</span>
+            {hint && (
+              <span className="hint">{hint}</span>
             )}
           </>
         ) : isLongText ? (

@@ -27,7 +27,7 @@ export function StatePanel({
   const ToneIcon = TONE_ICONS[tone] ?? TONE_ICONS.neutral
   return (
     <section
-      className={`flex flex-col items-center justify-center gap-3 rounded-sm px-6 py-10 text-center ${TONE_CLASSES[tone] ?? TONE_CLASSES.neutral}`}
+      className={`flex flex-col items-center justify-center gap-3 rounded-[var(--admin-radius-card)] px-6 py-10 text-center ${TONE_CLASSES[tone] ?? TONE_CLASSES.neutral}`}
       role={tone === 'danger' ? 'alert' : 'status'}
     >
       <ToneIcon className="h-6 w-6" aria-hidden="true" />

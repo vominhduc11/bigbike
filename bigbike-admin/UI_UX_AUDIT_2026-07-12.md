@@ -382,3 +382,137 @@ Quality gate nền trên working tree hiện tại, **trước khi sửa**:
 - Không thêm inline price/stock writer nếu chưa có API được duyệt.
 - Không tự sửa các blocker contract ở mục 4.2.
 
+## 14. Nhật ký sửa
+
+### 2026-07-12 — Nhóm A: 8 lỗi P0 UI-only (mục 4.1) — HOÀN TẤT
+
+Tất cả UI-only, không đổi API/payload/query-key/permission/state machine. Không sửa docs canonical (đối chiếu `TRANSLATION_RULE_003` xác nhận hướng #1).
+
+| Mục | File sửa | Cách sửa |
+|---|---|---|
+| P0 #1 | `screens/ProductDetailScreen.jsx` | Thêm `-${contentLang}` vào `key` của Suitability & SizeGuide card → đổi ngôn ngữ = remount, hết ghi đè VI↔EN |
+| P0 #2 | `components/layout/MobileCardList.jsx`, `components/AdminTable.jsx` | `MobileCard` thêm slot Checkbox chọn dòng (opt-in); AdminTable truyền `selectable/selected/onSelectChange` xuống nhánh mobile → khôi phục bulk trên mobile |
+| P0 #3 | `components/AdminTable.jsx` | Guard `fromInteractiveChild` cho row `onClick`/`onKeyDown` → Enter/Space/click trên control con không còn vừa chạy control vừa mở chi tiết |
+| P0 #4 | `screens/AssignmentRolesScreen.jsx` | Đảo `isError` lên trước guard `isLoading || !baseline` → hết kẹt "đang tải" khi API lỗi |
+| P0 #5 | `screens/audit-log-list/AuditDetailDrawer.jsx` | Formatter object-aware (`JSON.stringify` cho object) ở cả so sánh lẫn hiển thị → hết `[object Object]` và báo nhầm "không thay đổi" |
+| P0 #6 | `screens/RolesScreen.jsx` | `handleMobileBack` mirror guard của `handleSelectRole` (confirm khi dirty) cho nút Back mobile |
+| P0 #7 | `components/BlockEditor.jsx` | Bọc fallback HTML qua `sanitizeHtml` (DOMPurify có sẵn) — outlier duy nhất chưa sanitize |
+| P0 #8 | `components/MediaDetailPanel.jsx`, `locales/vi.json`+`en.json` | `showConfirm` trước khi thay file media; thêm key `media.replaceConfirm(Title)` cả 2 locale |
+
+**Kết quả quality gate (sau sửa):** `npm run lint` PASS · `npm run test` PASS (11 file / 114 test) · `npm run build` PASS (Vite build thành công).
+
+**Còn lại:** Nhóm B (P1 theo màn hình, mục 5–9) và Nhóm C (P2 polish/token/dead CSS/i18n, mục 10). Blocker contract mục 4.2 chưa đụng — gom hỏi user khi tới màn hình liên quan.
+
+### 2026-07-12 — Nhóm B (P1), cụm 1: Màn hình đăng nhập — HOÀN TẤT
+
+UI-only, không đổi API/quyền/state. `bb-btn-*` vẫn dùng ở Category/Media nên không phát sinh dead CSS.
+
+| File | Sửa |
+|---|---|
+| `screens/LoginScreen.jsx` | Thêm kiểm tra client (email rỗng/sai định dạng, mật khẩu rỗng) trước khi gọi API + focus ô lỗi; lỗi sai đăng nhập (401) đánh dấu cả 2 ô, lỗi mạng KHÔNG đánh dấu ô + hiện thông báo thân thiện thay vì lỗi thô; thêm lỗi inline từng ô |
+| `screens/AcceptInviteScreen.jsx` | Lỗi máy chủ 5xx không còn bị gọi nhầm "token sai" (cho thử lại); ô rỗng hiện lỗi inline + focus; tự focus ô mật khẩu khi lời mời hợp lệ; đổi 4 link thô `<a class="bb-btn">` sang `Button asChild` (shadcn) |
+| `locales/vi.json` + `en.json` | Thêm key song ngữ: `auth.networkError/emailRequired/emailInvalid/passwordRequired`, `acceptInvite.passwordRequired/confirmRequired` |
+
+**Quality gate:** `npm run lint` PASS · `npm run test` PASS (11/114) · `npm run build` PASS.
+
+### 2026-07-12 — Nhóm B (P1), cụm 3: Layout primitives dùng chung (Modal, Tabs, StickyActionBar) — HOÀN TẤT
+
+UI/accessibility thuần, không đổi API/payload/quyền/state. Không dead CSS (chỉ đổi selector mobile đã có). `SummaryCard/SummaryCardGrid` KHÔNG đụng ở cụm này — grep xác nhận không có consumer, để Nhóm C quyết xóa/giữ.
+
+| File | Sửa |
+|---|---|
+| `components/layout/Tabs.jsx` | Thêm điều hướng bàn phím WAI-ARIA cho tablist: roving tabindex (chỉ tab active nhận Tab), phím Mũi tên trái/phải/lên/xuống chuyển tab (vòng), Home/End về đầu/cuối. Giữ nguyên API + CSS `seg-tabs`. Không bọc Radix vì panel do consumer render tách rời (`activeTab === …`), không có `aria-controls`. |
+| `components/layout/Modal.jsx` | Nhãn nút đóng hết hardcode `'Đóng'` → mặc định `t('common.close')` (giữ caller đang truyền `closeLabel`); thêm prop `description` (nối `DialogDescription` đang import mà bỏ không dùng, để Radix tự gắn `aria-describedby`); footer action **xuống dòng + full-width nút trên mobile** (`flex-wrap` + biến thể `max-sm`). |
+| `components/layout/StickyActionBar.jsx` | Thêm prop `ariaLabel` (accessible name cho thanh); vùng info trạng thái autosave thành live region `role="status" aria-live="polite"` để trình đọc màn hình thông báo "Đã lưu lúc…". |
+| `screens/ProductDetailScreen.jsx`, `screens/ContentDetailScreen.jsx` | Truyền `ariaLabel` cho StickyActionBar. |
+| `styles/admin-layout.css` | Rule full-width mobile đổi `.sticky-action-bar .btn` → `.sticky-action-bar > button, .sticky-action-bar > .btn` để áp cả shadcn `Button` (render `<button>`) lẫn `.btn` legacy. |
+| `locales/vi.json` + `en.json` | Thêm key song ngữ `common.actionBarLabel` (Thanh thao tác / Action bar). |
+
+**Quality gate:** `npm run lint` PASS · `npm run test` PASS (11/114) · `npm run build` PASS (Vite build OK).
+
+### 2026-07-12 — Nhóm B (P1), cụm 4: Bảng & bộ lọc dùng chung (AdminTable, FilterSearchInput/Select/Chips, ColumnVisibilityToggle) — HOÀN TẤT
+
+UI/accessibility thuần, không đổi API/payload/quyền/state/query-key. Chiều cao 30px của filter control giữ nguyên (đổi sẽ ảnh hưởng layout filter bar diện rộng — để đợt touch-target hệ thống). Phần P0 mất-dữ-liệu của AdminTable (mobile selection, keyboard double-action) đã xử lý ở Nhóm A; lượt này nốt phần semantics/aria.
+
+| File | Sửa |
+|---|---|
+| `components/AdminTable.jsx` | Header sắp xếp: bỏ `role="button"` đè trên `<th>` → giữ ngữ nghĩa `columnheader` (`<th scope="col">`), chuyển thao tác sắp xếp vào `<button>` thật bên trong (focus/Enter/Space chuẩn), `aria-sort` vẫn ở `<th>`. Hai nhãn chọn ("Chọn tất cả"/"Chọn hàng") hết hardcode → i18n. |
+| `components/FilterSearchInput.jsx` | `aria-label` fallback về `placeholder` khi caller không truyền → hết trường hợp ô tìm kiếm không có tên đọc được (9/10 caller trước đây thiếu). |
+| `components/FilterSelect.jsx` | Tương tự: `aria-label` fallback về `placeholder`. |
+| `components/FilterChips.jsx` | Nhãn mặc định hết hardcode → i18n; aria nút gỡ chip nói rõ **chip nào** (ghép nhãn khi là chuỗi); tăng vùng chạm nút gỡ 16px → 20px. |
+| `components/ColumnVisibilityToggle.jsx` | Chặn tắt **cột cuối cùng đang hiện** (khoá checkbox khi chỉ còn 1 cột) → hết nguy cơ bảng trống; thêm mục "Hiện tất cả cột" để đặt lại. |
+| `locales/vi.json` + `en.json` | Thêm 6 key song ngữ dưới `common`: `selectAll`, `selectRow`, `sortColumn`, `clearAllFilters`, `removeFilterLabel`, `showAllColumns`. |
+
+**Ghi chú giữ nguyên có chủ đích:** `<tr role="button">` cho dòng bấm-mở-chi-tiết và các control lồng trong dòng (checkbox/link/action) giữ nguyên — đổi mô hình này là refactor rủi ro cao xuyên mọi màn list và có thể mất khả năng mở bằng bàn phím ở dòng không có `rowHref`; hành vi double-action đã được guard `fromInteractiveChild` từ Nhóm A.
+
+**Quality gate:** `npm run lint` PASS · `npm run test` PASS (11/114) · `npm run build` PASS (Vite build OK). Locale `common` cân bằng 71/71 key.
+
+### 2026-07-12 — Nhóm B (P1), cụm 2: Primitive dùng chung (phân trang, trạng thái, skeleton) — HOÀN TẤT
+
+UI-only, không đổi contract. Không dead CSS (`bb-field-error` đã dùng sẵn).
+
+| File | Sửa |
+|---|---|
+| `components/PaginationControls.jsx` | Nhảy trang nhập sai (rỗng/không phải số/ngoài khoảng) không còn bị xoá im lặng: hiện lỗi rõ, giữ ô để sửa, `aria-invalid`/`aria-describedby`; đổi `isNaN`→`Number.isNaN` |
+| `components/StatusBadge.jsx` | Trạng thái rỗng (null/undefined/'') ở các loại enum → nhãn "Không xác định" thay vì render key thô/chuỗi rỗng (giữ nguyên loại `visibility` vì `false` = Ẩn hợp lệ) |
+| `components/ScreenSkeleton.jsx` | Bọc `role=status` + text `sr-only` "Đang tải" để trình đọc màn hình biết đang tải (khung skeleton vẫn `aria-hidden`) |
+| `locales/vi.json` + `en.json` | Thêm key song ngữ: `pagination.jumpRange`, `common.unknown` |
+
+**Quality gate:** `npm run lint` PASS · `npm run test` PASS (11/114) · `npm run build` PASS.
+
+### 2026-07-13 — Đợt tổng: toàn bộ P1 còn lại (mục 5–9) + P2 (mục 10) + 10 blocker contract (mục 4.2) — HOÀN TẤT
+
+Đợt này xử lý **trọn gói** phần UI-fixable còn lại theo một kế hoạch tổng đã được chủ shop duyệt, sau khi chốt 10 blocker mục 4.2 một lượt. Chỉ sửa trong `bigbike-admin/src`; không đổi endpoint/state machine/backend/web/docs canonical. Thực thi song song nhiều agent + phục hồi khi gặp giới hạn phiên giữa chừng (chi tiết cuối mục).
+
+#### A. Quyết định 10 blocker contract (mục 4.2)
+
+| # | Blocker | Chủ shop chốt | Đã làm |
+|---|---|---|---|
+| 1 | Tên tiếng Anh bắt buộc/tùy chọn | **BẮT BUỘC** (giữ schema) | Thêm `translations.en.name` vào `getPublishReadiness` (checklist đăng, `required`); Brand/Product/Category/Content **hiện lỗi thiếu EN ra chỗ thấy** (alert + nút "Chuyển sang tiếng Anh" ở Brand; checklist ở Product); đổi placeholder EN name "(tùy chọn)"→"(bắt buộc)" ở category/brand/content. Không đụng schema/payload. |
+| 2 | Alt text rơi khỏi payload | **KHÔNG gửi** | Giữ nguyên serializer/`toPayload` — không thêm alt vào payload ở product/category/brand/content. |
+| 3 | Content UNKNOWN→DRAFT | Giữ (mặc định) | Không đụng `content-detail/constants.js` — remap phòng thủ giữ nguyên. |
+| 4 | BACS auto-PAID | Ngoài phạm vi UI | Không đụng logic/label BACS (là hành vi backend + doc). |
+| 5 | Lý do CANCELLED/FAILED + copy "giải phóng tồn kho" | Sửa copy + giữ reason bắt buộc | Copy FAILED bỏ câu "Tồn kho sẽ được giải phóng" (trái V261); reason vẫn bắt buộc (an toàn, giữ vết). |
+| 6 | Customer DISABLED/BLOCKED | Làm mềm copy | `statusConfirmBody` đổi sang câu trung tính "…dùng để quản lý nội bộ" (không khẳng định chặn đăng nhập/mua — lifecycle chưa xác thực). |
+| 7 | Category reorder không atomic | Ngoài phạm vi (cần batch API) | Giữ PATCH tuần tự + rollback; chỉ cải thiện thông báo lỗi khi partial. |
+| 8 | Export/Dashboard gating | **Ẩn theo quyền** | Export ở Reports/Order/Customer ẩn khi thiếu `reports.export` (`useHasPermission`); Dashboard nav + route guard thêm ràng buộc vai trò (ADMIN/SUPER_ADMIN/SHOP_MANAGER, `'*'` vẫn qua) — `App.jsx`. Không đổi backend. |
+| 9 | Report timezone | Sửa | ReportsScreen tính chuỗi ngày theo lịch địa phương (Asia/Ho_Chi_Minh) thay `toISOString()`/UTC — khớp REPORT_RULE_008. |
+| 10 | Review aggregate/reply | Ghi rõ "trên trang này" | Thẻ "Tổng quan đánh giá" thêm nhãn "Tính trên trang hiện tại". Aggregate toàn hệ thống + reply = cần backend, để lại. |
+
+#### B. Primitive dùng chung (nền tảng — làm trước để mọi screen kế thừa)
+
+- **Touch target `components/ui/*`:** checkbox/radio/switch mở rộng vùng chạm ~44px bằng pseudo-element (giữ visual 16–20px, không phá layout); `dialog` close 36px + i18n `common.close` + radius card token; `alert` chỉ danger/warning `role=alert`, info/success `role=status`, dismiss 28px; `tabs` list `overflow-x-auto`; `dropdown-menu` item `py-2`; `textarea` `min-h-20`. **Cố ý HOÃN (ghi rõ):** không đổi chiều cao base `button`/`input`/`select` (36px) — lan rất rộng (`size="sm"` dùng 167 lần), phá mật độ bảng/filter; 44px đạt qua CTA `lg` + vùng-chạm-mở-rộng.
+- **Layout:** `MobileCardList`→`<ul>/<li>` (list semantics) + giữ subtitle + bỏ inline style; `FormField` tôn trọng `id` con tự đặt (hết lệch htmlFor); `SectionCard`/`DetailSection` thêm prop `headingLevel` (+ CSS `:is(h2,h3,h4)`); `CollapsibleSection` thêm `keepMounted` (không reset editor/không giấu lỗi) + hint hiện cả mobile. **HOÃN:** `Screen.maxWidth` (max-width động, không thuộc token màu/spacing/radius).
+- **Table/filter phụ trợ:** `BulkActionBar` nút 32px + radius control token, bỏ inline gap; `ExportButton` lỗi thô→thân thiện + log; `StatePanel` radius card.
+
+#### C. Screen & component (mục 5–9) — theo miền
+
+- **Shell/điều hướng:** AdminShell (drawer đóng `inert`, nav `role=group`, guard user partial), GlobalSearch (lối vào mobile, lỗi→StatePanel, Ctrl+K reset/restore, `SKU TBD`→i18n), NotificationBell (Radix DropdownMenu, lỗi hiện, fallback date), LanguageSwitcher/ThemeToggle/RecentItemsChips (native→Button, vùng chạm ≥44, group label).
+- **Banner/toast/preview:** AssignmentBanner (tone semantic), OrderNotificationToast (1 live region polite, timer cleanup/pause, guard undefined, dời tránh che sticky), LivePreview (bỏ trap focus, header wrap, aria-label), ErrorBoundary (i18n hóa toàn bộ + nút "Về trang chủ").
+- **Form/editor/media:** BlockEditor/blocks (fallback legacy giữ, unknown block rõ, provider đổi giữ URL/label thật), RichTextEditor(+WithSource) (toolbar aria, link validation, seed lại đúng, source giữ HTML), Seo/Image/Password (guard undefined `.trim`, ARIA, native→Button), Sortable/TagInput/ProductPickerCombobox (combobox/listbox/arrow nav, dragCancel, fetch lỗi≠rỗng), ImportProductsDialog (progress + caption + chặn close khi commit); Media: MediaCard/ListRow (tách nav/action, copy-URL absolute bug, aria cụ thể), MediaDetailModal/Panel (dirty guard, save dirty-gate), MediaFolderSidebar (load/error rõ, aria), MediaPicker/VideoPicker/Lightbox (focus-trap + body-lock + guard close khi upload/selection + aria-pressed), Skeleton (sr loading).
+- **Dashboard/Reports/Orders/Customers/Reviews:** guard partial-data, lỗi≠empty (StatePanel), số theo locale, read-only banner, refetch guard, mobile parity, custom checkbox→shadcn, invalidate list, recent-order click được, filter chip a11y.
+- **Product/Catalog:** ProductList (chống bấm nhầm, mobile action, native→shadcn, quick-publish khớp điều kiện thật), ProductDetail + product-detail/* (progressive disclosure qua CollapsibleSection `keepMounted`, **variant 9 cột → thêm dạng card mobile**, bulk clear sale price, provider giữ URL, aria-label, lỗi query hiện), Featured (Save chỉ bật khi dirty + race đổi ngôn ngữ), Category list/detail (loading/empty đúng, collapse intro+FAQ+CTA, sticky save, FAQ delete confirm, cycle-guard breadcrumb), Brand list/detail (hide confirm, EN alert + sticky save + collapse optional + clear-SEO confirm).
+- **Content/Marketing:** ContentList/Detail (`/null` guard, native→shadcn), AssignmentBanner (loading/error rõ), Slider/Banner (collapse group + tab page/ngôn ngữ), HomeVideo (cancel giữ draft, partial-save báo rõ, Radix), HomeHighlights/Redirect (i18n, collapse advanced), Menu+menu/* (null guard, collapse 4 field, Radix Modal, category-picker).
+- **Media/Settings/Users/Roles/Audit:** MediaLibrary (page-size 1 control, view toggle tab semantics, hard-delete guard), UploadQueue (progressbar ARIA, chặn dismiss pending), Settings+* (collapse section, sticky action, helper nghiệp vụ, i18n metadata), AdminUsers (lỗi hiện, role→nhãn, dirty guard, chống double-submit), Roles (`Promise.allSettled`, Toast tone info hết đỏ, PermGroup/RoleDetail collapse, CreateRole slug bỏ dấu + dirty guard), AuditLog (locale động, nhãn "chỉ trang này", tone thống nhất nguồn chung, MobileFilterDrawer focus-trap + date validation).
+
+#### D. Hygiene (mục 10)
+
+- **Dead CSS xóa (grep 0-ref xác nhận):** 11 class (`.bb-btn-danger`, `.bb-btn-danger-ghost`, `.bb-label`, `.sort-ind`, `.bb-stack-sm`, `.bb-detail-actions` ở `admin-prototype.css`; `.menu-slot-missing`, `.menu-search-box/-icon/-clear`, `.audit-danger-banner` ở `index.css`) + `.medialib-page-size-wrap` (sau khi bỏ page-size lặp). **Dead export xóa:** `FilterBar/FilterField/SummaryCard/SummaryCardGrid` (+2 file component) — `.bb-filter-bar`/`.bb-kpi-grid` CSS GIỮ (screen dùng trực tiếp).
+- **Token:** comment "orange"→"đỏ" ở `admin-tokens.css` (giữ `status-warning-orange-*` đang dùng); inline style/radius numeric nơi có token → class/token.
+- **i18n:** thêm **337 key** vào CẢ `vi.json` LẪN `en.json` (VI từ defaultValue trong code, EN dịch chuẩn) → 2 file **cân bằng 2931/2931 key, 0 lệch**. 5 key sai text cũ đã override (Q4 customer/FAILED copy, Q1 EN placeholders). Hardcode gỡ: ErrorBoundary, roles/Toast, settings/constants, search `SKU TBD`, notifications… **Còn 34 key dùng template JS `${...}` (nội suy runtime) — cố ý GIỮ ở defaultValue** (chuyển sang locale cần đổi code sang nội suy i18next `{{}}`, ngoài phạm vi; chạy đúng qua defaultValue).
+
+#### E. Cố ý HOÃN / ghi rõ (không phải bỏ sót)
+
+- Chiều cao base `ui/button|input|select` (44px toàn diện) — rủi ro lan rộng; đã dùng mở-rộng-hit-area thay thế.
+- Một số native `<button>` gắn chặt CSS design-system (gallery add/remove, drag-handle, roles/RoleSidebar row, audit search-chip) — chuyển sang shadcn cần sửa/tạo CSS (bị cấm trong đợt); đã thêm aria đầy đủ.
+- 34 i18n key `${...}` (mục D). `Screen.maxWidth`. Test P1 (`product-detail/*.test.*`) giữ nguyên để không phá suite.
+- Blocker 4.2 #4/#7/#10-aggregate/reply: cần backend/API mới — để lại đúng như chốt.
+
+#### F. Quality gate (sau toàn bộ)
+
+`npm run lint` **PASS** · `npm run test` **PASS (11 file / 114 test)** · `npm run build` **PASS** (Vite bundle toàn bộ nguồn OK). Locale `vi.json`/`en.json` cân bằng 2931/2931. Không mojibake ở key mới (spot-check UTF-8 tiếng Việt có dấu).
+
+**Ghi chú smoke:** Docker `bigbike-admin` đang chạy nhưng là **image build sẵn, không mount source** → drive container chỉ test code cũ, không phản ánh thay đổi đợt này. Xác thực thay đổi dựa trên `npm run build` (bundle toàn bộ source thành công) + lint + test.
+
+**Ghi chú thực thi:** đợt này chạy song song ~15 agent theo file rời nhau. Giữa chừng gặp **giới hạn phiên** làm 8 agent dừng với sửa dở → đã **ổn định lại về xanh** (sửa 15 lỗi lint/parse do sửa dở: parse error IntroContentField, unused-var half-wired, setState-in-effect theo convention repo) rồi **re-dispatch 4 agent clean-slate** (Roles/Audit, Brand, Editors/Media còn lại, product-detail sub-editors) hoàn tất phần dở. Không commit/push (chờ yêu cầu).
+

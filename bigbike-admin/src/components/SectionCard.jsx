@@ -8,12 +8,15 @@
 // đổi layout của các nội dung con vốn tự quản khoảng cách.
 import { useTranslation } from 'react-i18next'
 
-export function SectionCard({ title, badge, required, children }) {
+// `headingLevel` (2|3|4, mặc định 3) để cấp tiêu đề khớp ngữ cảnh (tránh nhảy H1→H3);
+// CSS `.bb-card-header :is(h2,h3,h4)` giữ nguyên cỡ chữ ở mọi cấp.
+export function SectionCard({ title, badge, required, headingLevel = 3, children }) {
   const { t } = useTranslation()
+  const Heading = `h${headingLevel}`
   return (
     <div className="bb-card">
       <div className="bb-card-header">
-        <h3>
+        <Heading>
           {title}
           {required && (
             <span
@@ -22,7 +25,7 @@ export function SectionCard({ title, badge, required, children }) {
               title={t('common.required')}
             >*</span>
           )}
-        </h3>
+        </Heading>
         {badge}
       </div>
       <div className="bb-card-body">{children}</div>

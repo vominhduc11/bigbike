@@ -14,12 +14,21 @@ export function PublishChecklistModal({ form, onConfirm, onCancel }) {
   const blockers = requiredItems.filter((i) => !i.ok)
   const warnings = optionalItems.filter((i) => !i.ok)
 
-  const renderItem = (item) => (
-    <li key={item.id} className={`checklist-item ${item.ok ? 'checklist-ok' : item.required ? 'checklist-error' : 'checklist-warn'}`}>
-      <span className="checklist-icon" aria-hidden="true">{item.ok ? <Check size={15} /> : item.required ? <X size={15} /> : <AlertTriangle size={15} />}</span>
-      <span>{item.label}</span>
-    </li>
-  )
+  const renderItem = (item) => {
+    // Trạng thái đạt/chưa đạt đang chỉ thể hiện bằng icon + màu; thêm chữ ẩn cho trình đọc màn hình.
+    const statusText = item.ok
+      ? t('products.detail.checklist.itemDone', { defaultValue: 'Đạt' })
+      : item.required
+        ? t('products.detail.checklist.itemMissing', { defaultValue: 'Chưa đạt (bắt buộc)' })
+        : t('products.detail.checklist.itemOptionalMissing', { defaultValue: 'Nên bổ sung' })
+    return (
+      <li key={item.id} className={`checklist-item ${item.ok ? 'checklist-ok' : item.required ? 'checklist-error' : 'checklist-warn'}`}>
+        <span className="checklist-icon" aria-hidden="true">{item.ok ? <Check size={15} /> : item.required ? <X size={15} /> : <AlertTriangle size={15} />}</span>
+        <span>{item.label}</span>
+        <span className="sr-only">{statusText}</span>
+      </li>
+    )
+  }
 
   return (
     <Modal

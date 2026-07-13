@@ -32,7 +32,7 @@ import { MobileFilterDrawer } from './audit-log-list/MobileFilterDrawer'
 // ── Main screen ────────────────────────────────────────────────────────────────
 
 export function AuditLogListScreen() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const initialQuery = useMemo(() => readQueryFromUrl(INITIAL_QUERY), [])
   const [query, setQuery]             = useState(initialQuery)
   const [searchInput, setSearchInput] = useState(() => initialQuery.q)
@@ -239,7 +239,7 @@ export function AuditLogListScreen() {
             disabled={state.items.length === 0}
             title={
               state.items.length > 0
-                ? t('auditLog.exportTooltip', { count: state.items.length })
+                ? t('auditLog.exportTooltipPage', { count: state.items.length, defaultValue: 'Xuất {{count}} dòng đang hiển thị (chỉ trang này)' })
                 : t('auditLog.exportTooltipEmpty')
             }
           >
@@ -391,12 +391,20 @@ export function AuditLogListScreen() {
 
       {/* ── Results summary bar ── */}
       {state.status === 'success' && totalItems != null && totalItems > 0 && (
-        <div className="audit-summary-bar">
-          <span>
-            {t('auditLog.summaryFound', { count: totalItems.toLocaleString('vi-VN') })}
-            {isFiltered && ` ${t('auditLog.summaryFiltered')}`}
-          </span>
-        </div>
+        <>
+          <div className="audit-summary-bar">
+            <span>
+              {t('auditLog.summaryFound', { count: totalItems.toLocaleString(i18n.language) })}
+              {isFiltered && ` ${t('auditLog.summaryFiltered')}`}
+            </span>
+          </div>
+          {/* Sắp xếp/Xuất chỉ chạy trên trang hiện tải — ghi rõ giới hạn khi có nhiều trang. */}
+          {totalItems > query.pageSize && (
+            <p className="text-xs text-muted-foreground mt-1 mb-2">
+              {t('auditLog.pageScopeNote', { defaultValue: 'Sắp xếp và xuất dữ liệu chỉ áp dụng cho các dòng trong trang đang xem.' })}
+            </p>
+          )}
+        </>
       )}
 
       {/* ── Error state ── */}

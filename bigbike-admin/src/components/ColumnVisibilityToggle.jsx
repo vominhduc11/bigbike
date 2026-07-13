@@ -3,7 +3,7 @@ import { Columns3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
-  DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator,
+  DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
 
 // T7 — dropdown "Cột hiển thị" dùng chung cho mọi AdminTable. Ghép với
@@ -11,6 +11,7 @@ import {
 // truyền vào AdminTable, component này chỉ render UI bật/tắt.
 export function ColumnVisibilityToggle({ allColumns, hiddenKeys, onToggle }) {
   const { t } = useTranslation()
+  const visibleCount = allColumns.length - hiddenKeys.length
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -22,16 +23,30 @@ export function ColumnVisibilityToggle({ allColumns, hiddenKeys, onToggle }) {
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>{t('common.columns', { defaultValue: 'Cột hiển thị' })}</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {allColumns.map((column) => (
-          <DropdownMenuCheckboxItem
-            key={column.key}
-            checked={!hiddenKeys.includes(column.key)}
-            onCheckedChange={() => onToggle(column.key)}
-            onSelect={(e) => e.preventDefault()}
-          >
-            {column.label}
-          </DropdownMenuCheckboxItem>
-        ))}
+        {allColumns.map((column) => {
+          const checked = !hiddenKeys.includes(column.key)
+          // Không cho tắt cột cuối cùng đang hiện — tránh bảng trống trơn không còn cột nào.
+          const isLastVisible = checked && visibleCount === 1
+          return (
+            <DropdownMenuCheckboxItem
+              key={column.key}
+              checked={checked}
+              disabled={isLastVisible}
+              onCheckedChange={() => onToggle(column.key)}
+              onSelect={(e) => e.preventDefault()}
+            >
+              {column.label}
+            </DropdownMenuCheckboxItem>
+          )
+        })}
+        {hiddenKeys.length > 0 && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => hiddenKeys.forEach((k) => onToggle(k))}>
+              {t('common.showAllColumns', { defaultValue: 'Hiện tất cả cột' })}
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )

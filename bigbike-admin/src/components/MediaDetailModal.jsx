@@ -1,11 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { updateMedia } from '../lib/adminApi'
 import { useMediaReferences } from '../lib/useMediaReferences'
+import { showConfirm } from '../lib/confirm'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { IconClose } from './media-picker/pickerIcons'
 import { REFERENCE_TYPE_KEYS } from './media-picker/pickerUtils'
+import { useModalFocusTrap, useBodyScrollLock } from './media-picker/useModalBehavior'
 
 
 /**
@@ -15,7 +17,6 @@ import { REFERENCE_TYPE_KEYS } from './media-picker/pickerUtils'
 export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
   const { t } = useTranslation()
   const modalRef = useRef(null)
-  const previousFocusRef = useRef(null)
   const [altText, setAltText] = useState(media.altText ?? '')
   const [title, setTitle] = useState(media.title ?? '')
   const [saving, setSaving] = useState(false)
@@ -27,42 +28,24 @@ export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
   const isVideo = media.mimeType?.startsWith('video/')
   const isAudio = media.mimeType?.startsWith('audio/')
 
-  useEffect(() => {
-    previousFocusRef.current = document.activeElement
-    const focusableSelector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-    const modal = modalRef.current
-    const initialFocusTarget = modal?.querySelector(focusableSelector)
-    if (initialFocusTarget) initialFocusTarget.focus()
+  // Chỉ bật nút Lưu và hỏi trước khi đóng khi thật sự có thay đổi.
+  const dirty = altText !== (media.altText ?? '') || title !== (media.title ?? '')
 
-    function onKey(event) {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        onClose()
-        return
-      }
-      if (event.key !== 'Tab') return
-      const currentModal = modalRef.current
-      if (!currentModal) return
-      const focusables = Array.from(currentModal.querySelectorAll(focusableSelector))
-      if (!focusables.length) return
-      const first = focusables[0]
-      const last = focusables[focusables.length - 1]
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault()
-        last.focus()
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault()
-        first.focus()
-      }
+  const attemptClose = useCallback(async () => {
+    if (dirty) {
+      const ok = await showConfirm(
+        t('media.discardConfirm'),
+        t('media.discardConfirmTitle'),
+      )
+      if (!ok) return
     }
-    window.addEventListener('keydown', onKey)
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      if (previousFocusRef.current && typeof previousFocusRef.current.focus === 'function') {
-        previousFocusRef.current.focus()
-      }
-    }
-  }, [onClose])
+    onClose()
+  }, [dirty, onClose, t])
+
+  // Focus-trap + Escape + khoá scroll nền dùng chung (thay cho bản tự dựng).
+  // Escape đi qua attemptClose để không bỏ mất thay đổi chưa lưu.
+  useModalFocusTrap({ modalRef, onClose: attemptClose })
+  useBodyScrollLock()
 
   async function handleSave(e) {
     e.preventDefault()
@@ -82,11 +65,11 @@ export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
 
   return (
     <>
-      <div className="mpicker-backdrop" onClick={onClose} aria-hidden="true" />
+      <div className="mpicker-backdrop" onClick={attemptClose} aria-hidden="true" />
       <div ref={modalRef} className="mpicker-modal max-w-[820px] w-full" role="dialog" aria-modal="true" aria-label={t('media.editTitle')}>
         <div className="mpicker-header">
           <h3 className="mpicker-title">{t('media.editTitle')}</h3>
-          <Button variant="secondary" size="icon" type="button" onClick={onClose} aria-label={t('common.close')}>
+          <Button variant="secondary" size="icon" type="button" onClick={attemptClose} aria-label={t('common.close')}>
             <IconClose />
           </Button>
         </div>
@@ -189,8 +172,8 @@ export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
             {(media.filename ?? '').split('/').pop()}
           </span>
           <div className="mpicker-footer-actions">
-            <Button variant="secondary" type="button" onClick={onClose} disabled={saving}>{t('common.cancel')}</Button>
-            <Button type="submit" form="media-detail-form" disabled={saving}>
+            <Button variant="secondary" type="button" onClick={attemptClose} disabled={saving}>{t('common.cancel')}</Button>
+            <Button type="submit" form="media-detail-form" disabled={saving || !dirty}>
               {saving ? t('common.saving') : t('common.save')}
             </Button>
           </div>

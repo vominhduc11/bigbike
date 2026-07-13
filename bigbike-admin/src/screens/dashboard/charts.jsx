@@ -22,9 +22,14 @@ function fmtAxisMillions(value) {
 }
 
 function fmtIsoDateShort(isoDate) {
-  if (!isoDate) return ''
-  const [, m, d] = isoDate.split('-')
-  return `${parseInt(d)}/${parseInt(m)}`
+  if (!isoDate || typeof isoDate !== 'string') return ''
+  const parts = isoDate.split('-')
+  if (parts.length < 3) return isoDate
+  const m = Number.parseInt(parts[1], 10)
+  const d = Number.parseInt(parts[2], 10)
+  // Ngày hỏng (thiếu phần/không phải số) → trả nguyên chuỗi gốc, tránh hiện "NaN/NaN".
+  if (Number.isNaN(m) || Number.isNaN(d)) return isoDate
+  return `${d}/${m}`
 }
 
 function RevenueTooltip({ active, payload, label, ordersUnit }) {

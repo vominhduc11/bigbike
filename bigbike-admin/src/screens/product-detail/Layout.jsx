@@ -1,9 +1,10 @@
-import { useContext, useId } from 'react'
+import { useContext } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronDown, GripVertical, ImageOff, X } from 'lucide-react'
+import { GripVertical, ImageOff, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { resolveDisplayUrl } from '@/lib/contracts'
 import { AssignmentBanner as AssignmentBannerView } from '@/components/AssignmentBanner'
+import { CollapsibleSection } from '@/components/CollapsibleSection'
 import { AssignmentConfigContext } from './constants'
 
 // Returns the configured role label for a role key, or the i18n default when the admin hasn't
@@ -100,42 +101,26 @@ export function AssignmentBanner({ t }) {
 }
 
 // Collapsible group header that wraps a run of SectionCards inside the "product" tab.
-// Controlled (open/onToggle). Shows an inline hint (Bắt buộc / Tùy chọn) after the
-// title and a danger-coloured error count on the right when a contained section fails
-// validation. Children are unmounted while collapsed to keep the form light.
+// Controlled (open/onToggle). Shows an inline hint (Bắt buộc / Tùy chọn) after the title
+// and a danger-coloured error count on the right when a contained section fails validation.
+//
+// Delegates to the shared CollapsibleSection (native button + a11y wiring live there) and
+// uses `keepMounted` so the enclosed editors (BlockEditor/RichText/variant matrix...) keep
+// their local state and their validation errors stay in the DOM while the group is collapsed
+// — collapsing no longer resets an editor or hides a field error (audit P1).
 export function CollapsibleGroup({ title, hint, open, onToggle, errorCount = 0, children }) {
   const { t } = useTranslation()
-  const panelId = useId()
+  const badge = errorCount > 0
+    ? (
+      <span className="bb-section-group-error">
+        <span aria-hidden="true">{t('products.detail.groupErrorCount', { count: errorCount, defaultValue: '{{count}} lỗi' })}</span>
+        <span className="sr-only">{t('products.detail.groupErrorCountFull', { count: errorCount, defaultValue: '{{count}} lỗi cần sửa' })}</span>
+      </span>
+    )
+    : undefined
   return (
-    <section className="bb-section-group">
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={open}
-        aria-controls={panelId}
-        className={cn('bb-section-group-toggle', errorCount > 0 && 'has-error')}
-      >
-        <ChevronDown
-          size={18}
-          aria-hidden="true"
-          className={cn('shrink-0 text-muted-foreground transition-transform', !open && '-rotate-90')}
-        />
-        <span className="bb-section-group-title">{title}</span>
-        {hint && (
-          <span className="bb-section-group-hint hidden sm:inline">· {hint}</span>
-        )}
-        {errorCount > 0 && (
-          <span className="bb-section-group-error">
-            <span aria-hidden="true">{t('products.detail.groupErrorCount', { count: errorCount, defaultValue: '{{count}} lỗi' })}</span>
-            <span className="sr-only">{t('products.detail.groupErrorCountFull', { count: errorCount, defaultValue: '{{count}} lỗi cần sửa' })}</span>
-          </span>
-        )}
-      </button>
-      {open && (
-        <div id={panelId} className="bb-section-group-body">
-          {children}
-        </div>
-      )}
-    </section>
+    <CollapsibleSection title={title} hint={hint} open={open} onToggle={onToggle} badge={badge} keepMounted>
+      {children}
+    </CollapsibleSection>
   )
 }

@@ -23,7 +23,9 @@ export function ExportButton({ onExport, children, variant = 'secondary', classN
     try {
       await onExport()
     } catch (e) {
-      toast.error(e?.message || t('export.error', { defaultValue: 'Xuất tệp thất bại.' }))
+      // Không phơi lỗi kỹ thuật thô cho người dùng; ghi log để debug, hiện thông báo thân thiện.
+      console.error('[export]', e)
+      toast.error(t('export.error', { defaultValue: 'Xuất tệp thất bại. Vui lòng thử lại.' }))
     } finally {
       setBusy(false)
     }

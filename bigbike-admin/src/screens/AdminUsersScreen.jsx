@@ -67,9 +67,7 @@ const AVATAR_COLORS = [
   'bg-secondary text-secondary-foreground',
 ]
 
-function RoleBadge({ role, t }) {
-  const meta = ROLE_META[role]
-  const label = meta ? t(meta.labelKey) : role
+function RoleBadge({ role, label }) {
   return <span className={`bb-badge ${ROLE_BADGE[role] || 'bb-badge-neutral'}`}>{label || '—'}</span>
 }
 
@@ -127,8 +125,13 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
 
   // ── Dynamic roles ───────────────────────────────────────────────────────
   const [dynamicRoles, setDynamicRoles] = useState([])
+  const [rolesError, setRolesError] = useState(false)
   useEffect(() => {
-    fetchRoles().then((r) => setDynamicRoles(r.items || [])).catch(() => {})
+    // Lỗi tải danh sách vai trò tuỳ chỉnh không còn bị nuốt: hiện cảnh báo để admin
+    // biết danh sách vai trò có thể chưa đầy đủ (thay vì lặng lẽ thiếu lựa chọn).
+    fetchRoles()
+      .then((r) => { setDynamicRoles(r.items || []); setRolesError(false) })
+      .catch(() => setRolesError(true))
   }, [])
 
   const roleOptions = useMemo(() => {
@@ -136,6 +139,19 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
     const extras = dynamicRoles.filter((r) => !builtins.includes(r.id)).map((r) => r.id)
     return [...builtins, ...extras]
   }, [dynamicRoles])
+
+  // Đổi mã vai trò thô (vd vai trò tuỳ chỉnh) sang nhãn dễ đọc: ưu tiên nhãn i18n của
+  // vai trò dựng sẵn, rồi tên hiển thị của vai trò tuỳ chỉnh, cuối cùng mới là mã.
+  const resolveRoleLabel = useCallback((roleId) => {
+    if (!roleId) return '—'
+    const meta = ROLE_META[roleId]
+    if (meta) return t(meta.labelKey)
+    const dyn = dynamicRoles.find((r) => r.id === roleId)
+    return dyn?.name || roleId
+  }, [dynamicRoles, t])
+
+  // Chặn double-submit của nút kích hoạt/khoá ngay trên dòng: khoá nút đang xử lý.
+  const [togglingId, setTogglingId] = useState(null)
 
   // ── Edit drawer state ───────────────────────────────────────────────────
   const [editUser, setEditUser] = useState(null)
@@ -190,6 +206,27 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
     setEditSuccess(false)
   }
 
+  // So khớp form sửa với dữ liệu gốc để biết còn thay đổi chưa lưu hay không.
+  function isEditFormDirty() {
+    if (!editUser) return false
+    return (editForm.displayName || '') !== (editUser.displayName || '')
+      || editForm.status !== editUser.status
+      || editForm.role !== editUser.role
+      || (editForm.newPassword || '').trim() !== ''
+  }
+
+  // Đóng drawer sửa có cảnh báo khi còn thay đổi chưa lưu (nút Huỷ / nút X / nền mờ).
+  async function requestCloseEdit() {
+    if (isEditFormDirty() && !editSaving) {
+      const ok = await showConfirm(
+        t('adminUsers.discardConfirm', { defaultValue: 'Bạn có thay đổi chưa lưu. Đóng sẽ mất các thay đổi đó. Tiếp tục?' }),
+        t('adminUsers.discardTitle', { defaultValue: 'Bỏ thay đổi?' }),
+      )
+      if (!ok) return
+    }
+    closeEdit()
+  }
+
   function openCreate() {
     setCreateForm({ email: '', displayName: '', role: 'ADMIN' })
     setCreateError('')
@@ -200,6 +237,22 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
     setCreateOpen(false)
     setCreateError('')
     setCreateFieldErrors({})
+  }
+
+  function isCreateFormDirty() {
+    return createForm.email.trim() !== '' || createForm.displayName.trim() !== '' || createForm.role !== 'ADMIN'
+  }
+
+  // Đóng modal tạo mới có cảnh báo khi đã nhập dở (nút Huỷ / nút X / nền mờ).
+  async function requestCloseCreate() {
+    if (isCreateFormDirty() && !createSaving) {
+      const ok = await showConfirm(
+        t('adminUsers.discardConfirm', { defaultValue: 'Bạn có thay đổi chưa lưu. Đóng sẽ mất các thay đổi đó. Tiếp tục?' }),
+        t('adminUsers.discardTitle', { defaultValue: 'Bỏ thay đổi?' }),
+      )
+      if (!ok) return
+    }
+    closeCreate()
   }
 
   function handleFilterChange(field, value) {
@@ -290,6 +343,9 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
       const r = await updateAdminUser(editUser.id, payload)
       setListState((p) => ({ ...p, items: p.items.map((u) => (u.id === editUser.id ? r.item : u)) }))
       setEditUser(r.item)
+      // Đồng bộ form với dữ liệu vừa lưu + xoá ô mật khẩu để không bị coi là còn thay đổi
+      // (tránh hỏi "bỏ thay đổi?" nhầm khi đóng sau khi đã lưu thành công).
+      setEditForm({ displayName: r.item.displayName || '', status: r.item.status || 'ACTIVE', role: r.item.role || '', newPassword: '' })
       setEditSuccess(true)
       if (r.item.role !== editForm.role && editForm.role) {
         // Vai trò bị bỏ qua (do quyền) → gắn cạnh ô vai trò, không để ở banner.
@@ -384,6 +440,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
   // Kích hoạt / khoá tài khoản ngay trên dòng — 1 chạm thay vì mở drawer 4 bước.
   // Dùng lại đúng cập nhật trạng thái của drawer (updateAdminUser) + xác nhận khi khoá.
   async function handleToggleStatus(user) {
+    if (togglingId) return // đang có 1 thao tác kích hoạt/khoá chạy dở — chặn bấm chồng
     const activating = user.status !== 'ACTIVE'
     if (!activating) {
       const ok = await showConfirm(
@@ -393,12 +450,15 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
       )
       if (!ok) return
     }
+    setTogglingId(user.id)
     try {
       const r = await updateAdminUser(user.id, { status: activating ? 'ACTIVE' : 'DISABLED' })
       setListState((p) => ({ ...p, items: p.items.map((x) => (x.id === user.id ? r.item : x)) }))
       toast.success(activating ? t('adminUsers.activatedToast') : t('adminUsers.lockedToast'))
     } catch (err) {
       toast.error(err.message || t('common.error'))
+    } finally {
+      setTogglingId(null)
     }
   }
 
@@ -418,7 +478,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
     })
   }
   if (roleFilter) {
-    const roleLabel = ROLE_META[roleFilter] ? t(ROLE_META[roleFilter].labelKey) : roleFilter
+    const roleLabel = resolveRoleLabel(roleFilter)
     activeFilterChips.push({
       key: 'role',
       label: t('adminUsers.chipRole', { value: roleLabel, defaultValue: `Vai trò: ${roleLabel}` }),
@@ -469,7 +529,8 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
     const activating = u.status !== 'ACTIVE'
     const label = activating ? t('adminUsers.actionActivate') : t('adminUsers.actionLock')
     return (
-      <button type="button" className="bb-icon-btn" title={label} aria-label={label} onClick={() => handleToggleStatus(u)}>
+      <button type="button" className="bb-icon-btn" title={label} aria-label={label}
+        disabled={togglingId === u.id} onClick={() => handleToggleStatus(u)}>
         {activating ? <UserCheck size={14} /> : <Lock size={14} />}
       </button>
     )
@@ -503,7 +564,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
       label: t('adminUsers.colRole'),
       sortable: true,
       skeletonWidth: '50%',
-      render: (u) => <RoleBadge role={u.role} t={t} />,
+      render: (u) => <RoleBadge role={u.role} label={resolveRoleLabel(u.role)} />,
     },
     {
       key: 'status',
@@ -563,7 +624,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
       subtitle: u.displayName ? u.email : undefined,
       status: <UserStatusBadge status={u.status} t={t} />,
       meta: [
-        { label: t('adminUsers.colRole'), value: <RoleBadge role={u.role} t={t} /> },
+        { label: t('adminUsers.colRole'), value: <RoleBadge role={u.role} label={resolveRoleLabel(u.role)} /> },
         { label: t('adminUsers.colLastLogin'), value: u.lastLoginAt ? formatDateTime(u.lastLoginAt) : t('adminUsers.notLastLogin') },
       ],
       actions: canUpdate ? (
@@ -601,6 +662,12 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
 
       {listState.warning ? <ReadOnlyBanner warning={listState.warning} /> : null}
 
+      {rolesError && (
+        <Alert tone="warning" icon={AlertCircle} dismissible onDismiss={() => setRolesError(false)}>
+          {t('adminUsers.rolesLoadError', { defaultValue: 'Không tải được danh sách vai trò tuỳ chỉnh. Danh sách vai trò có thể chưa đầy đủ; thử tải lại trang.' })}
+        </Alert>
+      )}
+
       {inviteInfo && (
         <Alert tone="info" icon={Mail} dismissible onDismiss={() => setInviteInfo(null)}>
           {inviteInfo.error
@@ -630,7 +697,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
           ariaLabel={t('adminUsers.filterRole')}
           options={[
             { value: '', label: t('adminUsers.filterRole') },
-            ...roleOptions.map((r) => ({ value: r, label: ROLE_META[r] ? t(ROLE_META[r].labelKey) : r })),
+            ...roleOptions.map((r) => ({ value: r, label: resolveRoleLabel(r) })),
           ]}
         />
         <FilterSelect
@@ -709,11 +776,11 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
       <Modal
         open={Boolean(editUser)}
         title={t('adminUsers.editTitle')}
-        onClose={closeEdit}
+        onClose={requestCloseEdit}
         wide
         actions={
           <>
-            <Button type="button" variant="outline" size="sm" onClick={closeEdit}>
+            <Button type="button" variant="outline" size="sm" onClick={requestCloseEdit}>
               {t('common.cancel')}
             </Button>
             <Button type="button" size="sm" loading={editSaving} onClick={requestEditSubmit}>
@@ -759,10 +826,9 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
                   >
                     <SelectTrigger aria-invalid={editFieldErrors.role ? true : undefined}><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {roleOptions.map((r) => {
-                        const meta = ROLE_META[r]
-                        return <SelectItem key={r} value={r}>{meta ? t(meta.labelKey) : r}</SelectItem>
-                      })}
+                      {roleOptions.map((r) => (
+                        <SelectItem key={r} value={r}>{resolveRoleLabel(r)}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </FormField>
@@ -803,10 +869,10 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
       <Modal
         open={createOpen}
         title={t('adminUsers.createTitle')}
-        onClose={closeCreate}
+        onClose={requestCloseCreate}
         actions={
           <>
-            <Button type="button" variant="outline" size="sm" onClick={closeCreate}>{t('common.cancel')}</Button>
+            <Button type="button" variant="outline" size="sm" onClick={requestCloseCreate}>{t('common.cancel')}</Button>
             <Button type="submit" form="create-user-form" size="sm" loading={createSaving}>
               {t('adminUsers.createBtn')}
             </Button>
@@ -834,10 +900,9 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
             <Select value={createForm.role} onValueChange={(val) => setCreateForm((p) => ({ ...p, role: val }))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {roleOptions.map((r) => {
-                  const meta = ROLE_META[r]
-                  return <SelectItem key={r} value={r}>{meta ? t(meta.labelKey) : r}</SelectItem>
-                })}
+                {roleOptions.map((r) => (
+                  <SelectItem key={r} value={r}>{resolveRoleLabel(r)}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </FormField>

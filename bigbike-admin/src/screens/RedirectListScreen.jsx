@@ -17,6 +17,7 @@ import { PaginationControls } from '../components/PaginationControls'
 import { AdminTable } from '../components/AdminTable'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
+import { CollapsibleSection } from '../components/CollapsibleSection'
 import { FormField } from '../components/layout/FormField'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -82,6 +83,9 @@ export function RedirectListScreen({ canUpdate }) {
   })
   const debouncedSearch = useDebounce(searchInput, 300)
   const [showForm, setShowForm] = useState(false)
+  // F10: nhóm 2 trường ít dùng (Legacy ID, Ghi chú) vào phần thu gọn — mở sẵn khi đang sửa
+  // bản ghi đã có sẵn giá trị ở các trường đó để không giấu dữ liệu.
+  const [advancedOpen, setAdvancedOpen] = useState(false)
   const [editingRedirect, setEditingRedirect] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
   // F6: bản chụp form lúc mở, dùng để biết có thay đổi chưa lưu — mirror SliderListScreen.
@@ -250,6 +254,7 @@ export function RedirectListScreen({ canUpdate }) {
     setBaseline(next)
     setTouched({})
     setFormError('')
+    setAdvancedOpen(false)
     setShowForm(true)
   }
 
@@ -268,6 +273,7 @@ export function RedirectListScreen({ canUpdate }) {
     setBaseline(next)
     setTouched({})
     setFormError('')
+    setAdvancedOpen(Boolean(next.notes) || next.legacyId !== '')
     setShowForm(true)
   }
 
@@ -285,6 +291,20 @@ export function RedirectListScreen({ canUpdate }) {
     if (!showForm || !baseline) return false
     return JSON.stringify(form) !== JSON.stringify(baseline)
   }, [showForm, baseline, form])
+
+  // F5/F6: Huỷ khi form còn thay đổi chưa lưu → xác nhận trước để không mất bản nháp.
+  async function confirmCloseForm() {
+    if (isDirty) {
+      const ok = await showConfirm(
+        t('redirects.unsavedConfirm', {
+          defaultValue: 'Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?',
+        }),
+        t('redirects.unsavedTitle', { defaultValue: 'Có thay đổi chưa lưu' }),
+      )
+      if (!ok) return
+    }
+    closeForm()
+  }
 
   useUnsavedChanges(isDirty, t('redirects.unsavedConfirm', {
     defaultValue: 'Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?',
@@ -569,10 +589,6 @@ export function RedirectListScreen({ canUpdate }) {
                   </Select>
                 </label>
               )}
-              <label className="form-field">
-                <span>{t('redirects.formLegacyId', { defaultValue: 'Legacy ID' })}</span>
-                <Input type="number" min="0" value={form.legacyId} onChange={(e) => setForm((p) => ({ ...p, legacyId: e.target.value }))} />
-              </label>
               {/* V2: bỏ marginTop:22 canh thủ công — dùng items-end trên chính field này để tự canh đáy với ô cạnh bên. */}
               <label
                 className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit self-end"
@@ -580,11 +596,28 @@ export function RedirectListScreen({ canUpdate }) {
                 <Checkbox checked={form.enabled} onCheckedChange={(checked) => setForm((p) => ({ ...p, enabled: checked === true }))} />
                 <span>{t('redirects.formEnabled', { defaultValue: 'Bật' })}</span>
               </label>
-              <label className="form-field" style={{ gridColumn: '1 / -1' }}>
-                <span>{t('redirects.formNotes', { defaultValue: 'Ghi chú' })}</span>
-                <Textarea rows={3} value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
-                  placeholder={t('redirects.notesPlaceholder', { defaultValue: 'Ghi chú tuỳ chọn.' })} />
-              </label>
+              {/* Tùy chọn nâng cao — Legacy ID + Ghi chú, thu gọn sẵn để form ngắn hơn (F10). */}
+              <div className="col-span-full">
+                <CollapsibleSection
+                  title={t('redirects.advancedTitle', { defaultValue: 'Tùy chọn nâng cao' })}
+                  hint={t('redirects.advancedHint', { defaultValue: 'Legacy ID, ghi chú' })}
+                  open={advancedOpen}
+                  onToggle={() => setAdvancedOpen((v) => !v)}
+                  keepMounted
+                >
+                  <div className="bb-grid-2">
+                    <label className="form-field">
+                      <span>{t('redirects.formLegacyId', { defaultValue: 'Legacy ID' })}</span>
+                      <Input type="number" min="0" value={form.legacyId} onChange={(e) => setForm((p) => ({ ...p, legacyId: e.target.value }))} />
+                    </label>
+                    <label className="form-field col-span-full">
+                      <span>{t('redirects.formNotes', { defaultValue: 'Ghi chú' })}</span>
+                      <Textarea rows={3} value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
+                        placeholder={t('redirects.notesPlaceholder', { defaultValue: 'Ghi chú tuỳ chọn.' })} />
+                    </label>
+                  </div>
+                </CollapsibleSection>
+              </div>
             </div>
             <p className="text-xs text-muted-foreground mt-3">
               <span className="text-danger" aria-hidden="true">*</span>{' '}
@@ -592,7 +625,7 @@ export function RedirectListScreen({ canUpdate }) {
             </p>
             <div className="mt-4 flex gap-2">
               <Button type="submit" loading={saveMutation.isPending}>{t('common.save')}</Button>
-              <Button type="button" variant="outline" onClick={closeForm} disabled={saveMutation.isPending}>{t('common.cancel')}</Button>
+              <Button type="button" variant="outline" onClick={confirmCloseForm} disabled={saveMutation.isPending}>{t('common.cancel')}</Button>
             </div>
           </form>
         </div>

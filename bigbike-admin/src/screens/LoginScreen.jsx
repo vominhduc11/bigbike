@@ -15,6 +15,10 @@ export function LoginScreen() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [canRetry, setCanRetry] = useState(false)
+  // Lỗi sai thông tin đăng nhập (401) → đánh dấu cả 2 ô; lỗi mạng/máy chủ KHÔNG đánh dấu ô nào.
+  const [credentialError, setCredentialError] = useState(false)
+  // Lỗi kiểm tra tại client theo từng ô (email/password) — hiện inline, không gọi API khi có.
+  const [fieldErrors, setFieldErrors] = useState({})
   const [showForgot, setShowForgot] = useState(false)
   const [contactEmail, setContactEmail] = useState('admin@bigbike.vn')
 
@@ -33,12 +37,36 @@ export function LoginScreen() {
   const passwordId = useId()
   const errorId = useId()
   const forgotId = useId()
+  const emailErrId = useId()
+  const passwordErrId = useId()
+
+  // Kiểm tra client trước khi gọi API (form dùng noValidate nên phải tự validate):
+  // email không được rỗng và phải đúng định dạng; mật khẩu không được rỗng.
+  function validate() {
+    const errs = {}
+    const em = email.trim()
+    // Kiểm tra định dạng đơn giản (không regex phức tạp): có 1 '@', có '.' sau '@', không khoảng trắng.
+    const at = em.indexOf('@')
+    const dot = em.lastIndexOf('.')
+    const emailWellFormed = at > 0 && dot > at + 1 && dot < em.length - 1 && !/\s/.test(em)
+    if (!em) errs.email = t('auth.emailRequired', { defaultValue: 'Vui lòng nhập email.' })
+    else if (!emailWellFormed) errs.email = t('auth.emailInvalid', { defaultValue: 'Email không hợp lệ.' })
+    if (!password) errs.password = t('auth.passwordRequired', { defaultValue: 'Vui lòng nhập mật khẩu.' })
+    return errs
+  }
 
   async function onSubmit(event) {
     event?.preventDefault()
     if (submitting) return
     setError('')
     setCanRetry(false)
+    setCredentialError(false)
+    const errs = validate()
+    setFieldErrors(errs)
+    if (Object.keys(errs).length > 0) {
+      document.getElementById(errs.email ? emailId : passwordId)?.focus()
+      return
+    }
     setSubmitting(true)
     try {
       await login({ email: email.trim(), password })
@@ -46,9 +74,11 @@ export function LoginScreen() {
       if (err instanceof ApiClientError && err.status === 401) {
         setError(err.code === 'ACCOUNT_LOCKED' ? t('auth.accountLocked') : t('auth.invalidCredentials'))
         setCanRetry(false)
+        setCredentialError(true)
+        document.getElementById(emailId)?.focus()
       } else {
-        // Lỗi mạng/máy chủ — cho phép thử lại tường minh
-        setError(err?.message || t('auth.loginFailed'))
+        // Lỗi mạng/máy chủ — cho phép thử lại tường minh, không đánh dấu ô (thông tin có thể vẫn đúng)
+        setError(t('auth.networkError', { defaultValue: 'Không thể kết nối máy chủ. Vui lòng thử lại.' }))
         setCanRetry(true)
       }
     } finally {
@@ -57,6 +87,13 @@ export function LoginScreen() {
   }
 
   const hasError = Boolean(error)
+
+  // Ô mô tả bởi: lỗi inline của chính ô (nếu có), nếu không thì alert lỗi sai thông tin đăng nhập.
+  function fieldDescribedBy(ownErrId, hasOwnErr) {
+    if (hasOwnErr) return ownErrId
+    if (credentialError) return errorId
+    return undefined
+  }
 
   return (
     <div className="bb-login-shell">
@@ -121,12 +158,15 @@ export function LoginScreen() {
                 aria-required="true"
                 placeholder={t('auth.emailPlaceholder')}
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); if (fieldErrors.email) setFieldErrors((p) => ({ ...p, email: undefined })) }}
                 disabled={submitting}
-                aria-invalid={hasError || undefined}
-                aria-describedby={hasError ? errorId : undefined}
+                aria-invalid={Boolean(fieldErrors.email) || credentialError || undefined}
+                aria-describedby={fieldDescribedBy(emailErrId, Boolean(fieldErrors.email))}
                 className="bb-input"
               />
+              {fieldErrors.email ? (
+                <span id={emailErrId} role="alert" className="bb-field-error">{fieldErrors.email}</span>
+              ) : null}
             </div>
 
             <div className="bb-auth-field">
@@ -155,12 +195,15 @@ export function LoginScreen() {
                 maxLength={128}
                 placeholder={t('auth.passwordPlaceholder')}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); if (fieldErrors.password) setFieldErrors((p) => ({ ...p, password: undefined })) }}
                 disabled={submitting}
-                aria-invalid={hasError || undefined}
-                aria-describedby={hasError ? errorId : undefined}
+                aria-invalid={Boolean(fieldErrors.password) || credentialError || undefined}
+                aria-describedby={fieldDescribedBy(passwordErrId, Boolean(fieldErrors.password))}
                 className="bb-input"
               />
+              {fieldErrors.password ? (
+                <span id={passwordErrId} role="alert" className="bb-field-error">{fieldErrors.password}</span>
+              ) : null}
             </div>
 
             {showForgot ? (

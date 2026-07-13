@@ -13,14 +13,16 @@ import { showConfirm } from '../lib/confirm'
 import { recordRecentItem } from '../lib/useRecentItems'
 import { formatDateTime } from '../lib/formatters'
 import { toSlug } from '../lib/slug'
-import { useContentLang } from '../lib/contentLang'
+import { useContentLang, setContentLang } from '../lib/contentLang'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { clearNavGuard } from '@/lib/navigationGuard'
-import { ArrowLeft, Loader2, Save } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Loader2, Save, Trash2 } from 'lucide-react'
 
 import { createBrandSchema, zodErrors } from '../lib/schemas'
 import { StatePanel } from '../components/StatePanel'
 import { FormField } from '../components/layout/FormField'
+import { CollapsibleSection } from '../components/CollapsibleSection'
+import { StickyActionBar } from '../components/layout'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { SeoCard } from '../components/SeoCard'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
@@ -172,6 +174,10 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
   // đường dẫn. Chế độ SỬA không đụng slug hiện có (tránh đổi URL đã lập chỉ mục).
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
   const [seoOpen, setSeoOpen] = useState(false)
+  // Gom mô tả + hình ảnh (tùy chọn) vào nhóm thu gọn, đóng sẵn để chống ngợp form;
+  // tự bung khi sửa thương hiệu đã có sẵn nội dung/ảnh hoặc khi có lỗi bên trong.
+  const [optionalOpen, setOptionalOpen] = useState(false)
+  const enErrorRef = useRef(null)
 
   // F9: autosave / khôi phục bản nháp — cùng cơ chế localStorage với Sản phẩm/Nội dung.
   const autosaveKey = getAutosaveKey(brandId, isCreate)
@@ -190,6 +196,8 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     setForm(nextForm)
     setInitialSnapshot(JSON.stringify(nextForm))
     setEnSlugManuallyEdited(Boolean(nextForm.translations?.en?.slug))
+    // Thương hiệu đã có mô tả/logo/banner → mở sẵn nhóm tùy chọn để admin thấy ngay.
+    if (nextForm.description || nextForm.logoUrl || nextForm.bannerUrl) setOptionalOpen(true)
     // F9: bản nháp autosave mới hơn lần lưu gần nhất trên server → gợi ý khôi phục.
     if (fetchResult.item?.updatedAt) {
       const draft = loadFormFromStorage(autosaveKey)
@@ -384,6 +392,13 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     const clientErrors = zodErrors(result)
     if (Object.keys(clientErrors).length > 0) {
       setValidationErrors(clientErrors)
+      // Đưa lỗi đang bị ẩn ra chỗ nhìn thấy: bung nhóm tùy chọn / SEO nếu lỗi nằm trong đó,
+      // và cuộn cảnh báo "thiếu tên tiếng Anh" vào tầm nhìn (lỗi này nằm ở tab EN).
+      if (clientErrors.description || clientErrors.logoUrl) setOptionalOpen(true)
+      if (clientErrors.seoTitle || clientErrors.seoDescription || clientErrors.seoCanonicalUrl || clientErrors.seoOgImageUrl) setSeoOpen(true)
+      if (clientErrors['translations.en.name'] && !isEnLang) {
+        requestAnimationFrame(() => enErrorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
+      }
       return
     }
 
@@ -469,6 +484,29 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
   const requiredFieldsTotal = 2
   const requiredFieldsFilled = [form.slug, form.name].filter((v) => Boolean(v?.trim())).length
 
+  // Có dữ liệu SEO nào đang nhập không — dùng để hiện nút "Xóa thông tin SEO".
+  const hasSeoData = Boolean(
+    form.seoTitle?.trim() || form.seoDescription?.trim() || form.seoCanonicalUrl?.trim() ||
+    form.seoOgImageUrl?.trim() || form.seoOgImageAlt?.trim() ||
+    form.translations?.en?.seoTitle?.trim() || form.translations?.en?.seoDescription?.trim()
+  )
+
+  // Xóa toàn bộ SEO là hành động dễ nhầm (mất công đã nhập) — hỏi xác nhận trước khi dọn.
+  async function handleClearSeo() {
+    const ok = await showConfirm(
+      t('brands.detail.clearSeoConfirm', { defaultValue: 'Xóa toàn bộ thông tin SEO đã nhập (tiêu đề, mô tả, canonical, ảnh chia sẻ)? Hệ thống sẽ tự dùng tên và mô tả của thương hiệu.' }),
+      t('brands.detail.clearSeoTitle', { defaultValue: 'Xóa thông tin SEO?' }),
+      { variant: 'danger', confirmLabel: t('brands.detail.clearSeoBtn', { defaultValue: 'Xóa thông tin SEO' }), cancelLabel: t('common.cancel', { defaultValue: 'Hủy' }) },
+    )
+    if (!ok) return
+    setForm((prev) => ({
+      ...prev,
+      seoTitle: '', seoDescription: '', seoCanonicalUrl: '', seoOgImageUrl: '', seoOgImageAlt: '',
+      translations: { ...prev.translations, en: { ...(prev.translations?.en || {}), seoTitle: '', seoDescription: '' } },
+    }))
+    toast.success(t('brands.detail.clearSeoDone', { defaultValue: 'Đã xóa thông tin SEO.' }))
+  }
+
   return (
     <div>
       <div className="bb-screen-header">
@@ -507,24 +545,23 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
               {t('brands.detail.hideBtn')}
             </Button>
           )}
-          {!isEnLang && (
-            <span className="bb-muted text-xs">
-              {t('brands.detail.formProgress', { filled: requiredFieldsFilled, total: requiredFieldsTotal })}
-            </span>
-          )}
-          <Button
-            type="submit"
-            form="brand-form"
-            disabled={isReadOnly || !isDirty}
-            aria-busy={isSubmitting || undefined}
-          >
-            {isSubmitting && <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
-            {isSubmitting
-              ? t('common.saving')
-              : isCreate ? t('brands.detail.createBtn') : t('brands.detail.saveBtn')}
-          </Button>
         </div>
       </div>
+
+      {/* Q1: Tên tiếng Anh là bắt buộc (schema chặn). Nếu thiếu mà đang ở tab tiếng Việt,
+          lỗi sẽ nằm khuất trong tab EN — đưa ra cảnh báo rõ ở đầu trang kèm nút chuyển tab. */}
+      {!isEnLang && validationErrors['translations.en.name'] && (
+        <div ref={enErrorRef} className="bb-alert danger wrap center">
+          <AlertCircle size={16} className="shrink-0" aria-hidden="true" />
+          <span className="bb-alert-main">
+            <strong>{t('brands.detail.enNameMissingTitle', { defaultValue: 'Thiếu tên tiếng Anh' })}</strong>
+            {' · '}{validationErrors['translations.en.name']}
+          </span>
+          <Button type="button" variant="outline" size="sm" onClick={() => setContentLang('en')}>
+            {t('brands.detail.switchToEnglish', { defaultValue: 'Chuyển sang tiếng Anh' })}
+          </Button>
+        </div>
+      )}
 
       {draftRecovery && (
         <div className="bb-alert info center wrap">
@@ -593,6 +630,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
               <FormField
                 label={t('brands.detail.name').replace(/\s*\*\s*$/, '')}
                 required
+                helper={isEnLang ? t('brands.detail.nameHelperEn', { defaultValue: 'Bắt buộc — dùng cho khách xem bản tiếng Anh.' }) : undefined}
                 error={isEnLang ? validationErrors['translations.en.name'] : validationErrors.name}
               >
                 <Input
@@ -600,7 +638,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                   onChange={(e) => isEnLang ? handleEnNameChange(e.target.value) : handleNameChange(e.target.value)}
                   onBlur={() => handleFieldBlur(isEnLang ? 'translations.en.name' : 'name')}
                   disabled={isReadOnly}
-                  placeholder={isEnLang ? t('brands.detail.namePlaceholderEn', { defaultValue: 'English name' }) : undefined}
+                  placeholder={isEnLang ? t('brands.detail.namePlaceholderEnRequired', { defaultValue: 'Nhập tên thương hiệu bằng tiếng Anh' }) : undefined}
                 />
               </FormField>
               <FormField
@@ -627,62 +665,63 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                 <Checkbox checked={form.visible} onCheckedChange={(checked) => updateField('visible', checked)} disabled={isReadOnly} />
                 <span>{t('brands.detail.isVisible')}</span>
               </label>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <FormField
-                  label={t('brands.detail.description')}
-                  error={!isEnLang ? validationErrors.description : undefined}
-                >
-                  <RichTextEditor
-                    key={`description-${contentLang}`}
-                    value={isEnLang ? (form.translations?.en?.description ?? '') : form.description}
-                    onChange={(html) => isEnLang ? updateTranslation('description', html) : updateField('description', html)}
-                    placeholder={t('brands.detail.descriptionPlaceholder', { defaultValue: 'Nhập mô tả thương hiệu...' })}
-                    disabled={isReadOnly}
-                    enableImagePicker
-                  />
-                </FormField>
-              </div>
             </div>
           </div>
         </div>
 
-        {/* Hình ảnh */}
-        <div className="bb-card">
-          <div className="bb-card-header"><h2>{t('brands.detail.sectionMedia')}</h2></div>
-          <div className="bb-card-body">
-            <div className="bb-grid-2">
-              <div className="form-field" style={{ gridColumn: '1 / -1' }}>
-                <span>{t('brands.detail.logoUrl')}</span>
-                <ImageUrlInput
-                  value={form.logoUrl}
-                  onChange={(url) => updateField('logoUrl', url)}
-                  alt={form.logoAlt}
-                  onAltChange={(v) => updateField('logoAlt', v)}
-                  disabled={isReadOnly}
-                  error={validationErrors.logoUrl}
-                  recommend={IMAGE_RECO.logo}
-                />
-                <span className="hint">{t('brands.detail.logoUrlHint')}</span>
-              </div>
-              <div className="form-field" style={{ gridColumn: '1 / -1' }}>
-                <span>{t('brands.detail.bannerUrl')}</span>
-                <ImageUrlInput
-                  value={form.bannerUrl}
-                  onChange={(url) => updateField('bannerUrl', url)}
-                  alt={form.bannerAlt}
-                  onAltChange={(v) => updateField('bannerAlt', v)}
-                  disabled={isReadOnly}
-                  error={validationErrors.bannerUrl}
-                  recommend={IMAGE_RECO.bannerWide}
-                />
-                <span className="hint">{t('brands.detail.bannerUrlHint')}</span>
-              </div>
+        {/* Mô tả & hình ảnh (tùy chọn) — gom vào nhóm thu gọn, đóng sẵn để form gọn (chống ngợp). */}
+        <div className="mb-4">
+          <CollapsibleSection
+            title={t('brands.detail.optionalSection', { defaultValue: 'Mô tả & hình ảnh' })}
+            hint={t('brands.detail.optionalSectionHint', { defaultValue: 'Tùy chọn — mô tả, logo, ảnh banner' })}
+            open={optionalOpen}
+            onToggle={() => setOptionalOpen((v) => !v)}
+            keepMounted
+          >
+            <FormField
+              label={t('brands.detail.description')}
+              error={!isEnLang ? validationErrors.description : undefined}
+            >
+              <RichTextEditor
+                key={`description-${contentLang}`}
+                value={isEnLang ? (form.translations?.en?.description ?? '') : form.description}
+                onChange={(html) => isEnLang ? updateTranslation('description', html) : updateField('description', html)}
+                placeholder={t('brands.detail.descriptionPlaceholder', { defaultValue: 'Nhập mô tả thương hiệu...' })}
+                disabled={isReadOnly}
+                enableImagePicker
+              />
+            </FormField>
+            <div className="form-field">
+              <span>{t('brands.detail.logoUrl')}</span>
+              <ImageUrlInput
+                value={form.logoUrl}
+                onChange={(url) => updateField('logoUrl', url)}
+                alt={form.logoAlt}
+                onAltChange={(v) => updateField('logoAlt', v)}
+                disabled={isReadOnly}
+                error={validationErrors.logoUrl}
+                recommend={IMAGE_RECO.logo}
+              />
+              <span className="hint">{t('brands.detail.logoUrlHint')}</span>
             </div>
-          </div>
+            <div className="form-field">
+              <span>{t('brands.detail.bannerUrl')}</span>
+              <ImageUrlInput
+                value={form.bannerUrl}
+                onChange={(url) => updateField('bannerUrl', url)}
+                alt={form.bannerAlt}
+                onAltChange={(v) => updateField('bannerAlt', v)}
+                disabled={isReadOnly}
+                error={validationErrors.bannerUrl}
+                recommend={IMAGE_RECO.bannerWide}
+              />
+              <span className="hint">{t('brands.detail.bannerUrlHint')}</span>
+            </div>
+          </CollapsibleSection>
           {!isCreate && state.item?.updatedAt && (
-            <div className="px-4 py-2.5 border-t border-border text-xs bb-muted">
+            <p className="mt-2 text-xs bb-muted">
               {t('common.lastUpdated')} {formatDateTime(state.item.updatedAt)}
-            </div>
+            </p>
           )}
         </div>
 
@@ -703,7 +742,39 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
           open={seoOpen}
           onToggle={() => setSeoOpen((v) => !v)}
         />
+
+        {/* Xóa SEO có xác nhận — tránh mất nhầm nội dung đã nhập; chỉ hiện khi SEO đang mở & có dữ liệu. */}
+        {seoOpen && !isReadOnly && hasSeoData && (
+          <div className="mb-4 flex justify-end">
+            <Button type="button" variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={handleClearSeo}>
+              <Trash2 size={14} aria-hidden="true" />
+              {t('brands.detail.clearSeoBtn', { defaultValue: 'Xóa thông tin SEO' })}
+            </Button>
+          </div>
+        )}
       </form>
+
+      {/* Thanh Lưu dính đáy — luôn thấy khi cuộn form dài (trước đây chỉ có nút Lưu ở đầu trang). */}
+      <StickyActionBar
+        ariaLabel={t('common.actionBarLabel', { defaultValue: 'Thanh thao tác' })}
+        info={!isEnLang ? (
+          <span className="text-sm bb-muted">
+            {t('brands.detail.formProgress', { filled: requiredFieldsFilled, total: requiredFieldsTotal })}
+          </span>
+        ) : null}
+      >
+        <Button
+          type="submit"
+          form="brand-form"
+          disabled={isReadOnly || !isDirty}
+          aria-busy={isSubmitting || undefined}
+        >
+          {isSubmitting && <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
+          {isSubmitting
+            ? t('common.saving')
+            : isCreate ? t('brands.detail.createBtn') : t('brands.detail.saveBtn')}
+        </Button>
+      </StickyActionBar>
     </div>
   )
 }

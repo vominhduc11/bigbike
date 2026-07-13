@@ -358,21 +358,6 @@
   color: var(--bb-text-secondary);
 }
 .bb-btn-ghost:hover:not(:disabled) { background: var(--bb-surface-hover); color: var(--bb-text); }
-.bb-btn-danger {
-  background: var(--bb-danger);
-  border-color: var(--bb-danger);
-  color: #fff;
-}
-.bb-btn-danger:hover:not(:disabled) {
-  background: var(--bb-danger);
-  border-color: var(--bb-danger);
-  filter: brightness(0.92);
-}
-.bb-btn-danger-ghost {
-  background: transparent;
-  color: var(--bb-danger);
-}
-.bb-btn-danger-ghost:hover:not(:disabled) { background: var(--bb-danger-bg); }
 .bb-btn-sm { height: 26px; padding: 0 8px; font-size: 12px; border-radius: var(--bb-r-xs); }
 .bb-btn-lg { height: 38px; padding: 0 16px; font-size: 13.5px; }
 
@@ -437,7 +422,6 @@
 .bb-badge-muted   { color: var(--bb-text-muted); background: var(--bb-surface-raised); border-color: var(--bb-border); }
 
 /* ─── Form controls ─────────────────────────────────────────────────────────── */
-.bb-label .req { color: var(--bb-danger); }
 .bb-input,
 .bb-select {
   width: 100%;
@@ -487,7 +471,7 @@
   padding: 14px 16px;
   border-bottom: 1px solid var(--bb-border-faint);
 }
-.bb-card-header h3 {
+.bb-card-header :is(h2, h3, h4) {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
@@ -729,8 +713,6 @@
 }
 .bb-table th.sortable { cursor: pointer; user-select: none; }
 .bb-table th.sortable:hover { color: var(--bb-text); }
-.bb-table th .sort-ind { opacity: 0.4; margin-left: 4px; }
-.bb-table th.sorted .sort-ind { opacity: 1; color: var(--bb-primary); }
 .bb-table td {
   padding: 0 12px;
   height: var(--bb-row-h);
@@ -785,9 +767,9 @@
   border: 1px solid rgba(255,255,255,0.24);
   color: #fff;
   font-size: 12px;
-  height: 26px;
+  height: 32px;
   padding: 0 10px;
-  border-radius: 5px;
+  border-radius: var(--admin-radius-control);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -894,7 +876,6 @@
   flex-direction: column;
   gap: 16px;
 }
-.bb-stack-sm { gap: 12px; }
 .bb-stack-xs { gap: 8px; }
 
 .bb-heading-inline {
@@ -1173,11 +1154,6 @@
   justify-content: flex-end;
 }
 
-.bb-detail-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
 .bb-detail-form {
   display: flex;
   flex-direction: column;
@@ -1556,8 +1532,7 @@
 .bb-required-mark {
   color: var(--bb-danger);
 }
-.bb-auth-label,
-.bb-label {
+.bb-auth-label {
   font-size: 13px;
   font-weight: 500;
   color: var(--bb-text);

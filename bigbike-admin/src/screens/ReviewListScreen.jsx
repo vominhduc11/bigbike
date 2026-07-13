@@ -19,6 +19,7 @@ import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { useQueryClient } from '@tanstack/react-query'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { PaginationControls } from '../components/PaginationControls'
 
 const STATUS_OPTIONS = ['ALL', 'APPROVED', 'PENDING', 'SPAM', 'TRASH']
@@ -74,26 +75,20 @@ function ReviewCard({
       style={isSelected ? { borderColor: 'var(--bb-primary)', boxShadow: '0 0 0 1px var(--bb-primary)' } : undefined}
     >
       <div className="bb-card-body">
-        <div className="flex items-center gap-3 mb-3">
+        <div className="flex items-center gap-3 mb-3 flex-wrap">
           {canUpdate && (
-            <span
-              className={`bb-cb${isSelected ? ' checked' : ''}`}
-              role="checkbox"
-              aria-checked={isSelected}
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={() => onToggleSelect(r.id)}
               aria-label={t('reviews.selectOne', { defaultValue: 'Chọn đánh giá này' })}
-              tabIndex={0}
-              onClick={() => onToggleSelect(r.id)}
-              onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); onToggleSelect(r.id) } }}
-            >
-              {isSelected && <Check size={11} />}
-            </span>
+            />
           )}
           <span className={`inline-flex items-center justify-center size-8 rounded-full text-xs font-bold flex-shrink-0 ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
             {author.charAt(0).toUpperCase()}
           </span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700 }}>{author}</div>
-            <div className="bb-muted" style={{ fontSize: 12 }}>
+          <div className="min-w-0 flex-1">
+            <div className="font-bold truncate">{author}</div>
+            <div className="bb-muted text-xs">
               {t('reviews.colProduct')}:{' '}
               {r.productId ? (
                 <a
@@ -116,10 +111,12 @@ function ReviewCard({
               {' · '}{formatDateTime(r.createdAt)}
             </div>
           </div>
-          <Stars n={Math.round(r.rating)} />
-          <span className={`bb-badge ${STATUS_BADGE[r.status] || 'bb-badge-neutral'}`}>
-            {statusLabel(r.status, t)}
-          </span>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Stars n={Math.round(r.rating)} />
+            <span className={`bb-badge ${STATUS_BADGE[r.status] || 'bb-badge-neutral'}`}>
+              {statusLabel(r.status, t)}
+            </span>
+          </div>
         </div>
         <p style={{ margin: 0, color: 'var(--admin-color-text-secondary)', fontSize: 14, lineHeight: 1.55 }}>
           "{r.body?.slice(0, 400)}{r.body?.length > 400 ? '…' : ''}"
@@ -200,6 +197,14 @@ export function ReviewListScreen({ navigate, canUpdate }) {
 
   const handleStatusChange = useCallback(async (review, newStatus) => {
     if (pendingId) return
+    // Đánh dấu spam là hành động kiểm duyệt ẩn đánh giá khỏi khách → xác nhận trước.
+    if (newStatus === 'SPAM') {
+      const confirmed = await showConfirm(
+        t('reviews.spamConfirm', { defaultValue: 'Đánh dấu đánh giá này là spam? Đánh giá sẽ không hiển thị cho khách.' }),
+        t('reviews.spamConfirmTitle', { defaultValue: 'Đánh dấu spam' }),
+      )
+      if (!confirmed) return
+    }
     setActionError('')
     setPendingId(review.id)
     // Cập nhật lạc quan: đổi badge ngay trên trang đang xem, rollback nếu server lỗi.
@@ -276,8 +281,29 @@ export function ReviewListScreen({ navigate, canUpdate }) {
     })
   }, [])
   const allChecked = items.length > 0 && selected.size === items.length
+  // Trạng thái ô "chọn tất cả": tích đầy khi chọn hết, gạch ngang khi chọn một phần.
+  let selectAllState = false
+  if (allChecked) selectAllState = true
+  else if (selected.size > 0) selectAllState = 'indeterminate'
   const toggleSelectAll = useCallback(() => {
     setSelected((prev) => (prev.size === items.length ? new Set() : new Set(items.map((r) => r.id))))
+  }, [items])
+
+  // Đồng bộ lựa chọn hàng loạt với danh sách đang hiển thị: loại các đánh giá không còn
+  // trên trang (sau khi đổi bộ lọc/trang hoặc làm mới) để không thao tác nhầm trên mục cũ.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelected((prev) => {
+      if (prev.size === 0) return prev
+      const visible = new Set(items.map((r) => r.id))
+      let changed = false
+      const next = new Set()
+      for (const id of prev) {
+        if (visible.has(id)) next.add(id)
+        else changed = true
+      }
+      return changed ? next : prev
+    })
   }, [items])
 
   // Áp dụng một hành động cho mọi review đang chọn (duyệt / spam / xoá hàng loạt) — 1 request
@@ -291,6 +317,13 @@ export function ReviewListScreen({ navigate, canUpdate }) {
       const confirmed = await showConfirm(
         t('reviews.bulkDeleteConfirm', { count: ids.length, defaultValue: `Xoá ${ids.length} đánh giá đã chọn?` }),
         t('reviews.deleteConfirmTitle'),
+      )
+      if (!confirmed) return
+    }
+    if (kind === 'SPAM') {
+      const confirmed = await showConfirm(
+        t('reviews.bulkSpamConfirm', { count: ids.length, defaultValue: `Đánh dấu ${ids.length} đánh giá đã chọn là spam?` }),
+        t('reviews.spamConfirmTitle', { defaultValue: 'Đánh dấu spam' }),
       )
       if (!confirmed) return
     }
@@ -338,7 +371,10 @@ export function ReviewListScreen({ navigate, canUpdate }) {
       {/* Summary + attention cards */}
       <div className="bb-grid-2-1 mb-4">
         <div className="bb-card">
-          <div className="bb-card-header"><h3>{t('reviews.summaryTitle', { defaultValue: 'Tổng quan đánh giá' })}</h3></div>
+          <div className="bb-card-header">
+            <h3>{t('reviews.summaryTitle', { defaultValue: 'Tổng quan đánh giá' })}</h3>
+            <span className="bb-muted text-xs">{t('reviews.summaryScopeHint', { defaultValue: 'Tính trên trang hiện tại' })}</span>
+          </div>
           <div className="bb-card-body">
             <div className="flex gap-4 items-start">
               <div className="text-center shrink-0">
@@ -493,19 +529,17 @@ export function ReviewListScreen({ navigate, canUpdate }) {
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
         <div className="flex flex-col gap-3">
           {canUpdate && state.status === 'success' && items.length > 0 && (
-            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
-              <span
-                className={`bb-cb${allChecked ? ' checked' : ''}`}
-                role="checkbox"
-                aria-checked={allChecked}
-                tabIndex={0}
-                onClick={toggleSelectAll}
-                onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleSelectAll() } }}
-              >
-                {allChecked && <Check size={11} />}
-              </span>
-              <span onClick={toggleSelectAll}>{t('reviews.selectAllOnPage', { defaultValue: 'Chọn tất cả trên trang này' })}</span>
-            </label>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground select-none">
+              <Checkbox
+                id="reviews-select-all"
+                checked={selectAllState}
+                onCheckedChange={toggleSelectAll}
+                aria-label={t('reviews.selectAllOnPage', { defaultValue: 'Chọn tất cả trên trang này' })}
+              />
+              <label htmlFor="reviews-select-all" className="cursor-pointer">
+                {t('reviews.selectAllOnPage', { defaultValue: 'Chọn tất cả trên trang này' })}
+              </label>
+            </div>
           )}
           {state.status === 'loading' && items.length === 0 && (
             // N5: chiều cao khớp thẻ ReviewCard thật (avatar+tên+SP+ngày, sao, badge, nội
