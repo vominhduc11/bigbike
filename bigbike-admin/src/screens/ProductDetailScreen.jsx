@@ -1546,7 +1546,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     onChange={(blocks) => updateField('descriptionBlocks', blocks)}
                     disabled={isReadOnly}
                     hasError={Boolean(validationErrors.description)}
-                    fallbackHtml={langValue('description')}
+                    showFallbackHtml={false}
                     productMode
                     contentLang={contentLang}
                   />

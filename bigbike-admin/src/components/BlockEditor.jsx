@@ -43,12 +43,13 @@ function blockHasContent(block) {
  *   disabled     — bool
  *   hasError     — bool
  *   fallbackHtml — string | undefined; legacy HTML shown when value is null/empty
+ *   showFallbackHtml — bool; false hides the legacy HTML reference block
  *   productMode  — bool; true ⇒ chỉ 4 khối cho mô tả sản phẩm (V238), mặc định đầy đủ (Content)
  *   contentLang  — 'vi' | 'en'; 'en' ⇒ mỗi khối hiện field *En (không đổi cấu trúc — thêm/xóa/kéo
  *                  thả khối bị khóa, giống FaqEditor). Mặc định 'vi' nên chỗ dùng cho Content không
  *                  cần truyền (không song ngữ).
  */
-export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml, productMode, contentLang = 'vi' }) {
+export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml, showFallbackHtml = true, productMode, contentLang = 'vi' }) {
   const { t } = useTranslation()
   const blocks = value ?? []
   const menu = productMode ? PRODUCT_MENU : CONTENT_MENU
@@ -101,10 +102,7 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
     onChange(next)
   }
 
-  // Nội dung cũ (HTML legacy) phải HIỂN THỊ liên tục kể cả sau khi admin đã thêm khối mới —
-  // trước đây nó biến mất ngay khi blocks.length > 0, khiến admin tưởng mất nội dung cũ. Giờ luôn
-  // hiện khi có fallbackHtml; nếu đã có khối, đổi chú thích để nói rõ nội dung cũ sẽ được thay thế.
-  const hasFallback = Boolean(fallbackHtml && fallbackHtml.trim().length > 0)
+  const hasFallback = showFallbackHtml && Boolean(fallbackHtml && fallbackHtml.trim().length > 0)
 
   return (
     <div className={cn('flex flex-col gap-2', hasError && 'ring-1 ring-destructive rounded-sm')}>
