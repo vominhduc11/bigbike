@@ -1241,7 +1241,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     <span>{t('products.detail.variantPricingHint')}</span>
                   </div>
                 )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className={cn('grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-5', form.variants.length > 0 && 'mt-5')}>
                   <Field label={t('products.detail.retailPrice')} required={!hasVariants} error={validationErrors.retailPrice}>
                     <Input
                       type="text"
