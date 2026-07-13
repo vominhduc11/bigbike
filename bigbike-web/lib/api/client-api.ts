@@ -53,6 +53,52 @@ async function clientRequest<T>(
   return (payload as { data: T }).data ?? (payload as T);
 }
 
+function asArray<T>(value: unknown): T[] {
+  if (Array.isArray(value)) {
+    return value as T[];
+  }
+
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    for (const key of ["data", "content", "items", "results"]) {
+      const direct = record[key];
+      if (Array.isArray(direct)) {
+        return direct as T[];
+      }
+      if (direct && typeof direct === "object") {
+        const nested = direct as Record<string, unknown>;
+        for (const nestedKey of ["data", "content", "items", "results"]) {
+          if (Array.isArray(nested[nestedKey])) {
+            return nested[nestedKey] as T[];
+          }
+        }
+      }
+    }
+  }
+
+  return [];
+}
+
+function payloadData(payload: unknown): unknown {
+  if (payload && typeof payload === "object" && "data" in payload) {
+    return (payload as Record<string, unknown>).data;
+  }
+  return payload;
+}
+
+function payloadPagination<T>(payload: unknown): T | null {
+  if (payload && typeof payload === "object") {
+    const record = payload as Record<string, unknown>;
+    if (record.pagination) {
+      return record.pagination as T;
+    }
+    if (record.data && typeof record.data === "object" && "pagination" in record.data) {
+      return (record.data as Record<string, unknown>).pagination as T;
+    }
+  }
+  return null;
+}
+
 // ── Cart ─────────────────────────────────────────────────────────────────────
 
 export function fetchCart(): Promise<Cart> {
@@ -101,8 +147,7 @@ export async function fetchPublicSettings(lang?: string): Promise<PublicSetting[
     const msg = (payload as { error?: { message?: string } } | null)?.error?.message ?? `HTTP ${res.status}`;
     throw new Error(msg);
   }
-  const body = (payload ?? {}) as { data?: PublicSetting[] };
-  return body.data ?? [];
+  return asArray<PublicSetting>(payloadData(payload));
 }
 
 export function fetchPublicMenu(location: string, lang?: string): Promise<PublicMenu> {
@@ -200,8 +245,10 @@ export async function fetchPublicProductList(
     const msg = (payload as { error?: { message?: string } } | null)?.error?.message ?? `HTTP ${res.status}`;
     throw new Error(msg);
   }
-  const body = (payload ?? {}) as { data?: Product[]; pagination?: PublicProductListResult["pagination"] };
-  return { data: body.data ?? [], pagination: body.pagination ?? null };
+  return {
+    data: asArray<Product>(payloadData(payload)),
+    pagination: payloadPagination<PublicProductListResult["pagination"]>(payload),
+  };
 }
 
  type PublicArticleListQuery = {
@@ -240,8 +287,10 @@ export async function fetchPublicArticleList(
     const msg = (payload as { error?: { message?: string } } | null)?.error?.message ?? `HTTP ${res.status}`;
     throw new Error(msg);
   }
-  const body = (payload ?? {}) as { data?: Article[]; pagination?: PublicArticleListResult["pagination"] };
-  return { data: body.data ?? [], pagination: body.pagination ?? null };
+  return {
+    data: asArray<Article>(payloadData(payload)),
+    pagination: payloadPagination<PublicArticleListResult["pagination"]>(payload),
+  };
 }
 
 export type PublicBrandListResult = {
@@ -270,8 +319,10 @@ export async function fetchPublicBrandList(
     const msg = (payload as { error?: { message?: string } } | null)?.error?.message ?? `HTTP ${res.status}`;
     throw new Error(msg);
   }
-  const body = (payload ?? {}) as { data?: Brand[]; pagination?: PublicBrandListResult["pagination"] };
-  return { data: body.data ?? [], pagination: body.pagination ?? null };
+  return {
+    data: asArray<Brand>(payloadData(payload)),
+    pagination: payloadPagination<PublicBrandListResult["pagination"]>(payload),
+  };
 }
 
 /** Client-side category list fetch — dùng cho lưới danh mục trang chủ refetch theo lang. */
@@ -295,8 +346,7 @@ export async function fetchPublicCategoryList(
     const msg = (payload as { error?: { message?: string } } | null)?.error?.message ?? `HTTP ${res.status}`;
     throw new Error(msg);
   }
-  const body = (payload ?? {}) as { data?: Category[] };
-  return body.data ?? [];
+  return asArray<Category>(payloadData(payload));
 }
 
 export function submitQuickBuy(payload: QuickBuyPayload, idempotencyKey?: string): Promise<OrderSummary> {

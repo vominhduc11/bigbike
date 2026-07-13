@@ -5,7 +5,7 @@ export function pickSetting(
   settings: SettingEntry[] | undefined,
   keys: string[],
 ): string {
-  if (!settings) return "";
+  if (!Array.isArray(settings)) return "";
   for (const key of keys) {
     const v = settings.find((s) => s.settingKey === key)?.settingValue?.trim();
     if (v) return v;

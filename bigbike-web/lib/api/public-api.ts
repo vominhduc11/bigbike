@@ -107,6 +107,46 @@ function parseError(status: number, payload: unknown): ClientError {
   };
 }
 
+function asArray<T>(value: unknown): T[] {
+  if (Array.isArray(value)) {
+    return value as T[];
+  }
+
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    for (const key of ["data", "content", "items", "results"]) {
+      const direct = record[key];
+      if (Array.isArray(direct)) {
+        return direct as T[];
+      }
+      if (direct && typeof direct === "object") {
+        const nested = direct as Record<string, unknown>;
+        for (const nestedKey of ["data", "content", "items", "results"]) {
+          if (Array.isArray(nested[nestedKey])) {
+            return nested[nestedKey] as T[];
+          }
+        }
+      }
+    }
+  }
+
+  return [];
+}
+
+function paginationFrom(value: unknown): ListResult<unknown>["pagination"] {
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    if ("pagination" in record) {
+      return (record.pagination as ListResult<unknown>["pagination"]) ?? null;
+    }
+    if (record.data && typeof record.data === "object" && "pagination" in record.data) {
+      return ((record.data as Record<string, unknown>).pagination as ListResult<unknown>["pagination"]) ?? null;
+    }
+  }
+
+  return null;
+}
+
 // revalidate=0 → cache: "no-store" (search, user-specific). Otherwise ISR + optional tags.
 async function requestJson<T>(
   path: string,
@@ -153,14 +193,34 @@ async function loadList<T>(
   try {
     const response = await requestJson<ApiListResponse<T>>(endpoint, query, revalidate, tags);
     return {
-      data: response.data ?? [],
-      pagination: response.pagination,
+      data: asArray<T>(response),
+      pagination: paginationFrom(response),
       error: null,
     };
   } catch (error) {
     return {
       data: [],
       pagination: null,
+      error: toClientError(error),
+    };
+  }
+}
+
+async function loadArrayDataWithQuery<T>(
+  endpoint: string,
+  query: RequestQuery,
+  revalidate = 3600,
+  tags?: string[],
+): Promise<DataResult<T[]>> {
+  try {
+    const response = await requestJson<ApiDataResponse<unknown>>(endpoint, query, revalidate, tags);
+    return {
+      data: asArray<T>(response),
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: [],
       error: toClientError(error),
     };
   }
@@ -370,12 +430,12 @@ export function getPublicMenu(location: string, lang?: string): Promise<DataResu
 }
 
 export function listPublicSettings(lang?: string): Promise<DataResult<PublicSiteSetting[]>> {
-  return loadDataWithQuery("/api/v1/settings/public", { lang }, 3600, ["settings", `lang:${lang ?? "vi"}`]);
+  return loadArrayDataWithQuery("/api/v1/settings/public", { lang }, 3600, ["settings", `lang:${lang ?? "vi"}`]);
 }
 
 /** Active sliders for a given placement location (e.g. "home", "category_sidebar"). */
  function listSliders(location: string): Promise<DataResult<HomeSlider[]>> {
-  return loadDataWithQuery<HomeSlider[]>("/api/v1/sliders", { location }, 3600, ["sliders"]);
+  return loadArrayDataWithQuery<HomeSlider>("/api/v1/sliders", { location }, 3600, ["sliders"]);
 }
 
 export function listHomeSliders(): Promise<DataResult<HomeSlider[]>> {
@@ -383,11 +443,11 @@ export function listHomeSliders(): Promise<DataResult<HomeSlider[]>> {
 }
 
 export function listHomeVideos(lang?: string): Promise<DataResult<HomeVideo[]>> {
-  return loadDataWithQuery<HomeVideo[]>("/api/v1/home-videos", { lang }, 300, ["home-videos", `lang:${lang ?? "vi"}`]);
+  return loadArrayDataWithQuery<HomeVideo>("/api/v1/home-videos", { lang }, 300, ["home-videos", `lang:${lang ?? "vi"}`]);
 }
 
 export function listHomeHighlights(lang?: string): Promise<DataResult<HomeHighlightItem[]>> {
-  return loadDataWithQuery<HomeHighlightItem[]>("/api/v1/home/category-highlights", { lang }, 300, ["home-highlights", `lang:${lang ?? "vi"}`]);
+  return loadArrayDataWithQuery<HomeHighlightItem>("/api/v1/home/category-highlights", { lang }, 300, ["home-highlights", `lang:${lang ?? "vi"}`]);
 }
 
 export function getOrderLookup(orderNumber: string, orderKey: string): Promise<DataResult<OrderDetail>> {

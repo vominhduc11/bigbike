@@ -11,7 +11,9 @@ type HeroPropsFromSettings = {
 };
 
 function findValue(settings: PublicSiteSetting[], key: string): string | null {
-  const value = settings.find((s) => s.settingKey === key)?.settingValue?.trim();
+  const value = Array.isArray(settings)
+    ? settings.find((s) => s.settingKey === key)?.settingValue?.trim()
+    : "";
   return value ? value : null;
 }
 
