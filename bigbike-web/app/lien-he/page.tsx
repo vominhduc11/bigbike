@@ -50,7 +50,7 @@ export default async function ContactPage() {
   const title = t("titleFallback");
 
   return (
-    <StaticPageShell title={title} breadcrumb={[]} showHero={false} mainClassName="pb-10">
+    <StaticPageShell title={title} breadcrumb={[]} showHero={false} mainClassName="pb-10 bb-contact-page">
       <Container>
         <ContactPageContent contact={contact} />
       </Container>

@@ -931,6 +931,9 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   body:has(.bb-heroless) .bb-main {
     padding-top: 92px;
   }
+  body:has(.bb-contact-page.bb-heroless) .bb-main {
+    padding-top: 0px;
+  }
 }
 
 /* PDP-only: thu gọn khoảng trắng đầu trang do logo treo tạo ra. Chỉ nhắm
