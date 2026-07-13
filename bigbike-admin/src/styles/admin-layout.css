@@ -97,8 +97,10 @@
   .seg-tabs {
     width: 100%;
     overflow-x: auto;
+    overflow-y: hidden;
     flex-wrap: nowrap;
     scrollbar-width: none;
+    -ms-overflow-style: none;
   }
   .seg-tabs::-webkit-scrollbar { display: none; }
   .seg-tabs-tab { white-space: nowrap; }

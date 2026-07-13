@@ -641,6 +641,12 @@
   padding: 3px;
   gap: 2px;
   overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.bb-seg::-webkit-scrollbar {
+  display: none;
 }
 .bb-seg button {
   padding: 5px 10px;
