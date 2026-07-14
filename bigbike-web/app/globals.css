@@ -3878,9 +3878,13 @@ body > footer .bg-footer-top a:focus-visible {
 }
 
 html[data-bb-header-panel] .bb-floating-chat-anchor,
+html[data-bb-header-panel] .bb-scroll-top-anchor,
 html[data-bb-keyboard-focus] .bb-floating-chat-anchor,
+html[data-bb-keyboard-focus] .bb-scroll-top-anchor,
 html[data-bb-nav-dropdown-open] .bb-floating-chat-anchor,
-body:has(header .navigation.active) .bb-floating-chat-anchor {
+html[data-bb-nav-dropdown-open] .bb-scroll-top-anchor,
+body:has(header .navigation.active) .bb-floating-chat-anchor,
+body:has(header .navigation.active) .bb-scroll-top-anchor {
   display: none !important;
 }
 
@@ -3936,7 +3940,9 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
   }
 
   body:has(.bb-page--auth) .bb-floating-chat-anchor,
-  body:has(.bb-account-layout) .bb-floating-chat-anchor {
+  body:has(.bb-page--auth) .bb-scroll-top-anchor,
+  body:has(.bb-account-layout) .bb-floating-chat-anchor,
+  body:has(.bb-account-layout) .bb-scroll-top-anchor {
     display: none !important;
   }
 
@@ -4272,6 +4278,12 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
      !important beats the existing !important chat-anchor rule above. */
   body:has(.bb-pdp-sticky-cta.is-visible) .bb-floating-chat-anchor {
     bottom: calc(84px + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* Scroll-to-top FAB stays stacked 64px above the chat FAB (its height + gap),
+     so it lifts together with the chat anchor above. */
+  body:has(.bb-pdp-sticky-cta.is-visible) .bb-scroll-top-anchor {
+    bottom: calc(148px + env(safe-area-inset-bottom)) !important;
   }
 
 }

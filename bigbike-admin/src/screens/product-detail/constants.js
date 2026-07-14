@@ -910,38 +910,39 @@ export const SECTION_DEFS = [
   { id: 'section-accessories',    key: 'accessories',   icon: 'PlusCircle', labelKey: 'products.detail.sectionAccessories',    required: false },
 ]
 
-// Two tabs only: everything product-related on one page (split into collapsible
-// groups below), with SEO on its own tab so the SEO-role workflow stays separate.
-// Keys must match SECTION_DEFS keys; drives the per-tab error badge + findTabForErrors.
+// 2 tab. `main` gộp toàn bộ nội dung sản phẩm theo đúng thứ tự khối hiển thị trên bigbike-web PDP
+// (bigbike-web/components/catalog/ProductView.tsx): khu mua hàng (khối #1: tên/giá/ảnh/biến thể/gallery/
+// dải tin cậy) → phần thân trang render SAU PurchaseSection theo đúng thứ tự cố định `bodyOrder`
+// (ProductView.tsx dòng 258-262) + specStats/quickAnswer: specStats (#2) → quickAnswer (#3) →
+// description (#4) → highlights+related (#5) → suitability/sizeGuide (chưa có entry
+// SECTION_FIELD_PREFIXES riêng, xem field trong descriptionBuilder) → specs (#8) → faqs (#9) →
+// videos (#10) → commitments (khối Trust "Mua tại BigBike.vn", #11) → accessories (#12). `seo` không map
+// vào khối nào trên PDP (không hiển thị dạng block riêng). Keys phải khớp SECTION_DEFS keys; drives the
+// per-tab error badge + findTabForErrors.
 export const TAB_SECTIONS = {
-  product: ['basic', 'description', 'highlights', 'pricing', 'media', 'variants', 'gallery', 'videos', 'specs', 'specStats', 'faqs', 'commitments', 'trustBadges', 'related', 'accessories'],
-  seo:     ['seo'],
+  main: ['basic', 'media', 'pricing', 'variants', 'gallery', 'trustBadges', 'specStats', 'description', 'highlights', 'related', 'specs', 'faqs', 'videos', 'commitments', 'accessories'],
+  seo:  ['seo'],
 }
 
-// Within the "product" tab the sections are split into collapsible groups. To fight the
-// "too many fields at once" overwhelm (audit P0-1), the default-open group `buyArea` now
-// holds ONLY the truly-required core (thông tin cơ bản, ảnh đại diện, giá & trạng thái,
-// biến thể) — the four optional enhancement cards (gallery, dải tin cậy, cam kết, ô số
-// liệu) moved into `enhance`, which starts collapsed. `body` (thân trang) and `closing`
-// (cuối trang) also start collapsed so the form opens short. Field originBrandCountry
-// ("Thương hiệu (nước)") vẫn hiển thị ở khối "Mua tại BigBike.vn" cuối trang PDP nhưng
-// NHẬP LIỆU admin nằm ở card "Thông tin cơ bản" — form KHÔNG mirror 1:1 vị trí hiển thị.
-// Only `buyArea` opens by default; the three optional groups start collapsed.
-// Keys/order mirror the render order in ProductDetailScreen.
-export const PRODUCT_GROUPS = {
-  buyArea: ['basic', 'media', 'pricing', 'variants'],
-  enhance: ['gallery', 'trustBadges', 'commitments', 'specStats'],
-  body:    ['description', 'highlights', 'related', 'specs', 'faqs', 'videos'],
-  closing: ['accessories'],
-}
+// Tab chính ("main") gộp mọi mục nội dung. Form rất dài nên gom thành 3 NHÓM gấp/mở (chống "quá
+// nhiều đầu mục" + "quá nhiều field cùng lúc" — audit P0-1). Thứ tự các phần trong nhóm giữ nguyên
+// theo thứ tự khối trên PDP web. `sections` = key từng phần (khớp SECTION_FIELD_PREFIXES) để đếm/tự
+// bung nhóm khi lưu lỗi. Field originBrandCountry ("Thương hiệu (nước)") hiển thị ở khối "Mua tại
+// BigBike.vn" cuối PDP nhưng NHẬP LIỆU nằm ở "Thông tin cơ bản" — form KHÔNG mirror 1:1 vị trí hiển thị.
+export const MAIN_SECTION_GROUPS = [
+  { id: 'sales',   sections: ['basic', 'media', 'gallery', 'pricing', 'variants', 'trustBadges'] },
+  { id: 'content', sections: ['specStats', 'quickAnswer', 'description', 'highlights', 'related', 'suitability', 'sizeGuide', 'specs', 'faqs'] },
+  { id: 'extras',  sections: ['videos', 'commitments', 'accessories'] },
+]
 
-// First group (top-down) containing any failing section — used to auto-expand the
-// right group when validation fails on save.
-export function findGroupForErrors(sectionErrors) {
-  for (const [group, keys] of Object.entries(PRODUCT_GROUPS)) {
-    if (keys.some((k) => sectionErrors[k])) return group
-  }
-  return null
+// Nhóm mở sẵn khi vào trang (nhóm bán hàng cốt lõi); 2 nhóm còn lại thu gọn để form đỡ dài.
+export const MAIN_GROUPS_DEFAULT_OPEN = { sales: true }
+
+// Id các nhóm chứa ít nhất một mục đang lỗi — để tự bung nhóm khi lưu lỗi.
+export function groupsWithErrors(sectionErrors) {
+  return MAIN_SECTION_GROUPS
+    .filter((g) => g.sections.some((s) => sectionErrors[s]))
+    .map((g) => g.id)
 }
 
 // Khóa chuẩn để so bộ thuộc tính giữa các biến thể. Mọi alias màu ("Màu", "Màu sắc",

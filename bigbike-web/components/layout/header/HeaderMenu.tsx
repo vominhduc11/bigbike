@@ -98,7 +98,14 @@ export function HeaderMenu({ initialNodes, variant, onNavigate }: HeaderMenuProp
               >
                 {node.label}
               </Link>
-              {hasChildren ? <DesktopSubmenu nodes={node.children} locale={locale} depth={0} /> : null}
+              {hasChildren ? (
+                <DesktopSubmenu
+                  nodes={node.children}
+                  locale={locale}
+                  depth={0}
+                  onNavigate={() => setSuppressedId(node.id)}
+                />
+              ) : null}
             </li>
           );
         })}
@@ -107,7 +114,17 @@ export function HeaderMenu({ initialNodes, variant, onNavigate }: HeaderMenuProp
   );
 }
 
-function DesktopSubmenu({ nodes, locale, depth }: { nodes: HeaderNavNode[]; locale: string; depth: number }) {
+function DesktopSubmenu({
+  nodes,
+  locale,
+  depth,
+  onNavigate,
+}: {
+  nodes: HeaderNavNode[];
+  locale: string;
+  depth: number;
+  onNavigate: () => void;
+}) {
   return (
     <ul
       data-header-submenu
@@ -128,7 +145,11 @@ function DesktopSubmenu({ nodes, locale, depth }: { nodes: HeaderNavNode[]; loca
               itemGroups[Math.min(depth, itemGroups.length - 1)],
             )}
           >
-            <Link href={href} className="flex items-center px-6 py-[14px] font-body text-a5-meta font-semibold normal-case text-muted-foreground! no-underline! hover:text-brand-on-dark!">
+            <Link
+              href={href}
+              onClick={onNavigate}
+              className="flex items-center px-6 py-[14px] font-body text-a5-meta font-semibold normal-case text-muted-foreground! no-underline! hover:text-brand-on-dark!"
+            >
               {node.iconUrl ? (
                 <span
                   className={`${submenuIcon} mr-2 align-middle`}
@@ -138,7 +159,9 @@ function DesktopSubmenu({ nodes, locale, depth }: { nodes: HeaderNavNode[]; loca
               ) : null}
               {node.label}
             </Link>
-            {hasChildren ? <DesktopSubmenu nodes={node.children} locale={locale} depth={depth + 1} /> : null}
+            {hasChildren ? (
+              <DesktopSubmenu nodes={node.children} locale={locale} depth={depth + 1} onNavigate={onNavigate} />
+            ) : null}
           </li>
         );
       })}

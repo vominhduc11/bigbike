@@ -1272,13 +1272,6 @@
   color: var(--bb-text-muted);
   line-height: 1.35;
 }
-.bb-section-group-error {
-  margin-left: auto;
-  color: var(--bb-danger);
-  font-size: 12px;
-  font-weight: 800;
-  white-space: nowrap;
-}
 .bb-section-group-body {
   display: flex;
   flex-direction: column;

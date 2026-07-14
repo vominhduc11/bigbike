@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
 import {
-  AlertCircle, Check, Download, Eye, Info, Loader2, Lock, Save, Search as PfSearch, X,
+  AlertCircle, Check, ChevronsDownUp, ChevronsUpDown, Download, Eye, Info, Loader2, Lock, Save, Search as PfSearch, X,
 } from 'lucide-react'
 
 import {
@@ -66,9 +66,10 @@ import {
   TAB_SECTIONS,
   computeSectionErrorsFromMap,
   findTabForErrors,
-  findGroupForErrors,
   computeAttrSetWarning,
-  PRODUCT_GROUPS,
+  MAIN_SECTION_GROUPS,
+  MAIN_GROUPS_DEFAULT_OPEN,
+  groupsWithErrors,
   publishBadgeClass,
   RELATED_PRODUCTS_MAX,
   SPEC_STAT_MAX,
@@ -106,10 +107,10 @@ import { PublishChecklistModal } from './product-detail/Modals'
 import {
   RelatedProductRow,
   RoleBadge,
-  CollapsibleGroup,
   AssignmentBanner,
 } from './product-detail/Layout'
 import { SectionCard } from '../components/SectionCard'
+import { CollapsibleSection } from '@/components/CollapsibleSection'
 import { FormField as Field } from '../components/layout/FormField'
 import { AssignmentConfigContext } from './product-detail/constants'
 
@@ -652,6 +653,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       // theo trường (lỗi field thì hiện ngay dưới ô, bấm lưu lại cũng vô ích cho tới
       // khi sửa). Toast lỗi đã không tự tắt (facade toast đặt duration Infinity).
       const hasFieldErrors = Object.keys(fieldErrors).length > 0
+      // Lỗi theo trường (vd trùng slug/SKU) có thể nằm trong thẻ đang thu gọn — mở ra + nhảy tab.
+      if (hasFieldErrors) revealErrorSections(fieldErrors)
       toast.error(
         error.message || t('products.detail.errSaveFailed'),
         hasFieldErrors
@@ -681,6 +684,23 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         errorEl.scrollIntoView({ block: 'center', behavior: 'smooth' })
       }
     }))
+  }
+
+  // Khi lưu lỗi (client hoặc server trả về): chuyển sang tab chứa lỗi, BUNG các nhóm đang thu gọn
+  // có chứa mục lỗi (để không giấu lỗi sau nhóm đã đóng), rồi focus ô lỗi đầu tiên.
+  function revealErrorSections(errorsMap) {
+    const failedSections = computeSectionErrorsFromMap(errorsMap)
+    const failedTab = findTabForErrors(failedSections)
+    if (failedTab && failedTab !== activeTab) setActiveTab(failedTab)
+    const failedGroups = groupsWithErrors(failedSections)
+    if (failedGroups.length > 0) {
+      setOpenGroups((prev) => {
+        const next = { ...prev }
+        for (const id of failedGroups) next[id] = true
+        return next
+      })
+    }
+    focusFirstError()
   }
 
   async function handleExportJson() {
@@ -722,17 +742,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     if (Object.keys(clientErrors).length > 0) {
       if (attrWarn) toast.error(t('products.detail.variant.attrSetErrorToast'))
       setValidationErrors(clientErrors)
-      // Switch to the first tab containing an error so the user sees the field
-      // we're about to focus. computeSectionErrorsFromMap reuses the same
-      // prefix logic used by sectionErrors below.
-      const failedSections = computeSectionErrorsFromMap(clientErrors)
-      const failedTab = findTabForErrors(failedSections)
-      if (failedTab && failedTab !== activeTab) setActiveTab(failedTab)
-      // Auto-expand the collapsible group holding the first failing field so the user
-      // actually sees the error we're about to focus.
-      const failedGroup = findGroupForErrors(failedSections)
-      if (failedGroup) setOpenGroups((prev) => ({ ...prev, [failedGroup]: true }))
-      focusFirstError()
+      revealErrorSections(clientErrors)
       return
     }
 
@@ -765,13 +775,18 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
 
   // ── Tab navigation state (replaces the old TOC sidebar) ─────────────────────
-  // Two tabs ("product" + "seo"). Inside the product tab, collapsible groups — only
-  // `buyArea` (required core: thông tin, ảnh, giá, biến thể) opens by default; `enhance`
-  // (tùy chọn nâng cao), `body` (thân trang) and `closing` (cuối trang) start collapsed
-  // so the form opens short (audit P0-1: chống ngợp field).
-  const [activeTab, setActiveTab] = useState('product')
-  const [openGroups, setOpenGroups] = useState({ buyArea: true, enhance: false, body: false, closing: false })
-  const toggleGroup = (group) => setOpenGroups((prev) => ({ ...prev, [group]: !prev[group] }))
+  // 2 tab: "main" gộp toàn bộ nội dung sản phẩm theo đúng thứ tự khối trên PDP bigbike-web
+  // (khối #1 PurchaseSection: tên/ảnh/giá/biến thể + gallery phụ/dải tin cậy → thân trang #2→#12
+  // specStats → ... → accessories); "seo" không đổi. Trong tab main, nhóm `overviewExtra`
+  // (gallery, dải tin cậy — không bắt buộc) collapsed mặc định để chống ngợp field (audit P0-1).
+  const [activeTab, setActiveTab] = useState('main')
+  // Tab "main" gom mọi mục thành 3 NHÓM gấp/mở. Mở sẵn nhóm bán hàng cốt lõi (MAIN_GROUPS_DEFAULT_OPEN),
+  // 2 nhóm còn lại thu gọn để form không dài lê thê. Nút "Mở/Thu gọn tất cả" ở đầu tab đảo toàn bộ.
+  const [openGroups, setOpenGroups] = useState(() => ({ ...MAIN_GROUPS_DEFAULT_OPEN }))
+  const toggleGroup = (id) => setOpenGroups((prev) => ({ ...prev, [id]: !prev[id] }))
+  const allGroupsOpen = MAIN_SECTION_GROUPS.every((g) => openGroups[g.id])
+  const setAllGroups = (val) =>
+    setOpenGroups(Object.fromEntries(MAIN_SECTION_GROUPS.map((g) => [g.id, val])))
   const [savedFlash, setSavedFlash] = useState(false)
 
   if (state.status === 'loading') {
@@ -852,9 +867,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const tabCounts = Object.fromEntries(
     Object.entries(TAB_SECTIONS).map(([tab, keys]) => [tab, keys.filter((k) => sectionErrors[k]).length]),
   )
-  const groupCounts = Object.fromEntries(
-    Object.entries(PRODUCT_GROUPS).map(([group, keys]) => [group, keys.filter((k) => sectionErrors[k]).length]),
-  )
   // Badge số lỗi cho từng tab: tô màu cảnh báo (danger token) + nhãn ẩn cho trình
   // đọc màn hình để phân biệt với badge đếm thông thường ("N lỗi" thay vì số trơ).
   function tabErrorBadge(count) {
@@ -865,6 +877,20 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         <span className="sr-only">
           {t('products.detail.errorsInTab', { count, defaultValue: '{{count}} lỗi' })}
         </span>
+      </span>
+    )
+  }
+
+  // Badge số lỗi hiển thị bên phải tiêu đề NHÓM gấp/mở (đẩy sát phải qua ml-auto). Undefined khi
+  // nhóm không lỗi để không chiếm chỗ. Đếm theo các mục (section key) thuộc nhóm đang lỗi.
+  function mainGroupErrorBadge(groupId) {
+    const group = MAIN_SECTION_GROUPS.find((g) => g.id === groupId)
+    const count = group ? group.sections.filter((s) => sectionErrors[s]).length : 0
+    if (!count) return undefined
+    return (
+      <span className="ml-auto whitespace-nowrap text-xs font-bold text-danger">
+        <span aria-hidden="true">{t('products.detail.groupErrorCount', { count, defaultValue: '{{count}} lỗi' })}</span>
+        <span className="sr-only">{t('products.detail.groupErrorCountFull', { count, defaultValue: '{{count}} lỗi cần sửa' })}</span>
       </span>
     )
   }
@@ -1026,8 +1052,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           value={activeTab}
           onChange={setActiveTab}
           items={[
-            { key: 'product', label: t('products.detail.tabProduct', { defaultValue: 'Sản phẩm' }), count: tabErrorBadge(tabCounts.product) },
-            { key: 'seo',     label: t('products.detail.tabSeo', { defaultValue: 'SEO' }),           count: tabErrorBadge(tabCounts.seo) },
+            { key: 'main', label: t('products.detail.tabMain', { defaultValue: 'Thông tin sản phẩm' }), count: tabErrorBadge(tabCounts.main) },
+            { key: 'seo',  label: t('products.detail.tabSeo', { defaultValue: 'SEO' }),                 count: tabErrorBadge(tabCounts.seo) },
           ]}
         />
 
@@ -1049,15 +1075,40 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             {' '}
             {t('products.detail.requiredLegend', { defaultValue: 'Bắt buộc' })}
           </p>
-          {activeTab === 'product' && (
+          {activeTab === 'main' && (
             <>
-              <CollapsibleGroup
-                title={t('products.detail.groupBuyArea', { defaultValue: 'Thông tin bắt buộc' })}
-                hint={t('products.detail.groupBuyAreaHint', { defaultValue: 'Bắt buộc — thông tin, ảnh đại diện, giá, biến thể' })}
-                open={openGroups.buyArea}
-                onToggle={() => toggleGroup('buyArea')}
-                errorCount={groupCounts.buyArea}
+              {/* Nút mở/thu gọn toàn bộ các nhóm — tiện khi cần điền/rà soát hết một lượt. */}
+              <div className="-mb-2 flex justify-end">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAllGroups(!allGroupsOpen)}
+                >
+                  {allGroupsOpen ? (
+                    <>
+                      <ChevronsDownUp size={14} className="mr-1.5" />
+                      {t('products.detail.collapseAll', { defaultValue: 'Thu gọn tất cả' })}
+                    </>
+                  ) : (
+                    <>
+                      <ChevronsUpDown size={14} className="mr-1.5" />
+                      {t('products.detail.expandAll', { defaultValue: 'Mở tất cả' })}
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* ══ Nhóm 1: Bán hàng & hình ảnh ══ */}
+              <CollapsibleSection
+                title={t('products.detail.groupSales', { defaultValue: 'Bán hàng & hình ảnh' })}
+                hint={t('products.detail.groupSalesHint', { defaultValue: 'Thông tin để bán: cơ bản, ảnh, giá, biến thể' })}
+                open={openGroups.sales}
+                onToggle={() => toggleGroup('sales')}
+                badge={mainGroupErrorBadge('sales')}
+                keepMounted
               >
+
               {/* ── Card: Thông tin cơ bản ── */}
               <SectionCard
                 title={t('products.detail.sectionBasic')}
@@ -1233,6 +1284,26 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 />
               </SectionCard>
 
+              {/* ── Card: Gallery (ảnh phụ) — ngay dưới Ảnh đại diện, không bắt buộc ── */}
+              <SectionCard
+                title={t('products.detail.gallerySectionTitle')}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <span className="bb-count-pill">
+                      {form.gallery.length} {t('products.detail.galleryUnit', { defaultValue: 'ảnh' })}
+                    </span>
+                    <RoleBadge role="content" />
+                  </div>
+                }
+              >
+                <GalleryEditor
+                  items={form.gallery}
+                  onChange={(next) => updateField('gallery', next)}
+                  disabled={isReadOnly}
+                  validationErrors={validationErrors}
+                />
+              </SectionCard>
+
               {/* ── Card: Giá & trạng thái ── */}
               <SectionCard title={t('products.detail.sectionPricing')} required badge={<RoleBadge role="manager" />}>
                 {form.variants.length > 0 && (
@@ -1391,36 +1462,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   contentLang={contentLang}
                 />
               </SectionCard>
-              </CollapsibleGroup>
 
-              <CollapsibleGroup
-                title={t('products.detail.groupEnhance', { defaultValue: 'Tùy chọn nâng cao' })}
-                hint={t('products.detail.groupEnhanceHint', { defaultValue: 'Không bắt buộc — gallery, dải tin cậy, cam kết, ô số liệu' })}
-                open={openGroups.enhance}
-                onToggle={() => toggleGroup('enhance')}
-                errorCount={groupCounts.enhance}
-              >
-              {/* ── Card: Gallery (ảnh phụ) ── */}
-              <SectionCard
-                title={t('products.detail.gallerySectionTitle')}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="bb-count-pill">
-                      {form.gallery.length} {t('products.detail.galleryUnit', { defaultValue: 'ảnh' })}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <GalleryEditor
-                  items={form.gallery}
-                  onChange={(next) => updateField('gallery', next)}
-                  disabled={isReadOnly}
-                  validationErrors={validationErrors}
-                />
-              </SectionCard>
-
-              {/* ── Card: Dải tin cậy (trên tên sản phẩm) (V233) ── */}
+              {/* ── Card: Dải tin cậy (trên tên sản phẩm) (V233) — không bắt buộc ── */}
               <SectionCard
                 title={t('products.detail.sectionTrustBadges', { defaultValue: 'Dải tin cậy (trên tên sản phẩm)' })}
                 badge={
@@ -1448,33 +1491,17 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   onHtmlChange={(v) => langChange('trustBadges', v)}
                 />
               </SectionCard>
+              </CollapsibleSection>
 
-              {/* ── Card: Cam kết (dưới nút mua hàng) (V232) — nội dung bán hàng (tùy chọn) ── */}
-              <SectionCard
-                title={t('products.detail.sectionCommitments')}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="bb-count-pill">
-                      {form.commitments.length} {t('products.detail.commitments.unit', { defaultValue: 'dòng' })}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
+              {/* ══ Nhóm 2: Nội dung trang ══ */}
+              <CollapsibleSection
+                title={t('products.detail.groupContent', { defaultValue: 'Nội dung trang' })}
+                hint={t('products.detail.groupContentHint', { defaultValue: 'Mô tả, thông số, FAQ, tư vấn — phần lớn không bắt buộc' })}
+                open={openGroups.content}
+                onToggle={() => toggleGroup('content')}
+                badge={mainGroupErrorBadge('content')}
+                keepMounted
               >
-                <p className="text-xs text-muted-foreground mb-2">{t('products.detail.commitments.hint')}</p>
-                {validationErrors.commitments && (
-                  <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
-                    <AlertCircle size={13} className="shrink-0" />
-                    {validationErrors.commitments}
-                  </p>
-                )}
-                <CommitmentEditor
-                  items={form.commitments}
-                  onChange={(next) => updateField('commitments', next)}
-                  disabled={isReadOnly}
-                  contentLang={contentLang}
-                />
-              </SectionCard>
 
               {/* ── Card: Specs Dashboard — ô số liệu nổi bật (V235) ── */}
               <SectionCard
@@ -1502,15 +1529,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   onHtmlChange={(v) => langChange('specStats', v)}
                 />
               </SectionCard>
-              </CollapsibleGroup>
 
-              <CollapsibleGroup
-                title={t('products.detail.groupBody', { defaultValue: 'Mô tả & nội dung trang' })}
-                hint={t('products.detail.groupBodyHint', { defaultValue: 'Tính năng, ưu/nhược, thông số, FAQ' })}
-                open={openGroups.body}
-                onToggle={() => toggleGroup('body')}
-                errorCount={groupCounts.body}
-              >
               {/* ── Card: Quick Answer (V300) — đoạn tóm tắt AIO, hiện blockquote #3 ngay trước Tính năng chi tiết ── */}
               <SectionCard
                 title={t('products.detail.quickAnswer.sectionTitle', { defaultValue: 'Quick Answer (trả lời nhanh)' })}
@@ -1536,7 +1555,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               </SectionCard>
 
               {/* ── Card: Mô tả chi tiết — trình dựng khối Tính năng (#4). "Phù hợp với ai"/"Bảng size" có card riêng bên dưới ── */}
-              <SectionCard title={t('products.detail.sectionDescription', { defaultValue: 'Mô tả chi tiết' })} badge={<RoleBadge role="content" />}>
+              <SectionCard
+                title={t('products.detail.sectionDescription', { defaultValue: 'Mô tả chi tiết' })}
+                badge={<RoleBadge role="content" />}
+              >
                 <p className="text-xs text-muted-foreground mb-3">
                   {t('products.detail.descriptionBuilderHint', { defaultValue: 'Trình dựng khối Tính năng chi tiết (chữ, ảnh, ảnh + chữ). Kéo-thả để đổi thứ tự. "Phù hợp với ai" và "Bảng size" nhập ở 2 card riêng bên dưới.' })}
                 </p>
@@ -1755,6 +1777,18 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 />
               </SectionCard>
 
+              </CollapsibleSection>
+
+              {/* ══ Nhóm 3: Video, cam kết & bán kèm ══ */}
+              <CollapsibleSection
+                title={t('products.detail.groupExtras', { defaultValue: 'Video, cam kết & bán kèm' })}
+                hint={t('products.detail.groupExtrasHint', { defaultValue: 'Không bắt buộc' })}
+                open={openGroups.extras}
+                onToggle={() => toggleGroup('extras')}
+                badge={mainGroupErrorBadge('extras')}
+                keepMounted
+              >
+
               {/* ── Card: Video ── */}
               <SectionCard
                 title={t('products.detail.videoSectionTitle')}
@@ -1774,15 +1808,34 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   validationErrors={validationErrors}
                 />
               </SectionCard>
-              </CollapsibleGroup>
 
-              <CollapsibleGroup
-                title={t('products.detail.groupClosing', { defaultValue: 'Tin cậy & bán kèm (cuối trang)' })}
-                hint={t('products.detail.groupOptionalHint', { defaultValue: 'Tùy chọn' })}
-                open={openGroups.closing}
-                onToggle={() => toggleGroup('closing')}
-                errorCount={groupCounts.closing}
+              {/* ── Card: Cam kết (dưới nút mua hàng) (V232) — khối Trust "Mua tại BigBike.vn" #11, đặt ngay trước Phụ kiện #12 ── */}
+              <SectionCard
+                title={t('products.detail.sectionCommitments')}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <span className="bb-count-pill">
+                      {form.commitments.length} {t('products.detail.commitments.unit', { defaultValue: 'dòng' })}
+                    </span>
+                    <RoleBadge role="content" />
+                  </div>
+                }
               >
+                <p className="text-xs text-muted-foreground mb-2">{t('products.detail.commitments.hint')}</p>
+                {validationErrors.commitments && (
+                  <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
+                    <AlertCircle size={13} className="shrink-0" />
+                    {validationErrors.commitments}
+                  </p>
+                )}
+                <CommitmentEditor
+                  items={form.commitments}
+                  onChange={(next) => updateField('commitments', next)}
+                  disabled={isReadOnly}
+                  contentLang={contentLang}
+                />
+              </SectionCard>
+
               {/* ── Card: Phụ kiện (sản phẩm bán kèm) ── */}
               <SectionCard
                 title={t('products.detail.sectionAccessories')}
@@ -1844,7 +1897,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </>
                 )}
               </SectionCard>
-              </CollapsibleGroup>
+              </CollapsibleSection>
             </>
           )}
 

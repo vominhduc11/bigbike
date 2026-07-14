@@ -4,7 +4,6 @@ import { GripVertical, ImageOff, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { resolveDisplayUrl } from '@/lib/contracts'
 import { AssignmentBanner as AssignmentBannerView } from '@/components/AssignmentBanner'
-import { CollapsibleSection } from '@/components/CollapsibleSection'
 import { AssignmentConfigContext } from './constants'
 
 // Returns the configured role label for a role key, or the i18n default when the admin hasn't
@@ -100,27 +99,5 @@ export function AssignmentBanner({ t }) {
   )
 }
 
-// Collapsible group header that wraps a run of SectionCards inside the "product" tab.
-// Controlled (open/onToggle). Shows an inline hint (Bắt buộc / Tùy chọn) after the title
-// and a danger-coloured error count on the right when a contained section fails validation.
-//
-// Delegates to the shared CollapsibleSection (native button + a11y wiring live there) and
-// uses `keepMounted` so the enclosed editors (BlockEditor/RichText/variant matrix...) keep
-// their local state and their validation errors stay in the DOM while the group is collapsed
-// — collapsing no longer resets an editor or hides a field error (audit P1).
-export function CollapsibleGroup({ title, hint, open, onToggle, errorCount = 0, children }) {
-  const { t } = useTranslation()
-  const badge = errorCount > 0
-    ? (
-      <span className="bb-section-group-error">
-        <span aria-hidden="true">{t('products.detail.groupErrorCount', { count: errorCount, defaultValue: '{{count}} lỗi' })}</span>
-        <span className="sr-only">{t('products.detail.groupErrorCountFull', { count: errorCount, defaultValue: '{{count}} lỗi cần sửa' })}</span>
-      </span>
-    )
-    : undefined
-  return (
-    <CollapsibleSection title={title} hint={hint} open={open} onToggle={onToggle} badge={badge} keepMounted>
-      {children}
-    </CollapsibleSection>
-  )
-}
+// (Đã gỡ CollapsibleGroup — tab sản phẩm nay gấp/mở TỪNG thẻ qua prop `collapsible` của SectionCard,
+// không còn bọc nhóm. Xem ProductDetailScreen openSections + components/SectionCard.jsx.)

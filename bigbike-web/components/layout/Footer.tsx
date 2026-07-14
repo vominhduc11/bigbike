@@ -6,7 +6,6 @@ import { LocalizedSetting } from "@/components/i18n/LocalizedSetting";
 import { Tr } from "@/components/i18n/Tr";
 import { Container } from "@/components/layout/Container";
 import { FooterMenuLinks } from "@/components/layout/FooterMenuLinks";
-import { FooterScrollToTop } from "@/components/layout/FooterScrollToTop";
 import {
   Accordion,
   AccordionContent,
@@ -256,8 +255,7 @@ export async function Footer() {
         </Container>
       </div>
       <div className="bg-footer-top md:hidden">
-        <Container variant="blog" className="relative px-[15px]! pb-[10px]">
-          <FooterScrollToTop className="right-[15px] top-0" />
+        <Container variant="blog" className="px-[15px]! pb-[10px]">
           <a href={FOOTER_BCT_URL} className="flex flex-col items-start pr-[33.3333%] text-white! no-underline!">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -284,8 +282,7 @@ export async function Footer() {
         </div>
       </div>
       <div className="hidden bg-black md:block!">
-        <Container variant="blog" className="relative px-[15px]!">
-          <FooterScrollToTop className="right-[15px] top-[30px]" />
+        <Container variant="blog" className="px-[15px]!">
           <div className="grid grid-cols-12 items-center gap-x-[30px] pb-[31px] pt-[30px]">
             <div className="col-span-2">
               <Link href="/" className="inline-block">

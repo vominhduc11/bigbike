@@ -14,6 +14,7 @@ import { DEFAULT_LOCALE } from "@/i18n/locale";
 import viMessages from "@/messages/vi.json";
 import { FloatingChatLoader } from "@/components/layout/FloatingChatLoader";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
+import { ScrollToTopFab } from "@/components/layout/ScrollToTopFab";
 import { SettingsFocusScroller } from "@/components/layout/SettingsFocusScroller";
 import { SearchToggle } from "@/components/layout/SearchToggle";
 import { MobileCartSheet } from "@/components/layout/MobileCartSheet";
@@ -130,9 +131,10 @@ export default async function RootLayout({
                     <Footer />
                   </FooterMobileGate>
                   <SettingsFocusScroller />
-                  <div className="bb-floating-chat-anchor fixed z-[660] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+80px)] md:bottom-[max(24px,env(safe-area-inset-bottom))] right-[max(16px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))] pointer-events-none [&>*]:pointer-events-auto [[data-scroll-locked]_&]:hidden">
+                  <div className="bb-floating-chat-anchor fixed z-[663] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+80px)] md:bottom-[max(24px,env(safe-area-inset-bottom))] right-[max(16px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))] pointer-events-none [&>*]:pointer-events-auto [[data-scroll-locked]_&]:hidden">
                     <FloatingChatLoader />
                   </div>
+                  <ScrollToTopFab />
                 </AltSlugProvider>
               </CartProvider>
             </HeaderUiProvider>

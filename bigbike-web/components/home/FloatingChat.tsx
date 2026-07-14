@@ -37,8 +37,13 @@ const fabHaloRing =
   "absolute inset-0 !rounded-[50%] bg-[var(--bb-chat-title-bg)] opacity-0 pointer-events-none motion-reduce:hidden";
 // "Bạn cần hỗ trợ?" pill — cyan box up-left of the FAB, shown in both closed and open
 // states (WP sudovn parity). Hidden on mobile to avoid covering the bottom nav.
+// Reaches ~110px left of the FAB, which on wide desktop screens can land on top of
+// nearby in-page controls (eg. carousel next-arrows in the same right gutter) since
+// it's fixed to the viewport while they scroll with the page — so it's reveal-on-hover
+// (of the FAB) rather than always-on, keeping the persistent footprint to just the
+// circular button while still showing the hint the moment a visitor reaches for it.
 const chatTitlePill =
-  "bg-[var(--bb-chat-title-bg)] !rounded-[3px] px-[5px] py-0.5 text-[var(--bb-color-white)] text-a5-meta font-[Arial,sans-serif] whitespace-nowrap relative bottom-[42px] right-[70px] max-md:hidden";
+  "bg-[var(--bb-chat-title-bg)] !rounded-[3px] px-[5px] py-0.5 text-[var(--bb-color-white)] text-a5-meta font-[Arial,sans-serif] whitespace-nowrap relative bottom-[42px] right-[70px] max-md:hidden opacity-0 pointer-events-none transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100";
 // WP .sudovn-btn-social-item: padding .5rem 1rem, color #333, hover #f2f2f2; icon
 // margin-right 5px (= gap). The #333 text overrides the global blue <a> link colour.
 // hover:!text keeps the row text #333 — overrides the global `a:hover` brand-red rule
@@ -217,7 +222,7 @@ function ChatOverlay({
 
       {/* FAB — cùng kích thước & vị trí với lúc đóng (không nhảy), chỉ đổi icon */}
       <div className="fixed z-[2147483647] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+80px)] md:bottom-[max(24px,env(safe-area-inset-bottom))] right-[max(16px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))]">
-        <div dir="ltr" className="relative flex flex-col-reverse items-end">
+        <div dir="ltr" className="group relative flex flex-col-reverse items-end">
           <div className={chatTitlePill}>{t("needHelp")}</div>
           <div className={fabContainer}>
           <div className={`${fabMaskOpen}${fabMaskMobile}`} aria-hidden="true" />
@@ -312,7 +317,7 @@ export function FloatingChat({
         <div
           id="sudovn-btn-wrapper"
           dir="ltr"
-          className="relative font-[Arial,sans-serif] flex flex-col-reverse items-end [animation:b24-widget-button-visible_1s_ease-out_forwards_1]"
+          className="group relative font-[Arial,sans-serif] flex flex-col-reverse items-end [animation:b24-widget-button-visible_1s_ease-out_forwards_1]"
         >
           <div id="sudovn-btn-title" className={chatTitlePill}>
             {t("needHelp")}
