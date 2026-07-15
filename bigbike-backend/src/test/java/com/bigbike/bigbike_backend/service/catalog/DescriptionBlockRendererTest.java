@@ -331,6 +331,13 @@ class DescriptionBlockRendererTest {
         video.setProvider("youtube"); video.setUrl("https://youtu.be/abc");
         assertThat(validator.validate(video)).isEmpty();
 
+        for (String provider : List.of("tiktok", "facebook", "upload")) {
+            var supportedVideo = new DescriptionBlock.VideoBlock();
+            supportedVideo.setProvider(provider);
+            supportedVideo.setUrl("https://example.com/video");
+            assertThat(validator.validate(supportedVideo)).isEmpty();
+        }
+
         var callout = new DescriptionBlock.CalloutBlock();
         callout.setVariant("info"); callout.setHtml("<p>note</p>");
         assertThat(validator.validate(callout)).isEmpty();

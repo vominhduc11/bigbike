@@ -397,6 +397,9 @@ public class CatalogRequestValidator {
                 if (u != null && (existing == null || !existing.contains(u))) {
                     AdminMutationValidators.validateWhitelistedMediaUrl(u, fieldPrefix + "[" + i + "].url", base, errors);
                 }
+            } else if (block instanceof DescriptionBlock.VideoBlock videoBlock) {
+                AdminMutationValidators.validateVideoBlockUrl(
+                        videoBlock, fieldPrefix + "[" + i + "].url", existing, homeVideoUrlPolicy, errors);
             }
             AdminMutationValidators.validateHtmlInlineImages(
                     AdminMutationValidators.blockRawHtml(block), fieldPrefix + "[" + i + "].html",

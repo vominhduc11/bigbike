@@ -8,6 +8,7 @@ import com.bigbike.bigbike_backend.persistence.entity.content.ArticleEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.ContentCategoryEntity;
 import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.ContentCategoryJpaRepository;
+import com.bigbike.bigbike_backend.service.security.HomeVideoUrlPolicy;
 import java.util.List;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.env.Environment;
@@ -19,17 +20,20 @@ public class ContentRequestValidator {
     private final ArticleJpaRepository articleJpaRepository;
     private final ContentCategoryJpaRepository contentCategoryJpaRepository;
     private final MediaUrlProperties mediaUrlProperties;
+    private final HomeVideoUrlPolicy homeVideoUrlPolicy;
     private final boolean isDev;
 
     public ContentRequestValidator(
             ObjectProvider<ArticleJpaRepository> articleJpaRepositoryProvider,
             ObjectProvider<ContentCategoryJpaRepository> contentCategoryJpaRepositoryProvider,
             MediaUrlProperties mediaUrlProperties,
+            HomeVideoUrlPolicy homeVideoUrlPolicy,
             Environment environment
     ) {
         this.articleJpaRepository = articleJpaRepositoryProvider.getIfAvailable();
         this.contentCategoryJpaRepository = contentCategoryJpaRepositoryProvider.getIfAvailable();
         this.mediaUrlProperties = mediaUrlProperties;
+        this.homeVideoUrlPolicy = homeVideoUrlPolicy;
         this.isDev = environment != null && java.util.Arrays.stream(environment.getActiveProfiles())
                 .anyMatch(p -> java.util.Set.of("dev", "mock", "test", "local").contains(p.toLowerCase()));
     }
@@ -101,6 +105,14 @@ public class ContentRequestValidator {
                     if (u != null && !existingBlockMediaUrls.contains(u)) {
                         AdminMutationValidators.validateWhitelistedMediaUrl(u, "bodyBlocks[" + index + "].url", base, errors);
                     }
+                } else if (block instanceof com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock.VideoBlock videoBlock) {
+                    AdminMutationValidators.validateVideoBlockUrl(
+                            videoBlock,
+                            "bodyBlocks[" + index + "].url",
+                            existingBlockMediaUrls,
+                            homeVideoUrlPolicy,
+                            errors
+                    );
                 }
                 AdminMutationValidators.validateHtmlInlineImages(
                         AdminMutationValidators.blockRawHtml(block),

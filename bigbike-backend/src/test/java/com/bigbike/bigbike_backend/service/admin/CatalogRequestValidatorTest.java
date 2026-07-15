@@ -34,6 +34,7 @@ class CatalogRequestValidatorTest {
     private CatalogRequestValidator validator;
     private MediaUrlProperties mediaUrlProperties;
     private ProductJpaRepository productJpaRepository;
+    private HomeVideoUrlPolicy homeVideoUrlPolicy;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
@@ -58,8 +59,12 @@ class CatalogRequestValidatorTest {
         ObjectProvider<BrandJpaRepository> brandJpaRepositoryProvider = mock(ObjectProvider.class);
         when(brandJpaRepositoryProvider.getIfAvailable()).thenReturn(brandJpaRepository);
 
-        HomeVideoUrlPolicy homeVideoUrlPolicy = mock(HomeVideoUrlPolicy.class);
+        homeVideoUrlPolicy = mock(HomeVideoUrlPolicy.class);
         when(homeVideoUrlPolicy.isAllowed(org.mockito.ArgumentMatchers.anyString())).thenReturn(true);
+        when(homeVideoUrlPolicy.isAllowedForProvider(
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyString()
+        )).thenReturn(true);
 
         validator = new CatalogRequestValidator(
                 productJpaRepositoryProvider,
@@ -343,6 +348,53 @@ class CatalogRequestValidatorTest {
 
         assertThat(errors).noneSatisfy(error ->
                 assertThat(error.field()).startsWith("descriptionBlocks[0].html"));
+    }
+
+    @Test
+    void validateProductRequest_newInvalidVideoBlockUrl_isRejected() {
+        when(homeVideoUrlPolicy.isAllowedForProvider("tiktok", "https://vt.tiktok.com/ZSabcDEF/"))
+                .thenReturn(false);
+        UpsertProductRequest request = createBaseRequest();
+        com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock.VideoBlock video =
+                new com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock.VideoBlock();
+        video.setType("video");
+        video.setProvider("tiktok");
+        video.setUrl("https://vt.tiktok.com/ZSabcDEF/");
+        request.setDescriptionBlocks(java.util.List.of(video));
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        validator.validateProductRequest(request, null, true, false, errors);
+
+        assertThat(errors).anySatisfy(error -> {
+            assertThat(error.field()).isEqualTo("descriptionBlocks[0].url");
+            assertThat(error.code()).isEqualTo("INVALID_VALUE");
+        });
+    }
+
+    @Test
+    void validateProductRequest_unchangedLegacyVideoBlockUrl_isAccepted() {
+        String legacyUrl = "https://legacy.example/video/123";
+        when(homeVideoUrlPolicy.isAllowedForProvider("youtube", legacyUrl)).thenReturn(false);
+
+        var existing = new com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock.VideoBlock();
+        existing.setType("video");
+        existing.setProvider("youtube");
+        existing.setUrl(legacyUrl);
+        ProductEntity current = new ProductEntity();
+        current.setDescriptionBlocks(java.util.List.of(existing));
+
+        var submitted = new com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock.VideoBlock();
+        submitted.setType("video");
+        submitted.setProvider("youtube");
+        submitted.setUrl(legacyUrl);
+        UpsertProductRequest request = createBaseRequest();
+        request.setDescriptionBlocks(java.util.List.of(submitted));
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        validator.validateProductRequest(request, current, false, false, errors);
+
+        assertThat(errors).noneSatisfy(error ->
+                assertThat(error.field()).isEqualTo("descriptionBlocks[0].url"));
     }
 
     @Test

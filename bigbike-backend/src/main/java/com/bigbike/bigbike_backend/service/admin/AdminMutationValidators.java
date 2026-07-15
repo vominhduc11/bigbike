@@ -8,6 +8,7 @@ import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
+import com.bigbike.bigbike_backend.service.security.HomeVideoUrlPolicy;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.math.BigDecimal;
@@ -233,7 +234,7 @@ final class AdminMutationValidators {
 
     /**
      * Collects every media URL already present in a stored block list — structured
-     * {@code ImageBlock}/{@code FeatureBlock} urls plus inline {@code <img src>} inside raw-HTML
+     * {@code ImageBlock}/{@code FeatureBlock}/{@code VideoBlock} urls plus inline {@code <img src>} inside raw-HTML
      * block fields (paragraph/callout/feature), VI **and** EN (V326: each block carries both
      * languages inline, so a pasted image can hide in either {@code html} or {@code htmlEn}). Used to
      * grandfather legacy hotlinks when a product/article is edited, mirroring the gallery/video
@@ -257,11 +258,36 @@ final class AdminMutationValidators {
                 if (u != null) {
                     urls.add(u);
                 }
+            } else if (block instanceof DescriptionBlock.VideoBlock videoBlock) {
+                String u = trimToNull(videoBlock.getUrl());
+                if (u != null) {
+                    urls.add(u);
+                }
             }
             urls.addAll(extractInlineImageSrcs(blockRawHtml(block)));
             urls.addAll(extractInlineImageSrcs(blockRawHtmlEn(block)));
         }
         return urls;
+    }
+
+    static void validateVideoBlockUrl(
+            DescriptionBlock.VideoBlock block,
+            String field,
+            Set<String> existing,
+            HomeVideoUrlPolicy videoUrlPolicy,
+            List<ApiErrorDetail> errors
+    ) {
+        String url = trimToNull(block.getUrl());
+        if (url == null || (existing != null && existing.contains(url))) {
+            return;
+        }
+        if (!videoUrlPolicy.isAllowedForProvider(block.getProvider(), url)) {
+            errors.add(new ApiErrorDetail(
+                    field,
+                    "INVALID_VALUE",
+                    "Video URL must match its YouTube/TikTok/Facebook provider or be approved internal upload media."
+            ));
+        }
     }
 
     /** Raw-HTML (VI) payload of the block types that carry free HTML, or {@code null} for the rest. */

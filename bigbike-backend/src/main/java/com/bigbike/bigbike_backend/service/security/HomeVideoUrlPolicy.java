@@ -41,4 +41,24 @@ public class HomeVideoUrlPolicy {
                         || FacebookUrlParser.isFacebookVideoUrl(normalized)
                         || safeMediaAssetUrlPolicy.isAllowedVideoMediaUrl(normalized));
     }
+
+    /**
+     * Validates a structured video block without allowing the declared provider to disagree with
+     * the URL host. Platform providers require their approved full URL; upload requires internal
+     * media storage.
+     */
+    public boolean isAllowedForProvider(String provider, String url) {
+        String normalizedProvider = SafePublicLinkPolicy.trimToNull(provider);
+        String normalizedUrl = SafePublicLinkPolicy.trimToNull(url);
+        if (normalizedProvider == null || normalizedUrl == null) {
+            return false;
+        }
+        return switch (normalizedProvider) {
+            case "youtube" -> YouTubeUrlParser.isYouTubeUrl(normalizedUrl);
+            case "tiktok" -> TikTokUrlParser.isTikTokUrl(normalizedUrl);
+            case "facebook" -> FacebookUrlParser.isFacebookVideoUrl(normalizedUrl);
+            case "upload" -> safeMediaAssetUrlPolicy.isAllowedVideoMediaUrl(normalizedUrl);
+            default -> false;
+        };
+    }
 }

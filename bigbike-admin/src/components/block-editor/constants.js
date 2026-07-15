@@ -3,10 +3,9 @@
 // (pure constants/helpers live here to keep fast-refresh happy).
 import { generateId } from '@/lib/utils'
 
-// Vốn từ khối cho Content (bài viết Tin tức): chỉ Tiêu đề / Đoạn văn / Danh sách / Hình ảnh.
-// Đã bỏ feature/callout/video/divider khỏi menu thêm (owner 2026-06-24). Bài cũ lỡ chứa các khối
-// này vẫn render/sửa được — BlockCard giữ nguyên nhánh hiển thị; chỉ chặn THÊM mới.
-export const CONTENT_MENU = ['heading', 'paragraph', 'list', 'image'].map((type) => ({
+// Vốn từ khối cho Content (bài viết Tin tức). Video dùng một block chung và chọn provider
+// YouTube/TikTok/Facebook/upload trong editor (MEDIA_RULE_004).
+export const CONTENT_MENU = ['heading', 'paragraph', 'list', 'image', 'video'].map((type) => ({
   type,
   labelKey: `products.detail.blocks.blockType${type.charAt(0).toUpperCase()}${type.slice(1)}`,
 }))
@@ -20,6 +19,7 @@ export const PRODUCT_MENU = [
   { type: 'image',       labelKey: 'products.detail.blocks.blockTypeImage' },
   { type: 'feature',     labelKey: 'products.detail.blocks.blockTypeFeatureRight', preset: { side: 'right' } },
   { type: 'feature',     labelKey: 'products.detail.blocks.blockTypeFeatureLeft',  preset: { side: 'left' } },
+  { type: 'video',       labelKey: 'products.detail.blocks.blockTypeVideo' },
 ]
 
 // suitability/sizeGuide (V327/V328): không còn discriminator `type` — mỗi field là 1 object đơn,
