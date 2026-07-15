@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 @Slf4j
@@ -108,6 +109,15 @@ public class GlobalExceptionHandler {
         ApiErrorDetail detail = new ApiErrorDetail("file", "FILE_TOO_LARGE", "File exceeds 200 MB limit.");
         return build(HttpStatus.PAYLOAD_TOO_LARGE, "FILE_TOO_LARGE",
                 "File exceeds 200 MB limit.", List.of(detail), request);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleNoResourceFound(
+            NoResourceFoundException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("API route not found [{}] {}", request.getMethod(), request.getRequestURI());
+        return build(HttpStatus.NOT_FOUND, "NOT_FOUND", "Resource not found.", List.of(), request);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

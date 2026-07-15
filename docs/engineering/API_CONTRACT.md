@@ -17,6 +17,10 @@ Every API error, including responses produced directly by security and rate-limi
 `meta` is never `null`; it is generated through `ApiMetaFactory` so clients and operators can
 correlate an early filter rejection with server logs. `CONFIRMED_FROM_CODE`
 
+An unmapped path under `/api/**` returns HTTP `404` with code `NOT_FOUND` in the same envelope (not
+`500 SERVER_ERROR`). This includes Spring's static-resource fallback when no controller matches the
+request. `CONFIRMED_FROM_CODE`
+
 ## Auth Models
 
 | Model | Used by | Current contract | Status | Evidence |
