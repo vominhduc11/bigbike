@@ -104,7 +104,7 @@
 | AUD-053 | Đồng bộ model/schema `paymentMethod` nullable | ✅ `42eca656` | `PaymentEntity.paymentMethod` nullable khớp V284; DATA_CONTRACT chốt null/BACS chỉ để đọc dữ liệu cũ, đơn checkout/quick-buy mới vẫn normalize/bắt buộc COD. Thêm test lưu/đọc payment legacy null. Test mục tiêu 63/63 (`Phase1CCommerceSchemaTest` + `Phase1FCheckoutApiTest`); `git diff --check` đạt. |
 | AUD-054 | Sửa encoding comment importer | ✅ `3e24b965` | Thay literal mojibake `â€”` bằng em dash UTF-8 đúng trong comment `ProductVariationImporter`; quét cùng thư mục không còn chuỗi này. Backend `mvnw -DskipTests compile` đạt; `git diff --check` đạt. Không đổi runtime/data. |
 | AUD-059 | Ghi chú hệ thống checkout không thành "Đơn hàng được tạo.." | ✅ `c1a1b862` | Làm sớm cùng AUD-011 (cùng đoạn code): note luôn "Đơn hàng được tạo. Phương thức thanh toán: COD." — hết dấu chấm kép |
-| AUD-069 | Sửa/xóa SĐT khách không hợp lệ: báo lỗi thay vì im lặng bỏ qua | ⬜ | |
+| AUD-069 | Sửa/xóa SĐT khách không hợp lệ: báo lỗi thay vì im lặng bỏ qua | ✅ | `b4c354a1`; số điện thoại trống nay xóa giá trị đã lưu, số sai định dạng trả lỗi trường thay vì báo lưu thành công giả; `Phase1IAdminManagementApiTest` đạt 24/24; `git diff --check` đạt. |
 | AUD-070 | `rowKey` import không trùng khi 2 dòng cùng SKU | ⬜ | |
 | AUD-071 | Xóa trắng ô SEO thương hiệu phải được lưu | ⬜ | |
 | AUD-072 | API path không tồn tại trả 404 thay 500 | ⬜ | |
