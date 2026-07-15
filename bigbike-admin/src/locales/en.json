@@ -3064,7 +3064,9 @@
     "savedSuccess": "Home highlights configuration saved.",
     "noSlotsError": "At least one slot must be selected.",
     "slotLabel": "Slot {{number}}",
-    "noSlotsHint": "Select at least 1 product to save."
+    "noSlotsHint": "Select at least 1 product to save.",
+    "langSwitchConfirm": "You have unsaved Home Highlights changes. Switching language will reload the data and lose these changes. Continue?",
+    "unsavedTitle": "Unsaved changes"
   },
   "redirects": {
     "title": "Redirects",

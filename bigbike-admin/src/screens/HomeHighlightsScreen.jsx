@@ -15,6 +15,8 @@ import { Button } from '@/components/ui/button'
 import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { useSaveShortcut } from '@/lib/useSaveShortcut'
+import { showConfirm } from '../lib/confirm'
+import { canReloadHighlightsForLanguageChange } from './home-highlights/draftGuard'
 
 // Chữ ký so sánh dirty: chỉ phụ thuộc slot + productId đã chọn (thứ tự cố định 1-2-3).
 function slotsSignature(slots) {
@@ -130,11 +132,6 @@ export function HomeHighlightsScreen({ canUpdate }) {
     queryFn: fetchHomeHighlights,
   })
 
-  // Khi đổi ngôn ngữ nội dung (VI/EN), dữ liệu được fetch lại theo lang mới và
-  // các thẻ slot cần lấy lại tên đã dịch — bỏ chốt initialized để re-sync.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { setInitialized(false) }, [contentLang])
-
   useEffect(() => {
     if (!highlightsData || initialized) return
     const loaded = [1, 2, 3].map((n) => {
@@ -178,6 +175,28 @@ export function HomeHighlightsScreen({ canUpdate }) {
   const isDirty = initialized && !saveMutation.isPending && slotsSignature(slots) !== baselineSignature
 
   useUnsavedChanges(isDirty)
+
+  // Khi đổi ngôn ngữ nội dung (VI/EN), chỉ tải lại tên đã dịch sau khi bảo vệ
+  // bản nháp. Chọn huỷ trong hộp xác nhận sẽ giữ nguyên các slot đang sửa.
+  useEffect(() => {
+    let cancelled = false
+    async function maybeReload() {
+      const shouldReload = await canReloadHighlightsForLanguageChange({
+        initialized,
+        isDirty,
+        confirmDiscard: () => showConfirm(
+          t('homeHighlights.langSwitchConfirm'),
+          t('homeHighlights.unsavedTitle'),
+        ),
+      })
+      if (cancelled || !shouldReload) return
+      setInitialized(false)
+    }
+    maybeReload()
+    return () => { cancelled = true }
+    // Chỉ chạy khi contentLang đổi; isDirty/initialized là snapshot tại thời điểm đổi.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contentLang])
 
   // O3: Ctrl/Cmd+S lưu 3 slot nổi bật; handleSave tự báo lỗi nếu chưa chọn sản phẩm nào.
   useSaveShortcut(canUpdate, handleSave)

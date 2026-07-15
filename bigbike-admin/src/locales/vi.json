@@ -3064,7 +3064,9 @@
     "savedSuccess": "Đã lưu cấu hình highlights trang chủ.",
     "noSlotsError": "Phải chọn ít nhất 1 slot.",
     "slotLabel": "Vị trí {{number}}",
-    "noSlotsHint": "Chọn ít nhất 1 sản phẩm để lưu."
+    "noSlotsHint": "Chọn ít nhất 1 sản phẩm để lưu.",
+    "langSwitchConfirm": "Bạn có thay đổi Highlights chưa lưu. Đổi ngôn ngữ sẽ tải lại dữ liệu và mất các thay đổi này. Tiếp tục?",
+    "unsavedTitle": "Có thay đổi chưa lưu"
   },
   "redirects": {
     "title": "Chuyển hướng",
