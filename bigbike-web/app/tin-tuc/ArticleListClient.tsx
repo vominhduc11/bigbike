@@ -14,7 +14,7 @@ import { fetchPublicArticleList, type PublicArticleListResult } from "@/lib/api/
 import type { Article, ContentCategoryWithCount } from "@/lib/contracts/public";
 import { buildQueryString } from "@/lib/utils/query";
 import { toArticleListPath } from "@/lib/utils/routes";
-import type { Locale } from "@/i18n/locale";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/locale";
 
 const DEFAULT_PAGE_SIZE = 12;
 
@@ -44,8 +44,12 @@ export function ArticleListClient({
   }, [searchParams]);
 
   const isDefaultView = page === 1 && size === DEFAULT_PAGE_SIZE && !category && !q;
+  // Chỉ seed initialData cho key `vi` — seed cả key `en` sẽ ghim dữ liệu VI "fresh"
+  // suốt staleTime và không refetch khi khách đổi ngôn ngữ (AUD-014).
   const initialData =
-    isDefaultView && initialArticles ? { data: initialArticles, pagination: initialPagination } : undefined;
+    isDefaultView && locale === DEFAULT_LOCALE && initialArticles
+      ? { data: initialArticles, pagination: initialPagination }
+      : undefined;
 
   const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ["public-articles", { page, size, category, q, lang: locale }],

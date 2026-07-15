@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.api;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -287,7 +288,10 @@ class AdminRedirectApiTest {
     }
 
     @Test
-    void shouldClearNotesAndLegacyIdOnUpdate() throws Exception {
+    void patchRedirect_clearsNotesWithEmptyString_butKeepsLegacyId() throws Exception {
+        // Contract (fix 2026-07-06, audit #8): PATCH is presence-guarded. Explicit "" clears
+        // notes; legacyId can only be OVERWRITTEN — a bare JSON null is indistinguishable
+        // from "field omitted", so it must be kept, not wiped.
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         String sourcePattern = "/clear-fields-test-" + suffix;
 
@@ -324,8 +328,9 @@ class AdminRedirectApiTest {
 
         RedirectEntity updated = redirectJpaRepository.findById(created.getId())
                 .orElseThrow(() -> new IllegalStateException("Expected redirect to still exist."));
-        assertNull(updated.getNotes(), "notes should be cleared when the admin blanks the field");
-        assertNull(updated.getLegacyId(), "legacyId should be cleared when the admin blanks the field");
+        assertNull(updated.getNotes(), "explicit empty string must clear notes");
+        assertEquals(Long.valueOf(123), updated.getLegacyId(),
+                "a bare null must NOT wipe legacyId (presence-guarded PATCH)");
 
         redirectJpaRepository.delete(updated);
     }

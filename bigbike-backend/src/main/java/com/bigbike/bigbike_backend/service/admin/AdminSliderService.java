@@ -67,6 +67,17 @@ public class AdminSliderService {
 
     @Transactional
     public String create(UpsertSliderRequest request) {
+        // Website chỉ render slider trang chủ (listHomeSliders) — các vị trí khác đã gỡ
+        // (owner decision 2026-07-15, FIX_PROMPT §2 #4). Bản ghi MỚI chỉ nhận 'home';
+        // bản ghi cũ mang vị trí khác vẫn đọc được, không xóa data.
+        if (!"home".equals(request.getLocation())) {
+            throw ValidationException.fromField(
+                    "location",
+                    "UNSUPPORTED",
+                    "Chỉ còn vị trí 'home' — website không hiển thị các vị trí slider khác."
+            );
+        }
+
         String productId = blankToNull(request.getProductId());
         String externalLink = blankToNull(request.getExternalLink());
         if (productId == null && externalLink == null) {
@@ -175,6 +186,15 @@ public class AdminSliderService {
                 && !request.getSortOrder().equals(entity.getSortOrder());
         boolean locationChanging = request.isFullEdit()
                 && !request.getLocation().equals(entity.getLocation());
+        // Chỉ còn vị trí 'home' cho giá trị MỚI (owner decision 2026-07-15, FIX_PROMPT §2 #4);
+        // bản ghi cũ giữ nguyên vị trí hiện tại thì không sao.
+        if (locationChanging && !"home".equals(request.getLocation())) {
+            throw ValidationException.fromField(
+                    "location",
+                    "UNSUPPORTED",
+                    "Chỉ còn vị trí 'home' — website không hiển thị các vị trí slider khác."
+            );
+        }
         if (sortOrderChanging || locationChanging) {
             int targetSortOrder = request.getSortOrder() != null ? request.getSortOrder() : entity.getSortOrder();
             String targetLocation = request.isFullEdit() ? request.getLocation() : entity.getLocation();

@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { getStaticPage, staticPageSlugs } from "@/lib/content/static-pages";
+import { getStaticPage } from "@/lib/content/static-pages";
+import { LocaleSwitch } from "@/components/i18n/LocaleSwitch";
 import { listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { PrivacyPolicyContent } from "@/components/policy/PrivacyPolicyContent";
@@ -18,11 +19,17 @@ import { toHomePath } from "@/lib/utils/routes";
 const POLICY_BASE_PATH = "/chinh-sach";
 const WARRANTY_SLUG = "chinh-sach-bao-hanh";
 const PRIVACY_SLUG = "chinh-sach-bao-mat-thong-tin";
+const RETURN_SLUG = "chinh-sach-doi-tra-hang";
+
+// Đúng 3 trang chính sách cố định (owner decision 2026-07-15, FIX_PROMPT §2 #6):
+// Bảo mật thông tin, Bảo hành, Đổi trả hàng. KHÔNG build các slug tĩnh khác
+// (2 trang hướng dẫn size có route riêng dưới /huong-dan/ — AUD-031).
+const POLICY_SLUGS = [PRIVACY_SLUG, WARRANTY_SLUG, RETURN_SLUG] as const;
 
 export const dynamicParams = false;
 
 export async function generateStaticParams() {
-  return staticPageSlugs().map((slug) => ({ slug }));
+  return POLICY_SLUGS.map((slug) => ({ slug }));
 }
 
 type Props = {
@@ -46,11 +53,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function PolicyPage({ params }: Props) {
-  const [{ slug }, locale] = await Promise.all([
-    params,
-    getLocale(),
-  ]);
+  const { slug } = await params;
+  if (!(POLICY_SLUGS as readonly string[]).includes(slug)) {
+    notFound();
+  }
 
+  // Render sẵn cả 2 bản VI/EN, client chọn theo locale đang bật (AUD-013 —
+  // server luôn là `vi`, xem i18n/request.ts). Nội dung EN thiếu tự fallback VI.
+  const [vi, en] = await Promise.all([
+    renderPolicyForLocale(slug, "vi"),
+    renderPolicyForLocale(slug, "en"),
+  ]);
+  return <LocaleSwitch vi={vi} en={en} />;
+}
+
+async function renderPolicyForLocale(slug: string, locale: string) {
   const page = getStaticPage(slug, locale);
   if (!page) {
     notFound();
@@ -58,8 +75,8 @@ export default async function PolicyPage({ params }: Props) {
 
   const settingsResult = await listPublicSettings(locale);
   const settings = settingsResult?.data ?? [];
-  const t = await getTranslations("StaticPage");
-  const tBreadcrumb = await getTranslations("Breadcrumb");
+  const t = await getTranslations({ locale, namespace: "StaticPage" });
+  const tBreadcrumb = await getTranslations({ locale, namespace: "Breadcrumb" });
   const pageTitle = page.title || t("policy.title");
   const sidebarItems = buildStaticSidebarItems(locale, slug);
 

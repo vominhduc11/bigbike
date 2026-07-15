@@ -302,17 +302,51 @@ const nextConfig: NextConfig = {
         destination: "/san-pham/",
         permanent: true,
       },
-      // Legacy standalone buying-guide page merged into the admin-managed guide builder.
-      // /huong-dan-mua-hang now 301s to its canonical guide sub-route /huong-dan/mua-hang/.
+      // Legacy buying-guide URLs. Bộ hướng dẫn tĩnh hiện chỉ có 2 trang con
+      // (size-mu, size-trang-phuc) — không có nội dung "mua hàng" riêng, nên mọi
+      // biến thể mua-hàng cũ 301 về hub /huong-dan/; size-gang-tay cũ gộp vào
+      // trang size trang phục (đã bao gồm găng tay). Sửa 404 legacy (AUD-012).
       // Must precede the generic /{slug}.html→category CSV rule.
       {
         source: "/huong-dan-mua-hang.html",
-        destination: "/huong-dan/mua-hang/",
+        destination: "/huong-dan/",
         permanent: true,
       },
       {
         source: "/huong-dan-mua-hang",
-        destination: "/huong-dan/mua-hang/",
+        destination: "/huong-dan/",
+        permanent: true,
+      },
+      {
+        source: "/huong-dan/mua-hang",
+        destination: "/huong-dan/",
+        permanent: true,
+      },
+      {
+        source: "/huong-dan/size-gang-tay",
+        destination: "/huong-dan/size-trang-phuc/",
+        permanent: true,
+      },
+      // Canonical cũ trong static-pages.json trước 2026-07-15 trỏ các URL chưa từng
+      // được build — 301 về route thực để không mất SEO legacy (AUD-031).
+      {
+        source: "/cach-do-size-dau",
+        destination: "/huong-dan/size-mu/",
+        permanent: true,
+      },
+      {
+        source: "/cach-do-size-trang-phuc",
+        destination: "/huong-dan/size-trang-phuc/",
+        permanent: true,
+      },
+      {
+        source: "/chinh-sach/bao-hanh",
+        destination: "/chinh-sach/chinh-sach-bao-hanh/",
+        permanent: true,
+      },
+      {
+        source: "/chinh-sach/doi-tra",
+        destination: "/chinh-sach/chinh-sach-doi-tra-hang/",
         permanent: true,
       },
       ...csvRedirectRules,

@@ -60,6 +60,7 @@ public class AdminContentMutationService {
     private final MinioClient minioClient;
     private final MinioProperties minioProperties;
     private final ImageVariantService imageVariantService;
+    private final MediaReferenceService mediaReferenceService;
 
     public AdminContentMutationService(
             ObjectProvider<ArticleJpaRepository> articleJpaRepositoryProvider,
@@ -74,7 +75,8 @@ public class AdminContentMutationService {
             ArticleMapper articleMapper,
             MinioClient minioClient,
             MinioProperties minioProperties,
-            ImageVariantService imageVariantService
+            ImageVariantService imageVariantService,
+            MediaReferenceService mediaReferenceService
     ) {
         this.articleJpaRepository = articleJpaRepositoryProvider.getIfAvailable();
         this.contentCategoryJpaRepository = contentCategoryJpaRepositoryProvider.getIfAvailable();
@@ -89,6 +91,7 @@ public class AdminContentMutationService {
         this.minioClient = minioClient;
         this.minioProperties = minioProperties;
         this.imageVariantService = imageVariantService;
+        this.mediaReferenceService = mediaReferenceService;
     }
 
     @Transactional
@@ -281,29 +284,38 @@ public class AdminContentMutationService {
             throw new com.bigbike.bigbike_backend.api.error.ConflictException("Only trashed content can be permanently deleted.");
         }
         
-        // A9: Dọn dẹp object MinIO liên quan
-        deleteMinioObject(entity.getCoverImageUrl());
-        deleteMinioObject(entity.getSeoOgImageUrl());
+        // A9: Dọn dẹp object MinIO liên quan — gom URL duy nhất rồi chỉ xóa object
+        // KHÔNG còn nơi nào khác tham chiếu (bài viết khác, sản phẩm, review, settings…):
+        // object dùng chung phải sống tiếp sau khi bài này bị xóa vĩnh viễn (AUD-004).
+        LinkedHashSet<String> candidateUrls = new LinkedHashSet<>();
+        if (entity.getCoverImageUrl() != null) candidateUrls.add(entity.getCoverImageUrl());
+        if (entity.getSeoOgImageUrl() != null) candidateUrls.add(entity.getSeoOgImageUrl());
         if (entity.getBodyBlocks() != null) {
             for (DescriptionBlock block : entity.getBodyBlocks()) {
-                if (block instanceof DescriptionBlock.ImageBlock img) {
-                    deleteMinioObject(img.getUrl());
-                } else if (block instanceof DescriptionBlock.FeatureBlock feat) {
-                    deleteMinioObject(feat.getUrl());
+                if (block instanceof DescriptionBlock.ImageBlock img && img.getUrl() != null) {
+                    candidateUrls.add(img.getUrl());
+                } else if (block instanceof DescriptionBlock.FeatureBlock feat && feat.getUrl() != null) {
+                    candidateUrls.add(feat.getUrl());
                 }
             }
         }
-        
+        for (String url : candidateUrls) {
+            deleteMinioObjectIfUnreferenced(url, entity.getId());
+        }
+
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "CONTENT_ARTICLE_HARD_DELETED", "CONTENT", null, articleJson(entity), null));
         articleJpaRepository.delete(entity);
         revalidateArticle(entity, null);
     }
 
-    private void deleteMinioObject(String url) {
+    private void deleteMinioObjectIfUnreferenced(String url, String articleId) {
         if (url == null) return;
         String objectKey = extractObjectKey(url);
         if (objectKey == null) return;
+        if (mediaReferenceService.isObjectKeyReferencedOutsideArticle(objectKey, articleId)) {
+            return;
+        }
         try {
             minioClient.removeObject(
                     io.minio.RemoveObjectArgs.builder()

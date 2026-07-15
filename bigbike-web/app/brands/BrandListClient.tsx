@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import { CatalogPagination } from "@/components/catalog/CatalogPagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { DEFAULT_LOCALE } from "@/i18n/locale";
 import { fetchPublicBrandList, type PublicBrandListResult } from "@/lib/api/client-api";
 import type { Brand } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
@@ -48,8 +49,12 @@ export function BrandListClient({
   }, [searchParams]);
 
   const isDefaultView = page === 1 && size === DEFAULT_PAGE_SIZE && sort === DEFAULT_SORT;
+  // Chỉ seed initialData cho key `vi` — seed cả key `en` sẽ ghim dữ liệu VI "fresh"
+  // suốt staleTime và không refetch khi khách đổi ngôn ngữ (AUD-014).
   const initialData =
-    isDefaultView && initialBrands ? { data: initialBrands, pagination: initialPagination } : undefined;
+    isDefaultView && locale === DEFAULT_LOCALE && initialBrands
+      ? { data: initialBrands, pagination: initialPagination }
+      : undefined;
 
   const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ["public-brands", { page, size, sort, lang: locale }],

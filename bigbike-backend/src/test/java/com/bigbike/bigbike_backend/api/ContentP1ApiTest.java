@@ -51,25 +51,10 @@ class ContentP1ApiTest {
         String uniqueMarker = "CatSyncP1003x" + ts;
         String title = "Category Sync Test " + uniqueMarker;
 
-        // 0. Create an isolated target category so we don't pollute seeded counts
-        String targetCatSlug = "p1-003-target-" + ts;
-        String catPayload = """
-                {
-                  "slug": "%s",
-                  "name": "P1003 Target Cat %d"
-                }
-                """.formatted(targetCatSlug, ts);
-
-        MvcResult catResult = mockMvc.perform(post("/api/v1/admin/content/content-categories")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .header("X-Admin-Permissions", "content.update")
-                        .content(catPayload))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String targetCatId = objectMapper.readTree(
-                catResult.getResponse().getContentAsString()).at("/data/id").asText();
+        // 0. Target = seeded cc_blog. (The admin create-content-category endpoint was
+        //    removed together with the authors CRUD — categories are fixed seed/ops data.)
+        String targetCatSlug = "blog";
+        String targetCatId = "cc_blog";
 
         // 1. Create article with source category cc_trai_nghiem
         String createPayload = """
@@ -78,9 +63,10 @@ class ContentP1ApiTest {
                   "title": "%s",
                   "body": "<p>test</p>",
                   "categoryId": "cc_trai_nghiem",
-                  "publishStatus": "PUBLISHED"
+                  "publishStatus": "PUBLISHED",
+                  "translations": { "en": { "title": "%s EN" } }
                 }
-                """.formatted(slug, title);
+                """.formatted(slug, title, title);
 
         MvcResult createResult = mockMvc.perform(post("/api/v1/admin/content/articles")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -145,15 +131,9 @@ class ContentP1ApiTest {
                 .andExpect(jsonPath("$.meta.requestId").exists());
     }
 
-    @Test
-    void shouldListAuthorsViaReferenceEndpoint() throws Exception {
-        // no authors seeded — endpoint must return empty array (not 404/500)
-        mockMvc.perform(get("/api/v1/admin/content/reference/authors")
-                        .header("X-Admin-Permissions", "content.read"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.meta.requestId").exists());
-    }
+    // (Author CRUD + admin create-content-category tests removed: the
+    //  /admin/content/authors and /admin/content/content-categories endpoints no longer
+    //  exist — stale expectations cleaned per AUD-046.)
 
     @Test
     void shouldRejectReferenceEndpointWithoutContentReadPermission() throws Exception {
@@ -161,92 +141,5 @@ class ContentP1ApiTest {
                         .header("X-Admin-Permissions", "products.read"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
-    }
-
-    @Test
-    void shouldCreateAuthorAndReturnIt() throws Exception {
-        long ts = System.currentTimeMillis();
-        String payload = """
-                {
-                  "name": "Test Author %d"
-                }
-                """.formatted(ts);
-
-        mockMvc.perform(post("/api/v1/admin/content/authors")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .header("X-Admin-Permissions", "content.update")
-                        .content(payload))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.id").exists())
-                .andExpect(jsonPath("$.data.name").value("Test Author " + ts))
-                .andExpect(jsonPath("$.meta.requestId").exists());
-    }
-
-    @Test
-    void shouldCreateContentCategoryAndReturnIt() throws Exception {
-        long ts = System.currentTimeMillis();
-        String slug = "new-cat-" + ts;
-        String payload = """
-                {
-                  "slug": "%s",
-                  "name": "New Category %d"
-                }
-                """.formatted(slug, ts);
-
-        mockMvc.perform(post("/api/v1/admin/content/content-categories")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .header("X-Admin-Permissions", "content.update")
-                        .content(payload))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.id").exists())
-                .andExpect(jsonPath("$.data.slug").value(slug))
-                .andExpect(jsonPath("$.data.name").value("New Category " + ts))
-                .andExpect(jsonPath("$.meta.requestId").exists());
-    }
-
-    @Test
-    void shouldRejectDuplicateCategorySlug() throws Exception {
-        // "trai-nghiem" is already seeded via cc_trai_nghiem
-        String payload = """
-                {
-                  "slug": "trai-nghiem",
-                  "name": "Duplicate"
-                }
-                """;
-
-        mockMvc.perform(post("/api/v1/admin/content/content-categories")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .header("X-Admin-Permissions", "content.update")
-                        .content(payload))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
-                .andExpect(jsonPath("$.error.details[0].field").value("slug"));
-    }
-
-    @Test
-    void shouldRejectCreateAuthorWithoutPermission() throws Exception {
-        mockMvc.perform(post("/api/v1/admin/content/authors")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Admin-Permissions", "content.read")
-                        .content("""
-                                { "name": "No Permission Author" }
-                                """))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
-    }
-
-    @Test
-    void shouldRejectBlankAuthorName() throws Exception {
-        mockMvc.perform(post("/api/v1/admin/content/authors")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Admin-Permissions", "content.update")
-                        .content("""
-                                { "name": "" }
-                                """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
     }
 }

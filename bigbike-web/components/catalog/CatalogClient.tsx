@@ -4,6 +4,7 @@ import { useMemo, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
+import { DEFAULT_LOCALE } from "@/i18n/locale";
 import { fetchPublicProductList, type PublicProductListResult } from "@/lib/api/client-api";
 import { DEFAULT_PRODUCT_PAGE_SIZE, DEFAULT_PRODUCT_SORT } from "@/lib/constants/catalog";
 import { parseCatalogListParams } from "@/lib/utils/catalog-list-params";
@@ -108,6 +109,9 @@ export function CatalogClient({
   // View mặc định = page 1, sort mặc định, chưa áp filter nào (route category/brand
   // cố định theo trang nên không tính). Chỉ khi đó mới seed initialProducts từ server
   // — query key khớp lần render đầu nên HTML server có sẵn lưới, không lệch hydrate.
+  // CHỈ seed cho key `vi` (bản server render): nếu seed cả key `en`, react-query coi
+  // dữ liệu VI là "fresh" suốt staleTime và không refetch → lưới kẹt tiếng Việt sau
+  // khi khách đổi ngôn ngữ (AUD-014, cùng pattern ProductView).
   const isDefaultView =
     !hasValidationErrors &&
     catalog.page === 1 &&
@@ -121,7 +125,9 @@ export function CatalogClient({
     catalog.filters.minPrice === undefined &&
     catalog.filters.maxPrice === undefined;
   const initialData =
-    isDefaultView && initialProducts ? { data: initialProducts, pagination: initialPagination } : undefined;
+    isDefaultView && locale === DEFAULT_LOCALE && initialProducts
+      ? { data: initialProducts, pagination: initialPagination }
+      : undefined;
 
   const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ["catalog-products", productQuery],

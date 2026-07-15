@@ -316,7 +316,9 @@ Evidence:
 
 ## Guide Page Builder Rules — REMOVED (2026-06-24)
 
-> **REMOVED / Deprecated 2026-06-24.** Trang Hướng dẫn `/huong-dan` (+ 3 trang con `mua-hang`/`size-mu`/`size-gang-tay`) nay là **nội dung tĩnh trong `bigbike-web`** (nguồn `static-pages.json`). Trình dựng trang Hướng dẫn (GuidePageBuilder) trong admin đã gỡ; bảng `guide_page_layout` drop ở `V271`; endpoint admin/public guide-page không còn. Các rule dưới đây **không còn áp dụng** — giữ lại làm lịch sử.
+> **REMOVED / Deprecated 2026-06-24.** Trang Hướng dẫn `/huong-dan` nay là **nội dung tĩnh trong `bigbike-web`** (nguồn `static-pages.json`). Trình dựng trang Hướng dẫn (GuidePageBuilder) trong admin đã gỡ; bảng `guide_page_layout` drop ở `V271`; endpoint admin/public guide-page không còn. Các rule dưới đây **không còn áp dụng** — giữ lại làm lịch sử.
+>
+> **Bộ trang con hiện hành (2026-07-15, AUD-012):** đúng **2 trang con tĩnh** — `/huong-dan/size-mu/` (size mũ bảo hiểm) và `/huong-dan/size-trang-phuc/` (size trang phục bảo hộ, đã bao gồm găng tay/giày/áo/quần). Các URL cũ 301 trong `next.config.ts`: `/huong-dan/mua-hang/` (+ biến thể `/huong-dan-mua-hang(.html)`) → `/huong-dan/`; `/huong-dan/size-gang-tay/` → `/huong-dan/size-trang-phuc/`. Không có nội dung "hướng dẫn mua hàng" riêng — muốn có lại thì phải soạn nội dung mới (quyết định owner).
 >
 > - ~~`GUIDE_PAGE_RULE_000`~~..~~`GUIDE_PAGE_RULE_003`~~: (cũ) Lưới ô + hero do admin dựng qua trình dựng nhúng trong module Nội dung, lưu ở `guide_page_layout`, web dựng lưới/sidebar từ entries. → Toàn bộ chuyển thành tĩnh trong web.
 

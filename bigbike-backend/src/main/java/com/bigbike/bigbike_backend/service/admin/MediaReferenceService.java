@@ -201,6 +201,56 @@ public class MediaReferenceService {
         return counts;
     }
 
+    /**
+     * Returns true when the given MinIO object key is still referenced by any row other
+     * than the given article. Used by the article hard-delete cleanup so a shared object
+     * (e.g. an image reused in another article's body, a product description block, a
+     * review photo or a settings HTML value) is never removed from MinIO while somebody
+     * else still displays it (AUD-004).
+     *
+     * <p>Scans the same URL columns as {@link #getUsageCounts} plus the JSON block columns
+     * that the per-media reference check does not need (article bodies, product
+     * description/suitability/size-guide blocks, review photos, settings values).
+     */
+    public boolean isObjectKeyReferencedOutsideArticle(String objectKey, String excludeArticleId) {
+        if (objectKey == null || objectKey.isBlank()) return false;
+
+        String[] blobQueries = {
+                // A media-library row still owns this object: its lifecycle belongs to the
+                // library (which has its own reference-checked delete) — never remove the
+                // file behind an existing media entry.
+                "SELECT file_path FROM media WHERE file_path IS NOT NULL AND file_path <> ''",
+                "SELECT image_url FROM products WHERE image_url IS NOT NULL AND image_url <> ''",
+                "SELECT gallery::text FROM products WHERE gallery IS NOT NULL",
+                "SELECT description_blocks::text FROM products WHERE description_blocks IS NOT NULL",
+                "SELECT suitability_section::text FROM products WHERE suitability_section IS NOT NULL",
+                "SELECT size_guide_section::text FROM products WHERE size_guide_section IS NOT NULL",
+                "SELECT image_url FROM product_variants WHERE image_url IS NOT NULL AND image_url <> ''",
+                "SELECT image_url FROM product_variant_gallery_images WHERE image_url IS NOT NULL AND image_url <> ''",
+                "SELECT image_url FROM categories WHERE image_url IS NOT NULL AND image_url <> ''",
+                "SELECT logo_url FROM brands WHERE logo_url IS NOT NULL AND logo_url <> ''",
+                "SELECT video_url FROM home_videos WHERE video_url IS NOT NULL AND video_url <> ''",
+                "SELECT COALESCE(desktop_image::text,'') || ' ' || COALESCE(mobile_image::text,'') FROM sliders",
+                "SELECT photos::text FROM reviews WHERE photos IS NOT NULL",
+                "SELECT setting_value FROM site_settings WHERE setting_value IS NOT NULL AND setting_value <> ''",
+        };
+        for (String sql : blobQueries) {
+            for (String blob : jdbc.query(sql, (rs, i) -> rs.getString(1))) {
+                if (blob != null && blob.contains(objectKey)) return true;
+            }
+        }
+
+        // Other articles (cover + og + body blocks) — the article being deleted is excluded.
+        List<String> articleBlobs = jdbc.query(
+                "SELECT COALESCE(cover_image_url,'') || ' ' || COALESCE(seo_og_image_url,'') || ' ' " +
+                "|| COALESCE(body_blocks::text,'') FROM articles WHERE id <> ?",
+                (rs, i) -> rs.getString(1), excludeArticleId);
+        for (String blob : articleBlobs) {
+            if (blob != null && blob.contains(objectKey)) return true;
+        }
+        return false;
+    }
+
     @FunctionalInterface
     private interface RowMapper {
         MediaReferenceItem map(java.sql.ResultSet rs) throws java.sql.SQLException;

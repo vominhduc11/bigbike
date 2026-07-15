@@ -1307,7 +1307,7 @@ Evidence: `AdminRedirectController.java`, `AdminRedirectService.java`, `Internal
 - `ADMIN_USER` — AdminAdminUsersService. `ADMIN_USER_UPDATED` split 2026-07-04 into `ADMIN_USER_ROLE_CHANGED`, `ADMIN_USER_DISABLED`, `ADMIN_USER_SUSPENDED`, `ADMIN_USER_REACTIVATED` (one entry per changed dimension) — `ADMIN_USER_UPDATED` remains for plain displayName/password edits or a no-op patch.
 - `ADMIN_ROLE` — AdminRoleService (fixed in V76; previously erroneously `ADMIN_ROLE:<roleId>`)
 - `ADMIN_AUTH` — AdminAuthService: `ADMIN_LOGIN_SUCCESS`/`ADMIN_LOGIN_FAILED`/`ADMIN_LOGOUT`/`ADMIN_ACCOUNT_LOCKED`. `ipAddress` fixed 2026-07-04 to resolve via `ClientIpResolver` (reads `X-Forwarded-For` from a trusted proxy) instead of raw `request.getRemoteAddr()`, which behind the reverse proxy always returned the Docker-internal address.
-- `SLIDER` — AdminSliderService (home/category slider create/update/delete/reorder)
+- `SLIDER` — AdminSliderService (homepage hero slider create/update/delete/reorder). Vị trí duy nhất còn nhận cho bản ghi mới là `home` — 3 vị trí cũ `category`/`category_sidebar`/`promotion` đã gỡ khỏi admin (owner decision 2026-07-15, AUD-063); bản ghi cũ mang vị trí khác vẫn nằm trong DB (không xóa) nhưng không được quản lý/hiển thị.
 - `HOME_VIDEO` — AdminHomeVideoService (homepage video create/update/delete/reorder)
 - `REPORT` — `REPORT_EXPORT_CREATED` on every `/api/v1/admin/reports/*/export` call (AdminReportController)
 - `MEDIA_FOLDER` — added 2026-07-04, previously unaudited (AdminMediaFolderService: folder create/update/delete)

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
+import { LocaleSwitch } from "@/components/i18n/LocaleSwitch";
 import {
   BookOpen, FileText, Hand, HardHat, HelpCircle, Info, Ruler, ShieldCheck, ShoppingCart, Wrench,
 } from "lucide-react";
@@ -54,11 +55,23 @@ export async function resolveGuideMeta(subSegments: string[] | undefined, locale
   return { title: t("title"), description: t("description"), path: "/huong-dan/" };
 }
 
+/**
+ * Trang Hướng dẫn render sẵn cả 2 bản VI/EN rồi để client chọn theo locale
+ * (AUD-013 — server luôn là `vi`, xem i18n/request.ts). Nội dung tĩnh trong code
+ * nên nhánh EN không tốn thêm fetch nào.
+ */
 export async function GuidePage({ subSegments }: GuidePageProps) {
-  const [locale, t, tBreadcrumb] = await Promise.all([
-    getLocale(),
-    getTranslations("Guide"),
-    getTranslations("Breadcrumb"),
+  const [vi, en] = await Promise.all([
+    renderGuideForLocale("vi", subSegments),
+    renderGuideForLocale("en", subSegments),
+  ]);
+  return <LocaleSwitch vi={vi} en={en} />;
+}
+
+async function renderGuideForLocale(locale: string, subSegments?: string[]) {
+  const [t, tBreadcrumb] = await Promise.all([
+    getTranslations({ locale, namespace: "Guide" }),
+    getTranslations({ locale, namespace: "Breadcrumb" }),
   ]);
   const layout = getGuideLayout(locale);
   const entries = layout.entries;

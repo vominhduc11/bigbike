@@ -11,7 +11,7 @@
     "seoTitleEn": "How to determine your helmet size | BigBike",
     "seoDescription": "Hướng dẫn đo vòng đầu và tra bảng size mũ bảo hiểm chuẩn. Tư vấn size miễn phí qua Zalo, đổi size trong 30 ngày.",
     "seoDescriptionEn": "How to measure head circumference and read the helmet size chart. Free size advice via Zalo, 30-day exchange.",
-    "seoCanonicalUrl": "https://bigbike.vn/cach-do-size-dau/"
+    "seoCanonicalUrl": "https://bigbike.vn/huong-dan/size-mu/"
   },
   "chinh-sach-bao-hanh": {
     "slug": "chinh-sach-bao-hanh",
@@ -25,7 +25,7 @@
     "seoTitleEn": null,
     "seoDescription": null,
     "seoDescriptionEn": null,
-    "seoCanonicalUrl": "https://bigbike.vn/chinh-sach/bao-hanh/"
+    "seoCanonicalUrl": "https://bigbike.vn/chinh-sach/chinh-sach-bao-hanh/"
   },
   "chinh-sach-doi-tra-hang": {
     "slug": "chinh-sach-doi-tra-hang",
@@ -39,7 +39,7 @@
     "seoTitleEn": null,
     "seoDescription": null,
     "seoDescriptionEn": null,
-    "seoCanonicalUrl": "https://bigbike.vn/chinh-sach/doi-tra/"
+    "seoCanonicalUrl": "https://bigbike.vn/chinh-sach/chinh-sach-doi-tra-hang/"
   },
   "chinh-sach-bao-mat-thong-tin": {
     "slug": "chinh-sach-bao-mat-thong-tin",
@@ -67,6 +67,6 @@
     "seoTitleEn": "How to measure motorcycle clothing size | BigBike",
     "seoDescription": "Hướng dẫn đo và chọn size găng tay, giày, áo giáp, quần giáp bảo hộ moto chi tiết.",
     "seoDescriptionEn": "Detailed guide to measuring and choosing sizes for gloves, boots, jackets, and pants.",
-    "seoCanonicalUrl": "https://bigbike.vn/cach-do-size-trang-phuc/"
+    "seoCanonicalUrl": "https://bigbike.vn/huong-dan/size-trang-phuc/"
   }
 }

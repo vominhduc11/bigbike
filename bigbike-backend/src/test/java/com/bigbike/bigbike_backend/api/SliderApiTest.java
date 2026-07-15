@@ -63,8 +63,8 @@ class SliderApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "location": "audit-home",
-                                  "sortOrder": 0,
+                                  "location": "home",
+                                  "sortOrder": 9990,
                                   "isActive": true
                                 }
                                 """))
@@ -74,14 +74,32 @@ class SliderApiTest {
     }
 
     @Test
+    void createSlider_rejectsNonHomeLocation() throws Exception {
+        // Chỉ còn vị trí 'home' cho bản ghi mới (owner decision 2026-07-15, AUD-063).
+        mockMvc.perform(post("/api/v1/admin/sliders")
+                        .header("X-Admin-Permissions", "sliders.write")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "location": "category",
+                                  "sortOrder": 9991,
+                                  "externalLink": "/san-pham/",
+                                  "isActive": true
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].field").value("location"));
+    }
+
+    @Test
     void createSlider_rejectsUnsafeExternalLink() throws Exception {
         mockMvc.perform(post("/api/v1/admin/sliders")
                         .header("X-Admin-Permissions", "sliders.write")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "location": "audit-home",
-                                  "sortOrder": 1,
+                                  "location": "home",
+                                  "sortOrder": 9992,
                                   "externalLink": "javascript:alert(1)",
                                   "isActive": true
                                 }
@@ -113,8 +131,8 @@ class SliderApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "location": "audit-product",
-                                  "sortOrder": 0,
+                                  "location": "home",
+                                  "sortOrder": 9993,
                                   "productId": "prod_missing",
                                   "isActive": true
                                 }

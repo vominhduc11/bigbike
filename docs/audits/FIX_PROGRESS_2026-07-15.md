@@ -16,24 +16,24 @@
 
 | AUD | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
-| AUD-002 | Quick-buy không được ghép sản phẩm A với biến thể B | ✅ | `CheckoutService.quickBuy` kiểm tra variant thuộc đúng product (404 nếu lệch) + test `quickBuy_variantOfAnotherProduct_returns404` |
-| AUD-003 | `forceOutOfStock` phải chặn mua ở cart + checkout (cả biến thể) | ✅ | Check cấp product trước nhánh variant ở `CartService.addItem`/`validateQuantityAgainstStock`, `CheckoutService.quickBuy`/`validateCartAgainstStock` (STOCK_RULE_004) + 3 test mới |
-| AUD-007 | Checkout từ chối đơn thiếu tỉnh/phường hoặc địa chỉ giao rỗng | ✅ | `@NotBlank` province/ward trên DTO + `validateAddress` (cả shipping đã resolve); fallback shipping coi chuỗi rỗng như null; test missingProvince/missingWard/blankShipping |
-| AUD-010 | Bổ sung điểm vào "Mua nhanh" trên web theo docs | ✅ | Nút MUA NHANH trên PDP (`BuyButtons`) mở `QuickBuyDialog.tsx` mới — tái dùng `CheckoutAddressFields`+`CodPaymentBlock`, gửi `submitQuickBuy` với COD + idempotency key; xóa schema quick-buy mồ côi |
-| AUD-011 | Trang đặt hàng hiển thị cố định 1 phương thức COD + gửi/lưu `COD` | ✅ | Quyết định #10: web gửi `paymentMethod:"COD"`; backend normalize null→COD, reject BACS, options chỉ COD, bỏ nhánh BACS→ON_HOLD; docs PAY_RULE_001/002 + ORDER_RULE_002 + API_CONTRACT + MODULE_CATALOG cập nhật cùng commit |
-| AUD-016 | Admin list đơn hiển thị đúng trạng thái fulfil (bổ sung field DTO) | ✅ | `AdminOrderListItemResponse` thêm `fulfillmentStatus`+`fulfillmentType` (MapStruct tự map); admin contracts.js đã normalize sẵn |
+| AUD-002 | Quick-buy không được ghép sản phẩm A với biến thể B | ✅ `c1a1b862` | `CheckoutService.quickBuy` kiểm tra variant thuộc đúng product (404 nếu lệch) + test `quickBuy_variantOfAnotherProduct_returns404` |
+| AUD-003 | `forceOutOfStock` phải chặn mua ở cart + checkout (cả biến thể) | ✅ `c1a1b862` | Check cấp product trước nhánh variant ở `CartService.addItem`/`validateQuantityAgainstStock`, `CheckoutService.quickBuy`/`validateCartAgainstStock` (STOCK_RULE_004) + 3 test mới |
+| AUD-007 | Checkout từ chối đơn thiếu tỉnh/phường hoặc địa chỉ giao rỗng | ✅ `c1a1b862` | `@NotBlank` province/ward trên DTO + `validateAddress` (cả shipping đã resolve); fallback shipping coi chuỗi rỗng như null; test missingProvince/missingWard/blankShipping |
+| AUD-010 | Bổ sung điểm vào "Mua nhanh" trên web theo docs | ✅ `c1a1b862` | Nút MUA NHANH trên PDP (`BuyButtons`) mở `QuickBuyDialog.tsx` mới — tái dùng `CheckoutAddressFields`+`CodPaymentBlock`, gửi `submitQuickBuy` với COD + idempotency key; xóa schema quick-buy mồ côi |
+| AUD-011 | Trang đặt hàng hiển thị cố định 1 phương thức COD + gửi/lưu `COD` | ✅ `c1a1b862` | Quyết định #10: web gửi `paymentMethod:"COD"`; backend normalize null→COD, reject BACS, options chỉ COD, bỏ nhánh BACS→ON_HOLD; docs PAY_RULE_001/002 + ORDER_RULE_002 + API_CONTRACT + MODULE_CATALOG cập nhật cùng commit |
+| AUD-016 | Admin list đơn hiển thị đúng trạng thái fulfil (bổ sung field DTO) | ✅ `c1a1b862` | `AdminOrderListItemResponse` thêm `fulfillmentStatus`+`fulfillmentType` (MapStruct tự map); admin contracts.js đã normalize sẵn |
 
 ## Phase 1B — High: Nội dung, media, song ngữ, SEO
 
 | AUD | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
-| AUD-004 | Xóa vĩnh viễn bài viết không được xóa object MinIO còn nơi khác dùng | ⬜ | |
-| AUD-008 | Auto slug redirect phải có loop check + cache invalidation | ⬜ | |
-| AUD-012 | Sửa 2 route hướng dẫn đang trả 404 | ⬜ | |
-| AUD-013 | Trang tĩnh kích hoạt đúng nội dung EN khi chuyển ngôn ngữ | ⬜ | |
-| AUD-014 | List sản phẩm/thương hiệu/tin tức EN refetch đúng ngôn ngữ | ⬜ | |
-| AUD-015 | Sitemap/route EN nhất quán (trang EN crawl được độc lập) | ⬜ | |
-| AUD-063 | Gỡ 3 vị trí slider khỏi admin, chỉ giữ `home`; không xóa data cũ | ⬜ | Quyết định #4 |
+| AUD-004 | Xóa vĩnh viễn bài viết không được xóa object MinIO còn nơi khác dùng | ✅ | `MediaReferenceService.isObjectKeyReferencedOutsideArticle` quét media/products (image+gallery+blocks)/variants/categories/brands/home_videos/sliders/reviews/settings + articles khác; `hardDeleteArticle` chỉ xóa object không còn ai tham chiếu; object thuộc Media Library (còn dòng `media`) không bao giờ xóa qua đường này |
+| AUD-008 | Auto slug redirect phải có loop check + cache invalidation | ✅ | `SlugRedirectHelper`: guard self-loop, xóa redirect FROM URL mới sống lại (chặn A→B→A), canonicalize path, gọi `revalidateRedirects()` như luồng admin |
+| AUD-012 | Sửa 2 route hướng dẫn đang trả 404 | ✅ | Không bịa nội dung: 301 `/huong-dan/mua-hang/`(+biến thể legacy)→`/huong-dan/`; `/huong-dan/size-gang-tay/`→`/huong-dan/size-trang-phuc/` (đã gồm găng tay). Docs BUSINESS_RULES ghi bộ 2 trang con hiện hành |
+| AUD-013 | Trang tĩnh kích hoạt đúng nội dung EN khi chuyển ngôn ngữ | ✅ | Component mới `LocaleSwitch` (server render sẵn 2 nhánh VI/EN, client chọn theo locale — giữ ISR); áp cho GuidePage + PolicyPage. Lưu ý: `bodyEn` của cả 5 trang tĩnh đang RỖNG → EN fallback VI theo thiết kế; muốn EN thật phải soạn nội dung (việc owner) |
+| AUD-014 | List sản phẩm/thương hiệu/tin tức EN refetch đúng ngôn ngữ | ✅ | Chỉ seed initialData cho key `vi` (pattern ProductView) ở CatalogClient/BrandListClient/ArticleListClient — key `en` luôn fetch tươi |
+| AUD-015 | Sitemap/route EN nhất quán (trang EN crawl được độc lập) | ✅ | Sitemap chỉ khai URL VI canonical, bỏ toàn bộ entry/alternates EN (EN là trải nghiệm client-side, alias EN bị proxy 307 với crawler — khai lên chỉ tạo redirect/duplicate). Nếu sau này dựng routing EN độc lập thì thêm lại |
+| AUD-063 | Gỡ 3 vị trí slider khỏi admin, chỉ giữ `home`; không xóa data cũ | ✅ | Quyết định #4: admin bỏ filter + Select vị trí (màn chỉ còn home); backend reject vị trí ≠ home cho create/patch-đổi-vị-trí (data cũ giữ nguyên); dọn locale keys + preset `sliderMobile`; docs API_CONTRACT/DATA_CONTRACT cập nhật; test `createSlider_rejectsNonHomeLocation` |
 
 ## Phase 1C — High: Bảo mật, cấu hình hạ tầng
 
@@ -59,7 +59,7 @@
 | AUD | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
 | AUD-021 | Giỏ hàng hiển thị "Miễn phí vận chuyển" theo SHIP_RULE_001 | ⬜ | |
-| AUD-022 | Bỏ miễn CSRF cho checkout/quick-buy theo docs | ✅ | Làm sớm cùng nhóm 1A (chung file test): gỡ 2 exemption khỏi `CustomerCsrfFilter`; guest luôn có `bb_csrf` từ GET /cart app-wide; test CSRF Phase1F pass lại |
+| AUD-022 | Bỏ miễn CSRF cho checkout/quick-buy theo docs | ✅ `c1a1b862` | Làm sớm cùng nhóm 1A (chung file test): gỡ 2 exemption khỏi `CustomerCsrfFilter`; guest luôn có `bb_csrf` từ GET /cart app-wide; test CSRF Phase1F pass lại |
 | AUD-023 | Mark PAID→UNPAID không để lại payment row `SUCCEEDED` | ⬜ | |
 | AUD-024 | `ON_HOLD → PROCESSING` không tự đánh dấu BACS là PAID | ⬜ | |
 | AUD-025 | Khách hủy đơn: WS + inbox admin + audit log + email cho khách | ⬜ | Quyết định #3 |
@@ -68,7 +68,7 @@
 | AUD-028 | PDP tiếng Anh fallback về VI thay vì mất field | ⬜ | |
 | AUD-029 | Option hết hàng vẫn xem được (không disable chọn để xem ảnh) | ⬜ | |
 | AUD-030 | Gỡ filter `REFUNDED` ở web + sửa copy hủy đơn (không nói hoàn tồn) | ⬜ | Theo quyết định #7 |
-| AUD-031 | Canonical trang chính sách trỏ route thực sự được build | ⬜ | Cùng quyết định #6 |
+| AUD-031 | Canonical trang chính sách trỏ route thực sự được build | ✅ | Làm sớm cùng 1B (chung file với AUD-013): sửa 4 `seoCanonicalUrl` trong static-pages.json về route thực; `/chinh-sach` chỉ build đúng 3 slug chính sách (quyết định #6); 301 các canonical cũ chưa từng build về route thực |
 | AUD-032 | Form đánh giá gửi email khách đã nhập | ⬜ | |
 | AUD-033 | Checkout/account: chuỗi + hotline/địa chỉ theo locale/settings | ⬜ | |
 | AUD-034 | Xóa vĩnh viễn danh mục: cảnh báo đủ số sản phẩm + danh mục con | ⬜ | |
@@ -77,7 +77,7 @@
 | AUD-037 | Upload ảnh review không tạo orphan MinIO (cleanup) | ⬜ | |
 | AUD-038 | Ảnh line item snapshot theo đơn, không lấy live từ catalog | ⬜ | |
 | AUD-064 | Video mô tả/bài viết nhận YouTube/TikTok/Facebook theo AGENTS §14.3 | ⬜ | Reject link rút gọn |
-| AUD-065 | Giỏ đánh dấu "không khả dụng" cho sản phẩm no-variant hết hàng | ✅ | Làm sớm cùng AUD-003 (cùng file, audit khuyến nghị): `findUnavailableItemIds` mirror đúng điều kiện checkout (published + !forceOutOfStock + stockState với SP không biến thể) |
+| AUD-065 | Giỏ đánh dấu "không khả dụng" cho sản phẩm no-variant hết hàng | ✅ `c1a1b862` | Làm sớm cùng AUD-003 (cùng file, audit khuyến nghị): `findUnavailableItemIds` mirror đúng điều kiện checkout (published + !forceOutOfStock + stockState với SP không biến thể) |
 
 ## Phase 2B — Medium: tài liệu chuẩn
 
@@ -90,7 +90,7 @@
 | AUD-043 | Thống nhất rule WebSocket (role vs `orders.read`) theo code thực tế | ⬜ | |
 | AUD-044 | Dọn docs theo mô hình Còn/Hết thủ công + COD duy nhất | ⬜ | Quyết định #7, #10 |
 | AUD-045 | State machine + migration/version notes hết mâu thuẫn/stale | ⬜ | |
-| AUD-046 | Sửa test backend khóa contract cũ (quantity/refund/CSRF/auto-paid) | 🔧 | Đã sửa cùng nhóm 1A: quantity-decrement (Phase1F/1H), refund (Phase1H — xóa toàn bộ test POST /refund + REFUNDED status), CSRF (đi cùng AUD-022), shippingItems (Phase1G), địa chỉ 2 cấp trong template. Còn lại: test auto-cancel BACS (xóa cùng AUD-005), test auto-paid ON_HOLD→PROCESSING (sửa cùng AUD-024) |
+| AUD-046 | Sửa test backend khóa contract cũ (quantity/refund/CSRF/auto-paid) | 🔧 `c1a1b862` | Đã sửa cùng nhóm 1A: quantity-decrement (Phase1F/1H), refund (Phase1H — xóa toàn bộ test POST /refund + REFUNDED status), CSRF (đi cùng AUD-022), shippingItems (Phase1G), địa chỉ 2 cấp trong template. Còn lại: test auto-cancel BACS (xóa cùng AUD-005), test auto-paid ON_HOLD→PROCESSING (sửa cùng AUD-024) |
 | AUD-048 | ARCHITECTURE bỏ wishlist + mô tả account pages đúng build | ⬜ | |
 
 ## Phase 3A — Low: lỗi nhỏ rõ ràng
@@ -103,7 +103,7 @@
 | AUD-052 | Email chào bằng tên khách khi đơn có tên | ⬜ | |
 | AUD-053 | Đồng bộ model/schema `paymentMethod` nullable | ⬜ | Lưu ý quyết định #10 |
 | AUD-054 | Sửa encoding comment importer | ⬜ | |
-| AUD-059 | Ghi chú hệ thống checkout không thành "Đơn hàng được tạo.." | ✅ | Làm sớm cùng AUD-011 (cùng đoạn code): note luôn "Đơn hàng được tạo. Phương thức thanh toán: COD." — hết dấu chấm kép |
+| AUD-059 | Ghi chú hệ thống checkout không thành "Đơn hàng được tạo.." | ✅ `c1a1b862` | Làm sớm cùng AUD-011 (cùng đoạn code): note luôn "Đơn hàng được tạo. Phương thức thanh toán: COD." — hết dấu chấm kép |
 | AUD-069 | Sửa/xóa SĐT khách không hợp lệ: báo lỗi thay vì im lặng bỏ qua | ⬜ | |
 | AUD-070 | `rowKey` import không trùng khi 2 dòng cùng SKU | ⬜ | |
 | AUD-071 | Xóa trắng ô SEO thương hiệu phải được lưu | ⬜ | |

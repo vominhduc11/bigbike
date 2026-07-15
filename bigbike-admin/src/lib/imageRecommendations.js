@@ -27,9 +27,8 @@ export const IMAGE_RECO = {
   // hero mặc định): WpCategoryHero .page-title — full viewport × 450px (desktop 1920×450, background-cover).
   bannerWide: { idealW: 3840, idealH: 900, minW: 3840, minH: 900, ratio: [64, 15], ratioTolerance: 0.2 },
   // Slide trang chủ desktop (HeroSlider.tsx): w-full h-[max(40vw,300px)] → 1920×768 ở 1920px viewport.
+  // (sliderMobile đã gỡ 2026-07-15 cùng 3 vị trí slider ngoài trang chủ — hero chỉ dùng ảnh desktop.)
   sliderDesktop: { idealW: 3840, idealH: 1536, minW: 3840, minH: 1536, ratio: [5, 2], ratioTolerance: 0.2 },
-  // Banner không phải Hero dùng ảnh mobile riêng: tỷ lệ dọc 3:4.
-  sliderMobile: { idealW: 780, idealH: 1040, minW: 780, minH: 1040, ratio: [3, 4], ratioTolerance: 0.12 },
   // Logo hãng: vừa hiển thị cao tối đa 64px trong lưới hãng (object-contain, không ép tỉ lệ),
   // vừa dùng làm minh hoạ hero trang chi tiết hãng (native-render, giống illustration) — ngữ cảnh
   // sau đòi hỏi cao hơn: giữ khung 400×200 hiện có × 2.

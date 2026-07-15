@@ -1,6 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FilterSelect } from '../components/FilterSelect'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { GripVertical, Plus } from 'lucide-react'
 import { toast } from '@/lib/toast'
@@ -16,34 +15,25 @@ import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { useSaveShortcut } from '@/lib/useSaveShortcut'
-import { useUrlQuery } from '../lib/useUrlQuery'
 import { validateSafePublicLink } from '../lib/urlPolicies'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 
-const LOCATIONS = ['home', 'category', 'category_sidebar', 'promotion']
-// Query-param mặc định cho bộ lọc Vị trí (T9 URL-sync, đồng bộ với các list screen khác).
-const INITIAL_QUERY = { location: 'home' }
-// Nhãn tiếng Việt thân thiện cho mã vị trí kỹ thuật (T2) — dùng cho bộ lọc, Select trong
-// form và hiển thị trên thẻ. defaultValue để fallback khi key i18n chưa có.
-const LOCATION_LABEL_KEYS = {
-  home: { key: 'sliders.locationHome', defaultValue: 'Trang chủ' },
-  category: { key: 'sliders.locationCategory', defaultValue: 'Trang danh mục' },
-  category_sidebar: { key: 'sliders.locationCategorySidebar', defaultValue: 'Cột bên danh mục' },
-  promotion: { key: 'sliders.locationPromotion', defaultValue: 'Khuyến mãi' },
-}
-// Đổi mã vị trí kỹ thuật sang nhãn tiếng Việt thân thiện (T2). Mã lạ → trả nguyên mã.
+// Chỉ còn vị trí Trang chủ (owner decision 2026-07-15, FIX_PROMPT §2 #4): website chỉ
+// render slider `home`, 3 vị trí cũ (category/category_sidebar/promotion) đã gỡ khỏi
+// admin — dữ liệu cũ trong DB không bị xóa nhưng không quản lý qua màn này nữa.
+const HOME_LOCATION = 'home'
+// Nhãn tiếng Việt thân thiện cho mã vị trí kỹ thuật (T2). Mã lạ → trả nguyên mã.
 function locationLabel(t, code) {
-  const entry = LOCATION_LABEL_KEYS[code]
-  return entry ? t(entry.key, { defaultValue: entry.defaultValue }) : code
+  return code === HOME_LOCATION
+    ? t('sliders.locationHome', { defaultValue: 'Trang chủ' })
+    : code
 }
 const EMPTY_FORM = {
-  location: 'home',
+  location: HOME_LOCATION,
   sortOrder: '0',
   desktopImageUrl: '',
-  mobileImageUrl: '',
   legacyMobileImage: null,
   externalLink: '',
   productId: '',
@@ -161,13 +151,11 @@ export function SliderListScreen({ canUpdate }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
   const queryClient = useQueryClient()
-  // Bộ lọc Vị trí đồng bộ vào query-param (T9) → reload / quay lại vẫn giữ vị trí đang xem.
-  const [query, setQuery] = useUrlQuery(INITIAL_QUERY)
-  const location = query.location
-  const setLocation = useCallback((v) => setQuery({ location: v }), [setQuery])
+  // Màn này chỉ quản lý slider Trang chủ — không còn bộ lọc vị trí.
+  const location = HOME_LOCATION
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
-  const [form, setForm] = useState({ ...EMPTY_FORM, location: 'home' })
+  const [form, setForm] = useState({ ...EMPTY_FORM })
   // Bản chụp form lúc mở (để biết có thay đổi chưa lưu — F6). null khi form đóng.
   const [baseline, setBaseline] = useState(null)
   const [formError, setFormError] = useState('')
@@ -328,7 +316,6 @@ export function SliderListScreen({ canUpdate }) {
       location: slider.location,
       sortOrder: String(slider.sortOrder),
       desktopImageUrl: slider.desktopImage?.url || '',
-      mobileImageUrl: slider.mobileImage?.url || '',
       legacyMobileImage: slider.mobileImage ?? null,
       externalLink: slider.externalLink || '',
       productId: slider.productId || '',
@@ -401,10 +388,8 @@ export function SliderListScreen({ canUpdate }) {
     }
     // The homepage slider is a Hero. Its hidden legacy asset is forwarded intact
     // during a full edit because the backend would otherwise clear the old data.
-    if (form.location === 'home' && form.legacyMobileImage?.url) {
+    if (form.legacyMobileImage?.url) {
       payload.mobileImage = form.legacyMobileImage
-    } else if (form.location !== 'home' && form.mobileImageUrl.trim()) {
-      payload.mobileImage = { url: form.mobileImageUrl.trim() }
     }
     return payload
   }
@@ -494,20 +479,6 @@ export function SliderListScreen({ canUpdate }) {
 
       {warning ? <ReadOnlyBanner warning={warning} /> : null}
 
-      <div className="bb-filter-bar">
-        <FilterSelect
-          value={location}
-          onValueChange={async (v) => {
-            // Form đang sửa dở → hỏi trước khi đổi vị trí (sẽ đóng form, mất dữ liệu).
-            if (showForm && !(await confirmCloseForm())) return
-            setLocation(v)
-            closeForm()
-          }}
-          ariaLabel={t('sliders.filterLocation')}
-          options={LOCATIONS.map((loc) => ({ value: loc, label: locationLabel(t, loc) }))}
-        />
-      </div>
-
       {showForm && (
         <div className="bb-card mb-4">
           <div className="bb-card-header"><h2>{editingId ? t('sliders.editFormTitle') : t('sliders.formTitle')}</h2></div>
@@ -521,17 +492,10 @@ export function SliderListScreen({ canUpdate }) {
               <div className="bb-form-section-label">
                 {t('sliders.sectionPosition', { defaultValue: 'Vị trí & thứ tự' })}
               </div>
+              {/* Vị trí cố định Trang chủ (owner decision 2026-07-15) — không còn Select chọn vị trí. */}
               <label className="form-field">
-                <span>
-                  {t('sliders.formLocation')}
-                  <span className="text-danger ml-0.5" aria-hidden="true">*</span>
-                </span>
-                <Select value={form.location} onValueChange={(val) => setForm((p) => ({ ...p, location: val }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {LOCATIONS.map((loc) => <SelectItem key={loc} value={loc}>{locationLabel(t, loc)}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <span>{t('sliders.formLocation')}</span>
+                <Input value={locationLabel(t, HOME_LOCATION)} disabled readOnly />
               </label>
               <label className="form-field">
                 <span>
@@ -560,23 +524,6 @@ export function SliderListScreen({ canUpdate }) {
                 />
                 <span className="hint">{t('sliders.formDesktopUrlHint')}</span>
               </div>
-
-              {form.location !== 'home' && (
-                <>
-                  <div className="bb-form-section-label with-divider">
-                    {t('sliders.sectionMobileImage', { defaultValue: 'Ảnh mobile' })}
-                  </div>
-                  <div className="form-field form-field-wide">
-                    <span>{t('sliders.formMobileUrl')}</span>
-                    <ImageUrlInput
-                      value={form.mobileImageUrl}
-                      onChange={(url) => setForm((p) => ({ ...p, mobileImageUrl: url }))}
-                      recommend={IMAGE_RECO.sliderMobile}
-                    />
-                    <span className="hint">{t('sliders.formMobileUrlHint')}</span>
-                  </div>
-                </>
-              )}
 
               <div className="bb-form-section-label with-divider">
                 {t('sliders.sectionLink', { defaultValue: 'Liên kết' })}
