@@ -690,9 +690,7 @@ class Phase1HAdminOrderApiTest {
         mockMvc.perform(get("/api/v1/customer/orders"))
                 .andExpect(status().isUnauthorized());
 
-        // Checkout options still public
-        mockMvc.perform(get("/api/v1/checkout/options"))
-                .andExpect(status().isOk());
+        // (GET /checkout/options removed 2026-07-15 per AUD-056 — no probe here anymore)
 
         // Admin endpoints require auth (not just any auth — must be ROLE_ADMIN)
         mockMvc.perform(get("/api/v1/admin/orders"))

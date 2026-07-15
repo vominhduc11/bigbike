@@ -8,11 +8,9 @@ import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.domain.content.AdminContentItem;
 import com.bigbike.bigbike_backend.domain.content.Article;
 
-import com.bigbike.bigbike_backend.domain.content.ContentCategoryItem;
 import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
 import com.bigbike.bigbike_backend.service.admin.AdminContentMutationService;
 import com.bigbike.bigbike_backend.service.admin.AdminContentReadService;
-import com.bigbike.bigbike_backend.service.admin.AdminContentReferenceService;
 import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import lombok.RequiredArgsConstructor;
@@ -53,7 +51,6 @@ public class AdminContentController extends AdminControllerSupport {
 
     private final AdminContentReadService adminContentReadService;
     private final AdminContentMutationService adminContentMutationService;
-    private final AdminContentReferenceService adminContentReferenceService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
 
@@ -194,14 +191,8 @@ public class AdminContentController extends AdminControllerSupport {
         throw new UnauthorizedException("No authenticated admin principal.");
     }
 
-    // ── Reference lists (for article form dropdowns) ─────────────────────────
-
-    @GetMapping("/reference/categories")
-    public ApiListResponse<ContentCategoryItem> listCategoryRefs(HttpServletRequest request) {
-        devAdminAuthService.requirePermission(request, "content.read");
-        List<ContentCategoryItem> items = adminContentReferenceService.listCategories();
-        return apiResponseFactory.list(new PageResult<>(items, 1, items.size(), items.size(), 1), request);
-    }
+    // GET /reference/categories removed 2026-07-15 (AUD-056): the article form dropped its
+    // category picker (V275 — articles are auto-mapped to 'tin-tuc'), leaving no caller.
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 

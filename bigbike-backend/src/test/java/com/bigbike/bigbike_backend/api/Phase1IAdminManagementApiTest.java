@@ -374,13 +374,7 @@ class Phase1IAdminManagementApiTest {
                 .andExpect(jsonPath("$.data.status").value("ACTIVE"));
     }
 
-    // 30. Checkout options still public
-    @Test
-    void checkoutApi_stillWorks() throws Exception {
-        mockMvc.perform(get("/api/v1/checkout/options"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.paymentMethods").isArray());
-    }
+    // 30. (checkout options regression removed 2026-07-15 — endpoint deleted per AUD-056)
 
     // 31. Public catalog still public
     @Test

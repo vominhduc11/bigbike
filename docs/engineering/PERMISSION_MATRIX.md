@@ -11,12 +11,12 @@
 
 | Permission | Granted roles (seed) | Endpoint | Evidence |
 |---|---|---|---|
-| `inventory.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER`, `EDITOR` | `GET /api/v1/admin/inventory/**` (stock list / grouped / summary / movements) | `V121__realign_inventory_warranty_permissions.sql`, `AdminInventoryController.java` |
-| `inventory.write` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `PATCH /api/v1/admin/inventory/variants/{id}/availability`, `PATCH /api/v1/admin/inventory/products/{id}/availability` (đường API phụ, không có admin UI caller) | `V121__realign_inventory_warranty_permissions.sql`, `AdminInventoryController.java` |
+| `inventory.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER`, `EDITOR` | `GET /api/v1/admin/inventory` (stock list), `GET /api/v1/admin/inventory/summary` | `V121__realign_inventory_warranty_permissions.sql`, `AdminInventoryController.java` |
+| `inventory.write` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | **Không còn endpoint nào dùng** — hai endpoint availability PATCH (đường API phụ, chưa từng có admin UI caller) đã gỡ 2026-07-15 (AUD-056, owner decision #8). Quyền vẫn tồn tại trong seed/`PermissionCatalog` (không revoke bằng migration trong đợt này); mọi thay đổi Còn/Hết đi qua product upsert với `products.update`. | `V121__realign_inventory_warranty_permissions.sql`, `AdminInventoryController.java` |
 
 `inventory.*` is listed in `PermissionCatalog` (`roles.groupProducts`), so it is grantable to custom roles via the Roles UI.
 
-**Ranh giới quyền Còn/Hết hiện hành:** màn tạo/sửa sản phẩm gửi `forceOutOfStock` và `variants[].isAvailable` trong product upsert, nên dùng `products.update`; backend tự suy ra `stockState`. `inventory.write` chỉ áp dụng hai endpoint availability riêng ở bảng trên. Vì vậy custom role có `products.update` có thể đổi Còn/Hết khi lưu form sản phẩm dù không có `inventory.write` — đây là contract chủ đích theo `BUSINESS_RULES.md` Stock State Derivation Rules.
+**Ranh giới quyền Còn/Hết hiện hành:** màn tạo/sửa sản phẩm gửi `forceOutOfStock` và `variants[].isAvailable` trong product upsert, nên dùng `products.update`; backend tự suy ra `stockState`. Từ 2026-07-15 đây là đường mutation availability DUY NHẤT (các endpoint `inventory.write` đã gỡ) — contract chủ đích theo `BUSINESS_RULES.md` Stock State Derivation Rules.
 
 ### Media Library permissions
 
@@ -121,8 +121,7 @@ Status: `CONFIRMED_FROM_CODE` — `AdminAuthService.java`, `AdminLoginAttemptSer
 | `GET /api/v1/auth/admin/invite` | public (token-gated) — validate an admin invite token | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `AdminInviteService.validateToken` |
 | `POST /api/v1/auth/admin/accept-invite` | public (token-gated) — set password for an invited admin, `INVITED → ACTIVE` | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `AdminInviteService.acceptInvite` |
 | `POST /api/v1/admin/admin-users/{id}/resend-invite` | `admin-users.write` | `CONFIRMED_FROM_CODE` | `AdminAdminUsersController.java` |
-| `/api/v1/search-suggest` | public | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` (`/api/v1/search` gỡ 2026-07-15, AUD-066) |
-| `/api/v1/address/**` | public | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
+| `/api/v1/search-suggest` | public | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` (`/api/v1/search` gỡ 2026-07-15, AUD-066; `/api/v1/address/**` + `GET /checkout/options` gỡ 2026-07-15, AUD-056) |
 
 ## WebSocket Access
 

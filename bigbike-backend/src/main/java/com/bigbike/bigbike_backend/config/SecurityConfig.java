@@ -69,14 +69,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/home-videos").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/home/category-highlights").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/search-suggest").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/address/**").permitAll()
                         // Cart endpoints: guest + customer access, CSRF enforced on mutations by filter
                         .requestMatchers("/api/v1/cart/**").permitAll()
                         .requestMatchers("/api/v1/cart").permitAll()
                         // Checkout: guest + customer, CSRF enforced on mutations by filter
-                        // (quick-buy endpoint removed 2026-07-15 — customers order via the cart)
+                        // (quick-buy + GET /checkout/options + /address/** removed 2026-07-15, AUD-056)
                         .requestMatchers(HttpMethod.POST, "/api/v1/checkout").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/checkout/options").permitAll()
                         // Order lookup: public GET, no CSRF needed (safe method)
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders/lookup").permitAll()
                         // OpenAPI docs: disabled in prod via springdoc.api-docs.enabled=false

@@ -1,7 +1,6 @@
 package com.bigbike.bigbike_backend.api.checkout;
 
 import com.bigbike.bigbike_backend.api.cart.CartController;
-import com.bigbike.bigbike_backend.api.checkout.dto.CheckoutOptionsResponse;
 import com.bigbike.bigbike_backend.api.checkout.dto.CheckoutRequest;
 import com.bigbike.bigbike_backend.api.checkout.dto.OrderSummaryResponse;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
@@ -22,11 +21,9 @@ import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -62,13 +59,8 @@ public class CheckoutController {
 
     // POST /api/v1/orders/quick-buy removed 2026-07-15 (owner decision, reverses AUD-010):
     // the storefront has no quick-buy entry point — customers order through the cart.
-
-    @GetMapping("/checkout/options")
-    public ApiDataResponse<CheckoutOptionsResponse> getOptions(
-            @RequestParam(defaultValue = "vi") String lang,
-            HttpServletRequest request) {
-        return apiResponseFactory.data(checkoutService.getOptions(lang), request);
-    }
+    // GET /api/v1/checkout/options removed 2026-07-15 (AUD-056, owner decision #8):
+    // no caller since checkout stopped offering a payment-method choice (COD only).
 
     // ── helpers ───────────────────────────────────────────────────────────────
 

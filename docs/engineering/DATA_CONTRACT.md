@@ -259,7 +259,7 @@ Status:
 Evidence:
 
 - `AdminInventoryService.java`
-- `AdminInventoryController.java` (availability PATCH endpoints)
+- `AdminInventoryController.java` (read-only list/summary; availability PATCH endpoints removed 2026-07-15, AUD-056)
 - `CheckoutService.java` (per-variant `isAvailable` gate)
 - `V120__drop_stock_receipt_tables.sql`
 - `V259__remove_serial_management.sql`
@@ -285,7 +285,7 @@ Evidence:
 
 **Cột số lượng `quantity_on_hand` / `stock_quantity` / `manage_stock` giờ DORMANT** — giữ trong DB nhưng không đọc cho availability. `low_stock_threshold` đã gỡ (V279).
 
-**API input contract:** `stockState` bị bỏ khỏi `UpsertProductRequest` và `VariantRequest` vì là field suy ra. Catalog create/update nhận các nguồn boolean thật từ form sản phẩm: `UpsertProductRequest.forceOutOfStock` và `VariantRequest.isAvailable`, rồi `InventoryPolicyService.recomputeProductState` cập nhật `stockState`; đường này dùng quyền `products.update`. Hai endpoint Inventory `PATCH .../availability` là đường phụ dùng `inventory.write` và hiện không có UI caller.
+**API input contract:** `stockState` bị bỏ khỏi `UpsertProductRequest` và `VariantRequest` vì là field suy ra. Catalog create/update nhận các nguồn boolean thật từ form sản phẩm: `UpsertProductRequest.forceOutOfStock` và `VariantRequest.isAvailable`, rồi `InventoryPolicyService.recomputeProductState` cập nhật `stockState`; đường này dùng quyền `products.update`. Hai endpoint Inventory `PATCH .../availability` (đường phụ dùng `inventory.write`) đã gỡ 2026-07-15 (AUD-056) — product upsert là đường mutation availability duy nhất.
 
 **API response contract:** `stockState` vẫn có trong response (read-only). `stockQuantity` / `quantityOnHand` không còn nằm trong response product/variant; các cột số lượng dormant chỉ phục vụ tương thích dữ liệu cũ và migration, không được đưa trở lại contract. Storefront chỉ hiển thị "Còn hàng / Hết hàng".
 
@@ -293,7 +293,7 @@ Evidence:
 
 Evidence:
 
-- `AdminInventoryService.java` / `AdminInventoryController.java` (đường availability phụ)
+- `AdminInventoryService.java` / `AdminInventoryController.java` (chỉ còn đọc list/summary — đường availability phụ đã gỡ 2026-07-15, AUD-056)
 - `ProductMutationService.java`, `UpsertProductRequest.forceOutOfStock`, `VariantRequest.isAvailable`, `InventoryPolicyService.java` (đường form sản phẩm)
 - `CheckoutService.java` (per-variant `isAvailable` gate)
 - `BUSINESS_RULES.md` STOCK_RULE_001–009
@@ -1110,7 +1110,7 @@ Owner decision 2026-06-24: bỏ phân biệt nhóm bài viết. Migration `V275_
 Sau migration **chỉ còn 1 content category**. Hệ quả:
 - Trang `/tin-tuc`: sidebar lọc theo `articleCount > 0` nên tự rút còn 1 nhóm — không cần đổi code filter.
 - Khối "Góc trải nghiệm" trang chủ: fallback chuyển từ `category=reviews` → 3 bài mới nhất bất kỳ.
-- **Admin form bài viết bỏ ô "Danh mục".** Backend `ContentRequestValidator.resolveCategory` mặc định gán nhóm `tin-tuc` khi upsert không gửi `categoryId` (trước đây null = không nhóm) → bài luôn thuộc "Tin tức". Endpoint `/admin/content/reference/categories` thành orphan (không còn FE gọi).
+- **Admin form bài viết bỏ ô "Danh mục".** Backend `ContentRequestValidator.resolveCategory` mặc định gán nhóm `tin-tuc` khi upsert không gửi `categoryId` (trước đây null = không nhóm) → bài luôn thuộc "Tin tức". Endpoint `/admin/content/reference/categories` thành orphan và đã bị xóa 2026-07-15 (AUD-056).
 - **Một chiều:** không khôi phục được bài nào từng là Reviews vs Tin tức.
 
 Status: `CONFIRMED_FROM_CODE` — migration `V275__merge_content_categories_into_news.sql`.

@@ -52,14 +52,8 @@ export type CheckoutPayload = {
   customerNote?: string
 }
 
- type PaymentMethodOption = {
-  code: string
-  title: string
-}
-
-export type CheckoutOptions = {
-  paymentMethods: PaymentMethodOption[]
-}
+// CheckoutOptions/PaymentMethodOption đã xóa 2026-07-15 (AUD-056): endpoint
+// GET /checkout/options bị gỡ — COD là phương thức duy nhất, không còn bước chọn.
 
 export type PriceChange = {
   productName: string

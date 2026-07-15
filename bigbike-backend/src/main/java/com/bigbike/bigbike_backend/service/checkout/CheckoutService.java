@@ -1,10 +1,8 @@
 package com.bigbike.bigbike_backend.service.checkout;
 
 import com.bigbike.bigbike_backend.api.checkout.dto.CheckoutAddressRequest;
-import com.bigbike.bigbike_backend.api.checkout.dto.CheckoutOptionsResponse;
 import com.bigbike.bigbike_backend.api.checkout.dto.CheckoutRequest;
 import com.bigbike.bigbike_backend.api.checkout.dto.OrderSummaryResponse;
-import com.bigbike.bigbike_backend.api.checkout.dto.PaymentMethodOptionResponse;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
@@ -195,20 +193,8 @@ public class CheckoutService {
 
     // Quick-buy removed 2026-07-15 (owner decision, reverses AUD-010): the storefront has
     // no quick-buy entry point — customers order through the cart via checkoutFromCart.
-
-    // ── Checkout options ──────────────────────────────────────────────────────
-
-    @Transactional(readOnly = true)
-    public CheckoutOptionsResponse getOptions(String lang) {
-        boolean en = "en".equalsIgnoreCase(lang);
-        // COD is the only storefront payment method (owner decision 2026-07-15, PAY_RULE_001).
-        // There is no automatic payment gateway; payment is reconciled manually by admin.
-        List<PaymentMethodOptionResponse> paymentMethods = List.of(
-                new PaymentMethodOptionResponse("COD", en ? "Cash on delivery (COD)" : "Thanh toán khi nhận hàng (COD)")
-        );
-        // Shipping methods removed (owner decision 2026-06-23): online orders carry no shipping choice.
-        return new CheckoutOptionsResponse(paymentMethods);
-    }
+    // GET /checkout/options removed 2026-07-15 (AUD-056): COD is the only storefront
+    // payment method (PAY_RULE_001) so there is nothing to choose — no caller remained.
 
     private <T> IdempotencyReservation reserveIdempotency(
             String flowType,

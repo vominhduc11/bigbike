@@ -362,12 +362,9 @@ class Phase1GOrderReadApiTest {
                 .andExpect(jsonPath("$.data.status").value("ACTIVE"));
     }
 
-    @Test
-    void checkoutApi_stillWorks() throws Exception {
-        mockMvc.perform(get("/api/v1/checkout/options"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.paymentMethods").isArray());
-    }
+    // checkoutApi_stillWorks removed 2026-07-15: it probed GET /checkout/options,
+    // which was deleted per AUD-056 (no caller). POST /checkout coverage lives in
+    // Phase1FCheckoutApiTest and loginAndCheckout below.
 
     // ── Customer cancel — Issue 2 scope expansion ────────────────────────────
     //

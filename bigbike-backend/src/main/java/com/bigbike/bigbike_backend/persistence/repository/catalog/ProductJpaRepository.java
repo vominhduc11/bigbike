@@ -17,7 +17,6 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.lang.Nullable;
 
 public interface ProductJpaRepository extends JpaRepository<ProductEntity, String>, JpaSpecificationExecutor<ProductEntity> {
     Optional<ProductEntity> findBySlug(String slug);
@@ -127,67 +126,9 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Strin
             @Param("state") ProductStockState state
     );
 
-    // ── Grouped inventory queries ─────────────────────────────────────────────
-
-    @Query("""
-        SELECT COUNT(DISTINCT p.id) FROM ProductEntity p
-        JOIN p.variants v
-        WHERE p.publishStatus <> :trashStatus
-          AND (:q = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%',:q,'%'))
-               OR LOWER(CAST(p.sku AS string)) LIKE LOWER(CONCAT('%',:q,'%'))
-               OR LOWER(v.name) LIKE LOWER(CONCAT('%',:q,'%'))
-               OR LOWER(CAST(v.sku AS string)) LIKE LOWER(CONCAT('%',:q,'%')))
-          AND (:state IS NULL OR v.stockState = :state)
-        """)
-    long countProductsWithVariantStock(
-            @Param("q") String q,
-            @Param("state") @Nullable ProductStockState state,
-            @Param("trashStatus") PublishStatus trashStatus
-    );
-
-    @Query("""
-        SELECT COUNT(p) FROM ProductEntity p
-        WHERE NOT EXISTS (SELECT 1 FROM ProductVariantEntity v WHERE v.product = p)
-          AND p.publishStatus <> :trashStatus
-          AND (:q = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%',:q,'%'))
-               OR LOWER(CAST(p.sku AS string)) LIKE LOWER(CONCAT('%',:q,'%')))
-          AND (:state IS NULL OR p.stockState = :state)
-        """)
-    long countNoVariantStockByQueryAndState(
-            @Param("q") String q,
-            @Param("state") @Nullable ProductStockState state,
-            @Param("trashStatus") PublishStatus trashStatus
-    );
-
-    @Query("""
-        SELECT DISTINCT p.id, p.name FROM ProductEntity p
-        JOIN p.variants v
-        WHERE p.publishStatus <> :trashStatus
-          AND (:q = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%',:q,'%'))
-               OR LOWER(CAST(p.sku AS string)) LIKE LOWER(CONCAT('%',:q,'%'))
-               OR LOWER(v.name) LIKE LOWER(CONCAT('%',:q,'%'))
-               OR LOWER(CAST(v.sku AS string)) LIKE LOWER(CONCAT('%',:q,'%')))
-          AND (:state IS NULL OR v.stockState = :state)
-        """)
-    List<Object[]> findProductIdAndNameWithVariantStock(
-            @Param("q") String q,
-            @Param("state") @Nullable ProductStockState state,
-            @Param("trashStatus") PublishStatus trashStatus
-    );
-
-    @Query("""
-        SELECT p.id, p.name FROM ProductEntity p
-        WHERE NOT EXISTS (SELECT 1 FROM ProductVariantEntity v WHERE v.product = p)
-          AND p.publishStatus <> :trashStatus
-          AND (:q = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%',:q,'%'))
-               OR LOWER(CAST(p.sku AS string)) LIKE LOWER(CONCAT('%',:q,'%')))
-          AND (:state IS NULL OR p.stockState = :state)
-        """)
-    List<Object[]> findNoVariantProductIdAndName(
-            @Param("q") String q,
-            @Param("state") @Nullable ProductStockState state,
-            @Param("trashStatus") PublishStatus trashStatus
-    );
+    // Grouped inventory queries removed 2026-07-15 (AUD-056) together with the
+    // GET /admin/inventory/grouped endpoint — no caller since the standalone
+    // "Kho hàng" screen was dropped (2026-06-23).
 
     @Query("""
         SELECT DISTINCT p FROM ProductEntity p

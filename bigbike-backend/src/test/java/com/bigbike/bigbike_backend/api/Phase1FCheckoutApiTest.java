@@ -83,25 +83,15 @@ class Phase1FCheckoutApiTest {
         categoryRepo.save(cat);
     }
 
-    // ── Checkout options (2) ──────────────────────────────────────────────────
+    // GET /checkout/options removed 2026-07-15 (AUD-056): COD is the only storefront
+    // payment method (PAY_RULE_001) — nothing to choose, endpoint had no caller.
 
     @Test
-    void getOptions_returnsPaymentMethodsOnly() throws Exception {
-        // Shipping methods removed (owner decision 2026-06-23) — options carry payment methods only.
+    void checkoutOptions_endpointRemoved_isNoLongerPublic() throws Exception {
+        // The permitAll matcher was removed with the endpoint, so the path falls into the
+        // secure-by-default catch-all: anonymous requests get 401 instead of a response.
         mockMvc.perform(get("/api/v1/checkout/options"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.paymentMethods").isArray())
-                // COD is the single storefront payment method (owner decision 2026-07-15, PAY_RULE_001)
-                .andExpect(jsonPath("$.data.paymentMethods.length()").value(1))
-                .andExpect(jsonPath("$.data.paymentMethods[0].code").value("COD"))
-                .andExpect(jsonPath("$.data.shippingMethods").doesNotExist());
-    }
-
-    @Test
-    void getOptions_doesNotRequireCsrf() throws Exception {
-        // GET is CSRF-safe — no cookies or header needed
-        mockMvc.perform(get("/api/v1/checkout/options"))
-                .andExpect(status().isOk());
+                .andExpect(status().isUnauthorized());
     }
 
     // ── CSRF protection (2) ───────────────────────────────────────────────────

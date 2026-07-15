@@ -117,29 +117,8 @@ class ContentP1ApiTest {
                 .andExpect(jsonPath("$.pagination.totalItems").value(0));
     }
 
-    // ── P1-007: admin reference endpoints ────────────────────────────────────
-
-    @Test
-    void shouldListContentCategoriesViaReferenceEndpoint() throws Exception {
-        mockMvc.perform(get("/api/v1/admin/content/reference/categories")
-                        .header("X-Admin-Permissions", "content.read"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                // seed has cc_trai_nghiem and cc_blog
-                .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[?(@.slug == 'trai-nghiem')].name").value("Trai nghiem"))
-                .andExpect(jsonPath("$.meta.requestId").exists());
-    }
-
     // (Author CRUD + admin create-content-category tests removed: the
     //  /admin/content/authors and /admin/content/content-categories endpoints no longer
-    //  exist — stale expectations cleaned per AUD-046.)
-
-    @Test
-    void shouldRejectReferenceEndpointWithoutContentReadPermission() throws Exception {
-        mockMvc.perform(get("/api/v1/admin/content/reference/categories")
-                        .header("X-Admin-Permissions", "products.read"))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
-    }
+    //  exist — stale expectations cleaned per AUD-046. The reference/categories endpoint
+    //  and its tests were removed 2026-07-15 per AUD-056 — no caller since V275.)
 }

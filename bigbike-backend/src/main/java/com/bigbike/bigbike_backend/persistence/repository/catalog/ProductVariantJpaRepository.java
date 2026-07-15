@@ -7,8 +7,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import jakarta.persistence.LockModeType;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -43,14 +41,9 @@ public interface ProductVariantJpaRepository extends JpaRepository<ProductVarian
     @Query("SELECT DISTINCT v FROM ProductVariantEntity v LEFT JOIN FETCH v.gallery WHERE v.id IN :ids")
     List<ProductVariantEntity> findByIdsWithGallery(@Param("ids") Collection<String> ids);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT v FROM ProductVariantEntity v JOIN FETCH v.product WHERE v.id = :id")
-    Optional<ProductVariantEntity> findByIdForUpdate(@Param("id") String id);
-
     /**
-     * Batch counterpart of {@link #findByIdForUpdate(String)} — locks every variant in
-     * {@code ids} with one round-trip instead of one {@code SELECT ... FOR UPDATE} per cart
-     * line (see CheckoutService.syncPricesAndValidateStock).
+     * Locks every variant in {@code ids} with one round-trip instead of one
+     * {@code SELECT ... FOR UPDATE} per cart line (see CheckoutService.syncPricesAndValidateStock).
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT v FROM ProductVariantEntity v JOIN FETCH v.product WHERE v.id IN :ids")
@@ -58,23 +51,6 @@ public interface ProductVariantJpaRepository extends JpaRepository<ProductVarian
 
     // Caller passes empty string (not null) for q so Postgres can resolve lower(?) to text.
     // (Null params inside lower(...) make Postgres infer bytea — see AdminInventoryService.)
-    @Query("""
-        SELECT v FROM ProductVariantEntity v JOIN FETCH v.product p
-        WHERE (:q = ''
-               OR LOWER(CAST(v.sku AS string)) LIKE LOWER(CONCAT('%', :q, '%'))
-               OR LOWER(v.name) LIKE LOWER(CONCAT('%', :q, '%'))
-               OR LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%')))
-          AND (:state IS NULL OR v.stockState = :state)
-          AND p.publishStatus <> :trashStatus
-        ORDER BY p.name ASC, v.name ASC
-        """)
-    Page<ProductVariantEntity> searchStock(
-            @Param("q") String q,
-            @Param("state") ProductStockState state,
-            @Param("trashStatus") PublishStatus trashStatus,
-            Pageable pageable
-    );
-
     @Query("""
         SELECT v FROM ProductVariantEntity v JOIN FETCH v.product p
         WHERE (:q = ''
@@ -93,9 +69,6 @@ public interface ProductVariantJpaRepository extends JpaRepository<ProductVarian
 
     @Query("SELECT COUNT(v) FROM ProductVariantEntity v WHERE v.stockState = :state")
     long countByStockState(@Param("state") ProductStockState state);
-
-    @Query("SELECT COUNT(v) FROM ProductVariantEntity v WHERE v.stockState IN :states")
-    long countByStockStateIn(@Param("states") List<ProductStockState> states);
 
     boolean existsByProduct_Id(String productId);
 

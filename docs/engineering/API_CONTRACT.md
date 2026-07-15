@@ -71,8 +71,7 @@ Status: `CONFIRMED_FROM_CODE` — `PublicCacheHeaderFilter.java`, `SecurityConfi
 | Method | Path | Current purpose | Response shape | Status | Evidence |
 |---|---|---|---|---|---|
 | `GET` | `/api/v1/search-suggest` | Lightweight typeahead product/article suggestions. Accepts `q`, optional `limit`, and `lang=vi|en` (default `vi`); matching and displayed text follow `lang`, with field-level fallback to Vietnamese. Product/article items retain canonical `slug` plus optional `slugEn` so the storefront can build the correct localized URL. | `ApiDataResponse<SearchPayload>` | `CONFIRMED_FROM_CODE` | `PublicSearchController.java`, `GlobalSearchService.java` |
-| `GET` | `/api/v1/address/provinces` | List provinces (34 tỉnh/thành, post-2025-reform) | `ApiDataResponse<List<VnAddressItem>>` | `CONFIRMED_FROM_CODE` | `VnAddressController.java` |
-| `GET` | `/api/v1/address/provinces/{provinceCode}/wards` | List wards (phường/xã) directly by province code — no district tier | `ApiDataResponse<List<VnAddressItem>>` | `CONFIRMED_FROM_CODE` | `VnAddressController.java` |
+| `GET` | ~~`/api/v1/address/provinces`~~ + ~~`/api/v1/address/provinces/{provinceCode}/wards`~~ | **REMOVED (2026-07-15, AUD-056, owner decision #8 — không có mobile/client ngoài).** Web dùng dữ liệu tích hợp sẵn `VN_PROVINCES` (`vn-address-data.ts`), backend không còn API địa chỉ. | — | `REMOVED` | commit gỡ `VnAddressController.java` |
 | `GET` | `/api/v1/content-categories` | List content (news) categories with published-article counts, for the Tin tức category filter | `ApiListResponse<ContentCategoryWithCount>` | `CONFIRMED_FROM_CODE` | `ContentController.java` |
 | `POST` | `/api/v1/customer/auth/register` | Email/phone + password registration. Body accepts `email`, optional `phone`, `password`, `firstName`, `lastName`; at least email or phone must be present. | `ApiDataResponse<CustomerAuthResponse>` | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java`, `CustomerRegisterRequest.java`, `CustomerAuthService.register` |
 | `POST` | `/api/v1/customer/auth/login` | Email/phone + password login. Body accepts optional `remember` (boolean, default `false`) controlling session lifetime | `ApiDataResponse<CustomerAuthResponse>` | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java`, `CustomerLoginRequest.java` |
@@ -186,9 +185,9 @@ No query params. Response shape: `ApiListResponse<ContentCategoryWithCount>`:
 
 **Counting semantics:** an article counts toward a category when that category is its primary `category` **or** appears in its many-to-many `categories` list — the same membership rule as the `category` filter of `GET /api/v1/articles`. Every content category is returned (including `articleCount = 0`), ordered by `name`. Status: `CONFIRMED_FROM_CODE` — `ContentController.listContentCategories`, `ContentReadService.listContentCategories`.
 
-**Admin reference list** (`content.read`): `GET /api/v1/admin/content/reference/categories` → `ApiListResponse<ContentCategoryItem>` (`{ id, slug, name }`), ordered by `name`. Feeds the article editor's category picker so an article can be assigned to existing categories. Status: `ORPHAN` — *(Note: After V275, this endpoint is orphan/unused because the category picker has been removed from the admin form; all articles are automatically mapped to the default 'tin-tuc' category).* `AdminContentController.listCategories`, `AdminContentReferenceService.listCategories`, `adminApi.fetchContentCategories`.
+**Admin reference list — REMOVED (2026-07-15, AUD-056):** `GET /api/v1/admin/content/reference/categories` đã gỡ. Endpoint vốn nuôi ô chọn danh mục của form bài viết, nhưng ô chọn đã bị gỡ từ V275 (bài viết tự gán nhóm mặc định `tin-tuc`) nên endpoint thành orphan — xóa theo owner decision #8.
 
-**No admin CRUD.** There is no create/update/delete endpoint for content categories — the admin "Quản lý danh mục bài viết" screen was removed (the inventory of categories is fixed/seed-managed). Articles can only be assigned to categories that already exist; the public list and the article-editor picker both read from the same `content_categories` table.
+**No admin CRUD.** There is no create/update/delete endpoint for content categories — the admin "Quản lý danh mục bài viết" screen was removed (the inventory of categories is fixed/seed-managed). The public list reads from the `content_categories` table.
 
 ## Static CMS Pages + Guide Page — REMOVED (2026-06-24)
 
@@ -327,14 +326,10 @@ Status: `CONFIRMED_FROM_CODE`. Xem [BUSINESS_RULES.md](../business/BUSINESS_RULE
 Auto-translation Rules" (`TRANSLATION_RULE_001/002`) + §"Site Settings Rules" (`SETTINGS_RULE_001`),
 [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Product bilingual content — English columns (V136)".
 
-**Báo cáo record thiếu EN bắt buộc (V312):** `GET /api/v1/admin/translations/missing-required` — quyền
-bất kỳ trong `products.read` / `catalog.read` / `content.read` / `settings.read`. Liệt kê record đang
-**còn hoạt động** (bỏ qua Thùng rác/ẩn) thiếu tiếng Anh ở field bắt buộc: sản phẩm/danh mục/thương hiệu
-thiếu `nameEn`, bài viết thiếu `titleEn`, và các setting key vừa translatable vừa `.required()` (hiện
-chỉ `site_name`) thiếu `valueEn`. Trả `MissingRequiredEnglishResponse { products, categories, brands,
-articles: Item[] (id, slug, name), settingKeys: string[] }`. Dùng để admin chủ động biết cần bổ sung gì
-trước khi bị chặn lưu — không tự sửa dữ liệu. Status: `CONFIRMED_FROM_CODE` —
-`AdminTranslationCompletenessController`, `TranslationCompletenessService`.
+**Báo cáo record thiếu EN bắt buộc — REMOVED (2026-07-15, AUD-056):** endpoint
+`GET /api/v1/admin/translations/missing-required` (V312) đã gỡ theo owner decision #8 — chưa từng có
+UI admin gọi, không có client ngoài. Validation chặn lưu khi thiếu EN bắt buộc vẫn giữ nguyên ở
+mutation layer (xem đoạn trên); chỉ báo cáo tổng hợp bị gỡ.
 
 ## Administrative Deletion and Restore Contract (Trash Flow)
 
@@ -409,15 +404,18 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
 
 > **Removed (2026-06-23, online-only).** `POST /api/v1/admin/pos/orders` (immediate in-store sale) and `GET /api/v1/admin/pos/products/search` (POS product search) were deleted along with the POS module. See "POS Contract" below.
 
-## Checkout Options Contract
+## Checkout Options Contract — REMOVED (2026-07-15, AUD-056)
 
-`GET /api/v1/checkout/options` — no auth required; accessible to guests and authenticated customers.
+`GET /api/v1/checkout/options` đã gỡ theo owner decision #8: COD là phương thức thanh toán duy nhất
+trên storefront (`PAY_RULE_001`, owner decision 2026-07-15) nên không còn gì để "chọn" — endpoint
+không có caller (web hiển thị khối COD cố định, không fetch options). Các quy tắc thanh toán/vận
+chuyển vẫn nguyên trạng và được enforce ở `POST /checkout`:
+- `paymentMethod` omitted → normalise thành `COD`; mã khác (kể cả `BACS`) → `400 VALIDATION_ERROR`.
+  Đơn cũ mang `BACS`/`null` vẫn đọc/hiển thị bình thường. Không có cổng thanh toán tự động.
+- Shipping method đã gỡ từ 2026-06-23 (`SHIP_RULE_001`, `V264`): không chọn phương thức, không phí
+  (`shippingAmount = 0`), field `shippingMethodId` bị bỏ (client cũ gửi lên sẽ bị ignore).
 
-Response shape: `ApiDataResponse<CheckoutOptionsResponse>`:
-- `paymentMethods`: `[{ code, title }]` — exactly one entry: `COD` ("Thanh toán khi nhận hàng (COD)"). **Codes are uppercase strings; `title` is the customer-facing label.** COD is the single storefront payment method (owner decision 2026-07-15, `PAY_RULE_001` — supersedes the 2026-06-23 "optional / store null" model): the checkout UI displays COD as a fixed method with no selection step and always sends `paymentMethod = "COD"`. On `POST /checkout` an omitted `paymentMethod` is normalised to `COD`; any other explicit code (including `BACS`) is rejected with `400 VALIDATION_ERROR`. Legacy orders storing `BACS`/`null` are still read/displayed normally. There is no automatic payment gateway.
-- `shippingMethods`: **REMOVED (owner decision 2026-06-23)** — see `SHIP_RULE_001`. The shipping-method management module was dropped (migration `V264`); online orders no longer choose a shipping method and carry **no shipping fee** (`shippingAmount = 0`). The response no longer includes a `shippingMethods` array, and the `POST /checkout` request field `shippingMethodId` was **removed** (ignored if sent by an old client). The shop arranges delivery manually, but the customer is not charged a delivery fee either in-system or offline.
-
-Status: `CONFIRMED_FROM_CODE` | Evidence: `CheckoutService.getOptions`, `CheckoutOptionsResponse.java`, `CheckoutController.java`, `V264__remove_shipping_methods.sql`
+Status: `REMOVED` | Evidence: commit gỡ `CheckoutController.getOptions` + `CheckoutOptionsResponse.java`; hành vi checkout tại `CheckoutService.java`, `Phase1FCheckoutApiTest`
 
 ## Dashboard Contract
 
@@ -633,34 +631,34 @@ Evidence: `VariantRequest.java` (no `name` field), `AdminCatalogMutationService.
 
 - On create/update, backend ignores direct `stockState` input because the DTO has no setter.
 - Admin form renders Còn/Hết switches and persists them in the normal product upsert payload.
-- The Inventory availability endpoints below are an additional API path gated by `inventory.write`; they are not the only way to change availability and currently have no admin UI caller.
+- The former standalone Inventory availability endpoints were removed 2026-07-15 (AUD-056) — the product-form upsert is now the ONLY availability mutation path.
 
 Status: `CONFIRMED_BACKEND_ENFORCED`
 
 Evidence: `UpsertProductRequest.java` (`forceOutOfStock`, no `stockState` setter), `VariantRequest.java` (`isAvailable`), `ProductMutationService` + `InventoryPolicyService.recomputeProductState`, admin `VariantEditors.jsx`/product form.
 
-### Inventory — availability toggle endpoints (V261)
+### Inventory — read-only endpoints (boolean availability model, V261)
 
-Inventory availability is a **boolean** set by the admin. The former quantity-adjust endpoints `POST /api/v1/admin/inventory/variants/{id}/adjust` and `POST /api/v1/admin/inventory/products/{id}/adjust` (which took `quantityDelta`) are **REPLACED**:
+Inventory availability is a **boolean** set by the admin **inside the product form** (see the
+`stockState` derivation section above — `products.update`). The backend keeps only two read
+endpoints, both gated by `inventory.read`:
 
-| Endpoint | Body | Permission | Effect |
-|---|---|---|---|
-| `PATCH /api/v1/admin/inventory/variants/{variantId}/availability` | `{ available: boolean }` | `inventory.write` | Sets `product_variants.is_available`; the variant's `stockState` mirrors it. The product-level `stockState` re-aggregates from its variants. |
-| `PATCH /api/v1/admin/inventory/products/{productId}/availability` | `{ available: boolean }` | `inventory.write` | For a no-variant product, sets `products.stock_state` (`IN_STOCK` / `OUT_OF_STOCK`) directly. |
+| Endpoint | Current behavior |
+|---|---|
+| `GET /api/v1/admin/inventory` | Flat stock list (variants + no-variant products), filter `q`/`stockState`, paginated. Carries `available: boolean` (no quantities). |
+| `GET /api/v1/admin/inventory/summary` | `{ totalItems, inStockCount, outOfStockCount }` — powers the Dashboard "Hết hàng" alert. |
 
-Hai endpoint này là đường API phụ hiện không có caller trong admin. Luồng vận hành chính là lưu các switch Còn/Hết ngay trong form sản phẩm qua `POST/PATCH /api/v1/admin/products` với quyền `products.update`; kết quả cuối cùng cùng tuân theo `InventoryPolicyService`.
-
-Response shape changes:
-
-- **Stock item / variant response** carries `available: boolean` instead of `quantityOnHand`.
-- **Product group** carries `available` instead of `totalQuantity`.
-- **Inventory summary** is `{ totalItems, inStockCount, outOfStockCount }` (the previous quantity-based counters are gone).
+**Removed (2026-07-15, AUD-056, owner decision #8):** `GET /grouped`, `GET /movements`,
+`GET /variants/{id}/movements`, `GET /products/{id}/movements`, `GET /export.csv`,
+`PATCH /variants/{id}/availability`, `PATCH /products/{id}/availability` — không có caller từ khi
+màn "Kho hàng" độc lập bị gỡ (2026-06-23), không có mobile/client ngoài. `inventory.write` không còn
+endpoint nào sử dụng (xem PERMISSION_MATRIX).
 
 There is **no auto-decrement on sale and no restore on cancel** — selling does not change availability, so the admin must manually toggle an item to "Hết hàng" when it sells out (overselling is not auto-prevented).
 
 Status: `CONFIRMED_FROM_CODE`
 
-Evidence: `AdminInventoryController.java` (availability PATCH endpoints), `AdminInventoryService.java`, `V261__inventory_availability_toggle.sql`.
+Evidence: `AdminInventoryController.java`, `AdminInventoryService.java`, `V261__inventory_availability_toggle.sql`.
 
 ### Product preview — admin dry-run render (`POST /api/v1/admin/products/preview`)
 
