@@ -109,7 +109,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
     }
 
     @Override
-    public List<Article> searchPublishedArticles(java.util.List<String> tokens, int limit) {
+    public List<Article> searchPublishedArticles(java.util.List<String> tokens, String locale, int limit) {
         return articles.stream()
                 .filter(a -> a.publishStatus() == PublishStatus.PUBLISHED)
                 .filter(a -> tokens == null || tokens.isEmpty() || tokens.stream().allMatch(t -> {

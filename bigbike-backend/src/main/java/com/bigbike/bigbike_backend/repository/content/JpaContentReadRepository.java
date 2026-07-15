@@ -70,15 +70,26 @@ public class JpaContentReadRepository implements ContentReadRepository {
     }
 
     @Override
-    public List<Article> searchPublishedArticles(java.util.List<String> tokens, int limit) {
+    public List<Article> searchPublishedArticles(java.util.List<String> tokens, String locale, int limit) {
+        boolean english = "en".equalsIgnoreCase(locale);
         org.springframework.data.jpa.domain.Specification<ArticleEntity> spec = (root, query, cb) -> {
             java.util.List<jakarta.persistence.criteria.Predicate> preds = new java.util.ArrayList<>();
             preds.add(cb.equal(root.get("publishStatus"), PublishStatus.PUBLISHED));
+            jakarta.persistence.criteria.Expression<String> title = english
+                    ? cb.<String>selectCase()
+                            .when(cb.or(cb.isNull(root.get("titleEn")), cb.equal(cb.trim(root.get("titleEn")), "")), root.get("title"))
+                            .otherwise(root.get("titleEn"))
+                    : root.get("title");
+            jakarta.persistence.criteria.Expression<String> excerpt = english
+                    ? cb.<String>selectCase()
+                            .when(cb.or(cb.isNull(root.get("excerptEn")), cb.equal(cb.trim(root.get("excerptEn")), "")), root.get("excerpt"))
+                            .otherwise(root.get("excerptEn"))
+                    : root.get("excerpt");
             for (String token : tokens) {
                 String like = "%" + token.toLowerCase(java.util.Locale.ROOT) + "%";
                 preds.add(cb.or(
-                        cb.like(cb.lower(root.get("title")), like),
-                        cb.like(cb.lower(cb.coalesce(root.get("excerpt"), "")), like)));
+                        cb.like(cb.lower(title), like),
+                        cb.like(cb.lower(cb.coalesce(excerpt, "")), like)));
             }
             return cb.and(preds.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };
@@ -91,7 +102,7 @@ public class JpaContentReadRepository implements ContentReadRepository {
         if (ids.isEmpty()) return List.of();
         return articleJpaRepository.findWithAssociationsByIdIn(ids)
                 .stream()
-                .map(e -> toDomain(e, "vi", false))
+                .map(e -> toDomain(e, locale, false))
                 .toList();
     }
 

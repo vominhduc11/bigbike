@@ -9,6 +9,7 @@ import com.bigbike.bigbike_backend.service.search.GlobalSearchService.SearchResu
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.Arrays;
 import java.util.List;
@@ -64,6 +65,8 @@ public class PublicSearchController {
     public ApiDataResponse<SearchPayload> searchSuggest(
             @RequestParam(value = "q", required = false) @Size(max = 200) String q,
             @RequestParam(value = "limit", required = false) @Min(1) @Max(MAX_LIMIT) Integer limit,
+            @RequestParam(defaultValue = "vi")
+            @Pattern(regexp = "^(vi|en)$", message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
         String trimmed = q == null ? "" : q.strip();
@@ -74,7 +77,7 @@ public class PublicSearchController {
             );
         }
         int resolvedLimit = limit == null ? 8 : limit;
-        SearchResults results = searchService.search(trimmed, null, resolvedLimit);
+        SearchResults results = searchService.search(trimmed, null, resolvedLimit, lang);
         return apiResponseFactory.data(
                 new SearchPayload(trimmed, results.products(), results.articles()),
                 request

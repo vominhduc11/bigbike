@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { formatVnd, resolveMediaUrl } from "@/lib/utils/format";
-import { toArticlePath, toProductPath } from "@/lib/utils/routes";
 import type { ArticleSuggestion, SearchSuggestion } from "./types";
 import { SEARCH_PATH, resultItem, resultsLabel, sResults } from "./styles";
 
@@ -38,9 +38,11 @@ export function SuggestionResults({
               <p className={resultsLabel}>{t("sectionProducts")}</p>
             )}
             {suggestions.slice(0, 5).map((product) => (
-              <Link
+              <LocalizedLink
                 key={product.id}
-                href={toProductPath(product.slug)}
+                kind="product"
+                viSlug={product.slug}
+                enSlug={product.slugEn}
                 className={resultItem}
                 role="option"
                 aria-selected={false}
@@ -64,15 +66,17 @@ export function SuggestionResults({
                     {formatVnd(product.price?.salePrice ?? product.price?.retailPrice)}
                   </span>
                 </div>
-              </Link>
+              </LocalizedLink>
             ))}
             {articleSuggestions.length > 0 && (
               <>
                 <p className={resultsLabel}>{t("sectionArticles")}</p>
                 {articleSuggestions.slice(0, 3).map((article) => (
-                  <Link
+                  <LocalizedLink
                     key={article.id}
-                    href={toArticlePath(article.slug)}
+                    kind="article"
+                    viSlug={article.slug}
+                    enSlug={article.slugEn}
                     className={resultItem}
                     role="option"
                     aria-selected={false}
@@ -86,7 +90,7 @@ export function SuggestionResults({
                         </span>
                       )}
                     </div>
-                  </Link>
+                  </LocalizedLink>
                 ))}
               </>
             )}

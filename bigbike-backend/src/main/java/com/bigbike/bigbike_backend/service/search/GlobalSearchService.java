@@ -28,6 +28,10 @@ public class GlobalSearchService {
     public record SearchResults(List<Product> products, List<Article> articles) {}
 
     public SearchResults search(String q, Set<String> types, int limit) {
+        return search(q, types, limit, "vi");
+    }
+
+    public SearchResults search(String q, Set<String> types, int limit, String locale) {
         if (q == null || q.isBlank()) {
             return new SearchResults(List.of(), List.of());
         }
@@ -45,11 +49,11 @@ public class GlobalSearchService {
         boolean wantArticles = types == null || types.isEmpty() || types.contains("article");
 
         List<Product> products = wantProducts
-                ? catalogReadRepository.searchPublishedProducts(tokens, "vi", limit)
+                ? catalogReadRepository.searchPublishedProducts(tokens, locale, limit)
                 : List.of();
 
         List<Article> articles = wantArticles
-                ? contentReadRepository.searchPublishedArticles(tokens, limit)
+                ? contentReadRepository.searchPublishedArticles(tokens, locale, limit)
                 : List.of();
 
         return new SearchResults(products, articles);

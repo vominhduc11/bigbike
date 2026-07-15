@@ -44,6 +44,13 @@ describe("GET /api/search-suggest", () => {
     expect(calledUrl).not.toContain("page=");
   });
 
+  it("forwards the selected language to the backend", async () => {
+    const req = new Request("http://localhost/api/search-suggest?q=helmet&lang=en");
+    await GET(req);
+    const calledUrl = new URL((fetch as ReturnType<typeof vi.fn>).mock.calls[0][0]);
+    expect(calledUrl.searchParams.get("lang")).toBe("en");
+  });
+
   it("returns products array from data.products", async () => {
     const req = new Request("http://localhost/api/search-suggest?q=xe");
     const res = await GET(req);

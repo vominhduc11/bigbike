@@ -221,21 +221,32 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     @Override
     public List<Product> searchPublishedProducts(java.util.List<String> tokens, String locale, int limit) {
+        boolean english = LOCALE_EN.equalsIgnoreCase(locale);
         Specification<ProductEntity> spec = (root, query, cb) -> {
             java.util.List<Predicate> preds = new ArrayList<>();
             preds.add(cb.equal(root.get("publishStatus"), PublishStatus.PUBLISHED));
+            Expression<String> name = english
+                    ? cb.<String>selectCase()
+                            .when(cb.or(cb.isNull(root.get("nameEn")), cb.equal(cb.trim(root.get("nameEn")), "")), root.get("name"))
+                            .otherwise(root.get("nameEn"))
+                    : root.get("name");
+            Expression<String> shortDescription = english
+                    ? cb.<String>selectCase()
+                            .when(cb.or(cb.isNull(root.get("shortDescriptionEn")), cb.equal(cb.trim(root.get("shortDescriptionEn")), "")), root.get("shortDescription"))
+                            .otherwise(root.get("shortDescriptionEn"))
+                    : root.get("shortDescription");
             for (String token : tokens) {
                 String like = "%" + token.toLowerCase(Locale.ROOT) + "%";
                 preds.add(cb.or(
-                        cb.like(cb.lower(root.get("name")), like),
-                        cb.like(cb.lower(cb.coalesce(root.get("shortDescription"), "")), like)));
+                        cb.like(cb.lower(name), like),
+                        cb.like(cb.lower(cb.coalesce(shortDescription, "")), like)));
             }
             // Sort by name length ASC (shorter = more exact match), then alphabetically.
             // Guard against count query (Long) which does not support orderBy.
             if (!Long.class.equals(query.getResultType())) {
                 query.orderBy(
-                        cb.asc(cb.length(root.<String>get("name"))),
-                        cb.asc(root.get("name")));
+                        cb.asc(cb.length(name)),
+                        cb.asc(name));
             }
             return cb.and(preds.toArray(new Predicate[0]));
         };

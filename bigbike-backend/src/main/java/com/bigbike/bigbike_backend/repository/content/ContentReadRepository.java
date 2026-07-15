@@ -25,7 +25,7 @@ public interface ContentReadRepository {
      * DB-level token-AND search against title + excerpt.
      * Each token must match at least one field — "ba lo" → ["ba","lo"] finds "balo".
      */
-    List<Article> searchPublishedArticles(java.util.List<String> tokens, int limit);
+    List<Article> searchPublishedArticles(java.util.List<String> tokens, String locale, int limit);
 
     // --- DB-paginated listing (replaces in-memory full-scan in ContentReadService) ---
 
