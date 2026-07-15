@@ -116,13 +116,13 @@ export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [] }) {
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span>{t('roles.createRoleIdAutoLabel')}: </span>
             <code className="font-mono text-foreground">{id}</code>
-            <button
-              type="button"
+            <Button
+              variant="unstyled"
               onClick={() => setShowId(true)}
               className="text-xs text-muted-foreground bg-transparent border-none cursor-pointer underline p-0"
             >
               {t('roles.createRoleIdCustomize')}
-            </button>
+            </Button>
           </div>
         )}
 

@@ -154,8 +154,8 @@ export function GlobalSearch({ navigate, visiblePaths }) {
   return (
     <>
       {/* Desktop: ô tìm kiếm đầy đủ (ẩn ở <md) */}
-      <button
-        type="button"
+      <Button
+        variant="unstyled"
         onClick={() => setOpen(true)}
         className="hidden h-9 w-full max-w-[320px] items-center gap-2 rounded-sm border border-border bg-surface-muted px-3 text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground md:flex"
         aria-label={t('search.open')}
@@ -163,7 +163,7 @@ export function GlobalSearch({ navigate, visiblePaths }) {
         <Search size={15} className="shrink-0" />
         <span className="flex-1 truncate text-left text-sm">{t('search.placeholder')}</span>
         <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 text-xs font-semibold">⌘K</kbd>
-      </button>
+      </Button>
 
       {/* Mobile: nút icon mở panel tìm kiếm (ô đầy đủ ẩn ở <md) */}
       <Button
@@ -246,10 +246,10 @@ export function GlobalSearch({ navigate, visiblePaths }) {
                       const flatIndex = flat.indexOf(row)
                       const isActive = flatIndex === activeIndex
                       return (
-                        <button
+                        <Button
+                          variant="unstyled"
                           key={row.key}
                           id={`bb-search-opt-${flatIndex}`}
-                          type="button"
                           role="option"
                           aria-selected={isActive}
                           tabIndex={-1}
@@ -275,7 +275,7 @@ export function GlobalSearch({ navigate, visiblePaths }) {
                               {row.trailing}
                             </span>
                           )}
-                        </button>
+                        </Button>
                       )
                     })}
                   </div>

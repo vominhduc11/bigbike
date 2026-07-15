@@ -529,10 +529,10 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
     const activating = u.status !== 'ACTIVE'
     const label = activating ? t('adminUsers.actionActivate') : t('adminUsers.actionLock')
     return (
-      <button type="button" className="bb-icon-btn" title={label} aria-label={label}
+      <Button variant="unstyled" type="button" className="bb-icon-btn" title={label} aria-label={label}
         disabled={togglingId === u.id} onClick={() => handleToggleStatus(u)}>
         {activating ? <UserCheck size={14} /> : <Lock size={14} />}
-      </button>
+      </Button>
     )
   }
 
@@ -593,14 +593,14 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
           render: (u) => (
             <div className="inline-flex items-center justify-end gap-1">
               {u.status === 'INVITED' && (
-                <button type="button" className="bb-icon-btn" title={t('adminUsers.resendInvite')} aria-label={t('adminUsers.resendInvite')} onClick={() => handleResendInvite(u)}>
+                <Button variant="unstyled" type="button" className="bb-icon-btn" title={t('adminUsers.resendInvite')} aria-label={t('adminUsers.resendInvite')} onClick={() => handleResendInvite(u)}>
                   <Mail size={14} />
-                </button>
+                </Button>
               )}
               {statusToggleButton(u)}
-              <button type="button" className="bb-icon-btn" title={t('common.edit')} aria-label={t('common.edit')} onClick={() => openEdit(u)}>
+              <Button variant="unstyled" type="button" className="bb-icon-btn" title={t('common.edit')} aria-label={t('common.edit')} onClick={() => openEdit(u)}>
                 <Pencil size={14} />
-              </button>
+              </Button>
             </div>
           ),
         }]
@@ -630,14 +630,14 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
       actions: canUpdate ? (
         <>
           {u.status === 'INVITED' && (
-            <button type="button" className="bb-icon-btn" title={t('adminUsers.resendInvite')} aria-label={t('adminUsers.resendInvite')} onClick={() => handleResendInvite(u)}>
+            <Button variant="unstyled" type="button" className="bb-icon-btn" title={t('adminUsers.resendInvite')} aria-label={t('adminUsers.resendInvite')} onClick={() => handleResendInvite(u)}>
               <Mail size={14} />
-            </button>
+            </Button>
           )}
           {statusToggleButton(u)}
-          <button type="button" className="bb-icon-btn" title={t('common.edit')} aria-label={t('common.edit')} onClick={() => openEdit(u)}>
+          <Button variant="unstyled" type="button" className="bb-icon-btn" title={t('common.edit')} aria-label={t('common.edit')} onClick={() => openEdit(u)}>
             <Pencil size={14} />
-          </button>
+          </Button>
         </>
       ) : undefined,
     }

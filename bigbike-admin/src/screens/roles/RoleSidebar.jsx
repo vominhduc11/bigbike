@@ -15,7 +15,8 @@ export function RoleSidebar({ roles, selectedId, onSelect, editMode, isDirty, ca
         const desc = t(descKey, { defaultValue: role.description || '' })
         const showDesc = desc && desc !== displayName
         return (
-          <button
+          <Button
+            variant="unstyled"
             key={role.id}
             className={`roles-role-item${isActive ? ' active' : ''}`}
             onClick={() => onSelect(role.id)}
@@ -34,7 +35,7 @@ export function RoleSidebar({ roles, selectedId, onSelect, editMode, isDirty, ca
                 {desc}
               </div>
             )}
-          </button>
+          </Button>
         )
       })}
 

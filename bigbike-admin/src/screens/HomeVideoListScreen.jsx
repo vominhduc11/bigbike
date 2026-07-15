@@ -135,20 +135,20 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
             aria-label={`Chọn video ${video.title}`}
            />
           {!selectionMode && (
-            <button
-              type="button"
+            <Button
+              variant="unstyled"
               {...sortable.handleProps}
               className="bb-related-grip"
               aria-label={t('homeVideos.dragToReorder')}
             >
               <GripVertical size={16} />
-            </button>
+            </Button>
           )}
         </div>
       )}
 
-      <button
-        type="button"
+      <Button
+        variant="unstyled"
         onClick={onPreview}
         className="shrink-0 w-24 h-[58px] rounded-sm overflow-hidden bg-black border-none p-0 cursor-pointer relative"
         aria-label={`Xem trước: ${video.title}`}
@@ -164,7 +164,7 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
             <Play size={14} fill="white" className="text-white ml-0.5" aria-hidden="true" />
           </span>
         </div>
-      </button>
+      </Button>
 
       <div className="bb-slider-copy">
         <div className="bb-slider-title-row">

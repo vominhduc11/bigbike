@@ -20,6 +20,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { GripVertical } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 
 // Shared drag-and-drop reorder primitives for bigbike-admin.
 //
@@ -83,8 +84,8 @@ export function SortableRow({ id, disabled = false, children }) {
  */
 export function DragHandle({ handleProps, label, disabled = false, className }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="unstyled"
       {...(disabled ? {} : handleProps)}
       disabled={disabled}
       className={cn(
@@ -98,7 +99,7 @@ export function DragHandle({ handleProps, label, disabled = false, className }) 
       aria-label={label}
     >
       <GripVertical size={16} aria-hidden="true" />
-    </button>
+    </Button>
   )
 }
 

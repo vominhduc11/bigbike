@@ -917,19 +917,19 @@ export function BlockCard({ block, disabled, structDisabled, contentLang, sortab
       className="flex gap-2 p-3 border border-border rounded-sm bg-background hover:bg-muted/30 transition-colors"
     >
       {!dragDisabled && sortable && (
-        <button
-          type="button"
+        <Button
+          variant="unstyled"
           {...sortable.handleProps}
           className="shrink-0 self-start pt-1 cursor-grab touch-none text-muted-foreground hover:text-foreground"
           title={t('products.detail.blocks.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
           aria-label={t('products.detail.blocks.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
         >
           <GripVertical size={16} />
-        </button>
+        </Button>
       )}
       {onToggleCollapse && (
-        <button
-          type="button"
+        <Button
+          variant="unstyled"
           onClick={onToggleCollapse}
           className="shrink-0 self-start pt-1 text-muted-foreground hover:text-foreground"
           aria-expanded={!collapsed}
@@ -937,18 +937,18 @@ export function BlockCard({ block, disabled, structDisabled, contentLang, sortab
           title={collapseLabel}
         >
           <ChevronDown size={16} className={cn('transition-transform', collapsed && '-rotate-90')} aria-hidden="true" />
-        </button>
+        </Button>
       )}
       <BlockTypeLabel type={block.type} />
       <div className="flex-1 min-w-0">
         {collapsed ? (
-          <button
-            type="button"
+          <Button
+            variant="unstyled"
             onClick={onToggleCollapse}
             className="block w-full truncate py-1 text-left text-sm text-muted-foreground hover:text-foreground"
           >
             {collapsedPreview(block) || t('products.detail.blocks.collapsedHint', { defaultValue: '(đã thu gọn — bấm để mở)' })}
-          </button>
+          </Button>
         ) : (
           <>
             {block.type === 'heading'   && <HeadingBlockEditor   block={block} onChange={onUpdate} disabled={disabled} contentLang={contentLang} />}

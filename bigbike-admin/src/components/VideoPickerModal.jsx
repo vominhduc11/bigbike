@@ -248,7 +248,7 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
         {uploadError && (
           <div className="mpicker-upload-error">
             {uploadError}
-            <button type="button" onClick={() => setUploadError('')} aria-label={t('homeVideos.picker.dismissError')}><IconClose /></button>
+            <Button variant="unstyled" onClick={() => setUploadError('')} aria-label={t('homeVideos.picker.dismissError')}><IconClose /></Button>
           </div>
         )}
 
@@ -268,9 +268,9 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
                 const isSelected = url === selectedUrl
                 const filename = media.filename?.split('/').pop() ?? t('homeVideos.picker.defaultFileName')
                 return (
-                  <button
+                  <Button
+                    variant="unstyled"
                     key={media.id}
-                    type="button"
                     className={`mpicker-item${isSelected ? ' is-selected' : ''}`}
                     onClick={() => setSelectedUrl(isSelected ? null : url)}
                     aria-pressed={isSelected}
@@ -294,7 +294,7 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
                         <span className="mpicker-item-size">{formatBytes(media.fileSize)}</span>
                       ) : null}
                     </div>
-                  </button>
+                  </Button>
                 )
               })}
             </div>

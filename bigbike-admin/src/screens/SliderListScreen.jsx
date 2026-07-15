@@ -56,15 +56,15 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sorta
     >
       <div className="bb-card-body bb-slider-card-body">
         {canUpdate && sortable && (
-          <button
-            type="button"
+          <Button
+            variant="unstyled"
             {...sortable.handleProps}
             className="bb-icon-btn bb-slider-drag"
             title={t('sliders.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
             aria-label={t('sliders.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
           >
             <GripVertical size={16} />
-          </button>
+          </Button>
         )}
 
         <div className="bb-slider-media-stack">

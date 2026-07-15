@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Modal } from '../../components/layout'
 import { formatDateTimeWithSeconds } from '../../lib/formatters'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { DANGEROUS_ACTIONS, DANGEROUS_VALUES, toBadgeVariant, tryParse } from './constants'
 import { DetailRow } from './cells'
@@ -139,15 +140,15 @@ export function AuditDetailDrawer({ log, onClose }) {
           {/* #2: Raw JSON panel — only shown if data exists; hidden for non-dev but togglable */}
           {hasRaw && (
             <div className="audit-drawer-section">
-              <button
-                type="button"
+              <Button
+                variant="unstyled"
                 className="audit-tech-toggle"
                 onClick={() => setShowRaw((p) => !p)}
                 aria-expanded={showRaw}
               >
                 {t('auditLog.drawerTechData')}
                 <span aria-hidden="true" className="ml-1">{showRaw ? '▲' : '▼'}</span>
-              </button>
+              </Button>
               {showRaw && (
                 <div className="audit-tech-body">
                   {log.beforeData && (

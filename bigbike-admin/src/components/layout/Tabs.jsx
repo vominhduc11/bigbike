@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { Button } from '@/components/ui/button'
 
 /**
  * Tabs — segmented tab bar.
@@ -53,10 +54,10 @@ export function Tabs({ items, value, onChange, ariaLabel }) {
       {items.map((item, index) => {
         const active = item.key === value
         return (
-          <button
+          <Button
+            variant="unstyled"
             key={item.key}
             ref={(el) => { tabRefs.current[index] = el }}
-            type="button"
             role="tab"
             aria-selected={active}
             tabIndex={active ? 0 : -1}
@@ -66,7 +67,7 @@ export function Tabs({ items, value, onChange, ariaLabel }) {
           >
             <span>{item.label}</span>
             {item.count != null ? <span className="seg-tabs-count">{item.count}</span> : null}
-          </button>
+          </Button>
         )
       })}
     </div>

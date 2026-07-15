@@ -226,7 +226,7 @@ export function DashboardScreen({ navigate }) {
             aria-label={t('dashboard.periodControlLabel')}
           >
             {periodTabs.map((tab) => (
-              <button
+              <Button variant="unstyled"
                 key={tab.key}
                 type="button"
                 aria-pressed={period === tab.key}
@@ -234,7 +234,7 @@ export function DashboardScreen({ navigate }) {
                 onClick={() => setPeriod(tab.key)}
               >
                 {tab.label}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -515,14 +515,14 @@ export function DashboardScreen({ navigate }) {
                           <tr key={order.id}>
                             <td className="mono">
                               <div className="flex flex-col">
-                                <button
+                                <Button variant="unstyled"
                                   type="button"
                                   className="bg-transparent border-0 p-0 font-mono text-xs cursor-pointer hover:underline focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-2 text-left"
                                   style={{ color: 'var(--bb-primary)' }}
                                   onClick={() => navigate(`/admin/orders/${order.id}`)}
                                 >
                                   {order.orderNumber}
-                                </button>
+                                </Button>
                                 <span className="text-xs text-muted leading-none mt-0.5">
                                   {formatRelativeTime(order.placedAt, t)}
                                 </span>
@@ -605,14 +605,14 @@ export function DashboardScreen({ navigate }) {
                               </span>
                             </td>
                             <td>
-                              <button
+                              <Button variant="unstyled"
                                 type="button"
                                 className="bb-product-cell bg-transparent border-0 p-0 text-left cursor-pointer hover:underline focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-2"
                                 onClick={() => navigate(`/admin/products/${product.productId}`)}
                               >
                                 <span className="bb-product-thumb"><Package size={18} /></span>
                                 <span title={product.name}>{product.name || t('common.unknown')}</span>
-                              </button>
+                              </Button>
                             </td>
                             <td className="num">{product.units}</td>
                             <td className="num" style={{ fontWeight: 700, color: 'var(--bb-primary)' }}>

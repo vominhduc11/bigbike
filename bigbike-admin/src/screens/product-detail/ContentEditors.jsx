@@ -68,7 +68,7 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
             <Play size={28} fill="currentColor" aria-hidden="true" />
           </span>
           {!disabled && sortable && (
-            <button
+            <Button variant="unstyled"
               type="button"
               {...sortable.handleProps}
               className="absolute top-1 left-1 z-10 inline-flex items-center justify-center w-6 h-6 bg-black/55 text-white cursor-grab touch-none rounded-sm"
@@ -77,17 +77,17 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
               aria-label={dragLabel}
             >
               <GripVertical size={14} />
-            </button>
+            </Button>
           )}
           {!disabled && (
-            <button
+            <Button variant="unstyled"
               type="button"
               className="gallery-card-remove"
               onClick={(e) => { e.stopPropagation(); onRemove() }}
               aria-label={t('products.detail.gallery.removeImage')}
             >
               <X size={14} aria-hidden="true" />
-            </button>
+            </Button>
           )}
         </div>
         <div className="gallery-card-body flex flex-col gap-2">
@@ -170,7 +170,7 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
           ? <img src={displayUrl} alt="" loading="eager" />
           : <span className="gallery-thumb-status"><ImageIcon size={22} aria-hidden="true" /></span>}
         {!disabled && sortable && (
-          <button
+          <Button variant="unstyled"
             type="button"
             {...sortable.handleProps}
             className="absolute top-1 left-1 z-10 inline-flex items-center justify-center w-6 h-6 bg-black/55 text-white cursor-grab touch-none rounded-sm"
@@ -179,17 +179,17 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
             aria-label={dragLabel}
           >
             <GripVertical size={14} />
-          </button>
+          </Button>
         )}
         {!disabled && (
-          <button
+          <Button variant="unstyled"
             type="button"
             className="gallery-card-remove"
             onClick={(e) => { e.stopPropagation(); onRemove() }}
             aria-label={t('products.detail.gallery.removeImage')}
           >
             <X size={14} aria-hidden="true" />
-          </button>
+          </Button>
         )}
 
       </div>
@@ -264,10 +264,10 @@ export function GalleryEditor({ items, onChange, disabled, validationErrors = {}
           />
         )}
         footer={!disabled && (
-          <button type="button" className="gallery-card-add" onClick={addItem}>
+          <Button variant="unstyled" type="button" className="gallery-card-add" onClick={addItem}>
             <span className="gallery-add-icon"><Plus size={20} aria-hidden="true" /></span>
             <span>{t('products.detail.gallery.addImage')}</span>
-          </button>
+          </Button>
         )}
       />
       {!disabled && allowVideo && (

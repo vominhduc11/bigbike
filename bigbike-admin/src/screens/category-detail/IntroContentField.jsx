@@ -131,15 +131,15 @@ export function IntroContentField({ value, onChange, disabled, lang = 'vi' }) {
                   className="inline-flex items-center gap-1 rounded-[var(--admin-radius-xs)] border border-input px-2 py-0.5 text-xs"
                 >
                   {b}
-                  <button
-                    type="button"
+                  <Button
+                    variant="unstyled"
                     onClick={() => removeBrand(i)}
                     disabled={disabled}
                     className="text-muted-foreground hover:text-destructive"
                     aria-label={t('categories.detail.introBrandRemove')}
                   >
                     <XIcon size={12} aria-hidden="true" />
-                  </button>
+                  </Button>
                 </span>
               ))}
             </div>

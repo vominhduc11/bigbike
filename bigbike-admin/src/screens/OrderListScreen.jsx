@@ -344,16 +344,16 @@ export function OrderListScreen({ navigate, canUpdate }) {
       {/* Status tabs */}
       <div className="bb-seg" style={{ marginBottom: 12 }} role="tablist" aria-label={t('orders.filterStatus')}>
         {statusTabs.map((tab) => (
-          <button
+          <Button
+            variant="unstyled"
             key={tab.key}
-            type="button"
             role="tab"
             aria-selected={query.orderStatus === tab.key}
             className={query.orderStatus === tab.key ? 'active' : ''}
             onClick={() => updateQuery({ orderStatus: tab.key }, { resetPage: true })}
           >
             {tab.label}
-          </button>
+          </Button>
         ))}
       </div>
 

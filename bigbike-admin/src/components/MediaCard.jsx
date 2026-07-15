@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { formatText } from '../lib/formatters'
 import { formatBytes, toClipboardUrl } from './media-picker/pickerUtils'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/components/ui/button'
 
 const isImage = (m) => m && m.startsWith('image/')
 const isVideo = (m) => m && m.startsWith('video/')
@@ -69,7 +70,7 @@ export function MediaCard({
         {/* Vùng điều hướng: nút thật phủ kín thumb để mở xem lớn (Enter/Space
             chuẩn). Đặt TRƯỚC overlay để overlay (cùng position, đứng sau DOM) xếp
             trên và nhận click cho các nút thao tác. */}
-        <button type="button" onClick={onPreview}
+        <Button variant="unstyled" onClick={onPreview}
           aria-label={t('media.previewNamed', { name: displayName, defaultValue: 'Xem lớn {{name}}' })}
           className="absolute inset-0 cursor-zoom-in border-0 bg-transparent p-0" />
 
@@ -77,39 +78,39 @@ export function MediaCard({
           <div className="medialib-action-overlay">
             <div className="medialib-overlay-actions">
               {media.publicUrl && (
-                <button type="button" onClick={handleCopyUrl}
+                <Button variant="unstyled" onClick={handleCopyUrl}
                   className="medialib-icon-btn"
                   title={t('media.copyUrl')} aria-label={t('media.copyUrl')}>
                   <Copy size={14} />
-                </button>
+                </Button>
               )}
               {onEdit && (
-                <button type="button" onClick={(e) => { e.stopPropagation(); onEdit() }}
+                <Button variant="unstyled" onClick={(e) => { e.stopPropagation(); onEdit() }}
                   className="medialib-icon-btn"
                   title={t('common.edit')} aria-label={t('common.edit')}>
                   <Pencil size={14} />
-                </button>
+                </Button>
               )}
               {onRestore && (
-                <button type="button" onClick={(e) => { e.stopPropagation(); onRestore() }}
+                <Button variant="unstyled" onClick={(e) => { e.stopPropagation(); onRestore() }}
                   className="medialib-icon-btn" disabled={deleting}
                   title={t('media.restore')} aria-label={t('media.restore')}>
                   <RotateCcw size={14} />
-                </button>
+                </Button>
               )}
               {onDelete && (
-                <button type="button" onClick={(e) => { e.stopPropagation(); onDelete() }}
+                <Button variant="unstyled" onClick={(e) => { e.stopPropagation(); onDelete() }}
                   className="medialib-icon-btn medialib-btn-danger" disabled={deleting}
                   title={t('common.delete')} aria-label={t('common.delete')}>
                   <Trash2 size={14} />
-                </button>
+                </Button>
               )}
               {onHardDelete && (
-                <button type="button" onClick={(e) => { e.stopPropagation(); onHardDelete() }}
+                <Button variant="unstyled" onClick={(e) => { e.stopPropagation(); onHardDelete() }}
                   className="medialib-icon-btn medialib-btn-danger-solid" disabled={deleting}
                   title={t('media.hardDelete')} aria-label={t('media.hardDelete')}>
                   <AlertTriangle size={14} />
-                </button>
+                </Button>
               )}
             </div>
           </div>

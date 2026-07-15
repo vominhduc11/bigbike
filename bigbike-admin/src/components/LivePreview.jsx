@@ -129,9 +129,9 @@ export function LivePreview({
           {/* Ngôn ngữ nội dung — gọi lại dry-run khi đổi */}
           <div className="flex overflow-hidden rounded-md border border-border">
             {['vi', 'en'].map((code) => (
-              <button
+              <Button
+                variant="unstyled"
                 key={code}
-                type="button"
                 onClick={() => onLangChange(code)}
                 className={cn(
                   'px-2 py-1 text-xs font-medium uppercase transition-colors',
@@ -139,14 +139,14 @@ export function LivePreview({
                 )}
               >
                 {code}
-              </button>
+              </Button>
             ))}
           </div>
 
           {/* Thiết bị xem trước */}
           <div className="flex overflow-hidden rounded-md border border-border">
-            <button
-              type="button"
+            <Button
+              variant="unstyled"
               onClick={() => onDeviceChange('desktop')}
               aria-label={t(`${i18nPrefix}.desktop`, { defaultValue: 'Máy tính' })}
               className={cn(
@@ -155,9 +155,9 @@ export function LivePreview({
               )}
             >
               <Monitor size={14} />
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="unstyled"
               onClick={() => onDeviceChange('mobile')}
               aria-label={t(`${i18nPrefix}.mobile`, { defaultValue: 'Điện thoại' })}
               className={cn(
@@ -166,7 +166,7 @@ export function LivePreview({
               )}
             >
               <Smartphone size={14} />
-            </button>
+            </Button>
           </div>
 
           <Button variant="ghost" size="icon" type="button" onClick={onClose} aria-label={t('common.close', { defaultValue: 'Đóng' })}>

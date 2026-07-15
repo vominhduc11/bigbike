@@ -477,12 +477,12 @@ export function ProductListScreen({ navigate, canUpdate }) {
         const detailPath = `/admin/products/${product.id}`
         return (
           <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-            <button type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => navigate(detailPath)}>
+            <Button variant="unstyled" type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => navigate(detailPath)}>
               <Pencil size={14} />
-            </button>
+            </Button>
             {/* P1-1: bật/tắt xuất bản ngay trên dòng (1 chạm) — đồng bộ với Danh mục/Thương hiệu */}
             {canUpdate && !isTrashed && (
-              <button
+              <Button variant="unstyled"
                 type="button"
                 className="bb-icon-btn"
                 disabled={togglingPublishId === product.id}
@@ -490,14 +490,14 @@ export function ProductListScreen({ navigate, canUpdate }) {
                 onClick={() => handleTogglePublish(product)}
               >
                 {isPublished ? <EyeOff size={14} /> : <Eye size={14} />}
-              </button>
+              </Button>
             )}
             {/* P1-2: menu chuẩn (Radix) — điều hướng bàn phím, Escape đóng, quản lý focus */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button type="button" className="bb-icon-btn" title={t('common.actions')}>
+                <Button variant="unstyled" type="button" className="bb-icon-btn" title={t('common.actions')}>
                   <MoreHorizontal size={15} />
-                </button>
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onSelect={() => window.open(detailPath, '_blank', 'noopener')}>
@@ -597,25 +597,25 @@ export function ProductListScreen({ navigate, canUpdate }) {
       ],
       actions: (
         <div onClick={(e) => e.stopPropagation()}>
-          <button type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => navigate(detailPath)}>
+          <Button variant="unstyled" type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => navigate(detailPath)}>
             <Pencil size={14} />
-          </button>
-          <button
+          </Button>
+          <Button variant="unstyled"
             type="button"
             className="bb-icon-btn"
             title={t('common.openInNewTab')}
             onClick={() => window.open(detailPath, '_blank', 'noopener')}
           >
             <ExternalLink size={14} />
-          </button>
+          </Button>
           {canUpdate && (
-            <button type="button" className="bb-icon-btn" title={t('products.duplicate')} onClick={() => handleDuplicate(product)}>
+            <Button variant="unstyled" type="button" className="bb-icon-btn" title={t('products.duplicate')} onClick={() => handleDuplicate(product)}>
               <Copy size={14} />
-            </button>
+            </Button>
           )}
           {canUpdate && isTrashed && (
             <>
-              <button
+              <Button variant="unstyled"
                 type="button"
                 className="bb-icon-btn"
                 disabled={isBusy}
@@ -623,8 +623,8 @@ export function ProductListScreen({ navigate, canUpdate }) {
                 onClick={() => handleRestore(product)}
               >
                 <Undo2 size={14} />
-              </button>
-              <button
+              </Button>
+              <Button variant="unstyled"
                 type="button"
                 className="bb-icon-btn danger"
                 disabled={isBusy}
@@ -632,11 +632,11 @@ export function ProductListScreen({ navigate, canUpdate }) {
                 onClick={() => handlePermanentDelete(product)}
               >
                 <Trash2 size={14} />
-              </button>
+              </Button>
             </>
           )}
           {canUpdate && !isTrashed && (
-            <button
+            <Button variant="unstyled"
               type="button"
               className="bb-icon-btn"
               disabled={isBusy}
@@ -644,7 +644,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
               onClick={() => handleDelete(product)}
             >
               <Trash2 size={14} />
-            </button>
+            </Button>
           )}
         </div>
       ),

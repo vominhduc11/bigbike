@@ -8,6 +8,7 @@ import { fetchSettings, batchUpdateSettings } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { useSaveShortcut } from '@/lib/useSaveShortcut'
+import { Button } from '@/components/ui/button'
 import { formatDateTime } from '../lib/formatters'
 import { lazyScreen } from '../lib/lazyScreen'
 import { setContentLang } from '../lib/contentLang'
@@ -290,7 +291,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
             <strong>{t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}</strong>
             {' · '}{formatDateTime(new Date(draftRecovery.ts).toISOString())}
           </span>
-          <button
+          <Button variant="unstyled"
             type="button"
             className="text-xs font-semibold underline hover:no-underline"
             onClick={() => {
@@ -308,14 +309,14 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
             }}
           >
             {t('products.detail.draftRestore', { defaultValue: 'Khôi phục' })}
-          </button>
-          <button
+          </Button>
+          <Button variant="unstyled"
             type="button"
             className="text-xs underline hover:no-underline"
             onClick={() => { clearFormFromStorage(autosaveKey); setDraftRecovery(null) }}
           >
             {t('products.detail.draftDiscard', { defaultValue: 'Bỏ qua' })}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -331,7 +332,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                 const Icon = TAB_META.PUBLIC_HERO.icon
                 const isActive = activeTab === BANNERS_TAB_ID
                 return (
-                  <button
+                  <Button variant="unstyled"
                     key={tab.id}
                     type="button"
                     className={isActive ? 'active' : ''}
@@ -340,7 +341,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                   >
                     <Icon size={15} />
                     <span className="flex-1">{tabLabel('PUBLIC_HERO', t)}</span>
-                  </button>
+                  </Button>
                 )
               }
 
@@ -349,7 +350,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                 const Icon = TAB_META.PRODUCT_ASSIGN.icon
                 const isActive = activeTab === ASSIGN_TAB_ID
                 return (
-                  <button
+                  <Button variant="unstyled"
                     key={tab.id}
                     type="button"
                     className={isActive ? 'active' : ''}
@@ -358,7 +359,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                   >
                     <Icon size={15} />
                     <span className="flex-1">{tabLabel('PRODUCT_ASSIGN', t)}</span>
-                  </button>
+                  </Button>
                 )
               }
 
@@ -371,7 +372,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
               const dirtyInGroup = items.filter((s) => drafts[s.key] !== undefined || draftsEn[s.key] !== undefined).length
 
               return (
-                <button
+                <Button variant="unstyled"
                   key={group}
                   type="button"
                   className={isActive ? 'active' : ''}
@@ -385,7 +386,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                       {dirtyInGroup}
                     </span>
                   )}
-                </button>
+                </Button>
               )
             })}
           </nav>

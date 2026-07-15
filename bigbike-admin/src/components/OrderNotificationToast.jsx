@@ -4,6 +4,7 @@ import { X } from 'lucide-react'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { formatCurrencyVnd } from '../lib/formatters'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 
 const TOAST_DURATION_MS = 6000
 const MAX_TOASTS = 5
@@ -32,8 +33,8 @@ function Toast({ toast, onDismiss, navigate }) {
         isNew ? 'border-l-primary' : 'border-l-info'
       )}
     >
-      <button
-        type="button"
+      <Button
+        variant="unstyled"
         onClick={() => {
           onDismiss(toast.id)
           navigate(`/admin/orders/${toast.orderId}`)
@@ -53,15 +54,15 @@ function Toast({ toast, onDismiss, navigate }) {
             {meta.join(' · ')}
           </span>
         ) : null}
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
+        variant="unstyled"
         aria-label={t('notifications.close')}
         onClick={() => onDismiss(toast.id)}
         className="bg-transparent border-none cursor-pointer text-muted-foreground shrink-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <X size={16} aria-hidden="true" />
-      </button>
+      </Button>
     </div>
   )
 }

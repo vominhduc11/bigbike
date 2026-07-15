@@ -319,7 +319,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
         return (
           <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
             {!isTrashed && (
-              <button
+              <Button variant="unstyled"
                 type="button"
                 className="bb-icon-btn"
                 title={t('common.edit')}
@@ -327,10 +327,10 @@ export function ContentListScreen({ navigate, canUpdate }) {
                 onClick={() => navigate(`/admin/content/${item.type.toLowerCase()}/${item.id}`)}
               >
                 <Pencil size={14} />
-              </button>
+              </Button>
             )}
             {canUpdate && !isTrashed && (
-              <button
+              <Button variant="unstyled"
                 type="button"
                 className="bb-icon-btn danger"
                 title={t('common.delete')}
@@ -338,11 +338,11 @@ export function ContentListScreen({ navigate, canUpdate }) {
                 onClick={() => handleSoftDelete(item)}
               >
                 <Trash2 size={14} />
-              </button>
+              </Button>
             )}
             {canUpdate && isTrashed && (
               <>
-                <button
+                <Button variant="unstyled"
                   type="button"
                   className="bb-icon-btn"
                   title={t('products.restore')}
@@ -350,8 +350,8 @@ export function ContentListScreen({ navigate, canUpdate }) {
                   onClick={() => handleRestore(item)}
                 >
                   <Undo2 size={14} />
-                </button>
-                <button
+                </Button>
+                <Button variant="unstyled"
                   type="button"
                   className="bb-icon-btn danger"
                   title={t('common.permanentDelete')}
@@ -359,7 +359,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
                   onClick={() => handlePermanentDelete(item)}
                 >
                   <Trash2 size={14} />
-                </button>
+                </Button>
               </>
             )}
           </div>
@@ -380,28 +380,28 @@ export function ContentListScreen({ navigate, canUpdate }) {
       actions: (
         <div style={{ display: 'flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
           {!isTrashed && (
-            <button
+            <Button variant="unstyled"
               type="button"
               className="bb-icon-btn"
               title={t('common.edit')}
               onClick={() => navigate(`/admin/content/${item.type.toLowerCase()}/${item.id}`)}
             >
               <Pencil size={14} />
-            </button>
+            </Button>
           )}
           {canUpdate && !isTrashed && (
-            <button
+            <Button variant="unstyled"
               type="button"
               className="bb-icon-btn danger"
               title={t('common.delete')}
               onClick={() => handleSoftDelete(item)}
             >
               <Trash2 size={14} />
-            </button>
+            </Button>
           )}
           {canUpdate && isTrashed && (
             <>
-              <button
+              <Button variant="unstyled"
                 type="button"
                 className="bb-icon-btn"
                 disabled={bulkBusy}
@@ -409,8 +409,8 @@ export function ContentListScreen({ navigate, canUpdate }) {
                 onClick={() => handleRestore(item)}
               >
                 <Undo2 size={14} />
-              </button>
-              <button
+              </Button>
+              <Button variant="unstyled"
                 type="button"
                 className="bb-icon-btn danger"
                 disabled={bulkBusy}
@@ -418,7 +418,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
                 onClick={() => handlePermanentDelete(item)}
               >
                 <Trash2 size={14} />
-              </button>
+              </Button>
             </>
           )}
         </div>

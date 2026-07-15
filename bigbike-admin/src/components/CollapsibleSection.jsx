@@ -1,6 +1,7 @@
 import { useId } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 
 // Nhóm thu gọn dùng chung cho các form dài (Danh mục, Thương hiệu, Bài viết...).
 // Chống ngợp field: giữ mở phần bắt buộc, gom phần tùy chọn/nâng cao vào đây, đóng
@@ -21,8 +22,8 @@ export function CollapsibleSection({ title, hint, open, onToggle, badge, keepMou
   }
   return (
     <section className="bb-section-group">
-      <button
-        type="button"
+      <Button
+        variant="unstyled"
         onClick={onToggle}
         aria-expanded={open}
         aria-controls={panelId}
@@ -36,7 +37,7 @@ export function CollapsibleSection({ title, hint, open, onToggle, badge, keepMou
         <span className="bb-section-group-title">{title}</span>
         {hint && <span className="bb-section-group-hint">· {hint}</span>}
         {badge}
-      </button>
+      </Button>
       {body}
     </section>
   )

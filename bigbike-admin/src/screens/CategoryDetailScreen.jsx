@@ -592,7 +592,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   {t('common.lastUpdated')} {formatRelativeTime(state.item.updatedAt, t)}
                 </span>
               )}
-              <button
+              <Button variant="unstyled"
                 type="button"
                 className="bb-muted flex cursor-pointer items-center gap-1 border-0 bg-transparent text-xs"
                 onClick={handleCopyId}
@@ -601,7 +601,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                 <Hash size={12} aria-hidden="true" />
                 <code className="mono">{state.item.id}</code>
                 {idCopied ? <Check size={12} aria-hidden="true" /> : <Copy size={12} aria-hidden="true" />}
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -641,7 +641,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             <strong>{t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}</strong>
             {' · '}{formatDateTime(new Date(draftRecovery.ts).toISOString())}
           </span>
-          <button
+          <Button variant="unstyled"
             type="button"
             className="text-xs font-semibold underline hover:no-underline"
             onClick={() => {
@@ -652,14 +652,14 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             }}
           >
             {t('products.detail.draftRestore', { defaultValue: 'Khôi phục' })}
-          </button>
-          <button
+          </Button>
+          <Button variant="unstyled"
             type="button"
             className="text-xs underline hover:no-underline"
             onClick={() => { clearFormFromStorage(autosaveKey); setDraftRecovery(null) }}
           >
             {t('products.detail.draftDiscard', { defaultValue: 'Bỏ qua' })}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -699,14 +699,14 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               </Button>
             </div>
           </div>
-          <button
+          <Button variant="unstyled"
             type="button"
             className="bb-icon-btn"
             aria-label={t('categories.detail.menuNoticeDismiss')}
             onClick={handleDismissMenuNotice}
           >
             <XIcon size={16} aria-hidden="true" />
-          </button>
+          </Button>
         </div>
       )}
 

@@ -65,14 +65,14 @@ function ProductRow({ product, canUpdate, onRemove, sortable }) {
       className="flex items-center gap-3 p-3 border border-border bg-background"
     >
       {canUpdate && sortable && (
-        <button
-          type="button"
+        <Button
+          variant="unstyled"
           {...sortable.handleProps}
           className="flex-shrink-0 text-muted-foreground hover:text-foreground cursor-grab touch-none"
           aria-label={t('featuredProducts.dragHandle', { defaultValue: 'Kéo để sắp xếp' })}
         >
           <GripVertical size={16} />
-        </button>
+        </Button>
       )}
       {product.image?.url && (
         <img
@@ -89,14 +89,14 @@ function ProductRow({ product, canUpdate, onRemove, sortable }) {
         )}
       </div>
       {canUpdate && (
-        <button
-          type="button"
+        <Button
+          variant="unstyled"
           className="flex-shrink-0 text-muted-foreground hover:text-foreground p-1"
           onClick={() => onRemove(product.id)}
           aria-label={t('featuredProducts.removeItem', { defaultValue: 'Xóa khỏi danh sách' })}
         >
           <X size={14} />
-        </button>
+        </Button>
       )}
     </div>
   )

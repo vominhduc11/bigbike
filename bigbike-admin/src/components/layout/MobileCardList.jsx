@@ -1,4 +1,5 @@
 import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/components/ui/button'
 
 /**
  * MobileCardList — list-as-cards layout for narrow screens.
@@ -58,13 +59,13 @@ export function MobileCard({ title, subtitle, status, meta = [], actions, onClic
 
   const main = onClick
     ? (
-      <button
-        type="button"
+      <Button
+        variant="unstyled"
         onClick={onClick}
         className="mobile-card-main block w-full cursor-pointer border-0 bg-transparent p-0 text-left text-inherit [font:inherit]"
       >
         {body}
-      </button>
+      </Button>
     )
     : body
 

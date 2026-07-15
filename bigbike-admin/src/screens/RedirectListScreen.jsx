@@ -398,7 +398,7 @@ export function RedirectListScreen({ canUpdate }) {
   const rowActions = (redirect) => (
     <>
       {/* O4: toggle nhanh Bật/Tắt ngay trên bảng, không cần mở form sửa. */}
-      <button
+      <Button variant="unstyled"
         type="button"
         className="bb-icon-btn"
         title={redirect.enabled !== false ? t('redirects.statusOff', { defaultValue: 'Tắt' }) : t('redirects.statusOn', { defaultValue: 'Bật' })}
@@ -407,8 +407,8 @@ export function RedirectListScreen({ canUpdate }) {
         onClick={() => handleToggleEnabled(redirect)}
       >
         {redirect.enabled !== false ? <EyeOff size={14} /> : <Eye size={14} />}
-      </button>
-      <button
+      </Button>
+      <Button variant="unstyled"
         type="button"
         className="bb-icon-btn"
         title={t('common.edit')}
@@ -416,8 +416,8 @@ export function RedirectListScreen({ canUpdate }) {
         onClick={() => openEditForm(redirect)}
       >
         <Pencil size={14} />
-      </button>
-      <button
+      </Button>
+      <Button variant="unstyled"
         type="button"
         className="bb-icon-btn"
         title={t('common.delete')}
@@ -425,7 +425,7 @@ export function RedirectListScreen({ canUpdate }) {
         onClick={() => handleDelete(redirect)}
       >
         <Trash2 size={14} />
-      </button>
+      </Button>
     </>
   )
 

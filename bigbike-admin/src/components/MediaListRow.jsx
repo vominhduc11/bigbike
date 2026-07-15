@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { formatText } from '../lib/formatters'
 import { formatBytes, toClipboardUrl } from './media-picker/pickerUtils'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/components/ui/button'
 
 const isImage = (m) => m && m.startsWith('image/')
 const isVideo = (m) => m && m.startsWith('video/')
@@ -35,7 +36,7 @@ export function MediaListRow({
           style={{ position: 'static' }}  />
       ) : <span />}
 
-      <button type="button" onClick={onPreview}
+      <Button variant="unstyled" onClick={onPreview}
         aria-label={t('media.previewNamed', { name: filename, defaultValue: 'Xem lớn {{name}}' })}
         className="medialib-list-thumb">
         {isImage(media.mimeType) && media.publicUrl ? (
@@ -47,7 +48,7 @@ export function MediaListRow({
             {isAudio(media.mimeType) ? <Music size={20} /> : <FileText size={20} />}
           </div>
         )}
-      </button>
+      </Button>
 
       <div className="medialib-list-name">
         <span className="medialib-list-name-primary" title={media.filename ?? ''}>{filename}</span>
@@ -67,41 +68,41 @@ export function MediaListRow({
       </span>
 
       <div className="medialib-list-actions">
-        <button type="button" onClick={onPreview} className="medialib-icon-btn-light"
+        <Button variant="unstyled" onClick={onPreview} className="medialib-icon-btn-light"
           title={t('media.preview')} aria-label={t('media.preview')}>
           <Eye size={14} />
-        </button>
+        </Button>
         {media.publicUrl && (
-          <button type="button" onClick={handleCopyUrl} className="medialib-icon-btn-light"
+          <Button variant="unstyled" onClick={handleCopyUrl} className="medialib-icon-btn-light"
             title={t('media.copyUrl')} aria-label={t('media.copyUrl')}>
             <Copy size={14} />
-          </button>
+          </Button>
         )}
         {onEdit && (
-          <button type="button" onClick={onEdit} className="medialib-icon-btn-light"
+          <Button variant="unstyled" onClick={onEdit} className="medialib-icon-btn-light"
             title={t('common.edit')} aria-label={t('common.edit')}>
             <Pencil size={14} />
-          </button>
+          </Button>
         )}
         {onRestore && (
-          <button type="button" onClick={onRestore} className="medialib-icon-btn-light" disabled={deleting}
+          <Button variant="unstyled" onClick={onRestore} className="medialib-icon-btn-light" disabled={deleting}
             title={t('media.restore')} aria-label={t('media.restore')}>
             <RotateCcw size={14} />
-          </button>
+          </Button>
         )}
         {onDelete && (
-          <button type="button" onClick={onDelete}
+          <Button variant="unstyled" onClick={onDelete}
             className="medialib-icon-btn-light medialib-btn-danger" disabled={deleting}
             title={t('common.delete')} aria-label={t('common.delete')}>
             <Trash2 size={14} />
-          </button>
+          </Button>
         )}
         {onHardDelete && (
-          <button type="button" onClick={onHardDelete}
+          <Button variant="unstyled" onClick={onHardDelete}
             className="medialib-icon-btn-light medialib-btn-danger-solid" disabled={deleting}
             title={t('media.hardDelete')} aria-label={t('media.hardDelete')}>
             <AlertTriangle size={14} />
-          </button>
+          </Button>
         )}
       </div>
     </div>

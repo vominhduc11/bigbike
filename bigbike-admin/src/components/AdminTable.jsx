@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/components/ui/button'
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from '@/components/ui/table'
@@ -92,8 +93,8 @@ export function AdminTable({
                 {canSort ? (
                   // Nút bấm thật bên trong <th scope="col"> — giữ ngữ nghĩa columnheader
                   // (không đè role="button" lên <th>), vẫn focus/Enter/Space chuẩn của button.
-                  <button
-                    type="button"
+                  <Button
+                    variant="unstyled"
                     onClick={() => handleSort(column)}
                     aria-label={t('common.sortColumn', { defaultValue: 'Sắp xếp cột' })}
                     className="inline-flex cursor-pointer select-none items-center gap-1 rounded-xs focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-[-2px]"
@@ -104,7 +105,7 @@ export function AdminTable({
                         ? sortDir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />
                         : <ChevronsUpDown size={12} />}
                     </span>
-                  </button>
+                  </Button>
                 ) : (
                   <span className="inline-flex items-center gap-1">{column.label}</span>
                 )}

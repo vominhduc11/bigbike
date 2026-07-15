@@ -6,6 +6,7 @@ import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 
 // Thẻ SEO dùng chung (Danh mục, Thương hiệu, …). Gộp bản trùng ~95 dòng trước đây ở
 // BrandDetailScreen với category-detail/SeoCard (audit P1-13). Tham số hoá theo:
@@ -48,8 +49,8 @@ export function SeoCard({
   return (
     <div className="bb-card mb-4">
       {collapsible ? (
-        <button
-          type="button"
+        <Button
+          variant="unstyled"
           className="bb-card-header w-full text-left cursor-pointer"
           onClick={onToggle}
           aria-expanded={open}
@@ -65,7 +66,7 @@ export function SeoCard({
               <p className="sub">{desc}</p>
             </div>
           </div>
-        </button>
+        </Button>
       ) : (
         <div className="bb-card-header">
           <div>

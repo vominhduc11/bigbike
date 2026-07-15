@@ -164,7 +164,7 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
       <div className="mediadetail-body">
         {/* Preview */}
         <section className="mediadetail-preview">
-          <button type="button" onClick={onPreview} aria-label={t('media.preview')} className="mediadetail-preview-area">
+          <Button variant="unstyled" onClick={onPreview} aria-label={t('media.preview')} className="mediadetail-preview-area">
             {isImage && media.publicUrl ? (
               <img src={media.publicUrl} alt={altText || ''} />
             ) : isVideo && media.publicUrl ? (
@@ -182,7 +182,7 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
                 <Maximize2 size={14} /> {t('media.preview')}
               </span>
             )}
-          </button>
+          </Button>
 
           <div className="mediadetail-url-row">
             <Input type="text" readOnly value={media.publicUrl || ''} className="text-xs"  />

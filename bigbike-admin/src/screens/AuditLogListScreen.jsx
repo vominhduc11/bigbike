@@ -367,7 +367,7 @@ export function AuditLogListScreen() {
         {query.q && (
           <span className="audit-mobile-search-chip">
             "{query.q}"
-            <button type="button" onClick={() => { setSearchInput(''); updateQuery({ q: '' }, { resetPage: true }) }} aria-label={t('auditLog.resetFilters')}><X size={14} aria-hidden="true" /></button>
+            <Button variant="unstyled" onClick={() => { setSearchInput(''); updateQuery({ q: '' }, { resetPage: true }) }} aria-label={t('auditLog.resetFilters')}><X size={14} aria-hidden="true" /></Button>
           </span>
         )}
         {isFiltered && (

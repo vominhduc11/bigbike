@@ -423,7 +423,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
         {uploadError && (
           <div className="mpicker-upload-error">
             {uploadError}
-            <button type="button" onClick={() => setUploadError('')} aria-label={t('media.picker.dismissError')}><IconClose /></button>
+            <Button variant="unstyled" onClick={() => setUploadError('')} aria-label={t('media.picker.dismissError')}><IconClose /></Button>
           </div>
         )}
 
@@ -448,8 +448,8 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
                 const sel = isSelected(url)
                 return (
                   <div key={media.id} className="relative group">
-                    <button
-                      type="button"
+                    <Button
+                      variant="unstyled"
                       className={`mpicker-item w-full${sel ? ' is-selected' : ''}`}
                       onClick={() => toggleUrl(url)}
                       aria-pressed={sel}
@@ -480,17 +480,17 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
                           <span className="mpicker-item-size">{formatBytes(media.fileSize)}</span>
                         ) : null}
                       </div>
-                    </button>
+                    </Button>
                     {canWrite && (
-                      <button
-                        type="button"
+                      <Button
+                        variant="unstyled"
                         onClick={(e) => { e.stopPropagation(); openDetail(media) }}
                         className="absolute top-1.5 left-1.5 z-10 flex h-[22px] w-[22px] items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition-opacity hover:bg-black/75 focus:opacity-100 group-hover:opacity-100"
                         title={t('media.picker.editInfo')}
                         aria-label={t('media.picker.editInfo')}
                       >
                         <IconPencil />
-                      </button>
+                      </Button>
                     )}
                   </div>
                 )

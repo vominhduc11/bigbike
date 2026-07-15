@@ -221,15 +221,15 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
           <DetailSection title={t('reviews.detail.sectionPhotos')}>
             <div className="flex flex-wrap gap-2">
               {review.photos.map((url, i) => (
-                <button
+                <Button
+                  variant="unstyled"
                   key={`${url}-${i}`}
-                  type="button"
                   onClick={() => setPhotoIndex(i)}
                   aria-label={t('reviews.detail.openPhoto', { index: i + 1 })}
                   className="block size-20 overflow-hidden rounded-sm border border-border bg-surface-muted p-0 cursor-pointer"
                 >
                   <img src={resolveDisplayUrl(url)} alt={t('reviews.detail.photoAlt', { index: i + 1 })} loading="lazy" className="size-full object-cover" />
-                </button>
+                </Button>
               ))}
             </div>
           </DetailSection>

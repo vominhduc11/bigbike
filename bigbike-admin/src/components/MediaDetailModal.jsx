@@ -81,15 +81,15 @@ export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
             <div className="shrink-0 w-[360px] max-w-full flex flex-col gap-2">
               <div className="w-full h-[240px] bg-surface-muted rounded-md overflow-hidden flex items-center justify-center">
                 {isImage && media.publicUrl ? (
-                  <button
-                    type="button"
+                  <Button
+                    variant="unstyled"
                     onClick={() => onPreview && onPreview()}
                     aria-label={t('media.preview')}
                     className="w-full h-full flex items-center justify-center border-none p-0 bg-transparent"
                     style={{ cursor: onPreview ? 'zoom-in' : 'default' }}
                   >
                     <img src={media.publicUrl} alt={altText || ''} className="max-w-full max-h-full object-contain" />
-                  </button>
+                  </Button>
                 ) : isVideo && media.publicUrl ? (
                   <video src={media.publicUrl} controls className="w-full h-full object-contain bg-black" preload="metadata" />
                 ) : isAudio && media.publicUrl ? (

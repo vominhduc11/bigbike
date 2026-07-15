@@ -47,11 +47,17 @@ const Button = forwardRef(function Button({
   // Icon buttons are a fixed square: swap the icon for the spinner instead of
   // showing both side by side.
   const hideChildren = showSpinner && size === 'icon'
+  // variant="unstyled": nút thuộc hệ chassis CSS (`bb-*`/`medialib-*`) — mọi styling
+  // do class truyền vào quyết định, KHÔNG áp cva base/variant (tránh utility Tailwind
+  // đè lên CSS chassis). Vẫn hưởng type mặc định, loading, disabled, ref của primitive.
+  const buttonClassName = variant === 'unstyled'
+    ? cn(className)
+    : cn(buttonVariants({ variant, size, className }))
   return (
     <Comp
       ref={ref}
       type={asChild ? undefined : type}
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={buttonClassName}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       {...props}

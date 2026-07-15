@@ -757,7 +757,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           <div className="cat-name-cell" style={{ paddingLeft: depth * 20 }}>
             {/* Drag handle (tree mode only, no search active) */}
             {useTreeMode && canUpdate && sortableProps && !searchTerm && (
-              <button
+              <Button variant="unstyled"
                 type="button"
                 className="cat-drag-handle"
                 aria-label={t('categories.dragHandle')}
@@ -766,10 +766,10 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                 disabled={Boolean(bulkProgress) || Boolean(dragSavingId)}
               >
                 <GripVertical size={16} aria-hidden="true" />
-              </button>
+              </Button>
             )}
             {useTreeMode && hasChildren ? (
-              <button
+              <Button variant="unstyled"
                 type="button"
                 className={`cat-expand-btn${isExpanded ? ' is-open' : ''}`}
                 onClick={() => toggleExpand(category.id)}
@@ -777,7 +777,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                 aria-expanded={isExpanded}
               >
                 <ChevronRight size={14} aria-hidden="true" />
-              </button>
+              </Button>
             ) : (
               <span className="cat-expand-spacer" />
             )}
@@ -926,7 +926,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
         aria-label={t('categories.viewModeAria')}
         style={{ marginBottom: 'var(--admin-space-3)' }}
       >
-        <button
+        <Button variant="unstyled"
           type="button"
           role="tab"
           aria-selected={useTreeMode}
@@ -936,8 +936,8 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           onClick={() => updateQuery({ visibility: 'ALL', sort: 'sortOrder:asc' }, { resetPage: true })}
         >
           {t('categories.viewModeTree')}
-        </button>
-        <button
+        </Button>
+        <Button variant="unstyled"
           type="button"
           role="tab"
           aria-selected={!useTreeMode}
@@ -945,7 +945,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           onClick={() => updateQuery({ sort: 'updatedAt:desc' }, { resetPage: true })}
         >
           {t('categories.viewModeFlat')}
-        </button>
+        </Button>
       </div>
 
       {/* N2: query cây lỗi trước đây bị nuốt im lặng — rơi vĩnh viễn về "Dạng

@@ -401,13 +401,13 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
           actionLabel={t('common.retry', { defaultValue: 'Thử lại' })}
           onAction={() => refetch()}
         />
-        <button
+        <Button variant="unstyled"
           type="button"
           onClick={() => navigate('/admin/content')}
           className="text-sm font-medium underline hover:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--bb-primary)]"
         >
           {t('content.detail.backToList')}
-        </button>
+        </Button>
       </div>
     )
   }
@@ -559,20 +559,20 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
               <strong>{t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}</strong>
               {' · '}{formatDateTime(new Date(draftRecovery.ts).toISOString())}
             </span>
-            <button
+            <Button variant="unstyled"
               type="button"
               className="text-xs font-semibold underline hover:no-underline"
               onClick={() => { setForm(draftRecovery.form); setEnSlugManuallyEdited(Boolean(draftRecovery.form?.translations?.en?.slug)); setDraftRecovery(null) }}
             >
               {t('products.detail.draftRestore', { defaultValue: 'Khôi phục' })}
-            </button>
-            <button
+            </Button>
+            <Button variant="unstyled"
               type="button"
               className="text-xs opacity-70 hover:opacity-100"
               onClick={() => { clearFormFromStorage(autosaveKey); setDraftRecovery(null) }}
             >
               {t('products.detail.draftDiscard', { defaultValue: 'Bỏ qua' })}
-            </button>
+            </Button>
           </div>
         )}
 

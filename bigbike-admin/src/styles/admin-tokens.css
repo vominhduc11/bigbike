@@ -198,6 +198,8 @@
   --bb-sidebar:         var(--admin-color-background-sidebar);
   --bb-sidebar-hover:   #1a2230;
   --bb-sidebar-active:  #20293a;
+  --bb-sidebar-border:  #1c2230; /* viền/scrollbar trên chrome sidebar tối — cố định 2 theme */
+  --bb-sidebar-online:  #3fb950; /* chấm trạng thái online trên sidebar tối — xanh sáng cố định */
 
   --bb-border:          var(--admin-color-border-subtle);
   --bb-border-strong:   var(--admin-color-border-default);
@@ -210,6 +212,8 @@
   --bb-text-inverse:        var(--admin-color-text-inverse);
   --bb-text-onsidebar:      #c9d1d9;
   --bb-text-onsidebar-dim:  #7d8590;
+  --bb-text-onsidebar-strong: #ffffff; /* chữ nhấn/active trên chrome tối — trắng cố định, không flip theme */
+  --bb-on-brand:            #ffffff; /* chữ/icon trên nền đỏ brand chrome (logo, badge) — trắng cố định 2 theme */
 
   --bb-success:         var(--admin-color-status-success-text);
   --bb-success-bg:      var(--admin-color-status-success-bg);

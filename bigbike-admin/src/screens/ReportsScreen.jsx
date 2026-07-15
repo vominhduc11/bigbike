@@ -344,16 +344,16 @@ export function ReportsScreen() {
         <div className="bb-screen-actions">
           <div className="bb-seg" role="tablist" aria-label={t('reports.title')}>
             {presetTabs.map((tab) => (
-              <button
+              <Button
+                 variant="unstyled"
                  key={tab.key}
-                 type="button"
                  role="tab"
                  aria-selected={preset === tab.key}
                  className={preset === tab.key ? 'active' : ''}
                  onClick={() => setPreset(tab.key)}
               >
                 {tab.label}
-              </button>
+              </Button>
             ))}
           </div>
           {preset === 'custom' && (

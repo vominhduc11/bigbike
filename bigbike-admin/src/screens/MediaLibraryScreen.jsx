@@ -418,7 +418,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           <p className="bb-muted">{t('media.description')}</p>
         </div>
         <div className="bb-screen-actions">
-          <button
+          <Button variant="unstyled"
             type="button"
             className={isTrash ? 'bb-btn bb-btn-primary' : 'bb-btn bb-btn-secondary'}
             onClick={() => updateQuery({ status: isTrash ? 'ACTIVE' : 'DELETED' })}
@@ -426,7 +426,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           >
             <Trash2 size={14} />
             {t('media.trashShortcut')}
-          </button>
+          </Button>
           {canUpdate && (
             <>
               <input ref={fileInputRef} type="file" multiple accept={ALLOWED_MIME.join(',')}
@@ -479,11 +479,11 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
               placeholder={t('media.searchPlaceholder')}
               className={searchInput ? 'pr-8' : 'pr-3'}  />
             {searchInput && (
-              <button type="button" onClick={() => setSearchInput('')}
+              <Button variant="unstyled" type="button" onClick={() => setSearchInput('')}
                 aria-label={t('common.clear')}
                 className="medialib-search-clear focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--admin-color-primary)]">
                 <XIcon size={14} />
-              </button>
+              </Button>
             )}
           </div>
         </label>
@@ -569,18 +569,18 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           />
           <div className="medialib-view-switcher" role="tablist"
             aria-label={t('media.viewSwitcherLabel', { defaultValue: 'Kiểu hiển thị' })}>
-            <button type="button" role="tab" aria-selected={query.view === 'grid'}
+            <Button variant="unstyled" type="button" role="tab" aria-selected={query.view === 'grid'}
               onClick={() => updateQuery({ view: 'grid' }, { resetPage: false })}
               className={`focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--admin-color-primary)] ${query.view === 'grid' ? 'medialib-is-active' : ''}`}
               title={t('media.viewGrid')} aria-label={t('media.viewGrid')}>
               <GridIcon size={14} />
-            </button>
-            <button type="button" role="tab" aria-selected={query.view === 'list'}
+            </Button>
+            <Button variant="unstyled" type="button" role="tab" aria-selected={query.view === 'list'}
               onClick={() => updateQuery({ view: 'list' }, { resetPage: false })}
               className={`focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--admin-color-primary)] ${query.view === 'list' ? 'medialib-is-active' : ''}`}
               title={t('media.viewList')} aria-label={t('media.viewList')}>
               <ListIcon size={14} />
-            </button>
+            </Button>
           </div>
         </div>
       </div>

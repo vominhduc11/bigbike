@@ -2,6 +2,7 @@ import { useContext } from 'react'
 import { useTranslation } from 'react-i18next'
 import { GripVertical, ImageOff, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import { resolveDisplayUrl } from '@/lib/contracts'
 import { AssignmentBanner as AssignmentBannerView } from '@/components/AssignmentBanner'
 import { AssignmentConfigContext } from './constants'
@@ -31,14 +32,14 @@ export function RelatedProductRow({ chip, canEdit, onRemove, t, sortable }) {
       className={cn('bb-related-row', sortable?.isDragging && 'is-dragging')}
     >
       {canEdit && sortable && (
-        <button
-          type="button"
+        <Button
+          variant="unstyled"
           {...sortable.handleProps}
           className="bb-related-grip"
           aria-label={t('products.detail.relatedDragHint')}
         >
           <GripVertical size={16} />
-        </button>
+        </Button>
       )}
       {chip.imageUrl ? (
         <span className="bb-related-thumb">
@@ -56,14 +57,14 @@ export function RelatedProductRow({ chip, canEdit, onRemove, t, sortable }) {
       )}
       <span className="bb-related-title" title={chip.name}>{chip.name}</span>
       {canEdit && (
-        <button
-          type="button"
+        <Button
+          variant="unstyled"
           className="bb-related-remove"
           onClick={() => onRemove(chip.id)}
           aria-label={t('products.detail.relatedRemove', { name: chip.name })}
         >
           <X size={16} />
-        </button>
+        </Button>
       )}
     </div>
   )

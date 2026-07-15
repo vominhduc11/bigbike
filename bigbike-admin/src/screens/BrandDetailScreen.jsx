@@ -526,8 +526,8 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
             <strong>{t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}</strong>
             {' · '}{formatDateTime(new Date(draftRecovery.ts).toISOString())}
           </span>
-          <button
-            type="button"
+          <Button
+            variant="unstyled"
             className="text-xs font-semibold underline hover:no-underline"
             onClick={() => {
               setForm(draftRecovery.form)
@@ -536,14 +536,14 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
             }}
           >
             {t('products.detail.draftRestore', { defaultValue: 'Khôi phục' })}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="unstyled"
             className="text-xs underline hover:no-underline"
             onClick={() => { clearFormFromStorage(autosaveKey); setDraftRecovery(null) }}
           >
             {t('products.detail.draftDiscard', { defaultValue: 'Bỏ qua' })}
-          </button>
+          </Button>
         </div>
       )}
 

@@ -436,15 +436,15 @@ export function ReviewListScreen({ navigate, canUpdate }) {
       {/* Bộ lọc trạng thái — nhóm nút bật/tắt (aria-pressed), không phải tab pattern. */}
       <div className="bb-seg" style={{ marginBottom: 16 }} role="group" aria-label={t('reviews.filterStatus')}>
         {STATUS_OPTIONS.map((status) => (
-          <button
+          <Button
+            variant="unstyled"
             key={status}
-            type="button"
             aria-pressed={query.status === status}
             className={query.status === status ? 'active' : ''}
             onClick={() => updateQuery({ status }, { resetPage: true })}
           >
             {status === 'ALL' ? t('common.all') : statusLabel(status, t)}
-          </button>
+          </Button>
         ))}
       </div>
 

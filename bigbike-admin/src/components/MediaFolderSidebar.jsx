@@ -95,20 +95,20 @@ export function MediaFolderSidebar({
         <p className="mediafolder-section-title">{t('media.folders')}</p>
         <ul className="mediafolder-list">
           <li>
-            <button type="button" onClick={() => onSelectFolder('')}
+            <Button variant="unstyled" onClick={() => onSelectFolder('')}
               aria-current={!folderFilter ? 'true' : undefined}
               className={`mediafolder-item ${!folderFilter ? 'mediafolder-is-selected' : ''}`}>
               <FolderOpen size={14} />
               <span>{t('media.allFolders')}</span>
-            </button>
+            </Button>
           </li>
           <li>
-            <button type="button" onClick={() => onSelectFolder('NONE')}
+            <Button variant="unstyled" onClick={() => onSelectFolder('NONE')}
               aria-current={folderFilter === 'NONE' ? 'true' : undefined}
               className={`mediafolder-item ${folderFilter === 'NONE' ? 'mediafolder-is-selected' : ''}`}>
               <Inbox size={14} />
               <span>{t('media.uncategorized')}</span>
-            </button>
+            </Button>
           </li>
         </ul>
       </section>
@@ -117,10 +117,10 @@ export function MediaFolderSidebar({
         <div className="mediafolder-section-header">
           <p className="mediafolder-section-title">{t('media.myFolders')}</p>
           {canUpdate && (
-            <button type="button" onClick={() => setCreating(true)} className="mediafolder-add-btn"
+            <Button variant="unstyled" onClick={() => setCreating(true)} className="mediafolder-add-btn"
               aria-label={t('media.folderAdd')} title={t('media.folderAdd')}>
               <Plus size={14} />
-            </button>
+            </Button>
           )}
         </div>
         {folders.length === 0 && !creating && (
@@ -141,23 +141,23 @@ export function MediaFolderSidebar({
                   onCancel={() => setEditingId(null)} />
               ) : (
                 <div className={`mediafolder-item ${folderFilter === f.id ? 'mediafolder-is-selected' : ''} mediafolder-item-hover`}>
-                  <button type="button" onClick={() => onSelectFolder(f.id)}
+                  <Button variant="unstyled" onClick={() => onSelectFolder(f.id)}
                     aria-current={folderFilter === f.id ? 'true' : undefined}
                     className="mediafolder-item-btn">
                     <Folder size={14} />
                     <span className="mediafolder-item-label">{f.name}</span>
                     <span className="mediafolder-item-count">{f.mediaCount}</span>
-                  </button>
+                  </Button>
                   {canUpdate && (
                     <div className="mediafolder-item-actions">
-                      <button type="button" onClick={() => setEditingId(f.id)}
+                      <Button variant="unstyled" onClick={() => setEditingId(f.id)}
                         className="mediafolder-action-btn" aria-label={t('common.edit')} title={t('common.edit')}>
                         <Pencil size={11} />
-                      </button>
-                      <button type="button" onClick={() => handleDelete(f)}
+                      </Button>
+                      <Button variant="unstyled" onClick={() => handleDelete(f)}
                         className="mediafolder-action-btn" aria-label={t('common.delete')} title={t('common.delete')}>
                         <Trash2 size={11} />
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -179,12 +179,12 @@ export function MediaFolderSidebar({
           {tagsStatus === 'ready' && tags.length > 0 && (
             <div className="mediafolder-tags-wrap">
               {tags.map((tg) => (
-                <button key={tg} type="button"
+                <Button variant="unstyled" key={tg}
                   onClick={() => onSelectTag(tag === tg ? '' : tg)}
                   aria-pressed={tag === tg}
                   className={`mediafolder-tag ${tag === tg ? 'mediafolder-tag-selected' : ''}`}>
                   <Hash size={11} /> {tg}
-                </button>
+                </Button>
               ))}
             </div>
           )}
