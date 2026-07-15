@@ -107,7 +107,7 @@
 | AUD-069 | Sửa/xóa SĐT khách không hợp lệ: báo lỗi thay vì im lặng bỏ qua | ✅ | `b4c354a1`; số điện thoại trống nay xóa giá trị đã lưu, số sai định dạng trả lỗi trường thay vì báo lưu thành công giả; `Phase1IAdminManagementApiTest` đạt 24/24; `git diff --check` đạt. |
 | AUD-070 | `rowKey` import không trùng khi 2 dòng cùng SKU | ✅ | `16bc0395`; khóa chọn dòng gồm số thứ tự nên hai dòng trùng SKU vẫn chọn/bỏ độc lập; `ProductImportRoundTripTest` đạt 5/5; `git diff --check` đạt. |
 | AUD-071 | Xóa trắng ô SEO thương hiệu phải được lưu | ✅ | `77f0312f`; form nay gửi rõ khối SEO rỗng để xóa dữ liệu cũ, đồng thời giữ mô tả ảnh chia sẻ; kiểm thử admin 2/2, backend 1/1, lint và build admin đạt; `git diff --check` đạt. |
-| AUD-072 | API path không tồn tại trả 404 thay 500 | ⬜ | |
+| AUD-072 | API path không tồn tại trả 404 thay 500 | ✅ | `483177ae`; đường dẫn API không tồn tại trả `404 NOT_FOUND` đúng mẫu lỗi chung, không còn rơi vào lỗi hệ thống; `UnknownApiPathTest` đạt 1/1; `git diff --check` đạt. |
 | AUD-073 | Admin reviews tôn trọng tham số `lang` | ✅ `d7fefc10` | Hành vi hiển thị đã đúng: admin đổi cột tên SP theo `productNameEn`/`productName` (client, PRODUCT_RULE_004 — hiện đủ bản ghi, không ẩn SP chưa dịch); review là nội dung khách nhập nên đơn ngữ. Dọn dead `strictEnglish` + comment stale (backend/admin); `lang` giữ cho tương thích API, no-op theo thiết kế |
 | AUD-075 | Toaster dùng token font; nút nguy hiểm dùng token danger | ⬜ | |
 
