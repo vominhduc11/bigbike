@@ -129,7 +129,7 @@ Status: `CONFIRMED_FROM_CODE` — `AdminAuthService.java`, `AdminLoginAttemptSer
 | Channel | Access rule | Status | Evidence |
 |---|---|---|---|
 | `/ws` STOMP CONNECT | native `Authorization` bearer token required; admin account must be `ACTIVE` (DB-driven, cached, evicted on write — see `AdminAccountStatusService`) | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java` |
-| Admin order topic | Requires the `orders.read` permission (DB-driven via `AdminPermissionService.getPermissionsForRole`), not a hardcoded role — any role granted `orders.read` (e.g. `SHOP_MANAGER`) can connect. Rechecked on **both** CONNECT and every SUBSCRIBE, not just at connect time, so a mid-session permission/status change cuts the admin off on their next subscribe. Client subscribes to `/topic/admin/orders`. | `CONFIRMED_FROM_CODE` (fixed 2026-07-06 — previously hardcoded to `ADMIN`/`SUPER_ADMIN` roles and only checked at CONNECT) | `WebSocketConfig.java`, `adminWebSocket.js` |
+| Admin order topic | Requires the `orders.read` permission (DB-driven via `AdminPermissionService.getPermissionsForRole`), not a hardcoded role — any built-in or custom role granted `orders.read` (e.g. `SHOP_MANAGER`) can subscribe. CONNECT validates the JWT and `ACTIVE` account; current account status and permission are then rechecked on **every SUBSCRIBE**, so a mid-session permission/status change cuts the admin off on its next subscribe. Client subscribes to `/topic/admin/orders`. | `CONFIRMED_FROM_CODE` (fixed 2026-07-06 — previously hardcoded to `ADMIN`/`SUPER_ADMIN`) | `WebSocketConfig.java`, `adminWebSocket.js` |
 
 ## Internal Redirect Caveat
 

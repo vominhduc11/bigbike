@@ -341,7 +341,8 @@ Evidence:
 ## WebSocket Rules
 
 - WebSocket STOMP connect must include native header `Authorization: Bearer <token>`. `CONFIRMED_FROM_CODE`
-- Only `ADMIN` and `SUPER_ADMIN` roles are allowed to connect. `CONFIRMED_FROM_CODE`
+- The token must belong to an `ACTIVE` admin account. CONNECT is not restricted to hardcoded role names. `CONFIRMED_FROM_CODE`
+- `WEBSOCKET_RULE_001`: Subscribing to the admin order topic requires the `orders.read` permission. The rule is permission-based, so built-in roles such as `SHOP_MANAGER` and custom roles can receive order events when granted `orders.read`; `ADMIN`/`SUPER_ADMIN` is not a hardcoded allowlist. Account status and current DB-backed permission are rechecked on every SUBSCRIBE. `CONFIRMED_FROM_CODE`
 - Current confirmed topic is `/topic/admin/orders`. `CONFIRMED_FROM_CODE`
 - Confirmed event type in the checkout flow is `NEW_ORDER`; `ORDER_STATUS_CHANGED` is declared in the event record comment but needs a live sender check before relying on it. `NEEDS_VERIFICATION`
 
