@@ -63,7 +63,7 @@ When migrating from IP:port to a domain, swap the public values in `.env.vps` fo
 
 ## Schema And Migration Notes
 
-- Active Flyway migrations run through `V73`. `CONFIRMED_FROM_CONFIG`
+- Flyway runs every versioned migration under `bigbike-backend/src/main/resources/db/migration`; the current repository reaches `V340` (2026-07-15). Do not use the former `V73` note as a schema baseline—verify the migration directory and `flyway_schema_history` for the deployed environment. `CONFIRMED_FROM_CONFIG`
 - Receipt tables (`V52/V53/V55`) were dropped in `V120`; the serial movement table (`V57`) and all other serial tables were dropped in `V259` (serial tracking removed 2026-06-23). POS order snapshot columns were added in `V71` and still exist, but the POS feature itself was removed 2026-06-23 (online-only) — the columns are now only written with online values. `CONFIRMED_FROM_CONFIG`
 
 ## Deployment Caveats

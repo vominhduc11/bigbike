@@ -23,7 +23,7 @@
 | Controllers | `api/admin`, `api/customer`, `api/order`, `api/public_`, `api/cart`, `api/checkout` | `CONFIRMED_FROM_CODE` | `src/main/java/com/bigbike/bigbike_backend/api` |
 | Services | Business logic in `service/*` | `CONFIRMED_FROM_CODE` | `src/main/java/com/bigbike/bigbike_backend/service` |
 | Persistence | JPA entities and repositories | `CONFIRMED_FROM_CODE` | `persistence/entity`, `persistence/repository` |
-| Schema | Flyway migrations through `V73` plus dev seeds | `CONFIRMED_FROM_CODE` | `src/main/resources/db/migration`, `db/migration-dev` |
+| Schema | Flyway versioned migrations (current repository through `V340`) plus dev seeds | `CONFIRMED_FROM_CODE` | `src/main/resources/db/migration`, `db/migration-dev` |
 | Auth | Admin JWT + customer cookie/session auth | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, auth services/filters |
 | Real-time | STOMP over WebSocket with simple broker | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java`, `AdminOrderWsService.java` |
 
