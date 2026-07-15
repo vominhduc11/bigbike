@@ -79,7 +79,7 @@ function toInteger(value, fallback = 0) {
 // Handles three origin forms stored in the DB:
 //   - http://minio:9000/...       (set by migration runner inside Docker)
 //   - http://localhost:9000/...   (set by migration when MINIO_ENDPOINT=localhost)
-//   - http://103.1.236.148:9000/... (legacy data imported from production MinIO)
+//   - extra legacy origins explicitly configured for the current deployment
 // VITE_MINIO_INTERNAL_ORIGIN overrides the primary internal origin (default: http://minio:9000).
 // VITE_MINIO_EXTRA_ORIGINS is a comma-separated list of additional origins to rewrite.
 const _MINIO_INTERNAL_ORIGIN = (
@@ -88,7 +88,7 @@ const _MINIO_INTERNAL_ORIGIN = (
 
 const _MINIO_LOCALHOST_ORIGIN = 'http://localhost:9000'
 
-const _MINIO_EXTRA_ORIGINS = (import.meta.env.VITE_MINIO_EXTRA_ORIGINS || 'http://103.1.236.148:9000')
+const _MINIO_EXTRA_ORIGINS = (import.meta.env.VITE_MINIO_EXTRA_ORIGINS || '')
   .split(',')
   .map((o) => o.trim().replace(/\/$/, ''))
   .filter(Boolean)

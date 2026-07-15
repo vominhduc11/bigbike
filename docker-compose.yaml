@@ -222,6 +222,9 @@ services:
         VITE_ADMIN_API_BASE: /api/v1
         # Docker-internal MinIO origin for rewriting backend URLs to /media-proxy/.
         VITE_MINIO_INTERNAL_ORIGIN: http://minio:9000
+        # Optional comma-separated legacy media origins. Blank by default; never bake a retired
+        # production host into the admin bundle implicitly.
+        VITE_MINIO_EXTRA_ORIGINS: ${VITE_MINIO_EXTRA_ORIGINS:-}
         # Storefront origin for "view on site" links AND the product/article live-preview
         # iframe src (browser-accessible URL). Local default = localhost:3000; for production
         # set VITE_STOREFRONT_BASE_URL=https://bigbike.vn in .env.

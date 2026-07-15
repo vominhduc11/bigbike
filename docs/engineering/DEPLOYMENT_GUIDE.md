@@ -25,8 +25,11 @@ and `BIGBIKE_LEGACY_UPLOADS_BASE` must be the server's public address (`http://<
 
 `bigbike-admin` is environment-portable: its browser calls hit relative paths (`/api/v1`,
 `/media/`, `/ws`) that nginx proxies to internal Docker hostnames (`bigbike-backend:8080`,
-`minio:9000`), so its API base never changes. The only per-env admin value is
-`VITE_STOREFRONT_BASE_URL` (live-preview iframe), now read from the env-file. `CONFIRMED_FROM_CONFIG`
+`minio:9000`), so its API base never changes. Admin build values that may vary by environment are
+`VITE_STOREFRONT_BASE_URL` (live-preview iframe) and optional `VITE_MINIO_EXTRA_ORIGINS`
+(comma-separated legacy media origins that must be rewritten through `/media-proxy/`). Both are
+passed from the env-file through Compose build args; the extra-origin list defaults to empty and
+must never contain a retired host implicitly. `CONFIRMED_FROM_CONFIG`
 
 > **Build-time bake:** every `NEXT_PUBLIC_*` and `VITE_*` value is compiled into the web/admin
 > bundle at build time. After changing any of them you MUST rebuild (`--build`); a plain
