@@ -28,6 +28,15 @@
 
 `SHOP_MANAGER` does **not** hold `media.read`/`media.write` (not seeded in `V49`) — it cannot access the Media Library at all.
 
+### Reviews permissions
+
+| Permission | Granted roles (seed) | Endpoint | Evidence |
+|---|---|---|---|
+| `reviews.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `GET /api/v1/admin/reviews` (list), `GET /api/v1/admin/reviews/{id}` (detail) | `AdminReviewController.java`, `AdminRolePermissions.java`, `PermissionCatalog.java` |
+| `reviews.write` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `PATCH /api/v1/admin/reviews/{id}/status`, `DELETE /api/v1/admin/reviews/{id}`, `POST /api/v1/admin/reviews/bulk-status`, `POST /api/v1/admin/reviews/bulk-delete` | `AdminReviewController.java`, `AdminRolePermissions.java` |
+
+(Bổ sung 2026-07-15, AUD-076 — hai quyền này đã tồn tại trong seed/catalog từ trước nhưng chưa được ghi vào matrix. Không có quyền `reviews.moderate`.)
+
 ### Catalog / Product permissions
 
 | Permission | Granted roles (seed) | Endpoints | Evidence |

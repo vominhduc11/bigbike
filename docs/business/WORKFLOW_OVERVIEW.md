@@ -62,7 +62,7 @@ Preview **không** đổi `publishStatus`, không lưu, và không expose draft 
 
 **Lý do khác WP gốc (WP dùng flyout dọc):** UX > bám WP khi menu sâu 4 cấp. Quyết định này do chủ dự án xác nhận ngày 2026-05-27.
 
-**Giới hạn đã biết (2026-06-16):** Trang category của nhóm L2 cha chỉ hiển thị sản phẩm gắn **trực tiếp** vào category đó — catalog hiện tại mỗi product chỉ thuộc 1 category, chưa có cơ chế "trang cha gồm sản phẩm của category con" (evidence: `CatalogReadService` lọc theo `matchesCategory` đúng slug, không union subcategory). Nếu category cha không có sản phẩm trực tiếp, trang sẽ hiện rỗng — đây là giới hạn dữ liệu/catalog, không phải lỗi link.
+**Giới hạn cũ đã được sửa (ghi nhận 2026-06-16, gỡ note 2026-07-15 — AUD-076):** trang category cha nay hiển thị cả sản phẩm của mọi category con (`CATEGORY_RULE_006` — `CatalogReadService.resolveCategorySlugsWithDescendants` + `matchesCategoryOrDescendants`), không còn tình trạng trang cha rỗng khi sản phẩm chỉ gắn vào category con.
 
 ## Address Workflow
 
