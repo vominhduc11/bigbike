@@ -89,68 +89,48 @@
       "description": "Admin menu and menu item CRUD + reorder — requires Admin JWT"
     },
     {
-      "name": "Admin Coupons",
-      "description": "Admin coupon CRUD and status management — requires Admin JWT"
-    },
-    {
       "name": "Admin Dashboard",
-      "description": "Admin dashboard overview ??? requires Admin JWT"
+      "description": "Admin dashboard overview — requires Admin JWT"
     },
     {
       "name": "Admin Home Videos",
-      "description": "Admin homepage video CRUD ??? requires Admin JWT"
+      "description": "Admin homepage video CRUD — requires Admin JWT"
     },
     {
       "name": "Admin Inventory",
-      "description": "Admin inventory list, movements and adjustments ??? requires Admin JWT"
+      "description": "Admin inventory stock list and summary (read-only; boolean availability model) — requires Admin JWT"
     },
     {
       "name": "Admin Reports",
-      "description": "Admin analytics and CSV exports ??? requires Admin JWT"
-    },
-    {
-      "name": "Admin Returns",
-      "description": "Admin return list, detail and status updates ??? requires Admin JWT"
+      "description": "Admin analytics and CSV exports — requires Admin JWT"
     },
     {
       "name": "Admin Roles",
-      "description": "Admin role CRUD and permission updates ??? requires Admin JWT"
-    },
-    {
-      "name": "Admin Shipping",
-      "description": "Admin shipping zone and method CRUD ??? requires Admin JWT"
+      "description": "Admin role CRUD and permission updates — requires Admin JWT"
     },
     {
       "name": "Admin Audit Logs",
-      "description": "Admin audit log list ??? requires Admin JWT"
+      "description": "Admin audit log list — requires Admin JWT"
     },
     {
       "name": "Admin Redirects",
-      "description": "Admin SEO redirect CRUD ??? requires Admin JWT"
+      "description": "Admin SEO redirect CRUD — requires Admin JWT"
     },
     {
       "name": "Admin Reviews",
-      "description": "Admin review moderation ??? requires Admin JWT"
+      "description": "Admin review moderation — requires Admin JWT"
     },
     {
       "name": "Admin Sliders",
-      "description": "Admin banner CRUD and reorder ??? requires Admin JWT"
+      "description": "Admin banner CRUD and reorder — requires Admin JWT"
     },
     {
       "name": "Admin Admin Users",
-      "description": "Admin user list, detail, create and update ??? requires Admin JWT"
-    },
-    {
-      "name": "Admin POS",
-      "description": "Admin point-of-sale search and order creation ??? requires Admin JWT"
+      "description": "Admin user list, detail, create and update — requires Admin JWT"
     },
     {
       "name": "Public Search",
       "description": "Public search and typeahead endpoints"
-    },
-    {
-      "name": "Public Address",
-      "description": "Public Vietnam administrative address lookup endpoints"
     }
   ],
   "paths": {
@@ -587,33 +567,6 @@
         }
       }
     },
-    "/api/v1/pages/{slug}": {
-      "get": {
-        "tags": [
-          "Public Content"
-        ],
-        "summary": "Get page by slug",
-        "operationId": "getPage",
-        "parameters": [
-          {
-            "name": "slug",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Page detail"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          }
-        }
-      }
-    },
     "/api/v1/settings/public": {
       "get": {
         "tags": [
@@ -956,7 +909,7 @@
         "tags": [
           "Cart"
         ],
-        "summary": "Clear all items and coupons from cart",
+        "summary": "Clear all items from cart",
         "operationId": "clearCart",
         "security": [
           {
@@ -1080,108 +1033,6 @@
         "responses": {
           "200": {
             "description": "Item removed"
-          }
-        }
-      }
-    },
-    "/api/v1/cart/coupons": {
-      "post": {
-        "tags": [
-          "Cart"
-        ],
-        "summary": "Apply coupon to cart",
-        "operationId": "applyCoupon",
-        "security": [
-          {
-            "CsrfHeader": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ApplyCouponRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Coupon applied",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CartDataResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          }
-        }
-      }
-    },
-    "/api/v1/cart/coupons/{code}": {
-      "delete": {
-        "tags": [
-          "Cart"
-        ],
-        "summary": "Remove coupon from cart",
-        "operationId": "removeCoupon",
-        "security": [
-          {
-            "CsrfHeader": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "code",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Coupon removed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CartDataResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          }
-        }
-      }
-    },
-    "/api/v1/checkout/options": {
-      "get": {
-        "tags": [
-          "Checkout"
-        ],
-        "summary": "Get available shipping and payment options",
-        "operationId": "getCheckoutOptions",
-        "responses": {
-          "200": {
-            "description": "Checkout options",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CheckoutOptionsDataResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -2113,36 +1964,6 @@
       }
     },
     "/api/v1/admin/settings/{settingKey}": {
-      "get": {
-        "tags": [
-          "Admin Settings"
-        ],
-        "summary": "Get setting by key",
-        "operationId": "adminGetSetting",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "settingKey",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Setting detail"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          }
-        }
-      },
       "patch": {
         "tags": [
           "Admin Settings"
@@ -2535,256 +2356,6 @@
           },
           "400": {
             "$ref": "#/components/responses/ValidationError"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/coupons": {
-      "get": {
-        "tags": [
-          "Admin Coupons"
-        ],
-        "summary": "List coupons (admin)",
-        "operationId": "adminListCoupons",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 20
-            }
-          },
-          {
-            "name": "q",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Coupon list"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Admin Coupons"
-        ],
-        "summary": "Create coupon (admin)",
-        "operationId": "adminCreateCoupon",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Created"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/coupons/{couponId}": {
-      "get": {
-        "tags": [
-          "Admin Coupons"
-        ],
-        "summary": "Get coupon by id (admin)",
-        "operationId": "adminGetCoupon",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "couponId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Coupon detail"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Admin Coupons"
-        ],
-        "summary": "Update coupon (admin)",
-        "operationId": "adminUpdateCoupon",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/coupons/{couponId}/status": {
-      "patch": {
-        "tags": [
-          "Admin Coupons"
-        ],
-        "summary": "Update coupon status (admin)",
-        "operationId": "adminUpdateCouponStatus",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/pos/products/search": {
-      "get": {
-        "tags": [
-          "Admin POS"
-        ],
-        "summary": "Search products for POS bar",
-        "description": "Returns published products matching name or SKU. Requires orders.write permission.",
-        "operationId": "posSearchProducts",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "q",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Search query (product name or SKU)"
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 20
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Product list matching query"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/pos/orders": {
-      "post": {
-        "tags": [
-          "Admin POS"
-        ],
-        "summary": "Create a POS in-store order",
-        "description": "Creates an order for walk-in customers. Immediately decrements stock. Requires orders.write permission.",
-        "operationId": "posCreateOrder",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PosCreateOrderRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "POS order created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PosOrderResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/ValidationError"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
         }
       }
@@ -3591,50 +3162,6 @@
         }
       }
     },
-    "/api/v1/admin/content/pages": {
-      "post": {
-        "tags": [
-          "Admin Content"
-        ],
-        "summary": "Create page (admin)",
-        "operationId": "adminCreatePage",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/content/pages/{id}": {
-      "patch": {
-        "tags": [
-          "Admin Content"
-        ],
-        "summary": "Update page (admin)",
-        "operationId": "adminUpdatePage",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      }
-    },
     "/api/v1/admin/media/{mediaId}/restore": {
       "post": {
         "tags": [
@@ -4054,144 +3581,6 @@
         }
       }
     },
-    "/api/v1/admin/inventory/movements": {
-      "get": {
-        "tags": [
-          "Admin Inventory"
-        ],
-        "summary": "List inventory movements (admin)",
-        "operationId": "adminInventoryMovements",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 20
-            }
-          },
-          {
-            "name": "q",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "variantId",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "type",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Inventory movements"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/inventory/export.csv": {
-      "get": {
-        "tags": [
-          "Admin Inventory"
-        ],
-        "summary": "Export inventory CSV (admin)",
-        "operationId": "adminInventoryExportCsv",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "CSV export"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/inventory/variants/{variantId}/movements": {
-      "get": {
-        "tags": [
-          "Admin Inventory"
-        ],
-        "summary": "List variant movements (admin)",
-        "operationId": "adminVariantMovements",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "variantId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Variant movements"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/inventory/variants/{variantId}/adjust": {
-      "post": {
-        "tags": [
-          "Admin Inventory"
-        ],
-        "summary": "Adjust variant stock (admin)",
-        "operationId": "adminAdjustVariantStock",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      }
-    },
     "/api/v1/admin/reports/analytics": {
       "get": {
         "tags": [
@@ -4354,128 +3743,6 @@
         }
       }
     },
-    "/api/v1/admin/returns": {
-      "get": {
-        "tags": [
-          "Admin Returns"
-        ],
-        "summary": "List returns (admin)",
-        "operationId": "adminListReturns",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 20
-            }
-          },
-          {
-            "name": "q",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "from",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "to",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Return list"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/returns/{returnId}": {
-      "get": {
-        "tags": [
-          "Admin Returns"
-        ],
-        "summary": "Get return by id (admin)",
-        "operationId": "adminGetReturn",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "returnId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Return detail"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/returns/{returnId}/status": {
-      "patch": {
-        "tags": [
-          "Admin Returns"
-        ],
-        "summary": "Update return status (admin)",
-        "operationId": "adminUpdateReturnStatus",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      }
-    },
     "/api/v1/admin/roles": {
       "get": {
         "tags": [
@@ -4548,239 +3815,6 @@
         ],
         "summary": "Delete role (admin)",
         "operationId": "adminDeleteRole",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "No content"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/shipping/zones": {
-      "get": {
-        "tags": [
-          "Admin Shipping"
-        ],
-        "summary": "List shipping zones (admin)",
-        "operationId": "adminListShippingZones",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 20
-            }
-          },
-          {
-            "name": "q",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Shipping zone list"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Admin Shipping"
-        ],
-        "summary": "Create shipping zone (admin)",
-        "operationId": "adminCreateShippingZone",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/shipping/zones/{id}": {
-      "get": {
-        "tags": [
-          "Admin Shipping"
-        ],
-        "summary": "Get shipping zone by id (admin)",
-        "operationId": "adminGetShippingZone",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Shipping zone detail"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Admin Shipping"
-        ],
-        "summary": "Update shipping zone (admin)",
-        "operationId": "adminUpdateShippingZone",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Admin Shipping"
-        ],
-        "summary": "Delete shipping zone (admin)",
-        "operationId": "adminDeleteShippingZone",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "No content"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/shipping/zones/{zoneId}/methods": {
-      "get": {
-        "tags": [
-          "Admin Shipping"
-        ],
-        "summary": "List shipping methods (admin)",
-        "operationId": "adminListShippingMethods",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "zoneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Shipping method list"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Admin Shipping"
-        ],
-        "summary": "Create shipping method (admin)",
-        "operationId": "adminCreateShippingMethod",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/shipping/zones/{zoneId}/methods/{methodId}": {
-      "patch": {
-        "tags": [
-          "Admin Shipping"
-        ],
-        "summary": "Update shipping method (admin)",
-        "operationId": "adminUpdateShippingMethod",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Admin Shipping"
-        ],
-        "summary": "Delete shipping method (admin)",
-        "operationId": "adminDeleteShippingMethod",
         "security": [
           {
             "AdminBearerAuth": []
@@ -5077,28 +4111,6 @@
         }
       }
     },
-    "/api/v1/admin/orders/{orderId}/refund": {
-      "post": {
-        "tags": [
-          "Admin Orders"
-        ],
-        "summary": "Create refund (admin)",
-        "operationId": "adminCreateRefund",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      }
-    },
     "/api/v1/home-videos": {
       "get": {
         "tags": [
@@ -5117,86 +4129,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/api/v1/search": {
-      "get": {
-        "tags": [
-          "Public Search"
-        ],
-        "summary": "Search products and articles",
-        "operationId": "publicSearch",
-        "parameters": [
-          {
-            "name": "q",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "type",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "description": "Comma-separated types."
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 50,
-              "default": 20
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Search results",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "query": {
-                          "type": "string"
-                        },
-                        "products": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "additionalProperties": true
-                          }
-                        },
-                        "articles": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "additionalProperties": true
-                          }
-                        }
-                      }
-                    },
-                    "meta": {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/ValidationError"
           }
         }
       }
@@ -5253,157 +4185,6 @@
                           "items": {
                             "type": "object",
                             "additionalProperties": true
-                          }
-                        }
-                      }
-                    },
-                    "meta": {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/ValidationError"
-          }
-        }
-      }
-    },
-    "/api/v1/address/provinces": {
-      "get": {
-        "tags": [
-          "Public Address"
-        ],
-        "summary": "List provinces",
-        "operationId": "listProvinces",
-        "responses": {
-          "200": {
-            "description": "Province list",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "code": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          }
-                        }
-                      }
-                    },
-                    "meta": {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/address/provinces/{provinceCode}/districts": {
-      "get": {
-        "tags": [
-          "Public Address"
-        ],
-        "summary": "List districts by province code",
-        "operationId": "listDistricts",
-        "parameters": [
-          {
-            "name": "provinceCode",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Province code token."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "District list",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "code": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          }
-                        }
-                      }
-                    },
-                    "meta": {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/ValidationError"
-          }
-        }
-      }
-    },
-    "/api/v1/address/districts/{districtCode}/wards": {
-      "get": {
-        "tags": [
-          "Public Address"
-        ],
-        "summary": "List wards by district code",
-        "operationId": "listWards",
-        "parameters": [
-          {
-            "name": "districtCode",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "District code token."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Ward list",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "code": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
                           }
                         }
                       }
@@ -5523,7 +4304,8 @@
                             "type": "string"
                           },
                           "district": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "Legacy — chỉ còn ở dữ liệu lịch sử; mô hình địa chỉ 2 cấp (tỉnh/thành → phường/xã) từ 01/07/2025, địa chỉ mới không thu thập quận/huyện."
                           },
                           "ward": {
                             "type": "string"
@@ -5580,7 +4362,6 @@
                   "fullName",
                   "phone",
                   "province",
-                  "district",
                   "ward",
                   "addressLine1"
                 ],
@@ -5602,7 +4383,8 @@
                     "type": "string"
                   },
                   "district": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Legacy — chỉ còn ở dữ liệu lịch sử; mô hình địa chỉ 2 cấp (tỉnh/thành → phường/xã) từ 01/07/2025, địa chỉ mới không thu thập quận/huyện."
                   },
                   "ward": {
                     "type": "string"
@@ -5658,7 +4440,8 @@
                           "type": "string"
                         },
                         "district": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Legacy — chỉ còn ở dữ liệu lịch sử; mô hình địa chỉ 2 cấp (tỉnh/thành → phường/xã) từ 01/07/2025, địa chỉ mới không thu thập quận/huyện."
                         },
                         "ward": {
                           "type": "string"
@@ -5730,7 +4513,6 @@
                   "fullName",
                   "phone",
                   "province",
-                  "district",
                   "ward",
                   "addressLine1"
                 ],
@@ -5752,7 +4534,8 @@
                     "type": "string"
                   },
                   "district": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Legacy — chỉ còn ở dữ liệu lịch sử; mô hình địa chỉ 2 cấp (tỉnh/thành → phường/xã) từ 01/07/2025, địa chỉ mới không thu thập quận/huyện."
                   },
                   "ward": {
                     "type": "string"
@@ -5808,7 +4591,8 @@
                           "type": "string"
                         },
                         "district": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Legacy — chỉ còn ở dữ liệu lịch sử; mô hình địa chỉ 2 cấp (tỉnh/thành → phường/xã) từ 01/07/2025, địa chỉ mới không thu thập quận/huyện."
                         },
                         "ward": {
                           "type": "string"
@@ -5873,469 +4657,6 @@
         "responses": {
           "204": {
             "description": "Address deleted"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          }
-        }
-      }
-    },
-    "/api/v1/customer/orders/returns": {
-      "get": {
-        "tags": [
-          "Customer Orders"
-        ],
-        "summary": "List customer returns",
-        "operationId": "listCustomerReturns",
-        "security": [
-          {
-            "CustomerSession": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Customer return list",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string",
-                        "format": "uuid"
-                      },
-                      "returnNumber": {
-                        "type": "string"
-                      },
-                      "orderId": {
-                        "type": "string",
-                        "format": "uuid"
-                      },
-                      "orderNumber": {
-                        "type": "string"
-                      },
-                      "status": {
-                        "type": "string"
-                      },
-                      "reason": {
-                        "type": "string"
-                      },
-                      "customerNote": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "adminNote": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "refundAmount": {
-                        "type": "number"
-                      },
-                      "items": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "productName": {
-                              "type": "string"
-                            },
-                            "variantName": {
-                              "type": "string",
-                              "nullable": true
-                            },
-                            "sku": {
-                              "type": "string",
-                              "nullable": true
-                            },
-                            "quantity": {
-                              "type": "integer"
-                            },
-                            "unitPrice": {
-                              "type": "number"
-                            },
-                            "reason": {
-                              "type": "string",
-                              "nullable": true
-                            }
-                          }
-                        }
-                      },
-                      "history": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "fromStatus": {
-                              "type": "string",
-                              "nullable": true
-                            },
-                            "toStatus": {
-                              "type": "string"
-                            },
-                            "note": {
-                              "type": "string",
-                              "nullable": true
-                            },
-                            "createdAt": {
-                              "type": "string",
-                              "format": "date-time"
-                            }
-                          }
-                        }
-                      },
-                      "createdAt": {
-                        "type": "string",
-                        "format": "date-time"
-                      },
-                      "updatedAt": {
-                        "type": "string",
-                        "format": "date-time"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      }
-    },
-    "/api/v1/customer/orders/returns/{returnId}": {
-      "get": {
-        "tags": [
-          "Customer Orders"
-        ],
-        "summary": "Get customer return detail",
-        "operationId": "getCustomerReturn",
-        "security": [
-          {
-            "CustomerSession": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "returnId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Customer return detail",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "returnNumber": {
-                      "type": "string"
-                    },
-                    "orderId": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "orderNumber": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "string"
-                    },
-                    "reason": {
-                      "type": "string"
-                    },
-                    "customerNote": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "adminNote": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "refundAmount": {
-                      "type": "number"
-                    },
-                    "items": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "format": "uuid"
-                          },
-                          "productName": {
-                            "type": "string"
-                          },
-                          "variantName": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "sku": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "quantity": {
-                            "type": "integer"
-                          },
-                          "unitPrice": {
-                            "type": "number"
-                          },
-                          "reason": {
-                            "type": "string",
-                            "nullable": true
-                          }
-                        }
-                      }
-                    },
-                    "history": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "fromStatus": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "toStatus": {
-                            "type": "string"
-                          },
-                          "note": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "createdAt": {
-                            "type": "string",
-                            "format": "date-time"
-                          }
-                        }
-                      }
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "updatedAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          }
-        }
-      }
-    },
-    "/api/v1/customer/orders/{orderId}/returns": {
-      "post": {
-        "tags": [
-          "Customer Orders"
-        ],
-        "summary": "Create customer return request",
-        "operationId": "createCustomerReturn",
-        "security": [
-          {
-            "CustomerSession": []
-          },
-          {
-            "CsrfHeader": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "orderId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "reason",
-                  "items"
-                ],
-                "properties": {
-                  "reason": {
-                    "type": "string"
-                  },
-                  "customerNote": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "items": {
-                    "type": "array",
-                    "minItems": 1,
-                    "items": {
-                      "type": "object",
-                      "required": [
-                        "orderLineItemId",
-                        "quantity"
-                      ],
-                      "properties": {
-                        "orderLineItemId": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "quantity": {
-                          "type": "integer",
-                          "minimum": 1
-                        },
-                        "reason": {
-                          "type": "string",
-                          "nullable": true
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Return created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "returnNumber": {
-                      "type": "string"
-                    },
-                    "orderId": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "orderNumber": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "string"
-                    },
-                    "reason": {
-                      "type": "string"
-                    },
-                    "customerNote": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "adminNote": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "refundAmount": {
-                      "type": "number"
-                    },
-                    "items": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "format": "uuid"
-                          },
-                          "productName": {
-                            "type": "string"
-                          },
-                          "variantName": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "sku": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "quantity": {
-                            "type": "integer"
-                          },
-                          "unitPrice": {
-                            "type": "number"
-                          },
-                          "reason": {
-                            "type": "string",
-                            "nullable": true
-                          }
-                        }
-                      }
-                    },
-                    "history": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "fromStatus": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "toStatus": {
-                            "type": "string"
-                          },
-                          "note": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "createdAt": {
-                            "type": "string",
-                            "format": "date-time"
-                          }
-                        }
-                      }
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "updatedAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -6535,51 +4856,6 @@
           "timestamp": {
             "type": "string",
             "format": "date-time"
-          }
-        }
-      },
-      "ApiErrorDetail": {
-        "type": "object",
-        "properties": {
-          "field": {
-            "type": "string"
-          },
-          "code": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          }
-        }
-      },
-      "ApiError": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string",
-            "example": "VALIDATION_ERROR"
-          },
-          "message": {
-            "type": "string",
-            "example": "Validation failed."
-          },
-          "details": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ApiErrorDetail"
-            }
-          }
-        }
-      },
-      "ApiErrorResponse": {
-        "type": "object",
-        "description": "Standard error envelope used by all error responses",
-        "properties": {
-          "error": {
-            "$ref": "#/components/schemas/ApiError"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/ApiMeta"
           }
         }
       },
@@ -6882,45 +5158,6 @@
           }
         }
       },
-      "ApplyCouponRequest": {
-        "type": "object",
-        "required": [
-          "code"
-        ],
-        "properties": {
-          "code": {
-            "type": "string"
-          }
-        }
-      },
-      "CheckoutOptionsResponse": {
-        "type": "object",
-        "properties": {
-          "paymentMethods": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          },
-          "shippingMethods": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          }
-        }
-      },
-      "CheckoutOptionsDataResponse": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/CheckoutOptionsResponse"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/ApiMeta"
-          }
-        }
-      },
       "CheckoutRequest": {
         "type": "object",
         "required": [
@@ -6934,10 +5171,11 @@
             "type": "object"
           },
           "paymentMethod": {
-            "type": "string"
-          },
-          "shippingMethod": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "COD"
+            ],
+            "description": "COD là phương thức duy nhất (PAY_RULE_001, owner decision 2026-07-15). Bỏ trống sẽ được normalize thành COD; mã khác bị 400."
           },
           "notes": {
             "type": "string"
@@ -7055,25 +5293,6 @@
           }
         }
       },
-      "SubmitReviewResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean"
-          }
-        }
-      },
-      "SubmitReviewDataResponse": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/SubmitReviewResponse"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/ApiMeta"
-          }
-        }
-      },
       "UpdateOrderStatusRequest": {
         "type": "object",
         "required": [
@@ -7102,75 +5321,6 @@
               "REFUNDED",
               "CANCELLED"
             ]
-          }
-        }
-      },
-      "CreateOrderNoteRequest": {
-        "type": "object",
-        "required": [
-          "note"
-        ],
-        "properties": {
-          "note": {
-            "type": "string"
-          },
-          "isCustomerVisible": {
-            "type": "boolean"
-          }
-        }
-      },
-      "UpdateCustomerRequest": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string",
-            "format": "email"
-          },
-          "phone": {
-            "type": "string"
-          },
-          "displayName": {
-            "type": "string"
-          },
-          "firstName": {
-            "type": "string"
-          },
-          "lastName": {
-            "type": "string"
-          }
-        }
-      },
-      "UpdateCustomerStatusRequest": {
-        "type": "object",
-        "required": [
-          "status"
-        ],
-        "properties": {
-          "status": {
-            "type": "string",
-            "enum": [
-              "ACTIVE",
-              "DISABLED",
-              "BLOCKED",
-              "PENDING"
-            ]
-          },
-          "reason": {
-            "type": "string"
-          }
-        }
-      },
-      "UpdateMediaRequest": {
-        "type": "object",
-        "properties": {
-          "altText": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
           }
         }
       },
@@ -7291,38 +5441,6 @@
           },
           "meta": {
             "$ref": "#/components/schemas/ApiMeta"
-          }
-        }
-      },
-      "UpsertSliderRequest": {
-        "type": "object",
-        "required": [
-          "location",
-          "sortOrder"
-        ],
-        "properties": {
-          "location": {
-            "type": "string",
-            "example": "home"
-          },
-          "sortOrder": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "desktopImage": {
-            "$ref": "#/components/schemas/SliderImage"
-          },
-          "mobileImage": {
-            "$ref": "#/components/schemas/SliderImage",
-            "nullable": true
-          },
-          "productId": {
-            "type": "string",
-            "nullable": true
-          },
-          "externalLink": {
-            "type": "string",
-            "nullable": true
           }
         }
       },
@@ -7537,140 +5655,6 @@
                 }
               }
             }
-          }
-        }
-      },
-      "CreateCouponRequest": {
-        "type": "object",
-        "required": [
-          "code",
-          "name",
-          "discountType",
-          "amount"
-        ],
-        "properties": {
-          "code": {
-            "type": "string",
-            "example": "SUMMER20"
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "discountType": {
-            "type": "string",
-            "enum": [
-              "FIXED",
-              "PERCENT"
-            ]
-          },
-          "amount": {
-            "type": "number",
-            "minimum": 0.01
-          },
-          "minimumAmount": {
-            "type": "number",
-            "minimum": 0
-          },
-          "maximumAmount": {
-            "type": "number",
-            "minimum": 0
-          },
-          "usageLimit": {
-            "type": "integer"
-          },
-          "startsAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "expiresAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "ACTIVE",
-              "INACTIVE",
-              "EXPIRED",
-              "ARCHIVED"
-            ],
-            "default": "ACTIVE"
-          },
-          "metadata": {
-            "type": "string"
-          }
-        }
-      },
-      "UpdateCouponRequest": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "discountType": {
-            "type": "string",
-            "enum": [
-              "FIXED",
-              "PERCENT"
-            ]
-          },
-          "amount": {
-            "type": "number"
-          },
-          "minimumAmount": {
-            "type": "number"
-          },
-          "maximumAmount": {
-            "type": "number"
-          },
-          "usageLimit": {
-            "type": "integer"
-          },
-          "startsAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "expiresAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "ACTIVE",
-              "INACTIVE",
-              "EXPIRED",
-              "ARCHIVED"
-            ]
-          },
-          "metadata": {
-            "type": "string"
-          }
-        }
-      },
-      "UpdateCouponStatusRequest": {
-        "type": "object",
-        "required": [
-          "status"
-        ],
-        "properties": {
-          "status": {
-            "type": "string",
-            "enum": [
-              "ACTIVE",
-              "INACTIVE",
-              "EXPIRED",
-              "ARCHIVED"
-            ]
           }
         }
       },
@@ -8002,123 +5986,6 @@
           }
         }
       },
-      "PosLineItemRequest": {
-        "type": "object",
-        "required": [
-          "productId",
-          "quantity"
-        ],
-        "properties": {
-          "productId": {
-            "type": "string",
-            "description": "Product ID (required)"
-          },
-          "productVariantId": {
-            "type": "string",
-            "nullable": true,
-            "description": "Variant ID (required if product has variants)"
-          },
-          "quantity": {
-            "type": "integer",
-            "minimum": 1,
-            "description": "Quantity to sell (must be >= 1)"
-          },
-          "unitPriceOverride": {
-            "type": "number",
-            "nullable": true,
-            "description": "Override unit price (must be >= 0 if provided; null = use DB price)"
-          }
-        }
-      },
-      "PosCreateOrderRequest": {
-        "type": "object",
-        "required": [
-          "items",
-          "paymentMethod"
-        ],
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PosLineItemRequest"
-            },
-            "minItems": 1
-          },
-          "customerName": {
-            "type": "string",
-            "nullable": true
-          },
-          "customerPhone": {
-            "type": "string",
-            "nullable": true
-          },
-          "customerNote": {
-            "type": "string",
-            "nullable": true
-          },
-          "paymentMethod": {
-            "type": "string",
-            "enum": [
-              "CASH",
-              "CARD_TERMINAL"
-            ]
-          },
-          "tenderedAmount": {
-            "type": "integer",
-            "nullable": true,
-            "description": "Cash tendered by customer (VND, must be >= totalAmount if provided)"
-          },
-          "cardReferenceNumber": {
-            "type": "string",
-            "nullable": true,
-            "description": "Card/terminal transaction reference"
-          },
-          "staffNote": {
-            "type": "string",
-            "nullable": true
-          },
-          "posIdempotencyKey": {
-            "type": "string",
-            "nullable": true,
-            "description": "Client-generated UUID to prevent duplicate submissions"
-          }
-        }
-      },
-      "PosOrderResponse": {
-        "type": "object",
-        "properties": {
-          "orderId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "orderNumber": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string",
-            "description": "COMPLETED for CASH/CARD_TERMINAL"
-          },
-          "paymentStatus": {
-            "type": "string",
-            "description": "PAID for CASH/CARD_TERMINAL"
-          },
-          "paymentMethod": {
-            "type": "string"
-          },
-          "totalAmount": {
-            "type": "number"
-          },
-          "tenderedAmount": {
-            "type": "integer",
-            "nullable": true
-          },
-          "changeAmount": {
-            "type": "integer",
-            "nullable": true,
-            "description": "Change to return to customer (CASH only)"
-          }
-        }
-      },
       "PublicHomeVideoResponse": {
         "type": "object",
         "properties": {
@@ -8163,6 +6030,51 @@
           },
           "meta": {
             "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
+      "ApiErrorResponse": {
+        "type": "object",
+        "description": "Standard error envelope used by all error responses",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "VALIDATION_ERROR"
+          },
+          "message": {
+            "type": "string",
+            "example": "Validation failed."
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiErrorDetail"
+            }
+          }
+        }
+      },
+      "ApiErrorDetail": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
           }
         }
       }
