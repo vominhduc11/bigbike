@@ -53,8 +53,10 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio_admin}
       MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set - see .env.example}"
+    # Bind to loopback only (AUD-009) — production traffic must arrive via the nginx
+    # reverse proxy; direct external access to MinIO would bypass TLS/rate limiting.
     ports:
-      - "0.0.0.0:9000:9000"
+      - "127.0.0.1:9000:9000"
       - "127.0.0.1:9001:9001"
     volumes:
       - minio_data:/data
@@ -80,8 +82,10 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+    # Bind to loopback only (AUD-009) — the API must not be reachable on an external
+    # interface without the nginx reverse proxy (TLS, rate limit, security headers).
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     deploy:
       resources:
         limits:
@@ -126,9 +130,22 @@ services:
       BIGBIKE_MAIL_SMTP_AUTH: "${BIGBIKE_MAIL_SMTP_AUTH:-true}"
       BIGBIKE_MAIL_STARTTLS: "${BIGBIKE_MAIL_STARTTLS:-true}"
       BIGBIKE_MAIL_FROM: "${BIGBIKE_MAIL_FROM:-no-reply@bigbike.vn}"
+      BIGBIKE_MAIL_FROM_NAME: "${BIGBIKE_MAIL_FROM_NAME:-BigBike}"
       BIGBIKE_MAIL_ADMIN: "${BIGBIKE_MAIL_ADMIN:-info@bigbike.vn}"
       BIGBIKE_MAIL_VERIFY_BASE_URL: "${BIGBIKE_MAIL_VERIFY_BASE_URL:-https://bigbike.vn/xac-nhan-email}"
       BIGBIKE_MAIL_RESET_BASE_URL: "${BIGBIKE_MAIL_RESET_BASE_URL:-https://bigbike.vn/quen-mat-khau}"
+      # Admin invite set-password page (AUD-061). Without this the backend fell back to its
+      # application.properties default (http://localhost:4000/accept-invite) — invite emails
+      # sent from a deployed stack pointed staff to localhost.
+      BIGBIKE_MAIL_ADMIN_INVITE_BASE_URL: "${BIGBIKE_MAIL_ADMIN_INVITE_BASE_URL:-https://admin.bigbike.vn/accept-invite}"
+      # Social login (AUD-062): forward the six OAuth vars — without them the backend saw
+      # blank client ids inside Docker and social login was silently disabled.
+      OAUTH_GOOGLE_CLIENT_ID: "${OAUTH_GOOGLE_CLIENT_ID:-}"
+      OAUTH_GOOGLE_CLIENT_SECRET: "${OAUTH_GOOGLE_CLIENT_SECRET:-}"
+      OAUTH_FACEBOOK_CLIENT_ID: "${OAUTH_FACEBOOK_CLIENT_ID:-}"
+      OAUTH_FACEBOOK_CLIENT_SECRET: "${OAUTH_FACEBOOK_CLIENT_SECRET:-}"
+      OAUTH_CALLBACK_BASE_URL: "${OAUTH_CALLBACK_BASE_URL:-http://localhost:8080}"
+      OAUTH_WEB_SUCCESS_URL: "${OAUTH_WEB_SUCCESS_URL:-http://localhost:3000}"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/actuator/health"]
       interval: 30s
@@ -164,7 +181,7 @@ services:
     # Bind to loopback only — production traffic must arrive via the nginx reverse proxy
     # (TLS, rate limit, security headers). localhost access for local dev still works.
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     deploy:
       resources:
         limits:
@@ -217,7 +234,7 @@ services:
     # Bind to loopback only — the admin dashboard must not be reachable on an external
     # interface without the nginx reverse proxy in front of it.
     ports:
-      - "4000:80"
+      - "127.0.0.1:4000:80"
     deploy:
       resources:
         limits:

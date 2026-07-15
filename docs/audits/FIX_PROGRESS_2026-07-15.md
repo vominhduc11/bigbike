@@ -27,22 +27,22 @@
 
 | AUD | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
-| AUD-004 | Xóa vĩnh viễn bài viết không được xóa object MinIO còn nơi khác dùng | ✅ | `MediaReferenceService.isObjectKeyReferencedOutsideArticle` quét media/products (image+gallery+blocks)/variants/categories/brands/home_videos/sliders/reviews/settings + articles khác; `hardDeleteArticle` chỉ xóa object không còn ai tham chiếu; object thuộc Media Library (còn dòng `media`) không bao giờ xóa qua đường này |
-| AUD-008 | Auto slug redirect phải có loop check + cache invalidation | ✅ | `SlugRedirectHelper`: guard self-loop, xóa redirect FROM URL mới sống lại (chặn A→B→A), canonicalize path, gọi `revalidateRedirects()` như luồng admin |
-| AUD-012 | Sửa 2 route hướng dẫn đang trả 404 | ✅ | Không bịa nội dung: 301 `/huong-dan/mua-hang/`(+biến thể legacy)→`/huong-dan/`; `/huong-dan/size-gang-tay/`→`/huong-dan/size-trang-phuc/` (đã gồm găng tay). Docs BUSINESS_RULES ghi bộ 2 trang con hiện hành |
-| AUD-013 | Trang tĩnh kích hoạt đúng nội dung EN khi chuyển ngôn ngữ | ✅ | Component mới `LocaleSwitch` (server render sẵn 2 nhánh VI/EN, client chọn theo locale — giữ ISR); áp cho GuidePage + PolicyPage. Lưu ý: `bodyEn` của cả 5 trang tĩnh đang RỖNG → EN fallback VI theo thiết kế; muốn EN thật phải soạn nội dung (việc owner) |
-| AUD-014 | List sản phẩm/thương hiệu/tin tức EN refetch đúng ngôn ngữ | ✅ | Chỉ seed initialData cho key `vi` (pattern ProductView) ở CatalogClient/BrandListClient/ArticleListClient — key `en` luôn fetch tươi |
-| AUD-015 | Sitemap/route EN nhất quán (trang EN crawl được độc lập) | ✅ | Sitemap chỉ khai URL VI canonical, bỏ toàn bộ entry/alternates EN (EN là trải nghiệm client-side, alias EN bị proxy 307 với crawler — khai lên chỉ tạo redirect/duplicate). Nếu sau này dựng routing EN độc lập thì thêm lại |
-| AUD-063 | Gỡ 3 vị trí slider khỏi admin, chỉ giữ `home`; không xóa data cũ | ✅ | Quyết định #4: admin bỏ filter + Select vị trí (màn chỉ còn home); backend reject vị trí ≠ home cho create/patch-đổi-vị-trí (data cũ giữ nguyên); dọn locale keys + preset `sliderMobile`; docs API_CONTRACT/DATA_CONTRACT cập nhật; test `createSlider_rejectsNonHomeLocation` |
+| AUD-004 | Xóa vĩnh viễn bài viết không được xóa object MinIO còn nơi khác dùng | ✅ `6d12c864` | `MediaReferenceService.isObjectKeyReferencedOutsideArticle` quét media/products (image+gallery+blocks)/variants/categories/brands/home_videos/sliders/reviews/settings + articles khác; `hardDeleteArticle` chỉ xóa object không còn ai tham chiếu; object thuộc Media Library (còn dòng `media`) không bao giờ xóa qua đường này |
+| AUD-008 | Auto slug redirect phải có loop check + cache invalidation | ✅ `6d12c864` | `SlugRedirectHelper`: guard self-loop, xóa redirect FROM URL mới sống lại (chặn A→B→A), canonicalize path, gọi `revalidateRedirects()` như luồng admin |
+| AUD-012 | Sửa 2 route hướng dẫn đang trả 404 | ✅ `6d12c864` | Không bịa nội dung: 301 `/huong-dan/mua-hang/`(+biến thể legacy)→`/huong-dan/`; `/huong-dan/size-gang-tay/`→`/huong-dan/size-trang-phuc/` (đã gồm găng tay). Docs BUSINESS_RULES ghi bộ 2 trang con hiện hành |
+| AUD-013 | Trang tĩnh kích hoạt đúng nội dung EN khi chuyển ngôn ngữ | ✅ `6d12c864` | Component mới `LocaleSwitch` (server render sẵn 2 nhánh VI/EN, client chọn theo locale — giữ ISR); áp cho GuidePage + PolicyPage. Lưu ý: `bodyEn` của cả 5 trang tĩnh đang RỖNG → EN fallback VI theo thiết kế; muốn EN thật phải soạn nội dung (việc owner) |
+| AUD-014 | List sản phẩm/thương hiệu/tin tức EN refetch đúng ngôn ngữ | ✅ `6d12c864` | Chỉ seed initialData cho key `vi` (pattern ProductView) ở CatalogClient/BrandListClient/ArticleListClient — key `en` luôn fetch tươi |
+| AUD-015 | Sitemap/route EN nhất quán (trang EN crawl được độc lập) | ✅ `6d12c864` | Sitemap chỉ khai URL VI canonical, bỏ toàn bộ entry/alternates EN (EN là trải nghiệm client-side, alias EN bị proxy 307 với crawler — khai lên chỉ tạo redirect/duplicate). Nếu sau này dựng routing EN độc lập thì thêm lại |
+| AUD-063 | Gỡ 3 vị trí slider khỏi admin, chỉ giữ `home`; không xóa data cũ | ✅ `6d12c864` | Quyết định #4: admin bỏ filter + Select vị trí (màn chỉ còn home); backend reject vị trí ≠ home cho create/patch-đổi-vị-trí (data cũ giữ nguyên); dọn locale keys + preset `sliderMobile`; docs API_CONTRACT/DATA_CONTRACT cập nhật; test `createSlider_rejectsNonHomeLocation` |
 
 ## Phase 1C — High: Bảo mật, cấu hình hạ tầng
 
 | AUD | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
-| AUD-009 | Compose bind 127.0.0.1 cho backend/MinIO; KHÔNG tự restart | ⬜ | User áp dụng sau |
-| AUD-020 | Nâng dependency web có advisory (3 High + 10 thấp hơn) | ⬜ | Không major-bump phá build |
-| AUD-061 | Thêm biến invite URL admin vào compose + `.env.example` | ⬜ | |
-| AUD-062 | Truyền 6 biến OAuth Google/Facebook qua compose + `.env.example` | ⬜ | |
+| AUD-009 | Compose bind 127.0.0.1 cho backend/MinIO; KHÔNG tự restart | ✅ | Bind `127.0.0.1` cho backend:8080, MinIO:9000 (+9001), và luôn cả web:3000/admin:4000 (comment sẵn ghi loopback-only nhưng thực tế bind mọi interface — cùng lỗ hổng bypass nginx). `docker compose config` pass. **CHƯA restart** — user tự áp dụng; lưu ý nginx trên VPS phải proxy qua 127.0.0.1 (không qua IP bridge) |
+| AUD-020 | Nâng dependency web có advisory (3 High + 10 thấp hơn) | ✅ | `npm audit fix` + next 16.2.4→16.2.10 (cùng major) + esbuild 0.27.7→0.28.1, undici/vite vá theo range. Từ 16 advisory (4 High) còn **2 moderate upstream-only** (postcss đóng gói bên trong next — "fix" của npm là downgrade next về 9.x, không hợp lệ; chờ bản next mới). Test 208/208 + lint + build pass |
+| AUD-061 | Thêm biến invite URL admin vào compose + `.env.example` | ✅ | Compose forward `BIGBIKE_MAIL_ADMIN_INVITE_BASE_URL` (+ `BIGBIKE_MAIL_FROM_NAME` cũng bị sót) vào backend; `.env.example` đã có sẵn biến này từ trước |
+| AUD-062 | Truyền 6 biến OAuth Google/Facebook qua compose + `.env.example` | ✅ | Compose forward đủ 6 biến `OAUTH_*` vào backend; `.env.example` đã có sẵn. User cần điền `.env` thật rồi khởi động lại stack |
 
 ## Phase 1D — High: Email đơn & thông báo admin
 
@@ -68,7 +68,7 @@
 | AUD-028 | PDP tiếng Anh fallback về VI thay vì mất field | ⬜ | |
 | AUD-029 | Option hết hàng vẫn xem được (không disable chọn để xem ảnh) | ⬜ | |
 | AUD-030 | Gỡ filter `REFUNDED` ở web + sửa copy hủy đơn (không nói hoàn tồn) | ⬜ | Theo quyết định #7 |
-| AUD-031 | Canonical trang chính sách trỏ route thực sự được build | ✅ | Làm sớm cùng 1B (chung file với AUD-013): sửa 4 `seoCanonicalUrl` trong static-pages.json về route thực; `/chinh-sach` chỉ build đúng 3 slug chính sách (quyết định #6); 301 các canonical cũ chưa từng build về route thực |
+| AUD-031 | Canonical trang chính sách trỏ route thực sự được build | ✅ `6d12c864` | Làm sớm cùng 1B (chung file với AUD-013): sửa 4 `seoCanonicalUrl` trong static-pages.json về route thực; `/chinh-sach` chỉ build đúng 3 slug chính sách (quyết định #6); 301 các canonical cũ chưa từng build về route thực |
 | AUD-032 | Form đánh giá gửi email khách đã nhập | ⬜ | |
 | AUD-033 | Checkout/account: chuỗi + hotline/địa chỉ theo locale/settings | ⬜ | |
 | AUD-034 | Xóa vĩnh viễn danh mục: cảnh báo đủ số sản phẩm + danh mục con | ⬜ | |
