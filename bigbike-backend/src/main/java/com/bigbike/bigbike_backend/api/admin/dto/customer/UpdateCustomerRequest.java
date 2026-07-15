@@ -9,7 +9,7 @@ public record UpdateCustomerRequest(
         @Size(max = 255, message = "Email không được vượt quá 255 ký tự.")
         String email,
 
-        @Pattern(regexp = "^\\+?[0-9]{8,15}$", message = "Số điện thoại không hợp lệ.")
+        @Pattern(regexp = "^(?:\\s*|\\+?[0-9]{8,15})$", message = "Số điện thoại không hợp lệ.")
         String phone,
 
         @Size(max = 255, message = "Tên hiển thị không được vượt quá 255 ký tự.")

@@ -174,6 +174,35 @@ class Phase1IAdminManagementApiTest {
                 .andExpect(status().isConflict());
     }
 
+    @Test
+    void updateCustomer_blankPhone_clearsStoredPhone() throws Exception {
+        UUID customerId = createTestCustomer("phone-clear-" + UUID.randomUUID() + "@bigbike.test");
+        CustomerEntity customer = customerRepo.findById(customerId).orElseThrow();
+        customer.setPhone("0901234567");
+        customerRepo.saveAndFlush(customer);
+
+        mockMvc.perform(patch("/api/v1/admin/customers/" + customerId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"phone\":\"\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        assertThat(customerRepo.findById(customerId).orElseThrow().getPhone()).isNull();
+    }
+
+    @Test
+    void updateCustomer_invalidPhone_returnsFieldValidationError() throws Exception {
+        UUID customerId = createTestCustomer("phone-invalid-" + UUID.randomUUID() + "@bigbike.test");
+
+        mockMvc.perform(patch("/api/v1/admin/customers/" + customerId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"phone\":\"not-a-phone\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[?(@.field == 'phone')]").exists());
+    }
+
     // 7. Update customer status — disables customer
     @Test
     void updateCustomerStatus_disablesCustomer() throws Exception {

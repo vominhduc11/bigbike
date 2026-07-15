@@ -23,6 +23,7 @@ import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerAddre
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.customer.CustomerSessionService;
+import com.bigbike.bigbike_backend.util.PhoneNumbers;
 import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -187,9 +188,15 @@ public class AdminCustomerService {
         }
 
         // Phone uniqueness check — chuẩn hóa SĐT (nhất quán với đăng ký) trước khi đối chiếu/lưu
-        if (req.phone() != null && !req.phone().isBlank()) {
-            String normalizedPhone = com.bigbike.bigbike_backend.util.PhoneNumbers.normalize(req.phone());
-            if (normalizedPhone != null) {
+        if (req.phone() != null) {
+            if (req.phone().isBlank()) {
+                customer.setPhone(null);
+            } else {
+                String normalizedPhone = PhoneNumbers.normalize(req.phone());
+                if (normalizedPhone == null) {
+                    throw ValidationException.fromField(
+                            "phone", "INVALID_PHONE", "Số điện thoại không hợp lệ.");
+                }
                 customerRepo.findByPhone(normalizedPhone).ifPresent(existing -> {
                     if (!existing.getId().equals(customerId)) {
                         throw new ConflictException("Phone already in use by another customer.");

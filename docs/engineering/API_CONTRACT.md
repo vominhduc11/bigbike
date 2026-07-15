@@ -1260,6 +1260,7 @@ Trang `/lien-he` là **trang tĩnh hoàn toàn**: bố cục, nhãn, tiêu đề
 | Method | Path | Permission | Current behavior | Status | Evidence |
 |---|---|---|---|---|---|
 | `GET` | `/api/v1/admin/customers/summary` | `customers.read` | KPI counts for the admin Customers screen. Returns `AdminCustomerSummaryResponse`: `total` (all customers), `vip` (customers whose lifetime order total ≥ 10,000,000 VND — mirrors `AdminCustomerService.deriveSegment` VIP rule), `newLast30Days` (registered within the last 30 days), `active` (status = `ACTIVE`). | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java`, `AdminCustomerService.java` |
+| `PATCH` | `/api/v1/admin/customers/{customerId}` | `customers.write` | Updates profile fields. `phone = null` means unchanged; blank phone explicitly clears the stored number; a non-blank phone must pass validation and normalization or returns `400 VALIDATION_ERROR` on field `phone`. A normalized number owned by another customer returns `409`. | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java`, `AdminCustomerService.java`, `Phase1IAdminManagementApiTest.java` |
 
 ## Redirect Management Contract
 
