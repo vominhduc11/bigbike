@@ -2,15 +2,17 @@
 
 Chỉ còn **1 file duy nhất**: `mau-day-du.json`. Mỗi object trong mảng = **một sản phẩm hoàn chỉnh** (hàng hoá + nội dung). Nạp ở trang quản trị: **Sản phẩm → Nhập từ file**, hai bước *Kiểm tra* (xem trước, chưa lưu) → *Xác nhận nhập* (lưu thật).
 
-> **Trước đây** bộ này gồm 2 file (CSV hàng hoá + JSON nội dung, khớp nhau bằng SKU). **Từ 2026-07-06 gộp về 1 file JSON** — file JSON chứa được trọn vẹn cả hàng hoá (giá, kho, ảnh, biến thể, SEO) lẫn nội dung (mô tả, FAQ, dải tin cậy, cam kết, video…), nên không cần CSV nữa.
+> **Trước đây** bộ này gồm 2 file (CSV hàng hoá + JSON nội dung, khớp nhau bằng SKU). **Từ 2026-07-06 gộp về 1 file JSON** — file JSON chứa hàng hoá và nội dung chính cần nhập hàng loạt (giá, biến thể, SEO, mô tả, FAQ, dải tin cậy, cam kết…), nên không cần CSV nữa. Ảnh/video/sản phẩm liên quan vẫn sửa trực tiếp trong trang quản trị khi muốn đổi thật.
 >
 > **Từ 2026-07-07: mỗi cột song ngữ gộp chung thành 1 object lồng nhau** ngay tại vị trí cột đó — ví dụ tên sản phẩm giờ là `"name": { "nameVI": "...", "nameEN": "..." }` thay vì `"name": "..."` ở ngoài + `translations.en.name` ở một khối riêng cuối object. Khoá `translations` cấp cao nhất **không còn tồn tại**. Nút **"Tải dữ liệu hiện tại"** cũng trả về đúng shape mới này — nhập và xuất luôn khớp nhau.
 >
-> **Cũng từ 2026-07-07: "Phù hợp với ai" và "Bảng size" tách khỏi `descriptionBlocks`** thành 2 khoá riêng cấp cao nhất `suitabilitySection`/`sizeGuideSection` (đảo lại quyết định trước đó là để chúng làm khối `type: "suitability"`/`"sizeGuide"` trong mảng mô tả) — trình dựng mô tả trên trang quản trị giờ chỉ còn 4 loại khối: tiêu đề đoạn văn/ảnh/tính năng.
+> **Cũng từ 2026-07-07: "Phù hợp với ai" và "Bảng size" tách khỏi `descriptionBlocks`** thành 2 khoá riêng cấp cao nhất `suitabilitySection`/`sizeGuideSection` (đảo lại quyết định trước đó là để chúng làm khối `type: "suitability"`/`"sizeGuide"` trong mảng mô tả) — trình dựng mô tả sản phẩm trên trang quản trị chỉ còn 4 khối Notion: **mô tả**, **hình ảnh**, **ảnh phải + chữ trái**, **ảnh trái + chữ phải**.
 >
-> **Từ 2026-07-07: cột tiếng Việt và tiếng Anh của MỌI cặp song ngữ luôn xuất hiện song song trên file XUẤT RA, mỗi khi object/khối đó đã được dùng.** Bấm **"Tải dữ liệu hiện tại"** (hoặc tải 1 sản phẩm) in đủ cả 2 vế của mỗi cặp VI/EN — từng phần tử trong các mảng (`faqs[]`, `commitments[]`, `highlights.positiveNotes/negativeNotes[]`), và từng khối trong `descriptionBlocks` (`text/textEn`, `html/htmlEn`, `items/itemsEn`, `alt/altEn`, `caption/captionEn`, `subheading/subheadingEn`, `heading/headingEn`) cũng như `suitabilitySection`/`sizeGuideSection` khi 2 khoá này có được dùng (`title/titleEn`, `html/htmlEn`) — **vế nào chưa có nội dung thì hiện `null`, không còn bị bỏ hẳn khoá**. Nhưng nếu cả object/mảng đó không được dùng đến (vd sản phẩm không có FAQ nào, hoặc không dùng `sizeGuideSection`) thì khoá cha vẫn **bỏ hẳn** như trước — quy tắc chỉ null-fill 2 vế của một cặp đã tồn tại, không tự tạo ra khối rỗng.
+> **Từ 2026-07-07: cột tiếng Việt và tiếng Anh của MỌI cặp song ngữ luôn xuất hiện song song trên file XUẤT RA, mỗi khi object/khối đó đã được dùng.** Bấm **"Tải dữ liệu hiện tại"** (hoặc tải 1 sản phẩm) in đủ cả 2 vế của mỗi cặp VI/EN — từng phần tử trong các mảng (`faqs[]`, `commitments[]`, `highlights.positiveNotes/negativeNotes[]`), và từng khối trong `descriptionBlocks` (`html/htmlEn`, `alt/altEn`, `caption/captionEn`, `subheading/subheadingEn`, `heading/headingEn`) cũng như `suitabilitySection`/`sizeGuideSection` khi 2 khoá này có được dùng (`title/titleEn`, `html/htmlEn`) — **vế nào chưa có nội dung thì hiện `null`, không còn bị bỏ hẳn khoá**. Nhưng nếu cả object/mảng đó không được dùng đến (vd sản phẩm không có FAQ nào, hoặc không dùng `sizeGuideSection`) thì khoá cha vẫn **bỏ hẳn** như trước — quy tắc chỉ null-fill 2 vế của một cặp đã tồn tại, không tự tạo ra khối rỗng.
 >
-> **Từ 2026-07-07 (mới nhất — quyết định của chủ shop): riêng nhóm object cấp sản phẩm sau LUÔN xuất hiện trên file XUẤT RA, kể cả khi sản phẩm không có nội dung gì cho khoá đó** (khác với mảng/khối ở trên — nhóm này không bị bỏ hẳn dù rỗng hoàn toàn): `shortDescription`, `specifications`, `specStats`, `trustBadges`, `quickAnswerSummary`, `originBrandCountry`, `seo` (`titleVI/EN`, `descriptionVI/EN`; `canonicalUrl` không tính). Sản phẩm không có dữ liệu nào ở khoá đó → cả 2 vế VI/EN hiện `"...": null` thay vì bỏ hẳn cả khoá. `name`/`slug` luôn có sẵn (bắt buộc) nên trong thực tế luôn xuất hiện, không đổi gì. **Ngoại lệ đã chốt từ trước — không áp dụng quy tắc này:** `image` (ảnh đại diện) và `gallery` (bộ sưu tập ảnh) vẫn bỏ hẳn khoá khi không dùng, y như `videos`/`variants`/các mảng khác — nhóm ảnh không phải cặp song ngữ và có ý nghĩa PATCH riêng (chỉ áp dụng lúc tạo mới).
+> **Từ 2026-07-15 (mới nhất — quyết định của chủ shop): file XUẤT RA phải đầy đủ, còn file NHẬP VÀO được thiếu.** Khi bấm **"Tải dữ liệu hiện tại"**, hệ thống xuất cả `publishStatus`, `image` (ảnh đại diện), `gallery` (gallery ảnh sản phẩm), `videos`, `relatedProductIds`, `accessoryProductIds`, `variants[].id`, `variants[].imageUrl`, `variants[].imageAlt`, `variants[].gallery`. Nhưng khi nạp JSON, các nhóm này **không bắt buộc**; nếu file có sẵn thì hệ thống vẫn cho nạp và tự lược bỏ trước khi lưu Nháp. Muốn đổi ảnh/video/sản phẩm liên quan/hoàn thiện bộ bảo hộ hoặc đăng bán thì sửa trực tiếp trong trang quản trị.
+>
+> Riêng nhóm object cấp sản phẩm sau LUÔN xuất hiện trên file XUẤT RA, kể cả khi sản phẩm không có nội dung gì cho khoá đó: `shortDescription`, `specifications`, `specStats`, `trustBadges`, `quickAnswerSummary`, `originBrandCountry`, `seo` (`titleVI/EN`, `descriptionVI/EN`; `canonicalUrl` không tính). Sản phẩm không có dữ liệu nào ở khoá đó → cả 2 vế VI/EN hiện `"...": null` thay vì bỏ hẳn cả khoá. `name`/`slug` luôn có sẵn (bắt buộc) nên trong thực tế luôn xuất hiện, không đổi gì.
 >
 > Quy tắc "song song VI/EN" này **chỉ áp dụng cho file XUẤT RA**. Khi bạn tự soạn file NHẬP VÀO (tạo mới hoặc cập nhật), vẫn được **bỏ hẳn** một vế (hoặc cả object/cả khối, kể cả với nhóm cấp sản phẩm luôn-xuất-hiện ở trên) không có nội dung như trước — hệ thống không phân biệt được "khoá vắng mặt" với "khoá có giá trị `null`" khi đọc file (JSON `null` và khoá bị bỏ hẳn được xử lý giống hệt nhau lúc nhập), nên cách viết nào cũng hợp lệ. `canonicalUrl` (trong `seo`) và những khoá không phải cặp song ngữ (`sortOrder`, `icon`, `id`, `sku`, `retailPrice`…) không nằm trong quy tắc null-fill — vẫn bỏ hẳn khi không có nội dung, không ghi `null`.
 >
@@ -24,12 +26,12 @@ Chỉ còn **1 file duy nhất**: `mau-day-du.json`. Mỗi object trong mảng =
 
 1. **`categoryId` là bắt buộc ở mọi object — kể cả khi chỉ cập nhật sản phẩm đã có.** `categoryId` là **slug danh mục** (ví dụ `mu-bao-hiem`), `brandId` là **slug thương hiệu** (ví dụ `ls2`) — **KHÔNG** phải mã nội bộ dạng `cat_...`/`brand_...`. Khi **tạo mới** phải có `name.nameVI` và `name.nameEN` — thiếu tên tiếng Anh sẽ báo lỗi dòng đó. Khi **cập nhật** sản phẩm cũ: nếu file **không** đổi tên, có thể bỏ hẳn khoá `name` (tên VI/EN cũ được giữ nguyên); nhưng nếu file **có** đổi `nameVI`, bắt buộc phải kèm `nameEN` mới trong cùng khoá `name` đó.
    - **Ma trận bắt buộc theo có/không biến thể (PRODUCT_RULE_005, áp dụng ngay cả khi import, vì import gọi thẳng luồng lưu sản phẩm thường):** Luôn bắt buộc: `name` (khi tạo mới)/`categoryId`/`brandId`/`gender`. Sản phẩm **KHÔNG có `variants`**: `sku` và `retailPrice` **cấp sản phẩm** cũng bắt buộc — thiếu 1 trong 2 sẽ báo lỗi dòng đó. Sản phẩm **CÓ `variants`**: `sku` cấp sản phẩm vẫn bắt buộc; mỗi phần tử trong `variants[]` bắt buộc phải có `sku` riêng — còn `retailPrice` riêng của từng biến thể **chỉ bắt buộc nếu sản phẩm không có `retailPrice` cấp sản phẩm hợp lệ** làm giá chung thay thế (xem mục Biến thể và ghi chú "giá chung" ở đầu file, 2026-07-07). Ảnh (`image`, `variants[].imageUrl`) **không bao giờ bắt buộc lúc import** vì import luôn tạo Nháp — ảnh chỉ bắt buộc khi admin bấm "Đăng" thủ công sau đó trong trang quản trị.
-2. **Mọi ảnh phải nằm trong kho ảnh của shop (MinIO).** Dùng đường dẫn `/media/...` **hoặc** URL đầy đủ `https://media.bigbike.vn/bigbike-media/...`. **KHÔNG** dán ảnh từ host ngoài (Google Drive, Imgur, CDN bên thứ ba, link `bigbike.vn/wp-content/...` cũ) — sẽ bị loại và sản phẩm mất ảnh. Chưa có ảnh trong kho → **để trống**, bổ sung sau trong trang quản trị. **Chỉ áp dụng khi tạo sản phẩm mới** — nạp lại file cho sản phẩm **đã có sẵn** thì `image`/`gallery`/`videos`/ảnh biến thể trong file **bị bỏ qua hoàn toàn**, ảnh/video cũ trên hệ thống luôn được giữ nguyên (xem mục "Cập nhật sản phẩm đã có").
+2. **Ảnh không bắt buộc trong file nhập JSON.** Nếu dùng ảnh trong `descriptionBlocks`/`suitabilitySection`/`sizeGuideSection`, ảnh phải nằm trong kho ảnh của shop (MinIO): đường dẫn `/media/...` **hoặc** URL đầy đủ `https://media.bigbike.vn/bigbike-media/...`. Không dán ảnh từ host ngoài.
 3. **JSON KHÔNG được có khoá lạ.** Chỉ dùng đúng các khoá liệt kê bên dưới. Thừa 1 khoá (kể cả khoá ghi chú `_comment`) → **cả file bị từ chối**. Muốn ghi chú thì ghi ở file hướng dẫn này, không ghi trong file JSON.
 4. **KHÔNG để chữ nháp lọt ra khách:** bỏ hết `[Cần ảnh: ...]`, `[gắn link]`, `[Bigbike kiểm tra bổ sung]`. Link sản phẩm khác phải là URL thật hoặc bỏ.
-5. **URL (canonical, link nội dung) dùng tên miền thật** (`bigbike.vn`), **không** dùng địa chỉ máy chủ thử nghiệm (`http://103.x.x.x:...`).
+5. **URL (canonical, link nội dung)** dùng `bigbike.vn` hoặc IP vận hành đã chốt `http://103.1.236.148:3000/...` theo file mẫu. Không dùng host ngoài khác.
 
-> Import **luôn tạo sản phẩm ở trạng thái Nháp** và **bỏ qua "Đã xuất bản"**. Sau khi nạp xong, vào trang quản trị **bấm đăng tay** để lên web.
+> Import **luôn lưu sản phẩm ở trạng thái Nháp**, kể cả khi tạo mới hoặc cập nhật sản phẩm đã có. Sau khi nạp xong, vào trang quản trị **bấm đăng tay** để lên web.
 
 ---
 
@@ -51,28 +53,25 @@ Mỗi sản phẩm dùng các khoá sau. Khi cập nhật lại: khoá không đ
 | `originBrandCountry` | obj | `{ "originBrandCountryVI": "Trung Quốc", "originBrandCountryEN": "China" }` — xuất xứ thương hiệu, hiển thị ở ô "Thương hiệu (nước)" trên trang quản trị. Tối đa 120 ký tự mỗi vế, cả object tuỳ chọn. |
 | `retailPrice` | số | Giá bán lẻ (VNĐ, số nguyên, **không** dấu phẩy/chấm ngăn cách). **Bắt buộc khi sản phẩm KHÔNG có `variants`**; khi có `variants` thì tuỳ chọn — có thể bỏ hẳn khoá này hoặc để `null` (2 cách tương đương, không ảnh hưởng khi nhập lại). File tải từ "Tải dữ liệu hiện tại" luôn ghi `null` thay vì bỏ khoá. |
 | `salePrice` | số | Giá khuyến mãi (tuỳ chọn) — luôn có mặt trong file tải xuống, `null` khi sản phẩm không giảm giá. |
-| `image` | obj | Ảnh đại diện: `{ "url": "...", "alt": "..." }`. **Chỉ dùng khi tạo mới** — sản phẩm đã có sẵn thì bỏ qua, ảnh cũ luôn giữ nguyên. |
-| `gallery` | mảng | Thư viện ảnh: `[ { "url": "...", "alt": "...", "sortOrder": 0 } ]`. **Chỉ dùng khi tạo mới** — sản phẩm đã có sẵn thì bỏ qua, giữ nguyên. |
+| `image` / `gallery` | obj/mảng | File **xuất ra có thể có đầy đủ** ảnh đại diện và gallery. Khi **nhập vào**, 2 nhóm này không bắt buộc; nếu có thì hệ thống tự lược bỏ, không dùng để tạo/sửa ảnh. Ảnh sửa trực tiếp trong trang quản trị. |
 | `shortDescription` | obj | `{ "shortDescriptionVI": "...", "shortDescriptionEN": "..." }` — mô tả ngắn (HTML đơn giản), mỗi vế tuỳ chọn độc lập. |
 | `specifications` | obj | `{ "specificationsVI": "...", "specificationsEN": "..." }` — bảng thông số kỹ thuật (HTML thô), mỗi vế tuỳ chọn độc lập. |
 | `seo` | obj | `{ "titleVI": "...", "titleEN": "...", "descriptionVI": "...", "descriptionEN": "...", "canonicalUrl": "https://bigbike.vn/product/..." }`. `canonicalUrl` không tách VI/EN — dùng chung 1 khoá. |
 | `variants` | mảng | Biến thể (màu/size) — xem dưới. |
-| `relatedProductIds` | mảng chuỗi | SKU sản phẩm liên quan. Chỉ nên trỏ SKU **đang Đã xuất bản**. |
-| `accessoryProductIds` | mảng chuỗi | SKU phụ kiện bán kèm (cùng lưu ý trên). |
+| `relatedProductIds` / `accessoryProductIds` | mảng chuỗi | File **xuất ra có đầy đủ** sản phẩm liên quan và hoàn thiện bộ bảo hộ. Khi **nhập vào**, 2 nhóm này không bắt buộc; nếu có thì hệ thống tự lược bỏ, không dùng để sửa liên kết. |
 
 ### Biến thể — `variants` (nếu sản phẩm có màu/size)
 Mỗi biến thể:
 ```json
 { "sku": "MDS-CAB-TANCAR-BK-XS",
   "options": [ { "optionName": "Size", "optionValue": "XS" } ],
-  "retailPrice": 12000000, "salePrice": 11000000, "isAvailable": true,
-  "imageUrl": "/media/...", "imageAlt": "..." }
+  "retailPrice": 12000000, "salePrice": 11000000, "isAvailable": true }
 ```
 - `sku` **bắt buộc, duy nhất** cho mỗi biến thể. Hệ thống đối chiếu biến thể **theo SKU** khi cập nhật → giữ lịch sử tồn kho, không xoá nhầm.
-- **Không cần điền `id` cho biến thể.** Mã `id` (dạng `var_...`) do hệ thống tự sinh khi lưu — kể cả khi tạo mới lẫn khi biến thể mới xuất hiện trong lần cập nhật. Field này chỉ xuất hiện trong file **tải về** ("Tải dữ liệu hiện tại") vì đó là dữ liệu thật đã lưu; khi tự soạn file để nhập, bỏ hẳn khoá `id` — không tự bịa giá trị.
+- **Không cần điền `id` cho biến thể khi nhập.** Mã `id` do hệ thống tự sinh và hệ thống đối chiếu lại bằng SKU khi nhập. File **tải về có thể có `id` đầy đủ**, nhưng khi nạp lại hệ thống tự bỏ qua `id`, không dùng để đối chiếu.
 - `retailPrice` (từ 2026-07-06, nới lỏng 2026-07-07): **bắt buộc cho mỗi biến thể, TRỪ KHI sản phẩm đã có `retailPrice` cấp sản phẩm hợp lệ (`> 0`) làm "giá chung".** Bỏ trống `retailPrice` của biến thể → biến thể đó tự dùng trọn giá chung (cả `retailPrice` lẫn `salePrice` cấp sản phẩm) làm giá hiệu lực. Điền `retailPrice` riêng → biến thể đó dùng đúng giá riêng, không rơi về giá chung nữa (kể cả phần sale). Sản phẩm không có giá chung **và** biến thể cũng không có `retailPrice` riêng → dòng đó bị từ chối lỗi `variants[i].retailPrice`.
 - `salePrice` **tuỳ chọn** — biến thể nào không giảm giá thì **bỏ hẳn khoá này** (đừng ghi `null`), chỉ thêm khi biến thể đó thực sự có giá khuyến mãi và phải **nhỏ hơn** `retailPrice` của chính biến thể đó. **Bắt buộc phải đi kèm `retailPrice` riêng của cùng biến thể đó** — biến thể không có `retailPrice` riêng mà vẫn khai `salePrice` riêng sẽ bị từ chối lỗi `variants[i].salePrice` (vì `salePrice` đó sẽ bị bỏ qua âm thầm, không có tác dụng gì).
-- `imageUrl`/`imageAlt`/`gallery` của biến thể: nếu SKU khớp với biến thể **đã có sẵn**, ảnh trong file bị bỏ qua — ảnh cũ giữ nguyên. Chỉ áp dụng cho biến thể **hoàn toàn mới** (SKU chưa từng có).
+- `imageUrl`/`imageAlt`/`gallery` của biến thể: file **xuất ra có thể có đầy đủ** ảnh màu đại diện và gallery theo màu. Khi **nhập vào**, các trường này không bắt buộc; nếu có thì hệ thống tự lược bỏ, không dùng để tạo/sửa ảnh biến thể.
 - `options`: mỗi thuộc tính một cặp `optionName`/`optionValue` (ví dụ `{ "optionName": "Màu", "optionValue": "Đen" }`, `{ "optionName": "Size", "optionValue": "L" }`). Tên biến thể tự sinh từ options — không nhập tay. Đây là danh mục dùng chung, không tách VI/EN.
 
 ---
@@ -104,18 +103,17 @@ Mỗi mục: `{ "content": "Pin ~35h, ít phải sạc", "contentEn": "~35h batt
 Mỗi mục: `{ "question": "...?", "answer": "<p>Câu trả lời, cho phép HTML.</p>", "questionEn": "...?", "answerEn": "<p>...</p>", "sortOrder": 1 }`
 `question` ≤500, `answer` ≤20000 (HTML đơn giản: `<p> <strong> <ul> <li>`).
 
-### Video (mục riêng) — `videos` (tối đa 20)
-Mỗi mục: `{ "url": "https://www.youtube.com/watch?v=XXXXXXXXXXX", "provider": "youtube", "title": "...", "description": "...", "sortOrder": 1 }`
-`provider` nên ghi đúng: **`youtube` · `tiktok` · `facebook` · `upload`** (chỉ mang tính hiển thị/ghi chú — hệ thống tự nhận diện nền tảng từ chính `url`). Nền tảng khác YouTube/TikTok/Facebook bị cấm ở `url`. Link YouTube được phép dùng dạng rút gọn `youtu.be/...` (ổn định, chấp nhận bình thường); **TikTok/Facebook thì không** — phải dùng link đầy đủ, không dùng `vt.tiktok.com`/`vm.tiktok.com`/`fb.watch`. `upload` = video đã ở trong kho (`/media/...`). Không có video → **bỏ khoá `videos`**. **Chỉ dùng khi tạo mới** — sản phẩm đã có sẵn thì bỏ qua, video cũ luôn giữ nguyên (sửa video phải làm trực tiếp trong trang quản trị).
+### Video sản phẩm
+File **xuất ra có thể có `videos` đầy đủ**. Khi **nhập vào**, `videos` không bắt buộc; nếu có thì hệ thống tự lược bỏ, không dùng để tạo/sửa video. Video sản phẩm sửa trực tiếp trong trang quản trị sau khi nạp sản phẩm Nháp.
 
 ### Mô tả chi tiết — `descriptionBlocks`
 Mảng các khối — **1 mảng duy nhất, mỗi khối mang cả 2 ngôn ngữ** (không còn khoá `descriptionBlocksEn` riêng). Tiếng Việt là bản chính quyết định số khối/thứ tự khối; mỗi field dịch được có thêm field song song tên `...En` cùng trong khối đó (tuỳ chọn, bỏ trống được). Các loại khối dùng cho sản phẩm:
 
-- **Tiêu đề:** `{ "type": "heading", "level": 2, "text": "...", "textEn": "..." }` (`level` = 2 hoặc 3)
-- **Đoạn văn:** `{ "type": "paragraph", "html": "<p>...</p>", "htmlEn": "<p>...</p>" }`
-- **Danh sách:** `{ "type": "list", "style": "bulleted", "items": ["...", "..."], "itemsEn": ["...", "..."] }` (`style` = `bulleted`|`numbered`; `itemsEn` phải cùng số dòng và cùng thứ tự với `items`)
-- **Ảnh riêng:** `{ "type": "image", "url": "...", "alt": "...", "altEn": "...", "caption": "...", "captionEn": "..." }` — `url` bắt buộc và dùng chung cho cả 2 ngôn ngữ (không dịch), `alt`/`caption` (và bản `En`) tuỳ chọn.
-- **Tính năng (Lợi ích/Bằng chứng/Hạn chế):** `{ "type": "feature", "side": "left", "url": "...", "alt": "...", "altEn": "...", "caption": "...", "captionEn": "...", "subheading": "Nhãn ngắn", "subheadingEn": "...", "heading": "Tiêu đề tính năng", "headingEn": "...", "html": "<p><strong>Lợi ích:</strong></p><p>...</p>", "htmlEn": "<p>...</p>", "listStyle": "bulleted", "items": ["...", "..."], "itemsEn": ["...", "..."] }` — khối 2 cột ảnh–chữ; `url`/`side`/`listStyle` dùng chung cho cả 2 ngôn ngữ (bỏ trống ảnh → web render full-width chỉ chữ), `side` = `auto`|`left`|`right` (bỏ trống/`auto` → tự xen kẽ trái/phải). Không field nào bắt buộc riêng lẻ, nhưng khối phải có ít nhất ảnh hoặc chữ (VI hoặc EN).
+- **Mô tả:** `{ "type": "paragraph", "html": "<p>...</p>", "htmlEn": "<p>...</p>" }`
+- **Hình ảnh:** `{ "type": "image", "url": "...", "alt": "...", "altEn": "...", "caption": "...", "captionEn": "..." }` — `url` bắt buộc và dùng chung cho cả 2 ngôn ngữ (không dịch), `alt`/`caption` (và bản `En`) tuỳ chọn.
+- **Ảnh phải + chữ trái / ảnh trái + chữ phải:** `{ "type": "feature", "side": "right", "url": "...", "alt": "...", "altEn": "...", "caption": "...", "captionEn": "...", "subheading": "Nhãn ngắn", "subheadingEn": "...", "heading": "Tiêu đề tính năng", "headingEn": "...", "html": "<p><strong>Lợi ích:</strong></p><p>...</p>", "htmlEn": "<p>...</p>", "listStyle": "bulleted", "items": ["...", "..."], "itemsEn": ["...", "..."] }`. Dùng `side: "right"` cho ảnh phải + chữ trái, `side: "left"` cho ảnh trái + chữ phải. Không field nào bắt buộc riêng lẻ, nhưng khối phải có ít nhất ảnh hoặc chữ (VI hoặc EN).
+
+Không dùng `heading`, `list`, `video`, `callout`, `divider`, `prosCons` trong `descriptionBlocks` của sản phẩm. Những kiểu đó không thuộc template mô tả sản phẩm hiện tại và file nạp sẽ báo lỗi dòng đó.
 
 > Ảnh trong `html`/`htmlEn`/`url` cũng phải theo quy tắc MinIO (`/media/...` hoặc `https://media.bigbike.vn/bigbike-media/...`). Không nhúng `<img src="link ngoài">` hay dùng `url` ảnh ngoài kho.
 >
@@ -138,12 +136,12 @@ Muốn sửa/bổ sung cho sản phẩm **đã đăng bán** (thêm FAQ, sửa m
 - Vẫn phải có `sku` (khớp đúng sản phẩm đã tồn tại) và `categoryId` (điền đúng slug danh mục hiện tại, kể cả khi không đổi danh mục).
 - Khoá **không đưa vào file** → dữ liệu hiện có của khoá đó **giữ nguyên, không đổi, không mất**. Đây là lý do luôn nhắc "khoá nào không có nội dung thì bỏ hẳn khoá đó".
 - Với các khoá song ngữ lồng nhau (`name`, `slug`, `shortDescription`, `specifications`, `specStats`, `trustBadges`, `quickAnswerSummary`, `originBrandCountry`, `seo`): chỉ cần gửi **vế nào muốn đổi** trong object đó — vd `"trustBadges": { "trustBadgesEN": "..." }` chỉ đổi bản tiếng Anh, bản tiếng Việt giữ nguyên. Bỏ hẳn cả khoá cha (vd bỏ hẳn khoá `trustBadges`) mới là "không đổi gì cả ở cột đó".
-- **Ảnh và video luôn giữ nguyên dữ liệu cũ, bất kể file ghi gì** — `image` (ảnh đại diện), `gallery` (bộ sưu tập ảnh, kể cả ảnh gắn trong đó), `videos` (video sản phẩm), và ảnh/gallery riêng của **từng biến thể đã có sẵn** (`variants[].imageUrl`, `variants[].imageAlt`, `variants[].gallery`). Muốn đổi ảnh/video của sản phẩm đã đăng bán, phải sửa trực tiếp trong trang quản trị — nạp file **không** dùng để thay ảnh/video của sản phẩm cũ. (Biến thể **mới thêm** trong cùng lần nạp — không khớp SKU nào đã có — vẫn lấy ảnh từ file bình thường, vì biến thể đó chưa có ảnh cũ để giữ.)
-- Khoá **có đưa vào** trong số `commitments`, `highlights.positiveNotes`, `highlights.negativeNotes`, `faqs`, `variants` (trừ ảnh/gallery biến thể — xem trên) → **thay thế toàn bộ danh sách cũ bằng danh sách mới**, không cộng dồn. Muốn giữ mục cũ + thêm mục mới → phải liệt kê lại **đầy đủ cả cũ lẫn mới** trong cùng mảng đó. (`positiveNotes`/`negativeNotes` là 2 mảng con độc lập trong `highlights` — chỉ đưa `highlights.positiveNotes` thì `negativeNotes` cũ vẫn giữ nguyên, và ngược lại.)
+- **Ảnh, video, sản phẩm liên quan và hoàn thiện bộ bảo hộ có thể xuất ra đầy đủ nhưng không quản lý qua file JSON nhập.** Khi nạp lại, hệ thống tự lược bỏ các nhóm này; muốn đổi thật thì sửa trực tiếp trong trang quản trị.
+- Khoá **có đưa vào** trong số `commitments`, `highlights.positiveNotes`, `highlights.negativeNotes`, `faqs`, `variants` → **thay thế toàn bộ danh sách cũ bằng danh sách mới**, không cộng dồn. Muốn giữ mục cũ + thêm mục mới → phải liệt kê lại **đầy đủ cả cũ lẫn mới** trong cùng mảng đó. (`positiveNotes`/`negativeNotes` là 2 mảng con độc lập trong `highlights` — chỉ đưa `highlights.positiveNotes` thì `negativeNotes` cũ vẫn giữ nguyên, và ngược lại.)
 - `descriptionBlocks` cũng thay thế toàn bộ — sửa 1 đoạn vẫn phải dán lại **nguyên mảng khối mô tả đầy đủ** của sản phẩm đó (lấy từ trang quản trị hoặc từ file tải về), không chỉ đoạn muốn sửa.
 - `suitabilitySection`/`sizeGuideSection` cũng thay thế **toàn bộ object** khi có đưa vào file — khác với nhóm "khoá song ngữ lồng nhau" ở trên (không merge riêng từng vế VI/EN), phải gửi đủ cả `title`/`titleEn`/`html`/`htmlEn` muốn giữ, không chỉ vế muốn sửa.
 
-> Mẹo: bấm **"Tải dữ liệu hiện tại"** trong hộp thoại Nhập để tải về file JSON **đầy đủ** của toàn bộ sản phẩm hiện có — sửa trực tiếp trên đó rồi nạp lại là an toàn nhất (đúng cấu trúc, không sót khoá, cùng shape với file nhập).
+> Mẹo: bấm **"Tải dữ liệu hiện tại"** trong hộp thoại Nhập để tải về file JSON đầy đủ của toàn bộ sản phẩm hiện có — sửa trực tiếp trên đó rồi nạp lại vẫn an toàn vì hệ thống tự bỏ qua ảnh/video/liên quan/trạng thái đăng bán khi lưu Nháp.
 
 ---
 
@@ -155,7 +153,7 @@ Bạn tạo dữ liệu nhập sản phẩm cho cửa hàng BigBike theo ĐÚNG 
 một mảng JSON duy nhất, gồm:
 
 - Hàng hoá: sku, categoryId (slug danh mục), brandId (slug thương hiệu), gender,
-  retailPrice, salePrice, image, gallery, và variants nếu có màu/size.
+  retailPrice, salePrice, và variants nếu có màu/size.
 - Các cột song ngữ — MỖI CỘT LÀ 1 OBJECT LỒNG chứa cả 2 ngôn ngữ, không tách rời:
   name: { nameVI, nameEN }, slug: { slugVI, slugEN }, shortDescription:
   { shortDescriptionVI, shortDescriptionEN }, specifications:
@@ -181,15 +179,18 @@ BẮT BUỘC:
   biến thể bắt buộc phải tự có retailPrice riêng (không bỏ trống). Biến thể có
   retailPrice riêng thì salePrice riêng (nếu có) mới có tác dụng — biến thể không có
   retailPrice riêng mà khai salePrice riêng sẽ bị từ chối.
-- Mọi ảnh dùng /media/... hoặc https://media.bigbike.vn/bigbike-media/... ; chưa có
-  ảnh thì để trống (ảnh không bắt buộc lúc nhập — import luôn tạo Nháp, ảnh chỉ bắt
-  buộc khi admin bấm "Đăng" sau đó).
+- Nếu dùng ảnh trong descriptionBlocks/suitabilitySection/sizeGuideSection thì ảnh phải dùng
+  /media/... hoặc https://media.bigbike.vn/bigbike-media/... ; ảnh đại diện/gallery/video
+  trong file tải về có thể giữ nguyên, hệ thống sẽ bỏ qua khi nạp Nháp.
 - JSON chỉ chứa các khoá trong hướng dẫn, KHÔNG thêm khoá lạ, KHÔNG thêm ghi chú.
 - Mỗi cột song ngữ PHẢI là object lồng { ...VI, ...EN } — KHÔNG tách tên VI ra ngoài
   rồi dồn hết bản tiếng Anh vào một khối translations riêng (shape cũ đã bỏ).
 - Không để chữ nháp [Cần ảnh]/[gắn link]; link sản phẩm khác dùng URL thật hoặc bỏ.
 - Nội dung tiếng Việt có dấu đầy đủ, đúng chính tả.
-- Biến thể trong variants KHÔNG cần khoá `id` — hệ thống tự sinh mã này khi lưu, không tự bịa giá trị `id`.
+- Các khoá sau **không bắt buộc khi nhập**; nếu file tải về có sẵn thì giữ nguyên cũng được,
+  hệ thống sẽ tự bỏ qua khi nạp Nháp: publishStatus, image, gallery, videos,
+  relatedProductIds, accessoryProductIds, variants[].id, variants[].imageUrl,
+  variants[].imageAlt, variants[].gallery.
 ```
 
 Kiểm tra sau khi AI trả về: mở JSON bằng công cụ kiểm tra (jsonlint) xem có hợp lệ không; rà mọi ảnh đều thuộc kho MinIO; rà `categoryId`/`brandId` đúng slug; rà mỗi cột song ngữ đều là object lồng (không còn khoá `translations` rời).

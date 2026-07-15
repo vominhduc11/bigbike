@@ -20,6 +20,7 @@ import com.bigbike.bigbike_backend.api.error.ApiException;
 import com.bigbike.bigbike_backend.api.error.MutationNotImplementedException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
@@ -181,17 +182,18 @@ public class ProductImportService {
         List<ApiErrorDetail> warnings = new ArrayList<>(row.parseWarnings);
         UpsertProductRequest request = row.request;
 
+        discardExportOnlyImportFields(request);
         runBeanValidation(request, errors);
         checkRequiredSku(request, errors);
+        checkImportDescriptionBlocks(request, errors);
         resolveCategoryAndBrand(request, errors);
-        resolveRelatedAndAccessoryRefs(request, warnings);
 
         ProductEntity existing = resolveExistingProduct(request, errors);
         boolean ambiguous = errors.stream().anyMatch(e -> "AMBIGUOUS".equals(e.code()));
         boolean isCreate = existing == null && !ambiguous;
 
         resolveSlug(request, isCreate, batchSlugsLower, errors);
-        applyPublishStatusRule(request, isCreate, row.fileStatus, warnings);
+        applyPublishStatusRule(request);
 
         if (!isCreate && existing != null) {
             backfillTranslationsFromExisting(request, existing);
@@ -205,7 +207,6 @@ public class ProductImportService {
         }
 
         checkBatchVariantSkuDuplicates(request.getVariants(), batchSkusLower, errors);
-        checkMissingImage(request, existing, warnings);
 
         VariantDiff diff = computeVariantDiff(request, existing);
 
@@ -267,6 +268,53 @@ public class ProductImportService {
     private void checkRequiredSku(UpsertProductRequest request, List<ApiErrorDetail> errors) {
         if (AdminMutationValidators.trimToNull(request.getSku()) == null) {
             errors.add(new ApiErrorDetail("sku", "REQUIRED", "Thiếu SKU sản phẩm."));
+        }
+    }
+
+    private void discardExportOnlyImportFields(UpsertProductRequest request) {
+        request.setPublishStatus(null);
+        request.setImage(null);
+        request.setImagePresent(false);
+        request.setGallery(null);
+        request.setVideos(null);
+        request.setRelatedProductIds(null);
+        request.setAccessoryProductIds(null);
+
+        List<VariantRequest> variants = request.getVariants();
+        if (variants == null) {
+            return;
+        }
+        for (VariantRequest variant : variants) {
+            variant.setId(null);
+            variant.setImageUrl(null);
+            variant.setImageAlt(null);
+            variant.setImageWidth(null);
+            variant.setImageHeight(null);
+            variant.setImageMimeType(null);
+            variant.setGallery(null);
+        }
+    }
+
+    private void checkImportDescriptionBlocks(UpsertProductRequest request, List<ApiErrorDetail> errors) {
+        List<DescriptionBlock> blocks = request.getDescriptionBlocks();
+        if (blocks == null || blocks.isEmpty()) {
+            return;
+        }
+        for (int i = 0; i < blocks.size(); i++) {
+            DescriptionBlock block = blocks.get(i);
+            if (block instanceof DescriptionBlock.ParagraphBlock || block instanceof DescriptionBlock.ImageBlock) {
+                continue;
+            }
+            if (block instanceof DescriptionBlock.FeatureBlock feature) {
+                String side = AdminMutationValidators.trimToNull(feature.getSide());
+                if (!"left".equals(side) && !"right".equals(side)) {
+                    errors.add(new ApiErrorDetail("descriptionBlocks[" + i + "].side", "INVALID_VALUE",
+                            "Khối ảnh + chữ phải chọn side là 'left' hoặc 'right'."));
+                }
+                continue;
+            }
+            errors.add(new ApiErrorDetail("descriptionBlocks[" + i + "].type", "INVALID_VALUE",
+                    "Mô tả chi tiết sản phẩm trong file nhập chỉ nhận paragraph, image, hoặc feature."));
         }
     }
 
@@ -369,36 +417,13 @@ public class ProductImportService {
     }
 
     /**
-     * New products always start DRAFT regardless of the file (spec requirement). On update, the
-     * file's status passes through EXCEPT it can never resolve to PUBLISHED ({@code updateProduct}
-     * never runs the publish-readiness gate — only the dedicated publish-status endpoint does, so
-     * blindly honoring "Đã xuất bản" from a file would let an incomplete product go live with zero
-     * field-completeness checking) or to a legacy value ({@link PublishStatus#isLegacy()} —
-     * HIDDEN/ARCHIVED/PENDING/PRIVATE, none settable via admin API). Both cases are skipped with an
-     * IGNORED warning, leaving the product's current publishStatus untouched (request.publishStatus
-     * stays null here, so updateProduct falls back to entity.getPublishStatus()). Only DRAFT/TRASH
-     * pass through normally and rely on validatePublishTransition to reject invalid transitions.
+     * Bulk JSON import is a draft-editing workflow. Every row is saved as DRAFT, for both new and
+     * existing products, regardless of the file's publishStatus or the entity's prior status.
+     * Publishing remains a manual Admin action so the publish-readiness gate owns image/content
+     * completeness checks.
      */
-    private void applyPublishStatusRule(
-            UpsertProductRequest request, boolean isCreate, PublishStatus fileStatus, List<ApiErrorDetail> warnings) {
-        if (isCreate) {
-            request.setPublishStatus(PublishStatus.DRAFT);
-            return;
-        }
-        if (fileStatus == null) {
-            return;
-        }
-        if (fileStatus == PublishStatus.PUBLISHED) {
-            warnings.add(new ApiErrorDetail("publishStatus", "IGNORED",
-                    "Trạng thái 'Đã xuất bản' không áp dụng qua nhập file — vào sửa sản phẩm để đăng thủ công."));
-            return;
-        }
-        if (fileStatus.isLegacy()) {
-            warnings.add(new ApiErrorDetail("publishStatus", "IGNORED",
-                    "Trạng thái '" + fileStatus + "' không còn hợp lệ (giá trị cũ/legacy) — giữ nguyên trạng thái hiện tại của sản phẩm."));
-            return;
-        }
-        request.setPublishStatus(fileStatus);
+    private void applyPublishStatusRule(UpsertProductRequest request) {
+        request.setPublishStatus(PublishStatus.DRAFT);
     }
 
     /**
@@ -454,19 +479,6 @@ public class ProductImportService {
         }
     }
 
-    private void checkMissingImage(UpsertProductRequest request, ProductEntity existing, List<ApiErrorDetail> warnings) {
-        boolean hasImage;
-        if (request.isImagePresent()) {
-            hasImage = request.getImage() != null && AdminMutationValidators.trimToNull(request.getImage().getUrl()) != null;
-        } else {
-            hasImage = existing != null && AdminMutationValidators.trimToNull(existing.getImageUrl()) != null;
-        }
-        if (!hasImage) {
-            warnings.add(new ApiErrorDetail("image.url", "MISSING_IMAGE",
-                    "THIẾU ẢNH — sản phẩm chưa có ảnh đại diện, cần bổ sung trước khi đăng bán."));
-        }
-    }
-
     /**
      * translations.en.name is only required when the row touches the VI name (create, or an update
      * that sends `name`) — see CatalogRequestValidator. A row that sends a partial `translations.en`
@@ -514,12 +526,11 @@ public class ProductImportService {
     }
 
     /**
-     * Owner decision 2026-07-06 (extends PRODUCT_RULE_009): import UPDATE never touches media.
-     * Product-level main image/gallery/videos, and each already-existing (matched) variant's own
-     * cover image + gallery, stay exactly as already stored — no matter what the file sends for
-     * those keys. Every other field in the row still replaces normally. A variant the file adds
-     * fresh (no existing match — {@code resolveVariantIdentities} left its id {@code null}) keeps
-     * whatever media the file provides, since there is no old value to protect.
+     * PRODUCT_RULE_009: bulk import is draft data entry and never writes media from the file.
+     * Product-level main image/gallery/videos are cleared by {@link #discardExportOnlyImportFields}.
+     * For matched existing variants, {@code applyVariants} would otherwise overwrite media with
+     * nulls, so their stored cover image + gallery are copied back onto the request row before save.
+     * New variants keep null media; variant images are managed directly in Admin after import.
      *
      * <p>Product-level: {@code image} uses the same present-flag semantics {@code applyProductPatch}
      * checks ({@code create || isImagePresent()}), so forcing it back to "absent" is enough to
@@ -628,83 +639,14 @@ public class ProductImportService {
         final int rowNumber;
         final String rowKey;
         final UpsertProductRequest request;
-        final PublishStatus fileStatus;
         final List<ApiErrorDetail> parseErrors = new ArrayList<>();
         final List<ApiErrorDetail> parseWarnings = new ArrayList<>();
 
-        ParsedRow(int rowNumber, String rowKey, UpsertProductRequest request, PublishStatus fileStatus) {
+        ParsedRow(int rowNumber, String rowKey, UpsertProductRequest request) {
             this.rowNumber = rowNumber;
             this.rowKey = rowKey;
             this.request = request;
-            this.fileStatus = fileStatus;
         }
-    }
-
-    /**
-     * Re-resolves {@code relatedProductIds}/{@code accessoryProductIds} for both the CSV and
-     * JSON import paths (called from {@link #processRow}, after category/brand resolution).
-     * CSV rows arrive here holding raw SKU tokens (see column 42/43 parsing in
-     * {@link #buildProductRequestFromCsvMainRow}); JSON rows may hold literal product IDs
-     * (the pre-existing single-product-API shape) or the same SKU/slug tokens. Each token is
-     * tried as: exact product ID → SKU (case-insensitive) → slug, in that order, so existing
-     * ID-based JSON payloads keep working unchanged.
-     *
-     * <p>Unknown/ambiguous tokens are dropped with a soft warning rather than failing the row.
-     * If the original list was non-empty but every token failed to resolve, the field is reset
-     * to {@code null} (untouched) instead of persisting an empty list — an all-typo cell must
-     * not silently wipe an existing selection (mirrors {@code buildGalleryList}'s same
-     * all-invalid-entries fallback). A genuinely empty input list (JSON explicit {@code []},
-     * or a CSV cell containing only separators) passes through as an explicit clear, matching
-     * the single-product API's presence-flag semantics for these two fields.
-     *
-     * <p>A token referencing a product created earlier in the same file resolves fine on commit
-     * (rows commit sequentially — see class javadoc) but may warn as {@code NOT_FOUND} during
-     * validate-only preview, since that product does not exist in the database yet.
-     */
-    private void resolveRelatedAndAccessoryRefs(UpsertProductRequest request, List<ApiErrorDetail> warnings) {
-        List<String> related = request.getRelatedProductIds();
-        if (related != null) {
-            request.setRelatedProductIds(resolveProductRefTokens(related, warnings, "relatedProductIds"));
-        }
-        List<String> accessories = request.getAccessoryProductIds();
-        if (accessories != null) {
-            request.setAccessoryProductIds(resolveProductRefTokens(accessories, warnings, "accessoryProductIds"));
-        }
-    }
-
-    private List<String> resolveProductRefTokens(List<String> tokens, List<ApiErrorDetail> warnings, String field) {
-        if (tokens.isEmpty()) {
-            return tokens;
-        }
-        List<String> resolved = new ArrayList<>();
-        for (String raw : tokens) {
-            String token = AdminMutationValidators.trimToNull(raw);
-            if (token == null) {
-                continue;
-            }
-            if (productJpaRepository.findById(token).isPresent()) {
-                resolved.add(token);
-                continue;
-            }
-            List<ProductEntity> bySku = productJpaRepository.findAllBySkuIgnoreCase(token);
-            if (bySku.size() == 1) {
-                resolved.add(bySku.get(0).getId());
-                continue;
-            }
-            if (bySku.size() > 1) {
-                warnings.add(new ApiErrorDetail(field, "AMBIGUOUS",
-                        "SKU '" + token + "' trùng nhiều sản phẩm — bỏ qua tham chiếu ở " + field + "."));
-                continue;
-            }
-            ProductEntity bySlug = productJpaRepository.findBySlug(token).orElse(null);
-            if (bySlug != null) {
-                resolved.add(bySlug.getId());
-            } else {
-                warnings.add(new ApiErrorDetail(field, "NOT_FOUND",
-                        "Không tìm thấy sản phẩm với SKU/đường dẫn '" + token + "' ở " + field + " — bỏ qua."));
-            }
-        }
-        return resolved.isEmpty() ? null : resolved;
     }
 
     // ── JSON parsing (array of ProductImportRow; categoryId/brandId hold slugs) ─
@@ -723,11 +665,10 @@ public class ProductImportService {
         List<ParsedRow> rows = new ArrayList<>();
         for (int i = 0; i < array.length; i++) {
             UpsertProductRequest request = ProductImportRowMapper.toUpsertRequest(array[i]);
-            PublishStatus fileStatus = request.getPublishStatus();
             request.setPublishStatus(null);
             String rowIdentity = firstNonBlank(request.getSku(), request.getSlug(), "item");
             String rowKey = "row-" + (i + 1) + ":" + rowIdentity;
-            rows.add(new ParsedRow(i + 1, rowKey, request, fileStatus));
+            rows.add(new ParsedRow(i + 1, rowKey, request));
         }
         return rows;
     }
@@ -742,7 +683,7 @@ public class ProductImportService {
         return candidates[candidates.length - 1];
     }
 
-    // ── Round-trip export (full-fidelity JSON — same shape validate/commit consume) ─
+    // ── Full JSON export (same ProductImportRow shape validate/commit accept) ─
 
     @Transactional(readOnly = true)
     public byte[] exportCurrentCatalogAsTemplateJson() {
@@ -780,11 +721,15 @@ public class ProductImportService {
 
     /**
      * Maps a stored product back into the {@link ProductImportRow} shape the JSON import consumes,
-     * so "download current catalog → edit → re-import" round-trips. category/brand are emitted as
-     * slug (the import resolves them by slug), related/accessory as SKU. Every bilingual column is
+     * so "download current catalog → edit → re-import" stays easy for shop operations. category and
+     * brand are emitted as slugs (the import resolves them by slug), while related/accessory product
+     * references are emitted as SKU. Export includes media/status/relation groups for completeness;
+     * bulk import accepts those groups but discards them before validation/saving because import
+     * always saves drafts and those fields are managed directly in Admin. Every bilingual column is
      * emitted as one nested VI/EN object (omitted entirely when both sides are blank — {@link
      * #EXPORT_MAPPER} is NON_NULL) instead of a separate {@code translations} block. Detailed
-     * description prefers structured blocks, falling back to the legacy HTML string for old rows.
+     * description exports only the owner-approved product block vocabulary, falling back to the
+     * legacy HTML string when no supported block remains.
      */
     private ProductImportRow toExportRow(ProductEntity p) {
         ProductImportRow r = new ProductImportRow();
@@ -795,6 +740,7 @@ public class ProductImportService {
         r.setCurrency(p.getCurrency());
         r.setRetailPrice(p.getRetailPrice());
         r.setSalePrice(p.getSalePrice());
+        r.setPublishStatus(p.getPublishStatus());
         r.setForceOutOfStock(p.getForceOutOfStock());
         r.setHomepageBlock(p.getHomepageBlock());
         if (p.getHomepageOrder() != null) {
@@ -836,7 +782,12 @@ public class ProductImportService {
         }
 
         if (p.getDescriptionBlocks() != null && !p.getDescriptionBlocks().isEmpty()) {
-            r.setDescriptionBlocks(p.getDescriptionBlocks());
+            List<DescriptionBlock> blocks = exportableProductDescriptionBlocks(p.getDescriptionBlocks());
+            if (!blocks.isEmpty()) {
+                r.setDescriptionBlocks(blocks);
+            } else if (p.getDescription() != null) {
+                r.setDescription(p.getDescription());
+            }
         } else if (p.getDescription() != null) {
             r.setDescription(p.getDescription());
         }
@@ -846,7 +797,6 @@ public class ProductImportService {
         if (p.getSizeGuideSection() != null) {
             r.setSizeGuideSection(p.getSizeGuideSection());
         }
-
         if (notEmpty(p.getGallery())) {
             List<GalleryMedia> gallery = p.getGallery();
             List<GalleryImageRequest> galleryRows = new ArrayList<>();
@@ -897,6 +847,17 @@ public class ProductImportService {
         r.setRelatedProductIds(skusOf(p.getRelatedProducts()));
         r.setAccessoryProductIds(skusOf(p.getAccessoryProducts()));
         return r;
+    }
+
+    private static List<DescriptionBlock> exportableProductDescriptionBlocks(List<DescriptionBlock> blocks) {
+        if (blocks == null || blocks.isEmpty()) {
+            return List.of();
+        }
+        return blocks.stream()
+                .filter(block -> block instanceof DescriptionBlock.ParagraphBlock
+                        || block instanceof DescriptionBlock.ImageBlock
+                        || block instanceof DescriptionBlock.FeatureBlock)
+                .toList();
     }
 
     private VariantRequest toVariantRequest(ProductVariantEntity v) {

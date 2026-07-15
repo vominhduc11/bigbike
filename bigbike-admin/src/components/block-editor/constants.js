@@ -19,7 +19,6 @@ export const PRODUCT_MENU = [
   { type: 'image',       labelKey: 'products.detail.blocks.blockTypeImage' },
   { type: 'feature',     labelKey: 'products.detail.blocks.blockTypeFeatureRight', preset: { side: 'right' } },
   { type: 'feature',     labelKey: 'products.detail.blocks.blockTypeFeatureLeft',  preset: { side: 'left' } },
-  { type: 'video',       labelKey: 'products.detail.blocks.blockTypeVideo' },
 ]
 
 // suitability/sizeGuide (V327/V328): không còn discriminator `type` — mỗi field là 1 object đơn,

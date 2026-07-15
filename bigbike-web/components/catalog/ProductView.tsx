@@ -117,7 +117,7 @@ function MobileTrustLine({ product }: { product: Product }) {
     <div className="pt-4 md:hidden" aria-hidden={hasTrustBadges ? undefined : true}>
       {hasTrustBadges ? (
         <div
-          className="mb-4 bb-trust-badges-html"
+          className="mb-4 leading-none [&_*]:leading-none [&_a]:text-inherit! [&_p]:mb-0"
           dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(trustBadgesResolvedHtml, { allowInlineStyles: true }) }}
         />
       ) : null}

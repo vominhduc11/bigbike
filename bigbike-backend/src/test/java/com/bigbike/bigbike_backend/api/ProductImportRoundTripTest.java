@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.bigbike.bigbike_backend.api.admin.dto.ImportReportResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.ImportRowResult;
+import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.service.admin.ProductImportService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -11,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -47,11 +49,10 @@ class ProductImportRoundTripTest {
                 body.getBytes(StandardCharsets.UTF_8));
     }
 
-    private static Map<String, String> variantIdBySku(JsonNode product) {
+    private Map<String, String> variantDbIdBySku(String productId) {
         Map<String, String> ids = new HashMap<>();
-        for (JsonNode v : product.path("variants")) {
-            ids.put(v.path("sku").asText(), v.path("id").asText());
-        }
+        productJpaRepository.findByIdsWithVariants(List.of(productId)).get(0).getVariants()
+                .forEach(v -> ids.put(v.getSku(), v.getId()));
         return ids;
     }
 
@@ -87,7 +88,6 @@ class ProductImportRoundTripTest {
                     "image": { "url": "%s/products/%s.jpg", "alt": "Ảnh đại diện" },
                     "gallery": [ { "mediaType": "image", "url": "%s/products/%s-g1.jpg", "alt": "G1", "sortOrder": 0 } ],
                     "descriptionBlocks": [
-                      { "type": "heading", "level": 2, "text": "Tiêu đề" },
                       { "type": "paragraph", "html": "<p>Nội dung chi tiết</p>" }
                     ],
                     "specStats": { "specStatsVI": "<div>35h – Pin</div>" },
@@ -128,8 +128,14 @@ class ProductImportRoundTripTest {
         assertThat(mine.path("brandId").asText()).as("brand emitted as slug").isEqualTo("ls2");
         assertThat(mine.path("variants")).hasSize(2);
         assertThat(mine.path("faqs")).hasSize(1);
-        assertThat(mine.path("descriptionBlocks").size()).isEqualTo(2);
-        Map<String, String> variantIdsBefore = variantIdBySku(mine);
+        assertThat(mine.path("descriptionBlocks").size()).isEqualTo(1);
+        assertThat(mine.path("descriptionBlocks").get(0).path("type").asText()).isEqualTo("paragraph");
+        assertThat(mine.path("publishStatus").asText()).as("full export includes publish status").isEqualTo("DRAFT");
+        assertThat(mine.path("variants").get(0).hasNonNull("id"))
+                .as("full export includes variant internal ids for review/backup")
+                .isTrue();
+        String productId = productJpaRepository.findBySlug(slug).orElseThrow().getId();
+        Map<String, String> variantIdsBefore = variantDbIdBySku(productId);
 
         // Isolate our product (seed rows may lack an EN name and would ERROR on validate).
         ArrayNode single = mapper.createArrayNode().add(mine);
@@ -146,7 +152,7 @@ class ProductImportRoundTripTest {
         productImportService.commitImport(jsonFile(reimport), Set.of(), DEV_ADMIN_ID);
         JsonNode after = findBySku(productImportService.exportCurrentCatalogAsTemplateJson(), sku);
         assertThat(after).isNotNull();
-        assertThat(variantIdBySku(after))
+        assertThat(variantDbIdBySku(productId))
                 .as("variant ids preserved across export → re-import")
                 .isEqualTo(variantIdsBefore);
     }
@@ -239,15 +245,40 @@ class ProductImportRoundTripTest {
                 .doesNotHaveDuplicates();
     }
 
+    @Test
+    void importRejectsUnsupportedProductDescriptionBlocks() {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String array = """
+                [
+                  {
+                    "sku": "BAD-BLOCK-%s",
+                    "categoryId": "mu-bao-hiem",
+                    "name": { "nameVI": "Sai block", "nameEN": "Bad block" },
+                    "retailPrice": 500000,
+                    "descriptionBlocks": [
+                      { "type": "heading", "level": 2, "text": "Tiêu đề" },
+                      { "type": "video", "provider": "youtube", "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
+                      { "type": "feature", "side": "auto", "html": "<p>Không rõ hướng ảnh</p>" }
+                    ]
+                  }
+                ]
+                """.formatted(suffix);
+
+        ImportReportResponse report = productImportService.validateImport(jsonFile(array));
+
+        assertThat(report.errorCount()).isEqualTo(1);
+        assertThat(report.rows().get(0).errors())
+                .anyMatch(e -> "descriptionBlocks[0].type".equals(e.field()) && "INVALID_VALUE".equals(e.code()))
+                .anyMatch(e -> "descriptionBlocks[1].type".equals(e.field()) && "INVALID_VALUE".equals(e.code()))
+                .anyMatch(e -> "descriptionBlocks[2].side".equals(e.field()) && "INVALID_VALUE".equals(e.code()));
+    }
+
     /**
-     * PRODUCT_RULE_009: legacy publishStatus values (HIDDEN/ARCHIVED/PENDING/PRIVATE) in an
-     * update-existing-product import row must be skipped with a WARNING (IGNORED), never applied
-     * and never a hard row ERROR — matching how PUBLISHED is already handled. Regression test for
-     * the bug where these values previously flowed to validatePublishTransition and errored the
-     * whole row instead of warning-and-skipping (fixed alongside HIDDEN retirement, 2026-07-07).
+     * PRODUCT_RULE_009: bulk import always saves as DRAFT. publishStatus from the file is ignored
+     * without warning, including legacy values. Publishing is a manual Admin action after import.
      */
     @Test
-    void legacyPublishStatusOnUpdateImportIsIgnoredWithWarningNotError() {
+    void importAlwaysSavesDraftIgnoringFilePublishStatus() {
         String suffix = String.valueOf(System.currentTimeMillis());
         String sku = "RT3-" + suffix;
         String slug = "roundtrip3-" + suffix;
@@ -261,15 +292,20 @@ class ProductImportRoundTripTest {
                     "categoryId": "mu-bao-hiem",
                     "brandId": "ls2",
                     "gender": "Unisex",
-                    "retailPrice": 900000
+                    "retailPrice": 900000,
+                    "image": { "url": "%s/products/%s.jpg", "alt": "Ảnh đăng bán" }
                   }
                 ]
-                """.formatted(sku, slug, suffix, suffix);
+                """.formatted(sku, slug, suffix, suffix, MEDIA, slug);
         ImportReportResponse createReport =
                 productImportService.commitImport(jsonFile(createArray), Set.of(), DEV_ADMIN_ID);
         assertThat(createReport.errorCount()).isZero();
+        String productId = createReport.rows().get(0).productId();
 
-        for (String legacyStatus : new String[] {"HIDDEN", "ARCHIVED", "PENDING", "PRIVATE"}) {
+        assertThat(productJpaRepository.findById(productId))
+                .hasValueSatisfying(entity -> assertThat(entity.getPublishStatus()).isEqualTo(PublishStatus.DRAFT));
+
+        for (String legacyStatus : new String[] {"PUBLISHED", "HIDDEN", "ARCHIVED", "PENDING", "PRIVATE"}) {
             String updateArray = """
                     [
                       { "sku": "%s", "categoryId": "mu-bao-hiem", "retailPrice": 950000, "publishStatus": "%s" }
@@ -282,15 +318,13 @@ class ProductImportRoundTripTest {
                     .as(legacyStatus + " must not error the row")
                     .isZero();
             ImportRowResult row = update.rows().get(0);
-            assertThat(row.status()).as(legacyStatus + " row status").isEqualTo("WARNING");
-            assertThat(row.warnings())
-                    .as(legacyStatus + " produces an IGNORED warning on publishStatus")
-                    .anyMatch(w -> "publishStatus".equals(w.field()) && "IGNORED".equals(w.code()));
+            assertThat(row.status()).as(legacyStatus + " row status").isEqualTo("OK");
+            assertThat(row.warnings()).as(legacyStatus + " warning list").isEmpty();
 
             assertThat(productJpaRepository.findBySlug(slug))
-                    .as(legacyStatus + " must not overwrite the product's current publishStatus")
+                    .as(legacyStatus + " import must leave product as draft")
                     .hasValueSatisfying(entity ->
-                            assertThat(entity.getPublishStatus()).isEqualTo(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.DRAFT));
+                            assertThat(entity.getPublishStatus()).isEqualTo(PublishStatus.DRAFT));
         }
     }
 }

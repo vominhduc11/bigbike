@@ -96,12 +96,28 @@
     ],
     "highlights": {
       "positiveNotes": [
-        { "content": "Quay liên tục 10h, vừa sạc vừa quay — đủ cho cả ngày dài", "contentEn": "10h continuous recording, can record while charging — enough for a full day", "sortOrder": 0 },
-        { "content": "Full HD 1080P góc rộng, ghi rõ biển số và tình huống va chạm", "contentEn": "Full HD 1080P wide angle, clearly captures plates and collision situations", "sortOrder": 1 },
-        { "content": "Chống nước IP67, lắp được trên Fullface/3-4/lật hàm và cả xe máy, xe đạp", "contentEn": "IP67 waterproof, mounts on full-face/3-4/modular helmets and on motorcycles, bicycles", "sortOrder": 2 }
+        {
+          "content": "Quay liên tục 10h, vừa sạc vừa quay — đủ cho cả ngày dài",
+          "contentEn": "10h continuous recording, can record while charging — enough for a full day",
+          "sortOrder": 0
+        },
+        {
+          "content": "Full HD 1080P góc rộng, ghi rõ biển số và tình huống va chạm",
+          "contentEn": "Full HD 1080P wide angle, clearly captures plates and collision situations",
+          "sortOrder": 1
+        },
+        {
+          "content": "Chống nước IP67, lắp được trên Fullface/3-4/lật hàm và cả xe máy, xe đạp",
+          "contentEn": "IP67 waterproof, mounts on full-face/3-4/modular helmets and on motorcycles, bicycles",
+          "sortOrder": 2
+        }
       ],
       "negativeNotes": [
-        { "content": "Xem lại video phải qua App điện thoại, chưa có màn hình hiển thị trực tiếp trên thân máy", "contentEn": "Video review requires the phone app — no built-in display screen on the device", "sortOrder": 0 }
+        {
+          "content": "Xem lại video phải qua App điện thoại, chưa có màn hình hiển thị trực tiếp trên thân máy",
+          "contentEn": "Video review requires the phone app — no built-in display screen on the device",
+          "sortOrder": 0
+        }
       ]
     },
     "descriptionBlocks": [
@@ -207,7 +223,34 @@
       "titleEn": "MOUNT BRACKET SIZE (TEST DATA)",
       "html": "<table style=\"width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px;\"><thead><tr><th style=\"background:#1A1A1A;color:#FFFFFF !important;padding:11px 14px;text-align:center;font-weight:600;\">Loại ngàm gắn</th><th style=\"background:#1A1A1A;color:#FFFFFF !important;padding:11px 14px;text-align:center;font-weight:600;\">Vị trí gắn phù hợp</th></tr></thead><tbody><tr style=\"background:#FFFFFF;\"><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;font-weight:700;\">Ngàm mũ bảo hiểm (kèm hộp)</td><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;\">Fullface, 3/4, lật hàm</td></tr><tr style=\"background:#F7F7F7;\"><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;font-weight:700;\">Ngàm xe (mua thêm riêng)</td><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;\">Ghi đông xe máy, xe đạp</td></tr></tbody></table><p style=\"font-size:13px;margin:6px 0;\"><em>*Lưu ý: Bảng size ngàm gắn này là dữ liệu giả định được tạo ra để test chức năng hiển thị của khối Size Guide trên website cho dòng camera hành trình.</em></p>",
       "htmlEn": "<table style=\"width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px;\"><thead><tr><th style=\"background:#1A1A1A;color:#FFFFFF !important;padding:11px 14px;text-align:center;font-weight:600;\">Mount type</th><th style=\"background:#1A1A1A;color:#FFFFFF !important;padding:11px 14px;text-align:center;font-weight:600;\">Suitable position</th></tr></thead><tbody><tr style=\"background:#FFFFFF;\"><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;font-weight:700;\">Helmet mount (included)</td><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;\">Full-face, 3/4, modular</td></tr><tr style=\"background:#F7F7F7;\"><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;font-weight:700;\">Vehicle mount (sold separately)</td><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;\">Motorcycle or bicycle handlebar</td></tr></tbody></table><p style=\"font-size:13px;margin:6px 0;\"><em>*Note: This is a mock mount-size guide created so you can test the UI functionality of the Size Guide block for dash cameras.</em></p>"
-    }
+    },
+    "publishStatus": "DRAFT",
+    "image": {
+      "url": "/media/products/camera-hanh-trinh-gan-xe-scs-cam-s/anh-dai-dien.jpg",
+      "alt": "CAMERA HÀNH TRÌNH GẮN XE MÁY SCS CAM-S - GHI HÌNH FULL HD 1080P, NHỎ GỌN, CHỐNG NƯỚC IP67"
+    },
+    "gallery": [
+      {
+        "mediaType": "image",
+        "url": "/media/products/camera-hanh-trinh-gan-xe-scs-cam-s/gallery-1.jpg",
+        "alt": "CAMERA HÀNH TRÌNH GẮN XE MÁY SCS CAM-S - GHI HÌNH FULL HD 1080P, NHỎ GỌN, CHỐNG NƯỚC IP67 - ?nh 1",
+        "sortOrder": 0
+      }
+    ],
+    "videos": [
+      {
+        "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        "provider": "youtube",
+        "title": "CAMERA HÀNH TRÌNH GẮN XE MÁY SCS CAM-S - GHI HÌNH FULL HD 1080P, NHỎ GỌN, CHỐNG NƯỚC IP67 - video gi?i thi?u",
+        "sortOrder": 0
+      }
+    ],
+    "relatedProductIds": [
+      "TNB-SCS-S13"
+    ],
+    "accessoryProductIds": [
+      "TNB-SCS-S13"
+    ]
   },
   {
     "sku": "TNB-SCS-S13",
@@ -345,7 +388,6 @@
         "sku": "TNB-SCS-S13-DEN",
         "retailPrice": 3190000,
         "salePrice": null,
-        "imageUrl": "/media/uploads/scs/tai-nghe-bluetooth-intercom-scs-s13-chinh.webp",
         "isAvailable": true,
         "sortOrder": 0,
         "options": [
@@ -353,19 +395,40 @@
             "optionName": "Màu",
             "optionValue": "Đen"
           }
+        ],
+        "id": "sample-tnb-scs-s13-den",
+        "imageUrl": "/media/products/tai-nghe-bluetooth-intercom-scs-s13/variants/tnb-scs-s13-den.jpg",
+        "imageAlt": "SCS S13 - TNB-SCS-S13-DEN",
+        "gallery": [
+          {
+            "mediaType": "image",
+            "url": "/media/products/tai-nghe-bluetooth-intercom-scs-s13/variants/tnb-scs-s13-den-gallery-1.jpg",
+            "alt": "SCS S13 - TNB-SCS-S13-DEN - ?nh 1",
+            "sortOrder": 0
+          }
         ]
       },
       {
         "sku": "TNB-SCS-S13-BAC",
         "retailPrice": 3190000,
         "salePrice": null,
-        "imageUrl": "/media/uploads/scs/tai-nghe-bluetooth-intercom-scs-s13-phu-1.webp",
         "isAvailable": true,
         "sortOrder": 1,
         "options": [
           {
             "optionName": "Màu",
             "optionValue": "Bạc"
+          }
+        ],
+        "id": "sample-tnb-scs-s13-bac",
+        "imageUrl": "/media/products/tai-nghe-bluetooth-intercom-scs-s13/variants/tnb-scs-s13-bac.jpg",
+        "imageAlt": "SCS S13 - TNB-SCS-S13-BAC",
+        "gallery": [
+          {
+            "mediaType": "image",
+            "url": "/media/products/tai-nghe-bluetooth-intercom-scs-s13/variants/tnb-scs-s13-bac-gallery-1.jpg",
+            "alt": "SCS S13 - TNB-SCS-S13-BAC - ?nh 1",
+            "sortOrder": 0
           }
         ]
       }
@@ -406,6 +469,33 @@
       "titleEn": "CLAMP SIZE GUIDE (TEST DATA)",
       "html": "<table style=\"width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px;\"><thead><tr><th style=\"background:#1A1A1A;color:#FFFFFF !important;padding:11px 14px;text-align:center;font-weight:600;\">Kích thước ngàm kẹp</th><th style=\"background:#1A1A1A;color:#FFFFFF !important;padding:11px 14px;text-align:center;font-weight:600;\">Độ dày vỏ mũ phù hợp (mm)</th></tr></thead><tbody><tr style=\"background:#FFFFFF;\"><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;font-weight:700;\">Tiêu chuẩn (Kèm sẵn trong hộp)</td><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;\">Dưới 25mm</td></tr><tr style=\"background:#F7F7F7;\"><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;font-weight:700;\">Mở rộng (Mua thêm riêng)</td><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;\">25mm - 35mm</td></tr></tbody></table><p style=\"font-size:13px;margin:6px 0;\"><em>*Lưu ý: Bảng size ngàm kẹp này là dữ liệu giả định được tạo ra để bạn có thể test chức năng hiển thị của khối Size Guide trên website cho dòng tai nghe.</em></p>",
       "htmlEn": "<table style=\"width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px;\"><thead><tr><th style=\"background:#1A1A1A;color:#FFFFFF !important;padding:11px 14px;text-align:center;font-weight:600;\">Clamp Size</th><th style=\"background:#1A1A1A;color:#FFFFFF !important;padding:11px 14px;text-align:center;font-weight:600;\">Suitable Helmet Thickness (mm)</th></tr></thead><tbody><tr style=\"background:#FFFFFF;\"><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;font-weight:700;\">Standard (Included)</td><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;\">Under 25mm</td></tr><tr style=\"background:#F7F7F7;\"><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;font-weight:700;\">Extended (Sold Separately)</td><td style=\"padding:10px 14px;text-align:center;border:1px solid #E0E0E0;\">25mm - 35mm</td></tr></tbody></table><p style=\"font-size:13px;margin:6px 0;\"><em>*Note: This is a mock clamp size guide created so you can test the UI functionality of the Size Guide block for intercoms.</em></p>"
-    }
+    },
+    "publishStatus": "DRAFT",
+    "image": {
+      "url": "/media/products/tai-nghe-bluetooth-intercom-scs-s13/anh-dai-dien.jpg",
+      "alt": "SCS S13"
+    },
+    "gallery": [
+      {
+        "mediaType": "image",
+        "url": "/media/products/tai-nghe-bluetooth-intercom-scs-s13/gallery-1.jpg",
+        "alt": "SCS S13 - ?nh 1",
+        "sortOrder": 0
+      }
+    ],
+    "videos": [
+      {
+        "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        "provider": "youtube",
+        "title": "SCS S13 - video gi?i thi?u",
+        "sortOrder": 0
+      }
+    ],
+    "relatedProductIds": [
+      "SCS-CAM-S"
+    ],
+    "accessoryProductIds": [
+      "SCS-CAM-S"
+    ]
   }
 ]

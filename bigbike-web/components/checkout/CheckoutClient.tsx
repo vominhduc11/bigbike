@@ -151,7 +151,7 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
 
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="order_comments" className="font-body text-a5-meta font-bold text-foreground">
-                  {t("noteLabel")} <span className="optional">{t("noteOptional")}</span>
+                  {t("noteLabel")} <span className="font-normal text-muted-foreground">{t("noteOptional")}</span>
                 </label>
                 <Textarea
                   id="order_comments"

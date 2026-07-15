@@ -58,10 +58,11 @@ public class AdminProductImportController extends AdminControllerSupport {
     }
 
     /**
-     * Round-trip export: the current catalog serialized as a full-fidelity JSON array (the exact
-     * {@code ProductImportRow[]} shape the import consumes), for "download current catalog to
-     * edit and re-import." Deliberately separate from {@code GET /api/v1/admin/reports/products/export}
-     * (CSV reporting overview, gated by {@code reports.export}) — this one is a catalog-authoring capability.
+     * Full JSON export: the current catalog serialized as the {@code ProductImportRow[]} shape the
+     * import accepts. Export includes media, relations, and publish status for completeness, but
+     * bulk import discards those groups before saving Draft rows. Deliberately separate from
+     * {@code GET /api/v1/admin/reports/products/export} (CSV reporting overview, gated by
+     * {@code reports.export}) — this one is a catalog-authoring capability.
      */
     @GetMapping("/export")
     public ResponseEntity<byte[]> exportTemplate(HttpServletRequest request) {
@@ -73,7 +74,7 @@ public class AdminProductImportController extends AdminControllerSupport {
                 .body(json);
     }
 
-    /** Same round-trip shape as {@link #exportTemplate}, scoped to one product (array of one). */
+    /** Same full JSON export shape as {@link #exportTemplate}, scoped to one product (array of one). */
     @GetMapping("/export/{id}")
     public ResponseEntity<byte[]> exportProduct(@PathVariable String id, HttpServletRequest request) {
         devAdminAuthService.requirePermission(request, "products.update");

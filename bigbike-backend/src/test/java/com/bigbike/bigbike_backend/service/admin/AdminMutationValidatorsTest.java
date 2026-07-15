@@ -113,8 +113,19 @@ class AdminMutationValidatorsTest {
                 .satisfies(error -> {
                     assertThat(error.field()).isEqualTo("seo.canonicalUrl");
                     assertThat(error.code()).isEqualTo("INVALID_VALUE");
-                    assertThat(error.message()).contains("Canonical URL must belong to bigbike.vn or www.bigbike.vn");
+                    assertThat(error.message()).contains("Canonical URL must belong to bigbike.vn, www.bigbike.vn, or 103.1.236.148");
                 });
+    }
+
+    @Test
+    void seoCanonicalUrlAllowsApprovedVpsIpInProduction() {
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        SeoMetaRequest seo = new SeoMetaRequest();
+        seo.setCanonicalUrl("http://103.1.236.148:3000/product/mu-bao-hiem-ls2-ff800/");
+
+        AdminMutationValidators.validateSeoMeta(seo, "seo", MINIO_BASE_URL, false, errors);
+
+        assertThat(errors).isEmpty();
     }
 
     @Test

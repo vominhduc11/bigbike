@@ -181,9 +181,10 @@ final class AdminMutationValidators {
                     return;
                 }
                 boolean isProductionDomain = host.equalsIgnoreCase("bigbike.vn") || host.equalsIgnoreCase("www.bigbike.vn");
+                boolean isApprovedVpsIp = host.equalsIgnoreCase("103.1.236.148");
                 boolean isDevAllowed = isDev && (host.equalsIgnoreCase("localhost") || host.equalsIgnoreCase("127.0.0.1"));
-                if (!isProductionDomain && !isDevAllowed) {
-                    errors.add(new ApiErrorDetail(field, "INVALID_VALUE", "Canonical URL must belong to bigbike.vn or www.bigbike.vn."));
+                if (!isProductionDomain && !isApprovedVpsIp && !isDevAllowed) {
+                    errors.add(new ApiErrorDetail(field, "INVALID_VALUE", "Canonical URL must belong to bigbike.vn, www.bigbike.vn, or 103.1.236.148."));
                 }
             } catch (URISyntaxException e) {
                 errors.add(new ApiErrorDetail(field, "INVALID_VALUE", "Canonical URL must be a valid URL."));
