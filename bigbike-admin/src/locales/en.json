@@ -1898,7 +1898,6 @@
     "allFiles": "All",
     "images": "Images",
     "videos": "Videos",
-    "audios": "Audio",
     "loading": "Loading media",
     "loadError": "Error loading media",
     "empty": "No files",

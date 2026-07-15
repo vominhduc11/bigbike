@@ -495,7 +495,6 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
             <SelectItem value="ALL">{t('media.allFiles')}{stats ? ` (${formatNumber(stats.total)})` : ''}</SelectItem>
             <SelectItem value="image/">{t('media.images')}{stats?.byMimeGroup?.image != null ? ` (${formatNumber(stats.byMimeGroup.image)})` : ''}</SelectItem>
             <SelectItem value="video/">{t('media.videos')}{stats?.byMimeGroup?.video != null ? ` (${formatNumber(stats.byMimeGroup.video)})` : ''}</SelectItem>
-            <SelectItem value="audio/">{t('media.audios')}{stats?.byMimeGroup?.audio != null ? ` (${formatNumber(stats.byMimeGroup.audio)})` : ''}</SelectItem>
           </SelectContent></Select>
         </label>
 

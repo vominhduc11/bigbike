@@ -115,7 +115,7 @@
 
 | AUD | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
-| AUD-055 | Dọn tàn dư quantity/serial/wishlist/coupon/comparison/refund/shipping/POS | ⬜ | |
+| AUD-055 | Dọn tàn dư quantity/serial/wishlist/coupon/comparison/refund/shipping/POS | 🔧 | Đang đối chiếu các tính năng đã gỡ với contract sản phẩm, đơn hàng và mã nguồn còn tham chiếu. |
 | AUD-056 | Gỡ endpoint không consumer (grep 0 caller từng cái trước khi xóa) | ⬜ | Quyết định #8 |
 | AUD-057 | Web: dọn raw controls / arbitrary values trong active UI/CSS | ⬜ | |
 | AUD-058 | Admin: dọn named CSS / hardcode / raw buttons | ⬜ | |
@@ -123,7 +123,7 @@
 | AUD-066 | Gỡ `GET /api/v1/search` + sửa docs API_FLOW_MAP | ⬜ | Quyết định #8 |
 | AUD-067 | Gỡ `POST .../notifications/mark-read` không caller | ✅ `7e96af4d` | Làm sớm cùng 1D: gỡ endpoint + `markReadByIds` khi rework mô hình đã-đọc per-admin (endpoint chưa từng có caller); docs API_CONTRACT ghi Removed |
 | AUD-068 | Gỡ `GET .../settings/{settingKey}` không caller | ⬜ | Quyết định #8 |
-| AUD-074 | Gỡ audio khỏi Media Library (filter admin + backend reject) | ⬜ | Quyết định #5 |
+| AUD-074 | Gỡ audio khỏi Media Library (filter admin + backend reject) | ✅ | Quyết định #5: backend `AdminMediaService.ALLOWED_MIME_TYPES` bỏ 5 loại audio (reject upload); bỏ nhóm đếm `audio` trong stats; admin bỏ SelectItem Audio + chip + locale key `audios`; docs Media Rules cập nhật. Object audio cũ trong MinIO giữ nguyên |
 | AUD-076 | Docs bổ sung `orders/lookup`, quyền reviews, module Reviews; gỡ ghi chú stale | ⬜ | |
 | AUD-077 | Gỡ `REDIRECT_HIT_TRACKING` khỏi `.env.example` | ⬜ | |
 

@@ -73,7 +73,7 @@ Evidence:
 ## Media Rules
 
 - Media upload validation is server-side MIME/content validation using Apache Tika magic-byte detection. `CONFIRMED_FROM_CODE`
-- Allowed MIME types include common raster images, `image/svg+xml`, MP4 video, and selected audio formats. `CONFIRMED_FROM_CODE`
+- Allowed MIME types: common raster images (`image/jpeg`, `image/png`, `image/webp`, `image/gif`), `image/svg+xml`, and MP4 video only. **Audio was removed (owner decision 2026-07-15, AUD-074)** — the backend rejects audio MIME types on upload and the admin Media Library no longer offers an Audio filter/count; legacy audio objects already in MinIO are left untouched. `CONFIRMED_FROM_CODE`
 - SVG is allowed but sanitized on upload (`SvgSanitizer`): scripts, event handlers, `javascript:`/external references and CSS vectors are stripped; non-SVG content declared as `image/svg+xml` is rejected. `CONFIRMED_FROM_CODE`
 - Hard delete is blocked when a media URL is still referenced. `CONFIRMED_FROM_CODE`
 - `MEDIA_RULE_002` — URL ảnh trong gallery sản phẩm (`product.gallery`) và gallery biến thể (`variant.gallery`) bắt buộc phải thuộc whitelist MinIO khi thêm mới hoặc chỉnh sửa (mediaType không phải video). Ảnh cũ (legacy) đã tồn tại từ trước vẫn được chấp nhận để đảm bảo khả năng tương thích ngược khi sửa sản phẩm cũ. `CONFIRMED_FROM_CODE`

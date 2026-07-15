@@ -60,10 +60,12 @@ public class AdminMediaService {
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
     private static final Set<String> ALLOWED_STATUSES = Set.of("ACTIVE", "INACTIVE", "DELETED");
+    // Audio removed (owner decision 2026-07-15, AUD-074): Media Library accepts images
+    // (+ SVG) and mp4 video only. The admin never uploaded audio and the storefront has
+    // no audio surface. Legacy audio objects already in MinIO are left untouched.
     private static final Set<String> ALLOWED_MIME_TYPES = Set.of(
             "image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml",
-            "video/mp4",
-            "audio/mpeg", "audio/ogg", "audio/wav", "audio/webm", "audio/aac");
+            "video/mp4");
     private static final String SVG_MIME = "image/svg+xml";
     private static final Set<String> RASTER_IMAGE_TYPES = Set.of(
             "image/jpeg", "image/png", "image/gif");
@@ -380,7 +382,8 @@ public class AdminMediaService {
         Map<String, Long> byMime = new HashMap<>();
         byMime.put("image", all.stream().filter(m -> startsWith(m.getMimeType(), "image/")).count());
         byMime.put("video", all.stream().filter(m -> startsWith(m.getMimeType(), "video/")).count());
-        byMime.put("audio", all.stream().filter(m -> startsWith(m.getMimeType(), "audio/")).count());
+        // No "audio" group — audio uploads are rejected (AUD-074). Any legacy audio object
+        // in MinIO is left in place but no longer surfaced as a filterable category.
 
         return new AdminMediaStatsResponse(total, used, unused, activeCount, deletedCount, byMime, totalSize, sizeKnownCount);
     }

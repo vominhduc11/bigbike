@@ -38,7 +38,7 @@ export function buildActiveChips(query, t, folders, onRemove) {
   if (query.mimeType !== 'ALL') {
     const label = query.mimeType === 'image/' ? t('media.images')
       : query.mimeType === 'video/' ? t('media.videos')
-      : query.mimeType === 'audio/' ? t('media.audios') : query.mimeType
+      : query.mimeType
     chips.push({ key: 'mimeType', label: `${t('media.filterType')}: ${label}`, onRemove: () => onRemove('mimeType', 'ALL') })
   }
   if (query.usageFilter !== 'ALL') {
