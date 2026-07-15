@@ -4,18 +4,6 @@
 export const STOREFRONT_BASE = `${import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn'}/danh-muc-san-pham`
 export const MENU_NOTICE_DISMISSED_KEY = 'bigbike-admin-cat-menu-notice-dismissed'
 
-export function countDescendants(rootId, allCategories) {
-  let count = 0
-  const queue = [rootId]
-  while (queue.length > 0) {
-    const parentId = queue.shift()
-    const children = allCategories.filter((c) => c.parentId === parentId)
-    count += children.length
-    children.forEach((c) => queue.push(c.id))
-  }
-  return count
-}
-
 // Slugify dùng chung — tách sang src/lib/slug.js (khử trùng lặp với Brand/Content).
 export { toSlug } from '../../lib/slug'
 

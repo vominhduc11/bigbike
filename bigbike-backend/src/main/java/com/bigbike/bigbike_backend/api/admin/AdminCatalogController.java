@@ -1,6 +1,8 @@
 package com.bigbike.bigbike_backend.api.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.ProductPublishRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.CategoryPermanentDeleteImpactRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.CategoryPermanentDeleteImpactResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.SetHomepageBlocksRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertBrandRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertCategoryRequest;
@@ -14,6 +16,7 @@ import com.bigbike.bigbike_backend.domain.catalog.Product;
 import java.util.List;
 import com.bigbike.bigbike_backend.service.admin.ProductMutationService;
 import com.bigbike.bigbike_backend.service.admin.CategoryMutationService;
+import com.bigbike.bigbike_backend.service.admin.CategoryDeletionImpactService;
 import com.bigbike.bigbike_backend.service.admin.BrandMutationService;
 import com.bigbike.bigbike_backend.service.admin.HomepageBlockMutationService;
 import com.bigbike.bigbike_backend.service.admin.AdminCatalogReadService;
@@ -54,6 +57,7 @@ public class AdminCatalogController extends AdminControllerSupport {
     private final AdminCatalogReadService adminCatalogReadService;
     private final ProductMutationService productMutationService;
     private final CategoryMutationService categoryMutationService;
+    private final CategoryDeletionImpactService categoryDeletionImpactService;
     private final BrandMutationService brandMutationService;
     private final HomepageBlockMutationService homepageBlockMutationService;
     private final DevAdminAuthService devAdminAuthService;
@@ -242,6 +246,15 @@ public class AdminCatalogController extends AdminControllerSupport {
     ) {
         devAdminAuthService.requirePermission(request, "catalog.read");
         return apiResponseFactory.data(adminCatalogReadService.listAllCategoriesForTree(lang), request);
+    }
+
+    @PostMapping("/categories/permanent-delete-impact")
+    public ApiDataResponse<CategoryPermanentDeleteImpactResponse> previewCategoryPermanentDelete(
+            @Valid @RequestBody CategoryPermanentDeleteImpactRequest payload,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "catalog.read");
+        return apiResponseFactory.data(categoryDeletionImpactService.preview(payload.categoryIds()), request);
     }
 
     @GetMapping("/categories/{id}")

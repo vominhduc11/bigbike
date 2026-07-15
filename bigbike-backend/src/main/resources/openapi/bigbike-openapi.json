@@ -3163,6 +3163,54 @@
         }
       }
     },
+    "/api/v1/admin/categories/permanent-delete-impact": {
+      "post": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "Preview permanent category deletion impact",
+        "operationId": "adminPreviewCategoryPermanentDelete",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryPermanentDeleteImpactRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Unique category-tree and product impact",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryPermanentDeleteImpactDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
     "/api/v1/admin/categories/{id}": {
       "get": {
         "tags": [
@@ -7832,6 +7880,63 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "CategoryPermanentDeleteImpactRequest": {
+        "type": "object",
+        "required": [
+          "categoryIds"
+        ],
+        "properties": {
+          "categoryIds": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          }
+        }
+      },
+      "CategoryPermanentDeleteImpactResponse": {
+        "type": "object",
+        "required": [
+          "requestedCategoryCount",
+          "rootCategoryIds",
+          "descendantCategoryCount",
+          "reassignedProductCount"
+        ],
+        "properties": {
+          "requestedCategoryCount": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "rootCategoryIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "descendantCategoryCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reassignedProductCount": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "CategoryPermanentDeleteImpactDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CategoryPermanentDeleteImpactResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
           }
         }
       },

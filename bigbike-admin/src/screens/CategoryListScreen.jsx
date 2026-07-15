@@ -24,7 +24,7 @@ import { BulkActionBar } from '../components/BulkActionBar'
 import { FilterChips } from '../components/FilterChips'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { RecentItemsChips } from '../components/RecentItemsChips'
-import { fetchCategories, fetchCategoryDetail, fetchCategoryTree, updateCategory, softDeleteCategory, restoreCategory, hardDeleteCategory } from '../lib/adminApi'
+import { fetchCategories, fetchCategoryDetail, fetchCategoryTree, updateCategory, softDeleteCategory, restoreCategory, hardDeleteCategory, previewCategoryPermanentDelete } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { formatDateTime, formatText, stripHtml } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
@@ -341,17 +341,29 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   // Chạy tuần tự vì xóa vĩnh viễn cha kéo theo con (như runBulkVisibility).
   async function runBulkTrash(action) {
     if (!canUpdate || bulkProgress) return
-    const byId = new Map(allItems.map((c) => [c.id, c]))
-    const ids = Array.from(selectedIds).filter((id) => byId.has(id))
+    const byId = new Map([...allItems, ...paginatedState.items].map((c) => [c.id, c]))
+    let ids = Array.from(selectedIds).filter((id) => byId.has(id))
     if (ids.length === 0) return
 
     if (action === 'permanentDelete') {
+      let impact
+      try {
+        impact = await previewCategoryPermanentDelete(ids)
+      } catch (error) {
+        toast.error(error.message || t('categories.permanentDeleteImpactError'))
+        return
+      }
       const confirmed = await showConfirm(
-        t('categories.bulkPermanentDeleteConfirm', { count: ids.length, defaultValue: `Xóa vĩnh viễn {{count}} danh mục đã chọn cùng toàn bộ danh mục con? Hành vi này không thể khôi phục.` }),
+        t('categories.bulkPermanentDeleteImpactConfirm', {
+          selectedCount: impact.requestedCategoryCount,
+          descendantCount: impact.descendantCategoryCount,
+          productCount: impact.reassignedProductCount,
+        }),
         t('categories.bulkPermanentDeleteTitle', { defaultValue: 'Xóa vĩnh viễn các danh mục đã chọn?' }),
         { variant: 'danger', confirmLabel: t('common.permanentDelete') },
       )
       if (!confirmed) return
+      ids = impact.rootCategoryIds
     }
 
     const apiFn = action === 'restore' ? restoreCategory : hardDeleteCategory
@@ -527,8 +539,19 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   }
 
   const handlePermanentDelete = async (category) => {
+    let impact
+    try {
+      impact = await previewCategoryPermanentDelete([category.id])
+    } catch (error) {
+      toast.error(error.message || t('categories.permanentDeleteImpactError'))
+      return
+    }
     const confirmed = await showConfirm(
-      t('categories.permanentDeleteConfirm', { name: category.name, defaultValue: `Bạn có chắc chắn muốn xóa vĩnh viễn danh mục ${category.name} cùng toàn bộ danh mục con? Hành vi này không thể khôi phục.` }),
+      t('categories.permanentDeleteImpactConfirm', {
+        name: category.name,
+        descendantCount: impact.descendantCategoryCount,
+        productCount: impact.reassignedProductCount,
+      }),
       t('categories.permanentDeleteConfirmTitle', { defaultValue: 'Xác nhận xóa vĩnh viễn' }),
       { confirmLabel: t('common.permanentDelete'), variant: 'danger' }
     )

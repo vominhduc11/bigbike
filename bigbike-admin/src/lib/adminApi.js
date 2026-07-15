@@ -553,6 +553,20 @@ export async function hardDeleteCategory(categoryId) {
   await requestJson(`/admin/categories/${categoryId}/permanent`, { method: 'DELETE' })
 }
 
+export async function previewCategoryPermanentDelete(categoryIds) {
+  const payload = await requestJson('/admin/categories/permanent-delete-impact', {
+    method: 'POST',
+    body: { categoryIds },
+  })
+  const data = payload?.data ?? {}
+  return {
+    requestedCategoryCount: Number(data.requestedCategoryCount) || 0,
+    rootCategoryIds: Array.isArray(data.rootCategoryIds) ? data.rootCategoryIds.map(String) : [],
+    descendantCategoryCount: Number(data.descendantCategoryCount) || 0,
+    reassignedProductCount: Number(data.reassignedProductCount) || 0,
+  }
+}
+
 export async function fetchBrands(query) {
   try {
     const payload = await requestJson('/admin/brands', { query: buildBrandQuery(query) })

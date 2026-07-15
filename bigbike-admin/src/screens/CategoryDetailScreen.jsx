@@ -10,6 +10,7 @@ import {
   fetchCategoryTree,
   fetchProducts,
   hardDeleteCategory,
+  previewCategoryPermanentDelete,
   mapValidationErrors,
   updateCategory,
 } from '../lib/adminApi'
@@ -32,7 +33,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import {
   STOREFRONT_BASE,
   MENU_NOTICE_DISMISSED_KEY,
-  countDescendants,
   toSlug,
   buildEmptyForm,
   buildFormFromItem,
@@ -60,6 +60,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   const [enSlugManuallyEdited, setEnSlugManuallyEdited] = useState(false)
   const [seoOpen, setSeoOpen] = useState(false)
   const [idCopied, setIdCopied] = useState(false)
+  const [isHardDeletePreviewing, setIsHardDeletePreviewing] = useState(false)
   const [menuNoticeDismissed, setMenuNoticeDismissed] = useState(() => {
     try { return localStorage.getItem(MENU_NOTICE_DISMISSED_KEY) === '1' }
     catch { return false }
@@ -305,18 +306,21 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
   async function handleHardDelete() {
     const name = form.name || categoryId
-    const allCategories = categoriesResult?.items ?? []
-    const descendantCount = countDescendants(categoryId, allCategories)
-    // Sản phẩm trong danh mục (và cây con) không bị xoá — chúng tự chuyển sang
-    // "Chưa phân loại". Cảnh báo rõ trong hộp xác nhận để admin biết trước.
-    let message
-    if (descendantCount > 0) {
-      message = t('categories.detail.hardDeleteConfirmWithChildren', { name, count: descendantCount })
-    } else if (productsTotal > 0) {
-      message = t('categories.detail.hardDeleteConfirmWithProducts', { name, count: productsTotal })
-    } else {
-      message = t('categories.detail.hardDeleteConfirm', { name })
+    let impact
+    setIsHardDeletePreviewing(true)
+    try {
+      impact = await previewCategoryPermanentDelete([categoryId])
+    } catch (error) {
+      toast.error(error.message || t('categories.permanentDeleteImpactError'))
+      return
+    } finally {
+      setIsHardDeletePreviewing(false)
     }
+    const message = t('categories.permanentDeleteImpactConfirm', {
+      name,
+      descendantCount: impact.descendantCategoryCount,
+      productCount: impact.reassignedProductCount,
+    })
     // Nút xác nhận phải nêu rõ hành động (Xoá vĩnh viễn) thay vì "Xác nhận"
     // chung chung, để người dùng biết chính xác việc sắp làm (tiêu chí 7.5).
     const confirmed = await showConfirm(message, t('categories.detail.hardDeleteConfirmTitle'), {
@@ -932,7 +936,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
         {/* Danger zone */}
         {!isCreate && canUpdate && !isUncategorized && (
-          <DangerZoneCard onHardDelete={handleHardDelete} pending={hardDeleteMutation.isPending} />
+          <DangerZoneCard onHardDelete={handleHardDelete} pending={isHardDeletePreviewing || hardDeleteMutation.isPending} />
         )}
       </form>
     </div>

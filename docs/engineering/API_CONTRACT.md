@@ -353,6 +353,13 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
   - Tự động chuyển toàn bộ sản phẩm trong cây con sang danh mục hệ thống "Chưa phân loại" (`uncategorized`).
   - Thực hiện xóa cứng danh mục và toàn bộ cây con.
   - Chặn (409) mọi thao tác xóa (mềm/cứng) đối với danh mục hệ thống `uncategorized`.
+- **Xem trước ảnh hưởng xóa vĩnh viễn**: `POST /api/v1/admin/categories/permanent-delete-impact`
+  - Request: `{ "categoryIds": string[] }` (1–100 mã danh mục trong Thùng rác).
+  - Response: `{ data: { requestedCategoryCount, rootCategoryIds, descendantCategoryCount, reassignedProductCount } }`.
+  - `rootCategoryIds` loại các mục đã nằm dưới một danh mục khác trong cùng lựa chọn để luồng xóa hàng loạt không xóa trùng cây.
+  - `descendantCategoryCount` là tổng số danh mục con trong hợp của các cây sẽ xóa; `reassignedProductCount` là số sản phẩm duy nhất trong các cây đó sẽ chuyển sang `uncategorized`.
+  - Trả `404` nếu có mã không tồn tại; trả `409` nếu có danh mục chưa nằm trong Thùng rác hoặc là danh mục hệ thống `uncategorized`.
+  - Admin phải gọi phép xem trước này trước hộp xác nhận xóa đơn lẻ/hàng loạt và hiển thị **đồng thời** hai số đếm theo `BUSINESS_RULES.md` `CATEGORY_RULE_004`.
 
 ### 3. Brands (Thương hiệu)
 - **Xóa mềm (Ẩn)**: `DELETE /api/v1/admin/brands/{id}`
