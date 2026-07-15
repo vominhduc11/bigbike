@@ -3,13 +3,17 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
+import { useQuery } from "@tanstack/react-query";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { CheckoutSkeleton } from "@/components/ui/Skeletons";
 import { Textarea } from "@/components/ui/textarea";
-import { formatVnd } from "@/lib/utils/format";
+import { formatVnd, telHref } from "@/lib/utils/format";
 import { toCartPath, toProductListPath } from "@/lib/utils/routes";
-import type { Locale } from "@/i18n/locale";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/locale";
+import { listPublicSettings } from "@/lib/api/public-api";
+import type { PublicSiteSetting } from "@/lib/contracts/public";
+import { pickSetting } from "@/lib/utils/settings";
 import {
   CheckoutConfirmRow,
   CodPaymentBlock,
@@ -23,11 +27,22 @@ import { useCheckout } from "./parts/useCheckout";
  * Nội dung trang Thanh toán — được nâng cấp theo Mockup 1 (tiêu chuẩn UI/UX cao cấp).
  * GIỮ NGUYÊN toàn bộ hook useCheckout + logic thật của bigbike-web.
  */
-export function CheckoutClient() {
+export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting[] }) {
   const t = useTranslations("Checkout");
   const tCart = useTranslations("Cart");
   const locale = useLocale() as Locale;
   const [confirmedChecked, setConfirmedChecked] = useState(false);
+  const { data: freshSettingsResult } = useQuery({
+    queryKey: ["public-settings", locale],
+    queryFn: () => listPublicSettings(locale),
+    initialData: locale === DEFAULT_LOCALE ? { data: settings, error: null } : undefined,
+    staleTime: 5 * 60 * 1000,
+  });
+  const activeSettings = freshSettingsResult?.data ?? settings;
+  const hotline = pickSetting(activeSettings, ["hotline", "phone"]);
+  const contactAddress = pickSetting(activeSettings, ["contact_address", "address"]);
+  const zaloUrl = pickSetting(activeSettings, ["zalo_url"]);
+  const zaloDisplay = pickSetting(activeSettings, ["zalo_display"]);
 
   const {
     cart,
@@ -200,10 +215,13 @@ export function CheckoutClient() {
               className="mt-6 h-auto min-h-[56px] w-full rounded-none px-5 py-4 text-center"
               disabled={submitting || cartLoading || !cart.items.length || !confirmedChecked}
             >
-              {submitting ? t("placingOrder") : "ĐẶT HÀNG - SHOP SẼ GỌI XÁC NHẬN"}
+              {submitting ? t("placingOrder") : t("placeOrderCallConfirm")}
             </Button>
             <p className="mb-0 mt-3 text-center text-a5-meta text-muted-foreground">
-              Shop xác nhận trong 1-2 giờ làm việc. Hotline: 0906902404
+              {t("confirmationTiming")}
+              {hotline ? (
+                <> {t("hotlineLabel")}: <a className="font-semibold text-foreground hover:text-brand" href={telHref(hotline)}>{hotline}</a></>
+              ) : null}
             </p>
           </section>
 
@@ -217,8 +235,9 @@ export function CheckoutClient() {
             grandTotal={grandTotal}
             submitting={submitting}
             cartLoading={cartLoading}
+            contactAddress={contactAddress}
           />
-          <ZaloSupportBlock />
+          <ZaloSupportBlock zaloUrl={zaloUrl} zaloDisplay={zaloDisplay} />
         </div>
       </div>
     </form>

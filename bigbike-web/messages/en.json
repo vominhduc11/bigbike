@@ -552,7 +552,10 @@
     "continue": "Continue",
     "back": "‹ Back",
     "placeOrder": "Place order",
+    "placeOrderCallConfirm": "PLACE ORDER - SHOP WILL CALL TO CONFIRM",
     "placingOrder": "Placing order…",
+    "confirmationTiming": "The shop confirms within 1–2 business hours.",
+    "hotlineLabel": "Hotline",
     "bankInfoTitle": "Bank account details",
     "bankInfoFallback": "Bank details will be included in your order confirmation email.",
     "bankHolder": "Account holder:",
@@ -633,6 +636,14 @@
       }
     }
   },
+  "AddressFields": {
+    "provinceLabel": "Province / City",
+    "provincePlaceholder": "— Select a province / city —",
+    "wardLabel": "Ward / Commune",
+    "wardPlaceholder": "— Select a ward / commune —",
+    "wardInputPlaceholder": "Ward / commune name...",
+    "provinceFirstPlaceholder": "Select a province / city first"
+  },
   "Account": {
     "nav": {
       "dashboard": "Dashboard",
@@ -644,6 +655,8 @@
     "breadcrumbAccount": "Account",
     "logout": "Sign out",
     "loggingOut": "Signing out...",
+    "emailLabel": "Email",
+    "phoneLabel": "Phone",
     "loadingAccount": "Loading your account...",
     "logoutConfirm": "Sign out of your account?",
     "dashboardGreeting": "Hello <strong>{name}</strong>.",

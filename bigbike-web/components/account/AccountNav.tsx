@@ -168,9 +168,9 @@ export function AccountNav({
           <aside>
             <div className="relative mb-8 pr-10">
               <h2 className="font-body text-a4-content font-semibold text-foreground">{displayName}</h2>
-              <p className="m-0 truncate text-a5-meta text-foreground">Email: {profile.email}</p>
+              <p className="m-0 truncate text-a5-meta text-foreground">{t("emailLabel")}: {profile.email}</p>
               {profile.phone ? (
-                <p className="m-0 truncate text-a5-meta text-foreground">SĐT: {profile.phone}</p>
+                <p className="m-0 truncate text-a5-meta text-foreground">{t("phoneLabel")}: {profile.phone}</p>
               ) : null}
               <Button
                 type="button"

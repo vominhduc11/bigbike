@@ -8,12 +8,14 @@ export function CheckoutSummary({
   cart,
   cartSubtotal,
   grandTotal,
+  contactAddress,
 }: {
   cart: Cart;
   cartSubtotal: number;
   grandTotal: number;
   submitting: boolean;
   cartLoading: boolean;
+  contactAddress?: string;
 }) {
   const t = useTranslations("Checkout");
 
@@ -69,7 +71,7 @@ export function CheckoutSummary({
         </div>
       </div>
 
-      <TrustMini />
+      <TrustMini address={contactAddress} />
     </section>
   );
 }

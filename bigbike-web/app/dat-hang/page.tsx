@@ -3,6 +3,7 @@ import { Container } from "@/components/layout/Container";
 import { CheckoutPageHeading } from "@/components/layout/CheckoutPageHeading";
 import { CheckoutClient } from "@/components/checkout/CheckoutClient";
 import { Tr } from "@/components/i18n/Tr";
+import { listPublicSettings } from "@/lib/api/public-api";
 
 /**
  * Đặt hàng — port 1:1 từ themes/bigbike/page-templates/page-checkout.php (cùng
@@ -14,7 +15,8 @@ import { Tr } from "@/components/i18n/Tr";
 const TITLE = "Đặt hàng";
 const BREADCRUMB = [{ label: "Bigbike.vn", href: "/" }, { label: TITLE }];
 
-export default function CheckoutPage() {
+export default async function CheckoutPage() {
+  const settingsResult = await listPublicSettings("vi");
   return (
     <StaticPageShell
       title={TITLE}
@@ -26,7 +28,7 @@ export default function CheckoutPage() {
         <CheckoutPageHeading title={<Tr ns="Checkout" k="title" />} />
 
         <div className="pb-15">
-          <CheckoutClient />
+          <CheckoutClient settings={settingsResult.data ?? []} />
         </div>
       </Container>
     </StaticPageShell>

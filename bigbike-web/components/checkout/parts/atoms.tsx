@@ -2,6 +2,7 @@ import { useTranslations } from "next-intl";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { ZaloIcon } from "@/components/ui/ZaloIcon";
+import { zaloHref } from "@/lib/utils/format";
 
 export function CheckoutStepTitle({ step, children }: { step?: number; children: React.ReactNode }) {
   return (
@@ -64,7 +65,7 @@ export function CheckoutConfirmRow({
   );
 }
 
-export function TrustMini() {
+export function TrustMini({ address }: { address?: string }) {
   const t = useTranslations("Checkout");
   return (
     <div className="mt-5 space-y-2 border-t border-border pt-5 text-left text-a5-meta text-muted-foreground">
@@ -80,30 +81,29 @@ export function TrustMini() {
         <div className="h-1.5 w-1.5 rotate-45 bg-brand" />
         <span>{t("trustWarranty")}</span>
       </div>
-      <div className="flex items-center gap-2">
-        <div className="h-1.5 w-1.5 rotate-45 bg-brand" />
-        {/* Địa chỉ cửa hàng — dữ liệu doanh nghiệp (legacy storefront address fragment), giữ nguyên
-            không dịch (allowlist trong check-no-runtime-business-data.mjs). */}
-        <span>79/30/52 Âu Cơ, Phường Hòa Bình, TP.HCM</span>
-      </div>
+      {address ? (
+        <div className="flex items-center gap-2">
+          <div className="h-1.5 w-1.5 rotate-45 bg-brand" />
+          <span>{address}</span>
+        </div>
+      ) : null}
     </div>
   );
 }
 
-export function ZaloSupportBlock() {
+export function ZaloSupportBlock({ zaloUrl, zaloDisplay }: { zaloUrl?: string; zaloDisplay?: string }) {
   const t = useTranslations("Checkout");
+  if (!zaloUrl) return null;
   return (
     <aside className="border border-border bg-secondary p-5 text-center">
       <p className="text-a5-meta text-foreground mb-2.5 font-semibold">{t("zaloSupportTitle")}</p>
       <Button asChild variant="outline" className="w-full rounded-none border-zalo text-zalo hover:text-zalo">
-        <a href="https://zalo.me/0764640679" target="_blank" rel="noopener noreferrer">
+        <a href={zaloHref(zaloUrl)} target="_blank" rel="noopener noreferrer">
           <ZaloIcon className="h-5 w-5" aria-hidden />
           {t("zaloSupportCta")}
         </a>
       </Button>
-      {/* Tên nhân viên tư vấn + SĐT — dữ liệu doanh nghiệp (legacy storefront phone number), giữ
-          nguyên không dịch (allowlist trong check-no-runtime-business-data.mjs). */}
-      <p className="text-a5-meta text-muted-foreground mt-2">Mrs. Thư · 0764640679</p>
+      {zaloDisplay ? <p className="text-a5-meta text-muted-foreground mt-2">{zaloDisplay}</p> : null}
     </aside>
   );
 }

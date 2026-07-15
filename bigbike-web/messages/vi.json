@@ -552,7 +552,10 @@
     "continue": "Tiếp tục",
     "back": "‹ Quay lại",
     "placeOrder": "Đặt hàng",
+    "placeOrderCallConfirm": "ĐẶT HÀNG - SHOP SẼ GỌI XÁC NHẬN",
     "placingOrder": "Đang đặt hàng...",
+    "confirmationTiming": "Shop xác nhận trong 1–2 giờ làm việc.",
+    "hotlineLabel": "Hotline",
     "bankInfoTitle": "Thông tin tài khoản",
     "bankInfoFallback": "Thông tin tài khoản sẽ được gửi kèm email xác nhận sau khi đặt hàng.",
     "bankHolder": "Chủ tài khoản:",
@@ -633,6 +636,14 @@
       }
     }
   },
+  "AddressFields": {
+    "provinceLabel": "Tỉnh / Thành phố",
+    "provincePlaceholder": "— Chọn tỉnh / thành phố —",
+    "wardLabel": "Phường / Xã",
+    "wardPlaceholder": "— Chọn phường / xã —",
+    "wardInputPlaceholder": "Tên phường / xã...",
+    "provinceFirstPlaceholder": "Chọn tỉnh/thành phố trước"
+  },
   "Account": {
     "nav": {
       "dashboard": "Bảng điều khiển",
@@ -644,6 +655,8 @@
     "breadcrumbAccount": "Tài khoản",
     "logout": "Đăng xuất",
     "loggingOut": "Đang đăng xuất...",
+    "emailLabel": "Email",
+    "phoneLabel": "SĐT",
     "loadingAccount": "Đang tải tài khoản...",
     "logoutConfirm": "Đăng xuất khỏi tài khoản?",
     "dashboardGreeting": "Xin chào <strong>{name}</strong>.",

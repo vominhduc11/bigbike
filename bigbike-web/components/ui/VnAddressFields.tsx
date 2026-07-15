@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { VN_PROVINCES } from "@/lib/vn-address-data";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,6 +27,7 @@ type VnAddressFieldsProps = {
 };
 
 export function VnAddressFields({ value, onChange, required, labelClassName = "text-a5-meta font-semibold tracking-wide uppercase text-muted-foreground", selectContentClassName }: VnAddressFieldsProps) {
+  const t = useTranslations("AddressFields");
   const selectedProvince = useMemo(
     () => VN_PROVINCES.find((p) => p.name === value.province) ?? null,
     [value.province],
@@ -37,7 +39,7 @@ export function VnAddressFields({ value, onChange, required, labelClassName = "t
     <>
       <div className="flex flex-col gap-1.5">
         <label className={labelClassName}>
-          {"Tỉnh / Thành phố"}{required && <span className="text-brand ml-[3px]">*</span>}
+          {t("provinceLabel")}{required && <span className="text-brand ml-[3px]">*</span>}
         </label>
         <Select
           required={required}
@@ -47,8 +49,8 @@ export function VnAddressFields({ value, onChange, required, labelClassName = "t
             onChange("ward", "");
           }}
         >
-          <SelectTrigger aria-label={"Tỉnh / Thành phố"}>
-            <SelectValue placeholder={"— Chọn tỉnh / thành phố —"} />
+          <SelectTrigger aria-label={t("provinceLabel")}>
+            <SelectValue placeholder={t("provincePlaceholder")} />
           </SelectTrigger>
           <SelectContent className={cn("max-h-72", selectContentClassName)}>
             {VN_PROVINCES.map((p) => (
@@ -59,15 +61,15 @@ export function VnAddressFields({ value, onChange, required, labelClassName = "t
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label className={labelClassName}>{"Phường / Xã"}{required && <span className="text-brand ml-[3px]">*</span>}</label>
+        <label className={labelClassName}>{t("wardLabel")}{required && <span className="text-brand ml-[3px]">*</span>}</label>
         {selectedProvince && wards.length > 0 ? (
           <Select
             required={required}
             value={value.ward}
             onValueChange={(v) => onChange("ward", v)}
           >
-            <SelectTrigger aria-label={"Phường / Xã"}>
-              <SelectValue placeholder={"— Chọn phường / xã —"} />
+            <SelectTrigger aria-label={t("wardLabel")}>
+              <SelectValue placeholder={t("wardPlaceholder")} />
             </SelectTrigger>
             <SelectContent className={cn("max-h-72", selectContentClassName)}>
               {wards.map((w) => (
@@ -79,7 +81,7 @@ export function VnAddressFields({ value, onChange, required, labelClassName = "t
           <Input
             value={value.ward}
             onChange={(e) => onChange("ward", e.target.value)}
-            placeholder={selectedProvince ? "Tên phường / xã..." : "Chọn tỉnh/thành phố trước"}
+            placeholder={selectedProvince ? t("wardInputPlaceholder") : t("provinceFirstPlaceholder")}
             disabled={!selectedProvince}
             autoComplete="address-level2"
           />

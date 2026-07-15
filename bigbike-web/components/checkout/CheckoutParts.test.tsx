@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { CheckoutSummary } from "@/components/checkout/parts/CheckoutSummary";
-import { CheckoutConfirmRow, CodPaymentBlock } from "@/components/checkout/parts/atoms";
+import { CheckoutConfirmRow, CodPaymentBlock, ZaloSupportBlock } from "@/components/checkout/parts/atoms";
 import type { Cart } from "@/lib/contracts/commerce";
 
 vi.mock("next-intl", () => ({
@@ -45,10 +45,19 @@ describe("CheckoutSummary", () => {
         grandTotal={6100000}
         submitting={false}
         cartLoading={false}
+        contactAddress="Địa chỉ từ cài đặt"
       />,
     );
     expect(screen.getByText("Mũ bảo hiểm AGV K1S")).toBeInTheDocument();
     expect(screen.getAllByText("6.100.000 đ").length).toBeGreaterThan(0);
+    expect(screen.getByText("Địa chỉ từ cài đặt")).toBeInTheDocument();
+  });
+
+  it("dùng URL và tên hiển thị Zalo từ cài đặt", () => {
+    render(<ZaloSupportBlock zaloUrl="0901234567" zaloDisplay="Zalo BigBike" />);
+    expect(screen.getByRole("link", { name: /zaloSupportCta/i }))
+      .toHaveAttribute("href", "https://zalo.me/0901234567");
+    expect(screen.getByText("Zalo BigBike")).toBeInTheDocument();
   });
 });
 
