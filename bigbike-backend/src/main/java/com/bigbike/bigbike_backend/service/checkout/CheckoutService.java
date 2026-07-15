@@ -5,7 +5,6 @@ import com.bigbike.bigbike_backend.api.checkout.dto.CheckoutOptionsResponse;
 import com.bigbike.bigbike_backend.api.checkout.dto.CheckoutRequest;
 import com.bigbike.bigbike_backend.api.checkout.dto.OrderSummaryResponse;
 import com.bigbike.bigbike_backend.api.checkout.dto.PaymentMethodOptionResponse;
-import com.bigbike.bigbike_backend.api.checkout.dto.QuickBuyRequest;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
@@ -59,7 +58,6 @@ public class CheckoutService {
     private static final String FULFILLMENT_STATUS_UNFULFILLED = "UNFULFILLED";
     private static final String CURRENCY_VND = "VND";
     private static final String FLOW_CHECKOUT = "CHECKOUT";
-    private static final String FLOW_QUICK_BUY = "QUICK_BUY";
 
     private final CartJpaRepository cartRepo;
     private final CheckoutIdempotencyKeyJpaRepository checkoutIdempotencyKeyRepo;
@@ -195,114 +193,8 @@ public class CheckoutService {
         return toSummary(savedOrder, paymentMethod, priceChanges);
     }
 
-    // ── Quick-buy ─────────────────────────────────────────────────────────────
-
-    @Transactional
-    public OrderSummaryResponse quickBuy(
-            QuickBuyRequest req,
-            UUID customerId,
-            String guestSessionId,
-            String idempotencyKey,
-            String clientIp,
-            String userAgent
-    ) {
-        IdempotencyReservation idempotency = reserveIdempotency(
-                FLOW_QUICK_BUY, customerId, guestSessionId, idempotencyKey, req);
-        if (idempotency.existingSummary() != null) {
-            return idempotency.existingSummary();
-        }
-        validateAddress(req.billingAddress());
-        validatePaymentMethod(req.paymentMethod());
-        String paymentMethod = normalizePaymentMethod(req.paymentMethod());
-
-        ProductEntity product = productRepo.findByIdForUpdate(req.productId().toString())
-                .orElseThrow(() -> new NotFoundException("Product not found: " + req.productId()));
-        if (product.getPublishStatus() != PublishStatus.PUBLISHED) {
-            throw new ConflictException("Product is not available.");
-        }
-
-        // STOCK_RULE_004: forceOutOfStock is a product-level hard override — it blocks
-        // purchase even when an individual variant is still marked available.
-        if (Boolean.TRUE.equals(product.getForceOutOfStock())) {
-            throw new ConflictException("Sản phẩm '" + product.getName() + "' hết hàng.");
-        }
-
-        ProductVariantEntity variant = null;
-        if (req.productVariantId() != null && !req.productVariantId().isBlank()) {
-            variant = variantRepo.findByIdForUpdate(req.productVariantId())
-                    .orElseThrow(() -> new NotFoundException("Variant not found: " + req.productVariantId()));
-            if (!product.getId().equals(variant.getProduct().getId())) {
-                throw new NotFoundException("Variant not found: " + req.productVariantId());
-            }
-            if (!variant.isAvailable()) {
-                throw new ConflictException("Sản phẩm '" + product.getName() + "' hết hàng.");
-            }
-        } else {
-            if (product.getStockState() == ProductStockState.OUT_OF_STOCK) {
-                throw new ConflictException("Sản phẩm '" + product.getName() + "' hết hàng.");
-            }
-        }
-
-        BigDecimal unitPrice = resolveUnitPrice(product, variant);
-        int qty = req.quantity();
-        BigDecimal lineSubtotal = unitPrice.multiply(BigDecimal.valueOf(qty)).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal lineDiscount = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-        BigDecimal lineTotal = lineSubtotal.subtract(lineDiscount).setScale(2, RoundingMode.HALF_UP);
-
-        // No shipping method/fee on online orders (owner decision 2026-06-23) — see checkoutFromCart.
-        BigDecimal shippingCost = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-        BigDecimal total = lineTotal.setScale(2, RoundingMode.HALF_UP);
-
-        Instant now = Instant.now();
-        OrderEntity order = buildOrder(
-                customerId,
-                req.billingAddress().email(),
-                req.billingAddress().phone(),
-                req.billingAddress().fullName(),
-                req.customerNote(),
-                paymentMethod,
-                lineSubtotal,
-                lineDiscount,
-                shippingCost,
-                total,
-                "quick_buy",
-                clientIp,
-                userAgent,
-                now
-        );
-        OrderEntity savedOrder = orderRepo.saveAndFlush(order);
-
-        lineItemRepo.save(buildLineItemFromProduct(
-                savedOrder, product, variant, unitPrice, qty,
-                lineSubtotal, lineDiscount, lineTotal, now));
-
-        // Inventory is boolean availability only (owner decision 2026-06-23) — no decrement on sale.
-
-        // Addresses
-        addressRepo.save(buildAddress(savedOrder, "BILLING", req.billingAddress(), now));
-        addressRepo.save(buildAddress(savedOrder, "SHIPPING", req.billingAddress(), now));
-
-        // Payment
-        paymentRepo.save(buildPayment(savedOrder, paymentMethod, total, now));
-
-        // System note
-        noteRepo.save(buildSystemNote(savedOrder,
-                "Quick-buy đơn hàng được tạo. Phương thức thanh toán: " + paymentMethod + "." +
-                " Sản phẩm: " + product.getName() + " x" + qty + ".", now));
-
-        OrderEntity quickSnapshot = savedOrder;
-        String quickPm = paymentMethod;
-        var quickOrderEvent = buildNewOrderEvent(savedOrder, paymentMethod);
-        runAfterCommit(() -> {
-            orderNotificationService.sendOrderConfirmation(quickSnapshot, quickPm);
-            orderNotificationService.sendAdminNewOrderNotification(quickSnapshot, quickPm);
-            adminOrderWsService.pushEvent(quickOrderEvent);
-        });
-
-        attachOrderToReservation(idempotency, savedOrder.getId(), now);
-        webRevalidationService.revalidateProductsForOrder(savedOrder.getId());
-        return toSummary(savedOrder, paymentMethod, List.of());
-    }
+    // Quick-buy removed 2026-07-15 (owner decision, reverses AUD-010): the storefront has
+    // no quick-buy entry point — customers order through the cart via checkoutFromCart.
 
     // ── Checkout options ──────────────────────────────────────────────────────
 
@@ -430,7 +322,7 @@ public class CheckoutService {
         order.setCustomerId(customerId);
         order.setStatus(orderStatus);
         order.setPaymentStatus(PAYMENT_STATUS_UNPAID);
-        // Web/quick-buy orders always ship — initialise the delivery lifecycle
+        // Web orders always ship — initialise the delivery lifecycle
         // so admin transitions and the COMPLETED-after-DELIVERED guard
         // (AdminOrderService#validateBeforeComplete) operate on a known state.
         order.setFulfillmentStatus(FULFILLMENT_STATUS_UNFULFILLED);

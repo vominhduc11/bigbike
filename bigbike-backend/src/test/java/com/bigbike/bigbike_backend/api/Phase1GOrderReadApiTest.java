@@ -330,31 +330,7 @@ class Phase1GOrderReadApiTest {
                 .andExpect(jsonPath("$.data.lineItems.length()").value(1));
     }
 
-    // ── 17. Quick-buy order — can lookup by orderNumber+orderKey ─────────────
-
-    @Test
-    void quickBuyOrder_canLookupByOrderNumberAndKey() throws Exception {
-        ProductEntity product = createTestProduct("QB Lookup Product", 9000000, null, PublishStatus.PUBLISHED);
-        GuestSession guestSession = newGuestSession();
-
-        MvcResult result = mockMvc.perform(post("/api/v1/orders/quick-buy")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":1," +
-                                 "\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(guestSession.cookies).header("X-CSRF-Token", guestSession.csrf))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String body = result.getResponse().getContentAsString();
-        String orderNumber = extractJsonValue(body, "orderNumber");
-        String orderKey = extractJsonValue(body, "orderKey");
-
-        mockMvc.perform(get("/api/v1/orders/lookup")
-                        .param("orderNumber", orderNumber)
-                        .param("orderKey", orderKey))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.orderNumber").value(orderNumber));
-    }
+    // (Quick-buy order lookup test removed 2026-07-15 — endpoint deleted, reverses AUD-010.)
 
     // ── 18–22. Regression ─────────────────────────────────────────────────────
 

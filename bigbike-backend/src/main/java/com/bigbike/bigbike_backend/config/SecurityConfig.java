@@ -73,9 +73,9 @@ public class SecurityConfig {
                         // Cart endpoints: guest + customer access, CSRF enforced on mutations by filter
                         .requestMatchers("/api/v1/cart/**").permitAll()
                         .requestMatchers("/api/v1/cart").permitAll()
-                        // Checkout + quick-buy: guest + customer, CSRF enforced on mutations by filter
+                        // Checkout: guest + customer, CSRF enforced on mutations by filter
+                        // (quick-buy endpoint removed 2026-07-15 — customers order via the cart)
                         .requestMatchers(HttpMethod.POST, "/api/v1/checkout").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/orders/quick-buy").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/checkout/options").permitAll()
                         // Order lookup: public GET, no CSRF needed (safe method)
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders/lookup").permitAll()

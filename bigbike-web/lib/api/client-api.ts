@@ -7,7 +7,6 @@ import type {
   OrderDetail,
   OrderListItem,
   OrderSummary,
-  QuickBuyPayload,
   SaveAddressPayload,
   UpdateCustomerProfilePayload,
 } from "@/lib/contracts/commerce";
@@ -346,11 +345,6 @@ export async function fetchPublicCategoryList(
     throw new Error(msg);
   }
   return asArray<Category>(payloadData(payload));
-}
-
-export function submitQuickBuy(payload: QuickBuyPayload, idempotencyKey?: string): Promise<OrderSummary> {
-  const extra = idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined;
-  return clientRequest("POST", "/api/v1/orders/quick-buy", payload, extra);
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────

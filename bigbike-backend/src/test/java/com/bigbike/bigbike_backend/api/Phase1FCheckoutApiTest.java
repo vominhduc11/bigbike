@@ -117,17 +117,7 @@ class Phase1FCheckoutApiTest {
                 .andExpect(jsonPath("$.meta.timestamp").isNotEmpty());
     }
 
-    @Test
-    void quickBuy_missingCsrf_returns403() throws Exception {
-        mockMvc.perform(post("/api/v1/orders/quick-buy")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":\"any\",\"quantity\":1,\"paymentMethod\":\"COD\"," +
-                                 "\"billingAddress\":" + VALID_BILLING + "}"))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.error.code").value("CSRF_INVALID"))
-                .andExpect(jsonPath("$.meta.requestId").isNotEmpty())
-                .andExpect(jsonPath("$.meta.timestamp").isNotEmpty());
-    }
+    // (quick-buy tests removed 2026-07-15 — endpoint deleted, reverses AUD-010.)
 
     // ── Checkout validation (6) ───────────────────────────────────────────────
 
@@ -403,99 +393,9 @@ class Phase1FCheckoutApiTest {
                 .andExpect(jsonPath("$.data.status").value("PROCESSING"));
     }
 
-    // ── Quick-buy happy paths (2) ─────────────────────────────────────────────
-
-    @Test
-    void quickBuy_guestCOD_createsOrder() throws Exception {
-        ProductEntity product = createTestProduct("Quick Buy Product", 6000000, null, PublishStatus.PUBLISHED);
-        GuestSession session = newGuestSession();
-
-        mockMvc.perform(post("/api/v1/orders/quick-buy")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":1," +
-                                 "\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("PROCESSING"))
-                .andExpect(jsonPath("$.data.paymentMethod").value("COD"))
-                .andExpect(jsonPath("$.data.subtotalAmount").value(6000000.00))
-                .andExpect(jsonPath("$.data.orderNumber").isString());
-    }
-
-    @Test
-    void quickBuy_explicitBACS_isRejected_codOnly() throws Exception {
-        // BACS is no longer offered for new orders (owner decision 2026-07-15, PAY_RULE_001).
-        ProductEntity product = createTestProduct("QB BACS Product", 3500000, null, PublishStatus.PUBLISHED);
-        GuestSession session = newGuestSession();
-
-        mockMvc.perform(post("/api/v1/orders/quick-buy")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":2," +
-                                 "\"paymentMethod\":\"BACS\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void quickBuy_variantOfAnotherProduct_returns404() throws Exception {
-        // Quick-buy must not pair product A with a variant belonging to product B (AUD-002).
-        ProductEntity productA = createTestProduct("QB Mismatch A", 2000000, null, PublishStatus.PUBLISHED);
-        ProductEntity productB = createWpProduct("QB Mismatch B", 3000000);
-        ProductVariantEntity variantOfB = createWpVariant(productB, 5, 3000000);
-        GuestSession session = newGuestSession();
-
-        mockMvc.perform(post("/api/v1/orders/quick-buy")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":\"" + productA.getId() + "\",\"productVariantId\":\""
-                                 + variantOfB.getId() + "\",\"quantity\":1," +
-                                 "\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void quickBuy_forceOutOfStockProduct_blocksVariantPurchase() throws Exception {
-        // STOCK_RULE_004: the product-level hard override blocks variants too (AUD-003).
-        ProductEntity product = createWpProduct("QB Force OOS", 2800000);
-        ProductVariantEntity variant = createWpVariant(product, 5, 2800000);
-        product.setForceOutOfStock(true);
-        productRepo.save(product);
-        GuestSession session = newGuestSession();
-
-        mockMvc.perform(post("/api/v1/orders/quick-buy")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":\"" + product.getId() + "\",\"productVariantId\":\""
-                                 + variant.getId() + "\",\"quantity\":1," +
-                                 "\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isConflict());
-    }
-
-    // ── Quick-buy validation (3) ──────────────────────────────────────────────
-
-    @Test
-    void quickBuy_productNotFound_returns404() throws Exception {
-        GuestSession session = newGuestSession();
-        mockMvc.perform(post("/api/v1/orders/quick-buy")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":\"nonexistent-product-id\",\"quantity\":1," +
-                                 "\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void quickBuy_unpublishedProduct_returns409() throws Exception {
-        ProductEntity draft = createTestProduct("Draft Product QB", 2000000, null, PublishStatus.DRAFT);
-        GuestSession session = newGuestSession();
-
-        mockMvc.perform(post("/api/v1/orders/quick-buy")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":\"" + draft.getId() + "\",\"quantity\":1," +
-                                 "\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isConflict());
-    }
+    // (Quick-buy happy-path + validation tests removed 2026-07-15 — endpoint deleted,
+    //  reverses AUD-010. The underlying rules AUD-002/AUD-003 stay covered by the cart/
+    //  checkout tests below, e.g. checkoutFromCart_forceOutOfStockProduct_blocksVariantLine.)
 
     @Test
     void checkout_withUnpublishedProduct_returns409() throws Exception {
@@ -720,19 +620,6 @@ class Phase1FCheckoutApiTest {
     }
 
     @Test
-    void quickBuy_invalidPaymentMethod_returns400() throws Exception {
-        ProductEntity product = createTestProduct("QB Payment Validation", 1000000, null, PublishStatus.PUBLISHED);
-        GuestSession session = newGuestSession();
-
-        mockMvc.perform(post("/api/v1/orders/quick-buy")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":1," +
-                                 "\"paymentMethod\":\"CREDIT_CARD\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
     void checkout_sameIdempotencyKey_returnsExistingOrder_andDoesNotDecrementStockTwice() throws Exception {
         ProductEntity product = createTrackedProduct("Idempotent Checkout Product", 2500000, 5);
         GuestSession session = newGuestSession();
@@ -792,41 +679,6 @@ class Phase1FCheckoutApiTest {
     }
 
     @Test
-    void quickBuy_sameIdempotencyKey_returnsExistingOrder_andDoesNotDecrementStockTwice() throws Exception {
-        ProductEntity product = createTrackedProduct("Idempotent Quick Buy Product", 3200000, 6);
-        GuestSession session = newGuestSession();
-        long ordersBefore = orderRepo.count();
-        String payload = "{\"productId\":\"" + product.getId() + "\",\"quantity\":2," +
-                "\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}";
-        String idempotencyKey = "quick-buy-" + UUID.randomUUID();
-
-        MvcResult first = mockMvc.perform(post("/api/v1/orders/quick-buy")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(payload)
-                        .header("Idempotency-Key", idempotencyKey)
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        MvcResult second = mockMvc.perform(post("/api/v1/orders/quick-buy")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(payload)
-                        .header("Idempotency-Key", idempotencyKey)
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        assertThat(extractJsonValue(second.getResponse().getContentAsString(), "orderNumber"))
-                .isEqualTo(extractJsonValue(first.getResponse().getContentAsString(), "orderNumber"));
-        assertThat(extractJsonValue(second.getResponse().getContentAsString(), "orderKey"))
-                .isEqualTo(extractJsonValue(first.getResponse().getContentAsString(), "orderKey"));
-        assertThat(orderRepo.count()).isEqualTo(ordersBefore + 1);
-        ProductEntity refreshed = productRepo.findById(product.getId()).orElseThrow();
-        // Boolean availability model (V261): no decrement on sale, idempotent or not.
-        assertThat(refreshed.getStockQuantity()).isEqualTo(6);
-    }
-
-    @Test
     void checkout_sameIdempotencyKey_differentGuestSessions_createDistinctOrders() throws Exception {
         String idempotencyKey = "checkout-scope-" + UUID.randomUUID();
         GuestSession sessionA = newGuestSessionWithItem(2600000);
@@ -852,36 +704,6 @@ class Phase1FCheckoutApiTest {
 
         assertThat(extractJsonValue(resultA.getResponse().getContentAsString(), "orderNumber"))
                 .isNotEqualTo(extractJsonValue(resultB.getResponse().getContentAsString(), "orderNumber"));
-        assertThat(orderRepo.count()).isEqualTo(ordersBefore + 2);
-    }
-
-    @Test
-    void checkoutAndQuickBuy_sameIdempotencyKey_doNotCollideAcrossFlows() throws Exception {
-        GuestSession session = newGuestSessionWithItem(2800000);
-        ProductEntity quickBuyProduct = createTestProduct(
-                "Idempotent Cross Flow Product", 2900000, null, PublishStatus.PUBLISHED);
-        long ordersBefore = orderRepo.count();
-        String idempotencyKey = "checkout-quick-buy-" + UUID.randomUUID();
-
-        MvcResult checkoutResult = mockMvc.perform(post("/api/v1/checkout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .header("Idempotency-Key", idempotencyKey)
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        MvcResult quickBuyResult = mockMvc.perform(post("/api/v1/orders/quick-buy")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":\"" + quickBuyProduct.getId() + "\",\"quantity\":1," +
-                                "\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .header("Idempotency-Key", idempotencyKey)
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        assertThat(extractJsonValue(checkoutResult.getResponse().getContentAsString(), "orderNumber"))
-                .isNotEqualTo(extractJsonValue(quickBuyResult.getResponse().getContentAsString(), "orderNumber"));
         assertThat(orderRepo.count()).isEqualTo(ordersBefore + 2);
     }
 

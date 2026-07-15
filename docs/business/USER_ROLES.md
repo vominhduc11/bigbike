@@ -63,7 +63,7 @@ File này dùng làm nền cho:
 |---|---|
 | Purpose | Người truy cập chưa đăng nhập, xem sản phẩm/content và có thể mua hàng dạng guest. |
 | Access Area | Homepage, product listing/detail, category/brand, search, articles (Tin tức), static info/policy pages, public menu/settings, cart, checkout, order lookup. |
-| Main Actions | Xem sản phẩm/content, tìm kiếm, thêm giỏ hàng, checkout guest, quick-buy, submit review public nếu endpoint được dùng. |
+| Main Actions | Xem sản phẩm/content, tìm kiếm, thêm giỏ hàng, checkout guest, submit review public nếu endpoint được dùng. |
 | Restricted Actions | Không được gọi admin APIs; không được xem customer account/order protected APIs nếu chưa authenticate; không được gọi customer protected routes. |
 | Related Modules | Homepage, Catalog, Search, Cart, Checkout, Content, Reviews, SEO/Menu. |
 | Related Business Processes | Customer Browsing, Cart/Checkout, Review submission. |
@@ -241,7 +241,7 @@ Admin default role has broad business access to read/update many admin modules. 
 - Validate checkout address/payment/shipping/stock/price.
 - Create order, line items, address snapshots, payment, note. New orders do not create a shipping-method item or fee (`SHIP_RULE_001`).
 - Mark cart converted.
-- Validate per-variant availability (`isAvailable`) on checkout/quick-buy. (No quantity decrement — V261.)
+- Validate per-variant availability (`isAvailable`) on checkout. (No quantity decrement — V261.)
 - No stock restore on cancel/refund/return — availability is a manual boolean (V261).
 - Validate order/payment/return status transitions.
 - Write audit logs for admin order/admin user changes.
@@ -358,7 +358,7 @@ Admin default role has broad business access to read/update many admin modules. 
 | Role | Business Process | Responsibility | Status |
 |---|---|---|---|
 | Guest / Visitor | Customer Browsing Process | Xem homepage, products, categories, brands, content, search. | `CONFIRMED_FROM_CODE` |
-| Guest / Visitor | Cart / Checkout Process | Thêm cart, checkout guest, quick-buy. | `CONFIRMED_FROM_CODE` |
+| Guest / Visitor | Cart / Checkout Process | Thêm cart, checkout guest. | `CONFIRMED_FROM_CODE` |
 | Customer | Customer Account Process | Register/login/logout/profile/address. | `CONFIRMED_FROM_CODE` |
 | Customer | Order Tracking / Return Process | Xem đơn hàng, tạo/xem return. | `CONFIRMED_FROM_CODE` |
 | Admin | Product Management Process | Quản lý sản phẩm/category/brand/publish. | `CONFIRMED_FROM_CODE` |

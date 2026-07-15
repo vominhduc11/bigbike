@@ -154,7 +154,7 @@ From 01/07/2025 Vietnam abolished the district administrative tier nationwide (N
 202/2025/QH15 — 63→34 tỉnh/thành; Nghị quyết 1654-1687/NQ-UBTVQH15 — 10.035→3.321 phường/xã;
 mã theo Quyết định 19/2025/QĐ-TTg). The storefront (`bigbike-web`) and `VnAddressController`
 now only collect/serve **2 levels: province → ward**. `district` is no longer collected by new
-writes (web checkout, quick-buy, and the account address book all stop sending it), but the
+writes (web checkout and the account address book all stop sending it), but the
 column/field is **kept, nullable, read-only** so historical customer addresses and orders placed
 before the reform keep displaying their original quận/huyện. No backfill/migration was run —
 existing rows are untouched.
@@ -210,7 +210,7 @@ Migration `V284__allow_null_payment_method.sql` removed the `NOT NULL` constrain
 `payments.payment_method`; `PaymentEntity` must mirror that nullability.
 
 This storage compatibility does **not** make the current checkout contract optional: every new
-storefront checkout/quick-buy order is normalized to `COD`, and any other explicit method is
+storefront checkout order is normalized to `COD`, and any other explicit method is
 rejected. `BACS`/`null` are read compatibility only. `CONFIRMED_FROM_CODE`
 
 ### Admin invite (email-based admin user onboarding)
@@ -1289,9 +1289,8 @@ every non-UUID variant — the same UUID/varchar mismatch V74 fixed on the produ
 the variant from a line by **`product_variant_id` (UUID) first, then `product_variant_pk`** — see
 `OrderLineItemEntity.resolveVariantKey()` (and `resolveProductKey()` for the product side). This varchar PK still uniquely identifies the line's variant for snapshots. _(Since V261 inventory is a boolean availability toggle — there is no quantity decrement/restore, so the former stock-restore paths no longer run.)_
 
-Snapshotted at line creation on every sell path that records the variant by its string id —
-storefront quick-buy (`CheckoutService.buildLineItemFromProduct`) and
-storefront cart-checkout (`CheckoutService.buildLineItemFromCart`, since V176). (The former POS sell path was removed 2026-06-23.) Historical rows
+Snapshotted at line creation on the sell path that records the variant by its string id —
+storefront cart-checkout (`CheckoutService.buildLineItemFromCart`, since V176). (The former POS sell path was removed 2026-06-23; the former quick-buy sell path was removed 2026-07-15.) Historical rows
 keep `product_variant_pk = NULL` and fall back to product-level restore. Fixed BUG-2 — see
 `TEST_REPORT.md` and `QaBug2StockRestoreTest`.
 

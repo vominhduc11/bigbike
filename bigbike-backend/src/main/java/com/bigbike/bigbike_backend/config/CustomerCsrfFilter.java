@@ -40,7 +40,7 @@ public class CustomerCsrfFilter extends OncePerRequestFilter {
             "/api/v1/customer/auth/password/forgot",
             "/api/v1/customer/auth/password/reset",
             "/api/v1/customer/auth/verify-email"
-            // Checkout/quick-buy are NOT exempt (AUD-022): guests always hold a bb_csrf
+            // Checkout is NOT exempt (AUD-022): guests always hold a bb_csrf
             // cookie before ordering — the storefront issues it on the app-wide GET /cart.
     );
 

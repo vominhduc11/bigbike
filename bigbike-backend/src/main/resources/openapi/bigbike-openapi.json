@@ -50,7 +50,7 @@
     },
     {
       "name": "Checkout",
-      "description": "Cart checkout and quick-buy — CSRF required"
+      "description": "Cart checkout — CSRF required"
     },
     {
       "name": "Customer Orders",
@@ -1225,38 +1225,6 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
-          }
-        }
-      }
-    },
-    "/api/v1/orders/quick-buy": {
-      "post": {
-        "tags": [
-          "Checkout"
-        ],
-        "summary": "Quick buy — single item direct purchase",
-        "operationId": "quickBuy",
-        "security": [
-          {
-            "CsrfHeader": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/QuickBuyRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Order created"
-          },
-          "400": {
-            "$ref": "#/components/responses/ValidationError"
           }
         }
       }
@@ -6972,29 +6940,6 @@
             "type": "string"
           },
           "notes": {
-            "type": "string"
-          }
-        }
-      },
-      "QuickBuyRequest": {
-        "type": "object",
-        "required": [
-          "productId",
-          "quantity",
-          "billingAddress"
-        ],
-        "properties": {
-          "productId": {
-            "type": "string"
-          },
-          "quantity": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "billingAddress": {
-            "type": "object"
-          },
-          "paymentMethod": {
             "type": "string"
           }
         }

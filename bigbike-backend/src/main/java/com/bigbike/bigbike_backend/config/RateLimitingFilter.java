@@ -34,7 +34,7 @@ import tools.jackson.databind.ObjectMapper;
  *   register endpoint       → 3 req/min
  *   token refresh           → 30 req/min
  *   cart mutations          → 30 req/min
- *   checkout / quick-buy    → 5 req/min
+ *   checkout                → 5 req/min
  *   order lookup (GET)      → 20 req/min
  *   search (GET)            → 60 req/min
  *   public review submit    → 5 req/min
@@ -140,7 +140,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             if ("/api/v1/auth/refresh".equals(path) || "/api/v1/customer/auth/refresh".equals(path)) {
                 return LimitTier.REFRESH;
             }
-            if ("/api/v1/checkout".equals(path) || "/api/v1/orders/quick-buy".equals(path)) {
+            if ("/api/v1/checkout".equals(path)) {
                 return LimitTier.CHECKOUT;
             }
             // Public review photo upload: POST /api/v1/products/{productId}/reviews/photos

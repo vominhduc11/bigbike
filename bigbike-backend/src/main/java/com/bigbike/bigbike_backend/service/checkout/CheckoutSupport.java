@@ -184,44 +184,8 @@ final class CheckoutSupport {
         return item;
     }
 
-    static OrderLineItemEntity buildLineItemFromProduct(
-            OrderEntity order,
-            ProductEntity product,
-            ProductVariantEntity variant,
-            BigDecimal unitPrice,
-            int qty,
-            BigDecimal lineSubtotal,
-            BigDecimal lineDiscount,
-            BigDecimal lineTotal,
-            Instant now
-    ) {
-        OrderLineItemEntity item = new OrderLineItemEntity();
-        item.setOrder(order);
-        item.setProductId(tryParseUUID(product.getId()));
-        item.setProductPk(product.getId());
-        item.setProductVariantId(variant != null ? tryParseUUID(variant.getId()) : null);
-        // Snapshot the variant's string PK so cancel/refund/return restore can resolve the exact
-        // variant (productVariantId is null for migrated wp-* / admin-created variants). Quick-buy
-        // decrements the variant by this same string id, so restore stays symmetric. See V158.
-        item.setProductVariantPk(variant != null ? variant.getId() : null);
-        item.setSku(variant != null ? variant.getSku() : product.getSku());
-        item.setProductName(product.getName());
-        item.setVariantName(variant != null ? variant.getName() : null);
-        // Snapshot the bought image (AUD-038): variant image if any, else product image.
-        item.setImageUrl((variant != null && variant.getImageUrl() != null && !variant.getImageUrl().isBlank())
-                ? variant.getImageUrl() : product.getImageUrl());
-        item.setQuantity(qty);
-        item.setUnitPrice(unitPrice);
-        item.setRegularPrice(VariantPricing.regularPrice(product, variant));
-        item.setSalePrice(VariantPricing.salePrice(product, variant));
-        item.setLineSubtotal(lineSubtotal);
-        item.setLineDiscount(lineDiscount);
-        item.setLineTax(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
-        item.setLineTotal(lineTotal);
-        item.setCreatedAt(now);
-        item.setUpdatedAt(now);
-        return item;
-    }
+    // buildLineItemFromProduct removed 2026-07-15 with the quick-buy flow (reverses AUD-010) —
+    // cart checkout builds line items from cart items via buildLineItemFromCart.
 
     static OrderAddressEntity buildAddress(
             OrderEntity order, String type, CheckoutAddressRequest addr, Instant now
@@ -274,11 +238,6 @@ final class CheckoutSupport {
 
     static BigDecimal resolveUnitPrice(ProductEntity product, ProductVariantEntity variant) {
         return VariantPricing.resolveUnitPrice(product, variant);
-    }
-
-    static UUID tryParseUUID(String id) {
-        if (id == null) return null;
-        try { return UUID.fromString(id); } catch (IllegalArgumentException e) { return null; }
     }
 
     static OrderWsEvent buildNewOrderEvent(OrderEntity order, String paymentMethod) {

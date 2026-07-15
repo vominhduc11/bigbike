@@ -40,7 +40,7 @@ Nguyên tắc đọc file này:
 | Guest / Visitor | Role / Actor Term | Người truy cập chưa đăng nhập. | `CONFIRMED_FROM_REPO` | `USER_ROLES.md` |
 | Admin | Role / Actor Term | User nội bộ vận hành admin. | `CONFIRMED_FROM_REPO` | `USER_ROLES.md`, `PERMISSION_MATRIX.md` nếu có |
 | Super Admin | Role / Actor Term | Admin quyền cao nhất, wildcard permission. | `CONFIRMED_FROM_REPO` | `USER_ROLES.md` |
-| Order | Business Term | Đơn hàng được tạo từ checkout/quick-buy. | `CONFIRMED_FROM_REPO` | `BUSINESS_PROCESS.md`, `STATE_MACHINES.md` |
+| Order | Business Term | Đơn hàng được tạo từ cart checkout. | `CONFIRMED_FROM_REPO` | `BUSINESS_PROCESS.md`, `STATE_MACHINES.md` |
 | Payment | Business Term | Thanh toán COD nội bộ/thủ công và trạng thái payment; BACS chỉ còn ở đơn legacy. | `CONFIRMED_FROM_REPO` | `BUSINESS_PROCESS.md`, `STATE_MACHINES.md` |
 | Shipping | Business Term | Giao hàng do shop tự sắp xếp, không có lựa chọn phương thức hay phí giao hàng cho khách. | `CONFIRMED_FROM_REPO` | `BUSINESS_RULES.md`, `WORKFLOW_OVERVIEW.md` |
 | Inventory | Business Term | Tồn kho, stock state, stock movement. | `CONFIRMED_FROM_REPO` | `BUSINESS_PROCESS.md`, `STATE_MACHINES.md` |
@@ -230,7 +230,7 @@ Nguyên tắc đọc file này:
 | Field | Value |
 |---|---|
 | Category | Business Term |
-| Definition | Đơn hàng chính thức được tạo từ cart checkout hoặc quick-buy. |
+| Definition | Đơn hàng chính thức được tạo từ cart checkout. |
 | BigBike Context | Order có status, payment status, line items, shipping item, address snapshot, note và audit/notification side effects theo docs. |
 | Example | Checkout mới luôn dùng COD và tạo order ban đầu `PROCESSING`; BACS/`ON_HOLD` chỉ có thể xuất hiện trên đơn legacy. |
 | Related Docs | `BUSINESS_PROCESS.md`, `WORKFLOW_OVERVIEW.md`, `STATE_MACHINES.md` |
@@ -243,7 +243,7 @@ Nguyên tắc đọc file này:
 |---|---|
 | Category | Business Term |
 | Definition | Dòng sản phẩm bên trong order. |
-| BigBike Context | Checkout tạo line items/order items từ cart hoặc quick-buy; dùng để lưu product snapshot và quantity. |
+| BigBike Context | Checkout tạo line items/order items từ cart; dùng để lưu product snapshot và quantity. |
 | Example | Một order có 2 mũ bảo hiểm và 1 đôi găng tay thì có nhiều order items. |
 | Related Docs | `WORKFLOW_OVERVIEW.md`, `DATA_CONTRACT.md` nếu có |
 | Status | `CONFIRMED_FROM_REPO` |
@@ -573,7 +573,7 @@ Nguyên tắc đọc file này:
 | Field | Value |
 |---|---|
 | Definition | Request là dữ liệu client gửi; Response là dữ liệu backend trả; DTO là object truyền dữ liệu giữa API layer và service/client. |
-| BigBike Context | Backend có DTO như `CheckoutRequest`, `QuickBuyRequest`, `OrderSummaryResponse`, `ProductSnapshotResponse`. |
+| BigBike Context | Backend có DTO như `CheckoutRequest`, `OrderSummaryResponse`, `ProductSnapshotResponse`. |
 | Example | CheckoutController nhận `CheckoutRequest`, trả `OrderSummaryResponse`. |
 | Related Docs | `API_CONTRACT.md` nếu có |
 | Status | `CONFIRMED_FROM_REPO` |

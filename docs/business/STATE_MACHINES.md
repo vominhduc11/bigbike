@@ -238,7 +238,7 @@ From `AdminOrderService.ALLOWED_ORDER_STATUSES`:
 
 From checkout behavior:
 
-- New checkout and quick-buy orders always use `paymentMethod = COD`, start at `PROCESSING`, and have `paymentStatus = UNPAID` (owner decision 2026-07-15, `PAY_RULE_001`). The customer sees COD as a fixed method with no selection step; an omitted request value is normalised to COD and every other explicit code is rejected.
+- New checkout orders always use `paymentMethod = COD`, start at `PROCESSING`, and have `paymentStatus = UNPAID` (owner decision 2026-07-15, `PAY_RULE_001`). The customer sees COD as a fixed method with no selection step; an omitted request value is normalised to COD and every other explicit code is rejected.
 - Legacy orders may still carry `BACS`/`null` and remain readable. A legacy BACS order may already be `ON_HOLD`, but no new storefront request can create that combination.
 - `PENDING` exists as allowed order status, but checkout initial use needs deeper audit outside the default creation path.
 

@@ -43,21 +43,11 @@ export type Cart = {
   addressLine2?: string
 }
 
-export type QuickBuyPayload = {
-  productId: string
-  productVariantId?: string | null
-  quantity: number
-  billingAddress: CheckoutAddress
-  // COD là phương thức duy nhất trên storefront (owner decision 2026-07-15, PAY_RULE_001) —
-  // checkout/quick-buy luôn gửi "COD"; backend từ chối giá trị khác.
-  paymentMethod?: string
-  customerNote?: string
-}
-
 export type CheckoutPayload = {
   billingAddress: CheckoutAddress
   shippingAddress?: CheckoutAddress | null
-  // Luôn "COD" — see QuickBuyPayload#paymentMethod.
+  // COD là phương thức duy nhất trên storefront (owner decision 2026-07-15, PAY_RULE_001) —
+  // checkout luôn gửi "COD"; backend từ chối giá trị khác.
   paymentMethod?: string
   customerNote?: string
 }

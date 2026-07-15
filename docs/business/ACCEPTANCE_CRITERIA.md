@@ -22,7 +22,7 @@ This file captures measurable acceptance criteria that can be verified from curr
 | External shipping carrier | No confirmed GHN/GHTK/ViettelPost integration. `fulfillmentStatus` field is exposed but has no carrier-driven lifecycle. | `NOT_FOUND_IN_REPO` |
 | Receipt-based receiving flow | Schema dropped in V120 — feature not built. | `REMOVED` |
 | Invoice / e-invoice (hóa đơn điện tử) | No invoice entity, no e-invoice provider integration. **Owner decision 2026-07-06: không triển khai (out of scope).** | `OUT_OF_SCOPE` |
-| Legacy BACS reconciliation (mismatch handling) | Existing BACS orders are reconciled manually via `paymentStatus`/`paidAmount`; new checkout/quick-buy requests cannot select BACS. No structured bank-transfer record/payment-correction entity exists. | `LEGACY_COMPATIBILITY` |
+| Legacy BACS reconciliation (mismatch handling) | Existing BACS orders are reconciled manually via `paymentStatus`/`paidAmount`; new checkout requests cannot select BACS. No structured bank-transfer record/payment-correction entity exists. | `LEGACY_COMPATIBILITY` |
 | Customer-data export / delete (Nghị định 13/2023) | No customer-facing data export or delete endpoint. | `NOT_FOUND_IN_REPO` |
 | Customer support / ticketing | No customer-facing support channel beyond the static contact info (hotline/Zalo/Facebook/address) on `/lien-he`. **Owner decision 2026-07-06: không xây kênh hỗ trợ/khiếu nại/ticket — khách liên hệ qua hotline/Zalo/Facebook.** | `OUT_OF_SCOPE` |
 | Notification center (admin read/unread) | Persistent `admin_notifications` table (V102); `AdminNotificationController` with list-unread, mark-read, mark-all-read endpoints. | `CONFIRMED_FROM_CODE` |

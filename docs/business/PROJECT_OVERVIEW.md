@@ -27,7 +27,7 @@ BigBike is a commerce platform for motorcycle safety gear and rider accessories.
 
 | Topic | Current finding | Status | Evidence |
 |---|---|---|---|
-| External payment gateway | Out of scope. New storefront orders use fixed `COD`, reconciled manually by admin. No automatic gateway, redirect, or webhook. `BACS` is legacy-order compatibility only and is rejected for new checkout/quick-buy requests. The Alepay/ZaloPay plan was dropped. | `NOT_FOUND_IN_REPO` | `CheckoutService.java`, `INTEGRATION_GUIDE.md` |
+| External payment gateway | Out of scope. New storefront orders use fixed `COD`, reconciled manually by admin. No automatic gateway, redirect, or webhook. `BACS` is legacy-order compatibility only and is rejected for new checkout requests. The Alepay/ZaloPay plan was dropped. | `NOT_FOUND_IN_REPO` | `CheckoutService.java`, `INTEGRATION_GUIDE.md` |
 | External shipping carrier | No GHN, GHTK, or Viettel Post integration was confirmed in active source. `OrderEntity.fulfillmentStatus` field exists without carrier-driven lifecycle. | `NOT_FOUND_IN_REPO` | repo search, `INTEGRATION_GUIDE` verification |
 | Stock receipt workflow | Receipt tables were dropped in V120 (business decision, 2026-05-16) — schema-only, never built. The current boolean-availability model has no receiving workflow. | `REMOVED` | `V120__drop_stock_receipt_tables.sql`, `V261__inventory_availability_toggle.sql` |
 | Invoice / e-invoice (hóa đơn điện tử) | No invoice entity / service / e-invoice provider integration. **Owner decision 2026-07-06: không triển khai.** | `OUT_OF_SCOPE` | Trước cờ theo NĐ 123/2020; owner chốt không làm — xử lý ngoài hệ thống nếu cần |

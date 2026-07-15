@@ -90,7 +90,7 @@ Evidence:
 
 ## Payment — no automatic gateway
 
-New storefront checkout and quick-buy accept only `COD`. An omitted `paymentMethod` is normalised to COD; any other explicit code, including `BACS`, is rejected.
+New storefront checkout accepts only `COD`. An omitted `paymentMethod` is normalised to COD; any other explicit code, including `BACS`, is rejected.
 
 There is **no automatic payment gateway integration**. COD is reconciled manually by admin:
 
