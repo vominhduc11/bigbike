@@ -725,7 +725,8 @@ public class ProductImportService {
             UpsertProductRequest request = ProductImportRowMapper.toUpsertRequest(array[i]);
             PublishStatus fileStatus = request.getPublishStatus();
             request.setPublishStatus(null);
-            String rowKey = firstNonBlank(request.getSku(), request.getSlug(), "item-" + (i + 1));
+            String rowIdentity = firstNonBlank(request.getSku(), request.getSlug(), "item");
+            String rowKey = "row-" + (i + 1) + ":" + rowIdentity;
             rows.add(new ParsedRow(i + 1, rowKey, request, fileStatus));
         }
         return rows;

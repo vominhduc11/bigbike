@@ -218,6 +218,27 @@ class ProductImportRoundTripTest {
         assertThat(row.errors()).anyMatch(e -> "sku".equals(e.field()) && "REQUIRED".equals(e.code()));
     }
 
+    @Test
+    void duplicateSkuRowsStillReceiveDistinctSelectionKeys() {
+        String array = """
+                [
+                  { "sku": "DUPLICATE-ROW-KEY", "categoryId": "mu-bao-hiem",
+                    "name": { "nameVI": "Dòng thứ nhất", "nameEN": "First row" },
+                    "retailPrice": 500000 },
+                  { "sku": "DUPLICATE-ROW-KEY", "categoryId": "mu-bao-hiem",
+                    "name": { "nameVI": "Dòng thứ hai", "nameEN": "Second row" },
+                    "retailPrice": 600000 }
+                ]
+                """;
+
+        ImportReportResponse report = productImportService.validateImport(jsonFile(array));
+
+        assertThat(report.rows()).hasSize(2);
+        assertThat(report.rows()).extracting(ImportRowResult::rowKey)
+                .containsExactly("row-1:DUPLICATE-ROW-KEY", "row-2:DUPLICATE-ROW-KEY")
+                .doesNotHaveDuplicates();
+    }
+
     /**
      * PRODUCT_RULE_009: legacy publishStatus values (HIDDEN/ARCHIVED/PENDING/PRIVATE) in an
      * update-existing-product import row must be skipped with a WARNING (IGNORED), never applied
