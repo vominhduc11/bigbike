@@ -11,15 +11,6 @@
 | 5 | System | Create order, payment, notes (no shipping fee — `SHIP_RULE_001`) | `CONFIRMED_FROM_CODE` | `CheckoutService.java` |
 | 6 | System | Push admin order event (no quantity decrement — boolean availability, V261) | `CONFIRMED_FROM_CODE` | `CheckoutService.java`, `AdminOrderWsService.java` |
 
-## Product Comparison Workflow
-
-| Step | Actor | Current flow | Status | Evidence |
-|---|---|---|---|---|
-| 1 | Guest/Customer | Add a product to the comparison list via the compare button on a product card or the product detail page | `CONFIRMED_FROM_CODE` | `CompareButton.tsx`, `compare-context.tsx` |
-| 2 | System | Enforce max 3 products and a same-category rule; a rejected add raises a toast. The list persists in the browser (`localStorage`) — no login required | `CONFIRMED_FROM_CODE` | `compare-context.tsx`, `compare-storage.ts` |
-| 3 | Guest/Customer | Open `/so-sanh` from the floating compare bar to view a side-by-side table of specifications, price, rating, stock and variant options | `CONFIRMED_FROM_CODE` | `CompareBar.tsx`, `ComparisonTable.tsx` |
-| 4 | System | Fetch each compared product via `GET /api/v1/products/{slug}` to obtain specifications (omitted from list responses) | `CONFIRMED_FROM_CODE` | `client-api.ts` `fetchPublicProduct`, `CompareClient.tsx` |
-
 ## Account Login Workflow
 
 | Step | Actor | Current flow | Status | Evidence |

@@ -115,11 +115,6 @@ Status: `CONFIRMED_FROM_CODE` — `PublicCacheHeaderFilter.java`, `SecurityConfi
 | `PATCH` | `/api/v1/customer/orders/{orderId}/cancel` | Customer cancels own order. Allowed only when `paymentStatus = UNPAID` **and** order is `PENDING` / `ON_HOLD` / (`PROCESSING` with fulfillment not yet `SHIPPED`/`DELIVERED`) — see `CustomerOrderCancelService.isCustomerCancellable`. Sets `CANCELLED` (+ fulfillment `CANCELLED` for DELIVERY) and revalidates product pages. **Does NOT restore stock** — inventory is manual boolean availability (owner decision 2026-06-23, no auto-restore on cancel; AUD-044/AUD-030). **Notifies the shop like a new order** (owner decision 2026-07-15, AUD-025): WebSocket `ORDER_STATUS_CHANGED` + persistent admin inbox, an `ORDER_CANCELLED_BY_CUSTOMER` audit-log record (actor `CUSTOMER`), and a cancellation-confirmation email to the customer. Once `PAID`, returns `409` — the customer must contact the shop, who cancels the paid order directly. | `ApiDataResponse<OrderDetailResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `CustomerOrderCancelService.java` |
 
 > **Removed (2026-06-23).** The Return (RMA) and Refund feature was deleted platform-wide — the customer return endpoints (`/orders/returns`, `/orders/returns/{returnId}`, `/orders/{orderId}/returns`, `/orders/{orderId}/return-eligibility`), the admin returns/inspection endpoints, and every refund endpoint no longer exist. Customer-facing return/exchange policy text is kept as a manual commitment, not an API.
-| `GET` | `/api/v1/customer/wishlist` | List own wishlist product IDs, newest first | `ApiDataResponse<List<String>>` | `CONFIRMED_FROM_CODE` | `CustomerWishlistController.java` |
-| `GET` | `/api/v1/customer/wishlist/products` | List own wishlisted products (paginated, PUBLISHED only). Each `Product` uses the **list-view** shape — see "Product list — list-view payload vs detail payload". | `ApiListResponse<Product>` | `CONFIRMED_FROM_CODE` | `CustomerWishlistController.java` |
-| `POST` | `/api/v1/customer/wishlist` | Add a product to own wishlist (idempotent) | `ApiDataResponse<{productId,added}>` with HTTP `201` | `CONFIRMED_FROM_CODE` | `CustomerWishlistController.java` |
-| `DELETE` | `/api/v1/customer/wishlist/{productId}` | Remove a product from own wishlist | HTTP `204` no body | `CONFIRMED_FROM_CODE` | `CustomerWishlistController.java` |
-
 ## Catalog Facets Contract
 
 `GET /api/v1/catalog/facets` — public, no auth. Aggregated product counts powering the storefront catalog filter sidebar.
@@ -342,7 +337,7 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
   - Đặt `publishStatus = PublishStatus.DRAFT`.
 - **Xóa vĩnh viễn**: `DELETE /api/v1/admin/products/{id}/permanent`
   - Chặn lại bằng lỗi `409 Conflict` nếu trạng thái hiện tại khác `TRASH`.
-  - Thực hiện xóa cứng sản phẩm khỏi DB, tự động xóa liên đới các bảng liên quan (variants, gallery, v.v.) và xóa tham chiếu khỏi `home_category_highlights`, `wishlist_items`.
+  - Thực hiện xóa cứng sản phẩm khỏi DB, tự động xóa liên đới các bảng liên quan (variants, gallery, v.v.) và xóa tham chiếu khỏi `home_category_highlights`.
 
 ### 2. Categories (Danh mục)
 - **Xóa mềm**: `DELETE /api/v1/admin/categories/{id}`

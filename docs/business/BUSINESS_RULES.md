@@ -208,7 +208,7 @@ Evidence:
 - `ReviewJpaRepository.java` (`findAggregateByProductIdAndStatus`)
 - `WordPressProductMapper.java` (không còn default 4.5), `ProductImporter.java` (không seed rating từ meta), `ReviewImporter.java` (`recomputeRatingCache` từ review APPROVED sau import — `REVIEW_RULE_004`)
 - `bigbike-web/lib/rating.ts` (`hasApprovedReviews` — gate dùng chung phía web)
-- `bigbike-web/components/ui/RatingStars.tsx`, `ProductCard.tsx`, `ComparisonTable.tsx`, `WpProductSwipeItem.tsx`, `WpPurchaseSection.tsx`, `ReviewsSection.tsx` (các nơi render sao theo `REVIEW_RULE_003`)
+- `bigbike-web/components/ui/RatingStars.tsx`, `ProductCard.tsx`, `WpProductSwipeItem.tsx`, `WpPurchaseSection.tsx`, `ReviewsSection.tsx` (các nơi render sao theo `REVIEW_RULE_003`)
 - `API_CONTRACT.md` — "Public Reviews Contract"; `DATA_CONTRACT.md` — "Product rating denormalization"
 
 ## Category Catalog Rules

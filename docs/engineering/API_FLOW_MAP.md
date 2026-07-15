@@ -7,7 +7,6 @@
 | Web search | `GET /api/v1/search`, `GET /api/v1/search-suggest` | `PublicSearchController` | Search result payload from global search service | `CONFIRMED_FROM_CODE` |
 | Tin tức list page (`/tin-tuc`) | `GET /api/v1/articles`, `GET /api/v1/content-categories` | `ContentController` -> `ContentReadService` | Paginated article list + content categories with published-article counts for the category filter (desktop sidebar + mobile drawer) | `CONFIRMED_FROM_CODE` |
 | Web address lookup | `GET /api/v1/address/**` | `VnAddressController` | Read-only administrative address data | `CONFIRMED_FROM_CODE` |
-| Product comparison page (`/so-sanh`) | `GET /api/v1/products/{slug}` | `CatalogController` -> catalog read service | One detail fetch per compared product (incl. `specifications`, omitted from list responses); read-only, no write side effects. Comparison list itself lives in browser `localStorage` | `CONFIRMED_FROM_CODE` |
 | Cart UI | `/api/v1/cart`, `/api/v1/cart/items` | `CartController` -> `CartService` | Session/customer cart, item snapshots | `CONFIRMED_FROM_CODE` |
 | Checkout UI | `POST /api/v1/checkout`, `POST /api/v1/orders/quick-buy` | `CheckoutController` -> `CheckoutService` | Order/payment/shipping snapshots, per-variant `isAvailable` gate (no quantity decrement, V261), notifications, WS event | `CONFIRMED_FROM_CODE` |
 | Customer address UI | `/api/v1/customer/addresses` | `CustomerAddressController` -> `CustomerAddressService` | Own-address CRUD | `CONFIRMED_FROM_CODE` |
@@ -23,12 +22,6 @@
 ### Checkout
 
 `cart client -> CheckoutService -> order/payment/shipping tables -> email + /topic/admin/orders` (per-variant `isAvailable` gate; no stock movements written — V261)
-
-Status: `CONFIRMED_FROM_CODE`
-
-### Product comparison
-
-`compare button -> compare-context (localStorage, max 3, same category) -> CompareBar -> /so-sanh -> useQueries(GET /api/v1/products/{slug}) -> ComparisonTable`
 
 Status: `CONFIRMED_FROM_CODE`
 
