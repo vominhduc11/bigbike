@@ -105,7 +105,7 @@
 | AUD-054 | Sửa encoding comment importer | ✅ `3e24b965` | Thay literal mojibake `â€”` bằng em dash UTF-8 đúng trong comment `ProductVariationImporter`; quét cùng thư mục không còn chuỗi này. Backend `mvnw -DskipTests compile` đạt; `git diff --check` đạt. Không đổi runtime/data. |
 | AUD-059 | Ghi chú hệ thống checkout không thành "Đơn hàng được tạo.." | ✅ `c1a1b862` | Làm sớm cùng AUD-011 (cùng đoạn code): note luôn "Đơn hàng được tạo. Phương thức thanh toán: COD." — hết dấu chấm kép |
 | AUD-069 | Sửa/xóa SĐT khách không hợp lệ: báo lỗi thay vì im lặng bỏ qua | ✅ | `b4c354a1`; số điện thoại trống nay xóa giá trị đã lưu, số sai định dạng trả lỗi trường thay vì báo lưu thành công giả; `Phase1IAdminManagementApiTest` đạt 24/24; `git diff --check` đạt. |
-| AUD-070 | `rowKey` import không trùng khi 2 dòng cùng SKU | ⬜ | |
+| AUD-070 | `rowKey` import không trùng khi 2 dòng cùng SKU | ✅ | `16bc0395`; khóa chọn dòng gồm số thứ tự nên hai dòng trùng SKU vẫn chọn/bỏ độc lập; `ProductImportRoundTripTest` đạt 5/5; `git diff --check` đạt. |
 | AUD-071 | Xóa trắng ô SEO thương hiệu phải được lưu | ⬜ | |
 | AUD-072 | API path không tồn tại trả 404 thay 500 | ⬜ | |
 | AUD-073 | Admin reviews tôn trọng tham số `lang` | ✅ `d7fefc10` | Hành vi hiển thị đã đúng: admin đổi cột tên SP theo `productNameEn`/`productName` (client, PRODUCT_RULE_004 — hiện đủ bản ghi, không ẩn SP chưa dịch); review là nội dung khách nhập nên đơn ngữ. Dọn dead `strictEnglish` + comment stale (backend/admin); `lang` giữ cho tương thích API, no-op theo thiết kế |
