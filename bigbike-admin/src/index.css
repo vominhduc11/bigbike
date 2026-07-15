@@ -2902,28 +2902,27 @@ a {
   outline-offset: 2px;
 }
 
-/* Destructive variants override the default with translucent brand red so the
-   danger level is visible without breaking the overall white-on-dark look.
-   color-mix keeps the hue traceable to the brand token while tuning alpha. */
+/* Destructive variants use the dedicated danger token so delete actions remain
+   distinct from primary/brand actions in both light and dark themes. */
 .medialib-btn-danger {
-  background: color-mix(in srgb, var(--admin-color-brand-red) 40%, transparent);
+  background: color-mix(in srgb, var(--admin-color-status-danger-text) 40%, transparent);
   border-color: rgba(255, 255, 255, 0.4);
   color: #fff;
 }
 
 .medialib-btn-danger:hover {
-  background: color-mix(in srgb, var(--admin-color-brand-red) 75%, transparent);
+  background: color-mix(in srgb, var(--admin-color-status-danger-text) 75%, transparent);
   border-color: rgba(255, 200, 200, 0.8);
 }
 
 .medialib-btn-danger-solid {
-  background: color-mix(in srgb, var(--admin-color-brand-red-active) 70%, transparent);
+  background: color-mix(in srgb, var(--admin-color-status-danger-text) 70%, transparent);
   border-color: rgba(255, 255, 255, 0.5);
   color: #fff;
 }
 
 .medialib-btn-danger-solid:hover {
-  background: color-mix(in srgb, var(--admin-color-brand-red-active) 95%, transparent);
+  background: color-mix(in srgb, var(--admin-color-status-danger-text) 95%, transparent);
   border-color: rgba(255, 200, 200, 0.85);
 }
 

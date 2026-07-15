@@ -33,7 +33,7 @@ function ThemedToaster() {
       offset={{ top: '72px', right: '20px' }}
       toastOptions={{
         style: {
-          fontFamily: 'Inter, system-ui, sans-serif',
+          fontFamily: 'var(--admin-font-body)',
           fontSize: '0.875rem',
         },
         classNames: {
