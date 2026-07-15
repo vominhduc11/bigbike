@@ -616,17 +616,17 @@ Status: `CONFIRMED_FROM_CODE`
 
 Evidence: `VariantRequest.java` (no `name` field), `AdminCatalogMutationService.applyVariants` / `deriveVariantName`, `V297__derive_variant_name_from_options.sql` (legacy backfill).
 
-### Product upsert — `stockState` is read-only
+### Product upsert — `stockState` derived from product-form availability
 
-`POST /api/v1/admin/products` and `PATCH /api/v1/admin/products/{id}` do **not** accept `stockState` in the request body. The field mirrors the boolean availability and can only be mutated through the Inventory module availability endpoints (`/api/v1/admin/inventory/...`).
+`POST /api/v1/admin/products` and `PATCH /api/v1/admin/products/{id}` do **not** accept `stockState` directly. The product form instead sends the manual availability inputs it owns: product-level `forceOutOfStock` and `variants[].isAvailable`. Backend derives `stockState` on every save: no-variant product mirrors `forceOutOfStock`; product with variants is `IN_STOCK` when any variant is available. This product-form mutation is gated by `products.update`.
 
-- On create: backend forces `stockState = OUT_OF_STOCK` (item starts unavailable) regardless of payload.
-- On update: backend never reads `stockState` from the request.
-- DTO `UpsertProductRequest` has no setter for the field; admin form does not render a picker.
+- On create/update, backend ignores direct `stockState` input because the DTO has no setter.
+- Admin form renders Còn/Hết switches and persists them in the normal product upsert payload.
+- The Inventory availability endpoints below are an additional API path gated by `inventory.write`; they are not the only way to change availability and currently have no admin UI caller.
 
 Status: `CONFIRMED_BACKEND_ENFORCED`
 
-Evidence: `UpsertProductRequest.java` (no `stockState` setter), `AdminCatalogMutationService.applyProductPatch` (`if (create) entity.setStockState(OUT_OF_STOCK)`).
+Evidence: `UpsertProductRequest.java` (`forceOutOfStock`, no `stockState` setter), `VariantRequest.java` (`isAvailable`), `ProductMutationService` + `InventoryPolicyService.recomputeProductState`, admin `VariantEditors.jsx`/product form.
 
 ### Inventory — availability toggle endpoints (V261)
 
@@ -636,6 +636,8 @@ Inventory availability is a **boolean** set by the admin. The former quantity-ad
 |---|---|---|---|
 | `PATCH /api/v1/admin/inventory/variants/{variantId}/availability` | `{ available: boolean }` | `inventory.write` | Sets `product_variants.is_available`; the variant's `stockState` mirrors it. The product-level `stockState` re-aggregates from its variants. |
 | `PATCH /api/v1/admin/inventory/products/{productId}/availability` | `{ available: boolean }` | `inventory.write` | For a no-variant product, sets `products.stock_state` (`IN_STOCK` / `OUT_OF_STOCK`) directly. |
+
+Hai endpoint này là đường API phụ hiện không có caller trong admin. Luồng vận hành chính là lưu các switch Còn/Hết ngay trong form sản phẩm qua `POST/PATCH /api/v1/admin/products` với quyền `products.update`; kết quả cuối cùng cùng tuân theo `InventoryPolicyService`.
 
 Response shape changes:
 

@@ -12,9 +12,11 @@
 | Permission | Granted roles (seed) | Endpoint | Evidence |
 |---|---|---|---|
 | `inventory.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER`, `EDITOR` | `GET /api/v1/admin/inventory/**` (stock list / grouped / summary / movements) | `V121__realign_inventory_warranty_permissions.sql`, `AdminInventoryController.java` |
-| `inventory.write` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `POST /api/v1/admin/inventory/**` (manual stock adjust) | `V121__realign_inventory_warranty_permissions.sql`, `AdminInventoryController.java` |
+| `inventory.write` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `PATCH /api/v1/admin/inventory/variants/{id}/availability`, `PATCH /api/v1/admin/inventory/products/{id}/availability` (đường API phụ, không có admin UI caller) | `V121__realign_inventory_warranty_permissions.sql`, `AdminInventoryController.java` |
 
 `inventory.*` is listed in `PermissionCatalog` (`roles.groupProducts`), so it is grantable to custom roles via the Roles UI.
+
+**Ranh giới quyền Còn/Hết hiện hành:** màn tạo/sửa sản phẩm gửi `forceOutOfStock` và `variants[].isAvailable` trong product upsert, nên dùng `products.update`; backend tự suy ra `stockState`. `inventory.write` chỉ áp dụng hai endpoint availability riêng ở bảng trên. Vì vậy custom role có `products.update` có thể đổi Còn/Hết khi lưu form sản phẩm dù không có `inventory.write` — đây là contract chủ đích theo `BUSINESS_RULES.md` Stock State Derivation Rules.
 
 ### Media Library permissions
 

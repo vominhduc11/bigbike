@@ -274,7 +274,7 @@ Evidence:
 
 **Cột số lượng `quantity_on_hand` / `stock_quantity` / `manage_stock` giờ DORMANT** — giữ trong DB nhưng không đọc cho availability. `low_stock_threshold` đã gỡ (V279).
 
-**API input contract:** `stockState` bị bỏ khỏi `UpsertProductRequest` và `VariantRequest`. Availability đổi qua Inventory module (`PATCH .../availability`), không qua catalog create/update API.
+**API input contract:** `stockState` bị bỏ khỏi `UpsertProductRequest` và `VariantRequest` vì là field suy ra. Catalog create/update nhận các nguồn boolean thật từ form sản phẩm: `UpsertProductRequest.forceOutOfStock` và `VariantRequest.isAvailable`, rồi `InventoryPolicyService.recomputeProductState` cập nhật `stockState`; đường này dùng quyền `products.update`. Hai endpoint Inventory `PATCH .../availability` là đường phụ dùng `inventory.write` và hiện không có UI caller.
 
 **API response contract:** `stockState` vẫn có trong response (read-only). Public `stockQuantity` (product & variant) **luôn null** — storefront chỉ hiển thị "Còn hàng / Hết hàng".
 
@@ -282,8 +282,8 @@ Evidence:
 
 Evidence:
 
-- `AdminInventoryService.java` / `AdminInventoryController.java` (availability toggle)
-- `AdminCatalogMutationService.java` (removed stockState from create/update path)
+- `AdminInventoryService.java` / `AdminInventoryController.java` (đường availability phụ)
+- `ProductMutationService.java`, `UpsertProductRequest.forceOutOfStock`, `VariantRequest.isAvailable`, `InventoryPolicyService.java` (đường form sản phẩm)
 - `CheckoutService.java` (per-variant `isAvailable` gate)
 - `BUSINESS_RULES.md` STOCK_RULE_001–009
 - `V165__aggregate_variant_product_stock_state.sql` (trigger giữ `products.stockState` đồng bộ với variants)
