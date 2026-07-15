@@ -98,7 +98,7 @@
 | AUD | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
 | AUD-049 | `.env.example` link reset/verify về localhost | ✅ `9a4ffa8d` | Mẫu local dùng `http://localhost:3000/xac-nhan-email` và `/quen-mat-khau`, khớp route web và dev profile; không sửa `.env` thật. Kiểm tra giá trị biến + `git diff --check` đạt. |
-| AUD-050 | Biến extra MinIO origin đi qua Docker; bỏ default IP cũ | ⬜ | |
+| AUD-050 | Biến extra MinIO origin đi qua Docker; bỏ default IP cũ | ✅ `c55b4ac2` | `VITE_MINIO_EXTRA_ORIGINS` đi từ env example → Compose build arg → Dockerfile → Vite bundle; mặc định rỗng, không còn tự nhúng IP MinIO cũ. Cập nhật deployment docs. Admin lint/build đạt; `docker compose config --quiet` và `git diff --check` đạt; không chạy/restart container. |
 | AUD-051 | Filter trả đúng chuẩn error envelope | ⬜ | |
 | AUD-052 | Email chào bằng tên khách khi đơn có tên | ✅ `7e96af4d` | Làm sớm cùng AUD-006 (cùng file `OrderNotificationService`): `safeCustomerName` ưu tiên `customerName` trước email/SĐT |
 | AUD-053 | Đồng bộ model/schema `paymentMethod` nullable | ⬜ | Lưu ý quyết định #10 |
