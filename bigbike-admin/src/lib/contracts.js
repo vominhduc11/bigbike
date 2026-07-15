@@ -266,12 +266,6 @@ function normalizeVariant(input) {
       : [],
     price: normalizePrice(input.price),
     stockState: normalizeStockState(input.stockState),
-    // Surface stockQuantity so the inventory column in the variants table /
-    // any "Còn N" hint can render. The backend now exposes it on every
-    // variant (nullable when not tracked).
-    stockQuantity: Number.isFinite(input.stockQuantity)
-      ? Number(input.stockQuantity)
-      : null,
     image: normalizeImageAsset(input.image),
     // Color-scoped variant gallery. Without this pass-through the edit
     // form's GalleryEditor opens empty even when the database has rows.
@@ -456,7 +450,6 @@ export function normalizeProduct(input) {
       : [],
     price: normalizePrice(source.price),
     stockState: normalizeStockState(source.stockState),
-    stockQuantity: Number.isFinite(source.stockQuantity) ? Number(source.stockQuantity) : null,
     forceOutOfStock: Boolean(source.forceOutOfStock),
     publishStatus: normalizePublishStatus(source.publishStatus),
     homepageBlock: normalizeHomepageBlock(source.homepageBlock),
@@ -749,14 +742,6 @@ export function normalizeOrder(input) {
     billingAddress,
     payments,
     notes: Array.isArray(s.notes) ? s.notes.map(normalizeOrderNote) : [],
-    // Applied coupons (code + per-coupon discount) so the detail screen can show which
-    // promotions were used, not just the total discount.
-    appliedCoupons: Array.isArray(s.appliedCoupons)
-      ? s.appliedCoupons.map((c) => ({
-          code: toTrimmedStringLocal(c?.code) || '',
-          discountAmount: toIntegerLocal(c?.discountAmount, 0),
-        }))
-      : [],
     // Amounts — backend uses *Amount suffix
     subtotal: toIntegerLocal(s.subtotalAmount, 0),
     shippingFee: toIntegerLocal(s.shippingAmount, 0),

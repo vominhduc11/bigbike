@@ -61,8 +61,6 @@ const STATIC_ROUTES = [
   "/xac-nhan-email",
   "/tai-khoan",
   "/tai-khoan/don-hang",
-  "/tai-khoan/yeu-thich",
-  "/tai-khoan/doi-tra",
   "/tai-khoan/edit-account",
 ];
 

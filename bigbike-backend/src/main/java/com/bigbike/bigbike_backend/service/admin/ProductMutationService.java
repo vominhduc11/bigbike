@@ -333,7 +333,6 @@ public class ProductMutationService {
         fields.put("retailPrice", e.getRetailPrice());
         fields.put("salePrice", e.getSalePrice());
         fields.put("stockState", e.getStockState() == null ? null : e.getStockState().toString());
-        fields.put("stockQuantity", e.getStockQuantity());
         fields.put("forceOutOfStock", e.getForceOutOfStock());
         return writeAuditJson(fields);
     }

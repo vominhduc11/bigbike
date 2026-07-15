@@ -162,9 +162,6 @@ export type OrderDetail = {
   taxAmount: number
   totalAmount: number
   paidAmount: number
-  refundAmount: number
-  refundReason: string | null
-  refundedAt: string | null
   placedAt: string
   channel?: string
   lineItems: OrderLineItem[]

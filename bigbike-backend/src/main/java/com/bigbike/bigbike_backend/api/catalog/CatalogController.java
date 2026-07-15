@@ -142,8 +142,7 @@ public class CatalogController {
         ProductSnapshotResponse.Stock stock = new ProductSnapshotResponse.Stock(
                 state.name(),
                 STOCK_LABELS.getOrDefault(state, state.name()),
-                Boolean.TRUE.equals(product.forceOutOfStock()),
-                product.stockQuantity()
+                Boolean.TRUE.equals(product.forceOutOfStock())
         );
         return new ProductSnapshotResponse(
                 pricing,

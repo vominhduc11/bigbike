@@ -328,7 +328,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 ),
                 List.of(),
                 entity.getStockState(),
-                null, // stockQuantity never exposed — boolean availability model (2026-06-23)
                 entity.getForceOutOfStock(),
                 entity.getPublishStatus(),
                 entity.getHomepageBlock(),
@@ -399,7 +398,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 ),
                 toVariantsForListing(entity, locale),
                 entity.getStockState(),
-                null, // stockQuantity — public never sees a count
                 entity.getForceOutOfStock(),
                 entity.getPublishStatus(),
                 entity.getHomepageBlock(),
@@ -466,7 +464,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 options,
                 price,
                 entity.getStockState(),
-                null, // stockQuantity — public never sees a count
                 null, // image — list/facets never render variant media
                 List.of(),
                 entity.isAvailable()
@@ -732,9 +729,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 ? List.of()
                 : List.of(primaryCategory);
 
-        // Public never sees a count — boolean availability model (owner decision 2026-06-23).
-        Integer productStockQty = publicView ? null : entity.getStockQuantity();
-
         return new Product(
                 entity.getId(),
                 entity.getSku(),
@@ -763,7 +757,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 ),
                 toVariants(entity, publicView, locale),
                 entity.getStockState(),
-                productStockQty,
                 entity.getForceOutOfStock(),
                 entity.getPublishStatus(),
                 entity.getHomepageBlock(),
@@ -1084,9 +1077,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         .filter(m -> m != null)
                         .toList();
 
-        // Public never sees a count — boolean availability model (owner decision 2026-06-23).
-        Integer variantStockQty = publicView ? null : entity.getQuantityOnHand();
-
         return new ProductVariant(
                 entity.getId(),
                 entity.getSku(),
@@ -1094,7 +1084,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 options,
                 price,
                 entity.getStockState(),
-                variantStockQty,
                 toImageAsset(
                         entity.getImageId(),
                         entity.getImageUrl(),

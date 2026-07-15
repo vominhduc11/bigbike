@@ -54,7 +54,7 @@ public class UpsertProductRequest {
     @Pattern(regexp = "^(VND)$", message = "Currency must be VND.")
     private String currency;
 
-    // stockState is a derived field (computed from quantityOnHand). Removed from input — backend ignores it.
+    // stockState is derived from boolean availability. Removed from input — backend ignores it.
     private PublishStatus publishStatus;
 
     private Boolean forceOutOfStock;

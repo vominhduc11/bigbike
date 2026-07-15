@@ -209,7 +209,6 @@ final class CatalogReadSupport {
                         ? List.of()
                         : p.variants().stream().map(CatalogReadSupport::toVariantStub).toList(),
                 p.stockState(),
-                p.stockQuantity(),
                 p.forceOutOfStock(),
                 p.publishStatus(),
                 p.homepageBlock(),
@@ -254,7 +253,6 @@ final class CatalogReadSupport {
                 List.of(),
                 v.price(),
                 v.stockState(),
-                v.stockQuantity(),
                 null,
                 List.of(),
                 v.isAvailable()

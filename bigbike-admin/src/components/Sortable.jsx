@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils'
 // Shared drag-and-drop reorder primitives for bigbike-admin.
 //
 // Every reorderable surface (sliders, home videos, featured products, related
-// products, menu/category trees, product gallery, shipping methods, content
+// products, menu/category trees, product gallery, content
 // blocks) wires the same @dnd-kit boilerplate — sensors, transform styling,
 // arrayMove. This module is the single source so screens only describe WHAT to
 // reorder, not HOW.

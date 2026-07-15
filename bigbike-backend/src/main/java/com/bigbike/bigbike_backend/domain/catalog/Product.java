@@ -33,8 +33,6 @@ public record Product(
         ProductPrice price,
         List<ProductVariant> variants,
         ProductStockState stockState,
-        /** Best-effort on-hand count (product-level). Null if not tracked. */
-        Integer stockQuantity,
         Boolean forceOutOfStock,
         PublishStatus publishStatus,
         /** Homepage placement slot — see {@link HomepageBlock}. Never null; NONE means not pinned. */

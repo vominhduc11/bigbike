@@ -229,7 +229,6 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                                 ),
                                 new ProductPrice(BigDecimal.valueOf(3690000), BigDecimal.valueOf(3250000), "VND"),
                                 ProductStockState.IN_STOCK,
-                                12,
                                 null,
                                 List.of(),
                                 true
@@ -244,14 +243,12 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                                 ),
                                 new ProductPrice(BigDecimal.valueOf(3690000), BigDecimal.valueOf(3250000), "VND"),
                                 ProductStockState.IN_STOCK,
-                                3,
                                 null,
                                 List.of(),
                                 true
                         )
                 ),
                 ProductStockState.IN_STOCK,
-                15,
                 false,
                 PublishStatus.PUBLISHED,
                 com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.FEATURED_GRID,
@@ -310,7 +307,6 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 new ProductPrice(BigDecimal.valueOf(2890000), null, "VND"),
                 List.of(),
                 ProductStockState.IN_STOCK,
-                null,
                 false,
                 PublishStatus.DRAFT,
                 com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.NONE,
@@ -369,7 +365,6 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 new ProductPrice(BigDecimal.valueOf(2790000), BigDecimal.valueOf(2450000), "VND"),
                 List.of(),
                 ProductStockState.IN_STOCK,
-                4,
                 false,
                 PublishStatus.PUBLISHED,
                 com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.FEATURED_GRID,

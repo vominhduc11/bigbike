@@ -83,7 +83,8 @@ class PublicReadApiTest {
                         .param("category", "pub-cat-vis-" + suffix))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].slug").value("pub-vis-pub-" + suffix));
+                .andExpect(jsonPath("$.data[0].slug").value("pub-vis-pub-" + suffix))
+                .andExpect(jsonPath("$.data[0].stockQuantity").doesNotExist());
     }
 
     @Test
@@ -133,7 +134,8 @@ class PublicReadApiTest {
         mockMvc.perform(get("/api/v1/products/" + slug + "/snapshot"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.pricing.retailPrice").value(2500000))
-                .andExpect(jsonPath("$.data.stock.stockState").isString());
+                .andExpect(jsonPath("$.data.stock.stockState").isString())
+                .andExpect(jsonPath("$.data.stock.quantity").doesNotExist());
     }
 
     @Test

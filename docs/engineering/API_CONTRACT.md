@@ -534,8 +534,8 @@ renders; the heavy detail-only payload is served exclusively by
 |---|---|---|
 | `id`, `sku`, `slug`, `name`, `shortDescription` | ✅ present | ✅ present |
 | `brand`, `category`, `categories`, `image`, `price` | ✅ present | ✅ present |
-| `stockState`, `stockQuantity`, `forceOutOfStock`, `rating`, `ratingCount`, `homepageBlock`, `homepageOrder` | ✅ present | ✅ present |
-| **Note (V261):** `stockQuantity` is **always `null`** on the public API (product & variant) — availability is boolean. The storefront shows only "Còn hàng / Hết hàng" from `stockState`; the old "Chỉ còn N sản phẩm" low-stock message was removed. | | |
+| `stockState`, `forceOutOfStock`, `rating`, `ratingCount`, `homepageBlock`, `homepageOrder` | ✅ present | ✅ present |
+| **Note (V261):** `stockQuantity` / `quantityOnHand` are absent from the product and variant API shapes — availability is boolean. The storefront shows only "Còn hàng / Hết hàng" from `stockState`; the old "Chỉ còn N sản phẩm" low-stock message was removed. | | |
 | `description`, `contentBottom`, `suitabilityAdvisory` | ❌ `null` | ✅ present |
 | `originBrandCountry`, `sizeGuide`, `specifications`, `specStats`, `trustBadges`, `suitabilitySection`, `sizeGuideSection` | ❌ `null` | ✅ present |
 | `gallery`, `videos`, `faqs`, `commitments` | ❌ `[]` | ✅ present |
@@ -543,7 +543,7 @@ renders; the heavy detail-only payload is served exclusively by
 | `videos[].description` | — | ✅ present (detail) |
 | `seo` | ❌ `null` | ✅ present |
 | `variants` | ✅ present as **stubs** | ✅ full |
-| `variants[].id/sku/name/price/stockState/stockQuantity/isAvailable` | ✅ present | ✅ present |
+| `variants[].id/sku/name/price/stockState/isAvailable` | ✅ present | ✅ present |
 | `variants[].options`, `variants[].gallery`, `variants[].image` | ❌ `[]` / `null` | ✅ present |
 
 **Why variant stubs and not full omission:** the storefront product card needs the
@@ -713,7 +713,7 @@ Lets a shop owner create/update many products at once from a single JSON file (t
 
 **JSON row shape (V2026-07-07): `ProductImportRow`, a dedicated wire DTO — not `UpsertProductRequest` anymore.** Every bilingual column is nested as one VI/EN object at its own key (e.g. `name: {nameVI, nameEN}`, `seo: {titleVI, titleEN, descriptionVI, descriptionEN, canonicalUrl}`) instead of a Vietnamese top-level key plus a separate `translations.en.*` block. `ProductImportRowMapper.toUpsertRequest`/`fromEntity` convert every row to/from the exact `UpsertProductRequest` + `ProductTranslationRequest` shape the single-product admin form already uses — those two DTOs are unchanged and still deserialize/serialize the single-product API — so the rest of the pipeline (validation, category/brand resolution, create/update) is unaffected by the wire shape. As before, `categoryId`/`brandId` are interpreted as **slugs**, not literal database IDs (neither a shop owner nor an LLM can know real internal IDs). **`relatedProductIds`/`accessoryProductIds` get the same treatment (2026-07-05):** since a shop owner/LLM authoring JSON by hand can't know real IDs either, `processRow` re-resolves every entry in both arrays by trying, per token: exact product ID (so existing literal-ID payloads keep working unchanged) → SKU (case-insensitive) → slug. A token that doesn't resolve to exactly one product (not found, or a SKU shared by more than one product) is dropped with a soft `NOT_FOUND`/`AMBIGUOUS` warning rather than failing the row. **This mechanism cannot explicitly clear an existing list to empty:** if the original array was non-empty but every token failed to resolve, the field is reset to untouched rather than wiping it to `[]` — only a genuinely empty input (JSON literal `[]`) passes through as a real clear. **Ordering matters for cross-referencing products new to this same file:** rows commit sequentially and each commit is a real, immediately-queryable save (see "one bad row never rolls back rows already saved" above), so a row can reference the SKU/ID of a product defined earlier in the same file, but not one defined later. `validateImport` (dry-run) runs the identical resolution logic against the database as it stands *before* the file is committed, so a forward reference that will succeed on commit may still show a `NOT_FOUND` warning during preview — expected, not a bug.
 
-**Upsert matching:** product-level `sku` first (fallback `slug`) — more than one product sharing the same `sku` is an ambiguous-row error rather than a guess, since `products.sku` has no DB uniqueness (`PRODUCT_RULE_SKU_001` only covers variant SKU). **Variants are matched by SKU** before the existing full-replace-by-id `applyVariants` logic runs — this preserves each variant's real database id (and therefore its `stock_movements` history and `quantityOnHand`) across re-imports of an unchanged catalog. (A row can additionally supply a `variants[].id` hint, honored only after verifying it belongs to the target product; SKU is the primary match key.)
+**Upsert matching:** product-level `sku` first (fallback `slug`) — more than one product sharing the same `sku` is an ambiguous-row error rather than a guess, since `products.sku` has no DB uniqueness (`PRODUCT_RULE_SKU_001` only covers variant SKU). **Variants are matched by SKU** before the existing full-replace-by-id `applyVariants` logic runs — this preserves each variant's real database id (and therefore any dormant historical stock-movement links) across re-imports of an unchanged catalog. (A row can additionally supply a `variants[].id` hint, honored only after verifying it belongs to the target product; SKU is the primary match key.)
 
 **Validation note:** `validateImport` calls `CatalogRequestValidator.validateAndResolveCategory`/`validateAndResolveBrand`/`validateProductRequest` directly with `preview=false` — **not** `previewProduct` — because the preview/dry-run mode deliberately skips the English-name-required check and cross-product SKU/slug uniqueness (see "Product preview" above), which would under-report errors relative to what a real commit enforces.
 
@@ -1314,11 +1314,11 @@ Evidence: `AdminRedirectController.java`, `AdminRedirectService.java`, `Internal
 **Resource display name enrichment — fixed 2026-07-04, was ORDER/REVIEW only.** `ORDER` resolves via a batch join on `orders.order_number` (resourceId is real UUID); `REVIEW` parses `productName`/review id out of its own JSON. Every other type below pulls its display name straight out of the already-recorded `afterData` (fallback `beforeData`) JSON — no DB join, since most of these entities have String (non-UUID) ids. See `AdminAuditLogService.RESOURCE_NAME_FIELDS` for the exact field per type. `INVENTORY` has no natural display name (only variantId/productId codes) and stays unenriched.
 
 **Resource types written by backend:**
-- `ORDER` — order lifecycle events (AdminOrderService, PosOrderService)
-- `PRODUCT` — create/update/publish/soft-delete/restore (AdminCatalogMutationService). Before/after snapshot (fixed 2026-07-04, was name/slug/status only) now includes sku, brandId, categoryId, shortDescription, description, imageUrl, retailPrice, salePrice, stockState, stockQuantity, forceOutOfStock — captured **before** the patch is applied (previously several call sites passed `before = null` despite the entity already being loaded).
+- `ORDER` — order lifecycle events (`AdminOrderService`).
+- `PRODUCT` — create/update/publish/soft-delete/restore (AdminCatalogMutationService). Before/after snapshot (fixed 2026-07-04, was name/slug/status only) now includes sku, brandId, categoryId, shortDescription, description, imageUrl, retailPrice, salePrice, stockState, forceOutOfStock — captured **before** the patch is applied (previously several call sites passed `before = null` despite the entity already being loaded).
 - `CATEGORY` — create/update/soft-delete (AdminCatalogMutationService). Snapshot (fixed 2026-07-04) adds description, introContent, imageUrl, iconUrl, menuIconUrl, bannerUrl, parentId, sortOrder, showOnHomepage; before-snapshot bug fixed same as PRODUCT.
 - `BRAND` — create/update/soft-delete (AdminCatalogMutationService). Snapshot (fixed 2026-07-04) adds description, logoUrl, bannerUrl; before-snapshot bug fixed same as PRODUCT.
-- `INVENTORY` — stock adjustments (AdminInventoryService)
+- `INVENTORY` — manual availability changes (`AdminInventoryService`)
 - `CONTENT` — article create/update/soft-delete/restore/hard-delete (AdminContentMutationService). Snapshot (fixed 2026-07-04) adds excerpt, coverImageUrl, categoryId; before-snapshot bug fixed on update/soft-delete/restore.
 - `CUSTOMER` — AdminCustomerService
 - `MEDIA` — AdminMediaService

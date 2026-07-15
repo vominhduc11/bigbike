@@ -195,7 +195,7 @@ type TFn = (key: string) => string;
 /** Locale-aware variant of stockStateLabel. Pass t from useTranslations("Product"). */
 /** Locale-aware variant of orderStatusLabel. Pass t from useTranslations("Account.orders"). */
 export function orderStatusLabelWithT(status: string | null | undefined, t: TFn): string {
-  const known = ["PENDING", "ON_HOLD", "PROCESSING", "COMPLETED", "CANCELLED", "REFUNDED", "FAILED"];
+  const known = ["PENDING", "ON_HOLD", "PROCESSING", "COMPLETED", "CANCELLED", "FAILED"];
   if (status && known.includes(status)) return t(`orderStatus.${status}`);
   return status ?? t("orderStatus.UNKNOWN");
 }
@@ -203,7 +203,7 @@ export function orderStatusLabelWithT(status: string | null | undefined, t: TFn)
 /** Locale-aware variant of paymentStatusLabel. Pass t from useTranslations("Account.orders"). */
 /** Locale-aware label for fulfillment (giao hàng) status. Pass t from useTranslations("Account.orders"). */
 export function fulfillmentStatusLabelWithT(status: string | null | undefined, t: TFn): string {
-  const known = ["UNFULFILLED", "PROCESSING", "SHIPPED", "DELIVERED", "RETURNED", "CANCELLED"];
+  const known = ["UNFULFILLED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"];
   if (status && known.includes(status)) return t(`fulfillmentStatus.${status}`);
   return status ?? t("fulfillmentStatus.UNKNOWN");
 }

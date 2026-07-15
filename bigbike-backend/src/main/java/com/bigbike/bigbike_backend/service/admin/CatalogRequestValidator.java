@@ -81,7 +81,7 @@ public class CatalogRequestValidator {
             // hasVariants and draft-vs-publish, PRODUCT_RULE_005) is enforced post-merge by
             // AdminMutationValidators.validateProductFieldsRequired, not here — this request-level
             // check only runs on create/update wholesale and can't see the merged entity/variants.
-            // stockState is a derived field — not required from client. Always computed from quantityOnHand.
+            // stockState is derived from boolean availability and is not accepted from the client.
             if (request.getPublishStatus() == null) {
                 errors.add(new ApiErrorDetail("publishStatus", "REQUIRED", "publishStatus is required."));
             }

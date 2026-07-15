@@ -287,7 +287,7 @@ Evidence:
 
 **API input contract:** `stockState` bị bỏ khỏi `UpsertProductRequest` và `VariantRequest` vì là field suy ra. Catalog create/update nhận các nguồn boolean thật từ form sản phẩm: `UpsertProductRequest.forceOutOfStock` và `VariantRequest.isAvailable`, rồi `InventoryPolicyService.recomputeProductState` cập nhật `stockState`; đường này dùng quyền `products.update`. Hai endpoint Inventory `PATCH .../availability` là đường phụ dùng `inventory.write` và hiện không có UI caller.
 
-**API response contract:** `stockState` vẫn có trong response (read-only). Public `stockQuantity` (product & variant) **luôn null** — storefront chỉ hiển thị "Còn hàng / Hết hàng".
+**API response contract:** `stockState` vẫn có trong response (read-only). `stockQuantity` / `quantityOnHand` không còn nằm trong response product/variant; các cột số lượng dormant chỉ phục vụ tương thích dữ liệu cũ và migration, không được đưa trở lại contract. Storefront chỉ hiển thị "Còn hàng / Hết hàng".
 
 **forceOutOfStock:** field này vẫn là manual override (hard disable) và khác biệt với `stockState`. Checkout sẽ từ chối ngay cả khi `stockState = IN_STOCK` nếu `forceOutOfStock = true`.
 

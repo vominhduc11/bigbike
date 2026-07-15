@@ -43,7 +43,7 @@ public class VariantRequest {
     private BigDecimal salePrice;
     private boolean salePricePresent = false;
 
-    // stockState is a derived field (computed from quantityOnHand). Removed from input — backend ignores it.
+    // stockState is derived from boolean availability. Removed from input — backend ignores it.
 
     @Size(max = 2048, message = "Variant image URL is too long.")
     private String imageUrl;

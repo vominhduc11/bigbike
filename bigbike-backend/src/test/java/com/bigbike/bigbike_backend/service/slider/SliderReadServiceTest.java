@@ -60,7 +60,6 @@ class SliderReadServiceTest {
                         List.of(),
                         ProductStockState.IN_STOCK,
                         null,
-                        null,
                         PublishStatus.PUBLISHED,
                         com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.FEATURED_GRID,
                         null,       // homepageOrder

@@ -19,7 +19,6 @@ const ORDERS_PATH = "/tai-khoan/don-hang/";
 
 // Trùng tập trạng thái backend (OrderStatus) — lọc theo trạng thái đơn, ?status= được
 // CustomerOrderController hỗ trợ sẵn. Nhãn dùng lại Account.orders.orderStatus.*.
-// REFUNDED đã gỡ khỏi state machine (2026-06-23, refund removed) — bỏ khỏi bộ lọc (AUD-030).
 const STATUS_FILTERS = ["PENDING", "PROCESSING", "ON_HOLD", "COMPLETED", "CANCELLED", "FAILED"] as const;
 
 const filterHref = (status?: string) => orderFilterHref(ORDERS_PATH, status);

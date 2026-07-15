@@ -52,7 +52,7 @@ export function PurchaseSection({
   const { addToCart } = useCart();
 
   // ISR + CSR hybrid: mô tả/ảnh/thông số render từ props (ISR — phần cần SEO). GIÁ + TỒN
-  // KHO fetch lại ở CLIENT sau khi load để luôn tươi (shop bán cả online lẫn walk-in/POS
+  // Trạng thái Còn/Hết được fetch lại ở CLIENT sau khi load để luôn tươi
   // → tồn đổi liên tục, không cần SEO). Props ISR là giá trị ban đầu hợp lệ nên cập nhật
   // liền mạch, KHÔNG layout-shift/skeleton; refetch khi quay lại tab.
   const { data: snapshot } = useQuery<ProductSnapshot>({
@@ -82,7 +82,7 @@ export function PurchaseSection({
     return base.map((v) => {
       const fresh = freshById.get(v.id);
       return fresh
-        ? { ...v, price: fresh.price, stockState: fresh.stockState, stockQuantity: fresh.stockQuantity, isAvailable: fresh.isAvailable }
+        ? { ...v, price: fresh.price, stockState: fresh.stockState, isAvailable: fresh.isAvailable }
         : v;
     });
   }, [snapshot, product.variants]);

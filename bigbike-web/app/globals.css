@@ -1732,10 +1732,9 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   padding-bottom: 60px;
 }
 
-/* Diagonal logo emblem clearance for hero-less top-of-page content (checkout title /
-   empty-state, compare page header) is handled vertically via
-   body:has(.bb-checkout-page) .bb-main / body:has(.bb-compare-page) .bb-main
-   padding-top (see the bb-main clearance rule above), so this content keeps its
+/* Diagonal logo emblem clearance for hero-less checkout content is handled vertically
+   via body:has(.bb-checkout-page) .bb-main padding-top (see the bb-main clearance rule
+   above), so this content keeps its
    natural left alignment instead of being shoved right past the emblem — same
    pattern as the cart / PDP / account pages. */
 

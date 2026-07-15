@@ -147,8 +147,6 @@ export type ProductVariant = {
   options: ProductVariantOption[];
   price?: ProductPrice;
   stockState: ProductStockState;
-  /** On-hand count for this specific variant when tracked. */
-  stockQuantity?: number | null;
   /** Cover image used in chip thumbnails / cart line items. */
   image?: ImageAsset | null;
   /**
@@ -273,8 +271,6 @@ export type Product = {
   price: ProductPrice;
   variants?: ProductVariant[];
   stockState: ProductStockState;
-  /** Best-effort on-hand count at product level. Null when not tracked. */
-  stockQuantity?: number | null;
   /** When true the product is forced out-of-stock regardless of variant state. */
   forceOutOfStock?: boolean | null;
   publishStatus: PublishStatus;

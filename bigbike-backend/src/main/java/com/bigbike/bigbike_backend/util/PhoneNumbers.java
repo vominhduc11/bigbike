@@ -1,7 +1,7 @@
 package com.bigbike.bigbike_backend.util;
 
 /**
- * Chuẩn hóa số điện thoại Việt Nam để dùng làm khóa nhận diện khách (đặc biệt ở POS).
+ * Chuẩn hóa số điện thoại Việt Nam để dùng làm khóa nhận diện khách trên mọi luồng.
  *
  * <p>Quy tắc: bỏ mọi ký tự không phải chữ số, quy tiền tố quốc tế {@code +84}/{@code 84}
  * về {@code 0} để hai cách viết cùng một số ({@code 0987654321} và {@code +84987654321})

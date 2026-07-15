@@ -219,7 +219,6 @@ final class JpaCatalogReadSupport {
                             variant.options(),
                             variant.price(),
                             variant.stockState(),
-                            variant.stockQuantity(),
                             image,
                             gallery,
                             variant.isAvailable()

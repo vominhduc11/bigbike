@@ -9,7 +9,6 @@ public record OrderWsEvent(
         //   "NEW_ORDER"                  — new order placed (paymentMethod = payment method string, e.g. "COD")
         //   "ORDER_STATUS_CHANGED"       — order status updated (paymentMethod = current paymentStatus)
         //   "ORDER_PAYMENT_STATUS_CHANGED" — payment status updated (paymentMethod = new paymentStatus)
-        //   "ORDER_REFUND_CREATED"       — refund applied (paymentMethod = new paymentStatus after refund)
         //   "ORDER_NOTE_ADDED"           — note added to order (paymentMethod = current paymentStatus)
         String type,
         UUID orderId,

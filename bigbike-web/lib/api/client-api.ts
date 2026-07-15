@@ -163,9 +163,8 @@ function withLang(path: string, lang?: string): string {
 }
 
 /**
- * Client-side product detail fetch — used by the comparison page (reads the
- * product list from localStorage, needs the full payload incl. `specifications`)
- * AND by the client-side content localizer (refetch in EN on locale switch).
+ * Client-side product detail fetch used by the content localizer to refetch
+ * the full payload in English after a locale switch.
  */
 export async function fetchPublicProduct(slug: string, lang?: string): Promise<Product> {
   const product = await clientRequest<Product>("GET", withLang(`/api/v1/products/${encodeURIComponent(slug)}`, lang));

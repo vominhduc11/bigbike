@@ -23,11 +23,6 @@ public record ProductSnapshotResponse(
     public record Stock(
             String stockState,
             String label,
-            boolean forceOutOfStock,
-            /**
-             * Dormant: on-hand quantity is no longer tracked for availability
-             * (boolean "còn/hết" model since 2026-06-23). The storefront ignores it.
-             */
-            Integer quantity
+            boolean forceOutOfStock
     ) {}
 }

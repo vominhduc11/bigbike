@@ -37,7 +37,7 @@ public class CustomerAuthService {
     @Transactional
     public CustomerAuthResult register(CustomerRegisterRequest req, String ipAddress, String userAgent) {
         String normalizedEmail = req.email() != null ? req.email().toLowerCase(Locale.ROOT).trim() : null;
-        // Chuẩn hóa SĐT về dạng 0… (PhoneNumbers.normalize) để nhất quán với POS — cùng một số
+        // Chuẩn hóa SĐT về dạng 0… (PhoneNumbers.normalize) để mọi luồng nhận diện cùng một số
         // dù nhập +84 hay 0 đều lưu/đối chiếu như nhau.
         String normalizedPhone = PhoneNumbers.normalize(req.phone());
 

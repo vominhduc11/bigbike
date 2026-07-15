@@ -406,7 +406,7 @@ public class ProductImportService {
      * the file supplying the right opaque id) BEFORE {@code applyVariants} runs. Without this, an
      * existing variant that the file doesn't tag with the correct id looks "new" to
      * {@code applyVariants}'s full-replace-by-id logic — it gets a fresh id, and the old row is
-     * orphan-removed, cascade-deleting stock_movements history and resetting quantityOnHand to 0.
+     * orphan-removed, cascade-deleting any dormant stock-movement history.
      */
     private void resolveVariantIdentities(ProductEntity existing, List<VariantRequest> variants, List<ApiErrorDetail> errors) {
         if (variants == null || existing == null) {

@@ -28,7 +28,7 @@ public interface ProductVariantJpaRepository extends JpaRepository<ProductVarian
      * id) back to its existing DB row BEFORE calling into {@code applyVariants}'s
      * full-replace-by-id logic — otherwise an existing variant would look "new," get a
      * fresh id, and its old row would be orphan-removed, cascade-deleting
-     * {@code stock_movements} history and resetting quantityOnHand to 0.
+     * any dormant {@code stock_movements} history.
      */
     Optional<ProductVariantEntity> findBySkuIgnoreCase(String sku);
 
