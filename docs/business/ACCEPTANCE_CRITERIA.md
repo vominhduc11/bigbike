@@ -10,7 +10,7 @@ This file captures measurable acceptance criteria that can be verified from curr
 | Checkout | Checkout validates payload, shipping, per-variant availability (`isAvailable`), idempotency, and creates orders. (No quantity decrement — boolean availability, V261.) | `Phase1FCheckoutApiTest.java`, `CheckoutService.java` | `PASS` |
 | ~~POS~~ | Removed platform-wide (owner decision 2026-06-23, online-only). The POS search/sale endpoints, service, tests, and `pos.*` permissions no longer exist. | — | `REMOVED` |
 | Media | Valid PNG upload works; fake MIME, empty files, and unsupported types fail; SVG is accepted and sanitized (script-bearing SVG stored clean, non-SVG declared as SVG fails); delete/restore flows exist. | `AdminMediaP0Test.java`, `SvgSanitizerTest.java` | `PASS` |
-| Vietnam address | Province/district/ward endpoints are public and available to web clients. | `VnAddressController.java`, client endpoint maps | `PASS` |
+| Vietnam address | Địa chỉ mới dùng đúng hai cấp tỉnh/thành → phường/xã; web chọn từ dữ liệu tích hợp sẵn. API đọc công khai chỉ còn provinces và wards-by-province, không có district tier. | `VnAddressController.java`, `VnAddressFields.tsx`, `vn-address-data.ts` | `PASS` |
 | WebSocket admin feed | Admin clients can connect with JWT and subscribe to admin order topic. | `WebSocketConfig.java`, `adminWebSocket.js` | `PASS` |
 | Stock receipt workflow | Receipt-based receiving was dropped in V120 — feature never built. (Inventory is now a boolean availability toggle — no receiving flow, V261.) | `V120__drop_stock_receipt_tables.sql` | `REMOVED` |
 

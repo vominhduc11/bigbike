@@ -68,6 +68,7 @@ Preview **không** đổi `publishStatus`, không lưu, và không expose draft 
 
 | Step | Actor | Current flow | Status | Evidence |
 |---|---|---|---|---|
-| 1 | Web | Load provinces | `CONFIRMED_FROM_CODE` | `VnAddressController.java`, clients |
-| 2 | Web | Load districts by province code | `CONFIRMED_FROM_CODE` | `VnAddressController.java` |
-| 3 | Web | Load wards by district code | `CONFIRMED_FROM_CODE` | `VnAddressController.java` |
+| 1 | Web | Đọc danh sách 34 tỉnh/thành từ dữ liệu tích hợp sẵn `VN_PROVINCES` | `CONFIRMED_FROM_CODE` | `vn-address-data.ts`, `VnAddressFields.tsx` |
+| 2 | Web | Khi chọn tỉnh/thành, hiển thị trực tiếp phường/xã thuộc tỉnh; không có bước quận/huyện | `CONFIRMED_FROM_CODE` | `VnAddressFields.tsx` |
+
+Backend còn cung cấp API đọc tương đương `GET /api/v1/address/provinces` và `GET /api/v1/address/provinces/{provinceCode}/wards`, nhưng web/admin hiện không gọi hai endpoint này. Field `district` chỉ là dữ liệu lịch sử, không được thu thập cho địa chỉ mới — xem `DATA_CONTRACT.md` §Address fields.

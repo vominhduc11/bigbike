@@ -6,7 +6,7 @@
 |---|---|---|---|---|
 | Web search | `GET /api/v1/search`, `GET /api/v1/search-suggest` | `PublicSearchController` | Search result payload from global search service | `CONFIRMED_FROM_CODE` |
 | Tin tức list page (`/tin-tuc`) | `GET /api/v1/articles`, `GET /api/v1/content-categories` | `ContentController` -> `ContentReadService` | Paginated article list + content categories with published-article counts for the category filter (desktop sidebar + mobile drawer) | `CONFIRMED_FROM_CODE` |
-| Web address lookup | `GET /api/v1/address/**` | `VnAddressController` | Read-only administrative address data | `CONFIRMED_FROM_CODE` |
+| Public address utility API (không có caller nội bộ) | `GET /api/v1/address/provinces`, `GET /api/v1/address/provinces/{provinceCode}/wards` | `VnAddressController` | Dữ liệu địa chỉ hai cấp chỉ đọc; storefront dùng `VN_PROVINCES` tích hợp sẵn thay vì gọi API | `CONFIRMED_FROM_CODE` |
 | Cart UI | `/api/v1/cart`, `/api/v1/cart/items` | `CartController` -> `CartService` | Session/customer cart, item snapshots | `CONFIRMED_FROM_CODE` |
 | Checkout UI | `POST /api/v1/checkout`, `POST /api/v1/orders/quick-buy` | `CheckoutController` -> `CheckoutService` | Order/payment/shipping snapshots, per-variant `isAvailable` gate (no quantity decrement, V261), notifications, WS event | `CONFIRMED_FROM_CODE` |
 | Customer address UI | `/api/v1/customer/addresses` | `CustomerAddressController` -> `CustomerAddressService` | Own-address CRUD | `CONFIRMED_FROM_CODE` |

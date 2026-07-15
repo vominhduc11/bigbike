@@ -20,7 +20,7 @@ BigBike is a commerce platform for motorcycle safety gear and rider accessories.
 | Media | Admin media upload uses Apache Tika validation and rejects unsupported MIME types; SVG is accepted but sanitized on upload (`SvgSanitizer`). | `CONFIRMED_FROM_CODE` | `AdminMediaService.java`, `SvgSanitizer.java`, `AdminMediaP0Test.java` |
 | Inventory | Active service layer is movement-based inventory adjustment plus checkout/order/return side effects. | `CONFIRMED_FROM_CODE` | `AdminInventoryService.java`, `CheckoutService.java`, `AdminReturnService.java` |
 | Returns | Customer return creation/listing and admin return status management are live. | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `AdminReturnController.java`, `Phase1LReturnsApiTest.java` |
-| Address lookup | Vietnam administrative address lookup is live and consumed by clients. | `CONFIRMED_FROM_CODE` | `VnAddressController.java`, `bigbike-web/lib/vn-address-data.ts` |
+| Address lookup | Dữ liệu địa chỉ Việt Nam hai cấp (tỉnh/thành → phường/xã) đang hoạt động. Storefront dùng dữ liệu tích hợp sẵn; backend còn API đọc công khai tương đương nhưng không có caller nội bộ. | `CONFIRMED_FROM_CODE` | `VnAddressController.java`, `bigbike-web/lib/vn-address-data.ts`, `VnAddressFields.tsx` |
 | WebSocket admin order feed | Admin order push events are live through STOMP/WebSocket. | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java`, `AdminOrderWsService.java`, `adminWebSocket.js` |
 
 ## Confirmed Non-Goals Or Missing Pieces

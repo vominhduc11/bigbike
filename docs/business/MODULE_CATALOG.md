@@ -12,7 +12,7 @@
 | Customer account | web, backend | Profile, addresses, orders | `CONFIRMED_FROM_CODE` | customer controllers, clients |
 | Wishlist | — | **REMOVED (owner decision 2026-07-06).** Customer wishlist ("Sản phẩm yêu thích") dropped entirely — backend API + `wishlist_items` table removed; never had a web UI (no client ever called it). | `REMOVED` | `V320__drop_wishlist_items_table.sql` (drops table V103); deleted `CustomerWishlistController.java` / `WishlistItemEntity.java` / `WishlistItemJpaRepository.java` + `CustomerWishlistApiTest.java` |
 | Product comparison | — | **REMOVED (owner decision 2026-07-06).** "So sánh sản phẩm" dropped — was previously documented as a browser-local compare feature but **no implementing code ever existed** in `bigbike-web` (all 4 cited files are absent); the owner confirmed not to build it. | `REMOVED` | (none — feature was never implemented in code) |
-| Vietnam address lookup | web, backend | Province -> district -> ward lookup | `CONFIRMED_FROM_CODE` | `VnAddressController.java`, web helpers |
+| Vietnam address lookup | web, backend | Mô hình 2 cấp sau cải cách 2025: tỉnh/thành → phường/xã. Web đọc danh sách tích hợp sẵn (`VN_PROVINCES`); backend còn API đọc công khai cùng dữ liệu nhưng hiện không có caller nội bộ. Field `district` chỉ giữ để đọc địa chỉ lịch sử. | `CONFIRMED_FROM_CODE` | `VnAddressController.java`, `VnAddressFields.tsx`, `vn-address-data.ts`, `DATA_CONTRACT.md` §Address fields |
 
 ## Admin Platform Modules
 

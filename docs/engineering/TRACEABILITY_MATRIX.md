@@ -3,7 +3,7 @@
 | Business capability | Client surface | API/controller | Service/data path | Test evidence | Status |
 |---|---|---|---|---|---|
 | Catalog search | web | `PublicSearchController` | search service + payload DTOs | indirect via clients; no dedicated suite confirmed here | `CONFIRMED_FROM_CODE` |
-| Vietnam address lookup | web | `VnAddressController` | address service/data file | client endpoint coverage confirmed | `CONFIRMED_FROM_CODE` |
+| Vietnam address lookup | web dùng dữ liệu tích hợp sẵn; API công khai không có caller nội bộ | `VnAddressController` | `VnAddressService`/`vn-address.json`; web `vn-address-data.ts` | no dedicated backend endpoint test confirmed | `CONFIRMED_FROM_CODE` |
 | Cart | web | `CartController` | `CartService`, cart tables | `Phase1ECartApiTest.java` | `CONFIRMED_FROM_TEST` |
 | Checkout | web | `CheckoutController` | `CheckoutService`, order/payment/shipping tables (per-variant `isAvailable` gate; no quantity decrement, V261) | `Phase1FCheckoutApiTest.java` | `CONFIRMED_FROM_TEST` |
 | ~~POS~~ | — | — | Removed platform-wide (owner decision 2026-06-23, online-only) — controller, service, and `Phase1MPosApiTest` deleted. | — | `REMOVED` |
