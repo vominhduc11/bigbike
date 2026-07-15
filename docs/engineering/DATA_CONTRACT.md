@@ -58,9 +58,8 @@ audit, sửa code thì sửa cả bảng này.
 | `productImage` | Ảnh đại diện + gallery sản phẩm (PDP) | Khung vuông tối đa 903×903px (desktop ≥1920px) — kính lúp zoom 2.5× cần nguồn ≥1300×1300 nhưng đã nằm trong 2×903 | 1800×1800 | 1:1 |
 | `categoryImage` | Ảnh danh mục (lưới danh mục trang chủ) | Cột lưới ~255-290px (`HomeCategoryGrid.tsx`, không ép aspect-ratio bằng CSS) | 520×520 | 1:1 (quy ước để lưới thẳng hàng, không phải CSS ép) |
 | `bannerWide` | Nền banner hero danh mục/hãng, banner đầu trang Tất cả sản phẩm/Thương hiệu/Tin tức, banner mặc định | Full-bleed edge-to-edge × 450px cao cố định (`WpCategoryHero.tsx`, desktop 1920×450) | 3840×900 | 64:15 (≈4.27:1) |
-| `heroMobile` | Bản mobile của các banner hero listing trên (`hero_*_mobile_image_url`) | Dải nền ngang cố định cao 250px, full viewport width (390×250) — **không phải ảnh dọc** | 780×500 | 39:25 (≈1.56:1) |
-| `sliderDesktop` | Slide trang chủ (desktop) | `w-full h-[max(40vw,300px)]` → 1920×768 ở viewport 1920px (KHÔNG phải 1920×880 như giả định cũ) | 3840×1536 | 5:2 |
-| `sliderMobile` | Slide trang chủ (mobile) | `aspect-[411/548]` đúng 3:4 → 390×520 | 780×1040 | 3:4 |
+| `sliderDesktop` | Hero slider trang chủ (mọi breakpoint) và banner thường (desktop) | Hero: `w-full h-[max(40vw,300px)]` → 1920×768 ở viewport 1920px; trên mobile vẫn dùng cùng ảnh với `object-cover` | 3840×1536 | 5:2 |
+| `sliderMobile` | Ảnh mobile của banner thường, không phải Hero | Khung dọc 3:4 khi bề mặt banner thường cần ảnh riêng. Hero slider trang chủ không cho nhập hoặc render ảnh mobile; dữ liệu cũ vẫn được giữ tương thích. | 780×1040 | 3:4 |
 | `logo` | Logo hãng (lưới hãng + minh hoạ hero trang chi tiết hãng) | Lưới: cao tối đa 64px, object-contain; trang chi tiết hãng: native-render trong khung hero (giống `illustration`) — ngữ cảnh sau đòi hỏi cao hơn | 800×400 | tự do |
 | `cover` | Ảnh OG/chia sẻ mạng xã hội (sản phẩm/danh mục/hãng/bài viết) | **Không có khung hiển thị trên bigbike-web** — chỉ nằm trong `<meta og:image>`, Facebook/Zalo tự crop → dùng thẳng chuẩn Open Graph, không áp công thức 2× nội bộ | 1200×630 | 40:21 |
 | `promo` | Banner khuyến mãi trang chủ | Container rộng tối đa 1600px (≥1920px viewport), cao tự do theo ảnh (không crop) | 3200×1050 (chiều cao chỉ là gợi ý theo tỉ lệ 3:1, không ép) | tự do |
@@ -1217,7 +1216,7 @@ Evidence:
 
 > **REMOVED (2026-06-24).** Các cột hero trên `pages` (V98: `hero_image_url`, `hero_image_alt`, `hero_title`, `hero_description`, `hero_kicker`) đã drop cùng cả bảng `pages` ở `V271`. Trang thông tin/chính sách nay tĩnh ở web (hero cố định trong code, không do admin quản lý).
 >
-> **Vẫn còn:** hero của các **trang danh sách** (`/san-pham`, `/brands`, `/tin-tuc`) — lưu ở `SiteSettingEntity` nhóm `public_hero`, quản lý qua màn **Banner trang** (`BannerScreen.jsx`). Đó là cơ chế riêng, không liên quan tới bảng `pages`.
+> **Vẫn còn:** hero của các **trang danh sách** (`/san-pham`, `/brands`, `/tin-tuc`) — lưu ở `SiteSettingEntity` nhóm `public_hero`, quản lý qua màn **Banner trang** (`BannerScreen.jsx`). Mỗi Hero chỉ quản lý một ảnh nền desktop; website dùng lại ảnh đó ở mobile với responsive CSS. Các key cũ `hero_*_mobile_image_url` vẫn được giữ trong dữ liệu và API để tương thích, nhưng không được hiển thị, sửa trong admin hoặc render trên web. Đó là cơ chế riêng, không liên quan tới bảng `pages`.
 
 ### Article ↔ Product relation — REMOVED (V167)
 
@@ -1460,7 +1459,7 @@ The `GET /api/v1/admin/reports/orders/export` endpoint returns a CSV with the fo
 | `payment` | Bank-transfer account shown to customers at checkout — holder, number, bank, branch (4 keys) | Thanh toán |
 | `public_about` | **Removed 2026-06-24 (V274).** The About page (`/gioi-thieu`) is **fully static** — copy from i18n `About`, the 5 service tiles from theme assets; the web never read these keys (`AboutPageContent.tsx`). The 28 rows (seeded V223, re-seeded V269), the `SettingDefinitionRegistry` defs, and `AboutServiceMediaSeeder` were all dropped. | (đã gỡ) |
 | `public_product` | **No shared settings.** All product-detail content is per-product now: commitment rows under the buy buttons (`product.commitments`, JSONB on `products`) and the trust-badge row above the title (`product.trustBadges`, HTML-only). The former `product_commitment_*` (V228) and `product_trust_*` keys were removed in V232/V233. | (không có tab — nhóm trống) |
-| `public_hero` | Hero banners for listing pages (`/san-pham`, `/brands`, `/tin-tuc`) — 17 keys (5 per page incl. per-page `illustration_url` + 2 global fallbacks). Managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`), not the generic settings screen. | Banner trang |
+| `public_hero` | Hero banners for listing pages (`/san-pham`, `/brands`, `/tin-tuc`) — 14 active keys (desktop background, title, alt text and per-page illustration; plus 2 global fallbacks). The 3 legacy `hero_*_mobile_image_url` keys remain stored and returned for compatibility only; they are not editable or rendered. Managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`), not the generic settings screen. | Banner trang |
 | `promo` | **No rows.** The promo-banner keys (`promo_title`/`promo_off`/`promo_href`/`promo_image_url`) used to live in the `public_home` group — that group was removed entirely in V311 (hardcoded in `bigbike-web`); no `promo` group ever existed in the DB. | (không có tab — nhóm trống) |
 | `seo` | Homepage bottom SEO HTML block (`home_content_bottom_html`). The homepage SEO title/description + OG image (`seo_home_title`/`seo_home_description`/`og_image_url`) were **removed 2026-07-12 (V337)** — see "`seo` — 3 keys removed (V337)" below. | SEO website |
 | `store` | Operational: low-stock threshold | Cửa hàng |

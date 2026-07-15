@@ -88,9 +88,6 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
   const heroBgUrl = toLegacyWpMediaUrl(
     resolveMediaUrl(heroSettings.imageUrl?.trim()) || defaultHero.defaultBgUrl?.trim(),
   );
-  const heroMobileBgUrl = heroSettings.mobileImageUrl?.trim()
-    ? toLegacyWpMediaUrl(resolveMediaUrl(heroSettings.mobileImageUrl.trim()))
-    : null;
   const heroIllustrationUrl = toLegacyWpMediaUrl(
     resolveMediaUrl(defaultHero.defaultIllustrationUrl?.trim()),
   );
@@ -107,7 +104,6 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
               { label: errorTitle },
             ]}
             bgUrl={heroBgUrl}
-            mobileBgUrl={heroMobileBgUrl}
             illustrationUrl={heroIllustrationUrl}
             illustrationAlt={errorTitle}
           />
@@ -146,7 +142,6 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
       <ArticleView
         article={article}
         heroBgUrl={heroBgUrl}
-        heroMobileBgUrl={heroMobileBgUrl}
         heroIllustrationUrl={heroIllustrationUrl}
         highlighted={highlightedArticles}
         newest={newestArticles}

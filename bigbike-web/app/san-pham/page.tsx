@@ -43,9 +43,6 @@ export default async function ProductListPage() {
   const heroBgUrl = toLegacyWpMediaUrl(
     resolveMediaUrl(heroSettings.imageUrl?.trim()) || defaultHero.defaultBgUrl?.trim(),
   );
-  const heroMobileBgUrl = heroSettings.mobileImageUrl?.trim()
-    ? toLegacyWpMediaUrl(resolveMediaUrl(heroSettings.mobileImageUrl.trim()))
-    : null;
   const heroIllustrationUrl = toLegacyWpMediaUrl(
     resolveMediaUrl(heroSettings.illustrationUrl?.trim()) || defaultHero.defaultIllustrationUrl?.trim(),
   );
@@ -64,7 +61,6 @@ export default async function ProductListPage() {
           title={heroTitle}
           breadcrumb={heroBreadcrumb}
           bgUrl={heroBgUrl}
-          mobileBgUrl={heroMobileBgUrl}
           illustrationUrl={heroIllustrationUrl}
           illustrationAlt={heroSettings.imageAlt ?? heroTitle}
         />

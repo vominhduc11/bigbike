@@ -233,17 +233,14 @@ export const KEY_LABELS_VI = {
   home_content_bottom_html: 'Nội dung SEO cuối trang chủ (rich-text)',
   // public_hero — Tất cả sản phẩm
   hero_products_image_url: 'Ảnh hero — trang Tất cả sản phẩm (desktop)',
-  hero_products_mobile_image_url: 'Ảnh hero — trang Tất cả sản phẩm (điện thoại)',
   hero_products_image_alt: 'Alt ảnh hero — Tất cả sản phẩm',
   hero_products_title: 'Tiêu đề hero — Tất cả sản phẩm',
   // public_hero — Thương hiệu
   hero_brands_image_url: 'Ảnh hero — trang Thương hiệu (desktop)',
-  hero_brands_mobile_image_url: 'Ảnh hero — trang Thương hiệu (điện thoại)',
   hero_brands_image_alt: 'Alt ảnh hero — Thương hiệu',
   hero_brands_title: 'Tiêu đề hero — Thương hiệu',
   // public_hero — Tin tức
   hero_news_image_url: 'Ảnh hero — trang Tin tức (desktop)',
-  hero_news_mobile_image_url: 'Ảnh hero — trang Tin tức (điện thoại)',
   hero_news_image_alt: 'Alt ảnh hero — Tin tức',
   hero_news_title: 'Tiêu đề hero — Tin tức',
   // global hero defaults
@@ -255,11 +252,8 @@ export const KEY_LABELS_VI = {
 
 export const KEY_HINTS_VI = {
   hero_products_image_url:         'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
-  hero_products_mobile_image_url:  'Ảnh dọc cho điện thoại, ví dụ 750×1125px. Bỏ trống sẽ dùng ảnh desktop.',
   hero_brands_image_url:           'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
-  hero_brands_mobile_image_url:    'Ảnh dọc cho điện thoại, ví dụ 750×1125px. Bỏ trống sẽ dùng ảnh desktop.',
   hero_news_image_url:             'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
-  hero_news_mobile_image_url:      'Ảnh dọc cho điện thoại, ví dụ 750×1125px. Bỏ trống sẽ dùng ảnh desktop.',
   hero_default_bg_url:             'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
   hero_default_illustration_url:   'PNG nền trong, tỷ lệ gần vuông ~700×600px.',
 }
@@ -268,11 +262,8 @@ export const KEY_HINTS_VI = {
 // Key không liệt kê sẽ dùng spec chung (chỉ nhắc khi quá nhỏ, không khóa tỉ lệ).
 export const KEY_RECO = {
   hero_products_image_url:         IMAGE_RECO.bannerWide,
-  hero_products_mobile_image_url:  IMAGE_RECO.heroMobile,
   hero_brands_image_url:           IMAGE_RECO.bannerWide,
-  hero_brands_mobile_image_url:    IMAGE_RECO.heroMobile,
   hero_news_image_url:             IMAGE_RECO.bannerWide,
-  hero_news_mobile_image_url:      IMAGE_RECO.heroMobile,
   hero_default_bg_url:             IMAGE_RECO.bannerWide,
   hero_default_illustration_url:   IMAGE_RECO.illustration,
 }
@@ -333,15 +324,12 @@ export const KEY_GUIDE = {
   bank_branch:           ['payment_bank', 'chi nhánh'],
 
   hero_products_image_url:        ['hero_products', 'ảnh nền banner (desktop)'],
-  hero_products_mobile_image_url: ['hero_products', 'ảnh nền banner (điện thoại)'],
   hero_products_image_alt:        ['hero_products', 'mô tả ảnh (SEO)'],
   hero_products_title:            ['hero_products', 'tiêu đề trên banner'],
   hero_brands_image_url:          ['hero_brands', 'ảnh nền banner (desktop)'],
-  hero_brands_mobile_image_url:   ['hero_brands', 'ảnh nền banner (điện thoại)'],
   hero_brands_image_alt:          ['hero_brands', 'mô tả ảnh (SEO)'],
   hero_brands_title:              ['hero_brands', 'tiêu đề trên banner'],
   hero_news_image_url:            ['hero_news', 'ảnh nền banner (desktop)'],
-  hero_news_mobile_image_url:     ['hero_news', 'ảnh nền banner (điện thoại)'],
   hero_news_image_alt:            ['hero_news', 'mô tả ảnh (SEO)'],
   hero_news_title:                ['hero_news', 'tiêu đề trên banner'],
   hero_default_bg_url:           ['hero_default', 'ảnh nền mặc định'],

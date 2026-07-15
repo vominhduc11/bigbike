@@ -116,16 +116,13 @@ function toHeroSlide(slider: HomeSlider): HeroSlide | null {
   const desktopSrc = toLegacyWpMediaUrl(resolveMediaUrl(slider.desktopImage?.url?.trim()));
   if (!desktopSrc) return null;
 
-  // Banner WP: desktop dùng ảnh nền, mobile (≤767px) dùng ảnh riêng nếu có,
-  // fallback về ảnh desktop.
-  const mobileSrc = toLegacyWpMediaUrl(resolveMediaUrl(slider.mobileImage?.url?.trim())) || desktopSrc;
+  // The homepage Hero always reuses its desktop image at every breakpoint.
   const productName = slider.productName?.trim() ?? "";
   const categoryName = slider.categoryName?.trim() ?? "";
 
   return {
     id: slider.id,
     desktopSrc,
-    mobileSrc,
     alt: productName || categoryName || "BigBike",
     href: toSafePublicHref(slider.link || slider.productLink || slider.externalLink, "") || null,
     productName,

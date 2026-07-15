@@ -166,18 +166,6 @@ function PageBannerCard({ page, get, getEn, set, setEn, defaults, canUpdate, t, 
             error={errors[k('image_url')]}
           />
           <ImageField
-            label={t('banners.fieldBgMobile')}
-            hint={t('banners.hintBgMobile')}
-            value={get(k('mobile_image_url'))}
-            onChange={(url) => set(k('mobile_image_url'), url)}
-            recommend={IMAGE_RECO.heroMobile}
-            disabled={!canUpdate}
-            error={errors[k('mobile_image_url')]}
-          />
-        </div>
-
-        <div className="bb-form-grid bb-form-grid-2">
-          <ImageField
             label={t('banners.fieldIllustration')}
             hint={t('banners.hintIllustration')}
             value={ownIllu}

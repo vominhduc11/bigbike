@@ -26,7 +26,6 @@ const BLOG_THUMBNAIL = "/brand/news/article-cover.png";
 type ArticleViewProps = {
   article: Article;
   heroBgUrl?: string | null;
-  heroMobileBgUrl?: string | null;
   heroIllustrationUrl?: string | null;
   highlighted?: Article[];
   newest?: Article[];
@@ -37,7 +36,6 @@ type ArticleViewProps = {
 export function ArticleView({
   article,
   heroBgUrl,
-  heroMobileBgUrl,
   heroIllustrationUrl,
   highlighted = [],
   newest = [],
@@ -73,7 +71,6 @@ export function ArticleView({
         titleNode={<LText field="title">{articleTitle}</LText>}
         breadcrumb={heroBreadcrumb}
         bgUrl={heroBgUrl}
-        mobileBgUrl={heroMobileBgUrl}
         illustrationUrl={heroIllustrationUrl}
         illustrationAlt={articleTitle}
       />

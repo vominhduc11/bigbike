@@ -41,9 +41,6 @@ export default async function BrandListPage() {
   const heroBgUrl = toLegacyWpMediaUrl(
     resolveMediaUrl(heroSettings.imageUrl?.trim()) || defaultHero.defaultBgUrl?.trim(),
   );
-  const heroMobileBgUrl = heroSettings.mobileImageUrl?.trim()
-    ? toLegacyWpMediaUrl(resolveMediaUrl(heroSettings.mobileImageUrl.trim()))
-    : null;
   const heroIllustrationUrl = toLegacyWpMediaUrl(
     resolveMediaUrl(heroSettings.illustrationUrl?.trim()) || defaultHero.defaultIllustrationUrl?.trim(),
   );
@@ -61,7 +58,6 @@ export default async function BrandListPage() {
           titleNode={heroSettings.title ? heroTitle : <Tr ns="Catalog" k="brandsTitle" />}
           breadcrumb={heroBreadcrumb}
           bgUrl={heroBgUrl}
-          mobileBgUrl={heroMobileBgUrl}
           illustrationUrl={heroIllustrationUrl}
           illustrationAlt={heroSettings.imageAlt ?? heroTitle}
         />

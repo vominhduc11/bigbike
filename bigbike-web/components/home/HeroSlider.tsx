@@ -26,7 +26,6 @@ const ARROW_ICON =
 export type HeroSlide = {
   id: string;
   desktopSrc: string;
-  mobileSrc?: string;
   alt: string;
   /** Link admin đặt riêng cho slide (sản phẩm/danh mục/ngoài); null → dùng mặc định (trang sản phẩm). */
   href: string | null;
@@ -66,21 +65,15 @@ function HeroSlideView({ slide }: { slide: HeroSlide }) {
       .filter(Boolean)
       .join(" - ");
 
-  // Desktop dùng ảnh ngang (desktopSrc), mobile (≤767px) dùng ảnh dọc (mobileSrc)
-  // nếu có. Chuyển bằng <picture><source media> — TỰ CHỨA, không phụ thuộc CSS WP
-  // `#main-banner` (đã gỡ id để tránh rule cũ làm vỡ banner).
-  const hasMobileImg = Boolean(slide.mobileSrc && slide.mobileSrc !== slide.desktopSrc);
+  // One desktop image is reused at every breakpoint; responsive layout handles the crop.
   const picture = (
-    <picture className="block w-full h-full">
-      {hasMobileImg && <source media="(max-width: 767px)" srcSet={slide.mobileSrc} />}
-      <img
-        src={slide.desktopSrc}
-        alt={slide.alt}
-        className="bb-main-banner-img block w-full h-full min-h-[40vw] object-cover object-center max-md:min-h-0 3xl:min-h-[min(40vw,1080px)] 4xl:min-h-[min(40vw,1200px)]"
-        loading="eager"
-        draggable={false}
-      />
-    </picture>
+    <img
+      src={slide.desktopSrc}
+      alt={slide.alt}
+      className="bb-main-banner-img block w-full h-full min-h-[40vw] object-cover object-center max-md:min-h-0 3xl:min-h-[min(40vw,1080px)] 4xl:min-h-[min(40vw,1200px)]"
+      loading="eager"
+      draggable={false}
+    />
   );
 
   const copy = (

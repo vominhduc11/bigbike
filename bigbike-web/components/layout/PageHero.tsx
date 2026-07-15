@@ -24,7 +24,6 @@ export function PageHero({
   titleNode,
   breadcrumb,
   bgUrl,
-  mobileBgUrl,
   illustrationUrl,
   illustrationAlt,
   focusId,
@@ -33,14 +32,12 @@ export function PageHero({
   titleNode?: ReactNode;
   breadcrumb: PageHeroCrumb[];
   bgUrl?: string | null;
-  mobileBgUrl?: string | null;
   illustrationUrl?: string | null;
   illustrationAlt?: string | null;
   focusId?: string;
 }) {
   const locale = useLocale();
   const background = bgUrl?.trim() || DEFAULT_BG;
-  const mobileBackground = mobileBgUrl?.trim() || null;
   const illustration = illustrationUrl?.trim() || DEFAULT_ILLUSTRATION;
 
   return (
@@ -50,15 +47,6 @@ export function PageHero({
       data-page-hero
       data-bb-focus={focusId}
     >
-      {mobileBackground ? (
-        <img
-          src={mobileBackground}
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 h-full w-full object-cover md:hidden"
-        />
-      ) : null}
-
       <Container className="relative z-10 flex min-h-[250px] items-center md:min-h-[450px]">
         <div className="w-full md:w-1/2">
           <h1 className="m-0 font-cta text-a2-page font-semibold leading-normal text-white!">

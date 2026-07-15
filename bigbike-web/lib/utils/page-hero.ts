@@ -4,7 +4,6 @@ import type { PublicSiteSetting } from "@/lib/contracts/public";
 
 type HeroPropsFromSettings = {
   imageUrl: string | null;
-  mobileImageUrl: string | null;
   illustrationUrl: string | null;
   imageAlt: string | null;
   title: string | null;
@@ -23,7 +22,6 @@ export function readHeroSettings(
 ): HeroPropsFromSettings {
   return {
     imageUrl: findValue(settings, `${prefix}_image_url`),
-    mobileImageUrl: findValue(settings, `${prefix}_mobile_image_url`),
     illustrationUrl: findValue(settings, `${prefix}_illustration_url`),
     imageAlt: findValue(settings, `${prefix}_image_alt`),
     title: findValue(settings, `${prefix}_title`),

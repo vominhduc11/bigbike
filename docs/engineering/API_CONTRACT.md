@@ -1210,17 +1210,16 @@ Status: `CONFIRMED_FROM_CODE` — `SettingDefinitionRegistry.java`, `PublicSetti
 
 **Page hero settings (group `public_hero`, all `publicAllowed`):**
 
-For each listing page (`/san-pham`, `/brands`, `/tin-tuc`), the hero block is composed from 5 keys:
+For each listing page (`/san-pham`, `/brands`, `/tin-tuc`), the hero block is composed from 4 editable keys:
 
 | Key prefix | Type | Purpose |
 |---|---|---|
 | `hero_<page>_image_url` | `IMAGE_URL` | Desktop background image URL |
-| `hero_<page>_mobile_image_url` | `IMAGE_URL` | Mobile (≤767px) background image URL; blank → falls back to the desktop image |
 | `hero_<page>_illustration_url` | `IMAGE_URL` | Right-side cut-out gear illustration; blank → falls back to `hero_default_illustration_url` |
 | `hero_<page>_image_alt` | `STRING` | Image alt text |
 | `hero_<page>_title` | `STRING` | Heading text |
 
-Concrete keys: `hero_products_*`, `hero_brands_*`, `hero_news_*` (15 total). All are returned by `GET /api/v1/settings/public`. Two global fallbacks also live in `public_hero`: `hero_default_bg_url` and `hero_default_illustration_url`, used when a page has no own background / illustration. **Cascade per page:** the page's own key → the matching global default → a hardcoded asset baked into `WpCategoryHero`. The `WpCategoryHero` web component renders `mobile_image_url` via an art-directed `<img>` overlay shown only below the `md` breakpoint. The `_description` and `_kicker` keys that earlier seeds carried were dropped in `V199__drop_unused_hero_settings.sql` (never consumed); `_mobile_image_url` was re-introduced in `V220__reseed_hero_mobile_settings.sql`; per-page `_illustration_url` was added in `V221__add_hero_per_page_illustration.sql` (previously all three pages shared `hero_default_illustration_url`). These keys are managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`). (Trước đây các trang CMS about/contact/policy/guides mang hero trên `Page` entity — module pages đã gỡ 2026-06-24, các trang đó nay tĩnh ở web nên không còn hero do admin quản lý.)
+Concrete editable keys: `hero_products_*`, `hero_brands_*`, `hero_news_*` (12 total). All are returned by `GET /api/v1/settings/public`. Two global fallbacks also live in `public_hero`: `hero_default_bg_url` and `hero_default_illustration_url`, used when a page has no own background / illustration. **Cascade per page:** the page's own key → the matching global default → a hardcoded asset baked into `PageHero`. The legacy `hero_<page>_mobile_image_url` keys remain persisted and returned so existing data is preserved, but are not editable in admin and are ignored by the web. At every breakpoint, `PageHero` uses the desktop background with responsive CSS. The `_description` and `_kicker` keys that earlier seeds carried were dropped in `V199__drop_unused_hero_settings.sql` (never consumed); `_mobile_image_url` was re-introduced in `V220__reseed_hero_mobile_settings.sql` and retired from UI/rendering on 2026-07-15 without a data migration; per-page `_illustration_url` was added in `V221__add_hero_per_page_illustration.sql` (previously all three pages shared `hero_default_illustration_url`). These keys are managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`). (Trước đây các trang CMS about/contact/policy/guides mang hero trên `Page` entity — module pages đã gỡ 2026-06-24, các trang đó nay tĩnh ở web nên không còn hero do admin quản lý.)
 
 ## Contact Page (trang tĩnh — không có endpoint)
 
