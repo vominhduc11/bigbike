@@ -189,9 +189,18 @@ public class OrderReadService {
             boolean includeOrderKey
     ) {
         List<OrderLineItemEntity> lineItemEntities = lineItemRepo.findByOrderId(order.getId());
-        Map<String, String> thumbnailByProductPk = resolveProductThumbnails(lineItemEntities);
+        // Prefer the image snapshotted on the line at checkout (AUD-038); fall back to the
+        // live catalog thumbnail only for legacy rows placed before V340 (null image_url).
+        boolean anyMissingSnapshot = lineItemEntities.stream()
+                .anyMatch(e -> e.getImageUrl() == null || e.getImageUrl().isBlank());
+        Map<String, String> liveThumbnailByPk = anyMissingSnapshot
+                ? resolveProductThumbnails(lineItemEntities) : Map.of();
         List<OrderLineItemResponse> lineItems = lineItemEntities.stream()
-                .map(e -> orderItemMapper.toResponse(e, thumbnailByProductPk.get(e.getProductPk())))
+                .map(e -> {
+                    String image = (e.getImageUrl() != null && !e.getImageUrl().isBlank())
+                            ? e.getImageUrl() : liveThumbnailByPk.get(e.getProductPk());
+                    return orderItemMapper.toResponse(e, image);
+                })
                 .toList();
 
         List<OrderAddressResponse> addresses = addressRepo.findByOrderId(order.getId())

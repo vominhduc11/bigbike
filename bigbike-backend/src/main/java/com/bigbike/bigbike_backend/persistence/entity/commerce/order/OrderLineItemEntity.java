@@ -77,6 +77,12 @@ public class OrderLineItemEntity {
     @Column(name = "line_total", nullable = false, precision = 19, scale = 2)
     private BigDecimal lineTotal = BigDecimal.ZERO;
 
+    // Product/variant image snapshotted at checkout time (AUD-038) so the order history
+    // keeps showing the image the customer actually bought even if the catalog image later
+    // changes or the product is deleted. Null for legacy orders placed before V340.
+    @Column(name = "image_url", columnDefinition = "text")
+    private String imageUrl;
+
     @Column(columnDefinition = "text")
     private String metadata;
 

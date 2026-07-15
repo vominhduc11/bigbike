@@ -100,6 +100,42 @@ class SettingValueValidatorTest {
                 .doesNotThrowAnyException();
     }
 
+    // ── HTML image-source policy (AUD-036) ────────────────────────────────────
+
+    private static final SettingDefinition HTML_DEF =
+            SettingDefinition.builder("footer_html", "content", SettingValueType.HTML).build();
+
+    @Test
+    void html_allowsInternalMediaImages() {
+        String html = "<p>Hi</p><img src=\"/media/reviews/x/photo.jpg\"><div style=\"background:url('/media/a.png')\"></div>";
+        assertThatCode(() -> validator.validate("footer_html", html, HTML_DEF))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void html_rejectsExternalImage() {
+        String html = "<img src=\"https://evil.example.com/pixel.gif\">";
+        ValidationException ex = assertThrows(ValidationException.class,
+                () -> validator.validate("footer_html", html, HTML_DEF));
+        assertThat(ex.details().get(0).code()).isEqualTo("EXTERNAL_IMAGE");
+    }
+
+    @Test
+    void html_rejectsTrackingPixelInCssBackground() {
+        String html = "<div style=\"background-image:url(https://track.example.com/beacon.png)\"></div>";
+        ValidationException ex = assertThrows(ValidationException.class,
+                () -> validator.validate("footer_html", html, HTML_DEF));
+        assertThat(ex.details().get(0).code()).isEqualTo("EXTERNAL_IMAGE");
+    }
+
+    @Test
+    void html_rejectsDataUriImage() {
+        String html = "<img src=\"data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=\">";
+        ValidationException ex = assertThrows(ValidationException.class,
+                () -> validator.validate("footer_html", html, HTML_DEF));
+        assertThat(ex.details().get(0).code()).isEqualTo("EXTERNAL_IMAGE");
+    }
+
     private static String buildRoles(int count) {
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < count; i++) {

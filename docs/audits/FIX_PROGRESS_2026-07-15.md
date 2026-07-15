@@ -62,7 +62,7 @@
 | AUD-022 | Bỏ miễn CSRF cho checkout/quick-buy theo docs | ✅ `c1a1b862` | Làm sớm cùng nhóm 1A (chung file test): gỡ 2 exemption khỏi `CustomerCsrfFilter`; guest luôn có `bb_csrf` từ GET /cart app-wide; test CSRF Phase1F pass lại |
 | AUD-023 | Mark PAID→UNPAID không để lại payment row `SUCCEEDED` | ✅ `080c5ac4` | `updatePaymentStatus` nhánh UNPAID reset payment record về `PENDING`+`paidAt=null`; test `updatePaymentStatus_paidToUnpaid_resetsPaymentRecord` |
 | AUD-024 | `ON_HOLD → PROCESSING` không tự đánh dấu BACS là PAID | ✅ `080c5ac4` | Gỡ khối auto-mark PAID + constant `MANUAL_CONFIRM_PAYMENT_METHODS`; đơn giữ UNPAID, admin đối soát riêng (PAY_RULE_002); test `order_onHoldToProcessing_doesNotAutoMarkPaid` |
-| AUD-025 | Khách hủy đơn: WS + inbox admin + audit log + email cho khách | ✅ | Quyết định #3: `CustomerOrderCancelService.cancel` phát `ORDER_STATUS_CHANGED` qua `AdminOrderWsService` (WS + persist inbox), ghi audit `ORDER_CANCELLED_BY_CUSTOMER` (actor CUSTOMER), gửi email hủy (`sendOrderStatusUpdate` after-commit). Test audit-log trong Phase1G; docs API_CONTRACT customer-cancel |
+| AUD-025 | Khách hủy đơn: WS + inbox admin + audit log + email cho khách | ✅ `c058c226` | Quyết định #3: `CustomerOrderCancelService.cancel` phát `ORDER_STATUS_CHANGED` qua `AdminOrderWsService` (WS + persist inbox), ghi audit `ORDER_CANCELLED_BY_CUSTOMER` (actor CUSTOMER), gửi email hủy (`sendOrderStatusUpdate` after-commit). Test audit-log trong Phase1G; docs API_CONTRACT customer-cancel |
 | AUD-026 | Bản ghi thông báo offline đủ tên khách + giá trị đơn | ✅ `7e96af4d` | Làm sớm cùng 1D (chung file): `buildPayload` thêm `customerName`+`total`; admin `normalizeAdminNotification` đọc ra để hiển thị |
 | AUD-027 | Search suggest tôn trọng `lang`; link EN đúng slug/route | ⬜ | |
 | AUD-028 | PDP tiếng Anh fallback về VI thay vì mất field | ⬜ | |
@@ -73,9 +73,9 @@
 | AUD-033 | Checkout/account: chuỗi + hotline/địa chỉ theo locale/settings | ⬜ | |
 | AUD-034 | Xóa vĩnh viễn danh mục: cảnh báo đủ số sản phẩm + danh mục con | ⬜ | |
 | AUD-035 | Đổi VI/EN không làm mất draft Home Highlights | ⬜ | |
-| AUD-036 | HTML setting chặn ảnh ngoài/track pixel theo rule MinIO | ⬜ | |
+| AUD-036 | HTML setting chặn ảnh ngoài/track pixel theo rule MinIO | ✅ | `SettingValueValidator` type HTML thêm `validateHtmlImageSources`: quét `<img src>`/`srcset`/CSS `url()` — mọi ảnh phải qua `isAllowedImageUrl` (MinIO/media nội bộ); reject host ngoài + `data:` URI (chặn hotlink/pixel). 4 test mới |
 | AUD-037 | Upload ảnh review không tạo orphan MinIO (cleanup) | ✅ `d7fefc10` | `ReviewPhotoStorageService.deletePhotos` (best-effort, chỉ đụng object dưới `reviews/`); `AdminReviewService.deleteReview` gọi xóa ảnh MinIO của review bị xóa → hết orphan theo vòng đời review. Ghi chú: orphan do khách upload rồi bỏ dở (chưa submit) cần một đợt quét định kỳ — để lại follow-up (không thêm scheduler mới trái hướng dự án) |
-| AUD-038 | Ảnh line item snapshot theo đơn, không lấy live từ catalog | ⬜ | |
+| AUD-038 | Ảnh line item snapshot theo đơn, không lấy live từ catalog | ✅ | Thêm cột `order_line_items.image_url` (V340) + field entity; snapshot ảnh lúc checkout (cart: `productImageUrl`; quick-buy: ảnh variant→product); `OrderReadService` đọc snapshot, chỉ fallback live cho đơn cũ (null). Đơn giữ đúng ảnh đã mua kể cả khi SP đổi/xóa |
 | AUD-064 | Video mô tả/bài viết nhận YouTube/TikTok/Facebook theo AGENTS §14.3 | ⬜ | Reject link rút gọn |
 | AUD-065 | Giỏ đánh dấu "không khả dụng" cho sản phẩm no-variant hết hàng | ✅ `c1a1b862` | Làm sớm cùng AUD-003 (cùng file, audit khuyến nghị): `findUnavailableItemIds` mirror đúng điều kiện checkout (published + !forceOutOfStock + stockState với SP không biến thể) |
 

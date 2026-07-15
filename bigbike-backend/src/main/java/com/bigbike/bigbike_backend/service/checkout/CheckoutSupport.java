@@ -170,6 +170,7 @@ final class CheckoutSupport {
         item.setSku(cartItem.getSku());
         item.setProductName(cartItem.getProductName());
         item.setVariantName(cartItem.getVariantName());
+        item.setImageUrl(cartItem.getProductImageUrl()); // snapshot the bought image (AUD-038)
         item.setQuantity(cartItem.getQuantity());
         item.setUnitPrice(cartItem.getUnitPrice());
         item.setRegularPrice(cartItem.getRegularPrice());
@@ -206,6 +207,9 @@ final class CheckoutSupport {
         item.setSku(variant != null ? variant.getSku() : product.getSku());
         item.setProductName(product.getName());
         item.setVariantName(variant != null ? variant.getName() : null);
+        // Snapshot the bought image (AUD-038): variant image if any, else product image.
+        item.setImageUrl((variant != null && variant.getImageUrl() != null && !variant.getImageUrl().isBlank())
+                ? variant.getImageUrl() : product.getImageUrl());
         item.setQuantity(qty);
         item.setUnitPrice(unitPrice);
         item.setRegularPrice(VariantPricing.regularPrice(product, variant));

@@ -79,7 +79,10 @@ public class SettingValueValidator {
         switch (def.type()) {
             case STRING -> validateLength(key, rawValue, MAX_STRING_LENGTH);
             case LONG_TEXT -> validateLength(key, rawValue, MAX_LONG_TEXT_LENGTH);
-            case HTML -> validateLength(key, rawValue, MAX_HTML_LENGTH);
+            case HTML -> {
+                validateLength(key, rawValue, MAX_HTML_LENGTH);
+                validateHtmlImageSources(key, rawValue);
+            }
             case BOOLEAN -> validateBoolean(key, rawValue);
             case INTEGER -> validateInteger(key, rawValue, def);
             case DECIMAL, MONEY -> validateDecimal(key, rawValue, def);
@@ -101,6 +104,47 @@ public class SettingValueValidator {
     private void validateLength(String key, String value, int max) {
         if (value.length() > max) {
             throw fail(key, "TOO_LONG", "Value exceeds " + max + " characters.");
+        }
+    }
+
+    // Matches image sources embedded in HTML: <img src="…">, srcset URLs, and CSS
+    // background url(…). Case-insensitive; captures the URL in group 1/2/3.
+    private static final Pattern HTML_IMAGE_SRC_PATTERN = Pattern.compile(
+            "(?i)(?:<img\\b[^>]*?\\bsrc\\s*=\\s*[\"']([^\"']+)[\"'])"
+            + "|(?:\\bsrcset\\s*=\\s*[\"']([^\"']+)[\"'])"
+            + "|(?:url\\(\\s*[\"']?([^\"')]+)[\"']?\\s*\\))");
+
+    /**
+     * HTML settings must not embed external images or tracking pixels — every image source
+     * has to be an approved MinIO/media URL, same as admin-managed media (AUD-036, AGENTS §14.3).
+     * data: URIs and external hosts are rejected so a saved HTML block can't hotlink or beacon.
+     */
+    private void validateHtmlImageSources(String key, String html) {
+        var matcher = HTML_IMAGE_SRC_PATTERN.matcher(html);
+        while (matcher.find()) {
+            String imgSrc = matcher.group(1);
+            String srcset = matcher.group(2);
+            String cssUrl = matcher.group(3);
+            if (imgSrc != null) {
+                requireApprovedImage(key, imgSrc.trim());
+            }
+            if (cssUrl != null) {
+                requireApprovedImage(key, cssUrl.trim());
+            }
+            if (srcset != null) {
+                // srcset = comma-separated "url descriptor" pairs — validate each URL.
+                for (String candidate : srcset.split(",")) {
+                    String url = candidate.trim().split("\\s+")[0];
+                    if (!url.isEmpty()) requireApprovedImage(key, url);
+                }
+            }
+        }
+    }
+
+    private void requireApprovedImage(String key, String url) {
+        if (!safeMediaAssetUrlPolicy.isAllowedImageUrl(url)) {
+            throw fail(key, "EXTERNAL_IMAGE",
+                    "Ảnh trong HTML phải là ảnh nội bộ (MinIO/media). Không được nhúng ảnh/pixel từ host ngoài: " + url);
         }
     }
 
