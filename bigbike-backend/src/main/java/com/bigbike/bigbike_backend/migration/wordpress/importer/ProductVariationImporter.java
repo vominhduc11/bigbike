@@ -29,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Idempotent product variation importer.
- * Variant ID is deterministic: "wp-var-{sourceId}" â€” no @GeneratedValue used.
+ * Variant ID is deterministic: "wp-var-{sourceId}" — no @GeneratedValue used.
  * Parent product is required; variations with missing parent get a placeholder parent so no source row is dropped.
  * Options are fully replaced on each run via orphanRemoval=true.
  */
