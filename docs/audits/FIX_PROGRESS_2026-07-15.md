@@ -102,7 +102,7 @@
 | AUD-051 | Filter trả đúng chuẩn error envelope | ✅ `9413021e` | Chuẩn hóa CSRF 403 và rate-limit 429 về `ApiErrorResponse` có `error` + `meta.requestId/timestamp` qua `ApiMetaFactory`; sửa thông báo rate-limit tiếng Việt có dấu và ghi rõ contract. Test mục tiêu 47/47 (`Phase1FCheckoutApiTest` + `RateLimitingFilterTest`); `git diff --check` đạt. |
 | AUD-052 | Email chào bằng tên khách khi đơn có tên | ✅ `7e96af4d` | Làm sớm cùng AUD-006 (cùng file `OrderNotificationService`): `safeCustomerName` ưu tiên `customerName` trước email/SĐT |
 | AUD-053 | Đồng bộ model/schema `paymentMethod` nullable | ✅ `42eca656` | `PaymentEntity.paymentMethod` nullable khớp V284; DATA_CONTRACT chốt null/BACS chỉ để đọc dữ liệu cũ, đơn checkout/quick-buy mới vẫn normalize/bắt buộc COD. Thêm test lưu/đọc payment legacy null. Test mục tiêu 63/63 (`Phase1CCommerceSchemaTest` + `Phase1FCheckoutApiTest`); `git diff --check` đạt. |
-| AUD-054 | Sửa encoding comment importer | ⬜ | |
+| AUD-054 | Sửa encoding comment importer | ✅ `3e24b965` | Thay literal mojibake `â€”` bằng em dash UTF-8 đúng trong comment `ProductVariationImporter`; quét cùng thư mục không còn chuỗi này. Backend `mvnw -DskipTests compile` đạt; `git diff --check` đạt. Không đổi runtime/data. |
 | AUD-059 | Ghi chú hệ thống checkout không thành "Đơn hàng được tạo.." | ✅ `c1a1b862` | Làm sớm cùng AUD-011 (cùng đoạn code): note luôn "Đơn hàng được tạo. Phương thức thanh toán: COD." — hết dấu chấm kép |
 | AUD-069 | Sửa/xóa SĐT khách không hợp lệ: báo lỗi thay vì im lặng bỏ qua | ⬜ | |
 | AUD-070 | `rowKey` import không trùng khi 2 dòng cùng SKU | ⬜ | |
