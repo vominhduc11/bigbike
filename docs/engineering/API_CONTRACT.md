@@ -94,6 +94,18 @@ Status: `CONFIRMED_FROM_CODE` — `PublicCacheHeaderFilter.java`, `SecurityConfi
    - else a verified provider `email` matching an existing account → link OAuth fields onto it;
    - else create a new active customer (`password_hash = null`, `email_verified_at = now()`).
 5. Backend issues a 30-day session and redirects to the storefront.
+
+### Customer profile — email change resets verification
+
+| Method | Path | Current purpose | Response shape | Status | Evidence |
+|---|---|---|---|---|---|
+| `GET` | `/api/v1/customer/me` | Current customer profile (requires `ROLE_CUSTOMER`) | `ApiDataResponse<CustomerSummary>` | `CONFIRMED_FROM_CODE` | `CustomerController.java` |
+| `PATCH` | `/api/v1/customer/me` | Update own profile. Changing `email`, `phone` or `newPassword` requires `currentPassword` | `ApiDataResponse<CustomerSummary>` | `CONFIRMED_FROM_CODE` | `CustomerController.java`, `CustomerAuthService.updateProfile` |
+
+- **Changing `email` clears `email_verified_at`** and sends a fresh verification email to the new address. Guest-order auto-linking (`GuestOrderLinkingService`) stays disabled until the new email is verified again — linking requires proven ownership of the address (security fix AUD-001, 2026-07-15). The same reset applies when an admin changes a customer's email via `PATCH /api/v1/admin/customers/{id}`.
+
+| Method | Path | Current purpose | Response shape | Status | Evidence |
+|---|---|---|---|---|---|
 | `GET` | `/api/v1/customer/addresses` | List own addresses | `ApiDataResponse<List<CustomerAddressResponse>>` | `CONFIRMED_FROM_CODE` | `CustomerAddressController.java` |
 | `POST` | `/api/v1/customer/addresses` | Create own address | `ApiDataResponse<CustomerAddressResponse>` with HTTP `201` | `CONFIRMED_FROM_CODE` | `CustomerAddressController.java` |
 | `PATCH` | `/api/v1/customer/addresses/{id}` | Update own address | `ApiDataResponse<CustomerAddressResponse>` | `CONFIRMED_FROM_CODE` | `CustomerAddressController.java` |

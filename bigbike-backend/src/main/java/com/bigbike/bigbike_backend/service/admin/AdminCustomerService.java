@@ -178,7 +178,12 @@ public class AdminCustomerService {
                     throw new ConflictException("Email already in use by another customer.");
                 }
             });
-            customer.setEmail(newEmail);
+            if (!newEmail.equals(customer.getEmail())) {
+                customer.setEmail(newEmail);
+                // Ownership of the new address is unproven — drop verified status so
+                // guest orders of the new email cannot be auto-linked until re-verified (AUD-001).
+                customer.setEmailVerifiedAt(null);
+            }
         }
 
         // Phone uniqueness check — chuẩn hóa SĐT (nhất quán với đăng ký) trước khi đối chiếu/lưu

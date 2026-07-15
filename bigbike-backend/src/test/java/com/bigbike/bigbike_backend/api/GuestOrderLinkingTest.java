@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -298,6 +299,47 @@ class GuestOrderLinkingTest {
 
         assertThat(bodyA).contains(orderForA);
         assertThat(bodyA).doesNotContain(orderForB);
+    }
+
+    // ── TC10: changing email resets verification — no linking until re-verified ─
+
+    @Test
+    void changeEmail_resetsVerification_andBlocksLinkingOfNewEmailsOrders() throws Exception {
+        String emailA = "link-change-a-" + UUID.randomUUID() + "@bigbike.vn";
+        String emailB = "link-change-b-" + UUID.randomUUID() + "@bigbike.vn";
+
+        // Guest order placed with emailB — not owned by the account below
+        String guestOrderNumber = placeGuestOrderForEmail(emailB);
+
+        // Register + verify emailA
+        registerCustomer(emailA);
+        CustomerEntity customer = customerRepo.findByEmail(emailA).orElseThrow();
+        markEmailVerified(customer);
+
+        // Login and switch the account email to emailB
+        MvcResult loginResult = mockMvc.perform(post("/api/v1/customer/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"login\":\"" + emailA + "\",\"password\":\"pass1234\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        Cookie[] cookies = loginResult.getResponse().getCookies();
+        String csrf = getCookieValue(loginResult.getResponse(), "bb_csrf");
+
+        mockMvc.perform(patch("/api/v1/customer/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"" + emailB + "\",\"currentPassword\":\"pass1234\"}")
+                        .cookie(cookies).header("X-CSRF-Token", csrf))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.emailVerified").value(false));
+
+        // Verified status must be dropped in DB
+        CustomerEntity reloaded = customerRepo.findById(customer.getId()).orElseThrow();
+        assertThat(reloaded.getEmailVerifiedAt()).isNull();
+
+        // Logging in again must NOT link emailB's guest orders (email unverified)
+        loginCookies(emailB);
+        OrderEntity order = orderRepo.findByOrderNumber(guestOrderNumber).orElseThrow();
+        assertThat(order.getCustomerId()).isNull();
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

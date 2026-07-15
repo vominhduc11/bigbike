@@ -177,11 +177,17 @@ public class CustomerAuthService {
             }
         }
 
+        boolean emailChanged = false;
         if (newEmail != null && !newEmail.equals(customer.getEmail())) {
             customerRepo.findByEmail(newEmail).ifPresent(c -> {
                 throw new ConflictException("Thông tin cập nhật không hợp lệ.");
             });
             customer.setEmail(newEmail);
+            // Ownership of the new address is unproven — drop verified status so
+            // GuestOrderLinkingService cannot link the new email's guest orders
+            // until the customer re-verifies (security invariant, AUD-001).
+            customer.setEmailVerifiedAt(null);
+            emailChanged = true;
         }
         if (newPhone != null && !newPhone.equals(customer.getPhone())) {
             findByPhoneFlexible(newPhone).ifPresent(c -> {
@@ -211,11 +217,16 @@ public class CustomerAuthService {
             }
         }
         customer.setUpdatedAt(Instant.now());
+        CustomerEntity saved;
         try {
-            return toSummary(customerRepo.saveAndFlush(customer));
+            saved = customerRepo.saveAndFlush(customer);
         } catch (DataIntegrityViolationException ex) {
             throw new ConflictException("Thông tin cập nhật không hợp lệ.");
         }
+        if (emailChanged) {
+            emailVerificationService.issueAndSend(saved);
+        }
+        return toSummary(saved);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

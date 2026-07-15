@@ -10,7 +10,7 @@
 
 | AUD | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
-| AUD-001 | Đổi email phải hủy trạng thái xác minh; không tự liên kết guest order tới khi xác minh lại; sau đó rà dữ liệu read-only | ⬜ | Quyết định #1 |
+| AUD-001 | Đổi email phải hủy trạng thái xác minh; không tự liên kết guest order tới khi xác minh lại; sau đó rà dữ liệu read-only | ✅ | Vá `CustomerAuthService.updateProfile` (reset `emailVerifiedAt` + gửi lại email xác minh) và `AdminCustomerService.updateCustomer` (reset khi admin đổi email hộ). Thêm TC10 vào `GuestOrderLinkingTest` — 10/10 pass. Docs: API_CONTRACT thêm `GET/PATCH /customer/me` + rule reset. **Rà dữ liệu (SELECT read-only, container `bigbike-postgres`):** 0 audit log đổi email bởi admin; 131 đơn linked lệch email đều là import WordPress (`legacy_id NOT NULL`), không phải do bug; chỉ 1 khách có 7 đơn linked native — email khớp, đã xác minh, không có dấu hiệu bị khai thác. Lưu ý: đây là DB local đang chạy; nếu DB production trên VPS khác bản này thì cần chạy lại cùng bộ SELECT ở đó. |
 
 ## Phase 1A — High: Đơn hàng, giá, tồn kho
 
