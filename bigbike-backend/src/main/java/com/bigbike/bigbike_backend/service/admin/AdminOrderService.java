@@ -85,11 +85,6 @@ public class AdminOrderService {
             "UNPAID", "PAID", "CANCELLED"
     );
 
-    // Payment methods whose orders sit ON_HOLD until an admin confirms the money
-    // arrived. BACS (bank transfer) is the only manual-confirm online method.
-    private static final Set<String> MANUAL_CONFIRM_PAYMENT_METHODS = Set.of(
-            "BACS"
-    );
 
     private static final Map<String, Set<String>> ALLOWED_TRANSITIONS;
     static {
@@ -322,27 +317,10 @@ public class AdminOrderService {
             }
         }
 
-        // Manual-confirm methods (BACS) move ON_HOLD → PROCESSING only after
-        // admin confirms payment received.
-        // Auto-mark payment PAID so admin does not need a separate step.
-        if ("PROCESSING".equals(newStatus)
-                && "ON_HOLD".equals(currentStatus)
-                && MANUAL_CONFIRM_PAYMENT_METHODS.contains(
-                        order.getPaymentMethod() == null
-                                ? "" : order.getPaymentMethod().toUpperCase())
-                && "UNPAID".equals(order.getPaymentStatus())) {
-            order.setPaymentStatus("PAID");
-            if (order.getPaidAmount() == null
-                    || order.getPaidAmount().compareTo(BigDecimal.ZERO) == 0) {
-                order.setPaidAmount(order.getTotalAmount());
-            }
-            if (order.getPaidAt() == null) order.setPaidAt(now);
-            paymentRepo.findByOrderId(orderId).stream().findFirst().ifPresent(p -> {
-                p.setStatus("SUCCEEDED");
-                p.setPaidAt(now);
-                paymentRepo.save(p);
-            });
-        }
+        // AUD-024: moving ON_HOLD → PROCESSING no longer auto-marks payment PAID.
+        // Payment is reconciled manually and marked paid via the dedicated
+        // payment-status endpoint (PAY_RULE_002) — auto-marking here contradicted the
+        // manual-reconciliation model and silently flipped unpaid orders to paid.
 
         orderRepo.save(order);
 
@@ -447,6 +425,13 @@ public class AdminOrderService {
                 order.setPaymentStatus("UNPAID");
                 order.setPaidAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
                 order.setPaidAt(null);
+                // AUD-023: reverting to UNPAID must also reset the payment record —
+                // otherwise a SUCCEEDED row lingers and misrepresents the order as paid.
+                paymentRepo.findByOrderId(orderId).stream().findFirst().ifPresent(p -> {
+                    p.setStatus("PENDING");
+                    p.setPaidAt(null);
+                    paymentRepo.save(p);
+                });
             }
             default -> order.setPaymentStatus(newPaymentStatus);
         }

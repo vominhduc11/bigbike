@@ -726,7 +726,7 @@
       "errorGeneric": "Có lỗi xảy ra.",
       "orderNotFoundShort": "Không tìm thấy mã đơn hàng.",
       "loadFailedShort": "Không tải được đơn hàng.",
-      "cancelDescription": "Đơn hàng sẽ bị huỷ và tồn kho sẽ được hoàn lại. Thao tác không thể khôi phục.",
+      "cancelDescription": "Đơn hàng sẽ bị huỷ. Thao tác này không thể khôi phục. Nếu bạn đã thanh toán, BigBike sẽ chủ động liên hệ để hoàn lại tiền.",
       "cancelConfirmButton": "Xác nhận huỷ",
       "cancelInProgress": "Đang huỷ...",
       "cancelKeep": "Không huỷ",

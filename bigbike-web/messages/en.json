@@ -726,7 +726,7 @@
       "errorGeneric": "Something went wrong.",
       "orderNotFoundShort": "Order number not found.",
       "loadFailedShort": "Couldn't load the order.",
-      "cancelDescription": "The order will be cancelled and stock returned. This action cannot be undone.",
+      "cancelDescription": "The order will be cancelled. This action cannot be undone. If you have already paid, BigBike will contact you to arrange a refund.",
       "cancelConfirmButton": "Confirm cancel",
       "cancelInProgress": "Cancelling…",
       "cancelKeep": "Keep order",

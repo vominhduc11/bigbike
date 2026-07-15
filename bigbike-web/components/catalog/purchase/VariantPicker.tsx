@@ -50,19 +50,16 @@ export function VariantPicker({
                 {opts.map((o) => {
                   const checked = selectedOptions[attr] === o.value;
                   const swatch = color ? imgUrl(o.rep.image ?? o.rep.gallery?.[0]?.image) : "";
-                  // STOCK_RULE_005: làm mờ option hết hàng (vẫn click được để
-                  // xem ảnh màu), chỉ KHÓA option của biến thể không bán
-                  // (isAvailable=false). Probe = lựa chọn hiện tại + option này.
+                  // AUD-029: MỌI option đều CHỌN ĐƯỢC để khách xem ảnh màu/biến thể —
+                  // kể cả option hết hàng / không bán. Chỉ làm MỜ để báo hết hàng; việc
+                  // chặn MUA nằm ở nút mua (canBuy xét selectedVariant.isAvailable),
+                  // không khóa ở đây. Probe = lựa chọn hiện tại + option này.
                   const probe = { ...selectedOptions, [attr]: o.value };
                   const optInStock = Boolean(
                     findMatchingVariant(variants, probe, {
                       onlyAvailable: true,
                       inStockOnly: true,
                     }),
-                  );
-                  const optSelectable = Boolean(
-                    (findMatchingVariant(variants, probe, { onlyAvailable: true }) ??
-                      findMatchingVariant(variants, probe))?.isAvailable,
                   );
                   return (
                     <div
@@ -72,7 +69,6 @@ export function VariantPicker({
                         // hàng nút mua bên dưới; ô màu là ẢNH vuông cố định — giữ nguyên.
                         !color && "min-w-[64px] flex-1 basis-0",
                         !optInStock && !checked && "opacity-45",
-                        !optSelectable && !checked && "cursor-not-allowed",
                       )}
                       key={o.value}
                     >
@@ -83,7 +79,6 @@ export function VariantPicker({
                         name={`attribute_pa_${slug}`}
                         value={o.value}
                         checked={checked}
-                        disabled={!optSelectable && !checked}
                         // Radio đã chọn thì bấm lại KHÔNG bắn onChange,
                         // nên dùng onClick để bỏ chọn (toggle off) — giống
                         // VariantSelector của code cũ. onChange vẫn lo việc
@@ -96,7 +91,7 @@ export function VariantPicker({
                       <label
                         htmlFor={`${slug}-${o.value}`}
                         className={cn(
-                          "flex min-h-[52px] cursor-pointer items-center justify-center border border-border-control bg-white px-5 font-body text-a4-content font-semibold uppercase text-foreground transition-colors hover:border-brand peer-focus-visible:outline-2 peer-focus-visible:outline-ring peer-focus-visible:outline-offset-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
+                          "flex min-h-[52px] cursor-pointer items-center justify-center border border-border-control bg-white px-5 font-body text-a4-content font-semibold uppercase text-foreground transition-colors hover:border-brand peer-focus-visible:outline-2 peer-focus-visible:outline-ring peer-focus-visible:outline-offset-2",
                           !color && "w-full",
                           color && "h-[52px] w-[52px] bg-cover bg-center p-0",
                           checked && "border-brand text-brand ring-1 ring-brand",

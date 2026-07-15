@@ -48,26 +48,26 @@
 
 | AUD | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
-| AUD-005 | GỠ scheduler tự hủy BACS 72h + cập nhật docs | ✅ | Quyết định #2: xóa `OrderAutoCancelService`+`OrderAutoCancelScheduler` + query `findBacsUnpaidOnHoldOlderThan`; xóa 4 test auto-cancel + field autowire; docs thêm `ORDER_RULE_009` (không auto-cancel, admin tự xử lý) |
-| AUD-006 | Email hủy đơn bỏ lời hứa "hoàn tiền 3–5 ngày" | ✅ | `OrderNotificationService` CANCELLED: bỏ "hoàn tiền trong 3–5 ngày làm việc", đổi thành "BigBike sẽ chủ động liên hệ để hoàn lại tiền" + hotline |
-| AUD-017 | Cache thông báo không lộ chéo giữa tài khoản trên cùng trình duyệt | ✅ | localStorage namespace theo email (`bb-admin-notifications:{email}`); chuông chỉ render/fetch khi có `orders.read`; reset-state khi đổi tài khoản (render-phase) |
-| AUD-018 | Trạng thái đã-đọc thông báo tách riêng từng admin | ✅ | Bảng mới `admin_notification_reads` (V339, high-water mark per admin); service tính `isRead`/`unreadCount` theo `last_read_at` của riêng admin; cột `is_read` cũ giữ lại không dùng |
-| AUD-019 | Mở chuông không mark-all-read toàn DB / không mất backlog | ✅ | `markAllReadFor(adminId)` chỉ dời mốc của admin đó, không sửa bản ghi chung; GET trả backlog gần nhất (≤50) kèm `isRead` per-admin — không mất lịch sử. Test `AdminNotificationServiceTest` 3/3. **Gỡ luôn** endpoint `mark-read` (AUD-067) không caller |
+| AUD-005 | GỠ scheduler tự hủy BACS 72h + cập nhật docs | ✅ `7e96af4d` | Quyết định #2: xóa `OrderAutoCancelService`+`OrderAutoCancelScheduler` + query `findBacsUnpaidOnHoldOlderThan`; xóa 4 test auto-cancel + field autowire; docs thêm `ORDER_RULE_009` (không auto-cancel, admin tự xử lý) |
+| AUD-006 | Email hủy đơn bỏ lời hứa "hoàn tiền 3–5 ngày" | ✅ `7e96af4d` | `OrderNotificationService` CANCELLED: bỏ "hoàn tiền trong 3–5 ngày làm việc", đổi thành "BigBike sẽ chủ động liên hệ để hoàn lại tiền" + hotline |
+| AUD-017 | Cache thông báo không lộ chéo giữa tài khoản trên cùng trình duyệt | ✅ `7e96af4d` | localStorage namespace theo email (`bb-admin-notifications:{email}`); chuông chỉ render/fetch khi có `orders.read`; reset-state khi đổi tài khoản (render-phase) |
+| AUD-018 | Trạng thái đã-đọc thông báo tách riêng từng admin | ✅ `7e96af4d` | Bảng mới `admin_notification_reads` (V339, high-water mark per admin); service tính `isRead`/`unreadCount` theo `last_read_at` của riêng admin; cột `is_read` cũ giữ lại không dùng |
+| AUD-019 | Mở chuông không mark-all-read toàn DB / không mất backlog | ✅ `7e96af4d` | `markAllReadFor(adminId)` chỉ dời mốc của admin đó, không sửa bản ghi chung; GET trả backlog gần nhất (≤50) kèm `isRead` per-admin — không mất lịch sử. Test `AdminNotificationServiceTest` 3/3. **Gỡ luôn** endpoint `mark-read` (AUD-067) không caller |
 
 ## Phase 2A — Medium: khách hàng & vận hành
 
 | AUD | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
-| AUD-021 | Giỏ hàng hiển thị "Miễn phí vận chuyển" theo SHIP_RULE_001 | ⬜ | |
+| AUD-021 | Giỏ hàng hiển thị "Miễn phí vận chuyển" theo SHIP_RULE_001 | ✅ | Đã hết từ trước: `CartSummary` dùng `CartPage.shippingPending` = "Miễn phí vận chuyển toàn quốc" (shippingAmount luôn 0). Verify tại `CartSummary.tsx:41-50` |
 | AUD-022 | Bỏ miễn CSRF cho checkout/quick-buy theo docs | ✅ `c1a1b862` | Làm sớm cùng nhóm 1A (chung file test): gỡ 2 exemption khỏi `CustomerCsrfFilter`; guest luôn có `bb_csrf` từ GET /cart app-wide; test CSRF Phase1F pass lại |
-| AUD-023 | Mark PAID→UNPAID không để lại payment row `SUCCEEDED` | ⬜ | |
-| AUD-024 | `ON_HOLD → PROCESSING` không tự đánh dấu BACS là PAID | ⬜ | |
+| AUD-023 | Mark PAID→UNPAID không để lại payment row `SUCCEEDED` | ✅ | `updatePaymentStatus` nhánh UNPAID reset payment record về `PENDING`+`paidAt=null`; test `updatePaymentStatus_paidToUnpaid_resetsPaymentRecord` |
+| AUD-024 | `ON_HOLD → PROCESSING` không tự đánh dấu BACS là PAID | ✅ | Gỡ khối auto-mark PAID + constant `MANUAL_CONFIRM_PAYMENT_METHODS`; đơn giữ UNPAID, admin đối soát riêng (PAY_RULE_002); test `order_onHoldToProcessing_doesNotAutoMarkPaid` |
 | AUD-025 | Khách hủy đơn: WS + inbox admin + audit log + email cho khách | ⬜ | Quyết định #3 |
-| AUD-026 | Bản ghi thông báo offline đủ tên khách + giá trị đơn | ✅ | Làm sớm cùng 1D (chung file): `buildPayload` thêm `customerName`+`total`; admin `normalizeAdminNotification` đọc ra để hiển thị |
+| AUD-026 | Bản ghi thông báo offline đủ tên khách + giá trị đơn | ✅ `7e96af4d` | Làm sớm cùng 1D (chung file): `buildPayload` thêm `customerName`+`total`; admin `normalizeAdminNotification` đọc ra để hiển thị |
 | AUD-027 | Search suggest tôn trọng `lang`; link EN đúng slug/route | ⬜ | |
 | AUD-028 | PDP tiếng Anh fallback về VI thay vì mất field | ⬜ | |
-| AUD-029 | Option hết hàng vẫn xem được (không disable chọn để xem ảnh) | ⬜ | |
-| AUD-030 | Gỡ filter `REFUNDED` ở web + sửa copy hủy đơn (không nói hoàn tồn) | ⬜ | Theo quyết định #7 |
+| AUD-029 | Option hết hàng vẫn xem được (không disable chọn để xem ảnh) | ✅ | `VariantPicker` bỏ `disabled`/`optSelectable` — mọi option chọn được để xem ảnh; chỉ làm mờ báo hết hàng; chặn mua ở nút mua (canBuy) |
+| AUD-030 | Gỡ filter `REFUNDED` ở web + sửa copy hủy đơn (không nói hoàn tồn) | ✅ | Bỏ `REFUNDED` khỏi `STATUS_FILTERS` (OrderHistoryContent); copy `cancelDescription` VI/EN bỏ "tồn kho hoàn lại" → "BigBike liên hệ hoàn tiền"; docs API_CONTRACT customer-cancel + ORDER_RULE_004 bỏ "restores stock" (quyết định #7) |
 | AUD-031 | Canonical trang chính sách trỏ route thực sự được build | ✅ `6d12c864` | Làm sớm cùng 1B (chung file với AUD-013): sửa 4 `seoCanonicalUrl` trong static-pages.json về route thực; `/chinh-sach` chỉ build đúng 3 slug chính sách (quyết định #6); 301 các canonical cũ chưa từng build về route thực |
 | AUD-032 | Form đánh giá gửi email khách đã nhập | ⬜ | |
 | AUD-033 | Checkout/account: chuỗi + hotline/địa chỉ theo locale/settings | ⬜ | |
@@ -100,7 +100,7 @@
 | AUD-049 | `.env.example` link reset/verify về localhost | ⬜ | |
 | AUD-050 | Biến extra MinIO origin đi qua Docker; bỏ default IP cũ | ⬜ | |
 | AUD-051 | Filter trả đúng chuẩn error envelope | ⬜ | |
-| AUD-052 | Email chào bằng tên khách khi đơn có tên | ✅ | Làm sớm cùng AUD-006 (cùng file `OrderNotificationService`): `safeCustomerName` ưu tiên `customerName` trước email/SĐT |
+| AUD-052 | Email chào bằng tên khách khi đơn có tên | ✅ `7e96af4d` | Làm sớm cùng AUD-006 (cùng file `OrderNotificationService`): `safeCustomerName` ưu tiên `customerName` trước email/SĐT |
 | AUD-053 | Đồng bộ model/schema `paymentMethod` nullable | ⬜ | Lưu ý quyết định #10 |
 | AUD-054 | Sửa encoding comment importer | ⬜ | |
 | AUD-059 | Ghi chú hệ thống checkout không thành "Đơn hàng được tạo.." | ✅ `c1a1b862` | Làm sớm cùng AUD-011 (cùng đoạn code): note luôn "Đơn hàng được tạo. Phương thức thanh toán: COD." — hết dấu chấm kép |
@@ -121,7 +121,7 @@
 | AUD-058 | Admin: dọn named CSS / hardcode / raw buttons | ⬜ | |
 | AUD-060 | Gỡ 2 dead search export trong `public-api.ts` | ⬜ | |
 | AUD-066 | Gỡ `GET /api/v1/search` + sửa docs API_FLOW_MAP | ⬜ | Quyết định #8 |
-| AUD-067 | Gỡ `POST .../notifications/mark-read` không caller | ✅ | Làm sớm cùng 1D: gỡ endpoint + `markReadByIds` khi rework mô hình đã-đọc per-admin (endpoint chưa từng có caller); docs API_CONTRACT ghi Removed |
+| AUD-067 | Gỡ `POST .../notifications/mark-read` không caller | ✅ `7e96af4d` | Làm sớm cùng 1D: gỡ endpoint + `markReadByIds` khi rework mô hình đã-đọc per-admin (endpoint chưa từng có caller); docs API_CONTRACT ghi Removed |
 | AUD-068 | Gỡ `GET .../settings/{settingKey}` không caller | ⬜ | Quyết định #8 |
 | AUD-074 | Gỡ audio khỏi Media Library (filter admin + backend reject) | ⬜ | Quyết định #5 |
 | AUD-076 | Docs bổ sung `orders/lookup`, quyền reviews, module Reviews; gỡ ghi chú stale | ⬜ | |

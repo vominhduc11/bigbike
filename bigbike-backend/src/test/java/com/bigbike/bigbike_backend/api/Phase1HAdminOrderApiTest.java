@@ -967,27 +967,50 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(status().isBadRequest());
     }
 
-    // ── BACS ON_HOLD→PROCESSING auto-marks payment PAID ──────────────────────
+    // ── ON_HOLD→PROCESSING does NOT auto-mark payment (AUD-024) ──────────────
     @Test
-    void bacsOrder_onHoldToProcessing_autoMarksPaid() throws Exception {
+    void order_onHoldToProcessing_doesNotAutoMarkPaid() throws Exception {
         OrderInfo bacs = placeGuestOrderBacs(9600000);
 
-        // BACS order starts ON_HOLD + UNPAID
+        // Legacy BACS order starts ON_HOLD + UNPAID
         mockMvc.perform(get("/api/v1/admin/orders/" + bacs.orderId)
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("ON_HOLD"))
                 .andExpect(jsonPath("$.data.paymentStatus").value("UNPAID"));
 
-        // Transition ON_HOLD → PROCESSING auto-marks PAID
+        // Transition ON_HOLD → PROCESSING must leave payment UNPAID — admin reconciles
+        // money separately via the payment-status endpoint (PAY_RULE_002).
         mockMvc.perform(patch("/api/v1/admin/orders/" + bacs.orderId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"PROCESSING\"}")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("PROCESSING"))
+                .andExpect(jsonPath("$.data.paymentStatus").value("UNPAID"))
+                .andExpect(jsonPath("$.data.paidAt").isEmpty());
+    }
+
+    // ── PAID → UNPAID resets the payment record too (AUD-023) ────────────────
+    @Test
+    void updatePaymentStatus_paidToUnpaid_resetsPaymentRecord() throws Exception {
+        OrderInfo order = placeGuestOrder(3300000);
+        markPaid(order.orderId, 3300000);
+
+        mockMvc.perform(get("/api/v1/admin/orders/" + order.orderId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.paymentStatus").value("PAID"))
-                .andExpect(jsonPath("$.data.paidAt").isNotEmpty());
+                .andExpect(jsonPath("$.data.payments[0].status").value("SUCCEEDED"));
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentStatus\":\"UNPAID\",\"paidAmount\":0}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.paymentStatus").value("UNPAID"))
+                // The lingering SUCCEEDED payment row must be reset, not left as paid.
+                .andExpect(jsonPath("$.data.payments[0].status").value("PENDING"));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
