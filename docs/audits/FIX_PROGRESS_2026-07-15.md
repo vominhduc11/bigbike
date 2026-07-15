@@ -97,7 +97,7 @@
 
 | AUD | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
-| AUD-049 | `.env.example` link reset/verify về localhost | ⬜ | |
+| AUD-049 | `.env.example` link reset/verify về localhost | ✅ `9a4ffa8d` | Mẫu local dùng `http://localhost:3000/xac-nhan-email` và `/quen-mat-khau`, khớp route web và dev profile; không sửa `.env` thật. Kiểm tra giá trị biến + `git diff --check` đạt. |
 | AUD-050 | Biến extra MinIO origin đi qua Docker; bỏ default IP cũ | ⬜ | |
 | AUD-051 | Filter trả đúng chuẩn error envelope | ⬜ | |
 | AUD-052 | Email chào bằng tên khách khi đơn có tên | ✅ `7e96af4d` | Làm sớm cùng AUD-006 (cùng file `OrderNotificationService`): `safeCustomerName` ưu tiên `customerName` trước email/SĐT |
