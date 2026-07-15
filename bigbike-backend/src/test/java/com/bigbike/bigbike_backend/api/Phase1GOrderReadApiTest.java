@@ -44,6 +44,7 @@ class Phase1GOrderReadApiTest {
     @Autowired ProductJpaRepository productRepo;
     @Autowired CategoryJpaRepository categoryRepo;
     @Autowired OrderJpaRepository orderRepo;
+    @Autowired com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository auditLogRepo;
 
     private MockMvc mockMvc;
     private static String testCategoryId;
@@ -412,6 +413,14 @@ class Phase1GOrderReadApiTest {
         OrderEntity reloaded = orderRepo.findById(UUID.fromString(session.orderId)).orElseThrow();
         assertThat(reloaded.getStatus()).isEqualTo("CANCELLED");
         assertThat(reloaded.getCancelledAt()).isNotNull();
+
+        // AUD-025: a customer cancel writes an audit-log record (actor = CUSTOMER).
+        UUID orderUuid = UUID.fromString(session.orderId);
+        assertThat(auditLogRepo.findAll()).anySatisfy(a -> {
+            assertThat(a.getAction()).isEqualTo("ORDER_CANCELLED_BY_CUSTOMER");
+            assertThat(a.getActorType()).isEqualTo("CUSTOMER");
+            assertThat(a.getResourceId()).isEqualTo(orderUuid);
+        });
     }
 
     @Test

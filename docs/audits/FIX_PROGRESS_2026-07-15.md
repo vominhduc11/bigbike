@@ -62,19 +62,19 @@
 | AUD-022 | Bỏ miễn CSRF cho checkout/quick-buy theo docs | ✅ `c1a1b862` | Làm sớm cùng nhóm 1A (chung file test): gỡ 2 exemption khỏi `CustomerCsrfFilter`; guest luôn có `bb_csrf` từ GET /cart app-wide; test CSRF Phase1F pass lại |
 | AUD-023 | Mark PAID→UNPAID không để lại payment row `SUCCEEDED` | ✅ `080c5ac4` | `updatePaymentStatus` nhánh UNPAID reset payment record về `PENDING`+`paidAt=null`; test `updatePaymentStatus_paidToUnpaid_resetsPaymentRecord` |
 | AUD-024 | `ON_HOLD → PROCESSING` không tự đánh dấu BACS là PAID | ✅ `080c5ac4` | Gỡ khối auto-mark PAID + constant `MANUAL_CONFIRM_PAYMENT_METHODS`; đơn giữ UNPAID, admin đối soát riêng (PAY_RULE_002); test `order_onHoldToProcessing_doesNotAutoMarkPaid` |
-| AUD-025 | Khách hủy đơn: WS + inbox admin + audit log + email cho khách | ⬜ | Quyết định #3 |
+| AUD-025 | Khách hủy đơn: WS + inbox admin + audit log + email cho khách | ✅ | Quyết định #3: `CustomerOrderCancelService.cancel` phát `ORDER_STATUS_CHANGED` qua `AdminOrderWsService` (WS + persist inbox), ghi audit `ORDER_CANCELLED_BY_CUSTOMER` (actor CUSTOMER), gửi email hủy (`sendOrderStatusUpdate` after-commit). Test audit-log trong Phase1G; docs API_CONTRACT customer-cancel |
 | AUD-026 | Bản ghi thông báo offline đủ tên khách + giá trị đơn | ✅ `7e96af4d` | Làm sớm cùng 1D (chung file): `buildPayload` thêm `customerName`+`total`; admin `normalizeAdminNotification` đọc ra để hiển thị |
 | AUD-027 | Search suggest tôn trọng `lang`; link EN đúng slug/route | ⬜ | |
 | AUD-028 | PDP tiếng Anh fallback về VI thay vì mất field | ⬜ | |
 | AUD-029 | Option hết hàng vẫn xem được (không disable chọn để xem ảnh) | ✅ `080c5ac4` | `VariantPicker` bỏ `disabled`/`optSelectable` — mọi option chọn được để xem ảnh; chỉ làm mờ báo hết hàng; chặn mua ở nút mua (canBuy) |
 | AUD-030 | Gỡ filter `REFUNDED` ở web + sửa copy hủy đơn (không nói hoàn tồn) | ✅ `080c5ac4` | Bỏ `REFUNDED` khỏi `STATUS_FILTERS` (OrderHistoryContent); copy `cancelDescription` VI/EN bỏ "tồn kho hoàn lại" → "BigBike liên hệ hoàn tiền"; docs API_CONTRACT customer-cancel + ORDER_RULE_004 bỏ "restores stock" (quyết định #7) |
 | AUD-031 | Canonical trang chính sách trỏ route thực sự được build | ✅ `6d12c864` | Làm sớm cùng 1B (chung file với AUD-013): sửa 4 `seoCanonicalUrl` trong static-pages.json về route thực; `/chinh-sach` chỉ build đúng 3 slug chính sách (quyết định #6); 301 các canonical cũ chưa từng build về route thực |
-| AUD-032 | Form đánh giá gửi email khách đã nhập | ✅ | `SubmitReviewRequest` thêm `authorEmail` (@Email); controller+service lưu vào `reviews.author_email`; web `WriteReviewForm` gửi `authorEmail` trong payload |
+| AUD-032 | Form đánh giá gửi email khách đã nhập | ✅ `d7fefc10` | `SubmitReviewRequest` thêm `authorEmail` (@Email); controller+service lưu vào `reviews.author_email`; web `WriteReviewForm` gửi `authorEmail` trong payload |
 | AUD-033 | Checkout/account: chuỗi + hotline/địa chỉ theo locale/settings | ⬜ | |
 | AUD-034 | Xóa vĩnh viễn danh mục: cảnh báo đủ số sản phẩm + danh mục con | ⬜ | |
 | AUD-035 | Đổi VI/EN không làm mất draft Home Highlights | ⬜ | |
 | AUD-036 | HTML setting chặn ảnh ngoài/track pixel theo rule MinIO | ⬜ | |
-| AUD-037 | Upload ảnh review không tạo orphan MinIO (cleanup) | ✅ | `ReviewPhotoStorageService.deletePhotos` (best-effort, chỉ đụng object dưới `reviews/`); `AdminReviewService.deleteReview` gọi xóa ảnh MinIO của review bị xóa → hết orphan theo vòng đời review. Ghi chú: orphan do khách upload rồi bỏ dở (chưa submit) cần một đợt quét định kỳ — để lại follow-up (không thêm scheduler mới trái hướng dự án) |
+| AUD-037 | Upload ảnh review không tạo orphan MinIO (cleanup) | ✅ `d7fefc10` | `ReviewPhotoStorageService.deletePhotos` (best-effort, chỉ đụng object dưới `reviews/`); `AdminReviewService.deleteReview` gọi xóa ảnh MinIO của review bị xóa → hết orphan theo vòng đời review. Ghi chú: orphan do khách upload rồi bỏ dở (chưa submit) cần một đợt quét định kỳ — để lại follow-up (không thêm scheduler mới trái hướng dự án) |
 | AUD-038 | Ảnh line item snapshot theo đơn, không lấy live từ catalog | ⬜ | |
 | AUD-064 | Video mô tả/bài viết nhận YouTube/TikTok/Facebook theo AGENTS §14.3 | ⬜ | Reject link rút gọn |
 | AUD-065 | Giỏ đánh dấu "không khả dụng" cho sản phẩm no-variant hết hàng | ✅ `c1a1b862` | Làm sớm cùng AUD-003 (cùng file, audit khuyến nghị): `findUnavailableItemIds` mirror đúng điều kiện checkout (published + !forceOutOfStock + stockState với SP không biến thể) |
@@ -108,7 +108,7 @@
 | AUD-070 | `rowKey` import không trùng khi 2 dòng cùng SKU | ⬜ | |
 | AUD-071 | Xóa trắng ô SEO thương hiệu phải được lưu | ⬜ | |
 | AUD-072 | API path không tồn tại trả 404 thay 500 | ⬜ | |
-| AUD-073 | Admin reviews tôn trọng tham số `lang` | ✅ | Hành vi hiển thị đã đúng: admin đổi cột tên SP theo `productNameEn`/`productName` (client, PRODUCT_RULE_004 — hiện đủ bản ghi, không ẩn SP chưa dịch); review là nội dung khách nhập nên đơn ngữ. Dọn dead `strictEnglish` + comment stale (backend/admin); `lang` giữ cho tương thích API, no-op theo thiết kế |
+| AUD-073 | Admin reviews tôn trọng tham số `lang` | ✅ `d7fefc10` | Hành vi hiển thị đã đúng: admin đổi cột tên SP theo `productNameEn`/`productName` (client, PRODUCT_RULE_004 — hiện đủ bản ghi, không ẩn SP chưa dịch); review là nội dung khách nhập nên đơn ngữ. Dọn dead `strictEnglish` + comment stale (backend/admin); `lang` giữ cho tương thích API, no-op theo thiết kế |
 | AUD-075 | Toaster dùng token font; nút nguy hiểm dùng token danger | ⬜ | |
 
 ## Phase 3B — Low: dọn dead code / API thừa
