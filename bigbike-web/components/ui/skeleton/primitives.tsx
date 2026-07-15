@@ -30,7 +30,7 @@ export const bbCatLayout =
   "xl:grid-cols-[260px_1fr] xl:gap-9";
 
 /** Skeleton catalog-head row (former `.bb-catalog-head`). */
-export const bbCatalogHead = "mb-[18px] flex items-center justify-between";
+export const bbCatalogHead = "mb-4.5 flex items-center justify-between";
 
 const sr: CSSProperties = {
   position: "absolute",
@@ -136,7 +136,7 @@ export function ArticleCardSkel() {
       <div className="relative aspect-[16/9] overflow-hidden shrink-0 bg-white">
         <SkelBlock w="100%" h="100%" rounded={false} style={{ position: "absolute", inset: 0 }} />
       </div>
-      <div className="relative pt-[41px] px-5 pb-[30px] flex flex-col gap-2 flex-1 bg-card max-md:pt-[34px] max-md:px-[14px] max-md:pb-[18px]">
+      <div className="relative pt-[41px] px-5 pb-7.5 flex flex-col gap-2 flex-1 bg-card max-md:pt-8.5 max-md:px-3.5 max-md:pb-4.5">
         <SkelTitle w="85%" h="1em" />
         <SkelText w="100%" />
         <SkelText w="60%" />

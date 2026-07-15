@@ -16,21 +16,21 @@ import { telHref } from "@/lib/utils/format";
 // toggling open/closed never makes the button jump — only the icon swaps.
 const fabContainer = "relative inline-block";
 const fabMask =
-  "absolute -top-2 -left-2 w-[calc(100%+16px)] h-[82px] min-w-[66px] !rounded-[50%] bg-[var(--bb-chat-title-bg)] opacity-20 pointer-events-none";
-const fabBlock = "w-[66px] h-[66px] !rounded-[50%] box-border overflow-hidden";
+  "absolute -top-2 -left-2 w-[calc(100%+16px)] h-20.5 min-w-16.5 !rounded-[50%] bg-[var(--bb-chat-title-bg)] opacity-20 pointer-events-none";
+const fabBlock = "w-16.5 h-16.5 !rounded-[50%] box-border overflow-hidden";
 const fabInnerBlock =
-  "relative w-[66px] h-[66px] !rounded-[50%] bg-[var(--bb-chat-title-bg)] text-[var(--bb-chat-title-text)] border-none cursor-pointer flex items-center justify-center [outline:none] box-border focus-visible:[outline:2px_solid_#fff] focus-visible:[outline-offset:3px]";
+  "relative w-16.5 h-16.5 !rounded-[50%] bg-[var(--bb-chat-title-bg)] text-[var(--bb-chat-title-text)] border-none cursor-pointer flex items-center justify-center [outline:none] box-border focus-visible:[outline:2px_solid_#fff] focus-visible:[outline-offset:3px]";
 // Open state: FAB + mask turn gray (WP sudovn parity). Same size/position as the closed
 // FAB so toggling never makes the button jump — only the colour and icon change.
 const fabInnerBlockOpen =
-  "relative w-[66px] h-[66px] !rounded-[50%] bg-[var(--bb-chat-close-bg)] text-[var(--bb-chat-title-text)] border-none cursor-pointer flex items-center justify-center [outline:none] box-border [transition:background_0.3s_linear] focus-visible:[outline:2px_solid_#fff] focus-visible:[outline-offset:3px]";
+  "relative w-16.5 h-16.5 !rounded-[50%] bg-[var(--bb-chat-close-bg)] text-[var(--bb-chat-title-text)] border-none cursor-pointer flex items-center justify-center [outline:none] box-border [transition:background_0.3s_linear] focus-visible:[outline:2px_solid_#fff] focus-visible:[outline-offset:3px]";
 const fabMaskOpen =
-  "absolute -top-2 -left-2 w-[calc(100%+16px)] h-[82px] min-w-[66px] !rounded-[50%] bg-[var(--bb-chat-close-bg)] opacity-20 pointer-events-none";
+  "absolute -top-2 -left-2 w-[calc(100%+16px)] h-20.5 min-w-16.5 !rounded-[50%] bg-[var(--bb-chat-close-bg)] opacity-20 pointer-events-none";
 const fabIconWrap = "relative flex-1 w-full h-full";
 const fabIconItem =
   "absolute top-0 left-0 flex items-center justify-center w-full h-full [transition:opacity_0.6s_ease-out]";
-const fabBlockMobile = " max-md:w-[48px] max-md:h-[48px]";
-const fabMaskMobile = " max-md:w-[60px] max-md:h-[60px]";
+const fabBlockMobile = " max-md:w-12 max-md:h-12";
+const fabMaskMobile = " max-md:w-15 max-md:h-15";
 // Radiating halo ring — sits behind the closed FAB and rides the bb-chat-halo loop.
 // inset-0 auto-matches the button size (66px / 48px mobile); hidden for reduced motion.
 const fabHaloRing =
@@ -43,7 +43,7 @@ const fabHaloRing =
 // (of the FAB) rather than always-on, keeping the persistent footprint to just the
 // circular button while still showing the hint the moment a visitor reaches for it.
 const chatTitlePill =
-  "bg-[var(--bb-chat-title-bg)] !rounded-[3px] px-[5px] py-0.5 text-[var(--bb-color-white)] text-a5-meta font-[Arial,sans-serif] whitespace-nowrap relative bottom-[42px] right-[70px] max-md:hidden opacity-0 pointer-events-none transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100";
+  "bg-[var(--bb-chat-title-bg)] !rounded-[3px] px-[5px] py-0.5 text-[var(--bb-color-white)] text-a5-meta font-[Arial,sans-serif] whitespace-nowrap relative bottom-10.5 right-17.5 max-md:hidden opacity-0 pointer-events-none transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100";
 // WP .sudovn-btn-social-item: padding .5rem 1rem, color #333, hover #f2f2f2; icon
 // margin-right 5px (= gap). The #333 text overrides the global blue <a> link colour.
 // hover:!text keeps the row text #333 — overrides the global `a:hover` brand-red rule
@@ -202,7 +202,7 @@ function ChatOverlay({
         role="dialog"
         aria-modal="true"
         aria-label={t("ariaPanel")}
-        className="fixed z-[2147483645] w-[min(86vw,320px)] min-w-[300px] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+136px)] md:bottom-[max(124px,calc(env(safe-area-inset-bottom)+124px))] right-[max(16px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))] !rounded-[8px] bg-[var(--bb-color-white)] py-2 text-[var(--bb-chat-text)] shadow-[0_6px_24px_rgba(0,0,0,0.18)] before:content-[''] before:absolute before:-bottom-[7px] before:right-[25px] before:border-x-[8px] before:border-x-transparent before:border-t-[8px] before:border-t-[var(--bb-color-white)]"
+        className="fixed z-[2147483645] w-[min(86vw,320px)] min-w-75 bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+136px)] md:bottom-[max(124px,calc(env(safe-area-inset-bottom)+124px))] right-[max(16px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))] !rounded-[8px] bg-[var(--bb-color-white)] py-2 text-[var(--bb-chat-text)] shadow-[0_6px_24px_rgba(0,0,0,0.18)] before:content-[''] before:absolute before:-bottom-[7px] before:right-[25px] before:border-x-[8px] before:border-x-transparent before:border-t-[8px] before:border-t-[var(--bb-color-white)]"
       >
         {items.map((item) => (
           <a

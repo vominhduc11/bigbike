@@ -21,7 +21,7 @@ export function NotFoundActions() {
       <form
         action={toProductListPath(locale)}
         method="get"
-        className="flex flex-col sm:flex-row w-full max-w-[560px] mx-auto border border-border overflow-hidden bg-card"
+        className="flex flex-col sm:flex-row w-full max-w-140 mx-auto border border-border overflow-hidden bg-card"
         role="search"
         aria-label={t("searchAriaLabel")}
       >

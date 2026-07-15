@@ -6,8 +6,8 @@ import { ZaloIcon } from "@/components/ui/ZaloIcon";
 import { Button } from "@/components/ui/button";
 import { zaloHref } from "@/lib/utils/format";
 
-// Hàng nút mua: tỉ lệ 60/40 ở MỌI breakpoint (giỏ hàng flex-[3], Zalo flex-[2]).
-// flex-nowrap giữ 2 nút cạnh nhau cả trên mobile. Khớp thanh dính đáy mobile.
+// Hàng nút mua: tỉ lệ 60/40 ở MỌI breakpoint (grid 5 cột: giỏ hàng 3, Zalo 2),
+// 2 nút luôn cạnh nhau cả trên mobile. Khớp thanh dính đáy mobile.
 // (Nút "Mua nhanh" đã gỡ theo quyết định owner — khách đặt hàng qua giỏ.)
 export function BuyButtons({
   canBuy,
@@ -22,8 +22,8 @@ export function BuyButtons({
 }) {
   const tb = useTranslations("PdpBuyBox");
   return (
-    <div data-purchase-actions className="mt-6 flex flex-nowrap gap-2.5">
-      <div className="min-w-0 flex-[3]">
+    <div data-purchase-actions className="mt-6 grid grid-cols-5 gap-2.5">
+      <div className="col-span-3 min-w-0">
         {/* Hook class React riêng (js-bb-add-to-cart), KHÔNG dùng
             `js-add-to-cart-btn`: JS theme WP cũ (home.min.js) bám vào
             class đó, khi chọn đủ biến thể sẽ ghi đè chữ nút thành "Đang
@@ -36,7 +36,7 @@ export function BuyButtons({
           type="button"
           variant="primary"
           data-purchase-add
-        className="h-[52px] w-full whitespace-nowrap rounded-none px-4 font-cta text-b4-action"
+          className="h-13 w-full whitespace-nowrap rounded-none px-4 font-cta text-b4-action"
           disabled={!canBuy || adding}
           onClick={onAdd}
         >
@@ -57,7 +57,7 @@ export function BuyButtons({
           )}
         </Button>
       </div>
-      <div className="min-w-0 flex-[2]">
+      <div className="col-span-2 min-w-0">
         {/* <a> kế thừa `display:inline-block` của theme `.btn` → chữ dạt
             góc; ép flex căn giữa cho khớp nút THÊM VÀO GIỎ (vốn là <button>
             tự căn). gap-2.5 = 10px khớp khoảng cách icon nút trái.
@@ -67,7 +67,7 @@ export function BuyButtons({
         <Button
           asChild
           variant="outline"
-        className="h-[52px] w-full whitespace-nowrap rounded-none border-2 border-zalo bg-white px-3 font-cta text-b4-action text-zalo hover:bg-zalo-soft hover:text-zalo"
+          className="h-13 w-full whitespace-nowrap rounded-none border-2 border-zalo bg-white px-3 font-cta text-b4-action text-zalo hover:bg-zalo-soft hover:text-zalo"
         >
           <a
             href={zaloUrl ? zaloHref(zaloUrl) : "#"}

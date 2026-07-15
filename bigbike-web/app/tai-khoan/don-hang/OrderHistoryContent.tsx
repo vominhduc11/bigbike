@@ -86,7 +86,7 @@ export function OrderHistoryContent() {
           </table>
         </div>
       ) : orders.length === 0 ? (
-        <div className="py-[60px] text-center">
+        <div className="py-15 text-center">
           <p className="m-0 text-a4-content text-muted-foreground">{t("empty")}</p>
         </div>
       ) : (

@@ -77,12 +77,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className="bb-cart-toast fixed top-[88px] right-5 z-[600] bg-white border border-brand border-l-[3px] py-[14px] px-[18px] shadow-[var(--bb-shadow-lg)] flex gap-3 items-center max-w-[360px] animate-[bb-toast-in_0.3s_ease] [@media(max-width:480px)]:top-[calc(var(--bb-header-stack)+8px)] [@media(max-width:480px)]:right-3 [@media(max-width:480px)]:left-3 [@media(max-width:480px)]:max-w-none"
+          className="bb-cart-toast"
           role="status"
           aria-live="polite"
         >
           <div>
-            <b className="block text-a5-meta font-bold tracking-display uppercase text-brand mb-[2px]">{toast.title}</b>
+            <b className="mb-0.5 block text-a5-meta font-bold tracking-display uppercase text-brand">{toast.title}</b>
             <span className="text-a5-meta text-muted-foreground">{toast.message}</span>
           </div>
           <Link href={toCartPath(locale)} className="text-a5-meta font-bold text-brand no-underline whitespace-nowrap tracking-wide shrink-0 hover:text-brand-hover">

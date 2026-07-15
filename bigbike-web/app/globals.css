@@ -641,7 +641,7 @@ body:has([data-page-hero]) .bb-main {
   right: 0;
   width: 100%;
   height: var(--bb-header-height);
-  background: #000;
+  background: var(--bb-color-black);
   z-index: var(--bb-z-header);
   border-bottom: none;
   overflow: visible; /* logo stripe overflows below header line */
@@ -1117,10 +1117,10 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   padding: var(--bb-space-5);
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
-    #141414;
+    var(--bb-bg-surface-dark);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--bb-radius-card);
-  color: #fff;
+  color: var(--bb-color-white);
   box-shadow: var(--bb-shadow-sm);
   transition:
     border-color var(--bb-duration-normal) var(--bb-ease-standard),
@@ -1177,7 +1177,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
    (an unlayered rule that otherwise beats the Tailwind `text-black` utility),
    brand-red on hover like the rest of the site. */
 .bb-exp-slide-link {
-  color: #000;
+  color: var(--bb-color-black);
 }
 .bb-exp-slide-link:hover {
   color: var(--bb-text-brand);
@@ -1189,7 +1189,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
    brand-red. Dùng !important để chắc chắn thắng rule `a` của theme bất kể thứ tự nạp/cache.
    Cột phải `.contact-form .webform` (kênh trực tuyến) KHÔNG đụng — vẫn giữ kiểu link. */
 .contact-page .information .desc a {
-  color: #000 !important;
+  color: var(--bb-color-black) !important;
 }
 .contact-page .information .desc a:hover {
   color: var(--bb-text-brand) !important;
@@ -1311,7 +1311,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 .bb-seo-content h4,
 .bb-seo-content h5,
 .bb-seo-content h6 {
-  color: #000000;
+  color: var(--bb-color-black);
   font-family: var(--bb-font-body) !important;
   font-weight: 600;
   letter-spacing: 0;
@@ -1351,7 +1351,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 }
 
 .bb-seo-content p {
-  color: #000000;
+  color: var(--bb-color-black);
   font-size: var(--bb-text-a4-content); /* 16px — WP .content-bottom.wyswyg p = 16px */
   line-height: 24px;
   margin: 0 0 14px;
@@ -1406,9 +1406,37 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 /* -- Toast notification ------------------------------------ */
 @keyframes bb-toast-in { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 
+/* Toast "đã thêm vào giỏ" (lib/cart-context.tsx). Desktop: nổi góc phải ngay dưới
+   header. Block mobile-shell phía dưới (@media, `.bb-cart-toast` !important) override
+   xuống đáy màn hình phía trên bottom-nav. */
+.bb-cart-toast {
+  position: fixed;
+  top: calc(var(--bb-header-stack) + var(--bb-space-2));
+  right: var(--bb-space-5);
+  z-index: var(--bb-z-toast);
+  display: flex;
+  align-items: center;
+  gap: var(--bb-space-3);
+  max-width: 22.5rem;
+  padding: 0.875rem 1.125rem;
+  border: 1px solid var(--bb-border-brand);
+  border-left-width: 3px;
+  background: var(--bb-bg-surface);
+  box-shadow: var(--bb-shadow-lg);
+  animation: bb-toast-in 0.3s ease;
+}
+
+@media (max-width: 480px) {
+  .bb-cart-toast {
+    right: var(--bb-space-3);
+    left: var(--bb-space-3);
+    max-width: none;
+  }
+}
+
 /* -- Breadcrumb -------------------------------------------- */
-.bb-breadcrumb { max-width: var(--bb-container-wide); margin: 0 auto; padding: 16px 24px; font-size: var(--bb-text-a5-meta); letter-spacing: 0; text-transform: none; color: #717171; display: flex; flex-wrap: wrap; align-items: center; }
-.bb-breadcrumb a { color: #717171; font-weight: 600; text-decoration: none; cursor: pointer; }
+.bb-breadcrumb { max-width: var(--bb-container-wide); margin: 0 auto; padding: 16px 24px; font-size: var(--bb-text-a5-meta); letter-spacing: 0; text-transform: none; color: var(--bb-text-muted); display: flex; flex-wrap: wrap; align-items: center; }
+.bb-breadcrumb a { color: var(--bb-text-muted); font-weight: 600; text-decoration: none; cursor: pointer; }
 .bb-breadcrumb a:hover { color: var(--bb-text-brand); }
 .bb-breadcrumb .sep { margin: 0 10px; color: var(--bb-text-brand); }
 
@@ -1422,12 +1450,8 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
    PageHero, whose banner already covers the hanging logo). Keep it left-aligned
    so the skeleton matches the post-load layout. */
 
-/* -- Category Hero Banner — breadcrumb + title (dùng trong PageHero/Breadcrumb) -- */
-.bb-cat-hero-breadcrumb { display: flex; align-items: center; gap: 8px; font-size: var(--bb-text-a5-meta); letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 14px; overflow: hidden; min-width: 0; }
-.bb-cat-hero-breadcrumb a { color: rgba(255,255,255,0.5); text-decoration: none; transition: color 140ms; white-space: nowrap; flex-shrink: 0; }
-.bb-cat-hero-breadcrumb a:hover { color: var(--bb-brand-primary-on-dark); }
-.bb-cat-hero-breadcrumb span[aria-hidden] { color: var(--bb-brand-primary-on-dark); white-space: nowrap; flex-shrink: 0; }
-.bb-cat-hero-breadcrumb span[aria-current] { color: rgba(255,255,255,0.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex-shrink: 1; }
+/* .bb-cat-hero-breadcrumb đã xóa 2026-07-15 (AUD-057, quy trình §6.6): grep toàn
+   web 0 caller — PageHero/Breadcrumb hiện render bằng Tailwind utilities. */
 
 
 /* WP-parity trang shop (/san-pham): tiêu đề banner chữ thường ("Tất cả sản phẩm"),
@@ -1663,7 +1687,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
  * Cart page - scoped WooCommerce `page-cart.php` parity.
  * ============================================================ */
 .bb-cart-page {
-  background: #fff;
+  background: var(--bb-color-white);
   padding: 0 0 60px;
 }
 
@@ -1687,7 +1711,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 
 .bb-cart-heading-row h1 {
   margin: 0;
-  color: #000;
+  color: var(--bb-color-black);
   font-family: var(--bb-font-body);
   font-size: var(--bb-text-a1-title); /* WP page banner = 24px */
   line-height: 1.2;
@@ -1747,8 +1771,8 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   margin: 0 0 24px;
   padding: 16px 20px;
   border: 1px solid #cecece;
-  color: #3a3a3a;
-  background: #fff;
+  color: var(--bb-color-gray-700);
+  background: var(--bb-color-white);
 }
 
 .cart-table .woocommerce-error {
@@ -1770,7 +1794,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   padding: 0 24px;
   border: 0;
   background: var(--bb-action-primary);
-  color: #fff;
+  color: var(--bb-color-white);
   font-family: var(--bb-font-cta);
   font-size: var(--bb-text-b4-action);
   font-weight: 600;
@@ -2134,7 +2158,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
    * cards the same height while leaving room to show each image in full. */
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  background-color: #fff;
+  background-color: var(--bb-color-white);
   /* Kill the WP/lozad cover background-image on the anchor — it was showing a
    * cropped copy of the photo behind the `contain` image's margins, which read
    * as the image being cut/duplicated. !important beats lozad's inline style. */
@@ -2192,7 +2216,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
    * `.news-list` so it also covers the related-posts grid on article pages. */
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  background-color: #fff;
+  background-color: var(--bb-color-white);
   background-image: none !important;
   color: inherit;
   text-decoration: none;
@@ -2485,7 +2509,7 @@ a:not(.font-cta):hover {
 /* WP breadcrumb: color #717171, weight 600 — overrides blue-link group above */
 .bb-breadcrumb,
 .bb-breadcrumb a {
-  color: #717171;
+  color: var(--bb-text-muted);
 }
 
 .bb-breadcrumb a {
@@ -2521,7 +2545,7 @@ input[type="checkbox"] {
 }
 
 .bb-product-image {
-  background: #ffffff;
+  background: var(--bb-color-white);
   border-radius: 0;
 }
 
@@ -2687,8 +2711,8 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
 }
 
 .bb-article-detail-parity {
-  background: #ffffff;
-  color: #000000;
+  background: var(--bb-color-white);
+  color: var(--bb-color-black);
   font-family: var(--bb-font-body);
 }
 
@@ -2696,9 +2720,9 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
   width: 30%;
   margin-bottom: 14px;
   padding: 10px 16px;
-  border: 1px solid #000000;
+  border: 1px solid var(--bb-color-black);
   border-radius: 12px;
-  background-color: #ffffff;
+  background-color: var(--bb-color-white);
 }
 
 .bb-article-detail-parity #table-of-content.expanded {
@@ -2707,7 +2731,7 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
 }
 
 .bb-article-detail-parity #table-of-content .toc-title {
-  color: #000000;
+  color: var(--bb-color-black);
   font-size: var(--bb-text-a5-meta);
   font-weight: 600;
   line-height: 1.5625rem;
@@ -2716,7 +2740,7 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
 .bb-article-detail-parity #table-of-content .btn-toggle {
   border: 0;
   background: transparent;
-  color: #000000;
+  color: var(--bb-color-black);
   font: inherit;
   cursor: pointer;
 }
@@ -2740,7 +2764,7 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
 .bb-article-detail-parity #table-of-content .table-of-content-list a {
   display: inline-block;
   margin: 2px 0;
-  color: #000000;
+  color: var(--bb-color-black);
   text-decoration: underline;
   transition: all 0.2s ease;
 }
@@ -2750,7 +2774,7 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
 }
 
 .bb-article-detail-parity .bb-article-detail-page .bb-article-wyswyg {
-  color: #000000;
+  color: var(--bb-color-black);
   font-family: var(--bb-font-body);
   font-size: var(--bb-text-a5-meta);
   line-height: 1.5625rem;
@@ -2818,8 +2842,8 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
   min-height: 120px;
   align-items: center;
   justify-content: center;
-  background: #f5f5f5;
-  color: #6f6f6f;
+  background: var(--bb-color-gray-50);
+  color: var(--bb-color-gray-500);
   font-family: var(--bb-font-body);
   font-size: var(--bb-text-a5-meta);
 }
@@ -2833,7 +2857,7 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
 .bb-article-detail-page .bb-article-wyswyg {
   display: block;
   min-width: 0;
-  color: #000;
+  color: var(--bb-color-black);
   font-family: var(--bb-font-body);
   font-size: var(--bb-text-a4-content);
   line-height: 1.5;
@@ -2858,7 +2882,7 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
 .bb-article-detail-page .bb-article-wyswyg h6 {
   margin-top: 0;
   margin-bottom: 0.5rem;
-  color: #000;
+  color: var(--bb-color-black);
   font-family: var(--bb-font-body);
   font-weight: 600;
   line-height: 1.2;
@@ -2880,7 +2904,7 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
 .bb-article-detail-page .bb-article-wyswyg h6 { font-size: var(--bb-text-a4-content); }
 
 .bb-article-detail-page .bb-article-wyswyg a {
-  color: #000;
+  color: var(--bb-color-black);
   text-decoration: none;
 }
 
@@ -2905,7 +2929,7 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
 
 .bb-article-detail-page .bb-article-wyswyg figcaption {
   margin: 0.5rem 0 1rem;
-  color: #6f6f6f;
+  color: var(--bb-color-gray-500);
   font-size: var(--bb-text-a5-meta);
   text-align: center;
 }
@@ -3218,8 +3242,8 @@ html.overlay {
 
 /* Homepage visual parity: WordPress page-template-page-home cache 2026-01-19. */
 .bb-home {
-  background: #fff;
-  color: #000;
+  background: var(--bb-color-white);
+  color: var(--bb-color-black);
 }
 
 .bb-home a {
@@ -3238,13 +3262,13 @@ html.overlay {
 
 .bb-home .about-bigbike .block-content p {
   margin: 0;
-  color: #6f6f6f;
+  color: var(--bb-color-gray-500);
   font-size: var(--bb-text-a4-content);
   line-height: 1.6;
 }
 
 .bb-home .product-list {
-  background: #fff;
+  background: var(--bb-color-white);
 }
 
 .bb-home #main-product-slide {
@@ -3296,7 +3320,7 @@ body .banner-ads > .container > .row {
 .bb-home .content-bottom.wyswyg h5,
 .bb-home .content-bottom.wyswyg h6 {
   margin: 0 0 16px;
-  color: #000;
+  color: var(--bb-color-black);
   font-family: var(--bb-font-body);
   font-weight: 600;
   line-height: 1.5;

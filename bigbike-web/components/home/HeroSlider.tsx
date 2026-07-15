@@ -19,9 +19,9 @@ import type { Locale } from "@/i18n/locale";
 const LINK_CLASS =
   "-swiper-lazy bb-main-banner-link relative block w-full h-full text-inherit no-underline";
 const ARROW_BASE =
-  "absolute top-1/2 z-10 inline-flex items-center justify-center p-0 [transform:translateY(-50%)] border-none bg-transparent text-white cursor-pointer [filter:drop-shadow(0_1px_3px_rgba(0,0,0,0.6))] [transition:opacity_0.15s_ease] opacity-100 hover:opacity-75 focus-visible:[outline:2px_solid_rgba(255,255,255,0.7)] focus-visible:[outline-offset:2px] w-[48px] h-[72px]";
+  "absolute top-1/2 z-10 inline-flex items-center justify-center p-0 [transform:translateY(-50%)] border-none bg-transparent text-white cursor-pointer [filter:drop-shadow(0_1px_3px_rgba(0,0,0,0.6))] [transition:opacity_0.15s_ease] opacity-100 hover:opacity-75 focus-visible:[outline:2px_solid_rgba(255,255,255,0.7)] focus-visible:[outline-offset:2px] w-12 h-18";
 const ARROW_ICON =
-  "block shrink-0 w-[88px] h-[88px] max-md:w-[60px] max-md:h-[60px]";
+  "block shrink-0 w-22 h-22 max-md:w-15 max-md:h-15";
 
 export type HeroSlide = {
   id: string;
@@ -127,7 +127,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
 
   return (
     <div
-      className="bb-main-banner relative w-full h-[max(40vw,300px)] max-md:h-auto max-md:aspect-[411/548] overflow-hidden bg-black 3xl:max-h-[1080px] 4xl:max-h-[1200px]"
+      className="bb-main-banner relative w-full h-[max(40vw,300px)] max-md:h-auto max-md:aspect-[411/548] overflow-hidden bg-black 3xl:max-h-270 4xl:max-h-300"
       aria-roledescription="carousel"
       aria-label="BigBike"
     >
@@ -169,7 +169,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
         <>
           <button
             type="button"
-            className={`${ARROW_BASE} left-[10px]`}
+            className={`${ARROW_BASE} left-2.5`}
             onClick={() => swiperRef.current?.slidePrev()}
             aria-label={tA("slidePrev")}
           >
@@ -177,13 +177,13 @@ export function HeroSlider({ slides }: HeroSliderProps) {
           </button>
           <button
             type="button"
-            className={`${ARROW_BASE} right-[10px]`}
+            className={`${ARROW_BASE} right-2.5`}
             onClick={() => swiperRef.current?.slideNext()}
             aria-label={tA("slideNext")}
           >
             <ChevronRight aria-hidden="true" className={ARROW_ICON} strokeWidth={2} />
           </button>
-          <div className="absolute left-1/2 bottom-[70px] z-10 flex items-end gap-0 w-[min(370px,calc(100%-48px))] [transform:translateX(-50%)] pb-2.5 border-b border-b-muted-foreground text-white font-body text-a4-content leading-[1.2] text-left max-md:hidden">
+          <div className="absolute left-1/2 bottom-17.5 z-10 flex items-end gap-0 w-[min(370px,calc(100%-48px))] [transform:translateX(-50%)] pb-2.5 border-b border-b-muted-foreground text-white font-body text-a4-content leading-[1.2] text-left max-md:hidden">
             <span>{activeIndex + 1}/{count}</span>
           </div>
         </>

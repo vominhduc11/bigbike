@@ -60,7 +60,7 @@ export function ProductSwiper({ products, className, autoHeight = false }: Props
           type="button"
           variant="ghost"
           size="icon"
-          className={cn(ARROW_BTN, "-left-5 min-[1440px]:-left-[60px]")}
+          className={cn(ARROW_BTN, "-left-5 min-[1440px]:-left-15")}
           onClick={() => swiperRef.current?.slidePrev()}
           aria-label={t("scrollPrev")}
         >
@@ -109,7 +109,7 @@ export function ProductSwiper({ products, className, autoHeight = false }: Props
           type="button"
           variant="ghost"
           size="icon"
-          className={cn(ARROW_BTN, "-right-5 min-[1440px]:-right-[60px]")}
+          className={cn(ARROW_BTN, "-right-5 min-[1440px]:-right-15")}
           onClick={() => swiperRef.current?.slideNext()}
           aria-label={t("scrollNext")}
         >
@@ -124,7 +124,7 @@ export function ProductSwiper({ products, className, autoHeight = false }: Props
       {!isLocked && (
         <div
           id={paginationId}
-          className="flex justify-center mt-[40px] [&_.swiper-pagination-bullet]:my-0 [&_.swiper-pagination-bullet]:mx-[5px] [&_.swiper-pagination-bullet]:h-[10px] [&_.swiper-pagination-bullet]:w-[10px] [&_.swiper-pagination-bullet]:!rounded-full [&_.swiper-pagination-bullet]:bg-border-default [&_.swiper-pagination-bullet]:opacity-100 [&_.swiper-pagination-bullet]:[transition:all_0.3s_ease] [&_.swiper-pagination-bullet-active]:!w-[20px] [&_.swiper-pagination-bullet-active]:!rounded-[20px] [&_.swiper-pagination-bullet-active]:!bg-brand"
+          className="flex justify-center mt-10 [&_.swiper-pagination-bullet]:my-0 [&_.swiper-pagination-bullet]:mx-[5px] [&_.swiper-pagination-bullet]:h-2.5 [&_.swiper-pagination-bullet]:w-2.5 [&_.swiper-pagination-bullet]:!rounded-full [&_.swiper-pagination-bullet]:bg-border-default [&_.swiper-pagination-bullet]:opacity-100 [&_.swiper-pagination-bullet]:[transition:all_0.3s_ease] [&_.swiper-pagination-bullet-active]:!w-5 [&_.swiper-pagination-bullet-active]:!rounded-[20px] [&_.swiper-pagination-bullet-active]:!bg-brand"
           aria-hidden="true"
         />
       )}

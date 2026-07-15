@@ -38,26 +38,26 @@ type HeaderClientProps = {
 
 function HamburgerIcon({ open }: { open: boolean }) {
   return (
-    <span className="relative block h-[24px] w-[34px]" aria-hidden>
+    <span className="relative block h-6 w-8.5" aria-hidden>
       <span
         className={cn(
-          "absolute block h-[2px] bg-white transition-transform duration-300",
+          "absolute block h-0.5 bg-white transition-transform duration-300",
           open
-            ? "left-1/2 top-1/2 w-[34px] -translate-x-1/2 -translate-y-1/2 rotate-45"
-            : "left-[10px] top-[5px] w-[15px]",
+            ? "left-1/2 top-1/2 w-8.5 -translate-x-1/2 -translate-y-1/2 rotate-45"
+            : "left-2.5 top-[5px] w-[15px]",
         )}
       />
       <span
         className={cn(
-          "absolute block h-[2px] bg-white transition-transform duration-300",
+          "absolute block h-0.5 bg-white transition-transform duration-300",
           open
-            ? "left-1/2 top-1/2 w-[34px] -translate-x-1/2 -translate-y-1/2 -rotate-45"
-            : "left-[10px] top-[11px] w-[24px]",
+            ? "left-1/2 top-1/2 w-8.5 -translate-x-1/2 -translate-y-1/2 -rotate-45"
+            : "left-2.5 top-[11px] w-6",
         )}
       />
       <span
         className={cn(
-          "absolute bottom-[5px] right-0 block h-[2px] w-[15px] bg-white transition-opacity duration-300",
+          "absolute bottom-[5px] right-0 block h-0.5 w-[15px] bg-white transition-opacity duration-300",
           open && "opacity-0",
         )}
       />
@@ -74,19 +74,19 @@ function ContactDetails({ contact, dark = false }: { contact: HeaderContact; dar
   ];
 
   return (
-    <section className={cn("mt-[70px]", dark && "mt-0 border-t border-white/20 py-[30px]")}>
+    <section className={cn("mt-17.5", dark && "mt-0 border-t border-white/20 py-7.5")}>
       <h2 className={cn("m-0 font-cta text-b2-contact font-bold uppercase", dark ? "text-white" : "text-foreground")}>
         {t("shopInfoContactHeading")}
       </h2>
       <ul className="m-0 list-none p-0">
-        <li className="mt-[30px] flex items-start gap-4">
+        <li className="mt-7.5 flex items-start gap-4">
           <Clock className="h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
           <div className={cn("text-a4-content leading-6", dark ? "text-white/80" : "text-foreground")}>
             {hours.map((value) => <p key={value} className="m-0!">{value}</p>)}
           </div>
         </li>
         {contact.address ? (
-          <li className="mt-[30px] flex items-start gap-4">
+          <li className="mt-7.5 flex items-start gap-4">
             <MapPin className="h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
             <div className={cn("text-a4-content leading-6", dark ? "text-white/80" : "text-foreground")}>
               <p className="m-0! font-semibold">{t("wpContactStore")}</p>
@@ -95,7 +95,7 @@ function ContactDetails({ contact, dark = false }: { contact: HeaderContact; dar
           </li>
         ) : null}
         {contact.phones.length > 0 ? (
-          <li className="mt-[30px] flex items-start gap-4">
+          <li className="mt-7.5 flex items-start gap-4">
             <Phone className="h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
             <div className={cn("text-a4-content leading-6", dark ? "text-white/80" : "text-foreground")}>
               {contact.phones.map((phone) => <p key={phone} className="m-0!">{phone}</p>)}
@@ -128,9 +128,9 @@ export function HeaderClient({ menuNodes, contact }: HeaderClientProps) {
       <header
         data-bb-header
         data-scrolled={scrolled ? "true" : "false"}
-        className="fixed inset-x-0 top-0 z-[var(--bb-z-header)] h-[60px] bg-black text-white md:h-[80px]"
+        className="fixed inset-x-0 top-0 z-[var(--bb-z-header)] h-15 bg-black text-white md:h-20"
       >
-        <div className="mx-auto flex h-full w-full max-w-[1750px] items-center px-4 md:px-6">
+        <div className="mx-auto flex h-full w-full max-w-437.5 items-center px-4 md:px-6">
           <div className="flex h-full min-w-0 flex-1 items-start min-[1261px]:w-1/6 min-[1261px]:flex-none">
             <Link href="/" data-header-logo className="relative flex h-full items-start">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -140,7 +140,7 @@ export function HeaderClient({ menuNodes, contact }: HeaderClientProps) {
                 width={scrolled ? 150 : 190}
                 className={cn(
                   "hidden min-[1261px]:block!",
-                  scrolled ? "mt-[15px] w-[150px]" : "w-[190px]",
+                  scrolled ? "mt-[15px] w-37.5" : "w-47.5",
                 )}
               />
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -148,7 +148,7 @@ export function HeaderClient({ menuNodes, contact }: HeaderClientProps) {
                 src="/brand/header-mark.png"
                 alt="BigBike"
                 width="150"
-                className="my-auto w-20 min-[501px]:w-[150px] min-[1261px]:hidden"
+                className="my-auto w-20 min-[501px]:w-37.5 min-[1261px]:hidden"
               />
             </Link>
           </div>
@@ -157,7 +157,7 @@ export function HeaderClient({ menuNodes, contact }: HeaderClientProps) {
             <div className="hidden h-full min-[1261px]:block!">
               <HeaderMenu initialNodes={menuNodes} variant="desktop" />
             </div>
-            <div className="flex h-full shrink-0 items-center min-[1261px]:ml-[14px] min-[1261px]:border-l min-[1261px]:border-white/25 min-[1261px]:pl-[14px]">
+            <div className="flex h-full shrink-0 items-center min-[1261px]:ml-3.5 min-[1261px]:border-l min-[1261px]:border-white/25 min-[1261px]:pl-3.5">
               <LanguageSwitch />
               <HeaderSearchButton />
               <div className="hidden h-full md:block!">
@@ -174,7 +174,7 @@ export function HeaderClient({ menuNodes, contact }: HeaderClientProps) {
                 aria-label={mobileMenuOpen ? "Đóng menu" : "Mở menu"}
                 aria-expanded={mobileMenuOpen}
                 onClick={() => togglePanel("mobile-menu")}
-                className={cn(iconBtn, "h-[60px]! min-h-[60px]! px-[10px]! hover:not-disabled:scale-100 md:h-[80px]! md:min-h-[80px]! min-[1261px]:hidden!")}
+                className={cn(iconBtn, "h-15! min-h-15! px-2.5! hover:not-disabled:scale-100 md:h-20! md:min-h-20! min-[1261px]:hidden!")}
               >
                 <HamburgerIcon open={mobileMenuOpen} />
               </Button>
@@ -186,7 +186,7 @@ export function HeaderClient({ menuNodes, contact }: HeaderClientProps) {
                 aria-label="Thông tin cửa hàng"
                 aria-expanded={desktopInfoOpen}
                 onClick={() => togglePanel("desktop-info")}
-                className={cn(iconBtn, "ml-[10px] hidden h-[80px]! min-h-[80px]! px-[10px]! hover:not-disabled:scale-100 min-[1261px]:inline-flex!")}
+                className={cn(iconBtn, "ml-2.5 hidden h-20! min-h-20! px-2.5! hover:not-disabled:scale-100 min-[1261px]:inline-flex!")}
               >
                 <HamburgerIcon open={desktopInfoOpen} />
               </Button>
@@ -194,7 +194,7 @@ export function HeaderClient({ menuNodes, contact }: HeaderClientProps) {
           </div>
         </div>
       </header>
-      <div className="h-[60px] md:h-[80px]" aria-hidden />
+      <div className="h-15 md:h-20" aria-hidden />
 
       <Sheet
         modal={false}
@@ -213,9 +213,9 @@ export function HeaderClient({ menuNodes, contact }: HeaderClientProps) {
             }
           }}
           showClose={false}
-          overlayClassName="top-[60px]! md:top-[80px]!"
+          overlayClassName="top-15! md:top-20!"
           data-header-mobile-menu
-          className="bottom-0! top-[60px]! h-[calc(100dvh-60px)]! w-full! max-w-[500px]! gap-0 overflow-y-auto border-none! bg-black! p-0! text-white md:top-[80px]! md:h-[calc(100dvh-80px)]!"
+          className="bottom-0! top-15! h-[calc(100dvh-60px)]! w-full! max-w-125! gap-0 overflow-y-auto border-none! bg-black! p-0! text-white md:top-20! md:h-[calc(100dvh-80px)]!"
         >
           <SheetTitle className="sr-only">Menu chính</SheetTitle>
           <SheetDescription className="sr-only">Điều hướng và thông tin cửa hàng BigBike</SheetDescription>
@@ -234,7 +234,7 @@ export function HeaderClient({ menuNodes, contact }: HeaderClientProps) {
         <SheetContent
           side="right"
           showClose={false}
-          className="w-full! max-w-[645px]! overflow-y-auto border-none! bg-white! px-[70px]! py-[50px]!"
+          className="w-full! max-w-[645px]! overflow-y-auto border-none! bg-white! px-17.5! py-12.5!"
         >
           <SheetTitle className="sr-only">Thông tin cửa hàng</SheetTitle>
           <SheetDescription className="sr-only">Giờ mở cửa, địa chỉ và số điện thoại BigBike</SheetDescription>
@@ -244,13 +244,13 @@ export function HeaderClient({ menuNodes, contact }: HeaderClientProps) {
             size="icon"
             aria-label="Đóng"
             onClick={closePanel}
-            className="absolute right-[70px] top-[50px] hover:not-disabled:scale-100"
+            className="absolute right-17.5 top-12.5 hover:not-disabled:scale-100"
           >
             <X className="h-6 w-6" aria-hidden />
           </Button>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/brand/header-mark.png" alt="BigBike" width="150" />
-          <p className="mb-0 mt-[30px] text-a5-meta leading-6 text-muted-foreground">
+          <p className="mb-0 mt-7.5 text-a5-meta leading-6 text-muted-foreground">
             <LocalizedSetting
               vi={contact.descriptionVi}
               en={contact.descriptionEn}

@@ -45,7 +45,7 @@ export function LanguageSwitch() {
   }
 
   return (
-    <div className="flex h-[80px] items-center px-[20px]">
+    <div className="flex h-20 items-center px-5">
       {LOCALES.map((code, index) => (
         <span key={code} className="inline-flex items-center">
           {index > 0 ? <span className="select-none px-1 text-b5-label text-white/40">/</span> : null}

@@ -60,7 +60,7 @@ export function AddressForm({ editing, accountEmail, saving, error, onSubmit }: 
         <FormNotice tone="danger" className="mb-4">{error}</FormNotice>
       )}
 
-      <div className="grid grid-cols-1 gap-x-6 gap-y-[18px] sm:grid-cols-2 xl:gap-x-8">
+      <div className="grid grid-cols-1 gap-x-6 gap-y-4.5 sm:grid-cols-2 xl:gap-x-8">
         <div className="flex flex-col gap-1.5">
           <label className={LEGACY_LABEL}>{t("fullNameLabel")}<ReqMark /></label>
           <Input
@@ -98,7 +98,7 @@ export function AddressForm({ editing, accountEmail, saving, error, onSubmit }: 
             placeholder={t("addressPlaceholder")}
           />
         </div>
-        <div className="sm:col-span-2 grid grid-cols-1 gap-x-6 gap-y-[18px] sm:grid-cols-3 xl:gap-x-8">
+        <div className="sm:col-span-2 grid grid-cols-1 gap-x-6 gap-y-4.5 sm:grid-cols-3 xl:gap-x-8">
           {vnError && (
             <p className="sm:col-span-3 text-a4-content text-destructive">{vnError}</p>
           )}
@@ -125,7 +125,7 @@ export function AddressForm({ editing, accountEmail, saving, error, onSubmit }: 
           type="submit"
           variant="primary"
           disabled={saving}
-          className="w-full sm:w-auto sm:min-w-[160px]"
+          className="w-full sm:w-auto sm:min-w-40"
         >
           {saving ? t("saving") : t("save")}
         </Button>

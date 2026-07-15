@@ -29,7 +29,7 @@ export function CodPaymentBlock() {
   return (
     <div className="flex items-center gap-4 border border-border bg-secondary p-4">
       <div className="flex h-10 w-10 items-center justify-center bg-foreground">
-        <svg viewBox="0 0 24 24" className="w-[22px] h-[22px] fill-white"><path d="M2 8h20v2H2zm0 4h20v2H2zm0 4h12v2H2zM18 14l2 2 4-4-1.4-1.4L20 13.2l-.6-.6z"/></svg>
+        <svg viewBox="0 0 24 24" className="w-5.5 h-5.5 fill-white"><path d="M2 8h20v2H2zm0 4h20v2H2zm0 4h12v2H2zM18 14l2 2 4-4-1.4-1.4L20 13.2l-.6-.6z"/></svg>
       </div>
       <div className="min-w-0 flex-1 text-left">
         <strong className="block">{t("paymentMethod.COD")}</strong>

@@ -25,14 +25,14 @@ export function CheckoutSkeleton() {
         <SkelText w="10%" />
         <SkelTitle w="25%" h="2em" />
       </div>
-      <div className="grid grid-cols-[1fr_420px] max-[1025px]:grid-cols-1 gap-8 max-md:gap-[14px] max-w-[var(--bb-container-wide)] min-[1536px]:max-w-[1480px] min-[1920px]:max-w-[1760px] min-[2560px]:max-w-[2400px] mx-auto mb-10 max-md:mb-7 px-6 max-md:px-[var(--bb-mobile-page-x)]">
+      <div className="grid grid-cols-[1fr_420px] max-[1025px]:grid-cols-1 gap-8 max-md:gap-3.5 max-w-[var(--bb-container-wide)] min-[1536px]:max-w-370 min-[1920px]:max-w-440 min-[2560px]:max-w-600 mx-auto mb-10 max-md:mb-7 px-6 max-md:px-[var(--bb-mobile-page-x)]">
         <div>
           {/* Stepper */}
-          <div className="flex gap-0 mb-6 max-md:mb-[14px] border-b border-b-border max-[601px]:overflow-x-auto max-[601px]:flex-nowrap max-[601px]:[scrollbar-width:none] max-[601px]:[&::-webkit-scrollbar]:hidden">
+          <div className="flex gap-0 mb-6 max-md:mb-3.5 border-b border-b-border max-[601px]:overflow-x-auto max-[601px]:flex-nowrap max-[601px]:[scrollbar-width:none] max-[601px]:[&::-webkit-scrollbar]:hidden">
             {Array.from({ length: 3 }).map((_, i) => (
               <div
                 key={i}
-                className="flex flex-1 items-center gap-3 py-[14px] px-4 max-md:py-2.5 max-md:px-3 border-b-[3px] border-b-transparent text-muted-foreground cursor-pointer [transition:all_140ms] max-md:min-w-[132px] max-md:min-h-[var(--bb-touch-target)]"
+                className="flex flex-1 items-center gap-3 py-3.5 px-4 max-md:py-2.5 max-md:px-3 border-b-[3px] border-b-transparent text-muted-foreground cursor-pointer [transition:all_140ms] max-md:min-w-33 max-md:min-h-[var(--bb-touch-target)]"
               >
                 <SkelCircle size={28} />
                 <div className={skelCol} style={{ flex: 1 }}>
@@ -43,7 +43,7 @@ export function CheckoutSkeleton() {
             ))}
           </div>
           {/* Form section 1 */}
-          <div className="bg-card border border-border rounded-none py-[22px] px-6 max-md:py-4 max-md:px-[14px] mb-[18px] max-md:mb-3">
+          <div className="bg-card border border-border rounded-none py-5.5 px-6 max-md:py-4 max-md:px-3.5 mb-4.5 max-md:mb-3">
             <SkelTitle w="40%" />
             <div
               style={{ display: "grid", gap: 14, gridTemplateColumns: "1fr 1fr", marginTop: 18 }}
@@ -56,7 +56,7 @@ export function CheckoutSkeleton() {
               ))}
             </div>
           </div>
-          <div className="bg-card border border-border rounded-none py-[22px] px-6 max-md:py-4 max-md:px-[14px] mb-[18px] max-md:mb-3">
+          <div className="bg-card border border-border rounded-none py-5.5 px-6 max-md:py-4 max-md:px-3.5 mb-4.5 max-md:mb-3">
             <SkelTitle w="35%" />
             <div className={skelStack} style={{ marginTop: 18 }}>
               <SkelBlock w="100%" h={56} />
@@ -64,7 +64,7 @@ export function CheckoutSkeleton() {
             </div>
           </div>
         </div>
-        <aside className="bg-card border border-border rounded-none p-[22px] max-md:py-4 max-md:px-[14px] sticky max-[769px]:static top-[calc(var(--bb-header-height)+34px+16px)] [align-self:start] max-md:mb-3">
+        <aside className="bg-card border border-border rounded-none p-5.5 max-md:py-4 max-md:px-3.5 sticky max-[769px]:static top-[calc(var(--bb-header-height)+34px+16px)] [align-self:start] max-md:mb-3">
           <div className={skelStack}>
             <SkelTitle w="60%" />
             {Array.from({ length: 2 }).map((_, i) => (
@@ -148,7 +148,7 @@ export function OrderDetailSkeleton() {
 export function OrderConfirmSkeleton() {
   return (
     <SkeletonRoot labelKey="orderConfirm">
-      <div className="mx-auto flex w-full max-w-[680px] flex-col items-center px-4 py-10 text-center md:py-16">
+      <div className="mx-auto flex w-full max-w-170 flex-col items-center px-4 py-10 text-center md:py-16">
         <SkelCircle size={88} />
         <div className={`${skelStack} mt-6 items-center`}>
           <SkelText w={120} />

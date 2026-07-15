@@ -35,7 +35,7 @@ const submenuReveal = [
   "group-hover/l2:visible group-hover/l2:translate-x-0 group-hover/l2:opacity-100 group-focus-within/l2:visible group-focus-within/l2:translate-x-0 group-focus-within/l2:opacity-100",
   "group-hover/l3:visible group-hover/l3:translate-x-0 group-hover/l3:opacity-100 group-focus-within/l3:visible group-focus-within/l3:translate-x-0 group-focus-within/l3:opacity-100",
 ];
-const mobileIndent = ["pl-[25px]", "pl-[50px]", "pl-[70px]", "pl-[90px]"];
+const mobileIndent = ["pl-[25px]", "pl-12.5", "pl-17.5", "pl-22.5"];
 
 export function HeaderMenu({ initialNodes, variant, onNavigate }: HeaderMenuProps) {
   const locale = useLocale();
@@ -94,7 +94,7 @@ export function HeaderMenu({ initialNodes, variant, onNavigate }: HeaderMenuProp
                 target={node.openInNewTab ? "_blank" : undefined}
                 rel={node.openInNewTab ? "noopener" : undefined}
                 onClick={() => setSuppressedId(node.id)}
-                className="flex h-full items-center px-[30px] font-cta text-b4-action font-semibold uppercase text-white! no-underline! transition-colors hover:text-brand-on-dark! focus-visible:text-brand-on-dark!"
+                className="flex h-full items-center px-7.5 font-cta text-b4-action font-semibold uppercase text-white! no-underline! transition-colors hover:text-brand-on-dark! focus-visible:text-brand-on-dark!"
               >
                 {node.label}
               </Link>
@@ -129,7 +129,7 @@ function DesktopSubmenu({
     <ul
       data-header-submenu
       className={cn(
-        "invisible absolute z-[var(--bb-z-dropdown)] m-0 w-[300px] list-none bg-white p-0 opacity-0 shadow-[var(--bb-shadow-dropdown)] transition-[opacity,transform,visibility] duration-200",
+        "invisible absolute z-[var(--bb-z-dropdown)] m-0 w-75 list-none bg-white p-0 opacity-0 shadow-[var(--bb-shadow-dropdown)] transition-[opacity,transform,visibility] duration-200",
         depth === 0 ? "left-0 top-full -translate-y-[10px]" : "left-full top-0 -translate-x-[10px]",
         submenuReveal[Math.min(depth, submenuReveal.length - 1)],
       )}
@@ -148,7 +148,7 @@ function DesktopSubmenu({
             <Link
               href={href}
               onClick={onNavigate}
-              className="flex items-center px-6 py-[14px] font-body text-a5-meta font-semibold normal-case text-muted-foreground! no-underline! hover:text-brand-on-dark!"
+              className="flex items-center px-6 py-3.5 font-body text-a5-meta font-semibold normal-case text-muted-foreground! no-underline! hover:text-brand-on-dark!"
             >
               {node.iconUrl ? (
                 <span
@@ -198,9 +198,9 @@ function MobileMenuList({
               rel={node.openInNewTab ? "noopener" : undefined}
               onClick={onNavigate}
               className={cn(
-                "flex min-h-[52px] items-center pr-[70px] text-white! no-underline!",
+                "flex min-h-13 items-center pr-17.5 text-white! no-underline!",
                 mobileIndent[Math.min(depth, mobileIndent.length - 1)],
-                depth === 0 ? "py-[15px] font-cta text-b4-action font-semibold uppercase" : "py-[12px] font-body text-a5-meta",
+                depth === 0 ? "py-[15px] font-cta text-b4-action font-semibold uppercase" : "py-3 font-body text-a5-meta",
               )}
             >
               {node.label}

@@ -266,8 +266,8 @@ export function PurchaseSection({
             <div className="status">
               <p
                 className={[
-                  "stock relative m-0 h-[42px] w-full max-w-[190px] border-0 bg-transparent px-8 text-center font-cta text-b4-action font-semibold uppercase leading-none text-white",
-                  "after:absolute after:inset-0 after:z-0 after:h-[42px] after:w-full after:[transform:skewX(-20deg)] after:transition-colors after:duration-normal",
+                  "stock relative m-0 h-10.5 w-full max-w-47.5 border-0 bg-transparent px-8 text-center font-cta text-b4-action font-semibold uppercase leading-none text-white",
+                  "after:absolute after:inset-0 after:z-0 after:h-10.5 after:w-full after:[transform:skewX(-20deg)] after:transition-colors after:duration-normal",
                   isOutOfStock ? "out-of-stock after:bg-brand" : "in-stock after:bg-foreground",
                 ].join(" ")}
               >

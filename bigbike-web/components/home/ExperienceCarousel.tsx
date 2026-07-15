@@ -58,7 +58,7 @@ function ExperienceSlide({
           <img
             src={media.bgSrc}
             alt={media.bgAlt}
-            className="block w-full max-h-[378px] max-[767px]:max-h-[220px] object-cover"
+            className="block w-full max-h-94.5 max-[767px]:max-h-55 object-cover"
             loading={isActive ? "eager" : "lazy"}
             decoding="async"
             draggable={false}
@@ -76,7 +76,7 @@ function ExperienceSlide({
             <img
               src={media.productSrc}
               alt={media.productAlt}
-              className="mx-auto w-1/2 max-w-[420px] max-[991px]:w-[64%] max-[767px]:w-[52vw] max-[767px]:max-w-[230px] max-[374px]:max-w-[210px]"
+              className="mx-auto w-1/2 max-w-105 max-[991px]:w-[64%] max-[767px]:w-[52vw] max-[767px]:max-w-57.5 max-[374px]:max-w-52.5"
               loading={isActive ? "eager" : "lazy"}
               decoding="async"
               draggable={false}
@@ -88,12 +88,12 @@ function ExperienceSlide({
           <h3 className="m-0 font-body text-a2-page font-semibold uppercase leading-[30px] max-md:leading-[1.3] text-black">
             {media.title}
           </h3>
-          <div className="pt-[40px] text-center max-[767px]:pt-6">
+          <div className="pt-10 text-center max-[767px]:pt-6">
             <LocalizedLink
               kind="article"
               viSlug={article.slug}
               enSlug={article.slugEn}
-              className="bb-exp-slide-link inline-block w-[170px] max-md:w-[150px] p-0 border border-[var(--bb-border-default)] text-black font-[family-name:var(--bb-font-cta)] text-b4-action font-semibold leading-[52px] max-md:leading-[44px] no-underline uppercase [transition:border-color_var(--bb-duration-fast)_var(--bb-ease-standard),color_var(--bb-duration-fast)_var(--bb-ease-standard)] focus-visible:[outline:var(--bb-focus-outline)] focus-visible:outline-offset-4"
+              className="bb-exp-slide-link inline-block w-42.5 max-md:w-37.5 p-0 border border-[var(--bb-border-default)] text-black font-[family-name:var(--bb-font-cta)] text-b4-action font-semibold leading-[52px] max-md:leading-[44px] no-underline uppercase [transition:border-color_var(--bb-duration-fast)_var(--bb-ease-standard),color_var(--bb-duration-fast)_var(--bb-ease-standard)] focus-visible:[outline:var(--bb-focus-outline)] focus-visible:outline-offset-4"
               tabIndex={isActive ? 0 : -1}
             >
               {tCommon("viewDetails")}

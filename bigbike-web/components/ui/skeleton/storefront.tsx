@@ -54,7 +54,7 @@ export function HomeSkeleton() {
         <div className={bbSection}>
           <div className="grid grid-cols-1 gap-4 py-[var(--bb-space-12)] sm:grid-cols-2 lg:grid-cols-3 xl:gap-6 2xl:gap-8">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex min-h-[200px] flex-col justify-center gap-3 bg-muted p-6">
+              <div key={i} className="flex min-h-50 flex-col justify-center gap-3 bg-muted p-6">
                 <SkelText w="35%" />
                 <SkelTitle w="72%" />
                 <SkelButton w={110} />
@@ -130,7 +130,7 @@ export function PdpSkeleton() {
       </div>
 
       {/* Two-col PDP */}
-      <div className="grid grid-cols-[1.1fr_1fr] max-[769px]:grid-cols-1 gap-12 max-[601px]:gap-6 max-w-[var(--bb-container-wide)] 2xl:max-w-[1480px] min-[1920px]:max-w-[1760px] min-[2560px]:max-w-[2400px] mx-auto mt-5 px-6 max-[601px]:px-4 [align-items:start] min-w-0 [&>*]:min-w-0 bg-background">
+      <div className="grid grid-cols-[1.1fr_1fr] max-[769px]:grid-cols-1 gap-12 max-[601px]:gap-6 max-w-[var(--bb-container-wide)] 2xl:max-w-370 min-[1920px]:max-w-440 min-[2560px]:max-w-600 mx-auto mt-5 px-6 max-[601px]:px-4 [align-items:start] min-w-0 [&>*]:min-w-0 bg-background">
         {/* Gallery — cover image with a thumbnail row below */}
         <div>
           <div style={{ aspectRatio: "1", minWidth: 0 }}>
@@ -172,7 +172,7 @@ export function PdpSkeleton() {
       </div>
 
       {/* Below-fold: tabs + related */}
-      <div className="max-w-[var(--bb-container-wide)] 2xl:max-w-[1480px] min-[1920px]:max-w-[1760px] min-[2560px]:max-w-[2400px] mx-auto mt-12 max-[601px]:mt-7 px-6 pt-10 pb-0 max-[601px]:px-4 max-[601px]:pt-6 border-t border-t-[var(--bb-border-default)] bg-background">
+      <div className="max-w-[var(--bb-container-wide)] 2xl:max-w-370 min-[1920px]:max-w-440 min-[2560px]:max-w-600 mx-auto mt-12 max-[601px]:mt-7 px-6 pt-10 pb-0 max-[601px]:px-4 max-[601px]:pt-6 border-t border-t-[var(--bb-border-default)] bg-background">
         <div className={skelRow} style={{ borderBottom: "1px solid var(--bb-border-subtle)", marginBottom: 28 }}>
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} style={{ padding: "14px 22px" }}>
@@ -213,7 +213,7 @@ export function CatalogSkeleton({ withHero = false }: { withHero?: boolean }) {
   return (
     <SkeletonRoot labelKey="category">
       {withHero && (
-        <div className="relative h-[300px] md:h-[430px]">
+        <div className="relative h-75 md:h-107.5">
           <SkelBlock w="100%" h="100%" rounded={false} style={{ position: "absolute", inset: 0 }} />
         </div>
       )}

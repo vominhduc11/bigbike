@@ -110,7 +110,7 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
               />
 
               <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex min-h-[36px] items-center gap-2">
+                <div className="flex min-h-9 items-center gap-2">
                   <Button type="button" variant="outline" size="sm" onClick={openWriteReviewDialog}>
                     {t("writeButton")}
                   </Button>
@@ -134,7 +134,7 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
                 <div className="flex items-center gap-2">
                   <span className="shrink-0 text-a5-meta text-muted-foreground">{t("sortLabel")}</span>
                   <Select value={sort} onValueChange={(value) => handleSortChange(value as SortKey)}>
-                    <SelectTrigger className="w-[180px] min-h-[40px]" aria-label={t("sortLabel")}>
+                    <SelectTrigger className="w-45 min-h-10" aria-label={t("sortLabel")}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

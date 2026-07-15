@@ -126,7 +126,7 @@ export function ProductTrustCard({
             return (
               <div
                 key={cell.key}
-                className="flex min-h-[88px] flex-col gap-2 border-r border-b border-border p-3 transition-colors hover:bg-secondary"
+                className="flex min-h-22 flex-col gap-2 border-r border-b border-border p-3 transition-colors hover:bg-secondary"
               >
                 <span
                   className={`flex size-7 shrink-0 items-center justify-center ${cell.tone === "red" ? "bg-brand-soft" : "bg-secondary"}`}

@@ -114,13 +114,13 @@ function AccordionPanel({ value, title, children }: { value: string; title: Reac
       data-footer-section={value}
       className={cn(
         "border-b border-white/10 min-[992px]:mb-0 min-[992px]:border-none min-[992px]:pb-0",
-        value === "social" ? "mb-[40px] pb-[60px]" : "mb-[34px] pb-[49px]",
+        value === "social" ? "mb-10 pb-15" : "mb-8.5 pb-[49px]",
       )}
     >
       <AccordionTrigger
         className={cn(
-          "group min-h-11 w-full gap-2 py-0 pr-[30px] text-left font-cta text-b4-action font-medium uppercase! text-brand-on-dark hover:text-brand-inverse min-[992px]:mb-[15px]! min-[992px]:pointer-events-none",
-          value === "social" ? "mb-[22px]!" : "mb-[19px]!",
+          "group min-h-11 w-full gap-2 py-0 pr-7.5 text-left font-cta text-b4-action font-medium uppercase! text-brand-on-dark hover:text-brand-inverse min-[992px]:mb-[15px]! min-[992px]:pointer-events-none",
+          value === "social" ? "mb-5.5!" : "mb-[19px]!",
         )}
         indicator={
           <span className="shrink-0 min-[992px]:hidden" aria-hidden>
@@ -154,17 +154,17 @@ export async function Footer() {
 
   return (
     <footer data-bb-focus="general_brand" className="relative z-[661] font-body text-white md:z-[655]">
-      <div className="bg-footer-top pt-[60px] md:pb-[85px]">
+      <div className="bg-footer-top pt-15 md:pb-[85px]">
         <Container variant="blog" className="px-[15px]!">
-          <div className="grid grid-cols-1 gap-x-[30px] md:grid-cols-12">
+          <div className="grid grid-cols-1 gap-x-7.5 md:grid-cols-12">
             <div className="md:col-span-7">
-              <h2 className="mb-[40px]! font-cta text-b1-display font-semibold uppercase leading-title">
+              <h2 className="mb-10! font-cta text-b1-display font-semibold uppercase leading-title">
                 <Tr ns="Footer" k="taglineLong" />
               </h2>
-              <div className="mb-[30px] flex flex-col gap-0">
+              <div className="mb-7.5 flex flex-col gap-0">
                 {FOOTER_HOTLINES.map((phone) => (
                   <p key={phone} className="m-0! flex items-center gap-[29px] font-cta text-b2-contact font-semibold">
-                    <Phone className="h-[24px] w-[24px] shrink-0 text-brand-on-dark" aria-hidden />
+                    <Phone className="h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
                     <a href={telHref(phone)} className="text-white! no-underline!">
                       {phone}
                     </a>
@@ -175,12 +175,12 @@ export async function Footer() {
                     href={`mailto:${FOOTER_EMAIL}`}
                     className="flex items-center gap-[29px] text-white! no-underline!"
                   >
-                    <Mail className="h-[24px] w-[24px] shrink-0 text-brand-on-dark" aria-hidden />
+                    <Mail className="h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
                     {FOOTER_EMAIL}
                   </a>
                 </p>
                 <p className="m-0! flex items-start gap-[29px] font-cta text-b2-contact font-semibold">
-                  <MapPin className="mt-1 h-[24px] w-[24px] shrink-0 text-brand-on-dark" aria-hidden />
+                  <MapPin className="mt-1 h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
                   <Tr ns="Footer" k="address" />
                 </p>
               </div>
@@ -196,7 +196,7 @@ export async function Footer() {
               <Accordion
                 type="multiple"
                 defaultValue={["menu", "social"]}
-                className="grid grid-cols-1 gap-x-[30px] min-[992px]:grid-cols-12"
+                className="grid grid-cols-1 gap-x-7.5 min-[992px]:grid-cols-12"
               >
                 <div className="min-[992px]:col-span-7">
                   <AccordionPanel value="menu" title={<Tr ns="Footer" k="infoHeading" />}>
@@ -210,7 +210,7 @@ export async function Footer() {
                         <a
                           rel="nofollow"
                           href={FOOTER_SOCIAL_LINKS.facebook}
-                          className="flex items-center gap-[20px]! text-white! no-underline!"
+                          className="flex items-center gap-5! text-white! no-underline!"
                         >
                           <SocialSvgIcon name="facebook" label="Facebook" />
                           <span>{facebookLabel(FOOTER_SOCIAL_LINKS.facebook)}</span>
@@ -220,7 +220,7 @@ export async function Footer() {
                         <a
                           rel="nofollow"
                           href={FOOTER_SOCIAL_LINKS.youtube}
-                          className="flex items-center gap-[20px]! text-white! no-underline!"
+                          className="flex items-center gap-5! text-white! no-underline!"
                         >
                           <SocialSvgIcon name="youtube" label="YouTube" />
                           <span>{socialLabel(FOOTER_SOCIAL_LINKS.youtube, "yt", "YouTube")}</span>
@@ -230,7 +230,7 @@ export async function Footer() {
                         <a
                           rel="nofollow"
                           href={FOOTER_SOCIAL_LINKS.tiktok}
-                          className="flex items-center gap-[20px]! text-white! no-underline!"
+                          className="flex items-center gap-5! text-white! no-underline!"
                         >
                           <SocialSvgIcon name="tiktok" label="TikTok" />
                           <span>{socialLabel(FOOTER_SOCIAL_LINKS.tiktok, "tiktok", "TikTok")}</span>
@@ -240,7 +240,7 @@ export async function Footer() {
                         <a
                           rel="nofollow"
                           href={FOOTER_SOCIAL_LINKS.shopee}
-                          className="flex items-center gap-[20px]! text-white! no-underline!"
+                          className="flex items-center gap-5! text-white! no-underline!"
                         >
                           <SocialSvgIcon name="shopee" label="Shopee" />
                           <span>{socialLabel(FOOTER_SOCIAL_LINKS.shopee, "shopee", "Shopee")}</span>
@@ -255,7 +255,7 @@ export async function Footer() {
         </Container>
       </div>
       <div className="bg-footer-top md:hidden">
-        <Container variant="blog" className="px-[15px]! pb-[10px]">
+        <Container variant="blog" className="px-[15px]! pb-2.5">
           <a href={FOOTER_BCT_URL} className="flex flex-col items-start pr-[33.3333%] text-white! no-underline!">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -283,7 +283,7 @@ export async function Footer() {
       </div>
       <div className="hidden bg-black md:block!">
         <Container variant="blog" className="px-[15px]!">
-          <div className="grid grid-cols-12 items-center gap-x-[30px] pb-[31px] pt-[30px]">
+          <div className="grid grid-cols-12 items-center gap-x-7.5 pb-[31px] pt-7.5">
             <div className="col-span-2">
               <Link href="/" className="inline-block">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -293,7 +293,7 @@ export async function Footer() {
             <div className="col-span-4">
               <p className="m-0">Copyright © {new Date().getFullYear()}. All Rights Reserved.</p>
             </div>
-            <div className="col-span-6 pl-[138px] pr-[130px]">
+            <div className="col-span-6 pl-34.5 pr-32.5">
               <a href={FOOTER_BCT_URL} className="flex flex-col items-start text-white! no-underline!">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -302,7 +302,7 @@ export async function Footer() {
                   width="200"
                   height="74"
                 />
-                <p className="mb-0 mt-[10px]! leading-[20px]!">
+                <p className="mb-0 mt-2.5! leading-[20px]!">
                   <Tr ns="Footer" k="businessRegistration" />
                 </p>
               </a>

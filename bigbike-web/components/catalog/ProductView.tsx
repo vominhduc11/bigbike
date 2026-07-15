@@ -401,7 +401,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
       {/* Vạch tiến độ đọc — chỉ mobile (khớp mockup). Fixed top nên vị trí trong DOM
           không ảnh hưởng; đặt đầu khối cho dễ thấy. */}
       <ReadingProgressBar />
-      <div className="mx-auto w-full max-w-[1200px] px-4">
+      <div className="mx-auto w-full max-w-300 px-4">
         <nav className="hidden py-8 text-a5-meta text-muted-foreground md:block" aria-label="Breadcrumb">
           <ol className="m-0 flex list-none flex-wrap items-center gap-1 p-0">
             <li>

@@ -57,8 +57,8 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
             height={675}
           />
         </div>
-        <div className="relative pt-[41px] px-5 pb-[30px] flex flex-col gap-2 flex-1 bg-card max-md:pt-[34px] max-md:px-[14px] max-md:pb-[18px]">
-          <span className="absolute -top-[21px] left-0 z-[2] inline-flex items-center h-[42px] min-w-[168px] pl-[22px] pr-[28px] bg-brand text-white font-cta text-b5-label font-semibold tracking-normal uppercase whitespace-nowrap rounded-none [clip-path:polygon(0_0,100%_0,calc(100%-18px)_100%,0_100%)]">
+        <div className="relative pt-[41px] px-5 pb-7.5 flex flex-col gap-2 flex-1 bg-card max-md:pt-8.5 max-md:px-3.5 max-md:pb-4.5">
+          <span className="absolute -top-[21px] left-0 z-[2] inline-flex items-center h-10.5 min-w-42 pl-5.5 pr-7 bg-brand text-white font-cta text-b5-label font-semibold tracking-normal uppercase whitespace-nowrap rounded-none [clip-path:polygon(0_0,100%_0,calc(100%-18px)_100%,0_100%)]">
             {publishedDate}
           </span>
           <div className="flex flex-col gap-2 flex-1">
@@ -66,7 +66,7 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
             <h3 className="font-body text-a4-content font-semibold text-foreground normal-case leading-[1.2] m-0 [transition:color_0.14s] line-clamp-2 group-hover:text-brand">
               {title}
             </h3>
-            <p className="text-a4-content text-muted-foreground leading-[1.55] m-0 min-h-[104px] line-clamp-4 max-md:min-h-0 max-md:line-clamp-3">
+            <p className="text-a4-content text-muted-foreground leading-[1.55] m-0 min-h-26 line-clamp-4 max-md:min-h-0 max-md:line-clamp-3">
               {excerpt}
             </p>
           </div>
@@ -80,10 +80,10 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
       kind="article"
       viSlug={article.slug}
       enSlug={article.slugEn}
-      className="group flex flex-col md:grid md:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.75fr)] mb-[22px] md:min-h-[360px] no-underline text-inherit bg-card shadow-md transition-shadow duration-300 hover:shadow-[0_6px_14px_rgba(0,0,0,0.22)]"
+      className="group flex flex-col md:grid md:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.75fr)] mb-5.5 md:min-h-90 no-underline text-inherit bg-card shadow-md transition-shadow duration-300 hover:shadow-[0_6px_14px_rgba(0,0,0,0.22)]"
     >
       <div
-        className="relative aspect-video md:aspect-auto overflow-hidden bg-muted shrink-0 md:h-full md:min-h-[320px]"
+        className="relative aspect-video md:aspect-auto overflow-hidden bg-muted shrink-0 md:h-full md:min-h-80"
       >
         <MediaImage
           image={article.coverImage}
@@ -94,9 +94,9 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
         />
       </div>
       <div
-        className="relative pt-[41px] px-[34px] pb-[30px] flex flex-col gap-2 flex-1 bg-card justify-center"
+        className="relative pt-[41px] px-8.5 pb-7.5 flex flex-col gap-2 flex-1 bg-card justify-center"
       >
-        <span className="absolute -top-[21px] left-0 z-[2] inline-flex items-center h-[42px] min-w-[168px] pl-[22px] pr-[28px] bg-brand text-white font-body text-b5-label font-bold tracking-wide uppercase whitespace-nowrap [clip-path:polygon(0_0,100%_0,calc(100%-18px)_100%,0_100%)]">
+        <span className="absolute -top-[21px] left-0 z-[2] inline-flex items-center h-10.5 min-w-42 pl-5.5 pr-7 bg-brand text-white font-body text-b5-label font-bold tracking-wide uppercase whitespace-nowrap [clip-path:polygon(0_0,100%_0,calc(100%-18px)_100%,0_100%)]">
           {publishedDate}
         </span>
         <div className="flex flex-col gap-2 flex-1">
@@ -113,7 +113,7 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
           >
             {excerpt}
           </p>
-          <span className="mt-auto pt-[6px] text-muted-foreground text-b4-action font-bold tracking-display uppercase transition-colors duration-300 group-hover:text-brand">
+          <span className="mt-auto pt-1.5 text-muted-foreground text-b4-action font-bold tracking-display uppercase transition-colors duration-300 group-hover:text-brand">
             {t("articleReadMore")}
           </span>
         </div>

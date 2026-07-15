@@ -20,12 +20,12 @@ test.describe("Purchase section @desktop", () => {
     expect(Math.round(galleryBox?.y ?? -1)).toBe(Math.round(infoBox?.y ?? -2));
     expect(galleryBox?.width ?? 0).toBeGreaterThan(infoBox?.width ?? 0);
 
-    const fieldsets = section.locator("[data-variant-picker] fieldset");
-    const fieldsetCount = await fieldsets.count();
-    for (let index = 0; index < fieldsetCount; index += 1) {
-      const option = fieldsets.nth(index).locator('input[type="radio"]:not(:disabled)').first();
-      await option.locator("xpath=following-sibling::label").click();
-      await expect(option).toBeChecked();
+    const groups = section.locator('[data-variant-picker] [role="radiogroup"]');
+    const groupCount = await groups.count();
+    for (let index = 0; index < groupCount; index += 1) {
+      const option = groups.nth(index).locator('[role="radio"]:not([disabled])').first();
+      await option.click();
+      await expect(option).toHaveAttribute("data-state", "checked");
     }
 
     const quantity = section.locator('input[type="number"]').first();

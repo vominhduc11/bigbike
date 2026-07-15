@@ -154,7 +154,7 @@ export function AddressBookContent() {
       )}
 
       {loading ? (
-        <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 xl:gap-6" aria-busy="true">
+        <div className="grid grid-cols-1 gap-4.5 sm:grid-cols-2 xl:gap-6" aria-busy="true">
           {[1, 2].map((i) => (
             <div key={i} className="border border-border p-5">
               <span className={cn(skelBase, "h-[1.1em] w-1/2")} />
@@ -167,7 +167,7 @@ export function AddressBookContent() {
       ) : (
         <>
           {addresses.length > 0 && (
-            <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 xl:gap-6">
+            <div className="grid grid-cols-1 gap-4.5 sm:grid-cols-2 xl:gap-6">
               {pagedAddresses.map((addr, idx) => {
                 const isPending = pendingIds.has(addr.id);
                 return (
@@ -184,7 +184,7 @@ export function AddressBookContent() {
                     </span>
                   </div>
 
-                  <div className="mt-4 flex flex-col gap-[10px] text-a4-content text-muted-foreground">
+                  <div className="mt-4 flex flex-col gap-2.5 text-a4-content text-muted-foreground">
                     {addr.phone && (
                       <p className="m-0 flex items-center gap-2.5">
                         <Phone className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -235,7 +235,7 @@ export function AddressBookContent() {
                         disabled={isPending}
                         className="h-11 w-11 text-muted-foreground hover:text-brand"
                       >
-                        <SquarePen className="h-[18px] w-[18px]" aria-hidden />
+                        <SquarePen className="h-4.5 w-4.5" aria-hidden />
                       </Button>
                       <Button
                         type="button"
@@ -247,9 +247,9 @@ export function AddressBookContent() {
                         className="h-11 w-11 text-muted-foreground hover:text-brand"
                       >
                         {isPending ? (
-                          <Loader2 className="h-[18px] w-[18px] animate-spin" aria-hidden />
+                          <Loader2 className="h-4.5 w-4.5 animate-spin" aria-hidden />
                         ) : (
-                          <Trash2 className="h-[18px] w-[18px]" aria-hidden />
+                          <Trash2 className="h-4.5 w-4.5" aria-hidden />
                         )}
                       </Button>
                     </div>
@@ -294,7 +294,7 @@ export function AddressBookContent() {
       )}
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className={`max-w-[920px] w-[calc(100%-32px)] p-0 ${dialogMobileBottomSheet}`}>
+        <DialogContent className={`max-w-230 w-[calc(100%-32px)] p-0 ${dialogMobileBottomSheet}`}>
           <DialogGrabber />
           <DialogHeader className="p-6">
             <DialogTitle>{editing ? t("modalUpdate") : t("modalAdd")}</DialogTitle>

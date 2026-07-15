@@ -20,14 +20,14 @@ export const cardChrome = `border border-border bg-card ${cardHover}`;
 export const bbCard =
   "relative overflow-hidden rounded-none border border-border bg-card text-foreground";
 /** Card inner padding (was `.bb-card-content`): 20px desktop, 14px mobile. */
-export const bbCardContent = "p-5 max-md:p-[14px]";
+export const bbCardContent = "p-5 max-md:p-3.5";
 
 /* ── Account shell bundles (were `.bb-account-*` leaf in globals.css) ──────────
  * Shared by AccountShell and the account Skeletons (page mirror). */
 
 /** Account section heading row (was `.bb-account-header` container). */
 export const accountHeaderShell =
-  "mb-[22px] flex items-center justify-between border-b border-[#e4e4e4] pb-3.5 max-md:mb-4 max-md:pb-3";
+  "mb-5.5 flex items-center justify-between border-b border-border pb-3.5 max-md:mb-4 max-md:pb-3";
 /** Account sidebar rail (was `.bb-account-sidebar`): sticky desktop, static <=1024px.
  * `min-w-0` is load-bearing: on the mobile single-column grid (`grid-template-columns:1fr`
  * == `minmax(auto,1fr)`) the horizontal-scroll nav chip row would otherwise set this grid
@@ -99,7 +99,7 @@ export const bbLink =
 
 /** Section vertical rhythm (was `.bb-section` padding-block: 32/52/section-y). */
 const sectionPad =
-  "py-8 min-[640px]:py-[52px] min-[1024px]:py-[var(--bb-section-y)]";
+  "py-8 min-[640px]:py-13 min-[1024px]:py-[var(--bb-section-y)]";
 /** Full centered content section rail (was `.bb-section`): rhythm + max-width
  * (--bb-container-xl incl. large-desktop expansion) + responsive inline padding. */
 export const bbSection =

@@ -31,9 +31,9 @@ export function CartItemRow({
     <div className={cn("relative grid grid-cols-[5rem_minmax(0,1fr)] gap-x-3 gap-y-3 py-5 transition-opacity md:grid-cols-[130px_minmax(0,1fr)_auto_auto] md:items-center", isMutating && "opacity-50")} role="listitem">
       <div>
         {item.image?.url ? (
-          <MediaImage image={item.image} altFallback={item.productName} width={130} height={130} className="h-20 w-20 object-contain md:h-[130px] md:w-[130px]" />
+          <MediaImage image={item.image} altFallback={item.productName} width={130} height={130} className="h-20 w-20 object-contain md:h-32.5 md:w-32.5" />
         ) : (
-          <span className="flex h-20 w-20 items-center justify-center bg-secondary font-cta text-a2-page font-semibold md:h-[130px] md:w-[130px]">{item.productName.slice(0, 2)}</span>
+          <span className="flex h-20 w-20 items-center justify-center bg-secondary font-cta text-a2-page font-semibold md:h-32.5 md:w-32.5">{item.productName.slice(0, 2)}</span>
         )}
       </div>
 

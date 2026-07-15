@@ -19,11 +19,11 @@ export function CartSummary({
 }) {
   const t = useTranslations("CartPage");
   const locale = useLocale() as Locale;
-  const checkoutClassName = "h-[52px] w-full rounded-none";
+  const checkoutClassName = "h-13 w-full rounded-none";
   return (
     <>
       <aside className="md:col-span-4">
-        <div className="border border-border bg-background p-6 md:sticky md:top-[96px]">
+        <div className="border border-border bg-background p-6 md:sticky md:top-24">
           <h2 className="mb-6 font-cta text-a1-title font-semibold uppercase">{t("totalsHeading")}</h2>
 
           <div className="flex justify-between gap-4 border-b border-border py-4">
@@ -71,9 +71,9 @@ export function CartSummary({
             <strong className="block whitespace-nowrap font-cta text-a3-section text-brand">{formatVnd(cart.totals.totalAmount)}</strong>
           </div>
           {hasUnavailable ? (
-            <Button className="h-[52px] shrink-0 rounded-none px-4" disabled>{t("checkoutSubmit")}</Button>
+            <Button className="h-13 shrink-0 rounded-none px-4" disabled>{t("checkoutSubmit")}</Button>
           ) : (
-            <Button asChild className="h-[52px] shrink-0 rounded-none px-4">
+            <Button asChild className="h-13 shrink-0 rounded-none px-4">
               <Link href={toCheckoutPath(locale)}>{t("checkoutSubmit")}</Link>
             </Button>
           )}

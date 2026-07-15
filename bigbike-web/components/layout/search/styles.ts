@@ -15,7 +15,7 @@ export const preLabel =
   "font-cta text-b5-label font-bold uppercase tracking-normal text-muted-foreground";
 export const preChips = "flex flex-wrap gap-1.5 px-4 pb-3 pt-2.5 3xl:gap-2 3xl:px-5 4xl:px-6";
 export const preChip =
-  "inline-flex cursor-pointer items-center gap-[5px] border border-border bg-card px-3 py-[5px] font-cta text-b4-action font-semibold uppercase text-foreground transition-colors duration-fast hover:text-brand-on-dark focus-visible:text-brand-on-dark focus-visible:outline-none 3xl:px-3.5 3xl:py-1.5 4xl:px-[18px] 4xl:py-2";
+  "inline-flex cursor-pointer items-center gap-[5px] border border-border bg-card px-3 py-[5px] font-cta text-b4-action font-semibold uppercase text-foreground transition-colors duration-fast hover:text-brand-on-dark focus-visible:text-brand-on-dark focus-visible:outline-none 3xl:px-3.5 3xl:py-1.5 4xl:px-4.5 4xl:py-2";
 export const resultItem =
   "flex cursor-pointer items-center gap-3 border-b border-border px-4 py-2.5 text-foreground no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none 3xl:gap-4 3xl:px-5 3xl:py-3 4xl:px-6 4xl:py-3.5";
 export const resultsLabel =
@@ -29,8 +29,8 @@ export const resultsLabel =
 const mFocusRing =
   "focus-visible:[outline:var(--bb-focus-outline)] focus-visible:[outline-offset:2px]";
 export const mBody =
-  "block md:hidden flex-none min-h-0 overflow-y-auto bg-background px-6 pt-[18px] pb-[calc(24px_+_env(safe-area-inset-bottom))] text-foreground [-webkit-overflow-scrolling:touch]";
-export const mSection = "mb-[22px]";
+  "block md:hidden flex-none min-h-0 overflow-y-auto bg-background px-6 pt-4.5 pb-[calc(24px_+_env(safe-area-inset-bottom))] text-foreground [-webkit-overflow-scrolling:touch]";
+export const mSection = "mb-5.5";
 export const mLabel =
   "m-0 mb-2 font-cta text-b5-label font-semibold uppercase tracking-normal text-muted-foreground";
 export const mList = "grid [&_svg]:text-muted-foreground";
@@ -41,7 +41,7 @@ export const mRecentRemove =
   "flex h-7 w-7 min-h-11 shrink-0 cursor-pointer items-center justify-center border-b border-border bg-transparent p-0 " +
   mFocusRing;
 export const mChip =
-  "inline-flex min-h-11 cursor-pointer items-center gap-1.5 border border-border bg-card px-[14px] py-0 font-cta text-b4-action font-medium uppercase text-foreground [&>svg]:text-brand-on-dark " +
+  "inline-flex min-h-11 cursor-pointer items-center gap-1.5 border border-border bg-card px-3.5 py-0 font-cta text-b4-action font-medium uppercase text-foreground [&>svg]:text-brand-on-dark " +
   mFocusRing;
 export const mGridCard =
   "grid min-h-11 cursor-pointer gap-0.5 border border-border bg-card px-3 py-2.5 text-left font-body text-foreground no-underline " +

@@ -26,11 +26,11 @@ export function CheckoutSummary({
       <div>
         {cart.items.map((item) => (
           <div key={item.id} className="flex gap-4 border-b border-border py-4 first:pt-0">
-            <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center bg-secondary">
+            <div className="flex h-18 w-18 shrink-0 items-center justify-center bg-secondary">
               {item.image?.url ? (
                 <MediaImage image={item.image} altFallback={item.productName} width={72} height={72} className="h-full w-full object-contain" />
               ) : (
-                <svg viewBox="0 0 24 24" className="w-[36px] h-[36px] fill-border">
+                <svg viewBox="0 0 24 24" className="w-9 h-9 fill-border">
                   <path d="M21 6.5C21 4.01 18.99 2 16.5 2h-9C5.01 2 3 4.01 3 6.5v11C3 19.99 5.01 22 7.5 22h9c2.49 0 4.5-2.01 4.5-4.5v-11z" />
                 </svg>
               )}

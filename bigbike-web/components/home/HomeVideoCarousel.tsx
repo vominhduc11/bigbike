@@ -192,7 +192,7 @@ export function HomeVideoCarousel({ videos, surface = "dark", compact = false }:
       {/* Dots: hiện khi canScroll và có ≥2 dots */}
       {canScroll && dotCount > 1 && (
         <div
-          className="mt-4 flex items-center justify-center gap-[6px] min-[600px]:mt-5 min-[900px]:mt-6"
+          className="mt-4 flex items-center justify-center gap-1.5 min-[600px]:mt-5 min-[900px]:mt-6"
           aria-label={tA("videoSlide")}
         >
           {paginationDots.map((idx) => {
@@ -201,7 +201,7 @@ export function HomeVideoCarousel({ videos, surface = "dark", compact = false }:
               <button
                 key={idx}
                 type="button"
-                className="flex h-[44px] min-w-[24px] cursor-pointer items-center justify-center border-0 bg-transparent p-0 focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2"
+                className="flex h-11 min-w-6 cursor-pointer items-center justify-center border-0 bg-transparent p-0 focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2"
                 onClick={() => {
                   swiperRef.current?.slideTo(idx);
                 }}

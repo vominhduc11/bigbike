@@ -136,7 +136,7 @@ function CatalogToggleList({
         <Button
           type="button"
           variant="primary"
-          className="mt-3 h-[52px] w-full rounded-none text-primary-foreground!"
+          className="mt-3 h-13 w-full rounded-none text-primary-foreground!"
           onClick={toggle}
           aria-expanded={expanded}
         >
@@ -224,7 +224,7 @@ export function CatalogSidebar({
                       kind="category"
                       viSlug={category.slug}
                       enSlug={category.slugEn}
-                      className={cn(filterLinkClass, "relative", category.menuIconUrl && "pl-[30px]", active && "text-brand!")}
+                      className={cn(filterLinkClass, "relative", category.menuIconUrl && "pl-7.5", active && "text-brand!")}
                     >
                       {category.menuIconUrl ? (
                         <span
@@ -245,7 +245,7 @@ export function CatalogSidebar({
                                 kind="category"
                                 viSlug={child.slug}
                                 enSlug={child.slugEn}
-                                className={cn(filterLinkClass, "relative", child.menuIconUrl && "pl-[30px]", childActive && "text-brand!")}
+                                className={cn(filterLinkClass, "relative", child.menuIconUrl && "pl-7.5", childActive && "text-brand!")}
                               >
                                 {child.menuIconUrl ? (
                                   <span
@@ -353,7 +353,7 @@ export function CatalogSidebar({
         {renderFilters()}
       </aside>
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="right" className="w-full! max-w-[310px]! overflow-y-auto p-6!">
+        <SheetContent side="right" className="w-full! max-w-77.5! overflow-y-auto p-6!">
           <SheetTitle className="mb-6 border-b border-border pb-5 font-cta text-a2-page font-semibold uppercase">
             {t("filterMobileHeading")}
           </SheetTitle>

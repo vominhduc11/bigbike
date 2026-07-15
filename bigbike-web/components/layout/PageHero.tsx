@@ -42,12 +42,12 @@ export function PageHero({
 
   return (
     <section
-      className="relative mb-[90px] min-h-[250px] overflow-hidden bg-cover bg-center bg-no-repeat md:min-h-[450px]"
+      className="relative mb-22.5 min-h-62.5 overflow-hidden bg-cover bg-center bg-no-repeat md:min-h-112.5"
       style={{ backgroundImage: `url('${background}')` }}
       data-page-hero
       data-bb-focus={focusId}
     >
-      <Container className="relative z-10 flex min-h-[250px] items-center md:min-h-[450px]">
+      <Container className="relative z-10 flex min-h-62.5 items-center md:min-h-112.5">
         <div className="w-full md:w-1/2">
           <h1 className="m-0 font-cta text-a2-page font-semibold leading-normal text-white!">
             {titleNode ?? title}
@@ -79,7 +79,7 @@ export function PageHero({
           <img
             src={illustration}
             alt={illustrationAlt ?? title}
-            className="max-h-[400px] w-auto object-contain"
+            className="max-h-100 w-auto object-contain"
           />
         </div>
       </Container>

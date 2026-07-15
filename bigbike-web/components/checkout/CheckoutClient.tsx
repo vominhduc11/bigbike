@@ -212,7 +212,7 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
 
             <Button
               type="submit"
-              className="mt-6 h-auto min-h-[56px] w-full rounded-none px-5 py-4 text-center"
+              className="mt-6 h-auto min-h-14 w-full rounded-none px-5 py-4 text-center"
               disabled={submitting || cartLoading || !cart.items.length || !confirmedChecked}
             >
               {submitting ? t("placingOrder") : t("placeOrderCallConfirm")}
@@ -228,7 +228,7 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
         </div>
 
         {/* ===== CỘT PHẢI: TÓM TẮT ĐƠN HÀNG ===== */}
-        <div className="space-y-4 md:sticky md:top-[96px] md:self-start">
+        <div className="space-y-4 md:sticky md:top-24 md:self-start">
           <CheckoutSummary
             cart={cart}
             cartSubtotal={cartSubtotal}

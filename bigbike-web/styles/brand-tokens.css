@@ -216,6 +216,7 @@
 
   --bb-z-header: 200;
   --bb-z-dropdown: 600;
+  --bb-z-toast: 600; /* toast giỏ hàng — cùng lớp dropdown, dưới overlay/modal */
   --bb-z-overlay: 700;
   --bb-z-modal: 800;
   --bb-z-modal-dropdown: 900;

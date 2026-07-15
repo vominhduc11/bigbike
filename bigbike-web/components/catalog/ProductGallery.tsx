@@ -260,7 +260,7 @@ export function ProductGallery({
   }
 
   return (
-    <div className="flex flex-col gap-[10px] min-w-0 w-full max-md:gap-2">
+    <div className="flex flex-col gap-2.5 min-w-0 w-full max-md:gap-2">
       {/* Ảnh chính (carousel) nằm trên cùng. */}
       <div className="relative min-w-0">
         <div

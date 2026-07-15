@@ -33,7 +33,7 @@ const lineMeta = "mt-1 text-b5-label leading-[1.25]";
 
 function CartSheetThumb({ item }: { item: CartItem }) {
   return (
-    <div className="relative flex h-[72px] w-[72px] flex-none items-center justify-center overflow-hidden bg-[var(--bb-bg-surface)] text-[var(--bb-text-primary)] [&_img]:h-full [&_img]:w-full [&_img]:object-contain">
+    <div className="relative flex h-18 w-18 flex-none items-center justify-center overflow-hidden bg-[var(--bb-bg-surface)] text-[var(--bb-text-primary)] [&_img]:h-full [&_img]:w-full [&_img]:object-contain">
       {item.image?.url ? (
         <MediaImage image={item.image} altFallback={item.productName} width={96} height={96} />
       ) : (
@@ -109,10 +109,10 @@ export function MobileCartSheet() {
     >
       <SheetContent
         side="bottom"
-        className="md:hidden flex flex-col gap-0 p-0 text-[var(--bb-text-inverse)] bg-[var(--bb-mobile-shell-bg)] border-[var(--bb-mobile-shell-border)] z-[var(--bb-mobile-panel-z)] max-h-[min(84dvh,calc(100dvh_-_max(24px,env(safe-area-inset-top))))] [&>button]:top-[11px] [&>button]:right-[10px] [&>button]:h-11 [&>button]:w-11 [&>button]:text-[var(--bb-text-inverse)]"
+        className="md:hidden flex flex-col gap-0 p-0 text-[var(--bb-text-inverse)] bg-[var(--bb-mobile-shell-bg)] border-[var(--bb-mobile-shell-border)] z-[var(--bb-mobile-panel-z)] max-h-[min(84dvh,calc(100dvh_-_max(24px,env(safe-area-inset-top))))] [&>button]:top-[11px] [&>button]:right-2.5 [&>button]:h-11 [&>button]:w-11 [&>button]:text-[var(--bb-text-inverse)]"
       >
         <div className="mx-auto mt-2 h-1 w-9 flex-none bg-[var(--bb-mobile-shell-border-strong)]" aria-hidden="true" />
-        <div className="px-[14px] pt-3 pb-2 border-b border-[var(--bb-mobile-shell-border)]">
+        <div className="px-3.5 pt-3 pb-2 border-b border-[var(--bb-mobile-shell-border)]">
           <div>
             <p className={microLabel}>{t("heading")}</p>
             <SheetTitle className="text-[var(--bb-text-inverse)]">
@@ -124,17 +124,17 @@ export function MobileCartSheet() {
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto px-[18px] py-[14px] [-webkit-overflow-scrolling:touch]">
+        <div className="flex-1 min-h-0 overflow-y-auto px-4.5 py-3.5 [-webkit-overflow-scrolling:touch]">
           {loading ? (
-            <div className="grid gap-[10px]" role="status">
+            <div className="grid gap-2.5" role="status">
               <span className="sr-only">{t("loading")}</span>
               {[0, 1].map((i) => (
                 <div
                   key={i}
                   aria-hidden="true"
-                  className="flex gap-3 border border-[var(--bb-mobile-shell-border)] bg-[var(--bb-mobile-shell-surface)] p-[10px]"
+                  className="flex gap-3 border border-[var(--bb-mobile-shell-border)] bg-[var(--bb-mobile-shell-surface)] p-2.5"
                 >
-                  <div className="h-[72px] w-[72px] flex-none animate-pulse bg-[var(--bb-mobile-shell-border-strong)]" />
+                  <div className="h-18 w-18 flex-none animate-pulse bg-[var(--bb-mobile-shell-border-strong)]" />
                   <div className="min-w-0 flex-1 py-1">
                     <div className="h-3 w-3/5 animate-pulse bg-[var(--bb-mobile-shell-border-strong)]" />
                     <div className="mt-2 h-3 w-2/5 animate-pulse bg-[var(--bb-mobile-shell-border-strong)]" />
@@ -145,38 +145,38 @@ export function MobileCartSheet() {
             </div>
           ) : queryError || errorMessage ? (
             <div
-              className="py-11 px-[18px] text-center text-[var(--bb-text-inverse)] border border-[var(--bb-border-brand)] bg-[color-mix(in_srgb,var(--bb-brand-primary)_12%,transparent)]"
+              className="py-11 px-4.5 text-center text-[var(--bb-text-inverse)] border border-[var(--bb-border-brand)] bg-[color-mix(in_srgb,var(--bb-brand-primary)_12%,transparent)]"
               role="alert"
             >
               {errorMessage || queryError}
             </div>
           ) : items.length === 0 ? (
-            <div className="grid justify-items-center pt-9 px-3 pb-[42px] text-center text-[var(--bb-text-inverse-muted)]">
+            <div className="grid justify-items-center pt-9 px-3 pb-10.5 text-center text-[var(--bb-text-inverse-muted)]">
               <span
-                className="inline-flex h-16 w-16 items-center justify-center mb-[14px] border border-[var(--bb-mobile-shell-border)] bg-[var(--bb-mobile-shell-surface)] text-[var(--bb-text-inverse-muted)]"
+                className="inline-flex h-16 w-16 items-center justify-center mb-3.5 border border-[var(--bb-mobile-shell-border)] bg-[var(--bb-mobile-shell-surface)] text-[var(--bb-text-inverse-muted)]"
                 aria-hidden="true"
               >
                 <ShoppingCart size={28} />
               </span>
-              <p className="mt-[6px] mb-4">{t("emptyCta")}</p>
-              <Link href={toProductListPath(locale)} onClick={closePanel} className={cn(ctaBtn, ctaBtnFilled, "mt-[2px]")}>
+              <p className="mt-1.5 mb-4">{t("emptyCta")}</p>
+              <Link href={toProductListPath(locale)} onClick={closePanel} className={cn(ctaBtn, ctaBtnFilled, "mt-0.5")}>
                 {t("shopNow")}
               </Link>
             </div>
           ) : (
-            <div className="grid gap-[10px]" role="list">
+            <div className="grid gap-2.5" role="list">
               {items.map((item) => {
                 const mutating = updateItem.isPending || removeItem.isPending;
                 return (
                   <article
                     key={item.id}
-                    className="relative flex gap-3 border border-[var(--bb-mobile-shell-border)] bg-[var(--bb-mobile-shell-surface)] p-[10px]"
+                    className="relative flex gap-3 border border-[var(--bb-mobile-shell-border)] bg-[var(--bb-mobile-shell-surface)] p-2.5"
                     role="listitem"
                   >
                     <CartSheetThumb item={item} />
                     <div className="min-w-0 flex-1">
                       <p className={microLabel}>{item.sku || "BIGBIKE"}</p>
-                      <h3 className="mt-[2px] mr-7 line-clamp-2 font-cta text-a4-content font-medium leading-[1.2] text-[var(--bb-text-inverse)]">
+                      <h3 className="mt-0.5 mr-7 line-clamp-2 font-cta text-a4-content font-medium leading-[1.2] text-[var(--bb-text-inverse)]">
                         {item.productName}
                       </h3>
                       {item.variantName ? (
@@ -185,7 +185,7 @@ export function MobileCartSheet() {
                       {!item.available ? (
                         <p className={cn(lineMeta, "text-brand-on-dark")}>{t("unavailableLine")}</p>
                       ) : null}
-                      <div className="flex items-center justify-between gap-[10px] mt-2">
+                      <div className="flex items-center justify-between gap-2.5 mt-2">
                         <div className="inline-flex border border-[var(--bb-mobile-shell-border-strong)]" aria-label={t("quantityAria", { name: item.productName })}>
                           <button
                             type="button"
@@ -196,7 +196,7 @@ export function MobileCartSheet() {
                           >
                             -
                           </button>
-                          <span className="inline-flex min-w-[30px] items-center justify-center text-[var(--bb-text-inverse)] text-a5-meta">
+                          <span className="inline-flex min-w-7.5 items-center justify-center text-[var(--bb-text-inverse)] text-a5-meta">
                             {item.quantity}
                           </span>
                           <button
@@ -214,7 +214,7 @@ export function MobileCartSheet() {
                     </div>
                     <button
                       type="button"
-                      className={cn(qtyBtn, "absolute top-[6px] right-[6px] text-[var(--bb-text-inverse-muted)]")}
+                      className={cn(qtyBtn, "absolute top-1.5 right-1.5 text-[var(--bb-text-inverse-muted)]")}
                       onClick={() => removeLine(item)}
                       disabled={mutating}
                       aria-label={t("removeAria", { name: item.productName })}
@@ -229,7 +229,7 @@ export function MobileCartSheet() {
         </div>
 
         {items.length > 0 ? (
-          <div className="flex-none pt-3 px-[18px] pb-[max(16px,env(safe-area-inset-bottom))] border-t border-[var(--bb-mobile-shell-border)] bg-[var(--bb-mobile-shell-surface-2)]">
+          <div className="flex-none pt-3 px-4.5 pb-[max(16px,env(safe-area-inset-bottom))] border-t border-[var(--bb-mobile-shell-border)] bg-[var(--bb-mobile-shell-surface-2)]">
             <div className="flex items-baseline justify-between gap-3 mb-3">
               <span className={microLabel}>{t("subtotal")}</span>
               <strong className="text-[var(--bb-text-inverse)] font-body text-a2-page">
@@ -238,7 +238,7 @@ export function MobileCartSheet() {
             </div>
             {unavailable ? (
               <p
-                className="mt-[-2px] mb-3 border border-[var(--bb-state-warning-border)] bg-[var(--bb-state-warning-bg)] px-3 py-[10px] text-[var(--bb-state-warning-text)] text-a5-meta leading-[1.35]"
+                className="mt-[-2px] mb-3 border border-[var(--bb-state-warning-border)] bg-[var(--bb-state-warning-bg)] px-3 py-2.5 text-[var(--bb-state-warning-text)] text-a5-meta leading-[1.35]"
                 role="alert"
               >
                 {t("unavailableAlert")}

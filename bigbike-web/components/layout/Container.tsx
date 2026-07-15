@@ -24,8 +24,8 @@ const RAIL = {
     "min-[992px]:w-[min(100%_-_calc(var(--bb-page-padding-desktop)_*_2),var(--bb-container-xl))]",
   blog:
     "mx-auto w-full max-w-none px-[var(--bb-mobile-page-x)] " +
-    "md:px-[15px] md:max-w-[1200px] " +
-    "min-[1536px]:max-w-[1360px] min-[1920px]:max-w-[1600px] min-[2560px]:max-w-[2240px]",
+    "md:px-[15px] md:max-w-300 " +
+    "min-[1536px]:max-w-340 min-[1920px]:max-w-400 min-[2560px]:max-w-560",
 } as const;
 
 type ContainerProps = ComponentPropsWithoutRef<"div"> & {

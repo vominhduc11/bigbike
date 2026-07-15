@@ -68,7 +68,7 @@ export function OrderConfirmView({ orderNumber, orderKey, order, settingsRecord,
         <>
           <ThankYouHero message={t("receivedNotice")} />
           {isLoading ? (
-            <p className="mx-auto mt-3 max-w-[420px] text-center text-a4-content leading-6 text-muted-foreground">
+            <p className="mx-auto mt-3 max-w-105 text-center text-a4-content leading-6 text-muted-foreground">
               {tCommon("loading")}
             </p>
           ) : (
@@ -185,7 +185,7 @@ function OrderShell({ children }: { children: React.ReactNode }) {
       showHero={false}
       mainClassName="bb-checkout-page"
     >
-      <div className="mx-auto max-w-[680px] px-4 py-8 max-sm:px-3 max-sm:py-4">
+      <div className="mx-auto max-w-170 px-4 py-8 max-sm:px-3 max-sm:py-4">
         {children}
       </div>
     </StaticPageShell>
@@ -242,7 +242,7 @@ function NextSteps({ phone }: { phone: string }) {
 // order details, echoing WP's .payment-success block (centered, ~370-480px).
 function ThankYouHero({ message }: { message: string }) {
   return (
-    <div className="mx-auto max-w-[480px] py-2 text-center">
+    <div className="mx-auto max-w-120 py-2 text-center">
       <span className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--bb-brand-primary-soft)] text-brand">
         <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M20 6 9 17l-5-5" />
@@ -261,12 +261,12 @@ function ThankYouHero({ message }: { message: string }) {
 function OrderLoadFallback({ orderNumber }: { orderNumber: string }) {
   const t = useTranslations("OrderConfirm");
   return (
-    <div className="mx-auto max-w-[480px] text-center">
+    <div className="mx-auto max-w-120 text-center">
       <p className="m-0 text-a5-meta uppercase leading-6 text-muted-foreground">
         {t("orderCode")}{" "}
         <strong className="block normal-case text-foreground">{orderNumber}</strong>
       </p>
-      <p className="mx-auto mt-3 max-w-[420px] text-a4-content leading-6 text-muted-foreground">
+      <p className="mx-auto mt-3 max-w-105 text-a4-content leading-6 text-muted-foreground">
         {t("loadFailed")}
       </p>
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
@@ -298,7 +298,7 @@ function OrderDetails({ order }: { order: OrderDetail }) {
                   style={{ backgroundImage: `url("${item.productThumbnailUrl}")` }}
                 />
               ) : (
-                <svg viewBox="0 0 24 24" className="w-[36px] h-[36px] fill-border">
+                <svg viewBox="0 0 24 24" className="w-9 h-9 fill-border">
                   <path d="M21 6.5C21 4.01 18.99 2 16.5 2h-9C5.01 2 3 4.01 3 6.5v11C3 19.99 5.01 22 7.5 22h9c2.49 0 4.5-2.01 4.5-4.5v-11z" />
                 </svg>
               )}

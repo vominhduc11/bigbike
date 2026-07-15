@@ -12,7 +12,7 @@ export function AuthPageFrame({
   return (
     <StaticPageShell title="" breadcrumb={[]} showHero={false} mainClassName="">
       <section className="px-4 py-15 sm:px-6">
-        <div className={cn("mx-auto w-full", wide ? "max-w-screen-sm" : "max-w-[370px]")}>
+        <div className={cn("mx-auto w-full", wide ? "max-w-screen-sm" : "max-w-92.5")}>
           {children}
         </div>
       </section>

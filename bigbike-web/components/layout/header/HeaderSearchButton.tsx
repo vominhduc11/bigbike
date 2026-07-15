@@ -19,7 +19,7 @@ export function HeaderSearchButton() {
       size="icon"
       onClick={() => openPanel("search")}
       aria-label={t("search")}
-      className={cn(iconBtn, "bb-header-search-trigger h-[80px]! min-h-[80px]! px-[20px]! hover:not-disabled:scale-100")}
+      className={cn(iconBtn, "bb-header-search-trigger h-20! min-h-20! px-5! hover:not-disabled:scale-100")}
     >
       <Search className="-translate-x-0.5" size={18} strokeWidth={1.75} aria-hidden />
     </Button>

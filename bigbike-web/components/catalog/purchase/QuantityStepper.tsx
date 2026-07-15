@@ -31,7 +31,7 @@ export function QuantityStepper({
             aria-label={tb("decreaseQty")}
             onClick={() => setQuantity((q) => Math.max(1, q - 1))}
             disabled={quantity <= 1}
-            className="h-[52px]! w-11! rounded-none border-0 hover:bg-muted"
+            className="h-13! w-11! rounded-none border-0 hover:bg-muted"
           >
             <Minus className="h-4 w-4" />
           </Button>
@@ -42,7 +42,7 @@ export function QuantityStepper({
             value={quantity}
             onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
             aria-label={tb("quantity")}
-            className="h-[52px]! min-h-0 w-full min-w-0 flex-1 rounded-none border-y-0 border-x border-border-control px-1 py-0 text-center text-a2-page font-semibold [appearance:textfield] focus:shadow-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            className="h-13! min-h-0 w-full min-w-0 flex-1 rounded-none border-y-0 border-x border-border-control px-1 py-0 text-center text-a2-page font-semibold [appearance:textfield] focus:shadow-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           />
           <Button
             type="button"
@@ -50,7 +50,7 @@ export function QuantityStepper({
             size="icon"
             aria-label={tb("increaseQty")}
             onClick={() => setQuantity((q) => q + 1)}
-            className="h-[52px]! w-11! rounded-none border-0 hover:bg-muted"
+            className="h-13! w-11! rounded-none border-0 hover:bg-muted"
           >
             <Plus className="h-4 w-4" />
           </Button>

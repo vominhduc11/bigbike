@@ -39,7 +39,7 @@ function ServiceTile({
   return (
     <div
       className={cn(
-        "p-7 shadow-lg md:min-h-[360px]",
+        "p-7 shadow-lg md:min-h-90",
         highlight ? "bg-brand text-white" : "bg-card text-foreground",
       )}
     >

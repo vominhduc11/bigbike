@@ -68,7 +68,7 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
 
   if (variant === "mobile") {
     return (
-      <div className="border-b border-white/20 px-[25px] py-[30px]">
+      <div className="border-b border-white/20 px-[25px] py-7.5">
         {isAuthed ? (
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -119,18 +119,18 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
             closeMenu();
           }
         }}
-        className={cn(iconBtn, "h-[80px]! min-h-[80px]! px-[20px]! hover:not-disabled:scale-100")}
+        className={cn(iconBtn, "h-20! min-h-20! px-5! hover:not-disabled:scale-100")}
       >
         <UserCircle size={18} strokeWidth={1.75} aria-hidden />
       </Button>
       <div
         role="menu"
         className={cn(
-          "pointer-events-none invisible absolute right-[-50px] top-[80px] z-[var(--bb-z-dropdown)] w-[275px] bg-white p-[30px] opacity-0 shadow-[0_0_6px_rgba(0,0,0,0.64)] transition-[opacity,visibility] duration-300",
+          "pointer-events-none invisible absolute right-[-50px] top-20 z-[var(--bb-z-dropdown)] w-[275px] bg-white p-7.5 opacity-0 shadow-[0_0_6px_rgba(0,0,0,0.64)] transition-[opacity,visibility] duration-300",
           menuOpen && "pointer-events-auto visible opacity-100",
         )}
       >
-        <span className="absolute right-[60px] top-[-18px] h-0 w-0 border-x-[18px] border-b-[18px] border-x-transparent border-b-white" aria-hidden />
+        <span className="absolute right-15 top-[-18px] h-0 w-0 border-x-[18px] border-b-[18px] border-x-transparent border-b-white" aria-hidden />
         <div className="flex flex-col gap-5">
           <Button asChild variant="primary" size="auth">
             <Link href={isAuthed ? toAccountPath(locale) : toRegisterPath(locale)} role="menuitem" onClick={closeMenu}>

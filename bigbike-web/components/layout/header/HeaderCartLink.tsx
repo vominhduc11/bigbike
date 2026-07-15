@@ -16,7 +16,7 @@ export function HeaderCartLink({ ariaLabel }: { ariaLabel: string }) {
     <Link
       href={toCartPath(locale)}
       aria-label={ariaLabel}
-      className={cn(iconBtn, "relative h-[80px]! min-h-[80px]! px-[20px]!")}
+      className={cn(iconBtn, "relative h-20! min-h-20! px-5!")}
     >
       <ShoppingCart size={18} strokeWidth={1.75} aria-hidden />
       <HeaderCartCount />

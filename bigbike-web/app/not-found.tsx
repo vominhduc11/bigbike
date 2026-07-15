@@ -32,7 +32,7 @@ export default async function NotFoundPage() {
       mainClassName="bg-background min-h-[50vh]"
     >
       <Container>
-        <div className="max-w-[720px] mx-auto pt-10 pb-20 flex flex-col gap-7 text-center">
+        <div className="max-w-180 mx-auto pt-10 pb-20 flex flex-col gap-7 text-center">
           <div className="flex justify-center select-none" aria-hidden="true">
             <div className="relative">
               {/* Nhóm D: ngoại lệ trang trí nền duy nhất được dùng clamp(). */}
@@ -50,8 +50,8 @@ export default async function NotFoundPage() {
 
           {recent.length > 0 && (
             <section className="mt-6 text-left" aria-label={t("recentArticlesAriaLabel")}>
-              <h2 className={cn(sectionHeading, "mb-[18px]")}>{t("recentArticlesHeading")}</h2>
-              <div className="grid grid-cols-1 gap-[22px] sm:grid-cols-2 lg:grid-cols-3 xl:gap-6 2xl:gap-8">
+              <h2 className={cn(sectionHeading, "mb-4.5")}>{t("recentArticlesHeading")}</h2>
+              <div className="grid grid-cols-1 gap-5.5 sm:grid-cols-2 lg:grid-cols-3 xl:gap-6 2xl:gap-8">
                 {recent.map((article) => (
                   <ArticleCard key={article.id} article={article} />
                 ))}
