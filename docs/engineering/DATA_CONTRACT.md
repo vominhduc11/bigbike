@@ -202,6 +202,17 @@ The `orders.channel`, `orders.fulfillment_type`, and `orders.source` columns **s
 
 Status: `CONFIRMED_FROM_CODE`
 
+### Payment method compatibility — nullable for legacy rows, COD for new orders
+
+`orders.payment_method` and `payments.payment_method` are nullable at the schema/entity layer so
+legacy orders created under the former manual-reconciliation model can still be loaded and shown.
+Migration `V284__allow_null_payment_method.sql` removed the `NOT NULL` constraint from
+`payments.payment_method`; `PaymentEntity` must mirror that nullability.
+
+This storage compatibility does **not** make the current checkout contract optional: every new
+storefront checkout/quick-buy order is normalized to `COD`, and any other explicit method is
+rejected. `BACS`/`null` are read compatibility only. `CONFIRMED_FROM_CODE`
+
 ### Admin invite (email-based admin user onboarding)
 
 Admin users are onboarded by **email invite**, not by an admin typing a password. Schema impact (`V201__admin_invite_tokens.sql`):

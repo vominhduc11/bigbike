@@ -257,6 +257,25 @@ class Phase1CCommerceSchemaTest {
     }
 
     @Test
+    void payment_legacyNullMethod_isReadable() {
+        OrderEntity order = savedOrder();
+
+        PaymentEntity payment = new PaymentEntity();
+        payment.setOrder(order);
+        payment.setPaymentMethod(null);
+        payment.setProvider("manual");
+        payment.setStatus("PENDING");
+        payment.setAmount(new BigDecimal("4500000.00"));
+        payment.setCreatedAt(Instant.now());
+        payment.setUpdatedAt(Instant.now());
+        paymentRepo.saveAndFlush(payment);
+
+        List<PaymentEntity> found = paymentRepo.findByOrderId(order.getId());
+        assertThat(found).hasSize(1);
+        assertThat(found.get(0).getPaymentMethod()).isNull();
+    }
+
+    @Test
     void paymentEvent_saveAndFindByEventId() {
         String eventId = "evt_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
 

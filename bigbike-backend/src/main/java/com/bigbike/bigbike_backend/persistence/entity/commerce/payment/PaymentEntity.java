@@ -31,7 +31,7 @@ public class PaymentEntity {
     @JoinColumn(name = "order_id", nullable = false)
     private OrderEntity order;
 
-    @Column(name = "payment_method", nullable = false, length = 100)
+    @Column(name = "payment_method", nullable = true, length = 100)
     private String paymentMethod;
 
     @Column(length = 100)
