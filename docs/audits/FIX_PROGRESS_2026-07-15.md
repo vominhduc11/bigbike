@@ -115,7 +115,7 @@
 
 | AUD | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
-| AUD-055 | Dọn tàn dư quantity/serial/wishlist/coupon/comparison/refund/shipping/POS | 🔧 | Đang đối chiếu các tính năng đã gỡ với contract sản phẩm, đơn hàng và mã nguồn còn tham chiếu. |
+| AUD-055 | Dọn tàn dư quantity/serial/wishlist/coupon/comparison/refund/shipping/POS | ✅ `9a79618c` | Commit chính đã xóa F-08 (`appliedCoupons` trong contracts.js) + F-09 (`SerialImportRowRequest`) + locale/type/CSS chết liên quan. Session này grep lại toàn repo xác nhận sạch: coupon/serial/wishlist/comparison/POS 0 hit code; refund/shipping chỉ còn chỗ hợp lệ (copy khách, label audit-log, field dormant `shippingAmount=0` theo DATA_CONTRACT). Dọn nốt dòng route `/admin/coupons` stale trong `bigbike-admin/README.md`. Type chết `CheckoutOptions` xử lý ở AUD-056. |
 | AUD-056 | Gỡ endpoint không consumer (grep 0 caller từng cái trước khi xóa) | ⬜ | Quyết định #8 |
 | AUD-057 | Web: dọn raw controls / arbitrary values trong active UI/CSS | ⬜ | |
 | AUD-058 | Admin: dọn named CSS / hardcode / raw buttons | ⬜ | |

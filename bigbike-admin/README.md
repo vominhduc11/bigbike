@@ -24,7 +24,6 @@ npm run lint
 | `/admin/orders` | `orders.read` |
 | `/admin/customers` | `customers.read` |
 | `/admin/media` | `media.read` |
-| `/admin/coupons` | `coupons.read` |
 | `/admin/redirects` | `redirects.read / redirects.write` |
 | `/admin/menus` | `menus.read` |
 | `/admin/sliders` | `sliders.read` |
