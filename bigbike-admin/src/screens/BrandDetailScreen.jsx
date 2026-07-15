@@ -19,6 +19,7 @@ import { clearNavGuard } from '@/lib/navigationGuard'
 import { AlertCircle, ArrowLeft, Loader2, Save, Trash2 } from 'lucide-react'
 
 import { createBrandSchema, zodErrors } from '../lib/schemas'
+import { toBrandPayload } from './brandPayload'
 import { StatePanel } from '../components/StatePanel'
 import { FormField } from '../components/layout/FormField'
 import { CollapsibleSection } from '../components/CollapsibleSection'
@@ -82,51 +83,6 @@ function buildFormFromItem(item) {
   }
 }
 
-
-function toPayload(form) {
-  const payload = {
-    slug: form.slug.trim(),
-    name: form.name.trim(),
-    description: form.description.trim() || undefined,
-    visible: Boolean(form.visible),
-  }
-
-  payload.logo = form.logoUrl.trim()
-    ? { url: form.logoUrl.trim() }
-    : { url: '' }
-
-  payload.banner = form.bannerUrl.trim()
-    ? { url: form.bannerUrl.trim() }
-    : { url: '' }
-
-  if (
-    form.seoTitle.trim() ||
-    form.seoDescription.trim() ||
-    form.seoCanonicalUrl.trim() ||
-    form.seoOgImageUrl.trim()
-  ) {
-    payload.seo = {
-      title: form.seoTitle.trim() || undefined,
-      description: form.seoDescription.trim() || undefined,
-      canonicalUrl: form.seoCanonicalUrl.trim() || undefined,
-      ogImage: form.seoOgImageUrl.trim()
-        ? { url: form.seoOgImageUrl.trim() }
-        : null,
-    }
-  }
-
-  payload.translations = {
-    en: {
-      slug: form.translations?.en?.slug?.trim() || null,
-      name: form.translations?.en?.name?.trim() || null,
-      description: form.translations?.en?.description?.trim() || null,
-      seoTitle: form.translations?.en?.seoTitle?.trim() || null,
-      seoDescription: form.translations?.en?.seoDescription?.trim() || null,
-    },
-  }
-
-  return payload
-}
 
 // ── Autosave utilities (F9) ──────────────────────────────────────────────────
 // Mirrors product-detail/constants.js + content-detail/constants.js — same
@@ -405,7 +361,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     setIsSubmitting(true)
     setValidationErrors({})
 
-    saveMutation.mutate(toPayload(form))
+    saveMutation.mutate(toBrandPayload(form))
   }
 
 

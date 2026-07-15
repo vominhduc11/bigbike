@@ -1092,6 +1092,49 @@ class AdminMutationApiTest {
     // ── Brand hardening tests ─────────────────────────────────────────────────
 
     @Test
+    void brandSeoShouldClearWhenPatchSuppliesEmptySeoObject() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String slug = "brand-clear-seo-" + suffix;
+
+        mockMvc.perform(post("/api/v1/admin/brands")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "slug":"%s",
+                                  "name":"Thương hiệu SEO %s",
+                                  "seo":{
+                                    "title":"Tiêu đề cũ",
+                                    "description":"Mô tả cũ",
+                                    "canonicalUrl":"https://bigbike.vn/brands/%s",
+                                    "ogImage":{"url":"%s/brands/seo.jpg","alt":"Ảnh cũ"}
+                                  },
+                                  "translations":{"en":{"name":"SEO Brand %s"}}
+                                }
+                                """.formatted(slug, suffix, slug, MEDIA_PUBLIC_BASE_URL, suffix)))
+                .andExpect(status().isOk());
+
+        BrandEntity brand = brandJpaRepository.findBySlug(slug).orElseThrow();
+        assertThat(brand.getSeoTitle()).isEqualTo("Tiêu đề cũ");
+
+        mockMvc.perform(patch("/api/v1/admin/brands/{id}", brand.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"seo":{},"translations":{"en":{"name":"SEO Brand %s"}}}
+                                """.formatted(suffix)))
+                .andExpect(status().isOk());
+
+        BrandEntity cleared = brandJpaRepository.findById(brand.getId()).orElseThrow();
+        assertThat(cleared.getSeoTitle()).isNull();
+        assertThat(cleared.getSeoDescription()).isNull();
+        assertThat(cleared.getSeoCanonicalUrl()).isNull();
+        assertThat(cleared.getSeoOgImageUrl()).isNull();
+    }
+
+    @Test
     void shouldRejectBrandValidationErrors() throws Exception {
         // missing slug → REQUIRED
         mockMvc.perform(post("/api/v1/admin/brands")

@@ -365,6 +365,7 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
   - Admin phải gọi phép xem trước này trước hộp xác nhận xóa đơn lẻ/hàng loạt và hiển thị **đồng thời** hai số đếm theo `BUSINESS_RULES.md` `CATEGORY_RULE_004`.
 
 ### 3. Brands (Thương hiệu)
+- **Sửa SEO**: `PATCH /api/v1/admin/brands/{id}` giữ nguyên SEO hiện có khi request **không gửi** field `seo`; nếu gửi `seo`, từng giá trị trống được chuẩn hóa thành `null`, và `seo: {}` xóa toàn bộ SEO cũ (gồm ảnh chia sẻ). Form quản trị luôn gửi khối `seo` khi lưu để thao tác xóa hết các ô được ghi nhận rõ ràng, thay vì bị hiểu nhầm là không chỉnh sửa.
 - **Xóa mềm (Ẩn)**: `DELETE /api/v1/admin/brands/{id}`
   - Đặt `isVisible = false`.
 - **Khôi phục**: `POST /api/v1/admin/brands/{id}/restore`
