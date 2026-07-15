@@ -82,10 +82,11 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
-    # Bind to loopback only (AUD-009) — the API must not be reachable on an external
-    # interface without the nginx reverse proxy (TLS, rate limit, security headers).
+    # Pre-live (owner 2026-07-15): exposed directly over http because DNS/TLS is not
+    # live yet and .env.vps bakes http://IP:8080 into the frontends. When the domain
+    # goes live, re-bind to 127.0.0.1 (AUD-009) so traffic goes through nginx only.
     ports:
-      - "127.0.0.1:8080:8080"
+      - "8080:8080"
     deploy:
       resources:
         limits:
@@ -178,10 +179,10 @@ services:
     depends_on:
       bigbike-backend:
         condition: service_healthy
-    # Bind to loopback only — production traffic must arrive via the nginx reverse proxy
-    # (TLS, rate limit, security headers). localhost access for local dev still works.
+    # Pre-live (owner 2026-07-15): exposed directly over http until the domain goes
+    # live. Then re-bind to 127.0.0.1 (AUD-009) so traffic goes through nginx only.
     ports:
-      - "127.0.0.1:3000:3000"
+      - "3000:3000"
     deploy:
       resources:
         limits:
@@ -234,10 +235,10 @@ services:
     depends_on:
       bigbike-backend:
         condition: service_healthy
-    # Bind to loopback only — the admin dashboard must not be reachable on an external
-    # interface without the nginx reverse proxy in front of it.
+    # Pre-live (owner 2026-07-15): exposed directly over http until the domain goes
+    # live. Then re-bind to 127.0.0.1 (AUD-009) so traffic goes through nginx only.
     ports:
-      - "127.0.0.1:4000:80"
+      - "4000:80"
     deploy:
       resources:
         limits:
