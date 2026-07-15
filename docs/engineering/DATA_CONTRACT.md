@@ -1106,7 +1106,7 @@ Status: `CONFIRMED_FROM_CODE` — migration `V275__merge_content_categories_into
 
 ### Page bilingual content — REMOVED (2026-06-24)
 
-> **REMOVED (2026-06-24).** Bảng `pages` đã drop ở `V271__drop_pages_and_guide_page.sql` cùng entity `PageEntity` / domain `Page` / `PageTranslations` / enum `PageType`. Các cột song ngữ `_en` của trang (title/body/hero_*/seo_*, thêm ở `V138`) không còn. 10 trang thông tin/chính sách nay là **nội dung tĩnh trong `bigbike-web`** (nguồn `static-pages.json`, song ngữ VI/EN cố định trong code) — không còn dữ liệu trang trong DB. Bài viết (`articles`) vẫn giữ cột song ngữ — xem §"Article bilingual content (V138)".
+> **REMOVED (2026-06-24).** Bảng `pages` đã drop ở `V271__drop_pages_and_guide_page.sql` cùng entity `PageEntity` / domain `Page` / `PageTranslations` / enum `PageType`. Các cột song ngữ `_en` của trang (title/body/hero_*/seo_*, thêm ở `V138`) không còn. 8 route thông tin/chính sách hiện hành là **nội dung tĩnh trong `bigbike-web`**; trong đó có đúng 3 trang chính sách cố định — không còn dữ liệu trang trong DB. Bài viết (`articles`) vẫn giữ cột song ngữ — xem §"Article bilingual content (V138)".
 
 ### Menu item bilingual label — English column (V160)
 
@@ -1180,7 +1180,7 @@ Status: `CONFIRMED_FROM_CODE` — `bigbike-web/app/lien-he/page.tsx`, `bigbike-w
 
 ### Guide page layout — REMOVED (2026-06-24)
 
-> **REMOVED (2026-06-24).** Bảng singleton `guide_page_layout` (V227) đã drop ở `V271__drop_pages_and_guide_page.sql` cùng entity `GuidePageLayoutEntity` / `GuideEntry` / `GuideEntriesConverter` / `GuidePageService`. Trang Hướng dẫn `/huong-dan` (+ 3 trang con) nay là **nội dung tĩnh trong `bigbike-web`** (nguồn `static-pages.json`). Trình dựng trang Hướng dẫn trong admin cũng đã gỡ.
+> **REMOVED (2026-06-24).** Bảng singleton `guide_page_layout` (V227) đã drop ở `V271__drop_pages_and_guide_page.sql` cùng entity `GuidePageLayoutEntity` / `GuideEntry` / `GuideEntriesConverter` / `GuidePageService`. Trang Hướng dẫn `/huong-dan` (+ đúng 2 trang con `size-mu`/`size-trang-phuc`) nay là **nội dung tĩnh trong `bigbike-web`**. Trình dựng trang Hướng dẫn trong admin cũng đã gỡ.
 
 ### Product homepage placement (V111+)
 

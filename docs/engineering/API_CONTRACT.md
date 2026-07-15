@@ -182,7 +182,7 @@ No query params. Response shape: `ApiListResponse<ContentCategoryWithCount>`:
 
 ## Static CMS Pages + Guide Page — REMOVED (2026-06-24)
 
-> **REMOVED (2026-06-24).** Module "Trang tĩnh CMS" (pages) và module Guide Page Builder đã bị gỡ khỏi toàn stack. 10 trang thông tin — Giới thiệu (`/gioi-thieu`), Liên hệ (`/lien-he`), Hướng dẫn (`/huong-dan` + 3 trang con `/huong-dan/{mua-hang|size-mu|size-gang-tay}`), và 4 trang chính sách (`/chinh-sach/{slug}`) — nay **đóng cứng (hardcode) trong `bigbike-web`** (nguồn freeze: `bigbike-web/lib/content/static-pages.json` + `static-pages.ts`, render qua route giữ nguyên URL gồm cả catch-all `/[slug]`). Web **không** còn gọi backend cho các trang này.
+> **REMOVED (2026-06-24).** Module "Trang tĩnh CMS" (pages) và module Guide Page Builder đã bị gỡ khỏi toàn stack. 8 route thông tin hiện hành — Giới thiệu (`/gioi-thieu`), Liên hệ (`/lien-he`), Hướng dẫn (`/huong-dan` + 2 trang con `size-mu|size-trang-phuc`), và đúng 3 trang chính sách (`chinh-sach-bao-mat-thong-tin|chinh-sach-bao-hanh|chinh-sach-doi-tra-hang`) — nay **đóng cứng trong `bigbike-web`**. Web không gọi backend để đọc/quản lý các trang này.
 >
 > **Endpoint đã gỡ:**
 > - Public `GET /api/v1/pages`, `GET /api/v1/pages/{slug}` — không còn.
@@ -190,7 +190,7 @@ No query params. Response shape: `ApiListResponse<ContentCategoryWithCount>`:
 > - Toàn bộ admin CRUD pages (`POST`/`PATCH`/`DELETE /api/v1/admin/content/pages`, type `PAGE` trong `GET /api/v1/admin/content`) + reference `GET /api/v1/admin/content/reference/pages` — không còn.
 > - Admin guide-page `GET`/`PUT /api/v1/admin/guide-page` — không còn.
 >
-> Bảng `pages` + `guide_page_layout` đã drop ở `V271__drop_pages_and_guide_page.sql`. Module Nội dung admin nay **chỉ còn quản lý bài viết (Tin tức)** — xem "Article Content Contract" bên dưới. Sidebar trang chính sách `/chinh-sach` vẫn lấy danh mục từ menu location `policy` (`GET /api/v1/menus/policy`), nhưng thân bài từng trang nay là nội dung tĩnh ở web (không còn `GET /api/v1/pages/{slug}`).
+> Bảng `pages` + `guide_page_layout` đã drop ở `V271__drop_pages_and_guide_page.sql`. Module Nội dung admin nay **chỉ còn quản lý bài viết (Tin tức)** — xem "Article Content Contract" bên dưới. Sidebar chính sách là danh sách cố định 3 trang trong web; menu location `policy` không còn được admin hoặc storefront sử dụng.
 
 ## Article Content Contract
 
@@ -1146,7 +1146,7 @@ Quy trình quản lý menu `policy` qua admin đã bị loại bỏ. Thanh bên 
 **Đọc public:** `GET /api/v1/menus/policy` không còn được sử dụng ở storefront. Storefront tự dựng danh sách này tĩnh thông qua hàm `buildStaticSidebarItems` và so khớp `current` dựa trên `slug` hiện tại.
 **Ghi (admin):** Slot `policy` đã bị gỡ khỏi danh sách system slots và constants. Lớp `MenuLocations` không còn coi `policy` là system menu slot.
 
-Status: `CONFIRMED_FROM_CODE` — `MenuLocations.PRIMARY` duy nhất, `bigbike-web/components/policy/PolicyPageClient.tsx`.
+Status: `CONFIRMED_FROM_CODE` — `MenuLocations.PRIMARY` duy nhất, `bigbike-web/app/chinh-sach/[slug]/page.tsx`.
 
 ### Thứ tự danh sách danh mục công khai — `GET /api/v1/categories`
 
@@ -1244,7 +1244,7 @@ Trang `/lien-he` là **trang tĩnh hoàn toàn**: bố cục, nhãn, tiêu đề
 
 ## Guide Page Builder Contract — REMOVED (2026-06-24)
 
-> **REMOVED (2026-06-24).** Trang Hướng dẫn `/huong-dan` (+ 3 trang con `mua-hang`/`size-mu`/`size-gang-tay`) nay là **nội dung tĩnh trong `bigbike-web`** (nguồn `static-pages.json`). Toàn bộ endpoint guide-page đã gỡ: admin `GET`/`PUT /api/v1/admin/guide-page` và public `GET /api/v1/guide-page` không còn tồn tại. Bảng `guide_page_layout` drop ở `V271`. Trình dựng trang Hướng dẫn (GuidePageBuilder) trong admin cũng đã gỡ. Xem "Static CMS Pages + Guide Page — REMOVED (2026-06-24)" ở trên.
+> **REMOVED (2026-06-24).** Trang Hướng dẫn `/huong-dan` (+ đúng 2 trang con `size-mu`/`size-trang-phuc`) nay là **nội dung tĩnh trong `bigbike-web`**. URL `mua-hang` chuyển về trang Hướng dẫn; `size-gang-tay` chuyển sang `size-trang-phuc`. Toàn bộ endpoint guide-page đã gỡ: admin `GET`/`PUT /api/v1/admin/guide-page` và public `GET /api/v1/guide-page` không còn tồn tại. Bảng `guide_page_layout` drop ở `V271`; trình dựng GuidePageBuilder trong admin cũng đã gỡ.
 
 ## Customer Admin — Summary
 

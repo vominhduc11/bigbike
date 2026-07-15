@@ -293,13 +293,13 @@ Evidence:
 
 ## Static Page Rules — REMOVED (2026-06-24)
 
-> **REMOVED / Deprecated 2026-06-24.** Module "Trang tĩnh CMS" (pages) đã gỡ khỏi toàn stack. 10 trang thông tin (Giới thiệu, Liên hệ, Hướng dẫn + 3 trang con, 4 trang chính sách) nay **đóng cứng trong `bigbike-web`** (nguồn `static-pages.json` + `static-pages.ts`, song ngữ VI/EN cố định trong code). Không còn bảng `pages` (drop ở `V271`), không còn endpoint hay màn admin quản lý trang. Các rule dưới đây **không còn áp dụng** — giữ lại làm lịch sử.
+> **REMOVED / Deprecated 2026-06-24.** Module "Trang tĩnh CMS" (pages) đã gỡ khỏi toàn stack. 8 route thông tin/chính sách hiện hành (Giới thiệu, Liên hệ, Hướng dẫn + 2 trang con, 3 trang chính sách) nay **đóng cứng trong `bigbike-web`** (nguồn `static-pages.json` + component web, song ngữ VI/EN cố định trong code). Không còn bảng `pages` (drop ở `V271`), không còn endpoint hay màn admin quản lý trang. Các rule dưới đây **không còn áp dụng** — giữ lại làm lịch sử.
 >
 > - ~~`PAGE_RULE_001`~~: (cũ) Mỗi trang tĩnh bắt buộc có bản nội dung tiếng Việt; bản tiếng Anh tùy chọn. → Nay nội dung song ngữ cố định trong code web.
 > - ~~`PAGE_RULE_002`~~: (cũ) Đọc trang `lang=en` lùi về VI theo từng trường. → Không còn — web tự chọn bản theo locale.
 > - ~~`PAGE_RULE_003`~~: (cũ) `slug` của trang dùng chung 1 bản. → Slug nay là route cố định trong web.
 >
-> Lý do gỡ: 10 trang này nội dung ổn định, không cần admin sửa thường xuyên → chuyển thành tĩnh để đơn giản hoá vận hành. Bài viết (ARTICLE_RULE_*) **vẫn còn** quản lý động qua module Nội dung (Tin tức).
+> Lý do gỡ: các trang này có nội dung ổn định, không cần admin sửa thường xuyên → chuyển thành tĩnh để đơn giản hoá vận hành. Bài viết (ARTICLE_RULE_*) **vẫn còn** quản lý động qua module Nội dung (Tin tức).
 
 ## Contact Page Rules
 
@@ -326,17 +326,17 @@ Evidence:
 
 ## Policy Page Rules
 
-Trang chính sách `/chinh-sach/{slug}`: **thân bài nay là nội dung tĩnh trong `bigbike-web`** (nguồn `static-pages.json`, module pages gỡ 2026-06-24 — không còn trang CMS), còn thanh bên (danh sách + thứ tự các trang chính sách) **vẫn** do admin dựng qua **menu vị trí `policy`** — tái dùng trình quản lý Menu sẵn có. Phần menu sidebar GIỮ NGUYÊN; chỉ nguồn thân bài đổi từ CMS sang tĩnh.
+Trang chính sách `/chinh-sach/{slug}` là nội dung cố định trong `bigbike-web`; admin không quản lý thân bài, danh sách hay thứ tự sidebar (owner decision 2026-07-15, AUD-041).
 
-- `POLICY_PAGE_RULE_001`: `slug` trên URL khớp trang chính sách tĩnh trong web; web tự phân giải nội dung từ `static-pages.json` (**không còn** gọi `GET /api/v1/pages/{slug}`). Slug không khớp trang tĩnh nào → 404. `CONFIRMED_FROM_CODE`
-- `POLICY_PAGE_RULE_002`: Thanh bên dựng từ menu location `policy` (`GET /api/v1/menus/policy`); mỗi mục trỏ tới `/chinh-sach/{page-slug}`, mục đang xem mang trạng thái `current` khi slug khớp. Admin thêm/bớt/sắp thứ tự mục như menu header/footer. Chỉ mục `ACTIVE` hiển thị. `CONFIRMED_FROM_CODE`
-- `POLICY_PAGE_RULE_003`: `policy` là một system menu slot (cạnh `primary`/`footer`/`guide`) — admin không tạo/xóa container, chỉ quản lý mục bên trong. Nhãn mục song ngữ (`label` VI + `label_en`), lùi về VI khi thiếu EN (giống menu khác). V226 seed sẵn 4 mục chính sách. `CONFIRMED_FROM_CODE`
+- `POLICY_PAGE_RULE_001`: Chỉ có đúng 3 slug: `chinh-sach-bao-mat-thong-tin`, `chinh-sach-bao-hanh`, `chinh-sach-doi-tra-hang`. Slug khác trả 404. `CONFIRMED_FROM_CODE`
+- `POLICY_PAGE_RULE_002`: Sidebar luôn hiển thị cố định theo thứ tự **Bảo mật thông tin → Bảo hành → Đổi trả hàng**; web tự dựng từ danh sách trong route, không gọi `GET /api/v1/menus/policy`. `CONFIRMED_FROM_CODE`
+- `POLICY_PAGE_RULE_003`: Admin không quản lý trang chính sách và không có menu slot `policy`; hệ thống menu chỉ còn slot `primary`. Muốn thay đổi danh sách/nội dung chính sách phải cập nhật source web và canonical docs trong cùng thay đổi. `CONFIRMED_FROM_CODE`
 
 Evidence:
 
-- `MenuLocations.java` (`POLICY`), `AdminMenuService.java`, `PublicMenuController.java`
-- `V226__seed_policy_menu_slot.sql`
-- `bigbike-web/app/chinh-sach/[slug]/page.tsx` (render động), `bigbike-admin/src/screens/MenuScreen.jsx` (slot `policy`)
+- `bigbike-web/app/chinh-sach/[slug]/page.tsx` (`POLICY_SLUGS`, `buildStaticSidebarItems`)
+- `bigbike-web/lib/content/static-pages.json`
+- `MenuLocations.java` (`PRIMARY` là system slot duy nhất)
 
 ## WebSocket Rules
 

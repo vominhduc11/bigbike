@@ -34,7 +34,7 @@ BigBike is a commerce platform for motorcycle safety gear and rider accessories.
 | Customer-data export / delete (Nghị định 13/2023) | No customer-facing data-portability endpoint. | `NOT_FOUND_IN_REPO` | repo search |
 | Customer support / ticketing | No customer-facing support channel beyond static contact info (hotline/Zalo/Facebook/address) on `/lien-he`; no contact form, ticketing, SLA, or escalation. | `NOT_FOUND_IN_REPO` | repo search |
 | Notification center (admin read/unread) | Persistent `admin_notifications` table (V102); `AdminNotificationController` with list-unread + mark-read endpoints. | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `V102__create_admin_notifications_table.sql` |
-| Bộ Công Thương TMĐT registration / legal-content footer badge | CMS-driven legal pages; registration status outside repo. | `NEEDS_LEGAL_CONFIRMATION` | `app/chinh-sach/[slug]`, `app/huong-dan/[...sub]` |
+| Bộ Công Thương TMĐT registration / legal-content footer badge | Legal/policy pages are fixed in the web source; registration status remains outside repo. | `NEEDS_LEGAL_CONFIRMATION` | `app/chinh-sach/[slug]`, `app/huong-dan/[...sub]` |
 
 > Production-readiness verdict: ❌ NOT_READY. See `docs/business/ACCEPTANCE_CRITERIA.md` for the 15-blocker production gate.
 
