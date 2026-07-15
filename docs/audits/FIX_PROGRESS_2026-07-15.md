@@ -83,7 +83,7 @@
 
 | AUD | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
-| AUD-039 | Gỡ wishlist/comparison đã bỏ khỏi docs | ⬜ | |
+| AUD-039 | Gỡ wishlist/comparison đã bỏ khỏi docs | ✅ `99894033` | Xóa 4 endpoint wishlist giả, workflow/API flow so sánh và dẫn chứng `ComparisonTable` không tồn tại; bỏ tham chiếu bảng `wishlist_items` đã drop khỏi contract xóa sản phẩm. Giữ `MODULE_CATALOG.md` ở trạng thái `REMOVED` làm căn cứ lịch sử. Docs-only, đối chiếu active source không có implementation/caller. |
 | AUD-040 | Docs address theo mô hình 2 cấp tỉnh/thành → phường/xã | ⬜ | |
 | AUD-041 | Chốt 3 trang chính sách tĩnh, admin không quản lý — sửa docs | ⬜ | Quyết định #6 |
 | AUD-042 | Thống nhất quyền sửa tồn kho (`products.update` vs `inventory.write`) | ⬜ | |
