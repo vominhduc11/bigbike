@@ -65,7 +65,7 @@ type ProductViewProps = {
 function LocalizedTaxonomyName({ field, viName }: { field: "brand" | "category"; viName: string }) {
   const locale = useLocale();
   const localized = useLocalizedField<CategorySummary | BrandSummary>(field);
-  return <>{locale === "en" ? safeText(localized?.name, "") : viName}</>;
+  return <>{locale === "en" ? safeText(localized?.name, viName) : viName}</>;
 }
 
 /**
@@ -85,7 +85,7 @@ function LocalizedProductSwiper({
 }) {
   const locale = useLocale();
   const enProducts = useLocalizedField<Product[]>(field);
-  const products = safeArray(locale === "en" ? enProducts : viProducts).filter(
+  const products = safeArray(locale === "en" ? enProducts ?? viProducts : viProducts).filter(
     (p) => p.id !== currentProductId,
   );
   return <ProductSwiper products={products} autoHeight />;
@@ -108,7 +108,9 @@ function LocalizedProductSwiper({
 function MobileTrustLine({ product }: { product: Product }) {
   const locale = useLocale();
   const enTrustHtml = useLocalizedField<string>("trustBadges");
-  const trustBadgesResolvedHtml = locale === "en" ? enTrustHtml ?? "" : product.trustBadges ?? "";
+  const trustBadgesResolvedHtml = locale === "en"
+    ? enTrustHtml ?? product.trustBadges ?? ""
+    : product.trustBadges ?? "";
   const hasTrustBadges = trustBadgesResolvedHtml.trim().length > 0;
 
   return (

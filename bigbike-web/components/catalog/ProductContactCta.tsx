@@ -71,7 +71,7 @@ export function ProductContactCta({
   // (ProductView tính trước khi vào provider nên không tự đổi ngôn ngữ được).
   const locale = useLocale();
   const enName = useLocalizedField<string>("name");
-  const displayName = safeText(locale === "en" ? enName : productName, "");
+  const displayName = safeText(locale === "en" ? enName : productName, productName);
 
   const zaloNumber = zaloUrl ? zaloDisplayNumber(zaloUrl) : "";
 

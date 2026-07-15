@@ -176,14 +176,14 @@ export function PurchaseSection({
   const enName = useLocalizedField<string>("name");
   const name = safeText(
     locale === "en" ? enName : product.name,
-    "",
+    product.name,
   );
 
   // Dải tin cậy (V257) — HTML (EN override hoặc bản vi) là nguồn render duy nhất, sanitize
   // (cho phép CSS inline); không còn dải badge có cấu trúc để fallback.
   const enTrustHtml = useLocalizedField<string>("trustBadges");
   const trustBadgesResolvedHtml =
-    locale === "en" ? enTrustHtml ?? "" : product.trustBadges ?? "";
+    locale === "en" ? enTrustHtml ?? product.trustBadges ?? "" : product.trustBadges ?? "";
 
   // Mô tả ngắn nằm trong khối mua hàng (dưới đánh giá, trên phần chọn biến thể) — vị trí gốc.
   // Đổi ngôn ngữ qua LHtml (field "shortDescription"); trống → không render.
@@ -197,14 +197,14 @@ export function PurchaseSection({
   // (toCategorySummary/toBrandSummary/pick) — đọc qua useLocalizedField như commitments/
   // trustBadges ở trên (V319: originBrandCountry có cột *_en riêng).
   const enCategory = useLocalizedField<CategorySummary>("category");
-  const activeCategory = locale === "en" ? enCategory : product.category;
+  const activeCategory = locale === "en" ? enCategory ?? product.category : product.category;
   const eyebrowCategory =
     activeCategory?.slug === "chua-phan-loai" ? "" : safeText(activeCategory?.name, "");
   const enBrand = useLocalizedField<BrandSummary>("brand");
-  const activeBrand = locale === "en" ? enBrand : product.brand;
+  const activeBrand = locale === "en" ? enBrand ?? product.brand : product.brand;
   const enOriginBrandCountry = useLocalizedField<string>("originBrandCountry");
   const activeOriginBrandCountry =
-    locale === "en" ? enOriginBrandCountry : product.originBrandCountry;
+    locale === "en" ? enOriginBrandCountry ?? product.originBrandCountry : product.originBrandCountry;
   const eyebrowBrand = safeText(activeOriginBrandCountry, "") || safeText(activeBrand?.name, "");
   const eyebrow = [eyebrowCategory, eyebrowBrand].filter(Boolean).join(" / ");
 
@@ -212,7 +212,7 @@ export function PurchaseSection({
   // Đổi ngôn ngữ qua LocalizedContentProvider (như enName/enTrustHtml ở trên) — bản EN nếu có, không thì fallback bản vi.
   const enCommitments = useLocalizedField<ProductCommitment[]>("commitments");
   const commitments: ProductCommitment[] =
-    (locale === "en" ? enCommitments : product.commitments) ?? [];
+    (locale === "en" ? enCommitments ?? product.commitments : product.commitments) ?? [];
 
   return (
     <>

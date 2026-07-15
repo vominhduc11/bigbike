@@ -19,7 +19,7 @@ export function FeaturedSpecsBar({ viStatsHtml = "" }: { viStatsHtml?: string })
 
   // "HTML thắng" (V256): có HTML (EN override khi đổi ngôn ngữ, hoặc bản vi) → render HTML đã
   // sanitize (cho phép CSS inline); rỗng → không render gì.
-  const statsHtml = locale === "en" ? enStatsHtml : viStatsHtml;
+  const statsHtml = locale === "en" ? enStatsHtml ?? viStatsHtml : viStatsHtml;
   if (!statsHtml?.trim()) return null;
 
   const html = sanitizeRichHtml(statsHtml, { allowInlineStyles: true });

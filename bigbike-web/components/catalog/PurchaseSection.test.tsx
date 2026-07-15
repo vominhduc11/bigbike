@@ -1,12 +1,14 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Product } from "@/lib/contracts/public";
 import { PurchaseSection } from "./PurchaseSection";
 
+const { localeState } = vi.hoisted(() => ({ localeState: { value: "vi" } }));
+
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
-  useLocale: () => "vi",
+  useLocale: () => localeState.value,
 }));
 
 vi.mock("@/lib/cart-context", () => ({
@@ -56,6 +58,10 @@ function renderSection(rating: number | null, ratingCount: number | null, produc
   );
 }
 
+beforeEach(() => {
+  localeState.value = "vi";
+});
+
 describe("PurchaseSection — buy-box PDP, gate sao theo REVIEW_RULE_003", () => {
   it("ratingCount >= 1 → hiện sao (RatingStars) đúng trung bình + microdata aggregateRating", () => {
     const { container } = renderSection(4.0, 3);
@@ -96,5 +102,23 @@ describe("PurchaseSection — mô hình giá 2 trường (PRODUCT_RULE_012)", ()
     const { container } = renderSection(null, null, { price: { retailPrice: 2000000, currency: "VND" } });
     expect(screen.getByText("2.000.000 ₫")).toBeInTheDocument();
     expect(container.querySelector("del")).toBeNull();
+  });
+});
+
+describe("PurchaseSection — fallback nội dung tiếng Việt", () => {
+  it("giữ tên, taxonomy, trust và cam kết VI khi payload EN chưa tải hoặc lỗi", () => {
+    localeState.value = "en";
+    renderSection(null, null, {
+      name: "Áo giáp tiếng Việt",
+      category: { id: "c1", slug: "ao-giap", name: "Áo giáp" },
+      brand: { id: "b1", slug: "bigbike", name: "BigBike" },
+      trustBadges: "<p>Hàng chính hãng</p>",
+      commitments: [{ icon: "truck", title: "Miễn phí vận chuyển" }],
+    });
+
+    expect(screen.getByRole("heading", { name: "Áo giáp tiếng Việt" })).toBeInTheDocument();
+    expect(screen.getByText("Áo giáp / BigBike")).toBeInTheDocument();
+    expect(screen.getByText("Hàng chính hãng")).toBeInTheDocument();
+    expect(screen.getByText("Miễn phí vận chuyển")).toBeInTheDocument();
   });
 });

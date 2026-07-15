@@ -128,7 +128,7 @@ export function ProductDescriptionBlocks({
   // ProductSuitabilitySection/ProductSizeGuideSection bên dưới) — không cần lọc lại ở đây.
   const enBlocks = useLocalizedField<DescriptionBlock[]>("descriptionBlocks");
   const locale = useLocale();
-  const active = locale === "en" ? enBlocks : blocks;
+  const active = locale === "en" ? enBlocks ?? blocks : blocks;
 
   if (!Array.isArray(active) || active.length === 0) {
     return <>{fallback}</>;
@@ -146,7 +146,7 @@ export function ProductDescriptionBlocks({
 export function ProductSuitabilitySection({ section }: { section: SuitabilitySection | null }) {
   const enSection = useLocalizedField<SuitabilitySection>("suitabilitySection");
   const locale = useLocale();
-  const active = locale === "en" ? enSection : section;
+  const active = locale === "en" ? enSection ?? section : section;
   if (!active) return null;
   return (
     <div className="pdp-desc-rich flex flex-col gap-8">
@@ -158,7 +158,7 @@ export function ProductSuitabilitySection({ section }: { section: SuitabilitySec
 export function ProductSizeGuideSection({ section }: { section: SizeGuideSection | null }) {
   const enSection = useLocalizedField<SizeGuideSection>("sizeGuideSection");
   const locale = useLocale();
-  const active = locale === "en" ? enSection : section;
+  const active = locale === "en" ? enSection ?? section : section;
   if (!active) return null;
   return (
     <div className="pdp-desc-rich flex flex-col gap-8">

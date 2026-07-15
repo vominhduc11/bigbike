@@ -47,8 +47,8 @@ export function ProductProsCons({
   const locale = useLocale();
   const enPos = useLocalizedField<ProductHighlight[]>("positiveNotes");
   const enNeg = useLocalizedField<ProductHighlight[]>("negativeNotes");
-  const positive = highlightLines(locale === "en" ? enPos : positiveNotes);
-  const negative = highlightLines(locale === "en" ? enNeg : negativeNotes);
+  const positive = highlightLines(locale === "en" ? enPos ?? positiveNotes : positiveNotes);
+  const negative = highlightLines(locale === "en" ? enNeg ?? negativeNotes : negativeNotes);
   if (positive.length === 0 && negative.length === 0) return null;
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -98,7 +98,7 @@ export function ProductSpecsTable({ viSpecsHtml = "" }: { viSpecsHtml?: string }
   const containerRef = useRef<HTMLDivElement>(null);
 
   // "HTML thắng": có HTML (EN override khi đổi ngôn ngữ, hoặc bản vi) → render HTML đã sanitize.
-  const specsHtml = locale === "en" ? enSpecsHtml : viSpecsHtml;
+  const specsHtml = locale === "en" ? enSpecsHtml ?? viSpecsHtml : viSpecsHtml;
 
   useEffect(() => {
     const el = containerRef.current;
@@ -180,7 +180,7 @@ export function ProductFaqs({ viFaqs }: { viFaqs: Faq[] }) {
   const t = useTranslations("Product");
   const locale = useLocale();
   const enFaqs = useLocalizedField<Faq[]>("faqs");
-  const faqs = (locale === "en" ? enFaqs : viFaqs) ?? [];
+  const faqs = locale === "en" ? enFaqs ?? viFaqs : viFaqs;
 
   if (faqs.length === 0) {
     return (
@@ -222,8 +222,9 @@ export function ProductDescriptionTab({ viHtml }: { viHtml: string }) {
   const t = useTranslations("Product");
   const enHtml = useLocalizedField<unknown>("description");
   const locale = useLocale();
+  const hasEnglishContent = typeof enHtml === "string" && enHtml.trim().length > 0;
   const hasContent = locale === "en"
-    ? typeof enHtml === "string" && enHtml.trim().length > 0
+    ? hasEnglishContent || viHtml.trim().length > 0
     : viHtml.trim().length > 0;
   if (!hasContent) {
     return (
