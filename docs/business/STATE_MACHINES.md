@@ -238,8 +238,8 @@ From `AdminOrderService.ALLOWED_ORDER_STATUSES`:
 
 From checkout behavior:
 
-- Online orders default to `PROCESSING` (owner decision 2026-06-23): the customer no longer chooses a payment method, so there is no "awaiting transfer" hold. `paymentMethod` is stored `null` and `paymentStatus = UNPAID`.
-- Legacy/explicit `BACS` (if a caller still sends it) creates the order with `ON_HOLD`; explicit `COD` creates `PROCESSING`.
+- New checkout and quick-buy orders always use `paymentMethod = COD`, start at `PROCESSING`, and have `paymentStatus = UNPAID` (owner decision 2026-07-15, `PAY_RULE_001`). The customer sees COD as a fixed method with no selection step; an omitted request value is normalised to COD and every other explicit code is rejected.
+- Legacy orders may still carry `BACS`/`null` and remain readable. A legacy BACS order may already be `ON_HOLD`, but no new storefront request can create that combination.
 - `PENDING` exists as allowed order status, but checkout initial use needs deeper audit outside the default creation path.
 
 ### Terminal States
@@ -796,7 +796,7 @@ Notification/email/websocket events exist as side effects, but no persisted noti
 - Frontend chỉ được hide/disable action để UX tốt hơn, không thay thế backend validation.
 - Negative tests nên cover transition bị cấm.
 - API không được update status trực tiếp nếu thiếu service/domain validation.
-- Side effects như stock restore, notification phải nằm trong transactional service flow nếu ảnh hưởng dữ liệu bền vững.
+- Durable side effects such as notifications/audit records must remain in the transactional service flow when they affect persisted data. Inventory has no sale/cancel restore side effect under the manual boolean model.
 - **Audit log là best-effort, non-blocking:** ghi qua `AuditLogWriter` trong một giao dịch RIÊNG (`REQUIRES_NEW`) có bọc try/catch. Lỗi ghi nhật ký KHÔNG được rollback hay làm hỏng thao tác nghiệp vụ chính (`AuditLogWriter.java`, `AuditLogPersister.java`).
 
 ## 17. Backend Enforcement Requirements
@@ -838,10 +838,10 @@ Notes:
 
 | Entity / State Machine | Status | Gap |
 |---|---|---|
-| Payment Provider/Webhook lifecycle | `NOT_FOUND_IN_REPO` | No automatic payment gateway. Online checkout accepts only `COD`/`BACS`, both reconciled manually by admin. No payment redirect, no provider webhook. The Alepay/ZaloPay gateway plan was dropped. |
+| Payment Provider/Webhook lifecycle | `NOT_FOUND_IN_REPO` | No automatic payment gateway. New storefront orders use fixed COD and are reconciled manually by admin. BACS is legacy-order compatibility only. No payment redirect or provider webhook; the Alepay/ZaloPay plan was dropped. |
 | Shipping Provider/Tracking lifecycle | `NOT_FOUND_IN_REPO` | No carrier waybill/tracking/status state machine found. |
 | Fulfillment status lifecycle | `STATUS_ONLY` / `NEEDS_VERIFICATION` | `fulfillmentStatus` exposed in order detail, no transition map found. |
-| Serial lifecycle | `REMOVED` | Serial-number tracking was removed platform-wide (2026-06-23, V259). There is no serial lifecycle. Inventory is manual quantity only. |
+| Serial lifecycle | `REMOVED` | Serial-number tracking was removed platform-wide (2026-06-23, V259). There is no serial lifecycle. Inventory is manual boolean availability only. |
 | Notification read/unread lifecycle | `CONFIRMED_FROM_CODE` | `admin_notifications` table (V102) + `AdminNotificationController` mark-read/mark-all-read. Archive not implemented. |
 | Settings lifecycle | `STATUS_ONLY` / `NEEDS_VERIFICATION` | Settings APIs exist; no state machine confirmed. |
 | Review moderation lifecycle | `NEEDS_VERIFICATION` | Review controllers exist in prior docs, but review status transitions not audited here. |
@@ -858,7 +858,7 @@ Notes:
 | Product mutation | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCatalogMutationService.java` | Product create/update/publish/soft-delete uses transition validation. | High |
 | Public product/category/brand visibility | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/catalog/CatalogReadService.java` | Product `PUBLISHED` and category/brand visible filters. | High |
 | Order/payment transitions | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminOrderService.java` | Order/payment allowed transition maps, timestamps, audit, notification/websocket side effects. (No stock restore — availability is a manual boolean, V261.) | High |
-| Checkout initial state | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java` | COD/BACS initial order/payment state, per-variant `isAvailable` gate, order creation. (No quantity decrement — V261.) | High |
+| Checkout initial state | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java` | Fixed-COD initial order/payment state, per-variant `isAvailable` gate, order creation. Legacy BACS/null remains read-compatible only. (No quantity decrement — V261.) | High |
 | Inventory states | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/domain/catalog/ProductStockState.java` | Product stock states. | High |
 | Inventory availability | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminInventoryController.java` | Per-variant / per-product boolean availability toggle (V261); `stockState` mirrors it. | High |
 | Content state | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminContentController.java` | Admin content accepted status filters and permission boundary. | Medium-High |

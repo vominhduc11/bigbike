@@ -50,7 +50,7 @@ File này dùng làm nền cho:
 | Email Service | Third-party/system actor | Gửi transactional email cho order/admin notifications. | Backend notification/email integration. | `CONFIRMED_FROM_CODE` for code path; runtime `NEEDS_VERIFICATION` | `OrderNotificationService`, `bigbike-backend/pom.xml`, `docker-compose.yaml` |
 | Media Storage / MinIO | Third-party/system actor | Lưu file/media object. | Media upload/storage backend. | `CONFIRMED_FROM_CODE` | `AdminMediaController`, `MinioConfig`, `MinioProperties`, `docker-compose.yaml` |
 | Payment Provider | Third-party actor | Tự động cập nhật payment qua webhook/provider nếu có. | Payment integration. | `NOT_FOUND_IN_REPO` | No payment webhook/provider evidence found in audited files. |
-| Shipping Provider | Third-party actor | Tạo vận đơn/tracking với carrier nếu có. | Shipping/fulfillment integration. | `NOT_FOUND_IN_REPO` | `AdminShippingController` confirms internal zones/methods only. |
+| Shipping Provider | Third-party actor | Tạo vận đơn/tracking với carrier nếu có. | Shipping/fulfillment integration. | `NOT_FOUND_IN_REPO` | Shipping admin module đã gỡ; không có carrier-specific controller/service. |
 | Analytics / Observability Service | Third-party/system actor | Tracking/frontend analytics/errors. | Web analytics/Sentry/GTM references. | `INFERRED_FROM_STRUCTURE` | `bigbike-web/package.json`, `bigbike-web/app/page.tsx`, `docker-compose.yaml` |
 | Support Agent | Internal user | Hỗ trợ khách hàng/order issues. | Potentially admin customers/orders. | `NEEDS_VERIFICATION` | No explicit `SUPPORT` role found. |
 | Warehouse / Inventory Staff | Internal user | Quản lý kho/tồn/stock movement. | Inventory module. | `NEEDS_VERIFICATION` | Inventory module exists, no explicit warehouse role found. |
@@ -231,7 +231,7 @@ Admin default role has broad business access to read/update many admin modules. 
 | Field | Value |
 |---|---|
 | Purpose | Tự động thực hiện business logic và side effects bên trong backend. |
-| System Interaction | Validate input, create order/payment/shipping/note, audit, notify, websocket push, enforce state transitions. (No quantity decrement/restore — boolean availability, V261.) |
+| System Interaction | Validate input, create order/payment/address/note, audit, notify, websocket push, enforce state transitions. (No shipping-method row/fee and no quantity decrement/restore.) |
 | Related Processes | Checkout, Order Management, Payment Handling, Inventory, Return/Refund, Notification, Audit. |
 | Status | `CONFIRMED_FROM_CODE` |
 | Evidence | `CheckoutService`, `AdminOrderService`, `AdminReturnService`, `AdminOrderWsService`, `SecurityConfig` |
@@ -239,7 +239,7 @@ Admin default role has broad business access to read/update many admin modules. 
 #### System actions confirmed
 
 - Validate checkout address/payment/shipping/stock/price.
-- Create order, line items, addresses, shipping item, payment, note.
+- Create order, line items, address snapshots, payment, note. New orders do not create a shipping-method item or fee (`SHIP_RULE_001`).
 - Mark cart converted.
 - Validate per-variant availability (`isAvailable`) on checkout/quick-buy. (No quantity decrement — V261.)
 - No stock restore on cancel/refund/return — availability is a manual boolean (V261).
@@ -253,25 +253,24 @@ Admin default role has broad business access to read/update many admin modules. 
 | Field | Value |
 |---|---|
 | Purpose | Would update payment status automatically through provider callback/webhook. |
-| System Interaction | Not confirmed. Current payment appears internal/manual with COD/BACS. |
+| System Interaction | Not confirmed. New storefront payment is internal/manual COD only; legacy BACS orders remain readable and manually reconcilable. |
 | Related Processes | Payment Handling, Order Management. |
 | Status | `NOT_FOUND_IN_REPO` |
 | Evidence | No payment webhook/provider controller/service found in audited evidence. |
 
 #### Needs Verification
 
-- Whether bank transfer QR/reconciliation is planned outside repo.
-- Whether BACS is purely manual bank transfer.
+- Whether any future payment provider is planned outside this repo. Current storefront contract is COD-only.
 
 ### Actor: Shipping Provider
 
 | Field | Value |
 |---|---|
 | Purpose | Would create waybill/tracking and update shipping status through carrier integration. |
-| System Interaction | Not confirmed. Current shipping support is internal zones/methods/cost. |
+| System Interaction | Not confirmed. Shop arranges fulfillment manually; there is no shipping-method/fee configuration and delivery is free to the customer. |
 | Related Processes | Shipping/Fulfillment, Order Management. |
 | Status | `NOT_FOUND_IN_REPO` |
-| Evidence | `AdminShippingController` confirms zones/methods; no provider-specific integration found. |
+| Evidence | `SHIP_RULE_001`, `CheckoutService`, repo search không có carrier-specific integration. |
 
 ### Actor: Email Service
 
@@ -448,7 +447,7 @@ Production auth status:
 | Email Service | `OrderNotificationService`, `bigbike-backend/pom.xml`, `docker-compose.yaml` | Notification code paths and mail dependency/config. | Medium-High |
 | Media Storage / MinIO | `AdminMediaController`, `MinioConfig`, `MinioProperties`, `docker-compose.yaml` | Media upload/storage integration. | High |
 | Payment Provider | Audited payment/order/checkout evidence | No external payment webhook/provider found. | High for not found in audited scope |
-| Shipping Provider | `AdminShippingController`, shipping/checkout evidence | Internal shipping config found; no carrier provider found. | High for not found in audited scope |
+| Shipping Provider | `BUSINESS_RULES.md` `SHIP_RULE_001`, `CheckoutService`, repository search | Shipping-method config was removed; no carrier provider found. | High for not found in audited scope |
 | Analytics / Observability | `bigbike-web/package.json`, `bigbike-web/app/page.tsx`, `docker-compose.yaml` | Analytics/Sentry/GTM-like references inferred. | Medium |
 | Module context | `docs/business/MODULE_CATALOG.md` | Existing module map used to relate roles to modules. | High |
 | Process context | `docs/business/BUSINESS_PROCESS.md` | Existing process map used to relate roles to business processes. | High |
@@ -463,8 +462,8 @@ Production auth status:
 5. `SUPER_ADMIN` guardrails exist in admin user service, but UI confirmation/destructive-action safeguards need verification.
 6. Custom role creation/edit/delete exists; role governance (system roles non-deletable, `SUPER_ADMIN` immutable, custom-only deletion) is now documented in `PERMISSION_MATRIX.md` → Role Governance and section 12 above.
 7. Customer role is confirmed, including returns creation/list/detail, but return eligibility rules need deeper audit in `CustomerReturnService`.
-8. Payment provider actor is not confirmed. Current payment flow appears internal/manual COD/BACS.
-9. Shipping provider actor is not confirmed. Current shipping flow appears internal zones/methods/cost only.
+8. Payment provider actor is not confirmed. Current storefront payment flow is internal/manual COD only; BACS survives only on legacy orders.
+9. Shipping provider actor is not confirmed. Current fulfillment is arranged manually, with no shipping-method choice or fee.
 10. Email service code paths exist, but production SMTP deliverability was not runtime-tested.
 11. Media storage/MinIO exists, but CDN/public media delivery runtime behavior needs deployment verification.
 12. Analytics/observability service is inferred from package/config references; exact production tracking actor needs verification.

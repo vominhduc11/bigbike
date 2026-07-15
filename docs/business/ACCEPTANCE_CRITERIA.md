@@ -18,11 +18,11 @@ This file captures measurable acceptance criteria that can be verified from curr
 
 | Topic | Current limitation | Status |
 |---|---|---|
-| External payment gateway | No confirmed live provider/webhook contract. Online checkout uses provider `INTERNAL` (COD/BACS only). | `NOT_FOUND_IN_REPO` |
+| External payment gateway | No confirmed live provider/webhook contract. New storefront orders use provider `INTERNAL` with fixed COD; BACS is legacy-order compatibility only. | `NOT_FOUND_IN_REPO` |
 | External shipping carrier | No confirmed GHN/GHTK/ViettelPost integration. `fulfillmentStatus` field is exposed but has no carrier-driven lifecycle. | `NOT_FOUND_IN_REPO` |
 | Receipt-based receiving flow | Schema dropped in V120 — feature not built. | `REMOVED` |
 | Invoice / e-invoice (hóa đơn điện tử) | No invoice entity, no e-invoice provider integration. **Owner decision 2026-07-06: không triển khai (out of scope).** | `OUT_OF_SCOPE` |
-| Bank-transfer reconciliation (mismatch handling) | Manual via `paymentStatus`/`paidAmount` patches; no structured "bank transfer record" / "payment correction" entity. | `DOCUMENTED_NOT_ENFORCED` |
+| Legacy BACS reconciliation (mismatch handling) | Existing BACS orders are reconciled manually via `paymentStatus`/`paidAmount`; new checkout/quick-buy requests cannot select BACS. No structured bank-transfer record/payment-correction entity exists. | `LEGACY_COMPATIBILITY` |
 | Customer-data export / delete (Nghị định 13/2023) | No customer-facing data export or delete endpoint. | `NOT_FOUND_IN_REPO` |
 | Customer support / ticketing | No customer-facing support channel beyond the static contact info (hotline/Zalo/Facebook/address) on `/lien-he`. **Owner decision 2026-07-06: không xây kênh hỗ trợ/khiếu nại/ticket — khách liên hệ qua hotline/Zalo/Facebook.** | `OUT_OF_SCOPE` |
 | Notification center (admin read/unread) | Persistent `admin_notifications` table (V102); `AdminNotificationController` with list-unread, mark-read, mark-all-read endpoints. | `CONFIRMED_FROM_CODE` |

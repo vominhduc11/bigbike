@@ -90,12 +90,12 @@ Evidence:
 
 ## Payment — no automatic gateway
 
-`CheckoutService.ALLOWED_PAYMENT_METHODS` accepts only `COD` and `BACS`.
+New storefront checkout and quick-buy accept only `COD`. An omitted `paymentMethod` is normalised to COD; any other explicit code, including `BACS`, is rejected.
 
-There is **no automatic payment gateway integration**. Both methods are reconciled manually by admin:
+There is **no automatic payment gateway integration**. COD is reconciled manually by admin:
 
 - `COD` — cash collected on delivery; admin marks the order paid after the courier hands over the money.
-- `BACS` — customer bank transfer; admin verifies the transfer and patches `paymentStatus`/`paidAmount` manually.
+- Legacy `BACS` — no longer offered or accepted for new storefront orders; existing BACS orders remain readable and may still be reconciled manually through `paymentStatus`/`paidAmount`.
 
 No redirect, no provider webhook, no `paymentRedirectUrl`. The Alepay/ZaloPay online-gateway plan was dropped — those method codes are no longer accepted at checkout.
 
