@@ -473,52 +473,7 @@ export function getOrderLookup(orderNumber: string, orderKey: string): Promise<D
   );
 }
 
-// ── Cross-domain search ──────────────────────────────────────────────────────
-
- type SearchResults = {
-  query: string;
-  products: Product[];
-  articles: Article[];
-};
-
- type SearchTypeFilter = "product" | "article";
-
- type SearchQuery = {
-  q: string;
-  types?: SearchTypeFilter[];
-  limit?: number;
-};
-
-export async function search(query: SearchQuery): Promise<DataResult<SearchResults>> {
-  const params: RequestQuery = {
-    q: query.q,
-    limit: query.limit,
-  };
-  if (query.types && query.types.length > 0) {
-    params.type = query.types.join(",");
-  }
-  try {
-    const response = await requestJson<ApiDataResponse<SearchResults>>(
-      "/api/v1/search",
-      params,
-      0, // search is user-specific — no-store
-    );
-    return { data: response.data, error: null };
-  } catch (error) {
-    return { data: null, error: toClientError(error) };
-  }
-}
-
-export async function searchSuggest(query: Pick<SearchQuery, "q" | "limit">): Promise<DataResult<SearchResults>> {
-  try {
-    const response = await requestJson<ApiDataResponse<SearchResults>>(
-      "/api/v1/search-suggest",
-      { q: query.q, limit: query.limit ?? 6 },
-      0,
-    );
-    return { data: response.data, error: null };
-  } catch (error) {
-    return { data: null, error: toClientError(error) };
-  }
-}
+// Cross-domain search helpers (`search`, `searchSuggest`) removed 2026-07-15 (AUD-060):
+// no caller. The search page fetches products directly and the header dropdown calls the
+// Next.js route /app/api/search-suggest, which proxies the backend /api/v1/search-suggest.
 

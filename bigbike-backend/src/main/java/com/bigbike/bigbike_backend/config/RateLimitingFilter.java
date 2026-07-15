@@ -159,7 +159,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             if ("/api/v1/orders/lookup".equals(path)) {
                 return LimitTier.ORDER_LOOKUP;
             }
-            if ("/api/v1/search".equals(path) || "/api/v1/search-suggest".equals(path)) {
+            if ("/api/v1/search-suggest".equals(path)) {
                 return LimitTier.SEARCH;
             }
         }

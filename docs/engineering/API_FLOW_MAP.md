@@ -4,7 +4,7 @@
 
 | Client surface | Endpoint(s) | Backend entrypoint | Core side effects / data | Status |
 |---|---|---|---|---|
-| Web search | `GET /api/v1/search`, `GET /api/v1/search-suggest` | `PublicSearchController` | Search result payload from global search service | `CONFIRMED_FROM_CODE` |
+| Web search | Kết quả tìm kiếm: trang `/tim-kiem` gọi `GET /api/v1/products`; gợi ý gõ nhanh (dropdown header) gọi `GET /api/v1/search-suggest` qua route `/app/api/search-suggest`. (`GET /api/v1/search` đã gỡ 2026-07-15, AUD-066 — không client nào dùng.) | `PublicSearchController`, `PublicProductController` | Search result payload from global search service | `CONFIRMED_FROM_CODE` |
 | Tin tức list page (`/tin-tuc`) | `GET /api/v1/articles`, `GET /api/v1/content-categories` | `ContentController` -> `ContentReadService` | Paginated article list + content categories with published-article counts for the category filter (desktop sidebar + mobile drawer) | `CONFIRMED_FROM_CODE` |
 | Public address utility API (không có caller nội bộ) | `GET /api/v1/address/provinces`, `GET /api/v1/address/provinces/{provinceCode}/wards` | `VnAddressController` | Dữ liệu địa chỉ hai cấp chỉ đọc; storefront dùng `VN_PROVINCES` tích hợp sẵn thay vì gọi API | `CONFIRMED_FROM_CODE` |
 | Cart UI | `/api/v1/cart`, `/api/v1/cart/items` | `CartController` -> `CartService` | Session/customer cart, item snapshots | `CONFIRMED_FROM_CODE` |

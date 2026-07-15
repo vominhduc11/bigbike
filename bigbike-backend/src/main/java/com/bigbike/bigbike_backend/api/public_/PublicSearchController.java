@@ -11,10 +11,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,7 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class PublicSearchController {
 
-    private static final int DEFAULT_LIMIT = 20;
     private static final int MAX_LIMIT = 50;
 
     private final GlobalSearchService searchService;
@@ -40,26 +36,13 @@ public class PublicSearchController {
             List<Article> articles
     ) {}
 
-    @GetMapping("/search")
-    public ApiDataResponse<SearchPayload> search(
-            @RequestParam("q") @Size(min = 1, max = 200) String q,
-            @RequestParam(value = "type", required = false) String type,
-            @RequestParam(value = "limit", required = false) @Min(1) @Max(MAX_LIMIT) Integer limit,
-            HttpServletRequest request
-    ) {
-        Set<String> types = parseTypes(type);
-        int resolvedLimit = limit == null ? DEFAULT_LIMIT : limit;
-
-        SearchResults results = searchService.search(q, types, resolvedLimit);
-        return apiResponseFactory.data(
-                new SearchPayload(q, results.products(), results.articles()),
-                request
-        );
-    }
+    // GET /api/v1/search (cross-domain search) removed 2026-07-15 (AUD-066, decision #8):
+    // no client called it — the storefront search page fetches /api/v1/products and the
+    // header dropdown uses /api/v1/search-suggest below.
 
     /**
-     * Lightweight typeahead endpoint used by mobile (and the web BFF). Returns up to {@code limit}
-     * product matches; returns empty for blank queries.
+     * Lightweight typeahead endpoint used by the web BFF header dropdown. Returns up to
+     * {@code limit} product/article matches; returns empty for blank queries.
      */
     @GetMapping("/search-suggest")
     public ApiDataResponse<SearchPayload> searchSuggest(
@@ -82,14 +65,5 @@ public class PublicSearchController {
                 new SearchPayload(trimmed, results.products(), results.articles()),
                 request
         );
-    }
-
-    private static Set<String> parseTypes(String raw) {
-        if (raw == null || raw.isBlank()) return Set.of();
-        return Arrays.stream(raw.split(","))
-                .map(String::trim)
-                .map(s -> s.toLowerCase(java.util.Locale.ROOT))
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.toSet());
     }
 }

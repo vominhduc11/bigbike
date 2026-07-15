@@ -68,7 +68,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/sliders").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/home-videos").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/home/category-highlights").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/search").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/search-suggest").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/address/**").permitAll()
                         // Cart endpoints: guest + customer access, CSRF enforced on mutations by filter

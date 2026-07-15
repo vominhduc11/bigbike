@@ -47,14 +47,8 @@ public class AdminSettingsController extends AdminControllerSupport {
                 adminSettingsService.listSettings(page, size, q, group, isPublic), request);
     }
 
-    @GetMapping("/{settingKey}")
-    public ApiDataResponse<AdminSiteSettingResponse> getByKey(
-            @PathVariable String settingKey,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "settings.read");
-        return apiResponseFactory.data(adminSettingsService.getByKey(settingKey), request);
-    }
+    // GET /api/v1/admin/settings/{settingKey} removed 2026-07-15 (AUD-068, decision #8):
+    // no UI caller — the settings screen loads the whole list via GET /admin/settings.
 
     @PatchMapping
     public ApiDataResponse<List<AdminSiteSettingResponse>> batchUpdateSettings(

@@ -119,13 +119,13 @@
 | AUD-056 | Gỡ endpoint không consumer (grep 0 caller từng cái trước khi xóa) | ⬜ | Quyết định #8 |
 | AUD-057 | Web: dọn raw controls / arbitrary values trong active UI/CSS | ⬜ | |
 | AUD-058 | Admin: dọn named CSS / hardcode / raw buttons | ⬜ | |
-| AUD-060 | Gỡ 2 dead search export trong `public-api.ts` | ⬜ | |
-| AUD-066 | Gỡ `GET /api/v1/search` + sửa docs API_FLOW_MAP | ⬜ | Quyết định #8 |
+| AUD-060 | Gỡ 2 dead search export trong `public-api.ts` | ✅ | Xóa `search()`+`searchSuggest()` + 3 type (SearchResults/SearchTypeFilter/SearchQuery) — 0 caller (dropdown dùng route `/app/api/search-suggest`). Lint sạch |
+| AUD-066 | Gỡ `GET /api/v1/search` + sửa docs API_FLOW_MAP | ✅ | Quyết định #8 (grep 0 caller): gỡ mapping `/search` + `parseTypes` + overload 3-arg `GlobalSearchService.search` + matcher SecurityConfig + nhánh RateLimitingFilter; docs API_FLOW_MAP/API_CONTRACT/MODULE_CATALOG/PERMISSION_MATRIX cập nhật (giữ `/search-suggest`) |
 | AUD-067 | Gỡ `POST .../notifications/mark-read` không caller | ✅ `7e96af4d` | Làm sớm cùng 1D: gỡ endpoint + `markReadByIds` khi rework mô hình đã-đọc per-admin (endpoint chưa từng có caller); docs API_CONTRACT ghi Removed |
-| AUD-068 | Gỡ `GET .../settings/{settingKey}` không caller | ⬜ | Quyết định #8 |
-| AUD-074 | Gỡ audio khỏi Media Library (filter admin + backend reject) | ✅ | Quyết định #5: backend `AdminMediaService.ALLOWED_MIME_TYPES` bỏ 5 loại audio (reject upload); bỏ nhóm đếm `audio` trong stats; admin bỏ SelectItem Audio + chip + locale key `audios`; docs Media Rules cập nhật. Object audio cũ trong MinIO giữ nguyên |
+| AUD-068 | Gỡ `GET .../settings/{settingKey}` không caller | ✅ | Quyết định #8 (grep 0 caller): gỡ mapping GET-by-key + `AdminSettingsService.getByKey`; giữ PATCH-by-key (đang dùng) + GET list; docs API_CONTRACT ghi Removed |
+| AUD-074 | Gỡ audio khỏi Media Library (filter admin + backend reject) | ✅ `7a117468` | Quyết định #5: backend `AdminMediaService.ALLOWED_MIME_TYPES` bỏ 5 loại audio (reject upload); bỏ nhóm đếm `audio` trong stats; admin bỏ SelectItem Audio + chip + locale key `audios`; docs Media Rules cập nhật. Object audio cũ trong MinIO giữ nguyên |
 | AUD-076 | Docs bổ sung `orders/lookup`, quyền reviews, module Reviews; gỡ ghi chú stale | ⬜ | |
-| AUD-077 | Gỡ `REDIRECT_HIT_TRACKING` khỏi `.env.example` | ⬜ | |
+| AUD-077 | Gỡ `REDIRECT_HIT_TRACKING` khỏi `.env.example` | ✅ | 0 reader trong code (grep toàn repo); xóa dòng khỏi `.env.example` + `.env.vps.example` |
 
 ## Phase 3C — Chốt sổ
 

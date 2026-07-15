@@ -86,13 +86,7 @@ public class AdminSettingsService {
         return paginationService.paginate(items, normalizedPage, normalizedSize);
     }
 
-    // ── Get by key ────────────────────────────────────────────────────────────
-
-    public AdminSiteSettingResponse getByKey(String settingKey) {
-        SiteSettingEntity entity = settingRepo.findBySettingKey(settingKey)
-                .orElseThrow(() -> new NotFoundException("Setting not found: " + settingKey));
-        return toAdminResponse(entity);
-    }
+    // getByKey removed 2026-07-15 (AUD-068) with GET /admin/settings/{settingKey}.
 
     // ── Update ────────────────────────────────────────────────────────────────
 

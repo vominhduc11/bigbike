@@ -27,10 +27,8 @@ public class GlobalSearchService {
 
     public record SearchResults(List<Product> products, List<Article> articles) {}
 
-    public SearchResults search(String q, Set<String> types, int limit) {
-        return search(q, types, limit, "vi");
-    }
-
+    // The 3-arg overload (default "vi") was removed with GET /api/v1/search (AUD-066);
+    // search-suggest always passes an explicit lang.
     public SearchResults search(String q, Set<String> types, int limit, String locale) {
         if (q == null || q.isBlank()) {
             return new SearchResults(List.of(), List.of());
