@@ -48,8 +48,8 @@ export type QuickBuyPayload = {
   productVariantId?: string | null
   quantity: number
   billingAddress: CheckoutAddress
-  // Optional (owner decision 2026-06-23): online orders no longer ask the customer to choose a
-  // payment method — the admin reconciles payment offline.
+  // COD là phương thức duy nhất trên storefront (owner decision 2026-07-15, PAY_RULE_001) —
+  // checkout/quick-buy luôn gửi "COD"; backend từ chối giá trị khác.
   paymentMethod?: string
   customerNote?: string
 }
@@ -57,7 +57,7 @@ export type QuickBuyPayload = {
 export type CheckoutPayload = {
   billingAddress: CheckoutAddress
   shippingAddress?: CheckoutAddress | null
-  // Optional — see QuickBuyPayload#paymentMethod.
+  // Luôn "COD" — see QuickBuyPayload#paymentMethod.
   paymentMethod?: string
   customerNote?: string
 }

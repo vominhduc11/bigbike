@@ -1206,7 +1206,12 @@
     "buyNow": "Mua ngay",
     "addToCartFailed": "Không thêm được vào giỏ",
     "mobileAddToCart": "Thêm vào giỏ",
-    "mobileBuyNow": "Mua ngay"
+    "mobileBuyNow": "Mua ngay",
+    "quickBuy": "MUA NHANH — GIAO TẬN NƠI",
+    "quickBuyTitle": "Mua nhanh",
+    "quickBuySubmit": "ĐẶT HÀNG NGAY (COD)",
+    "quickBuyTotal": "Tổng thanh toán",
+    "quickBuyFailed": "Không đặt được đơn hàng. Vui lòng thử lại."
   },
   "Home": {
     "buyNow": "Mua ngay",

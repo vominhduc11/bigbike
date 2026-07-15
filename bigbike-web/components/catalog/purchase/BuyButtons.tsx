@@ -8,19 +8,24 @@ import { zaloHref } from "@/lib/utils/format";
 
 // Hàng nút mua: tỉ lệ 60/40 ở MỌI breakpoint (giỏ hàng flex-[3], Zalo flex-[2]).
 // flex-nowrap giữ 2 nút cạnh nhau cả trên mobile. Khớp thanh dính đáy mobile.
+// Dưới hàng là nút "MUA NHANH" full-width — điểm vào quick-buy (đặt 1 sản phẩm
+// không qua giỏ, AUD-010), mở QuickBuyDialog qua onQuickBuy.
 export function BuyButtons({
   canBuy,
   adding,
   onAdd,
+  onQuickBuy,
   zaloUrl,
 }: {
   canBuy: boolean;
   adding: boolean;
   onAdd: () => void;
+  onQuickBuy: () => void;
   zaloUrl?: string;
 }) {
   const tb = useTranslations("PdpBuyBox");
   return (
+    <>
     <div data-purchase-actions className="mt-6 flex flex-nowrap gap-2.5">
       <div className="min-w-0 flex-[3]">
         {/* Hook class React riêng (js-bb-add-to-cart), KHÔNG dùng
@@ -79,5 +84,18 @@ export function BuyButtons({
         </Button>
       </div>
     </div>
+    {/* Mua nhanh: nút đen full-width dưới hàng nút chính — CTA phụ, không tranh
+        độ nổi với nút đỏ THÊM VÀO GIỎ HÀNG. Disabled theo cùng điều kiện canBuy. */}
+    <Button
+      type="button"
+      variant="dark"
+      data-purchase-quick-buy
+      className="mt-2.5 h-[52px] w-full whitespace-nowrap rounded-none px-4 font-cta text-b4-action"
+      disabled={!canBuy || adding}
+      onClick={onQuickBuy}
+    >
+      {tb("quickBuy")}
+    </Button>
+    </>
   );
 }

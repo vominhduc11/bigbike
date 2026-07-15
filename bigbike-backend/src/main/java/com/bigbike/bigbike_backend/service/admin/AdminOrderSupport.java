@@ -39,6 +39,7 @@ final class AdminOrderSupport {
         }
         return new AdminOrderListItemResponse(
                 dto.id(), dto.orderNumber(), dto.status(), dto.paymentStatus(),
+                dto.fulfillmentStatus(), dto.fulfillmentType(),
                 dto.customerEmail(), dto.customerPhone(), fallback,
                 dto.totalAmount(), dto.currency(), dto.placedAt(), dto.itemCount(), dto.source());
     }

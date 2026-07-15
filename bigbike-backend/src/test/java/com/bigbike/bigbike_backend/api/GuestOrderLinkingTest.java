@@ -47,7 +47,7 @@ class GuestOrderLinkingTest {
 
     private static final String GUEST_BILLING_TEMPLATE =
             "{\"fullName\":\"Guest\",\"phone\":\"0909000001\",\"email\":\"%s\"," +
-            "\"addressLine1\":\"1 Test Rd\",\"province\":\"HCM\",\"country\":\"VN\"}";
+            "\"addressLine1\":\"1 Test Rd\",\"province\":\"HCM\",\"ward\":\"Phuong 1\",\"country\":\"VN\"}";
 
     @Autowired WebApplicationContext webApplicationContext;
     @Autowired CustomerJpaRepository customerRepo;

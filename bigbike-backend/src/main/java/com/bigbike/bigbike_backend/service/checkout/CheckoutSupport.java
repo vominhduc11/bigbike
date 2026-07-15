@@ -33,41 +33,60 @@ final class CheckoutSupport {
 
     private CheckoutSupport() {}
 
-    private static final Set<String> ALLOWED_PAYMENT_METHODS = Set.of("COD", "BACS");
+    static final String PAYMENT_METHOD_COD = "COD";
     private static final String ANONYMOUS_SCOPE = "anonymous";
 
     // ── Validation helpers ────────────────────────────────────────────────────
 
     static void validateAddress(CheckoutAddressRequest addr) {
+        validateAddress(addr, "billingAddress");
+    }
+
+    static void validateAddress(CheckoutAddressRequest addr, String fieldPrefix) {
         if (addr.fullName() == null || addr.fullName().isBlank()) {
-            throw ValidationException.fromField("billingAddress.fullName", "REQUIRED", "Full name is required.");
+            throw ValidationException.fromField(fieldPrefix + ".fullName", "REQUIRED", "Full name is required.");
         }
         if (addr.phone() == null || !addr.phone().matches("0[3-9]\\d{8}|\\+84[3-9]\\d{8}")) {
-            throw ValidationException.fromField("billingAddress.phone", "INVALID_PHONE",
+            throw ValidationException.fromField(fieldPrefix + ".phone", "INVALID_PHONE",
                     "Số điện thoại không hợp lệ. Vui lòng nhập số VN 10 chữ số (ví dụ: 0901234567).");
         }
         if (addr.email() != null && !addr.email().isBlank()
                 && !addr.email().matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
-            throw ValidationException.fromField("billingAddress.email", "INVALID_EMAIL",
+            throw ValidationException.fromField(fieldPrefix + ".email", "INVALID_EMAIL",
                     "Email không hợp lệ.");
         }
+        // Two-tier VN address (province/thành phố → phường/xã): both tiers are required so the
+        // shop never receives an order it cannot deliver (AUD-007).
+        if (addr.province() == null || addr.province().isBlank()) {
+            throw ValidationException.fromField(fieldPrefix + ".province", "REQUIRED",
+                    "Vui lòng chọn tỉnh/thành phố.");
+        }
+        if (addr.ward() == null || addr.ward().isBlank()) {
+            throw ValidationException.fromField(fieldPrefix + ".ward", "REQUIRED",
+                    "Vui lòng chọn phường/xã.");
+        }
         if (addr.addressLine1() == null || addr.addressLine1().isBlank()) {
-            throw ValidationException.fromField("billingAddress.addressLine1", "REQUIRED",
+            throw ValidationException.fromField(fieldPrefix + ".addressLine1", "REQUIRED",
                     "Address line 1 is required.");
         }
     }
 
     static void validatePaymentMethod(String method) {
-        // Payment method is optional now (owner decision 2026-06-23): online orders no longer make the
-        // customer choose, the admin reconciles offline. Only reject an explicit, unrecognised value so
-        // backward-compatible callers that still send COD/BACS keep working.
+        // COD is the only storefront payment method (owner decision 2026-07-15, PAY_RULE_001):
+        // BACS is no longer offered for new orders. Omitted values are normalised to COD by
+        // normalizePaymentMethod; an explicit different value is rejected.
         if (method == null || method.isBlank()) {
             return;
         }
-        if (!ALLOWED_PAYMENT_METHODS.contains(method)) {
+        if (!PAYMENT_METHOD_COD.equals(method)) {
             throw ValidationException.fromField("paymentMethod", "UNSUPPORTED",
-                    "Payment method must be COD or BACS.");
+                    "Payment method must be COD.");
         }
+    }
+
+    /** Owner decision 2026-07-15: every new online order is stored as COD. */
+    static String normalizePaymentMethod(String method) {
+        return (method == null || method.isBlank()) ? PAYMENT_METHOD_COD : method;
     }
 
     static String normalizeIdempotencyKey(String rawIdempotencyKey) {
@@ -115,17 +134,23 @@ final class CheckoutSupport {
         if (shipping == null || Boolean.TRUE.equals(shipping.sameAsBilling())) {
             return billing;
         }
+        // Blank strings fall back to billing like nulls do — otherwise "" would bypass the
+        // billing fallback and persist an empty delivery address (AUD-007).
         return new CheckoutAddressRequest(
-                shipping.fullName() != null ? shipping.fullName() : billing.fullName(),
-                shipping.email() != null ? shipping.email() : billing.email(),
-                shipping.phone() != null ? shipping.phone() : billing.phone(),
-                shipping.country() != null ? shipping.country() : billing.country(),
-                shipping.province() != null ? shipping.province() : billing.province(),
-                shipping.district() != null ? shipping.district() : billing.district(),
-                shipping.ward() != null ? shipping.ward() : billing.ward(),
-                shipping.addressLine1() != null ? shipping.addressLine1() : billing.addressLine1(),
+                firstNonBlank(shipping.fullName(), billing.fullName()),
+                firstNonBlank(shipping.email(), billing.email()),
+                firstNonBlank(shipping.phone(), billing.phone()),
+                firstNonBlank(shipping.country(), billing.country()),
+                firstNonBlank(shipping.province(), billing.province()),
+                firstNonBlank(shipping.district(), billing.district()),
+                firstNonBlank(shipping.ward(), billing.ward()),
+                firstNonBlank(shipping.addressLine1(), billing.addressLine1()),
                 shipping.addressLine2()
         );
+    }
+
+    private static String firstNonBlank(String primary, String fallback) {
+        return (primary != null && !primary.isBlank()) ? primary : fallback;
     }
 
     // ── Build helpers ─────────────────────────────────────────────────────────

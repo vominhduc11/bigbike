@@ -17,10 +17,14 @@ public record CheckoutAddressRequest(
         String phone,
         @Size(max = 100)
         String country,
+        // Two-tier VN address: province + ward are mandatory so orders are always deliverable.
+        // district stays optional — legacy 3-tier data is read-only.
+        @NotBlank(message = "province is required.")
         @Size(max = 255)
         String province,
         @Size(max = 255)
         String district,
+        @NotBlank(message = "ward is required.")
         @Size(max = 255)
         String ward,
         @NotBlank(message = "addressLine1 is required.")

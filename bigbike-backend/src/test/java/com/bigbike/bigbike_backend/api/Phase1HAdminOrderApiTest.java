@@ -55,7 +55,7 @@ class Phase1HAdminOrderApiTest {
 
     private static final String VALID_BILLING = """
             {"fullName":"Test User","phone":"0909123456","email":"test@example.com",
-             "addressLine1":"123 Test St","province":"HCM","country":"VN"}
+             "addressLine1":"123 Test St","province":"HCM","ward":"Phuong 1","country":"VN"}
             """;
 
     @Autowired WebApplicationContext webApplicationContext;
@@ -388,13 +388,17 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(jsonPath("$.data.cancelledAt").isNotEmpty());
     }
 
+    // Manual Còn/Hết availability model (owner decision 2026-07-15, FIX_PROMPT §2 #7):
+    // selling does not decrement stock and cancelling does not restore it — the admin
+    // toggles availability by hand. Cancel must therefore leave stock untouched.
+
     @Test
-    void cancelOrder_restoresProductLevelStock() throws Exception {
+    void cancelOrder_doesNotTouchProductLevelStock() throws Exception {
         ProductEntity product = createManagedStockProduct("1H Managed Product", 2100000, 10);
         OrderInfo order = placeGuestOrderForItem(product.getId(), null, 2, "COD");
 
         ProductEntity afterCheckout = productRepo.findById(product.getId()).orElseThrow();
-        assertThat(afterCheckout.getStockQuantity()).isEqualTo(8);
+        assertThat(afterCheckout.getStockQuantity()).isEqualTo(10);
         assertThat(afterCheckout.getStockState()).isEqualTo(ProductStockState.IN_STOCK);
 
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
@@ -404,18 +408,18 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("CANCELLED"));
 
-        ProductEntity restored = productRepo.findById(product.getId()).orElseThrow();
-        assertThat(restored.getStockQuantity()).isEqualTo(10);
-        assertThat(restored.getStockState()).isEqualTo(ProductStockState.IN_STOCK);
+        ProductEntity afterCancel = productRepo.findById(product.getId()).orElseThrow();
+        assertThat(afterCancel.getStockQuantity()).isEqualTo(10);
+        assertThat(afterCancel.getStockState()).isEqualTo(ProductStockState.IN_STOCK);
     }
 
     @Test
-    void cancelOrder_writesOrderCancelStockMovement() throws Exception {
+    void cancelOrder_writesNoStockMovement() throws Exception {
         VariantFixture fixture = createProductWithVariantStock(4, 1900000);
         OrderInfo order = placeGuestOrderForItem(fixture.productId(), fixture.variantId(), 2, "COD");
 
         ProductVariantEntity afterCheckout = variantRepo.findById(fixture.variantId()).orElseThrow();
-        assertThat(afterCheckout.getQuantityOnHand()).isEqualTo(2);
+        assertThat(afterCheckout.getQuantityOnHand()).isEqualTo(4);
 
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -424,19 +428,14 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("CANCELLED"));
 
-        ProductVariantEntity restored = variantRepo.findById(fixture.variantId()).orElseThrow();
-        assertThat(restored.getQuantityOnHand()).isEqualTo(4);
+        ProductVariantEntity afterCancel = variantRepo.findById(fixture.variantId()).orElseThrow();
+        assertThat(afterCancel.getQuantityOnHand()).isEqualTo(4);
 
         List<StockMovementEntity> movements = stockMovementRepo.findByVariantIdOrderByCreatedAtDesc(
                 fixture.variantId(), PageRequest.of(0, 10));
-        StockMovementEntity cancelMovement = movements.stream()
-                .filter(m -> "ORDER_CANCEL".equals(m.getReferenceType()) && order.orderId.equals(m.getReferenceId()))
-                .findFirst()
-                .orElseThrow();
-        assertThat(cancelMovement.getMovementType()).isEqualTo("IN");
-        assertThat(cancelMovement.getQuantityDelta()).isEqualTo(2);
-        assertThat(cancelMovement.getQuantityBefore()).isEqualTo(2);
-        assertThat(cancelMovement.getQuantityAfter()).isEqualTo(4);
+        assertThat(movements)
+                .noneMatch(m -> "ORDER_CANCEL".equals(m.getReferenceType())
+                        && order.orderId.equals(m.getReferenceId()));
     }
 
     // ── 19. Update order status — with note → note is persisted ──────────────
@@ -587,38 +586,9 @@ class Phase1HAdminOrderApiTest {
     }
 
     // ── 28. Regression — existing APIs still work ─────────────────────────────
-
-    @Test
-    void createRefund_unpaidOrder_returns409() throws Exception {
-        OrderInfo order = placeGuestOrder(7100000);
-
-        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refundAmount\":100000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isConflict());
-    }
-
-    @Test
-    void createRefund_partial_isRejected_partialRefundNotSupported() throws Exception {
-        OrderInfo order = placeGuestOrder(7200000);
-
-        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":7200000}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        // Partial refund (less than paidAmount) is no longer supported — must refund full amount
-        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"refundAmount":500000,"refundReason":"CUSTOMER_REQUEST",
-                                 "note":"Refund 500k","customerVisible":true}
-                                """)
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isBadRequest());
-    }
+    // (Refund tests removed: the Refund feature and POST /admin/orders/{id}/refund were
+    //  deleted platform-wide on 2026-06-23 — money returned to a customer is reconciled
+    //  manually outside the system. Stale expectations cleaned per AUD-046.)
 
     @Test
     void getOrderAuditTrail_returnsEntries_newestFirst() throws Exception {
@@ -640,58 +610,6 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(jsonPath("$.data[0].actorType").value("ADMIN"));
     }
 
-    @Test
-    void createRefund_full_setsRefundedStatus_andSyncsPaymentRecord() throws Exception {
-        OrderInfo order = placeGuestOrder(7300000);
-
-        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":7300000}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        markDelivered(order.orderId);
-
-        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"COMPLETED\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("COMPLETED"));
-
-        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"refundAmount":7300000,"refundReason":"CUSTOMER_REQUEST",
-                                 "note":"Full refund","customerVisible":true}
-                                """)
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("REFUNDED"))
-                .andExpect(jsonPath("$.data.paymentStatus").value("REFUNDED"))
-                .andExpect(jsonPath("$.data.refundAmount").value(7300000.00))
-                .andExpect(jsonPath("$.data.refundedAt").isNotEmpty())
-                .andExpect(jsonPath("$.data.payments[0].status").value("REFUNDED"))
-                .andExpect(jsonPath("$.data.payments[0].paymentMethod").value("COD"));
-    }
-
-    @Test
-    void createRefund_exceedsRefundable_returns400() throws Exception {
-        OrderInfo order = placeGuestOrder(7400000);
-
-        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":7400000}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refundAmount\":900001,\"refundReason\":\"CUSTOMER_REQUEST\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isBadRequest());
-    }
-
     // PROCESSING COD order, UNPAID, not yet delivered:
     //   COMPLETED must be absent (COD requires PAID + DELIVERED before completion).
     //   CANCELLED must be present (UNPAID order may cancel freely).
@@ -708,10 +626,11 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(jsonPath("$.data[1]").value("FAILED"));
     }
 
-    // After markPaid + markDelivered, COMPLETED must appear and CANCELLED must be gone
-    // (PAID order cannot cancel directly — must refund first).
+    // After markPaid + markDelivered, COMPLETED must appear. CANCELLED stays available —
+    // PAID orders can be cancelled directly since the refund feature was removed
+    // (ORDER_RULE_004); the admin reconciles the money manually outside the system.
     @Test
-    void listAllowedTransitions_processingPaidDelivered_onlyCompleted() throws Exception {
+    void listAllowedTransitions_processingPaidDelivered_includesCompleted() throws Exception {
         OrderInfo order = placeGuestOrder(7451000);
         markPaid(order.orderId, 7451000);
         markDelivered(order.orderId);
@@ -719,17 +638,15 @@ class Phase1HAdminOrderApiTest {
         mockMvc.perform(get("/api/v1/admin/orders/" + order.orderId + "/allowed-transitions")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0]").value("COMPLETED"))
-                .andExpect(jsonPath("$.data[1]").value("FAILED"));
+                .andExpect(jsonPath("$.data.length()").value(3))
+                .andExpect(jsonPath("$.data[0]").value("CANCELLED"))
+                .andExpect(jsonPath("$.data[1]").value("COMPLETED"))
+                .andExpect(jsonPath("$.data[2]").value("FAILED"));
     }
 
-    // ── Direct PATCH status COMPLETED → REFUNDED must be rejected.
-    //    Refund integrity (refund_transaction, payment.refundAmount, warranty void,
-    //    stock restore) belongs to RefundService;
-    //    the dedicated POST /refund endpoint is the only legitimate path.
+    // ── PATCH status với REFUNDED — trạng thái không còn tồn tại (refund removed 2026-06-23).
     @Test
-    void updateOrderStatus_completedToRefunded_isRejected() throws Exception {
+    void updateOrderStatus_refundedStatus_isRejectedAsUnknown() throws Exception {
         OrderInfo order = placeGuestOrder(7460000);
 
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
@@ -747,60 +664,18 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("COMPLETED"));
 
+        // REFUNDED was removed from the order state machine — rejected as an unknown status.
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"REFUNDED\"}")
                         .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isConflict());
+                .andExpect(status().isBadRequest());
 
+        // COMPLETED is terminal — no further transitions.
         mockMvc.perform(get("/api/v1/admin/orders/" + order.orderId + "/allowed-transitions")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(0));
-    }
-
-    // Partial refund is not supported — this test verifies that only a full refund contributes
-    // to the refund report, and that a partial refund attempt is rejected before it can write anything.
-    @Test
-    void refundReport_onlyFullRefund_contributesToReport() throws Exception {
-        Instant from = Instant.now().minusSeconds(1);
-        BigDecimal refundBefore = fetchRefundAmountSummary(from, Instant.now().plusSeconds(1));
-
-        // Partial refund attempt must be rejected (400) — does not write any refund record.
-        OrderInfo partialRefundOrder = placeGuestOrder(7500000);
-        mockMvc.perform(patch("/api/v1/admin/orders/" + partialRefundOrder.orderId + "/payment-status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":7500000}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-        mockMvc.perform(post("/api/v1/admin/orders/" + partialRefundOrder.orderId + "/refund")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refundAmount\":300000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isBadRequest());
-
-        // Full refund on a completed order — contributes 7600000 to the report.
-        OrderInfo fullRefundOrder = placeGuestOrder(7600000);
-        mockMvc.perform(patch("/api/v1/admin/orders/" + fullRefundOrder.orderId + "/payment-status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":7600000}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-        markDelivered(fullRefundOrder.orderId);
-        mockMvc.perform(patch("/api/v1/admin/orders/" + fullRefundOrder.orderId + "/status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"COMPLETED\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-        mockMvc.perform(post("/api/v1/admin/orders/" + fullRefundOrder.orderId + "/refund")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refundAmount\":7600000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        Instant to = Instant.now().plusSeconds(1);
-        BigDecimal refundAfter = fetchRefundAmountSummary(from, to);
-        assertThat(refundAfter.subtract(refundBefore)).isEqualByComparingTo(BigDecimal.valueOf(7600000));
     }
 
     @Test
@@ -826,59 +701,15 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    // ── ORD-005: Full refund of COMPLETED variant order restores stock ─────────
+    // ── Cancel product-level order — manual availability model: no stock movement ──
 
     @Test
-    void fullRefundCompletedVariantOrder_restoresStockAndWritesOrderRefundMovement() throws Exception {
-        VariantFixture fixture = createProductWithVariantStock(5, 2000000);
-        OrderInfo order = placeGuestOrderForItem(fixture.productId(), fixture.variantId(), 2, "COD");
-
-        ProductVariantEntity afterCheckout = variantRepo.findById(fixture.variantId()).orElseThrow();
-        assertThat(afterCheckout.getQuantityOnHand()).isEqualTo(3);
-
-        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":4000000}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        markDelivered(order.orderId);
-
-        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"COMPLETED\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refundAmount\":4000000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("REFUNDED"));
-
-        ProductVariantEntity restored = variantRepo.findById(fixture.variantId()).orElseThrow();
-        assertThat(restored.getQuantityOnHand()).isEqualTo(5);
-
-        List<StockMovementEntity> movements = stockMovementRepo
-                .findByReferenceTypeAndReferenceId("ORDER_REFUND", order.orderId);
-        assertThat(movements).hasSize(1);
-        StockMovementEntity m = movements.get(0);
-        assertThat(m.getMovementType()).isEqualTo("IN");
-        assertThat(m.getQuantityDelta()).isEqualTo(2);
-        assertThat(m.getQuantityBefore()).isEqualTo(3);
-        assertThat(m.getQuantityAfter()).isEqualTo(5);
-    }
-
-    // ── ORD-002: Cancel product-level order writes ORDER_CANCEL movement ───────
-
-    @Test
-    void cancelProductLevelOrder_writesOrderCancelStockMovement() throws Exception {
+    void cancelProductLevelOrder_writesNoStockMovement() throws Exception {
         ProductEntity product = createManagedStockProduct("1H ORD-002 Product", 1500000, 8);
         OrderInfo order = placeGuestOrderForItem(product.getId(), null, 3, "COD");
 
         ProductEntity afterCheckout = productRepo.findById(product.getId()).orElseThrow();
-        assertThat(afterCheckout.getStockQuantity()).isEqualTo(5);
+        assertThat(afterCheckout.getStockQuantity()).isEqualTo(8);
 
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -887,144 +718,12 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("CANCELLED"));
 
-        ProductEntity restored = productRepo.findById(product.getId()).orElseThrow();
-        assertThat(restored.getStockQuantity()).isEqualTo(8);
+        ProductEntity afterCancel = productRepo.findById(product.getId()).orElseThrow();
+        assertThat(afterCancel.getStockQuantity()).isEqualTo(8);
 
         List<StockMovementEntity> movements = stockMovementRepo
                 .findByReferenceTypeAndReferenceId("ORDER_CANCEL", order.orderId);
-        assertThat(movements).hasSize(1);
-        StockMovementEntity m = movements.get(0);
-        assertThat(m.getMovementType()).isEqualTo("IN");
-        assertThat(m.getQuantityDelta()).isEqualTo(3);
-        assertThat(m.getQuantityBefore()).isEqualTo(5);
-        assertThat(m.getQuantityAfter()).isEqualTo(8);
-        assertThat(m.getProductId()).isEqualTo(product.getId());
-        assertThat(m.getVariant()).isNull();
-    }
-
-    // ── ORD-002: Full refund of COMPLETED product-level order restores stock ───
-
-    @Test
-    void fullRefundCompletedProductLevelOrder_restoresStockAndWritesOrderRefundMovement() throws Exception {
-        ProductEntity product = createManagedStockProduct("1H ORD-002 Refund Product", 2500000, 10);
-        OrderInfo order = placeGuestOrderForItem(product.getId(), null, 4, "COD");
-
-        ProductEntity afterCheckout = productRepo.findById(product.getId()).orElseThrow();
-        assertThat(afterCheckout.getStockQuantity()).isEqualTo(6);
-
-        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":10000000}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        markDelivered(order.orderId);
-
-        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"COMPLETED\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refundAmount\":10000000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("REFUNDED"));
-
-        ProductEntity restored = productRepo.findById(product.getId()).orElseThrow();
-        assertThat(restored.getStockQuantity()).isEqualTo(10);
-
-        List<StockMovementEntity> movements = stockMovementRepo
-                .findByReferenceTypeAndReferenceId("ORDER_REFUND", order.orderId);
-        assertThat(movements).hasSize(1);
-        StockMovementEntity m = movements.get(0);
-        assertThat(m.getMovementType()).isEqualTo("IN");
-        assertThat(m.getQuantityDelta()).isEqualTo(4);
-        assertThat(m.getProductId()).isEqualTo(product.getId());
-        assertThat(m.getVariant()).isNull();
-    }
-
-    // ── Partial refund is rejected — only full refund is supported ──────────────
-
-    @Test
-    void partialRefund_isRejected_returns400() throws Exception {
-        VariantFixture fixture = createProductWithVariantStock(6, 3000000);
-        OrderInfo order = placeGuestOrderForItem(fixture.productId(), fixture.variantId(), 2, "COD");
-
-        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":6000000}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        markDelivered(order.orderId);
-
-        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"COMPLETED\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        // Partial refund (3M of 6M paid) must be rejected — only full refund allowed
-        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refundAmount\":3000000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isBadRequest());
-
-        // Stock must NOT be touched
-        ProductVariantEntity notTouched = variantRepo.findById(fixture.variantId()).orElseThrow();
-        assertThat(notTouched.getQuantityOnHand()).isEqualTo(4);
-    }
-
-    // ── ORD-005 idempotency: double call does not double-restore stock ─────────
-
-    @Test
-    void fullRefund_idempotencyGuard_doesNotDoubleRestore() throws Exception {
-        VariantFixture fixture = createProductWithVariantStock(8, 1000000);
-        OrderInfo order = placeGuestOrderForItem(fixture.productId(), fixture.variantId(), 2, "COD");
-
-        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":2000000}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        markDelivered(order.orderId);
-
-        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"COMPLETED\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        // First full refund — restores stock
-        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refundAmount\":2000000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("REFUNDED"));
-
-        ProductVariantEntity afterRefund = variantRepo.findById(fixture.variantId()).orElseThrow();
-        assertThat(afterRefund.getQuantityOnHand()).isEqualTo(8);
-
-        // Second refund attempt on already-REFUNDED order — must be rejected (payment already REFUNDED)
-        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refundAmount\":2000000,\"refundReason\":\"RETRY\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isConflict());
-
-        // Quantity must remain at original (no double-restore)
-        ProductVariantEntity afterRetry = variantRepo.findById(fixture.variantId()).orElseThrow();
-        assertThat(afterRetry.getQuantityOnHand()).isEqualTo(8);
-
-        // Only one ORDER_REFUND movement written
-        assertThat(stockMovementRepo
-                .findByReferenceTypeAndReferenceId("ORDER_REFUND", order.orderId)).hasSize(1);
+        assertThat(movements).isEmpty();
     }
 
     // ── ORD-001: Audit logs include IP and User-Agent ─────────────────────────
@@ -1071,32 +770,6 @@ class Phase1HAdminOrderApiTest {
                 .findFirst().orElseThrow();
         assertThat(log.getIpAddress()).isNotBlank();
         assertThat(log.getUserAgent()).isEqualTo("TestBrowser/2.0");
-    }
-
-    @Test
-    void createRefund_writesAuditLogWithIpAndUserAgent() throws Exception {
-        OrderInfo order = placeGuestOrder(8300000);
-
-        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":8300000}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        // Must refund full paidAmount — partial refund is not supported
-        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refundAmount\":8300000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
-                        .header("Authorization", "Bearer " + adminToken)
-                        .header("User-Agent", "TestBrowser/3.0"))
-                .andExpect(status().isOk());
-
-        AuditLogEntity log = auditLogRepo.findAll().stream()
-                .filter(a -> order.orderId.equals(a.getResourceId())
-                        && "ORDER_REFUND_CREATED".equals(a.getAction()))
-                .findFirst().orElseThrow();
-        assertThat(log.getIpAddress()).isNotBlank();
-        assertThat(log.getUserAgent()).isEqualTo("TestBrowser/3.0");
     }
 
     @Test
@@ -1251,15 +924,17 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(jsonPath("$.data.completedAt").isNotEmpty());
     }
 
-    // Rule 4: PAID orders cannot be CANCELLED directly — must go through refund/void.
+    // ORDER_RULE_004: PAID orders CAN be cancelled directly since the refund feature was
+    // removed (2026-06-23) — the admin reconciles the money manually outside the system.
+    // Manual availability model: stock stays untouched throughout.
     @Test
-    void cancelOrder_processingPaid_isRejected_andStockNotRestored() throws Exception {
+    void cancelOrder_processingPaid_succeeds_andStockUntouched() throws Exception {
         VariantFixture fixture = createProductWithVariantStock(4, 1900000);
         OrderInfo order = placeGuestOrderForItem(fixture.productId(), fixture.variantId(), 2, "COD");
 
-        // Stock dropped from 4 to 2 at checkout.
+        // Boolean availability model (V261): checkout does not decrement.
         assertThat(variantRepo.findById(fixture.variantId()).orElseThrow().getQuantityOnHand())
-                .isEqualTo(2);
+                .isEqualTo(4);
 
         markPaid(order.orderId, 3800000);
 
@@ -1267,41 +942,19 @@ class Phase1HAdminOrderApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"CANCELLED\"}")
                         .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isConflict());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("CANCELLED"));
 
         OrderEntity reloaded = orderRepo.findById(order.orderId).orElseThrow();
-        assertThat(reloaded.getStatus()).isEqualTo("PROCESSING");
-        assertThat(reloaded.getCancelledAt()).isNull();
+        assertThat(reloaded.getStatus()).isEqualTo("CANCELLED");
+        assertThat(reloaded.getCancelledAt()).isNotNull();
 
-        // Stock must NOT be restored — the guard fires before the side-effect path.
+        // Cancel does not restore stock either (owner decision 2026-07-15, FIX_PROMPT §2 #7).
         assertThat(variantRepo.findById(fixture.variantId()).orElseThrow().getQuantityOnHand())
-                .isEqualTo(2);
+                .isEqualTo(4);
     }
 
-    // Rule 4: PAID orders cannot be CANCELLED directly (PARTIALLY_PAID was removed as a valid status;
-    // this test uses full PAID to verify the same guard).
-    @Test
-    void cancelOrder_processingPaidFull_isRejected() throws Exception {
-        OrderInfo order = placeGuestOrder(2200000);
-
-        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":2200000}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"CANCELLED\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isConflict());
-
-        OrderEntity reloaded = orderRepo.findById(order.orderId).orElseThrow();
-        assertThat(reloaded.getStatus()).isEqualTo("PROCESSING");
-    }
-
-    // Rule 4 happy path: UNPAID orders cancel cleanly (regression check that the
-    // guard only fires for PAID / PARTIALLY_PAID).
+    // UNPAID orders cancel cleanly as before.
     @Test
     void cancelOrder_processingUnpaid_succeeds() throws Exception {
         OrderInfo order = placeGuestOrder(2300000);
@@ -1313,11 +966,10 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(jsonPath("$.data.status").value("CANCELLED"));
     }
 
-    // ── Direct PAID→REFUNDED via payment-status must be rejected ──────────────
-    // Refund must go through POST /refund so RefundService handles transaction,
-    // payment record, stock restore, and audit log atomically.
+    // ── PAID→REFUNDED via payment-status — REFUNDED payment status was removed
+    //    (2026-06-23): rejected as an unknown value.
     @Test
-    void updatePaymentStatus_paidToRefunded_isRejected() throws Exception {
+    void updatePaymentStatus_refundedStatus_isRejectedAsUnknown() throws Exception {
         OrderInfo order = placeGuestOrder(9100000);
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -1325,12 +977,11 @@ class Phase1HAdminOrderApiTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
 
-        // Direct REFUNDED transition via payment-status must be rejected
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"paymentStatus\":\"REFUNDED\"}")
                         .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isConflict());
+                .andExpect(status().isBadRequest());
 
         // Order must still be PAID
         mockMvc.perform(get("/api/v1/admin/orders/" + order.orderId)
@@ -1388,52 +1039,6 @@ class Phase1HAdminOrderApiTest {
         markDelivered(order.orderId);
         patchFulfillment(order.orderId, "{\"fulfillmentStatus\":\"RETURNED\"}")
                 .andExpect(status().isBadRequest());
-    }
-
-    // ── Refund PROCESSING+PAID order flips order status to REFUNDED ───────────
-    @Test
-    void createRefund_processingPaidOrder_flipsOrderStatusToRefunded() throws Exception {
-        OrderInfo order = placeGuestOrder(9400000);
-        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":9400000}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        // Refund while still in PROCESSING (not yet COMPLETED)
-        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refundAmount\":9400000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.paymentStatus").value("REFUNDED"))
-                .andExpect(jsonPath("$.data.status").value("REFUNDED"));
-    }
-
-    // ── PAID→UNPAID is rejected after refund has been applied ─────────────────
-    @Test
-    void updatePaymentStatus_paidToUnpaid_rejectedAfterRefund() throws Exception {
-        OrderInfo order = placeGuestOrder(9500000);
-        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":9500000}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        // Apply full refund
-        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refundAmount\":9500000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.paymentStatus").value("REFUNDED"));
-
-        // After refund, payment status is REFUNDED — cannot go back to UNPAID
-        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"UNPAID\",\"paidAmount\":0}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isConflict());
     }
 
     // ── BACS ON_HOLD→PROCESSING auto-marks payment PAID ──────────────────────
@@ -1503,8 +1108,19 @@ class Phase1HAdminOrderApiTest {
         return placeGuestOrderWith(price, "COD");
     }
 
+    /**
+     * Simulates a LEGACY BACS order: checkout can no longer create BACS/ON_HOLD orders
+     * (COD-only, owner decision 2026-07-15 — PAY_RULE_001), so the order is placed as COD
+     * and then mutated to the legacy shape directly in the DB.
+     */
     private OrderInfo placeGuestOrderBacs(int price) throws Exception {
-        return placeGuestOrderWith(price, "BACS");
+        OrderInfo info = placeGuestOrderWith(price, "COD");
+        OrderEntity order = orderRepo.findById(info.orderId).orElseThrow();
+        order.setPaymentMethod("BACS");
+        order.setStatus("ON_HOLD");
+        order.setUpdatedAt(Instant.now());
+        orderRepo.save(order);
+        return info;
     }
 
     private OrderInfo placeGuestOrderWith(int price, String paymentMethod) throws Exception {
@@ -1657,103 +1273,6 @@ class Phase1HAdminOrderApiTest {
         start += marker.length();
         int end = json.indexOf("\"", start);
         return json.substring(start, end);
-    }
-
-    private BigDecimal fetchRefundAmountSummary(Instant from, Instant to) throws Exception {
-        MvcResult result = mockMvc.perform(get("/api/v1/admin/reports/analytics")
-                        .param("from", from.toString())
-                        .param("to", to.toString())
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andReturn();
-        return extractJsonDecimalValue(result.getResponse().getContentAsString(), "refundAmount");
-    }
-
-    private BigDecimal extractJsonDecimalValue(String json, String key) {
-        String marker = "\"" + key + "\":";
-        int start = json.indexOf(marker);
-        if (start < 0) return BigDecimal.ZERO;
-        start += marker.length();
-        int end = start;
-        while (end < json.length()) {
-            char c = json.charAt(end);
-            if ((c < '0' || c > '9') && c != '.' && c != '-') {
-                break;
-            }
-            end++;
-        }
-        return new BigDecimal(json.substring(start, end));
-    }
-
-    // ── Regression: refund PROCESSING+PAID restores non-serial stock ─────────
-    // Bug: wasCompleted guard in RefundService skipped restoreForRefund for active orders.
-    // Non-serial stock was decremented at checkout but never restored when refunding
-    // a PROCESSING (not yet COMPLETED) order. Fix: also restore for wasActive orders.
-    @Test
-    void createRefund_processingPaidVariantOrder_restoresStock() throws Exception {
-        VariantFixture fixture = createProductWithVariantStock(6, 5000000);
-        OrderInfo order = placeGuestOrderForItem(fixture.productId(), fixture.variantId(), 2, "COD");
-
-        // Stock dropped from 6 to 4 at checkout
-        assertThat(variantRepo.findById(fixture.variantId()).orElseThrow().getQuantityOnHand())
-                .isEqualTo(4);
-
-        // Mark paid but do NOT complete (stays in PROCESSING)
-        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":10000000}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        // Refund while PROCESSING (not COMPLETED)
-        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refundAmount\":10000000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("REFUNDED"));
-
-        // Stock must be restored to original 6
-        assertThat(variantRepo.findById(fixture.variantId()).orElseThrow().getQuantityOnHand())
-                .isEqualTo(6);
-
-        // Stock movement written with ORDER_REFUND reference
-        assertThat(stockMovementRepo
-                .findByReferenceTypeAndReferenceId("ORDER_REFUND", order.orderId)).hasSize(1);
-    }
-
-    @Test
-    void createRefund_processingPaidProductLevelOrder_restoresStock() throws Exception {
-        ProductEntity product = createManagedStockProduct("1H PROC Refund", 3000000, 5);
-        OrderInfo order = placeGuestOrderForItem(product.getId(), null, 2, "COD");
-
-        // Stock dropped from 5 to 3 at checkout
-        assertThat(productRepo.findById(product.getId()).orElseThrow().getStockQuantity())
-                .isEqualTo(3);
-
-        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":6000000}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        // Refund while PROCESSING
-        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refundAmount\":6000000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("REFUNDED"));
-
-        // Stock restored
-        assertThat(productRepo.findById(product.getId()).orElseThrow().getStockQuantity())
-                .isEqualTo(5);
-
-        List<StockMovementEntity> movements = stockMovementRepo
-                .findByReferenceTypeAndReferenceId("ORDER_REFUND", order.orderId);
-        assertThat(movements).hasSize(1);
-        assertThat(movements.get(0).getMovementType()).isEqualTo("IN");
-        assertThat(movements.get(0).getQuantityDelta()).isEqualTo(2);
     }
 
     // ── Value types ───────────────────────────────────────────────────────────

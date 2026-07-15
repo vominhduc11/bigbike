@@ -45,7 +45,7 @@ class Phase1IAdminManagementApiTest {
 
     private static final String VALID_BILLING = """
             {"fullName":"Test User","phone":"0909000001","email":"tuser@example.com",
-             "addressLine1":"1 Test Rd","province":"HCM","country":"VN"}
+             "addressLine1":"1 Test Rd","province":"HCM","ward":"Phuong 1","country":"VN"}
             """;
 
     @Autowired WebApplicationContext webApplicationContext;

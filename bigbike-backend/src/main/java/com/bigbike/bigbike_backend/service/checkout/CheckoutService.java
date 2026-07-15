@@ -54,7 +54,6 @@ public class CheckoutService {
 
     private static final String CART_STATUS_CONVERTED = "CONVERTED";
     private static final String ORDER_STATUS_PROCESSING = "PROCESSING";
-    private static final String ORDER_STATUS_ON_HOLD = "ON_HOLD";
     private static final String PAYMENT_STATUS_UNPAID = "UNPAID";
     private static final String PAYMENT_RECORD_STATUS_PENDING = "PENDING";
     private static final String FULFILLMENT_STATUS_UNFULFILLED = "UNFULFILLED";
@@ -101,7 +100,12 @@ public class CheckoutService {
             throw ValidationException.fromField("cart", "EMPTY_CART", "Cart has no items.");
         }
         validateAddress(req.billingAddress());
+        // Resolve + re-validate the shipping address up front so a custom shipping block can
+        // never persist an undeliverable (blank province/ward) address (AUD-007).
+        CheckoutAddressRequest shippingAddr = resolveShippingAddress(req.billingAddress(), req.shippingAddress());
+        validateAddress(shippingAddr, "shippingAddress");
         validatePaymentMethod(req.paymentMethod());
+        String paymentMethod = normalizePaymentMethod(req.paymentMethod());
         // Validate stock and re-sync prices. Stock is NOT decremented yet so we have an orderId.
         List<OrderSummaryResponse.PriceChange> priceChanges = new ArrayList<>();
         syncPricesAndValidateStock(items, priceChanges);
@@ -142,7 +146,7 @@ public class CheckoutService {
                 req.billingAddress().phone(),
                 req.billingAddress().fullName(),
                 req.customerNote(),
-                req.paymentMethod(),
+                paymentMethod,
                 subtotal,
                 discount,
                 shippingCost,
@@ -163,17 +167,14 @@ public class CheckoutService {
 
         // Addresses
         addressRepo.save(buildAddress(savedOrder, "BILLING", req.billingAddress(), now));
-        CheckoutAddressRequest shippingAddr = resolveShippingAddress(req.billingAddress(), req.shippingAddress());
         addressRepo.save(buildAddress(savedOrder, "SHIPPING", shippingAddr, now));
 
         // Payment
-        paymentRepo.save(buildPayment(savedOrder, req.paymentMethod(), total, now));
+        paymentRepo.save(buildPayment(savedOrder, paymentMethod, total, now));
 
         // System note
-        String paymentNote = (req.paymentMethod() == null || req.paymentMethod().isBlank())
-                ? "" : " Phương thức thanh toán: " + req.paymentMethod() + ".";
         noteRepo.save(buildSystemNote(savedOrder,
-                "Đơn hàng được tạo." + paymentNote + ".", now));
+                "Đơn hàng được tạo. Phương thức thanh toán: " + paymentMethod + ".", now));
 
         // Mark cart converted
         cart.setStatus(CART_STATUS_CONVERTED);
@@ -181,8 +182,8 @@ public class CheckoutService {
         cartRepo.save(cart);
 
         OrderEntity orderSnapshot = savedOrder;
-        String paymentMethodSnapshot = req.paymentMethod();
-        var newOrderEvent = buildNewOrderEvent(savedOrder, req.paymentMethod());
+        String paymentMethodSnapshot = paymentMethod;
+        var newOrderEvent = buildNewOrderEvent(savedOrder, paymentMethod);
         runAfterCommit(() -> {
             orderNotificationService.sendOrderConfirmation(orderSnapshot, paymentMethodSnapshot);
             orderNotificationService.sendAdminNewOrderNotification(orderSnapshot, paymentMethodSnapshot);
@@ -191,7 +192,7 @@ public class CheckoutService {
 
         attachOrderToReservation(idempotency, savedOrder.getId(), now);
         webRevalidationService.revalidateProductsForOrder(savedOrder.getId());
-        return toSummary(savedOrder, req.paymentMethod(), priceChanges);
+        return toSummary(savedOrder, paymentMethod, priceChanges);
     }
 
     // ── Quick-buy ─────────────────────────────────────────────────────────────
@@ -212,6 +213,7 @@ public class CheckoutService {
         }
         validateAddress(req.billingAddress());
         validatePaymentMethod(req.paymentMethod());
+        String paymentMethod = normalizePaymentMethod(req.paymentMethod());
 
         ProductEntity product = productRepo.findByIdForUpdate(req.productId().toString())
                 .orElseThrow(() -> new NotFoundException("Product not found: " + req.productId()));
@@ -219,16 +221,24 @@ public class CheckoutService {
             throw new ConflictException("Product is not available.");
         }
 
+        // STOCK_RULE_004: forceOutOfStock is a product-level hard override — it blocks
+        // purchase even when an individual variant is still marked available.
+        if (Boolean.TRUE.equals(product.getForceOutOfStock())) {
+            throw new ConflictException("Sản phẩm '" + product.getName() + "' hết hàng.");
+        }
+
         ProductVariantEntity variant = null;
         if (req.productVariantId() != null && !req.productVariantId().isBlank()) {
             variant = variantRepo.findByIdForUpdate(req.productVariantId())
                     .orElseThrow(() -> new NotFoundException("Variant not found: " + req.productVariantId()));
+            if (!product.getId().equals(variant.getProduct().getId())) {
+                throw new NotFoundException("Variant not found: " + req.productVariantId());
+            }
             if (!variant.isAvailable()) {
                 throw new ConflictException("Sản phẩm '" + product.getName() + "' hết hàng.");
             }
         } else {
-            if (Boolean.TRUE.equals(product.getForceOutOfStock())
-                    || product.getStockState() == ProductStockState.OUT_OF_STOCK) {
+            if (product.getStockState() == ProductStockState.OUT_OF_STOCK) {
                 throw new ConflictException("Sản phẩm '" + product.getName() + "' hết hàng.");
             }
         }
@@ -250,7 +260,7 @@ public class CheckoutService {
                 req.billingAddress().phone(),
                 req.billingAddress().fullName(),
                 req.customerNote(),
-                req.paymentMethod(),
+                paymentMethod,
                 lineSubtotal,
                 lineDiscount,
                 shippingCost,
@@ -273,18 +283,16 @@ public class CheckoutService {
         addressRepo.save(buildAddress(savedOrder, "SHIPPING", req.billingAddress(), now));
 
         // Payment
-        paymentRepo.save(buildPayment(savedOrder, req.paymentMethod(), total, now));
+        paymentRepo.save(buildPayment(savedOrder, paymentMethod, total, now));
 
         // System note
-        String quickPaymentNote = (req.paymentMethod() == null || req.paymentMethod().isBlank())
-                ? "" : " Phương thức thanh toán: " + req.paymentMethod() + ".";
         noteRepo.save(buildSystemNote(savedOrder,
-                "Quick-buy đơn hàng được tạo." + quickPaymentNote +
+                "Quick-buy đơn hàng được tạo. Phương thức thanh toán: " + paymentMethod + "." +
                 " Sản phẩm: " + product.getName() + " x" + qty + ".", now));
 
         OrderEntity quickSnapshot = savedOrder;
-        String quickPm = req.paymentMethod();
-        var quickOrderEvent = buildNewOrderEvent(savedOrder, req.paymentMethod());
+        String quickPm = paymentMethod;
+        var quickOrderEvent = buildNewOrderEvent(savedOrder, paymentMethod);
         runAfterCommit(() -> {
             orderNotificationService.sendOrderConfirmation(quickSnapshot, quickPm);
             orderNotificationService.sendAdminNewOrderNotification(quickSnapshot, quickPm);
@@ -293,7 +301,7 @@ public class CheckoutService {
 
         attachOrderToReservation(idempotency, savedOrder.getId(), now);
         webRevalidationService.revalidateProductsForOrder(savedOrder.getId());
-        return toSummary(savedOrder, req.paymentMethod(), List.of());
+        return toSummary(savedOrder, paymentMethod, List.of());
     }
 
     // ── Checkout options ──────────────────────────────────────────────────────
@@ -301,11 +309,10 @@ public class CheckoutService {
     @Transactional(readOnly = true)
     public CheckoutOptionsResponse getOptions(String lang) {
         boolean en = "en".equalsIgnoreCase(lang);
-        // Only COD and BACS are supported. There is no automatic payment gateway;
-        // both methods are reconciled manually by admin.
+        // COD is the only storefront payment method (owner decision 2026-07-15, PAY_RULE_001).
+        // There is no automatic payment gateway; payment is reconciled manually by admin.
         List<PaymentMethodOptionResponse> paymentMethods = List.of(
-                new PaymentMethodOptionResponse("COD", en ? "Cash on delivery (COD)" : "Thanh toán khi nhận hàng (COD)"),
-                new PaymentMethodOptionResponse("BACS", en ? "Bank transfer" : "Chuyển khoản")
+                new PaymentMethodOptionResponse("COD", en ? "Cash on delivery (COD)" : "Thanh toán khi nhận hàng (COD)")
         );
         // Shipping methods removed (owner decision 2026-06-23): online orders carry no shipping choice.
         return new CheckoutOptionsResponse(paymentMethods);
@@ -413,10 +420,9 @@ public class CheckoutService {
             String userAgent,
             Instant now
     ) {
-        // Online orders default to PROCESSING (owner decision 2026-06-23): the customer no longer
-        // chooses a payment method, so there is no "awaiting transfer" hold. Only legacy/explicit BACS
-        // callers still enter ON_HOLD.
-        String orderStatus = "BACS".equals(paymentMethod) ? ORDER_STATUS_ON_HOLD : ORDER_STATUS_PROCESSING;
+        // Online orders always enter PROCESSING: COD is the only storefront payment method
+        // (owner decision 2026-07-15), so there is no "awaiting transfer" hold anymore.
+        String orderStatus = ORDER_STATUS_PROCESSING;
 
         OrderEntity order = new OrderEntity();
         order.setOrderNumber(orderNumberGenerator.generate());
@@ -511,6 +517,11 @@ public class CheckoutService {
                 throw new ConflictException(
                         "Sản phẩm '" + cartItem.getProductName() + "' không còn được bán.");
             }
+            // STOCK_RULE_004: product-level hard override blocks variants too.
+            if (Boolean.TRUE.equals(product.getForceOutOfStock())) {
+                throw new ConflictException(
+                        "Sản phẩm '" + cartItem.getProductName() + "' hết hàng.");
+            }
 
             ProductVariantEntity variant = null;
             if (cartItem.getProductVariantPk() != null) {
@@ -523,8 +534,7 @@ public class CheckoutService {
                             "Sản phẩm '" + cartItem.getProductName() + "' hết hàng.");
                 }
             } else {
-                if (Boolean.TRUE.equals(product.getForceOutOfStock())
-                        || product.getStockState() == ProductStockState.OUT_OF_STOCK) {
+                if (product.getStockState() == ProductStockState.OUT_OF_STOCK) {
                     throw new ConflictException(
                             "Sản phẩm '" + cartItem.getProductName() + "' hết hàng.");
                 }

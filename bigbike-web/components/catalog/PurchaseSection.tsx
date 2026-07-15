@@ -19,6 +19,7 @@ import { QuantityStepper } from "./purchase/QuantityStepper";
 import { CommitmentsList } from "./purchase/CommitmentsList";
 import { RatingBlock } from "./purchase/RatingBlock";
 import { BuyButtons } from "./purchase/BuyButtons";
+import { QuickBuyDialog } from "./purchase/QuickBuyDialog";
 
 type Props = {
   product: Product;
@@ -102,6 +103,7 @@ export function PurchaseSection({
   const [quantity, setQuantity] = useState(1);
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
+  const [quickBuyOpen, setQuickBuyOpen] = useState(false);
 
   const selectedVariant = useMemo(
     () => (hasVariants ? findMatchingVariant(variants, selectedOptions, { requireAll: true }) : null),
@@ -314,7 +316,13 @@ export function PurchaseSection({
               <div className="mt-6">
                 <QuantityStepper quantity={quantity} setQuantity={setQuantity} />
 
-                <BuyButtons canBuy={canBuy} adding={adding} onAdd={handleAdd} zaloUrl={zaloUrl} />
+                <BuyButtons
+                  canBuy={canBuy}
+                  adding={adding}
+                  onAdd={handleAdd}
+                  onQuickBuy={() => canBuy && setQuickBuyOpen(true)}
+                  zaloUrl={zaloUrl}
+                />
                 {addError ? <p className="mt-3 font-semibold text-destructive">{addError}</p> : null}
 
                 <CommitmentsList commitments={commitments} />
@@ -337,6 +345,21 @@ export function PurchaseSection({
       zaloUrl={zaloUrl}
       outOfStock={isOutOfStock}
     />
+
+    {/* Mua nhanh (AUD-010): đặt đúng sản phẩm/biến thể/số lượng đang chọn, không qua giỏ.
+        Mount theo điều kiện — form + router của dialog chỉ khởi tạo khi khách thật sự mở. */}
+    {quickBuyOpen ? (
+      <QuickBuyDialog
+        open={quickBuyOpen}
+        onOpenChange={setQuickBuyOpen}
+        productId={product.id}
+        productName={name}
+        productVariantId={selectedVariant?.id ?? null}
+        variantLabel={selectedVariant?.name ?? undefined}
+        quantity={quantity}
+        unitPrice={current}
+      />
+    ) : null}
     </>
   );
 }

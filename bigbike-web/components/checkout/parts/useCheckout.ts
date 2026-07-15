@@ -197,6 +197,9 @@ export function useCheckout() {
                 addressLine1: resolvedShip.addressLine1,
               }
             : undefined,
+          // COD là phương thức duy nhất trên storefront và UI hiển thị cố định COD —
+          // payload phải gửi đúng như đã hứa với khách (owner decision 2026-07-15, PAY_RULE_001).
+          paymentMethod: "COD",
           customerNote: customerNote.trim() || undefined,
         },
         idempotencyKey.current,

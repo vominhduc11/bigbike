@@ -37,7 +37,7 @@ class Phase1GOrderReadApiTest {
 
     private static final String VALID_BILLING = """
             {"fullName":"Test User","phone":"0909123456","email":"test@example.com",
-             "addressLine1":"123 Test St","province":"HCM","country":"VN"}
+             "addressLine1":"123 Test St","province":"HCM","ward":"Phuong 1","country":"VN"}
             """;
 
     @Autowired WebApplicationContext webApplicationContext;
@@ -206,18 +206,20 @@ class Phase1GOrderReadApiTest {
                 .andExpect(jsonPath("$.data.addresses.length()").value(2));
     }
 
-    // ── 9. Detail includes shipping items ─────────────────────────────────────
+    // ── 9. Detail — shipping items are legacy-only ────────────────────────────
+    // Shipping methods were removed (owner decision 2026-06-23, SHIP_RULE_001):
+    // order_shipping_items gets no new rows; the field stays as an empty array for
+    // new orders and only carries data for legacy/imported orders.
 
     @Test
-    void customerOrderDetail_includesShippingItems() throws Exception {
+    void customerOrderDetail_newOrder_hasNoShippingItems() throws Exception {
         String email = "ord-ship-" + UUID.randomUUID() + "@bigbike.vn";
         AuthSession session = loginAndCheckout(email, 3500000);
 
         mockMvc.perform(get("/api/v1/customer/orders/" + session.orderId).cookie(session.cookies))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.shippingItems").isArray())
-                .andExpect(jsonPath("$.data.shippingItems.length()").value(1))
-                .andExpect(jsonPath("$.data.shippingItems[0].methodTitle").isString());
+                .andExpect(jsonPath("$.data.shippingItems.length()").value(0));
     }
 
     // ── 10. Detail includes payment summary ───────────────────────────────────
@@ -413,16 +415,16 @@ class Phase1GOrderReadApiTest {
     }
 
     @Test
-    void customerCancel_bacsOnHoldUnpaid_succeeds() throws Exception {
-        String email = "cancel-bacs-" + UUID.randomUUID() + "@bigbike.vn";
-        Cookie[] cookies = registerAndLogin(email);
-        String csrf = findCsrf(cookies);
-        AuthSession session = placeOrderWithCookiesAndPayment(cookies, csrf, 2200000, "BACS");
+    void customerCancel_onHoldUnpaid_succeeds() throws Exception {
+        String email = "cancel-onhold-" + UUID.randomUUID() + "@bigbike.vn";
+        AuthSession session = loginAndCheckout(email, 2200000);
 
-        // Sanity: BACS creates ON_HOLD + UNPAID.
+        // Checkout can no longer create ON_HOLD orders (COD-only, PAY_RULE_001) — move the
+        // order to ON_HOLD directly, like a legacy BACS order or an admin hold.
         OrderEntity placed = orderRepo.findById(UUID.fromString(session.orderId)).orElseThrow();
-        assertThat(placed.getStatus()).isEqualTo("ON_HOLD");
-        assertThat(placed.getPaymentStatus()).isEqualTo("UNPAID");
+        placed.setStatus("ON_HOLD");
+        placed.setUpdatedAt(Instant.now());
+        orderRepo.save(placed);
 
         mockMvc.perform(patch("/api/v1/customer/orders/" + session.orderId + "/cancel")
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
@@ -473,33 +475,6 @@ class Phase1GOrderReadApiTest {
         Cookie[] cookies = registerAndLogin(email);
         String csrf = findCsrf(cookies);
         return placeOrderWithCookies(cookies, csrf, price);
-    }
-
-    private AuthSession placeOrderWithCookiesAndPayment(
-            Cookie[] cookies, String csrf, int price, String paymentMethod
-    ) throws Exception {
-        ProductEntity product = createTestProduct(
-                "Auth Order Product " + price + " " + paymentMethod, price, null, PublishStatus.PUBLISHED);
-
-        mockMvc.perform(post("/api/v1/cart/items")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":1}")
-                        .cookie(cookies).header("X-CSRF-Token", csrf))
-                .andExpect(status().isOk());
-
-        MvcResult result = mockMvc.perform(post("/api/v1/checkout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentMethod\":\"" + paymentMethod + "\",\"billingAddress\":"
-                                + VALID_BILLING + "}")
-                        .cookie(cookies).header("X-CSRF-Token", csrf))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String body = result.getResponse().getContentAsString();
-        return new AuthSession(
-                cookies, csrf,
-                extractJsonValue(body, "id"),
-                extractJsonValue(body, "orderNumber"));
     }
 
     private AuthSession placeOrderWithCookies(Cookie[] cookies, String csrf, int price) throws Exception {

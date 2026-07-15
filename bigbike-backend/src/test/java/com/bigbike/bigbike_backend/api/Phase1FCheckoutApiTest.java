@@ -46,7 +46,7 @@ class Phase1FCheckoutApiTest {
 
     private static final String VALID_BILLING = """
             {"fullName":"Nguyen Van A","phone":"0909123456","email":"buyer@example.com",
-             "addressLine1":"123 Duong ABC","province":"HCM","country":"VN"}
+             "addressLine1":"123 Duong ABC","province":"HCM","ward":"Phuong Hoa Binh","country":"VN"}
             """;
 
     @Autowired WebApplicationContext webApplicationContext;
@@ -91,8 +91,9 @@ class Phase1FCheckoutApiTest {
         mockMvc.perform(get("/api/v1/checkout/options"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.paymentMethods").isArray())
-                // Only COD and BACS — no automatic payment gateway
-                .andExpect(jsonPath("$.data.paymentMethods.length()").value(2))
+                // COD is the single storefront payment method (owner decision 2026-07-15, PAY_RULE_001)
+                .andExpect(jsonPath("$.data.paymentMethods.length()").value(1))
+                .andExpect(jsonPath("$.data.paymentMethods[0].code").value("COD"))
                 .andExpect(jsonPath("$.data.shippingMethods").doesNotExist());
     }
 
@@ -200,6 +201,51 @@ class Phase1FCheckoutApiTest {
                 .andExpect(status().isBadRequest());
     }
 
+    // ── Two-tier VN address is mandatory (AUD-007) ────────────────────────────
+
+    @Test
+    void checkout_missingProvince_returns400() throws Exception {
+        GuestSession session = newGuestSessionWithItem(5000000);
+        String billing = """
+                {"fullName":"Test","phone":"0909123456","email":"a@b.com",
+                 "addressLine1":"123 Rd","ward":"Phuong 1"}
+                """;
+        mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + billing + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void checkout_missingWard_returns400() throws Exception {
+        GuestSession session = newGuestSessionWithItem(5000000);
+        String billing = """
+                {"fullName":"Test","phone":"0909123456","email":"a@b.com",
+                 "addressLine1":"123 Rd","province":"HCM"}
+                """;
+        mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + billing + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void checkout_customShippingWithBlankAddressLine_fallsBackToBilling() throws Exception {
+        GuestSession session = newGuestSessionWithItem(2500000);
+        // Blank strings must fall back to billing like nulls do — the order may not
+        // persist an empty delivery address (AUD-007).
+        String shipping = "{\"sameAsBilling\":false,\"fullName\":\"Nguoi Nhan\",\"addressLine1\":\"\"}";
+        mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING +
+                                 ",\"shippingAddress\":" + shipping + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PROCESSING"));
+    }
+
     // ── Online orders carry no shipping fee (owner decision 2026-06-23) ────────
 
     @Test
@@ -232,15 +278,31 @@ class Phase1FCheckoutApiTest {
     }
 
     @Test
-    void checkout_guestBACS_createsOrder_status_ON_HOLD() throws Exception {
+    void checkout_explicitBACS_isRejected_codOnly() throws Exception {
+        // BACS is no longer offered for new orders (owner decision 2026-07-15, PAY_RULE_001).
         GuestSession session = newGuestSessionWithItem(2000000);
         mockMvc.perform(post("/api/v1/checkout")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"paymentMethod\":\"BACS\",\"billingAddress\":" + VALID_BILLING + "}")
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void checkout_omittedPaymentMethod_normalisesToCOD() throws Exception {
+        // Every new online order is stored as COD (PAY_RULE_001).
+        GuestSession session = newGuestSessionWithItem(2100000);
+        MvcResult result = mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("ON_HOLD"))
-                .andExpect(jsonPath("$.data.paymentMethod").value("BACS"));
+                .andExpect(jsonPath("$.data.status").value("PROCESSING"))
+                .andExpect(jsonPath("$.data.paymentMethod").value("COD"))
+                .andReturn();
+        String orderNumber = extractJsonValue(result.getResponse().getContentAsString(), "orderNumber");
+        assertThat(orderRepo.findByOrderNumber(orderNumber).orElseThrow().getPaymentMethod())
+                .isEqualTo("COD");
     }
 
     @Test
@@ -312,7 +374,7 @@ class Phase1FCheckoutApiTest {
 
         MvcResult result = mockMvc.perform(post("/api/v1/checkout")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentMethod\":\"BACS\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -357,7 +419,8 @@ class Phase1FCheckoutApiTest {
     }
 
     @Test
-    void quickBuy_guestBACS_createsOrder_statusOnHold() throws Exception {
+    void quickBuy_explicitBACS_isRejected_codOnly() throws Exception {
+        // BACS is no longer offered for new orders (owner decision 2026-07-15, PAY_RULE_001).
         ProductEntity product = createTestProduct("QB BACS Product", 3500000, null, PublishStatus.PUBLISHED);
         GuestSession session = newGuestSession();
 
@@ -366,10 +429,42 @@ class Phase1FCheckoutApiTest {
                         .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":2," +
                                  "\"paymentMethod\":\"BACS\",\"billingAddress\":" + VALID_BILLING + "}")
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("ON_HOLD"))
-                .andExpect(jsonPath("$.data.paymentMethod").value("BACS"))
-                .andExpect(jsonPath("$.data.subtotalAmount").value(7000000.00));
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void quickBuy_variantOfAnotherProduct_returns404() throws Exception {
+        // Quick-buy must not pair product A with a variant belonging to product B (AUD-002).
+        ProductEntity productA = createTestProduct("QB Mismatch A", 2000000, null, PublishStatus.PUBLISHED);
+        ProductEntity productB = createWpProduct("QB Mismatch B", 3000000);
+        ProductVariantEntity variantOfB = createWpVariant(productB, 5, 3000000);
+        GuestSession session = newGuestSession();
+
+        mockMvc.perform(post("/api/v1/orders/quick-buy")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productId\":\"" + productA.getId() + "\",\"productVariantId\":\""
+                                 + variantOfB.getId() + "\",\"quantity\":1," +
+                                 "\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void quickBuy_forceOutOfStockProduct_blocksVariantPurchase() throws Exception {
+        // STOCK_RULE_004: the product-level hard override blocks variants too (AUD-003).
+        ProductEntity product = createWpProduct("QB Force OOS", 2800000);
+        ProductVariantEntity variant = createWpVariant(product, 5, 2800000);
+        product.setForceOutOfStock(true);
+        productRepo.save(product);
+        GuestSession session = newGuestSession();
+
+        mockMvc.perform(post("/api/v1/orders/quick-buy")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productId\":\"" + product.getId() + "\",\"productVariantId\":\""
+                                 + variant.getId() + "\",\"quantity\":1," +
+                                 "\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isConflict());
     }
 
     // ── Quick-buy validation (3) ──────────────────────────────────────────────
@@ -417,14 +512,15 @@ class Phase1FCheckoutApiTest {
                 .andExpect(status().isConflict());
     }
 
-    // ── Cart-checkout stock for migrated wp-* catalog — V176 regression guard ─────
+    // ── Cart-checkout availability for migrated wp-* catalog — V176 regression guard ──
     // Before V176: cart_items had no product_variant_pk and CheckoutService keyed on the UUID
-    // product_id/product_variant_id, which are null for wp-* string-PK catalog. Both the validate
-    // and the apply pass skipped wp-* cart lines → order created with NO stock decrement/reservation
-    // (silent oversell), and two distinct wp-* products collapsed onto one cart line.
+    // product_id/product_variant_id, which are null for wp-* string-PK catalog, so wp-* cart
+    // lines skipped validation entirely and two distinct wp-* products collapsed onto one line.
+    // Inventory is boolean availability only since V261 (owner decision 2026-06-23):
+    // checkout never decrements quantity and never writes stock movements.
 
     @Test
-    void checkoutFromCart_wpVariantNonSerial_decrementsVariantStock_andWritesOutMovement() throws Exception {
+    void checkoutFromCart_wpVariant_createsOrder_withoutDecrementOrMovement() throws Exception {
         ProductEntity product = createWpProduct("WP Variant NonSerial", 6000000);
         ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 5, 6000000);
         GuestSession session = newGuestSession();
@@ -439,16 +535,14 @@ class Phase1FCheckoutApiTest {
         UUID orderId = UUID.fromString(extractJsonValue(result.getResponse().getContentAsString(), "id"));
 
         assertThat(variantRepo.findById(variant.getId()).orElseThrow().getQuantityOnHand())
-                .as("wp-* variant stock must decrement 5 -> 3 on cart checkout")
-                .isEqualTo(3);
+                .as("boolean availability model (V261): checkout must not decrement stock")
+                .isEqualTo(5);
 
         List<StockMovementEntity> movements =
                 stockMovementRepo.findByReferenceTypeAndReferenceId("ORDER", orderId);
-        assertThat(movements).hasSize(1);
-        assertThat(movements.get(0).getMovementType()).isEqualTo("OUT");
-        assertThat(movements.get(0).getQuantityDelta()).isEqualTo(-2);
+        assertThat(movements).as("no stock movement is written on sale (V261)").isEmpty();
 
-        // Order line must snapshot the variant string PK so restore stays symmetric.
+        // Order line must snapshot the variant string PK (V176) for symmetric later reads.
         assertThat(lineItemRepo.findByOrderId(orderId).get(0).getProductVariantPk())
                 .isEqualTo(variant.getId());
     }
@@ -483,30 +577,62 @@ class Phase1FCheckoutApiTest {
     }
 
     @Test
-    void checkoutFromCart_wpVariant_insufficientStock_returns409_andDoesNotDecrement() throws Exception {
+    void checkoutFromCart_wpVariant_becameUnavailable_returns409() throws Exception {
         ProductEntity product = createWpProduct("WP Oversell Guard", 5500000);
         ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 3, 5500000);
         GuestSession session = newGuestSession();
-        addVariantToGuestCart(session, product.getId(), variant.getId(), 2); // 2 <= 3 → accepted at cart
+        addVariantToGuestCart(session, product.getId(), variant.getId(), 2);
 
-        // Stock drops below the cart quantity after it was added (concurrent buyer / admin adjustment).
-        variant.setQuantityOnHand(1);
+        // Variant turned off after it was added (admin toggles Còn/Hết manually).
+        variant.setAvailable(false);
         variantRepo.save(variant);
 
-        // Before V176 the wp-* line was skipped by stock validation → order created with no decrement.
-        // Now it must be revalidated and rejected, leaving stock untouched.
+        // Before V176 the wp-* line was skipped by validation → order created anyway.
+        // Now it must be revalidated by varchar PK and rejected.
         mockMvc.perform(post("/api/v1/checkout")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isConflict());
-
-        assertThat(variantRepo.findById(variant.getId()).orElseThrow().getQuantityOnHand())
-                .as("rejected checkout must not decrement wp-* variant stock").isEqualTo(1);
     }
 
     @Test
-    void cartUpdateQuantity_wpVariant_beyondStock_returns409() throws Exception {
+    void checkoutFromCart_forceOutOfStockProduct_blocksVariantLine() throws Exception {
+        // STOCK_RULE_004: the product-level hard override blocks variant cart lines too (AUD-003).
+        ProductEntity product = createWpProduct("WP Force OOS Cart", 4200000);
+        ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 5, 4200000);
+        GuestSession session = newGuestSession();
+        addVariantToGuestCart(session, product.getId(), variant.getId(), 1);
+
+        product.setForceOutOfStock(true);
+        productRepo.save(product);
+
+        mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void cartAdd_forceOutOfStockProduct_blocksVariant_returns409() throws Exception {
+        // STOCK_RULE_004 applies at add-to-cart as well (AUD-003).
+        ProductEntity product = createWpProduct("WP Force OOS Add", 3100000);
+        ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 5, 3100000);
+        product.setForceOutOfStock(true);
+        productRepo.save(product);
+        GuestSession session = newGuestSession();
+
+        mockMvc.perform(post("/api/v1/cart/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productId\":\"" + product.getId() + "\",\"productVariantId\":\""
+                                + variant.getId() + "\",\"quantity\":1}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void cartUpdateQuantity_wpVariant_unavailable_returns409() throws Exception {
         ProductEntity product = createWpProduct("WP Update Qty Guard", 1300000);
         ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 2, 1300000);
         GuestSession session = newGuestSession();
@@ -519,8 +645,11 @@ class Phase1FCheckoutApiTest {
                 .andReturn();
         String itemId = extractItemId(add.getResponse().getContentAsString(), 0);
 
-        // Before V176 the wp-* line's UUID was null → updateItemQuantity skipped re-validation and
-        // accepted any quantity. Now it resolves by varchar PK and rejects qty above available stock.
+        // Variant turned off after add. Before V176 the wp-* line's UUID was null →
+        // updateItemQuantity skipped re-validation; now it resolves by varchar PK and rejects.
+        variant.setAvailable(false);
+        variantRepo.save(variant);
+
         mockMvc.perform(patch("/api/v1/cart/items/" + itemId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"quantity\":5}")
@@ -630,7 +759,8 @@ class Phase1FCheckoutApiTest {
                 .isEqualTo(extractJsonValue(first.getResponse().getContentAsString(), "orderKey"));
         assertThat(orderRepo.count()).isEqualTo(ordersBefore + 1);
         ProductEntity refreshed = productRepo.findById(product.getId()).orElseThrow();
-        assertThat(refreshed.getStockQuantity()).isEqualTo(3);
+        // Boolean availability model (V261): no decrement on sale, idempotent or not.
+        assertThat(refreshed.getStockQuantity()).isEqualTo(5);
     }
 
     @Test
@@ -649,7 +779,8 @@ class Phase1FCheckoutApiTest {
 
         mockMvc.perform(post("/api/v1/checkout")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentMethod\":\"BACS\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .content("{\"paymentMethod\":\"COD\",\"customerNote\":\"đổi nội dung\"," +
+                                 "\"billingAddress\":" + VALID_BILLING + "}")
                         .header("Idempotency-Key", idempotencyKey)
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isConflict())
@@ -687,7 +818,8 @@ class Phase1FCheckoutApiTest {
                 .isEqualTo(extractJsonValue(first.getResponse().getContentAsString(), "orderKey"));
         assertThat(orderRepo.count()).isEqualTo(ordersBefore + 1);
         ProductEntity refreshed = productRepo.findById(product.getId()).orElseThrow();
-        assertThat(refreshed.getStockQuantity()).isEqualTo(4);
+        // Boolean availability model (V261): no decrement on sale, idempotent or not.
+        assertThat(refreshed.getStockQuantity()).isEqualTo(6);
     }
 
     @Test

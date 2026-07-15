@@ -1206,7 +1206,12 @@
     "buyNow": "Buy now",
     "addToCartFailed": "Could not add to cart",
     "mobileAddToCart": "Add to cart",
-    "mobileBuyNow": "Buy now"
+    "mobileBuyNow": "Buy now",
+    "quickBuy": "QUICK BUY — HOME DELIVERY",
+    "quickBuyTitle": "Quick buy",
+    "quickBuySubmit": "PLACE ORDER NOW (COD)",
+    "quickBuyTotal": "Total",
+    "quickBuyFailed": "Could not place the order. Please try again."
   },
   "Home": {
     "buyNow": "Buy now",
