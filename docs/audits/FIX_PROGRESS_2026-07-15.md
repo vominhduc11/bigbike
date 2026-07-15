@@ -85,7 +85,7 @@
 |---|---|---|---|
 | AUD-039 | Gỡ wishlist/comparison đã bỏ khỏi docs | ✅ `99894033` | Xóa 4 endpoint wishlist giả, workflow/API flow so sánh và dẫn chứng `ComparisonTable` không tồn tại; bỏ tham chiếu bảng `wishlist_items` đã drop khỏi contract xóa sản phẩm. Giữ `MODULE_CATALOG.md` ở trạng thái `REMOVED` làm căn cứ lịch sử. Docs-only, đối chiếu active source không có implementation/caller. |
 | AUD-040 | Docs address theo mô hình 2 cấp tỉnh/thành → phường/xã | ✅ `790b2b6d` | Đồng bộ module/workflow/acceptance/overview/API flow/integration/traceability theo mô hình hai cấp sau cải cách 2025. Web dùng `VN_PROVINCES` tích hợp sẵn; backend còn API provinces + wards-by-province nhưng không có caller nội bộ; `district` chỉ đọc dữ liệu lịch sử theo `DATA_CONTRACT.md`. Docs-only, đối chiếu controller và web source. |
-| AUD-041 | Chốt 3 trang chính sách tĩnh, admin không quản lý — sửa docs | ⬜ | Quyết định #6 |
+| AUD-041 | Chốt 3 trang chính sách tĩnh, admin không quản lý — sửa docs | ✅ `3194efbc` | Quyết định #6 — canonical docs chốt đúng 3 trang: Bảo mật thông tin, Bảo hành, Đổi trả hàng; sidebar/thứ tự/slug cố định trong web, admin không quản lý và không có slot `policy`. Đồng bộ số route info/policy hiện hành từ 10 xuống 8 và guide từ 3 xuống 2 trang con. Docs-only; đối chiếu `POLICY_SLUGS`, `buildStaticSidebarItems`, `MenuLocations.PRIMARY`. |
 | AUD-042 | Thống nhất quyền sửa tồn kho (`products.update` vs `inventory.write`) | ⬜ | |
 | AUD-043 | Thống nhất rule WebSocket (role vs `orders.read`) theo code thực tế | ⬜ | |
 | AUD-044 | Dọn docs theo mô hình Còn/Hết thủ công + COD duy nhất | ⬜ | Quyết định #7, #10 |
