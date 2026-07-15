@@ -1703,6 +1703,10 @@ function normalizeAdminNotification(input) {
     type: s.type || parsed.type || 'ORDER_UPDATE',
     orderId: s.orderId ? String(s.orderId) : '',
     orderNumber: s.orderNumber || parsed.orderNumber || '',
+    // Tên khách + giá trị đơn nay nằm trong payload (AUD-026) → admin offline bắt kịp
+    // vẫn thấy ai đặt, bao nhiêu tiền, không chỉ mã đơn.
+    customerName: parsed.customerName || '',
+    total: parsed.total != null ? Number(parsed.total) : undefined,
     status: parsed.status,
     paymentMethod: parsed.paymentMethod,
     at: s.createdAt ? new Date(s.createdAt).getTime() : Date.now(),

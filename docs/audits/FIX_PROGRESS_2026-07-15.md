@@ -39,20 +39,20 @@
 
 | AUD | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
-| AUD-009 | Compose bind 127.0.0.1 cho backend/MinIO; KHÔNG tự restart | ✅ | Bind `127.0.0.1` cho backend:8080, MinIO:9000 (+9001), và luôn cả web:3000/admin:4000 (comment sẵn ghi loopback-only nhưng thực tế bind mọi interface — cùng lỗ hổng bypass nginx). `docker compose config` pass. **CHƯA restart** — user tự áp dụng; lưu ý nginx trên VPS phải proxy qua 127.0.0.1 (không qua IP bridge) |
-| AUD-020 | Nâng dependency web có advisory (3 High + 10 thấp hơn) | ✅ | `npm audit fix` + next 16.2.4→16.2.10 (cùng major) + esbuild 0.27.7→0.28.1, undici/vite vá theo range. Từ 16 advisory (4 High) còn **2 moderate upstream-only** (postcss đóng gói bên trong next — "fix" của npm là downgrade next về 9.x, không hợp lệ; chờ bản next mới). Test 208/208 + lint + build pass |
-| AUD-061 | Thêm biến invite URL admin vào compose + `.env.example` | ✅ | Compose forward `BIGBIKE_MAIL_ADMIN_INVITE_BASE_URL` (+ `BIGBIKE_MAIL_FROM_NAME` cũng bị sót) vào backend; `.env.example` đã có sẵn biến này từ trước |
-| AUD-062 | Truyền 6 biến OAuth Google/Facebook qua compose + `.env.example` | ✅ | Compose forward đủ 6 biến `OAUTH_*` vào backend; `.env.example` đã có sẵn. User cần điền `.env` thật rồi khởi động lại stack |
+| AUD-009 | Compose bind 127.0.0.1 cho backend/MinIO; KHÔNG tự restart | ✅ `d4847b9e` | Bind `127.0.0.1` cho backend:8080, MinIO:9000 (+9001), và luôn cả web:3000/admin:4000 (comment sẵn ghi loopback-only nhưng thực tế bind mọi interface — cùng lỗ hổng bypass nginx). `docker compose config` pass. **CHƯA restart** — user tự áp dụng; lưu ý nginx trên VPS phải proxy qua 127.0.0.1 (không qua IP bridge) |
+| AUD-020 | Nâng dependency web có advisory (3 High + 10 thấp hơn) | ✅ `d4847b9e` | `npm audit fix` + next 16.2.4→16.2.10 (cùng major) + esbuild 0.27.7→0.28.1, undici/vite vá theo range. Từ 16 advisory (4 High) còn **2 moderate upstream-only** (postcss đóng gói bên trong next — "fix" của npm là downgrade next về 9.x, không hợp lệ; chờ bản next mới). Test 208/208 + lint + build pass |
+| AUD-061 | Thêm biến invite URL admin vào compose + `.env.example` | ✅ `d4847b9e` | Compose forward `BIGBIKE_MAIL_ADMIN_INVITE_BASE_URL` (+ `BIGBIKE_MAIL_FROM_NAME` cũng bị sót) vào backend; `.env.example` đã có sẵn biến này từ trước |
+| AUD-062 | Truyền 6 biến OAuth Google/Facebook qua compose + `.env.example` | ✅ `d4847b9e` | Compose forward đủ 6 biến `OAUTH_*` vào backend; `.env.example` đã có sẵn. User cần điền `.env` thật rồi khởi động lại stack |
 
 ## Phase 1D — High: Email đơn & thông báo admin
 
 | AUD | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
-| AUD-005 | GỠ scheduler tự hủy BACS 72h + cập nhật docs | ⬜ | Quyết định #2 |
-| AUD-006 | Email hủy đơn bỏ lời hứa "hoàn tiền 3–5 ngày" | ⬜ | |
-| AUD-017 | Cache thông báo không lộ chéo giữa tài khoản trên cùng trình duyệt | ⬜ | Sửa cùng 018/019 |
-| AUD-018 | Trạng thái đã-đọc thông báo tách riêng từng admin | ⬜ | |
-| AUD-019 | Mở chuông không mark-all-read toàn DB / không mất backlog | ⬜ | |
+| AUD-005 | GỠ scheduler tự hủy BACS 72h + cập nhật docs | ✅ | Quyết định #2: xóa `OrderAutoCancelService`+`OrderAutoCancelScheduler` + query `findBacsUnpaidOnHoldOlderThan`; xóa 4 test auto-cancel + field autowire; docs thêm `ORDER_RULE_009` (không auto-cancel, admin tự xử lý) |
+| AUD-006 | Email hủy đơn bỏ lời hứa "hoàn tiền 3–5 ngày" | ✅ | `OrderNotificationService` CANCELLED: bỏ "hoàn tiền trong 3–5 ngày làm việc", đổi thành "BigBike sẽ chủ động liên hệ để hoàn lại tiền" + hotline |
+| AUD-017 | Cache thông báo không lộ chéo giữa tài khoản trên cùng trình duyệt | ✅ | localStorage namespace theo email (`bb-admin-notifications:{email}`); chuông chỉ render/fetch khi có `orders.read`; reset-state khi đổi tài khoản (render-phase) |
+| AUD-018 | Trạng thái đã-đọc thông báo tách riêng từng admin | ✅ | Bảng mới `admin_notification_reads` (V339, high-water mark per admin); service tính `isRead`/`unreadCount` theo `last_read_at` của riêng admin; cột `is_read` cũ giữ lại không dùng |
+| AUD-019 | Mở chuông không mark-all-read toàn DB / không mất backlog | ✅ | `markAllReadFor(adminId)` chỉ dời mốc của admin đó, không sửa bản ghi chung; GET trả backlog gần nhất (≤50) kèm `isRead` per-admin — không mất lịch sử. Test `AdminNotificationServiceTest` 3/3. **Gỡ luôn** endpoint `mark-read` (AUD-067) không caller |
 
 ## Phase 2A — Medium: khách hàng & vận hành
 
@@ -63,7 +63,7 @@
 | AUD-023 | Mark PAID→UNPAID không để lại payment row `SUCCEEDED` | ⬜ | |
 | AUD-024 | `ON_HOLD → PROCESSING` không tự đánh dấu BACS là PAID | ⬜ | |
 | AUD-025 | Khách hủy đơn: WS + inbox admin + audit log + email cho khách | ⬜ | Quyết định #3 |
-| AUD-026 | Bản ghi thông báo offline đủ tên khách + giá trị đơn | ⬜ | |
+| AUD-026 | Bản ghi thông báo offline đủ tên khách + giá trị đơn | ✅ | Làm sớm cùng 1D (chung file): `buildPayload` thêm `customerName`+`total`; admin `normalizeAdminNotification` đọc ra để hiển thị |
 | AUD-027 | Search suggest tôn trọng `lang`; link EN đúng slug/route | ⬜ | |
 | AUD-028 | PDP tiếng Anh fallback về VI thay vì mất field | ⬜ | |
 | AUD-029 | Option hết hàng vẫn xem được (không disable chọn để xem ảnh) | ⬜ | |
@@ -100,7 +100,7 @@
 | AUD-049 | `.env.example` link reset/verify về localhost | ⬜ | |
 | AUD-050 | Biến extra MinIO origin đi qua Docker; bỏ default IP cũ | ⬜ | |
 | AUD-051 | Filter trả đúng chuẩn error envelope | ⬜ | |
-| AUD-052 | Email chào bằng tên khách khi đơn có tên | ⬜ | |
+| AUD-052 | Email chào bằng tên khách khi đơn có tên | ✅ | Làm sớm cùng AUD-006 (cùng file `OrderNotificationService`): `safeCustomerName` ưu tiên `customerName` trước email/SĐT |
 | AUD-053 | Đồng bộ model/schema `paymentMethod` nullable | ⬜ | Lưu ý quyết định #10 |
 | AUD-054 | Sửa encoding comment importer | ⬜ | |
 | AUD-059 | Ghi chú hệ thống checkout không thành "Đơn hàng được tạo.." | ✅ `c1a1b862` | Làm sớm cùng AUD-011 (cùng đoạn code): note luôn "Đơn hàng được tạo. Phương thức thanh toán: COD." — hết dấu chấm kép |
@@ -121,7 +121,7 @@
 | AUD-058 | Admin: dọn named CSS / hardcode / raw buttons | ⬜ | |
 | AUD-060 | Gỡ 2 dead search export trong `public-api.ts` | ⬜ | |
 | AUD-066 | Gỡ `GET /api/v1/search` + sửa docs API_FLOW_MAP | ⬜ | Quyết định #8 |
-| AUD-067 | Gỡ `POST .../notifications/mark-read` không caller | ⬜ | Quyết định #8 |
+| AUD-067 | Gỡ `POST .../notifications/mark-read` không caller | ✅ | Làm sớm cùng 1D: gỡ endpoint + `markReadByIds` khi rework mô hình đã-đọc per-admin (endpoint chưa từng có caller); docs API_CONTRACT ghi Removed |
 | AUD-068 | Gỡ `GET .../settings/{settingKey}` không caller | ⬜ | Quyết định #8 |
 | AUD-074 | Gỡ audio khỏi Media Library (filter admin + backend reject) | ⬜ | Quyết định #5 |
 | AUD-076 | Docs bổ sung `orders/lookup`, quyền reviews, module Reviews; gỡ ghi chú stale | ⬜ | |

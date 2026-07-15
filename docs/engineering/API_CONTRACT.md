@@ -1320,15 +1320,18 @@ Evidence: `AdminRedirectController.java`, `AdminRedirectService.java`, `Internal
 
 > **Warranty module removed (2026-06-23, V266).** The admin warranty contract — `GET /api/v1/admin/warranties` and `PATCH /api/v1/admin/warranties/{id}/void` — and the public lookup `GET /api/v1/warranties/lookup` were **deleted** along with the entire warranty feature (records, services, controllers, DTOs, the `/bao-hanh` web page, and the `warranty.read` / `warranty.write` permissions). Customer-facing warranty wording now lives only in CMS policy content and per-product marketing rows.
 
-## Admin Notification Center Contract (V102)
+## Admin Notification Center Contract (V102 + V339)
 
-Persistent counterpart of the WebSocket order feed — admins offline when an event fires still see it here. All three endpoints are gated by `orders.read` (no dedicated `notifications.*` permission).
+Persistent counterpart of the WebSocket order feed — admins offline when an event fires still see it here. All endpoints are gated by `orders.read` (no dedicated `notifications.*` permission).
+
+**Per-admin read state (V339, AUD-017/018/019).** Read state is tracked **per admin** in `admin_notification_reads` (a per-admin `last_read_at` high-water mark) — a notification is "read" for an admin when it was created at/before that admin's marker. The legacy shared `admin_notifications.is_read` flag is no longer read or written. `GET` returns the shared recent backlog (up to 50, newest first) with each item's `isRead` resolved for the calling admin, plus that admin's own `unreadCount`. `mark-all-read` only advances the **caller's** marker — it never mutates the shared rows, so other admins keep their unread state and no backlog disappears from the list. The notification `payload` now also carries `customerName` and `total` (AUD-026) so an offline admin catching up sees who ordered and how much.
 
 | Method | Path | Permission | Purpose | Status | Evidence |
 |---|---|---|---|---|---|
-| `GET` | `/api/v1/admin/notifications` | `orders.read` | List unread notifications with `unreadCount`. Each item: `id`, `type`, `orderId`, `orderNumber`, `payload`, `isRead`, `createdAt`. | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `AdminNotificationService.listUnread` |
-| `POST` | `/api/v1/admin/notifications/mark-read` | `orders.read` | Mark the given notification IDs as read. Body `{ "ids": [uuid] }`. Returns `{ updated }`. | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `AdminNotificationService.markRead` |
-| `POST` | `/api/v1/admin/notifications/mark-all-read` | `orders.read` | Mark every unread notification as read. Returns `{ updated }`. | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `AdminNotificationService.markAllRead` |
+| `GET` | `/api/v1/admin/notifications` | `orders.read` | Recent notifications (≤50) with the caller's `unreadCount`. Each item: `id`, `type`, `orderId`, `orderNumber`, `payload` (incl. `customerName`, `total`), `isRead` (per-admin), `createdAt`. | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `AdminNotificationService.inboxFor` |
+| `POST` | `/api/v1/admin/notifications/mark-all-read` | `orders.read` | Advance the calling admin's read marker to now. Returns `{ unreadCount: 0 }`. | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `AdminNotificationService.markAllReadFor` |
+
+> **Removed (2026-07-15, AUD-067).** `POST /api/v1/admin/notifications/mark-read` (mark specific IDs) had no UI caller — the bell only ever advanced the whole-inbox marker. Deleted with the move to the per-admin high-water-mark model.
 
 ## WebSocket Contract
 

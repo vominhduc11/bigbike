@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { AlertCircle, Bell, Check, ShoppingCart } from 'lucide-react'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { fetchAdminNotifications, markAllAdminNotificationsRead } from '../lib/adminApi'
+import { useAuth, useHasPermission } from '../lib/auth'
 import { formatCurrencyVnd } from '../lib/formatters'
 import { toast } from '../lib/toast'
 import { cn } from '@/lib/utils'
@@ -14,8 +15,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-const STORAGE_KEY = 'bb-admin-notifications'
 const MAX_ITEMS = 30
+
+// Cache localStorage tách theo TỪNG tài khoản admin (AUD-017): trước đây mọi tài khoản
+// dùng chung 1 key 'bb-admin-notifications', logout không xóa → đăng nhập tài khoản khác
+// trên cùng trình duyệt đọc được thông báo (số đơn/khách/giá trị) của tài khoản trước,
+// kể cả khi tài khoản mới không có quyền orders.read. Namespace theo email → cô lập.
+function storageKeyFor(identity) {
+  return `bb-admin-notifications:${identity || 'anon'}`
+}
 
 // Dedupe key shared by WS events and server-persisted items: an order can raise both
 // a NEW_ORDER and later ORDER_UPDATE event, so key on orderId + type.
@@ -23,18 +31,18 @@ function keyOf(it) {
   return it.orderId ? `${it.orderId}:${it.type}` : `id:${it.id}`
 }
 
-function loadStored() {
+function loadStored(storageKey) {
   try {
-    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY))
+    const raw = JSON.parse(localStorage.getItem(storageKey))
     return Array.isArray(raw) ? raw.slice(0, MAX_ITEMS) : []
   } catch {
     return []
   }
 }
 
-function persist(items) {
+function persist(storageKey, items) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
+    localStorage.setItem(storageKey, JSON.stringify(items))
   } catch { /* quota / private mode — keep working from memory */ }
 }
 
@@ -52,7 +60,13 @@ function formatWhen(ts, locale) {
 // so the admin keeps a persistent, catch-up list instead of only fleeting toasts.
 export function NotificationBell({ navigate }) {
   const { t, i18n } = useTranslation()
-  const [items, setItems] = useState(loadStored)
+  const { user } = useAuth()
+  const hasPermission = useHasPermission()
+  // Chuông chỉ dành cho tài khoản có quyền đọc đơn (AUD-017) — không render/không fetch
+  // cho tài khoản không có orders.read.
+  const canViewOrders = hasPermission('orders.read')
+  const storageKey = storageKeyFor(user?.email)
+  const [items, setItems] = useState(() => (canViewOrders ? loadStored(storageKey) : []))
   const [open, setOpen] = useState(false)
   // Lỗi khi nạp danh sách từ server (V102): dùng để phân biệt "chưa có thông báo"
   // với "không tải được" thay vì nuốt lỗi im lặng.
@@ -62,7 +76,18 @@ export function NotificationBell({ navigate }) {
   // per-row "new" marker for this viewing (the bell badge correctly clears).
   const [seenUnread, setSeenUnread] = useState(() => new Set())
 
+  // Đổi tài khoản trên cùng trình duyệt: nạp lại cache của đúng tài khoản mới (theo
+  // storageKey), hoặc dọn sạch nếu tài khoản mới không có quyền đọc đơn (AUD-017).
+  // Pattern reset-state-khi-đổi-prop trong render (React docs) thay vì setState-in-effect.
+  const [activeKey, setActiveKey] = useState(storageKey)
+  if (activeKey !== storageKey) {
+    setActiveKey(storageKey)
+    setSeenUnread(new Set())
+    setItems(canViewOrders ? loadStored(storageKey) : [])
+  }
+
   useEffect(() => {
+    if (!canViewOrders) return undefined
     const unsubscribe = subscribeAdminWs('/topic/admin/orders', (event) => {
       if (!event?.orderId) return
       setItems((prev) => {
@@ -70,16 +95,18 @@ export function NotificationBell({ navigate }) {
           { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, at: Date.now(), read: false, ...event },
           ...prev,
         ].slice(0, MAX_ITEMS)
-        persist(next)
+        persist(storageKey, next)
         return next
       })
     })
     return unsubscribe
-  }, [])
+  }, [canViewOrders, storageKey])
 
-  // Hydrate from the server-persisted notification store (V102) so a fresh browser or a
+  // Hydrate from the server-persisted notification store so a fresh browser or a
   // previously-offline admin catches up on stored order events, not only live WS ones.
+  // Read state is now per-admin server-side, so item.read reflects THIS admin only.
   useEffect(() => {
+    if (!canViewOrders) return undefined
     let active = true
     fetchAdminNotifications()
       .then(({ items: serverItems }) => {
@@ -89,7 +116,7 @@ export function NotificationBell({ navigate }) {
         setItems((prev) => {
           const prevByKey = new Map(prev.map((it) => [keyOf(it), it]))
           const merged = new Map()
-          // server unread items are authoritative; keep a locally-read flag if we have one
+          // server items carry this admin's own read flag (authoritative)
           for (const it of serverItems) {
             const local = prevByKey.get(keyOf(it))
             merged.set(keyOf(it), local?.read ? { ...it, read: true } : it)
@@ -99,7 +126,7 @@ export function NotificationBell({ navigate }) {
             if (!merged.has(keyOf(it))) merged.set(keyOf(it), it)
           }
           const next = [...merged.values()].sort((a, b) => b.at - a.at).slice(0, MAX_ITEMS)
-          persist(next)
+          persist(storageKey, next)
           return next
         })
       })
@@ -109,17 +136,18 @@ export function NotificationBell({ navigate }) {
         if (active) setLoadError(true)
       })
     return () => { active = false }
-  }, [])
+  }, [canViewOrders, storageKey])
 
   const unread = items.reduce((n, it) => n + (it.read ? 0 : 1), 0)
 
   const markAllRead = useCallback(() => {
     setItems((prev) => {
       const next = prev.map((it) => (it.read ? it : { ...it, read: true }))
-      persist(next)
+      persist(storageKey, next)
       return next
     })
     // Sync to the server so the unread state stays cleared across browsers and reloads.
+    // Server chỉ dời mốc đã-đọc của RIÊNG tài khoản này (AUD-018/019) — không ảnh hưởng admin khác.
     markAllAdminNotificationsRead().catch(() => {
       // id: gộp toast trùng khi mở lại panel lúc offline (không xếp chồng vô hạn).
       toast.error(
@@ -127,7 +155,7 @@ export function NotificationBell({ navigate }) {
         { id: 'notif-sync-error', duration: 6000 },
       )
     })
-  }, [t])
+  }, [t, storageKey])
 
   // Radix quản lý focus/keyboard/đóng-mở; chỉ cần chạy logic snapshot khi MỞ.
   const handleOpenChange = useCallback((next) => {
@@ -147,12 +175,15 @@ export function NotificationBell({ navigate }) {
   // panel nên badge không sáng lại. preventDefault để menu không đóng sau khi dọn.
   function clearAll() {
     setItems([])
-    persist([])
+    persist(storageKey, [])
   }
 
   function openOrder(item) {
     if (item.orderId) navigate(`/admin/orders/${item.orderId}`)
   }
+
+  // Không có quyền đọc đơn → không hiển thị chuông (AUD-017).
+  if (!canViewOrders) return null
 
   return (
     <DropdownMenu open={open} onOpenChange={handleOpenChange}>

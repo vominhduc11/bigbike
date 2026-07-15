@@ -2,70 +2,56 @@ package com.bigbike.bigbike_backend.api.admin;
 
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
-import com.bigbike.bigbike_backend.persistence.entity.admin.AdminNotificationEntity;
 import com.bigbike.bigbike_backend.service.admin.AdminNotificationService;
+import com.bigbike.bigbike_backend.service.admin.AdminNotificationService.InboxView;
+import com.bigbike.bigbike_backend.service.admin.AdminNotificationService.NotificationView;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/admin/notifications")
 @RequiredArgsConstructor
-public class AdminNotificationController {
+public class AdminNotificationController extends AdminControllerSupport {
 
     private final AdminNotificationService notificationService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
 
     @GetMapping
-    public ApiDataResponse<Map<String, Object>> listUnread(HttpServletRequest request) {
+    public ApiDataResponse<Map<String, Object>> list(HttpServletRequest request) {
         devAdminAuthService.requirePermission(request, "orders.read");
-        List<AdminNotificationEntity> items = notificationService.listUnread();
-        long unreadCount = notificationService.countUnread();
-        List<Map<String, Object>> mapped = items.stream().map(this::toMap).toList();
-        return apiResponseFactory.data(Map.of("unreadCount", unreadCount, "items", mapped), request);
+        InboxView inbox = notificationService.inboxFor(resolveAdminId());
+        List<Map<String, Object>> mapped = inbox.items().stream().map(this::toMap).toList();
+        return apiResponseFactory.data(
+                Map.of("unreadCount", inbox.unreadCount(), "items", mapped), request);
     }
 
-    @PostMapping("/mark-read")
-    public ApiDataResponse<Map<String, Object>> markRead(
-            @Valid @RequestBody MarkReadRequest body, HttpServletRequest request) {
-        devAdminAuthService.requirePermission(request, "orders.read");
-        int updated = notificationService.markRead(body.ids());
-        return apiResponseFactory.data(Map.of("updated", updated), request);
-    }
-
+    // mark-read (by ids) endpoint removed 2026-07-15 (AUD-067): no UI caller — the bell
+    // only ever advances the caller's high-water mark via mark-all-read below.
     @PostMapping("/mark-all-read")
     public ApiDataResponse<Map<String, Object>> markAllRead(HttpServletRequest request) {
         devAdminAuthService.requirePermission(request, "orders.read");
-        int updated = notificationService.markAllRead();
-        return apiResponseFactory.data(Map.of("updated", updated), request);
+        long remaining = notificationService.markAllReadFor(resolveAdminId());
+        return apiResponseFactory.data(Map.of("unreadCount", remaining), request);
     }
 
-    private Map<String, Object> toMap(AdminNotificationEntity e) {
+    private Map<String, Object> toMap(NotificationView view) {
+        var e = view.notification();
         return Map.of(
                 "id", e.getId(),
                 "type", e.getType(),
                 "orderId", e.getOrderId() != null ? e.getOrderId() : "",
                 "orderNumber", e.getOrderNumber() != null ? e.getOrderNumber() : "",
                 "payload", e.getPayload() != null ? e.getPayload() : "{}",
-                "isRead", e.isRead(),
+                "isRead", view.read(),
                 "createdAt", e.getCreatedAt()
         );
     }
-
-    public record MarkReadRequest(
-            @NotEmpty @Size(max = 500) List<@NotNull UUID> ids
-    ) {}
 }

@@ -167,6 +167,10 @@ public class OrderNotificationService {
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private static String safeCustomerName(OrderEntity order) {
+        // Chào bằng TÊN khách khi đơn có tên (AUD-052) — email/SĐT chỉ là dự phòng.
+        if (order.getCustomerName() != null && !order.getCustomerName().isBlank()) {
+            return order.getCustomerName();
+        }
         if (order.getCustomerEmail() != null && !order.getCustomerEmail().isBlank()) {
             return order.getCustomerEmail();
         }
@@ -206,10 +210,12 @@ public class OrderNotificationService {
                     "Đơn hàng đã hoàn thành!",
                     "Đơn hàng của bạn đã được giao thành công. Cảm ơn bạn đã tin tưởng BigBike!",
                     "Đơn hàng hoàn thành");
+            // Không hứa mốc thời gian hoàn tiền: luồng refund đã gỡ (2026-06-23) — tiền
+            // được shop đối soát/hoàn thủ công ngoài hệ thống (AUD-006).
             case "CANCELLED" -> new StatusContent(
                     "ĐÃ HỦY", "#fee2e2", "#991b1b",
                     "Đơn hàng đã bị hủy",
-                    "Đơn hàng của bạn đã được hủy. Nếu bạn đã thanh toán, chúng tôi sẽ hoàn tiền trong vòng 3–5 ngày làm việc.",
+                    "Đơn hàng của bạn đã được hủy. Nếu bạn đã thanh toán, BigBike sẽ chủ động liên hệ để hoàn lại tiền cho bạn. Cần hỗ trợ ngay, vui lòng gọi hotline 0906.902.404.",
                     "Đơn hàng bị hủy");
             case "FAILED" -> new StatusContent(
                     "THẤT BẠI", "#fef9c3", "#854d0e",
