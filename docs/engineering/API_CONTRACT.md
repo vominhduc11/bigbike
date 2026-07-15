@@ -10,6 +10,13 @@ This document is the human-readable companion to `bigbike-backend/src/main/resou
   3. checked-in OpenAPI companion
 - If OpenAPI and controllers drift, controllers and current tests are the verification source until docs are repaired.
 
+## Error Envelope
+
+Every API error, including responses produced directly by security and rate-limit filters, uses
+`ApiErrorResponse`: `{ "error": { "code", "message", "details" }, "meta": { "requestId", "timestamp" } }`.
+`meta` is never `null`; it is generated through `ApiMetaFactory` so clients and operators can
+correlate an early filter rejection with server logs. `CONFIRMED_FROM_CODE`
+
 ## Auth Models
 
 | Model | Used by | Current contract | Status | Evidence |

@@ -1,6 +1,8 @@
 package com.bigbike.bigbike_backend.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.bigbike.bigbike_backend.api.common.ApiError;
+import com.bigbike.bigbike_backend.api.common.ApiErrorResponse;
+import com.bigbike.bigbike_backend.api.common.ApiMetaFactory;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import jakarta.servlet.FilterChain;
@@ -22,6 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Per-IP rate limiting for sensitive endpoints using Bucket4j.
@@ -42,8 +45,6 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 
     private enum LimitTier { LOGIN, REGISTER, PASSWORD_RESET, RESEND_VERIFICATION, REFRESH, CART, CHECKOUT, ORDER_LOOKUP, SEARCH, REVIEW, REVIEW_PHOTO }
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-
     /**
      * Proxies allowed to set X-Forwarded-For. Configurable via bigbike.trusted-proxies
      * (comma-separated). Each entry is either an exact IP (e.g. {@code 127.0.0.1}) or a
@@ -52,10 +53,16 @@ public class RateLimitingFilter extends OncePerRequestFilter {
      * is not fixed.
      */
     private final List<ProxyMatcher> trustedProxies;
+    private final ApiMetaFactory apiMetaFactory;
+    private final ObjectMapper objectMapper;
 
     public RateLimitingFilter(
-            @Value("${bigbike.trusted-proxies:127.0.0.1,::1}") String trustedProxiesConfig
+            @Value("${bigbike.trusted-proxies:127.0.0.1,::1}") String trustedProxiesConfig,
+            ApiMetaFactory apiMetaFactory,
+            ObjectMapper objectMapper
     ) {
+        this.apiMetaFactory = apiMetaFactory;
+        this.objectMapper = objectMapper;
         this.trustedProxies = Arrays.stream(trustedProxiesConfig.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
@@ -108,7 +115,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         if (bucket.tryConsume(1)) {
             chain.doFilter(request, response);
         } else {
-            sendRateLimitResponse(response);
+            sendRateLimitResponse(request, response);
         }
     }
 
@@ -293,16 +300,15 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         }
     }
 
-    private void sendRateLimitResponse(HttpServletResponse response) throws IOException {
+    private void sendRateLimitResponse(HttpServletRequest request, HttpServletResponse response) throws IOException {
         response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        var body = Map.of(
-                "error", Map.of(
-                        "code", "RATE_LIMIT_EXCEEDED",
-                        "message", "Qua nhieu yeu cau. Vui long thu lai sau.",
-                        "details", new Object[0]
-                )
-        );
-        MAPPER.writeValue(response.getOutputStream(), body);
+        ApiErrorResponse body = new ApiErrorResponse(
+                new ApiError(
+                        "RATE_LIMIT_EXCEEDED",
+                        "Quá nhiều yêu cầu. Vui lòng thử lại sau.",
+                        List.of()),
+                apiMetaFactory.from(request));
+        objectMapper.writeValue(response.getOutputStream(), body);
     }
 }

@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.config;
 
 import com.bigbike.bigbike_backend.api.common.ApiError;
 import com.bigbike.bigbike_backend.api.common.ApiErrorResponse;
+import com.bigbike.bigbike_backend.api.common.ApiMetaFactory;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -55,6 +56,7 @@ public class CustomerCsrfFilter extends OncePerRequestFilter {
     );
 
     private final ObjectMapper objectMapper;
+    private final ApiMetaFactory apiMetaFactory;
 
     @Override
     protected void doFilterInternal(
@@ -74,7 +76,8 @@ public class CustomerCsrfFilter extends OncePerRequestFilter {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             ApiErrorResponse body = new ApiErrorResponse(
-                    new ApiError("CSRF_INVALID", "CSRF token mismatch.", List.of()), null);
+                    new ApiError("CSRF_INVALID", "CSRF token mismatch.", List.of()),
+                    apiMetaFactory.from(request));
             response.getWriter().write(objectMapper.writeValueAsString(body));
             return;
         }

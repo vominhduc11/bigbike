@@ -112,7 +112,9 @@ class Phase1FCheckoutApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}"))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.error.code").value("CSRF_INVALID"));
+                .andExpect(jsonPath("$.error.code").value("CSRF_INVALID"))
+                .andExpect(jsonPath("$.meta.requestId").isNotEmpty())
+                .andExpect(jsonPath("$.meta.timestamp").isNotEmpty());
     }
 
     @Test
@@ -122,7 +124,9 @@ class Phase1FCheckoutApiTest {
                         .content("{\"productId\":\"any\",\"quantity\":1,\"paymentMethod\":\"COD\"," +
                                  "\"billingAddress\":" + VALID_BILLING + "}"))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.error.code").value("CSRF_INVALID"));
+                .andExpect(jsonPath("$.error.code").value("CSRF_INVALID"))
+                .andExpect(jsonPath("$.meta.requestId").isNotEmpty())
+                .andExpect(jsonPath("$.meta.timestamp").isNotEmpty());
     }
 
     // ── Checkout validation (6) ───────────────────────────────────────────────
