@@ -154,7 +154,10 @@ function ReviewCard({
 
 export function ReviewListScreen({ navigate, canUpdate }) {
   const { t } = useTranslation()
-  // Admin VI/EN switch: ở EN backend ẩn review của SP chưa dịch + trả productNameEn.
+  // Admin VI/EN switch: đổi CỘT TÊN SẢN PHẨM (productNameEn || productName). Backend trả
+  // toàn bộ review kèm cả 2 tên (PRODUCT_RULE_004 — không ẩn SP chưa dịch); nội dung đánh
+  // giá do khách nhập nên đơn ngữ, không đổi theo lang. contentLang nằm trong query key
+  // để refetch khi đổi ngôn ngữ.
   const contentLang = useContentLang()
   // O9 — đánh giá admin vừa xem gần đây, cho phép quay lại nhanh.
   const recentReviewItems = useRecentItems('recent:reviews')

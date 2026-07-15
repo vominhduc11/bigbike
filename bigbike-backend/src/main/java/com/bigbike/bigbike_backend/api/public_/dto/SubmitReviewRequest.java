@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.api.public_.dto;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -11,6 +12,11 @@ public record SubmitReviewRequest(
         @NotBlank(message = "Vui lòng nhập tên.")
         @Size(max = 80, message = "Tên không được vượt quá 80 ký tự.")
         String authorName,
+
+        // Email tùy chọn — form thu để shop liên hệ lại; lưu vào review (AUD-032).
+        @Email(message = "Email không hợp lệ.")
+        @Size(max = 255, message = "Email không được vượt quá 255 ký tự.")
+        String authorEmail,
 
         @NotNull(message = "Vui lòng chọn số sao đánh giá.")
         @Min(value = 1, message = "Đánh giá phải từ 1 đến 5 sao.")

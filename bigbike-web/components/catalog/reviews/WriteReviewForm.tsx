@@ -123,6 +123,7 @@ export function WriteReviewForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           authorName: authorName.trim(),
+          authorEmail: authorEmail.trim() || undefined,
           rating,
           comment: comment.trim(),
           photos: photoUrls,

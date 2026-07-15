@@ -723,7 +723,9 @@ class Phase1NReviewsApiTest {
         mockMvc.perform(get("/api/v1/products/" + product.slug()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(product.id()))
-                .andExpect(jsonPath("$.data.rating").value(org.hamcrest.Matchers.nullValue()))
+                // Product detail omits a null rating from the JSON (NON_NULL serialization) —
+                // the field is absent, not present-as-null (stale expectation, AUD-046).
+                .andExpect(jsonPath("$.data.rating").doesNotExist())
                 .andExpect(jsonPath("$.data.ratingCount").value(0));
 
         mockMvc.perform(get("/api/v1/products")
@@ -752,7 +754,9 @@ class Phase1NReviewsApiTest {
         mockMvc.perform(get("/api/v1/products/" + product.slug()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(product.id()))
-                .andExpect(jsonPath("$.data.rating").value(org.hamcrest.Matchers.nullValue()))
+                // Product detail omits a null rating from the JSON (NON_NULL serialization) —
+                // the field is absent, not present-as-null (stale expectation, AUD-046).
+                .andExpect(jsonPath("$.data.rating").doesNotExist())
                 .andExpect(jsonPath("$.data.ratingCount").value(0));
 
         mockMvc.perform(get("/api/v1/products")

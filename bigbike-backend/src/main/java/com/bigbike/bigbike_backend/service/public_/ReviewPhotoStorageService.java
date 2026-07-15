@@ -4,7 +4,9 @@ import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.config.MinioProperties;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectArgs;
 import java.io.ByteArrayInputStream;
+import java.util.List;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -69,6 +71,37 @@ public class ReviewPhotoStorageService {
         }
 
         return MEDIA_PATH_PREFIX + objectKey;
+    }
+
+    /**
+     * Best-effort delete of review photo objects from MinIO by their stored public URL
+     * ({@code /media/reviews/...}). Called when a review is removed so its photos don't
+     * linger as orphans (AUD-037). Only touches objects under the {@code reviews/} prefix —
+     * a defence so a tampered URL can't target unrelated media. Failures are logged, not thrown:
+     * cleanup must never block the review deletion itself.
+     */
+    public void deletePhotos(List<String> urls) {
+        if (urls == null || urls.isEmpty()) return;
+        String bucket = minioProperties.getBucket();
+        for (String url : urls) {
+            String objectKey = toReviewObjectKey(url);
+            if (objectKey == null) continue;
+            try {
+                minioClient.removeObject(
+                        RemoveObjectArgs.builder().bucket(bucket).object(objectKey).build());
+            } catch (Exception e) {
+                log.warn("Failed to delete review photo object '{}': {}", objectKey, e.getMessage());
+            }
+        }
+    }
+
+    /** Extract the MinIO object key from a stored review photo URL; null if it isn't a review object. */
+    private static String toReviewObjectKey(String url) {
+        if (url == null || url.isBlank()) return null;
+        int idx = url.indexOf(MEDIA_PATH_PREFIX + "reviews/");
+        if (idx < 0) return null;
+        String key = url.substring(idx + MEDIA_PATH_PREFIX.length());
+        return key.startsWith("reviews/") ? key : null;
     }
 
     /**

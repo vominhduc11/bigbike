@@ -51,6 +51,7 @@ public class AdminReviewService {
     private final AuditLogFactory auditLogFactory;
     private final WebRevalidationService webRevalidationService;
     private final EmailDispatchService emailDispatchService;
+    private final com.bigbike.bigbike_backend.service.public_.ReviewPhotoStorageService reviewPhotoStorageService;
     private final String siteBaseUrl;
 
     public AdminReviewService(
@@ -60,6 +61,7 @@ public class AdminReviewService {
             AuditLogFactory auditLogFactory,
             WebRevalidationService webRevalidationService,
             EmailDispatchService emailDispatchService,
+            com.bigbike.bigbike_backend.service.public_.ReviewPhotoStorageService reviewPhotoStorageService,
             @Value("${bigbike.site.base-url:https://bigbike.vn}") String siteBaseUrl
     ) {
         this.reviewRepo = reviewRepo;
@@ -68,9 +70,16 @@ public class AdminReviewService {
         this.auditLogFactory = auditLogFactory;
         this.webRevalidationService = webRevalidationService;
         this.emailDispatchService = emailDispatchService;
+        this.reviewPhotoStorageService = reviewPhotoStorageService;
         this.siteBaseUrl = siteBaseUrl;
     }
 
+    // AUD-073: the review list intentionally returns ALL reviews with both product
+    // names (productName + productNameEn); the admin UI picks the right name by its
+    // content-language toggle and falls back to VI when EN is missing (PRODUCT_RULE_004
+    // — never hide untranslated records). Reviews are single-language user content, so
+    // there is no server-side language filtering; the `lang` request param is accepted
+    // for API compatibility but does not change the result set.
     public PageResult<Map<String, Object>> listReviews(int page, int size, String q, String status, String lang) {
         int normalizedPage = Math.max(1, page);
         int normalizedSize = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
@@ -78,14 +87,14 @@ public class AdminReviewService {
         // Empty string (not null) keeps repository filter logic predictable for blank status values.
         String statusFilter = (status != null && !status.isBlank()) ? status.toUpperCase(Locale.ROOT) : "";
         String qFilter = (q != null && !q.isBlank()) ? q : "";
-        boolean strictEnglish = false;
 
         PageRequest pageRequest = PageRequest.of(
                 normalizedPage - 1,
                 normalizedSize,
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
-        Page<ReviewEntity> dbPage = reviewRepo.findByFilters(statusFilter, qFilter, strictEnglish, pageRequest);
+        // strictEnglish=false → show all reviews regardless of product translation state.
+        Page<ReviewEntity> dbPage = reviewRepo.findByFilters(statusFilter, qFilter, false, pageRequest);
 
         Map<String, ProductReviewMetadata> productMetadata = loadProductMetadata(dbPage.getContent());
         List<Map<String, Object>> mapped = dbPage.getContent().stream()
@@ -222,11 +231,14 @@ public class AdminReviewService {
                 .orElseThrow(() -> new NotFoundException("Review not found."));
         ProductReviewMetadata productMetadata = loadProductMetadata(List.of(entity)).get(entity.getProductId());
         String productId = entity.getProductId();
+        List<String> photos = entity.getPhotos();
         Instant now = Instant.now();
         String before = snapshot(entity, productMetadata);
 
         reviewRepo.delete(entity);
         reviewRepo.flush();
+        // Remove the review's MinIO photos so they don't linger as orphans (AUD-037).
+        reviewPhotoStorageService.deletePhotos(photos);
         recomputeProductReviewAggregate(productId);
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN",
