@@ -26,7 +26,7 @@ import {
 
 type Faq = { question?: string | null; answer?: string | null };
 
-/** Lấy danh sách câu (content) từ mảng ProductHighlight, bỏ rỗng. */
+/** Lấy nội dung HTML của từng mục từ mảng ProductHighlight, bỏ rỗng. */
 function highlightLines(notes: ProductHighlight[] | undefined): string[] {
   return (notes ?? []).map((h) => (h?.content ?? "").trim()).filter(Boolean);
 }
@@ -61,7 +61,7 @@ export function ProductProsCons({
             {positive.map((note, index) => (
               <li key={index} className="flex gap-2 text-a4-content text-foreground">
                 <Check className="mt-1 h-4 w-4 shrink-0 text-pros-accent" aria-hidden />
-                <span>{note}</span>
+                <span dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(note) }} />
               </li>
             ))}
           </ul>
@@ -76,7 +76,7 @@ export function ProductProsCons({
             {negative.map((note, index) => (
               <li key={index} className="flex gap-2 text-a4-content text-muted-foreground">
                 <X className="mt-1 h-4 w-4 shrink-0 text-cons-accent" aria-hidden />
-                <span>{note}</span>
+                <span dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(note) }} />
               </li>
             ))}
           </ul>

@@ -149,15 +149,17 @@ export function createProductSchema(t, isCreate = false) {
       relatedProductIds: z.array(z.string()).max(24, 'Sản phẩm liên quan tối đa 24 mục.').optional(),
       accessoryProductIds: z.array(z.string()).max(24, 'Phụ kiện tối đa 24 mục.').optional(),
       // Template SEO fields (V175) — optional, length/integer checked in superRefine.
+      // Giới hạn khớp backend (HighlightRequest.java @Size max=20000) và product-template/HUONG-DAN.md
+      // — tránh sản phẩm nhập từ file mẫu (được phép tới 20000 ký tự) bị chặn không lưu được trong admin.
       positiveNotes: z.array(z.object({
         _key: z.string().optional(),
-        content: z.string().max(2000, 'Ưu điểm tối đa 2000 ký tự.'),
-        contentEn: z.string().max(2000).optional(),
+        content: z.string().max(20000, 'Ưu điểm tối đa 20000 ký tự.'),
+        contentEn: z.string().max(20000).optional(),
       })).max(20, 'Ưu điểm tối đa 20 mục.').optional(),
       negativeNotes: z.array(z.object({
         _key: z.string().optional(),
-        content: z.string().max(2000, 'Nhược điểm tối đa 2000 ký tự.'),
-        contentEn: z.string().max(2000).optional(),
+        content: z.string().max(20000, 'Nhược điểm tối đa 20000 ký tự.'),
+        contentEn: z.string().max(20000).optional(),
       })).max(20, 'Nhược điểm tối đa 20 mục.').optional(),
       originBrandCountry: z.string().max(120).optional(),
       sizeGuide: z.string().max(20000, 'Bảng size tối đa 20000 ký tự.').optional(),

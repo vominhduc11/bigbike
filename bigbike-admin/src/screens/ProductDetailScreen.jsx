@@ -44,6 +44,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { Tabs as UiTabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 
 import {
@@ -81,6 +82,7 @@ import {
   VideoEditor,
   SpecificationsEditor,
   HighlightsEditor,
+  HighlightsHtmlEditor,
   FaqEditor,
 } from './product-detail/ContentEditors'
 
@@ -184,6 +186,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   // Discount helper for salePrice
   const [showDiscountHelper, setShowDiscountHelper] = useState(false)
   const [discountPct, setDiscountPct] = useState('')
+
+  // Ưu điểm & Nhược điểm: 1 công tắc Nhập có cấu trúc/Dán mã HTML dùng chung cho cả 2 cột
+  const [highlightsMode, setHighlightsMode] = useState('structured')
 
   const { data: fetchResult, isLoading, isError, error: fetchError, refetch } = useQuery({
     queryKey: ['product', productId],
@@ -1457,42 +1462,77 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 <p className="text-xs text-muted-foreground mb-3">
                   {t('products.detail.highlights.hint', { defaultValue: 'Các gạch đầu dòng ưu/nhược điểm thật của sản phẩm — hiện thành khối riêng ngay dưới mô tả (ngoài tab) và đưa vào dữ liệu có cấu trúc. Không bắt buộc; để trống → web ẩn khối.' })}
                 </p>
-                <div className="grid gap-5 @xl:grid-cols-2">
+                <UiTabs value={highlightsMode} onValueChange={setHighlightsMode} className="mb-3">
+                  <TabsList>
+                    <TabsTrigger value="structured" disabled={isReadOnly}>{t('products.detail.highlights.modeStructured')}</TabsTrigger>
+                    <TabsTrigger value="html" disabled={isReadOnly}>{t('products.detail.highlights.modeHtml')}</TabsTrigger>
+                  </TabsList>
+                </UiTabs>
+                {highlightsMode === 'html' ? (
                   <div>
-                    <div className="text-sm font-medium mb-2">{t('products.detail.highlights.prosTitle', { defaultValue: 'Ưu điểm' })}</div>
-                    {validationErrors.positiveNotes && (
-                      <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
-                        <AlertCircle size={13} className="shrink-0" />
-                        {validationErrors.positiveNotes}
-                      </p>
+                    {(validationErrors.positiveNotes || validationErrors.negativeNotes) && (
+                      <div className="mb-2 flex flex-col gap-1">
+                        {validationErrors.positiveNotes && (
+                          <p className="field-error flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
+                            <AlertCircle size={13} className="shrink-0" />
+                            {validationErrors.positiveNotes}
+                          </p>
+                        )}
+                        {validationErrors.negativeNotes && (
+                          <p className="field-error flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
+                            <AlertCircle size={13} className="shrink-0" />
+                            {validationErrors.negativeNotes}
+                          </p>
+                        )}
+                      </div>
                     )}
-                    <HighlightsEditor
-                      items={form.positiveNotes}
-                      onChange={(next) => updateField('positiveNotes', next)}
+                    <HighlightsHtmlEditor
+                      positiveNotes={form.positiveNotes}
+                      negativeNotes={form.negativeNotes}
+                      onChangePositive={(next) => updateField('positiveNotes', next)}
+                      onChangeNegative={(next) => updateField('negativeNotes', next)}
                       disabled={isReadOnly}
                       contentLang={contentLang}
-                      placeholder={t('products.detail.highlights.prosPlaceholder', { defaultValue: 'vd: Nhẹ hơn LS2 Storm II 29g' })}
-                      addLabel={t('products.detail.highlights.addPro', { defaultValue: 'Thêm ưu điểm' })}
                     />
                   </div>
-                  <div>
-                    <div className="text-sm font-medium mb-2">{t('products.detail.highlights.consTitle', { defaultValue: 'Nhược điểm' })}</div>
-                    {validationErrors.negativeNotes && (
-                      <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
-                        <AlertCircle size={13} className="shrink-0" />
-                        {validationErrors.negativeNotes}
-                      </p>
-                    )}
-                    <HighlightsEditor
-                      items={form.negativeNotes}
-                      onChange={(next) => updateField('negativeNotes', next)}
-                      disabled={isReadOnly}
-                      contentLang={contentLang}
-                      placeholder={t('products.detail.highlights.consPlaceholder', { defaultValue: 'vd: Không kèm Pinlock' })}
-                      addLabel={t('products.detail.highlights.addCon', { defaultValue: 'Thêm nhược điểm' })}
-                    />
+                ) : (
+                  <div className="grid gap-5 @xl:grid-cols-2">
+                    <div>
+                      <div className="text-sm font-medium mb-2">{t('products.detail.highlights.prosTitle', { defaultValue: 'Ưu điểm' })}</div>
+                      {validationErrors.positiveNotes && (
+                        <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
+                          <AlertCircle size={13} className="shrink-0" />
+                          {validationErrors.positiveNotes}
+                        </p>
+                      )}
+                      <HighlightsEditor
+                        items={form.positiveNotes}
+                        onChange={(next) => updateField('positiveNotes', next)}
+                        disabled={isReadOnly}
+                        contentLang={contentLang}
+                        placeholder={t('products.detail.highlights.prosPlaceholder', { defaultValue: 'vd: Nhẹ hơn LS2 Storm II 29g' })}
+                        addLabel={t('products.detail.highlights.addPro', { defaultValue: 'Thêm ưu điểm' })}
+                      />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium mb-2">{t('products.detail.highlights.consTitle', { defaultValue: 'Nhược điểm' })}</div>
+                      {validationErrors.negativeNotes && (
+                        <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
+                          <AlertCircle size={13} className="shrink-0" />
+                          {validationErrors.negativeNotes}
+                        </p>
+                      )}
+                      <HighlightsEditor
+                        items={form.negativeNotes}
+                        onChange={(next) => updateField('negativeNotes', next)}
+                        disabled={isReadOnly}
+                        contentLang={contentLang}
+                        placeholder={t('products.detail.highlights.consPlaceholder', { defaultValue: 'vd: Không kèm Pinlock' })}
+                        addLabel={t('products.detail.highlights.addCon', { defaultValue: 'Thêm nhược điểm' })}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
               </SectionCard>
 
               {/* ── Card: Sản phẩm tương tự — "Xem thêm lựa chọn" (#6) — ngay sau Ưu/Nhược, trước Phù hợp với ai ── */}

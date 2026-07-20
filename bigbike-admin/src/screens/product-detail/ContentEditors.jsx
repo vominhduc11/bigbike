@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, Film, GripVertical, ImageIcon, Play, Plus, X } from 'lucide-react'
+import { Check, ChevronDown, Film, GripVertical, ImageIcon, Play, Plus, X } from 'lucide-react'
 import { MediaPickerModal } from '../../components/MediaPickerModal'
 import { VideoPickerModal } from '../../components/VideoPickerModal'
 import { MediaRequirementHint } from '../../components/MediaRequirementHint'
@@ -17,6 +17,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { generateId } from '@/lib/utils'
 import { showConfirm } from '../../lib/confirm'
 import { parseSpecsFromHtml, mergeSpecsIntoHtml } from '../../lib/specSheet'
+import { mergeHighlightsPairHtmlIntoItems, serializeHighlightsPairToHtml } from '../../lib/highlightsBlock'
+import { mergeFaqsHtmlIntoItems, serializeFaqsToHtml } from '../../lib/faqsBlock'
 import { resolveDisplayUrl } from '@/lib/contracts'
 import { extractYouTubeId } from './constants'
 import { useMediaAltSync, useMediaAltSyncList } from '@/lib/useMediaAltSync'
@@ -674,8 +676,87 @@ export function SpecificationsEditor({ disabled, html = '', onHtmlChange }) {
   )
 }
 
+const PROS_ACCENT = '#0A6E2A'
+const CONS_ACCENT = '#D4000F'
+
+/** Xem trước khối Ưu/Nhược điểm ở chế độ "Dán mã HTML" — dựng lại ĐÚNG layout thẻ màu mà
+ *  bigbike-web thật sự render (ProductProsCons: viền trên + nền nhạt theo màu, icon Check/X),
+ *  thay vì đổ thẳng HTML thô ra (không có màu/icon, không giống thật). Đọc trực tiếp từ
+ *  positiveNotes/negativeNotes hiện có — luôn khớp dữ liệu, không phụ thuộc rawHtml. */
+function HighlightsCardsPreview({ positiveNotes, negativeNotes, isEn, prosLabel, consLabel }) {
+  const field = isEn ? 'contentEn' : 'content'
+  const pros = (positiveNotes || []).map((n) => (n?.[field] || '').trim()).filter(Boolean)
+  const cons = (negativeNotes || []).map((n) => (n?.[field] || '').trim()).filter(Boolean)
+  if (pros.length === 0 && cons.length === 0) return null
+
+  const card = (accent, bg, label, list, textColor) => (
+    <div style={{ borderTop: `2px solid ${accent}`, background: bg, padding: '1.25rem' }}>
+      <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: accent }}>
+        {label}
+      </h3>
+      <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', margin: 0, padding: 0, listStyle: 'none' }}>
+        {list.map((html, i) => (
+          <li key={i} style={{ display: 'flex', gap: '0.5rem', color: textColor, fontSize: '1rem' }}>
+            {accent === PROS_ACCENT
+              ? <Check size={16} style={{ marginTop: '2px', flexShrink: 0, color: accent }} aria-hidden="true" />
+              : <X size={16} style={{ marginTop: '2px', flexShrink: 0, color: accent }} aria-hidden="true" />}
+            <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }} />
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
+      {pros.length > 0 && card(PROS_ACCENT, 'rgba(10,110,42,0.07)', prosLabel, pros, '#000000')}
+      {cons.length > 0 && card(CONS_ACCENT, 'rgba(212,0,15,0.06)', consLabel, cons, '#6f6f6f')}
+    </div>
+  )
+}
+
+/** Xem trước khối FAQ ở chế độ "Dán mã HTML" — dựng lại accordion số thứ tự (01, 02…) giống
+ *  bigbike-web thật (PdpSection FAQ), thay vì đổ thẳng câu hỏi/trả lời dạng đoạn văn thường.
+ *  Dùng <details>/<summary> để có sẵn hành vi đóng/mở mà không cần thêm state. */
+function FaqAccordionPreview({ items, isEn }) {
+  const fQuestion = isEn ? 'questionEn' : 'question'
+  const fAnswer = isEn ? 'answerEn' : 'answer'
+  const rows = (items || [])
+    .map((item) => ({ question: (item?.[fQuestion] || '').trim(), answer: (item?.[fAnswer] || '').trim() }))
+    .filter((row) => row.question || row.answer)
+  if (rows.length === 0) return null
+
+  return (
+    <div className="faq-accordion-preview" style={{ borderTop: '1px solid #dddddd' }}>
+      {rows.map((row, i) => (
+        <details key={i} open={i === 0} style={{ borderBottom: '1px solid #dddddd' }}>
+          <summary
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem',
+              padding: '0.75rem 0', cursor: 'pointer', color: '#000000',
+            }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
+              <span style={{ flexShrink: 0, fontWeight: 700, fontSize: '1rem', color: '#6f6f6f', fontVariantNumeric: 'tabular-nums' }}>
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <span style={{ fontSize: '1rem', fontWeight: 600 }}>{row.question}</span>
+            </span>
+            <ChevronDown className="faq-chevron" size={16} style={{ flexShrink: 0, color: '#6f6f6f' }} aria-hidden="true" />
+          </summary>
+          <div
+            style={{ paddingLeft: '2.25rem', paddingBottom: '0.75rem', color: '#6f6f6f', fontSize: '0.8125rem' }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(row.answer) }}
+          />
+        </details>
+      ))}
+    </div>
+  )
+}
+
 /** Ưu/Nhược điểm (V175) — danh sách câu ngắn, song ngữ inline. Dùng chung cho cả
- *  hai nhóm; nhãn/placeholder truyền qua props. */
+ *  hai nhóm; nhãn/placeholder truyền qua props. Chỉ dùng ở chế độ "Nhập có cấu trúc" —
+ *  chế độ "Dán mã HTML" dùng chung 1 khối cho cả 2 nhóm, xem [[HighlightsHtmlEditor]]. */
 export function HighlightsEditor({ items, onChange, disabled, contentLang = 'vi', placeholder, addLabel }) {
   const { t } = useTranslation()
   const isEn = contentLang === 'en'
@@ -715,7 +796,7 @@ export function HighlightsEditor({ items, onChange, disabled, contentLang = 'vi'
                 value={item[fContent] || ''}
                 onChange={(e) => updateItem(index, e.target.value)}
                 disabled={disabled}
-                maxLength={2000}
+                maxLength={20000}
               />
             </div>
             <Button
@@ -740,11 +821,85 @@ export function HighlightsEditor({ items, onChange, disabled, contentLang = 'vi'
   )
 }
 
+/** Ưu/Nhược điểm — chế độ "Dán mã HTML": MỘT khối mã cho cả Ưu điểm lẫn Nhược điểm cùng
+ *  lúc (2 vùng .bb-highlights-pros/.bb-highlights-cons bên trong), gõ xong tách ngay về
+ *  positiveNotes/negativeNotes tương ứng — không tạo trường HTML riêng để lưu. */
+export function HighlightsHtmlEditor({ positiveNotes, negativeNotes, onChangePositive, onChangeNegative, disabled, contentLang = 'vi' }) {
+  const { t } = useTranslation()
+  const isEn = contentLang === 'en'
+  const labels = { prosLabel: t('products.detail.highlights.prosTitle'), consLabel: t('products.detail.highlights.consTitle') }
+  const [rawHtml, setRawHtml] = useState(() => serializeHighlightsPairToHtml(positiveNotes, negativeNotes, isEn, labels))
+  const lastHtmlRef = useRef(rawHtml)
+
+  useEffect(() => {
+    const nextHtml = serializeHighlightsPairToHtml(positiveNotes, negativeNotes, isEn, labels)
+    if (nextHtml === lastHtmlRef.current) return
+    lastHtmlRef.current = nextHtml
+    setRawHtml(nextHtml)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [positiveNotes, negativeNotes, isEn])
+
+  function updateHtml(value) {
+    const next = mergeHighlightsPairHtmlIntoItems(positiveNotes, negativeNotes, value, isEn)
+    lastHtmlRef.current = serializeHighlightsPairToHtml(next.positiveNotes, next.negativeNotes, isEn, labels)
+    setRawHtml(value)
+    onChangePositive(next.positiveNotes)
+    onChangeNegative(next.negativeNotes)
+  }
+
+  const isEmptyEn = isEn && positiveNotes.length === 0 && negativeNotes.length === 0
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Textarea
+        className="font-mono text-xs"
+        placeholder={t('products.detail.highlights.htmlPlaceholder')}
+        aria-label={t('products.detail.highlights.modeHtml')}
+        value={rawHtml}
+        onChange={(event) => updateHtml(event.target.value)}
+        disabled={disabled || isEmptyEn}
+        rows={14}
+      />
+      <p className="text-xs text-muted-foreground">{t('products.detail.highlights.htmlHint')}</p>
+      <AiHtmlBrief promptKey="products.detail.highlights.aiBriefPrompt" />
+      <div className="flex flex-col gap-1">
+        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          {t('products.detail.highlights.previewLabel')}
+        </label>
+        {rawHtml.trim() ? (
+          <div className="size-guide-preview rounded-sm border border-border bg-surface p-3 overflow-x-auto">
+            <HighlightsCardsPreview
+              positiveNotes={positiveNotes}
+              negativeNotes={negativeNotes}
+              isEn={isEn}
+              prosLabel={labels.prosLabel}
+              consLabel={labels.consLabel}
+            />
+          </div>
+        ) : (
+          <p className="list-editor-empty">{t('products.detail.highlights.previewEmpty')}</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function FaqEditor({ items, onChange, disabled, validationErrors, contentLang = 'vi' }) {
   const { t } = useTranslation()
   const isEn = contentLang === 'en'
   const fQuestion = isEn ? 'questionEn' : 'question'
   const fAnswer = isEn ? 'answerEn' : 'answer'
+  const [mode, setMode] = useState('structured')
+  const [rawHtml, setRawHtml] = useState(() => serializeFaqsToHtml(items, isEn))
+  const lastHtmlRef = useRef(rawHtml)
+
+  useEffect(() => {
+    const nextHtml = serializeFaqsToHtml(items, isEn)
+    if (nextHtml === lastHtmlRef.current) return
+    lastHtmlRef.current = nextHtml
+    setRawHtml(nextHtml)
+  }, [items, isEn])
+
   function updateItem(index, field, value) {
     const next = items.map((item, i) => i === index ? { ...item, [field]: value } : item)
     onChange(next)
@@ -761,68 +916,118 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
     }
     onChange(items.filter((_, i) => i !== index))
   }
+  function changeMode(next) {
+    if (next === mode) return
+    if (next === 'html') {
+      const nextHtml = serializeFaqsToHtml(items, isEn)
+      lastHtmlRef.current = nextHtml
+      setRawHtml(nextHtml)
+    }
+    setMode(next)
+  }
+  function updateHtml(value) {
+    const nextItems = mergeFaqsHtmlIntoItems(items, value, isEn)
+    lastHtmlRef.current = serializeFaqsToHtml(nextItems, isEn)
+    setRawHtml(value)
+    onChange(nextItems)
+  }
 
   return (
-    <div className="list-editor">
-      {items.length === 0 && (
-        <p className="list-editor-empty">
-          {isEn ? t('products.detail.faqs.addInViFirst', { defaultValue: 'Thêm câu hỏi ở tab Tiếng Việt trước, rồi quay lại đây để dịch.' }) : t('products.detail.faqs.empty')}
-        </p>
-      )}
-      <SortableList
-        items={items}
-        getId={(it) => it._key}
-        onReorder={(next) => onChange(next)}
-        disabled={disabled}
-        className="list-editor"
-        renderItem={(item, sortable, index) => {
-        const errQuestion = validationErrors?.[`faqs.${index}.question`]
-        const errAnswer = validationErrors?.[`faqs.${index}.answer`]
-        return (
-          <div ref={sortable.setNodeRef} style={sortable.style} className="list-editor-row list-editor-row--stack">
-            <DragHandle handleProps={sortable.handleProps} disabled={disabled || isEn} label={t('products.detail.dragToReorder')} />
-            <div className="flex flex-1 flex-col gap-2">
-              <div>
-                <Input className={errQuestion ? 'border-danger' : undefined}
-                  placeholder={t('products.detail.faqs.questionPlaceholder')}
-                  value={item[fQuestion] || ''}
-                  onChange={(e) => updateItem(index, fQuestion, e.target.value)}
-                  disabled={disabled}
-                  maxLength={500}
-                />
-                {errQuestion && <small className="field-error">{errQuestion}</small>}
-              </div>
-              <div>
-                <RichTextEditor
-                  key={`faq-answer-${item._key}-${contentLang}`}
-                  value={item[fAnswer] || ''}
-                  onChange={(html) => updateItem(index, fAnswer, html)}
-                  placeholder={t('products.detail.faqs.answerPlaceholder')}
-                  disabled={disabled}
-                  hasError={Boolean(errAnswer)}
-                />
-                {errAnswer && <small className="field-error">{errAnswer}</small>}
-              </div>
+    <Tabs value={mode} onValueChange={changeMode}>
+      <TabsList>
+        <TabsTrigger value="structured" disabled={disabled}>{t('products.detail.faqs.modeStructured')}</TabsTrigger>
+        <TabsTrigger value="html" disabled={disabled}>{t('products.detail.faqs.modeHtml')}</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="structured">
+        <div className="list-editor">
+          {items.length === 0 && (
+            <p className="list-editor-empty">
+              {isEn ? t('products.detail.faqs.addInViFirst', { defaultValue: 'Thêm câu hỏi ở tab Tiếng Việt trước, rồi quay lại đây để dịch.' }) : t('products.detail.faqs.empty')}
+            </p>
+          )}
+          <SortableList
+            items={items}
+            getId={(it) => it._key}
+            onReorder={(next) => onChange(next)}
+            disabled={disabled || isEn}
+            className="list-editor"
+            renderItem={(item, sortable, index) => {
+              const errQuestion = validationErrors?.[`faqs.${index}.question`]
+              const errAnswer = validationErrors?.[`faqs.${index}.answer`]
+              return (
+                <div ref={sortable.setNodeRef} style={sortable.style} className="list-editor-row list-editor-row--stack">
+                  <DragHandle handleProps={sortable.handleProps} disabled={disabled || isEn} label={t('products.detail.dragToReorder')} />
+                  <div className="flex flex-1 flex-col gap-2">
+                    <div>
+                      <Input className={errQuestion ? 'border-danger' : undefined}
+                        placeholder={t('products.detail.faqs.questionPlaceholder')}
+                        value={item[fQuestion] || ''}
+                        onChange={(e) => updateItem(index, fQuestion, e.target.value)}
+                        disabled={disabled}
+                        maxLength={500}
+                      />
+                      {errQuestion && <small className="field-error">{errQuestion}</small>}
+                    </div>
+                    <div>
+                      <RichTextEditor
+                        key={`faq-answer-${item._key}-${contentLang}`}
+                        value={item[fAnswer] || ''}
+                        onChange={(html) => updateItem(index, fAnswer, html)}
+                        placeholder={t('products.detail.faqs.answerPlaceholder')}
+                        disabled={disabled}
+                        hasError={Boolean(errAnswer)}
+                      />
+                      {errAnswer && <small className="field-error">{errAnswer}</small>}
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => removeItem(index)}
+                    disabled={disabled || isEn}
+                    aria-label={t('products.detail.faqs.removeFaq')}
+                  >
+                    <X size={14} aria-hidden="true" />
+                  </Button>
+                </div>
+              )
+            }}
+            footer={!isEn && (
+              <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
+                + {t('products.detail.faqs.addFaq')}
+              </Button>
+            )}
+          />
+        </div>
+      </TabsContent>
+
+      <TabsContent value="html" className="flex flex-col gap-2">
+        <Textarea
+          className="font-mono text-xs"
+          placeholder={t('products.detail.faqs.htmlPlaceholder')}
+          aria-label={t('products.detail.faqs.modeHtml')}
+          value={rawHtml}
+          onChange={(event) => updateHtml(event.target.value)}
+          disabled={disabled || (isEn && items.length === 0)}
+          rows={10}
+        />
+        <p className="text-xs text-muted-foreground">{t('products.detail.faqs.htmlHint')}</p>
+        <AiHtmlBrief promptKey="products.detail.faqs.aiBriefPrompt" />
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            {t('products.detail.faqs.previewLabel')}
+          </label>
+          {rawHtml.trim() ? (
+            <div className="size-guide-preview rounded-sm border border-border bg-surface p-3 overflow-x-auto">
+              <FaqAccordionPreview items={items} isEn={isEn} />
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-destructive hover:text-destructive"
-              onClick={() => removeItem(index)}
-              disabled={disabled || isEn}
-              aria-label={t('products.detail.faqs.removeFaq')}
-            >
-              <X size={14} aria-hidden="true" />
-            </Button>
-          </div>
-        )
-      }}
-        footer={!isEn && (
-          <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
-            + {t('products.detail.faqs.addFaq')}
-          </Button>
-        )}
-      />
-    </div>
+          ) : (
+            <p className="list-editor-empty">{t('products.detail.faqs.previewEmpty')}</p>
+          )}
+        </div>
+      </TabsContent>
+    </Tabs>
   )
 }

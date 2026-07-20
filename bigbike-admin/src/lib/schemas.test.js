@@ -170,4 +170,20 @@ describe('createProductSchema — PRODUCT_RULE_005 required-field matrix', () =>
     }))
     expect(result.success).toBe(true)
   })
+
+  it('cho phép Ưu/Nhược điểm tới 20000 ký tự — khớp giới hạn backend (HighlightRequest.java) và product-template', () => {
+    const schema = createProductSchema(t, false)
+    const longContent = 'x'.repeat(20000)
+    const valid = schema.safeParse(baseForm({
+      positiveNotes: [{ content: longContent, contentEn: longContent }],
+      negativeNotes: [{ content: 'Nhẹ', contentEn: 'Lightweight' }],
+    }))
+    const tooLong = schema.safeParse(baseForm({
+      positiveNotes: [{ content: `${longContent}x`, contentEn: '' }],
+    }))
+
+    expect(valid.success).toBe(true)
+    expect(tooLong.success).toBe(false)
+    expect(pathsOf(tooLong)).toContain('positiveNotes.0.content')
+  })
 })

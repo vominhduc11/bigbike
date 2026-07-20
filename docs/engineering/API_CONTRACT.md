@@ -862,7 +862,12 @@ field bổ sung cho template trang sản phẩm chuẩn SEO/AEO:
   điểm tách RA khỏi mô tả (đảo phần `prosCons` của V246) → khối RIÊNG cố định ngay dưới mô tả, ngoài
   tab; admin nhập ở card riêng (không bắt buộc). Request gửi `highlights: { positiveNotes?, negativeNotes? }`
   (DTO `HighlightsRequest`); mỗi nhóm là **mảng `{ content, contentEn?, sortOrder? }`**
-  (`@Size(max = 20)`, `content` blank bị drop), lưu vào `products.highlights` JSONB
+  (`@Size(max = 20)`, `content`/`contentEn` rich-text **HTML** ≤ 20 000 ký tự,
+  `content` blank bị drop). HTML được soạn qua TipTap ở admin và web sanitize bằng
+  `sanitizeRichHtml` trước khi render; JSON-LD schema.org chuyển nội dung về plain text,
+  ghi chú plain-text cũ vẫn hợp lệ. Khi nhập JSON, mọi `<img>` nhúng trong
+  `content`/`contentEn` bị xoá vô điều kiện, cùng quy tắc với các khối HTML nội dung khác.
+  Lưu vào `products.highlights` JSONB
   (`AdminCatalogMutationService.applyHighlights` — mỗi nhóm vẫn full-replace ĐỘC LẬP như trước, `null`
   = không đụng nhóm đó, hành vi giữ nguyên qua bước gộp). Trên product detail response (public/admin)
   trả `highlights: { positiveNotes: [...], negativeNotes: [...] }`, mỗi mục `{ content, contentEn? }`

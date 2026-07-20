@@ -71,7 +71,7 @@ export function buildProductJsonLd(product: Product): JsonLdObject {
 
 function buildNotesList(notes: { content: string }[] | undefined): JsonLdObject | undefined {
   const items = (notes ?? [])
-    .map((note) => note?.content?.trim())
+    .map((note) => stripHtmlToText(note?.content ?? ""))
     .filter((content): content is string => Boolean(content));
   if (items.length === 0) {
     return undefined;

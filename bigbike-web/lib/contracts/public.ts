@@ -209,7 +209,7 @@ export type ProductCommitment = {
   subtitle?: string | null;
 };
 
-/** Ưu/Nhược điểm (V175). `content` đã resolve theo ngôn ngữ; `contentEn` chỉ có trên admin. */
+/** Ưu/Nhược điểm (V175). `content` là rich-text HTML đã resolve theo ngôn ngữ; `contentEn` chỉ có trên admin. */
 export type ProductHighlight = {
   content: string;
   contentEn?: string | null;

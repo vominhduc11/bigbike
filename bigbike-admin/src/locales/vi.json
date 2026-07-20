@@ -760,7 +760,14 @@
         "addFaq": "Thêm câu hỏi",
         "unit": "câu hỏi",
         "addInViFirst": "Thêm câu hỏi ở tab Tiếng Việt trước, rồi quay lại đây để dịch.",
-        "missingViError": "Câu hỏi dòng #{{rows}} thiếu nội dung tiếng Việt (đã nhập tiếng Anh). Vui lòng bổ sung ở tab Tiếng Việt hoặc xoá dòng."
+        "missingViError": "Câu hỏi dòng #{{rows}} thiếu nội dung tiếng Việt (đã nhập tiếng Anh). Vui lòng bổ sung ở tab Tiếng Việt hoặc xoá dòng.",
+        "modeStructured": "Nhập có cấu trúc",
+        "modeHtml": "Dán mã HTML",
+        "htmlPlaceholder": "Dán hoặc soạn HTML nhiều câu hỏi ở đây...",
+        "htmlHint": "Đây là công cụ soạn nhanh nhiều câu hỏi cùng lúc. Mã HTML được tách ngay về từng câu hỏi trong danh sách, không tạo trường HTML riêng. Chỉ tab Tiếng Việt được thêm hoặc bớt số câu; tab Tiếng Anh chỉ sửa nội dung theo đúng vị trí.",
+        "previewLabel": "Xem trước (đúng như hiển thị trên web)",
+        "previewEmpty": "Chưa có nội dung để xem trước.",
+        "aiBriefPrompt": "Tạo HTML cho nhiều câu hỏi thường gặp trên trang sản phẩm BigBike. Trả về CHỈ HTML thuần, không markdown, không <script>, không <style>, không id.\n\nMỗi câu hỏi phải đúng cấu trúc sau:\n<div class=\"bb-faq-item\">\n  <h4 class=\"bb-faq-question\">Câu hỏi dạng chữ thường</h4>\n  <div class=\"bb-faq-answer\"><p>Câu trả lời có thể dùng HTML rich-text.</p></div>\n</div>\n\nQuy tắc:\n- Có thể lặp lại nhiều khối .bb-faq-item liên tiếp, bọc trong <div class=\"bb-faqs-list\"> nếu cần.\n- Câu hỏi phải là chữ thuần, không chứa HTML.\n- Câu trả lời chỉ dùng thẻ rich-text an toàn như p, strong, em, ul, li, a.\n- Không dùng nền tối, đổ bóng, gradient hay JavaScript."
       },
       "commitments": {
         "empty": "Chưa có dòng cam kết. Nhấn \"+ Thêm dòng\" để bắt đầu.",
@@ -817,7 +824,14 @@
         "remove": "Xoá mục",
         "addInViFirst": "Thêm mục ở tab Tiếng Việt trước, rồi quay lại đây để dịch.",
         "missingViErrorPros": "Ưu điểm dòng #{{rows}} thiếu nội dung tiếng Việt (đã nhập tiếng Anh). Vui lòng bổ sung ở tab Tiếng Việt hoặc xoá dòng.",
-        "missingViErrorCons": "Nhược điểm dòng #{{rows}} thiếu nội dung tiếng Việt (đã nhập tiếng Anh). Vui lòng bổ sung ở tab Tiếng Việt hoặc xoá dòng."
+        "missingViErrorCons": "Nhược điểm dòng #{{rows}} thiếu nội dung tiếng Việt (đã nhập tiếng Anh). Vui lòng bổ sung ở tab Tiếng Việt hoặc xoá dòng.",
+        "modeStructured": "Nhập có cấu trúc",
+        "modeHtml": "Dán mã HTML",
+        "htmlPlaceholder": "Dán hoặc soạn HTML cho cả ưu điểm lẫn nhược điểm ở đây...",
+        "htmlHint": "Đây là công cụ soạn nhanh cả 2 nhóm CÙNG LÚC trong 1 khối mã duy nhất (vùng \"bb-highlights-pros\" là ưu điểm, vùng \"bb-highlights-cons\" là nhược điểm). Mã HTML được tách ngay về từng dòng trong danh sách tương ứng, không tạo trường HTML riêng. Chỉ tab Tiếng Việt được thêm hoặc bớt số mục; tab Tiếng Anh chỉ sửa nội dung theo đúng vị trí.",
+        "previewLabel": "Xem trước (đúng như hiển thị trên web)",
+        "previewEmpty": "Chưa có nội dung để xem trước.",
+        "aiBriefPrompt": "Tạo HTML cho khối ưu điểm và nhược điểm trên trang sản phẩm BigBike. Trả về CHỈ HTML thuần, không markdown, không <script>, không <style>, không id.\n\nDùng đúng cấu trúc — MỘT khối duy nhất chứa cả 2 vùng:\n<div class=\"bb-highlights-pros\">\n  <h4>Ưu điểm</h4>\n  <ul class=\"bb-highlights-list\">\n    <li>Một ưu điểm.</li>\n  </ul>\n</div>\n<div class=\"bb-highlights-cons\">\n  <h4>Nhược điểm</h4>\n  <ul class=\"bb-highlights-list\">\n    <li>Một nhược điểm.</li>\n  </ul>\n</div>\n\nQuy tắc:\n- Mỗi <li> là đúng một ưu điểm hoặc nhược điểm, chữ thuần, không chứa HTML lồng bên trong.\n- Không dùng nền tối, đổ bóng, gradient hay JavaScript."
       },
       "dragToReorder": "Kéo để sắp xếp",
       "removeRowConfirmTitle": "Xóa dòng",

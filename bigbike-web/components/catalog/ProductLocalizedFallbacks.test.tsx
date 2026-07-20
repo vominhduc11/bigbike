@@ -49,4 +49,17 @@ describe("PDP localized fields — fallback VI while English data is unavailable
     expect(screen.getByText("Người đi phố")).toBeInTheDocument();
     expect(screen.getByText("Size M")).toBeInTheDocument();
   });
+
+  it("renders formatted highlights and removes unsafe HTML", () => {
+    const { container } = render(
+      <ProductProsCons
+        positiveNotes={[{ content: "<p><strong>Pin 35 giờ</strong></p><script>alert('xss')</script>" }]}
+        negativeNotes={[{ content: "<ul><li>Không phù hợp mưa lớn</li></ul>" }]}
+      />,
+    );
+
+    expect(screen.getByText("Pin 35 giờ").tagName).toBe("STRONG");
+    expect(screen.getByText("Không phù hợp mưa lớn").tagName).toBe("LI");
+    expect(container.querySelector("script")).toBeNull();
+  });
 });

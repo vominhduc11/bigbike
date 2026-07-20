@@ -735,6 +735,39 @@ a {
 .size-guide-preview p:last-child {
   margin-bottom: 0;
 }
+/* Khối "Phù hợp với ai" web render bằng class `.suitability-list` riêng (không phải <ul> thường) —
+   web ép list-style:none + flex column gap qua CSS (globals.css), admin cần mirror để khớp thật,
+   nếu không ăn theo rule `.size-guide-preview ul` chung (bullet + padding) là SAI với web. */
+.size-guide-preview .suitability-list {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.5rem !important;
+}
+.size-guide-preview .suitability-list > li {
+  margin: 0 !important;
+}
+
+/* ─── Xem trước Ưu/Nhược điểm + FAQ (chế độ "Dán mã HTML"): mô phỏng đúng layout thật của
+   web (thẻ Ưu/Nhược có màu, FAQ dạng accordion số thứ tự) — vì 2 khối này web render bằng
+   component React/Tailwind riêng (không phải HTML tự chứa như specs/specStats/sizeGuide/
+   trustBadges), nên phần preview ở đây phải TỰ dựng lại cấu trúc đó, không thể dán thẳng HTML
+   thô vào là ra đúng. Màu/kích thước dùng inline style hex cố định (khớp brand-tokens.css bên
+   web) ngay trong JSX; CSS ở đây chỉ lo phần trình duyệt không cho set qua inline style. ───*/
+.faq-accordion-preview summary {
+  list-style: none;
+}
+.faq-accordion-preview summary::-webkit-details-marker {
+  display: none;
+}
+.faq-accordion-preview .faq-chevron {
+  transition: transform 200ms ease;
+}
+.faq-accordion-preview details[open] .faq-chevron {
+  transform: rotate(180deg);
+}
 
 @media (min-width: 768px) {
   .size-guide-preview {

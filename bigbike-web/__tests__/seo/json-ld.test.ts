@@ -57,7 +57,7 @@ describe("buildProductJsonLd", () => {
       ],
       rating: 4.5,
       ratingCount: 12,
-      positiveNotes: [{ content: "Nhẹ" }, { content: "Thoáng khí" }],
+      positiveNotes: [{ content: "<p><strong>Nhẹ</strong></p>" }, { content: "<p>Thoáng khí</p>" }],
       negativeNotes: [{ content: "Giá cao" }],
     });
 

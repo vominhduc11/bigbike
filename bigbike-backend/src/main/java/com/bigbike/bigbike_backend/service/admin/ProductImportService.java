@@ -359,6 +359,22 @@ public class ProductImportService {
             sizeGuide.setHtml(stripImgTags(sizeGuide.getHtml()));
             sizeGuide.setHtmlEn(stripImgTags(sizeGuide.getHtmlEn()));
         }
+
+        HighlightsRequest highlights = request.getHighlights();
+        if (highlights != null) {
+            stripHighlightInlineImages(highlights.getPositiveNotes());
+            stripHighlightInlineImages(highlights.getNegativeNotes());
+        }
+    }
+
+    static void stripHighlightInlineImages(List<HighlightRequest> highlights) {
+        if (highlights == null) {
+            return;
+        }
+        for (HighlightRequest highlight : highlights) {
+            highlight.setContent(stripImgTags(highlight.getContent()));
+            highlight.setContentEn(stripImgTags(highlight.getContentEn()));
+        }
     }
 
     private void stripBlockInlineImages(DescriptionBlock block) {

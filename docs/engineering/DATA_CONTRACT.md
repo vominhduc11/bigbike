@@ -593,6 +593,12 @@ following the same physical-storage pattern as `description_blocks` /
 `suitability_section`.
 
 Shape: `{ positiveNotes: [{ content, contentEn?, sortOrder? }], negativeNotes: [{ content, contentEn?, sortOrder? }] }`.
+`content`/`contentEn` are sanitized rich-text **HTML** authored via the admin TipTap
+editor; max 20 000 chars at the DTO. The web PDP renders each note through
+`sanitizeRichHtml`; the schema.org `positiveNotes`/`negativeNotes` JSON-LD strips it
+to plain text. Legacy plain-text notes render unchanged (no tags). During bulk JSON
+import, every embedded `<img>` is removed from either language, matching the other
+owner-authored HTML content blocks.
 Upsert DTO nhận tối đa 20 mục mỗi nhóm (`@Size(max = 20)`). Mục `content` blank bị
 drop. Đọc ra domain `Product` thành 1 field lồng `highlights` (record
 `ProductHighlights { positiveNotes, negativeNotes }`, đã resolve theo locale).

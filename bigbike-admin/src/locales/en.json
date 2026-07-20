@@ -759,7 +759,14 @@
         "addFaq": "Add question",
         "unit": "questions",
         "addInViFirst": "Add the question in the Vietnamese tab first, then come back here to translate it.",
-        "missingViError": "FAQ row #{{rows}} is missing Vietnamese content (English was entered). Please fill it in on the Vietnamese tab or remove the row."
+        "missingViError": "FAQ row #{{rows}} is missing Vietnamese content (English was entered). Please fill it in on the Vietnamese tab or remove the row.",
+        "modeStructured": "Structured input",
+        "modeHtml": "Paste HTML",
+        "htmlPlaceholder": "Paste or compose HTML for multiple questions here...",
+        "htmlHint": "Use this to compose multiple questions quickly. The HTML is immediately split back into individual FAQ items; no separate HTML field is created. Only the Vietnamese tab can add or remove questions; the English tab only edits the matching items in place.",
+        "previewLabel": "Preview (exactly as shown on the web)",
+        "previewEmpty": "Nothing to preview yet.",
+        "aiBriefPrompt": "Generate HTML for multiple FAQs on a BigBike product page. Return ONLY plain HTML, with no markdown, no <script>, no <style>, and no id.\n\nEach FAQ must use this exact structure:\n<div class=\"bb-faq-item\">\n  <h4 class=\"bb-faq-question\">Plain-text question</h4>\n  <div class=\"bb-faq-answer\"><p>The answer may use rich-text HTML.</p></div>\n</div>\n\nRules:\n- Repeat .bb-faq-item blocks as needed; optionally wrap them in <div class=\"bb-faqs-list\">.\n- Questions must be plain text, with no HTML.\n- Answers may use safe rich-text tags such as p, strong, em, ul, li, a.\n- No dark backgrounds, box shadows, gradients, or JavaScript."
       },
       "commitments": {
         "empty": "No commitment rows yet. Click \"+ Add row\" to start.",
@@ -815,7 +822,14 @@
         "remove": "Remove item",
         "addInViFirst": "Add the item in the Vietnamese tab first, then come back here to translate it.",
         "missingViErrorPros": "Pro row #{{rows}} is missing Vietnamese content (English was entered). Please fill it in on the Vietnamese tab or remove the row.",
-        "missingViErrorCons": "Con row #{{rows}} is missing Vietnamese content (English was entered). Please fill it in on the Vietnamese tab or remove the row."
+        "missingViErrorCons": "Con row #{{rows}} is missing Vietnamese content (English was entered). Please fill it in on the Vietnamese tab or remove the row.",
+        "modeStructured": "Structured input",
+        "modeHtml": "Paste HTML",
+        "htmlPlaceholder": "Paste or compose HTML for both pros and cons here...",
+        "htmlHint": "Use this to compose BOTH groups at once in a single block of code (the \"bb-highlights-pros\" region is pros, \"bb-highlights-cons\" is cons). The HTML is immediately split back into the matching list; no separate HTML field is created. Only the Vietnamese tab can add or remove items; the English tab only edits the matching items in place.",
+        "previewLabel": "Preview (exactly as shown on the web)",
+        "previewEmpty": "Nothing to preview yet.",
+        "aiBriefPrompt": "Generate HTML for the pros and cons block on a BigBike product page. Return ONLY plain HTML, with no markdown, no <script>, no <style>, and no id.\n\nUse this exact structure — ONE block containing both regions:\n<div class=\"bb-highlights-pros\">\n  <h4>Pros</h4>\n  <ul class=\"bb-highlights-list\">\n    <li>One pro.</li>\n  </ul>\n</div>\n<div class=\"bb-highlights-cons\">\n  <h4>Cons</h4>\n  <ul class=\"bb-highlights-list\">\n    <li>One con.</li>\n  </ul>\n</div>\n\nRules:\n- Each <li> is exactly one pro or con, plain text, no nested HTML.\n- No dark backgrounds, box shadows, gradients, or JavaScript."
       },
       "dragToReorder": "Drag to reorder",
       "removeRowConfirmTitle": "Remove row",
