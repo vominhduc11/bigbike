@@ -15,6 +15,7 @@ import {
   Underline, Undo,
 } from 'lucide-react'
 import { MediaPickerModal } from './MediaPickerModal'
+import { MediaRequirementHint } from './MediaRequirementHint'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -212,7 +213,10 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
 
   // Phản ánh trạng thái lỗi lên vùng soạn thảo (aria-invalid) để không chỉ dựa vào viền màu.
   useEffect(() => {
-    if (!editor) return
+    // editor.view là getter luôn trả về giá trị "truthy" (Proxy tạm) khi view ProseMirror
+    // thật chưa mount hoặc đã destroy — check !editor.view không bắt được. editor.isDestroyed
+    // mới phản ánh đúng trạng thái view thật, tránh throw "editor may not be mounted yet".
+    if (!editor || editor.isDestroyed) return
     const dom = editor.view.dom
     if (hasError) dom.setAttribute('aria-invalid', 'true')
     else dom.removeAttribute('aria-invalid')
@@ -355,6 +359,9 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
             )}
           </DropdownMenuContent>
         </DropdownMenu>
+        {enableImagePicker && (
+          <MediaRequirementHint recommend={IMAGE_RECO.general} className="m-0 basis-full pt-1" />
+        )}
       </div>
 
       {/* Editor content */}

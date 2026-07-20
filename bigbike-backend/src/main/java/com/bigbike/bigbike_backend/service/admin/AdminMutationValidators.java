@@ -234,6 +234,33 @@ final class AdminMutationValidators {
     }
 
     /**
+     * Same acceptance rule as {@link #validateWhitelistedMediaUrl} (relative {@code /media/} or
+     * {@code /media-proxy/} paths, or an absolute URL under the configured MinIO public base) but as a
+     * plain predicate instead of an error-accumulating validator. Used by bulk product import
+     * ({@code ProductImportService}) to silently strip a content-block image/video reference the shop
+     * owner's file points at a non-MinIO host, instead of failing the whole row — see
+     * {@code PRODUCT_RULE_009}. Blank input is treated as "nothing to check" (true), matching
+     * {@code validateWhitelistedMediaUrl}'s no-op on a blank url.
+     */
+    static boolean isWhitelistedMediaUrl(String url, String allowedMediaBaseUrl) {
+        String normalized = trimToNull(url);
+        if (normalized == null) {
+            return true;
+        }
+        if (normalized.toLowerCase(Locale.ROOT).startsWith("/media/")
+                || normalized.toLowerCase(Locale.ROOT).startsWith("/media-proxy/")) {
+            return true;
+        }
+        List<ApiErrorDetail> probe = new java.util.ArrayList<>();
+        validatePublicUrl(normalized, "probe", probe);
+        if (!probe.isEmpty()) {
+            return false;
+        }
+        String allowedBase = trimToNull(allowedMediaBaseUrl);
+        return allowedBase != null && isAllowedMediaUrl(normalized, allowedBase);
+    }
+
+    /**
      * Collects every media URL already present in a stored block list — structured
      * {@code ImageBlock}/{@code FeatureBlock}/{@code VideoBlock} urls plus inline {@code <img src>} inside raw-HTML
      * block fields (paragraph/callout/feature), VI **and** EN (V326: each block carries both

@@ -12,6 +12,8 @@ type MobileStickyPurchaseBarProps = {
   zaloUrl?: string;
   /** Hết hàng: ẩn nút "Thêm vào giỏ", chỉ giữ nút "Tư vấn Zalo" (chiếm full ngang). */
   outOfStock?: boolean;
+  /** Khung xem trước admin: cả 2 nút chỉ để nhìn — làm mờ + khóa bấm. */
+  previewMode?: boolean;
 };
 
 export function MobileStickyPurchaseBar({
@@ -19,6 +21,7 @@ export function MobileStickyPurchaseBar({
   zaloLabel,
   zaloUrl,
   outOfStock = false,
+  previewMode = false,
 }: MobileStickyPurchaseBarProps) {
   const [visible, setVisible] = useState(false);
   const [addToCartDisabled, setAddToCartDisabled] = useState(false);
@@ -54,7 +57,11 @@ export function MobileStickyPurchaseBar({
     return () => observer.disconnect();
   }, []);
 
+  // Xem trước: nút chỉ để nhìn, mọi nút đều mờ + khóa bấm (không thêm giỏ, không cuộn).
+  const addDisabled = addToCartDisabled || previewMode;
+
   function handleAddToCart() {
+    if (previewMode) return;
     const btn = document.querySelector<HTMLButtonElement>("[data-purchase-add]");
 
     if (btn && !btn.disabled) {
@@ -114,37 +121,52 @@ export function MobileStickyPurchaseBar({
           className={cn(
             BASE_BTN,
             "flex-[3] rounded-none border-none bg-brand text-white",
-            addToCartDisabled && "opacity-50 cursor-not-allowed",
+            addDisabled && "opacity-50 cursor-not-allowed",
           )}
           onClick={handleAddToCart}
           aria-label={addToCartLabel}
-          aria-disabled={addToCartDisabled}
-          tabIndex={visible ? 0 : -1}
+          aria-disabled={addDisabled}
+          tabIndex={visible && !previewMode ? 0 : -1}
         >
           {addToCartLabel}
         </Button>
       ) : null}
 
-      <Button
-        asChild
-        variant="outline"
-        className={cn(
-          BASE_BTN,
-          // Kiểu Zalo phụ: nền trắng, viền + chữ + LOGO xanh Zalo (logo lấy currentColor).
-          "flex-[2] rounded-none border border-zalo bg-white text-zalo hover:bg-zalo-soft hover:text-zalo",
-        )}
-      >
-        <a
-          href={zaloUrl ? zaloHref(zaloUrl) : "#"}
-          target={zaloUrl ? "_blank" : undefined}
-          rel={zaloUrl ? "noopener noreferrer" : undefined}
+      {previewMode ? (
+        // Xem trước: nút Zalo mở link ngoài → thay bằng span mờ, khóa bấm.
+        <span
           aria-label={zaloLabel}
-          tabIndex={visible ? 0 : -1}
+          aria-disabled="true"
+          className={cn(
+            BASE_BTN,
+            "flex-[2] rounded-none border border-zalo bg-white text-zalo opacity-50 cursor-not-allowed",
+          )}
         >
           <ZaloIcon className="size-5 shrink-0" />
           {zaloLabel}
-        </a>
-      </Button>
+        </span>
+      ) : (
+        <Button
+          asChild
+          variant="outline"
+          className={cn(
+            BASE_BTN,
+            // Kiểu Zalo phụ: nền trắng, viền + chữ + LOGO xanh Zalo (logo lấy currentColor).
+            "flex-[2] rounded-none border border-zalo bg-white text-zalo hover:bg-zalo-soft hover:text-zalo",
+          )}
+        >
+          <a
+            href={zaloUrl ? zaloHref(zaloUrl) : "#"}
+            target={zaloUrl ? "_blank" : undefined}
+            rel={zaloUrl ? "noopener noreferrer" : undefined}
+            aria-label={zaloLabel}
+            tabIndex={visible ? 0 : -1}
+          >
+            <ZaloIcon className="size-5 shrink-0" />
+            {zaloLabel}
+          </a>
+        </Button>
+      )}
     </div>
   );
 }

@@ -15,7 +15,7 @@ import { Tr } from "@/components/i18n/Tr";
 
 type Snapshot = {
   pricing: { retailPrice: number; salePrice: number | null; discountPercent: number; currency: string };
-  stock: { stockState: string; label: string; forceOutOfStock: boolean };
+  stock: { stockState: string; label: string };
   variants: unknown[];
 };
 
@@ -53,16 +53,14 @@ export function TrustLivePrice({ product, previewMode = false }: { product: Prod
 
 /**
  * Tồn kho hiển thị — mirror STOCK_RULE_009: mô hình boolean Còn/Hết, KHÔNG hiển
- * thị số lượng và KHÔNG còn tầng "Sắp hết". Trạng thái lấy từ stockState tổng,
- * luôn tôn trọng "tắt bán thủ công" (forceOutOfStock) như nút mua.
+ * thị số lượng và KHÔNG còn tầng "Sắp hết". Trạng thái lấy từ stockState tổng.
  */
 export function TrustLiveStock({ product, previewMode = false }: { product: Product; previewMode?: boolean }) {
   const snap = useSnapshot(product, previewMode);
 
   const state = (snap?.stock.stockState as ProductStockState | undefined) ?? product.stockState;
-  const force = snap ? snap.stock.forceOutOfStock : Boolean(product.forceOutOfStock);
 
-  const isOut = force || state === "OUT_OF_STOCK";
+  const isOut = state === "OUT_OF_STOCK";
   const key: ProductStockState = isOut ? "OUT_OF_STOCK" : "IN_STOCK";
   // "Còn hàng" xanh success (ngoại lệ chức năng — xem STYLEGUIDE.md State colors); "Hết hàng"
   // giữ màu chữ mặc định, không dùng đỏ brand để tránh giành sự chú ý với giá/CTA.

@@ -27,6 +27,8 @@ import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.ProductHighlight;
 import com.bigbike.bigbike_backend.domain.catalog.ProductHighlights;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.domain.catalog.SizeGuideSection;
+import com.bigbike.bigbike_backend.domain.catalog.SuitabilitySection;
 import com.bigbike.bigbike_backend.domain.catalog.VideoAsset;
 import com.bigbike.bigbike_backend.migration.wordpress.normalizer.ProductSlugGenerator;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
@@ -54,13 +56,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * Bulk product import/export (JSON). Reuses the real {@link AdminCatalogMutationService}
+ * Bulk product import and single-product JSON export. Reuses the real {@link AdminCatalogMutationService}
  * create/update path for commits — this class parses the JSON file as {@link ProductImportRow}
  * (each bilingual column nested as one VI/EN object), converts every row via {@link
  * ProductImportRowMapper} into the same {@link UpsertProductRequest} shape the single-product admin
@@ -81,7 +85,7 @@ public class ProductImportService {
     // AdminCatalogMutationService.AUDIT_MAPPER for the same precedent) — construct our own.
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    // Serializes the round-trip export. NON_NULL keeps files lean; the custom introspector drops
+    // Serializes the single-product round-trip export. NON_NULL keeps files lean; the custom introspector drops
     // the ~23 `*Present` bookkeeping getters (setSku(..) etc. flip them) so a downloaded-then-
     // reimported file never emits e.g. {"salePricePresent": false} and thereby clears an untouched
     // field. No real content property name ends in "Present".
@@ -186,6 +190,7 @@ public class ProductImportService {
         runBeanValidation(request, errors);
         checkRequiredSku(request, errors);
         checkImportDescriptionBlocks(request, errors);
+        stripContentMedia(request);
         resolveCategoryAndBrand(request, errors);
 
         ProductEntity existing = resolveExistingProduct(request, errors);
@@ -316,6 +321,71 @@ public class ProductImportService {
             errors.add(new ApiErrorDetail("descriptionBlocks[" + i + "].type", "INVALID_VALUE",
                     "Mô tả chi tiết sản phẩm trong file nhập chỉ nhận paragraph, image, hoặc feature."));
         }
+    }
+
+    /**
+     * Owner decision 2026-07-19 (revised same day): bulk import never keeps any image embedded in a
+     * shop owner's content (descriptionBlocks/suitabilitySection/sizeGuideSection) — regardless of
+     * whether the URL already points at the shop's own MinIO media store. This matches the same
+     * always-blank-on-import treatment product/variant image/gallery/video already get
+     * (PRODUCT_RULE_009, {@link #discardExportOnlyImportFields}). An earlier version of this method
+     * only stripped URLs that failed the MinIO whitelist and reported a per-row WARNING; now that
+     * every content image is unconditionally cleared the outcome is fully predictable, so — like
+     * those other already-cleared media fields — it stays silent, no warning raised. An
+     * {@code ImageBlock}'s only purpose is its {@code url}, so instead of dropping the whole block
+     * (the old behavior), the block is kept with its url cleared: the same "no image yet, pick one"
+     * empty state {@code ImageBlockEditor} already renders for a brand-new Image block in Admin. A
+     * {@code FeatureBlock}'s image is optional, so only its url is cleared, its text stays. Any
+     * inline {@code <img>} pasted into a paragraph/feature's HTML or a suitability/size-guide
+     * section's HTML is stripped out of the markup, leaving the surrounding text untouched.
+     */
+    private void stripContentMedia(UpsertProductRequest request) {
+        List<DescriptionBlock> blocks = request.getDescriptionBlocks();
+        if (blocks != null && !blocks.isEmpty()) {
+            for (DescriptionBlock block : blocks) {
+                if (block instanceof DescriptionBlock.ImageBlock imageBlock) {
+                    imageBlock.setUrl(null);
+                } else if (block instanceof DescriptionBlock.FeatureBlock featureBlock) {
+                    featureBlock.setUrl(null);
+                }
+                stripBlockInlineImages(block);
+            }
+        }
+
+        SuitabilitySection suitability = request.getSuitabilitySection();
+        if (suitability != null) {
+            suitability.setHtml(stripImgTags(suitability.getHtml()));
+            suitability.setHtmlEn(stripImgTags(suitability.getHtmlEn()));
+        }
+        SizeGuideSection sizeGuide = request.getSizeGuideSection();
+        if (sizeGuide != null) {
+            sizeGuide.setHtml(stripImgTags(sizeGuide.getHtml()));
+            sizeGuide.setHtmlEn(stripImgTags(sizeGuide.getHtmlEn()));
+        }
+    }
+
+    private void stripBlockInlineImages(DescriptionBlock block) {
+        if (block instanceof DescriptionBlock.ParagraphBlock paragraph) {
+            paragraph.setHtml(stripImgTags(paragraph.getHtml()));
+            paragraph.setHtmlEn(stripImgTags(paragraph.getHtmlEn()));
+        } else if (block instanceof DescriptionBlock.FeatureBlock feature) {
+            feature.setHtml(stripImgTags(feature.getHtml()));
+            feature.setHtmlEn(stripImgTags(feature.getHtmlEn()));
+        }
+    }
+
+    /** Removes every {@code <img>} tag unconditionally, leaving the rest of the HTML untouched. */
+    private static String stripImgTags(String html) {
+        String normalized = AdminMutationValidators.trimToNull(html);
+        if (normalized == null) {
+            return html;
+        }
+        Document doc = Jsoup.parseBodyFragment(normalized);
+        if (doc.select("img").isEmpty()) {
+            return html;
+        }
+        doc.select("img").remove();
+        return doc.body().html();
     }
 
     private void resolveCategoryAndBrand(UpsertProductRequest request, List<ApiErrorDetail> errors) {
@@ -683,19 +753,9 @@ public class ProductImportService {
         return candidates[candidates.length - 1];
     }
 
-    // ── Full JSON export (same ProductImportRow shape validate/commit accept) ─
+    // ── Single-product JSON export (same ProductImportRow shape validate/commit accept) ─
 
-    @Transactional(readOnly = true)
-    public byte[] exportCurrentCatalogAsTemplateJson() {
-        requireJpaPersistenceEnabled();
-        List<ProductImportRow> out = productJpaRepository.findAll().stream()
-                .map(this::toExportRow)
-                .toList();
-        return writeExportJson(out);
-    }
-
-    /** Single-product variant of {@link #exportCurrentCatalogAsTemplateJson()} — same array shape
-     * (one element) so the downloaded file re-imports without edits. */
+    /** Same array shape (one element) so the downloaded file re-imports without edits. */
     @Transactional(readOnly = true)
     public ProductExportFile exportProductAsTemplateJson(String id) {
         requireJpaPersistenceEnabled();
@@ -721,7 +781,7 @@ public class ProductImportService {
 
     /**
      * Maps a stored product back into the {@link ProductImportRow} shape the JSON import consumes,
-     * so "download current catalog → edit → re-import" stays easy for shop operations. category and
+     * so "download one product → edit → re-import" stays easy for shop operations. category and
      * brand are emitted as slugs (the import resolves them by slug), while related/accessory product
      * references are emitted as SKU. Export includes media/status/relation groups for completeness;
      * bulk import accepts those groups but discards them before validation/saving because import
@@ -741,7 +801,7 @@ public class ProductImportService {
         r.setRetailPrice(p.getRetailPrice());
         r.setSalePrice(p.getSalePrice());
         r.setPublishStatus(p.getPublishStatus());
-        r.setForceOutOfStock(p.getForceOutOfStock());
+        r.setAvailable(p.getAvailable());
         r.setHomepageBlock(p.getHomepageBlock());
         if (p.getHomepageOrder() != null) {
             r.setHomepageOrder(p.getHomepageOrder());

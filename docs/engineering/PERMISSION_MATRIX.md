@@ -16,7 +16,7 @@
 
 `inventory.*` is listed in `PermissionCatalog` (`roles.groupProducts`), so it is grantable to custom roles via the Roles UI.
 
-**Ranh giới quyền Còn/Hết hiện hành:** màn tạo/sửa sản phẩm gửi `forceOutOfStock` và `variants[].isAvailable` trong product upsert, nên dùng `products.update`; backend tự suy ra `stockState`. Từ 2026-07-15 đây là đường mutation availability DUY NHẤT (các endpoint `inventory.write` đã gỡ) — contract chủ đích theo `BUSINESS_RULES.md` Stock State Derivation Rules.
+**Ranh giới quyền Còn/Hết hiện hành:** màn tạo/sửa sản phẩm gửi `available` (chỉ áp dụng SP không biến thể; đổi tên từ `forceOutOfStock`, gỡ hard-override cho SP có biến thể — V342, 2026-07-19) và `variants[].isAvailable` trong product upsert, nên dùng `products.update`; backend tự suy ra `stockState`. Từ 2026-07-15 đây là đường mutation availability DUY NHẤT (các endpoint `inventory.write` đã gỡ) — contract chủ đích theo `BUSINESS_RULES.md` Stock State Derivation Rules.
 
 ### Media Library permissions
 
@@ -41,7 +41,7 @@
 
 | Permission | Granted roles (seed) | Endpoints | Evidence |
 |---|---|---|---|
-| `products.update` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `POST/PATCH /api/v1/admin/products`, `POST /api/v1/admin/products/preview`, `PATCH /api/v1/admin/products/{id}/publish`, `DELETE /api/v1/admin/products/{id}[/permanent]`, `POST /api/v1/admin/products/{id}/restore`, `POST /api/v1/admin/products/import/validate`, `POST /api/v1/admin/products/import/commit`, `GET /api/v1/admin/products/import/export` | `V49__create_roles_permissions_tables.sql`, `AdminCatalogController.java`, `AdminProductImportController.java` |
+| `products.update` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `POST/PATCH /api/v1/admin/products`, `POST /api/v1/admin/products/preview`, `PATCH /api/v1/admin/products/{id}/publish`, `DELETE /api/v1/admin/products/{id}[/permanent]`, `POST /api/v1/admin/products/{id}/restore`, `POST /api/v1/admin/products/import/validate`, `POST /api/v1/admin/products/import/commit`, `GET /api/v1/admin/products/import/export/{id}` | `V49__create_roles_permissions_tables.sql`, `AdminCatalogController.java`, `AdminProductImportController.java` |
 
 `EDITOR` holds `products.read`/`catalog.read` only, not `products.update` — confirmed via `V121__realign_inventory_warranty_permissions.sql`'s own comment describing `EDITOR` as a role that "only had products.read."
 
@@ -165,8 +165,9 @@ Status: `CONFIRMED_FROM_CODE` — `AdminRolePermissions.java`, `AdminReportContr
 | `GET /api/v1/admin/reports/orders/export` | `reports.export` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` |
 | `GET /api/v1/admin/reports/customers/export` | `reports.export` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` |
 | `GET /api/v1/admin/reports/products/export` | `reports.export` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` |
+| `GET /api/v1/admin/products/export.csv` | `reports.export` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` |
 
 | Permission string | Roles | Purpose |
 |---|---|---|
 | `reports.read` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` | Access analytics dashboard |
-| `reports.export` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` | CSV export from Reports module (audit log gate) |
+| `reports.export` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` | CSV export from Reports and the full Product catalog export (audit log gate) |

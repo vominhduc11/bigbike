@@ -102,7 +102,7 @@ export const sInput =
   // `!` mirrors the legacy !important — guarantees these win over the shadcn Input
   // base regardless of twMerge grouping. A4 keeps search input at 16px on mobile
   // (preventing iOS zoom) and 18px on desktop, including ultra-wide screens.
-  "h-full [border:none]! bg-transparent! [padding:0_48px_0_34px]! [box-shadow:none]! text-white! text-a4-content! " +
+  "h-full [border:none]! bg-transparent! [padding:0_48px_0_34px]! [box-shadow:none]! [color:var(--bb-text-inverse)]! text-a4-content! " +
   "placeholder:text-white placeholder:opacity-100 placeholder:font-normal focus-visible:outline-none " +
   "max-md:h-[var(--bb-touch-target)]! max-md:[border:1px_solid_rgba(255,255,255,0.18)]! max-md:bg-[var(--bb-bg-surface)]! " +
   "max-md:[padding:0_12px]! max-md:text-[color:var(--bb-text-primary)]! max-md:leading-none! " +

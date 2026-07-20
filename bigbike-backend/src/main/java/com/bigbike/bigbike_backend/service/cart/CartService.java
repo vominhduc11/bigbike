@@ -94,11 +94,6 @@ public class CartService {
         if (product.getPublishStatus() != PublishStatus.PUBLISHED) {
             throw new ConflictException("Product is not available.");
         }
-        // STOCK_RULE_004: forceOutOfStock is a product-level hard override — it blocks
-        // adding to cart even when an individual variant is still marked available.
-        if (Boolean.TRUE.equals(product.getForceOutOfStock())) {
-            throw new ConflictException("Product is out of stock.");
-        }
 
         ProductVariantEntity variant = null;
         if (req.productVariantId() != null && !req.productVariantId().isBlank()) {
@@ -265,7 +260,6 @@ public class CartService {
             boolean productOk = productPk == null
                     || (product != null
                             && product.getPublishStatus() == PublishStatus.PUBLISHED
-                            && !Boolean.TRUE.equals(product.getForceOutOfStock())
                             && (variantPk != null
                                     || product.getStockState() != ProductStockState.OUT_OF_STOCK));
             boolean variantOk = variantPk == null || Boolean.TRUE.equals(variantEnabled.get(variantPk));
@@ -281,11 +275,9 @@ public class CartService {
     private void validateQuantityAgainstStock(ProductEntity product, ProductVariantEntity variant, int quantity) {
         // Boolean availability only (owner decision 2026-06-23): block when out of stock,
         // never by quantity. Method name/call sites kept.
-        // STOCK_RULE_004: product-level forceOutOfStock hard-blocks variants too.
-        boolean outOfStock = Boolean.TRUE.equals(product.getForceOutOfStock())
-                || ((variant != null)
-                        ? !variant.isAvailable()
-                        : product.getStockState() == ProductStockState.OUT_OF_STOCK);
+        boolean outOfStock = (variant != null)
+                ? !variant.isAvailable()
+                : product.getStockState() == ProductStockState.OUT_OF_STOCK;
         if (outOfStock) {
             throw new ConflictException("Sản phẩm '" + product.getName() + "' hết hàng.");
         }

@@ -10,6 +10,16 @@ import { generateId } from '@/lib/utils'
 
 export const SIZE_COL2_DEFAULT = 'Vòng đầu (cm)'
 
+/** Style inline chuẩn của bảng size trên PDP — đồng bộ với template trong aiBriefPrompt
+ *  (locales `products.detail.sizeGuide.aiBriefPrompt`) để structured mode và AI ra cùng 1 giao diện. */
+const SIZE_TABLE_STYLE =
+  'width:100%;min-width:520px;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#111111;margin:0 0 12px 0;'
+const SIZE_TH_STYLE =
+  'background:#f5f5f5;color:#111111;border:1px solid #dddddd;padding:12px 16px;text-align:center;font-weight:700;white-space:nowrap;'
+const SIZE_TD_STYLE = 'border:1px solid #dddddd;padding:12px 16px;text-align:center;vertical-align:middle;'
+const SIZE_TD_FIRST_STYLE = `${SIZE_TD_STYLE}font-weight:700;`
+const SIZE_NOTE_STYLE = 'font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#6f6f6f;margin:8px 0 0 0;'
+
 /** Model rỗng mặc định: 2 cột (Size + số đo), chưa có dòng. */
 export function emptySizeGuide() {
   return {
@@ -222,15 +232,20 @@ export function serializeSizeGuide(value) {
   const note = (value.note || '').trim()
   let html = ''
   if (rows.length > 0 && colCount > 0) {
-    const head = columns.map((c) => `<th>${escapeHtml((c.label || '').trim())}</th>`).join('')
-    html += `<table><thead><tr>${head}</tr></thead><tbody>`
+    const head = columns
+      .map((c) => `<th style="${SIZE_TH_STYLE}">${escapeHtml((c.label || '').trim())}</th>`)
+      .join('')
+    html += `<table style="${SIZE_TABLE_STYLE}"><thead><tr>${head}</tr></thead><tbody>`
     rows.forEach((cells) => {
       let tds = ''
-      for (let i = 0; i < colCount; i++) tds += `<td>${escapeHtml(cells[i] || '')}</td>`
+      for (let i = 0; i < colCount; i++) {
+        const style = i === 0 ? SIZE_TD_FIRST_STYLE : SIZE_TD_STYLE
+        tds += `<td style="${style}">${escapeHtml(cells[i] || '')}</td>`
+      }
       html += `<tr>${tds}</tr>`
     })
     html += '</tbody></table>'
   }
-  if (note) html += `<p>${escapeHtml(note)}</p>`
+  if (note) html += `<p style="${SIZE_NOTE_STYLE}"><em>${escapeHtml(note)}</em></p>`
   return html
 }

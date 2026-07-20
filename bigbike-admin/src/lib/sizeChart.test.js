@@ -23,20 +23,30 @@ describe('serializeSizeGuide', () => {
       rows: [row('M', '57 – 58'), row('L', '59 – 60')],
       note: '',
     })
-    expect(html).toContain('<table>')
-    expect(html).toContain('<th>Size</th><th>Vòng đầu (cm)</th>')
-    expect(html).toContain('<td>M</td><td>57 – 58</td>')
-    expect(html).toContain('<td>L</td><td>59 – 60</td>')
-    expect(html).not.toContain('<p>')
+    expect(html).toMatch(/^<table style="[^"]+">/)
+    expect(html).toMatch(/<th style="[^"]+">Size<\/th><th style="[^"]+">Vòng đầu \(cm\)<\/th>/)
+    expect(html).toMatch(/<td style="[^"]+">M<\/td><td style="[^"]+">57 – 58<\/td>/)
+    expect(html).toMatch(/<td style="[^"]+">L<\/td><td style="[^"]+">59 – 60<\/td>/)
+    expect(html).not.toContain('<p ')
   })
 
-  it('có note → thêm <p>', () => {
+  it('có note → thêm <p> với style riêng, bọc <em>', () => {
     const html = serializeSizeGuide({
       columns: cols('Size', 'Vòng đầu (cm)'),
       rows: [row('M', '57')],
       note: 'Chọn size lớn hơn',
     })
-    expect(html).toContain('<p>Chọn size lớn hơn</p>')
+    expect(html).toMatch(/<p style="[^"]+"><em>Chọn size lớn hơn<\/em><\/p>$/)
+  })
+
+  it('cột đầu tiên (size) có font-weight:700, cột sau thì không', () => {
+    const html = serializeSizeGuide({
+      columns: cols('Size', 'X'),
+      rows: [row('M', '57')],
+    })
+    const [, firstTd, secondTd] = html.match(/<td style="([^"]+)">M<\/td><td style="([^"]+)">57<\/td>/)
+    expect(firstTd).toContain('font-weight:700')
+    expect(secondTd).not.toContain('font-weight:700')
   })
 
   it('escape ký tự HTML', () => {
@@ -50,8 +60,8 @@ describe('serializeSizeGuide', () => {
       columns: cols('Size', 'Vòng đầu', 'Vòng ngực', 'Chiều cao', 'Cân nặng'),
       rows: [row('M', '57', '90', '165', '60')],
     })
-    expect(html).toContain('<th>Size</th><th>Vòng đầu</th><th>Vòng ngực</th><th>Chiều cao</th><th>Cân nặng</th>')
-    expect(html).toContain('<td>M</td><td>57</td><td>90</td><td>165</td><td>60</td>')
+    expect(html).toMatch(/<th style="[^"]+">Size<\/th><th style="[^"]+">Vòng đầu<\/th><th style="[^"]+">Vòng ngực<\/th><th style="[^"]+">Chiều cao<\/th><th style="[^"]+">Cân nặng<\/th>/)
+    expect(html).toMatch(/<td style="[^"]+">M<\/td><td style="[^"]+">57<\/td><td style="[^"]+">90<\/td><td style="[^"]+">165<\/td><td style="[^"]+">60<\/td>/)
   })
 
   it('ô thiếu trong dòng → bù <td> rỗng cho đủ số cột', () => {
@@ -59,7 +69,7 @@ describe('serializeSizeGuide', () => {
       columns: cols('Size', 'A', 'B'),
       rows: [{ _key: 'r', cells: ['M', '1'] }],
     })
-    expect(html).toContain('<td>M</td><td>1</td><td></td>')
+    expect(html).toMatch(/<td style="[^"]+">M<\/td><td style="[^"]+">1<\/td><td style="[^"]+"><\/td>/)
   })
 })
 

@@ -11,23 +11,36 @@ export function RatingBlock({
   ratingCount,
   onScrollToReviews,
   onOpenWriteReview,
+  previewMode = false,
 }: {
   hasReviews: boolean;
   rating: number | null;
   ratingCount: number | null;
   onScrollToReviews: (e: React.MouseEvent<HTMLAnchorElement>) => void;
   onOpenWriteReview: (e: React.MouseEvent<HTMLAnchorElement>) => void;
+  /** Khung xem trước admin: khối đánh giá bị ẩn (không có #reviews, không mount modal
+      viết đánh giá) nên các link "Xem/Viết đánh giá" chỉ để nhìn — render mờ, khóa bấm. */
+  previewMode?: boolean;
 }) {
   const tb = useTranslations("PdpBuyBox");
+
+  // Link đánh giá: bình thường là <a> bấm được; ở chế độ xem trước đổi thành <span>
+  // mờ (không bấm được) để admin hiểu đây chỉ để xem, tránh bấm vào không có gì xảy ra.
+  const reviewLinkClass = "text-brand! underline-offset-2 hover:underline";
+  const reviewDisabledClass = "text-muted-foreground/70 cursor-not-allowed";
 
   if (!hasReviews) {
     return (
       <div className="mt-5 font-body text-a4-content text-muted-foreground">
         <p className="m-0">
           {tb("noReviews")} —{" "}
-          <a href="#reviews" onClick={onOpenWriteReview} className="text-brand! underline-offset-2 hover:underline">
-            {tb("writeFirst")}
-          </a>
+          {previewMode ? (
+            <span className={reviewDisabledClass} aria-disabled="true">{tb("writeFirst")}</span>
+          ) : (
+            <a href="#reviews" onClick={onOpenWriteReview} className={reviewLinkClass}>
+              {tb("writeFirst")}
+            </a>
+          )}
         </p>
       </div>
     );
@@ -46,13 +59,21 @@ export function RatingBlock({
         {tb("ratingLabel")} <span itemProp="ratingValue">{rating}/</span>
         <span itemProp="reviewCount">{ratingCount}</span>
         {" — "}
-        <a href="#reviews" onClick={onScrollToReviews} className="text-brand! underline-offset-2 hover:underline">
-          {tb("viewAllReviews")}
-        </a>
+        {previewMode ? (
+          <span className={reviewDisabledClass} aria-disabled="true">{tb("viewAllReviews")}</span>
+        ) : (
+          <a href="#reviews" onClick={onScrollToReviews} className={reviewLinkClass}>
+            {tb("viewAllReviews")}
+          </a>
+        )}
         {" · "}
-        <a href="#reviews" onClick={onOpenWriteReview} className="text-brand! underline-offset-2 hover:underline">
-          {tb("writeReview")}
-        </a>
+        {previewMode ? (
+          <span className={reviewDisabledClass} aria-disabled="true">{tb("writeReview")}</span>
+        ) : (
+          <a href="#reviews" onClick={onOpenWriteReview} className={reviewLinkClass}>
+            {tb("writeReview")}
+          </a>
+        )}
       </p>
     </div>
   );

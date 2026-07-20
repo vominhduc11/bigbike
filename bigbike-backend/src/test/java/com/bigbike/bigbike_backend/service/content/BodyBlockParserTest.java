@@ -239,8 +239,7 @@ class BodyBlockParserTest {
         assertThat(b.getSubheading()).isEqualTo("Pin dung lượng khủng");
         assertThat(b.getHeading()).isEqualTo("Quay liên tục 10h");
         assertThat(b.getHtml()).contains("Lợi ích").contains("Không lo hết pin giữa hành trình.");
-        assertThat(b.getListStyle()).isEqualTo("bulleted");
-        assertThat(b.getItems()).containsExactly("Chống rung cơ bản");
+        assertThat(b.getHtml()).contains("<ul>").contains("Chống rung cơ bản");
     }
 
     @Test

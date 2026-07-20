@@ -30,18 +30,6 @@ describe("featureHasText", () => {
   it("false khi html chỉ khoảng trắng", () => {
     expect(featureHasText(makeFeature({ html: "   " }))).toBe(false);
   });
-
-  it("true khi items có ít nhất một phần tử không rỗng", () => {
-    expect(featureHasText(makeFeature({ items: ["", "Điểm nổi bật"] }))).toBe(true);
-  });
-
-  it("false khi items toàn chuỗi rỗng", () => {
-    expect(featureHasText(makeFeature({ items: ["", "  "] }))).toBe(false);
-  });
-
-  it("false khi items là mảng rỗng", () => {
-    expect(featureHasText(makeFeature({ items: [] }))).toBe(false);
-  });
 });
 
 describe("featureHasImage", () => {

@@ -32,7 +32,7 @@ export function sanitizeRichHtml(
     ? [...ALLOWED_TAGS, "style"]
     : ALLOWED_TAGS;
 
-  return DOMPurify.sanitize(withoutShortcodes, {
+  const sanitized = DOMPurify.sanitize(withoutShortcodes, {
     ALLOWED_TAGS: allowedTags,
     ALLOWED_ATTR: allowedAttr,
     // Drop generic data-* attributes; `data-src` is allowlisted explicitly above.
@@ -41,6 +41,21 @@ export function sanitizeRichHtml(
   })
     .replace(/<h1(\s[^>]*)?>/gi, "<h2$1>")
     .replace(/<\/h1>/gi, "</h2>");
+
+  return wrapTablesForScroll(sanitized);
+}
+
+/**
+ * Bọc mỗi <table> bằng <div class="rich-table-scroll">. Cần một wrapper thật
+ * (không thể "block hoá" chính thẻ <table>) vì display:block trên <table> phá vỡ
+ * table-layout — các ô con vẫn là display:table-cell nên trình duyệt phải tự
+ * sinh ra một "bảng vô danh" bên trong để vẽ lưới, và bảng vô danh đó không kế
+ * thừa width:100% của thẻ <table> ngoài cùng → bảng co lại theo đúng nội dung
+ * thay vì chiếm hết chiều ngang. Chạy sau DOMPurify nên input đã sạch, không có
+ * bảng lồng bảng trong các khối PDP đang dùng (size/thông số/phù hợp với ai).
+ */
+function wrapTablesForScroll(html: string): string {
+  return html.replace(/<table\b[\s\S]*?<\/table>/gi, (match) => `<div class="rich-table-scroll">${match}</div>`);
 }
 
 function rewriteLegacyMediaUrls(html: string): string {

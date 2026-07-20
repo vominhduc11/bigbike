@@ -122,8 +122,8 @@ public class ProductEntity {
     @Column(name = "height_cm", precision = 10, scale = 4)
     private java.math.BigDecimal heightCm;
 
-    @Column(name = "force_out_of_stock")
-    private Boolean forceOutOfStock;
+    @Column(name = "available")
+    private Boolean available;
 
     @Column(name = "discount_percent_override", precision = 5, scale = 2)
     private java.math.BigDecimal discountPercentOverride;

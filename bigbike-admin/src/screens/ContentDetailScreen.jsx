@@ -27,6 +27,7 @@ import { ImageUrlInput } from '../components/ImageUrlInput'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { StatePanel } from '../components/StatePanel'
 import { LivePreview } from '../components/LivePreview'
+import { useAutoHideSidebar } from '../components/AdminShell'
 import { Screen, ScreenHeader, StickyActionBar, Tabs } from '../components/layout'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -84,6 +85,10 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   const [previewData, setPreviewData] = useState(null)
   const [previewError, setPreviewError] = useState(null)
   const [previewLoading, setPreviewLoading] = useState(false)
+
+  // Mở panel Xem trước → tự ẩn sidebar bên trái, nhường chỗ cho form (màn hình vốn đã
+  // chật vì có thêm panel 520px). Đóng preview hoặc rời trang → sidebar hiện lại.
+  useAutoHideSidebar(previewOpen)
 
   useEffect(() => {
     if (!previewOpen) return
@@ -500,6 +505,10 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
   return (
     <div className="bb-proto">
+    <div className="flex w-full min-w-0 items-start gap-6">
+    {/* @container: lưới trong form co theo bề rộng cột này (xem ProductDetailScreen) —
+        kéo khung xem trước rộng ra làm cột hẹp thì lưới tự về 1 cột, không chật. */}
+    <div className="@container min-w-0 flex-1 basis-0">
       <Screen maxWidth="1200px">
         <ScreenHeader
           eyebrow={t('content.detail.eyebrow')}
@@ -613,7 +622,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                 title={t('content.detail.sectionCore')}
                 required
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
                   <Field full label={requiredLabel(t('content.detail.title'))} error={isEnLang ? validationErrors['translations.en.title'] : validationErrors.title}>
                     <Input
                       value={isEnLang ? (form.translations?.en?.title ?? '') : form.title}
@@ -698,7 +707,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
               {/* ── Card: Hình ảnh — article gallery / page hero ── */}
               <SectionCard title={t('content.detail.sectionMedia')}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
                   <Field full label={t('content.detail.coverImageUrl')} helper={t('content.detail.coverImageUrlHint')}>
                     <ImageUrlInput
                       value={form.coverImageUrl}
@@ -761,7 +770,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
                   <Field
                     full
                     label={t('content.detail.seoTitle', { defaultValue: 'Tiêu đề SEO' })}
@@ -804,7 +813,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                   open={seoAdvancedOpen}
                   onToggle={() => setSeoAdvancedOpen((v) => !v)}
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
                     <Field full label={t('content.detail.seoCanonicalUrl', { defaultValue: 'URL canonical' })} error={validationErrors.seoCanonicalUrl}>
                       <Input
                         value={form.seoCanonicalUrl}
@@ -861,7 +870,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       {seoPassed} / {seoChecks.length}
                     </span>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-y-1 gap-x-3">
+                  <div className="grid grid-cols-1 @xl:grid-cols-2 gap-y-1 gap-x-3">
                     {seoChecks.map((c, i) => (
                       <div key={i} className={cn('flex items-center gap-2 text-xs', c.ok ? 'text-foreground' : 'text-muted-foreground')}>
                         <span className={cn(
@@ -886,7 +895,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
               {/* ── Card: Hiển thị ── */}
               <SectionCard title={t('content.detail.sectionPublish', { defaultValue: 'Hiển thị' })} required>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
                   <Field label={t('content.detail.publishStatus')} error={validationErrors.publishStatus}>
                     <Select value={form.publishStatus} onValueChange={(val) => updateField('publishStatus', val)} disabled={isReadOnly}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
@@ -898,7 +907,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                     </Select>
                   </Field>
                   {isArticle && (
-                    <div className="md:col-span-2 flex flex-col gap-1.5">
+                    <div className="@xl:col-span-2 flex flex-col gap-1.5">
                       <label className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
                         <Checkbox
                           checked={form.featured}
@@ -968,7 +977,8 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
             {primaryLabel}
           </Button>
         </StickyActionBar>
-
+      </Screen>
+    </div>
         {isArticle && (
           <LivePreview
             open={previewOpen}
@@ -986,7 +996,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
             t={t}
           />
         )}
-      </Screen>
+    </div>
     </div>
   )
 }

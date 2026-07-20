@@ -5,8 +5,6 @@ import { buildCategoryTreeOrder } from '../product-detail/constants'
 
 export { buildCategoryTreeOrder }
 
-export const DUPLICATE_SESSION_KEY = 'product-duplicate-payload'
-
 export const INITIAL_QUERY = {
   search: '',
   publishStatus: 'ALL',

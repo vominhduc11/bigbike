@@ -22,7 +22,6 @@ public record ProductSnapshotResponse(
 
     public record Stock(
             String stockState,
-            String label,
-            boolean forceOutOfStock
+            String label
     ) {}
 }

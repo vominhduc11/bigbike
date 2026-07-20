@@ -458,7 +458,7 @@ Tracks the physical delivery lifecycle of `DELIVERY` orders. Since the platform 
 
 ### Purpose
 
-Availability is a boolean the admin sets by hand in the **product form**: a per-variant Còn/Hết switch (`product_variants.is_available`) and, for a no-variant product, a per-product Còn/Hết switch (persisted via `products.force_out_of_stock`). `products.stock_state` / `product_variants.stock_state` are **derived** badges, re-computed on every save (`InventoryPolicyService.recomputeProductState`): a variant mirrors its own `is_available`; a product-with-variants is `IN_STOCK` when ANY variant is available; a no-variant product mirrors its product-level switch. No on-hand count is kept.
+Availability is a boolean the admin sets by hand in the **product form**: a per-variant Còn/Hết switch (`product_variants.is_available`) and, for a no-variant product, a per-product Còn/Hết switch (persisted via `products.available`, renamed from `force_out_of_stock` in V342). `products.stock_state` / `product_variants.stock_state` are **derived** badges, re-computed on every save (`InventoryPolicyService.recomputeProductState`): a variant mirrors its own `is_available`; a product-with-variants is `IN_STOCK` when ANY variant is available; a no-variant product mirrors its product-level switch. No on-hand count is kept.
 
 ### State Field
 

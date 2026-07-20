@@ -280,7 +280,7 @@ export function buildEmptyForm() {
     categoryId: '',
     retailPrice: '',
     salePrice: '',
-    forceOutOfStock: false,
+    available: true,
     publishStatus: 'DRAFT',
     imageUrl: '',
     imageAlt: '',
@@ -482,7 +482,7 @@ export function buildFormFromItem(item) {
       Number.isInteger(item.price?.salePrice) && item.price.salePrice > 0
         ? String(item.price.salePrice)
         : '',
-    forceOutOfStock: Boolean(item.forceOutOfStock),
+    available: item.available !== false,
     publishStatus: item.publishStatus,
     imageUrl: item.image?.rawUrl || item.image?.url || '',
     imageAlt: item.image?.alt || '',
@@ -731,7 +731,7 @@ export function toPayload(form) {
     retailPrice: toIntegerOrNull(form.retailPrice),
     salePrice: toIntegerOrNull(form.salePrice),
     currency: 'VND',
-    forceOutOfStock: Boolean(form.forceOutOfStock),
+    available: Boolean(form.available),
     publishStatus: form.publishStatus,
     seo: hasSeo
       ? {

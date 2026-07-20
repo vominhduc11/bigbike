@@ -21,7 +21,6 @@ export async function GET(_req: Request, { params }: ProductRouteParams) {
       return {
         stockState,
         label: STOCK_LABELS[stockState] ?? stockState,
-        forceOutOfStock: Boolean(product.forceOutOfStock),
       };
     },
   });

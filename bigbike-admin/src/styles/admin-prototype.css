@@ -149,12 +149,6 @@
   gap: 8px;
 }
 .bb-sidebar-foot strong { color: var(--bb-text-onsidebar-strong); font-weight: 600; }
-.bb-sidebar-foot .dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--bb-sidebar-online);
-  box-shadow: 0 0 0 3px rgba(63,185,80,0.18);
-}
-.bb-sidebar-foot .dot.offline { background: var(--bb-text-faint); box-shadow: none; }
 
 /* Main shell */
 .bb-main { display: flex; flex-direction: column; min-width: 0; }
@@ -177,23 +171,6 @@
   color: var(--bb-text);
 }
 .bb-topbar-spacer { flex: 1; }
-
-.bb-pill-live {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11.5px;
-  font-weight: 500;
-  color: var(--bb-success);
-  background: var(--bb-success-bg);
-  border: 1px solid var(--bb-success-border);
-  padding: 3px 8px;
-  border-radius: 9999px;
-}
-.bb-pill-live .dot {
-  width: 6px; height: 6px; border-radius: 50%; background: currentColor;
-  box-shadow: 0 0 0 3px rgba(34,197,94,0.18);
-}
 
 .bb-icon-btn {
   width: 32px; height: 32px;
@@ -1690,12 +1667,11 @@ dl.bb-info-grid dd { color: var(--bb-text); }
   .bb-grid-2 { grid-template-columns: 1fr; }
 }
 
-/* Topbar: on the drawer breakpoint, collapse identity + status to icons so the
-   control row fits narrow screens. Full name/role stay in the user dropdown and
-   the sidebar foot; connection status stays in the sidebar foot. */
+/* Topbar: on the drawer breakpoint, collapse identity to icons so the control
+   row fits narrow screens. Full name/role stay in the user dropdown and the
+   sidebar foot. */
 @media (max-width: 900px) {
   .bb-topbar { padding: 0 12px; gap: 8px; }
-  .bb-pill-live { display: none; }
   .bb-user-chip { padding: 4px; }
   .bb-user-chip .name,
   .bb-user-chip .role { display: none; }
@@ -1793,40 +1769,11 @@ dl.bb-info-grid dd { color: var(--bb-text); }
 }
 .bb-user-dropdown-lang .lang-switcher { align-self: flex-start; }
 
-/* ─── Focus mode (form screens) ─────────────────────────────────────────────── */
-.bb-app.focus-mode .bb-sidebar {
+/* ─── Preview auto-hide (form + panel Xem trước cùng lúc) ───────────────────── */
+/* Chỉ ẩn sidebar, giữ topbar/breadcrumb. Tự bật/tắt theo trạng thái panel
+   LivePreview, xem useAutoHideSidebar (AdminShell.jsx). */
+.bb-app.preview-active .bb-sidebar {
   transform: translate3d(calc(-100% - 8px), 0, 0);
   pointer-events: none;
 }
-.bb-app.focus-mode .bb-topbar { display: none; }
-.bb-app.focus-mode .bb-breadcrumb { display: none; }
-.bb-app.focus-mode { grid-template-columns: 0 1fr; }
-
-.bb-focus-fab {
-  position: fixed;
-  bottom: 20px;
-  left: 20px;
-  z-index: var(--admin-z-toast);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 12px;
-  background: var(--bb-sidebar);
-  color: var(--bb-text-onsidebar-strong);
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  box-shadow: var(--bb-sh-md);
-  font-family: inherit;
-}
-.bb-focus-fab:hover { background: var(--bb-sidebar-hover); }
-.bb-focus-fab kbd {
-  font-size: 10px;
-  background: rgba(255,255,255,0.18);
-  border: 1px solid rgba(255,255,255,0.24);
-  border-radius: 3px;
-  padding: 1px 5px;
-  font-family: var(--bb-font-mono);
-}
+.bb-app.preview-active { grid-template-columns: 0 1fr; }

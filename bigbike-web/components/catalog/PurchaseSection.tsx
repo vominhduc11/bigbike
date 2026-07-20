@@ -34,7 +34,7 @@ type Props = {
 /** Shape trả về của /api/products/[slug]/snapshot — chỉ phần cần freshness (giá/tồn/variants). */
 type ProductSnapshot = {
   pricing: { retailPrice: number; salePrice: number | null; discountPercent: number; currency: string };
-  stock: { stockState: string; label: string; forceOutOfStock: boolean };
+  stock: { stockState: string; label: string };
   variants: ProductVariant[];
 };
 
@@ -93,7 +93,6 @@ export function PurchaseSection({
       }
     : product.price;
   const freshStockState = (snapshot?.stock.stockState as ProductStockState | undefined) ?? product.stockState;
-  const freshForceOutOfStock = snapshot ? snapshot.stock.forceOutOfStock : product.forceOutOfStock;
 
   const hasVariants = variants.length > 0;
   const attributeNames = useMemo(() => Array.from(collectAttributeNames(variants)), [variants]);
@@ -121,9 +120,9 @@ export function PurchaseSection({
   // STOCK_RULE_009 — hiển thị buy-box PDP (display-only, KHÔNG đổi điều kiện mua
   // ở STOCK_RULE_005/006). Mô hình tồn kho giờ là boolean Còn/Hết — KHÔNG hiển thị
   // số lượng, KHÔNG còn tầng "Sắp hết". Trạng thái lấy từ biến thể đã chọn (nếu có)
-  // hoặc trạng thái tổng của sản phẩm, cộng cờ "tắt bán thủ công".
+  // hoặc trạng thái tổng của sản phẩm.
   const unitState = selectedVariant?.stockState ?? freshStockState;
-  const isOutOfStock = Boolean(freshForceOutOfStock) || unitState === "OUT_OF_STOCK";
+  const isOutOfStock = unitState === "OUT_OF_STOCK";
   // Ở chế độ xem trước (admin) luôn KHÔNG cho mua: sản phẩm nháp chưa có trong kho,
   // mọi thao tác mua sẽ vô nghĩa/đổ lỗi. canBuy=false vô hiệu hoá cả nút thêm giỏ,
   // mua ngay (disabled) lẫn thanh mua cố định trên mobile (mirror trạng thái nút gốc).
@@ -283,6 +282,7 @@ export function PurchaseSection({
             ratingCount={ratingCount}
             onScrollToReviews={scrollToReviews}
             onOpenWriteReview={openWriteReview}
+            previewMode={previewMode}
           />
 
           {shortDescriptionHtml ? (
@@ -319,6 +319,7 @@ export function PurchaseSection({
                   adding={adding}
                   onAdd={handleAdd}
                   zaloUrl={zaloUrl}
+                  previewMode={previewMode}
                 />
                 {addError ? <p className="mt-3 font-semibold text-destructive">{addError}</p> : null}
 
@@ -341,6 +342,7 @@ export function PurchaseSection({
       zaloLabel={tb("mobileZaloConsult")}
       zaloUrl={zaloUrl}
       outOfStock={isOutOfStock}
+      previewMode={previewMode}
     />
     </>
   );

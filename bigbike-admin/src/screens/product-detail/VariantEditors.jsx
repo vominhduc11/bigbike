@@ -49,6 +49,7 @@ import {
 } from './constants'
 import { GalleryEditor } from './ContentEditors'
 import { MediaPickerModal } from '../../components/MediaPickerModal'
+import { MediaRequirementHint } from '../../components/MediaRequirementHint'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
 
 // Sentinel value for the "+ Tạo loại thuộc tính mới…" entry appended to the
@@ -754,7 +755,7 @@ function VariantDetailFields({ variant, onChange, disabled, fieldErrors = {}, co
 
   return (
     <>
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 @xl:grid-cols-2">
         <div className="space-y-2">
           <span className="form-field-label">{t('products.detail.variant.optionsLabel')}</span>
           <VariantOptionsEditor
@@ -827,6 +828,7 @@ function VariantDetailFields({ variant, onChange, disabled, fieldErrors = {}, co
                   </Button>
                 )}
               </div>
+              <MediaRequirementHint recommend={IMAGE_RECO.productImage} />
               {fieldErrors.imageUrl && <small className="field-error" role="alert">{fieldErrors.imageUrl}</small>}
               {variant.imageUrl && (
                 <img
@@ -1451,7 +1453,7 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="sticky top-0 z-20 flex flex-wrap items-center gap-2 bg-background py-2">
+      <div className="sticky top-0 z-[var(--admin-z-sticky)] flex flex-wrap items-center gap-2 bg-background py-2">
         {showFilter && (
           <Input
             type="search"

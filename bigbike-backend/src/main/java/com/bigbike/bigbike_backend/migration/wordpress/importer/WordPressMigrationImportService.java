@@ -610,7 +610,6 @@ public class WordPressMigrationImportService {
                 product.lengthCm(),
                 product.widthCm(),
                 product.heightCm(),
-                product.forceOutOfStock(),
                 product.discountPercentOverride(),
                 true,
                 product.showOnHomepage(),

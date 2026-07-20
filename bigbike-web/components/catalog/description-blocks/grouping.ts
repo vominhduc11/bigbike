@@ -2,12 +2,11 @@ import type { DescriptionBlock } from "@/lib/contracts/public";
 
 export type FeatureBlockT = Extract<DescriptionBlock, { type: "feature" }>;
 
-/** Trả về true nếu khối feature có phần chữ (subheading, heading, html, hoặc ít nhất một mục danh sách không rỗng). */
+/** Trả về true nếu khối feature có phần chữ (subheading, heading, hoặc html). */
 export function featureHasText(block: FeatureBlockT): boolean {
   if (block.subheading?.trim()) return true;
   if (block.heading?.trim()) return true;
   if (block.html?.trim()) return true;
-  if ((block.items ?? []).some((it) => (it ?? "").trim())) return true;
   return false;
 }
 

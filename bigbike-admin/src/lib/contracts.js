@@ -450,7 +450,7 @@ export function normalizeProduct(input) {
       : [],
     price: normalizePrice(source.price),
     stockState: normalizeStockState(source.stockState),
-    forceOutOfStock: Boolean(source.forceOutOfStock),
+    available: source.available !== false,
     publishStatus: normalizePublishStatus(source.publishStatus),
     homepageBlock: normalizeHomepageBlock(source.homepageBlock),
     homepageOrder: Number.isFinite(source.homepageOrder) ? Number(source.homepageOrder) : null,

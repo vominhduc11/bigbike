@@ -180,8 +180,6 @@ export type DescriptionBlock =
       subheading?: string;
       heading?: string;
       html?: string;
-      listStyle?: "bulleted" | "numbered";
-      items?: string[];
     };
 
 /** "Phù hợp với ai" (V240) — danh sách thẻ tư vấn, section riêng cố định trên PDP. Tách khỏi
@@ -271,8 +269,6 @@ export type Product = {
   price: ProductPrice;
   variants?: ProductVariant[];
   stockState: ProductStockState;
-  /** When true the product is forced out-of-stock regardless of variant state. */
-  forceOutOfStock?: boolean | null;
   publishStatus: PublishStatus;
   /** Homepage placement slot. NONE = not pinned to homepage. */
   homepageBlock: "NONE" | "FEATURED_GRID";

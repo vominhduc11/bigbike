@@ -23,6 +23,7 @@ import {
 } from '../lib/adminApi'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { VideoPickerModal } from '../components/VideoPickerModal'
+import { MediaRequirementHint } from '../components/MediaRequirementHint'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -870,6 +871,7 @@ export function HomeVideoListScreen({ canUpdate }) {
                   </Button>
                 )}
               </div>
+              <MediaRequirementHint recommend={IMAGE_RECO.video} className="font-normal" />
               {form.videoUrl ? (
                 <span className="text-xs text-success font-normal">
                   <Check size={14} aria-hidden="true" /> {form.videoUrl.split('/').pop()}
@@ -939,6 +941,7 @@ export function HomeVideoListScreen({ canUpdate }) {
 
       {videoPickerOpen && canUpdate && (
         <VideoPickerModal
+          recommend={IMAGE_RECO.video}
           onSelect={(url, media) => {
             setForm((prev) => ({
               ...prev,

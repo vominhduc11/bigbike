@@ -6,7 +6,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.SeoMetaRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
 
 /**
- * Converts the bulk import/export wire shape ({@link ProductImportRow}, each bilingual column
+ * Converts the bulk import / single-product export wire shape ({@link ProductImportRow}, each bilingual column
  * nested as one object e.g. {@code name: {nameVI, nameEN}}) to the shape the single-product admin
  * form already uses ({@link UpsertProductRequest} + {@link ProductTranslationRequest}), so the rest
  * of {@link ProductImportService}'s pipeline (validation, category/brand resolution, create/update)
@@ -27,7 +27,7 @@ final class ProductImportRowMapper {
 
         // sku/gender/retailPrice/salePrice back a PATCH "Present" flag that a null-valued call would
         // still flip to true (see class Javadoc) — only call the setter when the file actually sent
-        // the key. categoryId/brandId/currency/publishStatus/forceOutOfStock/homepageBlock have no
+        // the key. categoryId/brandId/currency/publishStatus/available/homepageBlock have no
         // such flag, but are guarded the same way for consistency and to match "absent = untouched".
         if (row.getSku() != null) {
             request.setSku(row.getSku());
@@ -53,8 +53,8 @@ final class ProductImportRowMapper {
         if (row.getPublishStatus() != null) {
             request.setPublishStatus(row.getPublishStatus());
         }
-        if (row.getForceOutOfStock() != null) {
-            request.setForceOutOfStock(row.getForceOutOfStock());
+        if (row.getAvailable() != null) {
+            request.setAvailable(row.getAvailable());
         }
         if (row.getHomepageBlock() != null) {
             request.setHomepageBlock(row.getHomepageBlock());

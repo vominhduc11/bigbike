@@ -29,10 +29,9 @@ export function ScrollToTopFab() {
 
   return (
     <div
-      className="bb-scroll-top-anchor fixed z-[665] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+176px)] right-[max(16px,env(safe-area-inset-right))] transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none md:bottom-[calc(max(24px,env(safe-area-inset-bottom))+146px)] md:right-[max(24px,env(safe-area-inset-right))] [[data-scroll-locked]_&]:hidden"
+      className="bb-scroll-top-anchor fixed z-[665] transition-opacity duration-200 ease-out motion-reduce:transition-none [[data-scroll-locked]_&]:hidden"
       style={{
         opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(8px)",
         pointerEvents: visible ? "auto" : "none",
       }}
     >

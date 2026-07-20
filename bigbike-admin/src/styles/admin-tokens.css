@@ -199,7 +199,6 @@
   --bb-sidebar-hover:   #1a2230;
   --bb-sidebar-active:  #20293a;
   --bb-sidebar-border:  #1c2230; /* viền/scrollbar trên chrome sidebar tối — cố định 2 theme */
-  --bb-sidebar-online:  #3fb950; /* chấm trạng thái online trên sidebar tối — xanh sáng cố định */
 
   --bb-border:          var(--admin-color-border-subtle);
   --bb-border-strong:   var(--admin-color-border-default);

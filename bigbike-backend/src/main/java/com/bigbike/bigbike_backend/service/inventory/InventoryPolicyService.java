@@ -41,8 +41,8 @@ public class InventoryPolicyService {
      * that is always consistent with the admin's toggles:
      * <ul>
      *   <li>With variants: IN_STOCK if ANY variant is available, else OUT_OF_STOCK.</li>
-     *   <li>No variants: mirror the product-level "còn/hết" switch, which is persisted as the
-     *       {@code forceOutOfStock} kill-switch (forced out → OUT_OF_STOCK, otherwise IN_STOCK).</li>
+     *   <li>No variants: mirror the product-level "còn/hết" switch, persisted as
+     *       {@code available} (true → IN_STOCK, false → OUT_OF_STOCK).</li>
      * </ul>
      */
     public void recomputeProductState(ProductEntity product) {
@@ -54,9 +54,9 @@ public class InventoryPolicyService {
                     : ProductStockState.OUT_OF_STOCK);
             return;
         }
-        boolean forcedOut = Boolean.TRUE.equals(product.getForceOutOfStock());
-        product.setStockState(forcedOut
-                ? ProductStockState.OUT_OF_STOCK
-                : ProductStockState.IN_STOCK);
+        boolean available = !Boolean.FALSE.equals(product.getAvailable());
+        product.setStockState(available
+                ? ProductStockState.IN_STOCK
+                : ProductStockState.OUT_OF_STOCK);
     }
 }

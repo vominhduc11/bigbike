@@ -64,13 +64,8 @@ class ProductImportMediaPreservationTest {
                 .orElse(null);
     }
 
-    private JsonNode findBySku(byte[] exported, String sku) throws Exception {
-        for (JsonNode node : mapper.readTree(exported)) {
-            if (sku.equals(node.path("sku").asText())) {
-                return node;
-            }
-        }
-        return null;
+    private JsonNode firstExportRow(byte[] exported) throws Exception {
+        return mapper.readTree(exported).get(0);
     }
 
     private static VariantOptionRequest variantOption(String name, String value) {
@@ -133,8 +128,8 @@ class ProductImportMediaPreservationTest {
         Product created = productMutationService.createProduct(create, DEV_ADMIN_ID);
         assertThat(created.id()).as("created product id").isNotBlank();
 
-        JsonNode exported = findBySku(productImportService.exportCurrentCatalogAsTemplateJson(), sku);
-        assertThat(exported).as("created product appears in full JSON export").isNotNull();
+        JsonNode exported = firstExportRow(productImportService.exportProductAsTemplateJson(created.id()).content());
+        assertThat(exported).as("created product appears in product JSON export").isNotNull();
         assertThat(exported.path("publishStatus").asText()).isEqualTo("DRAFT");
         assertThat(exported.path("image").path("url").asText()).endsWith(slug + ".jpg");
         assertThat(exported.path("gallery").get(0).path("url").asText()).endsWith(slug + "-g1.jpg");

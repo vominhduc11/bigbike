@@ -202,7 +202,7 @@ function ChatOverlay({
         role="dialog"
         aria-modal="true"
         aria-label={t("ariaPanel")}
-        className="fixed z-[2147483645] w-[min(86vw,320px)] min-w-75 bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+136px)] md:bottom-[max(124px,calc(env(safe-area-inset-bottom)+124px))] right-[max(16px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))] !rounded-[8px] bg-[var(--bb-color-white)] py-2 text-[var(--bb-chat-text)] shadow-[0_6px_24px_rgba(0,0,0,0.18)] before:content-[''] before:absolute before:-bottom-[7px] before:right-[25px] before:border-x-[8px] before:border-x-transparent before:border-t-[8px] before:border-t-[var(--bb-color-white)]"
+        className="bb-floating-chat-panel fixed z-[2147483645] w-[min(86vw,320px)] min-w-75 !rounded-[8px] bg-[var(--bb-color-white)] py-2 text-[var(--bb-chat-text)] shadow-[0_6px_24px_rgba(0,0,0,0.18)] before:content-[''] before:absolute before:-bottom-[7px] before:right-[25px] before:border-x-[8px] before:border-x-transparent before:border-t-[8px] before:border-t-[var(--bb-color-white)]"
       >
         {items.map((item) => (
           <a
@@ -221,7 +221,7 @@ function ChatOverlay({
       </div>
 
       {/* FAB — cùng kích thước & vị trí với lúc đóng (không nhảy), chỉ đổi icon */}
-      <div className="fixed z-[2147483647] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+80px)] md:bottom-[max(24px,env(safe-area-inset-bottom))] right-[max(16px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))]">
+      <div className="bb-floating-chat-portal-fab fixed z-[2147483647]">
         <div dir="ltr" className="group relative flex flex-col-reverse items-end">
           <div className={chatTitlePill}>{t("needHelp")}</div>
           <div className={fabContainer}>

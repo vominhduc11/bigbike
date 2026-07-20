@@ -584,7 +584,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
             ) : null}
             <div className="bb-grid-2">
               <FormField
-                label={t('brands.detail.name').replace(/\s*\*\s*$/, '')}
+                label={t('brands.detail.name')}
                 required
                 helper={isEnLang ? t('brands.detail.nameHelperEn', { defaultValue: 'Bắt buộc — dùng cho khách xem bản tiếng Anh.' }) : undefined}
                 error={isEnLang ? validationErrors['translations.en.name'] : validationErrors.name}
@@ -599,7 +599,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
               </FormField>
               <FormField
                 label={<>
-                  {t('brands.detail.slug').replace(/\s*\*\s*$/, '')}
+                  {t('brands.detail.slug')}
                   {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 8 }}>{t('brands.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
                 </>}
                 required={!isEnLang}

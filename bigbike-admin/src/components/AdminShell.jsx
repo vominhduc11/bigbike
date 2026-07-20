@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronDown, LogOut, Maximize2, Menu, Minimize2, X } from 'lucide-react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { ChevronDown, LogOut, Menu, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../lib/auth'
 import { useNavBadges } from '../lib/useNavBadges'
@@ -11,19 +11,25 @@ import { LanguageSwitcher } from './LanguageSwitcher'
 import { NotificationBell } from './NotificationBell'
 import { ThemeToggle } from './ThemeToggle'
 
-const FOCUS_MODE_STORAGE_KEY = 'bb-focus-mode'
+// Màn form (sản phẩm/tin tức) báo AdminShell tự ẩn sidebar khi mở panel Xem trước —
+// cả 2 chiếm chỗ ngang cùng lúc nên màn dễ chật. Tự động theo trạng thái preview,
+// chỉ ẩn sidebar, không nhớ qua lần sau.
+const PreviewSidebarContext = createContext(null)
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function useAutoHideSidebar(active) {
+  const setPreviewActive = useContext(PreviewSidebarContext)
+  useEffect(() => {
+    if (!setPreviewActive) return undefined
+    setPreviewActive(active)
+    return () => setPreviewActive(false)
+  }, [active, setPreviewActive])
+}
 
 function isRouteActive(activePath, candidatePath) {
   return (
     activePath === candidatePath ||
     activePath.startsWith(`${candidatePath}/`)
-  )
-}
-
-function isFormRoute(activePath) {
-  return (
-    /^\/admin\/products\/[^/]+$/.test(activePath) ||
-    /^\/admin\/content\/[^/]+\/[^/]+$/.test(activePath)
   )
 }
 
@@ -88,20 +94,18 @@ export function AdminShell({
   activePath,
   navigate,
   user,
-  authMode,
   pageTitle,
   children,
 }) {
   const { logout } = useAuth()
   const { t } = useTranslation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [previewActive, setPreviewActive] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const userMenuRef = useRef(null)
   const userChipRef = useRef(null)
   const hamburgerRef = useRef(null)
   const sidebarRef = useRef(null)
-
-  const formRoute = isFormRoute(activePath)
 
   // Drawer breakpoint (khớp @media max-width:900px trong admin-prototype.css): dưới
   // ngưỡng này sidebar là drawer trượt; trên ngưỡng là cột cố định luôn hiển thị.
@@ -117,32 +121,6 @@ export function AdminShell({
   // Drawer đóng trên mobile → loại nội dung sidebar khỏi thứ tự Tab + cây a11y
   // (chỉ CSS `pointer-events:none` không đủ, phím Tab vẫn lọt vào link ẩn).
   const drawerHidden = isDrawerViewport && !sidebarOpen
-
-  const [focusMode, setFocusMode] = useState(() => {
-    try { return localStorage.getItem(FOCUS_MODE_STORAGE_KEY) === '1' } catch { return false }
-  })
-
-  const toggleFocus = useCallback(() => {
-    setFocusMode((prev) => {
-      const next = !prev
-      try { localStorage.setItem(FOCUS_MODE_STORAGE_KEY, next ? '1' : '0') } catch { /* ignore */ }
-      return next
-    })
-  }, [])
-
-  useEffect(() => {
-    if (!formRoute) return undefined
-    const onKey = (e) => {
-      if (e.key === 'F11' || ((e.metaKey || e.ctrlKey) && e.key === '\\')) {
-        e.preventDefault()
-        toggleFocus()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [formRoute, toggleFocus])
-
-  const focusActive = focusMode && formRoute
 
   const visiblePaths = useMemo(
     () => new Set(navGroups.flatMap((group) => group.items.map((item) => item.path))),
@@ -205,8 +183,6 @@ export function AdminShell({
     return () => document.removeEventListener('keydown', onKey)
   }, [userMenuOpen])
 
-  const isLive = authMode === 'live'
-
   function formatRoles(roles) {
     return (roles ?? []).map(r => t(`roles.roleLabel_${r}`, { defaultValue: r.replace(/_/g, ' ') })).join(', ')
   }
@@ -220,12 +196,12 @@ export function AdminShell({
   }, [user?.fullName])
 
   return (
-    <>
+    <PreviewSidebarContext.Provider value={setPreviewActive}>
       <div
         className={[
           'bb-app',
           sidebarOpen ? 'sidebar-open' : '',
-          focusActive ? 'focus-mode' : '',
+          previewActive ? 'preview-active' : '',
         ].filter(Boolean).join(' ')}
         data-screen-label="BigBike Admin"
       >
@@ -298,9 +274,7 @@ export function AdminShell({
           </nav>
 
           <div className="bb-sidebar-foot">
-            <span className={`dot${isLive ? '' : ' offline'}`} aria-hidden="true" />
             <strong>{user?.fullName}</strong>
-            <span>{isLive ? t('auth.connectionLive') : t('auth.connectionOffline')}</span>
           </div>
         </aside>
 
@@ -328,36 +302,9 @@ export function AdminShell({
 
             <div className="bb-topbar-spacer" />
 
-            {/* Connection status pill */}
-            <span
-              className={`bb-pill-live${isLive ? '' : ' bb-pill-offline'}`}
-              aria-live="polite"
-              title={!isLive ? t('auth.connectionOfflineTooltip') : undefined}
-            >
-              <span className="dot" aria-hidden="true" />
-              <span>{isLive ? t('auth.connectionLive') : t('auth.connectionOffline')}</span>
-            </span>
-
             <ThemeToggle />
             <LanguageSwitcher />
             <NotificationBell navigate={navigate} />
-
-            {/* Focus-mode toggle — only on form routes */}
-            {formRoute && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="bb-icon-btn"
-                onClick={toggleFocus}
-                aria-pressed={focusMode}
-                title={focusMode
-                  ? t('app.focusExitTooltip', { defaultValue: 'Thoát chế độ tập trung (F11)' })
-                  : t('app.focusEnterTooltip', { defaultValue: 'Bật chế độ tập trung — ẩn sidebar/topbar (F11)' })}
-              >
-                {focusMode ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-              </Button>
-            )}
 
             {/* User dropdown */}
             <div ref={userMenuRef} style={{ position: 'relative' }}>
@@ -410,22 +357,7 @@ export function AdminShell({
         </div>
       </div>
 
-      {/* Focus-mode exit FAB */}
-      {focusActive && (
-        <Button
-          type="button"
-          variant="ghost"
-          className="bb-focus-fab"
-          onClick={toggleFocus}
-          title={t('app.focusExitTooltip', { defaultValue: 'Thoát chế độ tập trung (F11)' })}
-        >
-          <Minimize2 size={14} />
-          <span>{t('app.focusExit', { defaultValue: 'Thoát tập trung' })}</span>
-          <kbd>F11</kbd>
-        </Button>
-      )}
-
       <ConfirmDialogProvider />
-    </>
+    </PreviewSidebarContext.Provider>
   )
 }

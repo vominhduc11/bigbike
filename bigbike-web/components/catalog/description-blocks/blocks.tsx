@@ -157,12 +157,11 @@ export function TextStack({ blocks }: { blocks: DescriptionBlock[] }) {
   );
 }
 
-/** Render phần CHỮ của khối feature từ các field phẳng (heading / html / list) — đồng style với TextBlock. */
+/** Render phần CHỮ của khối feature từ các field phẳng (heading / html) — đồng style với TextBlock. */
 export function FeatureBody({ block }: { block: FeatureBlockT }) {
   const subheading = block.subheading?.trim();
   const heading = block.heading?.trim();
   const html = block.html?.trim();
-  const items = (block.items ?? []).map((it) => (it ?? "").trim()).filter(Boolean);
   return (
     // gap-4 = khoảng cách lớn hơn giữa cụm TIÊU ĐỀ và phần nội dung/danh sách bên dưới.
     <div className="flex flex-col gap-4">
@@ -186,27 +185,6 @@ export function FeatureBody({ block }: { block: FeatureBlockT }) {
         </div>
       ) : null}
       {html ? <div className={PDP_RICH_CONTENT_CLASS} dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html, PDP_RICH_HTML_OPTS) }} /> : null}
-      {items.length > 0 ? (
-        block.listStyle === "numbered" ? (
-          <ol className="flex list-none flex-col gap-2 text-a4-content leading-snug">
-            {items.map((it, idx) => (
-              <li key={idx} className="flex gap-2.5 text-foreground">
-                <span className="font-heading font-bold text-brand">{idx + 1}.</span>
-                <span>{it}</span>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <ul className="flex list-none flex-col gap-2 text-a4-content leading-snug">
-            {items.map((it, idx) => (
-              <li key={idx} className="flex gap-2.5 text-foreground">
-                <Check className="mt-1 h-4 w-4 shrink-0 text-brand" aria-hidden />
-                <span>{it}</span>
-              </li>
-            ))}
-          </ul>
-        )
-      ) : null}
     </div>
   );
 }

@@ -1,14 +1,13 @@
-import { useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, Check, Download, Loader2, Upload, X } from 'lucide-react'
+import { AlertTriangle, Check, Loader2, X } from 'lucide-react'
 import { Modal } from '@/components/layout/Modal'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from '@/lib/toast'
 import {
   ApiClientError,
-  exportProductImportTemplate,
   importProductsCommit,
   importProductsValidate,
 } from '@/lib/adminApi'
@@ -29,52 +28,36 @@ function StatusBadge({ t, status }) {
   return <span className="flex items-center gap-1 text-success"><Check size={14} aria-hidden />{t('import.statusOk')}</span>
 }
 
-export function ImportProductsDialog({ open, onClose }) {
+export function ImportProductsDialog({ file, open, onClose }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const fileInputRef = useRef(null)
 
-  const [step, setStep] = useState('pick') // pick | validating | review | committing | done
-  const [file, setFile] = useState(null)
+  const [step, setStep] = useState('validating')
   const [report, setReport] = useState(null)
   const [excludedRowKeys, setExcludedRowKeys] = useState(new Set())
   const [error, setError] = useState(null)
 
-  function reset() {
-    setStep('pick')
-    setFile(null)
-    setReport(null)
-    setExcludedRowKeys(new Set())
-    setError(null)
-  }
+  useEffect(() => {
+    if (!open || !file) return
+    let cancelled = false
+    importProductsValidate(file).then((result) => {
+      if (cancelled) return
+      setReport(result)
+      setExcludedRowKeys(new Set(result.rows.filter((r) => r.status === 'ERROR').map((r) => r.rowKey)))
+      setStep('review')
+    }).catch((err) => {
+      if (cancelled) return
+      // Chỉ hiện thông báo từ máy chủ (ApiClientError, đã thân thiện); lỗi kỹ thuật khác → thông báo chung.
+      setError(err instanceof ApiClientError ? err.message : t('import.error'))
+      setStep('error')
+    })
+    return () => { cancelled = true }
+  }, [open, file, t])
 
   function handleClose() {
     // Chặn đóng khi đang lưu để không bỏ dở giữa chừng (backdrop/Esc/nút X đều gọi hàm này).
     if (step === 'committing') return
-    reset()
     onClose?.()
-  }
-
-  function handleFileChange(e) {
-    const picked = e.target.files?.[0]
-    if (!picked) return
-    setFile(picked)
-    runValidate(picked)
-  }
-
-  async function runValidate(pickedFile) {
-    setStep('validating')
-    setError(null)
-    try {
-      const result = await importProductsValidate(pickedFile)
-      setReport(result)
-      setExcludedRowKeys(new Set(result.rows.filter((r) => r.status === 'ERROR').map((r) => r.rowKey)))
-      setStep('review')
-    } catch (err) {
-      // Chỉ hiện thông báo từ máy chủ (ApiClientError, đã thân thiện); lỗi kỹ thuật khác → thông báo chung.
-      setError(err instanceof ApiClientError ? err.message : t('import.error'))
-      setStep('pick')
-    }
   }
 
   async function handleConfirm() {
@@ -105,14 +88,6 @@ export function ImportProductsDialog({ open, onClose }) {
     })
   }
 
-  async function handleDownloadTemplate() {
-    try {
-      await exportProductImportTemplate()
-    } catch (err) {
-      toast.error(err?.message || t('import.error'))
-    }
-  }
-
   const allExcluded = report ? report.rows.every((r) => excludedRowKeys.has(r.rowKey)) : true
 
   let actions
@@ -139,33 +114,15 @@ export function ImportProductsDialog({ open, onClose }) {
       contentClassName="p-0 flex flex-col max-h-[90vh] w-[calc(100%-2rem)] max-w-5xl"
       actions={actions}
     >
-      {(step === 'pick') && (
-        <div className="space-y-4">
-          {error ? <div className="text-sm text-danger">{error}</div> : null}
-          <p className="text-sm text-muted-foreground">{t('import.pickFileHint')}</p>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-          <div className="flex gap-2">
-            <Button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1.5">
-              <Upload size={14} aria-hidden />{t('import.pickFile')}
-            </Button>
-            <Button variant="secondary" onClick={handleDownloadTemplate} className="flex items-center gap-1.5">
-              <Download size={14} aria-hidden />{t('import.downloadCurrent')}
-            </Button>
-          </div>
-        </div>
-      )}
-
       {(step === 'validating' || step === 'committing') && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground py-10 justify-center" role="status" aria-live="polite">
           <Loader2 size={16} className="animate-spin" aria-hidden />
           {t(step === 'validating' ? 'import.validating' : 'import.committing')}
         </div>
+      )}
+
+      {step === 'error' && (
+        <div className="text-sm text-danger py-6" role="alert">{error}</div>
       )}
 
       {(step === 'review' || step === 'done') && report && (

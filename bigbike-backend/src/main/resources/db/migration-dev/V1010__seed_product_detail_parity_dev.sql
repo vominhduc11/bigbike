@@ -19,7 +19,7 @@ update products
 set publish_status = 'PUBLISHED',
     stock_state = 'IN_STOCK',
     stock_quantity = 48,
-    force_out_of_stock = false,
+    available = true,
     weight_kg = 3.0000,
     length_cm = 40.0000,
     width_cm = 70.0000,
@@ -33,7 +33,7 @@ and (
     publish_status <> 'PUBLISHED'
     or stock_state <> 'IN_STOCK'
     or stock_quantity is distinct from 48
-    or force_out_of_stock is distinct from false
+    or available is distinct from true
     or weight_kg is distinct from 3.0000
     or length_cm is distinct from 40.0000
     or width_cm is distinct from 70.0000

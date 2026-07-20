@@ -31,9 +31,19 @@ const ALLOWED_ATTR = [
  */
 export function sanitizeHtml(raw) {
   if (raw == null || raw === '') return ''
-  return DOMPurify.sanitize(String(raw), {
+  const sanitized = DOMPurify.sanitize(String(raw), {
     ALLOWED_TAGS,
     ALLOWED_ATTR,
     ALLOW_DATA_ATTR: false,
   })
+  return wrapTablesForScroll(sanitized)
+}
+
+// Bọc mỗi <table> bằng <div class="rich-table-scroll"> — khớp với cách bigbike-web
+// render (lib/utils/html.ts). display:block đặt thẳng lên <table> phá vỡ table-layout
+// (ô con vẫn table-cell nên trình duyệt tự sinh "bảng vô danh" bên trong để vẽ lưới,
+// bảng vô danh đó không ăn width:100% của thẻ <table> ngoài) → bảng co theo nội dung
+// thay vì chiếm hết chiều ngang. Ô xem trước ở đây phải khớp đúng hành vi thật của web.
+function wrapTablesForScroll(html) {
+  return html.replace(/<table\b[\s\S]*?<\/table>/gi, (match) => `<div class="rich-table-scroll">${match}</div>`)
 }

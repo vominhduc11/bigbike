@@ -395,12 +395,6 @@ public class CheckoutService {
                 throw new ConflictException(
                         "Sản phẩm '" + cartItem.getProductName() + "' không còn được bán.");
             }
-            // STOCK_RULE_004: product-level hard override blocks variants too.
-            if (Boolean.TRUE.equals(product.getForceOutOfStock())) {
-                throw new ConflictException(
-                        "Sản phẩm '" + cartItem.getProductName() + "' hết hàng.");
-            }
-
             ProductVariantEntity variant = null;
             if (cartItem.getProductVariantPk() != null) {
                 variant = variantsById.get(cartItem.getProductVariantPk());

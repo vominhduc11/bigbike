@@ -46,6 +46,7 @@ export function SearchToggle({
   const searchParams = useSearchParams();
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const wasOpenRef = useRef(false);
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [articleSuggestions, setArticleSuggestions] = useState<ArticleSuggestion[]>([]);
@@ -77,6 +78,13 @@ export function SearchToggle({
     const timer = window.setTimeout(() => inputRef.current?.focus(), 80);
     return () => window.clearTimeout(timer);
   }, [open]);
+
+  useEffect(() => {
+    if (open && !wasOpenRef.current) {
+      setQuery(currentSearchQuery);
+    }
+    wasOpenRef.current = open;
+  }, [open, currentSearchQuery]);
 
   useMediaQueryChange("(min-width: 1261px)", closePanel);
 
@@ -198,7 +206,8 @@ export function SearchToggle({
 
             <Input
               ref={inputRef}
-              type="search"
+              type="text"
+              enterKeyHint="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={t("inputPlaceholder")}

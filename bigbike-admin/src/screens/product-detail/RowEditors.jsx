@@ -248,7 +248,7 @@ export function TrustBadgesEditor({ disabled, html = '', onHtmlChange }) {
           rows={8}
           maxLength={50000}
         />
-        <p className="text-xs text-muted-foreground">{t('products.detail.specs.htmlHint')}</p>
+        <p className="text-xs text-muted-foreground">{t('products.detail.trustBadges.htmlHint')}</p>
         <AiHtmlBrief promptKey="products.detail.trustBadges.aiBriefPrompt" />
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -401,7 +401,7 @@ export function SpecStatEditor({ disabled, html = '', onHtmlChange }) {
           rows={10}
           maxLength={50000}
         />
-        <p className="text-xs text-muted-foreground">{t('products.detail.specs.htmlHint')}</p>
+        <p className="text-xs text-muted-foreground">{t('products.detail.specStats.htmlHint')}</p>
         <AiHtmlBrief promptKey="products.detail.specStats.aiBriefPrompt" />
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -409,7 +409,7 @@ export function SpecStatEditor({ disabled, html = '', onHtmlChange }) {
           </label>
           {(html || '').trim() ? (
             <div
-              className="size-guide-preview rounded-sm border border-border bg-surface p-3 overflow-x-auto"
+              className="size-guide-preview specstats-preview rounded-sm border border-border bg-surface p-3 overflow-x-auto"
               dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
             />
           ) : (

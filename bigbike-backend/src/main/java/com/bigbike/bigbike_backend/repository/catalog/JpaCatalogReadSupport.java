@@ -153,8 +153,7 @@ final class JpaCatalogReadSupport {
             if (block instanceof DescriptionBlock.VideoBlock b && isPresent(b.getCaptionEn())) return true;
             if (block instanceof DescriptionBlock.CalloutBlock b && isPresent(b.getHtmlEn())) return true;
             if (block instanceof DescriptionBlock.FeatureBlock b && (isPresent(b.getAltEn()) || isPresent(b.getCaptionEn())
-                    || isPresent(b.getSubheadingEn()) || isPresent(b.getHeadingEn()) || isPresent(b.getHtmlEn())
-                    || (b.getItemsEn() != null && !b.getItemsEn().isEmpty()))) return true;
+                    || isPresent(b.getSubheadingEn()) || isPresent(b.getHeadingEn()) || isPresent(b.getHtmlEn()))) return true;
         }
         return false;
     }

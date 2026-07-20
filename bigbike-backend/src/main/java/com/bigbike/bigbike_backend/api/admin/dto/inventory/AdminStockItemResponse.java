@@ -12,8 +12,7 @@ public record AdminStockItemResponse(
         String variantSku,
         String stockState,
         boolean available,
-        BigDecimal retailPrice,
-        boolean forceOutOfStock
+        BigDecimal retailPrice
 ) {
     public record ImageRef(
             String id,

@@ -40,6 +40,17 @@ describe('parseTrustBadgesFromHtml', () => {
       '<div class="bb-trust-badges"><span><span style="background:red"></span><span>Chính hãng</span></span></div>'
     expect(parseTrustBadgesFromHtml(html).map((b) => b.content)).toEqual(['Chính hãng'])
   })
+
+  it('HTML nhập ngoài: chấm "•" là ký tự trước chữ, không phải span rỗng', () => {
+    const html =
+      '<div class="bb-trust-badges">' +
+      '<span><span style="color:#cc0906;font-size:18px">•</span> Tặng kèm Pinlock</span> ' +
+      '<span><span style="color:#cc0906;font-size:18px">•</span> FreeShip Toàn Quốc</span></div>'
+    expect(parseTrustBadgesFromHtml(html).map((b) => b.content)).toEqual([
+      'Tặng kèm Pinlock',
+      'FreeShip Toàn Quốc',
+    ])
+  })
 })
 
 describe('mergeTrustBadgesIntoHtml', () => {
@@ -69,5 +80,16 @@ describe('mergeTrustBadgesIntoHtml', () => {
   it('không còn mục → gỡ dải', () => {
     const styled = '<div class="bb-trust-badges"><span><span></span><span>A</span></span></div>'
     expect(mergeTrustBadgesIntoHtml([], styled)).toBe('')
+  })
+
+  it('HTML nhập ngoài (chấm "•" + chữ text node): đổi chữ không nhân đôi, giữ chấm', () => {
+    const imported =
+      '<div class="bb-trust-badges"><span><span style="color:#cc0906">•</span> Cũ</span></div>'
+    const out = mergeTrustBadgesIntoHtml([badge('Mới')], imported)
+    expect(out).toContain('Mới')
+    expect(out).not.toContain('Cũ')
+    expect(out).toContain('•')
+    // Không được lặp lại chữ mới hai lần.
+    expect((out.match(/Mới/g) || []).length).toBe(1)
   })
 })

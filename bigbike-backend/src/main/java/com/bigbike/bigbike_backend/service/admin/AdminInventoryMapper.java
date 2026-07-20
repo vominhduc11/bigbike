@@ -52,8 +52,7 @@ final class AdminInventoryMapper {
                 null,
                 p.getStockState() != null ? p.getStockState().name() : "UNKNOWN",
                 p.getStockState() != ProductStockState.OUT_OF_STOCK,
-                p.getRetailPrice(),
-                Boolean.TRUE.equals(p.getForceOutOfStock())
+                p.getRetailPrice()
         );
     }
 
@@ -68,8 +67,7 @@ final class AdminInventoryMapper {
                 v.getSku(),
                 v.getStockState() != null ? v.getStockState().name() : "UNKNOWN",
                 v.isAvailable(),
-                v.getRetailPrice(),
-                Boolean.TRUE.equals(v.getProduct().getForceOutOfStock())
+                v.getRetailPrice()
         );
     }
 

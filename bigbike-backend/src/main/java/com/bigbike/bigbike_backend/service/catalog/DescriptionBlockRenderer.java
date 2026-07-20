@@ -92,7 +92,19 @@ public class DescriptionBlockRenderer {
         return sb.toString();
     }
 
+    /**
+     * A bulk-imported product may carry an Image block with no url yet (content media is always
+     * cleared on import — see {@code ProductImportService#stripContentMedia}, PRODUCT_RULE_009):
+     * skip the {@code <img>} entirely rather than emit {@code <img src="">}, matching how
+     * {@link #renderFeature} already treats its optional image.
+     */
     private String renderImage(DescriptionBlock.ImageBlock b) {
+        if (b.getUrl() == null || b.getUrl().isBlank()) {
+            if (b.getCaption() == null || b.getCaption().isBlank()) {
+                return "";
+            }
+            return "<figure><figcaption>" + escapeHtml(b.getCaption()) + "</figcaption></figure>";
+        }
         StringBuilder sb = new StringBuilder("<figure>");
         sb.append("<img src=\"").append(escapeAttr(b.getUrl())).append("\"");
         if (b.getAlt() != null && !b.getAlt().isBlank()) {
@@ -121,7 +133,7 @@ public class DescriptionBlockRenderer {
     }
 
     /**
-     * Feature = một hàng ảnh + tiêu đề + đoạn + danh sách. Bản HTML này là fallback/SEO
+     * Feature = một hàng ảnh + tiêu đề + đoạn. Bản HTML này là fallback/SEO
      * (web đọc thẳng block để dựng 2 cột so le); ở đây render tuần tự trong một &lt;div class="bb-feature"&gt;.
      * {@code url} không bắt buộc (2026-07-05) — khối chỉ-chữ bỏ hẳn thẻ {@code <figure>/<img>} thay vì
      * xuất {@code <img src="">} rỗng, khớp quy tắc "thiếu url → render full-width chỉ chữ" của
@@ -157,17 +169,6 @@ public class DescriptionBlockRenderer {
             } else {
                 sb.append("<p>").append(trimmed).append("</p>");
             }
-        }
-        // Danh sách
-        if (b.getItems() != null && !b.getItems().isEmpty()) {
-            String tag = "numbered".equals(b.getListStyle()) ? "ol" : "ul";
-            sb.append("<").append(tag).append(">");
-            for (String item : b.getItems()) {
-                if (item != null && !item.isBlank()) {
-                    sb.append("<li>").append(escapeHtml(item)).append("</li>");
-                }
-            }
-            sb.append("</").append(tag).append(">");
         }
         sb.append("</div>");
         return sb.toString();

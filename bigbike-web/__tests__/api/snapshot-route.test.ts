@@ -4,7 +4,7 @@ import { GET } from "@/app/api/products/[id]/snapshot/route";
 
 const mockSnapshot = {
   pricing: { retailPrice: 5000000, salePrice: null, discountPercent: 0, currency: "VND" },
-  stock: { stockState: "IN_STOCK", label: "Còn hàng", forceOutOfStock: false, quantity: 10 },
+  stock: { stockState: "IN_STOCK", label: "Còn hàng", quantity: 10 },
   variants: [],
 };
 

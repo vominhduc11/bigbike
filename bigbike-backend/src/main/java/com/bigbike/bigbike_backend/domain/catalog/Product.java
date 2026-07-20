@@ -33,7 +33,8 @@ public record Product(
         ProductPrice price,
         List<ProductVariant> variants,
         ProductStockState stockState,
-        Boolean forceOutOfStock,
+        /** Product-level "còn/hết" toggle for products WITHOUT variants; ignored when variants exist. */
+        Boolean available,
         PublishStatus publishStatus,
         /** Homepage placement slot — see {@link HomepageBlock}. Never null; NONE means not pinned. */
         HomepageBlock homepageBlock,

@@ -242,7 +242,7 @@ Status: `CONFIRMED_FROM_CODE`
 
 - Availability is a **boolean**, not a quantity:
   - **Per variant** — `product_variants.is_available` (existing column) is the **sole gate**. The variant's `stock_state` mirrors it: `IN_STOCK` if available, else `OUT_OF_STOCK`.
-  - **Per product without variants** — `products.stock_state` (`IN_STOCK` / `OUT_OF_STOCK`) is set **directly** by the admin toggle. `products.force_out_of_stock` remains a hard override.
+  - **Per product without variants** — `products.stock_state` (`IN_STOCK` / `OUT_OF_STOCK`) is set **directly** by the admin toggle, persisted as `products.available` (renamed from `products.force_out_of_stock` in V342, 2026-07-19 — the old hard-override behavior for products WITH variants was removed at the same time).
   - **Product with variants** — `stock_state` = `IN_STOCK` if **any** variant `is_available`, else `OUT_OF_STOCK`.
 - **Dormant quantity columns:** `product_variants.quantity_on_hand`, `products.stock_quantity` and `products.manage_stock` are **kept but no longer read** for availability. The `low_stock_threshold` site setting was **removed (V279)**.
 - **No quantity behavior:** no stock validation by quantity, no auto-decrement on sale, no stock restore on cancel, and **no stock movements written for sales or restores**. Selling does not change availability; the admin must manually mark an item "Hết hàng" when it sells out (overselling is not auto-prevented). The `stock_movements` ledger is dormant for this model.
@@ -285,16 +285,16 @@ Evidence:
 
 **Cột số lượng `quantity_on_hand` / `stock_quantity` / `manage_stock` giờ DORMANT** — giữ trong DB nhưng không đọc cho availability. `low_stock_threshold` đã gỡ (V279).
 
-**API input contract:** `stockState` bị bỏ khỏi `UpsertProductRequest` và `VariantRequest` vì là field suy ra. Catalog create/update nhận các nguồn boolean thật từ form sản phẩm: `UpsertProductRequest.forceOutOfStock` và `VariantRequest.isAvailable`, rồi `InventoryPolicyService.recomputeProductState` cập nhật `stockState`; đường này dùng quyền `products.update`. Hai endpoint Inventory `PATCH .../availability` (đường phụ dùng `inventory.write`) đã gỡ 2026-07-15 (AUD-056) — product upsert là đường mutation availability duy nhất.
+**API input contract:** `stockState` bị bỏ khỏi `UpsertProductRequest` và `VariantRequest` vì là field suy ra. Catalog create/update nhận các nguồn boolean thật từ form sản phẩm: `UpsertProductRequest.available` (chỉ áp dụng SP không biến thể) và `VariantRequest.isAvailable`, rồi `InventoryPolicyService.recomputeProductState` cập nhật `stockState`; đường này dùng quyền `products.update`. Hai endpoint Inventory `PATCH .../availability` (đường phụ dùng `inventory.write`) đã gỡ 2026-07-15 (AUD-056) — product upsert là đường mutation availability duy nhất.
 
 **API response contract:** `stockState` vẫn có trong response (read-only). `stockQuantity` / `quantityOnHand` không còn nằm trong response product/variant; các cột số lượng dormant chỉ phục vụ tương thích dữ liệu cũ và migration, không được đưa trở lại contract. Storefront chỉ hiển thị "Còn hàng / Hết hàng".
 
-**forceOutOfStock:** field này vẫn là manual override (hard disable) và khác biệt với `stockState`. Checkout sẽ từ chối ngay cả khi `stockState = IN_STOCK` nếu `forceOutOfStock = true`.
+**`forceOutOfStock` — REMOVED (2026-07-19, V342):** field này từng là manual hard override, chặn mua ngay cả khi `stockState = IN_STOCK`/biến thể còn hàng. Owner quyết định gỡ hẳn: SP có biến thể giờ chỉ còn per-variant `isAvailable` quyết định mua được hay không (không còn override); SP không biến thể đổi tên field lưu trữ thành `available` (thuận dấu) nhưng hành vi/UI với loại SP này không đổi.
 
 Evidence:
 
 - `AdminInventoryService.java` / `AdminInventoryController.java` (chỉ còn đọc list/summary — đường availability phụ đã gỡ 2026-07-15, AUD-056)
-- `ProductMutationService.java`, `UpsertProductRequest.forceOutOfStock`, `VariantRequest.isAvailable`, `InventoryPolicyService.java` (đường form sản phẩm)
+- `ProductMutationService.java`, `UpsertProductRequest.available`, `VariantRequest.isAvailable`, `InventoryPolicyService.java` (đường form sản phẩm)
 - `CheckoutService.java` (per-variant `isAvailable` gate)
 - `BUSINESS_RULES.md` STOCK_RULE_001–009
 - `V165__aggregate_variant_product_stock_state.sql` (trigger giữ `products.stockState` đồng bộ với variants)
@@ -461,7 +461,7 @@ The Java `DescriptionBlock` hierarchy still deserializes older product rows and 
 |---|---|---|---|
 | `paragraph` | `html` (≤ 50 000 chars; inline `<b><i><a><br>` only) | — | `htmlEn` (≤ 50 000) |
 | `image` | `url` (≤ 2 000 chars) | `alt` (≤ 500), `caption` (≤ 500) | `altEn` (≤ 500), `captionEn` (≤ 500) — `url` dùng chung, không dịch |
-| `feature` | `side` (`left` hoặc `right` trong file import) | `url` (≤ 2 000 chars), `alt` (≤ 500), `caption` (≤ 500), `subheading` (≤ 500), `heading` (≤ 500), `html` (≤ 50 000), `listStyle` (`bulleted`\|`numbered`), `items` (≤ 200 strings, each ≤ 2 000 chars) | `altEn`, `captionEn`, `subheadingEn`, `headingEn` (mỗi ≤ 500), `htmlEn` (≤ 50 000), `itemsEn` (≤ 200 strings, each ≤ 2 000) — `url`/`side`/`listStyle` dùng chung |
+| `feature` | `side` (`left` hoặc `right` trong file import) | `url` (≤ 2 000 chars), `alt` (≤ 500), `caption` (≤ 500), `subheading` (≤ 500), `heading` (≤ 500), `html` (≤ 50 000) | `altEn`, `captionEn`, `subheadingEn`, `headingEn` (mỗi ≤ 500), `htmlEn` (≤ 50 000) — `url`/`side` dùng chung |
 
 **Ưu/Nhược điểm (`prosCons`) ĐÃ TÁCH RA khỏi mô tả (V251)** — quay lại là khối RIÊNG cố định ngay dưới mô tả, ngoài tab; nguồn dữ liệu hiện là `products.highlights` JSONB (xem §Ưu điểm/Nhược điểm), KHÔNG còn là khối trong `description_blocks`. Subtype `ProsConsBlock` vẫn còn trong sealed interface (dormant, để deserialize an toàn dữ liệu cũ, KHÔNG có field `*En` vì đã ngừng dùng từ V254); migration `V251` gỡ mọi khối `prosCons` còn sót trong `description_blocks`.
 
@@ -653,6 +653,12 @@ Status: `CONFIRMED_FROM_CODE` — `ProductEntity`
 `ProductHighlights` (domain), `Product`, `AdminCatalogMutationService.applyHighlights`,
 `JpaCatalogReadRepository`, migration `V175`, `V331__add_product_jsonb_content_columns.sql`,
 `V332__MigrateProductChildContentToJsonb.java`, `V333__drop_product_child_content_tables.sql`.
+
+### Full product catalog CSV projection (2026-07-19)
+
+The administrative full-catalog CSV export is a lossless read projection of the current `products` record and its catalog relations; it does not introduce a separate persistence model. Scalar `products` columns are emitted individually, including bilingual `*_en` columns, all pricing/availability/publish/homepage fields, legacy-but-stored operational columns, SEO/media metadata, and `created_at`/`updated_at`/`version`.
+
+JSONB groups (`description_blocks`, `suitability_section`, `size_guide_section`, `faqs`, `commitments`, `highlights`, `gallery`, and `videos`) are serialized as compact JSON strings in their own CSV cells. Relational groups are serialized in the same way: `variants_json` includes every `product_variants` field plus ordered `product_variant_options` and `product_variant_gallery_images`; `related_products_json` and `accessory_products_json` retain each link's order and linked-product identifying/list-view data. This is intentionally one row per product, rather than one row per child record, so a complete catalog can be opened in Excel without losing nested detail. The exact endpoint/header order is specified by `API_CONTRACT.md` §"Full product catalog CSV export".
 
 ### Product gallery — `products.gallery` JSONB (V1 → V248 → V334/V335/V336)
 

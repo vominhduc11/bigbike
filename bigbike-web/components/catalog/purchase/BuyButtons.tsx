@@ -14,11 +14,15 @@ export function BuyButtons({
   adding,
   onAdd,
   zaloUrl,
+  previewMode = false,
 }: {
   canBuy: boolean;
   adding: boolean;
   onAdd: () => void;
   zaloUrl?: string;
+  /** Khung xem trước admin: nút "Tư vấn Zalo" mở link ngoài → khóa bấm + làm mờ
+      (nút "Thêm vào giỏ" đã bị vô hiệu qua canBuy=false). */
+  previewMode?: boolean;
 }) {
   const tb = useTranslations("PdpBuyBox");
   return (
@@ -64,20 +68,31 @@ export function BuyButtons({
             Kiểu Zalo phụ: nền trắng + viền/chữ/LOGO xanh Zalo (text-zalo →
             logo lấy currentColor). !border-2 !border-zalo thắng `border:none`
             của theme `.add-to-cart .btn`. */}
-        <Button
-          asChild
-          variant="outline"
-          className="h-13 w-full whitespace-nowrap rounded-none border-2 border-zalo bg-white px-3 font-cta text-b4-action text-zalo hover:bg-zalo-soft hover:text-zalo"
-        >
-          <a
-            href={zaloUrl ? zaloHref(zaloUrl) : "#"}
-            target={zaloUrl ? "_blank" : undefined}
-            rel={zaloUrl ? "noopener noreferrer" : undefined}
+        {previewMode ? (
+          // Xem trước: giữ đúng bố cục nút nhưng mờ + khóa bấm (span, không href).
+          <span
+            aria-disabled="true"
+            className="flex h-13 w-full items-center justify-center gap-2.5 whitespace-nowrap rounded-none border-2 border-zalo bg-white px-3 font-cta text-b4-action text-zalo opacity-50 cursor-not-allowed"
           >
             <ZaloIcon className="size-5 shrink-0" />
             {tb("mobileZaloConsult")}
-          </a>
-        </Button>
+          </span>
+        ) : (
+          <Button
+            asChild
+            variant="outline"
+            className="h-13 w-full whitespace-nowrap rounded-none border-2 border-zalo bg-white px-3 font-cta text-b4-action text-zalo hover:bg-zalo-soft hover:text-zalo"
+          >
+            <a
+              href={zaloUrl ? zaloHref(zaloUrl) : "#"}
+              target={zaloUrl ? "_blank" : undefined}
+              rel={zaloUrl ? "noopener noreferrer" : undefined}
+            >
+              <ZaloIcon className="size-5 shrink-0" />
+              {tb("mobileZaloConsult")}
+            </a>
+          </Button>
+        )}
       </div>
     </div>
   );

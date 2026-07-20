@@ -128,9 +128,12 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
               disabled={disabled}
             />
           ) : (
-            <Button variant="outline" size="sm" onClick={() => setVideoPickerOpen(true)} disabled={disabled} className="self-start">
-              {item.videoUrl ? t('products.detail.gallery.videoChange', { defaultValue: 'Đổi video' }) : t('products.detail.gallery.videoPick', { defaultValue: 'Chọn video' })}
-            </Button>
+            <div className="flex flex-col gap-1">
+              <Button variant="outline" size="sm" onClick={() => setVideoPickerOpen(true)} disabled={disabled} className="self-start">
+                {item.videoUrl ? t('products.detail.gallery.videoChange', { defaultValue: 'Đổi video' }) : t('products.detail.gallery.videoPick', { defaultValue: 'Chọn video' })}
+              </Button>
+              <MediaRequirementHint recommend={IMAGE_RECO.video} />
+            </div>
           )}
           <Button variant="outline" size="sm" onClick={() => setPickerOpen(true)} disabled={disabled} className="self-start">
             {trimmed ? t('products.detail.gallery.thumbChange', { defaultValue: 'Đổi ảnh đại diện' }) : t('products.detail.gallery.thumbPick', { defaultValue: 'Ảnh đại diện (tuỳ chọn)' })}
@@ -150,6 +153,7 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
         )}
         {videoPickerOpen && (
           <VideoPickerModal
+            recommend={IMAGE_RECO.video}
             onSelect={(url) => { onUpdate({ videoUrl: url, provider: 'upload' }); setVideoPickerOpen(false) }}
             onClose={() => setVideoPickerOpen(false)}
           />
@@ -445,6 +449,7 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
                       </span>
                     )}
                   </div>
+                  <MediaRequirementHint recommend={IMAGE_RECO.video} className="mt-1" />
                   {urlError && <small className="field-error">{urlError}</small>}
                   {item.url && (
                     <video
@@ -490,6 +495,7 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
       </Button>
       {pickerOpenIndex !== null && (
         <VideoPickerModal
+          recommend={IMAGE_RECO.video}
           onSelect={(url, media) => {
             const title = getMediaAltSync(pickerOpenIndex).pickAlt(items[pickerOpenIndex]?.title, media)
             updateItem(pickerOpenIndex, { url, type: 'upload', title })

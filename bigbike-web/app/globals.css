@@ -372,7 +372,44 @@ body {
   padding-bottom: 0;
 }
 
-/* Floating action group: stacks scroll-to-top + chat vertically, fixed bottom-right */
+/* Floating action group: one viewport dock for chat + scroll-to-top.
+   Keep these offsets stable during page scroll; state-based UI may hide the dock,
+   but must not rewrite bottom coordinates. */
+:root {
+  --bb-floating-chat-size: 3rem;
+  --bb-floating-action-right: max(var(--bb-space-4), env(safe-area-inset-right));
+  --bb-floating-chat-bottom: calc(var(--bb-mobile-nav-height, 3.75rem) + env(safe-area-inset-bottom) + var(--bb-space-6));
+  --bb-floating-scroll-top-bottom: calc(var(--bb-floating-chat-bottom) + var(--bb-floating-chat-size) + var(--bb-space-6));
+  --bb-floating-chat-panel-bottom: calc(var(--bb-floating-chat-bottom) + var(--bb-floating-chat-size) + var(--bb-space-2));
+}
+
+@media (min-width: 768px) {
+  :root {
+    --bb-floating-chat-size: 4.125rem;
+    --bb-floating-action-right: max(var(--bb-space-6), env(safe-area-inset-right));
+    --bb-floating-chat-bottom: max(var(--bb-space-6), env(safe-area-inset-bottom));
+  }
+}
+
+.bb-floating-chat-anchor,
+.bb-scroll-top-anchor,
+.bb-floating-chat-panel,
+.bb-floating-chat-portal-fab {
+  right: var(--bb-floating-action-right);
+}
+
+.bb-floating-chat-anchor,
+.bb-floating-chat-portal-fab {
+  bottom: var(--bb-floating-chat-bottom);
+}
+
+.bb-scroll-top-anchor {
+  bottom: var(--bb-floating-scroll-top-bottom);
+}
+
+.bb-floating-chat-panel {
+  bottom: var(--bb-floating-chat-panel-bottom);
+}
 
 /* Generic page wrapper - light theme (WP cu uses page-title banner + container). */
 .bb-page {
@@ -3110,9 +3147,14 @@ body:has(.bb-home) {
 }
 /* Bảng thông số là khối tự đủ — bỏ lề cuối 1rem mà theme WP gán cho mọi <table>. Khung cuộn ngang
    `.thong-so-ki-thuat` (overflow) "nhốt" lề này lại nên nó không tự triệt tiêu, làm khoảng trống DƯỚI
-   bảng (trước vạch ngăn mục) lớn hơn phía trên trên mobile. Bỏ đi để nhịp trên/dưới vạch bằng nhau. */
+   bảng (trước vạch ngăn mục) lớn hơn phía trên trên mobile. Bỏ đi để nhịp trên/dưới vạch bằng nhau.
+   width:100%: bảng phải luôn chiếm hết chiều ngang khung — chế độ "Nhập có cấu trúc" (specSheet.js)
+   không tự khai width nên nếu không ép ở đây, bảng ít cột sẽ co lại theo nội dung. Giữ table-layout
+   mặc định (không display:block/table-layout:fixed) để bảng vẫn tự tràn (và `.thong-so-ki-thuat`
+   overflow-x-auto vẫn cuộn được) khi nội dung ô thật sự rộng hơn khung. */
 .thong-so-ki-thuat .shop_attributes {
   margin-bottom: 0;
+  width: 100%;
 }
 
 /* .bb-pdp-layout grid + .bb-pdp-gallery-col/.bb-pdp-info-col min-width:0
@@ -4282,32 +4324,6 @@ body:has(header .navigation.active) .bb-scroll-top-anchor {
   body .product-list .col-md-3.col-6 { flex: 0 0 16.6667%; max-width: 16.6667%; }
   body .product-category-list .col-md-3.col-6 { flex: 0 0 16.6667%; max-width: 16.6667%; }
   body .bb-blog-listing-parity .col-md-4 { flex: 0 0 20%; max-width: 20%; }
-}
-
-/* =====================================================================
-   MOBILE UX AUDIT FIXES (mobile-only, <=767px). Each rule overrides an
-   existing legacy .bb-* class for the mobile breakpoint ONLY; desktop and
-   tablet (>=768px) are untouched. See audit report for rationale.
-   ===================================================================== */
-@media (max-width: 767px) {
-  /* PDP: the sticky purchase bar and the bottom tab nav take turns. While the
-     bar is up the nav slides out (see the :has rule on .bb-bottom-nav), so the
-     bar sits flush at the bottom and restores its own safe-area padding. The bar's
-     own bottom/padding-bottom(12px)/z-index(651) now live inline on
-     MobileStickyPurchaseBar (effective audit values, not the base). */
-
-  /* Bar up + nav hidden: lift the floating chat FAB just above the purchase bar
-     (~70px tall) so it doesn't overlap the "Tư vấn" button.
-     !important beats the existing !important chat-anchor rule above. */
-  body:has(.bb-pdp-sticky-cta.is-visible) .bb-floating-chat-anchor {
-    bottom: calc(84px + env(safe-area-inset-bottom)) !important;
-  }
-
-  /* Scroll-to-top FAB stays above the chat halo when the purchase bar lifts both actions. */
-  body:has(.bb-pdp-sticky-cta.is-visible) .bb-scroll-top-anchor {
-    bottom: calc(176px + env(safe-area-inset-bottom)) !important;
-  }
-
 }
 
 /* Nháy viền khi admin "Xem trên web" cuộn tới khối tương ứng (SettingsFocusScroller). */

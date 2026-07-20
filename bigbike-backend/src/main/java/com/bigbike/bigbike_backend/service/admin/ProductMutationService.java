@@ -333,7 +333,7 @@ public class ProductMutationService {
         fields.put("retailPrice", e.getRetailPrice());
         fields.put("salePrice", e.getSalePrice());
         fields.put("stockState", e.getStockState() == null ? null : e.getStockState().toString());
-        fields.put("forceOutOfStock", e.getForceOutOfStock());
+        fields.put("available", e.getAvailable());
         return writeAuditJson(fields);
     }
 
@@ -385,8 +385,8 @@ public class ProductMutationService {
             entity.setSalePrice(request.getSalePrice());
         }
         entity.setCurrency("VND");
-        if (create || request.getForceOutOfStock() != null) {
-            entity.setForceOutOfStock(Boolean.TRUE.equals(request.getForceOutOfStock()));
+        if (create || request.getAvailable() != null) {
+            entity.setAvailable(!Boolean.FALSE.equals(request.getAvailable()));
         }
         if (create || request.getPublishStatus() != null) {
             entity.setPublishStatus(request.getPublishStatus() == null ? PublishStatus.DRAFT : request.getPublishStatus());

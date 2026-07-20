@@ -115,31 +115,18 @@ public class BodyBlockParser {
         if (headingEl != null) block.setHeading(headingEl.text());
 
         StringBuilder html = new StringBuilder();
-        List<String> items = new ArrayList<>();
-        String listStyle = null;
         for (Element child : el.children()) {
             if (child == figure || child == imgEl || child == eyebrow || child == headingEl) continue;
-            if (child.tagName().equals("p")) {
+            if (child.tagName().equals("p") || child.tagName().equals("ul") || child.tagName().equals("ol")) {
                 html.append(child.outerHtml());
-            } else if (child.tagName().equals("ul") || child.tagName().equals("ol")) {
-                listStyle = child.tagName().equals("ol") ? "numbered" : "bulleted";
-                for (Element li : child.select("> li")) {
-                    String text = li.text().trim();
-                    if (!text.isEmpty()) items.add(text);
-                }
             }
         }
         block.setHtml(html.toString());
-        if (!items.isEmpty()) {
-            block.setListStyle(listStyle);
-            block.setItems(items);
-        }
 
         boolean hasImage = block.getUrl() != null && !block.getUrl().isBlank();
         boolean hasText = (block.getSubheading() != null && !block.getSubheading().isBlank())
                 || (block.getHeading() != null && !block.getHeading().isBlank())
-                || (block.getHtml() != null && !block.getHtml().isBlank())
-                || (block.getItems() != null && !block.getItems().isEmpty());
+                || (block.getHtml() != null && !block.getHtml().isBlank());
         if (!hasImage && !hasText) {
             return fallback(el);
         }

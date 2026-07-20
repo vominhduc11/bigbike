@@ -1129,7 +1129,7 @@ class Phase1HAdminOrderApiTest {
         ProductEntity product = createTestProduct(name, price);
         product.setManageStock(true);
         product.setStockQuantity(stockQuantity);
-        product.setForceOutOfStock(false);
+        product.setAvailable(true);
         product.setStockState(ProductStockState.IN_STOCK);
         product.setUpdatedAt(Instant.now());
         return productRepo.save(product);

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AlertCircle, Eye, Loader2, Monitor, Smartphone, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -13,9 +13,58 @@ import { cn } from '@/lib/utils'
  * Chỉ làm UI + cầu nối iframe; phần debounce + gọi API preview do màn hình cha đảm
  * nhiệm và truyền `data` xuống. Nhãn lấy qua `t` + `i18nPrefix` (mỗi feature một bộ
  * key, ví dụ `products.detail.preview` / `content.detail.preview`).
- *
  * Docs: API_CONTRACT "Product/Article preview", WORKFLOW_OVERVIEW "Live Preview".
  */
+
+// Desktop preview renders the storefront at 1280px and scales down. Keep the
+// saved width bounded by the actual row width so preview cannot crush the form.
+// Below xl, preview becomes a fixed panel instead of taking layout space.
+const RESIZE_STORAGE_KEY = 'bb-preview-desktop-width'
+const DOCKED_QUERY = '(min-width: 1280px)'
+const MIN_PREVIEW_WIDTH = 520
+const MOBILE_PREVIEW_WIDTH = 520
+const MIN_FORM_WIDTH = 680
+const PREVIEW_GAP_WIDTH = 24
+const DEFAULT_PREVIEW_RATIO = 0.52
+const MAX_PREVIEW_RATIO = 0.62
+const FALLBACK_CONTENT_WIDTH = 1440
+const MAX_CONTENT_WIDTH = 1700
+
+function getViewportWidth() {
+  return typeof window !== 'undefined' ? window.innerWidth : FALLBACK_CONTENT_WIDTH
+}
+
+function getAvailableWidth(containerWidth) {
+  if (Number.isFinite(containerWidth) && containerWidth > 0) return containerWidth
+  return Math.max(MIN_PREVIEW_WIDTH, Math.min(getViewportWidth() - 48, MAX_CONTENT_WIDTH))
+}
+
+function getPreviewBounds(containerWidth) {
+  const available = getAvailableWidth(containerWidth)
+  const maxByForm = available - MIN_FORM_WIDTH - PREVIEW_GAP_WIDTH
+  const maxByRatio = Math.round(available * MAX_PREVIEW_RATIO)
+  const max = Math.max(MIN_PREVIEW_WIDTH, Math.min(maxByForm, maxByRatio))
+  return {
+    min: Math.min(MIN_PREVIEW_WIDTH, max),
+    max,
+    available,
+  }
+}
+
+function clampPreviewWidth(w, containerWidth) {
+  const { min, max } = getPreviewBounds(containerWidth)
+  return Math.max(min, Math.min(max, w))
+}
+
+function defaultPreviewWidth(containerWidth) {
+  const { available } = getPreviewBounds(containerWidth)
+  return clampPreviewWidth(Math.round(available * DEFAULT_PREVIEW_RATIO), containerWidth)
+}
+
+function matchesDockedQuery() {
+  return typeof window === 'undefined' ? true : window.matchMedia(DOCKED_QUERY).matches
+}
+
 export function LivePreview({
   open,
   onClose,
@@ -35,7 +84,97 @@ export function LivePreview({
   const readyRef = useRef(false)
   const dataRef = useRef(data)
   const frameHostRef = useRef(null)
+  const asideRef = useRef(null)
+  const dragRef = useRef(null)
   const [hostSize, setHostSize] = useState({ width: 0, height: 0 })
+  const [containerWidth, setContainerWidth] = useState(0)
+  const [isDocked, setIsDocked] = useState(matchesDockedQuery)
+
+  // Bề rộng khung ở chế độ Máy tính — kéo được, nhớ qua localStorage.
+  const [desktopWidth, setDesktopWidth] = useState(() => {
+    try {
+      const saved = Number(localStorage.getItem(RESIZE_STORAGE_KEY))
+      if (Number.isFinite(saved) && saved >= MIN_PREVIEW_WIDTH) return clampPreviewWidth(saved)
+    } catch { /* ignore */ }
+    return defaultPreviewWidth()
+  })
+
+  const persistWidth = useCallback((w) => {
+    try { localStorage.setItem(RESIZE_STORAGE_KEY, String(Math.round(w))) } catch { /* ignore */ }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined
+    const media = window.matchMedia(DOCKED_QUERY)
+    const sync = () => setIsDocked(media.matches)
+    sync()
+    if (media.addEventListener) {
+      media.addEventListener('change', sync)
+      return () => media.removeEventListener('change', sync)
+    }
+    media.addListener(sync)
+    return () => media.removeListener(sync)
+  }, [])
+
+  useLayoutEffect(() => {
+    if (!open) return undefined
+    const parent = asideRef.current?.parentElement
+    if (!parent) return undefined
+    const measure = () => setContainerWidth(Math.round(parent.getBoundingClientRect().width))
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(parent)
+    return () => ro.disconnect()
+  }, [open])
+
+  const onHandlePointerDown = useCallback((e) => {
+    if (!isDocked) return
+    e.preventDefault()
+    const startX = e.clientX
+    const startWidth = asideRef.current?.offsetWidth || MIN_PREVIEW_WIDTH
+    // Keep drag events on this document even if the cursor crosses the iframe.
+    const iframeEl = iframeRef.current
+    if (iframeEl) iframeEl.style.pointerEvents = 'none'
+    // Preview nằm bên phải: kéo chuột sang trái (clientX giảm) → khung rộng ra.
+    const onMove = (ev) => setDesktopWidth(clampPreviewWidth(startWidth + (startX - ev.clientX), containerWidth))
+    const onUp = () => {
+      dragRef.current = null
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      if (iframeEl) iframeEl.style.removeProperty('pointer-events')
+      document.body.style.removeProperty('user-select')
+      document.body.style.removeProperty('cursor')
+      persistWidth(clampPreviewWidth(asideRef.current?.offsetWidth || startWidth, containerWidth))
+    }
+    dragRef.current = onUp
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    document.body.style.userSelect = 'none'
+    document.body.style.cursor = 'col-resize'
+  }, [containerWidth, isDocked, persistWidth])
+
+  const nudgeWidth = useCallback((delta) => {
+    setDesktopWidth((w) => {
+      const next = clampPreviewWidth(w + delta, containerWidth)
+      persistWidth(next)
+      return next
+    })
+  }, [containerWidth, persistWidth])
+
+  const onHandleKeyDown = useCallback((e) => {
+    // Preview bên phải: mũi tên trái làm rộng khung, phải làm hẹp.
+    if (e.key === 'ArrowLeft') { e.preventDefault(); nudgeWidth(32) }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); nudgeWidth(-32) }
+  }, [nudgeWidth])
+
+  const resetWidth = useCallback(() => {
+    const next = defaultPreviewWidth(containerWidth)
+    setDesktopWidth(next)
+    persistWidth(next)
+  }, [containerWidth, persistWidth])
+
+  // Tháo listener kéo còn treo nếu unmount giữa lúc đang kéo.
+  useEffect(() => () => { dragRef.current?.() }, [])
 
   // Panel là NON-MODAL: form bên trái vẫn thao tác được khi đang xem preview, nên KHÔNG
   // trap focus (trap khiến bàn phím không Tab quay lại được form/trigger). Chỉ bắt Escape
@@ -85,7 +224,7 @@ export function LivePreview({
   }, [open])
 
   // Đo vùng hiển thị để scale iframe vừa khung. useLayoutEffect đo trước khi paint
-  // nên không nháy. ResizeObserver bắt cả khi cửa sổ/pane đổi kích thước.
+  // nên không nháy. ResizeObserver bắt cả khi cửa sổ trình duyệt đổi kích thước.
   useLayoutEffect(() => {
     if (!open) return undefined
     const el = frameHostRef.current
@@ -110,16 +249,45 @@ export function LivePreview({
   const availWidth = Math.max(0, hostSize.width - FRAME_PAD * 2)
   const availHeight = Math.max(0, hostSize.height - FRAME_PAD * 2)
   const scale = availWidth > 0 ? Math.min(1, availWidth / targetWidth) : 1
+  const previewBounds = getPreviewBounds(containerWidth)
+  const effectiveDesktopWidth = clampPreviewWidth(desktopWidth, containerWidth)
+  const dockedWidth = device === 'desktop'
+    ? effectiveDesktopWidth
+    : Math.min(MOBILE_PREVIEW_WIDTH, previewBounds.max)
+  const panelStyle = isDocked
+    ? {
+        width: dockedWidth,
+        height: 'calc(100vh - var(--bb-topbar-h) - 40px)',
+        boxShadow: 'var(--admin-shadow-lg)',
+      }
+    : {
+        boxShadow: 'var(--admin-shadow-lg)',
+      }
 
   return (
-    // Không có lớp phủ full-viewport chặn click: panel chỉ chiếm dải bên phải
-    // (max 860px), phần form bên trái vẫn thao tác được trong lúc xem preview —
-    // đúng tinh thần "live" (xem cập nhật ngay khi gõ, không phải đóng panel mới
-    // sửa tiếp được). Đóng bằng nút X hoặc phím Escape (không trap focus).
+    // Dock beside the form on wide screens; float above the form on narrower ones.
     <aside
+      ref={asideRef}
       aria-label={previewTitle}
-      className="fixed inset-y-0 right-0 z-[var(--admin-z-overlay)] flex w-full max-w-[860px] flex-col border-l border-border bg-muted shadow-xl outline-none"
+      className="fixed bottom-3 left-3 right-3 top-[calc(var(--bb-topbar-h)+12px)] z-[var(--admin-z-modal)] flex max-w-[calc(100vw-24px)] flex-col overflow-hidden rounded-[var(--admin-radius-card)] border border-border bg-muted outline-none xl:sticky xl:bottom-auto xl:left-auto xl:right-auto xl:top-[calc(var(--bb-topbar-h)+20px)] xl:z-[var(--admin-z-overlay)] xl:shrink-0 xl:self-start"
+      style={panelStyle}
     >
+      {/* Thanh kéo đổi độ rộng (chỉ chế độ Máy tính). Kéo để chia lại form/preview,
+          nhấp đúp về mặc định, mũi tên trái/phải cho bàn phím. */}
+      {isDocked && device === 'desktop' && (
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label={t(`${i18nPrefix}.resize`, { defaultValue: 'Kéo để đổi độ rộng khung xem trước (nhấp đúp để về mặc định)' })}
+          tabIndex={0}
+          onPointerDown={onHandlePointerDown}
+          onKeyDown={onHandleKeyDown}
+          onDoubleClick={resetWidth}
+          className="group absolute inset-y-0 left-0 z-20 flex w-2.5 cursor-col-resize touch-none items-center justify-center hover:bg-primary/10 focus-visible:bg-primary/10 focus-visible:outline-none"
+        >
+          <span className="h-10 w-1 rounded-full bg-border transition-colors group-hover:bg-primary group-focus-visible:bg-primary" aria-hidden="true" />
+        </div>
+      )}
       <header className="flex flex-wrap items-center gap-2 border-b border-border bg-card px-4 py-2">
         <Eye size={16} className="text-primary" />
         <span className="text-sm font-medium">{previewTitle}</span>

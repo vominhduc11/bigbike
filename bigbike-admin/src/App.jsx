@@ -334,7 +334,7 @@ function AdminApp() {
 
   if (route.kind === 'not-found') {
     return (
-      <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} authMode={authState.mode} pageTitle={activePageLabel}>
+      <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} pageTitle={activePageLabel}>
         <StatePanel tone="neutral" title={t('app.routeNotFound')} description={t('app.routeNotFoundDesc')}
           actionLabel={t('app.goToModule')} onAction={() => navigate(fallbackPath)} />
       </AdminShell>
@@ -346,7 +346,7 @@ function AdminApp() {
   const requiredPermission = routePermission(route.name)
   if (requiredPermission && !hasPermission(requiredPermission)) {
     return (
-      <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} authMode={authState.mode} pageTitle={activePageLabel}>
+      <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} pageTitle={activePageLabel}>
         <StatePanel tone="warning" title={t('app.permissionDenied')} description={`${t('app.missingPermission')} ${requiredPermission}`}
           actionLabel={t('app.goToAllowedModule')} onAction={() => navigate(fallbackPath)} />
       </AdminShell>
@@ -356,7 +356,7 @@ function AdminApp() {
   const requiredRoles = routeRoles(route.name)
   if (requiredRoles && !hasAnyRole(requiredRoles)) {
     return (
-      <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} authMode={authState.mode} pageTitle={activePageLabel}>
+      <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} pageTitle={activePageLabel}>
         <StatePanel tone="warning" title={t('app.permissionDenied')}
           description={t('app.missingRole', { defaultValue: 'Trang này chỉ dành cho một số vai trò quản trị (Quản trị viên, Quản lý cửa hàng).' })}
           actionLabel={t('app.goToAllowedModule')} onAction={() => navigate(fallbackPath)} />
@@ -433,7 +433,7 @@ function AdminApp() {
   }
 
   return (
-    <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} authMode={authState.mode} pageTitle={activePageLabel}>
+    <AdminShell navGroups={visibleNavGroups} activePath={activePath} navigate={navigate} user={authState.user} pageTitle={activePageLabel}>
       <Suspense fallback={SCREEN_SUSPENSE_FALLBACK}>
         {screen}
       </Suspense>

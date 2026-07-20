@@ -209,7 +209,7 @@ final class CatalogReadSupport {
                         ? List.of()
                         : p.variants().stream().map(CatalogReadSupport::toVariantStub).toList(),
                 p.stockState(),
-                p.forceOutOfStock(),
+                p.available(),
                 p.publishStatus(),
                 p.homepageBlock(),
                 p.homepageOrder(),

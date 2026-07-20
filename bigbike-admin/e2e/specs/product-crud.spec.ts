@@ -19,10 +19,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const TEST_IMAGE_PATH = path.join(__dirname, '../fixtures/product-image-2000.jpg')
 
 const RUN_ID = Date.now()
-const SHORT_DESCRIPTION_HTML =
-  '<p>Mô tả ngắn cho sản phẩm kiểm thử tự động E2E, không phải hàng thật, sẽ bị xoá sau khi chạy test.</p>'
-const DESCRIPTION_HTML =
-  '<p>Mô tả chi tiết cho sản phẩm kiểm thử tự động E2E. Nội dung này chỉ dùng để kiểm tra luồng tạo sản phẩm trong bigbike-admin, không phải thông tin sản phẩm thật.</p>'
+const SHORT_DESCRIPTION_TEXT =
+  'Mô tả ngắn cho sản phẩm kiểm thử tự động E2E, không phải hàng thật, sẽ bị xoá sau khi chạy test.'
+const DESCRIPTION_TEXT =
+  'Mô tả chi tiết cho sản phẩm kiểm thử tự động E2E. Nội dung này chỉ dùng để kiểm tra luồng tạo sản phẩm trong bigbike-admin, không phải thông tin sản phẩm thật.'
 const RETAIL_PRICE = '590000'
 const RETAIL_PRICE_EDITED = '699000'
 
@@ -59,13 +59,14 @@ async function pickFirstOption(page: Page, combobox: Locator) {
   await page.getByRole('option').first().click()
 }
 
-// Both shortDescription and the description block use RichTextEditorWithSource, which
-// keeps VI/EN — and every block — in its own Tabs instance. Scope to the containing
-// card to avoid ambiguity, and use the "Mã HTML" tab (a plain textarea) instead of the
-// TipTap visual editor since it's the reliable way to set content via Playwright.
-async function fillRichTextHtml(card: Locator, html: string) {
-  await card.getByRole('tab', { name: 'Mã HTML' }).click()
-  await card.locator('textarea').fill(html)
+// shortDescription and the description block's paragraph block both render a plain
+// RichTextEditor (TipTap) — no raw-HTML tab (V-notion-html-removed, matches the
+// Content/article editor). Playwright's .fill() supports [contenteditable] directly,
+// so type plain text straight into the editor's contenteditable region (identified by
+// its role="textbox" from RichTextEditor.jsx's editorProps.attributes) — TipTap wraps
+// it in a <p> like any normal keystroke would.
+async function fillRichText(card: Locator, text: string) {
+  await card.getByRole('textbox').fill(text)
 }
 
 // Product main image must be a REAL upload to MinIO — DATA_CONTRACT media rule — and
@@ -115,7 +116,7 @@ async function fillRequiredProductFields(page: Page, opts: FillOptions) {
   await combos.nth(2).click() // gender
   await page.getByRole('option', { name: 'Unisex', exact: true }).click()
 
-  await fillRichTextHtml(basicCard, SHORT_DESCRIPTION_HTML)
+  await fillRichText(basicCard, SHORT_DESCRIPTION_TEXT)
 
   if (!opts.skipImage) {
     await uploadMainImage(page)
@@ -130,7 +131,7 @@ async function fillRequiredProductFields(page: Page, opts: FillOptions) {
   const descCard = sectionCard(page, 'Mô tả chi tiết')
   await descCard.getByRole('button', { name: 'Thêm khối' }).click()
   await page.getByRole('menuitem', { name: 'Văn bản' }).click()
-  await fillRichTextHtml(descCard, DESCRIPTION_HTML)
+  await fillRichText(descCard, DESCRIPTION_TEXT)
 
   await fillEnglishName(page, basicCard, opts.nameEn)
 }

@@ -8,7 +8,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { ChevronDown, Copy, GripVertical, Plus, X } from 'lucide-react'
 import { RichTextEditor } from '../RichTextEditor'
-import { RichTextEditorWithSource } from '../RichTextEditorWithSource'
 import { cn, generateId } from '@/lib/utils'
 import { parseSizeGuide, serializeSizeGuide, mergeSizeGuideIntoHtml } from '../../lib/sizeChart'
 import { parseSuitabilityCards, mergeSuitabilityIntoHtml, emptySuitabilityCard, suitabilityCardHasContent } from '../../lib/suitabilityCards'
@@ -16,6 +15,8 @@ import { sanitizeHtml } from '../../lib/sanitizeHtml'
 import AiHtmlBrief from '../AiHtmlBrief'
 import { SortableList, DragHandle } from '../Sortable'
 import { showConfirm } from '../../lib/confirm'
+import { MediaRequirementHint } from '../MediaRequirementHint'
+import { IMAGE_RECO } from '../../lib/imageRecommendations'
 
 // Các loại khối có trình sửa riêng trong BlockCard. Khối ngoài tập này (vd dữ liệu cũ như
 // suitability/sizeGuide nay tách card riêng, hoặc loại chưa hỗ trợ) sẽ hiện thẻ giải thích rõ
@@ -92,14 +93,12 @@ export function HeadingBlockEditor({ block, onChange, disabled, contentLang = 'v
   )
 }
 
-export function ParagraphBlockEditor({ block, onChange, disabled, productMode, contentLang = 'vi' }) {
+export function ParagraphBlockEditor({ block, onChange, disabled, contentLang = 'vi' }) {
   const isEn = contentLang === 'en'
   const fHtml = isEn ? 'htmlEn' : 'html'
-  // Mô tả sản phẩm (productMode) giữ tab "Mã HTML"; bài viết Tin tức chỉ dùng trình soạn trực quan.
-  const Editor = productMode ? RichTextEditorWithSource : RichTextEditor
   return (
     <div className="flex-1">
-      <Editor
+      <RichTextEditor
         key={`${block._key}-${contentLang}`}
         value={block[fHtml] || ''}
         onChange={(html) => onChange({ [fHtml]: html })}
@@ -188,10 +187,17 @@ export function ImageBlockEditor({ block, onChange, disabled, onPickImage, conte
         {block.url ? (
           <div className="relative shrink-0">
             <img src={block.url} alt={block.alt || ''} className="h-24 w-36 object-cover rounded-sm border border-border" />
-            <Button variant="outline" size="sm" className="mt-1 w-36 text-xs"
-              onClick={onPickImage} disabled={disabled || isEn}>
-              {t('products.detail.blocks.imageChange')}
-            </Button>
+            <div className="mt-1 flex flex-wrap gap-1">
+              <Button variant="outline" size="sm" className="text-xs"
+                onClick={onPickImage} disabled={disabled || isEn}>
+                {t('products.detail.blocks.imageChange')}
+              </Button>
+              <Button variant="ghost" size="sm" className="text-danger hover:bg-danger-bg"
+                onClick={() => onChange({ url: '', alt: '' })} disabled={disabled || isEn}>
+                <X size={14} aria-hidden="true" />
+                {t('products.detail.blocks.imageRemove')}
+              </Button>
+            </div>
           </div>
         ) : (
           <Button variant="outline" size="sm" onClick={onPickImage} disabled={disabled || isEn} className="h-24 w-36 flex flex-col gap-1 text-xs">
@@ -200,6 +206,7 @@ export function ImageBlockEditor({ block, onChange, disabled, onPickImage, conte
           </Button>
         )}
         <div className="flex-1 flex flex-col gap-2">
+          <MediaRequirementHint recommend={IMAGE_RECO.general} />
           <Input
             aria-label={t('products.detail.blocks.imageCaptionPlaceholder')}
             placeholder={t('products.detail.blocks.imageCaptionPlaceholder')}
@@ -234,47 +241,87 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo, conte
         </SelectContent>
       </Select>
       {block.provider === 'youtube' ? (
-        <Input
-          aria-label={t('products.detail.blocks.videoUrlLabel', { defaultValue: 'Đường dẫn video' })}
-          placeholder={t('products.detail.blocks.videoUrlPlaceholder')}
-          value={block.url || ''}
-          onChange={(e) => onChange({ url: e.target.value })}
-          disabled={disabled || isEn}
-          maxLength={2000}
-        />
-      ) : block.provider === 'tiktok' ? (
-        <Input
-          aria-label={t('products.detail.blocks.videoUrlLabel', { defaultValue: 'Đường dẫn video' })}
-          placeholder={t('products.detail.blocks.tiktokUrlPlaceholder')}
-          value={block.url || ''}
-          onChange={(e) => onChange({ url: e.target.value })}
-          disabled={disabled || isEn}
-          maxLength={2000}
-        />
-      ) : block.provider === 'facebook' ? (
-        <Input
-          aria-label={t('products.detail.blocks.videoUrlLabel', { defaultValue: 'Đường dẫn video' })}
-          placeholder={t('products.detail.blocks.facebookUrlPlaceholder')}
-          value={block.url || ''}
-          onChange={(e) => onChange({ url: e.target.value })}
-          disabled={disabled || isEn}
-          maxLength={2000}
-        />
-      ) : (
-        <div className="flex gap-2 items-center">
+        <div className="flex items-center gap-2">
           <Input
             aria-label={t('products.detail.blocks.videoUrlLabel', { defaultValue: 'Đường dẫn video' })}
-            placeholder={t('products.detail.blocks.videoUploadedUrlPlaceholder', { defaultValue: 'URL video đã tải lên' })}
+            placeholder={t('products.detail.blocks.videoUrlPlaceholder')}
             value={block.url || ''}
             onChange={(e) => onChange({ url: e.target.value })}
             disabled={disabled || isEn}
             maxLength={2000}
             className="flex-1"
           />
-          <Button variant="outline" size="sm" onClick={onPickVideo} disabled={disabled || isEn} className="shrink-0">
-            {t('products.detail.blocks.videoPick')}
-          </Button>
+          {block.url && (
+            <Button variant="ghost" size="sm" className="shrink-0 text-danger hover:bg-danger-bg"
+              onClick={() => onChange({ url: '' })} disabled={disabled || isEn}>
+              <X size={14} aria-hidden="true" />
+              {t('products.detail.blocks.videoRemove')}
+            </Button>
+          )}
         </div>
+      ) : block.provider === 'tiktok' ? (
+        <div className="flex items-center gap-2">
+          <Input
+            aria-label={t('products.detail.blocks.videoUrlLabel', { defaultValue: 'Đường dẫn video' })}
+            placeholder={t('products.detail.blocks.tiktokUrlPlaceholder')}
+            value={block.url || ''}
+            onChange={(e) => onChange({ url: e.target.value })}
+            disabled={disabled || isEn}
+            maxLength={2000}
+            className="flex-1"
+          />
+          {block.url && (
+            <Button variant="ghost" size="sm" className="shrink-0 text-danger hover:bg-danger-bg"
+              onClick={() => onChange({ url: '' })} disabled={disabled || isEn}>
+              <X size={14} aria-hidden="true" />
+              {t('products.detail.blocks.videoRemove')}
+            </Button>
+          )}
+        </div>
+      ) : block.provider === 'facebook' ? (
+        <div className="flex items-center gap-2">
+          <Input
+            aria-label={t('products.detail.blocks.videoUrlLabel', { defaultValue: 'Đường dẫn video' })}
+            placeholder={t('products.detail.blocks.facebookUrlPlaceholder')}
+            value={block.url || ''}
+            onChange={(e) => onChange({ url: e.target.value })}
+            disabled={disabled || isEn}
+            maxLength={2000}
+            className="flex-1"
+          />
+          {block.url && (
+            <Button variant="ghost" size="sm" className="shrink-0 text-danger hover:bg-danger-bg"
+              onClick={() => onChange({ url: '' })} disabled={disabled || isEn}>
+              <X size={14} aria-hidden="true" />
+              {t('products.detail.blocks.videoRemove')}
+            </Button>
+          )}
+        </div>
+      ) : (
+        <>
+          <div className="flex gap-2 items-center">
+            <Input
+              aria-label={t('products.detail.blocks.videoUrlLabel', { defaultValue: 'Đường dẫn video' })}
+              placeholder={t('products.detail.blocks.videoUploadedUrlPlaceholder', { defaultValue: 'URL video đã tải lên' })}
+              value={block.url || ''}
+              onChange={(e) => onChange({ url: e.target.value })}
+              disabled={disabled || isEn}
+              maxLength={2000}
+              className="flex-1"
+            />
+            <Button variant="outline" size="sm" onClick={onPickVideo} disabled={disabled || isEn} className="shrink-0">
+              {t('products.detail.blocks.videoPick')}
+            </Button>
+            {block.url && (
+              <Button variant="ghost" size="sm" className="shrink-0 text-danger hover:bg-danger-bg"
+                onClick={() => onChange({ url: '' })} disabled={disabled || isEn}>
+                <X size={14} aria-hidden="true" />
+                {t('products.detail.blocks.videoRemove')}
+              </Button>
+            )}
+          </div>
+          <MediaRequirementHint recommend={IMAGE_RECO.contentVideo} />
+        </>
       )}
       <Input
         aria-label={t('products.detail.blocks.videoCaptionPlaceholder')}
@@ -322,26 +369,6 @@ export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, pro
   const fSubheading = isEn ? 'subheadingEn' : 'subheading'
   const fHeading = isEn ? 'headingEn' : 'heading'
   const fHtml = isEn ? 'htmlEn' : 'html'
-  const items = block.items || ['']
-  const itemsEn = block.itemsEn || []
-  const displayItems = isEn ? items.map((_, i) => itemsEn[i] || '') : items
-
-  function updateItem(i, value) {
-    if (isEn) {
-      const nextEn = items.map((_, idx) => (idx === i ? value : (itemsEn[idx] || '')))
-      onChange({ itemsEn: nextEn })
-      return
-    }
-    onChange({ items: items.map((it, idx) => idx === i ? value : it) })
-  }
-  function addItem() {
-    onChange({ items: [...items, ''], itemsEn: itemsEn.length ? [...itemsEn, ''] : itemsEn })
-  }
-  function removeItem(i) {
-    const next = items.filter((_, idx) => idx !== i)
-    const nextEn = itemsEn.filter((_, idx) => idx !== i)
-    onChange({ items: next.length === 0 ? [''] : next, itemsEn: nextEn })
-  }
 
   // Sản phẩm: chỉ trái/phải (không "tự đảo"); Content: giữ cả auto.
   const sideValue = block.side === 'left' || block.side === 'right'
@@ -368,10 +395,17 @@ export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, pro
         {block.url ? (
           <div className="relative shrink-0">
             <img src={block.url} alt={block.alt || ''} className="h-24 w-36 object-cover rounded-sm border border-border" />
-            <Button variant="outline" size="sm" className="mt-1 w-36 text-xs"
-              onClick={onPickImage} disabled={disabled || isEn}>
-              {t('products.detail.blocks.imageChange')}
-            </Button>
+            <div className="mt-1 flex flex-wrap gap-1">
+              <Button variant="outline" size="sm" className="text-xs"
+                onClick={onPickImage} disabled={disabled || isEn}>
+                {t('products.detail.blocks.imageChange')}
+              </Button>
+              <Button variant="ghost" size="sm" className="text-danger hover:bg-danger-bg"
+                onClick={() => onChange({ url: '', alt: '' })} disabled={disabled || isEn}>
+                <X size={14} aria-hidden="true" />
+                {t('products.detail.blocks.imageRemove')}
+              </Button>
+            </div>
           </div>
         ) : (
           <Button variant="outline" size="sm" onClick={onPickImage} disabled={disabled || isEn} className="h-24 w-36 flex flex-col gap-1 text-xs">
@@ -380,6 +414,7 @@ export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, pro
           </Button>
         )}
         <div className="flex-1 flex flex-col gap-2">
+          <MediaRequirementHint recommend={IMAGE_RECO.featureImage} />
           <Input
             aria-label={t('products.detail.blocks.imageCaptionPlaceholder')}
             placeholder={t('products.detail.blocks.imageCaptionPlaceholder')}
@@ -420,41 +455,6 @@ export function FeatureBlockEditor({ block, onChange, disabled, onPickImage, pro
         disabled={disabled}
         enableImagePicker={false}
       />
-
-      {/* Danh sách điểm nổi bật */}
-      <div className="flex flex-col gap-2">
-        <Select value={block.listStyle || 'bulleted'} onValueChange={(v) => onChange({ listStyle: v })} disabled={disabled || isEn}>
-          <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="bulleted">{t('products.detail.blocks.listStyleBulleted')}</SelectItem>
-            <SelectItem value="numbered">{t('products.detail.blocks.listStyleNumbered')}</SelectItem>
-          </SelectContent>
-        </Select>
-        <div className="flex flex-col gap-1">
-          {displayItems.map((item, i) => (
-            <div key={i} className="flex gap-1 items-center">
-              <span className="text-muted-foreground text-sm w-5 text-center shrink-0">
-                {block.listStyle === 'numbered' ? `${i + 1}.` : '•'}
-              </span>
-              <Input
-                className="flex-1"
-                aria-label={t('products.detail.blocks.listItemPlaceholder')}
-                value={item}
-                onChange={(e) => updateItem(i, e.target.value)}
-                disabled={disabled}
-                placeholder={t('products.detail.blocks.listItemPlaceholder')}
-                maxLength={2000}
-              />
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
-                onClick={() => removeItem(i)} disabled={disabled || isEn}
-                aria-label={t('products.detail.blocks.listRemoveItem')}><X size={14} aria-hidden="true" /></Button>
-            </div>
-          ))}
-        </div>
-        <Button variant="outline" size="sm" onClick={addItem} disabled={disabled || isEn} className="self-start">
-          + {t('products.detail.blocks.listAddItem')}
-        </Button>
-      </div>
     </div>
   )
 }
@@ -634,7 +634,7 @@ export function SuitabilityBlockEditor({ block, onChange, disabled, contentLang 
             maxLength={20000}
           />
           <p className="text-xs text-muted-foreground">{t('products.detail.suitability.htmlHint')}</p>
-          <AiHtmlBrief />
+          <AiHtmlBrief promptKey="products.detail.suitability.aiBriefPrompt" />
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {t('products.detail.suitability.previewLabel')}
@@ -952,7 +952,7 @@ export function BlockCard({ block, disabled, structDisabled, contentLang, sortab
         ) : (
           <>
             {block.type === 'heading'   && <HeadingBlockEditor   block={block} onChange={onUpdate} disabled={disabled} contentLang={contentLang} />}
-            {block.type === 'paragraph' && <ParagraphBlockEditor block={block} onChange={onUpdate} disabled={disabled} productMode={productMode} contentLang={contentLang} />}
+            {block.type === 'paragraph' && <ParagraphBlockEditor block={block} onChange={onUpdate} disabled={disabled} contentLang={contentLang} />}
             {block.type === 'list'      && <ListBlockEditor      block={block} onChange={onUpdate} disabled={disabled} contentLang={contentLang} />}
             {block.type === 'image'     && <ImageBlockEditor     block={block} onChange={onUpdate} disabled={disabled} onPickImage={onPickImage} onAltBlur={onAltBlur} contentLang={contentLang} />}
             {block.type === 'video'     && <VideoBlockEditor     block={block} onChange={onUpdate} disabled={disabled} onPickVideo={onPickVideo} contentLang={contentLang} />}

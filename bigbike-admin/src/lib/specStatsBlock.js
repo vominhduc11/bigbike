@@ -6,8 +6,10 @@ import { generateId } from '@/lib/utils'
  *
  * Mỗi ô 2 dòng: `value` (số liệu chính — lớn/đậm/màu nhấn) · `label` (tên chỉ tiêu — in hoa, xám nhạt).
  *
- * HTML sinh ra là một lưới tự chứa (inline-style + biến brand web `--color-brand`, kèm hex fallback)
- * mô phỏng FeaturedSpecsBar để giao diện mặc định không đổi. Container có class `bb-specstats` để
+ * HTML sinh ra là một lưới tự chứa (inline-style dùng token canonical web `--bb-border-subtle`/
+ * `--bb-bg-surface`/`--bb-text-a2-page`/`--bb-action-primary`/`--bb-text-a5-meta`/
+ * `--bb-text-secondary`, kèm hex fallback cho các token không đổi theo breakpoint) mô phỏng
+ * FeaturedSpecsBar để giao diện mặc định không đổi. Container có class `bb-specstats` để
  * round-trip ổn định: parse/merge bám vào class này; sửa cấu trúc chỉ đổi chữ, giữ nguyên style.
  *
  * Mã hoá theo SỐ SPAN (không dùng data-attr để khỏi lệ thuộc bộ lọc HTML của web): 2 span =
@@ -33,15 +35,16 @@ const statHasContent = (s) => s.value || s.label
 
 const GRID_STYLE =
   'display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;' +
-  'border:1px solid var(--color-border,#e5e7eb);background:var(--color-border,#e5e7eb)'
+  'border:1px solid var(--bb-border-subtle,#dddddd);background:var(--bb-border-subtle,#dddddd)'
 const BOX_STYLE =
   'display:flex;flex-direction:column;align-items:center;gap:4px;' +
-  'background:var(--color-background,#ffffff);padding:24px 16px;text-align:center'
+  'background:var(--bb-bg-surface,#ffffff);padding:24px 16px;text-align:center'
 const VALUE_STYLE =
-  'font-weight:700;font-size:24px;line-height:1;text-transform:uppercase;color:var(--color-brand,#e8281e)'
+  'font-weight:700;font-size:var(--bb-text-a2-page);line-height:1;text-transform:uppercase;' +
+  'color:var(--bb-action-primary,#cc0906)'
 const LABEL_STYLE =
-  'font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;' +
-  'color:var(--color-muted-foreground,#6b7280);opacity:0.72'
+  'font-size:var(--bb-text-a5-meta);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;' +
+  'color:var(--bb-text-secondary,#6f6f6f)'
 
 /** 1 ô ({value,label}) → markup 2 dòng. */
 function boxHtml(s) {

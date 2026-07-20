@@ -348,6 +348,18 @@ public class AdminReportService {
                 userAgent));
     }
 
+    /** Audit record for the uncapped, streamed catalog export. */
+    public void recordFullProductCatalogExportAudit(String actorId, String ipAddress, String userAgent) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("exportType", "PRODUCT_CATALOG_FULL");
+        payload.put("scope", "ALL_PRODUCTS_INCLUDING_TRASH");
+        payload.put("streamed", true);
+        payload.put("rowLimit", null);
+        auditLogWriter.save(auditLogFactory.build(
+                "ADMIN", parseActorId(actorId), "REPORT_EXPORT_CREATED", "PRODUCT",
+                null, null, writeAuditJson(payload), ipAddress, userAgent));
+    }
+
     private static String nvl(String s) { return s != null ? s : ""; }
 
     private UUID parseActorId(String id) {

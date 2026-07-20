@@ -14,7 +14,8 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * Wire shape for the bulk product import/export JSON template (product-template/mau-day-du.json).
+ * Wire shape for the bulk product import JSON template and single-product JSON export
+ * (product-template/mau-day-du.json).
  * Every bilingual column is nested as one object at its own key (e.g. {@code name: {nameVI, nameEN}})
  * instead of a Vietnamese top-level key plus a separate {@code translations.en.*} block, so both
  * languages of a column sit next to each other in the file. {@link ProductImportRowMapper} converts
@@ -44,7 +45,7 @@ public class ProductImportRow {
     private BigDecimal salePrice;
     private String currency;
     private PublishStatus publishStatus;
-    private Boolean forceOutOfStock;
+    private Boolean available;
     private HomepageBlock homepageBlock;
     private Integer homepageOrder;
 

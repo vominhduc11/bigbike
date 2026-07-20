@@ -467,10 +467,6 @@ export async function importProductsCommit(file, skipRowKeys) {
   return payload?.data
 }
 
-export async function exportProductImportTemplate() {
-  return fetchCsvBlob('/admin/products/import/export', {}, 'bigbike-products.json', 'application/json')
-}
-
 export async function exportProductJson(productId) {
   return fetchCsvBlob(`/admin/products/import/export/${productId}`, {}, `product-${productId}.json`, 'application/json')
 }
@@ -1605,6 +1601,11 @@ export async function exportCustomersCsv(filters = {}) {
 
 export async function exportProductsCsv(filters = {}) {
   return fetchCsvBlob('/admin/reports/products/export', { publishStatus: filters.publishStatus }, 'products.csv')
+}
+
+/** Full operational catalog export used only by the Product module; deliberately has no screen filters. */
+export async function exportFullProductCatalogCsv() {
+  return fetchCsvBlob('/admin/products/export.csv', {}, 'products-full.csv')
 }
 
 // Inventory

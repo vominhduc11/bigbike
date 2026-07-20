@@ -124,8 +124,6 @@ public sealed interface DescriptionBlock
                     .subheading(pick(b.getSubheading(), b.getSubheadingEn(), locale))
                     .heading(pick(b.getHeading(), b.getHeadingEn(), locale))
                     .html(pick(b.getHtml(), b.getHtmlEn(), locale))
-                    .listStyle(b.getListStyle())
-                    .items(pickList(b.getItems(), b.getItemsEn(), locale))
                     .build();
         }
         // DividerBlock / ProsConsBlock (dormant): no *En fields to resolve — pass through unchanged.
@@ -282,8 +280,7 @@ public sealed interface DescriptionBlock
     }
 
     /**
-     * { type: "feature", side?: "auto"|"left"|"right", url?, alt?, caption?, subheading?, heading?, html?,
-     *   listStyle?: "bulleted"|"numbered", items?: string[] }
+     * { type: "feature", side?: "auto"|"left"|"right", url?, alt?, caption?, subheading?, heading?, html? }
      *
      * <p>Một "hàng tính năng" gói chung 1 ảnh + tiêu đề phụ (eyebrow) + tiêu đề chính + đoạn mô tả +
      * danh sách, render thành khối 2 cột ảnh–chữ trên web (xen kẽ trái/phải khi {@code side} = "auto"
@@ -344,19 +341,6 @@ public sealed interface DescriptionBlock
         @JsonInclude(JsonInclude.Include.ALWAYS)
         @Size(max = 50000, message = "feature.htmlEn must not exceed 50 000 characters.")
         private String htmlEn;
-
-        @Pattern(regexp = "bulleted|numbered", message = "feature.listStyle must be 'bulleted' or 'numbered'.")
-        private String listStyle;
-
-        @JsonInclude(JsonInclude.Include.ALWAYS)
-        @Size(max = 200, message = "feature.items must not exceed 200 entries.")
-        private List<@Size(max = 2000, message = "Feature list item must not exceed 2 000 characters.") String> items;
-
-        // Optional English translation (V326 merge) — parallel array kept in sync by the admin
-        // editor (VI is structurally authoritative); never required, length-checked only.
-        @JsonInclude(JsonInclude.Include.ALWAYS)
-        @Size(max = 200, message = "feature.itemsEn must not exceed 200 entries.")
-        private List<@Size(max = 2000, message = "Feature list item (EN) must not exceed 2 000 characters.") String> itemsEn;
     }
 
     /**

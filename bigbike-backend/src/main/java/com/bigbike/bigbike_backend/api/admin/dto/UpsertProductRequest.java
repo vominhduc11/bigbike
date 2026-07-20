@@ -57,7 +57,8 @@ public class UpsertProductRequest {
     // stockState is derived from boolean availability. Removed from input — backend ignores it.
     private PublishStatus publishStatus;
 
-    private Boolean forceOutOfStock;
+    /** Product-level "còn/hết" toggle for products WITHOUT variants; ignored when variants exist. */
+    private Boolean available;
     private HomepageBlock homepageBlock;
     private Integer homepageOrder;
     private boolean homepageOrderPresent;

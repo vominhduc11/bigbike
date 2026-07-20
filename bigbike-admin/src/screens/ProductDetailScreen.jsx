@@ -3,12 +3,11 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
 import {
-  AlertCircle, Check, ChevronsDownUp, ChevronsUpDown, Download, Eye, Info, Loader2, Lock, Save, Search as PfSearch, X,
+  AlertCircle, Check, Eye, Info, Loader2, Lock, Save, Search as PfSearch, X,
 } from 'lucide-react'
 
 import {
   createProduct,
-  exportProductJson,
   fetchBrands,
   fetchCategoryTree,
   fetchProductAssignment,
@@ -33,23 +32,22 @@ import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { parseSpecsFromHtml } from '../lib/specSheet'
 import { parseSpecStatsFromHtml } from '../lib/specStatsBlock'
 import { parseTrustBadgesFromHtml } from '../lib/trustBadgesBlock'
-import { RichTextEditorWithSource } from '../components/RichTextEditorWithSource'
+import { RichTextEditor } from '../components/RichTextEditor'
 import { BlockEditor } from '../components/BlockEditor'
 import { SuitabilityBlockEditor, SizeGuideBlockEditor } from '../components/block-editor/blocks'
 import { createBlock } from '../components/block-editor/constants'
 import { SortableList } from '../components/Sortable'
 import { LivePreview } from '../components/LivePreview'
+import { useAutoHideSidebar } from '../components/AdminShell'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import { cn, generateId } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 
 import {
   slugify,
-  getAllowedPublishStatuses,
   formatPrice,
   getAutosaveKey,
   saveFormToStorage,
@@ -101,7 +99,6 @@ import {
   VariantsEditor,
   VariantMatrixWizard,
 } from './product-detail/VariantEditors'
-import { PublishChecklistModal } from './product-detail/Modals'
 // ── Prototype form layout ───────────────────────────────────────────────────────
 
 import {
@@ -134,10 +131,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const [isDirty, setIsDirty] = useState(false)
   const [validationErrors, setValidationErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isExportingJson, setIsExportingJson] = useState(false)
   const slugEditedByUser = useRef(false)
   const enSlugEditedByUser = useRef(false)
-  const [originalPublishStatus, setOriginalPublishStatus] = useState(null)
 
   // ── Live preview (xem trước storefront) ──────────────────────────────────────
   // Pane nhúng iframe bigbike-web /preview/product; debounce form rồi gọi dry-run
@@ -151,6 +146,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const [previewData, setPreviewData] = useState(null)
   const [previewError, setPreviewError] = useState(null)
   const [previewLoading, setPreviewLoading] = useState(false)
+
+  // Mở panel Xem trước → tự ẩn sidebar bên trái, nhường chỗ cho form (màn hình vốn đã
+  // chật vì có thêm panel 520px). Đóng preview hoặc rời trang → sidebar hiện lại.
+  useAutoHideSidebar(previewOpen)
 
   useEffect(() => {
     if (!previewOpen) return
@@ -178,10 +177,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   // Autosave / draft recovery
   const autosaveKey = getAutosaveKey(productId, isCreate)
   const [draftRecovery, setDraftRecovery] = useState(null)
-
-  // Publish checklist
-  const [showPublishChecklist, setShowPublishChecklist] = useState(false)
-  const [pendingPublish, setPendingPublish] = useState(null)
 
   // Variant matrix wizard
   const [showMatrixWizard, setShowMatrixWizard] = useState(false)
@@ -306,7 +301,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     setIsDirty(false)
     slugEditedByUser.current = Boolean(nextForm.slug)
     enSlugEditedByUser.current = Boolean(nextForm.translations?.en?.slug)
-    setOriginalPublishStatus(nextForm.publishStatus)
 
     // Check autosave newer than server updatedAt
     if (!isCreate && item?.updatedAt) {
@@ -327,41 +321,14 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     }
   }, [isCreate, fetchResult?.item?.id, fetchResult?.item?.name, t])
 
-  // Check autosave on mount for create mode; also handle product duplicate payload
+  // Check autosave on mount for create mode
   useEffect(() => {
     if (!isCreate) return
 
-    // Duplicate product: pre-fill form from sessionStorage payload
-    try {
-      const raw = sessionStorage.getItem('product-duplicate-payload')
-      if (raw) {
-        sessionStorage.removeItem('product-duplicate-payload')
-        const item = JSON.parse(raw)
-        const base = buildFormFromItem(item)
-        const duplicated = {
-          ...base,
-          // Clear identity fields — user must set unique values
-          slug: '',
-          // English slug is also identity — clear it so the copy doesn't collide.
-          translations: { ...base.translations, en: { ...(base.translations?.en || {}), slug: '' } },
-          sku: base.sku ? `${base.sku}-COPY` : '',
-          publishStatus: 'DRAFT',
-          // Clear variants IDs so they create as new
-          variants: base.variants.map((v) => ({ ...v, _key: generateId(), id: '' })),
-        }
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setForm(duplicated)
-        setIsDirty(true)
-        slugEditedByUser.current = false
-        enSlugEditedByUser.current = false
-        toast.success(t('products.detail.duplicateSuccess', { name: item.name || t('products.detail.productFallbackName') }))
-        return
-      }
-    } catch { /* ignore parse errors */ }
-
     const draft = loadFormFromStorage(autosaveKey)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (draft?.form) setDraftRecovery(draft)
-  }, [autosaveKey, isCreate, t])
+  }, [autosaveKey, isCreate])
 
   // Autosave when dirty
   useEffect(() => {
@@ -379,7 +346,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
   const isReadOnly = !canUpdate || isSubmitting
   const formRef = useRef(null)
-  const allowedPublishStatuses = getAllowedPublishStatuses(isCreate ? null : originalPublishStatus)
 
   // F6: cảnh báo khi rời trang lúc còn thay đổi chưa lưu — phủ CẢ điều hướng nội
   // bộ (sidebar/breadcrumb qua navigationGuard) lẫn reload/đóng tab (beforeunload).
@@ -626,7 +592,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       const savedItem = response.item || null
       const nextForm = buildFormFromItem(savedItem)
       setForm(nextForm)
-      setOriginalPublishStatus(nextForm.publishStatus)
       slugEditedByUser.current = Boolean(nextForm.slug)
       enSlugEditedByUser.current = Boolean(nextForm.translations?.en?.slug)
       setIsDirty(false)
@@ -703,19 +668,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     focusFirstError()
   }
 
-  async function handleExportJson() {
-    if (!canUpdate || isExportingJson) return
-    setIsExportingJson(true)
-    try {
-      await exportProductJson(productId)
-      toast.success(t('export.success'))
-    } catch {
-      toast.error(t('export.error'))
-    } finally {
-      setIsExportingJson(false)
-    }
-  }
-
   async function handleSave(overridePublishStatus) {
     if (!canUpdate) return
 
@@ -748,30 +700,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
     setIsSubmitting(true)
     setValidationErrors({})
-
-    // Show quality checklist whenever the resulting status would be PUBLISHED
-    // but the saved-on-server status is not — covers both the "Save & Publish"
-    // button path AND the dropdown-then-save path.
-    if (originalPublishStatus !== 'PUBLISHED' && formToSave.publishStatus === 'PUBLISHED') {
-      setPendingPublish({ formToSave, payload: toPayload(formToSave) })
-      setShowPublishChecklist(true)
-      setIsSubmitting(false)
-      return
-    }
-
     saveMutation.mutate(toPayload(formToSave))
   }
-
-
-  function confirmPublish() {
-    if (!pendingPublish) return
-    setShowPublishChecklist(false)
-    setIsSubmitting(true)
-    setValidationErrors({})
-    saveMutation.mutate(pendingPublish.payload)
-    setPendingPublish(null)
-  }
-
 
 
   // ── Tab navigation state (replaces the old TOC sidebar) ─────────────────────
@@ -781,12 +711,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   // (gallery, dải tin cậy — không bắt buộc) collapsed mặc định để chống ngợp field (audit P0-1).
   const [activeTab, setActiveTab] = useState('main')
   // Tab "main" gom mọi mục thành 3 NHÓM gấp/mở. Mở sẵn nhóm bán hàng cốt lõi (MAIN_GROUPS_DEFAULT_OPEN),
-  // 2 nhóm còn lại thu gọn để form không dài lê thê. Nút "Mở/Thu gọn tất cả" ở đầu tab đảo toàn bộ.
+  // 2 nhóm còn lại thu gọn để form không dài lê thê.
   const [openGroups, setOpenGroups] = useState(() => ({ ...MAIN_GROUPS_DEFAULT_OPEN }))
   const toggleGroup = (id) => setOpenGroups((prev) => ({ ...prev, [id]: !prev[id] }))
-  const allGroupsOpen = MAIN_SECTION_GROUPS.every((g) => openGroups[g.id])
-  const setAllGroups = (val) =>
-    setOpenGroups(Object.fromEntries(MAIN_SECTION_GROUPS.map((g) => [g.id, val])))
   const [savedFlash, setSavedFlash] = useState(false)
 
   if (state.status === 'loading') {
@@ -922,10 +849,11 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       ? t('products.detail.saveDirty', { defaultValue: 'Có thay đổi chưa lưu' })
       : t('products.detail.saveClean', { defaultValue: 'Đã lưu' })
 
+  // Trang sửa chỉ còn 1 nút Lưu: sản phẩm đang PUBLISHED thì lưu giữ nguyên trạng thái
+  // (không bị lùi về Nháp chỉ vì sửa nội dung); còn lại luôn lưu về DRAFT — đăng bán
+  // là hành động riêng, chỉ làm được từ nút bật/tắt ở màn danh sách sản phẩm.
   const isPublished = form.publishStatus === 'PUBLISHED'
-  const primaryLabel = isPublished
-    ? t('products.detail.saveBtn')
-    : (isCreate ? t('products.detail.createAndPublish') : t('products.detail.saveAndPublish'))
+  const primaryLabel = isPublished ? t('products.detail.saveBtn') : t('products.detail.saveDraft')
 
   async function handleClose() {
     if (isDirty) {
@@ -940,6 +868,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
   return (
     <AssignmentConfigContext.Provider value={assignmentConfig ?? null}>
+    <div className="flex w-full min-w-0 items-start gap-6">
+    {/* @container: các lưới trong form co theo BỀ RỘNG CỘT NÀY, không theo cửa sổ —
+        khi kéo khung xem trước rộng ra làm cột hẹp lại thì lưới tự về 1 cột, không chật. */}
+    <div className="@container min-w-0 flex-1 basis-0">
     <Screen maxWidth="1440px">
         <ScreenHeader
           eyebrow={t('products.detail.eyebrow')}
@@ -1068,37 +1000,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             }
           }}
         >
-          {/* Chú thích dấu bắt buộc — hiện cả khi tạo mới lẫn khi sửa (trường bắt buộc vẫn còn
-              trong cả hai chế độ: tên, danh mục, thương hiệu, ảnh, giá khi không biến thể...). */}
-          <p className="text-xs text-muted-foreground">
-            <span className="text-danger">*</span>
-            {' '}
-            {t('products.detail.requiredLegend', { defaultValue: 'Bắt buộc' })}
-          </p>
           {activeTab === 'main' && (
             <>
-              {/* Nút mở/thu gọn toàn bộ các nhóm — tiện khi cần điền/rà soát hết một lượt. */}
-              <div className="-mb-2 flex justify-end">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setAllGroups(!allGroupsOpen)}
-                >
-                  {allGroupsOpen ? (
-                    <>
-                      <ChevronsDownUp size={14} className="mr-1.5" />
-                      {t('products.detail.collapseAll', { defaultValue: 'Thu gọn tất cả' })}
-                    </>
-                  ) : (
-                    <>
-                      <ChevronsUpDown size={14} className="mr-1.5" />
-                      {t('products.detail.expandAll', { defaultValue: 'Mở tất cả' })}
-                    </>
-                  )}
-                </Button>
-              </div>
-
               {/* ══ Nhóm 1: Bán hàng & hình ảnh ══ */}
               <CollapsibleSection
                 title={t('products.detail.groupSales', { defaultValue: 'Bán hàng & hình ảnh' })}
@@ -1120,7 +1023,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </div>
                 }
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
                   <Field
                     full
                     label={t('products.detail.name')}
@@ -1171,7 +1074,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     count={`${form.sku.length} / 100`}
                     countWarn={form.sku.length > 85}
                     helper={t('products.detail.skuHint')}
-                    required={!hasVariants}
+                    required
                     error={validationErrors.sku}
                   >
                     <Input
@@ -1257,14 +1160,13 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     helper={t('products.detail.shortDescriptionHint')}
                     error={validationErrors.shortDescription}
                   >
-                    <RichTextEditorWithSource
+                    <RichTextEditor
                       key={`shortDescription-${contentLang}`}
                       value={langValue('shortDescription')}
                       onChange={(html) => langChange('shortDescription', html)}
                       placeholder={t('products.detail.shortDescriptionPlaceholder')}
                       disabled={isReadOnly}
                       hasError={Boolean(validationErrors.shortDescription)}
-                      maxLength={2000}
                     />
                   </Field>
 
@@ -1312,7 +1214,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     <span>{t('products.detail.variantPricingHint')}</span>
                   </div>
                 )}
-                <div className={cn('grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-5', form.variants.length > 0 && 'mt-5')}>
+                <div className={cn('grid grid-cols-1 @xl:grid-cols-2 gap-x-4 gap-y-5', form.variants.length > 0 && 'mt-5')}>
                   <Field label={t('products.detail.retailPrice')} required={!hasVariants} error={validationErrors.retailPrice}>
                     <Input
                       type="text"
@@ -1394,49 +1296,21 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     )}
                   </Field>
 
-                  <Field label={t('products.detail.publishStatus')} error={validationErrors.publishStatus}>
-                    <Select value={form.publishStatus} onValueChange={(val) => { if (val) updateField('publishStatus', val) }} disabled={isReadOnly}>
-                      <SelectTrigger><SelectValue>{form.publishStatus ? t(`status.publish.${form.publishStatus}`, { defaultValue: form.publishStatus }) : undefined}</SelectValue></SelectTrigger>
-                      <SelectContent>
-                        {form.publishStatus && !['DRAFT', 'PUBLISHED', 'TRASH'].includes(form.publishStatus) && (
-                          <SelectItem value={form.publishStatus} disabled>
-                            {t('products.detail.specialPublishNote', { state: form.publishStatus })}
-                          </SelectItem>
-                        )}
-                        <SelectItem value="DRAFT" disabled={!allowedPublishStatuses.includes('DRAFT')}>{t('status.publish.DRAFT')}</SelectItem>
-                        <SelectItem value="PUBLISHED" disabled={!allowedPublishStatuses.includes('PUBLISHED')}>{t('status.publish.PUBLISHED')}</SelectItem>
-                        {form.publishStatus === 'TRASH' && (
-                          <SelectItem value="TRASH" disabled>{t('status.publish.TRASH')}</SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-
-                  {form.variants.length === 0 ? (
+                  {form.variants.length === 0 && (
                     // Sản phẩm KHÔNG biến thể: công tắc Còn/Hết mức sản phẩm (admin tự quyết).
-                    // Lưu qua forceOutOfStock; backend dẫn xuất stockState theo công tắc này.
-                    <div className="md:col-span-2 flex items-center gap-2.5 p-2.5 border border-border text-sm">
+                    // Lưu qua available; backend dẫn xuất stockState theo công tắc này.
+                    <div className="@xl:col-span-2 flex items-center gap-2.5 p-2.5 border border-border text-sm">
                       <Switch
-                        checked={!form.forceOutOfStock}
-                        onCheckedChange={(checked) => updateField('forceOutOfStock', !checked)}
+                        checked={form.available}
+                        onCheckedChange={(checked) => updateField('available', checked)}
                         disabled={isReadOnly}
                         aria-label={t('products.detail.productStock')}
                       />
-                      <span className={!form.forceOutOfStock ? 'text-success font-medium' : 'text-danger font-medium'}>
-                        {!form.forceOutOfStock ? t('status.stock.IN_STOCK') : t('status.stock.OUT_OF_STOCK')}
+                      <span className={form.available ? 'text-success font-medium' : 'text-danger font-medium'}>
+                        {form.available ? t('status.stock.IN_STOCK') : t('status.stock.OUT_OF_STOCK')}
                       </span>
                       <span className="text-muted-foreground">— {t('products.detail.productStockHint')}</span>
                     </div>
-                  ) : (
-                    // Sản phẩm CÓ biến thể: tồn kho theo từng biến thể; ô này là "buộc hết" toàn SP.
-                    <label className="md:col-span-2 flex items-start gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted">
-                      <Checkbox
-                        checked={form.forceOutOfStock}
-                        onCheckedChange={(checked) => updateField('forceOutOfStock', checked)}
-                        disabled={isReadOnly}
-                      />
-                      <span><strong>{t('products.detail.forceOutOfStock')}</strong> — {t('products.detail.forceOutOfStockHint')}</span>
-                    </label>
                   )}
                 </div>
               </SectionCard>
@@ -1583,7 +1457,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 <p className="text-xs text-muted-foreground mb-3">
                   {t('products.detail.highlights.hint', { defaultValue: 'Các gạch đầu dòng ưu/nhược điểm thật của sản phẩm — hiện thành khối riêng ngay dưới mô tả (ngoài tab) và đưa vào dữ liệu có cấu trúc. Không bắt buộc; để trống → web ẩn khối.' })}
                 </p>
-                <div className="grid gap-5 md:grid-cols-2">
+                <div className="grid gap-5 @xl:grid-cols-2">
                   <div>
                     <div className="text-sm font-medium mb-2">{t('products.detail.highlights.prosTitle', { defaultValue: 'Ưu điểm' })}</div>
                     {validationErrors.positiveNotes && (
@@ -1924,7 +1798,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
                   <Field
                     full
                     label={t('products.detail.seoTitle')}
@@ -1996,7 +1870,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                       {seoPassed} / {seoChecks.length}
                     </span>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-y-1 gap-x-3">
+                  <div className="grid grid-cols-1 @xl:grid-cols-2 gap-y-1 gap-x-3">
                     {seoChecks.map((c, i) => (
                       <div key={i} className={cn('flex items-center gap-2 text-xs', c.ok ? 'text-foreground' : 'text-muted-foreground')}>
                         <span className={cn(
@@ -2042,49 +1916,15 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             {t('products.detail.preview.open', { defaultValue: 'Xem trước' })}
           </Button>
 
-          {!isCreate && (
-            <Button
-              variant="outline"
-              type="button"
-              disabled={!canUpdate || isExportingJson}
-              onClick={handleExportJson}
-              title={!canUpdate ? t('products.requirePermission') : undefined}
-            >
-              {isExportingJson
-                ? <Loader2 size={14} className="animate-spin mr-1.5" />
-                : <Download size={14} className="mr-1.5" />}
-              {t('products.detail.exportJson', { defaultValue: 'Xuất JSON' })}
-            </Button>
-          )}
-
-
-          <Button
-            variant="outline"
-            type="button"
-            disabled={isReadOnly || !isDirty}
-            onClick={() => handleSave('DRAFT')}
-          >
-            {t('products.detail.saveDraft')}
-          </Button>
-
           <Button
             type="button"
             disabled={isReadOnly || isSubmitting || !isDirty}
-            onClick={() => handleSave(isPublished ? undefined : 'PUBLISHED')}
+            onClick={() => handleSave(isPublished ? undefined : 'DRAFT')}
           >
             {isSubmitting && <Loader2 size={14} className="animate-spin mr-1.5" />}
             {primaryLabel}
           </Button>
         </StickyActionBar>
-
-        {/* Modals */}
-        {showPublishChecklist && pendingPublish && (
-          <PublishChecklistModal
-            form={pendingPublish.formToSave}
-            onConfirm={confirmPublish}
-            onCancel={() => { setShowPublishChecklist(false); setPendingPublish(null) }}
-          />
-        )}
 
         {showMatrixWizard && (
           <VariantMatrixWizard
@@ -2114,7 +1954,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             onClose={() => setShowMatrixWizard(false)}
           />
         )}
-
+    </Screen>
+    </div>
         <LivePreview
           open={previewOpen}
           onClose={() => setPreviewOpen(false)}
@@ -2130,7 +1971,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           i18nPrefix="products.detail.preview"
           t={t}
         />
-    </Screen>
+    </div>
     </AssignmentConfigContext.Provider>
   )
 }

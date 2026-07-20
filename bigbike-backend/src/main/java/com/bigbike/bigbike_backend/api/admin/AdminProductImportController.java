@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * Bulk product import (JSON) + the matching round-trip export. Split out from
+ * Bulk product import (JSON) + single-product JSON export. Split out from
  * {@link AdminCatalogController} the same way {@code AdminReportController} already is —
  * same permission domain ({@code products.update}), cleaner review unit.
  */
@@ -57,24 +57,7 @@ public class AdminProductImportController extends AdminControllerSupport {
                 productImportService.commitImport(file, skip, resolveAdminId()), request);
     }
 
-    /**
-     * Full JSON export: the current catalog serialized as the {@code ProductImportRow[]} shape the
-     * import accepts. Export includes media, relations, and publish status for completeness, but
-     * bulk import discards those groups before saving Draft rows. Deliberately separate from
-     * {@code GET /api/v1/admin/reports/products/export} (CSV reporting overview, gated by
-     * {@code reports.export}) — this one is a catalog-authoring capability.
-     */
-    @GetMapping("/export")
-    public ResponseEntity<byte[]> exportTemplate(HttpServletRequest request) {
-        devAdminAuthService.requirePermission(request, "products.update");
-        byte[] json = productImportService.exportCurrentCatalogAsTemplateJson();
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"bigbike-products.json\"")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(json);
-    }
-
-    /** Same full JSON export shape as {@link #exportTemplate}, scoped to one product (array of one). */
+    /** Full JSON export shape, scoped to one product (array of one). */
     @GetMapping("/export/{id}")
     public ResponseEntity<byte[]> exportProduct(@PathVariable String id, HttpServletRequest request) {
         devAdminAuthService.requirePermission(request, "products.update");

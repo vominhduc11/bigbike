@@ -4,9 +4,11 @@ import { generateId } from '@/lib/utils'
  * Chuyển đổi giữa danh sách "Dải tin cậy" có cấu trúc (model nhập trong admin) và HTML lưu vào
  * `trustBadges` — web render HTML thay cho dải có cấu trúc (V257). Model: [{ _key, content }].
  *
- * HTML sinh ra là một dải flex tự chứa (inline-style + biến brand web `--color-brand`, kèm hex
- * fallback) mô phỏng dải tin cậy trên tên sản phẩm. Container có class `bb-trust-badges` để
- * round-trip ổn định; sửa cấu trúc chỉ đổi chữ, giữ nguyên style/markup (gồm chấm tròn).
+ * HTML sinh ra là một dải flex tự chứa (inline-style dùng token canonical web `--bb-font-body`/
+ * `--bb-text-a5-meta`/`--bb-text-secondary`/`--bb-action-primary`, kèm hex fallback cho các token
+ * không đổi theo breakpoint) mô phỏng dải tin cậy trên tên sản phẩm. Container có class
+ * `bb-trust-badges` để round-trip ổn định; sửa cấu trúc chỉ đổi chữ, giữ nguyên style/markup (gồm
+ * chấm tròn). `line-height:1` khớp `leading-none` mà web ép trên dải này (PurchaseSection.tsx).
  */
 
 function escapeHtml(s) {
@@ -20,9 +22,10 @@ const contentOf = (b) => (b?.content || '').trim()
 
 const ROW_STYLE =
   'display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;' +
-  'font-size:14px;color:var(--color-muted-foreground,#6b7280)'
-const BADGE_STYLE = 'display:flex;align-items:center;gap:8px'
-const DOT_STYLE = 'height:6px;width:6px;flex:none;background:var(--color-brand,#e8281e)'
+  'font-family:var(--bb-font-body);font-size:var(--bb-text-a5-meta);line-height:1;' +
+  'color:var(--bb-text-secondary,#6f6f6f)'
+const BADGE_STYLE = 'display:flex;align-items:center;gap:8px;line-height:1'
+const DOT_STYLE = 'height:6px;width:6px;flex:none;background:var(--bb-action-primary,#cc0906)'
 
 /** items[] ({content}) → HTML dải tin cậy (rỗng nếu không mục nào có nội dung). */
 export function serializeTrustBadges(items) {
@@ -49,11 +52,25 @@ function findContainer(doc) {
   return null
 }
 
-/** Lấy phần chữ của một badge = text span cuối (bỏ chấm tròn rỗng); fallback textContent cả badge. */
+// Ký tự chấm tròn/bullet trang trí có thể đứng lẫn trong chữ (HTML nhập ngoài dùng "• Chữ").
+const BULLET_CHARS = '•·●○◦▪▫∙‣⁃'
+const LEADING_BULLET_RE = new RegExp(`^[${BULLET_CHARS}]+\\s*`)
+const ONLY_BULLET_RE = new RegExp(`^[${BULLET_CHARS}]+$`)
+
+/**
+ * Lấy phần chữ của một badge: dùng textContent đầy đủ rồi bỏ chấm tròn/bullet dẫn đầu. Hỗ trợ cả
+ * markup canonical (chấm nằm ở span rỗng riêng → textContent chỉ còn chữ) lẫn HTML nhập ngoài
+ * (chấm là ký tự "•" đứng trước chữ trong cùng badge, vd "• Chính hãng").
+ */
 function badgeText(el) {
-  const spans = [...el.querySelectorAll('span')].filter((s) => (s.textContent || '').trim())
-  if (spans.length) return (spans[spans.length - 1].textContent || '').trim()
-  return (el.textContent || '').trim()
+  const raw = (el.textContent || '').replace(/\s+/g, ' ').trim()
+  return raw.replace(LEADING_BULLET_RE, '').trim()
+}
+
+/** Span "chấm tròn" trang trí: rỗng hoặc chỉ chứa ký tự bullet (không phải chữ nội dung). */
+function isDotSpan(span) {
+  const txt = (span.textContent || '').trim()
+  return txt === '' || ONLY_BULLET_RE.test(txt)
 }
 
 /** HTML → items[] (best-effort). */
@@ -72,18 +89,24 @@ export function parseTrustBadgesFromHtml(html) {
   }
 }
 
-/** Đặt phần chữ cho 1 badge mà giữ nguyên chấm tròn/markup: ghi vào span text cuối (tạo nếu thiếu). */
+/**
+ * Đặt phần chữ cho 1 badge mà GIỮ NGUYÊN chấm tròn/markup. Ghi vào span "chữ" sẵn có (span không
+ * phải chấm, không lồng phần tử con). Nếu badge nhúng chữ dạng text node trần cạnh chấm (HTML nhập
+ * ngoài, vd "• Chữ") thì gỡ text node đó rồi tạo span chữ mới — tránh nhân đôi chữ khi ghép.
+ */
 function setBadgeText(doc, el, content) {
-  const textSpans = [...el.querySelectorAll('span')]
-  // span "chữ" = span KHÔNG phải chấm (không có style dot). Ưu tiên span cuối.
-  const target = textSpans.length ? textSpans[textSpans.length - 1] : null
-  if (target && target.children.length === 0) {
-    target.textContent = content
-  } else {
-    const span = doc.createElement('span')
-    span.textContent = content
-    el.appendChild(span)
+  const spans = [...el.querySelectorAll('span')]
+  const dot = spans.find(isDotSpan)
+  const textSpan = spans.find((s) => s !== dot && s.children.length === 0)
+  if (textSpan) {
+    textSpan.textContent = content
+    return
   }
+  // Gỡ mọi text node trần trực tiếp trên badge (chữ nằm ngoài span) để không lặp lại khi ghép.
+  ;[...el.childNodes].forEach((n) => { if (n.nodeType === 3) el.removeChild(n) })
+  const span = doc.createElement('span')
+  span.textContent = content
+  el.appendChild(span)
 }
 
 /**

@@ -31,7 +31,6 @@ public class WordPressProductMapper {
             BigDecimal lengthCm,
             BigDecimal widthCm,
             BigDecimal heightCm,
-            Boolean forceOutOfStock,
             BigDecimal discountPercentOverride,
             Boolean isFeatured,
             Boolean showOnHomepage,
@@ -75,7 +74,6 @@ public class WordPressProductMapper {
         BigDecimal height = parseBigDecimal(metaMap.get("_height"), "_height", warnings);
 
         // BigBike-specific WooCommerce custom meta.
-        Boolean forceOutOfStock = parseYesNo(metaMap.get("_force_out_of_stock"));
         BigDecimal discountPercent = parseBigDecimal(
                 firstNonBlank(metaMap.get("_discount_percent_override"), metaMap.get("_wc_discount_percent")),
                 "_discount_percent_override", warnings);
@@ -121,7 +119,7 @@ public class WordPressProductMapper {
                 post.id(), post.postName(), post.postTitle(),
                 post.postContent(), sku, price, regularPrice, salePrice,
                 stockQty, stockStatus, manageStock, backorders,
-                weight, length, width, height, forceOutOfStock, discountPercent,
+                weight, length, width, height, discountPercent,
                 false, showOnHomepage, rating,
                 thumbnailId, galleryIds,
                 status, seoTitle, seoDescription, unmapped, warnings

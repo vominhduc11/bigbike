@@ -384,8 +384,9 @@ class Phase1FCheckoutApiTest {
     }
 
     // (Quick-buy happy-path + validation tests removed 2026-07-15 — endpoint deleted,
-    //  reverses AUD-010. The underlying rules AUD-002/AUD-003 stay covered by the cart/
-    //  checkout tests below, e.g. checkoutFromCart_forceOutOfStockProduct_blocksVariantLine.)
+    //  reverses AUD-010. The underlying rule AUD-002 stays covered by the cart/checkout
+    //  tests below. AUD-003's forceOutOfStock hard-override was removed 2026-07-19 —
+    //  variant availability alone now governs purchasability.)
 
     @Test
     void checkout_withUnpublishedProduct_returns409() throws Exception {
@@ -486,41 +487,6 @@ class Phase1FCheckoutApiTest {
         mockMvc.perform(post("/api/v1/checkout")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isConflict());
-    }
-
-    @Test
-    void checkoutFromCart_forceOutOfStockProduct_blocksVariantLine() throws Exception {
-        // STOCK_RULE_004: the product-level hard override blocks variant cart lines too (AUD-003).
-        ProductEntity product = createWpProduct("WP Force OOS Cart", 4200000);
-        ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 5, 4200000);
-        GuestSession session = newGuestSession();
-        addVariantToGuestCart(session, product.getId(), variant.getId(), 1);
-
-        product.setForceOutOfStock(true);
-        productRepo.save(product);
-
-        mockMvc.perform(post("/api/v1/checkout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isConflict());
-    }
-
-    @Test
-    void cartAdd_forceOutOfStockProduct_blocksVariant_returns409() throws Exception {
-        // STOCK_RULE_004 applies at add-to-cart as well (AUD-003).
-        ProductEntity product = createWpProduct("WP Force OOS Add", 3100000);
-        ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 5, 3100000);
-        product.setForceOutOfStock(true);
-        productRepo.save(product);
-        GuestSession session = newGuestSession();
-
-        mockMvc.perform(post("/api/v1/cart/items")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":\"" + product.getId() + "\",\"productVariantId\":\""
-                                + variant.getId() + "\",\"quantity\":1}")
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isConflict());
     }
@@ -786,7 +752,7 @@ class Phase1FCheckoutApiTest {
         ProductEntity product = createTestProduct(name, retailPrice, null, PublishStatus.PUBLISHED);
         product.setManageStock(true);
         product.setStockQuantity(stockQuantity);
-        product.setForceOutOfStock(false);
+        product.setAvailable(true);
         product.setStockState(ProductStockState.IN_STOCK);
         product.setUpdatedAt(Instant.now());
         return productRepo.save(product);
@@ -820,7 +786,7 @@ class Phase1FCheckoutApiTest {
         product.setCurrency("VND");
         product.setPublishStatus(PublishStatus.PUBLISHED);
         product.setStockState(ProductStockState.IN_STOCK);
-        product.setForceOutOfStock(false);
+        product.setAvailable(true);
         product.setCreatedAt(now);
         product.setUpdatedAt(now);
         product.setCategory(categoryRepo.findById(testCategoryId)

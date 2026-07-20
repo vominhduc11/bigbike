@@ -25,9 +25,9 @@ describe("DescriptionBlocksView — khối feature adaptive", () => {
     expect(container.querySelectorAll("section")).toHaveLength(0);
   });
 
-  it("Quy tắc 4: url rỗng + items rỗng → không render section", () => {
+  it("Quy tắc 4: url rỗng + không chữ → không render section", () => {
     const { container } = render(
-      <DescriptionBlocksView blocks={[feature({ url: "", items: [] })]} />,
+      <DescriptionBlocksView blocks={[feature({ url: "" })]} />,
     );
     expect(container.querySelectorAll("section")).toHaveLength(0);
   });
@@ -53,15 +53,6 @@ describe("DescriptionBlocksView — khối feature adaptive", () => {
     expect(container.querySelectorAll("section")).toHaveLength(1);
     expect(container.querySelector(".md\\:grid-cols-2")).toBeNull();
     expect(container.querySelector("img")).toBeNull();
-  });
-
-  it("Quy tắc 2: chỉ có chữ (items) → không có grid 2 cột, danh sách hiển thị", () => {
-    const { container, getByText } = render(
-      <DescriptionBlocksView blocks={[feature({ items: ["Điểm 1", "Điểm 2"] })]} />,
-    );
-    expect(container.querySelectorAll("section")).toHaveLength(1);
-    expect(container.querySelector(".md\\:grid-cols-2")).toBeNull();
-    expect(getByText("Điểm 1")).toBeTruthy();
   });
 
   it("Quy tắc 3: chỉ có ảnh → ảnh hiển thị, không có grid 2 cột", () => {

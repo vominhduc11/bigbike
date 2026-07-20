@@ -349,7 +349,7 @@ class Phase2D3ProductNormalizationTest {
                 sourceId, slug, name, "", null,
                 new BigDecimal("1000000"), new BigDecimal("1000000"), null,
                 10, "instock", null, null,
-                null, null, null, null, null, null,
+                null, null, null, null, null,
                 false, null, new BigDecimal("4.5"),
                 null, List.of(), "PUBLISHED",
                 null, null,

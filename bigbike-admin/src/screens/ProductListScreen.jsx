@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
-import { Copy, Eye, EyeOff, ExternalLink, MoreHorizontal, Package, Pencil, Plus, Trash2, Undo2 } from 'lucide-react'
+import { useHasPermission } from '@/lib/auth'
+import { Download, Eye, EyeOff, ExternalLink, MoreHorizontal, Package, Pencil, Plus, Trash2, Undo2 } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { ExportButton } from '@/components/ExportButton'
 import { ImportProductsDialog } from '@/components/ImportProductsDialog'
@@ -19,7 +20,7 @@ import { PublishStatusBadge } from '../components/StatusBadge'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { publishRowAccent } from '../lib/statusTone'
 import { showConfirm } from '../lib/confirm'
-import { ApiClientError, exportProductImportTemplate, exportProductsCsv, fetchBrands, fetchCategoryTree, fetchProductDetail, fetchProducts, publishProduct, restoreProduct, softDeleteProduct, permanentDeleteProduct } from '../lib/adminApi'
+import { ApiClientError, exportFullProductCatalogCsv, exportProductJson, fetchBrands, fetchCategoryTree, fetchProductDetail, fetchProducts, publishProduct, restoreProduct, softDeleteProduct, permanentDeleteProduct } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
 import { useColumnVisibility } from '../lib/useColumnVisibility'
@@ -30,11 +31,15 @@ import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { PaginationControls } from '../components/PaginationControls'
-import { DUPLICATE_SESSION_KEY, HOMEPAGE_BLOCK_LABEL_KEYS, HOMEPAGE_BLOCK_LIMITS, INITIAL_QUERY, buildCategoryTreeOrder, categoryLabel } from './product-list/constants'
+import { HOMEPAGE_BLOCK_LABEL_KEYS, HOMEPAGE_BLOCK_LIMITS, INITIAL_QUERY, buildCategoryTreeOrder, categoryLabel } from './product-list/constants'
 import { StockCell } from './product-list/cells'
+import { buildFormFromItem } from './product-detail/constants'
+import { PublishChecklistModal } from './product-detail/Modals'
 
 export function ProductListScreen({ navigate, canUpdate }) {
   const { t } = useTranslation()
+  const hasPermission = useHasPermission()
+  const canExport = hasPermission('reports.export')
   const contentLang = useContentLang()
   const queryClient = useQueryClient()
   const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
@@ -47,9 +52,19 @@ export function ProductListScreen({ navigate, canUpdate }) {
   const [deletingId, setDeletingId] = useState(null)
   const [restoringId, setRestoringId] = useState(null)
   const [togglingPublishId, setTogglingPublishId] = useState(null)
+  const [exportingJsonId, setExportingJsonId] = useState(null)
+  const [publishChecklist, setPublishChecklist] = useState(null)
   const [selected, setSelected] = useState(() => new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
-  const [importOpen, setImportOpen] = useState(false)
+  const [importFile, setImportFile] = useState(null)
+  const importFileInputRef = useRef(null)
+
+  function handleImportFileChange(e) {
+    const picked = e.target.files?.[0]
+    e.target.value = ''
+    if (!picked) return
+    setImportFile(picked)
+  }
 
   const state = useAdminList(['products', query, contentLang], () => fetchProducts(query))
 
@@ -90,20 +105,6 @@ export function ProductListScreen({ navigate, canUpdate }) {
     setSelected(new Set())
     setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
-
-  const handleDuplicate = useCallback(async (product) => {
-    try {
-      const result = await fetchProductDetail(product.id)
-      const item = result?.item
-      if (!item) return
-      try {
-        sessionStorage.setItem(DUPLICATE_SESSION_KEY, JSON.stringify(item))
-      } catch { /* quota */ }
-      navigate('/admin/products/new')
-    } catch {
-      toast.error(t('products.dupLoadError'))
-    }
-  }, [navigate, t])
 
   const handleDelete = useCallback(async (product) => {
     const confirmed = await showConfirm(
@@ -177,6 +178,19 @@ export function ProductListScreen({ navigate, canUpdate }) {
     }
   }, [queryClient, t])
 
+  const handleExportJson = useCallback(async (product) => {
+    if (!canUpdate || exportingJsonId) return
+    setExportingJsonId(product.id)
+    try {
+      await exportProductJson(product.id)
+      toast.success(t('export.success'))
+    } catch {
+      toast.error(t('export.error'))
+    } finally {
+      setExportingJsonId(null)
+    }
+  }, [canUpdate, exportingJsonId, t])
+
   // O4/N7: toggle nhanh Xuất bản/Ẩn ngay trên bảng, không cần mở trang chi tiết —
   // cùng ý tưởng handleToggleVisibility đã có cho Danh mục (CategoryListScreen).
   // N7: cập nhật lạc quan (onMutate + rollback) — badge đổi ngay khi bấm thay vì
@@ -209,26 +223,38 @@ export function ProductListScreen({ navigate, canUpdate }) {
     },
   })
 
-  const handleTogglePublish = useCallback((product) => {
+  // Đăng bán (DRAFT→PUBLISHED) giờ chỉ làm được từ đây (trang sửa đã bỏ nút Lưu &
+  // Đăng bán) — nên bảng kiểm chất lượng PRODUCT_RULE_005 chuyển hẳn từ trang sửa
+  // sang đây: tải đủ dữ liệu sản phẩm rồi chạy đúng getPublishReadiness/PublishChecklistModal
+  // cũ (Tên/Tên EN/Đường dẫn/Danh mục/Thương hiệu/Giới tính/SKU/Giá/Ảnh/Ảnh biến thể màu),
+  // không chỉ 5 trường tóm tắt sẵn có ở dòng bảng. Ẩn sản phẩm (PUBLISHED→DRAFT) không cần kiểm.
+  const handleTogglePublish = useCallback(async (product) => {
     if (!canUpdate) return
     const nextStatus = product.publishStatus === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED'
-    if (nextStatus === 'PUBLISHED') {
-      const hasName = !!product.name
-      const hasBrand = !!product.brand?.name
-      const hasCategory = !!categoryLabel(product)
-      const hasImage = !!product.image?.url
-      const hasPrice = product.price?.retailPrice > 0
-
-      if (!hasName || !hasBrand || !hasCategory || !hasImage || !hasPrice) {
-        toast.error(t('products.publishMissingFields', {
-          defaultValue: 'Cần đủ Tên/Thương hiệu/Danh mục/Ảnh/Giá trước khi đăng. Mở trang chi tiết để bổ sung.'
-        }))
-        return
-      }
+    if (nextStatus === 'DRAFT') {
+      setTogglingPublishId(product.id)
+      togglePublishMutation.mutate({ id: product.id, nextStatus })
+      return
     }
     setTogglingPublishId(product.id)
-    togglePublishMutation.mutate({ id: product.id, nextStatus })
+    try {
+      const detail = await fetchProductDetail(product.id)
+      setPublishChecklist({ productId: product.id, form: buildFormFromItem(detail.item) })
+    } catch (error) {
+      const message = error instanceof ApiClientError ? error.message : (error?.message || t('common.error'))
+      toast.error(message)
+    } finally {
+      setTogglingPublishId(null)
+    }
   }, [canUpdate, togglePublishMutation, t])
+
+  const confirmPublishFromChecklist = useCallback(() => {
+    if (!publishChecklist) return
+    const { productId } = publishChecklist
+    setPublishChecklist(null)
+    setTogglingPublishId(productId)
+    togglePublishMutation.mutate({ id: productId, nextStatus: 'PUBLISHED' })
+  }, [publishChecklist, togglePublishMutation])
 
   const emptyState = query.publishStatus === 'TRASH'
     ? {
@@ -407,7 +433,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
       render: (product) => {
         const sale = product.price?.salePrice
         return (
-          <span style={{ fontWeight: 700 }}>
+          <span style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>
             {sale > 0 ? (
               <>
                 {formatCurrencyVnd(sale)}
@@ -503,9 +529,15 @@ export function ProductListScreen({ navigate, canUpdate }) {
                 <DropdownMenuItem onSelect={() => window.open(detailPath, '_blank', 'noopener')}>
                   <ExternalLink size={13} className="mr-2" />{t('common.openInNewTab')}
                 </DropdownMenuItem>
-                {canUpdate && (
-                  <DropdownMenuItem onSelect={() => handleDuplicate(product)}>
-                    <Copy size={13} className="mr-2" />{t('products.duplicate')}
+                {canUpdate && !isTrashed && (
+                  <DropdownMenuItem
+                    disabled={exportingJsonId === product.id}
+                    onSelect={() => handleExportJson(product)}
+                  >
+                    <Download size={13} className="mr-2" />
+                    {exportingJsonId === product.id
+                      ? t('export.exporting', { defaultValue: 'Đang xuất...' })
+                      : t('products.exportJson', { defaultValue: 'Xuất JSON' })}
                   </DropdownMenuItem>
                 )}
                 {canUpdate && isTrashed && (
@@ -608,11 +640,6 @@ export function ProductListScreen({ navigate, canUpdate }) {
           >
             <ExternalLink size={14} />
           </Button>
-          {canUpdate && (
-            <Button variant="unstyled" type="button" className="bb-icon-btn" title={t('products.duplicate')} onClick={() => handleDuplicate(product)}>
-              <Copy size={14} />
-            </Button>
-          )}
           {canUpdate && isTrashed && (
             <>
               <Button variant="unstyled"
@@ -662,37 +689,30 @@ export function ProductListScreen({ navigate, canUpdate }) {
         </div>
         <div className="bb-screen-actions">
           <ExportButton
-            onExport={async () => {
-              let r
-              try {
-                r = await exportProductsCsv({ publishStatus: query.publishStatus !== 'ALL' ? query.publishStatus : undefined })
-              } catch {
-                throw new Error(t('export.error'))
-              }
-              if (r?.truncated) toast.warning(t('export.truncated', { max: r.maxRows }))
-              else toast.success(t('export.success'))
-            }}
-          >
-            {t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
-          </ExportButton>
-          <ExportButton
-            disabled={!canUpdate}
-            title={!canUpdate ? t('products.requirePermission') : undefined}
+            disabled={!canExport}
+            title={!canExport ? t('products.requirePermission') : undefined}
             onExport={async () => {
               try {
-                await exportProductImportTemplate()
+                await exportFullProductCatalogCsv()
               } catch {
                 throw new Error(t('export.error'))
               }
               toast.success(t('export.success'))
             }}
           >
-            {t('products.exportTemplate', { defaultValue: 'Tải mẫu nhập sản phẩm' })}
+            {t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
           </ExportButton>
+          <input
+            ref={importFileInputRef}
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={handleImportFileChange}
+          />
           <Button
             type="button"
             variant="secondary"
-            onClick={() => setImportOpen(true)}
+            onClick={() => importFileInputRef.current?.click()}
             disabled={!canUpdate}
             title={!canUpdate ? t('products.requirePermission') : undefined}
           >
@@ -709,7 +729,20 @@ export function ProductListScreen({ navigate, canUpdate }) {
         </div>
       </div>
 
-      <ImportProductsDialog open={importOpen} onClose={() => setImportOpen(false)} />
+      <ImportProductsDialog
+        key={importFile ? `${importFile.name}-${importFile.lastModified}-${importFile.size}` : 'none'}
+        file={importFile}
+        open={Boolean(importFile)}
+        onClose={() => setImportFile(null)}
+      />
+
+      {publishChecklist && (
+        <PublishChecklistModal
+          form={publishChecklist.form}
+          onConfirm={confirmPublishFromChecklist}
+          onCancel={() => setPublishChecklist(null)}
+        />
+      )}
 
       {/* O9 — Vừa xem gần đây */}
       <RecentItemsChips items={recentProductItems} onSelect={(item) => navigate(`/admin/products/${item.id}`)} />

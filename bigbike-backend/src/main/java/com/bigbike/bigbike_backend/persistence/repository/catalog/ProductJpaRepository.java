@@ -19,6 +19,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface ProductJpaRepository extends JpaRepository<ProductEntity, String>, JpaSpecificationExecutor<ProductEntity> {
+    /** Keyset page used by the uncapped full-catalog CSV export. */
+    @Query("SELECT p FROM ProductEntity p WHERE (:afterId IS NULL OR p.id > :afterId) ORDER BY p.id ASC")
+    List<ProductEntity> findForFullCsvExportAfterId(
+            @Param("afterId") String afterId,
+            org.springframework.data.domain.Pageable pageable
+    );
+
     Optional<ProductEntity> findBySlug(String slug);
 
     /**

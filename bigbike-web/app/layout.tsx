@@ -131,7 +131,7 @@ export default async function RootLayout({
                     <Footer />
                   </FooterMobileGate>
                   <SettingsFocusScroller />
-                  <div className="bb-floating-chat-anchor fixed z-[663] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+80px)] md:bottom-[max(24px,env(safe-area-inset-bottom))] right-[max(16px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))] pointer-events-none [&>*]:pointer-events-auto [[data-scroll-locked]_&]:hidden">
+                  <div className="bb-floating-chat-anchor fixed z-[663] pointer-events-none [&>*]:pointer-events-auto [[data-scroll-locked]_&]:hidden">
                     <FloatingChatLoader />
                   </div>
                   <ScrollToTopFab />
