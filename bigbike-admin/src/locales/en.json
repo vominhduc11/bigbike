@@ -689,8 +689,7 @@
         "title": "AI brief for on-brand HTML",
         "copy": "Copy",
         "copied": "AI brief copied",
-        "copyFailed": "Couldn't copy",
-        "prompt": "Generate HTML for a content block on a BigBike product detail page. Hard requirements:\n- Return plain HTML with inline CSS only (the style=\"...\" attribute). NO <script>, NO <style> tag, no classes, no ids.\n- Fonts: body text uses \"Arial, Helvetica, sans-serif\"; headings use \"'Barlow Condensed', Arial, sans-serif\", UPPERCASE and bold.\n- Font sizes: body 18px; notes/captions 14px.\n- Colors: main text #111111; secondary text #6f6f6f; accent (headings, key numbers) #cc0906; links #005fcc.\n- Tables and frames: 1px solid #dddddd border; white #ffffff background; square corners (border-radius: 0); table header cells use #f5f5f5 background and bold text.\n- Spacing in multiples of 4px (4, 8, 12, 16, 24px).\n- NO dark backgrounds, box-shadow, gradients, or any color outside the list above.\n\nContent to present (replace with your own):\n[paste your content here]"
+        "copyFailed": "Couldn't copy"
       },
       "specs": {
         "empty": "No specifications yet. Click \"+ Add spec\" to start.",
@@ -736,7 +735,8 @@
         "htmlPlaceholder": "Paste \"Who it's for\" HTML (e.g. AI-generated) here...",
         "htmlHint": "This tab is pre-filled with the HTML that matches the cards above. Edit it here to write your own HTML instead — the site will then render this HTML (ignoring the cards). You may style it with inline CSS; match the product page's fonts, colors and spacing and avoid odd backgrounds/shadows/colors that clash. To go back to the cards, open the \"Structured input\" tab. Only unsafe code is filtered.",
         "previewLabel": "Preview (exactly as shown on the web)",
-        "previewEmpty": "Nothing to preview yet."
+        "previewEmpty": "Nothing to preview yet.",
+        "aiBriefPrompt": "Generate HTML for the \"Who it's for\" block on a BigBike product detail page. Return ONLY plain HTML using inline styles that follow the exact template below. No explanation, no markdown, no <script>, no <style>, no id.\n\nMust keep this exact structure:\n<ul class=\"suitability-list\" style=\"list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;font-family:var(--bb-font-body);font-size:var(--bb-text-a4-content);line-height:1.5;color:var(--bb-text-secondary);\">\n  <li style=\"margin:0;\"><strong style=\"color:var(--bb-text-primary);font-weight:700;\">Audience</strong> → Advice</li>\n  ...\n</ul>\n\nRules:\n- Keep the class, tag structure, and every var(--bb-...) value in the style attributes AS-IS — they are the site's real font/color variables; do not replace them with literal hex codes, px sizes, or other styles.\n- class=\"suitability-list\" on the <ul> is required — the only class allowed.\n- Each row must use exactly <li style=\"margin:0;\"><strong style=\"color:var(--bb-text-primary);font-weight:700;\">Audience</strong> → Advice</li>; keep <strong> first, → in the middle, and the advice after it.\n- You may only add or remove complete <li> rows and replace text; do not change colors, fonts, spacing, tag order, or the sample styles.\n- NO dark backgrounds, box-shadow, rounded corners, gradients, or emoji.\n\nAudience list (replace with product-specific content):\n[Audience 1] → [Advice]\n[Audience 2] → [Advice]\n..."
       },
       "specStats": {
         "empty": "No stat boxes yet. Click \"+ Add box\" to start.",
@@ -832,7 +832,6 @@
         "blockTypeCallout": "Callout box",
         "blockTypeDivider": "Divider",
         "blockTypeFeature": "Image + text",
-        "blockTypeText": "Text",
         "blockTypeFeatureRight": "Image right + text left",
         "blockTypeFeatureLeft": "Image left + text right",
         "blockTypeSuitability": "Who it's for",

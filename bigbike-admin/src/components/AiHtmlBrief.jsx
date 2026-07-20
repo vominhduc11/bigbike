@@ -11,10 +11,10 @@ import { toast } from '@/lib/toast'
  * Nút "Sao chép" đưa sẵn bản brief chứa font/màu/cỡ/khoảng cách thật của web để
  * admin dán kèm nội dung, giúp HTML sinh ra khớp giao diện.
  *
- * `promptKey` trỏ tới locale key chứa nội dung brief — mặc định là key chung
- * `products.detail.aiBrief.prompt`; truyền key khác để hiện brief riêng (vd specStats).
+ * `promptKey` là locale key bắt buộc, trỏ tới nội dung brief riêng của từng khối PDP
+ * (ví dụ `products.detail.specStats.aiBriefPrompt`).
  */
-export default function AiHtmlBrief({ promptKey = 'products.detail.aiBrief.prompt' }) {
+export default function AiHtmlBrief({ promptKey }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const panelId = useId()

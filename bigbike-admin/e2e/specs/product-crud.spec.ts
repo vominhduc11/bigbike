@@ -59,8 +59,8 @@ async function pickFirstOption(page: Page, combobox: Locator) {
   await page.getByRole('option').first().click()
 }
 
-// shortDescription and the description block's paragraph block both render a plain
-// RichTextEditor (TipTap) — no raw-HTML tab (V-notion-html-removed, matches the
+// shortDescription and the description block's feature block (`html` field) both render
+// a plain RichTextEditor (TipTap) — no raw-HTML tab (V-notion-html-removed, matches the
 // Content/article editor). Playwright's .fill() supports [contenteditable] directly,
 // so type plain text straight into the editor's contenteditable region (identified by
 // its role="textbox" from RichTextEditor.jsx's editorProps.attributes) — TipTap wraps
@@ -130,7 +130,7 @@ async function fillRequiredProductFields(page: Page, opts: FillOptions) {
   await page.getByRole('button', { name: 'Mô tả & nội dung trang' }).click()
   const descCard = sectionCard(page, 'Mô tả chi tiết')
   await descCard.getByRole('button', { name: 'Thêm khối' }).click()
-  await page.getByRole('menuitem', { name: 'Văn bản' }).click()
+  await page.getByRole('menuitem', { name: 'Ảnh phải + chữ trái' }).click()
   await fillRichText(descCard, DESCRIPTION_TEXT)
 
   await fillEnglishName(page, basicCard, opts.nameEn)

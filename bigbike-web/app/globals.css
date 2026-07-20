@@ -3094,6 +3094,34 @@ body:has(.bb-home) {
   }
 }
 
+/* HTML dán vào PDP là dữ liệu ngoài luồng JSX. Khóa bố cục cốt lõi để sai lệch nhỏ
+   trong inline style không làm dải tin cậy hoặc danh sách đối tượng vỡ layout; màu và
+   font vẫn do HTML đặt bằng token --bb-... để rebrand không bị xung đột. */
+.bb-trust-badges {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 8px 16px !important;
+  line-height: 1 !important;
+}
+.bb-trust-badges > span {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  line-height: 1 !important;
+}
+.suitability-list {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+.suitability-list > li {
+  margin: 0 !important;
+}
+
 /* Mô tả sản phẩm dạng khối (ProductDescriptionBlocks): đoạn văn, danh sách,
    ghi chú và khối ảnh-chữ đều dùng nhóm A4.
    !important: theme WP nạp `.wyswyg{font-size:.875rem}` + `body .wyswyg{16px}` UNLAYERED, thắng mọi

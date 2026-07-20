@@ -307,9 +307,6 @@ public class ProductImportService {
         }
         for (int i = 0; i < blocks.size(); i++) {
             DescriptionBlock block = blocks.get(i);
-            if (block instanceof DescriptionBlock.ParagraphBlock || block instanceof DescriptionBlock.ImageBlock) {
-                continue;
-            }
             if (block instanceof DescriptionBlock.FeatureBlock feature) {
                 String side = AdminMutationValidators.trimToNull(feature.getSide());
                 if (!"left".equals(side) && !"right".equals(side)) {
@@ -319,7 +316,7 @@ public class ProductImportService {
                 continue;
             }
             errors.add(new ApiErrorDetail("descriptionBlocks[" + i + "].type", "INVALID_VALUE",
-                    "Mô tả chi tiết sản phẩm trong file nhập chỉ nhận paragraph, image, hoặc feature."));
+                    "Mô tả chi tiết sản phẩm trong file nhập chỉ nhận khối feature (ảnh + chữ)."));
         }
     }
 

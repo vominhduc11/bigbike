@@ -10,13 +10,13 @@ export const CONTENT_MENU = ['heading', 'paragraph', 'list', 'image', 'video'].m
   labelKey: `products.detail.blocks.blockType${type.charAt(0).toUpperCase()}${type.slice(1)}`,
 }))
 
-// Vốn từ cho SẢN PHẨM (V238): chỉ các khối mô tả/tính năng cơ bản. "Phù hợp với ai" và "Bảng size"
-// KHÔNG còn là khối thêm trong mô tả — tách RA thành 2 card nhập RIÊNG (giống "Ưu điểm & Nhược điểm").
-// (V327/V328) Dữ liệu của 2 card đó giờ lưu ở 2 field riêng form.suitabilitySection/sizeGuideSection,
-// không còn embedded trong descriptionBlocks. Ưu/Nhược điểm nhập ở card riêng, lưu vào product_highlights.
+// Vốn từ cho SẢN PHẨM (V238, thu hẹp 2026-07-20): chỉ còn khối so le ảnh+chữ. "Phù hợp với ai" và
+// "Bảng size" KHÔNG còn là khối thêm trong mô tả — tách RA thành 2 card nhập RIÊNG (giống "Ưu điểm &
+// Nhược điểm"). (V327/V328) Dữ liệu của 2 card đó giờ lưu ở 2 field riêng form.suitabilitySection/
+// sizeGuideSection, không còn embedded trong descriptionBlocks. Ưu/Nhược điểm nhập ở card riêng, lưu
+// vào product_highlights. Owner decision 2026-07-20: bỏ hẳn 'paragraph'/'image' khỏi menu sản phẩm —
+// chỉ giữ khối feature (ảnh phải + chữ trái / ảnh trái + chữ phải), đủ để làm chữ-thuần hoặc ảnh-thuần.
 export const PRODUCT_MENU = [
-  { type: 'paragraph',   labelKey: 'products.detail.blocks.blockTypeText' },
-  { type: 'image',       labelKey: 'products.detail.blocks.blockTypeImage' },
   { type: 'feature',     labelKey: 'products.detail.blocks.blockTypeFeatureRight', preset: { side: 'right' } },
   { type: 'feature',     labelKey: 'products.detail.blocks.blockTypeFeatureLeft',  preset: { side: 'left' } },
 ]
