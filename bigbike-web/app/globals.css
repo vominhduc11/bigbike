@@ -377,9 +377,10 @@ body {
    but must not rewrite bottom coordinates. */
 :root {
   --bb-floating-chat-size: 3rem;
+  --bb-floating-action-gap: var(--bb-space-5);
   --bb-floating-action-right: max(var(--bb-space-4), env(safe-area-inset-right));
   --bb-floating-chat-bottom: calc(var(--bb-mobile-nav-height, 3.75rem) + env(safe-area-inset-bottom) + var(--bb-space-6));
-  --bb-floating-scroll-top-bottom: calc(var(--bb-floating-chat-bottom) + var(--bb-floating-chat-size) + var(--bb-space-6));
+  --bb-floating-scroll-top-bottom: calc(var(--bb-floating-chat-bottom) + var(--bb-floating-chat-size) + var(--bb-floating-action-gap));
   --bb-floating-chat-panel-bottom: calc(var(--bb-floating-chat-bottom) + var(--bb-floating-chat-size) + var(--bb-space-2));
 }
 
@@ -3039,9 +3040,9 @@ body:has(.bb-home) {
 /* Pulsing "halo" rings radiating outward from the floating chat FAB to draw
    attention. Two staggered rings (see FloatingChat.tsx) share this loop. */
 @keyframes bb-chat-halo {
-  0% { transform: scale(1);   opacity: 0.5; }
-  70% { opacity: 0; }
-  100% { transform: scale(2.2); opacity: 0; }
+  0% { transform: scale(1); opacity: 0.32; }
+  68% { opacity: 0; }
+  100% { transform: scale(1.6); opacity: 0; }
 }
 
 /* Khung chờ (loading skeleton) render `.bb-breadcrumb` ngay đầu trang trên nền

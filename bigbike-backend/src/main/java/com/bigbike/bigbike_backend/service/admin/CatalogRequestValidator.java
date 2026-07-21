@@ -99,6 +99,7 @@ public class CatalogRequestValidator {
                 request.getImage(),
                 "image",
                 mediaUrlProperties.getPublicBaseUrl(),
+                current == null ? null : current.getImageUrl(),
                 errors
         );
         AdminMutationValidators.validateSeoMeta(
@@ -106,6 +107,7 @@ public class CatalogRequestValidator {
                 "seo",
                 mediaUrlProperties.getPublicBaseUrl(),
                 isDev,
+                current == null ? null : current.getSeoOgImageUrl(),
                 errors
         );
 
@@ -568,18 +570,21 @@ public class CatalogRequestValidator {
                 request.getImage(),
                 "image",
                 mediaUrlProperties.getPublicBaseUrl(),
+                current == null ? null : current.getImageUrl(),
                 errors
         );
         AdminMutationValidators.validateImageAsset(
                 request.getIcon(),
                 "icon",
                 mediaUrlProperties.getPublicBaseUrl(),
+                current == null ? null : current.getIconUrl(),
                 errors
         );
         AdminMutationValidators.validateImageAsset(
                 request.getMenuIcon(),
                 "menuIcon",
                 mediaUrlProperties.getPublicBaseUrl(),
+                current == null ? null : current.getMenuIconUrl(),
                 errors
         );
         AdminMutationValidators.validateSeoMeta(
@@ -587,6 +592,7 @@ public class CatalogRequestValidator {
                 "seo",
                 mediaUrlProperties.getPublicBaseUrl(),
                 isDev,
+                current == null ? null : current.getSeoOgImageUrl(),
                 errors
         );
 
@@ -683,6 +689,7 @@ public class CatalogRequestValidator {
                 request.getLogo(),
                 "logo",
                 mediaUrlProperties.getPublicBaseUrl(),
+                current == null ? null : current.getLogoUrl(),
                 errors
         );
         AdminMutationValidators.validateSeoMeta(
@@ -690,6 +697,7 @@ public class CatalogRequestValidator {
                 "seo",
                 mediaUrlProperties.getPublicBaseUrl(),
                 isDev,
+                current == null ? null : current.getSeoOgImageUrl(),
                 errors
         );
 

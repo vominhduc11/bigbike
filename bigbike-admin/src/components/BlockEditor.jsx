@@ -9,7 +9,7 @@ import { VideoPickerModal } from './VideoPickerModal'
 import { SortableList } from './Sortable'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { cn, generateId } from '@/lib/utils'
-import { CONTENT_MENU, PRODUCT_MENU, createBlock } from './block-editor/constants'
+import { CONTENT_MENU, PRODUCT_MENU, createBlock, nextProductFeatureSide } from './block-editor/constants'
 import { BlockCard } from './block-editor/blocks'
 import { showConfirm } from '@/lib/confirm'
 import { sanitizeHtml } from '@/lib/sanitizeHtml'
@@ -104,6 +104,12 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
 
   const hasFallback = showFallbackHtml && Boolean(fallbackHtml && fallbackHtml.trim().length > 0)
 
+  // Gợi ý so le tự động cho khối cuối (productMode) — chỉ gợi ý UX, giá trị lưu vẫn 'left'/'right'
+  // tường minh (xem nextProductFeatureSide trong constants.js).
+  const suggestedAppendEntry = productMode
+    ? menu.find((m) => m.preset?.side === nextProductFeatureSide(blocks[blocks.length - 1]?.side)) ?? menu[0]
+    : null
+
   return (
     <div className={cn('flex flex-col gap-2', hasError && 'ring-1 ring-destructive rounded-sm')}>
       {hasFallback && (
@@ -155,20 +161,29 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
         )}
       />
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" disabled={structDisabled} className="self-start">
-            + {t('products.detail.blocks.addBlock')}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          {menu.map((entry, i) => (
-            <DropdownMenuItem key={`${entry.type}-${i}`} onClick={() => addBlock(entry.type, entry.preset)}>
-              {t(entry.labelKey)}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {productMode ? (
+        <Button
+          variant="outline" size="sm" disabled={structDisabled} className="self-start"
+          onClick={() => addBlock(suggestedAppendEntry.type, suggestedAppendEntry.preset)}
+        >
+          + {t(suggestedAppendEntry.labelKey)}
+        </Button>
+      ) : (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" disabled={structDisabled} className="self-start">
+              + {t('products.detail.blocks.addBlock')}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            {menu.map((entry, i) => (
+              <DropdownMenuItem key={`${entry.type}-${i}`} onClick={() => addBlock(entry.type, entry.preset)}>
+                {t(entry.labelKey)}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
 
       {mediaPickerIndex !== null && (
         <MediaPickerModal

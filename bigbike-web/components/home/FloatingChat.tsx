@@ -16,7 +16,7 @@ import { telHref } from "@/lib/utils/format";
 // toggling open/closed never makes the button jump — only the icon swaps.
 const fabContainer = "relative inline-block";
 const fabMask =
-  "absolute -top-2 -left-2 w-[calc(100%+16px)] h-20.5 min-w-16.5 !rounded-[50%] bg-[var(--bb-chat-title-bg)] opacity-20 pointer-events-none";
+  "absolute -inset-1.5 !rounded-[50%] bg-[var(--bb-chat-title-bg)] opacity-10 pointer-events-none";
 const fabBlock = "w-16.5 h-16.5 !rounded-[50%] box-border overflow-hidden";
 const fabInnerBlock =
   "relative w-16.5 h-16.5 !rounded-[50%] bg-[var(--bb-chat-title-bg)] text-[var(--bb-chat-title-text)] border-none cursor-pointer flex items-center justify-center [outline:none] box-border focus-visible:[outline:2px_solid_#fff] focus-visible:[outline-offset:3px]";
@@ -25,12 +25,11 @@ const fabInnerBlock =
 const fabInnerBlockOpen =
   "relative w-16.5 h-16.5 !rounded-[50%] bg-[var(--bb-chat-close-bg)] text-[var(--bb-chat-title-text)] border-none cursor-pointer flex items-center justify-center [outline:none] box-border [transition:background_0.3s_linear] focus-visible:[outline:2px_solid_#fff] focus-visible:[outline-offset:3px]";
 const fabMaskOpen =
-  "absolute -top-2 -left-2 w-[calc(100%+16px)] h-20.5 min-w-16.5 !rounded-[50%] bg-[var(--bb-chat-close-bg)] opacity-20 pointer-events-none";
+  "absolute -inset-1.5 !rounded-[50%] bg-[var(--bb-chat-close-bg)] opacity-10 pointer-events-none";
 const fabIconWrap = "relative flex-1 w-full h-full";
 const fabIconItem =
   "absolute top-0 left-0 flex items-center justify-center w-full h-full [transition:opacity_0.6s_ease-out]";
 const fabBlockMobile = " max-md:w-12 max-md:h-12";
-const fabMaskMobile = " max-md:w-15 max-md:h-15";
 // Radiating halo ring — sits behind the closed FAB and rides the bb-chat-halo loop.
 // inset-0 auto-matches the button size (66px / 48px mobile); hidden for reduced motion.
 const fabHaloRing =
@@ -43,7 +42,7 @@ const fabHaloRing =
 // (of the FAB) rather than always-on, keeping the persistent footprint to just the
 // circular button while still showing the hint the moment a visitor reaches for it.
 const chatTitlePill =
-  "bg-[var(--bb-chat-title-bg)] !rounded-[3px] px-[5px] py-0.5 text-[var(--bb-color-white)] text-a5-meta font-[Arial,sans-serif] whitespace-nowrap relative bottom-10.5 right-17.5 max-md:hidden opacity-0 pointer-events-none transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100";
+  "absolute right-full bottom-1/2 mr-3 translate-y-1/2 bg-[var(--bb-chat-title-bg)] !rounded-[3px] px-[5px] py-0.5 text-[var(--bb-color-white)] text-a5-meta font-[Arial,sans-serif] whitespace-nowrap max-md:hidden opacity-0 pointer-events-none transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100";
 // WP .sudovn-btn-social-item: padding .5rem 1rem, color #333, hover #f2f2f2; icon
 // margin-right 5px (= gap). The #333 text overrides the global blue <a> link colour.
 // hover:!text keeps the row text #333 — overrides the global `a:hover` brand-red rule
@@ -225,7 +224,7 @@ function ChatOverlay({
         <div dir="ltr" className="group relative flex flex-col-reverse items-end">
           <div className={chatTitlePill}>{t("needHelp")}</div>
           <div className={fabContainer}>
-          <div className={`${fabMaskOpen}${fabMaskMobile}`} aria-hidden="true" />
+          <div className={fabMaskOpen} aria-hidden="true" />
           <div className={`${fabBlock}${fabBlockMobile}`}>
             <button
               type="button"
@@ -325,7 +324,7 @@ export function FloatingChat({
           <div className={fabContainer} id="sudovn-btn-inner-container">
             <div className={`${fabHaloRing} [animation:bb-chat-halo_2.4s_ease-out_infinite]`} aria-hidden="true" />
             <div className={`${fabHaloRing} [animation:bb-chat-halo_2.4s_ease-out_1.2s_infinite]`} aria-hidden="true" />
-            <div className={`${fabMask}${fabMaskMobile}`} aria-hidden="true" />
+            <div className={fabMask} aria-hidden="true" />
             <div className={`${fabBlock}${fabBlockMobile}`}>
               <button
                 ref={triggerRef}

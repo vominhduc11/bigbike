@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import { AlertCircle, ArrowRight } from 'lucide-react'
+import { AlertCircle, ArrowRight, ChevronRight } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { addOrderNote, fetchOrderAllowedTransitions, fetchOrderAuditTrail, fetchOrderDetail, updateOrderFulfillment, updateOrderPaymentStatus, updateOrderStatus } from '../lib/adminApi'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
+import { ORDER_STATUS_TONE, PAYMENT_STATUS_TONE, FULFILLMENT_STATUS_TONE } from '../lib/statusTone'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '../lib/useUnsavedChanges'
@@ -289,6 +290,15 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   // transitions có thể sắp thay) — tránh thao tác dựa trên trạng thái cũ.
   const actionsBusy = saving || orderQuery.isFetching
 
+  // T18: 3 nhóm hành động trong vùng "Việc cần làm tiếp" — tách rõ để khi CẢ BA đều
+  // rỗng (vd đơn đã hủy/hoàn thành) hiện trạng thái "quiet" thay vì khối cảnh báo to.
+  const hasOrderGroup = allowedTransitions.length > 0 || transitionsError
+  const hasPaymentGroup = !['CANCELLED', 'FAILED'].includes(order.orderStatus)
+    && (PAYMENT_TRANSITIONS[order.paymentStatus] ?? []).length > 0
+  const hasFulfillmentGroup = order.fulfillmentType === 'DELIVERY'
+    && !['CANCELLED', 'FAILED'].includes(order.orderStatus)
+  const hasAnyAction = hasOrderGroup || hasPaymentGroup || hasFulfillmentGroup
+
   return (
     <div>
       <div className="bb-screen-header">
@@ -298,8 +308,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
             <span className="mono bb-heading-key">
               {formatText(order.orderNumber, `#${orderId}`)}
             </span>
-            <StatusBadge type="order" status={order.orderStatus} />
-            <StatusBadge type="payment" status={order.paymentStatus} />
           </h1>
           <p className="bb-muted">
             {t('orders.detail.orderDate')} {formatDateTime(order.createdAt)}
@@ -315,153 +323,190 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
       {warning && <ReadOnlyBanner warning={warning} />}
 
-      {/* Action panel */}
-      {canUpdate && (
-        <div className="bb-card bb-action-panel">
-          <div className="bb-card-body">
-            <div className="bb-action-panel-main">
-              <div className="bb-action-panel-title">{t('orders.detail.orderStatus')}</div>
-              <div className="bb-action-panel-copy">
-                {transitionsError
-                  ? t('orders.detail.transitionsLoadError')
-                  : allowedTransitions.length === 0
-                    ? t('orders.detail.noTransition')
-                    : t('orders.detail.selectActionHint')}
-              </div>
+      {/* Tầng 1 — dải trạng thái (trái) + việc cần làm tiếp (phải): toàn cảnh đơn
+          hàng trong 1 lần nhìn, thay vì 3 khối trạng thái rời + panel hành động
+          full-width như trước. */}
+      {(() => {
+        const tiles = (
+          <div className={`bb-status-tiles${order.fulfillmentType === 'DELIVERY' ? '' : ' bb-status-tiles--2'}`}>
+            <div className={`bb-status-tile bb-status-tile--${ORDER_STATUS_TONE[order.orderStatus] ?? 'muted'}`}>
+              <div className="bb-status-tile-k">{t('orders.detail.tileOrder')}</div>
+              <StatusBadge type="order" status={order.orderStatus} />
             </div>
-            <div className="bb-action-panel-actions">
-              {allowedTransitions.map((s) => {
-                const cfg = ORDER_STATUS_ACTION[s] ?? { variant: 'secondary' }
-                const isPrimary = cfg.variant === 'primary' || cfg.variant === 'success'
-                const isDanger = cfg.variant === 'destructive'
-                const isPending = pendingAction === `status:${s}`
-                return (
-                  <Button
-                    key={s}
-                    type="button"
-                    variant={isDanger ? 'ghost' : isPrimary ? 'default' : 'secondary'}
-                    className={isDanger ? 'text-danger' : undefined}
-                    disabled={actionsBusy}
-                    onClick={() => handleStatusChange(s)}
-                  >
-                    {isPending ? t('orders.detail.savingShort') : <><ArrowRight size={14} aria-hidden="true" />{getOrderStatusLabel(s, order, t)}</>}
-                  </Button>
-                )
-              })}
-              {transitionsError && (
-                <Button type="button" variant="ghost" size="sm" onClick={() => setTransitionsKey((k) => k + 1)}>
-                  {t('common.retry')}
-                </Button>
+            <div className={`bb-status-tile bb-status-tile--${PAYMENT_STATUS_TONE[order.paymentStatus] ?? 'muted'}`}>
+              <div className="bb-status-tile-k">{t('orders.detail.tilePayment')}</div>
+              <StatusBadge type="payment" status={order.paymentStatus} />
+            </div>
+            {order.fulfillmentType === 'DELIVERY' && (
+              <div className={`bb-status-tile bb-status-tile--${FULFILLMENT_STATUS_TONE[order.fulfillmentStatus] ?? 'muted'}`}>
+                <div className="bb-status-tile-k">{t('orders.detail.tileFulfillment')}</div>
+                <StatusBadge type="fulfillment" status={order.fulfillmentStatus} />
+              </div>
+            )}
+          </div>
+        )
+
+        if (!canUpdate) return tiles
+
+        return (
+          <div className="bb-status-summary">
+            {tiles}
+            <div className="bb-actionzone">
+              {!hasAnyAction ? (
+                <div className="bb-actionzone-quiet">
+                  <span className="dot" aria-hidden="true" />
+                  {t('orders.detail.noActionQuiet')}
+                </div>
+              ) : (
+                <>
+                  <div className="bb-actionzone-title">{t('orders.detail.nextActions')}</div>
+
+                  {hasOrderGroup && (
+                    <div className="bb-actionzone-group">
+                      <div className="bb-actionzone-group-label">{t('orders.detail.orderStatus')}</div>
+                      <div className="bb-actionzone-actions">
+                        {allowedTransitions.map((s) => {
+                          const cfg = ORDER_STATUS_ACTION[s] ?? { variant: 'secondary' }
+                          const isPrimary = cfg.variant === 'primary' || cfg.variant === 'success'
+                          const isDanger = cfg.variant === 'destructive'
+                          const isPending = pendingAction === `status:${s}`
+                          return (
+                            <Button
+                              key={s}
+                              type="button"
+                              variant={isDanger ? 'ghost' : isPrimary ? 'default' : 'secondary'}
+                              className={isDanger ? 'text-danger' : undefined}
+                              disabled={actionsBusy}
+                              onClick={() => handleStatusChange(s)}
+                            >
+                              {isPending ? t('orders.detail.savingShort') : <><ArrowRight size={14} aria-hidden="true" />{getOrderStatusLabel(s, order, t)}</>}
+                            </Button>
+                          )
+                        })}
+                        {transitionsError && (
+                          <Button type="button" variant="ghost" size="sm" onClick={() => setTransitionsKey((k) => k + 1)}>
+                            {t('common.retry')}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {hasPaymentGroup && (
+                    <div className="bb-actionzone-group">
+                      <div className="bb-actionzone-group-label">{t('orders.detail.paymentStatus')}</div>
+                      <div className="bb-actionzone-actions">
+                        {(PAYMENT_TRANSITIONS[order.paymentStatus] ?? []).map((s) => (
+                          <Button
+                            key={s}
+                            type="button"
+                            variant={s === 'CANCELLED' ? 'ghost' : 'secondary'}
+                            size="sm"
+                            className={s === 'CANCELLED' ? 'text-danger' : undefined}
+                            disabled={actionsBusy}
+                            onClick={() => handlePaymentStatusChange(s)}
+                          >
+                            {pendingAction === `payment:${s}`
+                              ? t('orders.detail.savingShort')
+                              : PAYMENT_ACTION_LABEL[s] ? t(PAYMENT_ACTION_LABEL[s]) : s}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {hasFulfillmentGroup && (
+                    <div className="bb-actionzone-group">
+                      <div className="bb-actionzone-group-label">{t('orders.detail.fulfillment')}</div>
+                      <div className="bb-actionzone-actions">
+                        {(order.fulfillmentStatus == null || order.fulfillmentStatus === 'UNFULFILLED') && (
+                          <Button type="button" variant="secondary" size="sm" disabled={fulfillmentSaving}
+                            onClick={() => handleFulfillmentUpdate('PROCESSING')}>
+                            {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffStartPreparing')}
+                          </Button>
+                        )}
+                        {order.fulfillmentStatus === 'PROCESSING' && (
+                          <Button type="button" variant="secondary" size="sm" disabled={fulfillmentSaving}
+                            aria-expanded={showShipForm}
+                            aria-controls="ship-form"
+                            onClick={() => setShowShipForm((p) => !p)}>
+                            {t('orders.detail.ffMarkShipped')}
+                          </Button>
+                        )}
+                        {order.fulfillmentStatus === 'SHIPPED' && (
+                          <Button type="button" size="sm" disabled={fulfillmentSaving}
+                            onClick={() => handleFulfillmentUpdate('DELIVERED')}>
+                            {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffMarkDelivered')}
+                          </Button>
+                        )}
+                        {(order.fulfillmentStatus === 'DELIVERED' || order.fulfillmentStatus === 'SHIPPED') && (
+                          <span className="bb-muted text-xs">{ffStatusLabel}</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Form nhập vận đơn — mở ngay tại khu hành động khi bấm "Giao hàng" (không phải cuộn xuống) */}
+                  {hasFulfillmentGroup && showShipForm && (
+                    <div className="bb-actionzone-group">
+                      <form
+                        id="ship-form"
+                        className="bb-detail-form w-full"
+                        onSubmit={(e) => { e.preventDefault(); handleFulfillmentUpdate('SHIPPED') }}
+                      >
+                        <div className="flex flex-col gap-1">
+                          <label htmlFor="ship-tracking-input" className="text-sm font-medium">
+                            {t('orders.detail.trackingLabel')} *
+                          </label>
+                          <p className="text-xs text-muted-foreground">
+                            <span className="text-danger" aria-hidden="true">*</span> {t('common.requiredLegend', { defaultValue: 'Bắt buộc' })}
+                          </p>
+                          <Input
+                            id="ship-tracking-input"
+                            type="text"
+                            placeholder={t('orders.detail.trackingPlaceholder')}
+                            value={trackingNumber}
+                            onChange={(e) => { setTrackingNumber(e.target.value); if (trackingError) setTrackingError('') }}
+                            onBlur={() => { if (!trackingNumber.trim()) setTrackingError(t('orders.detail.trackingRequiredError')) }}
+                            disabled={fulfillmentSaving}
+                            required
+                            aria-invalid={trackingError ? true : undefined}
+                            aria-describedby={trackingError ? 'ship-tracking-error' : undefined}
+                          />
+                        </div>
+                        {trackingError ? (
+                          <p id="ship-tracking-error" role="alert" className="bb-error-inline">
+                            <AlertCircle size={13} aria-hidden="true" />
+                            {trackingError}
+                          </p>
+                        ) : (
+                          <p className="bb-muted text-xs">{t('orders.detail.trackingHint')}</p>
+                        )}
+                        <Input
+                          type="text"
+                          placeholder={t('orders.detail.carrierPlaceholder')}
+                          value={shippingCarrier}
+                          onChange={(e) => setShippingCarrier(e.target.value)}
+                          disabled={fulfillmentSaving}
+                        />
+                        <div className="bb-detail-form-actions">
+                          <Button type="submit" size="sm" disabled={fulfillmentSaving}>
+                            {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffConfirmShip')}
+                          </Button>
+                          <Button type="button" variant="secondary" size="sm" disabled={fulfillmentSaving}
+                            onClick={() => { setShowShipForm(false); setTrackingNumber(''); setShippingCarrier(''); setTrackingError('') }}>
+                            {t('common.cancel')}
+                          </Button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
-          {!['CANCELLED', 'FAILED'].includes(order.orderStatus)
-            && (PAYMENT_TRANSITIONS[order.paymentStatus] ?? []).length > 0 && (
-            <div className="bb-action-strip">
-              <span className="bb-action-strip-label">{t('orders.detail.paymentStatus')}</span>
-              {(PAYMENT_TRANSITIONS[order.paymentStatus] ?? []).map((s) => (
-                <Button
-                  key={s}
-                  type="button"
-                  variant={s === 'CANCELLED' ? 'ghost' : 'secondary'}
-                  size="sm"
-                  className={s === 'CANCELLED' ? 'text-danger' : undefined}
-                  disabled={actionsBusy}
-                  onClick={() => handlePaymentStatusChange(s)}
-                >
-                  {pendingAction === `payment:${s}`
-                    ? t('orders.detail.savingShort')
-                    : PAYMENT_ACTION_LABEL[s] ? t(PAYMENT_ACTION_LABEL[s]) : s}
-                </Button>
-              ))}
-            </div>
-          )}
-          {/* Giao hàng — gom cùng khu hành động với trạng thái đơn & thanh toán (audit) */}
-          {order.fulfillmentType === 'DELIVERY' && !['CANCELLED', 'FAILED'].includes(order.orderStatus) && (
-            <div className="bb-action-strip">
-              <span className="bb-action-strip-label">{t('orders.detail.fulfillment')}</span>
-              {(order.fulfillmentStatus == null || order.fulfillmentStatus === 'UNFULFILLED') && (
-                <Button type="button" variant="secondary" size="sm" disabled={fulfillmentSaving}
-                  onClick={() => handleFulfillmentUpdate('PROCESSING')}>
-                  {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffStartPreparing')}
-                </Button>
-              )}
-              {order.fulfillmentStatus === 'PROCESSING' && (
-                <Button type="button" variant="secondary" size="sm" disabled={fulfillmentSaving}
-                  aria-expanded={showShipForm}
-                  aria-controls="ship-form"
-                  onClick={() => setShowShipForm((p) => !p)}>
-                  {t('orders.detail.ffMarkShipped')}
-                </Button>
-              )}
-              {order.fulfillmentStatus === 'SHIPPED' && (
-                <Button type="button" size="sm" disabled={fulfillmentSaving}
-                  onClick={() => handleFulfillmentUpdate('DELIVERED')}>
-                  {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffMarkDelivered')}
-                </Button>
-              )}
-              {(order.fulfillmentStatus === 'DELIVERED' || order.fulfillmentStatus === 'SHIPPED') && (
-                <span className="bb-muted text-xs">{ffStatusLabel}</span>
-              )}
-            </div>
-          )}
-          {/* Form nhập vận đơn — mở ngay tại khu hành động khi bấm "Giao hàng" (không phải cuộn xuống) */}
-          {order.fulfillmentType === 'DELIVERY' && showShipForm && (
-            <div className="bb-action-strip">
-              <form
-                id="ship-form"
-                className="bb-detail-form w-full"
-                onSubmit={(e) => { e.preventDefault(); handleFulfillmentUpdate('SHIPPED') }}
-              >
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="ship-tracking-input" className="text-sm font-medium">
-                    {t('orders.detail.trackingLabel')} *
-                  </label>
-                  <p className="text-xs text-muted-foreground">
-                    <span className="text-danger" aria-hidden="true">*</span> {t('common.requiredLegend', { defaultValue: 'Bắt buộc' })}
-                  </p>
-                  <Input
-                    id="ship-tracking-input"
-                    type="text"
-                    placeholder={t('orders.detail.trackingPlaceholder')}
-                    value={trackingNumber}
-                    onChange={(e) => { setTrackingNumber(e.target.value); if (trackingError) setTrackingError('') }}
-                    onBlur={() => { if (!trackingNumber.trim()) setTrackingError(t('orders.detail.trackingRequiredError')) }}
-                    disabled={fulfillmentSaving}
-                    required
-                    aria-invalid={trackingError ? true : undefined}
-                    aria-describedby={trackingError ? 'ship-tracking-error' : undefined}
-                  />
-                </div>
-                {trackingError ? (
-                  <p id="ship-tracking-error" role="alert" className="bb-error-inline">
-                    <AlertCircle size={13} aria-hidden="true" />
-                    {trackingError}
-                  </p>
-                ) : (
-                  <p className="bb-muted text-xs">{t('orders.detail.trackingHint')}</p>
-                )}
-                <Input
-                  type="text"
-                  placeholder={t('orders.detail.carrierPlaceholder')}
-                  value={shippingCarrier}
-                  onChange={(e) => setShippingCarrier(e.target.value)}
-                  disabled={fulfillmentSaving}
-                />
-                <div className="bb-detail-form-actions">
-                  <Button type="submit" size="sm" disabled={fulfillmentSaving}>
-                    {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffConfirmShip')}
-                  </Button>
-                  <Button type="button" variant="secondary" size="sm" disabled={fulfillmentSaving}
-                    onClick={() => { setShowShipForm(false); setTrackingNumber(''); setShippingCarrier(''); setTrackingError('') }}>
-                    {t('common.cancel')}
-                  </Button>
-                </div>
-              </form>
-            </div>
-          )}
-        </div>
-      )}
+        )
+      })()}
 
       <div className="bb-grid-2-1">
         {/* Left column */}
@@ -544,11 +589,16 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
             </div>
           </div>
 
-          {/* Payments */}
+          {/* Payments — thu gọn mặc định, admin bấm mở khi cần đối chiếu tiền
+              (có thể nhiều dòng với đơn thanh toán từng phần / hoàn tiền nhiều đợt). */}
           {(order.payments ?? []).length > 0 && (
             <div className="bb-card">
-              <div className="bb-card-header"><h3>{t('orders.detail.payments')}</h3></div>
-              <div className="bb-card-body--flush">
+              <details className="bb-foldable">
+                <summary>
+                  {t('orders.detail.payments')} ({(order.payments ?? []).length})
+                  <ChevronRight size={16} className="bb-foldable-chev" aria-hidden="true" />
+                </summary>
+                <div className="bb-foldable-body">
                 <div className="hide-on-mobile">
                 <div className="bb-table-wrap">
                   <table className="bb-table">
@@ -586,7 +636,8 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     />
                   ))}
                 </MobileCardList>
-              </div>
+                </div>
+              </details>
             </div>
           )}
 
@@ -634,41 +685,45 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                 </form>
               )}
             </div>
-          </div>
 
-          {/* Audit trail — lịch sử thao tác trên đơn (status/payment/fulfillment/note/refund) */}
-          <div className="bb-card">
-            <div className="bb-card-header"><h3>{t('orders.audit.title')}</h3></div>
-            <div className="bb-card-body">
-              {auditQuery.isLoading ? (
-                <p className="bb-muted">{t('orders.audit.loading')}</p>
-              ) : auditQuery.isError ? (
-                <div className="flex items-center gap-3 flex-wrap">
-                  <p className="bb-muted m-0">{t('orders.audit.error')}</p>
-                  <Button type="button" variant="ghost" size="sm" onClick={() => auditQuery.refetch()}>
-                    {t('common.retry')}
-                  </Button>
-                </div>
-              ) : (auditQuery.data ?? []).length === 0 ? (
-                <p className="bb-muted">{t('orders.audit.empty')}</p>
-              ) : (
-                <ul className="bb-list-clean">
-                  {(auditQuery.data ?? []).map((entry, i) => (
-                    <li key={entry.id ?? i} className="bb-list-item">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="bb-list-title">
-                          {t(`orders.audit.action.${entry.action}`, { defaultValue: entry.action })}
-                        </span>
-                        <span className="bb-muted">{entry.createdAt ? formatDateTime(entry.createdAt) : ''}</span>
-                      </div>
-                      <div className="bb-list-meta">
-                        {t(`orders.audit.actor.${entry.actorType}`, { defaultValue: entry.actorType })}{entry.ipAddress ? ` · ${entry.ipAddress}` : ''}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            {/* Lịch sử thao tác — gộp vào cuối card Ghi chú (thay vì card riêng), thu gọn
+                mặc định vì chỉ cần tra cứu khi có tranh chấp/kiểm tra, không phải xem hàng ngày. */}
+            <details className="bb-foldable">
+              <summary>
+                {t('orders.audit.title')}
+                <ChevronRight size={16} className="bb-foldable-chev" aria-hidden="true" />
+              </summary>
+              <div className="bb-foldable-body">
+                {auditQuery.isLoading ? (
+                  <p className="bb-muted">{t('orders.audit.loading')}</p>
+                ) : auditQuery.isError ? (
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <p className="bb-muted m-0">{t('orders.audit.error')}</p>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => auditQuery.refetch()}>
+                      {t('common.retry')}
+                    </Button>
+                  </div>
+                ) : (auditQuery.data ?? []).length === 0 ? (
+                  <p className="bb-muted">{t('orders.audit.empty')}</p>
+                ) : (
+                  <ul className="bb-list-clean">
+                    {(auditQuery.data ?? []).map((entry, i) => (
+                      <li key={entry.id ?? i} className="bb-list-item">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="bb-list-title">
+                            {t(`orders.audit.action.${entry.action}`, { defaultValue: entry.action })}
+                          </span>
+                          <span className="bb-muted">{entry.createdAt ? formatDateTime(entry.createdAt) : ''}</span>
+                        </div>
+                        <div className="bb-list-meta">
+                          {t(`orders.audit.actor.${entry.actorType}`, { defaultValue: entry.actorType })}{entry.ipAddress ? ` · ${entry.ipAddress}` : ''}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </details>
           </div>
         </div>
 

@@ -6,6 +6,7 @@ import { useLocale } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { PurchaseEvent } from "@/components/analytics/PurchaseEvent";
 import { fetchOrderLookup, fetchPublicSettings } from "@/lib/api/client-api";
+import { queryKeys } from "@/lib/query/keys";
 import { OrderConfirmView } from "./OrderConfirmView";
 
 export function OrderConfirmClient() {
@@ -23,7 +24,7 @@ export function OrderConfirmClient() {
   });
 
   const settingsQuery = useQuery({
-    queryKey: ["public-settings", locale],
+    queryKey: queryKeys.publicSettings(locale),
     queryFn: () => fetchPublicSettings(locale),
     staleTime: 5 * 60 * 1000,
   });

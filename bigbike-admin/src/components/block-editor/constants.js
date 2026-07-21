@@ -21,6 +21,13 @@ export const PRODUCT_MENU = [
   { type: 'feature',     labelKey: 'products.detail.blocks.blockTypeFeatureLeft',  preset: { side: 'left' } },
 ]
 
+// Sản phẩm không lưu side="auto" (owner decision 2026-07-20 — xem DATA_CONTRACT.md), nhưng thao tác
+// Thêm/Chèn khối vẫn tự gợi ý phía ngược khối liền trước để ra so le mà không cần chọn tay (yêu cầu
+// chủ shop 2026-07-21). Giá trị lưu vẫn tường minh 'left'/'right', không đổi contract nhập/xuất.
+export function nextProductFeatureSide(prevSide) {
+  return prevSide === 'right' ? 'left' : 'right'
+}
+
 // suitability/sizeGuide (V327/V328): không còn discriminator `type` — mỗi field là 1 object đơn,
 // không phải phần tử mảng đa hình. `createBlock` vẫn dùng làm factory giá trị rỗng mặc định cho
 // form.suitabilitySection/sizeGuideSection (giữ `_key` để editor không reseed giữa các lần render).

@@ -100,6 +100,53 @@ class AdminMutationValidatorsTest {
     }
 
     @Test
+    void imageUrlMatchingExistingUrlIsGrandfatheredEvenIfOutsideWhitelist() {
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        String legacyUrl = "https://media.bigbike.vn/bigbike-media/wp-uploads/2020/07/mu-ls2.jpg";
+
+        AdminMutationValidators.validateImageAsset(
+                image(legacyUrl),
+                "image",
+                MINIO_BASE_URL,
+                legacyUrl,
+                errors
+        );
+
+        assertThat(errors).isEmpty();
+    }
+
+    @Test
+    void imageUrlDifferentFromExistingUrlIsStillWhitelistChecked() {
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        String legacyUrl = "https://media.bigbike.vn/bigbike-media/wp-uploads/2020/07/mu-ls2.jpg";
+
+        AdminMutationValidators.validateImageAsset(
+                image("https://example.com/new-image.jpg"),
+                "image",
+                MINIO_BASE_URL,
+                legacyUrl,
+                errors
+        );
+
+        assertThat(errors)
+                .hasSize(1)
+                .first()
+                .satisfies(error -> assertThat(error.field()).isEqualTo("image.url"));
+    }
+
+    @Test
+    void seoOgImageMatchingExistingUrlIsGrandfatheredEvenIfOutsideWhitelist() {
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        String legacyUrl = "https://media.bigbike.vn/bigbike-media/wp-uploads/2020/07/og.jpg";
+        SeoMetaRequest seo = new SeoMetaRequest();
+        seo.setOgImage(image(legacyUrl));
+
+        AdminMutationValidators.validateSeoMeta(seo, "seo", MINIO_BASE_URL, false, legacyUrl, errors);
+
+        assertThat(errors).isEmpty();
+    }
+
+    @Test
     void seoCanonicalUrlMustBelongToRealDomainInProduction() {
         List<ApiErrorDetail> errors = new ArrayList<>();
         SeoMetaRequest seo = new SeoMetaRequest();

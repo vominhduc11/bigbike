@@ -17,33 +17,46 @@ import { SortableList, DragHandle } from '../Sortable'
 import { showConfirm } from '../../lib/confirm'
 import { MediaRequirementHint } from '../MediaRequirementHint'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
+import { nextProductFeatureSide } from './constants'
 
 // Các loại khối có trình sửa riêng trong BlockCard. Khối ngoài tập này (vd dữ liệu cũ như
 // suitability/sizeGuide nay tách card riêng, hoặc loại chưa hỗ trợ) sẽ hiện thẻ giải thích rõ
 // thay vì card trống — nội dung vẫn được giữ nguyên khi lưu.
 const KNOWN_BLOCK_TYPES = new Set(['heading', 'paragraph', 'list', 'image', 'video', 'callout', 'feature', 'divider'])
 
-export function BlockControls({ disabled, insertMenu, onInsertBelow, onDuplicate, onRemove }) {
+export function BlockControls({ disabled, insertMenu, onInsertBelow, onDuplicate, onRemove, productMode, block }) {
   const { t } = useTranslation()
   const insertLabel = t('products.detail.blocks.insertBelow', { defaultValue: 'Chèn khối bên dưới' })
+  // Sản phẩm: chèn khối bên dưới tự gợi ý phía ngược khối hiện tại (so le tự động), không cần chọn tay.
+  const suggestedInsertEntry = productMode && insertMenu
+    ? insertMenu.find((m) => m.preset?.side === nextProductFeatureSide(block?.side)) ?? insertMenu[0]
+    : null
   return (
     <div className="flex items-center gap-1 shrink-0">
       {insertMenu && onInsertBelow && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" className="h-7 w-7" disabled={disabled}
-              aria-label={insertLabel} title={insertLabel}>
-              <Plus size={14} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {insertMenu.map((entry, i) => (
-              <DropdownMenuItem key={`${entry.type}-${i}`} onClick={() => onInsertBelow(entry.type, entry.preset)}>
-                {t(entry.labelKey)}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        suggestedInsertEntry ? (
+          <Button variant="outline" size="icon" className="h-7 w-7" disabled={disabled}
+            aria-label={t(suggestedInsertEntry.labelKey)} title={t(suggestedInsertEntry.labelKey)}
+            onClick={() => onInsertBelow(suggestedInsertEntry.type, suggestedInsertEntry.preset)}>
+            <Plus size={14} />
+          </Button>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-7 w-7" disabled={disabled}
+                aria-label={insertLabel} title={insertLabel}>
+                <Plus size={14} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {insertMenu.map((entry, i) => (
+                <DropdownMenuItem key={`${entry.type}-${i}`} onClick={() => onInsertBelow(entry.type, entry.preset)}>
+                  {t(entry.labelKey)}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
       )}
       <Button variant="outline" size="icon" className="h-7 w-7"
         onClick={onDuplicate} disabled={disabled}
@@ -976,6 +989,8 @@ export function BlockCard({ block, disabled, structDisabled, contentLang, sortab
         onInsertBelow={onInsertBelow}
         onDuplicate={onDuplicate}
         onRemove={onRemove}
+        productMode={productMode}
+        block={block}
       />
     </div>
   )

@@ -871,47 +871,97 @@
   font-family: var(--bb-font-mono);
 }
 
-.bb-action-panel {
+/* ─── Order detail: status summary strip + "next actions" zone ──────────────
+   Tầng 1 của trang chi tiết đơn hàng — dải trạng thái (trái) đi kèm vùng
+   hành động (phải) để admin thấy toàn cảnh + việc cần làm trong 1 lần nhìn,
+   thay vì 3 khối trạng thái rời + panel hành động full-width như trước. ─── */
+.bb-status-summary {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 12px;
   margin-bottom: 16px;
-  border-left: 3px solid var(--bb-primary);
+  align-items: stretch;
 }
-.bb-action-panel .bb-card-body {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  flex-wrap: wrap;
+.bb-status-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
 }
-.bb-action-panel-main {
-  flex: 1 1 auto;
-  min-width: 240px;
+.bb-status-tiles--2 { grid-template-columns: repeat(2, 1fr); }
+.bb-status-tile {
+  background: var(--bb-surface);
+  border: 1px solid var(--bb-border);
+  border-left: 3px solid var(--bb-neutral);
+  border-radius: var(--bb-r-card);
+  box-shadow: var(--bb-sh-xs);
+  padding: 12px 14px;
 }
-.bb-action-panel-title {
-  font-weight: 700;
+.bb-status-tile--success { border-left-color: var(--bb-success); }
+.bb-status-tile--warning { border-left-color: var(--bb-warning); }
+.bb-status-tile--danger  { border-left-color: var(--bb-danger); }
+.bb-status-tile--info    { border-left-color: var(--bb-info); }
+.bb-status-tile--neutral { border-left-color: var(--bb-neutral); }
+.bb-status-tile--muted   { border-left-color: var(--bb-text-muted); }
+.bb-status-tile-k {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  color: var(--bb-text-muted);
   margin-bottom: 8px;
 }
-.bb-action-panel-copy {
-  font-size: 12.5px;
+
+.bb-actionzone {
+  background: var(--bb-surface);
+  border: 1px solid var(--bb-border);
+  border-radius: var(--bb-r-card);
+  box-shadow: var(--bb-sh-xs);
+  padding: 13px 15px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+.bb-actionzone-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
   color: var(--bb-text-muted);
 }
-.bb-action-panel-actions {
+.bb-actionzone-quiet {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  color: var(--bb-text-muted);
+}
+.bb-actionzone-quiet .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bb-text-muted);
+  flex-shrink: 0;
+}
+.bb-actionzone-group + .bb-actionzone-group {
+  border-top: 1px solid var(--bb-border-faint);
+  padding-top: 10px;
+}
+.bb-actionzone-group-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bb-text-muted);
+  margin-bottom: 6px;
+}
+.bb-actionzone-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  justify-content: flex-end;
 }
-.bb-action-strip {
-  padding: 12px 16px;
-  border-top: 1px solid var(--bb-border-faint);
-  background: var(--bb-surface-muted);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.bb-action-strip-label {
-  font-size: 12px;
-  color: var(--bb-text-muted);
-  font-weight: 600;
+
+@media (max-width: 860px) {
+  .bb-status-summary { grid-template-columns: 1fr; }
+  .bb-status-tiles, .bb-status-tiles--2 { grid-template-columns: 1fr; }
 }
 
 .bb-total-panel {
@@ -965,6 +1015,35 @@
   margin-top: 4px;
   color: var(--bb-text-muted);
 }
+
+/* ─── Foldable section (details/summary) — dùng cho khối phụ trợ nên thu gọn
+   mặc định trong card (vd lịch sử thao tác, lịch sử thanh toán nhiều dòng). ─── */
+.bb-foldable {
+  border-top: 1px solid var(--bb-border-faint);
+}
+/* Foldable là con duy nhất/đầu tiên của card (vd card Thanh toán) → tự làm
+   header, không cần viền chia thêm ở trên. */
+.bb-card > .bb-foldable:first-child { border-top: 0; }
+.bb-foldable > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bb-text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.bb-foldable > summary::-webkit-details-marker { display: none; }
+.bb-foldable > summary .bb-foldable-chev {
+  color: var(--bb-text-muted);
+  transition: transform 120ms ease;
+  flex-shrink: 0;
+}
+.bb-foldable[open] > summary .bb-foldable-chev { transform: rotate(90deg); }
+.bb-foldable-body { padding: 0 16px 16px; }
 
 .bb-form-grid {
   display: grid;

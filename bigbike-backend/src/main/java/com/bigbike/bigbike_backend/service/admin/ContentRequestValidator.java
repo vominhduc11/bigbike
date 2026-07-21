@@ -76,6 +76,7 @@ public class ContentRequestValidator {
                 request.getCoverImage(),
                 "coverImage",
                 mediaUrlProperties.getPublicBaseUrl(),
+                current == null ? null : current.getCoverImageUrl(),
                 errors
         );
         AdminMutationValidators.validateSeoMeta(
@@ -83,6 +84,7 @@ public class ContentRequestValidator {
                 "seo",
                 mediaUrlProperties.getPublicBaseUrl(),
                 isDev,
+                current == null ? null : current.getSeoOgImageUrl(),
                 errors
         );
 

@@ -129,8 +129,9 @@ async function fillRequiredProductFields(page: Page, opts: FillOptions) {
   // (PRODUCT_GROUPS in product-detail/constants.js) — must expand it first.
   await page.getByRole('button', { name: 'Mô tả & nội dung trang' }).click()
   const descCard = sectionCard(page, 'Mô tả chi tiết')
-  await descCard.getByRole('button', { name: 'Thêm khối' }).click()
-  await page.getByRole('menuitem', { name: 'Ảnh phải + chữ trái' }).click()
+  // Sản phẩm không còn dropdown "Thêm khối" — nút tự gợi ý so le, khối đầu tiên luôn là
+  // "Ảnh phải + chữ trái" (nextProductFeatureSide mặc định 'right' khi chưa có khối nào).
+  await descCard.getByRole('button', { name: 'Ảnh phải + chữ trái' }).click()
   await fillRichText(descCard, DESCRIPTION_TEXT)
 
   await fillEnglishName(page, basicCard, opts.nameEn)

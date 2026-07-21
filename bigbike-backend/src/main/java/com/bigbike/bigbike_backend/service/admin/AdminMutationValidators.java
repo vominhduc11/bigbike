@@ -110,11 +110,31 @@ final class AdminMutationValidators {
             String allowedMediaBaseUrl,
             List<ApiErrorDetail> errors
     ) {
+        validateImageAsset(image, fieldPrefix, allowedMediaBaseUrl, null, errors);
+    }
+
+    /**
+     * {@code existingUrl} is the URL already persisted on the entity for this single-image field
+     * (product.image, category.image/icon/menuIcon, brand.logo, article.coverImage). A match is
+     * grandfathered and skips the MinIO whitelist check — mirrors the gallery/content-block legacy
+     * tolerance (MEDIA_RULE_002/003) so editing a legacy record whose image still hotlinks the old
+     * WordPress host is never blocked; only a genuinely NEW url must pass the whitelist.
+     */
+    static void validateImageAsset(
+            ImageAssetRequest image,
+            String fieldPrefix,
+            String allowedMediaBaseUrl,
+            String existingUrl,
+            List<ApiErrorDetail> errors
+    ) {
         if (image == null) {
             return;
         }
 
-        validateWhitelistedMediaUrl(image.getUrl(), fieldPrefix + ".url", allowedMediaBaseUrl, errors);
+        String url = trimToNull(image.getUrl());
+        if (url == null || existingUrl == null || !url.equals(trimToNull(existingUrl))) {
+            validateWhitelistedMediaUrl(image.getUrl(), fieldPrefix + ".url", allowedMediaBaseUrl, errors);
+        }
         validateNonNegativeInteger(image.getWidth(), fieldPrefix + ".width", "Image width", errors);
         validateNonNegativeInteger(image.getHeight(), fieldPrefix + ".height", "Image height", errors);
     }
@@ -125,7 +145,7 @@ final class AdminMutationValidators {
             String allowedMediaBaseUrl,
             List<ApiErrorDetail> errors
     ) {
-        validateSeoMeta(seo, fieldPrefix, allowedMediaBaseUrl, false, errors);
+        validateSeoMeta(seo, fieldPrefix, allowedMediaBaseUrl, false, null, errors);
     }
 
     static void validateSeoMeta(
@@ -135,12 +155,28 @@ final class AdminMutationValidators {
             boolean isDev,
             List<ApiErrorDetail> errors
     ) {
+        validateSeoMeta(seo, fieldPrefix, allowedMediaBaseUrl, isDev, null, errors);
+    }
+
+    /** {@code existingOgImageUrl} grandfathers the entity's already-persisted SEO og:image URL — same
+     * rationale as {@link #validateImageAsset(ImageAssetRequest, String, String, String, List)}. */
+    static void validateSeoMeta(
+            SeoMetaRequest seo,
+            String fieldPrefix,
+            String allowedMediaBaseUrl,
+            boolean isDev,
+            String existingOgImageUrl,
+            List<ApiErrorDetail> errors
+    ) {
         if (seo == null) {
             return;
         }
         validatePublicUrl(seo.getCanonicalUrl(), fieldPrefix + ".canonicalUrl", isDev, errors);
         if (seo.getOgImage() != null) {
-            validateWhitelistedMediaUrl(seo.getOgImage().getUrl(), fieldPrefix + ".ogImage.url", allowedMediaBaseUrl, errors);
+            String url = trimToNull(seo.getOgImage().getUrl());
+            if (url == null || existingOgImageUrl == null || !url.equals(trimToNull(existingOgImageUrl))) {
+                validateWhitelistedMediaUrl(seo.getOgImage().getUrl(), fieldPrefix + ".ogImage.url", allowedMediaBaseUrl, errors);
+            }
         }
     }
 
