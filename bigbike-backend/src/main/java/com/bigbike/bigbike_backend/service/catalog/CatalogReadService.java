@@ -219,10 +219,21 @@ public class CatalogReadService {
     }
 
     public PageResult<Brand> listBrands(int page, int size, String sort, String lang) {
+        return listBrands(page, size, sort, null, lang);
+    }
+
+    public PageResult<Brand> listBrands(
+            int page,
+            int size,
+            String sort,
+            Boolean showOnHomepage,
+            String lang
+    ) {
         SortSpec sortSpec = sortParser.parse(sort, "name", SortDirection.ASC, BRAND_SORT_FIELDS);
 
         List<Brand> result = catalogReadRepository.findAllBrands(lang).stream()
                 .filter(Brand::isVisible)
+                .filter(brand -> matchesFlag(brand.showOnHomepage(), showOnHomepage))
                 .sorted(brandComparator(sortSpec))
                 .toList();
 

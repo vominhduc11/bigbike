@@ -527,7 +527,8 @@ export function normalizeBrand(input) {
     bannerImage: normalizeImageAsset(source.bannerImage),
     mobileBannerImage: normalizeImageAsset(source.mobileBannerImage),
     seo: normalizeSeoMeta(source.seo),
-    isVisible: source.isVisible !== false,
+    isVisible: typeof source.isVisible === 'boolean' ? source.isVisible : null,
+    showOnHomepage: typeof source.showOnHomepage === 'boolean' ? source.showOnHomepage : null,
     translations: {
       en: {
         name: toTrimmedString(source.translations?.en?.name) || undefined,

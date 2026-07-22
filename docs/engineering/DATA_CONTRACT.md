@@ -972,6 +972,26 @@ Status: `CONFIRMED_FROM_CODE` — `CategoryEntity`, `CategoryTranslations` domai
 
 Cột `deleted` (`BOOLEAN`, `NOT NULL`, mặc định `false`) trên bảng `categories` được sử dụng để quản lý trạng thái Xóa mềm (Thùng rác) của danh mục. Khi `deleted = true`, danh mục được coi là nằm trong Thùng rác và sẽ tự động bị ẩn khỏi toàn bộ luồng đọc công khai (storefront web). Các sản phẩm thuộc danh mục bị xóa mềm vẫn được giữ nguyên và bán bình thường.
 
+### Category visibility and homepage placement
+
+Category uses three independent booleans with separate meanings:
+
+| API/domain field | Persistence | Default | Meaning |
+|---|---|---|---|
+| `isVisible` | `categories.is_visible` | `true` | Whether an active Category may appear on the storefront. Hiding a Category with a directly visible child is rejected with `409`. |
+| `deleted` | `categories.deleted` | `false` | Trash lifecycle. Soft-delete/restore cascade the complete subtree and do not themselves change product links. |
+| `showOnHomepage` | `categories.show_on_homepage` | `false` | Placement in the homepage category surface only; it is independent of visibility and Trash. |
+
+`showOnHomepage` is omitted by the create form while false; an explicit true value is persisted. On update, absence preserves the stored value and a supplied `false` clears the homepage placement. No Category list/detail response currently exposes a product count, so an admin consumer must not synthesize one from the current page.
+
+The system Category `uncategorized` is permanently hidden and may be read in the admin Category list, but every write operation (upsert, visibility change, soft delete, restore and permanent delete) is rejected with `409`. It is excluded from the Category parent picker.
+
+### Category media and SEO write shape
+
+The Category upsert DTO accepts separate assets for `image` (grid thumbnail), `icon` (hero illustration), `menuIcon` (menu/filter line icon), `banner` (desktop hero background), `mobileBanner` (mobile hero background), and `seo.ogImage`. Assets other than `menuIcon` retain the normal `ImageAsset { url, alt, width, height, mimeType }` shape; `menuIcon` persists only its `url`.
+
+For `PATCH`, omitting an asset block preserves it; `{ "url": null }` clears that asset. Omitting `seo` preserves SEO. Supplying `seo` normalizes blank text fields to `null`; `seo: {}` therefore clears title, description, canonical URL and the social image. Admin forms always send an explicit `seo` block when saved.
+
 ### Category menu/sidebar line-icon — `menu_icon_url` (V213)
 
 Cột `menu_icon_url` (`TEXT`, nullable) trên `categories` lưu **icon line đơn sắc** của danh mục, dùng cho:
@@ -1036,6 +1056,20 @@ Fallback: tên thương hiệu luôn lấy từ `name` theo `BRAND_RULE_001`; sl
 **Slug tiếng Anh (`slug_en`, V215):** legacy-only cho brand; xem mục **"English URL slug"** bên dưới.
 
 Status: `CONFIRMED_FROM_CODE` — `BrandEntity`, `BrandTranslations` domain record, migration `V137`.
+
+### Brand homepage placement — `show_on_homepage` (V349)
+
+Brand có một cờ boolean riêng cho vị trí trên trang chủ, không phải state xóa mềm:
+
+| Field domain/API | Cột DB | Kiểu | Ý nghĩa |
+|---|---|---|---|
+| `showOnHomepage` | `show_on_homepage` | `BOOLEAN NOT NULL DEFAULT TRUE` | Khi `true`, Brand có thể xuất hiện trong dải logo thương hiệu trang chủ; khi `false`, chỉ loại khỏi dải này. |
+
+Migration `V349__add_brand_show_on_homepage.sql` backfill mọi Brand hiện có thành `true`, nên không làm thương hiệu hiện tại biến mất khỏi carousel sau deploy. `isVisible` vẫn là cờ xóa mềm duy nhất và tiếp tục được dùng cho toàn bộ public Brand reads. `showOnHomepage` không lọc `/brands`, `/brands/{slug}`, facet thương hiệu hoặc `BrandSummary` nhúng trong sản phẩm.
+
+`Brand` domain/public response và `UpsertBrandRequest` đều mang field `showOnHomepage`; field này được ghi qua create/update admin. Public list chỉ áp dụng bộ lọc khi caller truyền `showOnHomepage` (trang chủ truyền `true`).
+
+Status: `CONFIRMED_FROM_CODE` — `BrandEntity.showOnHomepage`, `Brand.showOnHomepage`, `UpsertBrandRequest.showOnHomepage`, `BrandMutationService.applyBrandPatch`, `CatalogReadService.listBrands`, migration `V349`.
 
 ### English URL slug — `slug_en` (V213 categories / V214 products / V216 articles; V215 brand legacy)
 

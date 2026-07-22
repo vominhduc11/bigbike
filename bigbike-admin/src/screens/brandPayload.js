@@ -3,7 +3,7 @@ export function toBrandPayload(form) {
     slug: form.slug.trim(),
     name: form.name.trim(),
     description: form.description.trim() || undefined,
-    visible: Boolean(form.visible),
+    showOnHomepage: Boolean(form.showOnHomepage),
   }
 
   payload.logo = form.logoUrl.trim()
@@ -28,12 +28,6 @@ export function toBrandPayload(form) {
 
   payload.translations = {
     en: {
-      // BRAND_RULE_003: brand slug is shared across VI/EN.
-      // Send null so older backend builds clear/ignore the legacy slug_en value.
-      slug: null,
-      // BRAND_RULE_001: brand names are proper nouns and use one shared value.
-      // Keep sending it for compatibility with backend builds that still expect this field.
-      name: form.name.trim() || null,
       description: form.translations?.en?.description?.trim() || null,
       seoTitle: form.translations?.en?.seoTitle?.trim() || null,
       seoDescription: form.translations?.en?.seoDescription?.trim() || null,

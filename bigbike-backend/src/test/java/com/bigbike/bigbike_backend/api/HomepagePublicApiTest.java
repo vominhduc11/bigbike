@@ -78,6 +78,23 @@ class HomepagePublicApiTest {
                 .andExpect(jsonPath("$.data[?(@.showOnHomepage != true)]").doesNotExist());
     }
 
+    // ── Brand: homepage-only placement filter ───────────────────────────────
+
+    @Test
+    void listHomepageBrands_filtersOnlyHomepageFlagAndKeepsPublicBrandListUnfiltered() throws Exception {
+        mockMvc.perform(get("/api/v1/brands").param("size", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.slug == 'kyt')].showOnHomepage").value(hasItems(false)))
+                .andExpect(jsonPath("$.data[?(@.slug == 'kyt')]").exists());
+
+        mockMvc.perform(get("/api/v1/brands")
+                        .param("showOnHomepage", "true")
+                        .param("size", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.slug == 'kyt')]").doesNotExist())
+                .andExpect(jsonPath("$.data[?(@.showOnHomepage != true)]").doesNotExist());
+    }
+
     // ── Article: category slug filter ────────────────────────────────────────
 
     @Test

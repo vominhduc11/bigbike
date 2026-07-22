@@ -193,10 +193,11 @@ public class CatalogController {
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             @RequestParam(required = false) String sort,
+            @RequestParam(required = false) Boolean showOnHomepage,
             @RequestParam(defaultValue = "vi") @Pattern(regexp = LANG_REGEX, message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
-        return apiResponseFactory.list(catalogReadService.listBrands(page, size, sort, lang), request);
+        return apiResponseFactory.list(catalogReadService.listBrands(page, size, sort, showOnHomepage, lang), request);
     }
 
     @GetMapping("/brands/{slug}")

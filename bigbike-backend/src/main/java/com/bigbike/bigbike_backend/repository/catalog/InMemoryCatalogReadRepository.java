@@ -129,6 +129,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         false
                 ),
                 true,
+                true,
                 null,
                 Instant.parse("2026-04-02T03:00:00Z"),
                 Instant.parse("2026-04-18T03:00:00Z")
@@ -157,6 +158,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         null,
                         false
                 ),
+                true,
                 true,
                 null,
                 Instant.parse("2026-04-02T03:00:00Z"),

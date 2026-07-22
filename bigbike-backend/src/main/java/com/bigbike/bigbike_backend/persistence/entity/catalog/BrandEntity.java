@@ -80,6 +80,9 @@ public class BrandEntity {
     @Column(nullable = false)
     private boolean isVisible;
 
+    @Column(name = "show_on_homepage", nullable = false)
+    private boolean showOnHomepage = true;
+
     @Column(nullable = false)
     private Instant createdAt;
 

@@ -51,7 +51,7 @@ File này liên quan trực tiếp đến:
 | Entity | State Field | States Found | Main Transitions | Enforcement | Status | Evidence |
 |---|---|---|---|---|---|---|
 | Product | `publishStatus` | `DRAFT`, `PUBLISHED`, `TRASH` | Controlled publish transitions (DRAFT ↔ PUBLISHED allowed both directions); soft-delete sequences `PUBLISHED → DRAFT → TRASH` in one request; restore `TRASH -> DRAFT`. Legacy values `HIDDEN`, `ARCHIVED`, `PENDING`, `PRIVATE` all migrated to `DRAFT` (V324). | Backend validator | `CONFIRMED_BACKEND_ENFORCED` | `PublishStatus.java`, `AdminMutationValidators.java`, `ProductMutationService.java`, `CatalogReadService.java` |
-| Category | `visible` | `true`, `false` | Soft-delete/hide sets visible false; public only visible; cannot hide parent with visible children. | Backend service | `CONFIRMED_BACKEND_ENFORCED` for visibility rules; no enum state machine | `CategoryMutationService.java`, `CatalogReadService.java` |
+| Category | `deleted` + `isVisible` | `deleted`: `false`, `true`; `isVisible`: `true`, `false` | `deleted` is the independent Trash lifecycle; `isVisible` independently controls storefront display. Soft-delete/restore cascade the tree; hiding is rejected when a direct child remains visible. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `CategoryMutationService.java`, `CatalogReadService.java` |
 | Brand | `visible` | `true`, `false` | Delete sets visible false; public only visible. | Backend service | `CONFIRMED_BACKEND_ENFORCED` for visibility; no full transition map | `BrandMutationService.java`, `CatalogReadService.java` |
 | Order | `status` | `PENDING`, `PROCESSING`, `SHIPPING`, `COMPLETED`, `CANCELLED` | Một state machine duy nhất; tracking là dữ liệu tham khảo, không phải state. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java`, `CheckoutService.java` |
 | Payment record | `status` on Payment | Payment record giữ lifecycle kỹ thuật nội bộ để lưu snapshot giao dịch; không tạo thêm trục trạng thái trên Order. | Không dùng để điều khiển chuyển trạng thái đơn. | Backend service | `STATUS_ONLY` | `CheckoutService.java`, payment persistence |
@@ -172,16 +172,28 @@ Brand:
 - Category: `deleted = false`
 - Brand: `isVisible = true`
 
+### Brand homepage attribute (not a state)
+
+Brand `showOnHomepage` is an independent boolean attribute, defaulting to `true`. It controls only placement in the homepage brand carousel. Setting it to `false` does not move the Brand to Trash and does not affect the Brand list/detail page, catalog facets, or embedded product brand. It is not an allowed transition in this state machine and does not change the `isVisible` soft-delete/restore transitions above.
+
+Evidence: `BrandEntity.showOnHomepage`, migration `V349__add_brand_show_on_homepage.sql`, `CatalogReadService.listBrands`, `CatalogController`, and `bigbike-web/app/page.tsx`.
+
+### Category homepage attribute (not a state)
+
+Category `showOnHomepage` is an independent boolean placement attribute. It defaults to `false` for a new Category and does not alter `isVisible`, `deleted`, the parent tree, or product relations. The create form omits this field while it remains at the default; an explicit enabled value is persisted. It is not a lifecycle transition.
+
+Evidence: `CategoryEntity.showOnHomepage`, `UpsertCategoryRequest.showOnHomepage`, `CategoryMutationService.applyCategoryPatch`, and `BUSINESS_RULES.md` `CATEGORY_RULE_007`.
+
 ### Allowed Transitions
 
 | Entity | From | To | Actor / Role | Preconditions | Side Effects | Enforcement | Evidence |
 |---|---|---|---|---|---|---|---|
 | Category | `deleted = false` | `deleted = true` | Admin / role có `catalog.update` | Category exists; is not "Chưa phân loại" system category. | Category and all its descendants are marked `deleted = true` (Trash). Products in it are NOT reassigned yet. | `CONFIRMED_BACKEND_ENFORCED` | `CategoryMutationService.java` |
-| Category | `deleted = true` | `deleted = false` | Admin / role có `catalog.update` | Category exists. | Category and all its descendants are restored to `deleted = false` (Active). | `CONFIRMED_BACKEND_ENFORCED` | `CategoryMutationService.java` |
+| Category | `deleted = true` | `deleted = false` | Admin / role có `catalog.update` | Category exists and is not the system Category `uncategorized`. | Category and all its descendants are restored to `deleted = false` (Active). | `CONFIRMED_BACKEND_ENFORCED` | `CategoryMutationService.java` |
 | Category | `deleted = true` | `DELETED` (physical) | Admin / role có `catalog.update` | Category is in Trash (`deleted = true`); is not "Chưa phân loại". | Category and descendants are physically deleted; only their product links are removed. Products with no remaining category receive `uncategorized`. | `CONFIRMED_BACKEND_ENFORCED` | `CategoryMutationService.java` |
 | Brand | `isVisible = true` | `isVisible = false` | Admin / role có `catalog.update` | Brand exists. | Brand is soft-deleted (sent to Trash). Storefront hides it. | `CONFIRMED_BACKEND_ENFORCED` | `BrandMutationService.java` |
 | Brand | `isVisible = false` | `isVisible = true` | Admin / role có `catalog.update` | Brand exists. | Brand is restored. Storefront shows it. | `CONFIRMED_BACKEND_ENFORCED` | `BrandMutationService.java` |
-| Brand | `isVisible = false` | `DELETED` (physical) | Admin / role có `catalog.update` | Brand is in Trash (`isVisible = false`). | Brand is physically deleted. Product references are set to NULL. | `CONFIRMED_BACKEND_ENFORCED` | `BrandMutationService.java` |
+| Brand | `isVisible = false` | `DELETED` (physical) | Admin / role có `catalog.update` | Brand is in Trash (`isVisible = false`) and is not the system Brand `uncategorized-brand`. | Brand is physically deleted. All linked products are reassigned to the system Brand `uncategorized-brand`; the API returns `reassignedProductCount`. | `CONFIRMED_BACKEND_ENFORCED` | `BrandMutationService.java`, `ProductJpaRepository.java` |
 
 ### Forbidden Transitions
 
@@ -189,9 +201,11 @@ Brand:
 |---|---|---|---|---|
 | Category parentId | self/circular parent | Would corrupt tree. | Backend validation rejects. | `CategoryMutationService.java` |
 | "Chưa phân loại" | `deleted = true` | System category cannot be soft-deleted. | Backend rejects (409). | `CategoryMutationService.java` |
+| "Chưa phân loại" | `deleted = false` via restore | System category cannot be restored or otherwise written. | Backend rejects (409). | `CategoryMutationService.java` |
 | "Chưa phân loại" | `DELETED` (physical) | System category cannot be physically deleted. | Backend rejects (409). | `CategoryMutationService.java` |
 | Category `deleted = false` | `DELETED` (physical) | Cannot permanently delete active category; must soft-delete first. | Backend rejects (409). | `CategoryMutationService.java` |
 | Brand `isVisible = true` | `DELETED` (physical) | Cannot permanently delete active brand; must soft-delete first. | Backend rejects (409). | `BrandMutationService.java` |
+| Brand `slug = uncategorized-brand` | Any mutation or deletion transition | System Brand is locked, permanently hidden, and excluded from the Brand admin list. | Backend rejects (409). | `BrandMutationService.java`, `AdminCatalogReadService.java` |
 
 ### Frontend Behavior
 

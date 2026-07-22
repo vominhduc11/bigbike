@@ -28,6 +28,7 @@ import { Screen, ScreenHeader, StickyActionBar, Tabs } from '../components/layou
 import { StatePanel } from '../components/StatePanel'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
+import { BrandCombobox } from './product-detail/BrandCombobox'
 import { useProductPicker } from '../lib/useProductPicker'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { parseSpecsFromHtml } from '../lib/specSheet'
@@ -1267,17 +1268,13 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </Field>
 
                   <Field label={t('products.detail.brandId')} required error={validationErrors.brandId}>
-                    <Select value={form.brandId} onValueChange={(val) => { if (val) updateField('brandId', val) }} disabled={isReadOnly}>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('products.detail.brandPlaceholder')}>{selectedBrandLabel}</SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {form.brandId && !brandOptions.some((b) => b.id === form.brandId) && (
-                          <SelectItem value={form.brandId} disabled>{t('products.detail.optionNotFound', { id: form.brandId })}</SelectItem>
-                        )}
-                        {brandOptions.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <BrandCombobox
+                      displayLabel={selectedBrandLabel}
+                      options={brandOptions}
+                      onChange={(id) => updateField('brandId', id)}
+                      disabled={isReadOnly}
+                      placeholder={t('products.detail.brandSearchPlaceholder', { defaultValue: 'Tìm hoặc tạo thương hiệu…' })}
+                    />
                   </Field>
 
                   <Field
@@ -2025,19 +2022,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                       disabled={isReadOnly}
                       maxLength={5000}
                       placeholder={t('products.detail.seoDescription')}
-                    />
-                  </Field>
-
-                  <Field
-                    full
-                    label={t('products.detail.seoCanonicalUrl')}
-                    helper={t('products.detail.seoCanonicalAuto', { defaultValue: 'Tự sinh theo đường dẫn (slug) — không cần nhập.' })}
-                  >
-                    <Input
-                      value={canonicalUrlFromSlug(form.slug) || ''}
-                      readOnly
-                      disabled
-                      placeholder={`https://bigbike.vn/product/duong-dan-san-pham/`}
                     />
                   </Field>
 

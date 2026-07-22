@@ -298,13 +298,14 @@ export type PublicBrandListResult = {
 
 /** Client-side brand list fetch — lưới thương hiệu CSR (phân trang/sắp xếp). */
 export async function fetchPublicBrandList(
-  query: { page?: number; size?: number; sort?: string; lang?: string },
+  query: { page?: number; size?: number; sort?: string; showOnHomepage?: boolean; lang?: string },
 ): Promise<PublicBrandListResult> {
   const qs = new URLSearchParams();
   const put = (k: string, v: string | number | undefined) => appendParam(qs, k, v);
   put("page", query.page);
   put("size", query.size);
   put("sort", query.sort ?? "name:asc");
+  if (query.showOnHomepage) qs.set("showOnHomepage", "true");
   put("lang", query.lang);
 
   const res = await fetch(`${API_BASE_URL}/api/v1/brands?${qs.toString()}`, {

@@ -6,7 +6,7 @@ function formWithSeo(overrides = {}) {
     slug: 'ls2',
     name: 'LS2',
     description: '',
-    visible: true,
+    showOnHomepage: true,
     logoUrl: '',
     bannerUrl: '',
     seoTitle: '',
@@ -14,7 +14,7 @@ function formWithSeo(overrides = {}) {
     seoCanonicalUrl: '',
     seoOgImageUrl: '',
     seoOgImageAlt: '',
-    translations: { en: { slug: '', name: 'LS2', description: '', seoTitle: '', seoDescription: '' } },
+    translations: { en: { description: '', seoTitle: '', seoDescription: '' } },
     ...overrides,
   }
 }
@@ -39,23 +39,26 @@ describe('BrandDetailScreen toPayload', () => {
     })
   })
 
-  it('dùng tên thương hiệu chung cho trường tương thích tiếng Anh', () => {
-    expect(toBrandPayload(formWithSeo({
+  it('không gửi tên hoặc slug tiếng Anh riêng cho thương hiệu', () => {
+    const payload = toBrandPayload(formWithSeo({
       name: 'Hevik',
-      translations: { en: { name: '' } },
-    })).translations.en.name).toBe('Hevik')
+      translations: { en: { description: 'English description' } },
+    }))
+    expect(payload.translations.en).not.toHaveProperty('name')
+    expect(payload.translations.en).not.toHaveProperty('slug')
+    expect(payload.translations.en.description).toBe('English description')
   })
 
-  it('không gửi slug tiếng Anh riêng cho thương hiệu', () => {
-    expect(toBrandPayload(formWithSeo({
-      translations: { en: { slug: 'hevik-en', name: 'Hevik' } },
-    })).translations.en.slug).toBeNull()
+  it('gửi cờ hiện ở trang chủ và không gửi cờ thùng rác', () => {
+    const payload = toBrandPayload(formWithSeo({ showOnHomepage: false }))
+    expect(payload.showOnHomepage).toBe(false)
+    expect(payload).not.toHaveProperty('visible')
   })
 })
 
 describe('BrandDetailScreen required progress', () => {
   it('chỉ tính tên dùng chung và slug vì thương hiệu không có tên tiếng Anh riêng', () => {
-    expect(getBrandRequiredProgress(formWithSeo({ translations: { en: { name: '' } } }))).toEqual({
+    expect(getBrandRequiredProgress(formWithSeo({ translations: { en: {} } }))).toEqual({
       filled: 2,
       total: 2,
     })

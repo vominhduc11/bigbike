@@ -14,6 +14,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantOptionRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantRequest;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
@@ -656,9 +657,9 @@ class AdminMutationApiTest {
                                   "slug": "%s",
                                   "name": "Phase 4G Brand %s",
                                   "description": "Brand from mutation test",
-                                  "visible": true,
+                                  "showOnHomepage": true,
                                   "translations": {
-                                    "en": { "name": "Phase 4G Brand EN %s" }
+                                    "en": { "description": "Phase 4G Brand EN %s" }
                                   }
                                 }
                                 """.formatted(brandSlug, suffix, suffix)))
@@ -674,14 +675,15 @@ class AdminMutationApiTest {
                         .content("""
                                 {
                                   "name": "Phase 4G Brand Updated %s",
-                                  "visible": false,
+                                  "showOnHomepage": false,
                                   "translations": {
-                                    "en": { "name": "Phase 4G Brand Updated EN %s" }
+                                    "en": { "description": "Phase 4G Brand Updated EN %s" }
                                   }
                                 }
-                                """.formatted(suffix, suffix)))
+                """.formatted(suffix, suffix)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.isVisible").value(false));
+                .andExpect(jsonPath("$.data.isVisible").value(true))
+                .andExpect(jsonPath("$.data.showOnHomepage").value(false));
 
         String articleSlug = "phase4g-article-" + suffix;
         mockMvc.perform(post("/api/v1/admin/content/articles")
@@ -775,16 +777,16 @@ class AdminMutationApiTest {
 
         mockMvc.perform(delete("/api/v1/admin/categories/{id}", parent.getId())
                         .header("X-Admin-Permissions", "catalog.update"))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.deleted").value(true));
 
-        assertThat(categoryJpaRepository.findById(parent.getId())).isEmpty();
-        assertThat(categoryJpaRepository.findById(child.getId())).isEmpty();
+        assertThat(categoryJpaRepository.findById(parent.getId()).orElseThrow().isDeleted()).isTrue();
+        assertThat(categoryJpaRepository.findById(child.getId()).orElseThrow().isDeleted()).isTrue();
     }
 
     @Test
-    void deleteCategoryWithProductInSubtreeShouldReturnConflict() throws Exception {
-        // CATEGORY_RULE_004: a product assigned anywhere in the sub-tree blocks
-        // deletion; the category (and its product) must survive untouched.
+    void deleteCategoryWithProductInSubtreeShouldSoftDeleteWithoutReassignment() throws Exception {
+        // CATEGORY_RULE_004: soft delete keeps product links and cascades the tree.
         String suffix = String.valueOf(System.currentTimeMillis());
         String parentSlug = "prodblock-del-parent-" + suffix;
         String childSlug = "prodblock-del-child-" + suffix;
@@ -821,24 +823,26 @@ class AdminMutationApiTest {
                                 {
                                   "slug": "%s",
                                   "name": "ProdBlock Del Product %s",
+                                  "sku": "CAT-SOFT-%s",
                                   "categoryId": "%s",
+                                  "brandId": "brand_ls2",
+                                  "gender": "MEN",
                                   "retailPrice": 1000000,
                                   "stockState": "IN_STOCK",
                                   "publishStatus": "DRAFT",
                                   "translations": { "en": { "name": "ProdBlock Del Product EN %s" } },
                                   "image": { "url": "%s/wp-uploads/products/%s.jpg", "alt": "p" }
                                 }
-                                """.formatted(productSlug, suffix, child.getId(), suffix, MEDIA_PUBLIC_BASE_URL, productSlug)))
+                                """.formatted(productSlug, suffix, suffix, child.getId(), suffix, MEDIA_PUBLIC_BASE_URL, productSlug)))
                 .andExpect(status().isOk());
 
-        // Deleting the PARENT must be blocked because a descendant has a product.
         mockMvc.perform(delete("/api/v1/admin/categories/{id}", parent.getId())
                         .header("X-Admin-Permissions", "catalog.update"))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.deleted").value(true));
 
-        assertThat(categoryJpaRepository.findById(parent.getId())).isPresent();
-        assertThat(categoryJpaRepository.findById(child.getId())).isPresent();
+        assertThat(categoryJpaRepository.findById(parent.getId()).orElseThrow().isDeleted()).isTrue();
+        assertThat(categoryJpaRepository.findById(child.getId()).orElseThrow().isDeleted()).isTrue();
     }
 
     @Test
@@ -1089,6 +1093,35 @@ class AdminMutationApiTest {
         assertThat(cleared.getSeoOgImageAlt()).isNull();
     }
 
+    @Test
+    void shouldKeepCategoryHomepageIndependentAndLockSystemCategoryRestore() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String slug = "category-homepage-" + suffix;
+
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"Category Homepage %s","translations":{"en":{"name":"Category Homepage EN %s"}}}
+                                """.formatted(slug, suffix, suffix)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.showOnHomepage").value(false));
+
+        CategoryEntity category = categoryJpaRepository.findBySlug(slug).orElseThrow();
+        mockMvc.perform(patch("/api/v1/admin/categories/{id}", category.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("{" + "\"showOnHomepage\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.showOnHomepage").value(true))
+                .andExpect(jsonPath("$.data.isVisible").value(true));
+
+        mockMvc.perform(post("/api/v1/admin/categories/{id}/restore", "uncategorized")
+                        .header("X-Admin-Permissions", "catalog.update"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+    }
+
     // ── Brand hardening tests ─────────────────────────────────────────────────
 
     @Test
@@ -1110,7 +1143,7 @@ class AdminMutationApiTest {
                                     "canonicalUrl":"https://bigbike.vn/brands/%s",
                                     "ogImage":{"url":"%s/brands/seo.jpg","alt":"Ảnh cũ"}
                                   },
-                                  "translations":{"en":{"name":"SEO Brand %s"}}
+                                  "translations":{"en":{"description":"English SEO description"}}
                                 }
                                 """.formatted(slug, suffix, slug, MEDIA_PUBLIC_BASE_URL, suffix)))
                 .andExpect(status().isOk());
@@ -1123,7 +1156,7 @@ class AdminMutationApiTest {
                         .characterEncoding(StandardCharsets.UTF_8)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"seo":{},"translations":{"en":{"name":"SEO Brand %s"}}}
+                                {"seo":{},"translations":{"en":{"description":"English SEO description"}}}
                                 """.formatted(suffix)))
                 .andExpect(status().isOk());
 
@@ -1201,8 +1234,8 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Dup Brand First %s","translations":{"en":{"name":"Dup Brand First EN %s"}}}
-                                """.formatted(slug, suffix, suffix)))
+                                {"slug":"%s","name":"Dup Brand First %s"}
+                                """.formatted(slug, suffix)))
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/api/v1/admin/brands")
@@ -1226,8 +1259,8 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Soft Del Brand %s","visible":true,"translations":{"en":{"name":"Soft Del Brand EN %s"}}}
-                                """.formatted(slug, suffix, suffix)))
+                                {"slug":"%s","name":"Soft Del Brand %s"}
+                                """.formatted(slug, suffix)))
                 .andExpect(status().isOk());
 
         BrandEntity brand = brandJpaRepository.findBySlug(slug)
@@ -1273,8 +1306,8 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Idempotent Brand %s","visible":true,"translations":{"en":{"name":"Idempotent Brand EN %s"}}}
-                                """.formatted(slug, suffix, suffix)))
+                                {"slug":"%s","name":"Idempotent Brand %s"}
+                                """.formatted(slug, suffix)))
                 .andExpect(status().isOk());
 
         BrandEntity brand = brandJpaRepository.findBySlug(slug)
@@ -1313,16 +1346,22 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Filter Brand Visible %s","visible":true,"translations":{"en":{"name":"Filter Brand Visible EN %s"}}}
-                                """.formatted(visibleSlug, suffix, suffix)))
+                                {"slug":"%s","name":"Filter Brand Visible %s"}
+                                """.formatted(visibleSlug, suffix)))
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/api/v1/admin/brands")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Filter Brand Hidden %s","visible":false,"translations":{"en":{"name":"Filter Brand Hidden EN %s"}}}
-                                """.formatted(hiddenSlug, suffix, suffix)))
+                                {"slug":"%s","name":"Filter Brand Hidden %s"}
+                                """.formatted(hiddenSlug, suffix)))
+                .andExpect(status().isOk());
+
+        BrandEntity hiddenBrand = brandJpaRepository.findBySlug(hiddenSlug)
+                .orElseThrow(() -> new IllegalStateException("Expected hidden brand."));
+        mockMvc.perform(delete("/api/v1/admin/brands/{id}", hiddenBrand.getId())
+                        .header("X-Admin-Permissions", "catalog.update"))
                 .andExpect(status().isOk());
 
         // VISIBLE filter → only visible brand in results
@@ -1355,6 +1394,78 @@ class AdminMutationApiTest {
     }
 
     @Test
+    void shouldRestoreAndPermanentlyDeleteTrashedBrandWithProductReassignment() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String slug = "brand-permanent-" + suffix;
+
+        mockMvc.perform(post("/api/v1/admin/brands")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"Permanent Brand %s","showOnHomepage":false}
+                                """.formatted(slug, suffix)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.isVisible").value(true))
+                .andExpect(jsonPath("$.data.showOnHomepage").value(false));
+
+        BrandEntity brand = brandJpaRepository.findBySlug(slug)
+                .orElseThrow(() -> new IllegalStateException("Expected brand."));
+
+        mockMvc.perform(delete("/api/v1/admin/brands/{id}/permanent", brand.getId())
+                        .header("X-Admin-Permissions", "catalog.update"))
+                .andExpect(status().isConflict());
+
+        mockMvc.perform(delete("/api/v1/admin/brands/{id}", brand.getId())
+                        .header("X-Admin-Permissions", "catalog.update"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.isVisible").value(false));
+
+        mockMvc.perform(post("/api/v1/admin/brands/{id}/restore", brand.getId())
+                        .header("X-Admin-Permissions", "catalog.update"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.isVisible").value(true));
+
+        mockMvc.perform(delete("/api/v1/admin/brands/{id}", brand.getId())
+                        .header("X-Admin-Permissions", "catalog.update"))
+                .andExpect(status().isOk());
+
+        ProductEntity product = new ProductEntity();
+        product.setId("prod-brand-permanent-" + suffix);
+        product.setSlug("product-brand-permanent-" + suffix);
+        product.setName("Product Brand Permanent " + suffix);
+        product.setBrand(brandJpaRepository.findById(brand.getId()).orElseThrow());
+        product.setRetailPrice(BigDecimal.ONE);
+        product.setCurrency("VND");
+        product.setStockState(ProductStockState.IN_STOCK);
+        product.setPublishStatus(PublishStatus.DRAFT);
+        product.setCreatedAt(Instant.now());
+        product.setUpdatedAt(Instant.now());
+        productJpaRepository.saveAndFlush(product);
+
+        mockMvc.perform(delete("/api/v1/admin/brands/{id}/permanent", brand.getId())
+                        .header("X-Admin-Permissions", "catalog.update"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.reassignedProductCount").value(1));
+
+        assertThat(brandJpaRepository.findById(brand.getId())).isEmpty();
+        assertThat(productJpaRepository.findById(product.getId()).orElseThrow().getBrand().getId())
+                .isEqualTo("uncategorized-brand");
+    }
+
+    @Test
+    void shouldRejectSystemBrandMutation() throws Exception {
+        mockMvc.perform(patch("/api/v1/admin/brands/{id}", "uncategorized-brand")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("{\"name\":\"Cannot update\"}"))
+                .andExpect(status().isConflict());
+
+        mockMvc.perform(delete("/api/v1/admin/brands/{id}/permanent", "uncategorized-brand")
+                        .header("X-Admin-Permissions", "catalog.update"))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
     void shouldHideBrandSummaryOnPublicWhenBrandIsHidden() throws Exception {
         String suffix = String.valueOf(System.currentTimeMillis());
         String brandSlug = "brand-hidden-product-" + suffix;
@@ -1365,8 +1476,8 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Hidden Brand Product %s","visible":true,"translations":{"en":{"name":"Hidden Brand Product EN %s"}}}
-                                """.formatted(brandSlug, suffix, suffix)))
+                                {"slug":"%s","name":"Hidden Brand Product %s"}
+                                """.formatted(brandSlug, suffix)))
                 .andExpect(status().isOk());
 
         BrandEntity brand = brandJpaRepository.findBySlug(brandSlug)

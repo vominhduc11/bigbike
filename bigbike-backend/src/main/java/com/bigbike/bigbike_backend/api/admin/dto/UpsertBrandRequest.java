@@ -39,7 +39,7 @@ public class UpsertBrandRequest {
     @Valid
     private SeoMetaRequest seo;
 
-    private Boolean visible;
+    private Boolean showOnHomepage;
 
     @Valid
     private BrandTranslationRequest translations;

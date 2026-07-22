@@ -86,9 +86,13 @@ WHERE NOT EXISTS (SELECT 1 FROM site_settings WHERE setting_key = 'hotline');
 -- Nhóm setting `seo` (SEO trang chủ) gỡ hẳn V337 — không seed nữa.
 
 -- ── Brands ────────────────────────────────────────────────────────────────────
-INSERT INTO brands (id, slug, name, is_visible, created_at, updated_at)
-SELECT 'brand_ls2', 'ls2', 'LS2 Helmets', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+INSERT INTO brands (id, slug, name, is_visible, show_on_homepage, created_at, updated_at)
+SELECT 'brand_ls2', 'ls2', 'LS2 Helmets', true, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM brands WHERE id = 'brand_ls2');
+
+INSERT INTO brands (id, slug, name, is_visible, show_on_homepage, created_at, updated_at)
+SELECT 'brand_kyt', 'kyt', 'KYT Helmets', true, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM brands WHERE id = 'brand_kyt');
 
 -- ── Catalog categories ────────────────────────────────────────────────────────
 INSERT INTO categories (id, slug, name, is_visible, show_on_homepage, sort_order, created_at, updated_at)
@@ -106,8 +110,8 @@ INSERT INTO categories (id, slug, name, is_visible, show_on_homepage, sort_order
 SELECT 'uncategorized', 'uncategorized', 'Chua phan loai', false, false, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM categories WHERE id = 'uncategorized');
 
-INSERT INTO brands (id, slug, name, is_visible, created_at, updated_at)
-SELECT 'uncategorized-brand', 'uncategorized-brand', 'Chua phan loai', false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+INSERT INTO brands (id, slug, name, is_visible, show_on_homepage, created_at, updated_at)
+SELECT 'uncategorized-brand', 'uncategorized-brand', 'Chua phan loai', false, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM brands WHERE id = 'uncategorized-brand');
 
 -- ── Products ──────────────────────────────────────────────────────────────────

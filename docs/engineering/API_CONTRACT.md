@@ -362,10 +362,27 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
   - Thực hiện xóa cứng sản phẩm khỏi DB, tự động xóa liên đới các bảng liên quan (variants, gallery, v.v.) và xóa tham chiếu khỏi `home_category_highlights`.
 
 ### 2. Categories (Danh mục)
+
+**Quyền:** mọi route đọc bên dưới cần `catalog.read`; mọi route ghi cần `catalog.update`, trừ preview impact chỉ đọc cần `catalog.read`. Không có permission key Category riêng.
+
+**Danh sách và cây:**
+- `GET /api/v1/admin/categories?page=&size=&sort=&q=&visibility=&deleted=&lang=` trả phân trang `CategoryResponse[]`. `visibility` là `VISIBLE|HIDDEN` và tùy chọn; khi bỏ qua trả cả hai trạng thái. `deleted` mặc định `false` và độc lập với `visibility`. `lang` là `vi|en`, mặc định `vi`, áp dụng fallback từng field theo `CATEGORY_RULE_002`.
+- `GET /api/v1/admin/categories/tree?lang=vi|en` trả cây Category không ở Trash, dùng để chọn cha và sắp xếp; không dùng trong Trash.
+- `GET /api/v1/admin/categories/{id}` trả chi tiết Category gồm translations, asset theo vai trò, SEO, `isVisible`, `deleted`, `showOnHomepage`, parent và timestamps. API hiện không có `productCount` trên Category response.
+
+**Ghi:**
+- `POST /api/v1/admin/categories` và `PATCH /api/v1/admin/categories/{id}` nhận `UpsertCategoryRequest`: name/slug VI, `translations.en.name` bắt buộc khi field name được tạo/sửa, `slugEn` tùy chọn, parent, mô tả/intro/SEO song ngữ, asset theo vai trò, `sortOrder` và `showOnHomepage`.
+- `isVisible` là patch trạng thái riêng (`PATCH /{id}`); ẩn Category có con trực tiếp đang hiển thị trả `409` với hướng dẫn ẩn hoặc chuyển cha cho con trước. Không áp dụng kiểm tra đệ quy.
+- `showOnHomepage` độc lập với `isVisible` và `deleted`, mặc định `false`. Create client không gửi field ở giá trị mặc định; PATCH bỏ field giữ nguyên. `seo` bị bỏ qua thì giữ nguyên, SEO được gửi với text trống được chuẩn hóa thành `null`, và `seo: {}` xóa toàn bộ SEO cũ gồm ảnh chia sẻ.
+- `uncategorized` được trả trong danh sách admin nhưng mọi route ghi cho record này (kể cả restore) trả `409`.
+
+**Mã lỗi chung:** `403` thiếu quyền, `404` không có Category, `409` cho vòng lặp cha-con, con trực tiếp còn hiển thị, Category chưa ở Trash khi xóa vĩnh viễn, hoặc Category hệ thống bị khóa. Client phải hiển thị từng nguyên nhân thay vì gộp chung.
+
 - **Xóa mềm**: `DELETE /api/v1/admin/categories/{id}`
   - Đặt `deleted = true` trên danh mục mục tiêu và toàn bộ cây con của nó. Không chuyển sản phẩm.
 - **Khôi phục**: `POST /api/v1/admin/categories/{id}/restore`
   - Đặt `deleted = false` trên danh mục mục tiêu và toàn bộ cây con của nó.
+  - Trả `409` cho `uncategorized` vì Category hệ thống bị khóa cho mọi ghi.
 - **Xóa vĩnh viễn**: `DELETE /api/v1/admin/categories/{id}/permanent`
   - Chặn lại bằng lỗi `409 Conflict` nếu danh mục chưa được xóa mềm (`deleted == false`).
   - Gỡ các liên kết thuộc cây danh mục bị xóa; chỉ sản phẩm không còn bất kỳ liên kết danh mục nào mới được gán danh mục hệ thống "Chưa phân loại" (`uncategorized`).
@@ -381,8 +398,11 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
 
 ### 3. Brands (Thương hiệu)
 - **Sửa SEO**: `PATCH /api/v1/admin/brands/{id}` giữ nguyên SEO hiện có khi request **không gửi** field `seo`; nếu gửi `seo`, từng giá trị trống được chuẩn hóa thành `null`, và `seo: {}` xóa toàn bộ SEO cũ (gồm ảnh chia sẻ). Form quản trị luôn gửi khối `seo` khi lưu để thao tác xóa hết các ô được ghi nhận rõ ràng, thay vì bị hiểu nhầm là không chỉnh sửa.
+- **Đặt trên trang chủ**: `POST/PATCH /api/v1/admin/brands` nhận field `showOnHomepage` (boolean, mặc định `true`). Field này chỉ điều khiển dải logo thương hiệu ở trang chủ; không ẩn thương hiệu khỏi `/brands`, `/brands/{slug}`, facet thương hiệu hoặc brand nhúng trong sản phẩm.
+- **Danh sách public**: `GET /api/v1/brands` nhận query param tùy chọn `showOnHomepage` (boolean). Chỉ khi truyền `true` hoặc `false` thì danh sách mới lọc theo cờ homepage; khi bỏ qua, danh sách vẫn chỉ loại Brand có `isVisible = false` theo quy tắc public hiện tại. Response Brand trả thêm `showOnHomepage`.
 - **Xóa mềm (Ẩn)**: `DELETE /api/v1/admin/brands/{id}`
   - Đặt `isVisible = false`.
+- **Không đổi visibility qua upsert**: `POST/PATCH /api/v1/admin/brands` không nhận `visible`/`isVisible` để chuyển trạng thái. Brand mới luôn hiển thị; chỉ endpoint xóa mềm ở trên mới đưa Brand vào Thùng rác.
 - **Khôi phục**: `POST /api/v1/admin/brands/{id}/restore`
   - Đặt `isVisible = true`.
 - **Xóa vĩnh viễn**: `DELETE /api/v1/admin/brands/{id}/permanent`

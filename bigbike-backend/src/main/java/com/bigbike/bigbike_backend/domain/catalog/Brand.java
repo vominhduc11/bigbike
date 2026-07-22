@@ -14,6 +14,7 @@ public record Brand(
         ImageAsset mobileBannerImage,
         SeoMeta seo,
         boolean isVisible,
+        boolean showOnHomepage,
         /** Raw English content — non-null only on admin detail reads (V137). */
         BrandTranslations translations,
         Instant createdAt,

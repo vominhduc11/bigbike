@@ -898,6 +898,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getSeoOgImageMimeType()
                 ),
                 entity.isVisible(),
+                entity.isShowOnHomepage(),
                 includeTranslations ? toBrandTranslations(entity) : null,
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()

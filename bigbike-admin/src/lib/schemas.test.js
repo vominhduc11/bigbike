@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createBrandSchema, createProductSchema } from './schemas'
+import { createBrandSchema, createCategorySchema, createProductSchema } from './schemas'
 
 // Stub i18n: return the defaultValue when provided, otherwise the raw key —
 // enough for asserting on error *paths*, which is what these tests check.
@@ -209,5 +209,37 @@ describe('createBrandSchema — BRAND_RULE_001/003 shared name and slug', () => 
     })
 
     expect(result.success).toBe(true)
+  })
+})
+
+describe('createCategorySchema — CATEGORY_RULE_001 and TRANSLATION_RULE_002', () => {
+  const categoryForm = (overrides = {}) => ({
+    slug: 'e2e-category',
+    name: 'Danh mục thử nghiệm',
+    translations: { en: { name: 'Test category', slug: '' } },
+    ...overrides,
+  })
+
+  it('requires the English category name while keeping the English slug optional', () => {
+    const schema = createCategorySchema(t)
+    expect(schema.safeParse(categoryForm()).success).toBe(true)
+
+    const missingEnglishName = schema.safeParse(categoryForm({ translations: { en: { name: '', slug: '' } } }))
+    expect(missingEnglishName.success).toBe(false)
+    expect(pathsOf(missingEnglishName)).toContain('translations.en.name')
+  })
+
+  it('accepts a blank SEO block and validates media separately by role', () => {
+    const schema = createCategorySchema(t)
+    const valid = schema.safeParse(categoryForm({
+      seoTitle: '', seoDescription: '', seoCanonicalUrl: '', seoOgImageUrl: '',
+      imageUrl: 'https://cdn.example.test/category.jpg', imageAlt: 'Ảnh danh mục',
+      bannerImageUrl: 'https://cdn.example.test/banner.jpg', bannerImageAlt: 'Banner desktop',
+      mobileBannerImageUrl: 'https://cdn.example.test/banner-mobile.jpg', mobileBannerImageAlt: 'Banner mobile',
+      heroImageUrl: 'https://cdn.example.test/hero.jpg', heroImageAlt: 'Minh họa hero',
+      menuIconUrl: 'https://cdn.example.test/menu.svg',
+    }))
+
+    expect(valid.success).toBe(true)
   })
 })

@@ -257,15 +257,37 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     },
   })
 
-  function handleToggleVisibility(category) {
+  async function handleToggleVisibility(category) {
     // Block individual toggle while a bulk action is in flight too — both
     // hit the same endpoint and we don't have transactional batching.
-    if (!canUpdate || toggleVisibilityMutation.isPending || bulkProgress) return
+    if (!canUpdate || category.id === 'uncategorized' || toggleVisibilityMutation.isPending || bulkProgress) return
+    const willBeVisible = !category.isVisible
+    const confirmed = await showConfirm(
+      willBeVisible
+        ? t('categories.showConfirm', {
+          name: category.name,
+          defaultValue: `Hiện danh mục ${category.name} trên website?`,
+        })
+        : t('categories.hideConfirm', {
+          name: category.name,
+          defaultValue: `Ẩn danh mục ${category.name} khỏi website? Danh mục này không bị chuyển vào Thùng rác.`,
+        }),
+      willBeVisible
+        ? t('categories.showConfirmTitle', { defaultValue: 'Xác nhận hiện trên website' })
+        : t('categories.hideConfirmTitle', { defaultValue: 'Xác nhận ẩn khỏi website' }),
+      {
+        variant: willBeVisible ? 'default' : 'danger',
+        confirmLabel: willBeVisible ? t('categories.showAction') : t('categories.hideAction'),
+      },
+    )
+    if (!confirmed) return
+
     setTogglingId(category.id)
-    toggleVisibilityMutation.mutate({ id: category.id, visible: !category.isVisible })
+    toggleVisibilityMutation.mutate({ id: category.id, visible: willBeVisible })
   }
 
   function toggleSelected(id) {
+    if (id === 'uncategorized') return
     setSelectedIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
@@ -305,7 +327,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       return d
     }
     const ids = Array.from(selectedIds)
-      .filter((id) => byId.has(id))
+      .filter((id) => id !== 'uncategorized' && byId.has(id))
       .sort((a, b) => (targetVisible ? depthOf(a) - depthOf(b) : depthOf(b) - depthOf(a)))
 
     setBulkProgress({ done: 0, total: ids.length })
@@ -343,7 +365,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   async function runBulkTrash(action) {
     if (!canUpdate || bulkProgress) return
     const byId = new Map([...allItems, ...paginatedState.items].map((c) => [c.id, c]))
-    let ids = Array.from(selectedIds).filter((id) => byId.has(id))
+    let ids = Array.from(selectedIds).filter((id) => id !== 'uncategorized' && byId.has(id))
     if (ids.length === 0) return
 
     if (action === 'permanentDelete') {
@@ -616,7 +638,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   // Rows currently shown to the user — basis for the header "select all" checkbox.
   const currentPageRows = useTreeMode ? visibleTreeRows : flatItems
   const currentPageIds = useMemo(
-    () => currentPageRows.map((r) => r.id),
+    () => currentPageRows.filter((r) => r.id !== 'uncategorized').map((r) => r.id),
     [currentPageRows],
   )
   const allCurrentSelected =
@@ -663,12 +685,12 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           </a>
         </Button>
       )}
-      {canUpdate && !query.deleted && (
+      {canUpdate && category.id !== 'uncategorized' && !query.deleted && (
         <Button variant="ghost" size="icon" onClick={() => handleDuplicate(category)} title={t('categories.duplicate')} aria-label={t('categories.duplicate')}>
           <Copy size={14} aria-hidden="true" />
         </Button>
       )}
-      {canUpdate && !query.deleted && (
+      {canUpdate && category.id !== 'uncategorized' && !query.deleted && (
         <Button
           variant="outline"
           size="sm"
@@ -689,7 +711,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           {t('common.delete')}
         </Button>
       )}
-      {canUpdate && query.deleted && (
+      {canUpdate && category.id !== 'uncategorized' && query.deleted && (
         <>
           <Button variant="outline" size="sm" className="text-success hover:text-success" onClick={() => handleRestore(category)}>
             {t('products.restore')}
@@ -751,7 +773,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               aria-label={t('categories.selectRowAria')}
               checked={selectedIds.has(category.id)}
               onCheckedChange={() => toggleSelected(category.id)}
-              disabled={Boolean(bulkProgress)}
+              disabled={category.id === 'uncategorized' || Boolean(bulkProgress)}
              />
           </td>
         )}
@@ -819,6 +841,10 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               {!useTreeMode && category.parentId && (
                 <span className="cat-breadcrumb">{breadcrumb}</span>
               )}
+              <span className="mt-1 flex flex-wrap gap-1">
+                {query.deleted ? <StatusBadge type="trash" status /> : null}
+                <StatusBadge type="homepage" status={Boolean(category.showOnHomepage)} />
+              </span>
             </a>
           </div>
         </td>
@@ -916,7 +942,11 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       {/* O9 — Vừa xem gần đây */}
       <RecentItemsChips items={recentCategoryItems} onSelect={(item) => navigate(`/admin/categories/${item.id}`)} />
 
-      {paginatedState.warning ? <ReadOnlyBanner warning={paginatedState.warning} /> : null}
+      {!canUpdate
+        ? <ReadOnlyBanner warning={t('categories.readOnlyListHint', { defaultValue: 'Bạn chỉ có quyền xem danh mục; mọi thao tác thay đổi đều bị khóa.' })} />
+        : paginatedState.warning
+          ? <ReadOnlyBanner warning={paginatedState.warning} />
+          : null}
 
       {/* T3: chuyển đổi cây↔danh sách trước đây tự động theo filter Trạng thái
           hiển thị/Sắp xếp, khiến phân trang xuất hiện/biến mất không rõ lý do.

@@ -5,6 +5,7 @@ import { resolveMediaUrl } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { richContentClassName } from "@/components/layout/RichContent";
 import { cn } from "@/lib/utils";
+import { ClampableHtmlSection } from "@/components/catalog/ClampableHtmlSection";
 import { facebookEmbedUrl, getTikTokId, isFacebookVideoUrl, tiktokEmbedUrl } from "../product-gallery/media";
 import type { FeatureBlockT } from "./grouping";
 
@@ -215,7 +216,8 @@ export function SuitabilityBlockView({ block }: { block: SuitabilitySection }) {
   );
 }
 
-/** Khối "Bảng size" (V246) — HTML tự do (thường là bảng), sanitize trước khi render. */
+/** Khối "Bảng size" (V246) — HTML tự do (thường là bảng), sanitize trước khi render.
+ *  Dùng ClampableHtmlSection để xem thêm/thu gọn giống hệt bảng "Thông số kỹ thuật". */
 export function SizeGuideBlockView({ block }: { block: SizeGuideSection }) {
   // html là nguồn render; cho phép CSS inline để admin tự chỉnh giao diện khi dán HTML.
   const html = block.html ? sanitizeRichHtml(block.html, PDP_RICH_HTML_OPTS) : "";
@@ -224,7 +226,7 @@ export function SizeGuideBlockView({ block }: { block: SizeGuideSection }) {
     // gap-4 = khoảng tiêu đề→nội dung, đồng nhất với TextStack/FeatureBody (16px mọi loại khối).
     <div className="flex flex-col gap-4">
       <BlockTitle text={block.title} />
-      <div className={PDP_RICH_CONTENT_CLASS} dangerouslySetInnerHTML={{ __html: html }} />
+      <ClampableHtmlSection html={html} contentClassName={PDP_RICH_CONTENT_CLASS} />
     </div>
   );
 }

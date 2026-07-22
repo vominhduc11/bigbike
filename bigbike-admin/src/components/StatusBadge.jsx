@@ -26,9 +26,28 @@ export function StatusBadge({ status, type = 'order', className }) {
     tone = ORDER_STATUS_TONE[status] ?? 'muted'
     label = t(`status.order.${status}`, { defaultValue: status })
   } else if (type === 'visibility') {
+    if (status !== true && status !== false) {
+      return <Badge tone="muted" className={className}>{t('common.unknown')}</Badge>
+    }
     const key = status ? 'VISIBLE' : 'HIDDEN'
     tone = key === 'VISIBLE' ? 'success' : 'neutral'
     label = key === 'VISIBLE' ? t('common.visible') : t('common.hidden')
+  } else if (type === 'trash') {
+    if (status !== true && status !== false) {
+      return <Badge tone="muted" className={className}>{t('common.unknown')}</Badge>
+    }
+    tone = status ? 'danger' : 'success'
+    label = status
+      ? t('categories.filterTrash', { defaultValue: 'Thùng rác' })
+      : t('categories.activeStatus', { defaultValue: 'Đang hoạt động' })
+  } else if (type === 'homepage') {
+    if (status !== true && status !== false) {
+      return <Badge tone="muted" className={className}>{t('common.unknown')}</Badge>
+    }
+    tone = status ? 'success' : 'neutral'
+    label = status
+      ? t('categories.homepageShown', { defaultValue: 'Có trên trang chủ' })
+      : t('categories.homepageHidden', { defaultValue: 'Không trên trang chủ' })
   } else if (type === 'customer') {
     tone = CUSTOMER_STATUS_TONE[status] ?? 'muted'
     label = t(`status.customer.${status}`, { defaultValue: status })

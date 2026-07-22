@@ -165,7 +165,7 @@ export default async function HomePage() {
     // Dự phòng khi admin chưa chọn bài nào: 3 bài viết mới nhất (sau khi gộp nhóm còn 1 "Tin tức").
     listArticles({ page: 1, size: 3, sort: "publishedAt:desc", lang: locale }),
     listArticles({ page: 1, category: "tin-tuc", size: 3, sort: "publishedAt:desc", lang: locale }),
-    listBrands({ page: 1, size: 12, sort: "name:asc", lang: locale }),
+    listBrands({ page: 1, size: 12, sort: "name:asc", showOnHomepage: true, lang: locale }),
     listPublicSettings(locale),
     listProducts({
       page: 1,

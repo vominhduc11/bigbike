@@ -11,7 +11,7 @@ import {
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { recordRecentItem } from '../lib/useRecentItems'
-import { formatDateTime } from '../lib/formatters'
+import { formatDateTime, formatText } from '../lib/formatters'
 import { toSlug } from '../lib/slug'
 import { useContentLang } from '../lib/contentLang'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
@@ -21,9 +21,11 @@ import { ArrowLeft, Loader2, Save, Trash2 } from 'lucide-react'
 import { createBrandSchema, zodErrors } from '../lib/schemas'
 import { getBrandRequiredProgress, toBrandPayload } from './brandPayload'
 import { StatePanel } from '../components/StatePanel'
+import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
+import { StatusBadge } from '../components/StatusBadge'
 import { FormField } from '../components/layout/FormField'
 import { CollapsibleSection } from '../components/CollapsibleSection'
-import { StickyActionBar } from '../components/layout'
+import { Screen, StickyActionBar } from '../components/layout'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { SeoCard } from '../components/SeoCard'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
@@ -33,6 +35,7 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 
 const STOREFRONT_BASE = `${import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn'}/brands`
+const SYSTEM_BRAND_SLUG = 'uncategorized-brand'
 
 
 function buildEmptyForm() {
@@ -40,7 +43,7 @@ function buildEmptyForm() {
     slug: '',
     name: '',
     description: '',
-    visible: true,
+    showOnHomepage: true,
     logoUrl: '',
     logoAlt: '',
     bannerUrl: '',
@@ -50,7 +53,7 @@ function buildEmptyForm() {
     seoCanonicalUrl: '',
     seoOgImageUrl: '',
     seoOgImageAlt: '',
-    translations: { en: { slug: '', name: '', description: '', seoTitle: '', seoDescription: '' } },
+    translations: { en: { description: '', seoTitle: '', seoDescription: '' } },
   }
 }
 
@@ -60,7 +63,7 @@ function buildFormFromItem(item) {
     slug: item.slug || '',
     name: item.name || '',
     description: item.description || '',
-    visible: item.isVisible !== false,
+    showOnHomepage: item.showOnHomepage !== false,
     logoUrl: item.logo?.url || '',
     logoAlt: item.logo?.alt || '',
     bannerUrl: item.bannerImage?.url || '',
@@ -72,8 +75,6 @@ function buildFormFromItem(item) {
     seoOgImageAlt: item.seo?.ogImage?.alt || '',
     translations: {
       en: {
-        slug: '',
-        name: item.translations?.en?.name || '',
         description: item.translations?.en?.description || '',
         seoTitle: item.translations?.en?.seoTitle || '',
         seoDescription: item.translations?.en?.seoDescription || '',
@@ -159,33 +160,13 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     }
   }, [autosaveKey, fetchResult])
 
-  // F11: Nhân bản thương hiệu — nạp bản nháp BrandListScreen ghi vào sessionStorage
-  // khi bấm "Sao chép", rồi điều hướng sang màn tạo mới (cùng cơ chế duplicate của
-  // Sản phẩm/Danh mục). Chỉ giữ lại slug trống — admin phải đặt giá trị mới.
   useEffect(() => {
     if (!isCreate) return
-    try {
-      const raw = sessionStorage.getItem('brand-duplicate-payload')
-      if (raw) {
-        sessionStorage.removeItem('brand-duplicate-payload')
-        const item = JSON.parse(raw)
-        const base = buildFormFromItem(item)
-        const duplicated = {
-          ...base,
-          slug: '',
-          translations: { ...base.translations, en: { ...(base.translations?.en || {}), slug: '' } },
-        }
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setForm(duplicated)
-        toast.success(t('brands.detail.duplicateSuccess', { name: item.name || item.slug || '' }))
-        return
-      }
-    } catch { /* ignore parse errors */ }
-
-    // F9: chưa có bản sao chép — kiểm tra bản nháp autosave dở dang từ phiên trước.
     const draft = loadFormFromStorage(autosaveKey)
-    if (draft?.form) setDraftRecovery(draft)
-  }, [autosaveKey, isCreate, t])
+    if (!draft?.form) return undefined
+    const timer = setTimeout(() => setDraftRecovery(draft), 0)
+    return () => clearTimeout(timer)
+  }, [autosaveKey, isCreate])
 
   // O9: ghi lại thương hiệu vừa xem để hiện trong widget "Vừa xem gần đây" ở danh sách.
   useEffect(() => {
@@ -216,7 +197,8 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
 
   const formRef = useRef(null)
   const isDirty = useMemo(() => JSON.stringify(form) !== initialSnapshot, [form, initialSnapshot])
-  const isReadOnly = !canUpdate || isSubmitting
+  const isSystemBrand = state.item?.slug === SYSTEM_BRAND_SLUG
+  const isReadOnly = !canUpdate || isSubmitting || isSystemBrand
 
   // F6: cảnh báo rời trang khi chưa lưu — chặn cả điều hướng nội bộ (nút quay lại,
   // sidebar) qua navigationGuard lẫn reload/đóng tab qua beforeunload.
@@ -282,17 +264,15 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
   // Brand name/slug are shared across VI/EN; typing the name suggests the shared slug on create.
   function handleSharedNameChange(value) {
     setForm((previous) => {
-      const en = { ...(previous.translations?.en || {}), name: value }
-      const next = { ...previous, name: value, translations: { ...previous.translations, en } }
+      const next = { ...previous, name: value }
       if (isCreate && !slugManuallyEdited) next.slug = toSlug(value)
       return next
     })
     setValidationErrors((previous) => {
-      if (!previous.name && !previous.slug && !previous['translations.en.name']) return previous
+      if (!previous.name && !previous.slug) return previous
       const next = { ...previous }
       delete next.name
       delete next.slug
-      delete next['translations.en.name']
       return next
     })
   }
@@ -300,12 +280,6 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
   function handleSlugChange(value) {
     setSlugManuallyEdited(true)
     updateField('slug', value)
-    setValidationErrors((previous) => {
-      if (!previous['translations.en.slug']) return previous
-      const next = { ...previous }
-      delete next['translations.en.slug']
-      return next
-    })
   }
 
   // F3: validate sớm một field khi rời ô (onBlur). Chạy toàn schema rồi chỉ lấy
@@ -323,7 +297,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
 
   async function handleSubmit(event) {
     event.preventDefault()
-    if (!canUpdate) return
+    if (isReadOnly) return
 
     const schema = createBrandSchema(t)
     const result = schema.safeParse(form)
@@ -348,7 +322,8 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     // về, vì trang thật có header + 3 bb-card (thông tin cơ bản, hình ảnh, SEO) chứ không
     // phải một panel nhỏ. Cùng kiểu dựng animate-pulse như ProductDetailScreen.
     return (
-      <div className="animate-pulse" aria-hidden="true">
+      <Screen>
+        <div className="animate-pulse" aria-hidden="true">
         <div className="bb-screen-header">
           <div className="bb-screen-title flex flex-col gap-2">
             <div className="h-3 w-28 rounded-xs bg-surface-muted" />
@@ -385,31 +360,36 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
             <div className="h-16 w-full rounded-sm bg-surface-muted" />
           </div>
         </div>
-      </div>
+        </div>
+      </Screen>
     )
   }
 
   if (state.status === 'error') {
     return (
-      <StatePanel
-        tone="danger"
-        title={t('brands.detail.loadError')}
-        description={state.error}
-        actionLabel={t('common.retry', { defaultValue: 'Thử lại' })}
-        onAction={() => refetch()}
-      />
+      <Screen>
+        <StatePanel
+          tone="danger"
+          title={t('brands.detail.loadError')}
+          description={state.error}
+          actionLabel={t('common.retry', { defaultValue: 'Thử lại' })}
+          onAction={() => refetch()}
+        />
+      </Screen>
     )
   }
 
   if (!isCreate && !state.item) {
     return (
-      <StatePanel
-        tone="neutral"
-        title={t('brands.detail.notFound')}
-        description={t('brands.detail.notFoundDesc')}
-        actionLabel={t('brands.detail.backToList')}
-        onAction={() => navigate('/admin/brands')}
-      />
+      <Screen>
+        <StatePanel
+          tone="neutral"
+          title={t('brands.detail.notFound')}
+          description={t('brands.detail.notFoundDesc')}
+          actionLabel={t('brands.detail.backToList')}
+          onAction={() => navigate('/admin/brands')}
+        />
+      </Screen>
     )
   }
 
@@ -439,7 +419,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
   }
 
   return (
-    <div>
+    <Screen>
       <div className="bb-screen-header">
         <div className="bb-screen-title">
           <p className="bb-screen-eyebrow">
@@ -451,20 +431,21 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
               <ArrowLeft size={14} aria-hidden="true" /> {t('brands.detail.backToList')}
             </a>
           </p>
-          <h1>{isCreate ? t('brands.detail.createTitle') : t('brands.detail.editTitle')}</h1>
-          <p className="bb-muted">{isCreate ? t('brands.detail.createDesc') : t('brands.detail.editDesc')}</p>
+          <h1>{isCreate ? t('brands.detail.createTitle') : isSystemBrand ? t('brands.detail.systemTitle', { defaultValue: 'Thương hiệu hệ thống' }) : t('brands.detail.editTitle')}</h1>
+          <p className="bb-muted">{isCreate ? t('brands.detail.createDesc') : isSystemBrand ? t('brands.detail.systemDesc', { defaultValue: 'Thương hiệu này được hệ thống dùng để nhận sản phẩm chưa được phân loại và không thể thay đổi.' }) : t('brands.detail.editDesc')}</p>
         </div>
         <div className="bb-screen-actions">
-          {!isCreate && canUpdate && (
+          {!isCreate && canUpdate && !isSystemBrand && (
 
             <Button
               type="button"
               variant="secondary"
-              className="text-danger"
-              disabled={isSubmitting}
+              className="min-h-11 text-danger"
+              disabled={isReadOnly}
+              aria-busy={isSubmitting || undefined}
               onClick={async () => {
                 const confirmed = await showConfirm(
-                  t('brands.detail.hideConfirm').replace('{slug}', form.slug || state.item?.slug || '…'),
+                  t('brands.detail.hideConfirm', { name: formatText(form.name || state.item?.name) }),
                   t('brands.detail.hideConfirmTitle'),
                   { variant: 'danger', confirmLabel: t('brands.detail.hideBtn') },
                 )
@@ -478,6 +459,45 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
           )}
         </div>
       </div>
+
+      {!isCreate ? (
+        <dl className="mb-4 grid gap-3 rounded-md border border-border bg-surface p-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <dt className="text-muted-foreground">{t('brands.detail.name')}</dt>
+            <dd className="mt-1 font-medium text-foreground">{formatText(state.item?.name)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">{t('brands.detail.slug')}</dt>
+            <dd className="mt-1 font-mono text-foreground">/{formatText(state.item?.slug)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">{t('brands.detail.isVisible')}</dt>
+            <dd className="mt-1"><StatusBadge type="visibility" status={state.item?.isVisible} /></dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">{t('brands.detail.showOnHomepage')}</dt>
+            <dd className="mt-1 text-foreground">
+              {state.item?.showOnHomepage === true
+                ? t('common.yes', { defaultValue: 'Có' })
+                : state.item?.showOnHomepage === false
+                  ? t('common.no', { defaultValue: 'Không' })
+                  : t('common.unknown', { defaultValue: 'Không xác định' })}
+            </dd>
+          </div>
+          {state.item?.createdAt ? (
+            <div>
+              <dt className="text-muted-foreground">{t('common.createdAt', { defaultValue: 'Tạo lúc' })}</dt>
+              <dd className="mt-1 text-foreground">{formatDateTime(state.item.createdAt)}</dd>
+            </div>
+          ) : null}
+          {state.item?.updatedAt ? (
+            <div>
+              <dt className="text-muted-foreground">{t('common.lastUpdated')}</dt>
+              <dd className="mt-1 text-foreground">{formatDateTime(state.item.updatedAt)}</dd>
+            </div>
+          ) : null}
+        </dl>
+      ) : null}
 
       {draftRecovery && (
         <div className="bb-alert info center wrap">
@@ -507,14 +527,18 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
       )}
 
       {state.warning ? (
-        <StatePanel tone="warning" title={t('readOnly.prefix')} description={state.warning} />
+        <ReadOnlyBanner warning={state.warning} />
       ) : null}
 
       {!canUpdate ? (
+        <ReadOnlyBanner warning={t('brands.detail.permissionDesc')} />
+      ) : null}
+
+      {isSystemBrand ? (
         <StatePanel
           tone="warning"
-          title={t('brands.detail.permissionDenied')}
-          description={t('brands.detail.permissionDesc')}
+          title={t('brands.detail.systemTitle', { defaultValue: 'Thương hiệu hệ thống' })}
+          description={t('brands.detail.systemDesc', { defaultValue: 'Thương hiệu này được hệ thống dùng để nhận sản phẩm chưa được phân loại và không thể thay đổi.' })}
         />
       ) : null}
 
@@ -568,14 +592,11 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                   onBlur={() => handleFieldBlur('slug')}
                   disabled={isReadOnly}
                   placeholder={isEnLang ? t('brands.detail.slugPlaceholderEn', { defaultValue: 'slug-dung-chung' }) : undefined}
-                  style={{ fontFamily: 'var(--admin-font-mono)' }} />
+                  className="font-mono" />
               </FormField>
-              <label
-                className="flex items-center gap-2 p-2 border border-border text-sm cursor-pointer hover:bg-muted w-fit"
-                style={{ gridColumn: '1 / -1' }}
-              >
-                <Checkbox checked={form.visible} onCheckedChange={(checked) => updateField('visible', checked)} disabled={isReadOnly} />
-                <span>{t('brands.detail.isVisible')}</span>
+              <label className="col-span-full flex w-fit cursor-pointer items-center gap-2 border border-border p-2 text-sm hover:bg-muted">
+                <Checkbox checked={form.showOnHomepage} onCheckedChange={(checked) => updateField('showOnHomepage', checked)} disabled={isReadOnly} />
+                <span>{t('brands.detail.showOnHomepage')}</span>
               </label>
             </div>
           </div>
@@ -687,6 +708,6 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
             : isCreate ? t('brands.detail.createBtn') : t('brands.detail.saveBtn')}
         </Button>
       </StickyActionBar>
-    </div>
+    </Screen>
   )
 }

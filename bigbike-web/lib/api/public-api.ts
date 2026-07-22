@@ -340,6 +340,7 @@ export function getCategoryBySlug(slug: string, lang?: string): Promise<DataResu
   page?: number;
   size?: number;
   sort?: string;
+  showOnHomepage?: boolean;
   /** Content language: "vi" (default) or "en". English falls back to Vietnamese per BRAND_RULE_002. */
   lang?: string;
 };
@@ -351,6 +352,7 @@ export function listBrands(query: BrandListQuery): Promise<ListResult<Brand>> {
       page: query.page,
       size: query.size,
       sort: query.sort ?? "name:asc",
+      showOnHomepage: query.showOnHomepage ? "true" : undefined,
       lang: query.lang,
     },
     3600,

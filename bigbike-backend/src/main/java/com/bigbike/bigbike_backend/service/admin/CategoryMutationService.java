@@ -161,6 +161,11 @@ public class CategoryMutationService {
         CategoryEntity entity = categoryJpaRepository.findById(categoryId)
                 .orElseThrow(() -> new NotFoundException("Category not found."));
 
+        if (UNCATEGORIZED_CATEGORY_ID.equals(entity.getId())) {
+            throw new ConflictException(
+                    "Không thể khôi phục danh mục \"Chưa phân loại\" — đây là danh mục hệ thống được khóa.");
+        }
+
         List<CategoryEntity> subtree = collectCategorySubtree(entity);
         for (CategoryEntity node : subtree) {
             String before = categoryJson(node);

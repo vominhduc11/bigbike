@@ -41,6 +41,8 @@
 
 | Permission | Granted roles (seed) | Endpoints | Evidence |
 |---|---|---|---|
+| `catalog.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER`, `EDITOR` | `GET /api/v1/admin/brands`, `GET /api/v1/admin/brands/{id}` and other catalog taxonomy reads | `V49__create_roles_permissions_tables.sql`, `AdminCatalogController.java`, `PermissionCatalog.java` |
+| `catalog.update` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `POST/PATCH /api/v1/admin/brands`, `DELETE /api/v1/admin/brands/{id}`, `POST /api/v1/admin/brands/{id}/restore`, `DELETE /api/v1/admin/brands/{id}/permanent` and other catalog taxonomy mutations | `V49__create_roles_permissions_tables.sql`, `AdminCatalogController.java`, `PermissionCatalog.java` |
 | `products.update` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `POST/PATCH /api/v1/admin/products`, `POST /api/v1/admin/products/preview`, `PATCH /api/v1/admin/products/{id}/publish`, `DELETE /api/v1/admin/products/{id}[/permanent]`, `POST /api/v1/admin/products/{id}/restore`, `POST /api/v1/admin/products/import/validate`, `POST /api/v1/admin/products/import/commit`, `GET /api/v1/admin/products/import/export/{id}` | `V49__create_roles_permissions_tables.sql`, `AdminCatalogController.java`, `AdminProductImportController.java` |
 
 `EDITOR` holds `products.read`/`catalog.read` only, not `products.update` — confirmed via `V121__realign_inventory_warranty_permissions.sql`'s own comment describing `EDITOR` as a role that "only had products.read."

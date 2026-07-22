@@ -14,11 +14,15 @@ export function buildEmptyForm() {
     description: '',
     introContent: '',
     parentId: '',
-    visible: true,
     showOnHomepage: false,
     imageUrl: '',
+    imageAlt: '',
     bannerImageUrl: '',
+    bannerImageAlt: '',
+    mobileBannerImageUrl: '',
+    mobileBannerImageAlt: '',
     heroImageUrl: '',
+    heroImageAlt: '',
     menuIconUrl: '',
     seoTitle: '',
     seoDescription: '',
@@ -37,12 +41,16 @@ export function buildFormFromItem(item) {
     description: item.description || '',
     introContent: item.introContent || '',
     parentId: item.parentId || '',
-    visible: item.isVisible !== false,
     showOnHomepage: Boolean(item.showOnHomepage),
     imageUrl: item.image?.url || '',
+    imageAlt: item.image?.alt || '',
     bannerImageUrl: item.bannerImage?.url || '',
+    bannerImageAlt: item.bannerImage?.alt || '',
+    mobileBannerImageUrl: item.mobileBannerImage?.url || '',
+    mobileBannerImageAlt: item.mobileBannerImage?.alt || '',
     // Ảnh minh hoạ hero (WP ACF "image_left") nằm ở field `icon` của response, không phải `image`.
     heroImageUrl: item.icon?.url || '',
+    heroImageAlt: item.icon?.alt || '',
     menuIconUrl: item.menuIconUrl || '',
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
@@ -96,7 +104,7 @@ export function clearFormFromStorage(key) {
   try { localStorage.removeItem(key) } catch { /* ignore */ }
 }
 
-export function toPayload(form) {
+export function toPayload(form, { isCreate = false } = {}) {
   // sortOrder is intentionally omitted: category ordering is owned solely by the
   // drag-reorder on CategoryListScreen. The backend update preserves the existing
   // sortOrder when the field is absent (presence-flag: AdminCatalogMutationService
@@ -107,20 +115,28 @@ export function toPayload(form) {
     description: form.description.trim() || undefined,
     introContent: form.introContent.trim() || undefined,
     parentId: form.parentId.trim(),
-    visible: Boolean(form.visible),
-    showOnHomepage: Boolean(form.showOnHomepage),
   }
 
+  // Visibility is intentionally owned by the list actions. Homepage placement
+  // is independent; omit the untouched false default on create so backend
+  // defaulting remains the single source of truth.
+  if (!isCreate || form.showOnHomepage) payload.showOnHomepage = Boolean(form.showOnHomepage)
+
   const imageUrl = form.imageUrl.trim()
-  payload.image = imageUrl ? { url: imageUrl } : { url: null }
+  payload.image = imageUrl ? { url: imageUrl, alt: String(form.imageAlt ?? '').trim() || null } : { url: null }
 
   const bannerImageUrl = form.bannerImageUrl.trim()
-  payload.banner = bannerImageUrl ? { url: bannerImageUrl } : { url: null }
+  payload.banner = bannerImageUrl ? { url: bannerImageUrl, alt: String(form.bannerImageAlt ?? '').trim() || null } : { url: null }
+
+  const mobileBannerImageUrl = form.mobileBannerImageUrl.trim()
+  payload.mobileBanner = mobileBannerImageUrl
+    ? { url: mobileBannerImageUrl, alt: String(form.mobileBannerImageAlt ?? '').trim() || null }
+    : { url: null }
 
   // Ảnh minh hoạ hero (WP ACF "image_left") → backend field `icon` (icon_url). Đây là ảnh
   // web hiển thị ở hero trang danh mục; KHÁC `image` (thumbnail lưới) và `menuIcon` (icon menu).
   const heroImageUrl = form.heroImageUrl.trim()
-  payload.icon = heroImageUrl ? { url: heroImageUrl } : { url: null }
+  payload.icon = heroImageUrl ? { url: heroImageUrl, alt: String(form.heroImageAlt ?? '').trim() || null } : { url: null }
 
   // Icon line đơn sắc cho menu header + bộ lọc danh mục (lưu vào menu_icon_url).
   const menuIconUrl = form.menuIconUrl.trim()
@@ -131,11 +147,11 @@ export function toPayload(form) {
   const seoCanonicalUrl = form.seoCanonicalUrl.trim()
   const seoOgImageUrl = form.seoOgImageUrl.trim()
   payload.seo = {
-    title: seoTitle || undefined,
-    description: seoDescription || undefined,
-    canonicalUrl: seoCanonicalUrl || undefined,
+    title: seoTitle || null,
+    description: seoDescription || null,
+    canonicalUrl: seoCanonicalUrl || null,
     ogImage: seoOgImageUrl
-      ? { url: seoOgImageUrl }
+      ? { url: seoOgImageUrl, alt: String(form.seoOgImageAlt ?? '').trim() || null }
       : null,
   }
 

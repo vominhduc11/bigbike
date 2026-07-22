@@ -1,560 +1,400 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
+import { Award, EyeOff, Pencil, Plus, RefreshCw, Trash2, Undo2 } from 'lucide-react'
 import { toast } from '@/lib/toast'
+import { Button } from '@/components/ui/button'
 import { showConfirm } from '../lib/confirm'
+import { FilterSearchInput } from '../components/FilterSearchInput'
 import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
-import { FilterSearchInput } from '../components/FilterSearchInput'
-import { Award, Copy, Eye, EyeOff, Pencil, Plus, Trash2, Undo2 } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { AdminTable } from '../components/AdminTable'
-import { Button } from '@/components/ui/button'
-import { BulkActionBar } from '../components/BulkActionBar'
 import { FilterChips } from '../components/FilterChips'
-import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
-import { RecentItemsChips } from '../components/RecentItemsChips'
-import { fetchBrandDetail, fetchBrands, updateBrand, deleteBrand, restoreBrand, permanentDeleteBrand } from '../lib/adminApi'
-import { formatDateTime, formatText, stripHtml } from '../lib/formatters'
+import { FilterBar, Screen, ScreenHeader } from '../components/layout'
+import { deleteBrand, fetchBrands, permanentDeleteBrand, restoreBrand } from '../lib/adminApi'
+import { formatDateTime, formatText } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
-import { useColumnVisibility } from '../lib/useColumnVisibility'
 import { useContentLang } from '../lib/contentLang'
 import { useDebounce } from '../lib/useDebounce'
-import { useRecentItems } from '../lib/useRecentItems'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 
+const SYSTEM_BRAND_SLUG = 'uncategorized-brand'
 const INITIAL_QUERY = {
   search: '',
-  visibility: 'ALL',
+  visibility: 'VISIBLE',
   sort: 'updatedAt:desc',
   page: 1,
   pageSize: 20,
 }
 
-// F11: khoá sessionStorage dùng để chuyển bản nháp "Nhân bản" sang màn tạo mới
-// (BrandDetailScreen đọc — cùng cơ chế DUPLICATE_SESSION_KEY của Sản phẩm/Danh mục).
-const DUPLICATE_SESSION_KEY = 'brand-duplicate-payload'
+function initialBrandQuery() {
+  const query = readQueryFromUrl(INITIAL_QUERY)
+  return {
+    ...INITIAL_QUERY,
+    ...query,
+    visibility: query.visibility === 'HIDDEN' ? 'HIDDEN' : 'VISIBLE',
+  }
+}
 
-const SORT_LABEL_KEY = {
-  'updatedAt:desc': 'newestUpdated',
-  'updatedAt:asc': 'oldestUpdated',
-  'name:asc': 'nameAZ',
+function brandActionError(t, error, fallback) {
+  if (error?.status === 403) {
+    return t('brands.actionForbidden', { defaultValue: 'Bạn không có quyền thực hiện thao tác này.' })
+  }
+  if (error?.status === 404) {
+    return t('brands.actionNotFound', { defaultValue: 'Thương hiệu không còn tồn tại. Danh sách đã được làm mới.' })
+  }
+  if (error?.status === 409) {
+    return error.message || t('brands.actionConflict', { defaultValue: 'Thương hiệu không còn ở trạng thái phù hợp để thực hiện thao tác này.' })
+  }
+  return error?.message || fallback
 }
 
 export function BrandListScreen({ navigate, canUpdate }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
   const queryClient = useQueryClient()
-  const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
-  const [searchInput, setSearchInput] = useState(() => {
-    const params = new URLSearchParams(window.location.search)
-    return params.get('search') || INITIAL_QUERY.search
-  })
-  const debouncedSearch = useDebounce(searchInput, 300)
+  const [query, setQuery] = useState(initialBrandQuery)
+  const [searchInput, setSearchInput] = useState(() => query.search)
+  const [activeAction, setActiveAction] = useState(null)
   const isFirstSearchRender = useRef(true)
-  const [selectedIds, setSelectedIds] = useState([])
-  const [bulkProgress, setBulkProgress] = useState(null) // {done,total} or null
-  const [togglingVisibilityId, setTogglingVisibilityId] = useState(null)
-
-  // O9: thương hiệu vừa mở gần đây (ghi lại từ BrandDetailScreen khi mount).
-  const recentBrandItems = useRecentItems('recent:brands')
-
+  const debouncedSearch = useDebounce(searchInput, 300)
   const state = useAdminList(['brands', query, contentLang], () => fetchBrands(query))
 
   useEffect(() => {
     syncQueryToUrl(query, INITIAL_QUERY)
-    // Selections refer to ids that may leave the visible page after a filter
-    // or page change; clear so the bulk bar never shows hidden items.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSelectedIds([])
   }, [query])
 
   useEffect(() => {
-    if (isFirstSearchRender.current) { isFirstSearchRender.current = false; return }
-    setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
+    if (isFirstSearchRender.current) {
+      isFirstSearchRender.current = false
+      return
+    }
+    setQuery((previous) => ({ ...previous, search: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
 
-  function updateQuery(partial, options = { resetPage: false }) {
-    setQuery((previous) => {
-      const next = { ...previous, ...partial }
-      if (options.resetPage) next.page = 1
-      return next
-    })
+  function updateQuery(partial, resetPage = false) {
+    setQuery((previous) => ({
+      ...previous,
+      ...partial,
+      ...(resetPage ? { page: 1 } : {}),
+    }))
   }
 
   function resetFilters() {
-    setSearchInput(INITIAL_QUERY.search)
+    setSearchInput('')
     setQuery(INITIAL_QUERY)
   }
 
-  const items = state.items || []
-  const pagination = state.pagination
-  const isFiltered = !!query.search || query.visibility !== 'ALL' || query.sort !== INITIAL_QUERY.sort
+  const items = (state.items || []).filter((brand) => brand.slug !== SYSTEM_BRAND_SLUG)
+  const isTrash = query.visibility === 'HIDDEN'
+  const isFiltered = Boolean(query.search) || isTrash
+  const isActionBusy = Boolean(activeAction)
 
-  // O4: toggle nhanh Hiển thị/Ẩn ngay trên bảng — mượn đúng mẫu cập nhật lạc
-  // quan (onMutate + rollback) đã dùng cho Danh mục (CategoryListScreen),
-  // thay vì await xong mới invalidate như trước.
-  const toggleVisibilityMutation = useMutation({
-    mutationFn: ({ id, visible }) => updateBrand(id, { visible }),
-    onMutate: async ({ id, visible }) => {
-      await queryClient.cancelQueries({ queryKey: ['brands'] })
-      const previousQueries = queryClient.getQueriesData({ queryKey: ['brands'] })
-      queryClient.setQueriesData({ queryKey: ['brands'] }, (old) => {
-        if (!old?.items) return old
-        return { ...old, items: old.items.map((b) => (b.id === id ? { ...b, isVisible: visible } : b)) }
-      })
-      return { previousQueries }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['brands'] })
-      toast.success(t('brands.toggleSuccess', { defaultValue: 'Đã đổi trạng thái hiển thị.' }))
-      setTogglingVisibilityId(null)
-    },
-    onError: (err, _variables, context) => {
-      context?.previousQueries?.forEach(([key, data]) => queryClient.setQueryData(key, data))
-      toast.error(err.message || t('common.error'))
-      setTogglingVisibilityId(null)
-    },
-  })
-
-  async function handleToggleVisibility(brand) {
-    if (!canUpdate || toggleVisibilityMutation.isPending || bulkProgress) return
-    // Đối xứng với Xóa (vốn đã có confirm): ẩn một thương hiệu khỏi web cũng là hành
-    // động khiến khách không còn thấy — hỏi xác nhận trước. Hiện lại thì không cần hỏi.
-    if (brand.isVisible) {
-      const ok = await showConfirm(
-        t('brands.hideRowConfirm', { name: brand.name, defaultValue: `Ẩn thương hiệu "{{name}}" khỏi website? Khách sẽ không còn thấy thương hiệu này. Bạn có thể hiện lại bất cứ lúc nào.` }),
-        t('brands.hideRowTitle', { defaultValue: 'Ẩn thương hiệu khỏi website?' }),
-        { confirmLabel: t('brands.hideAction'), variant: 'danger' },
-      )
-      if (!ok) return
-    }
-    setTogglingVisibilityId(brand.id)
-    toggleVisibilityMutation.mutate({ id: brand.id, visible: !brand.isVisible })
-  }
-
-  // F11: Nhân bản thương hiệu — tải chi tiết đầy đủ, ghi tạm vào sessionStorage
-  // rồi điều hướng sang màn tạo mới; BrandDetailScreen đọc bản nháp đó khi mount
-  // (cùng cơ chế "Sao chép" đã có ở Sản phẩm/Danh mục).
-  const handleDuplicate = async (brand) => {
-    try {
-      const result = await fetchBrandDetail(brand.id)
-      const item = result?.item
-      if (!item) return
-      try {
-        sessionStorage.setItem(DUPLICATE_SESSION_KEY, JSON.stringify(item))
-      } catch { /* quota */ }
-      navigate('/admin/brands/new')
-    } catch {
-      toast.error(t('brands.dupLoadError', { defaultValue: 'Không thể tải dữ liệu thương hiệu để sao chép.' }))
-    }
-  }
-
-  // ── Bulk hiển thị/ẩn nhiều thương hiệu ──────────────────────────────
-  async function runBulkVisibility(targetVisible) {
-    if (!canUpdate || bulkProgress) return
-    const byId = new Map(items.map((b) => [b.id, b]))
-    const ids = selectedIds.filter((id) => byId.has(id))
-    if (ids.length === 0) return
-
-    // Ẩn hàng loạt là hành động làm thương hiệu biến mất khỏi web công khai
-    // (destructive) — bắt buộc xác nhận trước khi chạy các lệnh cập nhật.
-    if (targetVisible === false) {
-      const ok = await showConfirm(
-        t('brands.bulkHideConfirm', { count: ids.length, defaultValue: `Ẩn {{count}} thương hiệu đã chọn? Các trang /brands/{slug} tương ứng sẽ trả về 404 trên web. Có thể hiện lại sau.` }),
-        t('brands.bulkHideTitle', { defaultValue: 'Ẩn các thương hiệu đã chọn?' }),
-        { variant: 'danger' },
-      )
-      if (!ok) return
-    }
-
-    // Runs in parallel (Promise.allSettled) — unlike categories, brands have no
-    // parent/child hide-order constraint, so there is no reason to serialize these.
-    setBulkProgress({ done: 0, total: ids.length })
-    let success = 0
-    let failed = 0
-    await Promise.allSettled(
-      ids.map((id) =>
-        updateBrand(id, { visible: targetVisible })
-          .then(() => { success += 1 })
-          .catch((err) => {
-            failed += 1
-            const brand = byId.get(id)
-            toast.error(`${brand?.name || id}: ${err.message || t('common.error')}`)
-          })
-          .finally(() => {
-            setBulkProgress((prev) => ({ done: (prev?.done ?? 0) + 1, total: ids.length }))
-          })
-      )
-    )
-    setBulkProgress(null)
-    setSelectedIds([])
-    queryClient.invalidateQueries({ queryKey: ['brands'] })
-    const summary = t('brands.bulkResult', {
-      success,
-      failed,
-      defaultValue: `Đã cập nhật {{success}} thương hiệu, {{failed}} lỗi.`,
-    })
-    if (failed === 0) toast.success(summary)
-    else if (success === 0) toast.error(summary)
-    else toast.warning(summary)
-  }
-
-  // ── Bulk khôi phục / xóa vĩnh viễn (khi đang xem Thùng rác) ─────────────
-  // Bọc API single-item sẵn có (restoreBrand / permanentDeleteBrand) qua
-  // Promise.allSettled — cùng khuôn với runBulkVisibility, không đổi backend.
-  async function runBulkTrash(action) {
-    if (!canUpdate || bulkProgress) return
-    const byId = new Map(items.map((b) => [b.id, b]))
-    const ids = selectedIds.filter((id) => byId.has(id))
-    if (ids.length === 0) return
-
-    if (action === 'permanentDelete') {
-      const ok = await showConfirm(
-        t('brands.bulkPermanentDeleteConfirm', { count: ids.length, defaultValue: `Xóa vĩnh viễn {{count}} thương hiệu đã chọn? Thao tác này không thể hoàn tác.` }),
-        t('brands.bulkPermanentDeleteTitle', { defaultValue: 'Xóa vĩnh viễn các thương hiệu đã chọn?' }),
-        { variant: 'danger', confirmLabel: t('common.permanentDelete') },
-      )
-      if (!ok) return
-    }
-
-    const apiFn = action === 'restore' ? restoreBrand : permanentDeleteBrand
-    setBulkProgress({ done: 0, total: ids.length })
-    let success = 0
-    let failed = 0
-    await Promise.allSettled(
-      ids.map((id) =>
-        apiFn(id)
-          .then(() => { success += 1 })
-          .catch((err) => {
-            failed += 1
-            const brand = byId.get(id)
-            toast.error(`${brand?.name || id}: ${err.message || t('common.error')}`)
-          })
-          .finally(() => {
-            setBulkProgress((prev) => ({ done: (prev?.done ?? 0) + 1, total: ids.length }))
-          })
-      )
-    )
-    setBulkProgress(null)
-    setSelectedIds([])
-    queryClient.invalidateQueries({ queryKey: ['brands'] })
-    if (action === 'permanentDelete') queryClient.invalidateQueries({ queryKey: ['products'] })
-    const summary = t('brands.bulkResult', { success, failed, defaultValue: `Đã cập nhật {{success}} thương hiệu, {{failed}} lỗi.` })
-    if (failed === 0) toast.success(summary)
-    else if (success === 0) toast.error(summary)
-    else toast.warning(summary)
-  }
-
-  const handleSoftDelete = async (brand) => {
+  async function hideBrand(brand) {
+    if (!canUpdate || isActionBusy) return
     const confirmed = await showConfirm(
-      t('brands.deleteConfirm', { name: brand.name, defaultValue: `Bạn có chắc chắn muốn xóa thương hiệu ${brand.name}? Các sản phẩm của thương hiệu này sẽ bị hủy liên kết.` }),
-      t('brands.deleteConfirmTitle', { defaultValue: 'Xác nhận xóa' }),
-      { confirmLabel: t('common.delete'), variant: 'danger' }
+      t('brands.hideConfirm', {
+        name: formatText(brand.name),
+        defaultValue: 'Chuyển thương hiệu "{{name}}" vào Thùng rác? Đây là xóa mềm và có thể khôi phục sau.',
+      }),
+      t('brands.hideConfirmTitle', { defaultValue: 'Chuyển vào Thùng rác?' }),
+      { variant: 'danger', confirmLabel: t('brands.hideAction', { defaultValue: 'Chuyển vào Thùng rác' }) },
     )
     if (!confirmed) return
 
+    setActiveAction(`hide:${brand.id}`)
     try {
       await deleteBrand(brand.id)
-      queryClient.invalidateQueries({ queryKey: ['brands'] })
-      toast.success(t('brands.deleteSuccess', { defaultValue: 'Đã chuyển thương hiệu vào Thùng rác.' }))
+      await queryClient.invalidateQueries({ queryKey: ['brands'] })
+      toast.success(t('brands.hideSuccess', { defaultValue: 'Đã chuyển thương hiệu vào Thùng rác.' }))
     } catch (error) {
-      toast.error(error.message || t('common.error'))
+      toast.error(brandActionError(t, error, t('common.error')))
+      if (error?.status === 404) queryClient.invalidateQueries({ queryKey: ['brands'] })
+    } finally {
+      setActiveAction(null)
     }
   }
 
-  const handleRestore = async (brand) => {
+  async function restoreBrandFromTrash(brand) {
+    if (!canUpdate || isActionBusy) return
     const confirmed = await showConfirm(
-      t('brands.restoreConfirm', { name: brand.name, defaultValue: `Bạn có chắc chắn muốn khôi phục thương hiệu ${brand.name}?` }),
-      t('brands.restoreConfirmTitle', { defaultValue: 'Xác nhận khôi phục' }),
-      { confirmLabel: t('products.restore'), variant: 'default' }
+      t('brands.restoreConfirm', {
+        name: formatText(brand.name),
+        defaultValue: 'Khôi phục thương hiệu "{{name}}"? Thương hiệu sẽ hiển thị lại trên website.',
+      }),
+      t('brands.restoreConfirmTitle', { defaultValue: 'Khôi phục thương hiệu?' }),
+      { variant: 'default', confirmLabel: t('products.restore', { defaultValue: 'Khôi phục' }) },
     )
     if (!confirmed) return
 
+    setActiveAction(`restore:${brand.id}`)
     try {
       await restoreBrand(brand.id)
-      queryClient.invalidateQueries({ queryKey: ['brands'] })
-      toast.success(t('brands.restoreSuccess', { defaultValue: 'Khôi phục thương hiệu thành công.' }))
+      await queryClient.invalidateQueries({ queryKey: ['brands'] })
+      toast.success(t('brands.restoreSuccess', { defaultValue: 'Đã khôi phục và hiển thị lại thương hiệu.' }))
     } catch (error) {
-      toast.error(error.message || t('common.error'))
+      toast.error(brandActionError(t, error, t('common.error')))
+      if (error?.status === 404) queryClient.invalidateQueries({ queryKey: ['brands'] })
+    } finally {
+      setActiveAction(null)
     }
   }
 
-  const handlePermanentDelete = async (brand) => {
+  async function permanentlyDeleteBrand(brand) {
+    if (!canUpdate || isActionBusy) return
     const confirmed = await showConfirm(
-      t('brands.permanentDeleteConfirm', { name: brand.name, defaultValue: `Bạn có chắc chắn muốn xóa vĩnh viễn thương hiệu ${brand.name}? Thao tác này không thể hoàn tác.` }),
-      t('brands.permanentDeleteConfirmTitle', { defaultValue: 'Xác nhận xóa vĩnh viễn' }),
-      { confirmLabel: t('common.permanentDelete'), variant: 'danger' }
+      t('brands.permanentDeleteConfirm', {
+        name: formatText(brand.name),
+        defaultValue: 'Xóa vĩnh viễn thương hiệu "{{name}}"? Không thể hoàn tác. Sản phẩm đang gắn thương hiệu này sẽ được chuyển sang “Chưa phân loại”.',
+      }),
+      t('brands.permanentDeleteConfirmTitle', { defaultValue: 'Xóa vĩnh viễn thương hiệu?' }),
+      { variant: 'danger', confirmLabel: t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' }) },
     )
     if (!confirmed) return
 
+    setActiveAction(`permanent:${brand.id}`)
     try {
       const { reassignedProductCount } = await permanentDeleteBrand(brand.id)
-      queryClient.invalidateQueries({ queryKey: ['brands'] })
-      queryClient.invalidateQueries({ queryKey: ['products'] })
-      toast.success(
-        reassignedProductCount > 0
-          ? t('brands.permanentDeleteSuccessWithProducts', {
-              count: reassignedProductCount,
-              defaultValue: `Đã xóa vĩnh viễn thương hiệu. {{count}} sản phẩm bên trong đã được chuyển sang "Chưa phân loại".`,
-            })
-          : t('brands.permanentDeleteSuccess', { defaultValue: 'Xóa vĩnh viễn thương hiệu thành công.' })
-      )
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['brands'] }),
+        queryClient.invalidateQueries({ queryKey: ['products'] }),
+      ])
+      toast.success(t('brands.permanentDeleteSuccessWithProducts', {
+        count: reassignedProductCount,
+        defaultValue: 'Đã xóa vĩnh viễn thương hiệu. {{count}} sản phẩm đã được chuyển sang “Chưa phân loại”.',
+      }))
     } catch (error) {
-      toast.error(error.message || t('common.error'))
+      toast.error(brandActionError(t, error, t('common.error')))
+      if (error?.status === 404) queryClient.invalidateQueries({ queryKey: ['brands'] })
+    } finally {
+      setActiveAction(null)
     }
   }
 
-  const sortLabelKey = SORT_LABEL_KEY[query.sort] || 'newestUpdated'
+  function renderRowActions(brand) {
+    const actionForBrand = activeAction?.endsWith(`:${brand.id}`)
+    const disabled = isActionBusy || brand.isVisible !== true
 
-  const activeFilterChips = []
-  if (query.search) {
-    activeFilterChips.push({
-      key: 'search',
-      label: t('brands.filterChipSearch', { value: query.search, defaultValue: `Tìm: "{{value}}"` }),
-      removeLabel: t('brands.removeFilter', { filter: t('common.search'), defaultValue: `Bỏ lọc {{filter}}` }),
-      onRemove: () => {
-        setSearchInput('')
-        updateQuery({ search: '' }, { resetPage: true })
-      },
-    })
-  }
-  if (query.visibility !== 'ALL') {
-    activeFilterChips.push({
-      key: 'visibility',
-      label: t('brands.filterChipVisibility', {
-        value: query.visibility === 'VISIBLE' ? t('common.visible') : t('common.hidden'),
-        defaultValue: `Trạng thái: {{value}}`,
-      }),
-      removeLabel: t('brands.removeFilter', { filter: t('brands.filterVisibility'), defaultValue: `Bỏ lọc {{filter}}` }),
-      onRemove: () => updateQuery({ visibility: 'ALL' }, { resetPage: true }),
-    })
-  }
-  if (query.sort !== INITIAL_QUERY.sort) {
-    activeFilterChips.push({
-      key: 'sort',
-      label: t('brands.filterChipSort', { value: t(`sort.${sortLabelKey}`), defaultValue: `Sắp xếp: {{value}}` }),
-      removeLabel: t('brands.removeFilter', { filter: t('brands.filterSort'), defaultValue: `Bỏ lọc {{filter}}` }),
-      onRemove: () => updateQuery({ sort: INITIAL_QUERY.sort }, { resetPage: true }),
-    })
-  }
+    if (!canUpdate || brand.isVisible === null || brand.slug === SYSTEM_BRAND_SLUG) return null
 
-  // Nút thao tác dòng — dùng chung cho cột "actions" (desktop) và thẻ mobile,
-  // để điện thoại có đủ hành động nhanh như bảng (P2-2).
-  const renderRowActions = (brand) => {
-    const isTrashed = !brand.isVisible
+    if (brand.isVisible === false) {
+      return (
+        <div className="flex justify-end gap-1" onClick={(event) => event.stopPropagation()}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="min-h-11 min-w-11"
+            title={t('products.restore', { defaultValue: 'Khôi phục' })}
+            aria-label={t('products.restore', { defaultValue: 'Khôi phục' })}
+            aria-busy={actionForBrand || undefined}
+            disabled={isActionBusy}
+            onClick={() => restoreBrandFromTrash(brand)}
+          >
+            <Undo2 size={16} aria-hidden="true" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="min-h-11 min-w-11 text-destructive hover:text-destructive"
+            title={t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' })}
+            aria-label={t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' })}
+            aria-busy={actionForBrand || undefined}
+            disabled={isActionBusy}
+            onClick={() => permanentlyDeleteBrand(brand)}
+          >
+            <Trash2 size={16} aria-hidden="true" />
+          </Button>
+        </div>
+      )
+    }
+
     return (
-      <>
-        {!isTrashed && (
-          <Button variant="ghost" size="icon" title={t('common.edit')} aria-label={t('common.edit')} onClick={() => navigate(`/admin/brands/${brand.id}`)}>
-            <Pencil size={14} aria-hidden="true" />
-          </Button>
-        )}
-        {canUpdate && !isTrashed && (
-          <Button variant="ghost" size="icon" title={t('brands.duplicate')} aria-label={t('brands.duplicate')} onClick={() => handleDuplicate(brand)}>
-            <Copy size={14} aria-hidden="true" />
-          </Button>
-        )}
-        {canUpdate && !isTrashed && (
-          <Button variant="ghost" size="icon" title={brand.isVisible ? t('brands.hideAction') : t('brands.showAction')} aria-label={brand.isVisible ? t('brands.hideAction') : t('brands.showAction')} disabled={toggleVisibilityMutation.isPending && togglingVisibilityId === brand.id} onClick={() => handleToggleVisibility(brand)}>
-            {brand.isVisible ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
-          </Button>
-        )}
-        {canUpdate && !isTrashed && (
-          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" title={t('common.delete')} aria-label={t('common.delete')} onClick={() => handleSoftDelete(brand)}>
-            <Trash2 size={14} aria-hidden="true" />
-          </Button>
-        )}
-        {canUpdate && isTrashed && (
-          <>
-            <Button variant="ghost" size="icon" title={t('products.restore')} aria-label={t('products.restore')} onClick={() => handleRestore(brand)}>
-              <Undo2 size={14} aria-hidden="true" />
-            </Button>
-            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" title={t('common.permanentDelete')} aria-label={t('common.permanentDelete')} onClick={() => handlePermanentDelete(brand)}>
-              <Trash2 size={14} aria-hidden="true" />
-            </Button>
-          </>
-        )}
-      </>
+      <div className="flex justify-end gap-1" onClick={(event) => event.stopPropagation()}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="min-h-11 min-w-11"
+          title={t('common.edit', { defaultValue: 'Chỉnh sửa' })}
+          aria-label={t('common.edit', { defaultValue: 'Chỉnh sửa' })}
+          disabled={disabled}
+          onClick={() => navigate(`/admin/brands/${brand.id}`)}
+        >
+          <Pencil size={16} aria-hidden="true" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="min-h-11 min-w-11 text-destructive hover:text-destructive"
+          title={t('brands.hideAction', { defaultValue: 'Chuyển vào Thùng rác' })}
+          aria-label={t('brands.hideAction', { defaultValue: 'Chuyển vào Thùng rác' })}
+          aria-busy={actionForBrand || undefined}
+          disabled={disabled}
+          onClick={() => hideBrand(brand)}
+        >
+          <EyeOff size={16} aria-hidden="true" />
+        </Button>
+      </div>
     )
   }
 
   const columns = [
     {
       key: 'brand',
-      label: t('brands.colBrand'),
+      label: t('brands.colBrand', { defaultValue: 'Thương hiệu' }),
       render: (brand) => (
-        <div className="product-cell">
-          <span className="bb-product-thumb">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xs border border-border bg-surface-muted text-muted-foreground">
+            <Award size={18} aria-hidden="true" />
             {brand.logo?.url ? (
               <img
                 src={brand.logo.url}
-                alt={brand.logo.alt || brand.name}
+                alt={brand.logo.alt || `Logo ${formatText(brand.name)}`}
                 referrerPolicy="no-referrer"
                 loading="lazy"
-                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                className="absolute inset-0 h-full w-full bg-background object-contain"
+                onError={(event) => { event.currentTarget.hidden = true }}
               />
-            ) : <Award size={18} />}
+            ) : null}
           </span>
-          <div className="info">
-            <div className="name">{formatText(brand.name)}</div>
-            <div className="sku">/{brand.slug}</div>
+          <div className="min-w-0">
+            <p className="truncate font-medium text-foreground">{formatText(brand.name)}</p>
+            <p className="truncate font-mono text-xs text-muted-foreground">/{formatText(brand.slug)}</p>
           </div>
         </div>
       ),
     },
     {
-      key: 'description',
-      label: t('brands.colDescription'),
-      render: (brand) => {
-        const desc = stripHtml(brand.description)
-        return desc ? <span className="bb-muted">{desc}</span> : <span className="cell-empty">—</span>
-      },
-    },
-    {
       key: 'visibility',
-      label: t('brands.colVisibility'),
+      label: t('brands.colVisibility', { defaultValue: 'Hiển thị' }),
       render: (brand) => <StatusBadge type="visibility" status={brand.isVisible} />,
     },
     {
+      key: 'showOnHomepage',
+      label: t('brands.detail.showOnHomepage', { defaultValue: 'Hiển thị trên trang chủ' }),
+      render: (brand) => (
+        <span className="text-sm text-foreground">
+          {brand.showOnHomepage === true
+            ? t('common.yes', { defaultValue: 'Có' })
+            : brand.showOnHomepage === false
+              ? t('common.no', { defaultValue: 'Không' })
+              : t('common.unknown', { defaultValue: 'Không xác định' })}
+        </span>
+      ),
+    },
+    {
       key: 'updatedAt',
-      label: t('brands.colUpdated'),
+      label: t('brands.colUpdated', { defaultValue: 'Cập nhật' }),
       align: 'right',
-      render: (brand) => <span className="bb-muted text-xs">{formatDateTime(brand.updatedAt)}</span>,
+      render: (brand) => <span className="text-xs text-muted-foreground">{formatDateTime(brand.updatedAt)}</span>,
     },
     {
       key: 'actions',
-      label: '',
+      label: t('common.actions', { defaultValue: 'Thao tác' }),
       align: 'right',
-      render: (brand) => (
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
-          {renderRowActions(brand)}
-        </div>
-      ),
+      render: renderRowActions,
     },
   ]
 
-  // T7: cho phép ẩn/hiện cột Mô tả/Cập nhật trên bảng thương hiệu, lưu theo trình duyệt.
-  const { visibleColumns, hiddenKeys, toggle: toggleColumn, allColumns } = useColumnVisibility(columns, 'columns:brands')
+  const activeFilterChips = [
+    ...(query.search ? [{
+      key: 'search',
+      label: t('brands.filterChipSearch', { value: query.search, defaultValue: 'Tìm: "{{value}}"' }),
+      removeLabel: t('brands.removeFilter', { filter: t('common.search'), defaultValue: 'Bỏ lọc {{filter}}' }),
+      onRemove: () => {
+        setSearchInput('')
+        updateQuery({ search: '' }, true)
+      },
+    }] : []),
+    ...(isTrash ? [{
+      key: 'visibility',
+      label: t('brands.filterChipVisibility', { value: t('brands.filterVisibilityHidden', { defaultValue: 'Thùng rác' }), defaultValue: 'Hiển thị: {{value}}' }),
+      removeLabel: t('brands.removeFilter', { filter: t('brands.filterVisibility'), defaultValue: 'Bỏ lọc {{filter}}' }),
+      onRemove: () => updateQuery({ visibility: 'VISIBLE' }, true),
+    }] : []),
+  ]
 
   const mobileCard = (brand) => ({
     title: formatText(brand.name),
-    subtitle: `/${brand.slug}`,
+    subtitle: `/${formatText(brand.slug)}`,
     status: <StatusBadge type="visibility" status={brand.isVisible} />,
     meta: [
-      { label: t('brands.colDescription'), value: stripHtml(brand.description) || '—' },
-      { label: t('brands.colUpdated'), value: formatDateTime(brand.updatedAt) },
+      {
+        label: t('brands.detail.showOnHomepage', { defaultValue: 'Hiển thị trên trang chủ' }),
+        value: brand.showOnHomepage === true
+          ? t('common.yes', { defaultValue: 'Có' })
+          : brand.showOnHomepage === false
+            ? t('common.no', { defaultValue: 'Không' })
+            : t('common.unknown', { defaultValue: 'Không xác định' }),
+      },
+      { label: t('brands.colUpdated', { defaultValue: 'Cập nhật' }), value: formatDateTime(brand.updatedAt) },
     ],
+    actions: renderRowActions(brand),
     onClick: () => navigate(`/admin/brands/${brand.id}`),
-    // P2-2: hành động nhanh trên thẻ mobile (edit không cần canUpdate; nút trash cần canUpdate).
-    actions: (brand.isVisible || canUpdate) ? renderRowActions(brand) : undefined,
   })
 
   return (
-    <div>
-      <div className="bb-screen-header">
-        <div className="bb-screen-title">
-          <p className="bb-screen-eyebrow">{t('brands.eyebrow')}</p>
-          <h1>{t('brands.title')}</h1>
-          <p className="bb-muted">{t('brands.description')}</p>
-        </div>
-        <div className="bb-screen-actions">
-          <Button
-            type="button"
-            onClick={() => navigate('/admin/brands/new')}
-            disabled={!canUpdate}
-          >
-            <Plus size={14} />{canUpdate ? t('brands.create') : t('common.noPermission')}
+    <Screen>
+      <ScreenHeader
+        eyebrow={t('brands.eyebrow')}
+        title={t('brands.title')}
+        description={t('brands.description')}
+        actions={canUpdate ? (
+          <Button type="button" className="min-h-11" onClick={() => navigate('/admin/brands/new')}>
+            <Plus size={16} aria-hidden="true" />
+            {t('brands.create')}
           </Button>
-        </div>
-      </div>
+        ) : null}
+      />
 
-      {/* O9 — Vừa xem gần đây */}
-      <RecentItemsChips items={recentBrandItems} onSelect={(item) => navigate(`/admin/brands/${item.id}`)} />
+      {!canUpdate ? (
+        <ReadOnlyBanner warning={t('brands.readOnly', { defaultValue: 'Bạn chỉ có quyền xem thương hiệu. Cần quyền cập nhật danh mục để thay đổi dữ liệu.' })} />
+      ) : null}
 
-      {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
-
-      <div className="bb-filter-bar">
+      <FilterBar ariaLabel={t('brands.filterAria', { defaultValue: 'Bộ lọc thương hiệu' })} className="mt-4">
         <FilterSearchInput
           value={searchInput}
           onChange={setSearchInput}
           placeholder={t('brands.searchPlaceholder')}
+          ariaLabel={t('brands.searchPlaceholder')}
+          className="min-w-56"
         />
         <FilterSelect
           value={query.visibility}
-          onValueChange={(v) => updateQuery({ visibility: v }, { resetPage: true })}
+          onValueChange={(value) => updateQuery({ visibility: value }, true)}
           ariaLabel={t('brands.filterVisibility')}
           options={[
-            { value: 'ALL', label: t('brands.filterVisibilityAll', { defaultValue: 'Tất cả trạng thái' }) },
-            { value: 'VISIBLE', label: t('common.visible', { defaultValue: 'Đang hiển thị' }) },
-            { value: 'HIDDEN', label: t('brands.filterVisibilityHidden', { defaultValue: 'Đã ẩn' }) },
+            { value: 'VISIBLE', label: t('brands.filterVisibilityVisible', { defaultValue: 'Đang hiển thị' }) },
+            { value: 'HIDDEN', label: t('brands.filterVisibilityHidden', { defaultValue: 'Thùng rác' }) },
           ]}
         />
-        <FilterSelect
-          value={query.sort}
-          onValueChange={(v) => updateQuery({ sort: v }, { resetPage: true })}
-          ariaLabel={t('brands.filterSort')}
-          options={[
-            { value: 'updatedAt:desc', label: t('sort.newestUpdated') },
-            { value: 'updatedAt:asc', label: t('sort.oldestUpdated') },
-            { value: 'name:asc', label: t('sort.nameAZ') },
-          ]}
-        />
-        <PageSizeSelect
-          value={query.pageSize}
-          onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
-        />
-        <ColumnVisibilityToggle allColumns={allColumns} hiddenKeys={hiddenKeys} onToggle={toggleColumn} />
-      </div>
+        <PageSizeSelect value={query.pageSize} onChange={(pageSize) => updateQuery({ pageSize }, true)} />
+        <Button
+          type="button"
+          variant="secondary"
+          className="min-h-11"
+          disabled={state.isFetching}
+          onClick={() => state.refetch()}
+        >
+          <RefreshCw size={16} className={state.isFetching ? 'animate-spin' : undefined} aria-hidden="true" />
+          {t('common.refresh', { defaultValue: 'Làm mới' })}
+        </Button>
+        {state.isFetching && state.status === 'success' ? (
+          <span className="text-sm text-muted-foreground" role="status" aria-live="polite">
+            {t('brands.refreshing', { defaultValue: 'Đang cập nhật' })}
+          </span>
+        ) : null}
+      </FilterBar>
 
-      {/* Filter chips — chỉ báo gọn đang lọc gì + gỡ từng filter. */}
       <FilterChips
         chips={activeFilterChips}
         onClearAll={resetFilters}
-        clearAllLabel={t('common.resetFilters')}
-        removeChipLabel={t('common.clear')}
+        clearAllLabel={t('common.resetFilters', { defaultValue: 'Làm mới bộ lọc' })}
+        removeChipLabel={t('common.clear', { defaultValue: 'Bỏ lọc' })}
         ariaLabel={t('brands.activeFiltersAria', { defaultValue: 'Bộ lọc đang áp dụng' })}
-      />
-
-      {/* Thanh hành động hàng loạt — ẩn/hiện nhiều thương hiệu. */}
-      <BulkActionBar
-        selectedCount={canUpdate && selectedIds.length > 0
-          ? (bulkProgress
-            ? t('brands.bulkProcessing', { done: bulkProgress.done, total: bulkProgress.total, defaultValue: `Đang xử lý {{done}}/{{total}}...` })
-            : t('brands.bulkSelectedCount', { count: selectedIds.length, defaultValue: `Đã chọn {{count}} thương hiệu` }))
-          : null}
-        onClear={() => setSelectedIds([])}
-        closeLabel={t('common.deselect', { defaultValue: 'Bỏ chọn' })}
-        actions={query.visibility === 'HIDDEN'
-          ? [
-            {
-              label: t('products.restore'),
-              onClick: () => runBulkTrash('restore'),
-              disabled: Boolean(bulkProgress),
-            },
-            {
-              label: t('common.permanentDelete'),
-              tone: 'danger',
-              onClick: () => runBulkTrash('permanentDelete'),
-              disabled: Boolean(bulkProgress),
-            },
-          ]
-          : [
-            {
-              label: t('brands.bulkShow', { defaultValue: 'Hiện các thương hiệu đã chọn' }),
-              onClick: () => runBulkVisibility(true),
-              disabled: Boolean(bulkProgress),
-            },
-            {
-              label: t('brands.bulkHide', { defaultValue: 'Ẩn các thương hiệu đã chọn' }),
-              tone: 'danger',
-              onClick: () => runBulkVisibility(false),
-              disabled: Boolean(bulkProgress),
-            },
-          ]}
       />
 
       {state.status === 'error' ? (
@@ -562,46 +402,50 @@ export function BrandListScreen({ navigate, canUpdate }) {
           tone="danger"
           title={t('brands.loadError')}
           description={state.error || t('brands.loadErrorDesc', { defaultValue: 'Không thể tải danh sách thương hiệu. Vui lòng thử lại.' })}
-          actionLabel={t('common.retry')}
+          actionLabel={t('common.retry', { defaultValue: 'Thử lại' })}
           onAction={() => state.refetch()}
+          className="mt-4"
         />
       ) : null}
 
       {state.status === 'success' && items.length === 0 ? (
         <StatePanel
           tone="neutral"
-          title={isFiltered ? t('brands.emptyFiltered', { defaultValue: t('brands.empty') }) : t('brands.empty')}
-          description={isFiltered ? t('brands.emptyFilteredDesc', { defaultValue: t('brands.emptyDesc') }) : t('brands.emptyDesc')}
-          actionLabel={isFiltered ? t('common.resetFilters') : undefined}
-          onAction={isFiltered ? resetFilters : undefined}
+          title={isFiltered
+            ? t('brands.emptyFiltered', { defaultValue: 'Không có thương hiệu phù hợp' })
+            : t('brands.empty', { defaultValue: 'Chưa có thương hiệu' })}
+          description={isFiltered
+            ? t('brands.emptyFilteredDesc', { defaultValue: 'Hãy thay đổi từ khóa hoặc bộ lọc để xem kết quả khác.' })
+            : t('brands.emptyDesc', { defaultValue: 'Tạo thương hiệu đầu tiên để quản lý danh mục sản phẩm.' })}
+          actionLabel={isFiltered ? t('common.resetFilters', { defaultValue: 'Làm mới bộ lọc' }) : canUpdate ? t('brands.create') : undefined}
+          onAction={isFiltered ? resetFilters : canUpdate ? () => navigate('/admin/brands/new') : undefined}
+          className="mt-4"
         />
       ) : null}
 
-      {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
-        <div className="bb-card">
-          <div className="bb-card-body bb-card-body--flush">
-            <AdminTable
-              columns={visibleColumns}
-              rows={items}
-              caption={t('brands.tableCaption')}
-              loading={state.status === 'loading'}
-              pageSize={query.pageSize}
-              selectable={canUpdate}
-              selectedIds={selectedIds}
-              onSelectionChange={setSelectedIds}
-              onRowClick={(brand) => navigate(`/admin/brands/${brand.id}`)}
-              rowHref={(brand) => `/admin/brands/${brand.id}`}
-              mobileCard={mobileCard}
-            />
-          </div>
-          {state.status === 'success' && pagination && (
-            <PaginationControls
-              pagination={pagination}
-              onPageChange={(p) => updateQuery({ page: p })}
-            />
-          )}
+      {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) ? (
+        <div className="mt-4 overflow-hidden rounded-md border border-border bg-surface">
+          <AdminTable
+            columns={columns}
+            rows={items}
+            caption={t('brands.tableCaption', { defaultValue: 'Danh sách thương hiệu' })}
+            loading={state.status === 'loading'}
+            pageSize={query.pageSize}
+            onRowClick={(brand) => navigate(`/admin/brands/${brand.id}`)}
+            rowHref={(brand) => `/admin/brands/${brand.id}`}
+            mobileCard={mobileCard}
+          />
+          {state.status === 'success' && state.pagination ? (
+            <div className="px-4">
+              <PaginationControls
+                pagination={state.pagination}
+                disabled={state.isFetching || isActionBusy}
+                onPageChange={(page) => updateQuery({ page })}
+              />
+            </div>
+          ) : null}
         </div>
-      )}
-    </div>
+      ) : null}
+    </Screen>
   )
 }

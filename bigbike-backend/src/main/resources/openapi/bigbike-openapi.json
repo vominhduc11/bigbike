@@ -2725,13 +2725,41 @@
             "name": "visibility",
             "in": "query",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": ["VISIBLE", "HIDDEN"]
+            }
+          },
+          {
+            "name": "deleted",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["vi", "en"],
+              "default": "vi"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Category list"
+            "description": "Category list. Omitting visibility returns both visible and hidden categories.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -2749,10 +2777,26 @@
             "AdminBearerAuth": []
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpsertCategoryRequest" }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Created category",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CategoryDataResponse" }
+              }
+            }
           },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/Conflict" },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           }
@@ -2808,6 +2852,12 @@
       }
     },
     "/api/v1/admin/categories/{id}": {
+      "parameters": [{
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" }
+      }],
       "get": {
         "tags": [
           "Admin Catalog"
@@ -2831,8 +2881,15 @@
         ],
         "responses": {
           "200": {
-            "description": "Category detail"
+            "description": "Category detail",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CategoryDataResponse" }
+              }
+            }
           },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           }
@@ -2849,10 +2906,27 @@
             "AdminBearerAuth": []
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpsertCategoryRequest" }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Updated category",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CategoryDataResponse" }
+              }
+            }
           },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           }
@@ -2871,11 +2945,54 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Category and descendants moved to Trash",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CategoryDataResponse" }
+              }
+            }
           },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           }
+        }
+      }
+    },
+    "/api/v1/admin/categories/{id}/restore": {
+      "post": {
+        "tags": ["Admin Catalog"],
+        "summary": "Restore a category tree from Trash",
+        "operationId": "adminRestoreCategory",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Restored category and descendants",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CategoryDataResponse" } } }
+          },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/admin/categories/{id}/permanent": {
+      "delete": {
+        "tags": ["Admin Catalog"],
+        "summary": "Permanently delete a category tree already in Trash",
+        "operationId": "adminPermanentDeleteCategory",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "204": { "description": "Category tree permanently deleted" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
         }
       }
     },
@@ -3047,6 +3164,62 @@
         }
       }
     },
+    "/api/v1/admin/brands/{id}/restore": {
+      "post": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "Restore a trashed brand (admin)",
+        "operationId": "adminRestoreBrand",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restored brand"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Brand not found"
+          },
+          "409": {
+            "description": "System brand is locked or the state transition is invalid"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/brands/{id}/permanent": {
+      "delete": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "Permanently delete a trashed brand and reassign its products",
+        "operationId": "adminPermanentDeleteBrand",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Brand permanently deleted; data.reassignedProductCount is the number of products reassigned to uncategorized-brand"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Brand not found"
+          },
+          "409": {
+            "description": "Only trashed non-system brands may be permanently deleted"
+          }
+        }
+      }
+    },
     "/api/v1/admin/content": {
       "get": {
         "tags": [
@@ -3189,11 +3362,40 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Category and descendants moved to Trash",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CategoryDataResponse" }
+              }
+            }
           },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           }
+        }
+      }
+    },
+    "/api/v1/admin/categories/tree": {
+      "get": {
+        "tags": ["Admin Catalog"],
+        "summary": "Get active category tree (admin)",
+        "operationId": "adminGetCategoryTree",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [{
+          "name": "lang",
+          "in": "query",
+          "schema": { "type": "string", "enum": ["vi", "en"], "default": "vi" }
+        }],
+        "responses": {
+          "200": {
+            "description": "Non-deleted category tree for parent selection and ordering.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CategoryListResponse" } } }
+          },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
         }
       }
     },
@@ -6147,6 +6349,10 @@
           "slug": {
             "type": "string"
           },
+          "slugEn": {
+            "type": "string",
+            "nullable": true
+          },
           "name": {
             "type": "string"
           },
@@ -6159,9 +6365,33 @@
             "nullable": true
           },
           "image": {
-            "$ref": "#/components/schemas/ImageAsset"
+            "$ref": "#/components/schemas/ImageAsset",
+            "nullable": true
+          },
+          "icon": {
+            "$ref": "#/components/schemas/ImageAsset",
+            "nullable": true
+          },
+          "menuIconUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "bannerImage": {
+            "$ref": "#/components/schemas/ImageAsset",
+            "nullable": true
+          },
+          "mobileBannerImage": {
+            "$ref": "#/components/schemas/ImageAsset",
+            "nullable": true
+          },
+          "seo": {
+            "$ref": "#/components/schemas/CategorySeoMeta",
+            "nullable": true
           },
           "isVisible": {
+            "type": "boolean"
+          },
+          "deleted": {
             "type": "boolean"
           },
           "showOnHomepage": {
@@ -6172,6 +6402,14 @@
             "type": "integer",
             "nullable": true
           },
+          "introContent": {
+            "type": "string",
+            "nullable": true
+          },
+          "translations": {
+            "$ref": "#/components/schemas/CategoryTranslations",
+            "nullable": true
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -6180,6 +6418,60 @@
             "type": "string",
             "format": "date-time"
           }
+        }
+      },
+      "CategorySeoMeta": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "nullable": true },
+          "description": { "type": "string", "nullable": true },
+          "canonicalUrl": { "type": "string", "nullable": true },
+          "ogImage": { "$ref": "#/components/schemas/ImageAsset", "nullable": true }
+        }
+      },
+      "CategoryTranslations": {
+        "type": "object",
+        "properties": {
+          "en": { "$ref": "#/components/schemas/CategoryTranslationContent", "nullable": true }
+        }
+      },
+      "CategoryTranslationContent": {
+        "type": "object",
+        "properties": {
+          "slug": { "type": "string", "nullable": true, "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+          "name": { "type": "string", "nullable": true, "maxLength": 255 },
+          "description": { "type": "string", "nullable": true, "maxLength": 5000 },
+          "introContent": { "type": "string", "nullable": true, "maxLength": 50000 },
+          "seoTitle": { "type": "string", "nullable": true, "maxLength": 255 },
+          "seoDescription": { "type": "string", "nullable": true, "maxLength": 5000 }
+        }
+      },
+      "UpsertCategoryRequest": {
+        "type": "object",
+        "description": "Create requires canonical Vietnamese name/slug and translations.en.name. PATCH is presence-sensitive: omitted fields remain unchanged.",
+        "properties": {
+          "slug": { "type": "string", "maxLength": 100, "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+          "name": { "type": "string", "maxLength": 255 },
+          "description": { "type": "string", "nullable": true, "maxLength": 5000 },
+          "introContent": { "type": "string", "nullable": true, "maxLength": 50000 },
+          "parentId": { "type": "string", "nullable": true },
+          "visible": { "type": "boolean", "description": "Independent storefront visibility patch; false is rejected if a direct child remains visible." },
+          "showOnHomepage": { "type": "boolean", "description": "Independent homepage placement; omitted on create while false by default." },
+          "sortOrder": { "type": "integer", "nullable": true },
+          "image": { "$ref": "#/components/schemas/ImageAsset" },
+          "icon": { "$ref": "#/components/schemas/ImageAsset" },
+          "menuIcon": { "$ref": "#/components/schemas/ImageAsset", "description": "Only url is persisted." },
+          "banner": { "$ref": "#/components/schemas/ImageAsset" },
+          "mobileBanner": { "$ref": "#/components/schemas/ImageAsset" },
+          "seo": { "$ref": "#/components/schemas/CategorySeoMeta", "description": "Omit to preserve; {} clears all stored Category SEO." },
+          "translations": { "$ref": "#/components/schemas/CategoryTranslations" }
+        }
+      },
+      "CategoryDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CategoryResponse" },
+          "meta": { "$ref": "#/components/schemas/ApiMeta" }
         }
       },
       "CategoryPermanentDeleteImpactRequest": {

@@ -73,6 +73,7 @@ public class BrandMutationService {
         Instant now = Instant.now();
         BrandEntity entity = new BrandEntity();
         entity.setId(generateId("brand"));
+        entity.setVisible(true);
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
         applyBrandPatch(entity, request, slug, true);
@@ -210,6 +211,7 @@ public class BrandMutationService {
         fields.put("name", nullSafe(e.getName()));
         fields.put("slug", nullSafe(e.getSlug()));
         fields.put("visible", e.isVisible());
+        fields.put("showOnHomepage", e.isShowOnHomepage());
         fields.put("description", e.getDescription());
         fields.put("logoUrl", e.getLogoUrl());
         fields.put("bannerUrl", e.getBannerUrl());
@@ -243,8 +245,8 @@ public class BrandMutationService {
         if (create || request.getDescription() != null) {
             entity.setDescription(AdminMutationValidators.trimToNull(request.getDescription()));
         }
-        if (create || request.getVisible() != null) {
-            entity.setVisible(request.getVisible() == null || request.getVisible());
+        if (create || request.getShowOnHomepage() != null) {
+            entity.setShowOnHomepage(request.getShowOnHomepage() == null || request.getShowOnHomepage());
         }
 
         if (request.getLogo() != null) {

@@ -17,7 +17,7 @@ function IconLibrary() {
   )
 }
 
-function ImagePreview({ url }) {
+function ImagePreview({ url, alt }) {
   const { t } = useTranslation()
   const [ok, setOk] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -38,10 +38,10 @@ function ImagePreview({ url }) {
   if (!trimmed) return null
   if (loading) return <div className="img-preview img-preview-loading">{t('imageInput.previewLoading')}</div>
   if (!ok) return <div className="img-preview img-preview-error">{t('imageInput.previewError')}</div>
-  return <img src={trimmed} alt={t('imageInput.previewAlt')} className="img-preview" loading="eager" />
+  return <img src={trimmed} alt={alt || t('imageInput.previewAlt')} className="img-preview" loading="eager" />
 }
 
-export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, error, recommend }) {
+export function ImageUrlInput({ value, onChange, alt, onAltChange, previewAlt, disabled, error, recommend }) {
   const { t } = useTranslation()
   const [pickerOpen, setPickerOpen] = useState(false)
   const hasImage = Boolean(value?.trim())
@@ -74,7 +74,7 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, err
       </div>
       {error && <small id={errorId} role="alert" className="field-error">{error}</small>}
       <MediaRequirementHint recommend={recommend} className="mt-1 text-xs text-muted-foreground" />
-      <ImagePreview url={value} />
+      <ImagePreview url={value} alt={previewAlt || alt} />
 
       {pickerOpen && (
         <MediaPickerModal

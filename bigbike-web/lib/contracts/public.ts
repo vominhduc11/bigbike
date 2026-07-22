@@ -383,6 +383,7 @@ export type Brand = {
   mobileBannerImage?: ImageAsset;
   seo?: SeoMeta;
   isVisible: boolean;
+  showOnHomepage?: boolean;
   createdAt: string;
   updatedAt: string;
 };

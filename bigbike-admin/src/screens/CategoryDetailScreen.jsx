@@ -144,10 +144,10 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
       findDescendants(categoryId)
     }
     // Loại chính nó + toàn bộ cháu con trước khi build cây, tránh chọn cha thành vòng lặp.
-    const eligible = items.filter((c) => c.id !== categoryId && !descendants.has(c.id))
+    const eligible = items.filter((c) => c.id !== 'uncategorized' && c.id !== categoryId && !descendants.has(c.id))
     return buildCategoryTreeOrder(eligible).map((c) => ({
       id: c.id,
-      label: <span style={{ paddingInlineStart: `${c.depth * 16}px` }}>{c.name}</span>,
+      label: `${'— '.repeat(c.depth)}${c.name}`,
     }))
   }, [categoriesResult, categoryId])
 
@@ -418,7 +418,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     setIsSubmitting(true)
     setValidationErrors({})
 
-    saveMutation.mutate(toPayload(form))
+    saveMutation.mutate(toPayload(form, { isCreate }))
   }
 
 
@@ -776,39 +776,13 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   </span>
                 )}
               </label>
-              {/* Ẩn/hiện danh mục đưa lên đầu — tác vụ thường ngày, không phải cuộn qua nội dung + ảnh (P0-2). */}
-              <label className="flex items-center gap-2 p-2 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
-                <Checkbox
-                  checked={form.visible}
-                  onCheckedChange={(checked) => {
-                    const nextVisible = checked === true
-                    setForm((prev) => ({
-                      ...prev,
-                      visible: nextVisible,
-                      showOnHomepage: nextVisible ? prev.showOnHomepage : false,
-                    }))
-                  }}
-                  disabled={isReadOnly}
-                />
-                <span>{t('categories.detail.isVisible')}</span>
-              </label>
-              <label
-                className="flex items-center gap-2 p-2 border border-border text-sm cursor-pointer hover:bg-muted w-fit"
-                style={{ opacity: form.visible ? 1 : 0.5 }}
-              >
+              <label className="flex w-fit items-center gap-2 border border-border p-2 text-sm">
                 <Checkbox
                   checked={form.showOnHomepage}
                   onCheckedChange={(checked) => updateField('showOnHomepage', checked)}
-                  disabled={isReadOnly || !form.visible}
+                  disabled={isReadOnly}
                 />
-                <span>
-                  {t('categories.detail.showOnHomepage')}
-                  {!form.visible && (
-                    <span className="hint" style={{ display: 'block' }}>
-                      {t('categories.detail.showOnHomepageRequiresVisible')}
-                    </span>
-                  )}
-                </span>
+                <span>{t('categories.detail.showOnHomepage')}</span>
               </label>
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('categories.detail.introContent')}</span>
@@ -827,6 +801,9 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                 <ImageUrlInput
                   value={form.imageUrl}
                   onChange={(url) => updateField('imageUrl', url)}
+                  alt={form.imageAlt}
+                  onAltChange={(alt) => updateField('imageAlt', alt)}
+                  previewAlt={form.imageAlt || t('categories.detail.imageAlt', { defaultValue: 'Ảnh thumbnail danh mục' })}
                   disabled={isReadOnly}
                   error={validationErrors.imageUrl}
                   recommend={IMAGE_RECO.categoryImage}
@@ -838,17 +815,36 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                 <ImageUrlInput
                   value={form.bannerImageUrl}
                   onChange={(url) => updateField('bannerImageUrl', url)}
+                  alt={form.bannerImageAlt}
+                  onAltChange={(alt) => updateField('bannerImageAlt', alt)}
+                  previewAlt={form.bannerImageAlt || t('categories.detail.bannerAlt', { defaultValue: 'Ảnh nền hero danh mục' })}
                   disabled={isReadOnly}
                   error={validationErrors.bannerImageUrl}
                   recommend={IMAGE_RECO.bannerWide}
                 />
                 <span className="hint">{t('categories.detail.bannerImageUrlHint')}</span>
               </div>
+              <div className="form-field" data-field="mobileBannerImageUrl" style={{ gridColumn: '1 / -1' }}>
+                <span>{t('categories.detail.mobileBannerImageUrl', { defaultValue: 'Ảnh banner mobile' })}</span>
+                <ImageUrlInput
+                  value={form.mobileBannerImageUrl}
+                  onChange={(url) => updateField('mobileBannerImageUrl', url)}
+                  alt={form.mobileBannerImageAlt}
+                  onAltChange={(alt) => updateField('mobileBannerImageAlt', alt)}
+                  previewAlt={form.mobileBannerImageAlt || t('categories.detail.mobileBannerAlt', { defaultValue: 'Ảnh nền hero mobile danh mục' })}
+                  disabled={isReadOnly}
+                  error={validationErrors.mobileBannerImageUrl}
+                  recommend={IMAGE_RECO.bannerWide}
+                />
+              </div>
               <div className="form-field" data-field="heroImageUrl" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('categories.detail.heroImageUrl')}</span>
                 <ImageUrlInput
                   value={form.heroImageUrl}
                   onChange={(url) => updateField('heroImageUrl', url)}
+                  alt={form.heroImageAlt}
+                  onAltChange={(alt) => updateField('heroImageAlt', alt)}
+                  previewAlt={form.heroImageAlt || t('categories.detail.heroAlt', { defaultValue: 'Ảnh minh họa hero danh mục' })}
                   disabled={isReadOnly}
                   error={validationErrors.heroImageUrl}
                   recommend={IMAGE_RECO.illustration}
@@ -860,6 +856,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                 <ImageUrlInput
                   value={form.menuIconUrl}
                   onChange={(url) => updateField('menuIconUrl', url)}
+                  previewAlt={t('categories.detail.menuIconAlt', { defaultValue: 'Icon menu danh mục' })}
                   disabled={isReadOnly}
                   error={validationErrors.menuIconUrl}
                 />
