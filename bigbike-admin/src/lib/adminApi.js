@@ -16,6 +16,8 @@ import { clearTokens, hasAccessToken, readTokens, writeTokens } from './authStor
 import { getContentLang } from './contentLang'
 
 const API_BASE = (import.meta.env.VITE_ADMIN_API_BASE || '/api/v1').replace(/\/$/, '')
+export const SESSION_EXPIRED_CODE = 'SESSION_EXPIRED'
+export const SESSION_EXPIRED_MESSAGE = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để tiếp tục.'
 
 export class ApiClientError extends Error {
   constructor(message, status, code, details = []) {
@@ -38,6 +40,11 @@ let authErrorListener = null
 
 export function setAuthErrorListener(listener) {
   authErrorListener = typeof listener === 'function' ? listener : null
+}
+
+function notifyAuthExpired(message = SESSION_EXPIRED_MESSAGE) {
+  clearTokens()
+  if (authErrorListener) authErrorListener(message)
 }
 
 let refreshInFlight = null
@@ -70,11 +77,11 @@ async function performTokenRefresh() {
 
 // Attempt a silent refresh using the httpOnly cookie. Called on page load so
 // the user does not need to re-login after a hard refresh.
-export async function refreshAccessToken() {
+export async function refreshAccessToken({ notifyOnFailure = false } = {}) {
   const newAccess = await performTokenRefresh()
   if (!newAccess) {
     clearTokens()
-    if (authErrorListener) authErrorListener()
+    if (notifyOnFailure && authErrorListener) authErrorListener(SESSION_EXPIRED_MESSAGE)
   }
   return newAccess
 }
@@ -126,7 +133,7 @@ async function requestJson(endpoint, options = {}) {
 
   // 401 -> refresh once, retry once. The refresh endpoint itself is called with
   // skipAuth so we never recurse here.
-  if (response.status === 401 && !skipAuth && accessToken) {
+  if (response.status === 401 && !skipAuth) {
     const newAccess = await performTokenRefresh()
     if (newAccess) {
       ({ response, payload } = await dispatch(method, url, body, newAccess))
@@ -134,8 +141,13 @@ async function requestJson(endpoint, options = {}) {
     if (response.status === 401) {
       // Refresh failed or replay still 401 — surface to AuthProvider so it can
       // clear state and show the login screen.
-      clearTokens()
-      if (authErrorListener) authErrorListener()
+      notifyAuthExpired()
+      throw new ApiClientError(
+        SESSION_EXPIRED_MESSAGE,
+        response.status,
+        SESSION_EXPIRED_CODE,
+        payload?.error?.details || [],
+      )
     }
   }
 
@@ -1064,9 +1076,16 @@ export async function uploadMedia(file, altText = '', onProgress = null) {
   try {
     return await attempt(accessToken)
   } catch (err) {
-    if (err?.status === 401 && accessToken) {
+    if (err?.status === 401) {
       const refreshed = await performTokenRefresh()
       if (refreshed) return await attempt(refreshed)
+      notifyAuthExpired()
+      throw new ApiClientError(
+        SESSION_EXPIRED_MESSAGE,
+        err.status,
+        SESSION_EXPIRED_CODE,
+        err.details || [],
+      )
     }
     throw err
   }
@@ -1586,14 +1605,18 @@ async function fetchCsvBlob(path, params = {}, fallbackName = 'export.csv', acce
   let { accessToken } = readTokens()
   let response = await doFetch(accessToken)
 
-  if (response.status === 401 && accessToken) {
+  if (response.status === 401) {
     const newAccess = await performTokenRefresh()
     if (newAccess) {
       response = await doFetch(newAccess)
     }
     if (response.status === 401) {
-      clearTokens()
-      if (authErrorListener) authErrorListener()
+      notifyAuthExpired()
+      throw new ApiClientError(
+        SESSION_EXPIRED_MESSAGE,
+        response.status,
+        SESSION_EXPIRED_CODE,
+      )
     }
   }
 

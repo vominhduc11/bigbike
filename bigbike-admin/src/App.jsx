@@ -12,7 +12,8 @@ import { ScreenSkeleton } from './components/ScreenSkeleton'
 import { StatePanel } from './components/StatePanel'
 import { AuthProvider, useAuth } from './lib/auth'
 import { readTokens } from './lib/authStorage'
-import { connectAdminWs, disconnectAdminWs, setWsReconnectCallback } from './lib/adminWebSocket'
+import { refreshAccessToken } from './lib/adminApi'
+import { connectAdminWs, disconnectAdminWs, setWsAuthRejectedCallback, setWsReconnectCallback } from './lib/adminWebSocket'
 import { queryClient } from './lib/queryClient'
 import { confirmNavigation } from './lib/navigationGuard'
 import { lazyScreen } from './lib/lazyScreen'
@@ -243,6 +244,15 @@ function AdminApp() {
 
   useEffect(() => {
     if (authState.status !== 'authenticated') return
+    let disposed = false
+    let refreshingWsAuth = false
+    setWsAuthRejectedCallback(async () => {
+      if (refreshingWsAuth) return
+      refreshingWsAuth = true
+      const token = await refreshAccessToken({ notifyOnFailure: true })
+      refreshingWsAuth = false
+      if (!disposed && token) connectAdminWs(() => readTokens().accessToken)
+    })
     connectAdminWs(() => readTokens().accessToken)
     // Sau mỗi lần (re)connect ta có thể đã bỏ lỡ event đơn khi offline → chỉ làm mới
     // các cache do luồng đơn chi phối, thay vì invalidate TẤT CẢ. Tránh việc mạng chập
@@ -255,7 +265,11 @@ function AdminApp() {
         queryClient.invalidateQueries({ queryKey })
       }
     })
-    return () => disconnectAdminWs()
+    return () => {
+      disposed = true
+      setWsAuthRejectedCallback(null)
+      disconnectAdminWs()
+    }
   }, [authState.status])
 
   const route = parseRoute(pathname)

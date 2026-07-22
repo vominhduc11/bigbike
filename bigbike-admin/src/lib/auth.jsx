@@ -23,17 +23,17 @@ export function AuthProvider({ children }) {
   // doesn't race with the user clicking "log in" again.
   const aliveRef = useRef(true)
 
-  const setUnauthenticated = useCallback(() => {
-    setState({ status: 'unauthenticated', user: null, mode: 'live', error: '' })
+  const setUnauthenticated = useCallback((message = '') => {
+    setState({ status: 'unauthenticated', user: null, mode: 'live', error: message || '' })
   }, [])
 
   // Wired into the fetch interceptor: when refresh ultimately fails, kick the
   // user back to the login screen. We do not call clearTokens here because the
   // interceptor has already done it.
   useEffect(() => {
-    setAuthErrorListener(() => {
+    setAuthErrorListener((message) => {
       if (!aliveRef.current) return
-      setUnauthenticated()
+      setUnauthenticated(message)
     })
     return () => setAuthErrorListener(null)
   }, [setUnauthenticated])
@@ -50,7 +50,7 @@ export function AuthProvider({ children }) {
 
     if (!hasStoredAccessToken()) {
       // Attempt silent refresh using the httpOnly refresh cookie.
-      const newToken = await refreshAccessToken()
+      const newToken = await refreshAccessToken({ notifyOnFailure: false })
       if (!aliveRef.current) return
       if (!newToken) {
         setUnauthenticated()

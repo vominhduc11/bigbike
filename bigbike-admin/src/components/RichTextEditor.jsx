@@ -81,6 +81,8 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
       StarterKit.configure({
         heading: { levels: [2, 3] },
         codeBlock: { languageClassPrefix: 'language-' },
+        link: false,
+        underline: false,
       }),
       UnderlineExt,
       LinkExt.configure({

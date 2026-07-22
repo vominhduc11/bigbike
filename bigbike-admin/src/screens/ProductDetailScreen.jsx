@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 
 import {
+  ApiClientError,
   createProduct,
   fetchBrands,
   fetchCategoryTree,
@@ -627,11 +628,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       // theo trường (lỗi field thì hiện ngay dưới ô, bấm lưu lại cũng vô ích cho tới
       // khi sửa). Toast lỗi đã không tự tắt (facade toast đặt duration Infinity).
       const hasFieldErrors = Object.keys(fieldErrors).length > 0
+      const isAuthExpired = error instanceof ApiClientError && error.status === 401
       // Lỗi theo trường (vd trùng slug/SKU) có thể nằm trong thẻ đang thu gọn — mở ra + nhảy tab.
       if (hasFieldErrors) revealErrorSections(fieldErrors)
       toast.error(
         error.message || t('products.detail.errSaveFailed'),
-        hasFieldErrors
+        hasFieldErrors || isAuthExpired
           ? undefined
           : { action: { label: t('common.retry', { defaultValue: 'Thử lại' }), onClick: () => handleSave() } },
       )
