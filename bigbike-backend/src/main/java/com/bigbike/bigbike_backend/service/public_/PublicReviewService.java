@@ -7,6 +7,8 @@ import com.bigbike.bigbike_backend.api.public_.dto.PublicProductReviewsResponse;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ReviewEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
+import com.bigbike.bigbike_backend.service.ws.AdminReviewWsService;
+import com.bigbike.bigbike_backend.service.ws.ReviewWsEvent;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -39,6 +41,7 @@ public class PublicReviewService {
     private final ReviewJpaRepository reviewRepo;
     private final ProductJpaRepository productRepo;
     private final ReviewPhotoStorageService reviewPhotoStorageService;
+    private final AdminReviewWsService adminReviewWsService;
 
     public PublicProductReviewsResponse getProductReviews(String productId, int page, int size) {
         return getProductReviews(productId, page, size, null, null);
@@ -142,7 +145,13 @@ public class PublicReviewService {
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
 
-        reviewRepo.save(entity);
+        ReviewEntity saved = reviewRepo.save(entity);
+        adminReviewWsService.pushEvent(new ReviewWsEvent(
+                "REVIEW_SUBMITTED",
+                saved.getId(),
+                saved.getProductId(),
+                saved.getStatus(),
+                Instant.now()));
     }
 
     /**

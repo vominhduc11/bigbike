@@ -1384,6 +1384,10 @@ Persistent counterpart of the WebSocket order feed — admins offline when an ev
 | Allowed roles | `ADMIN`, `SUPER_ADMIN` | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java` |
 | Confirmed topic | `/topic/admin/orders` | `CONFIRMED_FROM_CODE` | `AdminOrderWsService.java`, `adminWebSocket.js` |
 | Payload | `OrderWsEvent` with `type`, `orderId`, `orderNumber`, `customerName`, `total`, `status`, `paymentMethod`, `timestamp` | `CONFIRMED_FROM_CODE` | `OrderWsEvent.java` |
+| Confirmed topic | `/topic/admin/inventory` | `CONFIRMED_FROM_CODE` | `AdminInventoryWsService.java`, `adminWebSocket.js` |
+| Inventory payload | `InventoryWsEvent` with `type`, `productId`, `timestamp`; subscription requires `inventory.read` | `CONFIRMED_FROM_CODE` | `InventoryWsEvent.java`, `WebSocketConfig.java` |
+| Confirmed topic | `/topic/admin/reviews` | `CONFIRMED_FROM_CODE` | `AdminReviewWsService.java`, `adminWebSocket.js` |
+| Review payload | `ReviewWsEvent` with `type`, `reviewId`, `productId`, `status`, `timestamp`; `REVIEW_SUBMITTED` is sent after the public review transaction commits and subscription requires `reviews.read` | `CONFIRMED_FROM_CODE` | `ReviewWsEvent.java`, `PublicReviewService.java`, `WebSocketConfig.java` |
 
 ## Response Shape Caveats
 
@@ -1401,6 +1405,7 @@ invalidates `['orders']`, while `AdminShell.jsx` invalidates
 `['nav-badge', 'orders-pending']` so the pending-order sidebar count refetches
 immediately. Both use the shared reconnecting STOMP client; the REST query
 remains the fallback when WebSocket delivery is unavailable.
+`/topic/admin/inventory` invalidates `['inventory-summary']` in `DashboardScreen.jsx`, and `/topic/admin/reviews` invalidates both `['reviews']` and `['review-summary']` in `ReviewListScreen.jsx`; the pending review count is a screen summary, not a separate sidebar badge.
 
 ### Account page fields — address email, order product names (V127)
 

@@ -16,6 +16,7 @@ import { useDebounce } from '../lib/useDebounce'
 import { useAdminList } from '../lib/useAdminList'
 import { useRecentItems } from '../lib/useRecentItems'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
+import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { useQueryClient } from '@tanstack/react-query'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -169,6 +170,13 @@ export function ReviewListScreen({ navigate, canUpdate }) {
   const debouncedSearch = useDebounce(searchInput, 300)
   const isFirstSearchRender = useRef(true)
   const queryClient = useQueryClient()
+  useEffect(() => {
+    const unsubscribe = subscribeAdminWs('/topic/admin/reviews', () => {
+      queryClient.invalidateQueries({ queryKey: ['reviews'] })
+      queryClient.invalidateQueries({ queryKey: ['review-summary'] })
+    })
+    return unsubscribe
+  }, [queryClient])
   // Danh sách đánh giá qua react-query: cache + dedupe + giữ trang cũ khi đổi filter.
   // Shape trả về { status, items, pagination, warning, error } khớp đúng JSX bên dưới.
   const state = useAdminList(['reviews', query, contentLang], () => fetchReviews(query))
