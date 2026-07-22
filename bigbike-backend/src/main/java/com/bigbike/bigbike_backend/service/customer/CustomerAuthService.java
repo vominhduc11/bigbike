@@ -12,6 +12,8 @@ import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerSessionEntity;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
+import com.bigbike.bigbike_backend.service.ws.AdminCustomerWsService;
+import com.bigbike.bigbike_backend.service.ws.CustomerWsEvent;
 import com.bigbike.bigbike_backend.util.PhoneNumbers;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -33,6 +35,7 @@ public class CustomerAuthService {
     private final PasswordService passwordService;
     private final EmailVerificationService emailVerificationService;
     private final GuestOrderLinkingService guestOrderLinkingService;
+    private final AdminCustomerWsService adminCustomerWsService;
 
     @Transactional
     public CustomerAuthResult register(CustomerRegisterRequest req, String ipAddress, String userAgent) {
@@ -73,6 +76,12 @@ public class CustomerAuthService {
         } catch (DataIntegrityViolationException ex) {
             throw new ConflictException("Thông tin đăng ký không hợp lệ.");
         }
+
+        adminCustomerWsService.pushEvent(new CustomerWsEvent(
+                "CUSTOMER_REGISTERED",
+                saved.getId(),
+                saved.getStatus(),
+                Instant.now()));
 
         // Fire-and-forget-on-failure email send. Mail outages must not break signup.
         if (saved.getEmail() != null && !saved.getEmail().isBlank()) {

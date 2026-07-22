@@ -31,6 +31,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private static final String ORDERS_PERMISSION = "orders.read";
     private static final String INVENTORY_PERMISSION = "inventory.read";
     private static final String REVIEWS_PERMISSION = "reviews.read";
+    private static final String CUSTOMERS_PERMISSION = "customers.read";
     private static final String STATUS_ACTIVE = "ACTIVE";
     private static final String SESSION_ATTR_ADMIN_USER_ID = "adminUserId";
 
@@ -129,6 +130,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     case "/topic/admin/orders" -> ORDERS_PERMISSION;
                     case "/topic/admin/inventory" -> INVENTORY_PERMISSION;
                     case "/topic/admin/reviews" -> REVIEWS_PERMISSION;
+                    case "/topic/admin/customers" -> CUSTOMERS_PERMISSION;
                     default -> null;
                 };
                 return requiredPermission != null && hasPermission(userId, requiredPermission);

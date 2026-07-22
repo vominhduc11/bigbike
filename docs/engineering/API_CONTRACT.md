@@ -1406,6 +1406,7 @@ invalidates `['orders']`, while `AdminShell.jsx` invalidates
 immediately. Both use the shared reconnecting STOMP client; the REST query
 remains the fallback when WebSocket delivery is unavailable.
 `/topic/admin/inventory` invalidates `['inventory-summary']` in `DashboardScreen.jsx`, and `/topic/admin/reviews` invalidates both `['reviews']` and `['review-summary']` in `ReviewListScreen.jsx`; the pending review count is a screen summary, not a separate sidebar badge.
+`/topic/admin/customers` invalidates both `['customers']` and `['customer-summary']` in `CustomerListScreen.jsx`; customer KPIs are a screen summary, not a separate sidebar badge.
 
 ### Account page fields — address email, order product names (V127)
 

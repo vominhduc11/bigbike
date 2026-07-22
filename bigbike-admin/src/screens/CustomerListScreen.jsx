@@ -24,6 +24,7 @@ import { useDebounce } from '../lib/useDebounce'
 import { useRecentItems } from '../lib/useRecentItems'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { useHasPermission } from '@/lib/auth'
+import { subscribeAdminWs } from '../lib/adminWebSocket'
 
 // O4: tái dùng đúng danh sách trạng thái có thể set thủ công của CustomerDetailScreen
 // (giữ local thay vì import chéo giữa 2 screen — mỗi screen là 1 lazy chunk riêng).
@@ -81,6 +82,14 @@ export function CustomerListScreen({ navigate, canUpdate }) {
     queryFn: fetchCustomerSummary,
     staleTime: 60_000,
   })
+
+  useEffect(() => {
+    const unsubscribe = subscribeAdminWs('/topic/admin/customers', () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
+      queryClient.invalidateQueries({ queryKey: ['customer-summary'] })
+    })
+    return unsubscribe
+  }, [queryClient])
 
   useEffect(() => {
     syncQueryToUrl(query, INITIAL_QUERY)
