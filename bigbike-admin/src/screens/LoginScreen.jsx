@@ -8,7 +8,7 @@ import { PasswordInput } from '../components/PasswordInput'
 import { Alert } from '@/components/ui/alert'
 
 export function LoginScreen() {
-  const { login, error: sessionError } = useAuth()
+  const { login } = useAuth()
   const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -86,15 +86,12 @@ export function LoginScreen() {
     }
   }
 
-  const visibleError = error || sessionError
-  const effectiveCredentialError = sessionError && !error ? false : credentialError
-  const effectiveCanRetry = sessionError && !error ? false : canRetry
-  const hasError = Boolean(visibleError)
+  const hasError = Boolean(error)
 
   // Ô mô tả bởi: lỗi inline của chính ô (nếu có), nếu không thì alert lỗi sai thông tin đăng nhập.
   function fieldDescribedBy(ownErrId, hasOwnErr) {
     if (hasOwnErr) return ownErrId
-    if (effectiveCredentialError) return errorId
+    if (credentialError) return errorId
     return undefined
   }
 
@@ -128,8 +125,8 @@ export function LoginScreen() {
           {hasError ? (
             <Alert id={errorId} tone="danger" size="sm" className="mb-4">
               <div className="flex items-center justify-between gap-3">
-                <span>{visibleError}</span>
-                {effectiveCanRetry ? (
+                <span>{error}</span>
+                {canRetry ? (
                   <Button
                     type="button"
                     variant="ghost"
@@ -163,7 +160,7 @@ export function LoginScreen() {
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); if (fieldErrors.email) setFieldErrors((p) => ({ ...p, email: undefined })) }}
                 disabled={submitting}
-                aria-invalid={Boolean(fieldErrors.email) || effectiveCredentialError || undefined}
+                aria-invalid={Boolean(fieldErrors.email) || credentialError || undefined}
                 aria-describedby={fieldDescribedBy(emailErrId, Boolean(fieldErrors.email))}
                 className="bb-input"
               />
@@ -200,7 +197,7 @@ export function LoginScreen() {
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); if (fieldErrors.password) setFieldErrors((p) => ({ ...p, password: undefined })) }}
                 disabled={submitting}
-                aria-invalid={Boolean(fieldErrors.password) || effectiveCredentialError || undefined}
+                aria-invalid={Boolean(fieldErrors.password) || credentialError || undefined}
                 aria-describedby={fieldDescribedBy(passwordErrId, Boolean(fieldErrors.password))}
                 className="bb-input"
               />

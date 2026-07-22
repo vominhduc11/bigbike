@@ -8,7 +8,6 @@ const RECONNECT_MAX_MS = 30000
 // these are permanent (bad/expired token, inactive account, missing permission), not a
 // transient network blip, so reconnecting on a fixed timer would just hammer the server.
 const AUTH_REJECTION_PATTERN = /Admin (JWT required|role required|account is not active)|Invalid or expired token|Not permitted to subscribe/i
-const TOKEN_REJECTION_PATTERN = /Admin JWT required|Invalid or expired token/i
 
 function parseFrame(raw) {
   const nullIdx = raw.indexOf('\0')
@@ -49,7 +48,6 @@ let reconnectTimer = null
 let reconnectAttempt = 0
 let authRejected = false
 let onReconnect = null   // callback fired on every CONNECTED (initial + reconnect)
-let onAuthRejected = null
 const reconnectListeners = new Set()
 
 function clearReconnect() {
@@ -120,9 +118,6 @@ function openConnection() {
       console.warn('[AdminWS] STOMP ERROR:', frame.body)
       if (AUTH_REJECTION_PATTERN.test(frame.body || '')) {
         authRejected = true
-        if (TOKEN_REJECTION_PATTERN.test(frame.body || '') && typeof onAuthRejected === 'function') {
-          onAuthRejected(frame.body || '')
-        }
       }
       ws.close()
     }
@@ -151,17 +146,12 @@ export function disconnectAdminWs() {
   clearReconnect()
   getToken = null
   onReconnect = null
-  onAuthRejected = null
   reconnectListeners.clear()
   if (ws) { ws.close(); ws = null }
 }
 
 export function setWsReconnectCallback(fn) {
   onReconnect = fn
-}
-
-export function setWsAuthRejectedCallback(fn) {
-  onAuthRejected = typeof fn === 'function' ? fn : null
 }
 
 export function registerAdminWsReconnectListener(listener) {
