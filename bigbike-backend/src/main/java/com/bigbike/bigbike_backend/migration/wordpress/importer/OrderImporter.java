@@ -84,8 +84,7 @@ public class OrderImporter implements DomainImporter {
                 entity.setLegacyId(mo.sourceId());
                 entity.setOrderNumber(mo.orderNumber());
                 entity.setOrderKey(mo.orderKey());
-                entity.setStatus(mo.status() != null ? mo.status() : "PENDING_PAYMENT");
-                entity.setPaymentStatus(mo.paymentStatus() != null ? mo.paymentStatus() : "UNPAID");
+                entity.setStatus(normalizeOrderStatus(mo.status(), mo.completedAt() != null));
                 entity.setCurrency(mo.currency() != null ? mo.currency() : "VND");
                 entity.setCustomerEmail(mo.billingEmail());
                 entity.setCustomerPhone(mo.billingPhone());
@@ -269,6 +268,18 @@ public class OrderImporter implements DomainImporter {
         if (payment.paidAt() != null) entity.setPaidAt(payment.paidAt().toInstant(ZoneOffset.UTC));
         entity.setUpdatedAt(Instant.now());
         paymentRepo.save(entity);
+    }
+
+    private String normalizeOrderStatus(String rawStatus, boolean hasCompletedAt) {
+        if (rawStatus == null || rawStatus.isBlank()) return "PENDING";
+        return switch (rawStatus.trim().toUpperCase()) {
+            case "PENDING", "PENDING_PAYMENT" -> "PENDING";
+            case "ON_HOLD", "PROCESSING" -> "PROCESSING";
+            case "SHIPPING", "SHIPPED" -> hasCompletedAt ? "COMPLETED" : "SHIPPING";
+            case "COMPLETED" -> "COMPLETED";
+            case "CANCELLED", "FAILED", "REFUNDED" -> "CANCELLED";
+            default -> "PENDING";
+        };
     }
 
     private BigDecimal safe(BigDecimal v) {

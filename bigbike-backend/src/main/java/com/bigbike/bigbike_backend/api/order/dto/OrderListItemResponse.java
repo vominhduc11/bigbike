@@ -9,7 +9,6 @@ public record OrderListItemResponse(
         UUID id,
         String orderNumber,
         String status,
-        String paymentStatus,
         BigDecimal totalAmount,
         String currency,
         Instant placedAt,

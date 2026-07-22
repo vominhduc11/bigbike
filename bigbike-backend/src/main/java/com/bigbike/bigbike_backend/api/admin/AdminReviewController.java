@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.api.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.UpdateReviewStatusRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.review.AdminReviewSummaryResponse;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
@@ -45,11 +46,18 @@ public class AdminReviewController extends AdminControllerSupport {
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) @Min(1) @Max(5) Integer rating,
             @RequestParam(defaultValue = "vi") String lang,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "reviews.read");
-        return apiResponseFactory.list(adminReviewService.listReviews(page, size, q, status, lang), request);
+        return apiResponseFactory.list(adminReviewService.listReviews(page, size, q, status, rating, lang), request);
+    }
+
+    @GetMapping("/summary")
+    public ApiDataResponse<AdminReviewSummaryResponse> reviewSummary(HttpServletRequest request) {
+        devAdminAuthService.requirePermission(request, "reviews.read");
+        return apiResponseFactory.data(adminReviewService.getSummary(), request);
     }
 
     @GetMapping("/{id}")

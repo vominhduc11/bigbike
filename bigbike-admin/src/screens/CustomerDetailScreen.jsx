@@ -9,7 +9,7 @@ import { DetailSection } from '../components/DetailSection'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
-import { fetchCustomerDetail, mapValidationErrors, updateCustomer, updateCustomerStatus } from '../lib/adminApi'
+import { fetchCustomerDetail, mapValidationErrors, removeCustomerAvatar, updateCustomer, updateCustomerStatus } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -49,6 +49,24 @@ const SEGMENT_BADGE_CLASSES = {
   REGULAR:  'text-success bg-success-bg',
   NEW:      'text-warning bg-warning-bg',
   INACTIVE: 'text-muted-foreground bg-surface-muted',
+}
+
+// Ảnh đại diện khách hàng: có avatarUrl thì hiện ảnh tròn; không thì hiện chữ cái
+// đầu trên nền trung tính (đây là công cụ nội bộ, không phải bề mặt thương hiệu
+// khách hàng nên không dùng đỏ brand như trên web).
+function CustomerAvatar({ avatarUrl, name }) {
+  const initial = (name || '?').trim().charAt(0).toUpperCase() || '?'
+  if (avatarUrl) {
+    return <img src={avatarUrl} alt="" className="size-12 shrink-0 rounded-full object-cover" />
+  }
+  return (
+    <span
+      aria-hidden="true"
+      className="flex size-12 shrink-0 items-center justify-center rounded-full bg-secondary text-lg font-semibold text-muted-foreground"
+    >
+      {initial}
+    </span>
+  )
 }
 
 function SegmentBadge({ segment }) {
@@ -163,6 +181,29 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
     }
   }
 
+  async function handleRemoveAvatar() {
+    const ok = await showConfirm(
+      t('customers.detail.avatarRemoveConfirmBody', {
+        defaultValue: 'Xoá ảnh đại diện của khách hàng này? Khách sẽ cần tự tải ảnh mới nếu muốn.',
+      }),
+      t('customers.detail.avatarRemoveConfirmTitle', { defaultValue: 'Xoá ảnh đại diện' }),
+      { variant: 'danger', confirmLabel: t('customers.detail.avatarRemoveConfirmOk', { defaultValue: 'Xoá ảnh' }) },
+    )
+    if (!ok) return
+    setSaving(true)
+    try {
+      const r = await removeCustomerAvatar(customerId)
+      setState((p) => ({ ...p, customer: r.item }))
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
+      queryClient.invalidateQueries({ queryKey: ['customer-summary'] })
+      toast.success(t('customers.detail.avatarRemoved', { defaultValue: 'Đã xoá ảnh đại diện.' }))
+    } catch (err) {
+      toast.error(err.message || t('common.error'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
   function handleEditOpen(customer) {
     const initial = {
       displayName: customer.displayName || customer.fullName || '',
@@ -230,12 +271,20 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
   return (
     <div>
       <div className="bb-screen-header">
-        <div className="bb-screen-title">
-          <p className="bb-screen-eyebrow">{t('customers.detail.eyebrow')}</p>
-          <h1>{formatText(customer.fullName)}</h1>
-          <p className="bb-muted">{formatText(customer.email)}</p>
+        <div className="flex items-center gap-4">
+          <CustomerAvatar avatarUrl={customer.avatarUrl} name={customer.fullName} />
+          <div className="bb-screen-title">
+            <p className="bb-screen-eyebrow">{t('customers.detail.eyebrow')}</p>
+            <h1>{formatText(customer.fullName)}</h1>
+            <p className="bb-muted">{formatText(customer.email)}</p>
+          </div>
         </div>
         <div className="bb-screen-actions">
+          {customer.avatarUrl && (
+            <Button variant="outline" onClick={handleRemoveAvatar} disabled={!canUpdate || saving}>
+              {t('customers.detail.removeAvatar', { defaultValue: 'Xoá ảnh đại diện' })}
+            </Button>
+          )}
           <Button variant="outline" onClick={() => navigate(`/admin/customers${readListQuery()}`)}>
             {t('customers.detail.backToList')}
           </Button>

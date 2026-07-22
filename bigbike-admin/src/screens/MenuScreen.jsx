@@ -23,6 +23,7 @@ import {
   updateMenuItem,
 } from '../lib/adminApi'
 import { useContentLang } from '../lib/contentLang'
+import { queryKeys } from '../lib/queryKeys'
 import { showConfirm } from '../lib/confirm'
 import { formatText } from '../lib/formatters'
 import { useSaveShortcut } from '@/lib/useSaveShortcut'
@@ -124,7 +125,7 @@ export function MenuScreen({ canUpdate }) {
   // Danh mục có sẵn cho picker "Chọn danh mục có sẵn" trong ItemForm. Luôn dùng
   // cây 'vi' (giống ô "Mục cha") để không mất option khi UI content-lang đang EN.
   const { data: categoriesResult, isError: categoriesIsError } = useQuery({
-    queryKey: ['categories', 'tree', 'vi'],
+    queryKey: queryKeys.categoriesTree('vi'),
     queryFn: () => fetchCategoryTree('vi'),
     staleTime: 5 * 60 * 1000,
   })

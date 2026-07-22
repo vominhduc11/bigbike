@@ -625,10 +625,7 @@ export function normalizeRedirect(input) {
 }
 
 export const ORDER_STATUS_VALUES = [
-  'PENDING', 'ON_HOLD', 'PROCESSING', 'COMPLETED', 'CANCELLED', 'FAILED',
-]
-export const PAYMENT_STATUS_VALUES = [
-  'UNPAID', 'PAID', 'CANCELLED',
+  'PENDING', 'PROCESSING', 'SHIPPING', 'COMPLETED', 'CANCELLED',
 ]
 
 function toTrimmedStringLocal(value) {
@@ -642,9 +639,6 @@ function toIntegerLocal(value, fallback = 0) {
 
 export function normalizeOrderStatus(value) {
   return ORDER_STATUS_VALUES.includes(value) ? value : 'UNKNOWN'
-}
-export function normalizePaymentStatus(value) {
-  return PAYMENT_STATUS_VALUES.includes(value) ? value : 'UNKNOWN'
 }
 
 function normalizeOrderItem(input) {
@@ -660,6 +654,7 @@ function normalizeOrderItem(input) {
     lineSubtotal: toIntegerLocal(s.lineSubtotal, 0),
     lineDiscount: toIntegerLocal(s.lineDiscount, 0),
     lineTotal: toIntegerLocal(s.lineTotal, 0),
+    productThumbnailUrl: toTrimmedStringLocal(s.productThumbnailUrl) || undefined,
   }
 }
 
@@ -726,8 +721,6 @@ export function normalizeOrder(input) {
     customerName,
     customerNote: toTrimmedStringLocal(s.customerNote) || undefined,
     orderStatus: normalizeOrderStatus(s.status ?? s.orderStatus),
-    paymentStatus: normalizePaymentStatus(s.paymentStatus),
-    fulfillmentStatus: toTrimmedStringLocal(s.fulfillmentStatus) || undefined,
     fulfillmentType: toTrimmedStringLocal(s.fulfillmentType) || 'DELIVERY',
     trackingNumber: toTrimmedStringLocal(s.trackingNumber) || undefined,
     shippingCarrier: toTrimmedStringLocal(s.shippingCarrier) || undefined,
@@ -780,6 +773,7 @@ export function normalizeCustomer(input) {
     firstName: toTrimmedStringLocal(s.firstName) || undefined,
     lastName: toTrimmedStringLocal(s.lastName) || undefined,
     phone: toTrimmedStringLocal(s.phone) || undefined,
+    avatarUrl: resolveDisplayUrl(toTrimmedStringLocal(s.avatarUrl)) || undefined,
     status: normalizeCustomerStatus(s.status),
     emailVerifiedAt: toTrimmedStringLocal(s.emailVerifiedAt) || undefined,
     phoneVerifiedAt: toTrimmedStringLocal(s.phoneVerifiedAt) || undefined,

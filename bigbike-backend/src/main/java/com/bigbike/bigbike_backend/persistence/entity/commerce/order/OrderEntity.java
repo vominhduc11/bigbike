@@ -46,12 +46,6 @@ public class OrderEntity {
     @Column(nullable = false, length = 50)
     private String status;
 
-    @Column(name = "payment_status", nullable = false, length = 50)
-    private String paymentStatus;
-
-    @Column(name = "fulfillment_status", length = 50)
-    private String fulfillmentStatus;
-
     @Column(name = "tracking_number", length = 200)
     private String trackingNumber;
 

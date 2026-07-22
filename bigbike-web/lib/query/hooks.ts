@@ -73,7 +73,7 @@ export function useAddresses(options: CustomerQueryOptions = {}) {
 // ── Orders ──────────────────────────────────────────────────────────────────
 
 // Trạng thái đơn không còn đổi nữa → ngừng polling để khỏi gọi API vô ích.
-const ORDER_TERMINAL_STATUSES = new Set(["COMPLETED", "CANCELLED", "FAILED"]);
+const ORDER_TERMINAL_STATUSES = new Set(["COMPLETED", "CANCELLED"]);
 // Khách theo dõi đơn đang chạy → làm mới trạng thái mỗi 15s (admin đổi trạng thái
 // theo nhịp thao tác tay nên 15s là đủ; cần dưới-giây thật thì chuyển sang SSE).
 const ORDER_POLL_INTERVAL_MS = 15_000;

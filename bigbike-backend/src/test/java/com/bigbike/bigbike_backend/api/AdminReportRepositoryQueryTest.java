@@ -294,11 +294,10 @@ class AdminReportRepositoryQueryTest {
         return c;
     }
 
-    private OrderEntity order(String status, String paymentStatus, String totalAmount, Instant placedAt) {
+    private OrderEntity order(String status, String ignoredPaymentRecordStatus, String totalAmount, Instant placedAt) {
         OrderEntity o = new OrderEntity();
         o.setOrderNumber("TC-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12));
         o.setStatus(status);
-        o.setPaymentStatus(paymentStatus);
         o.setTotalAmount(new BigDecimal(totalAmount));
         o.setPaidAmount(new BigDecimal(totalAmount));
         o.setPlacedAt(placedAt);

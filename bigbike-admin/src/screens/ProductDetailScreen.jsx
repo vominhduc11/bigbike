@@ -22,6 +22,7 @@ import { clearNavGuard } from '@/lib/navigationGuard'
 import { recordRecentItem } from '../lib/useRecentItems'
 import { formatDateTime } from '../lib/formatters'
 import { useContentLang, overlayEnNames } from '../lib/contentLang'
+import { queryKeys } from '../lib/queryKeys'
 import { createProductSchema, zodErrors, normalizeVariantToken, isColorAttributeName } from '../lib/schemas'
 import { Screen, ScreenHeader, StickyActionBar, Tabs } from '../components/layout'
 import { StatePanel } from '../components/StatePanel'
@@ -203,23 +204,23 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   // Lấy danh sách 'vi' đầy đủ; ở EN nạp thêm danh sách 'en' để phủ tên Anh khi có.
   const isEn = contentLang === 'en'
   const { data: categoriesResultVi, isError: categoriesLoadError } = useQuery({
-    queryKey: ['categories', 'tree', 'vi'],
+    queryKey: queryKeys.categoriesTree('vi'),
     queryFn: () => fetchCategoryTree('vi'),
     staleTime: 5 * 60 * 1000,
   })
   const { data: categoriesResultEn } = useQuery({
-    queryKey: ['categories', 'tree', 'en'],
+    queryKey: queryKeys.categoriesTree('en'),
     queryFn: () => fetchCategoryTree('en'),
     enabled: isEn,
     staleTime: 5 * 60 * 1000,
   })
   const { data: brandsResultVi } = useQuery({
-    queryKey: ['brands-all', 'vi'],
+    queryKey: queryKeys.brandsAll('vi'),
     queryFn: () => fetchBrands({ pageSize: 100, lang: 'vi' }),
     staleTime: 5 * 60 * 1000,
   })
   const { data: brandsResultEn } = useQuery({
-    queryKey: ['brands-all', 'en'],
+    queryKey: queryKeys.brandsAll('en'),
     queryFn: () => fetchBrands({ pageSize: 100, lang: 'en' }),
     enabled: isEn,
     staleTime: 5 * 60 * 1000,
@@ -235,7 +236,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   // Editable "Phân công" banner text (role names + task lists). Read-only here
   // (products.read); SUPER_ADMIN edits it in Cài đặt → Phân công sản phẩm.
   const { data: assignmentConfig } = useQuery({
-    queryKey: ['product-assignment'],
+    queryKey: queryKeys.productAssignment(),
     queryFn: () => fetchProductAssignment(),
     staleTime: 5 * 60 * 1000,
   })

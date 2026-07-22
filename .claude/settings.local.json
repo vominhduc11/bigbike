@@ -219,7 +219,10 @@
       "Bash(dd if=\"e:/Project/bigbike/bigbike_vn__2026_04_17/files/wp-content/cache/page_enhanced/bigbike.vn/_index_slash_ssl.html\" bs=1 skip=41800 count=15000)",
       "Bash(dd if=\"e:/Project/bigbike/bigbike_vn__2026_04_17/files/wp-content/cache/page_enhanced/bigbike.vn/_index_slash_ssl.html\" bs=1 skip=41500 count=50000)",
       "Read(//tmp/**)",
-      "Bash(dd if=\"e:/Project/bigbike/bigbike_vn__2026_04_17/files/wp-content/cache/page_enhanced/bigbike.vn/_index_slash_ssl.html\" bs=1 skip=41500 count=80000)"
+      "Bash(dd if=\"e:/Project/bigbike/bigbike_vn__2026_04_17/files/wp-content/cache/page_enhanced/bigbike.vn/_index_slash_ssl.html\" bs=1 skip=41500 count=80000)",
+      "Read(//e/Project/bigbike/bigbike-backend/src/main/resources/db/migration/**)",
+      "Bash(sed -E 's/^V\\([0-9]+\\)__.*/\\\\1 &/')",
+      "Bash(sort -n -k1)"
     ],
     "additionalDirectories": [
       "e:\\Project\\bigbike\\bigbike_vn__2026_04_17\\files\\wp-content\\cache\\page_enhanced\\bigbike.vn"

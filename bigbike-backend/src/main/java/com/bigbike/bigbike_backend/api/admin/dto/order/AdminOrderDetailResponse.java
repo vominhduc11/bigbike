@@ -14,8 +14,6 @@ public record AdminOrderDetailResponse(
         String orderNumber,
         String orderKey,
         String status,
-        String paymentStatus,
-        String fulfillmentStatus,
         String fulfillmentType,
         String trackingNumber,
         String shippingCarrier,

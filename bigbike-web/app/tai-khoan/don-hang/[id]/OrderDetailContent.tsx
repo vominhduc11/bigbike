@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { AccountSectionHeading } from "@/components/account/AccountNav";
 import { Button } from "@/components/ui/button";
 import { useCancelOrder, useOrder } from "@/lib/query/hooks";
-import { formatAddress, formatVnd, fulfillmentStatusLabelWithT, orderStatusLabelWithT, paymentMethodLabelWithT, safeText } from "@/lib/utils/format";
+import { formatAddress, formatVnd, orderStatusLabelWithT, paymentMethodLabelWithT, safeText } from "@/lib/utils/format";
 import { isCustomerCancellable } from "@/lib/utils/orders";
 import { useLocalDate } from "@/components/i18n/LocalDate";
 import { toOrderHistoryPath } from "@/lib/utils/routes";
@@ -80,13 +80,6 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
           status: orderStatusLabelWithT(order.status, t),
         })}
       </p>
-
-      {order.fulfillmentStatus && (
-        <p className="mb-5 text-a4-content text-muted-foreground">
-          <strong className="text-foreground">{t("fulfillmentLabel")}:</strong>{" "}
-          {fulfillmentStatusLabelWithT(order.fulfillmentStatus, t)}
-        </p>
-      )}
 
       <h2 className={cn(sectionSubheading, "mb-3")}>{t("invoice")}</h2>
       <div className="overflow-x-auto">

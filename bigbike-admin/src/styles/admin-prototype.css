@@ -880,12 +880,13 @@
   grid-template-columns: 1.4fr 1fr;
   gap: 12px;
   margin-bottom: 16px;
-  align-items: stretch;
+  align-items: start;
 }
 .bb-status-tiles {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
+  align-items: start;
 }
 .bb-status-tiles--2 { grid-template-columns: repeat(2, 1fr); }
 .bb-status-tile {

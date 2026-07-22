@@ -10,8 +10,6 @@ public record OrderDetailResponse(
         String orderNumber,
         String orderKey,
         String status,
-        String paymentStatus,
-        String fulfillmentStatus,
         String customerEmail,
         String customerPhone,
         String customerNote,

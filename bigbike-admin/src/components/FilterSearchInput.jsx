@@ -12,13 +12,13 @@ import { cn } from '@/lib/utils'
  * @param {string} value
  * @param {(v:string)=>void} onChange - nhận giá trị thô (đã rút từ e.target.value).
  */
-export function FilterSearchInput({ value, onChange, placeholder, ariaLabel, autoFocus, className, wrapperClassName }) {
+export function FilterSearchInput({ value, onChange, placeholder, ariaLabel, autoFocus, className, wrapperClassName, disabled }) {
   return (
     <div className={cn('relative', wrapperClassName)}>
       <Search
         size={14}
         aria-hidden="true"
-        className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[var(--bb-text-muted)]"
+        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
       />
       <Input
         type="search"
@@ -27,10 +27,11 @@ export function FilterSearchInput({ value, onChange, placeholder, ariaLabel, aut
         placeholder={placeholder}
         aria-label={ariaLabel || placeholder}
         autoFocus={autoFocus}
+        disabled={disabled}
         className={cn(
-          'h-[30px] w-full pl-7 pr-2.5 text-xs shadow-none',
-          'rounded-[var(--admin-radius-xs)] border-[var(--bb-border-strong)] bg-[var(--bb-surface)] text-[var(--bb-text)]',
-          'focus-visible:border-[var(--bb-primary)] focus-visible:ring-[3px] focus-visible:ring-[var(--bb-primary-muted)] focus-visible:ring-offset-0',
+          'h-9 w-full pl-9 pr-3 text-sm shadow-none',
+          'rounded-sm border-border bg-background text-foreground',
+          'focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0',
           className
         )}
       />

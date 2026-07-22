@@ -28,6 +28,7 @@ import { useContentLang } from '../lib/contentLang'
 import { useDebounce } from '../lib/useDebounce'
 import { useRecentItems } from '../lib/useRecentItems'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
+import { queryKeys } from '../lib/queryKeys'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { PaginationControls } from '../components/PaginationControls'
@@ -85,8 +86,11 @@ export function ProductListScreen({ navigate, canUpdate }) {
 
   // Bộ lọc trên màn duyệt = strict-EN theo PRODUCT_RULE_004 (ẩn mục chưa dịch để
   // biết cái nào còn thiếu bản tiếng Anh) — khác với selector trong form (full).
-  const { data: brandsData } = useQuery({ queryKey: ['brands-all', contentLang], queryFn: () => fetchBrands({ pageSize: 100, sort: 'name:asc' }), staleTime: 5 * 60_000 })
-  const { data: categoriesData } = useQuery({ queryKey: ['categories', 'tree', contentLang], queryFn: () => fetchCategoryTree(), staleTime: 5 * 60_000 })
+  // Key riêng brandsFilter() (khác brandsAll() của ProductDetailScreen) vì params
+  // khác nhau (sort:'name:asc' vs không sort) — dùng chung key trước đây khiến 2
+  // màn hình đọc nhầm cache của nhau khi cùng contentLang.
+  const { data: brandsData } = useQuery({ queryKey: queryKeys.brandsFilter(contentLang), queryFn: () => fetchBrands({ pageSize: 100, sort: 'name:asc' }), staleTime: 5 * 60_000 })
+  const { data: categoriesData } = useQuery({ queryKey: queryKeys.categoriesTree(contentLang), queryFn: () => fetchCategoryTree(), staleTime: 5 * 60_000 })
   const brands = useMemo(() => brandsData?.items ?? [], [brandsData])
   const categories = useMemo(() => categoriesData?.items ?? [], [categoriesData])
   // Depth-annotated (parent-first, child indented) order for the category filter dropdown —

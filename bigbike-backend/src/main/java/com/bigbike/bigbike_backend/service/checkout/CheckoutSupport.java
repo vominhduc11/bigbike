@@ -34,6 +34,7 @@ final class CheckoutSupport {
     private CheckoutSupport() {}
 
     static final String PAYMENT_METHOD_COD = "COD";
+    static final String PAYMENT_METHOD_BANK_TRANSFER = "BANK_TRANSFER";
     private static final String ANONYMOUS_SCOPE = "anonymous";
 
     // ── Validation helpers ────────────────────────────────────────────────────
@@ -72,19 +73,19 @@ final class CheckoutSupport {
     }
 
     static void validatePaymentMethod(String method) {
-        // COD is the only storefront payment method (owner decision 2026-07-15, PAY_RULE_001):
-        // BACS is no longer offered for new orders. Omitted values are normalised to COD by
-        // normalizePaymentMethod; an explicit different value is rejected.
+        // Storefront customers choose COD or the new manual BANK_TRANSFER code (PAY_RULE_001).
+        // BACS remains legacy-only: it must not enter the old BACS auto-mark-paid path. Omitted
+        // values are normalised to COD by normalizePaymentMethod; other explicit values reject.
         if (method == null || method.isBlank()) {
             return;
         }
-        if (!PAYMENT_METHOD_COD.equals(method)) {
+        if (!Set.of(PAYMENT_METHOD_COD, PAYMENT_METHOD_BANK_TRANSFER).contains(method)) {
             throw ValidationException.fromField("paymentMethod", "UNSUPPORTED",
-                    "Payment method must be COD.");
+                    "Payment method must be COD or BANK_TRANSFER.");
         }
     }
 
-    /** Owner decision 2026-07-15: every new online order is stored as COD. */
+    /** Omitted checkout payment method preserves the established COD default. */
     static String normalizePaymentMethod(String method) {
         return (method == null || method.isBlank()) ? PAYMENT_METHOD_COD : method;
     }
@@ -225,7 +226,6 @@ final class CheckoutSupport {
                 order.getOrderNumber(),
                 order.getOrderKey(),
                 order.getStatus(),
-                order.getPaymentStatus(),
                 paymentMethod,
                 order.getSubtotalAmount(),
                 order.getShippingAmount(),

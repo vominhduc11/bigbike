@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.api.public_.dto.PublicProductReviewsResponse;
 import com.bigbike.bigbike_backend.api.public_.dto.SubmitReviewRequest;
+import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
 import com.bigbike.bigbike_backend.service.public_.PublicReviewService;
 import com.bigbike.bigbike_backend.service.security.SafeMediaAssetUrlPolicy;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,8 +15,11 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -67,7 +71,8 @@ public class PublicReviewController {
         }
         validatePhotos(body.photos());
         publicReviewService.submitReview(
-                productId, body.authorName(), body.authorEmail(), body.rating(), body.comment(), body.photos());
+                productId, body.authorName(), body.authorEmail(), body.rating(), body.comment(), body.photos(),
+                optionalCustomerId());
         return apiResponseFactory.data(Map.of("success", true), request);
     }
 
@@ -99,5 +104,19 @@ public class PublicReviewController {
                 safeMediaAssetUrlPolicy.validateImageUrlOrThrow(url, "photos");
             }
         }
+    }
+
+    /**
+     * Non-throwing read of the current customer's id, if any. Unlike {@code CustomerController}'s
+     * {@code requireCustomer()}, this endpoint stays permitAll \u2014 a logged-in customer is a bonus
+     * (lets the review link to their account so its avatar can be resolved later), not a requirement.
+     * {@code CustomerSessionFilter} already populates the SecurityContext from the bb_session cookie
+     * on this path even though it's public.
+     */
+    private UUID optionalCustomerId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null && auth.getPrincipal() instanceof CustomerPrincipal principal
+                ? principal.customerId()
+                : null;
     }
 }

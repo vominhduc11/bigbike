@@ -29,9 +29,9 @@ export function RecentItemsChips({ items, onSelect }) {
           size="sm"
           onClick={() => onSelect(item)}
           title={item.label}
-          className="h-8 rounded-full bg-surface-muted px-3 font-normal text-foreground"
+          className="min-h-11 rounded-full bg-surface-muted px-3 font-normal text-foreground"
         >
-          <span className="block max-w-[160px] truncate">{item.label}</span>
+          <span className="block max-w-40 truncate">{item.label}</span>
         </Button>
       ))}
     </div>

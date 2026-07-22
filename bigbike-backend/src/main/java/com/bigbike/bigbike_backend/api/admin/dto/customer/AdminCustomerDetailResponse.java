@@ -20,5 +20,6 @@ public record AdminCustomerDetailResponse(
         Instant createdAt,
         Instant updatedAt,
         List<AdminCustomerAddressResponse> addresses,
-        AdminCustomerOrderSummaryResponse orderSummary
+        AdminCustomerOrderSummaryResponse orderSummary,
+        String avatarUrl
 ) {}

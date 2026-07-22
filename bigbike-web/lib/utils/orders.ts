@@ -1,7 +1,7 @@
 import type { OrderDetail } from "@/lib/contracts/commerce";
 
 // Trạng thái đơn (chưa giao) mà khách được phép tự huỷ khi chưa thanh toán.
-const ACTIVE_CANCELLABLE_STATUSES = new Set(["PENDING", "ON_HOLD"]);
+const ACTIVE_CANCELLABLE_STATUSES = new Set(["PENDING", "PROCESSING"]);
 
 /**
  * Khách được tự huỷ đơn khi chưa thu tiền và hàng chưa rời kho.
@@ -9,14 +9,9 @@ const ACTIVE_CANCELLABLE_STATUSES = new Set(["PENDING", "ON_HOLD"]);
  * backend là nguồn chốt cuối; helper này chỉ để ẩn/hiện nút trên UI.
  */
 export function isCustomerCancellable(
-  order: Pick<OrderDetail, "status" | "paymentStatus" | "fulfillmentStatus">,
+  order: Pick<OrderDetail, "status">,
 ): boolean {
-  if (order.paymentStatus !== "UNPAID") return false;
-  if (ACTIVE_CANCELLABLE_STATUSES.has(order.status)) return true;
-  if (order.status === "PROCESSING") {
-    return order.fulfillmentStatus !== "SHIPPED" && order.fulfillmentStatus !== "DELIVERED";
-  }
-  return false;
+  return ACTIVE_CANCELLABLE_STATUSES.has(order.status);
 }
 
 /**

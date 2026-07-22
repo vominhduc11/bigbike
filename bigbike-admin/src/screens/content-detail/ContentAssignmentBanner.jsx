@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { AlertCircle, Loader2 } from 'lucide-react'
 import { fetchProductAssignment } from '../../lib/adminApi'
+import { queryKeys } from '../../lib/queryKeys'
 import { AssignmentBanner } from '@/components/AssignmentBanner'
 import { Button } from '@/components/ui/button'
 
@@ -13,7 +14,7 @@ import { Button } from '@/components/ui/button'
 export function ContentAssignmentBanner() {
   const { t } = useTranslation()
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['product-assignment'],
+    queryKey: queryKeys.productAssignment(),
     queryFn: fetchProductAssignment,
     staleTime: 5 * 60 * 1000,
   })

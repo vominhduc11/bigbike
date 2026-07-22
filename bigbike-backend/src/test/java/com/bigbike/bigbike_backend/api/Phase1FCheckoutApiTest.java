@@ -83,8 +83,8 @@ class Phase1FCheckoutApiTest {
         categoryRepo.save(cat);
     }
 
-    // GET /checkout/options removed 2026-07-15 (AUD-056): COD is the only storefront
-    // payment method (PAY_RULE_001) — nothing to choose, endpoint had no caller.
+    // GET /checkout/options remains removed: COD and BANK_TRANSFER are the two fixed storefront
+    // choices (PAY_RULE_001); the backend validates their enum through POST /checkout.
 
     @Test
     void checkoutOptions_endpointRemoved_isNoLongerPublic() throws Exception {
@@ -227,7 +227,7 @@ class Phase1FCheckoutApiTest {
                                  ",\"shippingAddress\":" + shipping + "}")
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("PROCESSING"));
+                .andExpect(jsonPath("$.data.status").value("PENDING"));
     }
 
     // ── Online orders carry no shipping fee (owner decision 2026-06-23) ────────
@@ -248,22 +248,39 @@ class Phase1FCheckoutApiTest {
     // ── Guest checkout happy paths (5) ────────────────────────────────────────
 
     @Test
-    void checkout_guestCOD_createsOrder_status_PROCESSING() throws Exception {
+    void checkout_guestCOD_createsOrder_status_PENDING() throws Exception {
         GuestSession session = newGuestSessionWithItem(4500000);
         mockMvc.perform(post("/api/v1/checkout")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("PROCESSING"))
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
                 .andExpect(jsonPath("$.data.paymentMethod").value("COD"))
                 .andExpect(jsonPath("$.data.orderNumber").isString())
                 .andExpect(jsonPath("$.data.orderKey").isString());
     }
 
     @Test
-    void checkout_explicitBACS_isRejected_codOnly() throws Exception {
-        // BACS is no longer offered for new orders (owner decision 2026-07-15, PAY_RULE_001).
+    void checkout_guestBankTransfer_createsOrder_status_PENDING() throws Exception {
+        GuestSession session = newGuestSessionWithItem(4500000);
+        MvcResult result = mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"BANK_TRANSFER\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
+                .andExpect(jsonPath("$.data.paymentMethod").value("BANK_TRANSFER"))
+                .andReturn();
+
+        String orderNumber = extractJsonValue(result.getResponse().getContentAsString(), "orderNumber");
+        assertThat(orderRepo.findByOrderNumber(orderNumber).orElseThrow().getPaymentMethod())
+                .isEqualTo("BANK_TRANSFER");
+    }
+
+    @Test
+    void checkout_explicitBACS_isRejected_asLegacyOnly() throws Exception {
+        // BACS remains reserved for imported legacy orders; new checkout uses BANK_TRANSFER.
         GuestSession session = newGuestSessionWithItem(2000000);
         mockMvc.perform(post("/api/v1/checkout")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -281,7 +298,7 @@ class Phase1FCheckoutApiTest {
                         .content("{\"billingAddress\":" + VALID_BILLING + "}")
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("PROCESSING"))
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
                 .andExpect(jsonPath("$.data.paymentMethod").value("COD"))
                 .andReturn();
         String orderNumber = extractJsonValue(result.getResponse().getContentAsString(), "orderNumber");
@@ -290,14 +307,14 @@ class Phase1FCheckoutApiTest {
     }
 
     @Test
-    void checkout_guestOrder_paymentStatus_UNPAID() throws Exception {
+    void checkout_guestOrder_startsAtPending() throws Exception {
         GuestSession session = newGuestSessionWithItem(1000000);
         mockMvc.perform(post("/api/v1/checkout")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.paymentStatus").value("UNPAID"));
+                .andExpect(jsonPath("$.data.status").value("PENDING"));
     }
 
     @Test
@@ -347,7 +364,7 @@ class Phase1FCheckoutApiTest {
                         .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("PROCESSING"))
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
                 .andExpect(jsonPath("$.data.orderNumber").isString());
     }
 
@@ -380,7 +397,7 @@ class Phase1FCheckoutApiTest {
                                  ",\"shippingAddress\":" + shipping + "}")
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("PROCESSING"));
+                .andExpect(jsonPath("$.data.status").value("PENDING"));
     }
 
     // (Quick-buy happy-path + validation tests removed 2026-07-15 — endpoint deleted,

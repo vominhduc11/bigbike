@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Avatar } from "@/components/ui/Avatar";
+import { useAuth } from "@/lib/auth/auth-store";
 import { StarRatingInput } from "./stars";
 import type { PhotoItem } from "./types";
 
@@ -28,6 +30,14 @@ export function WriteReviewForm({
 }) {
   const t = useTranslations("Product.reviews");
   const isDialog = variant === "dialog";
+  // Đã đăng nhập: lấy tên + email thẳng từ tài khoản, ẩn 2 ô nhập. Tên hiển thị khi đó
+  // luôn khớp với ảnh đại diện resolve theo phiên đăng nhập (REVIEW_RULE_006) — nếu để
+  // khách tự gõ, đánh giá có thể hiện tên này kèm ảnh của người khác.
+  const auth = useAuth();
+  const signedInProfile = auth.status === "authenticated" ? auth.profile : null;
+  const signedInName = signedInProfile
+    ? signedInProfile.displayName?.trim() || signedInProfile.email?.split("@")[0] || ""
+    : "";
   const [rating, setRating] = useState(0);
   const [authorName, setAuthorName] = useState("");
   const [authorEmail, setAuthorEmail] = useState("");
@@ -108,7 +118,9 @@ export function WriteReviewForm({
       setError(t("errorPickStars"));
       return;
     }
-    if (!authorName.trim()) {
+    const effectiveName = signedInProfile ? signedInName : authorName.trim();
+    const effectiveEmail = signedInProfile ? signedInProfile.email?.trim() : authorEmail.trim();
+    if (!effectiveName) {
       setError(t("errorPickName"));
       return;
     }
@@ -122,8 +134,8 @@ export function WriteReviewForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          authorName: authorName.trim(),
-          authorEmail: authorEmail.trim() || undefined,
+          authorName: effectiveName,
+          authorEmail: effectiveEmail || undefined,
           rating,
           comment: comment.trim(),
           photos: photoUrls,
@@ -183,40 +195,59 @@ export function WriteReviewForm({
             <StarRatingInput value={rating} onChange={setRating} />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label
-              htmlFor="review-author"
-              className="text-a5-meta font-semibold text-[var(--bb-text-primary)]"
-            >
-              {t("formName")} <span className="text-brand">*</span>
-            </Label>
-            <Input
-              id="review-author"
-              name="author"
-              type="text"
-              value={authorName}
-              onChange={(event) => setAuthorName(event.target.value)}
-              placeholder={t("formNamePlaceholder")}
-              maxLength={80}
-              required
-            />
-          </div>
+          {signedInProfile ? (
+            <div className="flex items-center gap-3 border border-border bg-muted px-4 py-3">
+              <Avatar
+                url={signedInProfile.avatarUrl}
+                name={signedInName}
+                size="sm"
+                variant="brand"
+              />
+              <div className="min-w-0">
+                <p className="m-0 text-a5-meta text-muted-foreground">{t("formSignedInAs")}</p>
+                <p className="m-0 truncate text-a4-content font-semibold text-[var(--bb-text-primary)]">
+                  {signedInName}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-col gap-1.5">
+                <Label
+                  htmlFor="review-author"
+                  className="text-a5-meta font-semibold text-[var(--bb-text-primary)]"
+                >
+                  {t("formName")} <span className="text-brand">*</span>
+                </Label>
+                <Input
+                  id="review-author"
+                  name="author"
+                  type="text"
+                  value={authorName}
+                  onChange={(event) => setAuthorName(event.target.value)}
+                  placeholder={t("formNamePlaceholder")}
+                  maxLength={80}
+                  required
+                />
+              </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label
-              htmlFor="review-email"
-              className="text-a5-meta font-semibold text-[var(--bb-text-primary)]"
-            >
-              {t("formEmail")}
-            </Label>
-            <Input
-              id="review-email"
-              name="email"
-              type="email"
-              value={authorEmail}
-              onChange={(event) => setAuthorEmail(event.target.value)}
-            />
-          </div>
+              <div className="flex flex-col gap-1.5">
+                <Label
+                  htmlFor="review-email"
+                  className="text-a5-meta font-semibold text-[var(--bb-text-primary)]"
+                >
+                  {t("formEmail")}
+                </Label>
+                <Input
+                  id="review-email"
+                  name="email"
+                  type="email"
+                  value={authorEmail}
+                  onChange={(event) => setAuthorEmail(event.target.value)}
+                />
+              </div>
+            </>
+          )}
 
           <div className="flex flex-col gap-1.5">
             <Label

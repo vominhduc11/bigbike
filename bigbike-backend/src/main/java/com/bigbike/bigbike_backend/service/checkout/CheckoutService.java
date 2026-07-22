@@ -50,10 +50,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 public class CheckoutService {
 
     private static final String CART_STATUS_CONVERTED = "CONVERTED";
-    private static final String ORDER_STATUS_PROCESSING = "PROCESSING";
-    private static final String PAYMENT_STATUS_UNPAID = "UNPAID";
     private static final String PAYMENT_RECORD_STATUS_PENDING = "PENDING";
-    private static final String FULFILLMENT_STATUS_UNFULFILLED = "UNFULFILLED";
     private static final String CURRENCY_VND = "VND";
     private static final String FLOW_CHECKOUT = "CHECKOUT";
 
@@ -179,11 +176,15 @@ public class CheckoutService {
 
         OrderEntity orderSnapshot = savedOrder;
         String paymentMethodSnapshot = paymentMethod;
-        var newOrderEvent = buildNewOrderEvent(savedOrder, paymentMethod);
+        // pushEvent() defers its own send until after-commit internally — call it directly
+        // (not nested in runAfterCommit below). Registering a new TransactionSynchronization
+        // from inside another synchronization's afterCommit() of the same transaction is
+        // silently dropped by Spring (verified against this project's Spring version), which
+        // was swallowing every NEW_ORDER admin push.
+        adminOrderWsService.pushEvent(buildNewOrderEvent(savedOrder, paymentMethod));
         runAfterCommit(() -> {
             orderNotificationService.sendOrderConfirmation(orderSnapshot, paymentMethodSnapshot);
             orderNotificationService.sendAdminNewOrderNotification(orderSnapshot, paymentMethodSnapshot);
-            adminOrderWsService.pushEvent(newOrderEvent);
         });
 
         attachOrderToReservation(idempotency, savedOrder.getId(), now);
@@ -298,20 +299,14 @@ public class CheckoutService {
             String userAgent,
             Instant now
     ) {
-        // Online orders always enter PROCESSING: COD is the only storefront payment method
-        // (owner decision 2026-07-15), so there is no "awaiting transfer" hold anymore.
-        String orderStatus = ORDER_STATUS_PROCESSING;
+        // All new orders enter the single lifecycle at PENDING and are confirmed by the shop.
+        String orderStatus = "PENDING";
 
         OrderEntity order = new OrderEntity();
         order.setOrderNumber(orderNumberGenerator.generate());
         order.setOrderKey(orderKeyGenerator.generate());
         order.setCustomerId(customerId);
         order.setStatus(orderStatus);
-        order.setPaymentStatus(PAYMENT_STATUS_UNPAID);
-        // Web orders always ship — initialise the delivery lifecycle
-        // so admin transitions and the COMPLETED-after-DELIVERED guard
-        // (AdminOrderService#validateBeforeComplete) operate on a known state.
-        order.setFulfillmentStatus(FULFILLMENT_STATUS_UNFULFILLED);
         order.setPaymentMethod(paymentMethod);
         order.setCustomerEmail(email);
         order.setCustomerPhone(phone);

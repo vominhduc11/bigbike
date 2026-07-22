@@ -6,6 +6,7 @@ import { StatePanel } from '../components/StatePanel'
 import { CollapsibleSection } from '../components/CollapsibleSection'
 import { StickyActionBar } from '../components/layout/StickyActionBar'
 import { fetchProductAssignment, batchUpdateSettings } from '../lib/adminApi'
+import { queryKeys } from '../lib/queryKeys'
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { generateId } from '@/lib/utils'
@@ -78,7 +79,7 @@ export function AssignmentRolesScreen({ canUpdate = false, embedded = false }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['product-assignment'],
+    queryKey: queryKeys.productAssignment(),
     queryFn: fetchProductAssignment,
   })
 
@@ -179,7 +180,7 @@ export function AssignmentRolesScreen({ canUpdate = false, embedded = false }) {
       if (updates.length > 0) {
         await batchUpdateSettings(updates)
       }
-      await queryClient.invalidateQueries({ queryKey: ['product-assignment'] })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.productAssignment() })
       setBaseline({ title, roles: roles.map((r) => ({ ...r })) })
       setAttemptedSave(false)
       setTouched(new Set())

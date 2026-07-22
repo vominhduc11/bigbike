@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.service.admin;
 
+import com.bigbike.bigbike_backend.api.admin.dto.review.AdminReviewSummaryResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -80,13 +81,14 @@ public class AdminReviewService {
     // — never hide untranslated records). Reviews are single-language user content, so
     // there is no server-side language filtering; the `lang` request param is accepted
     // for API compatibility but does not change the result set.
-    public PageResult<Map<String, Object>> listReviews(int page, int size, String q, String status, String lang) {
+    public PageResult<Map<String, Object>> listReviews(int page, int size, String q, String status, Integer rating, String lang) {
         int normalizedPage = Math.max(1, page);
         int normalizedSize = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
 
         // Empty string (not null) keeps repository filter logic predictable for blank status values.
         String statusFilter = (status != null && !status.isBlank()) ? status.toUpperCase(Locale.ROOT) : "";
         String qFilter = (q != null && !q.isBlank()) ? q : "";
+        int ratingFilter = rating == null ? 0 : rating;
 
         PageRequest pageRequest = PageRequest.of(
                 normalizedPage - 1,
@@ -94,7 +96,7 @@ public class AdminReviewService {
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
         // strictEnglish=false → show all reviews regardless of product translation state.
-        Page<ReviewEntity> dbPage = reviewRepo.findByFilters(statusFilter, qFilter, false, pageRequest);
+        Page<ReviewEntity> dbPage = reviewRepo.findByFilters(statusFilter, qFilter, ratingFilter, false, pageRequest);
 
         Map<String, ProductReviewMetadata> productMetadata = loadProductMetadata(dbPage.getContent());
         List<Map<String, Object>> mapped = dbPage.getContent().stream()
@@ -102,6 +104,40 @@ public class AdminReviewService {
                 .toList();
         return new PageResult<>(mapped, normalizedPage, normalizedSize,
                 dbPage.getTotalElements(), dbPage.getTotalPages());
+    }
+
+    /**
+     * Global moderation KPIs. This deliberately does not use the paginated list,
+     * because the admin list may be filtered or show only one page.
+     */
+    public AdminReviewSummaryResponse getSummary() {
+        ReviewJpaRepository.ReviewAggregate approved =
+                reviewRepo.findGlobalAggregateByStatus(APPROVED_STATUS);
+        BigDecimal average = approved.getAvgRating() == null
+                ? BigDecimal.ZERO.setScale(1)
+                : BigDecimal.valueOf(approved.getAvgRating()).setScale(1, RoundingMode.HALF_UP);
+
+        Map<String, Long> breakdown = new LinkedHashMap<>();
+        Map<Short, Long> grouped = reviewRepo.findGlobalRatingBreakdownByStatus(APPROVED_STATUS).stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number) row[0]).shortValue(),
+                        row -> ((Number) row[1]).longValue()
+                ));
+        for (short star = 1; star <= 5; star++) {
+            breakdown.put(String.valueOf(star), grouped.getOrDefault(star, 0L));
+        }
+
+        return new AdminReviewSummaryResponse(
+                new AdminReviewSummaryResponse.ApprovedSummary(
+                        average,
+                        approved.getTotalReviews() == null ? 0L : approved.getTotalReviews(),
+                        breakdown
+                ),
+                new AdminReviewSummaryResponse.PendingSummary(
+                        reviewRepo.countByStatus("PENDING"),
+                        reviewRepo.countByStatusAndRating("PENDING", (short) 1)
+                )
+        );
     }
 
     public Map<String, Object> getReview(Long id) {

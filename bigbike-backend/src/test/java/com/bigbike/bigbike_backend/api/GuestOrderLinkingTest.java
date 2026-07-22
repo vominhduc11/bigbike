@@ -439,7 +439,6 @@ class GuestOrderLinkingTest {
         o.setCustomerEmail(customerEmail.toLowerCase());
         o.setCustomerId(ownerId);
         o.setStatus("PROCESSING");
-        o.setPaymentStatus("UNPAID");
         o.setSubtotalAmount(BigDecimal.valueOf(500_000));
         o.setTotalAmount(BigDecimal.valueOf(500_000));
         o.setChannel("WEB");

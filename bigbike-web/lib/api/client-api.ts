@@ -402,6 +402,45 @@ export function updateCustomerProfile(payload: UpdateCustomerProfilePayload): Pr
   return clientRequest("PATCH", "/api/v1/customer/me", payload);
 }
 
+// Avatar upload/remove bypass clientRequest (JSON-only) — multipart body for upload,
+// no body for delete — but reuse the same CSRF/credentials/error-unwrap conventions.
+async function unwrapAvatarResponse(res: Response): Promise<CustomerProfile> {
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) {
+    const msg = (payload as { error?: { message?: string } } | null)?.error?.message ?? `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  if (payload === null) throw new Error("Máy chủ không trả về dữ liệu hợp lệ.");
+  return (payload as { data: CustomerProfile }).data;
+}
+
+export async function uploadCustomerAvatar(file: File): Promise<CustomerProfile> {
+  const form = new FormData();
+  form.set("file", file);
+  const headers: Record<string, string> = { Accept: "application/json" };
+  const csrf = getCsrfToken();
+  if (csrf) headers["X-CSRF-Token"] = csrf;
+  const res = await fetch(`${API_BASE_URL}/api/v1/customer/me/avatar`, {
+    method: "POST",
+    credentials: "include",
+    headers,
+    body: form,
+  });
+  return unwrapAvatarResponse(res);
+}
+
+export async function removeCustomerAvatar(): Promise<CustomerProfile> {
+  const headers: Record<string, string> = { Accept: "application/json" };
+  const csrf = getCsrfToken();
+  if (csrf) headers["X-CSRF-Token"] = csrf;
+  const res = await fetch(`${API_BASE_URL}/api/v1/customer/me/avatar`, {
+    method: "DELETE",
+    credentials: "include",
+    headers,
+  });
+  return unwrapAvatarResponse(res);
+}
+
 export function fetchMyAddresses(): Promise<CustomerAddress[]> {
   return clientRequest("GET", "/api/v1/customer/addresses");
 }

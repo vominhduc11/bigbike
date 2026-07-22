@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +36,7 @@ public class CustomerAuthService {
     private final PasswordService passwordService;
     private final EmailVerificationService emailVerificationService;
     private final GuestOrderLinkingService guestOrderLinkingService;
+    private final CustomerAvatarStorageService customerAvatarStorageService;
     private final AdminCustomerWsService adminCustomerWsService;
 
     @Transactional
@@ -274,10 +276,40 @@ public class CustomerAuthService {
 
     private CustomerSummary toSummary(CustomerEntity c) {
         return new CustomerSummary(c.getId(), c.getEmail(), c.getPhone(), c.getDisplayName(), c.getStatus(),
-                c.getGender(), c.getDob(), c.getEmailVerifiedAt() != null);
+                c.getGender(), c.getDob(), c.getEmailVerifiedAt() != null, c.getAvatarUrl());
     }
 
     public CustomerSessionResult createSessionForCustomer(CustomerEntity customer, String ipAddress, String userAgent) {
         return sessionService.createSession(customer.getId(), ipAddress, userAgent);
+    }
+
+    @Transactional
+    public CustomerSummary updateAvatar(UUID customerId, MultipartFile file) {
+        CustomerEntity customer = customerRepo.findById(customerId)
+                .orElseThrow(() -> new UnauthorizedException("Customer not found."));
+        String previousUrl = customer.getAvatarUrl();
+        String newUrl = customerAvatarStorageService.store(customerId, file);
+        customer.setAvatarUrl(newUrl);
+        customer.setUpdatedAt(Instant.now());
+        CustomerEntity saved = customerRepo.saveAndFlush(customer);
+        if (previousUrl != null) {
+            customerAvatarStorageService.deleteAvatar(previousUrl);
+        }
+        return toSummary(saved);
+    }
+
+    @Transactional
+    public CustomerSummary removeAvatar(UUID customerId) {
+        CustomerEntity customer = customerRepo.findById(customerId)
+                .orElseThrow(() -> new UnauthorizedException("Customer not found."));
+        String previousUrl = customer.getAvatarUrl();
+        if (previousUrl == null) {
+            return toSummary(customer);
+        }
+        customer.setAvatarUrl(null);
+        customer.setUpdatedAt(Instant.now());
+        CustomerEntity saved = customerRepo.saveAndFlush(customer);
+        customerAvatarStorageService.deleteAvatar(previousUrl);
+        return toSummary(saved);
     }
 }

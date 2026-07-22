@@ -5,8 +5,10 @@ import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.public_.dto.PublicProductReviewsResponse;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ReviewEntity;
+import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.service.ws.AdminReviewWsService;
 import com.bigbike.bigbike_backend.service.ws.ReviewWsEvent;
 import java.time.Instant;
@@ -16,7 +18,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -40,6 +44,7 @@ public class PublicReviewService {
 
     private final ReviewJpaRepository reviewRepo;
     private final ProductJpaRepository productRepo;
+    private final CustomerJpaRepository customerRepo;
     private final ReviewPhotoStorageService reviewPhotoStorageService;
     private final AdminReviewWsService adminReviewWsService;
 
@@ -76,8 +81,9 @@ public class PublicReviewService {
 
         Map<Integer, Long> ratingBreakdown = buildRatingBreakdown(productId);
 
+        Map<UUID, String> avatarsByCustomerId = fetchAvatarsByCustomerId(approvedPage.getContent());
         List<PublicProductReviewsResponse.ReviewItem> reviews = approvedPage.getContent().stream()
-                .map(this::toPublicReviewItem)
+                .map(r -> toPublicReviewItem(r, avatarsByCustomerId))
                 .toList();
 
         // totalItems/totalPages/hasNext follow the (possibly filtered) list so "load more"
@@ -105,7 +111,7 @@ public class PublicReviewService {
     @Transactional
     public void submitReview(
             String productId, String authorName, String authorEmail, int rating, String comment,
-            List<String> photos) {
+            List<String> photos, UUID customerId) {
         productRepo.findById(productId)
                 .orElseThrow(() -> new NotFoundException("S\u1ea3n ph\u1ea9m kh\u00f4ng t\u1ed3n t\u1ea1i."));
 
@@ -144,6 +150,9 @@ public class PublicReviewService {
         entity.setStatus("PENDING");
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
+        if (customerId != null) {
+            entity.setCustomerId(customerId);
+        }
 
         ReviewEntity saved = reviewRepo.save(entity);
         adminReviewWsService.pushEvent(new ReviewWsEvent(
@@ -218,13 +227,32 @@ public class PublicReviewService {
         return Math.round(avgRating * 10.0) / 10.0;
     }
 
-    private PublicProductReviewsResponse.ReviewItem toPublicReviewItem(ReviewEntity review) {
+    /** Batch-fetches avatar URLs for every distinct linked customerId on the page \u2014 avoids an N+1 lookup. */
+    private Map<UUID, String> fetchAvatarsByCustomerId(List<ReviewEntity> reviews) {
+        List<UUID> customerIds = reviews.stream()
+                .map(ReviewEntity::getCustomerId)
+                .filter(id -> id != null)
+                .distinct()
+                .toList();
+        if (customerIds.isEmpty()) {
+            return Map.of();
+        }
+        return customerRepo.findAllById(customerIds).stream()
+                .collect(Collectors.toMap(CustomerEntity::getId, c -> c.getAvatarUrl() != null ? c.getAvatarUrl() : ""));
+    }
+
+    private PublicProductReviewsResponse.ReviewItem toPublicReviewItem(
+            ReviewEntity review, Map<UUID, String> avatarsByCustomerId) {
+        String avatarUrl = review.getCustomerId() != null
+                ? avatarsByCustomerId.get(review.getCustomerId())
+                : null;
         return new PublicProductReviewsResponse.ReviewItem(
                 review.getId(),
                 review.getAuthorName() != null ? review.getAuthorName() : "\u1ea8n danh",
                 review.getRating(),
                 review.getBody() != null ? review.getBody() : "",
                 review.getPhotos() != null ? review.getPhotos() : List.of(),
-                review.getCreatedAt() != null ? review.getCreatedAt().toString() : "");
+                review.getCreatedAt() != null ? review.getCreatedAt().toString() : "",
+                (avatarUrl != null && !avatarUrl.isBlank()) ? avatarUrl : null);
     }
 }

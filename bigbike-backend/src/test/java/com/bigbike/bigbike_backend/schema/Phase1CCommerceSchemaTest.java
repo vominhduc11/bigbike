@@ -81,7 +81,6 @@ class Phase1CCommerceSchemaTest {
         o.setOrderNumber("ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         o.setOrderKey("wc_order_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16));
         o.setStatus("PENDING");
-        o.setPaymentStatus("UNPAID");
         o.setCreatedAt(Instant.now());
         o.setUpdatedAt(Instant.now());
         return orderRepo.save(o);
@@ -140,7 +139,7 @@ class Phase1CCommerceSchemaTest {
 
         Optional<OrderEntity> found = orderRepo.findByOrderKey(key);
         assertThat(found).isPresent();
-        assertThat(found.get().getPaymentStatus()).isEqualTo("UNPAID");
+        assertThat(found.get().getStatus()).isEqualTo("PENDING");
     }
 
     @Test
@@ -299,7 +298,6 @@ class Phase1CCommerceSchemaTest {
         OrderEntity order = new OrderEntity();
         order.setOrderNumber("GUEST-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         order.setStatus("PENDING");
-        order.setPaymentStatus("UNPAID");
         order.setCustomerPhone("0987654321");
         order.setCustomerEmail("guest@example.com");
         // customerId intentionally null — guest order

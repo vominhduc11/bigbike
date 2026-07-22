@@ -46,11 +46,11 @@ File này dùng làm nền cho:
 | Shop Manager | Internal user | Quản lý bán hàng/vận hành shop: products, orders, customers, reviews. | Admin portal selected business modules. | `CONFIRMED_FROM_CODE` for role mapping; UI behavior `NEEDS_VERIFICATION` | `AdminRolePermissions.java` |
 | Editor | Internal user | Quản lý content/media/menu/slider, SEO redirects và đọc catalog. | Admin content/media/menu/slider/redirects modules. | `CONFIRMED_FROM_CODE` for role mapping; UI behavior `NEEDS_VERIFICATION` | `AdminRolePermissions.java`, `V211__reduce_default_roles.sql` |
 | Staff | Internal user | Role nghiệp vụ chung để gọi nhân viên vận hành; repo không có role exact `STAFF`. | Admin modules depending assigned role. | `INFERRED_FROM_STRUCTURE` | Business docs/admin scope; exact technical role absent in `AdminRolePermissions.java` |
-| System | System actor | Tự động validate, tạo order/payment/shipping, gửi notification, audit, websocket event. (Không trừ/hoàn kho — availability là cờ boolean admin tự bật/tắt, V261.) | Backend services/internal workflows. | `CONFIRMED_FROM_CODE` | `CheckoutService`, `AdminOrderService`, `AdminOrderWsService` |
+| System | System actor | Tự động validate, tạo order/payment/shipping data, gửi notification, audit, websocket event. (Không trừ/hoàn kho — availability là cờ boolean admin tự bật/tắt, V261.) | Backend services/internal workflows. | `CONFIRMED_FROM_CODE` | `CheckoutService`, `AdminOrderService`, `AdminOrderWsService` |
 | Email Service | Third-party/system actor | Gửi transactional email cho order/admin notifications. | Backend notification/email integration. | `CONFIRMED_FROM_CODE` for code path; runtime `NEEDS_VERIFICATION` | `OrderNotificationService`, `bigbike-backend/pom.xml`, `docker-compose.yaml` |
 | Media Storage / MinIO | Third-party/system actor | Lưu file/media object. | Media upload/storage backend. | `CONFIRMED_FROM_CODE` | `AdminMediaController`, `MinioConfig`, `MinioProperties`, `docker-compose.yaml` |
-| Payment Provider | Third-party actor | Tự động cập nhật payment qua webhook/provider nếu có. | Payment integration. | `NOT_FOUND_IN_REPO` | No payment webhook/provider evidence found in audited files. |
-| Shipping Provider | Third-party actor | Tạo vận đơn/tracking với carrier nếu có. | Shipping/fulfillment integration. | `NOT_FOUND_IN_REPO` | Shipping admin module đã gỡ; không có carrier-specific controller/service. |
+| Payment Provider | Third-party actor | Tự động ghi nhận payment event qua webhook/provider nếu có. | Payment integration. | `NOT_FOUND_IN_REPO` | No payment webhook/provider evidence found in audited files. |
+| Shipping Provider | Third-party actor | Tạo vận đơn/tracking với carrier nếu có. | Shipping integration. | `NOT_FOUND_IN_REPO` | Shipping admin module đã gỡ; không có carrier-specific controller/service. |
 | Analytics / Observability Service | Third-party/system actor | Tracking/frontend analytics/errors. | Web analytics/Sentry/GTM references. | `INFERRED_FROM_STRUCTURE` | `bigbike-web/package.json`, `bigbike-web/app/page.tsx`, `docker-compose.yaml` |
 | Support Agent | Internal user | Hỗ trợ khách hàng/order issues. | Potentially admin customers/orders. | `NEEDS_VERIFICATION` | No explicit `SUPPORT` role found. |
 | Warehouse / Inventory Staff | Internal user | Quản lý kho/tồn/stock movement. | Inventory module. | `NEEDS_VERIFICATION` | Inventory module exists, no explicit warehouse role found. |
@@ -252,21 +252,21 @@ Admin default role has broad business access to read/update many admin modules. 
 
 | Field | Value |
 |---|---|
-| Purpose | Would update payment status automatically through provider callback/webhook. |
-| System Interaction | Not confirmed. New storefront payment is internal/manual COD only; legacy BACS orders remain readable and manually reconcilable. |
+| Purpose | Would record payment events automatically through a provider callback/webhook. |
+| System Interaction | Not confirmed. New storefront payment is internal/manual `COD` or `BANK_TRANSFER`; legacy BACS orders remain readable and manually reconcilable. |
 | Related Processes | Payment Handling, Order Management. |
 | Status | `NOT_FOUND_IN_REPO` |
 | Evidence | No payment webhook/provider controller/service found in audited evidence. |
 
 #### Needs Verification
 
-- Whether any future payment provider is planned outside this repo. Current storefront contract is COD-only.
+- Whether any future payment provider is planned outside this repo. Current storefront contract is manual `COD`/`BANK_TRANSFER` only.
 
 ### Actor: Shipping Provider
 
 | Field | Value |
 |---|---|
-| Purpose | Would create waybill/tracking and update shipping status through carrier integration. |
+| Purpose | Would create waybill/tracking and update shipping metadata through carrier integration. |
 | System Interaction | Not confirmed. Shop arranges fulfillment manually; there is no shipping-method/fee configuration and delivery is free to the customer. |
 | Related Processes | Shipping/Fulfillment, Order Management. |
 | Status | `NOT_FOUND_IN_REPO` |
@@ -462,7 +462,7 @@ Production auth status:
 5. `SUPER_ADMIN` guardrails exist in admin user service, but UI confirmation/destructive-action safeguards need verification.
 6. Custom role creation/edit/delete exists; role governance (system roles non-deletable, `SUPER_ADMIN` immutable, custom-only deletion) is now documented in `PERMISSION_MATRIX.md` → Role Governance and section 12 above.
 7. Customer role is confirmed, including returns creation/list/detail, but return eligibility rules need deeper audit in `CustomerReturnService`.
-8. Payment provider actor is not confirmed. Current storefront payment flow is internal/manual COD only; BACS survives only on legacy orders.
+8. Payment provider actor is not confirmed. Current storefront payment flow is internal/manual `COD`/`BANK_TRANSFER`; BACS survives only on legacy orders.
 9. Shipping provider actor is not confirmed. Current fulfillment is arranged manually, with no shipping-method choice or fee.
 10. Email service code paths exist, but production SMTP deliverability was not runtime-tested.
 11. Media storage/MinIO exists, but CDN/public media delivery runtime behavior needs deployment verification.

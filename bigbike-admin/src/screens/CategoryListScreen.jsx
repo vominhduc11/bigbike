@@ -33,6 +33,7 @@ import { useContentLang } from '../lib/contentLang'
 import { useDebounce } from '../lib/useDebounce'
 import { useRecentItems } from '../lib/useRecentItems'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
+import { queryKeys } from '../lib/queryKeys'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -129,7 +130,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     error: treeError,
     refetch: refetchTree,
   } = useQuery({
-    queryKey: ['categories', 'tree', contentLang],
+    queryKey: queryKeys.categoriesTree(contentLang),
     queryFn: () => fetchCategoryTree(),
   })
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight, X as XIcon, Music, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -18,6 +18,8 @@ export function MediaPreviewLightbox({ media, items, index, onClose, onNavigate 
   useDialogA11y(dialogRef, { onClose })
   // Khoá scroll nền khi lightbox mở.
   useBodyScrollLock()
+  const [loadedImageUrl, setLoadedImageUrl] = useState('')
+  const [errorImageUrl, setErrorImageUrl] = useState('')
 
   // Resolve current item: prefer items[index] if both provided
   const current = (Array.isArray(items) && typeof index === 'number') ? items[index] : media
@@ -42,7 +44,6 @@ export function MediaPreviewLightbox({ media, items, index, onClose, onNavigate 
   const isVideo = current.mimeType?.startsWith('video/')
   const isAudio = current.mimeType?.startsWith('audio/')
   const filename = (current.filename ?? current.publicUrl ?? '').split('/').pop()
-
   const canPrev = hasNav && index > 0
   const canNext = hasNav && index < total - 1
 
@@ -51,11 +52,11 @@ export function MediaPreviewLightbox({ media, items, index, onClose, onNavigate 
       ref={dialogRef}
       tabIndex={-1}
       onClick={onClose}
-      className="fixed inset-0 z-[var(--admin-z-modal)] bg-black/90 flex flex-col items-center justify-center p-8 outline-none"
+      className="fixed inset-0 z-modal flex flex-col items-center justify-center bg-black/90 p-8 outline-none"
     >
       {/* Close button */}
       <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label={t('common.close')}
-        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/15 text-white hover:bg-white/25 hover:text-white z-[2]">
+        className="absolute right-4 top-4 z-10 h-11 w-11 rounded-full bg-white/15 text-white hover:bg-white/25 hover:text-white">
         <XIcon size={22} />
       </Button>
 
@@ -72,7 +73,7 @@ export function MediaPreviewLightbox({ media, items, index, onClose, onNavigate 
           onClick={(e) => { e.stopPropagation(); if (canPrev) onNavigate(index - 1) }}
           disabled={!canPrev}
           aria-label={t('media.previous')}
-          className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/15 text-white hover:bg-white/25 hover:text-white z-[2]">
+          className="absolute left-4 top-1/2 z-10 h-12 w-12 -translate-y-1/2 rounded-full bg-white/15 text-white hover:bg-white/25 hover:text-white">
           <ChevronLeft size={28} />
         </Button>
       )}
@@ -83,24 +84,38 @@ export function MediaPreviewLightbox({ media, items, index, onClose, onNavigate 
           onClick={(e) => { e.stopPropagation(); if (canNext) onNavigate(index + 1) }}
           disabled={!canNext}
           aria-label={t('media.next')}
-          className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/15 text-white hover:bg-white/25 hover:text-white z-[2]">
+          className="absolute right-4 top-1/2 z-10 h-12 w-12 -translate-y-1/2 rounded-full bg-white/15 text-white hover:bg-white/25 hover:text-white">
           <ChevronRight size={28} />
         </Button>
       )}
 
       {/* Content */}
       <div onClick={(e) => e.stopPropagation()}
-        className="max-w-[90vw] max-h-[80vh] flex items-center justify-center">
+        className="flex max-h-screen max-w-full items-center justify-center">
         {isImage && current.publicUrl && (
-          <img src={current.publicUrl} alt={current.altText || filename}
-            className="max-w-[90vw] max-h-[80vh] object-contain rounded-xs" />
+          errorImageUrl === current.publicUrl ? (
+            <div role="alert" className="rounded-md bg-surface px-6 py-8 text-center text-sm text-danger">
+              {t('media.imageLoadError', { defaultValue: 'Không thể tải ảnh này.' })}
+            </div>
+          ) : (
+            <>
+              {loadedImageUrl !== current.publicUrl ? <span className="absolute text-sm text-white/80">{t('media.imageLoading', { defaultValue: 'Đang tải ảnh…' })}</span> : null}
+              <img
+                src={current.publicUrl}
+                alt={current.altText || filename}
+                onLoad={() => setLoadedImageUrl(current.publicUrl)}
+                onError={() => setErrorImageUrl(current.publicUrl)}
+                className={loadedImageUrl === current.publicUrl ? 'max-h-screen max-w-full rounded-xs object-contain' : 'max-h-screen max-w-full rounded-xs object-contain opacity-0'}
+              />
+            </>
+          )
         )}
         {isVideo && current.publicUrl && (
           <video src={current.publicUrl} controls
-            className="max-w-[90vw] max-h-[80vh] rounded-xs bg-black" />
+            className="max-h-screen max-w-full rounded-xs bg-black" />
         )}
         {isAudio && current.publicUrl && (
-          <div className="bg-surface p-4 sm:p-8 rounded-md w-[min(320px,90vw)] text-foreground">
+            <div className="w-full max-w-md rounded-md bg-surface p-4 text-foreground sm:p-8">
             <div className="flex justify-center mb-3"><Music size={64} /></div>
             <p className="m-0 mb-4 font-semibold text-center break-all">
               {filename}
@@ -117,7 +132,7 @@ export function MediaPreviewLightbox({ media, items, index, onClose, onNavigate 
         )}
       </div>
 
-      <p className="mt-4 text-white/85 text-sm max-w-[90vw] text-center break-all">
+      <p className="mt-4 max-w-full break-all text-sm text-center text-white/85">
         {filename}
       </p>
 

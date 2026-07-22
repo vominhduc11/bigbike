@@ -1,0 +1,80 @@
+- generic [ref=e2]:
+  - generic [ref=e40]:
+    - link "Bỏ qua tới nội dung" [ref=e41] [cursor=pointer]:
+      - /url: "#bb-main-content"
+    - complementary "Thanh điều hướng" [ref=e42]:
+      - generic [ref=e43]:
+        - generic [ref=e44]: BB
+        - generic [ref=e45]:
+          - generic [ref=e46]: BigBike
+          - generic [ref=e47]: Admin
+      - navigation "Điều hướng chính" [ref=e48]:
+        - group "Bán hàng" [ref=e49]:
+          - link "Tổng quan" [ref=e51] [cursor=pointer]:
+            - /url: /admin/dashboard
+          - link "Đơn hàng 388 mục cần xử lý" [ref=e58] [cursor=pointer]:
+            - /url: /admin/orders
+            - generic [ref=e63]: Đơn hàng
+            - generic "388 mục cần xử lý" [ref=e64]: 99+
+          - link "Khách hàng" [ref=e65] [cursor=pointer]:
+            - /url: /admin/customers
+          - link "Đánh giá" [ref=e72] [cursor=pointer]:
+            - /url: /admin/reviews
+        - group "Sản phẩm" [ref=e76]:
+          - link "Sản phẩm" [ref=e78] [cursor=pointer]:
+            - /url: /admin/products
+          - link "Sản phẩm nổi bật" [ref=e84] [cursor=pointer]:
+            - /url: /admin/featured-products
+          - link "Danh mục" [ref=e88] [cursor=pointer]:
+            - /url: /admin/categories
+          - link "Thương hiệu" [ref=e93] [cursor=pointer]:
+            - /url: /admin/brands
+        - group "Nội dung & Marketing" [ref=e98]:
+          - link "Tin tức" [ref=e100] [cursor=pointer]:
+            - /url: /admin/content
+          - link "Banner" [ref=e105] [cursor=pointer]:
+            - /url: /admin/sliders
+          - link "Video trang chủ" [ref=e108] [cursor=pointer]:
+            - /url: /admin/home-videos
+          - link "Highlights trang chủ" [ref=e111] [cursor=pointer]:
+            - /url: /admin/home-highlights
+          - link "Chuyển hướng" [ref=e118] [cursor=pointer]:
+            - /url: /admin/redirects
+          - link "Menu" [ref=e123] [cursor=pointer]:
+            - /url: /admin/menus
+          - link "Thư viện" [ref=e126] [cursor=pointer]:
+            - /url: /admin/media
+        - group "Báo cáo" [ref=e132]:
+          - link "Báo cáo" [ref=e134] [cursor=pointer]:
+            - /url: /admin/reports
+        - group "Hệ thống" [ref=e137]:
+          - link "Cài đặt" [ref=e139] [cursor=pointer]:
+            - /url: /admin/settings
+          - link "Quản trị viên" [ref=e144] [cursor=pointer]:
+            - /url: /admin/admin-users
+          - link "Phân quyền" [ref=e148] [cursor=pointer]:
+            - /url: /admin/roles
+          - link "Nhật ký" [ref=e153] [cursor=pointer]:
+            - /url: /admin/audit-logs
+      - strong [ref=e158]: Super Admin
+    - generic [ref=e159]:
+      - banner [ref=e160]:
+        - button "Mở tìm kiếm nhanh" [ref=e161]:
+          - generic [ref=e165]: Tìm đơn hàng, sản phẩm, khách hàng...
+          - generic [ref=e166]: ⌘K
+        - button "Chuyển sang chế độ tối" [ref=e167] [cursor=pointer]
+        - group "Ngôn ngữ nội dung" [ref=e170]:
+          - button "VI" [pressed] [ref=e171] [cursor=pointer]
+          - button "EN" [ref=e172] [cursor=pointer]
+        - button "Thông báo" [ref=e173] [cursor=pointer]
+        - button "Super Admin Chủ hệ thống" [ref=e178] [cursor=pointer]:
+          - generic [ref=e179]: AS
+          - generic [ref=e180]:
+            - generic [ref=e181]: Super Admin
+            - generic [ref=e182]: Chủ hệ thống
+      - main [ref=e185]:
+        - status [ref=e186]:
+          - heading "Không tìm thấy trang" [level=2] [ref=e189]
+          - paragraph [ref=e190]: Đường dẫn admin này không tồn tại.
+          - button "Đến module khả dụng" [ref=e191] [cursor=pointer]
+  - region "Notifications alt+T"

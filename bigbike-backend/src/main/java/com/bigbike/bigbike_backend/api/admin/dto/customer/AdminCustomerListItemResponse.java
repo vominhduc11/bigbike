@@ -15,5 +15,6 @@ public record AdminCustomerListItemResponse(
         Instant lastLoginAt,
         Instant createdAt,
         int orderCount,
-        BigDecimal totalSpent
+        BigDecimal totalSpent,
+        String avatarUrl
 ) {}

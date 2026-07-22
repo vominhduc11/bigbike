@@ -202,7 +202,7 @@ The `orders.channel`, `orders.fulfillment_type`, and `orders.source` columns **s
 
 Status: `CONFIRMED_FROM_CODE`
 
-### Payment method compatibility — nullable for legacy rows, COD for new orders
+### Payment method compatibility — nullable for legacy rows, two manual methods for new orders
 
 `orders.payment_method` and `payments.payment_method` are nullable at the schema/entity layer so
 legacy orders created under the former manual-reconciliation model can still be loaded and shown.
@@ -210,8 +210,9 @@ Migration `V284__allow_null_payment_method.sql` removed the `NOT NULL` constrain
 `payments.payment_method`; `PaymentEntity` must mirror that nullability.
 
 This storage compatibility does **not** make the current checkout contract optional: every new
-storefront checkout order is normalized to `COD`, and any other explicit method is
-rejected. `BACS`/`null` are read compatibility only. `CONFIRMED_FROM_CODE`
+storefront checkout order uses `COD` or `BANK_TRANSFER`; an omitted request value is normalized to
+`COD`, and any other explicit method is rejected. `BANK_TRANSFER` is the new manual-transfer code
+and must not reuse legacy `BACS`; `BACS`/`null` are read compatibility only. `CONFIRMED_FROM_CODE`
 
 ### Admin invite (email-based admin user onboarding)
 
@@ -232,7 +233,7 @@ Status: `CONFIRMED_FROM_CODE`
 
 ### Return / Refund data — removed (2026-06-23)
 
-> **Removed (2026-06-23).** The Return (RMA) and Refund data model — `returns` / `return_items` / `return_history` tables, the `refund_amount` / `refund_reason` / `refunded_at` columns on `orders` & `payments`, and the `REFUNDED` value on order status & payment_status — was dropped. Old REFUNDED orders were migrated to CANCELLED.
+> **Removed (2026-06-23).** The Return (RMA) and Refund data model — `returns` / `return_items` / `return_history` tables, the `refund_amount` / `refund_reason` / `refunded_at` columns on `orders` & `payments`, and the `REFUNDED` value on order status — was dropped. Old REFUNDED orders were migrated to CANCELLED.
 
 ## Inventory Model
 
@@ -1276,17 +1277,30 @@ Status: `CONFIRMED_FROM_CODE` — `CatalogFacets.java`, `CatalogReadService.comp
 |---|---|---|---|---|---|
 | `customer_addresses` | `email` | `VARCHAR(255)` | YES | `null` | Per-address contact email; backs the "Email" field on the address book popup |
 
+### customers — avatar_url (V346, owner decision 2026-07-21)
+
+| Table | Column | Type | Nullable | Default | Purpose |
+|---|---|---|---|---|---|
+| `customers` | `avatar_url` | `VARCHAR(500)` | YES | `null` | MinIO object URL (`/media/customers/{customerId}/...`) for the customer's own uploaded avatar. `null` = no avatar uploaded — storefront (account sidebar, header, reviews) and admin customer detail all render a generated circular initials badge in that case. A generated default badge is never itself stored as a MinIO object. |
+
+Only `CustomerAvatarStorageService.store(...)` (called from `POST /api/v1/customer/me/avatar`) ever writes a non-null value — no endpoint accepts an arbitrary client-supplied URL for this column (contrast with `reviews.photos`, which does accept client-supplied MinIO URLs from a separate upload step). Removal (self-service `DELETE /api/v1/customer/me/avatar` or admin `DELETE /api/v1/admin/customers/{id}/avatar`) nulls the column and best-effort deletes the underlying MinIO object.
+
+`reviews.customer_id` (pre-existing, previously always `null`) is now populated when the submitter had a valid session at submit time — see `BUSINESS_RULES.md` review rules and `API_CONTRACT.md`'s Public Reviews Contract. `authorAvatarUrl` on the public reviews read path is resolved by joining this column back to `customers.avatar_url` live at read time (no denormalized snapshot column on `reviews`).
+
+Evidence: `V346__add_customer_avatar_url.sql`, `CustomerEntity.java`, `CustomerAvatarStorageService.java`.
+
 ### Order line-item thumbnail — `productThumbnailUrl` (response-only, no DB column)
 
 `OrderLineItemResponse.productThumbnailUrl` (`String`, nullable) backs the product thumbnail
-in the customer order-detail view. It is **not** snapshotted on `order_line_items` — it is
-resolved read-time in `OrderReadService` by joining `order_line_items.product_pk` to
-`products.id` and reading the product's current `image_url`. Returns `null` when the product
-no longer exists. Rationale: unlike `productName` / `unitPrice` (which must stay historically
-fixed), the image is presentational, so showing the product's current image is acceptable and
-avoids a migration/backfill — including for orders imported from WordPress.
+in both the customer and admin order-detail views. Its value prefers the `image_url` snapshot
+stored on `order_line_items` at checkout (AUD-038, V340), so a later catalog image change does
+not alter the image shown for a new order. For legacy rows whose snapshot is `null` or blank,
+both read paths batch-resolve the current product `image_url` by `product_pk` in one query; this
+is a presentational fallback only and returns `null` when the product no longer exists or has no
+image. The shared resolver avoids an N+1 product lookup.
 
-Evidence: `OrderReadService.resolveProductThumbnails`, `ProductJpaRepository.findImageUrlsByIds`.
+Evidence: `CheckoutSupport`, `OrderLineItemThumbnailResolver`,
+`ProductJpaRepository.findImageUrlsByIds`.
 
 ### order_line_items — `product_variant_pk` (V158)
 
@@ -1348,10 +1362,10 @@ Partial unique index `ux_customers_oauth` on `(oauth_provider, oauth_subject)` w
 
 | Field | Computation | Purpose |
 |---|---|---|
-| `todayRevenue` | `SUM(totalAmount)` excluding CANCELLED/FAILED | Gross GMV placed today _(REFUNDED removed 2026-06-23)_ |
-| `todayPaidRevenue` | `SUM(paidAmount)` where `paymentStatus IN ('PAID')` | Actual cash collected today (PARTIALLY_PAID removed in V114) |
+| `todayRevenue` | `SUM(totalAmount)` excluding CANCELLED | Gross GMV placed today _(REFUNDED removed 2026-06-23, FAILED removed 2026-07-21)_ |
+| `todayPaidRevenue` | `SUM(totalAmount)` where `status = 'COMPLETED'` | Recognized revenue from completed orders; response name retained for compatibility |
 | `todayRevenuePct` | Percentage comparison between today's revenue and yesterday's revenue | Double percentage growth (null if yesterday has no data or zero revenue) |
-| `todayOrders` | Count of orders placed today excluding CANCELLED/FAILED | Volume of transactions today |
+| `todayOrders` | Count of orders placed today excluding CANCELLED | Volume of transactions today |
 | `todayOrdersDelta` | Difference in order count between today and yesterday | Trend in order volume |
 | `pendingOrders` | Count of orders with status `PENDING` | Active orders requiring admin action |
 | `activeProducts` | Count of products with publish status `PUBLISHED` | Active catalog size |
@@ -1416,9 +1430,9 @@ Evidence: `AdminCustomerService.java` line 48, `deriveSegment()` method
 
 | Field | Type | Description |
 |---|---|---|
-| `grossOrderValue` | `BigDecimal` | GMV: SUM(totalAmount) excl CANCELLED/FAILED _(REFUNDED removed 2026-06-23)_ |
-| `paidRevenue` | `BigDecimal` | SUM(paidAmount) where paymentStatus = PAID, excl CANCELLED orders (PARTIALLY_PAID removed in V114; REFUNDED removed 2026-06-23) |
-| `orderCount` | `int` | COUNT excl CANCELLED/FAILED |
+| `grossOrderValue` | `BigDecimal` | GMV: SUM(totalAmount) excl CANCELLED _(REFUNDED removed 2026-06-23, FAILED removed 2026-07-21)_ |
+| `paidRevenue` | `BigDecimal` | SUM(totalAmount) where status = COMPLETED; response name retained for compatibility |
+| `orderCount` | `int` | COUNT excl CANCELLED |
 | `avgOrderValue` | `BigDecimal` | grossOrderValue / orderCount; zero if orderCount = 0 |
 
 ### DailyRevenue item (dailyRevenue[] array)
@@ -1456,17 +1470,16 @@ Evidence: `AdminAnalyticsResponse.java`, `AdminReportService.java`, `OrderJpaRep
 The `GET /api/v1/admin/reports/orders/export` endpoint returns a CSV with the following columns:
 1. `order_number`
 2. `status`
-3. `payment_status`
-4. `customer_email`
-5. `customer_phone`
-6. `currency`
-7. `subtotal`
-8. `shipping`
-9. `total`
-10. `paid_amount`
-11. `placed_at`
-12. `paid_at`
-13. `completed_at`
+3. `customer_email`
+4. `customer_phone`
+5. `currency`
+6. `subtotal`
+7. `shipping`
+8. `total`
+9. `paid_amount`
+10. `placed_at`
+11. `paid_at`
+12. `completed_at`
 14. `cancelled_at`
 
 *(Note: the "discount" column was removed on 2026-07-04 since discounts are no longer supported)*

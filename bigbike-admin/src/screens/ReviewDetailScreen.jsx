@@ -1,39 +1,59 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { toast } from '@/lib/toast'
-import { recordRecentItem } from '@/lib/useRecentItems'
+import { Check, Copy, ExternalLink, Image as ImageIcon, Loader2, RefreshCw, Trash2, X } from 'lucide-react'
+import { Alert } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
 import { DetailSection } from '../components/DetailSection'
+import { MediaPreviewLightbox } from '../components/MediaPreviewLightbox'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
-import { MediaPreviewLightbox } from '../components/MediaPreviewLightbox'
+import { StatusBadge } from '../components/StatusBadge'
+import { Screen, ScreenHeader, StickyActionBar } from '../components/layout'
 import { showConfirm } from '../lib/confirm'
 import { deleteReview, fetchReviewDetail, updateReviewStatus } from '../lib/adminApi'
 import { resolveDisplayUrl } from '../lib/contracts'
 import { useContentLang } from '../lib/contentLang'
 import { formatDateTime, formatText } from '../lib/formatters'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { useQueryClient } from '@tanstack/react-query'
+import { recordRecentItem } from '../lib/useRecentItems'
+import { toast } from '@/lib/toast'
 
-const STATUS_VARIANTS = { APPROVED: 'success', PENDING: 'warning', SPAM: 'muted', TRASH: 'muted' }
-
-// T9: đọc lại query string (filter/trang) mà ReviewListScreen đã lưu trước khi
-// điều hướng sang trang chi tiết, để nút "Quay lại danh sách" không làm mất bộ lọc.
 function readListQuery() {
-  try {
-    return sessionStorage.getItem('reviews:listQuery') || ''
-  } catch {
-    return ''
-  }
+  try { return sessionStorage.getItem('reviews:listQuery') || '' } catch { return '' }
 }
 
-function ReviewStatusBadge({ review, t }) {
+function Stars({ rating }) {
+  const rounded = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)))
   return (
-    <Badge variant={STATUS_VARIANTS[review.status] ?? 'muted'}>
-      {t(`reviews.status${review.status.charAt(0) + review.status.slice(1).toLowerCase()}`, {
-        defaultValue: review.status,
-      })}
-    </Badge>
+    <span className="inline-flex gap-px" role="img" aria-label={`${rounded}/5`}>
+      {Array.from({ length: 5 }, (_, index) => <span key={index} aria-hidden="true" className={index < rounded ? 'text-warning' : 'text-muted-foreground'}>★</span>)}
+    </span>
+  )
+}
+
+function DetailRow({ label, children }) {
+  return (
+    <div className="grid gap-1 border-b border-border py-3 last:border-0 sm:grid-cols-2 sm:items-center sm:gap-4">
+      <dt className="text-sm font-semibold text-muted-foreground">{label}</dt>
+      <dd className="m-0 break-words text-sm text-foreground">{children}</dd>
+    </div>
+  )
+}
+
+function PhotoButton({ url, index, alt, onOpen, t }) {
+  const [state, setState] = useState('loading')
+  return (
+    <Button
+      variant="unstyled"
+      type="button"
+      onClick={onOpen}
+      aria-label={t('reviews.detail.openPhoto', { index: index + 1 })}
+      className="group relative block size-24 overflow-hidden rounded-sm border border-border bg-surface-muted p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:size-28"
+    >
+      {state === 'loading' ? <span className="absolute inset-0 flex items-center justify-center text-muted-foreground"><Loader2 size={18} className="animate-spin" /></span> : null}
+      {state === 'error' ? <span className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-2 text-center text-xs text-danger"><X size={18} />{t('reviews.detail.imageLoadError')}</span> : null}
+      <img src={resolveDisplayUrl(url)} alt={alt} loading="lazy" onLoad={() => setState('loaded')} onError={() => setState('error')} className={state === 'error' ? 'hidden' : 'size-full object-cover transition group-hover:scale-105'} />
+    </Button>
   )
 }
 
@@ -41,238 +61,174 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
   const queryClient = useQueryClient()
-  const [state, setState] = useState({ status: 'loading', item: null, warning: '' })
-  const [busy, setBusy] = useState(false)
-  // Theo dõi đúng nút đang chạy để chỉ nút được bấm hiện spinner (APPROVED/SPAM/DELETE).
+  const [state, setState] = useState({ status: 'loading', item: null, error: '', refreshing: false })
   const [pendingAction, setPendingAction] = useState(null)
   const [photoIndex, setPhotoIndex] = useState(null)
+  const [copyState, setCopyState] = useState('idle')
+  const [actionError, setActionError] = useState('')
 
-  const loadReview = useCallback(() => {
-    let active = true
-    fetchReviewDetail(reviewId)
-      .then((result) => {
-        if (!active) return
-        setState({
-          status: 'success',
-          item: result.item,
-          warning: '',
-        })
-      })
-      .catch((error) => {
-        if (!active) return
-        setState({ status: 'error', item: null, warning: '', error: error.message })
-      })
-    return () => { active = false }
+  const loadReview = useCallback(async ({ refresh = false } = {}) => {
+    setState((current) => ({ ...current, status: refresh ? current.status : 'loading', error: '', refreshing: refresh }))
+    try {
+      const result = await fetchReviewDetail(reviewId)
+      setState({ status: 'success', item: result.item, error: '', refreshing: false })
+    } catch (error) {
+      setState((current) => ({ status: refresh && current.item ? 'success' : 'error', item: refresh ? current.item : null, error: error.message, refreshing: false }))
+    }
   }, [reviewId])
 
-  useEffect(() => loadReview(), [loadReview])
+  useEffect(() => { loadReview(); return undefined }, [loadReview])
 
-  // O9: ghi lại đánh giá vừa xem để hiện trong widget "Vừa xem gần đây" ở danh sách.
   useEffect(() => {
-    if (state.item?.id) {
-      recordRecentItem('recent:reviews', {
-        id: state.item.id,
-        label: formatText(state.item.authorName, `#${state.item.id}`),
-      })
-    }
+    if (state.item?.id) recordRecentItem('recent:reviews', { id: state.item.id, label: formatText(state.item.authorName, `#${state.item.id}`) })
   }, [state.item?.id, state.item?.authorName])
 
   const handleStatusChange = useCallback(async (nextStatus) => {
-    if (busy) return
-    // Đánh dấu spam là hành động kiểm duyệt ẩn đánh giá khỏi khách → xác nhận trước.
+    if (pendingAction) return
     if (nextStatus === 'SPAM') {
       const confirmed = await showConfirm(
-        t('reviews.spamConfirm', { defaultValue: 'Đánh dấu đánh giá này là spam? Đánh giá sẽ không hiển thị cho khách.' }),
-        t('reviews.spamConfirmTitle', { defaultValue: 'Đánh dấu spam' }),
+        t('reviews.spamConfirmMany', { count: 1, defaultValue: 'Đánh dấu đánh giá này là spam? Đánh giá và ảnh sẽ không còn hiển thị công khai.' }),
+        t('reviews.spamConfirmTitle'),
+        { variant: 'danger', confirmLabel: t('reviews.spam') },
       )
       if (!confirmed) return
     }
-    setBusy(true)
+    setActionError('')
     setPendingAction(nextStatus)
     try {
       const result = await updateReviewStatus(reviewId, nextStatus)
-      setState((prev) => ({ ...prev, item: result.item }))
-      // Đồng bộ lại danh sách đánh giá để badge/bộ lọc cập nhật khi quay lại.
-      queryClient.invalidateQueries({ queryKey: ['reviews'] })
+      setState((current) => ({ ...current, item: result.item }))
+      await queryClient.invalidateQueries({ queryKey: ['reviews'] })
+      await queryClient.invalidateQueries({ queryKey: ['review-summary'] })
       toast.success(t('reviews.detail.statusUpdated'))
     } catch (error) {
-      toast.error(error.message || t('reviews.approveError'))
+      const message = error.message || t('reviews.approveError')
+      setActionError(message)
+      toast.error(message)
     } finally {
-      setBusy(false)
       setPendingAction(null)
     }
-  }, [busy, reviewId, t, queryClient])
+  }, [pendingAction, queryClient, reviewId, t])
 
   const handleDelete = useCallback(async () => {
-    if (busy) return
-    const confirmed = await showConfirm(t('reviews.deleteConfirm'), t('reviews.deleteConfirmTitle'))
+    if (pendingAction) return
+    const confirmed = await showConfirm(
+      t('reviews.deleteConfirmPermanent', { count: 1, defaultValue: 'Xóa vĩnh viễn đánh giá này? Không thể hoàn tác; đánh giá và ảnh đính kèm sẽ bị xóa.' }),
+      t('reviews.deleteConfirmTitle'),
+      { variant: 'danger', confirmLabel: t('reviews.deletePermanent'), cancelLabel: t('common.cancel') },
+    )
     if (!confirmed) return
-
-    setBusy(true)
+    setActionError('')
     setPendingAction('DELETE')
     try {
       await deleteReview(reviewId)
-      queryClient.invalidateQueries({ queryKey: ['reviews'] })
+      await queryClient.invalidateQueries({ queryKey: ['reviews'] })
+      await queryClient.invalidateQueries({ queryKey: ['review-summary'] })
       toast.success(t('reviews.detail.deleteSuccess'))
-      // Giữ nguyên bộ lọc/trang đã lưu khi quay lại danh sách sau khi xoá.
       navigate(`/admin/reviews${readListQuery()}`)
     } catch (error) {
-      toast.error(error.message || t('reviews.deleteError'))
+      const message = error.message || t('reviews.deleteError')
+      setActionError(message)
+      toast.error(message)
     } finally {
-      setBusy(false)
       setPendingAction(null)
     }
-  }, [busy, navigate, reviewId, t, queryClient])
+  }, [navigate, pendingAction, queryClient, reviewId, t])
 
-  if (state.status === 'loading') {
-    return <StatePanel tone="info" title={t('reviews.detail.loading')} description={t('common.pleaseWait')} />
-  }
+  const copyEmail = useCallback(async () => {
+    const email = state.item?.authorEmail
+    if (!email) return
+    try {
+      await navigator.clipboard.writeText(email)
+      setCopyState('copied')
+      window.setTimeout(() => setCopyState('idle'), 1600)
+    } catch {
+      setCopyState('error')
+    }
+  }, [state.item?.authorEmail])
 
-  if (state.status === 'error') {
-    return (
-      <StatePanel
-        tone="danger"
-        title={t('reviews.detail.error')}
-        description={state.error}
-        actionLabel={t('common.retry')}
-        onAction={() => { setState({ status: 'loading', item: null, warning: '' }); loadReview() }}
-      />
-    )
-  }
-
-  if (!state.item) {
-    return (
-      <StatePanel
-        tone="neutral"
-        title={t('reviews.detail.notFound')}
-        description={`ID: ${reviewId}`}
-        actionLabel={t('common.back')}
-        onAction={() => navigate('/admin/reviews')}
-      />
-    )
-  }
+  if (state.status === 'loading' && !state.item) return <Screen><StatePanel tone="info" title={t('reviews.detail.loading')} description={t('common.pleaseWait')} /></Screen>
+  if (state.status === 'error' && !state.item) return <Screen><StatePanel tone="danger" title={t('reviews.detail.error')} description={state.error} actionLabel={t('common.retry')} onAction={() => loadReview()} /></Screen>
+  if (!state.item) return <Screen><StatePanel tone="neutral" title={t('reviews.detail.notFound')} description={`ID: ${reviewId}`} actionLabel={t('common.back')} onAction={() => navigate('/admin/reviews')} /></Screen>
 
   const review = state.item
-  // Admin VI/EN switch: ở EN hiện tên SP tiếng Anh (backend trả kèm productNameEn).
-  const reviewProductName = contentLang === 'en'
-    ? (review.productNameEn || review.productName)
-    : review.productName
+  const productName = formatText(contentLang === 'en' ? (review.productNameEn || review.productName) : review.productName, t('reviews.unknownProduct'))
+  const authorName = formatText(review.authorName, t('reviews.unknownAuthor'))
+  const actionButtons = (
+    <div className="flex flex-wrap gap-2">
+      {canUpdate && review.status !== 'APPROVED' ? <Button type="button" variant="secondary" className="min-h-11" disabled={Boolean(pendingAction)} loading={pendingAction === 'APPROVED'} onClick={() => handleStatusChange('APPROVED')}><Check size={16} />{t('reviews.approve')}</Button> : null}
+      {canUpdate && review.status !== 'SPAM' ? <Button type="button" variant="outline" className="min-h-11" disabled={Boolean(pendingAction)} loading={pendingAction === 'SPAM'} onClick={() => handleStatusChange('SPAM')}><X size={16} />{t('reviews.spam')}</Button> : null}
+      {canUpdate ? <Button type="button" variant="danger" className="min-h-11" disabled={Boolean(pendingAction)} loading={pendingAction === 'DELETE'} onClick={handleDelete}><Trash2 size={16} />{t('reviews.deletePermanent')}</Button> : null}
+      {!canUpdate ? <span className="self-center text-sm text-muted-foreground">{t('reviews.detail.noActionPermission')}</span> : null}
+    </div>
+  )
 
   return (
-    <div>
-      <div className="bb-screen-header">
-        <div className="bb-screen-title">
-          <p className="bb-screen-eyebrow">{t('reviews.eyebrow')}</p>
-          <h1>{t('reviews.detail.title')}</h1>
-          <p className="bb-muted break-words">{formatText(reviewProductName, review.productId || t('reviews.unknownProduct'))}</p>
-        </div>
-        <div className="bb-screen-actions">
-          <Button variant="secondary" type="button" onClick={() => navigate(`/admin/reviews${readListQuery()}`)}>
-            {t('reviews.detail.backToList')}
-          </Button>
-        </div>
-      </div>
-
-      {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
-      {!canUpdate ? (
-        <ReadOnlyBanner warning={t('reviews.detail.readOnlyHint', { defaultValue: 'Bạn chỉ có quyền xem đánh giá. Liên hệ quản trị để được cấp quyền kiểm duyệt.' })} />
-      ) : null}
-
-      <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
-        <DetailSection title={t('reviews.detail.sectionReview')}>
-          <div className="grid gap-3">
-            <p><strong>{t('reviews.colAuthor')}</strong> {formatText(review.authorName, '(---)')}</p>
-            <p><strong>{t('reviews.detail.authorEmail')}</strong> {formatText(review.authorEmail, '(---)')}</p>
-            <p className="flex items-center gap-2">
-              <strong>{t('reviews.colRating')}</strong>
-              <span className="inline-flex gap-px" role="img" aria-label={`${t('reviews.colRating')}: ${review.rating}/5`}>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <span key={i} aria-hidden="true" style={{ color: i < Math.round(review.rating) ? 'var(--admin-color-rating-star)' : 'var(--admin-color-border-default)' }}>★</span>
-                ))}
-              </span>
-              <span>{review.rating}/5</span>
-            </p>
-            <p><strong>{t('reviews.colStatus')}</strong> <ReviewStatusBadge review={review} t={t} /></p>
-            <p><strong>{t('reviews.colDate')}</strong> {formatDateTime(review.createdAt)}</p>
-            <p><strong>{t('reviews.detail.updatedAt')}</strong> {formatDateTime(review.updatedAt)}</p>
+    <Screen>
+      <ScreenHeader
+        eyebrow={t('reviews.eyebrow')}
+        title={t('reviews.detail.title')}
+        description={productName}
+        badge={<StatusBadge type="review" status={review.status} />}
+        actions={(
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="secondary" className="min-h-11" onClick={() => navigate(`/admin/reviews${readListQuery()}`)}>{t('reviews.detail.backToList')}</Button>
+            <Button type="button" variant="ghost" className="min-h-11" onClick={() => loadReview({ refresh: true })} disabled={state.refreshing}><RefreshCw size={16} className={state.refreshing ? 'animate-spin' : ''} />{state.refreshing ? t('reviews.refreshing') : t('reviews.refresh')}</Button>
           </div>
-        </DetailSection>
+        )}
+      />
 
-        <DetailSection title={t('reviews.detail.sectionProduct')}>
-          <div className="grid gap-3">
-            <p><strong>{t('reviews.detail.productName')}</strong> {formatText(reviewProductName, t('reviews.unknownProduct'))}</p>
-            <p><strong>{t('reviews.detail.productSlug')}</strong> {formatText(review.productSlug, '(---)')}</p>
-            <p><strong>{t('reviews.detail.productId')}</strong> {formatText(review.productId, '(---)')}</p>
-            {review.productId ? (
-              <Button variant="secondary" type="button" onClick={() => navigate(`/admin/products/${review.productId}`)}>
-                {t('reviews.detail.openProduct')}
-              </Button>
-            ) : null}
-          </div>
-        </DetailSection>
+      {state.refreshing ? <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground" role="status"><Loader2 size={16} className="animate-spin" />{t('reviews.refreshing')}</div> : null}
+      {state.error && state.item ? <Alert tone="danger"><div className="flex flex-wrap items-center justify-between gap-3"><span>{state.error}</span><Button type="button" variant="ghost" className="min-h-11" onClick={() => loadReview({ refresh: true })}>{t('common.retry')}</Button></div></Alert> : null}
+      {actionError ? <Alert tone="danger">{actionError}</Alert> : null}
+      {!canUpdate ? <ReadOnlyBanner warning={t('reviews.detail.readOnlyHint')} /> : null}
 
-        <DetailSection title={t('reviews.detail.sectionContent')}>
-          <p className="m-0 whitespace-pre-wrap leading-relaxed break-words">
-            {formatText(review.body, '(---)')}
-          </p>
-        </DetailSection>
-
-        {review.photos?.length > 0 ? (
-          <DetailSection title={t('reviews.detail.sectionPhotos')}>
-            <div className="flex flex-wrap gap-2">
-              {review.photos.map((url, i) => (
-                <Button
-                  variant="unstyled"
-                  key={`${url}-${i}`}
-                  onClick={() => setPhotoIndex(i)}
-                  aria-label={t('reviews.detail.openPhoto', { index: i + 1 })}
-                  className="block size-20 overflow-hidden rounded-sm border border-border bg-surface-muted p-0 cursor-pointer"
-                >
-                  <img src={resolveDisplayUrl(url)} alt={t('reviews.detail.photoAlt', { index: i + 1 })} loading="lazy" className="size-full object-cover" />
-                </Button>
-              ))}
-            </div>
+      <div className="mb-6 grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 lg:col-span-2">
+          <DetailSection title={t('reviews.detail.sectionReview')}>
+            <dl className="m-0">
+              <DetailRow label={t('reviews.colStatus')}><StatusBadge type="review" status={review.status} /></DetailRow>
+              <DetailRow label={t('reviews.colRating')}><span className="inline-flex items-center gap-2"><Stars rating={review.rating} /><span>{review.rating}/5</span></span></DetailRow>
+              <DetailRow label={t('reviews.colAuthor')}><span className="font-semibold">{authorName}</span></DetailRow>
+              <DetailRow label={t('reviews.detail.authorEmail')}><span className="inline-flex flex-wrap items-center gap-2">{formatText(review.authorEmail, t('reviews.detail.emailMissing'))}{review.authorEmail ? <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={copyEmail}><Copy size={16} />{copyState === 'copied' ? t('reviews.detail.emailCopied') : t('reviews.detail.copyEmail')}</Button> : null}</span></DetailRow>
+              <DetailRow label={t('reviews.colDate')}>{formatDateTime(review.createdAt)}</DetailRow>
+              <DetailRow label={t('reviews.detail.updatedAt')}>{formatDateTime(review.updatedAt)}</DetailRow>
+            </dl>
+            {copyState === 'error' ? <p className="mt-3 mb-0 text-sm text-danger">{t('reviews.detail.emailCopyError')}</p> : null}
           </DetailSection>
-        ) : null}
 
-        <DetailSection title={t('reviews.detail.sectionActions')}>
-          <div className="flex gap-2 flex-wrap">
-            {canUpdate && review.status !== 'APPROVED' ? (
-              <Button variant="secondary" type="button" disabled={busy} loading={pendingAction === 'APPROVED'} onClick={() => handleStatusChange('APPROVED')}>
-                {t('reviews.approve')}
-              </Button>
-            ) : null}
-            {canUpdate && review.status !== 'SPAM' ? (
-              <Button variant="secondary" type="button" disabled={busy} loading={pendingAction === 'SPAM'} onClick={() => handleStatusChange('SPAM')}>
-                {t('reviews.spam')}
-              </Button>
-            ) : null}
-            {canUpdate ? (
-              <Button variant="danger" type="button" disabled={busy} loading={pendingAction === 'DELETE'} onClick={handleDelete}>
-                {t('common.delete')}
-              </Button>
-            ) : null}
-            {!canUpdate ? (
-              <p className="bb-muted text-sm m-0">
-                {t('reviews.detail.noActionPermission', { defaultValue: 'Bạn không có quyền kiểm duyệt đánh giá này.' })}
-              </p>
-            ) : null}
-          </div>
-        </DetailSection>
+          <DetailSection title={t('reviews.detail.sectionProduct')}>
+            <dl className="m-0">
+              <DetailRow label={t('reviews.detail.productName')}>{productName}</DetailRow>
+              <DetailRow label={t('reviews.detail.productSlug')}>{formatText(review.productSlug, t('reviews.detail.missingValue'))}</DetailRow>
+              <DetailRow label={t('reviews.detail.productId')}>{formatText(review.productId, t('reviews.detail.missingValue'))}</DetailRow>
+            </dl>
+            {review.productId ? <Button type="button" variant="secondary" className="mt-4 min-h-11" title={t('reviews.productLinkHint')} onClick={() => navigate(`/admin/products/${review.productId}`)}><ExternalLink size={16} />{t('reviews.detail.openProduct')}</Button> : null}
+          </DetailSection>
+
+          <DetailSection title={t('reviews.detail.sectionContent')}>
+            <p className="m-0 whitespace-pre-wrap break-words leading-relaxed">{formatText(review.body, t('reviews.contentMissing'))}</p>
+          </DetailSection>
+
+          <DetailSection title={t('reviews.detail.sectionPhotos')} description={t('reviews.detail.photoLimitHint')}>
+            {review.photos?.length ? <div className="flex flex-wrap gap-3">{review.photos.map((url, index) => <PhotoButton key={`${url}-${index}`} url={url} index={index} alt={t('reviews.detail.photoAlt', { index: index + 1, author: authorName, product: productName })} onOpen={() => setPhotoIndex(index)} t={t} />)}</div> : <div className="flex items-center gap-2 text-sm text-muted-foreground"><ImageIcon size={18} />{t('reviews.detail.noPhotos')}</div>}
+          </DetailSection>
+        </div>
+
+        <aside className="hidden h-fit lg:sticky lg:top-4 lg:block">
+          <DetailSection title={t('reviews.detail.sectionActions')} description={t('reviews.detail.permanentDeleteHint')}>
+            {actionButtons}
+          </DetailSection>
+        </aside>
       </div>
 
-      {photoIndex !== null && review.photos?.length > 0 ? (
-        <MediaPreviewLightbox
-          items={review.photos.map((url) => ({
-            publicUrl: resolveDisplayUrl(url),
-            mimeType: 'image/jpeg',
-            filename: typeof url === 'string' ? url.split('/').pop() : '',
-          }))}
-          index={photoIndex}
-          onClose={() => setPhotoIndex(null)}
-          onNavigate={setPhotoIndex}
-        />
-      ) : null}
-    </div>
+      <div className="lg:hidden">
+        <StickyActionBar ariaLabel={t('reviews.detail.sectionActions')} info={canUpdate ? t('reviews.detail.mobileActionHint') : t('reviews.detail.noActionPermission')}>
+          {actionButtons}
+        </StickyActionBar>
+      </div>
+
+      {photoIndex !== null && review.photos?.length ? <MediaPreviewLightbox items={review.photos.map((url, index) => ({ publicUrl: resolveDisplayUrl(url), mimeType: 'image/jpeg', filename: `review-${review.id}-${index + 1}`, altText: t('reviews.detail.photoAlt', { index: index + 1, author: authorName, product: productName }) }))} index={photoIndex} onClose={() => setPhotoIndex(null)} onNavigate={setPhotoIndex} /> : null}
+    </Screen>
   )
 }

@@ -12,7 +12,7 @@
 | Admin order push | admin | WebSocket `/ws` + `/topic/admin/orders` | `WebSocketConfig`, `AdminOrderWsService`, `OrderWsEvent` | no dedicated automated WS suite reopened in this pass | `CONFIRMED_FROM_CODE` |
 | Receipt-based receiving flow | none | none | dropped in V120 | none | `REMOVED` |
 | Dashboard revenue accuracy (gross vs paid) | admin | `AdminDashboardController` | `AdminDashboardService`, `OrderJpaRepository.sumPaidRevenueSince` | no dedicated suite | `CONFIRMED_FROM_CODE` (P-1 fix applied) |
-| External payment provider / webhook | none confirmed | none confirmed | none confirmed (new storefront orders use provider `INTERNAL` with fixed COD; BACS is legacy-order compatibility only) | none | `NOT_FOUND_IN_REPO` |
-| External shipping carrier | none confirmed | none confirmed | none confirmed (`fulfillmentStatus` field exposed on order detail; no carrier integration / waybill / tracking code) | none | `NOT_FOUND_IN_REPO` |
+| External payment provider / webhook | none confirmed | none confirmed | none confirmed (new storefront orders use provider `INTERNAL` with manual `COD`/`BANK_TRANSFER`; BACS is legacy-order compatibility only) | none | `NOT_FOUND_IN_REPO` |
+| External shipping carrier | none confirmed | none confirmed | none confirmed (manual tracking metadata only; no carrier integration / waybill) | none | `NOT_FOUND_IN_REPO` |
 | Invoice / e-invoice | none | none | none | none | `OUT_OF_SCOPE` (owner 2026-07-06 — không triển khai) |
 | Stock receiving workflow | none | none | receipt tables dropped in V120 (`V120__drop_stock_receipt_tables.sql`); inventory is now a boolean availability toggle (no receiving flow, V261) | none | `REMOVED` |

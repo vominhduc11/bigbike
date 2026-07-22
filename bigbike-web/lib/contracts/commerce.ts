@@ -46,8 +46,8 @@ export type Cart = {
 export type CheckoutPayload = {
   billingAddress: CheckoutAddress
   shippingAddress?: CheckoutAddress | null
-  // COD là phương thức duy nhất trên storefront (owner decision 2026-07-15, PAY_RULE_001) —
-  // checkout luôn gửi "COD"; backend từ chối giá trị khác.
+  // Storefront chọn COD hoặc BANK_TRANSFER; backend giữ COD mặc định khi field bị bỏ qua
+  // và từ chối mọi mã khác (PAY_RULE_001).
   paymentMethod?: string
   customerNote?: string
 }
@@ -66,7 +66,6 @@ export type OrderSummary = {
   orderNumber: string
   orderKey: string
   status: string
-  paymentStatus: string
   paymentMethod: string
   subtotalAmount: number
   shippingAmount: number
@@ -133,8 +132,6 @@ export type OrderDetail = {
   orderNumber: string
   orderKey: string | null
   status: string
-  paymentStatus: string
-  fulfillmentStatus: string
   customerEmail: string | null
   customerPhone: string | null
   customerNote: string | null
@@ -164,6 +161,7 @@ export type CustomerProfile = {
   gender?: string | null
   dob?: string | null
   emailVerified?: boolean
+  avatarUrl?: string | null
 }
 
 export type CustomerAuthData = {
@@ -181,7 +179,6 @@ export type OrderListItem = {
   id: string
   orderNumber: string
   status: string
-  paymentStatus: string
   totalAmount: number
   currency: string
   placedAt: string

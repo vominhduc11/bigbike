@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { BrandSummary, CategorySummary, GalleryMedia, Product, ProductCommitment, ProductPrice, ProductStockState, ProductVariant } from "@/lib/contracts/public";
 import { useCart } from "@/lib/cart-context";
 import { derivePricing } from "@/lib/pricing";
+import { queryKeys } from "@/lib/query/keys";
 import { formatVndNumber, safeText } from "@/lib/utils/format";
 import { collectAttributeNames, findColorPreviewVariant, findMatchingVariant } from "@/lib/utils/variant-match";
 import { ProductGallery } from "@/components/catalog/ProductGallery";
@@ -56,7 +57,7 @@ export function PurchaseSection({
   // liền mạch, KHÔNG layout-shift/skeleton; refetch khi quay lại tab.
   const { data: snapshot } = useQuery<ProductSnapshot>({
     // locale trong key → đổi ngôn ngữ refetch lại để tên màu/size đổi theo.
-    queryKey: ["product-snapshot", product.slug, locale],
+    queryKey: queryKeys.productSnapshot(product.slug, locale),
     queryFn: async () => {
       const res = await fetch(`/api/products/${product.slug}/snapshot/?lang=${locale}`);
       if (!res.ok) throw new Error("snapshot");

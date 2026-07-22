@@ -195,17 +195,9 @@ type TFn = (key: string) => string;
 /** Locale-aware variant of stockStateLabel. Pass t from useTranslations("Product"). */
 /** Locale-aware variant of orderStatusLabel. Pass t from useTranslations("Account.orders"). */
 export function orderStatusLabelWithT(status: string | null | undefined, t: TFn): string {
-  const known = ["PENDING", "ON_HOLD", "PROCESSING", "COMPLETED", "CANCELLED", "FAILED"];
+  const known = ["PENDING", "PROCESSING", "SHIPPING", "COMPLETED", "CANCELLED"];
   if (status && known.includes(status)) return t(`orderStatus.${status}`);
   return status ?? t("orderStatus.UNKNOWN");
-}
-
-/** Locale-aware variant of paymentStatusLabel. Pass t from useTranslations("Account.orders"). */
-/** Locale-aware label for fulfillment (giao hàng) status. Pass t from useTranslations("Account.orders"). */
-export function fulfillmentStatusLabelWithT(status: string | null | undefined, t: TFn): string {
-  const known = ["UNFULFILLED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"];
-  if (status && known.includes(status)) return t(`fulfillmentStatus.${status}`);
-  return status ?? t("fulfillmentStatus.UNKNOWN");
 }
 
 /** Locale-aware variant of paymentMethodLabel. Pass t from useTranslations("Checkout"). */
@@ -213,6 +205,7 @@ export function paymentMethodLabelWithT(method: string | null | undefined, t: TF
   const code = (method ?? "").trim().toUpperCase();
   switch (code) {
     case "COD": return t("paymentMethod.COD");
+    case "BANK_TRANSFER": return t("paymentMethod.BANK_TRANSFER");
     case "BACS": return t("paymentMethod.BACS");
     case "": return t("paymentMethod.EMPTY");
     default: return code;

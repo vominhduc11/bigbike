@@ -17,7 +17,6 @@ import com.bigbike.bigbike_backend.mapper.PaymentMapper;
 import com.bigbike.bigbike_backend.mapper.ShippingMapper;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineItemEntity;
-import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAddressJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
@@ -27,7 +26,6 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.Payme
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -50,7 +48,7 @@ public class OrderReadService {
 
     private final OrderJpaRepository orderRepo;
     private final OrderLineItemJpaRepository lineItemRepo;
-    private final ProductJpaRepository productRepo;
+    private final OrderLineItemThumbnailResolver thumbnailResolver;
     private final OrderAddressJpaRepository addressRepo;
     private final OrderShippingItemJpaRepository shippingItemRepo;
     private final OrderNoteJpaRepository noteRepo;
@@ -65,7 +63,7 @@ public class OrderReadService {
     // ── Customer orders list ──────────────────────────────────────────────────
 
     public PageResult<OrderListItemResponse> listCustomerOrders(
-            UUID customerId, int page, int size, String status, String paymentStatus
+            UUID customerId, int page, int size, String status
     ) {
         int normalizedPage = Math.max(1, page);
         int normalizedSize = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
@@ -75,9 +73,6 @@ public class OrderReadService {
             predicates.add(cb.equal(root.get("customerId"), customerId));
             if (status != null && !status.isBlank()) {
                 predicates.add(cb.equal(cb.upper(root.get("status")), status.toUpperCase()));
-            }
-            if (paymentStatus != null && !paymentStatus.isBlank()) {
-                predicates.add(cb.equal(cb.upper(root.get("paymentStatus")), paymentStatus.toUpperCase()));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
@@ -161,28 +156,6 @@ public class OrderReadService {
                 ));
     }
 
-    /**
-     * Resolves a thumbnail URL per product (keyed by product_pk) for the given line items.
-     * Read-time lookup against the current catalog image — order line items do not
-     * snapshot the image. Returns only entries that actually have an image URL.
-     */
-    private Map<String, String> resolveProductThumbnails(List<OrderLineItemEntity> items) {
-        List<String> productPks = items.stream()
-                .map(OrderLineItemEntity::getProductPk)
-                .filter(pk -> pk != null && !pk.isBlank())
-                .distinct()
-                .toList();
-        if (productPks.isEmpty()) return Map.of();
-
-        Map<String, String> byPk = new HashMap<>();
-        for (Object[] row : productRepo.findImageUrlsByIds(productPks)) {
-            if (row[1] != null) {
-                byPk.put((String) row[0], (String) row[1]);
-            }
-        }
-        return byPk;
-    }
-
     private OrderDetailResponse toDetail(
             OrderEntity order,
             boolean customerVisibleNotesOnly,
@@ -191,16 +164,10 @@ public class OrderReadService {
         List<OrderLineItemEntity> lineItemEntities = lineItemRepo.findByOrderId(order.getId());
         // Prefer the image snapshotted on the line at checkout (AUD-038); fall back to the
         // live catalog thumbnail only for legacy rows placed before V340 (null image_url).
-        boolean anyMissingSnapshot = lineItemEntities.stream()
-                .anyMatch(e -> e.getImageUrl() == null || e.getImageUrl().isBlank());
-        Map<String, String> liveThumbnailByPk = anyMissingSnapshot
-                ? resolveProductThumbnails(lineItemEntities) : Map.of();
+        Map<String, String> liveThumbnailByPk = thumbnailResolver.resolveLiveFallbacks(lineItemEntities);
         List<OrderLineItemResponse> lineItems = lineItemEntities.stream()
-                .map(e -> {
-                    String image = (e.getImageUrl() != null && !e.getImageUrl().isBlank())
-                            ? e.getImageUrl() : liveThumbnailByPk.get(e.getProductPk());
-                    return orderItemMapper.toResponse(e, image);
-                })
+                .map(e -> orderItemMapper.toResponse(
+                        e, thumbnailResolver.resolveThumbnail(e, liveThumbnailByPk)))
                 .toList();
 
         List<OrderAddressResponse> addresses = addressRepo.findByOrderId(order.getId())

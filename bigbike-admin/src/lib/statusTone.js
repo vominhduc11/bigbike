@@ -7,21 +7,11 @@ import { normalizePublishStatus } from './contracts'
 
 export const ORDER_STATUS_TONE = {
   PENDING:    'warning',
-  ON_HOLD:    'warning',
   PROCESSING: 'info',
+  SHIPPING:   'info',
   COMPLETED:  'success',
   CANCELLED:  'neutral',
-  FAILED:     'danger',
   UNKNOWN:    'muted',
-}
-
-export const PAYMENT_STATUS_TONE = {
-  PENDING:   'warning',
-  UNPAID:    'warning',
-  PAID:      'success',
-  CANCELLED: 'neutral',
-  FAILED:    'danger',
-  UNKNOWN:   'muted',
 }
 
 export const CUSTOMER_STATUS_TONE = {
@@ -32,13 +22,11 @@ export const CUSTOMER_STATUS_TONE = {
   UNKNOWN:  'muted',
 }
 
-export const FULFILLMENT_STATUS_TONE = {
-  UNFULFILLED: 'neutral',
-  PROCESSING:  'info',
-  SHIPPED:     'warning',
-  DELIVERED:   'success',
-  CANCELLED:   'danger',
-  UNKNOWN:     'muted',
+export const REVIEW_STATUS_TONE = {
+  APPROVED: 'success',
+  PENDING: 'warning',
+  SPAM: 'neutral',
+  TRASH: 'neutral',
 }
 
 export function toneFromPublish(status) {

@@ -5,9 +5,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderListItemRespons
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderNoteResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.CreateOrderNoteRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.OrderAuditLogResponse;
-import com.bigbike.bigbike_backend.api.admin.dto.order.UpdateFulfillmentRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.UpdateOrderStatusRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.order.UpdatePaymentStatusRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
@@ -45,7 +43,6 @@ public class AdminOrderController extends AdminControllerSupport {
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String paymentStatus,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to,
@@ -54,7 +51,7 @@ public class AdminOrderController extends AdminControllerSupport {
     ) {
         devAdminAuthService.requirePermission(request, "orders.read");
         return apiResponseFactory.list(
-                adminOrderService.listOrders(page, size, status, paymentStatus, q, from, to, sort),
+                adminOrderService.listOrders(page, size, status, q, from, to, sort),
                 request
         );
     }
@@ -87,36 +84,6 @@ public class AdminOrderController extends AdminControllerSupport {
         UUID adminId = resolveAdminId();
         return apiResponseFactory.data(
                 adminOrderService.updateOrderStatus(orderId, adminId, body,
-                        extractClientIp(request), request.getHeader("User-Agent")),
-                request
-        );
-    }
-
-    @PatchMapping("/{orderId}/payment-status")
-    public ApiDataResponse<AdminOrderDetailResponse> updatePaymentStatus(
-            @PathVariable UUID orderId,
-            @Valid @RequestBody UpdatePaymentStatusRequest body,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "orders.write");
-        UUID adminId = resolveAdminId();
-        return apiResponseFactory.data(
-                adminOrderService.updatePaymentStatus(orderId, adminId, body,
-                        extractClientIp(request), request.getHeader("User-Agent")),
-                request
-        );
-    }
-
-    @PatchMapping("/{orderId}/fulfillment")
-    public ApiDataResponse<AdminOrderDetailResponse> updateFulfillmentStatus(
-            @PathVariable UUID orderId,
-            @Valid @RequestBody UpdateFulfillmentRequest body,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "orders.write");
-        UUID adminId = resolveAdminId();
-        return apiResponseFactory.data(
-                adminOrderService.updateFulfillmentStatus(orderId, adminId, body,
                         extractClientIp(request), request.getHeader("User-Agent")),
                 request
         );

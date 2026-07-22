@@ -1,0 +1,189 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e27]:
+      - link "Bỏ qua tới nội dung" [ref=e28] [cursor=pointer]:
+        - /url: "#bb-main-content"
+      - complementary "Thanh điều hướng" [ref=e29]:
+        - generic [ref=e30]:
+          - generic [ref=e31]: BB
+          - generic [ref=e32]:
+            - generic [ref=e33]: BigBike
+            - generic [ref=e34]: Admin
+        - navigation "Điều hướng chính" [ref=e35]:
+          - group "Bán hàng" [ref=e36]:
+            - link "Tổng quan" [ref=e38] [cursor=pointer]:
+              - /url: /admin/dashboard
+            - link "Đơn hàng 388 mục cần xử lý" [ref=e45] [cursor=pointer]:
+              - /url: /admin/orders
+              - generic [ref=e50]: Đơn hàng
+              - generic "388 mục cần xử lý" [ref=e51]: 99+
+            - link "Khách hàng" [ref=e52] [cursor=pointer]:
+              - /url: /admin/customers
+            - link "Đánh giá" [ref=e59] [cursor=pointer]:
+              - /url: /admin/reviews
+          - group "Sản phẩm" [ref=e63]:
+            - link "Sản phẩm" [ref=e65] [cursor=pointer]:
+              - /url: /admin/products
+            - link "Sản phẩm nổi bật" [ref=e71] [cursor=pointer]:
+              - /url: /admin/featured-products
+            - link "Danh mục" [ref=e75] [cursor=pointer]:
+              - /url: /admin/categories
+            - link "Thương hiệu" [ref=e80] [cursor=pointer]:
+              - /url: /admin/brands
+          - group "Nội dung & Marketing" [ref=e85]:
+            - link "Tin tức" [ref=e87] [cursor=pointer]:
+              - /url: /admin/content
+            - link "Banner" [ref=e92] [cursor=pointer]:
+              - /url: /admin/sliders
+            - link "Video trang chủ" [ref=e95] [cursor=pointer]:
+              - /url: /admin/home-videos
+            - link "Highlights trang chủ" [ref=e98] [cursor=pointer]:
+              - /url: /admin/home-highlights
+            - link "Chuyển hướng" [ref=e105] [cursor=pointer]:
+              - /url: /admin/redirects
+            - link "Menu" [ref=e110] [cursor=pointer]:
+              - /url: /admin/menus
+            - link "Thư viện" [ref=e113] [cursor=pointer]:
+              - /url: /admin/media
+          - group "Báo cáo" [ref=e119]:
+            - link "Báo cáo" [ref=e121] [cursor=pointer]:
+              - /url: /admin/reports
+          - group "Hệ thống" [ref=e124]:
+            - link "Cài đặt" [ref=e126] [cursor=pointer]:
+              - /url: /admin/settings
+            - link "Quản trị viên" [ref=e131] [cursor=pointer]:
+              - /url: /admin/admin-users
+            - link "Phân quyền" [ref=e135] [cursor=pointer]:
+              - /url: /admin/roles
+            - link "Nhật ký" [ref=e140] [cursor=pointer]:
+              - /url: /admin/audit-logs
+        - strong [ref=e145]: Super Admin
+      - generic [ref=e146]:
+        - banner [ref=e147]:
+          - generic [ref=e148]: Đơn hàng
+          - button "Mở tìm kiếm nhanh" [ref=e149]:
+            - generic [ref=e153]: Tìm đơn hàng, sản phẩm, khách hàng...
+            - generic [ref=e154]: ⌘K
+          - button "Chuyển sang chế độ tối" [ref=e155] [cursor=pointer]
+          - group "Ngôn ngữ nội dung" [ref=e569]:
+            - button "VI" [pressed] [ref=e570] [cursor=pointer]
+            - button "EN" [ref=e571] [cursor=pointer]
+          - button "Thông báo" [ref=e158] [cursor=pointer]
+          - button "Super Admin Chủ hệ thống" [ref=e163] [cursor=pointer]:
+            - generic [ref=e164]: AS
+            - generic [ref=e165]:
+              - generic [ref=e166]: Super Admin
+              - generic [ref=e167]: Chủ hệ thống
+        - navigation "Breadcrumb" [ref=e170]:
+          - list [ref=e171]:
+            - listitem [ref=e172]:
+              - link "Tổng quan" [ref=e449] [cursor=pointer]:
+                - /url: /admin/dashboard
+            - listitem [ref=e450]: /
+            - listitem [ref=e451]:
+              - link "Đơn hàng" [ref=e1415] [cursor=pointer]:
+                - /url: /admin/orders
+            - listitem [ref=e1416]: /
+            - listitem [ref=e1417]:
+              - generic [ref=e1418]: Chi tiết
+        - main [ref=e174]:
+          - generic [ref=e1419]:
+            - generic [ref=e1420]:
+              - generic [ref=e1421]:
+                - heading "Đơn hàng BB-20260626-741E86" [level=1] [ref=e1422]:
+                  - text: Đơn hàng
+                  - generic [ref=e1423]: BB-20260626-741E86
+                - paragraph [ref=e1424]: "Ngày đặt: 15:00 26/06/2026 · Phương thức: —"
+              - button "Danh sách" [ref=e1426] [cursor=pointer]
+            - generic [ref=e1427]:
+              - generic [ref=e1428]:
+                - generic [ref=e1429]:
+                  - generic [ref=e1430]: Đơn hàng
+                  - generic [ref=e1431]: Đang xử lý
+                  - generic [ref=e1433]: "Đặt: 15:00 26/06/2026"
+                - generic [ref=e1434]:
+                  - generic [ref=e1435]: Thanh toán
+                  - generic [ref=e1436]: Chưa thanh toán
+                  - generic [ref=e1438]: Đã thu 0 ₫ · Không rõ
+                - generic [ref=e1439]:
+                  - generic [ref=e1440]: Giao hàng
+                  - generic [ref=e1441]: Chưa giao
+                  - generic [ref=e1443]: Chưa có mã vận đơn
+              - generic [ref=e1444]:
+                - generic [ref=e1445]: Việc cần làm tiếp
+                - generic [ref=e1446]:
+                  - generic [ref=e1447]: Trạng thái thanh toán
+                  - generic [ref=e1448]:
+                    - button "Xác nhận đã thu tiền" [ref=e1449] [cursor=pointer]
+                    - button "Huỷ thanh toán" [ref=e1450] [cursor=pointer]
+                - generic [ref=e1451]:
+                  - generic [ref=e1452]: Vận chuyển
+                  - button "Bắt đầu chuẩn bị hàng" [ref=e1454] [cursor=pointer]
+                - generic [ref=e1455]:
+                  - generic [ref=e1456]: Thao tác khác
+                  - button "Huỷ đơn" [ref=e1458] [cursor=pointer]
+            - generic [ref=e1459]:
+              - generic [ref=e1460]:
+                - generic [ref=e1461]:
+                  - heading "Sản phẩm trong đơn (1)" [level=3] [ref=e1463]
+                  - generic [ref=e1464]:
+                    - table [ref=e1467]:
+                      - rowgroup [ref=e1468]:
+                        - row [ref=e1469]:
+                          - columnheader "Sản phẩm" [ref=e1470]
+                          - columnheader "Đơn giá" [ref=e1471]
+                          - columnheader "SL" [ref=e1472]
+                          - columnheader "Thành tiền" [ref=e1473]
+                      - rowgroup [ref=e1474]:
+                        - row [ref=e1475]:
+                          - 'cell "CABERG TANAMI CARBON - 2 IN 1 size: m" [ref=e1476]':
+                            - generic [ref=e1483]:
+                              - generic [ref=e1484]: CABERG TANAMI CARBON - 2 IN 1
+                              - generic [ref=e1485]: "size: m"
+                          - cell "12.000.000 ₫" [ref=e1486]
+                          - cell "×1" [ref=e1487]
+                          - cell "12.000.000 ₫" [ref=e1488]
+                    - generic [ref=e1490]:
+                      - term [ref=e1491]: "Tạm tính:"
+                      - definition [ref=e1492]: 12.000.000 ₫
+                      - term [ref=e1493]: "Tổng cộng:"
+                      - definition [ref=e1494]: 12.000.000 ₫
+                - group [ref=e1496]:
+                  - generic "Thanh toán (1)" [ref=e1497] [cursor=pointer]
+                - generic [ref=e1500]:
+                  - heading "Ghi chú nội bộ" [level=3] [ref=e1502]
+                  - generic [ref=e1503]:
+                    - list [ref=e1504]:
+                      - listitem [ref=e1505]: 15:00 26/06/2026Đơn hàng được tạo..
+                    - generic [ref=e1506]:
+                      - textbox "Nhập ghi chú..." [ref=e1507]
+                      - generic [ref=e1508]:
+                        - generic [ref=e1509] [cursor=pointer]:
+                          - checkbox "Hiển thị cho khách hàng" [ref=e1510]
+                          - checkbox
+                          - text: Hiển thị cho khách hàng
+                        - button "Thêm ghi chú" [disabled]
+                  - group [ref=e1511]:
+                    - generic "Lịch sử thao tác" [ref=e1512] [cursor=pointer]
+              - generic [ref=e1515]:
+                - generic [ref=e1516]:
+                  - heading "Thông tin khách hàng" [level=3] [ref=e1518]
+                  - generic [ref=e1520]:
+                    - term [ref=e1521]: "Tên:"
+                    - definition [ref=e1522]: 7456_võ minh đức
+                    - term [ref=e1523]: "Email:"
+                    - definition [ref=e1524]: vominhduc760@gmail.com
+                    - term [ref=e1525]: "ĐT:"
+                    - definition [ref=e1526]: "+84896664086"
+                    - term [ref=e1527]: "Địa chỉ:"
+                    - definition [ref=e1528]: 79/30/52 Âu Cơ, p14, Phường Phúc Xá, Quận Ba Đình, Hà Nội
+                - generic [ref=e1529]:
+                  - heading "Vận chuyển" [level=3] [ref=e1531]
+                  - paragraph [ref=e1533]: Chưa có thông tin giao hàng.
+                - generic [ref=e1534]:
+                  - heading "Thời gian" [level=3] [ref=e1536]
+                  - generic [ref=e1538]:
+                    - term [ref=e1539]: "Đặt hàng:"
+                    - definition [ref=e1540]: 15:00 26/06/2026
+    - region "Notifications alt+T"
+  - generic [ref=e448]: "0.0"

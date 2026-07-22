@@ -22,6 +22,7 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJp
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerAddressJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
+import com.bigbike.bigbike_backend.service.customer.CustomerAvatarStorageService;
 import com.bigbike.bigbike_backend.service.customer.CustomerSessionService;
 import com.bigbike.bigbike_backend.util.PhoneNumbers;
 import jakarta.persistence.criteria.Predicate;
@@ -66,6 +67,7 @@ public class AdminCustomerService {
     private final CustomerSessionService customerSessionService;
     private final CustomerMapper customerMapper;
     private final CustomerAddressMapper customerAddressMapper;
+    private final CustomerAvatarStorageService customerAvatarStorageService;
 
     // ── List ──────────────────────────────────────────────────────────────────
 
@@ -219,6 +221,24 @@ public class AdminCustomerService {
 
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "CUSTOMER_UPDATED", "CUSTOMER", customerId, beforeSnapshot, snapshot(customer)));
+
+        return getCustomerDetail(customerId);
+    }
+
+    // ── Remove avatar (admin — view + remove only, never upload) ──────────────
+
+    @Transactional
+    public AdminCustomerDetailResponse removeAvatar(UUID customerId) {
+        CustomerEntity customer = customerRepo.findById(customerId)
+                .orElseThrow(() -> new NotFoundException("Customer not found."));
+
+        String previousUrl = customer.getAvatarUrl();
+        if (previousUrl != null) {
+            customer.setAvatarUrl(null);
+            customer.setUpdatedAt(Instant.now());
+            customerRepo.saveAndFlush(customer);
+            customerAvatarStorageService.deleteAvatar(previousUrl);
+        }
 
         return getCustomerDetail(customerId);
     }

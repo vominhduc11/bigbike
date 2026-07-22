@@ -66,7 +66,6 @@ public class WordPressOrderMapper {
             // ── Extended fields (Phase 2C) ─────────────────────────────────────
             String orderKey,
             String syntheticCustomerKey,
-            String paymentStatus,
             String customerNote,
             String paymentMethodTitle,
             String transactionId,
@@ -164,9 +163,9 @@ public class WordPressOrderMapper {
         LocalDateTime cancelledAt = null;
         if ("CANCELLED".equals(status)) cancelledAt = post.postDate();
 
-        // ── Payment status ─────────────────────────────────────────────────────
+        // ── Payment record status ─────────────────────────────────────────────
         BigDecimal paidAmount = total != null ? total : BigDecimal.ZERO;
-        String paymentStatus = derivePaymentStatus(status, paidAt, transactionId, paidAmount, total, warnings);
+        String paymentRecordStatus = derivePaymentRecordStatus(status, paidAt, transactionId, paidAmount, total, warnings);
 
         // ── Billing / shipping address snapshots ───────────────────────────────
         String billingEmail   = metaMap.get("_billing_email");
@@ -209,7 +208,7 @@ public class WordPressOrderMapper {
         MappedOrderPayment payment = new MappedOrderPayment(
                 post.id(), paymentMethod,
                 resolveProvider(paymentMethod),
-                paymentStatus, total, currency, transactionId, paidAt
+                paymentRecordStatus, total, currency, transactionId, paidAt
         );
 
         // Synthetic customer key for guest orders
@@ -234,7 +233,7 @@ public class WordPressOrderMapper {
                 metaMap.getOrDefault("_billing_country", "VN"),
                 basicItems, warnings,
                 // extended
-                orderKey, syntheticKey, paymentStatus,
+                orderKey, syntheticKey,
                 customerNote, paymentMethodTitle, transactionId,
                 subtotal, discount, shipping, null, tax, paidAmount,
                 placedAt, paidAt, completedAt, cancelledAt,
@@ -268,12 +267,13 @@ public class WordPressOrderMapper {
         return switch (postStatus) {
             case "wc-pending"    -> "PENDING";
             case "wc-processing" -> "PROCESSING";
-            case "wc-on-hold"    -> "ON_HOLD";
+            case "wc-on-hold"    -> "PROCESSING";
             case "wc-completed"  -> "COMPLETED";
             case "wc-cancelled"  -> "CANCELLED";
             // Refunds were removed — legacy wc-refunded orders import as CANCELLED.
             case "wc-refunded"   -> "CANCELLED";
-            case "wc-failed"     -> "FAILED";
+            // FAILED removed 2026-07-21 — legacy wc-failed orders import as CANCELLED.
+            case "wc-failed"     -> "CANCELLED";
             default -> {
                 warnings.add("Unknown WooCommerce order status: '" + postStatus
                         + "' — defaulting to PENDING");
@@ -282,15 +282,15 @@ public class WordPressOrderMapper {
         };
     }
 
-    private String derivePaymentStatus(String orderStatus, LocalDateTime paidAt,
+    private String derivePaymentRecordStatus(String orderStatus, LocalDateTime paidAt,
                                         String transactionId, BigDecimal paidAmount,
                                         BigDecimal total, List<String> warnings) {
-        if ("CANCELLED".equals(orderStatus) || "FAILED".equals(orderStatus)) return "CANCELLED";
+        if ("CANCELLED".equals(orderStatus)) return "CANCELLED";
         if (paidAt != null) return "PAID";
         if (transactionId != null && !transactionId.isBlank()) return "PAID";
         if ("COMPLETED".equals(orderStatus)) return "PAID";
         if ("PROCESSING".equals(orderStatus)) {
-            warnings.add("Order PROCESSING but no paid date or transaction ID — defaulting payment status to UNPAID");
+            warnings.add("Order PROCESSING but no paid date or transaction ID — defaulting payment record status to UNPAID");
             return "UNPAID";
         }
         return "UNPAID";

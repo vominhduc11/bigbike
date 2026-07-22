@@ -1,0 +1,5 @@
+- generic [ref=f1e2]:
+  - status [ref=f1e4]:
+    - heading "Đang tải phiên đăng nhập" [level=2] [ref=f1e7]
+    - paragraph [ref=f1e8]: Đang xác thực tài khoản quản trị...
+  - region "Notifications alt+T"

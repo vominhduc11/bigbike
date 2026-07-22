@@ -13,6 +13,8 @@ import com.bigbike.bigbike_backend.config.MinioProperties;
 import com.bigbike.bigbike_backend.persistence.entity.media.MediaEntity;
 import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
+import com.bigbike.bigbike_backend.service.media.CompressionProfile;
+import com.bigbike.bigbike_backend.service.media.ImageCompressionService;
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaSpecifications;
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaTagJdbc;
@@ -80,6 +82,12 @@ public class AdminMediaService {
     private static final int MIN_UPLOAD_WIDTH = 500;
     private static final int MIN_UPLOAD_HEIGHT = 400;
 
+    // Stored original is capped at 2000px wide (owner-approved, MEDIA_RULE_006) — variants
+    // (thumb/medium/large, max 1600px) are always smaller anyway, so this only shrinks what
+    // gets served when someone requests the full-size original directly.
+    private static final CompressionProfile ADMIN_ORIGINAL_PROFILE =
+            new CompressionProfile(2000, 2000, 0.85f, false);
+
     private final MediaJpaRepository mediaRepo;
     private final AuditLogWriter auditLogWriter;
     private final AuditLogFactory auditLogFactory;
@@ -89,6 +97,7 @@ public class AdminMediaService {
     private final MediaReferenceService mediaReferenceService;
     private final MediaTagJdbc tagRepo;
     private final ImageVariantService imageVariantService;
+    private final ImageCompressionService imageCompressionService;
 
     // ── Upload ────────────────────────────────────────────────────────────────
 
@@ -138,6 +147,25 @@ public class AdminMediaService {
             }
         }
 
+        // Downscale the stored original (MEDIA_RULE_006). The floor check above ran against the
+        // pre-compression image so a wide/short banner over 2000px can't be rejected by a shrink
+        // it hasn't undergone yet. width/height are re-measured below from what's actually
+        // written to MinIO, not from what the admin uploaded.
+        if (mimeType.startsWith("image/")) {
+            bytes = imageCompressionService.compress(bytes, mimeType, ADMIN_ORIGINAL_PROFILE);
+            if (RASTER_IMAGE_TYPES.contains(mimeType)) {
+                try {
+                    BufferedImage compressedImg = ImageIO.read(new java.io.ByteArrayInputStream(bytes));
+                    if (compressedImg != null) {
+                        width = compressedImg.getWidth();
+                        height = compressedImg.getHeight();
+                    }
+                } catch (IOException e) {
+                    log.warn("Could not re-measure compressed image for {}: {}", file.getOriginalFilename(), e.getMessage());
+                }
+            }
+        }
+
         String safeFilename = sanitizeFilename(file.getOriginalFilename());
         String objectKey = "uploads/" + UUID.randomUUID() + "/" + safeFilename;
         String bucket = minioProperties.getBucket();
@@ -168,8 +196,9 @@ public class AdminMediaService {
         media.setStorageProvider(MINIO_PROVIDER);
         media.setBucket(bucket);
         media.setMimeType(mimeType);
-        // SVG bytes were rewritten by the sanitizer — record the stored length, not the upload's.
-        media.setFileSize(SVG_MIME.equals(mimeType) ? (long) bytes.length : file.getSize());
+        // `bytes` always reflects what was actually written to MinIO — sanitized SVG, compressed
+        // raster image, or the untouched original for anything else (e.g. video/mp4).
+        media.setFileSize((long) bytes.length);
         media.setWidth(width);
         media.setHeight(height);
         media.setAltText(altText != null ? altText.strip() : null);
@@ -237,6 +266,17 @@ public class AdminMediaService {
             }
         }
 
+        // Downscale the stored original (MEDIA_RULE_006) — same reasoning as uploadMedia().
+        if (newMime.startsWith("image/")) {
+            bytes = imageCompressionService.compress(bytes, newMime, ADMIN_ORIGINAL_PROFILE);
+            if (RASTER_IMAGE_TYPES.contains(newMime)) {
+                try {
+                    BufferedImage compressedImg = ImageIO.read(new java.io.ByteArrayInputStream(bytes));
+                    if (compressedImg != null) { width = compressedImg.getWidth(); height = compressedImg.getHeight(); }
+                } catch (IOException ignored) {}
+            }
+        }
+
         String before = snapshot(media);
         String objectKey = media.getFilePath();
         String bucket = media.getBucket() != null ? media.getBucket() : minioProperties.getBucket();
@@ -259,7 +299,7 @@ public class AdminMediaService {
         Map<String, String> variants = imageVariantService.generateAndUpload(bytes, objectKey, newMime);
 
         media.setMimeType(newMime);
-        media.setFileSize(SVG_MIME.equals(newMime) ? (long) bytes.length : file.getSize());
+        media.setFileSize((long) bytes.length);
         if (width != null) media.setWidth(width);
         if (height != null) media.setHeight(height);
         media.setSizes(variants.isEmpty() ? null : toJson(variants));

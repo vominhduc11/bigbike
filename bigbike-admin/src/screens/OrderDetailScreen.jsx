@@ -2,15 +2,15 @@ import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import { AlertCircle, ArrowRight, ChevronRight } from 'lucide-react'
+import { AlertCircle, ArrowRight, ChevronRight, Package } from 'lucide-react'
 import { Alert } from '@/components/ui/alert'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
-import { addOrderNote, fetchOrderAllowedTransitions, fetchOrderAuditTrail, fetchOrderDetail, updateOrderFulfillment, updateOrderPaymentStatus, updateOrderStatus } from '../lib/adminApi'
+import { addOrderNote, fetchOrderAllowedTransitions, fetchOrderAuditTrail, fetchOrderDetail, updateOrderStatus } from '../lib/adminApi'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
-import { ORDER_STATUS_TONE, PAYMENT_STATUS_TONE, FULFILLMENT_STATUS_TONE } from '../lib/statusTone'
+import { ORDER_STATUS_TONE } from '../lib/statusTone'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '../lib/useUnsavedChanges'
@@ -21,8 +21,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import {
-  PAYMENT_TRANSITIONS, REASON_REQUIRED, addressLine, sameAddress,
-  ORDER_STATUS_ACTION, getOrderStatusLabel, PAYMENT_ACTION_LABEL,
+  REASON_REQUIRED, addressLine, sameAddress,
+  ORDER_STATUS_ACTION, getOrderStatusLabel,
 } from './order-detail/constants'
 import { ReasonConfirmModal } from './order-detail/ReasonConfirmModal'
 
@@ -69,6 +69,25 @@ function OrderDetailSkeleton() {
   )
 }
 
+function OrderItemThumbnail({ item }) {
+  const [imageFailed, setImageFailed] = useState(false)
+  const imageUrl = item.productThumbnailUrl
+
+  return (
+    <span className="bb-product-thumb" aria-hidden="true">
+      {imageUrl && !imageFailed ? (
+        <img
+          src={imageUrl}
+          alt=""
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={() => setImageFailed(true)}
+        />
+      ) : <Package className="size-4" />}
+    </span>
+  )
+}
+
 export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
@@ -107,7 +126,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const [noteContent, setNoteContent] = useState('')
   const [noteCustomerVisible, setNoteCustomerVisible] = useState(false)
   const [submittingNote, setSubmittingNote] = useState(false)
-  const [fulfillmentSaving, setFulfillmentSaving] = useState(false)
   const [showShipForm, setShowShipForm] = useState(false)
   const [trackingNumber, setTrackingNumber] = useState('')
   const [trackingError, setTrackingError] = useState('')
@@ -145,19 +163,16 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
         setTransitionsError(true)
       })
     return () => { active = false }
-  }, [orderId, orderQuery.isSuccess, order?.orderStatus, order?.paymentStatus, order?.fulfillmentStatus, transitionsKey])
+  }, [orderId, orderQuery.isSuccess, order?.orderStatus, transitionsKey])
 
-  async function doStatusChange(newStatus, reason) {
+  async function doStatusChange(newStatus, reason, shipping) {
     setSaving(true)
     setPendingAction(`status:${newStatus}`)
     try {
-      const response = await updateOrderStatus(orderId, newStatus, reason)
+      const response = await updateOrderStatus(orderId, newStatus, reason, shipping)
       const updatedOrder = response.item
       applyOrderUpdate(updatedOrder)
-      const wasOnHold = order.orderStatus === 'ON_HOLD'
-      const isBACS = order.paymentMethod === 'BACS'
-      const autoMarkedPaid = wasOnHold && isBACS && newStatus === 'PROCESSING' && updatedOrder.paymentStatus === 'PAID'
-      toast.success(autoMarkedPaid ? t('orders.detail.autoMarkedPaidToast') : t('orders.detail.statusUpdated'))
+      toast.success(t('orders.detail.statusUpdated'))
       return true
     } catch (err) {
       toast.error(err.message || t('orders.detail.updateStatusError'))
@@ -173,17 +188,11 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       setReasonModal({ targetStatus: newStatus })
       return
     }
-    const isBACSAutoPayConfirm =
-      newStatus === 'PROCESSING' &&
-      order?.orderStatus === 'ON_HOLD' &&
-      order?.paymentMethod === 'BACS'
-    if (isBACSAutoPayConfirm) {
-      const confirmed = await showConfirm(
-        t('orders.detail.confirmBacsMessage'),
-        t('orders.detail.confirmBacsTitle')
-      )
-      if (!confirmed) return
-    } else if (newStatus === 'COMPLETED') {
+    if (newStatus === 'SHIPPING') {
+      setShowShipForm(true)
+      return
+    }
+    if (newStatus === 'COMPLETED') {
       const labelKeys = { COMPLETED: 'orders.detail.dangerCompleted' }
       const label = labelKeys[newStatus] ? t(labelKeys[newStatus]) : newStatus
       const confirmed = await showConfirm(
@@ -193,30 +202,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       if (!confirmed) return
     }
     await doStatusChange(newStatus, undefined)
-  }
-
-  async function handlePaymentStatusChange(newStatus) {
-    const PAYMENT_CONFIRM = {
-      PAID: 'orders.detail.confirmPayPaidMessage',
-      UNPAID: 'orders.detail.confirmPayUnpaidMessage',
-      CANCELLED: 'orders.detail.confirmPayCancelledMessage',
-    }
-    if (PAYMENT_CONFIRM[newStatus]) {
-      const confirmed = await showConfirm(t(PAYMENT_CONFIRM[newStatus]), t('orders.detail.confirmPaymentTitle'))
-      if (!confirmed) return
-    }
-    setSaving(true)
-    setPendingAction(`payment:${newStatus}`)
-    try {
-      const response = await updateOrderPaymentStatus(orderId, newStatus)
-      applyOrderUpdate(response.item)
-      toast.success(t('orders.detail.paymentUpdated'))
-    } catch (err) {
-      toast.error(err.message || t('orders.detail.updatePaymentError'))
-    } finally {
-      setSaving(false)
-      setPendingAction(null)
-    }
   }
 
   async function handleAddNote(e) {
@@ -239,36 +224,22 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
     }
   }
 
-  async function handleFulfillmentUpdate(newFulfillmentStatus) {
-    const DANGEROUS = new Set(['CANCELLED'])
-    if (DANGEROUS.has(newFulfillmentStatus)) {
-      const labelKeys = { CANCELLED: 'orders.detail.ffDangerCancelled' }
-      const label = t(labelKeys[newFulfillmentStatus])
-      if (!await showConfirm(t('orders.detail.confirmFulfillmentMessage', { label }), t('orders.detail.confirmFulfillmentTitle'))) return
-    }
-    if (newFulfillmentStatus === 'SHIPPED' && !trackingNumber.trim()) {
+  async function handleShippingSubmit(e) {
+    e.preventDefault()
+    if (!trackingNumber.trim()) {
       setTrackingError(t('orders.detail.trackingRequiredError'))
       return
     }
     setTrackingError('')
-    setFulfillmentSaving(true)
-    try {
-      const body = { fulfillmentStatus: newFulfillmentStatus }
-      if (newFulfillmentStatus === 'SHIPPED') {
-        if (trackingNumber.trim()) body.trackingNumber = trackingNumber.trim()
-        if (shippingCarrier.trim()) body.shippingCarrier = shippingCarrier.trim()
-      }
-      const response = await updateOrderFulfillment(orderId, body)
-      applyOrderUpdate(response.item)
+    const ok = await doStatusChange('SHIPPING', undefined, {
+      trackingNumber: trackingNumber.trim(),
+      shippingCarrier: shippingCarrier.trim() || undefined,
+    })
+    if (ok) {
       setShowShipForm(false)
       setTrackingNumber('')
       setShippingCarrier('')
       setTrackingError('')
-      toast.success(t('orders.detail.fulfillmentUpdated'))
-    } catch (err) {
-      toast.error(err.message || t('orders.detail.fulfillmentError'))
-    } finally {
-      setFulfillmentSaving(false)
     }
   }
 
@@ -285,9 +256,12 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       actionLabel={t('common.back')} onAction={() => navigate('/admin/orders')} />
   }
 
-  const ffStatusLabel = order.fulfillmentStatus
-    ? t({ UNFULFILLED: 'orders.detail.ffUnfulfilled', PROCESSING: 'orders.detail.ffProcessing', SHIPPED: 'orders.detail.ffShipped', DELIVERED: 'orders.detail.ffDelivered', CANCELLED: 'orders.detail.ffCancelled' }[order.fulfillmentStatus] ?? order.fulfillmentStatus)
-    : t('orders.detail.ffNone')
+  const trackingSummary = order.trackingNumber
+    ? t('orders.detail.tileTrackingNumber', {
+      tracking: `${order.shippingCarrier ? `${order.shippingCarrier} · ` : ''}${order.trackingNumber}`,
+    })
+    : t('orders.detail.tileTrackingPending')
+  const shippingReference = [order.shippingCarrier, order.trackingNumber].filter(Boolean).join(' · ')
 
   // Khoá các nút chuyển trạng thái khi đang lưu HOẶC đang làm mới nền (dữ liệu/allowed
   // transitions có thể sắp thay) — tránh thao tác dựa trên trạng thái cũ.
@@ -295,12 +269,11 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
   // T18: 3 nhóm hành động trong vùng "Việc cần làm tiếp" — tách rõ để khi CẢ BA đều
   // rỗng (vd đơn đã hủy/hoàn thành) hiện trạng thái "quiet" thay vì khối cảnh báo to.
-  const hasOrderGroup = allowedTransitions.length > 0 || transitionsError
-  const hasPaymentGroup = !['CANCELLED', 'FAILED'].includes(order.orderStatus)
-    && (PAYMENT_TRANSITIONS[order.paymentStatus] ?? []).length > 0
-  const hasFulfillmentGroup = order.fulfillmentType === 'DELIVERY'
-    && !['CANCELLED', 'FAILED'].includes(order.orderStatus)
-  const hasAnyAction = hasOrderGroup || hasPaymentGroup || hasFulfillmentGroup
+  const orderProgressTransitions = allowedTransitions.filter((status) => status !== 'CANCELLED')
+  const hasOrderGroup = orderProgressTransitions.length > 0 || transitionsError
+  const canCancelOrder = allowedTransitions.includes('CANCELLED')
+  const hasAnyAction = hasOrderGroup || canCancelOrder
+  const hasShippingDetails = Boolean(shippingReference || order.shippedAt)
 
   return (
     <div>
@@ -337,21 +310,16 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           full-width như trước. */}
       {(() => {
         const tiles = (
-          <div className={`bb-status-tiles${order.fulfillmentType === 'DELIVERY' ? '' : ' bb-status-tiles--2'}`}>
+          <div className="bb-status-tiles bb-status-tiles--2">
             <div className={`bb-status-tile bb-status-tile--${ORDER_STATUS_TONE[order.orderStatus] ?? 'muted'}`}>
               <div className="bb-status-tile-k">{t('orders.detail.tileOrder')}</div>
               <StatusBadge type="order" status={order.orderStatus} />
+              <div className="bb-cell-sub">{t('orders.detail.tileOrderDate', { date: formatDateTime(order.placedAt) })}</div>
             </div>
-            <div className={`bb-status-tile bb-status-tile--${PAYMENT_STATUS_TONE[order.paymentStatus] ?? 'muted'}`}>
-              <div className="bb-status-tile-k">{t('orders.detail.tilePayment')}</div>
-              <StatusBadge type="payment" status={order.paymentStatus} />
+            <div className="bb-status-tile bb-status-tile--muted">
+              <div className="bb-status-tile-k">{t('orders.detail.tileShipping')}</div>
+              <div className="bb-cell-sub">{trackingSummary}</div>
             </div>
-            {order.fulfillmentType === 'DELIVERY' && (
-              <div className={`bb-status-tile bb-status-tile--${FULFILLMENT_STATUS_TONE[order.fulfillmentStatus] ?? 'muted'}`}>
-                <div className="bb-status-tile-k">{t('orders.detail.tileFulfillment')}</div>
-                <StatusBadge type="fulfillment" status={order.fulfillmentStatus} />
-              </div>
-            )}
           </div>
         )
 
@@ -374,26 +342,24 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     <div className="bb-actionzone-group">
                       <div className="bb-actionzone-group-label">{t('orders.detail.orderStatus')}</div>
                       <div className="bb-actionzone-actions">
-                        {allowedTransitions.map((s) => {
-                          const cfg = ORDER_STATUS_ACTION[s] ?? { variant: 'secondary' }
+                        {orderProgressTransitions.map((status) => {
+                          const cfg = ORDER_STATUS_ACTION[status] ?? { variant: 'secondary' }
                           const isPrimary = cfg.variant === 'primary' || cfg.variant === 'success'
-                          const isDanger = cfg.variant === 'destructive'
-                          const isPending = pendingAction === `status:${s}`
+                          const isPending = pendingAction === `status:${status}`
                           return (
                             <Button
-                              key={s}
+                              key={status}
                               type="button"
-                              variant={isDanger ? 'ghost' : isPrimary ? 'default' : 'secondary'}
-                              className={isDanger ? 'text-danger' : undefined}
+                              variant={isPrimary ? 'default' : 'secondary'}
                               disabled={actionsBusy}
-                              onClick={() => handleStatusChange(s)}
+                              onClick={() => handleStatusChange(status)}
                             >
-                              {isPending ? t('orders.detail.savingShort') : <><ArrowRight size={14} aria-hidden="true" />{getOrderStatusLabel(s, order, t)}</>}
+                              {isPending ? t('orders.detail.savingShort') : <><ArrowRight size={14} aria-hidden="true" />{getOrderStatusLabel(status, order, t)}</>}
                             </Button>
                           )
                         })}
                         {transitionsError && (
-                          <Button type="button" variant="ghost" size="sm" onClick={() => setTransitionsKey((k) => k + 1)}>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => setTransitionsKey((key) => key + 1)}>
                             {t('common.retry')}
                           </Button>
                         )}
@@ -401,67 +367,33 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     </div>
                   )}
 
-                  {hasPaymentGroup && (
+                  {canCancelOrder && (
                     <div className="bb-actionzone-group">
-                      <div className="bb-actionzone-group-label">{t('orders.detail.paymentStatus')}</div>
+                      <div className="bb-actionzone-group-label">{t('orders.detail.otherActions')}</div>
                       <div className="bb-actionzone-actions">
-                        {(PAYMENT_TRANSITIONS[order.paymentStatus] ?? []).map((s) => (
-                          <Button
-                            key={s}
-                            type="button"
-                            variant={s === 'CANCELLED' ? 'ghost' : 'secondary'}
-                            size="sm"
-                            className={s === 'CANCELLED' ? 'text-danger' : undefined}
-                            disabled={actionsBusy}
-                            onClick={() => handlePaymentStatusChange(s)}
-                          >
-                            {pendingAction === `payment:${s}`
-                              ? t('orders.detail.savingShort')
-                              : PAYMENT_ACTION_LABEL[s] ? t(PAYMENT_ACTION_LABEL[s]) : s}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {hasFulfillmentGroup && (
-                    <div className="bb-actionzone-group">
-                      <div className="bb-actionzone-group-label">{t('orders.detail.fulfillment')}</div>
-                      <div className="bb-actionzone-actions">
-                        {(order.fulfillmentStatus == null || order.fulfillmentStatus === 'UNFULFILLED') && (
-                          <Button type="button" variant="secondary" size="sm" disabled={fulfillmentSaving}
-                            onClick={() => handleFulfillmentUpdate('PROCESSING')}>
-                            {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffStartPreparing')}
-                          </Button>
-                        )}
-                        {order.fulfillmentStatus === 'PROCESSING' && (
-                          <Button type="button" variant="secondary" size="sm" disabled={fulfillmentSaving}
-                            aria-expanded={showShipForm}
-                            aria-controls="ship-form"
-                            onClick={() => setShowShipForm((p) => !p)}>
-                            {t('orders.detail.ffMarkShipped')}
-                          </Button>
-                        )}
-                        {order.fulfillmentStatus === 'SHIPPED' && (
-                          <Button type="button" size="sm" disabled={fulfillmentSaving}
-                            onClick={() => handleFulfillmentUpdate('DELIVERED')}>
-                            {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffMarkDelivered')}
-                          </Button>
-                        )}
-                        {(order.fulfillmentStatus === 'DELIVERED' || order.fulfillmentStatus === 'SHIPPED') && (
-                          <span className="bb-muted text-xs">{ffStatusLabel}</span>
-                        )}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-danger"
+                          disabled={actionsBusy}
+                          onClick={() => handleStatusChange('CANCELLED')}
+                        >
+                          {pendingAction === 'status:CANCELLED'
+                            ? t('orders.detail.savingShort')
+                            : getOrderStatusLabel('CANCELLED', order, t)}
+                        </Button>
                       </div>
                     </div>
                   )}
 
                   {/* Form nhập vận đơn — mở ngay tại khu hành động khi bấm "Giao hàng" (không phải cuộn xuống) */}
-                  {hasFulfillmentGroup && showShipForm && (
+                  {showShipForm && order.orderStatus === 'PROCESSING' && (
                     <div className="bb-actionzone-group">
                       <form
                         id="ship-form"
                         className="bb-detail-form w-full"
-                        onSubmit={(e) => { e.preventDefault(); handleFulfillmentUpdate('SHIPPED') }}
+                        onSubmit={handleShippingSubmit}
                       >
                         <div className="flex flex-col gap-1">
                           <label htmlFor="ship-tracking-input" className="text-sm font-medium">
@@ -477,7 +409,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                             value={trackingNumber}
                             onChange={(e) => { setTrackingNumber(e.target.value); if (trackingError) setTrackingError('') }}
                             onBlur={() => { if (!trackingNumber.trim()) setTrackingError(t('orders.detail.trackingRequiredError')) }}
-                            disabled={fulfillmentSaving}
+                            disabled={saving}
                             required
                             aria-invalid={trackingError ? true : undefined}
                             aria-describedby={trackingError ? 'ship-tracking-error' : undefined}
@@ -496,13 +428,13 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                           placeholder={t('orders.detail.carrierPlaceholder')}
                           value={shippingCarrier}
                           onChange={(e) => setShippingCarrier(e.target.value)}
-                          disabled={fulfillmentSaving}
+                          disabled={saving}
                         />
                         <div className="bb-detail-form-actions">
-                          <Button type="submit" size="sm" disabled={fulfillmentSaving}>
-                            {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffConfirmShip')}
+                          <Button type="submit" size="sm" disabled={saving}>
+                            {saving ? t('orders.detail.savingShort') : t('orders.detail.confirmShipping')}
                           </Button>
-                          <Button type="button" variant="secondary" size="sm" disabled={fulfillmentSaving}
+                          <Button type="button" variant="secondary" size="sm" disabled={saving}
                             onClick={() => { setShowShipForm(false); setTrackingNumber(''); setShippingCarrier(''); setTrackingError('') }}>
                             {t('common.cancel')}
                           </Button>
@@ -545,8 +477,13 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                       {(order.items ?? []).map((item) => (
                         <tr key={item.id}>
                           <td>
-                            <div className="font-semibold">{formatText(item.productName)}</div>
-                            {item.variantName && <div className="bb-cell-sub">{item.variantName}</div>}
+                            <div className="bb-product-cell">
+                              <OrderItemThumbnail item={item} />
+                              <div>
+                                <div className="font-semibold">{formatText(item.productName)}</div>
+                                {item.variantName && <div className="bb-cell-sub">{item.variantName}</div>}
+                              </div>
+                            </div>
                           </td>
                           <td className="num">{formatCurrencyVnd(item.unitPrice)}</td>
                           <td className="num">×{item.quantity}</td>
@@ -561,7 +498,12 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                   {(order.items ?? []).map((item) => (
                     <MobileCard
                       key={item.id}
-                      title={formatText(item.productName)}
+                      title={(
+                        <span className="flex items-center gap-2">
+                          <OrderItemThumbnail item={item} />
+                          <span>{formatText(item.productName)}</span>
+                        </span>
+                      )}
                       subtitle={item.variantName || undefined}
                       meta={[
                         { label: t('orders.detail.colUnitPrice'), value: formatCurrencyVnd(item.unitPrice) },
@@ -614,7 +556,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     <thead>
                       <tr>
                         <th>{t('orders.detail.colPaymentMethod')}</th>
-                        <th>{t('orders.detail.colPaymentStatus')}</th>
+                        <th>{t('orders.detail.colPaymentRecordStatus')}</th>
                         <th className="num">{t('orders.detail.colAmount')}</th>
                         <th className="num">{t('orders.detail.colPaidAt')}</th>
                       </tr>
@@ -623,7 +565,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                       {(order.payments ?? []).map((p, i) => (
                         <tr key={p.id ?? i}>
                           <td className="mono">{t(`status.paymentMethod.${p.paymentMethod}`, { defaultValue: formatText(p.paymentMethod) })}</td>
-                          <td>{t(`status.payment.${p.status}`, { defaultValue: p.status })}</td>
+                          <td>{t(`status.paymentRecord.${p.status}`, { defaultValue: p.status })}</td>
                           <td className="num">{formatCurrencyVnd(p.amount)}</td>
                           <td className="num bb-muted">{p.paidAt ? formatDateTime(p.paidAt) : '—'}</td>
                         </tr>
@@ -640,7 +582,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                       subtitle={p.paidAt ? formatDateTime(p.paidAt) : undefined}
                       meta={[
                         { label: t('orders.detail.colAmount'), value: formatCurrencyVnd(p.amount), tone: 'strong' },
-                        { label: t('orders.detail.colPaymentStatus'), value: t(`status.payment.${p.status}`, { defaultValue: p.status }) },
+                        { label: t('orders.detail.colPaymentRecordStatus'), value: t(`status.paymentRecord.${p.status}`, { defaultValue: p.status }) },
                       ]}
                     />
                   ))}
@@ -773,19 +715,18 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
             </div>
           </div>
 
-          {/* Fulfillment */}
+          {/* Shipping metadata */}
           {order.fulfillmentType === 'DELIVERY' && (
             <div className="bb-card">
-              <div className="bb-card-header"><h3>{t('orders.detail.fulfillment')}</h3></div>
+              <div className="bb-card-header"><h3>{t('orders.detail.shipping')}</h3></div>
               <div className="bb-card-body">
-                <dl className="bb-info-grid">
-                  <dt>{t('orders.detail.fulfillmentStatusLabel')}</dt>
-                  <dd className="font-semibold">{ffStatusLabel}</dd>
-                  {order.trackingNumber && (
+                {hasShippingDetails && (
+                  <dl className="bb-info-grid">
+                  {shippingReference && (
                     <>
                       <dt>{t('orders.detail.colRma', { defaultValue: 'Mã vận đơn' })}</dt>
                       <dd className="mono">
-                        {order.shippingCarrier ? `${order.shippingCarrier} · ` : ''}{order.trackingNumber}
+                        {shippingReference}
                       </dd>
                     </>
                   )}
@@ -795,7 +736,9 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                       <dd>{formatDateTime(order.shippedAt)}</dd>
                     </>
                   )}
-                </dl>
+                  </dl>
+                )}
+                {!hasShippingDetails && <p className="bb-muted m-0">{t('orders.detail.shippingPendingInfo')}</p>}
               </div>
             </div>
           )}
@@ -818,7 +761,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
       {reasonModal && (
         <ReasonConfirmModal
-          targetStatus={reasonModal.targetStatus}
           loading={saving}
           onConfirm={async (reason) => {
             const ok = await doStatusChange(reasonModal.targetStatus, reason)

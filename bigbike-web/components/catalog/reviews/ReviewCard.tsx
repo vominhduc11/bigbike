@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Avatar } from "@/components/ui/Avatar";
 import { StarRow } from "./stars";
 import type { Review } from "./types";
 
@@ -96,16 +97,10 @@ function ReviewPhotos({ photos, authorName }: { photos: string[]; authorName: st
 }
 
 export function ReviewCard({ review }: { review: Review }) {
-  const initial = review.authorName.trim().charAt(0).toUpperCase() || "?";
   const photos = review.photos ?? [];
   return (
     <li className="flex gap-4 border-b border-border py-5 first:pt-0">
-      <span
-        aria-hidden="true"
-        className="flex h-10 w-10 shrink-0 items-center justify-center bg-muted font-body text-a4-content font-semibold text-[var(--bb-text-primary)]"
-      >
-        {initial}
-      </span>
+      <Avatar url={review.authorAvatarUrl} name={review.authorName} size="md" variant="neutral" />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
           <strong className="min-w-0 text-a3-section font-semibold text-[var(--bb-text-primary)] [overflow-wrap:anywhere]">

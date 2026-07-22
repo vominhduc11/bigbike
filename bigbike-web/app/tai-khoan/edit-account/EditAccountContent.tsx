@@ -1,18 +1,104 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AccountSectionHeading, useAccount, useAccountRefresh } from "@/components/account/AccountNav";
-import { updateCustomerProfile } from "@/lib/api/client-api";
+import { updateCustomerProfile, uploadCustomerAvatar, removeCustomerAvatar } from "@/lib/api/client-api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormNotice } from "@/components/ui/FormNotice";
+import { Avatar } from "@/components/ui/Avatar";
 
 // 2020-mockup field label: gray, sentence-case.
 const LEGACY_LABEL = "text-a5-meta text-muted-foreground";
 
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+const ALLOWED_AVATAR_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+
 function ReqMark() {
   return <span className="text-brand">*</span>;
+}
+
+function AvatarEditor() {
+  const t = useTranslations("Account.edit");
+  const profile = useAccount();
+  const refreshProfile = useAccountRefresh();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [busy, setBusy] = useState<"uploading" | "removing" | null>(null);
+  const [notice, setNotice] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setNotice(null);
+    if (file.size > MAX_AVATAR_BYTES) {
+      setNotice({ tone: "danger", text: t("avatarErrorTooLarge") });
+      return;
+    }
+    if (!ALLOWED_AVATAR_TYPES.has(file.type)) {
+      setNotice({ tone: "danger", text: t("avatarErrorInvalidType") });
+      return;
+    }
+
+    setBusy("uploading");
+    try {
+      await uploadCustomerAvatar(file);
+      await refreshProfile?.();
+      setNotice({ tone: "success", text: t("avatarUpdated") });
+    } catch (err: unknown) {
+      setNotice({ tone: "danger", text: err instanceof Error ? err.message : t("avatarErrorGeneric") });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleRemove() {
+    setNotice(null);
+    setBusy("removing");
+    try {
+      await removeCustomerAvatar();
+      await refreshProfile?.();
+      setNotice({ tone: "success", text: t("avatarRemoved") });
+    } catch (err: unknown) {
+      setNotice({ tone: "danger", text: err instanceof Error ? err.message : t("avatarErrorGeneric") });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div className="mb-6 flex flex-wrap items-center gap-4">
+      <Avatar url={profile?.avatarUrl} name={profile?.displayName ?? profile?.email ?? ""} size="lg" variant="brand" />
+      <div className="flex flex-col gap-2">
+        {notice && <FormNotice tone={notice.tone}>{notice.text}</FormNotice>}
+        <div className="flex flex-wrap gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={busy !== null}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {busy === "uploading" ? t("avatarUploading") : t("avatarUploadCta")}
+          </Button>
+          {profile?.avatarUrl && (
+            <Button type="button" variant="ghost" disabled={busy !== null} onClick={handleRemove}>
+              {busy === "removing" ? t("avatarRemoving") : t("avatarRemoveCta")}
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function EditAccountContent() {
@@ -82,6 +168,8 @@ export function EditAccountContent() {
       <p className="mb-5 text-a4-content leading-relaxed text-muted-foreground">
         {t("intro")}
       </p>
+
+      <AvatarEditor />
 
       {success && (
         <FormNotice tone="success" className="mb-5">{t("successUpdated")}</FormNotice>

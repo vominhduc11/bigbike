@@ -159,7 +159,7 @@ class Phase1GOrderReadApiTest {
         mockMvc.perform(get("/api/v1/customer/orders/" + session.orderId).cookie(session.cookies))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.orderNumber").value(session.orderNumber))
-                .andExpect(jsonPath("$.data.status").value("PROCESSING"))
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
                 .andExpect(jsonPath("$.data.orderKey").isEmpty());
     }
 
@@ -266,7 +266,7 @@ class Phase1GOrderReadApiTest {
                         .param("orderKey", order.orderKey))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.orderNumber").value(order.orderNumber))
-                .andExpect(jsonPath("$.data.status").value("PROCESSING"));
+                .andExpect(jsonPath("$.data.status").value("PENDING"));
     }
 
     // ── 13. Guest lookup — wrong key ──────────────────────────────────────────
@@ -368,10 +368,8 @@ class Phase1GOrderReadApiTest {
 
     // ── Customer cancel — Issue 2 scope expansion ────────────────────────────
     //
-    // Before fix: only PENDING was cancellable, but checkout never created
-    // PENDING orders, so customer cancel was effectively dead. Allowed scope
-    // is now: (ON_HOLD | PENDING) OR (PROCESSING + not yet shipped), gated by
-    // paymentStatus ∈ {UNPAID, PENDING}.
+    // Customer cancellation is allowed only while the order is PENDING or
+    // PROCESSING. Payment records do not control this workflow transition.
 
     @Test
     void customerCancel_codProcessingUnpaid_succeedsAndReleasesStock() throws Exception {
@@ -397,16 +395,9 @@ class Phase1GOrderReadApiTest {
     }
 
     @Test
-    void customerCancel_onHoldUnpaid_succeeds() throws Exception {
-        String email = "cancel-onhold-" + UUID.randomUUID() + "@bigbike.vn";
+    void customerCancel_pending_succeeds() throws Exception {
+        String email = "cancel-pending-" + UUID.randomUUID() + "@bigbike.vn";
         AuthSession session = loginAndCheckout(email, 2200000);
-
-        // Checkout can no longer create ON_HOLD orders (COD-only, PAY_RULE_001) — move the
-        // order to ON_HOLD directly, like a legacy BACS order or an admin hold.
-        OrderEntity placed = orderRepo.findById(UUID.fromString(session.orderId)).orElseThrow();
-        placed.setStatus("ON_HOLD");
-        placed.setUpdatedAt(Instant.now());
-        orderRepo.save(placed);
 
         mockMvc.perform(patch("/api/v1/customer/orders/" + session.orderId + "/cancel")
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
@@ -415,23 +406,23 @@ class Phase1GOrderReadApiTest {
     }
 
     @Test
-    void customerCancel_paid_isRejected() throws Exception {
+    void customerCancel_paidProcessing_succeeds() throws Exception {
         String email = "cancel-paid-" + UUID.randomUUID() + "@bigbike.vn";
         AuthSession session = loginAndCheckout(email, 1800000);
 
-        // Force the order to PAID outside of normal flow — refund must go via admin, not cancel.
+        // Payment history is retained but does not control the order transition.
         OrderEntity order = orderRepo.findById(UUID.fromString(session.orderId)).orElseThrow();
-        order.setPaymentStatus("PAID");
         order.setPaidAmount(order.getTotalAmount());
         order.setUpdatedAt(Instant.now());
         orderRepo.save(order);
 
         mockMvc.perform(patch("/api/v1/customer/orders/" + session.orderId + "/cancel")
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isConflict());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("CANCELLED"));
 
         OrderEntity reloaded = orderRepo.findById(UUID.fromString(session.orderId)).orElseThrow();
-        assertThat(reloaded.getStatus()).isEqualTo("PROCESSING");
+        assertThat(reloaded.getStatus()).isEqualTo("CANCELLED");
     }
 
     @Test
@@ -440,7 +431,7 @@ class Phase1GOrderReadApiTest {
         AuthSession session = loginAndCheckout(email, 1900000);
 
         OrderEntity order = orderRepo.findById(UUID.fromString(session.orderId)).orElseThrow();
-        order.setFulfillmentStatus("SHIPPED");
+        order.setStatus("SHIPPING");
         order.setShippedAt(Instant.now());
         order.setUpdatedAt(Instant.now());
         orderRepo.save(order);

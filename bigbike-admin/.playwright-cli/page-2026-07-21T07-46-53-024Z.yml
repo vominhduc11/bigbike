@@ -1,0 +1,444 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e27]:
+      - link "Bỏ qua tới nội dung" [ref=e28] [cursor=pointer]:
+        - /url: "#bb-main-content"
+      - complementary "Thanh điều hướng" [ref=e29]:
+        - generic [ref=e30]:
+          - generic [ref=e31]: BB
+          - generic [ref=e32]:
+            - generic [ref=e33]: BigBike
+            - generic [ref=e34]: Admin
+        - navigation "Điều hướng chính" [ref=e35]:
+          - group "Bán hàng" [ref=e36]:
+            - link "Tổng quan" [ref=e38] [cursor=pointer]:
+              - /url: /admin/dashboard
+            - link "Đơn hàng 388 mục cần xử lý" [active] [ref=e45] [cursor=pointer]:
+              - /url: /admin/orders
+              - generic [ref=e50]: Đơn hàng
+              - generic "388 mục cần xử lý" [ref=e51]: 99+
+            - link "Khách hàng" [ref=e52] [cursor=pointer]:
+              - /url: /admin/customers
+            - link "Đánh giá" [ref=e59] [cursor=pointer]:
+              - /url: /admin/reviews
+          - group "Sản phẩm" [ref=e63]:
+            - link "Sản phẩm" [ref=e65] [cursor=pointer]:
+              - /url: /admin/products
+            - link "Sản phẩm nổi bật" [ref=e71] [cursor=pointer]:
+              - /url: /admin/featured-products
+            - link "Danh mục" [ref=e75] [cursor=pointer]:
+              - /url: /admin/categories
+            - link "Thương hiệu" [ref=e80] [cursor=pointer]:
+              - /url: /admin/brands
+          - group "Nội dung & Marketing" [ref=e85]:
+            - link "Tin tức" [ref=e87] [cursor=pointer]:
+              - /url: /admin/content
+            - link "Banner" [ref=e92] [cursor=pointer]:
+              - /url: /admin/sliders
+            - link "Video trang chủ" [ref=e95] [cursor=pointer]:
+              - /url: /admin/home-videos
+            - link "Highlights trang chủ" [ref=e98] [cursor=pointer]:
+              - /url: /admin/home-highlights
+            - link "Chuyển hướng" [ref=e105] [cursor=pointer]:
+              - /url: /admin/redirects
+            - link "Menu" [ref=e110] [cursor=pointer]:
+              - /url: /admin/menus
+            - link "Thư viện" [ref=e113] [cursor=pointer]:
+              - /url: /admin/media
+          - group "Báo cáo" [ref=e119]:
+            - link "Báo cáo" [ref=e121] [cursor=pointer]:
+              - /url: /admin/reports
+          - group "Hệ thống" [ref=e124]:
+            - link "Cài đặt" [ref=e126] [cursor=pointer]:
+              - /url: /admin/settings
+            - link "Quản trị viên" [ref=e131] [cursor=pointer]:
+              - /url: /admin/admin-users
+            - link "Phân quyền" [ref=e135] [cursor=pointer]:
+              - /url: /admin/roles
+            - link "Nhật ký" [ref=e140] [cursor=pointer]:
+              - /url: /admin/audit-logs
+        - strong [ref=e145]: Super Admin
+      - generic [ref=e146]:
+        - banner [ref=e147]:
+          - generic [ref=e148]: Đơn hàng
+          - button "Mở tìm kiếm nhanh" [ref=e149]:
+            - generic [ref=e153]: Tìm đơn hàng, sản phẩm, khách hàng...
+            - generic [ref=e154]: ⌘K
+          - button "Chuyển sang chế độ tối" [ref=e155] [cursor=pointer]
+          - group "Ngôn ngữ nội dung" [ref=e569]:
+            - button "VI" [pressed] [ref=e570] [cursor=pointer]
+            - button "EN" [ref=e571] [cursor=pointer]
+          - button "Thông báo" [ref=e158] [cursor=pointer]
+          - button "Super Admin Chủ hệ thống" [ref=e163] [cursor=pointer]:
+            - generic [ref=e164]: AS
+            - generic [ref=e165]:
+              - generic [ref=e166]: Super Admin
+              - generic [ref=e167]: Chủ hệ thống
+        - navigation "Breadcrumb" [ref=e170]:
+          - list [ref=e171]:
+            - listitem [ref=e172]:
+              - link "Tổng quan" [ref=e449] [cursor=pointer]:
+                - /url: /admin/dashboard
+            - listitem [ref=e450]: /
+            - listitem [ref=e451]:
+              - generic [ref=e572]: Đơn hàng
+        - main [ref=e174]:
+          - generic [ref=e573]:
+            - generic [ref=e574]:
+              - generic [ref=e575]:
+                - paragraph [ref=e576]: Thương mại
+                - heading "Đơn hàng" [level=1] [ref=e577]
+                - paragraph [ref=e578]: Quản lý và xử lý đơn hàng từ khách hàng.
+              - button "Xuất CSV" [ref=e580] [cursor=pointer]
+            - tablist "Trạng thái" [ref=e584]:
+              - tab "Tất cả" [selected] [ref=e585] [cursor=pointer]
+              - tab "Chờ xác nhận" [ref=e586] [cursor=pointer]
+              - tab "Đang xử lý" [ref=e587] [cursor=pointer]
+              - tab "Tạm giữ" [ref=e588] [cursor=pointer]
+              - tab "Hoàn thành" [ref=e589] [cursor=pointer]
+              - tab "Đã huỷ" [ref=e590] [cursor=pointer]
+            - generic [ref=e591]:
+              - searchbox "Số đơn, email khách hàng" [ref=e593]
+              - combobox "Thanh toán" [ref=e594]
+              - combobox "Sắp xếp" [ref=e597]:
+                - generic: Mới nhất
+              - combobox "Số hàng/trang" [ref=e600]:
+                - generic: 20 / Trang
+              - button "Cột hiển thị" [ref=e603] [cursor=pointer]
+              - button "Xoá lọc" [ref=e606] [cursor=pointer]
+            - generic [ref=e608]:
+              - table [ref=e612]:
+                - rowgroup [ref=e613]:
+                  - row [ref=e614]:
+                    - columnheader [ref=e615]:
+                      - checkbox "Chọn tất cả" [ref=e616]
+                    - columnheader "Đơn hàng" [ref=e617]
+                    - columnheader "Khách hàng" [ref=e619]
+                    - columnheader [ref=e621]:
+                      - button "Sắp xếp cột" [ref=e622] [cursor=pointer]: Ngày đặt
+                    - columnheader [ref=e626]:
+                      - button "Sắp xếp cột" [ref=e627] [cursor=pointer]: Tổng tiền
+                    - columnheader "Thanh toán" [ref=e632]
+                    - columnheader "Giao hàng" [ref=e634]
+                    - columnheader "Trạng thái" [ref=e636]
+                - rowgroup [ref=e638]:
+                  - button [ref=e639] [cursor=pointer]:
+                    - cell [ref=e640]:
+                      - checkbox "Chọn hàng" [ref=e641]
+                    - cell [ref=e642]:
+                      - link "BB-20260721-50525F" [ref=e643]:
+                        - /url: /admin/orders/1474e553-207c-419e-b124-6ae2dd0bbd49
+                    - cell "Võ Minh Đức duc237022@gmail.com" [ref=e645]:
+                      - generic [ref=e647]:
+                        - generic [ref=e648]: Võ Minh Đức
+                        - generic [ref=e649]: duc237022@gmail.com
+                    - cell "11:27 21/07/2026" [ref=e650]
+                    - cell "9.570.000 ₫" [ref=e651]
+                    - cell [ref=e652]
+                    - cell [ref=e655]
+                    - cell [ref=e658]
+                  - button [ref=e662] [cursor=pointer]:
+                    - cell [ref=e663]:
+                      - checkbox "Chọn hàng" [ref=e664]
+                    - cell [ref=e665]:
+                      - link "BB-20260721-3B87BF" [ref=e666]:
+                        - /url: /admin/orders/ecb706f0-bf88-453c-9f9e-96a833d6529a
+                    - cell "Võ Minh Đức duc237022@gmail.com" [ref=e668]:
+                      - generic [ref=e670]:
+                        - generic [ref=e671]: Võ Minh Đức
+                        - generic [ref=e672]: duc237022@gmail.com
+                    - cell "10:35 21/07/2026" [ref=e673]
+                    - cell "3.190.000 ₫" [ref=e674]
+                    - cell [ref=e675]
+                    - cell [ref=e678]
+                    - cell [ref=e681]
+                  - button [ref=e685] [cursor=pointer]:
+                    - cell [ref=e686]:
+                      - checkbox "Chọn hàng" [ref=e687]
+                    - cell [ref=e688]:
+                      - link "BB-20260721-AB9179" [ref=e689]:
+                        - /url: /admin/orders/591440f1-ff1d-4dc6-8171-cadaa327666d
+                    - cell "Võ Minh Đức duc237022@gmail.com" [ref=e691]:
+                      - generic [ref=e693]:
+                        - generic [ref=e694]: Võ Minh Đức
+                        - generic [ref=e695]: duc237022@gmail.com
+                    - cell "10:11 21/07/2026" [ref=e696]
+                    - cell "3.190.000 ₫" [ref=e697]
+                    - cell [ref=e698]
+                    - cell [ref=e701]
+                    - cell [ref=e704]
+                  - button [ref=e708] [cursor=pointer]:
+                    - cell [ref=e709]:
+                      - checkbox "Chọn hàng" [ref=e710]
+                    - cell [ref=e711]:
+                      - link "BB-20260721-AD2518" [ref=e712]:
+                        - /url: /admin/orders/8c616804-5503-40a6-ae42-e573311032ef
+                    - cell "Võ Minh Đức duc237022@gmail.com" [ref=e714]:
+                      - generic [ref=e716]:
+                        - generic [ref=e717]: Võ Minh Đức
+                        - generic [ref=e718]: duc237022@gmail.com
+                    - cell "10:09 21/07/2026" [ref=e719]
+                    - cell "3.190.000 ₫" [ref=e720]
+                    - cell [ref=e721]
+                    - cell [ref=e724]
+                    - cell [ref=e727]
+                  - button [ref=e731] [cursor=pointer]:
+                    - cell [ref=e732]:
+                      - checkbox "Chọn hàng" [ref=e733]
+                    - cell [ref=e734]:
+                      - link "BB-20260721-8BE11A" [ref=e735]:
+                        - /url: /admin/orders/bfcdaa19-79d5-49c5-9780-ff2ee3b4ad2d
+                    - cell "Võ Minh Đức duc237022@gmail.com" [ref=e737]:
+                      - generic [ref=e739]:
+                        - generic [ref=e740]: Võ Minh Đức
+                        - generic [ref=e741]: duc237022@gmail.com
+                    - cell "09:02 21/07/2026" [ref=e742]
+                    - cell "3.190.000 ₫" [ref=e743]
+                    - cell [ref=e744]
+                    - cell [ref=e747]
+                    - cell [ref=e750]
+                  - button [ref=e754] [cursor=pointer]:
+                    - cell [ref=e755]:
+                      - checkbox "Chọn hàng" [ref=e756]
+                    - cell [ref=e757]:
+                      - link "BB-20260701-6D08F5" [ref=e758]:
+                        - /url: /admin/orders/03b3abd1-e564-4a4c-9e7f-283296eb07df
+                    - cell "Trần Kim Khôi trankimkhoi7703@gmail.com" [ref=e760]:
+                      - generic [ref=e762]:
+                        - generic [ref=e763]: Trần Kim Khôi
+                        - generic [ref=e764]: trankimkhoi7703@gmail.com
+                    - cell "09:18 01/07/2026" [ref=e765]
+                    - cell "24.000.000 ₫" [ref=e766]
+                    - cell [ref=e767]
+                    - cell [ref=e770]
+                    - cell [ref=e773]
+                  - button [ref=e777] [cursor=pointer]:
+                    - cell [ref=e778]:
+                      - checkbox "Chọn hàng" [ref=e779]
+                    - cell [ref=e780]:
+                      - link "BB-20260626-C6E065" [ref=e781]:
+                        - /url: /admin/orders/95af98dd-d8ca-4708-9c21-5232a7919cf4
+                    - cell "Vo Minh Tri vominhtriv@gmail.com" [ref=e783]:
+                      - generic [ref=e785]:
+                        - generic [ref=e786]: Vo Minh Tri
+                        - generic [ref=e787]: vominhtriv@gmail.com
+                    - cell "15:06 26/06/2026" [ref=e788]
+                    - cell "24.000.000 ₫" [ref=e789]
+                    - cell [ref=e790]
+                    - cell [ref=e793]
+                    - cell [ref=e796]
+                  - button [ref=e800] [cursor=pointer]:
+                    - cell [ref=e801]:
+                      - checkbox "Chọn hàng" [ref=e802]
+                    - cell [ref=e803]:
+                      - link "BB-20260626-741E86" [ref=e804]:
+                        - /url: /admin/orders/bf013b8f-b83e-4a60-a7eb-0c0a5e05707f
+                    - cell "7456_võ minh đức vominhduc760@gmail.com" [ref=e806]:
+                      - generic [ref=e808]:
+                        - generic [ref=e809]: 7456_võ minh đức
+                        - generic [ref=e810]: vominhduc760@gmail.com
+                    - cell "15:00 26/06/2026" [ref=e811]
+                    - cell "12.000.000 ₫" [ref=e812]
+                    - cell [ref=e813]
+                    - cell [ref=e816]
+                    - cell [ref=e819]
+                  - button [ref=e823] [cursor=pointer]:
+                    - cell [ref=e824]:
+                      - checkbox "Chọn hàng" [ref=e825]
+                    - cell [ref=e826]:
+                      - link "BB-20260625-F0D1F6" [ref=e827]:
+                        - /url: /admin/orders/7462cf76-c534-45e5-8a2f-9544434ac972
+                    - cell "7456_võ minh đức vominhduc760@gmail.com" [ref=e829]:
+                      - generic [ref=e831]:
+                        - generic [ref=e832]: 7456_võ minh đức
+                        - generic [ref=e833]: vominhduc760@gmail.com
+                    - cell "19:37 25/06/2026" [ref=e834]
+                    - cell "12.000.000 ₫" [ref=e835]
+                    - cell [ref=e836]
+                    - cell [ref=e839]
+                    - cell [ref=e842]
+                  - button [ref=e846] [cursor=pointer]:
+                    - cell [ref=e847]:
+                      - checkbox "Chọn hàng" [ref=e848]
+                    - cell [ref=e849]:
+                      - link "BB-20260625-8D51B5" [ref=e850]:
+                        - /url: /admin/orders/118997e0-7495-4320-a6af-8ee13bb07c6e
+                    - cell "7456_võ minh đức vominhduc760@gmail.com" [ref=e852]:
+                      - generic [ref=e854]:
+                        - generic [ref=e855]: 7456_võ minh đức
+                        - generic [ref=e856]: vominhduc760@gmail.com
+                    - cell "18:52 25/06/2026" [ref=e857]
+                    - cell "12.000.000 ₫" [ref=e858]
+                    - cell [ref=e859]
+                    - cell [ref=e862]
+                    - cell [ref=e865]
+                  - button [ref=e869] [cursor=pointer]:
+                    - cell [ref=e870]:
+                      - checkbox "Chọn hàng" [ref=e871]
+                    - cell [ref=e872]:
+                      - link "BB-20260625-B2B395" [ref=e873]:
+                        - /url: /admin/orders/d4ccbebc-8fda-4684-9677-f704bae34756
+                    - cell "4thiteck duc237022@gmail.com" [ref=e875]:
+                      - generic [ref=e877]:
+                        - generic [ref=e878]: 4thiteck
+                        - generic [ref=e879]: duc237022@gmail.com
+                    - cell "16:55 25/06/2026" [ref=e880]
+                    - cell "12.000.000 ₫" [ref=e881]
+                    - cell [ref=e882]
+                    - cell [ref=e885]
+                    - cell [ref=e888]
+                  - button [ref=e892] [cursor=pointer]:
+                    - cell [ref=e893]:
+                      - checkbox "Chọn hàng" [ref=e894]
+                    - cell [ref=e895]:
+                      - link "BB-20260625-E49A12" [ref=e896]:
+                        - /url: /admin/orders/47fab073-6fc4-4125-8130-c36826a17757
+                    - cell "7456_võ minh đức vominhduc760@gmail.com" [ref=e898]:
+                      - generic [ref=e900]:
+                        - generic [ref=e901]: 7456_võ minh đức
+                        - generic [ref=e902]: vominhduc760@gmail.com
+                    - cell "16:54 25/06/2026" [ref=e903]
+                    - cell "36.000.000 ₫" [ref=e904]
+                    - cell [ref=e905]
+                    - cell [ref=e908]
+                    - cell [ref=e911]
+                  - button [ref=e915] [cursor=pointer]:
+                    - cell [ref=e916]:
+                      - checkbox "Chọn hàng" [ref=e917]
+                    - cell [ref=e918]:
+                      - link "42512" [ref=e919]:
+                        - /url: /admin/orders/17e7d53d-ef10-4e4a-8a47-4b5601cb73de
+                    - cell "Việt Hùng nanhn9878@gmail.com" [ref=e921]:
+                      - generic [ref=e923]:
+                        - generic [ref=e924]: Việt Hùng
+                        - generic [ref=e925]: nanhn9878@gmail.com
+                    - cell "20:20 09/06/2026" [ref=e926]
+                    - cell "545.000 ₫" [ref=e927]
+                    - cell [ref=e928]
+                    - cell [ref=e931]
+                    - cell [ref=e934]
+                  - button [ref=e938] [cursor=pointer]:
+                    - cell [ref=e939]:
+                      - checkbox "Chọn hàng" [ref=e940]
+                    - cell [ref=e941]:
+                      - link "42460" [ref=e942]:
+                        - /url: /admin/orders/4736cfa0-ba1c-45cf-bc31-41a9c3a6022f
+                    - cell "Fredrik Nyquist fredrik.nyquist@gmail.com" [ref=e944]:
+                      - generic [ref=e946]:
+                        - generic [ref=e947]: Fredrik Nyquist
+                        - generic [ref=e948]: fredrik.nyquist@gmail.com
+                    - cell "01:29 05/06/2026" [ref=e949]
+                    - cell "910.000 ₫" [ref=e950]
+                    - cell [ref=e951]
+                    - cell [ref=e954]
+                    - cell [ref=e957]
+                  - button [ref=e961] [cursor=pointer]:
+                    - cell [ref=e962]:
+                      - checkbox "Chọn hàng" [ref=e963]
+                    - cell [ref=e964]:
+                      - link "42395" [ref=e965]:
+                        - /url: /admin/orders/6917905f-78ac-41e7-afa5-9bc0948026cf
+                    - cell "Sang sangmax14444@gmail.com" [ref=e967]:
+                      - generic [ref=e969]:
+                        - generic [ref=e970]: Sang
+                        - generic [ref=e971]: sangmax14444@gmail.com
+                    - cell "18:23 31/05/2026" [ref=e972]
+                    - cell "1.625.000 ₫" [ref=e973]
+                    - cell [ref=e974]
+                    - cell [ref=e977]
+                    - cell [ref=e980]
+                  - button [ref=e984] [cursor=pointer]:
+                    - cell [ref=e985]:
+                      - checkbox "Chọn hàng" [ref=e986]
+                    - cell [ref=e987]:
+                      - link "42366" [ref=e988]:
+                        - /url: /admin/orders/6908ae6e-6c26-424f-b469-4b341566b0c0
+                    - cell "Huỳnh Văn Phước phuocr@gmail.com" [ref=e990]:
+                      - generic [ref=e992]:
+                        - generic [ref=e993]: Huỳnh Văn Phước
+                        - generic [ref=e994]: phuocr@gmail.com
+                    - cell "01:13 26/05/2026" [ref=e995]
+                    - cell "3.200.000 ₫" [ref=e996]
+                    - cell [ref=e997]
+                    - cell [ref=e1000]
+                    - cell [ref=e1003]
+                  - button [ref=e1007] [cursor=pointer]:
+                    - cell [ref=e1008]:
+                      - checkbox "Chọn hàng" [ref=e1009]
+                    - cell [ref=e1010]:
+                      - link "42365" [ref=e1011]:
+                        - /url: /admin/orders/5818fd30-d7b2-47e2-9b41-c8cd94e88978
+                    - cell "Lê minh luân leminhluan@gmail.com" [ref=e1013]:
+                      - generic [ref=e1015]:
+                        - generic [ref=e1016]: Lê minh luân
+                        - generic [ref=e1017]: leminhluan@gmail.com
+                    - cell "23:15 25/05/2026" [ref=e1018]
+                    - cell "3.900.000 ₫" [ref=e1019]
+                    - cell [ref=e1020]
+                    - cell [ref=e1023]
+                    - cell [ref=e1026]
+                  - button [ref=e1030] [cursor=pointer]:
+                    - cell [ref=e1031]:
+                      - checkbox "Chọn hàng" [ref=e1032]
+                    - cell [ref=e1033]:
+                      - link "BB-20260515-0D8AA0" [ref=e1034]:
+                        - /url: /admin/orders/7f000421-b176-48c4-90b0-6dfd328b1972
+                    - cell "Võ Minh Đức duc237022@gmail.com" [ref=e1036]:
+                      - generic [ref=e1038]:
+                        - generic [ref=e1039]: Võ Minh Đức
+                        - generic [ref=e1040]: duc237022@gmail.com
+                    - cell "19:44 15/05/2026" [ref=e1041]
+                    - cell "2.630.000 ₫" [ref=e1042]
+                    - cell [ref=e1043]
+                    - cell [ref=e1046]
+                    - cell [ref=e1049]
+                  - button [ref=e1053] [cursor=pointer]:
+                    - cell [ref=e1054]:
+                      - checkbox "Chọn hàng" [ref=e1055]
+                    - cell [ref=e1056]:
+                      - link "BB-20260515-CCE009" [ref=e1057]:
+                        - /url: /admin/orders/3e23bd56-ebfc-42f7-a13e-e5b8c69c858b
+                    - cell "Võ Minh Đức duc237022@gmail.com" [ref=e1059]:
+                      - generic [ref=e1061]:
+                        - generic [ref=e1062]: Võ Minh Đức
+                        - generic [ref=e1063]: duc237022@gmail.com
+                    - cell "19:32 15/05/2026" [ref=e1064]
+                    - cell "820.000 ₫" [ref=e1065]
+                    - cell [ref=e1066]
+                    - cell [ref=e1069]
+                    - cell [ref=e1072]
+                  - button [ref=e1076] [cursor=pointer]:
+                    - cell [ref=e1077]:
+                      - checkbox "Chọn hàng" [ref=e1078]
+                    - cell [ref=e1079]:
+                      - link "BB-20260515-5F2A8E" [ref=e1080]:
+                        - /url: /admin/orders/bdfcd0ca-bfe0-431d-b23b-bc72b818a674
+                    - cell "Võ Minh Đức duc237022@gmail.com" [ref=e1082]:
+                      - generic [ref=e1084]:
+                        - generic [ref=e1085]: Võ Minh Đức
+                        - generic [ref=e1086]: duc237022@gmail.com
+                    - cell "19:28 15/05/2026" [ref=e1087]
+                    - cell "2.630.000 ₫" [ref=e1088]
+                    - cell [ref=e1089]
+                    - cell [ref=e1092]
+                    - cell [ref=e1095]
+              - generic [ref=e1099]:
+                - generic [ref=e1100]: 1678 mục · Trang 1/84
+                - generic [ref=e1101]:
+                  - generic [ref=e1102]:
+                    - generic [ref=e1103]: Đến trang
+                    - spinbutton "Đến trang" [ref=e1104]
+                    - button "Đến trang" [disabled]
+                  - generic [ref=e1105]:
+                    - button "Trước" [disabled]
+                    - button "1" [ref=e1106] [cursor=pointer]
+                    - button "2" [ref=e1107] [cursor=pointer]
+                    - button "3" [ref=e1108] [cursor=pointer]
+                    - generic [ref=e1109]: …
+                    - button "84" [ref=e1110] [cursor=pointer]
+                    - button "Tiếp" [ref=e1111] [cursor=pointer]
+    - region "Notifications alt+T"
+  - generic [ref=e448]: "0.0"
+  - generic [ref=e1113]:
+    - text: Đơn hàng (388)
+    - tooltip "Đơn hàng (388)" [ref=e1114]

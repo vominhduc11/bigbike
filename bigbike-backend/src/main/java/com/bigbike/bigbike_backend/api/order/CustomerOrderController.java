@@ -44,12 +44,11 @@ public class CustomerOrderController {
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             @RequestParam(required = false) @Size(max = 32) String status,
-            @RequestParam(required = false) @Size(max = 32) String paymentStatus,
             HttpServletRequest request
     ) {
         UUID customerId = requireCustomerId();
         return apiResponseFactory.list(
-                orderReadService.listCustomerOrders(customerId, page, size, status, paymentStatus),
+                orderReadService.listCustomerOrders(customerId, page, size, status),
                 request
         );
     }

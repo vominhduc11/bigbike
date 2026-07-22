@@ -264,6 +264,7 @@
       "formStars": "Stars",
       "formName": "Your name",
       "formNamePlaceholder": "John Doe",
+      "formSignedInAs": "Reviewing as:",
       "formComment": "Comment",
       "formCommentPlaceholder": "Great product, fits well, fast delivery…",
       "submitting": "Submitting…",
@@ -589,6 +590,7 @@
     },
     "paymentMethod": {
       "COD": "Cash on delivery (COD)",
+      "BANK_TRANSFER": "Bank transfer",
       "BACS": "Bank transfer",
       "EMPTY": "—"
     },
@@ -596,8 +598,9 @@
     "paymentMethodTitle": "Payment method",
     "addressExampleHint": "Example: 79/30/52 Au Co, Hoa Binh Ward",
     "codSubtitle": "Pay cash on delivery — inspect the item before paying",
+    "bankTransferSubtitle": "BigBike will call to confirm your order and send the transfer details afterward.",
     "confirmNotice": "BigBike will call to confirm your order before shipping. Orders are only processed after phone confirmation. <strong>No charge before confirmation.</strong>",
-    "trustShipping": "Nationwide delivery · COD · Inspect before paying",
+    "trustShipping": "Nationwide delivery · Inspect before paying",
     "trustReturnPolicy": "Free size exchange within 30 days if it doesn't fit",
     "trustWarranty": "24-month manufacturer warranty",
     "zaloSupportTitle": "Need help before ordering?",
@@ -728,7 +731,7 @@
       "errorGeneric": "Something went wrong.",
       "orderNotFoundShort": "Order number not found.",
       "loadFailedShort": "Couldn't load the order.",
-      "cancelDescription": "The order will be cancelled. This action cannot be undone. If you have already paid, BigBike will contact you to arrange a refund.",
+      "cancelDescription": "The order will be cancelled. This action cannot be undone.",
       "cancelConfirmButton": "Confirm cancel",
       "cancelInProgress": "Cancelling…",
       "cancelKeep": "Keep order",
@@ -738,41 +741,23 @@
       "defaultNote": "Note",
       "orderStatus": {
         "PENDING": "Pending",
-        "ON_HOLD": "On hold",
         "PROCESSING": "Processing",
+        "SHIPPING": "Shipping",
         "COMPLETED": "Completed",
-        "CANCELLED": "Cancelled",
-        "FAILED": "Failed",
-        "UNKNOWN": "Updating"
-      },
-      "paymentStatus": {
-        "UNPAID": "Unpaid",
-        "PAID": "Paid",
-        "CANCELLED": "Cancelled",
-        "UNKNOWN": "Updating"
-      },
-      "fulfillmentLabel": "Delivery status",
-      "fulfillmentStatus": {
-        "UNFULFILLED": "Not shipped",
-        "PROCESSING": "Preparing",
-        "SHIPPED": "Shipping",
-        "DELIVERED": "Delivered",
         "CANCELLED": "Cancelled",
         "UNKNOWN": "Updating"
       },
       "timeline": {
         "PENDING_LABEL": "Received",
         "PENDING_SUB": "Your order has been created successfully",
-        "ON_HOLD_LABEL": "Awaiting confirmation",
-        "ON_HOLD_SUB": "Waiting for the store to confirm your bank transfer",
         "PROCESSING_LABEL": "Processing",
         "PROCESSING_SUB": "Your order is being packed and checked",
+        "SHIPPING_LABEL": "Shipping",
+        "SHIPPING_SUB": "Your order has been handed to the carrier",
         "COMPLETED_LABEL": "Completed",
         "COMPLETED_SUB": "Your order has been delivered successfully",
         "CANCELLED_LABEL": "Cancelled",
-        "CANCELLED_SUB": "This order has been cancelled",
-        "FAILED_LABEL": "Failed",
-        "FAILED_SUB": "This order could not be processed"
+        "CANCELLED_SUB": "This order has been cancelled"
       }
     },
     "addresses": {
@@ -813,6 +798,15 @@
       "intro": "From the account area you can quickly see recent purchases and update your details. Pick a section below to view or edit.",
       "successUpdated": "Your details have been updated.",
       "errorGeneric": "Something went wrong, please try again.",
+      "avatarUploadCta": "Upload photo",
+      "avatarRemoveCta": "Remove photo",
+      "avatarUploading": "Uploading…",
+      "avatarRemoving": "Removing…",
+      "avatarUpdated": "Your avatar has been updated.",
+      "avatarRemoved": "Your avatar has been removed.",
+      "avatarErrorTooLarge": "The photo must be under 5MB.",
+      "avatarErrorInvalidType": "Only JPG, PNG or WebP images are accepted.",
+      "avatarErrorGeneric": "Couldn't update your avatar, please try again.",
       "fullNameLabel": "Full name",
       "fullNamePlaceholder": "Full name",
       "emailLabel": "Email",
@@ -891,6 +885,7 @@
     "addressFieldLabel": "Address",
     "noteFieldLabel": "Note",
     "paymentCod": "Cash on delivery (COD)",
+    "paymentBankTransfer": "Bank transfer",
     "paymentBacs": "Bank transfer",
     "shippingFree": "Free",
     "qtyAbbrev": "Qty"

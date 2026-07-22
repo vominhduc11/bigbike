@@ -12,11 +12,12 @@ import { formatVnd, telHref } from "@/lib/utils/format";
 import { toCartPath, toProductListPath } from "@/lib/utils/routes";
 import { DEFAULT_LOCALE, type Locale } from "@/i18n/locale";
 import { listPublicSettings } from "@/lib/api/public-api";
+import { queryKeys } from "@/lib/query/keys";
 import type { PublicSiteSetting } from "@/lib/contracts/public";
 import { pickSetting } from "@/lib/utils/settings";
 import {
   CheckoutConfirmRow,
-  CodPaymentBlock,
+  PaymentMethodSelector,
   ZaloSupportBlock,
 } from "./parts/atoms";
 import { CheckoutAddressFields } from "./parts/CheckoutAddressFields";
@@ -33,7 +34,7 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
   const locale = useLocale() as Locale;
   const [confirmedChecked, setConfirmedChecked] = useState(false);
   const { data: freshSettingsResult } = useQuery({
-    queryKey: ["public-settings", locale],
+    queryKey: queryKeys.publicSettingsResult(locale),
     queryFn: () => listPublicSettings(locale),
     initialData: locale === DEFAULT_LOCALE ? { data: settings, error: null } : undefined,
     staleTime: 5 * 60 * 1000,
@@ -61,6 +62,8 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
     setCustomerNote,
     shipToDifferent,
     setShipToDifferent,
+    paymentMethod,
+    setPaymentMethod,
     registerShip,
     shipErrors,
     formShip,
@@ -203,7 +206,7 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
           <section className="border border-border bg-background p-6">
             <h2 className="mb-6 font-cta text-a2-page font-semibold uppercase">{t("paymentMethodTitle")}</h2>
             
-            <CodPaymentBlock />
+            <PaymentMethodSelector value={paymentMethod} onValueChange={setPaymentMethod} />
 
             <CheckoutConfirmRow
               checked={confirmedChecked}

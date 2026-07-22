@@ -62,10 +62,10 @@ public class AdminReportService {
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(VN_ZONE);
 
     // REVENUE_EXCLUDED: orders that generated no revenue and should not appear in GMV/paidRevenue/count.
-    private static final List<String> REVENUE_EXCLUDED = List.of("CANCELLED", "FAILED");
+    private static final List<String> REVENUE_EXCLUDED = List.of("CANCELLED");
 
     // RANKING_EXCLUDED: orders excluded from topProducts/topCustomers (no revenue generated).
-    private static final List<String> RANKING_EXCLUDED = List.of("CANCELLED", "FAILED");
+    private static final List<String> RANKING_EXCLUDED = List.of("CANCELLED");
 
     private final OrderJpaRepository orderRepo;
     private final OrderLineItemJpaRepository lineItemRepo;
@@ -101,11 +101,11 @@ public class AdminReportService {
                     "'from' must not be after 'to'.");
         }
 
-        // GMV: SUM(totalAmount) excl CANCELLED/FAILED
+        // GMV: SUM(totalAmount) excl CANCELLED
         BigDecimal grossOrderValue = orderRepo.sumRevenueBetweenExcluding(fromInstant, toInstant, REVENUE_EXCLUDED);
 
-        // Paid revenue: SUM(paidAmount) for orders where payment was collected
-        BigDecimal paidRevenue = orderRepo.sumPaidRevenueBetweenExcluding(fromInstant, toInstant, REVENUE_EXCLUDED);
+        // paidRevenue keeps the existing response name and uses COMPLETED order totals.
+        BigDecimal paidRevenue = orderRepo.sumPaidRevenueBetween(fromInstant, toInstant);
 
         long orderCount = orderRepo.countOrdersBetweenExcluding(fromInstant, toInstant, REVENUE_EXCLUDED);
         BigDecimal avgOrderValue = orderCount > 0
@@ -155,7 +155,7 @@ public class AdminReportService {
         return new AdminAnalyticsResponse(summary, dailyRevenue, topProducts, topCustomers);
     }
 
-    public ExportResult exportOrdersCsv(String status, String paymentStatus, String from, String to) {
+    public ExportResult exportOrdersCsv(String status, String from, String to) {
         Instant fromInstant = parseFromDate(from);
         Instant toInstant = parseToDate(to);
 
@@ -163,9 +163,6 @@ public class AdminReportService {
             List<Predicate> predicates = new ArrayList<>();
             if (status != null && !status.isBlank()) {
                 predicates.add(cb.equal(root.get("status"), status.toUpperCase(Locale.ROOT)));
-            }
-            if (paymentStatus != null && !paymentStatus.isBlank()) {
-                predicates.add(cb.equal(root.get("paymentStatus"), paymentStatus.toUpperCase(Locale.ROOT)));
             }
             if (fromInstant != null) {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("placedAt"), fromInstant));
@@ -183,7 +180,7 @@ public class AdminReportService {
 
         StringWriter sw = new StringWriter();
         CSVFormat format = CSVFormat.DEFAULT.builder()
-                .setHeader("order_number", "status", "payment_status", "customer_email",
+                .setHeader("order_number", "status", "customer_email",
                         "customer_phone", "currency", "subtotal", "shipping",
                         "total", "paid_amount", "placed_at", "paid_at",
                         "completed_at", "cancelled_at")
@@ -196,7 +193,6 @@ public class AdminReportService {
                 printer.printRecord(
                         o.getOrderNumber(),
                         o.getStatus(),
-                        o.getPaymentStatus(),
                         CsvExportUtil.escape(nvl(o.getCustomerEmail())),
                         CsvExportUtil.escape(nvl(o.getCustomerPhone())),
                         o.getCurrency(),

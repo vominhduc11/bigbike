@@ -22,7 +22,7 @@ import { defineConfig } from 'vite'
  * Targets are host-mapped Docker ports: backend 8080, MinIO 9000.
  * `/media-proxy` is listed before `/media` so the regex contexts don't overlap.
  */
-const BACKEND = 'http://localhost:8080'
+const BACKEND = process.env.E2E_BACKEND_URL || 'http://localhost:8080'
 const MINIO = 'http://localhost:9000'
 const ALLOWED_ORIGIN = process.env.E2E_BACKEND_ORIGIN || 'http://localhost:4000'
 

@@ -210,7 +210,7 @@ public class WordPressMappingPlanService {
                 List.of(
                         "HPOS is OFF — source of truth is kd_posts legacy mode",
                         "kd_wc_orders table exists but is empty (HPOS never enabled)",
-                        "WC status map: wc-pending→PENDING_PAYMENT, wc-processing→PROCESSING, wc-completed→COMPLETED, wc-cancelled→CANCELLED, wc-refunded→CANCELLED",
+                        "WC status map: wc-pending→PENDING, wc-processing/wc-on-hold→PROCESSING, wc-completed→COMPLETED, wc-cancelled/wc-refunded→CANCELLED",
                         "Order number = postmeta._order_number or post_id if not set"
                 )
         ));

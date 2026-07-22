@@ -2,30 +2,15 @@ import { describe, expect, it } from "vitest";
 import { isCustomerCancellable, orderFilterHref, resolveBankTransfer } from "@/lib/utils/orders";
 
 describe("isCustomerCancellable", () => {
-  it("allows UNPAID PENDING / ON_HOLD", () => {
-    expect(isCustomerCancellable({ status: "PENDING", paymentStatus: "UNPAID", fulfillmentStatus: "UNFULFILLED" })).toBe(true);
-    expect(isCustomerCancellable({ status: "ON_HOLD", paymentStatus: "UNPAID", fulfillmentStatus: "UNFULFILLED" })).toBe(true);
+  it("allows PENDING and PROCESSING", () => {
+    expect(isCustomerCancellable({ status: "PENDING" })).toBe(true);
+    expect(isCustomerCancellable({ status: "PROCESSING" })).toBe(true);
   });
 
-  it("allows UNPAID PROCESSING when goods have not shipped/delivered", () => {
-    expect(isCustomerCancellable({ status: "PROCESSING", paymentStatus: "UNPAID", fulfillmentStatus: "UNFULFILLED" })).toBe(true);
-    expect(isCustomerCancellable({ status: "PROCESSING", paymentStatus: "UNPAID", fulfillmentStatus: "PROCESSING" })).toBe(true);
-  });
-
-  it("blocks PROCESSING once shipped or delivered", () => {
-    expect(isCustomerCancellable({ status: "PROCESSING", paymentStatus: "UNPAID", fulfillmentStatus: "SHIPPED" })).toBe(false);
-    expect(isCustomerCancellable({ status: "PROCESSING", paymentStatus: "UNPAID", fulfillmentStatus: "DELIVERED" })).toBe(false);
-  });
-
-  it("blocks any order once payment is collected (must go through refund)", () => {
-    expect(isCustomerCancellable({ status: "PENDING", paymentStatus: "PAID", fulfillmentStatus: "UNFULFILLED" })).toBe(false);
-    expect(isCustomerCancellable({ status: "PROCESSING", paymentStatus: "PAID", fulfillmentStatus: "PROCESSING" })).toBe(false);
-    expect(isCustomerCancellable({ status: "ON_HOLD", paymentStatus: "REFUNDED", fulfillmentStatus: "UNFULFILLED" })).toBe(false);
-  });
-
-  it("blocks terminal / non-cancellable statuses", () => {
-    for (const status of ["COMPLETED", "CANCELLED", "REFUNDED", "FAILED"]) {
-      expect(isCustomerCancellable({ status, paymentStatus: "UNPAID", fulfillmentStatus: "UNFULFILLED" })).toBe(false);
+  it("blocks SHIPPING and terminal statuses", () => {
+    expect(isCustomerCancellable({ status: "SHIPPING" })).toBe(false);
+    for (const status of ["COMPLETED", "CANCELLED"]) {
+      expect(isCustomerCancellable({ status })).toBe(false);
     }
   });
 });
@@ -54,6 +39,7 @@ describe("resolveBankTransfer", () => {
 
   it("returns null for non-BACS payment methods", () => {
     expect(resolveBankTransfer("COD", full)).toBeNull();
+    expect(resolveBankTransfer("BANK_TRANSFER", full)).toBeNull();
     expect(resolveBankTransfer("", full)).toBeNull();
     expect(resolveBankTransfer(null, full)).toBeNull();
     expect(resolveBankTransfer(undefined, full)).toBeNull();

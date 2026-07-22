@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Avatar } from "@/components/ui/Avatar";
 import type { Locale } from "@/i18n/locale";
 import { performLogout, useAuth } from "@/lib/auth/auth-store";
 import { cn } from "@/lib/utils";
@@ -71,9 +72,12 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
       <div className="border-b border-white/20 px-[25px] py-7.5">
         {isAuthed ? (
           <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="m-0! font-cta text-a4-content font-semibold uppercase text-white">HEY YO! <span>{displayName}</span></p>
-              <Link href={toAccountPath(locale)} className="text-a5-meta text-white/70 no-underline!">{t("account")}</Link>
+            <div className="flex items-center gap-3">
+              <Avatar url={auth.profile.avatarUrl} name={displayName} size="sm" variant="brand" />
+              <div>
+                <p className="m-0! font-cta text-a4-content font-semibold uppercase text-white">HEY YO! <span>{displayName}</span></p>
+                <Link href={toAccountPath(locale)} className="text-a5-meta text-white/70 no-underline!">{t("account")}</Link>
+              </div>
             </div>
             <Button type="button" variant="ghost" size="icon" onClick={() => void handleLogout()} disabled={loggingOut} aria-label={t("logout")} className="text-white hover:not-disabled:scale-100">
               <LogOut className="h-6 w-6" aria-hidden />
@@ -121,7 +125,11 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
         }}
         className={cn(iconBtn, "h-20! min-h-20! px-5! hover:not-disabled:scale-100")}
       >
-        <UserCircle size={18} strokeWidth={1.75} aria-hidden />
+        {isAuthed ? (
+          <Avatar url={auth.profile.avatarUrl} name={displayName} size="sm" variant="brand" />
+        ) : (
+          <UserCircle size={18} strokeWidth={1.75} aria-hidden />
+        )}
       </Button>
       <div
         role="menu"

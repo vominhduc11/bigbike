@@ -107,8 +107,8 @@ class AdminDashboardApiTest {
         double baseline = fetchTodayRevenue();
 
         Instant now = Instant.now();
-        orderRepo.save(buildOrder("COMPLETED", "PAID",      BigDecimal.valueOf(500_000), now));
-        orderRepo.save(buildOrder("CANCELLED", "CANCELLED", BigDecimal.valueOf(200_000), now));
+        orderRepo.save(buildOrder("COMPLETED", BigDecimal.valueOf(500_000), now));
+        orderRepo.save(buildOrder("CANCELLED", BigDecimal.valueOf(200_000), now));
 
         double after = fetchTodayRevenue();
         double delta = after - baseline;
@@ -117,30 +117,12 @@ class AdminDashboardApiTest {
         assertThat(delta).isEqualTo(500_000.0);
     }
 
-    // ── 5. Revenue exclusion: FAILED and REFUNDED also excluded ──────────────
-
-    @Test
-    void getDashboard_todayRevenue_excludesFailedAndCancelledOrders() throws Exception {
-        double baseline = fetchTodayRevenue();
-
-        Instant now = Instant.now();
-        orderRepo.save(buildOrder("PROCESSING", "PENDING",  BigDecimal.valueOf(300_000), now));
-        orderRepo.save(buildOrder("FAILED",     "FAILED",   BigDecimal.valueOf(100_000), now));
-        orderRepo.save(buildOrder("CANCELLED",  "CANCELLED", BigDecimal.valueOf(150_000), now));
-
-        double after = fetchTodayRevenue();
-        double delta = after - baseline;
-
-        // Only PROCESSING counts; FAILED and CANCELLED are excluded
-        assertThat(delta).isEqualTo(300_000.0);
-    }
-
     // ── 6. recentOrders contains customerName field (P1-4) ───────────────────
 
     @Test
     void getDashboard_recentOrders_customerNameFieldPresent() throws Exception {
         Instant now = Instant.now();
-        OrderEntity order = buildOrder("COMPLETED", "PAID", BigDecimal.valueOf(100_000), now);
+        OrderEntity order = buildOrder("COMPLETED", BigDecimal.valueOf(100_000), now);
         order.setCustomerName("Nguyen Van Dashboard");
         order.setCustomerEmail("dashboard-test@bigbike.test");
         orderRepo.save(order);
@@ -165,7 +147,7 @@ class AdminDashboardApiTest {
         Instant now = Instant.now();
         String productPk = "prod_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
 
-        OrderEntity order = buildOrder("COMPLETED", "PAID", BigDecimal.valueOf(999_000), now);
+        OrderEntity order = buildOrder("COMPLETED", BigDecimal.valueOf(999_000), now);
         orderRepo.save(order);
 
         OrderLineItemEntity li = new OrderLineItemEntity();
@@ -234,11 +216,11 @@ class AdminDashboardApiTest {
         Instant todayMidpoint = todayStart.plus(java.time.Duration.ofHours(12));
 
         // Seed yesterday's order (falls in prevDayStart to todayStart)
-        OrderEntity yOrder = buildOrder("COMPLETED", "PAID", BigDecimal.valueOf(100_000), yesterdayMidpoint);
+        OrderEntity yOrder = buildOrder("COMPLETED", BigDecimal.valueOf(100_000), yesterdayMidpoint);
         orderRepo.save(yOrder);
 
         // Seed today's order (falls in todayStart onwards)
-        OrderEntity tOrder = buildOrder("PROCESSING", "PAID", BigDecimal.valueOf(150_000), todayMidpoint);
+        OrderEntity tOrder = buildOrder("PROCESSING", BigDecimal.valueOf(150_000), todayMidpoint);
         orderRepo.save(tOrder);
 
         MvcResult r = mockMvc.perform(get("/api/v1/admin/dashboard?period=7d")
@@ -266,11 +248,10 @@ class AdminDashboardApiTest {
         return extractJsonDouble(r.getResponse().getContentAsString(), "todayRevenue");
     }
 
-    private OrderEntity buildOrder(String status, String paymentStatus, BigDecimal total, Instant placedAt) {
+    private OrderEntity buildOrder(String status, BigDecimal total, Instant placedAt) {
         OrderEntity o = new OrderEntity();
         o.setOrderNumber("DASH-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12));
         o.setStatus(status);
-        o.setPaymentStatus(paymentStatus);
         o.setTotalAmount(total);
         o.setPlacedAt(placedAt);
         o.setCreatedAt(placedAt);

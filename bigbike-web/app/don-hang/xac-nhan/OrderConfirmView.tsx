@@ -452,6 +452,8 @@ function legacyPaymentMethodLabel(method: string, t: ReturnType<typeof useTransl
   switch (method.trim().toUpperCase()) {
     case "COD":
       return t("paymentCod");
+    case "BANK_TRANSFER":
+      return t("paymentBankTransfer");
     case "BACS":
       return t("paymentBacs");
     default:

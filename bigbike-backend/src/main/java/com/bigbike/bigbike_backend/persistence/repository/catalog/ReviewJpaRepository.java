@@ -37,6 +37,7 @@ public interface ReviewJpaRepository extends JpaRepository<ReviewEntity, Long> {
     @Query("""
             SELECT r FROM ReviewEntity r
             WHERE (:status = '' OR UPPER(r.status) = UPPER(:status))
+              AND (:rating = 0 OR r.rating = :rating)
               AND (:q = ''
                    OR LOWER(r.authorName) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(r.body)       LIKE LOWER(CONCAT('%', :q, '%')))
@@ -49,8 +50,28 @@ public interface ReviewJpaRepository extends JpaRepository<ReviewEntity, Long> {
     Page<ReviewEntity> findByFilters(
             @Param("status") String status,
             @Param("q") String q,
+            @Param("rating") int rating,
             @Param("strictEnglish") boolean strictEnglish,
             Pageable pageable);
+
+    @Query("""
+            SELECT AVG(r.rating) AS avgRating, COUNT(r) AS totalReviews
+            FROM ReviewEntity r
+            WHERE r.status = :status
+            """)
+    ReviewAggregate findGlobalAggregateByStatus(@Param("status") String status);
+
+    @Query("""
+            SELECT r.rating, COUNT(r)
+            FROM ReviewEntity r
+            WHERE r.status = :status
+            GROUP BY r.rating
+            """)
+    List<Object[]> findGlobalRatingBreakdownByStatus(@Param("status") String status);
+
+    long countByStatus(String status);
+
+    long countByStatusAndRating(String status, short rating);
 
     @Query("""
             SELECT r FROM ReviewEntity r

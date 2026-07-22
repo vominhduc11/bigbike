@@ -113,6 +113,15 @@ Status: `CONFIRMED_FROM_CODE` — `PublicCacheHeaderFilter.java`, `SecurityConfi
 
 - **Changing `email` clears `email_verified_at`** and sends a fresh verification email to the new address. Guest-order auto-linking (`GuestOrderLinkingService`) stays disabled until the new email is verified again — linking requires proven ownership of the address (security fix AUD-001, 2026-07-15). The same reset applies when an admin changes a customer's email via `PATCH /api/v1/admin/customers/{id}`.
 
+### Customer avatar upload/remove (2026-07-21, owner decision)
+
+| Method | Path | Current purpose | Response shape | Status | Evidence |
+|---|---|---|---|---|---|
+| `POST` | `/api/v1/customer/me/avatar` | Upload/replace own avatar. `multipart/form-data`, single `file` part. Max **5 MB**, `image/jpeg`/`image/png`/`image/webp` only — both declared Content-Type and Apache Tika magic-byte detection must agree (same double-check as review photos, `ReviewPhotoStorageService`/`CustomerAvatarStorageService`). Server center-crops + downscales to **400×400** (`ImageCompressionService`, MEDIA_RULE_006) before storing to MinIO under `customers/{customerId}/...` and persisting the returned URL — replacing a previous avatar deletes the old MinIO object. | `ApiDataResponse<CustomerSummary>` with `avatarUrl` populated | `CONFIRMED_FROM_CODE` | `CustomerController.java`, `CustomerAvatarStorageService.java` |
+| `DELETE` | `/api/v1/customer/me/avatar` | Remove own avatar — deletes the MinIO object and nulls `avatar_url`. Idempotent: calling when already unset is a no-op `200`, not `404`. | `ApiDataResponse<CustomerSummary>` with `avatarUrl: null` | `CONFIRMED_FROM_CODE` | `CustomerController.java` |
+
+**No endpoint accepts an arbitrary avatar URL string.** The only way `avatar_url` changes is via the upload endpoint above (the server generates the URL from the stored MinIO object) or the two remove paths (this one and the admin one below) — enforcing the project-wide "no external image URLs" rule for avatars specifically. `PATCH /api/v1/customer/me` does **not** accept an `avatarUrl` field.
+
 | Method | Path | Current purpose | Response shape | Status | Evidence |
 |---|---|---|---|---|---|
 | `GET` | `/api/v1/customer/addresses` | List own addresses | `ApiDataResponse<List<CustomerAddressResponse>>` | `CONFIRMED_FROM_CODE` | `CustomerAddressController.java` |
@@ -122,7 +131,7 @@ Status: `CONFIRMED_FROM_CODE` — `PublicCacheHeaderFilter.java`, `SecurityConfi
 | `GET` | `/api/v1/orders/lookup?orderNumber=...&orderKey=...` | Public guest-order lookup — no auth, no CSRF (safe GET). Both params required (`400 VALIDATION_ERROR` when blank); returns the order detail only when `orderNumber` + secret `orderKey` match (`orderKey` được phát trong URL xác nhận sau checkout). Caller: trang xác nhận đơn `don-hang/xac-nhan` (`public-api.ts getOrderLookup` → `OrderConfirmClient.tsx`). *(Bổ sung vào contract 2026-07-15, AUD-076 — endpoint đã tồn tại từ trước.)* | `ApiDataResponse<OrderDetailResponse>` | `CONFIRMED_FROM_CODE` | `OrderLookupController.java`, `OrderReadService.guestLookup` |
 | `GET` | `/api/v1/customer/orders` | List own orders. Each item includes `channel` — now always `"WEB"` (POS / `"IN_STORE"` removed 2026-06-23, online-only). | `ApiListResponse<OrderListItemResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
 | `GET` | `/api/v1/customer/orders/{orderId}` | Get own order detail. Response includes `channel` — now always `"WEB"` (POS / `"IN_STORE"` removed 2026-06-23, online-only). | `ApiDataResponse<OrderDetailResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
-| `PATCH` | `/api/v1/customer/orders/{orderId}/cancel` | Customer cancels own order. Allowed only when `paymentStatus = UNPAID` **and** order is `PENDING` / `ON_HOLD` / (`PROCESSING` with fulfillment not yet `SHIPPED`/`DELIVERED`) — see `CustomerOrderCancelService.isCustomerCancellable`. Sets `CANCELLED` (+ fulfillment `CANCELLED` for DELIVERY) and revalidates product pages. **Does NOT restore stock** — inventory is manual boolean availability (owner decision 2026-06-23, no auto-restore on cancel; AUD-044/AUD-030). **Notifies the shop like a new order** (owner decision 2026-07-15, AUD-025): WebSocket `ORDER_STATUS_CHANGED` + persistent admin inbox, an `ORDER_CANCELLED_BY_CUSTOMER` audit-log record (actor `CUSTOMER`), and a cancellation-confirmation email to the customer. Once `PAID`, returns `409` — the customer must contact the shop, who cancels the paid order directly. | `ApiDataResponse<OrderDetailResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `CustomerOrderCancelService.java` |
+| `PATCH` | `/api/v1/customer/orders/{orderId}/cancel` | Customer cancels own order only while the order is `PENDING` or `PROCESSING`; `SHIPPING`/`COMPLETED`/`CANCELLED` return `409`. Sets `CANCELLED`, does not restore stock, and sends the existing audit, WebSocket, inbox and email side effects. | `ApiDataResponse<OrderDetailResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `CustomerOrderCancelService.java` |
 
 **Customer order tracking (polling).** The signed-in order-detail page refreshes the existing own-order endpoint every 15 seconds while the page is visible and refetches when the tab regains focus. The guest confirmation page applies the same short polling to the existing `orderNumber` + `orderKey` lookup after the first successful lookup. Both stop polling for `COMPLETED` or `CANCELLED`; no customer WebSocket channel or new endpoint is introduced. Status: `CONFIRMED_FROM_CODE` — `bigbike-web` order query hooks and confirmation client.
 
@@ -161,7 +170,7 @@ Query params (all optional):
 Response `data` shape:
 - `avgRating` (number, 1-decimal, **HALF_UP** — `PublicReviewService.roundAverage`), `totalReviews` (long) — **always global**, never affected by `rating`. Khi 0 review approved: `avgRating = 0.0` (không phải null) và `totalReviews = 0` — FE gate hiển thị sao bắt buộc bằng `totalReviews ≥ 1`, không bằng `avgRating > 0` (xem `BUSINESS_RULES.md` `REVIEW_RULE_003`).
 - `ratingBreakdown` — `{ "5": n, "4": n, "3": n, "2": n, "1": n }`, every key present, global counts.
-- `reviews` — `[{ id, authorName, rating, comment, photos, createdAt }]`, filtered + sorted per params. `photos` is an array of MinIO media URLs (`/media/reviews/...`, possibly empty) — customer-uploaded photos for that review, surfacing only for `APPROVED` reviews (moderated together with the review).
+- `reviews` — `[{ id, authorName, rating, comment, photos, createdAt, authorAvatarUrl }]`, filtered + sorted per params. `photos` is an array of MinIO media URLs (`/media/reviews/...`, possibly empty) — customer-uploaded photos for that review, surfacing only for `APPROVED` reviews (moderated together with the review). `authorAvatarUrl` (string, nullable, added 2026-07-21) — the linked customer's **current** avatar URL when the review was submitted while logged in (`reviews.customer_id` non-null); resolved **live** at read time (not a snapshot frozen at submission — if the customer later changes/removes their avatar, already-published reviews reflect the new state on next read), batch-fetched for all distinct `customer_id`s on the page in one query (no N+1). `null` for guest-submitted reviews or when the linked customer currently has no avatar — client renders the initials fallback in both cases identically.
 - `pagination` — `{ page, pageSize, totalItems, totalPages, hasNext, hasPrevious }`. `totalItems`/`totalPages`/`hasNext` follow the **filtered** list (so "load more" pages correctly within one star bucket); when `rating` is absent these equal the global approved count.
 
 Out-of-range `page`/`size`/`rating` → `400 VALIDATION_ERROR`. Unknown `productId` → `404`.
@@ -172,11 +181,13 @@ Submits a review (`status = PENDING`, awaits admin moderation). Honeypot `websit
 
 Body fields: `authorName` (required, ≤80), `rating` (required, 1..5), `comment` (optional, ≤1000), `website` (honeypot), plus `photos` (optional, `string[]`, ≤10). Each `photos[]` entry **must** be an internal MinIO media URL (`/media/...`) — external/hotlink URLs are rejected `400 VALIDATION_ERROR` (`photos/INVALID`); more than 10 entries → `photos/TOO_MANY`. Reuses `SafeMediaAssetUrlPolicy.validateImageUrlOrThrow`.
 
+**Customer linking (2026-07-21, owner decision):** this endpoint stays `permitAll()` (guest submission fully supported, unchanged), but when the request carries a valid `bb_session` cookie, `CustomerSessionFilter` (which runs globally except `/api/v1/admin/**`/`/api/v1/auth/**`) has already populated the `SecurityContext` with a `CustomerPrincipal` by the time this handler runs. The controller reads it optionally (non-throwing) and, when present, the review's `customer_id` is set server-side to that customer — **never client-supplied**. This is what makes `authorAvatarUrl` (below) resolvable for reviews submitted while logged in. `bigbike-web`'s same-origin proxy route (`app/api/products/[id]/reviews/route.ts`) forwards only the `bb_session` cookie value to the upstream call for this reason.
+
 ### `POST /api/v1/products/{productId}/reviews/photos`
 
 Public, no auth. `multipart/form-data` with a single `file` part — uploads one customer review photo to MinIO and returns its URL so the submit body can reference it. Rate-limited per IP (`REVIEW_PHOTO` tier). Response `data`: `{ url }` (e.g. `/media/reviews/{uuid}/{filename}`).
 
-Validation: image only — declared + Apache Tika magic-byte must be `image/jpeg`, `image/png`, or `image/webp` (no SVG/GIF/video). Max **8 MB** per file. Unknown `productId` → `404`; wrong type / oversize / empty → `400 VALIDATION_ERROR`. Photos are stored directly under the `reviews/` prefix and are **not** registered in the admin media library (`media` table). Evidence: `PublicReviewController.uploadPhoto`, `ReviewPhotoStorageService`.
+Validation: image only — declared + Apache Tika magic-byte must be `image/jpeg`, `image/png`, or `image/webp` (no SVG/GIF/video). Max **8 MB** per file. Unknown `productId` → `404`; wrong type / oversize / empty → `400 VALIDATION_ERROR`. Photos are stored directly under the `reviews/` prefix and are **not** registered in the admin media library (`media` table). Server downscales to max **1600px** wide before storing (`ImageCompressionService`, MEDIA_RULE_006) — the returned URL points at the compressed file, not the bytes the client uploaded. Evidence: `PublicReviewController.uploadPhoto`, `ReviewPhotoStorageService`.
 
 ## Content Categories Contract
 
@@ -402,29 +413,30 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
 
 | Endpoint | Current contract | Status | Evidence |
 |---|---|---|---|
-| `POST /api/v1/checkout` | Revalidates price/availability state and creates order/payment rows. Availability is gated per-variant by `isAvailable` (boolean), or by `stockState` for no-variant products; there is **no quantity decrement** (V261). The old product-level `forceOutOfStock` hard override (`STOCK_RULE_004`) was removed (V342, 2026-07-19). Billing **and** resolved shipping address require `province` + `ward` + `addressLine1` (two-tier VN address; blank strings in a custom shipping block fall back to billing). No shipping-method choice and **no shipping fee** (`shippingAmount = 0`, owner decision 2026-06-23, `SHIP_RULE_001`). `paymentMethod` is normalised to `COD`; other codes are rejected (`PAY_RULE_001`, owner decision 2026-07-15). | `CONFIRMED_FROM_CODE` | `CheckoutService.java`, `CheckoutSupport.java`, checkout tests |
+| `POST /api/v1/checkout` | Revalidates price/availability state and creates order/payment rows. Availability is gated per-variant by `isAvailable` (boolean), or by `stockState` for no-variant products; there is **no quantity decrement** (V261). The old product-level `forceOutOfStock` hard override (`STOCK_RULE_004`) was removed (V342, 2026-07-19). Billing **and** resolved shipping address require `province` + `ward` + `addressLine1` (two-tier VN address; blank strings in a custom shipping block fall back to billing). No shipping-method choice and **no shipping fee** (`shippingAmount = 0`, owner decision 2026-06-23, `SHIP_RULE_001`). `paymentMethod` accepts `COD` or `BANK_TRANSFER`; omitted is normalised to `COD` and any other explicit code is rejected (`PAY_RULE_001`, owner decision 2026-07-21). | `CONFIRMED_FROM_CODE` | `CheckoutService.java`, `CheckoutSupport.java`, checkout tests |
 > **Removed (2026-07-15).** `POST /api/v1/orders/quick-buy` (single-item direct purchase) was deleted — endpoint, `CheckoutService.quickBuy`, `QuickBuyRequest` DTO, security matcher and tests (owner decision, reversing AUD-010). The storefront has no quick-buy entry point; customers order through the cart.
 
 > **Removed (2026-06-23, online-only).** `POST /api/v1/admin/pos/orders` (immediate in-store sale) and `GET /api/v1/admin/pos/products/search` (POS product search) were deleted along with the POS module. See "POS Contract" below.
 
-## Checkout Options Contract — REMOVED (2026-07-15, AUD-056)
+## Checkout Options Contract — REMAINS REMOVED (2026-07-21)
 
-`GET /api/v1/checkout/options` đã gỡ theo owner decision #8: COD là phương thức thanh toán duy nhất
-trên storefront (`PAY_RULE_001`, owner decision 2026-07-15) nên không còn gì để "chọn" — endpoint
-không có caller (web hiển thị khối COD cố định, không fetch options). Các quy tắc thanh toán/vận
-chuyển vẫn nguyên trạng và được enforce ở `POST /checkout`:
-- `paymentMethod` omitted → normalise thành `COD`; mã khác (kể cả `BACS`) → `400 VALIDATION_ERROR`.
-  Đơn cũ mang `BACS`/`null` vẫn đọc/hiển thị bình thường. Không có cổng thanh toán tự động.
+`GET /api/v1/checkout/options` không được khôi phục. Owner đã chốt đúng hai lựa chọn storefront
+ổn định là `COD` và `BANK_TRANSFER`; web hiển thị cố định hai lựa chọn này và backend vẫn là lớp
+kiểm soát cuối ở `POST /checkout`, nên không cần endpoint danh sách động. Các quy tắc thanh toán/vận
+chuyển được enforce ở `POST /checkout`:
+- `paymentMethod` omitted → normalise thành `COD`; `COD`/`BANK_TRANSFER` → hợp lệ; mã khác
+  (kể cả `BACS`) → `400 VALIDATION_ERROR`. `BANK_TRANSFER` là mã mới, tách khỏi logic legacy
+  `BACS`. Đơn cũ mang `BACS`/`null` vẫn đọc/hiển thị bình thường. Không có cổng thanh toán tự động.
 - Shipping method đã gỡ từ 2026-06-23 (`SHIP_RULE_001`, `V264`): không chọn phương thức, không phí
   (`shippingAmount = 0`), field `shippingMethodId` bị bỏ (client cũ gửi lên sẽ bị ignore).
 
-Status: `REMOVED` | Evidence: commit gỡ `CheckoutController.getOptions` + `CheckoutOptionsResponse.java`; hành vi checkout tại `CheckoutService.java`, `Phase1FCheckoutApiTest`
+Status: `REMOVED` | Evidence: commit gỡ `CheckoutController.getOptions` + `CheckoutOptionsResponse.java`; contract hiện tại tại `CheckoutSupport.java`, `CheckoutService.java`, `Phase1FCheckoutApiTest`
 
 ## Dashboard Contract
 
 | Endpoint | Permission | Current behavior | Status | Evidence |
 |---|---|---|---|---|
-| `GET /api/v1/admin/dashboard?period={7d\|30d\|90d}` | `orders.read`; accessible to `ADMIN`, `SUPER_ADMIN`, `SHOP_MANAGER` | Returns KPI aggregates, revenue series, order-status breakdown, recent orders, top products. Revenue excludes `CANCELLED`, `FAILED` orders. Default period: `30d`. | `CONFIRMED_FROM_CODE` | `AdminDashboardController.java`, `AdminDashboardService.java` |
+| `GET /api/v1/admin/dashboard?period={7d\|30d\|90d}` | `orders.read`; accessible to `ADMIN`, `SUPER_ADMIN`, `SHOP_MANAGER` | Returns KPI aggregates, revenue series, order-status breakdown, recent orders, top products. Revenue excludes `CANCELLED` orders (`FAILED` removed 2026-07-21). Default period: `30d`. | `CONFIRMED_FROM_CODE` | `AdminDashboardController.java`, `AdminDashboardService.java` |
 
 Response shape: `ApiDataResponse<AdminDashboardSummaryResponse>`:
 - `kpi`: `{ todayRevenue, todayPaidRevenue, todayRevenuePct, todayOrders, todayOrdersDelta, pendingOrders, activeProducts }`
@@ -440,21 +452,21 @@ Status: `CONFIRMED_FROM_CODE`
 | Endpoint | Permission | Current behavior | Status | Evidence |
 |---|---|---|---|---|
 | `GET /api/v1/admin/reports/analytics?from=YYYY-MM-DD&to=YYYY-MM-DD` | `reports.read` | Returns PeriodSummary, daily revenue series, top products, and top customers. | `CONFIRMED_FROM_CODE` | `AdminReportController.java`, `AdminReportService.java` |
-| `GET /api/v1/admin/reports/orders/export?status=...&paymentStatus=...&from=...&to=...` | `reports.export` | Exports orders matching filters to a UTF-8 BOM CSV file. | `CONFIRMED_FROM_CODE` | `AdminReportController.java`, `AdminReportService.java` |
+| `GET /api/v1/admin/reports/orders/export?status=...&from=...&to=...` | `reports.export` | Exports orders matching order-status/date filters to a UTF-8 BOM CSV file. | `CONFIRMED_FROM_CODE` | `AdminReportController.java`, `AdminReportService.java` |
 | `GET /api/v1/admin/reports/customers/export?status=...` | `reports.export` | Exports customers matching filters to a UTF-8 BOM CSV file. | `CONFIRMED_FROM_CODE` | `AdminReportController.java`, `AdminReportService.java` |
 | `GET /api/v1/admin/reports/products/export?publishStatus=...` | `reports.export` | Exports the limited product report (13 reporting columns), optionally filtered by publish status, to a UTF-8 BOM CSV file. It is not the catalog backup/export endpoint. | `CONFIRMED_FROM_CODE` | `AdminReportController.java`, `AdminReportService.java` |
 
 ### Analytics Response Shape
 Returns `AdminAnalyticsResponse`. The `PeriodSummary` object inside `summary` contains:
-- `grossOrderValue`: GMV: SUM(totalAmount) excl CANCELLED/FAILED.
-- `paidRevenue`: SUM(paidAmount) where paymentStatus = PAID, excl CANCELLED orders.
-- `orderCount`: count of orders excl CANCELLED/FAILED.
+- `grossOrderValue`: GMV: SUM(totalAmount) excl CANCELLED.
+- `paidRevenue`: SUM(totalAmount) where status = COMPLETED; response name retained for compatibility.
+- `orderCount`: count of orders excl CANCELLED.
 - `avgOrderValue`: grossOrderValue / orderCount (or 0 if orderCount = 0).
-*(Note: `refundAmount` and `netRevenue` metrics were removed on 2026-07-04 as the refund feature is retired).*
+*(Note: `refundAmount` and `netRevenue` metrics were removed on 2026-07-04 as the refund feature is retired. `FAILED` was removed as an order status on 2026-07-21 — old `FAILED` orders were migrated to `CANCELLED`.)*
 
 ### Order Export Format
 The CSV file generated by `/api/v1/admin/reports/orders/export` contains the following headers in order:
-- `order_number`, `status`, `payment_status`, `customer_email`, `customer_phone`, `currency`, `subtotal`, `shipping`, `total`, `paid_amount`, `placed_at`, `paid_at`, `completed_at`, `cancelled_at`
+- `order_number`, `status`, `customer_email`, `customer_phone`, `currency`, `subtotal`, `shipping`, `total`, `paid_amount`, `placed_at`, `paid_at`, `completed_at`, `cancelled_at`
 *(Note: the `"discount"` column was removed on 2026-07-04 as promotion codes/discounts are retired).*
 
 ### Customer Export Format
@@ -1290,6 +1302,7 @@ Trang `/lien-he` là **trang tĩnh hoàn toàn**: bố cục, nhãn, tiêu đề
 |---|---|---|---|---|---|
 | `GET` | `/api/v1/admin/customers/summary` | `customers.read` | KPI counts for the admin Customers screen. Returns `AdminCustomerSummaryResponse`: `total` (all customers), `vip` (customers whose lifetime order total ≥ 10,000,000 VND — mirrors `AdminCustomerService.deriveSegment` VIP rule), `newLast30Days` (registered within the last 30 days), `active` (status = `ACTIVE`). | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java`, `AdminCustomerService.java` |
 | `PATCH` | `/api/v1/admin/customers/{customerId}` | `customers.write` | Updates profile fields. `phone = null` means unchanged; blank phone explicitly clears the stored number; a non-blank phone must pass validation and normalization or returns `400 VALIDATION_ERROR` on field `phone`. A normalized number owned by another customer returns `409`. | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java`, `AdminCustomerService.java`, `Phase1IAdminManagementApiTest.java` |
+| `DELETE` | `/api/v1/admin/customers/{customerId}/avatar` | `customers.write` | Admin removes a customer's avatar (owner decision 2026-07-21) — same delete semantics as the customer's own `DELETE /api/v1/customer/me/avatar` (deletes the MinIO object, nulls `avatar_url`, idempotent). **No admin upload endpoint exists** — admins can only view and remove, never upload on a customer's behalf. | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java` |
 
 ## Redirect Management Contract
 
@@ -1395,6 +1408,44 @@ Persistent counterpart of the WebSocket order feed — admins offline when an ev
 | Presence topics | `/topic/admin/presence/order/{orderId}` requires `orders.read`; `/topic/admin/presence/product/{productId}` requires `products.read` | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java`, `AdminPresenceService.java` |
 | Presence command | STOMP `SEND` to `/app/admin/presence` with `{ action: JOIN|LEAVE, entityType: ORDER|PRODUCT, entityId }`; presence is in-memory per WebSocket session, removed on `LEAVE` or disconnect, and never replaces `@Version` conflict protection | `CONFIRMED_FROM_CODE` | `AdminPresenceController.java`, `AdminPresenceService.java`, `OrderEntity.java`, `ProductEntity.java` |
 
+
+## Admin Reviews Contract
+
+Admin review endpoints require an Admin JWT and the permission shown below. Evidence:
+`AdminReviewController.java`, `AdminReviewService.java`, `ReviewJpaRepository.java`.
+
+| Method | Path | Permission | Purpose |
+|---|---|---|---|
+| `GET` | `/api/v1/admin/reviews` | `reviews.read` | Paginated review list. Optional `page`, `size`, `q`, `status`, `rating` (1–5), and `lang`. `pagination.totalItems` is the count after all supplied filters. |
+| `GET` | `/api/v1/admin/reviews/{id}` | `reviews.read` | Review detail, including product metadata and review photos. |
+| `GET` | `/api/v1/admin/reviews/summary` | `reviews.read` | Whole-system moderation summary, independent of list filters and page. |
+| `PATCH` | `/api/v1/admin/reviews/{id}/status` | `reviews.write` | Apply one of the statuses currently accepted by the backend. This contract does not add or redefine lifecycle transitions. |
+| `DELETE` | `/api/v1/admin/reviews/{id}` | `reviews.write` | Permanent deletion. The review cannot be restored and its review photos are deleted from media storage. Returns `204`. |
+| `POST` | `/api/v1/admin/reviews/bulk-status` | `reviews.write` | Apply the existing status operation to up to 500 IDs. Returns `{ "affected": number }`. |
+| `POST` | `/api/v1/admin/reviews/bulk-delete` | `reviews.write` | Permanently delete up to 500 IDs, including their review photos. Returns `{ "affected": number }`. |
+
+`GET /api/v1/admin/reviews/summary` returns `ApiDataResponse<AdminReviewSummaryResponse>`:
+
+```json
+{
+  "approved": {
+    "averageRating": 4.2,
+    "totalReviews": 120,
+    "ratingBreakdown": { "1": 2, "2": 5, "3": 13, "4": 40, "5": 60 }
+  },
+  "pending": { "totalReviews": 8, "oneStarReviews": 2 }
+}
+```
+
+`approved` includes only `APPROVED` reviews and follows `REVIEW_RULE_001`; the average is rounded
+to one decimal using `HALF_UP` and is `0.0` when there are no public reviews. `ratingBreakdown`
+contains all five keys. `pending` is counted across the whole system and is not affected by list
+filters. Review photos remain limited to the existing `REVIEW_RULE_005` constraints.
+
+The list `rating` filter affects only the returned rows and `pagination.totalItems`; it never changes
+the summary endpoint. Unknown or missing products/authors remain representable in the response with
+empty nullable metadata so the admin UI can render an explicit fallback.
+
 ## Response Shape Caveats
 
 The repo does not use one wrapper consistently across every controller:
@@ -1409,12 +1460,12 @@ Status: `CONFIRMED_FROM_CODE`
 The existing `/topic/admin/orders` feed has two admin consumers: `OrderListScreen.jsx`
 invalidates `['orders']`, while `AdminShell.jsx` invalidates
 `['nav-badge', 'orders-pending']` so the pending-order sidebar count refetches
-immediately. Both use the shared reconnecting STOMP client; the REST query
+immediately. `/topic/admin/inventory` invalidates `['inventory-summary']` in
+`DashboardScreen.jsx`, and `/topic/admin/reviews` invalidates both `['reviews']` and
+`['review-summary']` in `ReviewListScreen.jsx`, and `/topic/admin/customers` invalidates both
+`['customers']` and `['customer-summary']` in `CustomerListScreen.jsx`; the pending review count
+and customer KPIs are screen summaries, not separate sidebar badges. All use the shared reconnecting STOMP client; the REST query
 remains the fallback when WebSocket delivery is unavailable.
-`/topic/admin/inventory` invalidates `['inventory-summary']` in `DashboardScreen.jsx`, and `/topic/admin/reviews` invalidates both `['reviews']` and `['review-summary']` in `ReviewListScreen.jsx`; the pending review count is a screen summary, not a separate sidebar badge.
-`/topic/admin/customers` invalidates both `['customers']` and `['customer-summary']` in `CustomerListScreen.jsx`; customer KPIs are a screen summary, not a separate sidebar badge.
-Presence is ephemeral and session-scoped: the detail screens send `JOIN`/`LEAVE` through `/app/admin/presence`, resubscribe and rejoin after reconnect, and show a warning when the same entity has more than one distinct active admin.
-`/topic/admin/customers` invalidates both `['customers']` and `['customer-summary']` in `CustomerListScreen.jsx`; customer KPIs are a screen summary, not a separate sidebar badge.
 
 ### Account page fields — address email, order product names (V127)
 

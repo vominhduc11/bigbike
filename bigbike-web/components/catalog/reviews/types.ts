@@ -7,6 +7,7 @@ export type Review = {
   comment?: string;
   photos?: string[];
   createdAt: string;
+  authorAvatarUrl?: string | null;
 };
 
 export type ReviewsData = {

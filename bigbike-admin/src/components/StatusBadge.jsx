@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { normalizePublishStatus, normalizeStockState } from '../lib/contracts'
-import { ORDER_STATUS_TONE, PAYMENT_STATUS_TONE, CUSTOMER_STATUS_TONE, FULFILLMENT_STATUS_TONE, toneFromPublish, toneFromStock } from '../lib/statusTone'
+import { ORDER_STATUS_TONE, CUSTOMER_STATUS_TONE, REVIEW_STATUS_TONE, toneFromPublish, toneFromStock } from '../lib/statusTone'
 
 function Badge({ tone = 'muted', className, children }) {
   return (
@@ -25,9 +25,6 @@ export function StatusBadge({ status, type = 'order', className }) {
   if (type === 'order') {
     tone = ORDER_STATUS_TONE[status] ?? 'muted'
     label = t(`status.order.${status}`, { defaultValue: status })
-  } else if (type === 'payment') {
-    tone = PAYMENT_STATUS_TONE[status] ?? 'muted'
-    label = t(`status.payment.${status}`, { defaultValue: status })
   } else if (type === 'visibility') {
     const key = status ? 'VISIBLE' : 'HIDDEN'
     tone = key === 'VISIBLE' ? 'success' : 'neutral'
@@ -35,9 +32,9 @@ export function StatusBadge({ status, type = 'order', className }) {
   } else if (type === 'customer') {
     tone = CUSTOMER_STATUS_TONE[status] ?? 'muted'
     label = t(`status.customer.${status}`, { defaultValue: status })
-  } else if (type === 'fulfillment') {
-    tone = FULFILLMENT_STATUS_TONE[status] ?? 'muted'
-    label = t(`status.fulfillment.${status}`, { defaultValue: status })
+  } else if (type === 'review') {
+    tone = REVIEW_STATUS_TONE[status] ?? 'muted'
+    label = t(`reviews.status${String(status).charAt(0) + String(status).slice(1).toLowerCase()}`, { defaultValue: t('common.unknown') })
   }
 
   return <Badge tone={tone} className={className}>{label}</Badge>

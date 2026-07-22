@@ -29,8 +29,6 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
 
     List<OrderEntity> findByStatus(String status);
 
-    List<OrderEntity> findByPaymentStatus(String paymentStatus);
-
     List<OrderEntity> findByCustomerPhone(String customerPhone);
 
     List<OrderEntity> findByCustomerEmail(String customerEmail);
@@ -73,29 +71,26 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
 
     // ── Dashboard: KPI aggregates ──────────────────────────────────────────────
 
-    // Gross GMV: total order value placed regardless of payment status (includes unpaid/cancelled)
+    // Gross GMV: total order value placed regardless of payment records (includes unpaid/cancelled)
     @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM OrderEntity o WHERE o.placedAt >= :from")
     BigDecimal sumRevenueSince(@Param("from") Instant from);
 
     @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM OrderEntity o WHERE o.placedAt >= :from AND o.placedAt < :to")
     BigDecimal sumRevenueBetween(@Param("from") Instant from, @Param("to") Instant to);
 
-    // Paid revenue: actual cash collected — SUM(paidAmount) for orders where payment was received
-    @Query("SELECT COALESCE(SUM(o.paidAmount), 0) FROM OrderEntity o " +
-           "WHERE o.placedAt >= :from AND o.paymentStatus = 'PAID'")
+    // Compatibility query for paidRevenue response: completed-order total value.
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM OrderEntity o " +
+           "WHERE o.placedAt >= :from AND o.status = 'COMPLETED'")
     BigDecimal sumPaidRevenueSince(@Param("from") Instant from);
 
-    // Canonical paid revenue: PAID orders only (cash actually collected).
-    @Query("SELECT COALESCE(SUM(o.paidAmount), 0) FROM OrderEntity o " +
-           "WHERE o.placedAt >= :from " +
-           "  AND o.paymentStatus = 'PAID' " +
-           "  AND o.status NOT IN :excludedStatuses")
+    // Compatibility query for todayPaidRevenue: COMPLETED orders only.
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM OrderEntity o " +
+           "WHERE o.placedAt >= :from AND o.status = 'COMPLETED'")
     BigDecimal sumPaidRevenueSinceExcluding(
-            @Param("from") Instant from,
-            @Param("excludedStatuses") List<String> excludedStatuses);
+            @Param("from") Instant from);
 
-    @Query("SELECT COALESCE(SUM(o.paidAmount), 0) FROM OrderEntity o " +
-           "WHERE o.placedAt >= :from AND o.placedAt < :to AND o.paymentStatus = 'PAID'")
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM OrderEntity o " +
+           "WHERE o.placedAt >= :from AND o.placedAt < :to AND o.status = 'COMPLETED'")
     BigDecimal sumPaidRevenueBetween(@Param("from") Instant from, @Param("to") Instant to);
 
     @Query("SELECT COUNT(o) FROM OrderEntity o WHERE o.placedAt >= :from")
@@ -139,7 +134,7 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
             @Param("excludedStatuses") List<String> excludedStatuses,
             Pageable pageable);
 
-    // ── Dashboard: valid-order aggregates (excludes CANCELLED/FAILED) ─────────
+    // ── Dashboard: valid-order aggregates (excludes CANCELLED) ────────────────
 
     @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM OrderEntity o " +
            "WHERE o.placedAt >= :from AND o.status NOT IN :excludedStatuses")
@@ -179,14 +174,12 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
             @Param("from") Instant from, @Param("to") Instant to,
             @Param("excludedStatuses") List<String> excludedStatuses);
 
-    // Paid revenue: cash actually collected — SUM(paidAmount) for PAID orders.
-    @Query("SELECT COALESCE(SUM(o.paidAmount), 0) FROM OrderEntity o " +
+    // Compatibility query for paidRevenue: COMPLETED-order total value.
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM OrderEntity o " +
            "WHERE o.placedAt >= :from AND o.placedAt < :to " +
-           "  AND o.paymentStatus = 'PAID' " +
-           "  AND o.status NOT IN :excludedStatuses")
+           "  AND o.status = 'COMPLETED'")
     BigDecimal sumPaidRevenueBetweenExcluding(
-            @Param("from") Instant from, @Param("to") Instant to,
-            @Param("excludedStatuses") List<String> excludedStatuses);
+            @Param("from") Instant from, @Param("to") Instant to);
 
     // Top customers using COALESCE(customer_id::text, customer_email) as group key.
     // Prevents the same customer appearing in multiple rows if their email changed.

@@ -7,15 +7,14 @@ import java.util.UUID;
 public record OrderWsEvent(
         // type values:
         //   "NEW_ORDER"                  — new order placed (paymentMethod = payment method string, e.g. "COD")
-        //   "ORDER_STATUS_CHANGED"       — order status updated (paymentMethod = current paymentStatus)
-        //   "ORDER_PAYMENT_STATUS_CHANGED" — payment status updated (paymentMethod = new paymentStatus)
-        //   "ORDER_NOTE_ADDED"           — note added to order (paymentMethod = current paymentStatus)
+        //   "ORDER_STATUS_CHANGED"       — order status updated (paymentMethod = current method)
+        //   "ORDER_NOTE_ADDED"           — note added to order (paymentMethod = current method)
         String type,
         UUID orderId,
         String orderNumber,
         String customerName,
         BigDecimal total,
         String status,
-        String paymentMethod,   // semantics vary by event type — see type comments above
+        String paymentMethod,
         Instant timestamp
 ) {}

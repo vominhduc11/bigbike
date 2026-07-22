@@ -5,7 +5,7 @@ import { Modal } from '../../components/layout'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 
-export function ReasonConfirmModal({ targetStatus, onConfirm, onClose, loading = false }) {
+export function ReasonConfirmModal({ onConfirm, onClose, loading = false }) {
   const { t } = useTranslation()
   const [reason, setReason] = useState('')
   const [error, setError] = useState('')
@@ -15,11 +15,8 @@ export function ReasonConfirmModal({ targetStatus, onConfirm, onClose, loading =
   // double-submit trong khoảng thời gian parent chưa kịp bật loading).
   const busy = loading || submitting
 
-  const isFailed = targetStatus === 'FAILED'
-  const title = isFailed ? t('orders.detail.confirmFailedTitle') : t('orders.detail.confirmCancelTitle')
-  const description = isFailed
-    ? t('orders.detail.confirmFailedDesc')
-    : t('orders.detail.confirmCancelDesc')
+  const title = t('orders.detail.confirmCancelTitle')
+  const description = t('orders.detail.confirmCancelDesc')
 
   async function handleSubmit(e) {
     e.preventDefault()

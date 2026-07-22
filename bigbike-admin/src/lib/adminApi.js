@@ -774,7 +774,6 @@ export async function fetchOrders(query) {
         sort: query?.sort,
         q: query?.search,
         status: query?.orderStatus !== 'ALL' ? query?.orderStatus : undefined,
-        paymentStatus: query?.paymentStatus !== 'ALL' ? query?.paymentStatus : undefined,
         from: query?.dateRange?.from?.toISOString().slice(0, 10),
         to: query?.dateRange?.to?.toISOString().slice(0, 10),
       },
@@ -794,11 +793,13 @@ export async function fetchOrderDetail(orderId) {
   }
 }
 
-export async function updateOrderStatus(orderId, orderStatus, reason) {
+export async function updateOrderStatus(orderId, orderStatus, reason, shipping = undefined) {
   const body = { status: orderStatus }
   // BE DTO UpdateOrderStatusRequest field is `note` (not `reason`); the cancel/fail reason
   // the admin types is persisted as the order note. Sending `reason` was silently dropped.
   if (reason) body.note = reason
+  if (shipping?.trackingNumber) body.trackingNumber = shipping.trackingNumber
+  if (shipping?.shippingCarrier) body.shippingCarrier = shipping.shippingCarrier
   const payload = await requestJson(`/admin/orders/${orderId}/status`, {
     method: 'PATCH',
     body,
@@ -814,24 +815,6 @@ export async function fetchOrderAllowedTransitions(orderId) {
   } catch (error) {
     throw normalizeError(error)
   }
-}
-
-export async function updateOrderPaymentStatus(orderId, paymentStatus, paidAmount) {
-  const body = { paymentStatus }
-  if (paidAmount !== undefined && paidAmount !== null) body.paidAmount = paidAmount
-  const payload = await requestJson(`/admin/orders/${orderId}/payment-status`, {
-    method: 'PATCH',
-    body,
-  })
-  return parseDetailPayload(payload, normalizeOrder)
-}
-
-export async function updateOrderFulfillment(orderId, body) {
-  const payload = await requestJson(`/admin/orders/${orderId}/fulfillment`, {
-    method: 'PATCH',
-    body,
-  })
-  return parseDetailPayload(payload, normalizeOrder)
 }
 
 export async function addOrderNote(orderId, { content, customerVisible = false }) {
@@ -897,6 +880,11 @@ export async function updateCustomer(customerId, data) {
     method: 'PATCH',
     body: data,
   })
+  return parseDetailPayload(payload, normalizeCustomer)
+}
+
+export async function removeCustomerAvatar(customerId) {
+  const payload = await requestJson(`/admin/customers/${customerId}/avatar`, { method: 'DELETE' })
   return parseDetailPayload(payload, normalizeCustomer)
 }
 
@@ -1386,9 +1374,44 @@ function normalizeReview(input) {
 export async function fetchReviews(query) {
   try {
     const payload = await requestJson('/admin/reviews', {
-      query: { page: query?.page, size: query?.pageSize, q: query?.search, status: query?.status, lang: getContentLang() },
+      query: {
+        page: query?.page,
+        size: query?.pageSize,
+        q: query?.search,
+        status: query?.status,
+        rating: query?.rating || undefined,
+        lang: getContentLang(),
+      },
     })
     return withLiveData(parseListPayload(payload, normalizeReview, 20))
+  } catch (error) {
+    throw normalizeError(error)
+  }
+}
+
+export async function fetchReviewSummary() {
+  try {
+    const payload = await requestJson('/admin/reviews/summary')
+    const data = payload?.data || {}
+    const approved = data.approved || {}
+    const pending = data.pending || {}
+    const ratingBreakdown = approved.ratingBreakdown && typeof approved.ratingBreakdown === 'object'
+      ? approved.ratingBreakdown
+      : {}
+    return {
+      approved: {
+        averageRating: Number.isFinite(Number(approved.averageRating)) ? Number(approved.averageRating) : 0,
+        totalReviews: Number.isFinite(Number(approved.totalReviews)) ? Number(approved.totalReviews) : 0,
+        ratingBreakdown: Object.fromEntries([1, 2, 3, 4, 5].map((star) => [
+          String(star),
+          Number.isFinite(Number(ratingBreakdown[String(star)])) ? Number(ratingBreakdown[String(star)]) : 0,
+        ])),
+      },
+      pending: {
+        totalReviews: Number.isFinite(Number(pending.totalReviews)) ? Number(pending.totalReviews) : 0,
+        oneStarReviews: Number.isFinite(Number(pending.oneStarReviews)) ? Number(pending.oneStarReviews) : 0,
+      },
+    }
   } catch (error) {
     throw normalizeError(error)
   }
@@ -1589,7 +1612,6 @@ async function fetchCsvBlob(path, params = {}, fallbackName = 'export.csv', acce
 export async function exportOrdersCsv(filters = {}) {
   return fetchCsvBlob('/admin/reports/orders/export', {
     status: filters.status,
-    paymentStatus: filters.paymentStatus,
     from: filters.from,
     to: filters.to,
   }, 'orders.csv')

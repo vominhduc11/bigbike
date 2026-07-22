@@ -26,24 +26,19 @@ import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { useHasPermission } from '../lib/auth'
 
-const ORDER_STATUS_KEYS = ['PENDING', 'PROCESSING', 'ON_HOLD', 'COMPLETED', 'CANCELLED', 'FAILED']
-const PAYMENT_STATUS_KEYS = ['UNPAID', 'PAID', 'CANCELLED']
+const ORDER_STATUS_KEYS = ['PENDING', 'PROCESSING', 'SHIPPING', 'COMPLETED', 'CANCELLED']
 
 // T2 — CTA cho trạng thái "chưa từng có đơn nào" (không phải do lọc).
 const STOREFRONT_BASE = (import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn').replace(/\/$/, '')
 
-// O4 — các bước chuyển trạng thái không cần lý do/xác nhận, cho phép đổi ngay
-// trên danh sách (đúng ALLOWED_TRANSITIONS trong STATE_MACHINES.md: PENDING → PROCESSING/ON_HOLD,
-// ON_HOLD → PROCESSING).
+// Chỉ bước PENDING → PROCESSING được thực hiện nhanh trên danh sách.
 const INLINE_STATUS_TARGETS = {
-  PENDING: ['ON_HOLD', 'PROCESSING'],
-  ON_HOLD: ['PROCESSING'],
+  PENDING: ['PROCESSING'],
 }
 
 const INITIAL_QUERY = {
   search: '',
   orderStatus: 'ALL',
-  paymentStatus: 'ALL',
   sort: 'createdAt:desc',
   page: 1,
   pageSize: 20,
@@ -116,7 +111,7 @@ export function OrderListScreen({ navigate, canUpdate }) {
 
   const items = useMemo(() => state.items || [], [state.items])
   const pagination = state.pagination
-  const isFiltered = !!query.search || query.orderStatus !== 'ALL' || query.paymentStatus !== 'ALL'
+  const isFiltered = !!query.search || query.orderStatus !== 'ALL'
 
   // O4 — đổi trạng thái ngay trên 1 dòng (không cần lý do/xác nhận).
   async function handleInlineStatusChange(order, newStatus) {
@@ -139,7 +134,7 @@ export function OrderListScreen({ navigate, canUpdate }) {
     }
   }
 
-  // O6 — chuyển hàng loạt các đơn đã chọn (đang PENDING/ON_HOLD) sang "Đang xử lý".
+  // Chuyển hàng loạt các đơn PENDING đã chọn sang "Đang xử lý".
   async function runBulkProcessing() {
     if (!canUpdate || bulkProgress || state.isFetching) return
     const byId = new Map(items.map((o) => [o.id, o]))
@@ -232,20 +227,6 @@ export function OrderListScreen({ navigate, canUpdate }) {
       render: (order) => <span style={{ fontWeight: 700 }}>{formatCurrencyVnd(order.total)}</span>,
     },
     {
-      key: 'paymentStatus',
-      label: t('orders.colPaymentStatus'),
-      render: (order) => <StatusBadge type="payment" status={order.paymentStatus} />,
-    },
-    {
-      // Trạng thái giao hàng — biết đơn nào cần đóng gói/giao mà không cần mở chi tiết
-      // (đơn nhận tại cửa hàng hiển thị "—"). UI-only: dữ liệu đã có sẵn trong danh sách.
-      key: 'fulfillmentStatus',
-      label: t('orders.colFulfillment', { defaultValue: 'Giao hàng' }),
-      render: (order) => order.fulfillmentType === 'DELIVERY'
-        ? <StatusBadge type="fulfillment" status={order.fulfillmentStatus || 'UNFULFILLED'} />
-        : <span className="bb-muted">—</span>,
-    },
-    {
       key: 'orderStatus',
       label: t('orders.colStatus'),
       render: (order) => {
@@ -264,7 +245,7 @@ export function OrderListScreen({ navigate, canUpdate }) {
               >
                 {inlineUpdating[order.id] === target
                   ? t('orders.detail.savingShort')
-                  : <><ArrowRight size={14} aria-hidden="true" />{target === 'PROCESSING' ? t('orders.detail.actionProcessing') : t('orders.detail.actionOnHold')}</>}
+                  : <><ArrowRight size={14} aria-hidden="true" />{t('orders.detail.actionProcessing')}</>}
               </Button>
             ))}
           </div>
@@ -290,7 +271,6 @@ export function OrderListScreen({ navigate, canUpdate }) {
       meta: [
         { label: t('orders.colDate'), value: formatDateTime(order.createdAt) },
         { label: t('orders.colTotal'), value: formatCurrencyVnd(order.total), tone: 'strong' },
-        { label: t('orders.colPaymentStatus'), value: <StatusBadge type="payment" status={order.paymentStatus} /> },
       ],
       onClick: () => navigate(`/admin/orders/${order.id}`),
       actions: inlineTargets.length > 0
@@ -305,7 +285,7 @@ export function OrderListScreen({ navigate, canUpdate }) {
           >
             {inlineUpdating[order.id] === target
               ? t('orders.detail.savingShort')
-              : <><ArrowRight size={14} aria-hidden="true" />{target === 'PROCESSING' ? t('orders.detail.actionProcessing') : t('orders.detail.actionOnHold')}</>}
+              : <><ArrowRight size={14} aria-hidden="true" />{t('orders.detail.actionProcessing')}</>}
           </Button>
         ))
         : undefined,
@@ -366,15 +346,6 @@ export function OrderListScreen({ navigate, canUpdate }) {
           wrapperClassName="flex-1 min-w-[200px]"
         />
         <FilterSelect
-          value={query.paymentStatus}
-          onValueChange={(v) => updateQuery({ paymentStatus: v }, { resetPage: true })}
-          ariaLabel={t('orders.filterPaymentStatus')}
-          options={[
-            { value: 'ALL', label: t('orders.filterPaymentStatus') },
-            ...PAYMENT_STATUS_KEYS.map((k) => ({ value: k, label: t(`status.payment.${k}`) })),
-          ]}
-        />
-        <FilterSelect
           value={query.sort}
           onValueChange={(v) => updateQuery({ sort: v }, { resetPage: true })}
           ariaLabel={t('orders.filterSort')}
@@ -394,7 +365,7 @@ export function OrderListScreen({ navigate, canUpdate }) {
         </Button>
       </div>
 
-      {/* Thanh hành động hàng loạt — chuyển nhiều đơn PENDING/ON_HOLD sang Đang xử lý. */}
+      {/* Thanh hành động hàng loạt — chuyển nhiều đơn PENDING sang Đang xử lý. */}
       <BulkActionBar
         selectedCount={canUpdate && selectedIds.length > 0
           ? (bulkProgress

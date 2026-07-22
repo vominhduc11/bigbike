@@ -30,11 +30,10 @@ const PENDING_WARN_THRESHOLD = 5
 
 const ORDER_STATUS_COLORS = {
   PENDING:    'var(--admin-color-status-warning-text)',
-  ON_HOLD:    'var(--admin-color-text-muted)',
   PROCESSING: 'var(--admin-color-status-info-text)',
+  SHIPPING:   'var(--admin-color-status-info-text)',
   COMPLETED:  'var(--admin-color-status-success-text)',
   CANCELLED:  'var(--admin-color-status-danger-text)',
-  FAILED:     'var(--admin-color-status-warning-orange-text)',
 }
 
 // Charts pull in recharts (~346KB) — load them lazily so the dashboard shell
@@ -87,8 +86,8 @@ function SkeletonBlock({ height = 280 }) {
 
 export function DashboardScreen({ navigate }) {
   const { t, i18n } = useTranslation()
-  const queryClient = useQueryClient()
   const { user } = useAuth()
+  const queryClient = useQueryClient()
   const [period, setPeriod] = useState('30d')
   // Số đếm (đơn/sản phẩm) format theo ngôn ngữ đang chọn — không cứng 'vi-VN'.
   const numberLocale = i18n.language === 'en' ? 'en-US' : 'vi-VN'

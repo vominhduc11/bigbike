@@ -44,7 +44,6 @@ public class CustomerOrderCancelService {
         if (!isCustomerCancellable(order)) {
             throw new ConflictException(
                     "Đơn hàng ở trạng thái " + order.getStatus()
-                    + (order.getPaymentStatus() != null ? "/" + order.getPaymentStatus() : "")
                     + " không thể huỷ. Vui lòng liên hệ shop để được hỗ trợ."
             );
         }
@@ -54,10 +53,6 @@ public class CustomerOrderCancelService {
         order.setStatus("CANCELLED");
         order.setCancelledAt(now);
         order.setUpdatedAt(now);
-
-        if ("DELIVERY".equalsIgnoreCase(order.getFulfillmentType())) {
-            order.setFulfillmentStatus("CANCELLED");
-        }
 
         orderRepo.save(order);
 
@@ -72,7 +67,7 @@ public class CustomerOrderCancelService {
                 : (order.getCustomerEmail() != null ? order.getCustomerEmail() : "Khách hàng");
         adminOrderWsService.pushEvent(new OrderWsEvent(
                 "ORDER_STATUS_CHANGED", order.getId(), order.getOrderNumber(),
-                customerName, order.getTotalAmount(), "CANCELLED", order.getPaymentStatus(), now));
+                customerName, order.getTotalAmount(), "CANCELLED", order.getPaymentMethod(), now));
 
         auditLogWriter.save(auditLogFactory.build(
                 "CUSTOMER", customerId, "ORDER_CANCELLED_BY_CUSTOMER", "ORDER", order.getId(),
@@ -98,31 +93,9 @@ public class CustomerOrderCancelService {
         }
     }
 
-    /**
-     * Customer may cancel their own order only when no money has been collected
-     * and the goods have not left the warehouse:
-     *   • PENDING                          — legacy / not yet confirmed
-     *   • ON_HOLD                          — BACS placed, transfer not received
-     *   • PROCESSING + not yet SHIPPED/DELIVERED — COD or BACS confirmed but still
-     *                                            packable / cancellable in-house
-     * In every case paymentStatus must be UNPAID. Once payment is captured (PAID),
-     * the customer must contact the shop, which cancels the order and reconciles any
-     * money returned manually (there is no system refund flow).
-     */
+    /** Customer may cancel only before the order enters shipping. */
     private static boolean isCustomerCancellable(OrderEntity order) {
-        String paymentStatus = order.getPaymentStatus();
-        if (!"UNPAID".equals(paymentStatus)) {
-            return false;
-        }
-
         String status = order.getStatus();
-        if ("PENDING".equals(status) || "ON_HOLD".equals(status)) {
-            return true;
-        }
-        if ("PROCESSING".equals(status)) {
-            String fulfillment = order.getFulfillmentStatus();
-            return !"SHIPPED".equals(fulfillment) && !"DELIVERED".equals(fulfillment);
-        }
-        return false;
+        return "PENDING".equals(status) || "PROCESSING".equals(status);
     }
 }

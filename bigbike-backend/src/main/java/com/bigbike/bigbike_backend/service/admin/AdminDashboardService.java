@@ -36,10 +36,10 @@ public class AdminDashboardService {
 
     // Real OrderStatus values (mirrors OrderStatus enum)
     private static final List<String> STATUS_ORDER = List.of(
-            "PENDING", "ON_HOLD", "PROCESSING", "COMPLETED", "CANCELLED", "FAILED");
+            "PENDING", "PROCESSING", "SHIPPING", "COMPLETED", "CANCELLED");
 
     // Orders excluded from revenue KPIs — consistent with Reports module
-    private static final List<String> REVENUE_EXCLUDED_STATUSES = List.of("CANCELLED", "FAILED");
+    private static final List<String> REVENUE_EXCLUDED_STATUSES = List.of("CANCELLED");
 
     private final OrderJpaRepository orderRepo;
     private final OrderLineItemJpaRepository lineItemRepo;
@@ -53,12 +53,11 @@ public class AdminDashboardService {
         Instant prevDayStart = todayVn.minusDays(1).atStartOfDay(VN_ZONE).toInstant();
         Instant periodStart  = todayVn.minusDays(days - 1L).atStartOfDay(VN_ZONE).toInstant();
 
-        // ── KPI aggregates (valid orders only — excludes CANCELLED/FAILED) ───
+        // ── KPI aggregates (valid orders only — excludes CANCELLED) ──────────
         BigDecimal todayRevenue     = orderRepo.sumRevenueSinceExcluding(todayStart, REVENUE_EXCLUDED_STATUSES);
-        // paidRevenue = SUM(paidAmount) for PAID orders (excl CANCELLED).
-        // Uses same status set as AdminReportService.sumPaidRevenueBetweenExcluding()
-        // so Dashboard.todayPaidRevenue matches Reports.paidRevenue for the same date range.
-        BigDecimal todayPaidRevenue = orderRepo.sumPaidRevenueSinceExcluding(todayStart, REVENUE_EXCLUDED_STATUSES);
+        // todayPaidRevenue keeps the existing response name but is based on
+        // COMPLETED order totals, matching Reports.paidRevenue.
+        BigDecimal todayPaidRevenue = orderRepo.sumPaidRevenueSinceExcluding(todayStart);
         BigDecimal prevRevenue      = orderRepo.sumRevenueBetweenExcluding(prevDayStart, todayStart, REVENUE_EXCLUDED_STATUSES);
         long todayOrderCount = orderRepo.countOrdersSinceExcluding(todayStart, REVENUE_EXCLUDED_STATUSES);
         long prevOrderCount  = orderRepo.countOrdersBetweenExcluding(prevDayStart, todayStart, REVENUE_EXCLUDED_STATUSES);

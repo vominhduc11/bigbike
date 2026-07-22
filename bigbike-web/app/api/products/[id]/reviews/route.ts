@@ -136,11 +136,23 @@ export async function POST(req: Request, { params }: ProductRouteParams) {
     ? photos.filter((p): p is string => typeof p === "string" && p.trim().length > 0).slice(0, 10)
     : [];
 
+  // Forward only the bb_session cookie (never the full Cookie header) so a review
+  // submitted while logged in can be linked to the customer's account server-side —
+  // never the full Cookie header, to avoid leaking bb_csrf/other cookies to this
+  // server-to-server call.
+  const rawCookie = req.headers.get("cookie") ?? "";
+  const sessionMatch = rawCookie.match(/(?:^|;\s*)bb_session=([^;]*)/);
+  const sessionCookie = sessionMatch ? `bb_session=${sessionMatch[1]}` : null;
+
   try {
     const res = await fetch(`${BACKEND}/api/v1/products/${id}/reviews`, {
       method: "POST",
       cache: "no-store",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(sessionCookie ? { Cookie: sessionCookie } : {}),
+      },
       body: JSON.stringify({
         authorName: authorName.trim(),
         rating,

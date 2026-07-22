@@ -5,9 +5,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderListItemRespons
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderNoteResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.OrderAuditLogResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.CreateOrderNoteRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.order.UpdateFulfillmentRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.UpdateOrderStatusRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.order.UpdatePaymentStatusRequest;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
@@ -38,6 +36,7 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderSh
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
 import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.checkout.OrderNotificationService;
+import com.bigbike.bigbike_backend.service.order.OrderLineItemThumbnailResolver;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
@@ -51,7 +50,6 @@ import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.safeCu
 import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.withResolvedCustomerName;
 import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -78,50 +76,18 @@ public class AdminOrderService {
     private static final int MAX_SIZE = 100;
 
     private static final Set<String> ALLOWED_ORDER_STATUSES = Set.of(
-            "PENDING", "PROCESSING", "ON_HOLD", "COMPLETED", "CANCELLED", "FAILED"
-    );
-
-    private static final Set<String> ALLOWED_PAYMENT_STATUSES = Set.of(
-            "UNPAID", "PAID", "CANCELLED"
+            "PENDING", "PROCESSING", "SHIPPING", "COMPLETED", "CANCELLED"
     );
 
 
     private static final Map<String, Set<String>> ALLOWED_TRANSITIONS;
     static {
         ALLOWED_TRANSITIONS = new HashMap<>();
-        ALLOWED_TRANSITIONS.put("PENDING",    Set.of("PROCESSING", "ON_HOLD", "CANCELLED", "FAILED"));
-        ALLOWED_TRANSITIONS.put("ON_HOLD",    Set.of("PROCESSING", "CANCELLED", "FAILED"));
-        ALLOWED_TRANSITIONS.put("PROCESSING", Set.of("COMPLETED", "CANCELLED", "FAILED"));
-        // COMPLETED is terminal. There is no refund flow anymore — money returned to a
-        // customer (e.g. after cancelling a paid order) is reconciled manually by the admin
-        // outside the system.
+        ALLOWED_TRANSITIONS.put("PENDING",    Set.of("PROCESSING", "CANCELLED"));
+        ALLOWED_TRANSITIONS.put("PROCESSING", Set.of("SHIPPING", "CANCELLED"));
+        ALLOWED_TRANSITIONS.put("SHIPPING",   Set.of("COMPLETED", "CANCELLED"));
         ALLOWED_TRANSITIONS.put("COMPLETED",  Set.of());
         ALLOWED_TRANSITIONS.put("CANCELLED",  Set.of());
-        ALLOWED_TRANSITIONS.put("FAILED",     Set.of());
-    }
-
-    private static final Map<String, Set<String>> ALLOWED_PAYMENT_TRANSITIONS;
-    static {
-        ALLOWED_PAYMENT_TRANSITIONS = new HashMap<>();
-        ALLOWED_PAYMENT_TRANSITIONS.put("UNPAID",    Set.of("PAID", "CANCELLED"));
-        ALLOWED_PAYMENT_TRANSITIONS.put("PAID",      Set.of("UNPAID"));
-        ALLOWED_PAYMENT_TRANSITIONS.put("CANCELLED", Set.of());
-    }
-
-    private static final Set<String> ALLOWED_FULFILLMENT_STATUSES = Set.of(
-            "UNFULFILLED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"
-    );
-
-    private static final Map<String, Set<String>> ALLOWED_FULFILLMENT_TRANSITIONS;
-    static {
-        ALLOWED_FULFILLMENT_TRANSITIONS = new HashMap<>();
-        // UNFULFILLED → DELIVERED direct is removed. Delivery orders must go through SHIPPED first
-        // so tracking data is captured before the order can be completed.
-        ALLOWED_FULFILLMENT_TRANSITIONS.put("UNFULFILLED", Set.of("PROCESSING", "CANCELLED"));
-        ALLOWED_FULFILLMENT_TRANSITIONS.put("PROCESSING",  Set.of("SHIPPED", "CANCELLED"));
-        ALLOWED_FULFILLMENT_TRANSITIONS.put("SHIPPED",     Set.of("DELIVERED"));
-        ALLOWED_FULFILLMENT_TRANSITIONS.put("DELIVERED",   Set.of());
-        ALLOWED_FULFILLMENT_TRANSITIONS.put("CANCELLED",   Set.of());
     }
 
     private final OrderJpaRepository orderRepo;
@@ -138,6 +104,7 @@ public class AdminOrderService {
     private final WebRevalidationService webRevalidationService;
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
+    private final OrderLineItemThumbnailResolver thumbnailResolver;
     private final OrderAddressMapper orderAddressMapper;
     private final ShippingMapper shippingMapper;
     private final PaymentMapper paymentMapper;
@@ -147,7 +114,7 @@ public class AdminOrderService {
 
     @Transactional(readOnly = true)
     public PageResult<AdminOrderListItemResponse> listOrders(
-            int page, int size, String status, String paymentStatus, String q, String from, String to, String sort
+            int page, int size, String status, String q, String from, String to, String sort
     ) {
         int normalizedPage = Math.max(1, page);
         int normalizedSize = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
@@ -159,9 +126,6 @@ public class AdminOrderService {
             List<Predicate> predicates = new ArrayList<>();
             if (status != null && !status.isBlank()) {
                 predicates.add(cb.equal(root.get("status"), status.toUpperCase(Locale.ROOT)));
-            }
-            if (paymentStatus != null && !paymentStatus.isBlank()) {
-                predicates.add(cb.equal(root.get("paymentStatus"), paymentStatus.toUpperCase(Locale.ROOT)));
             }
             if (q != null && !q.isBlank()) {
                 String pattern = "%" + q.toLowerCase(Locale.ROOT) + "%";
@@ -210,55 +174,13 @@ public class AdminOrderService {
         return toDetail(order);
     }
 
-    /**
-     * Returns the list of order statuses that the given order can legally
-     * transition into right now, in a stable order. Filters out any target
-     * status whose business preconditions would cause {@link #updateOrderStatus}
-     * to throw — so the UI only shows buttons that will actually succeed.
-     */
+    /** Returns the next legal values in the single order-status state machine. */
     @Transactional(readOnly = true)
     public List<String> listAllowedTransitions(UUID orderId) {
         OrderEntity order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found."));
         Set<String> allowed = ALLOWED_TRANSITIONS.getOrDefault(order.getStatus(), Set.of());
-        return allowed.stream()
-                .filter(s -> canTransitionTo(order, s))
-                .sorted()
-                .toList();
-    }
-
-    /**
-     * Returns true if the given order can transition to {@code targetStatus}
-     * without hitting a business precondition error in {@link #updateOrderStatus}.
-     * Mirrors {@link #validateBeforeComplete} and {@link #validateBeforeCancel}
-     * exactly so the two code paths stay in sync.
-     */
-    private boolean canTransitionTo(OrderEntity order, String targetStatus) {
-        return switch (targetStatus) {
-            case "COMPLETED" -> canComplete(order);
-            case "CANCELLED" -> canCancel(order);
-            default -> true;
-        };
-    }
-
-    private boolean canComplete(OrderEntity order) {
-        String fulfillmentType  = order.getFulfillmentType();
-        String fulfillmentStatus = order.getFulfillmentStatus();
-
-        // Payment no longer gates completion (owner decision 2026-06-23): the admin reconciles money
-        // offline and may mark the order paid before or after completing it. Only the delivery
-        // lifecycle still gates COMPLETED for delivery orders.
-        if ("DELIVERY".equalsIgnoreCase(fulfillmentType)
-                && !"DELIVERED".equals(fulfillmentStatus)) {
-            return false;
-        }
-        return true;
-    }
-
-    private boolean canCancel(OrderEntity order) {
-        // Paid orders can now be cancelled directly — there is no system refund flow;
-        // any money already collected is reconciled manually by the admin.
-        return true;
+        return allowed.stream().sorted().toList();
     }
 
     // ── Update order status ───────────────────────────────────────────────────
@@ -281,19 +203,18 @@ public class AdminOrderService {
             return toDetail(order);
         }
 
-        // Transition validation (structural — map only). Business preconditions
-        // (payment/fulfillment guards) are evaluated below per target status.
+        // Transition validation is the complete business rule for the single axis.
         Set<String> allowed = ALLOWED_TRANSITIONS.getOrDefault(currentStatus, Set.of());
         if (!allowed.contains(newStatus)) {
             throw new ConflictException(
                     "Cannot transition order from " + currentStatus + " to " + newStatus + ".");
         }
 
-        // Business preconditions: payment / fulfillment must be in the right shape.
-        // Keep these as small, target-status–scoped guards so the side-effect path below
-        // can stay focused on the actual transition.
-        if ("COMPLETED".equals(newStatus)) {
-            validateBeforeComplete(order);
+        if ("SHIPPING".equals(newStatus)) {
+            if (req.trackingNumber() == null || req.trackingNumber().isBlank()) {
+                throw ValidationException.fromField("trackingNumber", "REQUIRED",
+                        "Mã vận đơn (trackingNumber) là bắt buộc khi chuyển sang Đang giao.");
+            }
         }
 
         String beforeStatus = order.getStatus();
@@ -308,28 +229,24 @@ public class AdminOrderService {
             order.setCancelledAt(now);
         }
 
-        // Auto-initialise fulfillmentStatus for DELIVERY orders on key transitions.
-        if ("DELIVERY".equalsIgnoreCase(order.getFulfillmentType())) {
-            if ("PROCESSING".equals(newStatus) && order.getFulfillmentStatus() == null) {
-                order.setFulfillmentStatus("UNFULFILLED");
-            } else if ("CANCELLED".equals(newStatus) || "FAILED".equals(newStatus)) {
-                order.setFulfillmentStatus("CANCELLED");
+        if ("SHIPPING".equals(newStatus)) {
+            order.setTrackingNumber(req.trackingNumber().trim());
+            if (req.shippingCarrier() != null && !req.shippingCarrier().isBlank()) {
+                order.setShippingCarrier(req.shippingCarrier().trim());
+            }
+            if (order.getShippedAt() == null) {
+                order.setShippedAt(now);
             }
         }
-
-        // AUD-024: moving ON_HOLD → PROCESSING no longer auto-marks payment PAID.
-        // Payment is reconciled manually and marked paid via the dedicated
-        // payment-status endpoint (PAY_RULE_002) — auto-marking here contradicted the
-        // manual-reconciliation model and silently flipped unpaid orders to paid.
 
         orderRepo.save(order);
 
         // Web cache side-effects.
         if ("COMPLETED".equals(newStatus)) {
             webRevalidationService.revalidateProductsForOrder(orderId);
-        } else if ("CANCELLED".equals(newStatus) || "FAILED".equals(newStatus)) {
+        } else if ("CANCELLED".equals(newStatus)) {
             // Inventory is boolean availability only (owner decision 2026-06-23) — nothing to
-            // restore on cancel/fail. Just refresh the web cache.
+            // restore on cancel. Just refresh the web cache.
             webRevalidationService.revalidateProductsForOrder(orderId);
         }
 
@@ -350,202 +267,12 @@ public class AdminOrderService {
         OrderEntity statusSnapshot = order;
         String statusForEmail = newStatus;
         String noteForEmail = customerNote;
-        var statusChangedEvent = buildStatusChangedEvent(order, newStatus);
-        runAfterCommit(() -> {
-            orderNotificationService.sendOrderStatusUpdate(statusSnapshot, statusForEmail, noteForEmail);
-            adminOrderWsService.pushEvent(statusChangedEvent);
-        });
-
-        return toDetail(orderRepo.findById(orderId).orElseThrow());
-    }
-
-    // ── Update payment status ─────────────────────────────────────────────────
-
-    @Transactional
-    public AdminOrderDetailResponse updatePaymentStatus(UUID orderId, UUID adminId, UpdatePaymentStatusRequest req,
-            String clientIp, String userAgent) {
-        String newPaymentStatus = req.paymentStatus().toUpperCase(Locale.ROOT);
-        if (!ALLOWED_PAYMENT_STATUSES.contains(newPaymentStatus)) {
-            throw ValidationException.fromField("paymentStatus", "INVALID",
-                    "Unknown payment status: " + newPaymentStatus);
-        }
-
-        OrderEntity order = orderRepo.findById(orderId)
-                .orElseThrow(() -> new NotFoundException("Order not found."));
-
-        String orderStatus = order.getStatus();
-        if ("CANCELLED".equals(orderStatus) || "FAILED".equals(orderStatus)) {
-            throw new ConflictException(
-                    "Không thể cập nhật thanh toán cho đơn hàng đã " +
-                    ("CANCELLED".equals(orderStatus) ? "hủy" : "thất bại") + ".");
-        }
-
-        String currentPaymentStatus = order.getPaymentStatus();
-        String beforePaymentStatus = currentPaymentStatus;
-
-        if (currentPaymentStatus.equals(newPaymentStatus)) {
-            return toDetail(order);
-        }
-
-        Set<String> allowedPayment = ALLOWED_PAYMENT_TRANSITIONS.getOrDefault(currentPaymentStatus, Set.of());
-        if (!allowedPayment.contains(newPaymentStatus)) {
-            throw new ConflictException(
-                    "Cannot transition payment from " + currentPaymentStatus + " to " + newPaymentStatus + ".");
-        }
-
-        Instant now = Instant.now();
-
-        switch (newPaymentStatus) {
-            case "PAID" -> {
-                BigDecimal paid = req.paidAmount() != null
-                        ? req.paidAmount().setScale(2, RoundingMode.HALF_UP)
-                        : order.getTotalAmount();
-                if (paid.compareTo(order.getTotalAmount()) != 0) {
-                    throw ValidationException.fromField("paidAmount", "INVALID",
-                            "paidAmount phải bằng tổng đơn hàng (" + order.getTotalAmount() + " VND) khi đặt trạng thái PAID.");
-                }
-                order.setPaymentStatus("PAID");
-                order.setPaidAmount(paid);
-                if (order.getPaidAt() == null) order.setPaidAt(now);
-                // Mark payment record SUCCEEDED; capture bank transfer reference if provided
-                paymentRepo.findByOrderId(orderId).stream().findFirst().ifPresent(p -> {
-                    p.setStatus("SUCCEEDED");
-                    p.setPaidAt(now);
-                    if (req.bankReference() != null && !req.bankReference().isBlank()) {
-                        p.setTransactionId(req.bankReference().strip());
-                    }
-                    paymentRepo.save(p);
-                });
-            }
-            case "UNPAID" -> {
-                if (req.paidAmount() != null && req.paidAmount().compareTo(BigDecimal.ZERO) != 0) {
-                    throw ValidationException.fromField("paidAmount", "INVALID",
-                            "paidAmount must be 0 for UNPAID.");
-                }
-                order.setPaymentStatus("UNPAID");
-                order.setPaidAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
-                order.setPaidAt(null);
-                // AUD-023: reverting to UNPAID must also reset the payment record —
-                // otherwise a SUCCEEDED row lingers and misrepresents the order as paid.
-                paymentRepo.findByOrderId(orderId).stream().findFirst().ifPresent(p -> {
-                    p.setStatus("PENDING");
-                    p.setPaidAt(null);
-                    paymentRepo.save(p);
-                });
-            }
-            default -> order.setPaymentStatus(newPaymentStatus);
-        }
-
-        order.setUpdatedAt(now);
-        orderRepo.save(order);
-
-        // Note
-        if (req.note() != null && !req.note().isBlank()) {
-            boolean visible = Boolean.TRUE.equals(req.customerVisible());
-            noteRepo.save(buildNote(order, adminId, "ADMIN", req.note(), visible, now));
-        }
-
-        // Audit
-        auditLogWriter.save(auditLogFactory.build("ADMIN", adminId, "ORDER_PAYMENT_STATUS_UPDATED", "ORDER", order.getId(),
-                "{\"paymentStatus\":\"" + beforePaymentStatus + "\"}",
-                "{\"paymentStatus\":\"" + newPaymentStatus + "\"}", clientIp, userAgent));
-
-        var paymentStatusChangedEvent = new OrderWsEvent(
-                "ORDER_PAYMENT_STATUS_CHANGED", order.getId(), order.getOrderNumber(),
-                safeCustomerName(order), order.getTotalAmount(),
-                order.getStatus(), newPaymentStatus, now);
-        runAfterCommit(() -> adminOrderWsService.pushEvent(paymentStatusChangedEvent));
-
-        return toDetail(orderRepo.findById(orderId).orElseThrow());
-    }
-
-    // ── Update fulfillment status ─────────────────────────────────────────────
-
-    @Transactional
-    public AdminOrderDetailResponse updateFulfillmentStatus(UUID orderId, UUID adminId,
-            UpdateFulfillmentRequest req, String clientIp, String userAgent) {
-
-        String newStatus = req.fulfillmentStatus().toUpperCase(Locale.ROOT);
-        if (!ALLOWED_FULFILLMENT_STATUSES.contains(newStatus)) {
-            throw ValidationException.fromField("fulfillmentStatus", "INVALID",
-                    "Unknown fulfillment status: " + newStatus);
-        }
-
-        OrderEntity order = orderRepo.findById(orderId)
-                .orElseThrow(() -> new NotFoundException("Order not found."));
-
-        if (!"DELIVERY".equalsIgnoreCase(order.getFulfillmentType())) {
-            throw new ConflictException(
-                    "Fulfillment status is only applicable to DELIVERY orders.");
-        }
-
-        String current = order.getFulfillmentStatus();
-
-        if (newStatus.equals(current)) {
-            return toDetail(order);
-        }
-
-        // Legacy orders imported before fulfillment tracking existed have a null fulfillmentStatus.
-        // Treat null as the pre-processing "UNFULFILLED" baseline for transition validation so those
-        // orders still must pass through SHIPPED (+ tracking number) before DELIVERED — do not write
-        // "UNFULFILLED" back onto the order here, that backfill is a separate decision.
-        String effectiveCurrent = current != null ? current : "UNFULFILLED";
-        Set<String> allowed = ALLOWED_FULFILLMENT_TRANSITIONS.getOrDefault(effectiveCurrent, Set.of());
-        if (!allowed.contains(newStatus)) {
-            throw new ConflictException(
-                    "Cannot transition fulfillment from " + effectiveCurrent + " to " + newStatus + ".");
-        }
-
-        Instant now = Instant.now();
-
-        order.setFulfillmentStatus(newStatus);
-        order.setUpdatedAt(now);
-
-        if ("SHIPPED".equals(newStatus)) {
-            if (req.trackingNumber() == null || req.trackingNumber().isBlank()) {
-                throw ValidationException.fromField("trackingNumber", "REQUIRED",
-                        "Mã vận đơn (trackingNumber) là bắt buộc khi đánh dấu đã giao vận chuyển.");
-            }
-            if (order.getShippedAt() == null) {
-                order.setShippedAt(now);
-            }
-        }
-        if (req.trackingNumber() != null && !req.trackingNumber().isBlank()) {
-            order.setTrackingNumber(req.trackingNumber().trim());
-        }
-        if (req.shippingCarrier() != null && !req.shippingCarrier().isBlank()) {
-            order.setShippingCarrier(req.shippingCarrier().trim());
-        }
-
-        orderRepo.save(order);
-
-        if (req.note() != null && !req.note().isBlank()) {
-            boolean visible = Boolean.TRUE.equals(req.customerVisible());
-            noteRepo.save(buildNote(order, adminId, "ADMIN", req.note(), visible, now));
-        }
-
-        auditLogWriter.save(auditLogFactory.build("ADMIN", adminId, "ORDER_FULFILLMENT_STATUS_UPDATED", "ORDER",
-                order.getId(),
-                "{\"fulfillmentStatus\":\"" + current + "\"}",
-                "{\"fulfillmentStatus\":\"" + newStatus + "\""
-                        + (order.getTrackingNumber() != null
-                                ? ",\"trackingNumber\":\"" + order.getTrackingNumber() + "\""
-                                : "") + "}",
-                clientIp, userAgent));
-
-        if ("SHIPPED".equals(newStatus)) {
-            String customerNote = (req.note() != null && Boolean.TRUE.equals(req.customerVisible()))
-                    ? req.note() : null;
-            OrderEntity shippedSnapshot = order;
-            String shippedNote = customerNote;
-            runAfterCommit(() -> orderNotificationService.sendOrderShipped(shippedSnapshot, shippedNote));
-        }
-
-        var fulfillmentChangedEvent = new OrderWsEvent(
-                "ORDER_FULFILLMENT_STATUS_CHANGED", order.getId(), order.getOrderNumber(),
-                safeCustomerName(order), order.getTotalAmount(),
-                order.getStatus(), order.getPaymentStatus(), now);
-        runAfterCommit(() -> adminOrderWsService.pushEvent(fulfillmentChangedEvent));
+        // pushEvent() already defers its own send until after-commit — call it directly here,
+        // not nested inside runAfterCommit below (a TransactionSynchronization registered from
+        // inside another synchronization's afterCommit() of the same transaction is silently
+        // dropped by Spring, which was swallowing this admin push).
+        adminOrderWsService.pushEvent(buildStatusChangedEvent(order, newStatus));
+        runAfterCommit(() -> orderNotificationService.sendOrderStatusUpdate(statusSnapshot, statusForEmail, noteForEmail));
 
         return toDetail(orderRepo.findById(orderId).orElseThrow());
     }
@@ -570,11 +297,11 @@ public class AdminOrderService {
                 "{\"noteType\":\"" + noteType + "\",\"customerVisible\":" + visible + "}",
                 clientIp, userAgent));
 
-        var noteAddedEvent = new OrderWsEvent(
+        // pushEvent() defers its own send until after commit.
+        adminOrderWsService.pushEvent(new OrderWsEvent(
                 "ORDER_NOTE_ADDED", order.getId(), order.getOrderNumber(),
                 safeCustomerName(order), order.getTotalAmount(),
-                order.getStatus(), order.getPaymentStatus(), now);
-        runAfterCommit(() -> adminOrderWsService.pushEvent(noteAddedEvent));
+                order.getStatus(), order.getPaymentMethod(), now));
 
         return toAdminNote(note);
     }
@@ -593,7 +320,7 @@ public class AdminOrderService {
     // ── Audit trail ───────────────────────────────────────────────────────────
 
     /**
-     * Read-only audit trail for an order: every status/payment/fulfillment/note
+     * Read-only audit trail for an order: every status/payment-record/shipping-metadata/note
      * change recorded in {@code audit_logs} (resource_type = ORDER), newest first.
      */
     @Transactional(readOnly = true)
@@ -609,32 +336,6 @@ public class AdminOrderService {
                         a.getId(), a.getAction(), a.getActorType(), a.getActorId(),
                         a.getBeforeData(), a.getAfterData(), a.getIpAddress(), a.getCreatedAt()))
                 .toList();
-    }
-
-    // ── Business preconditions for status transitions ─────────────────────────
-
-    /**
-     * Enforce business rules before flipping an order to COMPLETED.
-     *
-     * DELIVERY orders cannot be COMPLETED until the goods have been marked DELIVERED.
-     * fulfillmentStatus is initialised to UNFULFILLED on order creation and progresses
-     * UNFULFILLED → PROCESSING → SHIPPED → DELIVERED via {@link #updateFulfillmentStatus}.
-     *
-     * Payment status no longer blocks completion (owner decision 2026-06-23): the admin
-     * reconciles money offline and may mark an order paid before or after completing it.
-     */
-    private void validateBeforeComplete(OrderEntity order) {
-        String fulfillmentType = order.getFulfillmentType();
-        String fulfillmentStatus = order.getFulfillmentStatus();
-
-        if ("DELIVERY".equalsIgnoreCase(fulfillmentType)
-                && !"DELIVERED".equals(fulfillmentStatus)) {
-            throw new ConflictException(
-                    "Chỉ được hoàn thành đơn giao hàng sau khi đã giao thành công.");
-        }
-
-        // Payment status no longer blocks completion (owner decision 2026-06-23): the admin reconciles
-        // money offline and may mark paid before or after completing the order. See #canComplete.
     }
 
     // ── Mapping ───────────────────────────────────────────────────────────────
@@ -669,8 +370,11 @@ public class AdminOrderService {
     }
 
     private AdminOrderDetailResponse toDetail(OrderEntity order) {
-        List<OrderLineItemResponse> lineItems = lineItemRepo.findByOrderId(order.getId())
-                .stream().map(this::toLineItem).toList();
+        List<OrderLineItemEntity> lineItemEntities = lineItemRepo.findByOrderId(order.getId());
+        Map<String, String> liveThumbnailByPk = thumbnailResolver.resolveLiveFallbacks(lineItemEntities);
+        List<OrderLineItemResponse> lineItems = lineItemEntities.stream()
+                .map(lineItem -> toLineItem(lineItem, liveThumbnailByPk))
+                .toList();
 
         List<OrderAddressResponse> addresses = addressRepo.findByOrderId(order.getId())
                 .stream().map(this::toAddress).toList();
@@ -699,8 +403,6 @@ public class AdminOrderService {
                 order.getOrderNumber(),
                 order.getOrderKey(),
                 order.getStatus(),
-                order.getPaymentStatus(),
-                order.getFulfillmentStatus(),
                 order.getFulfillmentType(),
                 order.getTrackingNumber(),
                 order.getShippingCarrier(),
@@ -730,9 +432,14 @@ public class AdminOrderService {
         );
     }
 
-    private OrderLineItemResponse toLineItem(OrderLineItemEntity e) {
-        // Admin order view does not surface product thumbnails — pass null.
-        return orderItemMapper.toResponse(e, null);
+    private OrderLineItemResponse toLineItem(
+            OrderLineItemEntity lineItem,
+            Map<String, String> liveThumbnailByPk
+    ) {
+        return orderItemMapper.toResponse(
+                lineItem,
+                thumbnailResolver.resolveThumbnail(lineItem, liveThumbnailByPk)
+        );
     }
 
     private OrderAddressResponse toAddress(OrderAddressEntity e) {

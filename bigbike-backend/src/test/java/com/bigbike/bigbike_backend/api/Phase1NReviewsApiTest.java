@@ -843,6 +843,71 @@ class Phase1NReviewsApiTest {
     }
 
     @Test
+    void adminListReviews_filterByRating_returnsFilteredPaginationTotal() throws Exception {
+        Long filteredId = insertReview(PRODUCT_ID, "RatingFilterUnique", 1, "Only this review", "PENDING");
+
+        mockMvc.perform(get("/api/v1/admin/reviews")
+                        .param("q", "RatingFilterUnique")
+                        .param("rating", "1")
+                        .param("page", "1")
+                        .param("size", "20")
+                        .header("X-Admin-Permissions", "reviews.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value(filteredId))
+                .andExpect(jsonPath("$.data[0].rating").value(1))
+                .andExpect(jsonPath("$.pagination.totalItems").value(1));
+    }
+
+    @Test
+    void adminReviewSummary_countsApprovedAndPendingGlobally() throws Exception {
+        long approvedBefore = reviewRepo.countByStatus("APPROVED");
+        long pendingBefore = reviewRepo.countByStatus("PENDING");
+        long pendingOneStarBefore = reviewRepo.countByStatusAndRating("PENDING", (short) 1);
+
+        insertReview(PRODUCT_ID, "Summary Approved", 1, "Public score", "APPROVED");
+        insertReview(PRODUCT_ID, "Summary Approved 2", 5, "Public score", "APPROVED");
+        insertReview(PRODUCT_ID, "Summary Pending", 1, "Queue", "PENDING");
+        insertReview(PRODUCT_ID, "Summary Spam", 1, "Ignored", "SPAM");
+
+        mockMvc.perform(get("/api/v1/admin/reviews/summary")
+                        .header("X-Admin-Permissions", "reviews.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.approved.totalReviews").value(approvedBefore + 2))
+                .andExpect(jsonPath("$.data.approved.averageRating").isNumber())
+                .andExpect(jsonPath("$.data.approved.ratingBreakdown['1']").isNumber())
+                .andExpect(jsonPath("$.data.approved.ratingBreakdown['5']").isNumber())
+                .andExpect(jsonPath("$.data.pending.totalReviews").value(pendingBefore + 1))
+                .andExpect(jsonPath("$.data.pending.oneStarReviews").value(pendingOneStarBefore + 1));
+    }
+
+    @Test
+    void adminBulkReviewActions_updateStatusAndPermanentlyDelete() throws Exception {
+        Long first = insertReview(PRODUCT_ID, "Bulk First", 2, "Bulk", "PENDING");
+        Long second = insertReview(PRODUCT_ID, "Bulk Second", 3, "Bulk", "PENDING");
+
+        mockMvc.perform(post("/api/v1/admin/reviews/bulk-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"ids\":[" + first + "," + second + "],\"status\":\"APPROVED\"}")
+                        .header("X-Admin-Permissions", "reviews.write"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.affected").value(2));
+
+        org.assertj.core.api.Assertions.assertThat(reviewRepo.findById(first).orElseThrow().getStatus()).isEqualTo("APPROVED");
+        org.assertj.core.api.Assertions.assertThat(reviewRepo.findById(second).orElseThrow().getStatus()).isEqualTo("APPROVED");
+
+        mockMvc.perform(post("/api/v1/admin/reviews/bulk-delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"ids\":[" + first + "," + second + "]}")
+                        .header("X-Admin-Permissions", "reviews.write"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.affected").value(2));
+
+        org.assertj.core.api.Assertions.assertThat(reviewRepo.findById(first)).isEmpty();
+        org.assertj.core.api.Assertions.assertThat(reviewRepo.findById(second)).isEmpty();
+    }
+
+    @Test
     void adminListReviews_noFilter_returnsPaginatedList() throws Exception {
         mockMvc.perform(get("/api/v1/admin/reviews")
                         .param("page", "1")
@@ -890,6 +955,21 @@ class Phase1NReviewsApiTest {
     void adminListReviews_noAuth_returns401() throws Exception {
         secMvc.perform(get("/api/v1/admin/reviews"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void adminReviewSummary_noAuth_returns401() throws Exception {
+        secMvc.perform(get("/api/v1/admin/reviews/summary"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void adminReviewSummary_missingReviewsReadPermission_returns403() throws Exception {
+        String editorToken = createActiveAdminAndToken("EDITOR");
+
+        secMvc.perform(get("/api/v1/admin/reviews/summary")
+                        .header("Authorization", "Bearer " + editorToken))
+                .andExpect(status().isForbidden());
     }
 
     @Test

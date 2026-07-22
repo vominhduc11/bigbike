@@ -41,7 +41,7 @@ Nguyên tắc đọc file này:
 | Admin | Role / Actor Term | User nội bộ vận hành admin. | `CONFIRMED_FROM_REPO` | `USER_ROLES.md`, `PERMISSION_MATRIX.md` nếu có |
 | Super Admin | Role / Actor Term | Admin quyền cao nhất, wildcard permission. | `CONFIRMED_FROM_REPO` | `USER_ROLES.md` |
 | Order | Business Term | Đơn hàng được tạo từ cart checkout. | `CONFIRMED_FROM_REPO` | `BUSINESS_PROCESS.md`, `STATE_MACHINES.md` |
-| Payment | Business Term | Thanh toán COD nội bộ/thủ công và trạng thái payment; BACS chỉ còn ở đơn legacy. | `CONFIRMED_FROM_REPO` | `BUSINESS_PROCESS.md`, `STATE_MACHINES.md` |
+| Payment | Business Term | Phương thức COD hoặc chuyển khoản thủ công (`BANK_TRANSFER`) và payment records lịch sử; BACS chỉ còn ở đơn legacy. | `CONFIRMED_FROM_REPO` | `BUSINESS_PROCESS.md`, `STATE_MACHINES.md` |
 | Shipping | Business Term | Giao hàng do shop tự sắp xếp, không có lựa chọn phương thức hay phí giao hàng cho khách. | `CONFIRMED_FROM_REPO` | `BUSINESS_RULES.md`, `WORKFLOW_OVERVIEW.md` |
 | Inventory | Business Term | Tồn kho, stock state, stock movement. | `CONFIRMED_FROM_REPO` | `BUSINESS_PROCESS.md`, `STATE_MACHINES.md` |
 | Return / Đổi trả | Business Term | Chính sách đổi/trả hàng cam kết thủ công với khách (không phải tính năng hệ thống). (Hệ thống xử lý đổi-trả/hoàn tiền đã gỡ 2026-06-23.) | `CONFIRMED_FROM_REPO` | `BUSINESS_RULES.md` |
@@ -231,8 +231,8 @@ Nguyên tắc đọc file này:
 |---|---|
 | Category | Business Term |
 | Definition | Đơn hàng chính thức được tạo từ cart checkout. |
-| BigBike Context | Order có status, payment status, line items, shipping item, address snapshot, note và audit/notification side effects theo docs. |
-| Example | Checkout mới luôn dùng COD và tạo order ban đầu `PROCESSING`; BACS/`ON_HOLD` chỉ có thể xuất hiện trên đơn legacy. |
+| BigBike Context | Order có một trục status, payment method/records, line items, shipping item, address snapshot, note và audit/notification side effects theo docs. |
+| Example | Checkout mới chọn COD hoặc `BANK_TRANSFER` và tạo order ban đầu `PENDING`; trạng thái đi qua `PROCESSING`, `SHIPPING`, rồi `COMPLETED`. |
 | Related Docs | `BUSINESS_PROCESS.md`, `WORKFLOW_OVERVIEW.md`, `STATE_MACHINES.md` |
 | Status | `CONFIRMED_FROM_REPO` |
 | Evidence | `CheckoutController.java`, `BUSINESS_PROCESS.md`, `STATE_MACHINES.md` |
@@ -255,7 +255,7 @@ Nguyên tắc đọc file này:
 |---|---|
 | Category | Business Term |
 | Definition | Thông tin và trạng thái thanh toán của order. |
-| BigBike Context | New storefront payment is fixed COD/internal/manual; BACS is legacy-order compatibility only and no provider webhook exists. |
+| BigBike Context | New storefront payment is internal/manual `COD` or `BANK_TRANSFER`; BACS is legacy-order compatibility only and no provider webhook exists. |
 | Example | `UNPAID`, `PAID`, `CANCELLED` (`PARTIALLY_PAID`/`REFUNDED` đã gỡ). |
 | Related Docs | `BUSINESS_PROCESS.md`, `BUSINESS_RULES.md`, `STATE_MACHINES.md` |
 | Status | `CONFIRMED_FROM_REPO` cho internal/manual payment; external provider `NOT_FOUND_IN_REPO` |
@@ -425,7 +425,7 @@ Nguyên tắc đọc file này:
 |---|---|
 | Definition | Chức năng con cụ thể bên trong module. |
 | BigBike Context | Feature phải được đánh giá theo scope UI/API/service/data/permission/test nếu có mutation/data thật. |
-| Example | Product list, create product, publish product, update payment status. |
+| Example | Product list, create product, publish product, update order status. |
 | Related Docs | `MODULE_CATALOG.md`, `ACCEPTANCE_CRITERIA.md` |
 | Status | `STANDARD_ANALYSIS_TERM` |
 | Evidence | `MODULE_CATALOG.md` |
@@ -516,8 +516,8 @@ Nguyên tắc đọc file này:
 | Field | Value |
 |---|---|
 | Definition | State Machine mô tả các trạng thái hợp lệ và transition giữa chúng. State/Status là giá trị hiện tại; Transition là hành động đổi trạng thái. |
-| BigBike Context | Product publish status, order status, payment status, media status, admin user status. |
-| Example | Product `DRAFT -> PUBLISHED`; Order `PROCESSING -> COMPLETED`; Payment `UNPAID -> PAID`. |
+| BigBike Context | Product publish status, order status, payment-record status, media status, admin user status. |
+| Example | Product `DRAFT -> PUBLISHED`; Order `PROCESSING -> SHIPPING -> COMPLETED`; payment record stores its own technical snapshot. |
 | Related Docs | `STATE_MACHINES.md` |
 | Status | `STANDARD_ANALYSIS_TERM` / status values `CONFIRMED_FROM_REPO` |
 | Evidence | `PublishStatus.java`, `ProductStockState.java`, `STATE_MACHINES.md` |
@@ -538,7 +538,7 @@ Nguyên tắc đọc file này:
 | Field | Value |
 |---|---|
 | Definition | Initial State là trạng thái ban đầu; Terminal State là trạng thái kết thúc; Precondition là điều kiện trước action; Postcondition là kết quả sau action; Enforcement Layer là nơi rule được kiểm soát. |
-| BigBike Context | New COD orders start `PROCESSING`; legacy BACS orders may already be `ON_HOLD`. Backend/service là enforcement layer cho state/payment/inventory. |
+| BigBike Context | New COD or `BANK_TRANSFER` orders start `PENDING`; backend/service là enforcement layer cho order state, payment records và inventory. |
 | Example | Publish precondition: product có đủ field bắt buộc; postcondition: product status `PUBLISHED`. |
 | Related Docs | `STATE_MACHINES.md`, `BUSINESS_RULES.md` |
 | Status | `STANDARD_ANALYSIS_TERM` |
@@ -769,7 +769,7 @@ Nguyên tắc đọc file này:
 |---|---|
 | Definition | Provider thanh toán, vận chuyển, email và CDN/media delivery. |
 | BigBike Context | Email SMTP config/code path có evidence; payment provider và shipping provider external chưa thấy; CDN chưa xác nhận runtime. |
-| Example | COD là payment method storefront nội bộ/manual; BACS chỉ còn trên đơn legacy, không phải payment gateway webhook. |
+| Example | COD và `BANK_TRANSFER` là payment method storefront nội bộ/manual; BACS chỉ còn trên đơn legacy, không phải payment gateway webhook. |
 | Related Docs | `BUSINESS_PROCESS.md`, `USER_ROLES.md` |
 | Status | Email `CONFIRMED_FROM_REPO`; payment/shipping provider `NOT_FOUND_IN_REPO`; CDN `NEEDS_BUSINESS_CONFIRMATION` |
 | Evidence | `docker-compose.yaml`, `BUSINESS_PROCESS.md`, search pass no provider evidence |
@@ -799,6 +799,7 @@ Nguyên tắc đọc file này:
 | `SHOP_MANAGER` | Built-in operational admin role. | `CONFIRMED_FROM_REPO` | `AdminRolePermissions.java` |
 | `SEO_EDITOR` | Built-in role for content/redirect SEO work. | `CONFIRMED_FROM_REPO` | `AdminRolePermissions.java` |
 | `COD` | Cash on delivery/manual payment method. | `CONFIRMED_FROM_REPO` | `BUSINESS_PROCESS.md`, `BUSINESS_RULES.md` |
+| `BANK_TRANSFER` | New storefront bank-transfer/manual payment method; shop sends account details only after phone confirmation. | `CONFIRMED_FROM_REPO` | `BUSINESS_PROCESS.md`, `BUSINESS_RULES.md` |
 | `BACS` | Legacy bank-transfer/manual payment method; không còn được chấp nhận cho đơn storefront mới. | `LEGACY_COMPATIBILITY` | `BUSINESS_PROCESS.md`, `BUSINESS_RULES.md` |
 | MinIO | S3-compatible media storage in Docker stack. | `CONFIRMED_FROM_REPO` | `docker-compose.yaml` |
 | PostgreSQL | Main relational database. | `CONFIRMED_FROM_REPO` | `docker-compose.yaml` |
@@ -820,7 +821,7 @@ Nguyên tắc đọc file này:
 | Acceptance Criteria | Test Case | Acceptance Criteria là tiêu chí pass; Test Case là kịch bản cụ thể để kiểm tiêu chí đó. |
 | UI | UX | UI là phần nhìn/thành phần giao diện; UX là trải nghiệm thao tác, flow, feedback, states. |
 | Frontend Validation | Backend Validation | Frontend validation giúp user nhập đúng; backend validation là lớp bảo vệ bắt buộc. |
-| Payment Method | Payment Provider | Payment Method storefront hiện tại là COD; BACS chỉ là dữ liệu legacy. Payment Provider là cổng/dịch vụ thanh toán ngoài hệ thống và hiện không dùng. |
+| Payment Method | Payment Provider | Payment Method storefront hiện tại là COD hoặc `BANK_TRANSFER`; BACS chỉ là dữ liệu legacy. Payment Provider là cổng/dịch vụ thanh toán ngoài hệ thống và hiện không dùng. |
 | Shipping Method | Shipping Provider | Shipping Method đã gỡ khỏi checkout/admin; Shipping Provider là carrier bên thứ ba có API/tracking và hiện chưa tích hợp. |
 | Canonical Field | Legacy Field | Canonical field là field chuẩn hiện tại; legacy field là field cũ/fallback cần tránh tái tạo drift. |
 
@@ -829,7 +830,7 @@ Nguyên tắc đọc file này:
 | Term | Where it appears | Conflict | Recommended canonical meaning | Needs verification |
 |---|---|---|---|---|
 | Staff | `USER_ROLES.md`, business docs | Business dùng generic Staff; role map không có exact `STAFF`. | Dùng `Staff` là business-level generic; technical roles là `SHOP_MANAGER`, `EDITOR`, `AUTHOR`, `CONTRIBUTOR`, `SEO_EDITOR`. | Business xác nhận cách gọi role nội bộ tiếng Việt. |
-| Payment Provider / Payment Method | Business docs | Storefront COD-only; external provider/webhook intentionally not used. | Payment Method mới là COD internal/manual; BACS chỉ giữ tương thích đơn cũ. Payment Provider hiện không dùng. SePay auto-reconciliation đã bị bỏ (V59). | Đã chốt: không tích hợp cổng tự động. |
+| Payment Provider / Payment Method | Business docs | Storefront dùng COD hoặc `BANK_TRANSFER`; external provider/webhook intentionally not used. | Payment Method mới là COD/`BANK_TRANSFER` internal/manual; BACS chỉ giữ tương thích đơn cũ. Payment Provider hiện không dùng. SePay auto-reconciliation đã bị bỏ (V59). | Đã chốt: không tích hợp cổng tự động. |
 | Shipping Provider / Shipping Method | Business docs | Shipping method/admin module đã gỡ; carrier integration not found. | Shop tự sắp xếp giao hàng miễn phí; không có Shipping Method trong checkout. Shipping Provider là carrier external chưa tích hợp. | Business xác nhận GHN/GHTK/ViettelPost scope. |
 | Staging | Prompt yêu cầu kiểm nếu có | Repo có dev/mock/prod; staging chưa thấy. | Không dùng staging như confirmed environment nếu chưa có config/deploy evidence. | Business/DevOps xác nhận có staging không. |
 | `docs/DECISIONS.md` | README mentions | Direct fetch trong audit pass này không thấy file trên main. | Treat as planned/missing referenced doc until exists. | Kiểm tra path/branch hoặc tạo sau. |
@@ -839,7 +840,7 @@ Nguyên tắc đọc file này:
 | Term | Category | Status | Notes |
 |---|---|---|---|
 | Payment Webhook | Integration Term | `NOT_FOUND_IN_REPO` | Không thấy payment webhook/provider controller/service trong audit/search pass này. |
-| External Payment Provider | Integration Term | `NOT_FOUND_IN_REPO` | COD/manual payment confirmed; BACS chỉ là dữ liệu legacy, không phải external provider. |
+| External Payment Provider | Integration Term | `NOT_FOUND_IN_REPO` | COD/`BANK_TRANSFER` manual payment confirmed; BACS chỉ là dữ liệu legacy, không phải external provider. |
 | Shipping Provider | Integration Term | `NOT_FOUND_IN_REPO` | Không thấy GHN/GHTK/ViettelPost/carrier provider integration. |
 | Carrier Tracking / Waybill | Integration Term | `NOT_FOUND_IN_REPO` | Shipping methods đã gỡ; fulfillment tracking/carrier automation chưa có. |
 | Inventory Movement serial lifecycle | Business Term | `REMOVED` | Theo dõi theo số serial đã được gỡ toàn nền tảng (2026-06-23, V259). Tồn kho nay là Còn/Hết thủ công; không còn vòng đời serial hay số lượng. |

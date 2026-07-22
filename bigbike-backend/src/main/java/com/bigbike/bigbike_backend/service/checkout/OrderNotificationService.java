@@ -20,7 +20,7 @@ public class OrderNotificationService {
 
     /** Statuses that customers care enough about to receive an email notification. */
     private static final Set<String> CUSTOMER_NOTIFIABLE_STATUSES =
-            Set.of("PROCESSING", "COMPLETED", "CANCELLED", "FAILED");
+            Set.of("PROCESSING", "SHIPPING", "COMPLETED", "CANCELLED");
 
     private final EmailDispatchService emailDispatch;
     private final String adminEmail;
@@ -189,6 +189,7 @@ public class OrderNotificationService {
         if (method == null) return "—";
         return switch (method.toUpperCase(Locale.ROOT)) {
             case "COD"  -> "Thanh toán khi nhận hàng (COD)";
+            case "BANK_TRANSFER" -> "Chuyển khoản ngân hàng";
             case "BACS" -> "Chuyển khoản ngân hàng";
             default     -> method;
         };
@@ -205,6 +206,11 @@ public class OrderNotificationService {
                     "Đơn hàng đang được xử lý",
                     "Chúng tôi đã nhận và đang chuẩn bị đơn hàng của bạn. Bạn sẽ được thông báo khi hàng được giao cho đơn vị vận chuyển.",
                     "Đơn hàng đang xử lý");
+            case "SHIPPING" -> new StatusContent(
+                    "ĐANG GIAO", "#dbeafe", "#1e40af",
+                    "Đơn hàng đang được giao đến bạn",
+                    "Đơn hàng đã được bàn giao cho đơn vị vận chuyển.",
+                    "Đơn hàng đang giao");
             case "COMPLETED" -> new StatusContent(
                     "HOÀN THÀNH", "#dcfce7", "#166534",
                     "Đơn hàng đã hoàn thành!",
@@ -217,11 +223,6 @@ public class OrderNotificationService {
                     "Đơn hàng đã bị hủy",
                     "Đơn hàng của bạn đã được hủy. Nếu bạn đã thanh toán, BigBike sẽ chủ động liên hệ để hoàn lại tiền cho bạn. Cần hỗ trợ ngay, vui lòng gọi hotline 0906.902.404.",
                     "Đơn hàng bị hủy");
-            case "FAILED" -> new StatusContent(
-                    "THẤT BẠI", "#fef9c3", "#854d0e",
-                    "Đơn hàng gặp sự cố",
-                    "Rất tiếc, đơn hàng của bạn không thể được xử lý. Vui lòng liên hệ hotline 0906.902.404 để được hỗ trợ.",
-                    "Đơn hàng thất bại");
             default -> new StatusContent(
                     status, "#f3f4f6", "#374151",
                     "Cập nhật đơn hàng",

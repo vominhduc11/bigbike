@@ -38,8 +38,7 @@ final class AdminOrderSupport {
             return dto;
         }
         return new AdminOrderListItemResponse(
-                dto.id(), dto.orderNumber(), dto.status(), dto.paymentStatus(),
-                dto.fulfillmentStatus(), dto.fulfillmentType(),
+                dto.id(), dto.orderNumber(), dto.status(), dto.fulfillmentType(),
                 dto.customerEmail(), dto.customerPhone(), fallback,
                 dto.totalAmount(), dto.currency(), dto.placedAt(), dto.itemCount(), dto.source());
     }
@@ -105,7 +104,7 @@ final class AdminOrderSupport {
                 safeCustomerName(order),
                 order.getTotalAmount(),
                 newStatus,
-                order.getPaymentStatus(),
+                order.getPaymentMethod(),
                 Instant.now()
         );
     }

@@ -1,17 +1,17 @@
 package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.config.MinioProperties;
+import com.bigbike.bigbike_backend.service.media.CompressionProfile;
+import com.bigbike.bigbike_backend.service.media.ImageCompressionService;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.imageio.ImageIO;
-import net.coobird.thumbnailator.Thumbnails;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -46,6 +46,7 @@ public class ImageVariantService {
 
     private final MinioClient minioClient;
     private final MinioProperties minioProperties;
+    private final ImageCompressionService imageCompressionService;
 
     /**
      * Generate and upload variants for a freshly-uploaded raster image.
@@ -78,7 +79,6 @@ public class ImageVariantService {
                 || mimeType.equalsIgnoreCase("image/webp")
                 || source.getColorModel().hasAlpha();
 
-        String outputFormat = preserveAlpha ? "png" : "jpg";
         String outputMime = preserveAlpha ? "image/png" : "image/jpeg";
         String outputExt = preserveAlpha ? ".png" : ".jpg";
 
@@ -94,7 +94,8 @@ public class ImageVariantService {
 
             String variantKey = deriveVariantKey(originalKey, name, outputExt);
             try {
-                byte[] resized = resizeImage(source, targetWidth, outputFormat, preserveAlpha);
+                CompressionProfile profile = new CompressionProfile(targetWidth, targetWidth, JPEG_QUALITY, false);
+                byte[] resized = imageCompressionService.compress(sourceBytes, mimeType, profile);
                 uploadToMinio(variantKey, resized, outputMime);
                 result.put(name, MEDIA_PATH_PREFIX + variantKey);
             } catch (Exception e) {
@@ -128,20 +129,6 @@ public class ImageVariantService {
         int dot = originalKey.lastIndexOf('.');
         if (dot < 0) return originalKey + "." + variantName + ext;
         return originalKey.substring(0, dot) + "." + variantName + ext;
-    }
-
-    private static byte[] resizeImage(BufferedImage source, int targetWidth,
-                                      String outputFormat, boolean preserveAlpha) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        var builder = Thumbnails.of(source)
-                .width(targetWidth)
-                .outputFormat(outputFormat);
-        // Quality only applies to lossy formats. For PNG, Thumbnailator ignores it.
-        if (!preserveAlpha) {
-            builder = builder.outputQuality(JPEG_QUALITY);
-        }
-        builder.toOutputStream(out);
-        return out.toByteArray();
     }
 
     private void uploadToMinio(String key, byte[] bytes, String contentType) throws Exception {

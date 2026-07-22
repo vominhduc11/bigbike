@@ -32,7 +32,7 @@
 
 | Permission | Granted roles (seed) | Endpoint | Evidence |
 |---|---|---|---|
-| `reviews.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `GET /api/v1/admin/reviews` (list), `GET /api/v1/admin/reviews/{id}` (detail) | `AdminReviewController.java`, `AdminRolePermissions.java`, `PermissionCatalog.java` |
+| `reviews.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `GET /api/v1/admin/reviews` (filtered list), `GET /api/v1/admin/reviews/{id}` (detail), `GET /api/v1/admin/reviews/summary` (global moderation KPIs) | `AdminReviewController.java`, `AdminRolePermissions.java`, `PermissionCatalog.java` |
 | `reviews.write` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `PATCH /api/v1/admin/reviews/{id}/status`, `DELETE /api/v1/admin/reviews/{id}`, `POST /api/v1/admin/reviews/bulk-status`, `POST /api/v1/admin/reviews/bulk-delete` | `AdminReviewController.java`, `AdminRolePermissions.java` |
 
 (Bổ sung 2026-07-15, AUD-076 — hai quyền này đã tồn tại trong seed/catalog từ trước nhưng chưa được ghi vào matrix. Không có quyền `reviews.moderate`.)
@@ -127,6 +127,8 @@ Status: `CONFIRMED_FROM_CODE` — `AdminAuthService.java`, `AdminLoginAttemptSer
 | `/api/v1/admin/orders/{orderId}/audit` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.listAuditTrail`, `AdminOrderService.listAuditTrail` |
 | `/api/v1/customer/orders/**` | `ROLE_CUSTOMER` | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
 | `/api/v1/customer/addresses/**` | `ROLE_CUSTOMER` | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
+| `POST`/`DELETE /api/v1/customer/me/avatar` | `ROLE_CUSTOMER` (own account only — no admin-upload path exists) | `CONFIRMED_FROM_CODE` | `CustomerController.java` |
+| `DELETE /api/v1/admin/customers/{customerId}/avatar` | `customers.write` — reuses the same permission as `PATCH /{customerId}` and `PATCH /{customerId}/status`; no separate delete/avatar tier was introduced | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java` |
 | `GET /api/v1/auth/admin/invite` | public (token-gated) — validate an admin invite token | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `AdminInviteService.validateToken` |
 | `POST /api/v1/auth/admin/accept-invite` | public (token-gated) — set password for an invited admin, `INVITED → ACTIVE` | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `AdminInviteService.acceptInvite` |
 | `POST /api/v1/admin/admin-users/{id}/resend-invite` | `admin-users.write` | `CONFIRMED_FROM_CODE` | `AdminAdminUsersController.java` |

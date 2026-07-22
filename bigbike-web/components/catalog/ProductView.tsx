@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { listPublicSettings } from "@/lib/api/public-api";
+import { queryKeys } from "@/lib/query/keys";
 
 import { DEFAULT_LOCALE } from "@/i18n/locale";
 import { PurchaseSection } from "@/components/catalog/PurchaseSection";
@@ -135,7 +136,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   // bản `vi` đó là "fresh" cho cả key `en` trong suốt `staleTime` (5 phút) và KHÔNG fetch lại, khiến
   // giờ mở cửa/địa chỉ/Zalo kẹt tiếng Việt dù đã đổi sang tiếng Anh.
   const { data: freshSettingsResult } = useQuery({
-    queryKey: ["public-settings", locale],
+    queryKey: queryKeys.publicSettingsResult(locale),
     queryFn: () => listPublicSettings(locale),
     initialData: locale === DEFAULT_LOCALE ? { data: settings, error: null } : undefined,
     staleTime: 5 * 60 * 1000,

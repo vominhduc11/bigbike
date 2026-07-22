@@ -8,8 +8,8 @@ public record CheckoutRequest(
         @NotNull @Valid CheckoutAddressRequest billingAddress,
         @Valid
         CheckoutShippingAddressRequest shippingAddress,
-        // Optional (owner decision 2026-06-23): online checkout no longer asks the customer to pick a
-        // payment method — the admin reconciles payment offline. Kept for backward-compatible callers.
+        // Optional for backward-compatible callers: omitted values default to COD. New storefront
+        // checkout sends the customer's COD or BANK_TRANSFER selection; reconciliation stays manual.
         @Size(max = 32) String paymentMethod,
         @Size(max = 1000)
         String customerNote

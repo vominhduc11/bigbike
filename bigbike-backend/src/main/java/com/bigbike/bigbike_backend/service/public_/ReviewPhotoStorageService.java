@@ -2,6 +2,8 @@ package com.bigbike.bigbike_backend.service.public_;
 
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.config.MinioProperties;
+import com.bigbike.bigbike_backend.service.media.CompressionProfile;
+import com.bigbike.bigbike_backend.service.media.ImageCompressionService;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
@@ -37,9 +39,13 @@ public class ReviewPhotoStorageService {
     private static final long MAX_UPLOAD_BYTES = 8L * 1024 * 1024; // 8 MB
     private static final Set<String> ALLOWED_MIME_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
     static final String MEDIA_PATH_PREFIX = "/media/";
+    // Owner-approved (MEDIA_RULE_006): review photos are viewed full-size in a lightbox, so keep
+    // more headroom than the avatar/admin ceilings.
+    private static final CompressionProfile REVIEW_PROFILE = new CompressionProfile(1600, 1600, 0.85f, false);
 
     private final MinioClient minioClient;
     private final MinioProperties minioProperties;
+    private final ImageCompressionService imageCompressionService;
 
     /**
      * Validate + store one image. Returns the relative public URL ({@code /media/reviews/...}).
@@ -53,6 +59,7 @@ public class ReviewPhotoStorageService {
         } catch (IOException e) {
             throw new IllegalStateException("Failed to read upload bytes: " + e.getMessage(), e);
         }
+        bytes = imageCompressionService.compress(bytes, mimeType, REVIEW_PROFILE);
 
         String safeFilename = sanitizeFilename(file.getOriginalFilename());
         String objectKey = "reviews/" + UUID.randomUUID() + "/" + safeFilename;

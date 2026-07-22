@@ -17,7 +17,7 @@ function buildPageList(page, totalPages) {
   return pages
 }
 
-export function PaginationControls({ pagination, onPageChange }) {
+export function PaginationControls({ pagination, onPageChange, disabled = false }) {
   const { t } = useTranslation()
   const [jumpInput, setJumpInput] = useState('')
   const [jumpError, setJumpError] = useState('')
@@ -29,6 +29,7 @@ export function PaginationControls({ pagination, onPageChange }) {
 
   function handleJump(e) {
     e.preventDefault()
+    if (disabled) return
     const target = parseInt(jumpInput, 10)
     // Số trang không hợp lệ (rỗng/không phải số/ngoài khoảng) → báo lỗi rõ, GIỮ lại ô nhập để sửa,
     // không xoá im lặng khiến người dùng tưởng đã nhảy trang.
@@ -42,16 +43,16 @@ export function PaginationControls({ pagination, onPageChange }) {
   }
 
   return (
-    <div className="bb-table-foot">
-      <span className="bb-muted">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-4 text-sm text-muted-foreground" aria-busy={disabled || undefined}>
+      <span>
         {t('pagination.items', { count: totalItems })}
         {' · '}
         {t('pagination.page', { page, total: totalPages })}
       </span>
 
-      <div className="bb-row flex-wrap">
+      <div className="flex flex-wrap items-center gap-3">
         {totalPages > 3 && (
-          <form onSubmit={handleJump} className="bb-row gap-1.5">
+          <form onSubmit={handleJump} className="flex items-center gap-2">
             <span className="whitespace-nowrap text-xs text-muted-foreground">
               {t('pagination.jumpTo')}
             </span>
@@ -61,27 +62,28 @@ export function PaginationControls({ pagination, onPageChange }) {
               max={totalPages}
               value={jumpInput}
               onChange={(e) => { setJumpInput(e.target.value); if (jumpError) setJumpError('') }}
-              className="bb-input h-[26px] w-[52px] px-1 text-center text-xs"
+              className="h-9 w-14 px-1 text-center text-sm"
               aria-label={t('pagination.jumpTo')}
               aria-invalid={jumpError ? true : undefined}
               aria-describedby={jumpError ? jumpErrId : undefined}
+              disabled={disabled}
             />
-            <Button type="submit" variant="secondary" size="sm" disabled={!jumpInput} aria-label={t('pagination.jumpTo')}>
+            <Button type="submit" variant="secondary" size="sm" className="min-h-11" disabled={disabled || !jumpInput} aria-label={t('pagination.jumpTo')}>
               <ArrowRight size={14} aria-hidden="true" />
             </Button>
             {jumpError ? (
-              <span id={jumpErrId} role="alert" className="bb-field-error whitespace-nowrap">{jumpError}</span>
+              <span id={jumpErrId} role="alert" className="whitespace-nowrap text-sm text-danger">{jumpError}</span>
             ) : null}
           </form>
         )}
 
-        <div className="bb-pagination">
+        <nav className="flex flex-wrap items-center gap-1" aria-label={t('pagination.page', { page, total: totalPages })}>
           <Button
             variant="secondary"
             size="sm"
-            className="h-7"
+            className="min-h-11"
             onClick={() => onPageChange(page - 1)}
-            disabled={page <= 1}
+            disabled={disabled || page <= 1}
           >
             {t('pagination.previous')}
           </Button>
@@ -94,8 +96,9 @@ export function PaginationControls({ pagination, onPageChange }) {
                 key={p}
                 variant="secondary"
                 size="sm"
-                className={p === page ? 'active' : ''}
+                className={p === page ? 'min-h-11 border-primary bg-primary text-primary-foreground' : 'min-h-11'}
                 onClick={() => onPageChange(p)}
+                disabled={disabled}
                 aria-current={p === page ? 'page' : undefined}
               >
                 {p}
@@ -106,13 +109,13 @@ export function PaginationControls({ pagination, onPageChange }) {
           <Button
             variant="secondary"
             size="sm"
-            className="h-7"
+            className="min-h-11"
             onClick={() => onPageChange(page + 1)}
-            disabled={page >= totalPages}
+            disabled={disabled || page >= totalPages}
           >
             {t('pagination.next')}
           </Button>
-        </div>
+        </nav>
       </div>
     </div>
   )

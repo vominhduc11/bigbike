@@ -1,6 +1,7 @@
 import { X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 /**
  * BulkActionBar — thanh hành động hàng loạt khi chọn nhiều dòng.
@@ -12,7 +13,7 @@ import { Button } from '@/components/ui/button'
  */
 export function BulkActionBar({
   selectedCount, onClear, actions = [], closeLabel,
-  totalMatching, onSelectAllMatching, allMatchingSelected,
+  totalMatching, onSelectAllMatching, allMatchingSelected, className,
 }) {
   const { t } = useTranslation()
   if (!selectedCount) return null
@@ -28,10 +29,10 @@ export function BulkActionBar({
     && !allMatchingSelected
 
   return (
-    <div className="bb-bulk-bar" role="region" aria-label={t('common.bulkActions', { defaultValue: 'Hành động hàng loạt' })}>
-      <span className="count">{countLabel}</span>
+    <div className={cn('flex flex-wrap items-center gap-3 rounded-md border border-border bg-surface px-4 py-3 shadow-sm', className)} role="region" aria-label={t('common.bulkActions', { defaultValue: 'Hành động hàng loạt' })}>
+      <span className="font-semibold text-sm">{countLabel}</span>
       {showSelectAll && (
-        <Button type="button" variant="ghost" size="sm" className="bulk-btn" onClick={onSelectAllMatching}>
+        <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={onSelectAllMatching}>
           {t('common.selectAllMatching', { count: totalMatching, defaultValue: `Chọn tất cả ${totalMatching} kết quả khớp` })}
         </Button>
       )}
@@ -40,17 +41,18 @@ export function BulkActionBar({
           {t('common.allMatchingSelected', { count: totalMatching, defaultValue: `Đã chọn tất cả ${totalMatching} kết quả` })}
         </span>
       )}
-      <span className="sep" />
-      <div className="bb-row gap-1.5">
+      <span className="h-6 w-px bg-border" aria-hidden="true" />
+      <div className="flex flex-wrap items-center gap-2">
         {actions.map((action, index) => (
           <Button
             key={index}
             type="button"
             variant={action.tone === 'danger' ? 'danger' : 'ghost'}
             size="sm"
-            className={`bulk-btn${action.tone === 'danger' ? ' danger' : ''}`}
+            className="min-h-11"
             onClick={action.onClick}
-            disabled={action.disabled}
+            disabled={action.disabled || action.loading}
+            loading={action.loading}
           >
             {action.label}
           </Button>
@@ -59,7 +61,7 @@ export function BulkActionBar({
           type="button"
           variant="ghost"
           size="sm"
-          className="bulk-btn"
+          className="min-h-11"
           onClick={onClear}
           aria-label={close}
           title={close}

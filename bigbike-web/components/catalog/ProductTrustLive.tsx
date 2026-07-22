@@ -5,13 +5,14 @@ import { useLocale } from "next-intl";
 import type { Product, ProductPrice, ProductStockState } from "@/lib/contracts/public";
 import { derivePricing } from "@/lib/pricing";
 import { formatVnd } from "@/lib/utils/format";
+import { queryKeys } from "@/lib/query/keys";
 import { Tr } from "@/components/i18n/Tr";
 
 // Giá + tồn kho cho khối "Mua tại BigBike.vn" (#12). Trước đây khối này đọc giá/tồn TĨNH
 // lúc dựng trang nên LỆCH với khu mua hàng chính (PurchaseSection): không tính giảm giá,
 // không tính trạng thái "tắt bán thủ công" → có thể hiện "Còn hàng"/giá gốc trong khi nút
-// mua đã "Hết hàng"/giá khuyến mãi. Ở đây dùng CHUNG nguồn thời gian thực: cùng queryKey
-// ["product-snapshot", slug, locale] nên react-query chia sẻ cache, KHÔNG fetch thừa.
+// mua đã "Hết hàng"/giá khuyến mãi. Ở đây dùng CHUNG nguồn thời gian thực: cùng
+// queryKeys.productSnapshot(slug, locale) nên react-query chia sẻ cache, KHÔNG fetch thừa.
 
 type Snapshot = {
   pricing: { retailPrice: number; salePrice: number | null; discountPercent: number; currency: string };
@@ -22,7 +23,7 @@ type Snapshot = {
 function useSnapshot(product: Product, previewMode: boolean): Snapshot | undefined {
   const locale = useLocale();
   const { data } = useQuery<Snapshot>({
-    queryKey: ["product-snapshot", product.slug, locale],
+    queryKey: queryKeys.productSnapshot(product.slug, locale),
     queryFn: async () => {
       const res = await fetch(`/api/products/${product.slug}/snapshot/?lang=${locale}`);
       if (!res.ok) throw new Error("snapshot");

@@ -8,10 +8,6 @@ public record AdminOrderListItemResponse(
         UUID id,
         String orderNumber,
         String status,
-        String paymentStatus,
-        // Delivery lifecycle for the list's "Giao hàng" column — without these every
-        // order rendered as unfulfilled because the UI had no data (AUD-016).
-        String fulfillmentStatus,
         String fulfillmentType,
         String customerEmail,
         String customerPhone,

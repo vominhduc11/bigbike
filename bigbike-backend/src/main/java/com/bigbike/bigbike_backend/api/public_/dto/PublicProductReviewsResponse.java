@@ -18,7 +18,8 @@ public record PublicProductReviewsResponse(
             int rating,
             String comment,
             List<String> photos,
-            String createdAt
+            String createdAt,
+            String authorAvatarUrl
     ) {
     }
 }

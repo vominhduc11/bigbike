@@ -264,6 +264,7 @@
       "formStars": "Số sao",
       "formName": "Tên của bạn",
       "formNamePlaceholder": "Nguyễn Văn A",
+      "formSignedInAs": "Đánh giá với tên:",
       "formComment": "Nhận xét",
       "formCommentPlaceholder": "Sản phẩm tốt, đúng size, giao hàng nhanh...",
       "submitting": "Đang gửi...",
@@ -589,6 +590,7 @@
     },
     "paymentMethod": {
       "COD": "Thanh toán khi nhận hàng (COD)",
+      "BANK_TRANSFER": "Chuyển khoản ngân hàng",
       "BACS": "Chuyển khoản",
       "EMPTY": "—"
     },
@@ -596,8 +598,9 @@
     "paymentMethodTitle": "Phương thức thanh toán",
     "addressExampleHint": "Ví dụ: 79/30/52 Âu Cơ, Phường Hòa Bình",
     "codSubtitle": "Trả tiền mặt khi nhận — đồng kiểm hàng trước khi thanh toán",
+    "bankTransferSubtitle": "Shop sẽ gọi điện xác nhận đơn và gửi thông tin chuyển khoản sau.",
     "confirmNotice": "Shop BigBike sẽ gọi điện xác nhận đơn hàng trước khi giao. Đơn hàng chỉ được xử lý sau khi xác nhận qua điện thoại. <strong>Không trừ tiền trước khi xác nhận.</strong>",
-    "trustShipping": "Giao toàn quốc · COD · Đồng kiểm khi nhận",
+    "trustShipping": "Giao toàn quốc · Đồng kiểm khi nhận",
     "trustReturnPolicy": "Đổi size miễn phí trong 30 ngày nếu không vừa",
     "trustWarranty": "Bảo hành 24 tháng theo hãng",
     "zaloSupportTitle": "Cần hỗ trợ trước khi đặt?",
@@ -728,7 +731,7 @@
       "errorGeneric": "Có lỗi xảy ra.",
       "orderNotFoundShort": "Không tìm thấy mã đơn hàng.",
       "loadFailedShort": "Không tải được đơn hàng.",
-      "cancelDescription": "Đơn hàng sẽ bị huỷ. Thao tác này không thể khôi phục. Nếu bạn đã thanh toán, BigBike sẽ chủ động liên hệ để hoàn lại tiền.",
+      "cancelDescription": "Đơn hàng sẽ bị huỷ. Thao tác này không thể khôi phục.",
       "cancelConfirmButton": "Xác nhận huỷ",
       "cancelInProgress": "Đang huỷ...",
       "cancelKeep": "Không huỷ",
@@ -738,41 +741,23 @@
       "defaultNote": "Ghi chú",
       "orderStatus": {
         "PENDING": "Chờ xác nhận",
-        "ON_HOLD": "Tạm giữ",
         "PROCESSING": "Đang xử lý",
+        "SHIPPING": "Đang giao",
         "COMPLETED": "Hoàn thành",
-        "CANCELLED": "Đã huỷ",
-        "FAILED": "Thất bại",
-        "UNKNOWN": "Đang cập nhật"
-      },
-      "paymentStatus": {
-        "UNPAID": "Chưa thanh toán",
-        "PAID": "Đã thanh toán",
-        "CANCELLED": "Đã huỷ thanh toán",
-        "UNKNOWN": "Đang cập nhật"
-      },
-      "fulfillmentLabel": "Trạng thái giao hàng",
-      "fulfillmentStatus": {
-        "UNFULFILLED": "Chưa giao",
-        "PROCESSING": "Đang chuẩn bị",
-        "SHIPPED": "Đang giao",
-        "DELIVERED": "Đã giao",
         "CANCELLED": "Đã huỷ",
         "UNKNOWN": "Đang cập nhật"
       },
       "timeline": {
         "PENDING_LABEL": "Đã tiếp nhận",
         "PENDING_SUB": "Đơn hàng đã được tạo thành công",
-        "ON_HOLD_LABEL": "Chờ xác nhận",
-        "ON_HOLD_SUB": "Đang chờ xác nhận chuyển khoản từ shop",
         "PROCESSING_LABEL": "Đang xử lý",
         "PROCESSING_SUB": "Đơn đang được đóng gói & kiểm tra",
+        "SHIPPING_LABEL": "Đang giao",
+        "SHIPPING_SUB": "Đơn hàng đã được bàn giao cho đơn vị vận chuyển",
         "COMPLETED_LABEL": "Hoàn thành",
         "COMPLETED_SUB": "Đơn hàng đã được giao thành công",
         "CANCELLED_LABEL": "Đã huỷ",
-        "CANCELLED_SUB": "Đơn hàng đã bị huỷ",
-        "FAILED_LABEL": "Thất bại",
-        "FAILED_SUB": "Đơn hàng không thể xử lý"
+        "CANCELLED_SUB": "Đơn hàng đã bị huỷ"
       }
     },
     "addresses": {
@@ -813,6 +798,15 @@
       "intro": "Từ trang Tài khoản, bạn có thể xem nhanh hoạt động mua hàng gần đây và cập nhật thông tin cá nhân của mình. Chọn một mục bên dưới để xem hoặc chỉnh sửa.",
       "successUpdated": "Thông tin đã được cập nhật.",
       "errorGeneric": "Có lỗi xảy ra, vui lòng thử lại.",
+      "avatarUploadCta": "Tải ảnh lên",
+      "avatarRemoveCta": "Gỡ ảnh",
+      "avatarUploading": "Đang tải ảnh...",
+      "avatarRemoving": "Đang gỡ ảnh...",
+      "avatarUpdated": "Đã cập nhật ảnh đại diện.",
+      "avatarRemoved": "Đã gỡ ảnh đại diện.",
+      "avatarErrorTooLarge": "Ảnh không được vượt quá 5MB.",
+      "avatarErrorInvalidType": "Chỉ chấp nhận ảnh JPG, PNG hoặc WebP.",
+      "avatarErrorGeneric": "Không thể cập nhật ảnh đại diện, vui lòng thử lại.",
       "fullNameLabel": "Họ và tên",
       "fullNamePlaceholder": "Họ và tên",
       "emailLabel": "Email",
@@ -891,6 +885,7 @@
     "addressFieldLabel": "Địa chỉ",
     "noteFieldLabel": "Ghi chú",
     "paymentCod": "Trả tiền mặt khi nhận hàng (COD)",
+    "paymentBankTransfer": "Chuyển khoản ngân hàng",
     "paymentBacs": "Chuyển khoản ngân hàng",
     "shippingFree": "Miễn phí",
     "qtyAbbrev": "SL"

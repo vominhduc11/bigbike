@@ -5,7 +5,6 @@ import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.config.ClientIpResolver;
 import com.bigbike.bigbike_backend.domain.auth.AdminUserProfile;
 import com.bigbike.bigbike_backend.domain.commerce.OrderStatus;
-import com.bigbike.bigbike_backend.domain.commerce.PaymentStatus;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.customer.CustomerStatus;
 import com.bigbike.bigbike_backend.service.admin.AdminReportService;
@@ -41,8 +40,6 @@ public class AdminReportController {
 
     private static final Set<String> VALID_ORDER_STATUSES =
             Arrays.stream(OrderStatus.values()).map(Enum::name).collect(Collectors.toUnmodifiableSet());
-    private static final Set<String> VALID_PAYMENT_STATUSES =
-            Arrays.stream(PaymentStatus.values()).map(Enum::name).collect(Collectors.toUnmodifiableSet());
     private static final Set<String> VALID_PUBLISH_STATUSES =
             Arrays.stream(PublishStatus.values()).map(Enum::name).collect(Collectors.toUnmodifiableSet());
     private static final Set<String> VALID_CUSTOMER_STATUSES =
@@ -66,7 +63,6 @@ public class AdminReportController {
     @GetMapping("/orders/export")
     public ResponseEntity<byte[]> exportOrders(
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String paymentStatus,
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to,
             HttpServletRequest request
@@ -78,18 +74,12 @@ public class AdminReportController {
             throw ValidationException.fromField("status", "INVALID_ORDER_STATUS",
                     "Unknown order status: " + status);
         }
-        if (paymentStatus != null && !paymentStatus.isBlank()
-                && !VALID_PAYMENT_STATUSES.contains(paymentStatus.toUpperCase(Locale.ROOT))) {
-            throw ValidationException.fromField("paymentStatus", "INVALID_PAYMENT_STATUS",
-                    "Unknown payment status: " + paymentStatus);
-        }
-        AdminReportService.ExportResult ordersResult = adminReportService.exportOrdersCsv(status, paymentStatus, from, to);
+        AdminReportService.ExportResult ordersResult = adminReportService.exportOrdersCsv(status, from, to);
         adminReportService.recordExportAudit(
                 actor.id(),
                 "ORDERS",
                 filters(
                         "status", blankToNull(status),
-                        "paymentStatus", blankToNull(paymentStatus),
                         "from", blankToNull(from),
                         "to", blankToNull(to)
                 ),

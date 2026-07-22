@@ -2667,7 +2667,7 @@ input[type="checkbox"] {
   border-radius: 0;
 }
 
-.bb-theme :is(.bb-round, .bb-account-avatar, .swiper-pagination-bullet) {
+.bb-theme :is(.bb-account-avatar, .swiper-pagination-bullet) {
   border-radius: 50%;
 }
 

@@ -12,11 +12,15 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/customer")
@@ -36,6 +40,19 @@ public class CustomerController {
     public ApiDataResponse<CustomerSummary> updateMe(@Valid @RequestBody UpdateCustomerProfileRequest req, HttpServletRequest request) {
         CustomerPrincipal principal = requireCustomer();
         return apiResponseFactory.data(authService.updateProfile(principal.customerId(), req), request);
+    }
+
+    @PostMapping(path = "/me/avatar", consumes = "multipart/form-data")
+    public ApiDataResponse<CustomerSummary> uploadAvatar(
+            @RequestParam("file") MultipartFile file, HttpServletRequest request) {
+        CustomerPrincipal principal = requireCustomer();
+        return apiResponseFactory.data(authService.updateAvatar(principal.customerId(), file), request);
+    }
+
+    @DeleteMapping("/me/avatar")
+    public ApiDataResponse<CustomerSummary> removeAvatar(HttpServletRequest request) {
+        CustomerPrincipal principal = requireCustomer();
+        return apiResponseFactory.data(authService.removeAvatar(principal.customerId()), request);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

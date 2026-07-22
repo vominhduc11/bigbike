@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { generateId } from "@/lib/utils";
 import { submitCheckout } from "@/lib/api/client-api";
@@ -15,6 +15,7 @@ import { createCheckoutAddressSchema, type CheckoutAddressFormValues } from "@/l
 import { pushDataLayer, toGtmCartItems } from "@/lib/analytics";
 import { toOrderConfirmPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
+import type { CheckoutPaymentMethod } from "./atoms";
 import { pickDefaultAddress } from "./helpers";
 
 /**
@@ -38,8 +39,8 @@ export function useCheckout() {
   const [gtmFired, setGtmFired] = useState(false);
   const [customerNote, setCustomerNote] = useState("");
   const [shipToDifferent, setShipToDifferent] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("COD");
   const idempotencyKey = useRef<string>(generateId());
-  const hasPrefilledRef = useRef(false);
 
   const { data: cart, isLoading: cartLoading, error: cartError } = useCartQuery();
   const shouldLoadCustomer =
@@ -50,8 +51,9 @@ export function useCheckout() {
   const {
     register,
     trigger,
-    watch,
+    control,
     setValue,
+    getValues,
     formState: { errors: addressErrors },
   } = useForm<CheckoutAddressFormValues>({
     resolver: zodResolver(createCheckoutAddressSchema(tValidation, true)),
@@ -66,15 +68,17 @@ export function useCheckout() {
     },
   });
 
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const formAddress = watch();
+  // useWatch (thay vì watch()) để Select tỉnh/phường — vốn là controlled input
+  // đọc từ giá trị này — được vẽ lại đúng khi prefill bằng setValue() từ địa chỉ
+  // đã lưu, không chỉ khi người dùng gõ tay.
+  const formAddress = useWatch({ control });
 
   // Form địa chỉ giao riêng — chỉ dùng khi khách chọn "giao tới địa chỉ khác".
   // Backend không validate shippingAddress (chỉ billing), nên ràng buộc nằm ở zod đây.
   const {
     register: registerShip,
     trigger: triggerShip,
-    watch: watchShip,
+    control: controlShip,
     setValue: setValueShip,
     formState: { errors: shipErrors },
   } = useForm<CheckoutAddressFormValues>({
@@ -90,7 +94,7 @@ export function useCheckout() {
     },
   });
 
-  const formShip = watchShip();
+  const formShip = useWatch({ control: controlShip });
 
   useEffect(() => {
     if (!cart || gtmFired) return;
@@ -102,26 +106,32 @@ export function useCheckout() {
     setGtmFired(true);
   }, [cart, gtmFired]);
 
+  // Không dùng "chạy một lần" (useRef khoá) — nếu request profile/addresses tới
+  // chậm hơn lần mount trước, hoặc trang được giữ lại (không remount) khi khách rời
+  // rồi quay lại Đặt hàng, khoá một-lần sẽ chặn vĩnh viễn việc set lại Tỉnh/Phường,
+  // trong khi 4 ô nhập chữ thường vẫn "trông như đã điền" do trình duyệt tự nhớ giúp
+  // (autofill), khiến lỗi bị che giấu. Điền mỗi khi ô đang trống thay vì khoá theo
+  // mount, để không phụ thuộc vào việc component có bị Next.js giữ lại hay không —
+  // đồng thời không ghi đè lên giá trị khách đã tự gõ.
   useEffect(() => {
-    if (hasPrefilledRef.current) return;
     if (!profile) return;
     if (addresses === undefined) return;
-    hasPrefilledRef.current = true;
 
+    const current = getValues();
     const addr = pickDefaultAddress(addresses);
     if (addr) {
-      setValue("fullName", addr.fullName ?? profile.displayName ?? "");
-      setValue("phone", addr.phone ?? profile.phone ?? "");
-      setValue("email", addr.email ?? profile.email ?? "");
-      setValue("province", addr.province ?? "");
-      setValue("ward", addr.ward ?? "");
-      setValue("addressLine1", addr.addressLine1 ?? "");
+      if (!current.fullName) setValue("fullName", addr.fullName ?? profile.displayName ?? "");
+      if (!current.phone) setValue("phone", addr.phone ?? profile.phone ?? "");
+      if (!current.email) setValue("email", addr.email ?? profile.email ?? "");
+      if (!current.province) setValue("province", addr.province ?? "");
+      if (!current.ward) setValue("ward", addr.ward ?? "");
+      if (!current.addressLine1) setValue("addressLine1", addr.addressLine1 ?? "");
     } else {
-      if (profile.displayName) setValue("fullName", profile.displayName);
-      if (profile.phone) setValue("phone", profile.phone);
-      if (profile.email) setValue("email", profile.email);
+      if (!current.fullName && profile.displayName) setValue("fullName", profile.displayName);
+      if (!current.phone && profile.phone) setValue("phone", profile.phone);
+      if (!current.email && profile.email) setValue("email", profile.email);
     }
-  }, [profile, addresses, setValue]);
+  }, [profile, addresses, setValue, getValues]);
 
   const resolvedAddress = useMemo(
     () => ({
@@ -197,9 +207,7 @@ export function useCheckout() {
                 addressLine1: resolvedShip.addressLine1,
               }
             : undefined,
-          // COD là phương thức duy nhất trên storefront và UI hiển thị cố định COD —
-          // payload phải gửi đúng như đã hứa với khách (owner decision 2026-07-15, PAY_RULE_001).
-          paymentMethod: "COD",
+          paymentMethod,
           customerNote: customerNote.trim() || undefined,
         },
         idempotencyKey.current,
@@ -247,6 +255,8 @@ export function useCheckout() {
     setCustomerNote,
     shipToDifferent,
     setShipToDifferent,
+    paymentMethod,
+    setPaymentMethod,
     registerShip,
     shipErrors,
     formShip,

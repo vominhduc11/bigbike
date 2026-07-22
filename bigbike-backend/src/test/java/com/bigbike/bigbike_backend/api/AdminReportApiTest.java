@@ -125,15 +125,15 @@ class AdminReportApiTest {
                 .andExpect(status().isBadRequest());
     }
 
-    // ── 4. GMV excludes CANCELLED/FAILED — REFUNDED stays ────────────────────
+    // ── 4. GMV excludes CANCELLED ─────────────────────────────────────────────
 
     @Test
     void analytics_cancelledOrders_excludedFromGrossOrderValue() throws Exception {
         double baseline = fetchGrossOrderValue();
 
         Instant now = Instant.now();
-        orderRepo.save(buildOrder("COMPLETED", "PAID", "500000", null, now));
-        orderRepo.save(buildOrder("CANCELLED", "CANCELLED", "200000", null, now));
+        orderRepo.save(buildOrder("COMPLETED", "500000", null, now));
+        orderRepo.save(buildOrder("CANCELLED", "200000", null, now));
 
         double after = fetchGrossOrderValue();
         double delta = after - baseline;
@@ -239,12 +239,11 @@ class AdminReportApiTest {
      * Builds a test order. paidAmount defaults to totalAmount (cash collected equals order total).
      * Override paidAmount after calling this method for edge-case tests.
      */
-    private OrderEntity buildOrder(String status, String paymentStatus,
+    private OrderEntity buildOrder(String status,
                                    String totalAmount, String refundAmount, Instant placedAt) {
         OrderEntity o = new OrderEntity();
         o.setOrderNumber("RPT-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12));
         o.setStatus(status);
-        o.setPaymentStatus(paymentStatus);
         o.setTotalAmount(new BigDecimal(totalAmount));
         o.setPaidAmount(new BigDecimal(totalAmount)); // default: all cash collected
         // Refund bookkeeping removed from OrderEntity (refund feature dropped) — param kept inert.

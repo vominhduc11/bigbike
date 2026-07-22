@@ -61,6 +61,9 @@ public class CustomerEntity {
     @Column(name = "dob")
     private LocalDate dob;
 
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
+
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
 

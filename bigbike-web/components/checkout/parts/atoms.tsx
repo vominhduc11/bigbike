@@ -1,7 +1,10 @@
 import { useTranslations } from "next-intl";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ZaloIcon } from "@/components/ui/ZaloIcon";
+import { cn } from "@/lib/utils";
 import { zaloHref } from "@/lib/utils/format";
 
 export function CheckoutStepTitle({ step, children }: { step?: number; children: React.ReactNode }) {
@@ -24,21 +27,61 @@ export function FieldError({ message }: { message?: string }) {
   return <p className="m-0 mt-1 text-a5-meta text-brand">{message}</p>;
 }
 
-export function CodPaymentBlock() {
+export type CheckoutPaymentMethod = "COD" | "BANK_TRANSFER";
+
+export function PaymentMethodSelector({
+  value,
+  onValueChange,
+}: {
+  value: CheckoutPaymentMethod;
+  onValueChange: (value: CheckoutPaymentMethod) => void;
+}) {
   const t = useTranslations("Checkout");
   return (
-    <div className="flex items-center gap-4 border border-border bg-secondary p-4">
-      <div className="flex h-10 w-10 items-center justify-center bg-foreground">
-        <svg viewBox="0 0 24 24" className="w-5.5 h-5.5 fill-white"><path d="M2 8h20v2H2zm0 4h20v2H2zm0 4h12v2H2zM18 14l2 2 4-4-1.4-1.4L20 13.2l-.6-.6z"/></svg>
+    <RadioGroup
+      value={value}
+      onValueChange={(nextValue) => {
+        if (nextValue === "COD" || nextValue === "BANK_TRANSFER") {
+          onValueChange(nextValue);
+        }
+      }}
+      aria-label={t("paymentMethodTitle")}
+      className="gap-3"
+    >
+      <div className={cn(
+        "flex items-start gap-3 border p-4 transition-colors",
+        value === "COD" ? "border-brand bg-secondary ring-1 ring-brand/20" : "border-border bg-background",
+      )}>
+        <RadioGroupItem
+          id="payment-cod"
+          value="COD"
+          className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+        >
+          {value === "COD" ? <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-brand" /> : null}
+        </RadioGroupItem>
+        <Label htmlFor="payment-cod" className="min-w-0 flex-1 cursor-pointer text-left leading-relaxed">
+          <span className="block font-semibold">{t("paymentMethod.COD")}</span>
+          <span className="mt-1 block text-a5-meta font-normal text-muted-foreground">{t("codSubtitle")}</span>
+        </Label>
       </div>
-      <div className="min-w-0 flex-1 text-left">
-        <strong className="block">{t("paymentMethod.COD")}</strong>
-        <span className="mt-1 block text-a5-meta text-muted-foreground">{t("codSubtitle")}</span>
+
+      <div className={cn(
+        "flex items-start gap-3 border p-4 transition-colors",
+        value === "BANK_TRANSFER" ? "border-brand bg-secondary ring-1 ring-brand/20" : "border-border bg-background",
+      )}>
+        <RadioGroupItem
+          id="payment-bank-transfer"
+          value="BANK_TRANSFER"
+          className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+        >
+          {value === "BANK_TRANSFER" ? <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-brand" /> : null}
+        </RadioGroupItem>
+        <Label htmlFor="payment-bank-transfer" className="min-w-0 flex-1 cursor-pointer text-left leading-relaxed">
+          <span className="block font-semibold">{t("paymentMethod.BANK_TRANSFER")}</span>
+          <span className="mt-1 block text-a5-meta font-normal text-muted-foreground">{t("bankTransferSubtitle")}</span>
+        </Label>
       </div>
-      <div className="flex h-6 w-6 items-center justify-center bg-brand">
-        <svg viewBox="0 0 24 24" className="w-[13px] h-[13px] fill-white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
-      </div>
-    </div>
+    </RadioGroup>
   );
 }
 

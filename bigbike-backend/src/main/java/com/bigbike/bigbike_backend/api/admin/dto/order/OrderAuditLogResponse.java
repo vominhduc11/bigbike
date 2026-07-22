@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Read-only audit-trail entry for an order (status / payment / fulfillment / note
+ * Read-only audit-trail entry for an order (status / payment record / shipping metadata / note
  * changes). Sourced from {@code audit_logs} where {@code resource_type = 'ORDER'}.
  */
 public record OrderAuditLogResponse(
