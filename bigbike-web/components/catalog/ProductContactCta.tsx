@@ -30,17 +30,6 @@ function scrollToBuyBox() {
   window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
 }
 
-/** Pull a human-readable phone number out of a raw Zalo value (URL or number).
- * Returns the raw digits when grouping is unknown, "" when there are no digits
- * (e.g. an alias like zalo.me/bigbike). */
-function zaloDisplayNumber(value: string): string {
-  const digits = value.replace(/[^\d]/g, "");
-  if (digits.length === 10 || digits.length === 11) {
-    return `${digits.slice(0, 4)} ${digits.slice(4, 7)} ${digits.slice(7)}`;
-  }
-  return digits;
-}
-
 /**
  * Local-SEO contact band at the foot of the product detail page: a light card
  * laid out in two columns — shop name + address on the left, a "Mua ngay" primary
@@ -72,8 +61,6 @@ export function ProductContactCta({
   const locale = useLocale();
   const enName = useLocalizedField<string>("name");
   const displayName = safeText(locale === "en" ? enName : productName, productName);
-
-  const zaloNumber = zaloUrl ? zaloDisplayNumber(zaloUrl) : "";
 
   return (
     <section className="mt-16 mb-12 max-md:mt-6 max-md:mb-0">
@@ -113,7 +100,7 @@ export function ProductContactCta({
               className="inline-flex items-center justify-center gap-2.5 border-2 !border-zalo !bg-white px-7 py-3.5 font-cta text-b4-action font-bold !text-zalo transition-colors hover:!bg-zalo-soft max-md:w-full"
             >
               <MessageCircle className="size-5" aria-hidden="true" />
-              {zaloNumber || t("zaloLink")}
+              {t("zaloLink")}
             </a>
           )}
         </div>
