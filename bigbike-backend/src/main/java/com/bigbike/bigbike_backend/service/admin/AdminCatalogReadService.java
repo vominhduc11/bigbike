@@ -156,7 +156,7 @@ public class AdminCatalogReadService {
         String query = coalesceSearch(q, search);
 
         String locale = normalizeLocale(lang);
-        // Admin VI/EN switch: ở EN chỉ hiện thương hiệu đã có tên tiếng Anh.
+        // Brand names/slugs are shared across VI/EN; keep every brand visible in the EN admin list.
         List<Brand> result = catalogReadRepository.findAllBrands(locale, "en".equals(locale)).stream()
                 .filter(brand -> !UNCATEGORIZED_BRAND_ID.equals(brand.id()))
                 .filter(brand -> matchesVisibility(brand.isVisible(), visibility))

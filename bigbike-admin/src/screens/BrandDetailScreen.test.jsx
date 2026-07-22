@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toBrandPayload } from './brandPayload'
+import { getBrandRequiredProgress, toBrandPayload } from './brandPayload'
 
 function formWithSeo(overrides = {}) {
   return {
@@ -36,6 +36,35 @@ describe('BrandDetailScreen toPayload', () => {
     })).seo.ogImage).toEqual({
       url: '/media/brands/ls2.jpg',
       alt: 'Logo thương hiệu LS2',
+    })
+  })
+
+  it('dùng tên thương hiệu chung cho trường tương thích tiếng Anh', () => {
+    expect(toBrandPayload(formWithSeo({
+      name: 'Hevik',
+      translations: { en: { name: '' } },
+    })).translations.en.name).toBe('Hevik')
+  })
+
+  it('không gửi slug tiếng Anh riêng cho thương hiệu', () => {
+    expect(toBrandPayload(formWithSeo({
+      translations: { en: { slug: 'hevik-en', name: 'Hevik' } },
+    })).translations.en.slug).toBeNull()
+  })
+})
+
+describe('BrandDetailScreen required progress', () => {
+  it('chỉ tính tên dùng chung và slug vì thương hiệu không có tên tiếng Anh riêng', () => {
+    expect(getBrandRequiredProgress(formWithSeo({ translations: { en: { name: '' } } }))).toEqual({
+      filled: 2,
+      total: 2,
+    })
+  })
+
+  it('đủ tiến độ khi có tên dùng chung và slug', () => {
+    expect(getBrandRequiredProgress(formWithSeo())).toEqual({
+      filled: 2,
+      total: 2,
     })
   })
 })

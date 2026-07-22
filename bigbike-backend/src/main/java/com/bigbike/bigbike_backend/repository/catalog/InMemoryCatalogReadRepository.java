@@ -638,6 +638,6 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     }
 
     private static BrandSummary summaryOf(Brand brand) {
-        return new BrandSummary(brand.id(), brand.slug(), brand.slugEn(), brand.name());
+        return new BrandSummary(brand.id(), brand.slug(), null, brand.name());
     }
 }

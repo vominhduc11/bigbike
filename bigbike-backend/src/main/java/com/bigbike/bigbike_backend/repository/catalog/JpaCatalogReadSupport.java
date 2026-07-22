@@ -91,13 +91,12 @@ final class JpaCatalogReadSupport {
     }
 
     static BrandTranslations toBrandTranslations(BrandEntity entity) {
-        boolean anyEnglish = isPresent(entity.getNameEn())
-                || isPresent(entity.getDescriptionEn())
+        boolean anyEnglish = isPresent(entity.getDescriptionEn())
                 || isPresent(entity.getSeoTitleEn())
                 || isPresent(entity.getSeoDescriptionEn());
         if (!anyEnglish) return null;
         return new BrandTranslations(new BrandTranslations.BrandContent(
-                entity.getNameEn(),
+                null,
                 entity.getDescriptionEn(),
                 entity.getSeoTitleEn(),
                 entity.getSeoDescriptionEn()

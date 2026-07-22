@@ -58,10 +58,8 @@ export async function generateMetadata({ params }: BrandDetailPageProps): Promis
     description: brand.seo?.description ?? brand.description ?? "Chi tiết thương hiệu BigBike.",
     canonicalPath: toBrandPath(brand.slug),
     ogImage: brand.seo?.ogImage?.url ?? brand.logo?.url ?? undefined,
-    // hreflang vi/en khi thương hiệu có slug tiếng Anh riêng (BRAND_RULE_003).
-    languageAlternates: brand.slugEn
-      ? { vi: toBrandPath(brand.slug), en: toBrandPath(brand.slugEn) }
-      : undefined,
+    // BRAND_RULE_003: brand slug is shared across VI/EN; no separate hreflang URL.
+    languageAlternates: undefined,
   });
 }
 
@@ -75,12 +73,11 @@ export default async function BrandDetailPage({ params }: BrandDetailPageProps) 
   // Shell tĩnh theo slug — KHÔNG đọc searchParams (lưới lọc/phân trang nằm ở client).
   // Lưới sản phẩm view MẶC ĐỊNH (page 1, sort mặc định) của thương hiệu fetch sẵn ở
   // server → nằm trong HTML server cho SEO, đồng bộ cách trang danh mục seed lưới.
-  const [brandResult, brandsResult, categoriesResult, facetsResult, productsResult] = await Promise.all([
+  const [brandResult, brandsResult, categoriesResult, facetsResult] = await Promise.all([
     getBrandBySlug(slug, locale),
     listBrands({ page: 1, size: 100, sort: "name:asc", lang: locale }),
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc", lang: locale }),
     getCatalogFacets({ lang: locale }),
-    listProducts({ page: 1, size: DEFAULT_PRODUCT_PAGE_SIZE, sort: DEFAULT_PRODUCT_SORT, brand: slug, lang: locale }),
   ]);
 
   if (!brandResult.data && brandResult.error?.status === 404) {
@@ -106,6 +103,13 @@ export default async function BrandDetailPage({ params }: BrandDetailPageProps) 
   }
 
   const brand = brandResult.data;
+  const productsResult = await listProducts({
+    page: 1,
+    size: DEFAULT_PRODUCT_PAGE_SIZE,
+    sort: DEFAULT_PRODUCT_SORT,
+    brand: brand.slug,
+    lang: locale,
+  });
   const canonicalPath = toBrandPath(brand.slug);
   const filterCategories = (categoriesResult.data ?? []).filter((c) => c.isVisible);
   const breadcrumbJsonLd = serializeJsonLd(buildBrandBreadcrumbJsonLd(brand));
@@ -139,7 +143,7 @@ export default async function BrandDetailPage({ params }: BrandDetailPageProps) 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
 
       <LocalizedContentProvider kind="brand" slug={brand.slug}>
-        <AltSlugRegistrar kind="brand" viSlug={brand.slug} enSlug={brand.slugEn ?? null} />
+        <AltSlugRegistrar kind="brand" viSlug={brand.slug} enSlug={null} />
         <div>
           <PageHero
             title={brandName}

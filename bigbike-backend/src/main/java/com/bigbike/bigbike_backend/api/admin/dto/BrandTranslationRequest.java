@@ -1,7 +1,6 @@
 package com.bigbike.bigbike_backend.api.admin.dto;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,9 +10,10 @@ import lombok.Setter;
 /**
  * English content for a brand upsert (V137), entered manually by the admin (no auto-translation).
  *
- * <p>Per {@code BUSINESS_RULES.md BRAND_RULE_001/TRANSLATION_RULE_002}: {@code name} is required
- * (validated in {@code CatalogRequestValidator}, mirroring the Vietnamese {@code name} field being
- * required) — every other field is optional and may be left blank. Only length is validated.
+ * <p>Per {@code BUSINESS_RULES.md BRAND_RULE_001/003}: brand {@code name} and {@code slug}
+ * are shared across locales. {@code en.name}/{@code en.slug} are accepted only for old clients
+ * and ignored by mutation/display logic. Every real translated field is optional and may be left
+ * blank. Only length/format is validated.
  */
 @Getter
 @Setter
@@ -30,11 +30,10 @@ public class BrandTranslationRequest {
     @AllArgsConstructor
     public static class BrandContentRequest {
 
-        /** Optional English URL slug (V215). Empty/blank → fall back to the vi slug. */
-        @Pattern(regexp = "^[a-z0-9]+(?:-[a-z0-9]+)*$", message = "English slug must be lowercase alphanumeric with hyphens.")
-        @Size(max = 100, message = "English slug must be at most 100 characters.")
+        /** Legacy compatibility field. Brand URL always uses the top-level {@code slug}. */
         private String slug;
 
+        /** Legacy compatibility field. Brand display name always uses the top-level {@code name}. */
         @Size(max = 255, message = "English name is too long.")
         private String name;
 

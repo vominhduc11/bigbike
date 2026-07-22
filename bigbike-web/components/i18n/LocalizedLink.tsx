@@ -13,7 +13,9 @@ import {
 
 /**
  * Navigation link that points to the language-appropriate URL slug while the
- * visitor is browsing in English (PRODUCT/CATEGORY/BRAND/ARTICLE_RULE_003).
+ * visitor is browsing in English (PRODUCT/CATEGORY/ARTICLE_RULE_003).
+ * Brand links deliberately keep the shared brand slug in every locale
+ * (BRAND_RULE_003).
  *
  * Why a wrapper: the server ALWAYS renders the canonical `vi` locale (so ISR
  * caches a single HTML — `i18n/request.ts` deliberately ignores the cookie), so
@@ -70,6 +72,8 @@ export function LocalizedLink({
     href = toCategoryPath(useEn ? (enSlug || viSlug) : viSlug, locale as Locale, !!(useEn && enSlug));
   } else if (kind === "article") {
     href = toArticlePath(useEn ? (enSlug || viSlug) : viSlug, locale as Locale, !!(useEn && enSlug));
+  } else if (kind === "brand") {
+    href = toBrandPath(viSlug);
   } else {
     href = PATH_FOR_KIND[kind](useEn ? (enSlug || viSlug) : viSlug);
   }

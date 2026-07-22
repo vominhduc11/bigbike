@@ -22,7 +22,7 @@ public class SlugRedirectHelper {
 
     /**
      * 301-redirect bookkeeping when the optional English slug changes
-     * (PRODUCT/CATEGORY/BRAND_RULE_003). {@code pathPrefix} is e.g. {@code "/product/"}.
+     * (PRODUCT/CATEGORY_RULE_003). {@code pathPrefix} is e.g. {@code "/product/"}.
      * Changed → old-EN → new-EN; cleared → old-EN → vi URL. No-op when there was no
      * previous English slug or it is unchanged.
      */

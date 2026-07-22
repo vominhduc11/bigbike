@@ -97,7 +97,6 @@ public class BrandMutationService {
         }
 
         String previousSlug = entity.getSlug();
-        String previousSlugEn = entity.getSlugEn();
         String before = brandJson(entity);
 
         List<ApiErrorDetail> errors = new ArrayList<>();
@@ -111,7 +110,6 @@ public class BrandMutationService {
         if (!previousSlug.equals(entity.getSlug())) {
             slugRedirectHelper.autoCreateSlugRedirect("/brands/" + previousSlug, "/brands/" + entity.getSlug());
         }
-        slugRedirectHelper.autoCreateSlugEnRedirect("/brands/", previousSlugEn, entity.getSlugEn(), entity.getSlug());
         webRevalidationService.revalidateBrand(entity.getSlug(), previousSlug);
 
         return catalogReadRepository.findBrandById(entity.getId())
@@ -277,17 +275,19 @@ public class BrandMutationService {
         BrandTranslationRequest.BrandContentRequest en =
                 translations != null ? translations.getEn() : null;
         if (en != null) {
-            entity.setSlugEn(AdminMutationValidators.trimToNull(en.getSlug()));
-            entity.setNameEn(AdminMutationValidators.trimToNull(en.getName()));
             entity.setDescriptionEn(AdminMutationValidators.trimToNull(en.getDescription()));
             entity.setSeoTitleEn(AdminMutationValidators.trimToNull(en.getSeoTitle()));
             entity.setSeoDescriptionEn(AdminMutationValidators.trimToNull(en.getSeoDescription()));
         } else if (create) {
-            entity.setSlugEn(null);
-            entity.setNameEn(null);
             entity.setDescriptionEn(null);
             entity.setSeoTitleEn(null);
             entity.setSeoDescriptionEn(null);
+        }
+        if (create || request.getName() != null) {
+            entity.setNameEn(null);
+        }
+        if (create || request.getSlug() != null) {
+            entity.setSlugEn(null);
         }
     }
 

@@ -9,7 +9,7 @@ const MEDIA_URL_REGEX = /^(?:https?:\/\/|\/)/
 export const COLOR_ATTRIBUTE_KEYS = new Set(['color', 'colour', 'mau', 'mau sac', 'pa color', 'pa mau', 'pa mau sac'])
 
 /**
- * Optional English URL slug (V213/V214/V215): empty is allowed (falls back to the
+ * Optional English URL slug (V213/V214/V216): empty is allowed (falls back to the
  * vi slug); when filled it must be valid kebab-case ≤ 100 chars. Errors target
  * `translations.en.slug` so the per-language slug field highlights correctly.
  */
@@ -605,8 +605,8 @@ export function createBrandSchema(t) {
     logoUrl: z.string().optional(),
     seoCanonicalUrl: z.string().optional(),
     seoOgImageUrl: z.string().optional(),
-    // English content (V137 + V215 slug). TRANSLATION_RULE_002: `name` is required
-    // (mirrors VI `name`); every other field is optional, validated for format/length only.
+    // English content (V137). BRAND_RULE_001/003: brand name and slug are shared
+    // across VI/EN; translated fields here are optional and format/length-only.
     translations: z.object({
       en: z.object({
         slug: z.string().optional(),
@@ -617,14 +617,6 @@ export function createBrandSchema(t) {
       }).optional(),
     }).optional(),
   }).superRefine((data, ctx) => {
-    validateEnSlug(t, data.translations?.en?.slug, ctx)
-    if (!String(data.translations?.en?.name ?? '').trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: t('brands.detail.errNameRequiredEn', { defaultValue: 'Vui lòng nhập tên thương hiệu bằng tiếng Anh.' }),
-        path: ['translations', 'en', 'name'],
-      })
-    }
     const s = String(data.slug || '').trim()
     if (!s) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('brands.detail.errSlugRequired'), path: ['slug'] })

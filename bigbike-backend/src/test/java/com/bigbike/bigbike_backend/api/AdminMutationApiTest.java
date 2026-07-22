@@ -1135,6 +1135,26 @@ class AdminMutationApiTest {
     }
 
     @Test
+    void shouldCreateBrandWithoutSeparateEnglishName() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String slug = "brand-shared-name-" + suffix;
+
+        mockMvc.perform(post("/api/v1/admin/brands")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"Shared Brand %s","translations":{"en":{"slug":"Invalid English Slug !!!","name":"Different English Brand","description":"English description"}}}
+                                """.formatted(slug, suffix)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.name").value("Shared Brand " + suffix));
+
+        BrandEntity brand = brandJpaRepository.findBySlug(slug).orElseThrow();
+        assertThat(brand.getName()).isEqualTo("Shared Brand " + suffix);
+        assertThat(brand.getNameEn()).isNull();
+        assertThat(brand.getSlugEn()).isNull();
+    }
+
+    @Test
     void shouldRejectBrandValidationErrors() throws Exception {
         // missing slug → REQUIRED
         mockMvc.perform(post("/api/v1/admin/brands")

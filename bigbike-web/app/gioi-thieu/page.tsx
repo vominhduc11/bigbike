@@ -43,7 +43,7 @@ export default async function AboutPage() {
         id: brand.id,
         name: brand.name,
         slug: brand.slug,
-        slugEn: brand.slugEn,
+        slugEn: null,
         logoUrl,
         logoAlt: brand.logo?.alt ?? brand.name,
       };

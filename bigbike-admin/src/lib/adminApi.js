@@ -27,6 +27,16 @@ export class ApiClientError extends Error {
   }
 }
 
+function normalizeApiErrorMessage(error, status) {
+  if (error?.code === 'VALIDATION_ERROR') {
+    return 'Dữ liệu chưa hợp lệ. Vui lòng kiểm tra các ô đang báo lỗi.'
+  }
+  if (typeof error?.message === 'string' && error.message.trim()) {
+    return error.message
+  }
+  return `Yêu cầu thất bại (mã ${status}). Vui lòng thử lại.`
+}
+
 // Auth interceptor state
 // We don't pull in axios just for an auth header. The same interceptor pattern
 // is implemented around fetch: every request reads the latest accessToken from
@@ -142,7 +152,7 @@ async function requestJson(endpoint, options = {}) {
   if (!response.ok) {
     const error = payload?.error || {}
     throw new ApiClientError(
-      error.message || `Yêu cầu thất bại (mã ${response.status}). Vui lòng thử lại.`,
+      normalizeApiErrorMessage(error, response.status),
       response.status,
       error.code || 'REQUEST_FAILED',
       error.details || [],
@@ -343,16 +353,33 @@ export function mapValidationErrors(error) {
     const rawField = typeof detail.field === 'string' ? detail.field : '_form'
     // Normalize bracket notation variants[0].field -> variants.0.field
     const field = (FIELD_ALIASES[rawField] || rawField).replace(/\[(\d+)\]/g, '.$1')
-    const message =
-      typeof detail.message === 'string'
-        ? detail.message
-        : 'Invalid value.'
+    const message = translateValidationMessage(field, detail)
 
     if (!acc[field]) {
       acc[field] = message
     }
     return acc
   }, {})
+}
+
+function translateValidationMessage(field, detail) {
+  const code = typeof detail?.code === 'string' ? detail.code : ''
+  const rawMessage = typeof detail?.message === 'string' ? detail.message : ''
+
+  if (code === 'DUPLICATE' && field === 'slug') {
+    return 'Slug này đã được dùng. Hãy mở bản ghi đang có hoặc đổi slug khác.'
+  }
+  if (code === 'DUPLICATE' && field === 'translations.en.slug') {
+    return 'Slug tiếng Anh này đã được dùng. Hãy đổi slug tiếng Anh hoặc để trống.'
+  }
+  if (rawMessage === 'Slug is already in use.') {
+    return 'Slug này đã được dùng. Hãy mở bản ghi đang có hoặc đổi slug khác.'
+  }
+  if (rawMessage === 'English slug is already in use.') {
+    return 'Slug tiếng Anh này đã được dùng. Hãy đổi slug tiếng Anh hoặc để trống.'
+  }
+
+  return rawMessage || 'Giá trị chưa hợp lệ.'
 }
 
 export async function fetchCurrentAdminUser() {

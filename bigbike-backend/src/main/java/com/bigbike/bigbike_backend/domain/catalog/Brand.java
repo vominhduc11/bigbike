@@ -5,7 +5,7 @@ import java.time.Instant;
 public record Brand(
         String id,
         String slug,
-        /** Optional English URL slug (V215). Canonical {@code slug} stays vi; null when unset. */
+        /** Legacy-only; brand URL uses shared {@code slug} across VI/EN (BRAND_RULE_003). */
         String slugEn,
         String name,
         String description,

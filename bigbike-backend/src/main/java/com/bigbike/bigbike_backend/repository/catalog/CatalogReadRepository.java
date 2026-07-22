@@ -147,9 +147,9 @@ public interface CatalogReadRepository {
     List<Brand> findAllBrands(String locale);
 
     /**
-     * Admin language-toggle brand list. When {@code strictEnglish} is true, only
-     * brands with a non-blank {@code name_en} are returned (NO Vietnamese fallback)
-     * — used by the admin VI/EN switch. Public/web keeps {@link #findAllBrands(String)}.
+     * Admin language-toggle brand list. {@code strictEnglish} is retained for the
+     * shared catalog interface, but brand names/slugs are shared across VI/EN
+     * (BRAND_RULE_001/003), so brands are not filtered by {@code name_en}.
      */
     List<Brand> findAllBrands(String locale, boolean strictEnglish);
 
@@ -157,7 +157,7 @@ public interface CatalogReadRepository {
 
     Optional<Brand> findBrandBySlug(String slug);
 
-    /** Public locale-aware brand lookup. */
+    /** Public locale-aware brand lookup; accepts legacy {@code slug_en}, but brand response uses shared {@code slug}. */
     Optional<Brand> findBrandBySlug(String slug, String locale);
 
     Optional<Brand> findBrandById(String id);

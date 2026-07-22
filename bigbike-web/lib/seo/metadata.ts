@@ -12,7 +12,7 @@ type PublicMetadataInput = {
   ogType?: "website" | "article";
   siteName?: string;
   /**
-   * Per-language URL paths for `hreflang` alternates (PRODUCT/CATEGORY/BRAND_RULE_003).
+   * Per-language URL paths for `hreflang` alternates (PRODUCT/CATEGORY/ARTICLE_RULE_003).
    * Canonical stays the vi URL; emit this when an entity has a distinct English slug
    * so Google links the vi/en URLs instead of treating them as duplicates.
    */

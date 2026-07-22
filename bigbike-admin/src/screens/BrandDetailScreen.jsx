@@ -13,13 +13,13 @@ import { showConfirm } from '../lib/confirm'
 import { recordRecentItem } from '../lib/useRecentItems'
 import { formatDateTime } from '../lib/formatters'
 import { toSlug } from '../lib/slug'
-import { useContentLang, setContentLang } from '../lib/contentLang'
+import { useContentLang } from '../lib/contentLang'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { clearNavGuard } from '@/lib/navigationGuard'
-import { AlertCircle, ArrowLeft, Loader2, Save, Trash2 } from 'lucide-react'
+import { ArrowLeft, Loader2, Save, Trash2 } from 'lucide-react'
 
 import { createBrandSchema, zodErrors } from '../lib/schemas'
-import { toBrandPayload } from './brandPayload'
+import { getBrandRequiredProgress, toBrandPayload } from './brandPayload'
 import { StatePanel } from '../components/StatePanel'
 import { FormField } from '../components/layout/FormField'
 import { CollapsibleSection } from '../components/CollapsibleSection'
@@ -72,8 +72,7 @@ function buildFormFromItem(item) {
     seoOgImageAlt: item.seo?.ogImage?.alt || '',
     translations: {
       en: {
-        // slug tiếng Anh nằm ở field top-level `slugEn` của response, không trong translations.en
-        slug: item.slugEn || '',
+        slug: '',
         name: item.translations?.en?.name || '',
         description: item.translations?.en?.description || '',
         seoTitle: item.translations?.en?.seoTitle || '',
@@ -125,7 +124,6 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
   const [initialSnapshot, setInitialSnapshot] = useState(JSON.stringify(buildEmptyForm()))
   const [validationErrors, setValidationErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [enSlugManuallyEdited, setEnSlugManuallyEdited] = useState(false)
   // Khi TẠO MỚI, gõ tên tự gợi ý đường dẫn (giống Danh mục) cho tới khi admin tự sửa
   // đường dẫn. Chế độ SỬA không đụng slug hiện có (tránh đổi URL đã lập chỉ mục).
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
@@ -133,7 +131,6 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
   // Gom mô tả + hình ảnh (tùy chọn) vào nhóm thu gọn, đóng sẵn để chống ngợp form;
   // tự bung khi sửa thương hiệu đã có sẵn nội dung/ảnh hoặc khi có lỗi bên trong.
   const [optionalOpen, setOptionalOpen] = useState(false)
-  const enErrorRef = useRef(null)
 
   // F9: autosave / khôi phục bản nháp — cùng cơ chế localStorage với Sản phẩm/Nội dung.
   const autosaveKey = getAutosaveKey(brandId, isCreate)
@@ -151,7 +148,6 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setForm(nextForm)
     setInitialSnapshot(JSON.stringify(nextForm))
-    setEnSlugManuallyEdited(Boolean(nextForm.translations?.en?.slug))
     // Thương hiệu đã có mô tả/logo/banner → mở sẵn nhóm tùy chọn để admin thấy ngay.
     if (nextForm.description || nextForm.logoUrl || nextForm.bannerUrl) setOptionalOpen(true)
     // F9: bản nháp autosave mới hơn lần lưu gần nhất trên server → gợi ý khôi phục.
@@ -165,7 +161,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
 
   // F11: Nhân bản thương hiệu — nạp bản nháp BrandListScreen ghi vào sessionStorage
   // khi bấm "Sao chép", rồi điều hướng sang màn tạo mới (cùng cơ chế duplicate của
-  // Sản phẩm/Danh mục). Chỉ giữ lại slug/đường dẫn EN trống — admin phải đặt giá trị mới.
+  // Sản phẩm/Danh mục). Chỉ giữ lại slug trống — admin phải đặt giá trị mới.
   useEffect(() => {
     if (!isCreate) return
     try {
@@ -181,7 +177,6 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
         }
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setForm(duplicated)
-        setEnSlugManuallyEdited(false)
         toast.success(t('brands.detail.duplicateSuccess', { name: item.name || item.slug || '' }))
         return
       }
@@ -241,7 +236,6 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
       const nextForm = buildFormFromItem(savedItem)
       setForm(nextForm)
       setInitialSnapshot(JSON.stringify(nextForm))
-      setEnSlugManuallyEdited(Boolean(nextForm.translations?.en?.slug))
       clearFormFromStorage(autosaveKey)
       setDraftRecovery(null)
       queryClient.invalidateQueries({ queryKey: ['brands'] })
@@ -285,18 +279,20 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     })
   }
 
-  // Chế độ tiếng Việt: gõ tên tự gợi ý đường dẫn (chỉ khi tạo mới & chưa sửa tay slug).
-  function handleNameChange(value) {
+  // Brand name/slug are shared across VI/EN; typing the name suggests the shared slug on create.
+  function handleSharedNameChange(value) {
     setForm((previous) => {
-      const next = { ...previous, name: value }
+      const en = { ...(previous.translations?.en || {}), name: value }
+      const next = { ...previous, name: value, translations: { ...previous.translations, en } }
       if (isCreate && !slugManuallyEdited) next.slug = toSlug(value)
       return next
     })
     setValidationErrors((previous) => {
-      if (!previous.name && !previous.slug) return previous
+      if (!previous.name && !previous.slug && !previous['translations.en.name']) return previous
       const next = { ...previous }
       delete next.name
       delete next.slug
+      delete next['translations.en.name']
       return next
     })
   }
@@ -304,20 +300,6 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
   function handleSlugChange(value) {
     setSlugManuallyEdited(true)
     updateField('slug', value)
-  }
-
-  // Chế độ tiếng Anh: gõ tên EN tự gợi ý slug EN (khi chưa sửa tay); xoá để sửa tự do.
-  function handleEnNameChange(value) {
-    setForm((previous) => {
-      const en = { ...(previous.translations?.en || {}), name: value }
-      if (!enSlugManuallyEdited) en.slug = toSlug(value)
-      return { ...previous, translations: { ...previous.translations, en } }
-    })
-  }
-
-  function handleEnSlugChange(value) {
-    setEnSlugManuallyEdited(true)
-    updateTranslation('slug', value)
     setValidationErrors((previous) => {
       if (!previous['translations.en.slug']) return previous
       const next = { ...previous }
@@ -348,13 +330,9 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     const clientErrors = zodErrors(result)
     if (Object.keys(clientErrors).length > 0) {
       setValidationErrors(clientErrors)
-      // Đưa lỗi đang bị ẩn ra chỗ nhìn thấy: bung nhóm tùy chọn / SEO nếu lỗi nằm trong đó,
-      // và cuộn cảnh báo "thiếu tên tiếng Anh" vào tầm nhìn (lỗi này nằm ở tab EN).
+      // Đưa lỗi đang bị ẩn ra chỗ nhìn thấy: bung nhóm tùy chọn / SEO nếu lỗi nằm trong đó.
       if (clientErrors.description || clientErrors.logoUrl) setOptionalOpen(true)
       if (clientErrors.seoTitle || clientErrors.seoDescription || clientErrors.seoCanonicalUrl || clientErrors.seoOgImageUrl) setSeoOpen(true)
-      if (clientErrors['translations.en.name'] && !isEnLang) {
-        requestAnimationFrame(() => enErrorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
-      }
       return
     }
 
@@ -435,10 +413,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     )
   }
 
-  // F13: tiến độ điền các mục bắt buộc (đường dẫn URL, tên) — chỉ có ý nghĩa ở bản
-  // tiếng Việt, vì bản tiếng Anh không có mục nào bắt buộc (xem required={!isEnLang} ở dưới).
-  const requiredFieldsTotal = 2
-  const requiredFieldsFilled = [form.slug, form.name].filter((v) => Boolean(v?.trim())).length
+  const requiredProgress = getBrandRequiredProgress(form)
 
   // Có dữ liệu SEO nào đang nhập không — dùng để hiện nút "Xóa thông tin SEO".
   const hasSeoData = Boolean(
@@ -504,21 +479,6 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
         </div>
       </div>
 
-      {/* Q1: Tên tiếng Anh là bắt buộc (schema chặn). Nếu thiếu mà đang ở tab tiếng Việt,
-          lỗi sẽ nằm khuất trong tab EN — đưa ra cảnh báo rõ ở đầu trang kèm nút chuyển tab. */}
-      {!isEnLang && validationErrors['translations.en.name'] && (
-        <div ref={enErrorRef} className="bb-alert danger wrap center">
-          <AlertCircle size={16} className="shrink-0" aria-hidden="true" />
-          <span className="bb-alert-main">
-            <strong>{t('brands.detail.enNameMissingTitle', { defaultValue: 'Thiếu tên tiếng Anh' })}</strong>
-            {' · '}{validationErrors['translations.en.name']}
-          </span>
-          <Button type="button" variant="outline" size="sm" onClick={() => setContentLang('en')}>
-            {t('brands.detail.switchToEnglish', { defaultValue: 'Chuyển sang tiếng Anh' })}
-          </Button>
-        </div>
-      )}
-
       {draftRecovery && (
         <div className="bb-alert info center wrap">
           <Save size={14} className="shrink-0" />
@@ -532,7 +492,6 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
             onClick={() => {
               setForm(draftRecovery.form)
               setDraftRecovery(null)
-              setEnSlugManuallyEdited(Boolean(draftRecovery.form?.translations?.en?.slug))
             }}
           >
             {t('products.detail.draftRestore', { defaultValue: 'Khôi phục' })}
@@ -586,32 +545,29 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
               <FormField
                 label={t('brands.detail.name')}
                 required
-                helper={isEnLang ? t('brands.detail.nameHelperEn', { defaultValue: 'Bắt buộc — dùng cho khách xem bản tiếng Anh.' }) : undefined}
-                error={isEnLang ? validationErrors['translations.en.name'] : validationErrors.name}
+                helper={isEnLang ? t('brands.detail.nameHelperEn', { defaultValue: 'Tên thương hiệu dùng chung cho cả tiếng Việt và tiếng Anh.' }) : undefined}
+                error={validationErrors.name}
               >
                 <Input
-                  value={isEnLang ? (form.translations?.en?.name ?? '') : form.name}
-                  onChange={(e) => isEnLang ? handleEnNameChange(e.target.value) : handleNameChange(e.target.value)}
-                  onBlur={() => handleFieldBlur(isEnLang ? 'translations.en.name' : 'name')}
+                  value={form.name}
+                  onChange={(e) => handleSharedNameChange(e.target.value)}
+                  onBlur={() => handleFieldBlur('name')}
                   disabled={isReadOnly}
-                  placeholder={isEnLang ? t('brands.detail.namePlaceholderEnRequired', { defaultValue: 'Nhập tên thương hiệu bằng tiếng Anh' }) : undefined}
+                  placeholder={isEnLang ? t('brands.detail.namePlaceholderEnRequired', { defaultValue: 'Tên thương hiệu dùng chung' }) : undefined}
                 />
               </FormField>
               <FormField
-                label={<>
-                  {t('brands.detail.slug')}
-                  {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 8 }}>{t('brands.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
-                </>}
-                required={!isEnLang}
-                helper={isEnLang ? t('brands.detail.slugHintEn', { defaultValue: 'Để trống sẽ dùng đường dẫn tiếng Việt cho bản tiếng Anh.' }) : undefined}
-                error={isEnLang ? validationErrors['translations.en.slug'] : validationErrors.slug}
+                label={t('brands.detail.slug')}
+                required
+                helper={isEnLang ? t('brands.detail.slugHelperEn', { defaultValue: 'Slug thương hiệu dùng chung cho cả tiếng Việt và tiếng Anh.' }) : undefined}
+                error={validationErrors.slug}
               >
                 <Input
-                  value={isEnLang ? (form.translations?.en?.slug ?? '') : form.slug}
-                  onChange={(e) => isEnLang ? handleEnSlugChange(e.target.value) : handleSlugChange(e.target.value)}
-                  onBlur={() => handleFieldBlur(isEnLang ? 'translations.en.slug' : 'slug')}
+                  value={form.slug}
+                  onChange={(e) => handleSlugChange(e.target.value)}
+                  onBlur={() => handleFieldBlur('slug')}
                   disabled={isReadOnly}
-                  placeholder={isEnLang ? t('brands.detail.slugPlaceholderEn', { defaultValue: 'english-url-slug' }) : undefined}
+                  placeholder={isEnLang ? t('brands.detail.slugPlaceholderEn', { defaultValue: 'slug-dung-chung' }) : undefined}
                   style={{ fontFamily: 'var(--admin-font-mono)' }} />
               </FormField>
               <label
@@ -713,11 +669,11 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
       {/* Thanh Lưu dính đáy — luôn thấy khi cuộn form dài (trước đây chỉ có nút Lưu ở đầu trang). */}
       <StickyActionBar
         ariaLabel={t('common.actionBarLabel', { defaultValue: 'Thanh thao tác' })}
-        info={!isEnLang ? (
+        info={(
           <span className="text-sm bb-muted">
-            {t('brands.detail.formProgress', { filled: requiredFieldsFilled, total: requiredFieldsTotal })}
+            {t('brands.detail.formProgress', { filled: requiredProgress.filled, total: requiredProgress.total })}
           </span>
-        ) : null}
+        )}
       >
         <Button
           type="submit"

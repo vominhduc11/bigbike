@@ -1,6 +1,5 @@
 package com.bigbike.bigbike_backend.service.admin;
 
-import com.bigbike.bigbike_backend.api.admin.dto.BrandTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.CategoryTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.ProductTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertBrandRequest;
@@ -430,14 +429,11 @@ public class CatalogRequestValidator {
         if (enContent instanceof CategoryTranslationRequest.CategoryContentRequest c) {
             return AdminMutationValidators.trimToNull(c.getSlug());
         }
-        if (enContent instanceof BrandTranslationRequest.BrandContentRequest b) {
-            return AdminMutationValidators.trimToNull(b.getSlug());
-        }
         return null;
     }
 
     /**
-     * Cross-column uniqueness for the optional English slug (PRODUCT/CATEGORY/BRAND_RULE_003):
+     * Cross-column uniqueness for the optional English slug (PRODUCT/CATEGORY_RULE_003):
      * the en slug must differ from this entity's own vi slug, and must not collide with any
      * other entity's vi slug or en slug of the same kind. Errors target {@code translations.en.slug}.
      */
@@ -760,26 +756,6 @@ public class CatalogRequestValidator {
                 s -> brandJpaRepository.findBySlugEn(s).map(BrandEntity::getId),
                 errors
         );
-
-        validateEnglishSlug(
-                extractEnSlug(request.getTranslations() == null ? null : request.getTranslations().getEn()),
-                slug,
-                current == null ? null : current.getId(),
-                s -> brandJpaRepository.findBySlug(s).map(BrandEntity::getId),
-                s -> brandJpaRepository.findBySlugEn(s).map(BrandEntity::getId),
-                errors
-        );
-
-        // Tiếng Anh chỉ bắt buộc khi tiếng Việt tương ứng đang bắt buộc (TRANSLATION_RULE_002).
-        // `name` là field cốt lõi bắt buộc ở VI → `translations.en.name` cũng bắt buộc, nhưng chỉ khi
-        // request thực sự đặt tên (tạo mới, hoặc sửa có gửi `name`) — khớp điều kiện validate tên VI
-        // ở trên, để PATCH tối giản (vd chỉ {visible}/{sortOrder}) không bị chặn.
-        if (create || request.getName() != null) {
-            BrandTranslationRequest.BrandContentRequest brandEn =
-                    request.getTranslations() == null ? null : request.getTranslations().getEn();
-            AdminMutationValidators.validateRequiredText(
-                    brandEn == null ? null : brandEn.getName(), "translations.en.name", "English name", errors);
-        }
 
         return slug;
     }

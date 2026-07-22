@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createProductSchema } from './schemas'
+import { createBrandSchema, createProductSchema } from './schemas'
 
 // Stub i18n: return the defaultValue when provided, otherwise the raw key —
 // enough for asserting on error *paths*, which is what these tests check.
@@ -185,5 +185,29 @@ describe('createProductSchema — PRODUCT_RULE_005 required-field matrix', () =>
     expect(valid.success).toBe(true)
     expect(tooLong.success).toBe(false)
     expect(pathsOf(tooLong)).toContain('positiveNotes.0.content')
+  })
+})
+
+describe('createBrandSchema — BRAND_RULE_001/003 shared name and slug', () => {
+  it('không yêu cầu tên tiếng Anh riêng cho thương hiệu', () => {
+    const schema = createBrandSchema(t)
+    const result = schema.safeParse({
+      slug: 'hevik',
+      name: 'Hevik',
+      translations: { en: { name: '' } },
+    })
+
+    expect(result.success).toBe(true)
+  })
+
+  it('không validate slug tiếng Anh riêng cho thương hiệu', () => {
+    const schema = createBrandSchema(t)
+    const result = schema.safeParse({
+      slug: 'hevik',
+      name: 'Hevik',
+      translations: { en: { slug: 'Invalid English Slug !!!' } },
+    })
+
+    expect(result.success).toBe(true)
   })
 })

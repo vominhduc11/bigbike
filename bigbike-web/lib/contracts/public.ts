@@ -249,7 +249,7 @@ export type CategorySummary = {
 export type BrandSummary = {
   id: string;
   slug: string;
-  /** Optional English URL slug of the brand (V215). Null/absent when unset — used for PDP breadcrumb. */
+  /** Legacy-only; brand links use the shared `slug` in every locale (BRAND_RULE_003). */
   slugEn?: string | null;
   name: string;
 };
@@ -374,7 +374,7 @@ export type Category = {
 export type Brand = {
   id: string;
   slug: string;
-  /** Optional English URL slug (V215). Canonical `slug` stays vi; null/absent when unset. */
+  /** Legacy-only; brand detail URL uses the shared `slug` in every locale (BRAND_RULE_003). */
   slugEn?: string | null;
   name: string;
   description?: string;

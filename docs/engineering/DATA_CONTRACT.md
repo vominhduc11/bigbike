@@ -1015,48 +1015,54 @@ Status: `CONFIRMED_FROM_CODE` — `CategoryEntity.menuIconUrl`, `Category` domai
 
 ### Brand bilingual content — English columns (V137)
 
-Thương hiệu có 2 bản nội dung: **tiếng Việt** (canonical) và **tiếng Anh** (tùy chọn).
-Bản tiếng Anh lưu trên các cột `_en` nullable cùng dòng trong bảng `brands`.
+Thương hiệu có tên riêng và slug dùng chung VI/EN; chỉ các field nội dung/SEO có bản tiếng Anh tùy chọn.
+Bản tiếng Anh lưu trên các cột `_en` nullable cùng dòng trong bảng `brands`; riêng
+`name_en` và `slug_en` là cột legacy còn tồn tại để tương thích dữ liệu cũ nhưng không còn điều khiển
+tên/slug hiển thị hoặc validation tạo/sửa thương hiệu.
 
 **Cột `_en` trên `brands`** (đều nullable):
 
 | Cột tiếng Việt | Cột tiếng Anh | Kiểu |
 |---|---|---|
-| `name` | `name_en` | `VARCHAR(255)` |
+| `name` | `name_en` | `VARCHAR(255)` — legacy, ignored for display/write validation; brand name always uses `name` |
+| `slug` | `slug_en` | `VARCHAR(100)` — legacy, ignored for display/write validation; brand slug always uses `slug` |
 | `description` | `description_en` | `TEXT` |
 | `seo_title` | `seo_title_en` | `VARCHAR(255)` |
 | `seo_description` | `seo_description_en` | `TEXT` |
 
-Fallback: giống `PRODUCT_RULE_002` — mỗi trường lùi về VI khi EN bị null/blank. Xem `BRAND_RULE_001/002`.
+Fallback: tên thương hiệu luôn lấy từ `name` theo `BRAND_RULE_001`; slug thương hiệu luôn lấy từ
+`slug` theo `BRAND_RULE_003`; các trường còn lại lùi về VI khi EN bị null/blank theo `BRAND_RULE_002`.
 
-**Slug tiếng Anh (`slug_en`, V215):** xem mục **"English URL slug"** bên dưới.
+**Slug tiếng Anh (`slug_en`, V215):** legacy-only cho brand; xem mục **"English URL slug"** bên dưới.
 
 Status: `CONFIRMED_FROM_CODE` — `BrandEntity`, `BrandTranslations` domain record, migration `V137`.
 
-### English URL slug — `slug_en` (V213 categories / V214 products / V215 brands / V216 articles)
+### English URL slug — `slug_en` (V213 categories / V214 products / V216 articles; V215 brand legacy)
 
-Mỗi danh mục / sản phẩm / thương hiệu / **bài viết** có thêm cột `slug_en VARCHAR(100)` **nullable**:
+Mỗi danh mục / sản phẩm / **bài viết** có thêm cột `slug_en VARCHAR(100)` **nullable** đang hoạt động.
+Brand cũng còn `slug_en` từ V215 nhưng chỉ là legacy compatibility; admin không ghi/sửa và response brand
+không dùng nó làm slug điều hướng:
 
 | Bảng | Cột VI (canonical) | Cột EN | Migration |
 |---|---|---|---|
 | `categories` | `slug` | `slug_en` | `V213` |
 | `products` | `slug` | `slug_en` | `V214` |
-| `brands` | `slug` | `slug_en` | `V215` |
+| `brands` | `slug` | `slug_en` | `V215` — legacy-only |
 | `articles` | `slug` | `slug_en` | `V216` |
 
 **Index:** mỗi bảng có **partial-unique index** `ux_<bảng>_slug_en ON <bảng> (slug_en) WHERE slug_en IS NOT NULL` — cho phép nhiều `NULL`, chặn trùng `slug_en` (en-vs-en) ở tầng DB.
 
 **Uniqueness chéo cột (vi-vs-en):** `slug_en` **không được trùng** bất kỳ `slug` (vi) nào cùng loại, và `slug` vi mới không được trùng `slug_en` đang tồn tại. Ràng buộc này **enforce ở tầng ứng dụng** (`AdminCatalogMutationService.validate*` cho catalog; `AdminContentMutationService.validateArticleRequest` cho bài viết) — DB chỉ lo en-vs-en. Lý do: tránh `/.../x/` mơ hồ khi `x` vừa là slug vi của entity này vừa là slug en của entity khác.
 
-**Lookup:** public read tra cứu theo **vi HOẶC en** slug (`findBySlug(slug).or(() -> findBySlugEn(slug))` — ưu tiên khớp vi trước cho tất định) nên cả hai URL mở cùng entity.
+**Lookup:** public read tra cứu theo **vi HOẶC en** slug (`findBySlug(slug).or(() -> findBySlugEn(slug))` — ưu tiên khớp vi trước cho tất định) nên cả hai URL mở cùng entity. Brand chỉ dùng `slug` làm URL chính; lookup qua `brands.slug_en` chỉ còn để không làm gãy URL cũ.
 
-**Response:** domain record trả cả `slug` (canonical vi, không đổi theo locale) lẫn `slugEn` (nullable). Web dùng `slug` cho canonical + `slugEn` cho URL/hreflang tiếng Anh; `slugEn` trống → URL EN lùi về `slug` vi. Mọi `CategorySummary` trong `category` và `categories[]` đều mang `slugEn`, `visible`, `deleted`; `category` là phần tử đầu của danh sách có thứ tự để breadcrumb PDP điều hướng đúng URL EN và chỉ tạo liên kết khi danh mục còn công khai.
+**Response:** domain record trả cả `slug` (canonical vi, không đổi theo locale) lẫn `slugEn` (nullable). Web dùng `slug` cho canonical + `slugEn` cho URL/hreflang tiếng Anh; `slugEn` trống → URL EN lùi về `slug` vi. Brand record/summary luôn trả `slugEn = null` vì brand slug dùng chung. Mọi `CategorySummary` trong `category` và `categories[]` đều mang `slugEn`, `visible`, `deleted`; `category` là phần tử đầu của danh sách có thứ tự để breadcrumb PDP điều hướng đúng URL EN và chỉ tạo liên kết khi danh mục còn công khai.
 
-**Redirect:** catalog (danh mục/sản phẩm/thương hiệu) đổi/xoá `slug_en` tự sinh 301 (`autoCreateSlugRedirect`) — đổi → old-EN→new-EN; xoá → old-EN→URL vi; honored runtime bởi `bigbike-web/proxy.ts` qua `/api/internal/redirect`. **Bài viết KHÔNG có cơ chế redirect** (module nội dung không có `autoCreateSlugRedirect`) — đổi/xoá `slug_en` không sinh 301.
+**Redirect:** catalog danh mục/sản phẩm đổi/xoá `slug_en` tự sinh 301 (`autoCreateSlugRedirect`) — đổi → old-EN→new-EN; xoá → old-EN→URL vi; honored runtime bởi `bigbike-web/proxy.ts` qua `/api/internal/redirect`. Brand không còn tạo/sửa `slug_en`, nên không sinh redirect riêng cho slug EN. **Bài viết KHÔNG có cơ chế redirect** (module nội dung không có `autoCreateSlugRedirect`) — đổi/xoá `slug_en` không sinh 301.
 
 **Ngoài phạm vi:** trang thông tin/chính sách nay là **nội dung tĩnh ở web** (module pages đã gỡ 2026-06-24, bảng `pages` drop ở `V271`) — web định tuyến bằng slug cố định trong `static-pages.json`, không qua backend.
 
-Status: `CONFIRMED_FROM_CODE` — `CategoryEntity`/`ProductEntity`/`BrandEntity`/`ArticleEntity` (`slugEn`), `*JpaRepository.findBySlugEn`, `JpaCatalogReadRepository`/`JpaContentReadRepository` (map `slugEn` + OR-resolve), `AdminCatalogMutationService`/`AdminContentMutationService` (validate), migrations `V213`/`V214`/`V215`/`V216`.
+Status: `CONFIRMED_FROM_CODE` — `CategoryEntity`/`ProductEntity`/`ArticleEntity` (`slugEn`), `BrandEntity.slugEn` legacy-only, `*JpaRepository.findBySlugEn`, `JpaCatalogReadRepository`/`JpaContentReadRepository` (map active `slugEn` + OR-resolve; brand `slugEn` response null), `AdminCatalogMutationService`/`AdminContentMutationService` (validate), migrations `V213`/`V214`/`V215`/`V216`.
 
 ### Redirects table (`redirects`)
 

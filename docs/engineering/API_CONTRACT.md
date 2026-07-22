@@ -328,11 +328,14 @@ qua nút VI/EN (`contentLang`) trên form — không đổi hình dạng payload
 
 **Validate EN bắt buộc (mới):** tiếng Anh chỉ bắt buộc khi trường tiếng Việt tương ứng đang bắt buộc —
 `UpsertProductRequest.translations.en.name`, `UpsertCategoryRequest.translations.en.name`,
-`UpsertBrandRequest.translations.en.name`, `UpsertArticleRequest.translations.en.title` bắt buộc
-non-blank (áp dụng cho cả tạo mới lẫn sửa bản ghi cũ, kể cả bản ghi cũ đang thiếu EN ở field này).
-Thiếu → `400 VALIDATION_ERROR` (field `translations.en.name`/`translations.en.title`, code `REQUIRED`).
-Các field/khối còn lại (mô tả, specifications, faqs, slug, body/bodyBlocks…) vẫn tùy chọn ở EN — không
-chặn lưu khi trống. `UpdateSiteSettingRequest.valueEn` / `BatchUpdateSettingsRequest.BatchSettingUpdate.valueEn`
+`UpsertArticleRequest.translations.en.title` bắt buộc non-blank (áp dụng cho cả tạo mới lẫn sửa bản ghi cũ,
+kể cả bản ghi cũ đang thiếu EN ở field này). **Ngoại lệ:** `UpsertBrandRequest.translations.en.name`
+và `UpsertBrandRequest.translations.en.slug` không còn bắt buộc và không dùng để hiển thị/điều hướng
+thương hiệu; brand name + slug là giá trị dùng chung VI/EN (`BRAND_RULE_001`/`BRAND_RULE_003`).
+Thiếu → `400 VALIDATION_ERROR` (field `translations.en.name`/`translations.en.title`,
+code `REQUIRED`) cho product/category/article tương ứng.
+Các field/khối còn lại (mô tả, specifications, faqs, slug của product/category/article,
+body/bodyBlocks…) vẫn tùy chọn ở EN — không chặn lưu khi trống. `UpdateSiteSettingRequest.valueEn` / `BatchUpdateSettingsRequest.BatchSettingUpdate.valueEn`
 bắt buộc khi setting vừa translatable vừa `.required()` ở VI (hiện chỉ `site_name`) — thiếu → `400
 VALIDATION_ERROR` (field `valueEn`, code `REQUIRED`).
 
@@ -1027,9 +1030,11 @@ phần còn lại của trang. `pricing`/`stock` không có text dịch nên kh�
 `GET /api/v1/admin/products`, `/admin/categories`, `/admin/categories/tree`,
 `/admin/brands` và `/admin/content` nhận query param `lang` = `vi` (mặc định)
 hoặc `en`. Khi
-`lang=en`, **trường hiển thị** trả bản tiếng Anh (`name` cho product/category/brand,
+`lang=en`, **trường hiển thị** trả bản tiếng Anh (`name` cho product/category,
 `title` cho content), **lùi về tiếng Việt theo từng trường** khi cột `_en` rỗng
-(`COALESCE`, theo `PRODUCT_RULE_002` / `CATEGORY_RULE_002` / `BRAND_RULE_002`).
+(`COALESCE`, theo `PRODUCT_RULE_002` / `CATEGORY_RULE_002`). Riêng `name` và `slug` của brand
+luôn là giá trị dùng chung VI/EN theo `BRAND_RULE_001`/`BRAND_RULE_003`; các field khác của brand
+vẫn fallback theo `BRAND_RULE_002`.
 List response **giữ nguyên shape** — không thêm khối `translations`; chỉ trường
 hiển thị được localize (chi tiết vẫn trả cả 2 bản như trên). `bigbike-admin` truyền
 `i18n.language` (chọn ở `LanguageSwitcher` header) vào `lang`. **Lọc (`q`) và sắp xếp vẫn theo cột tiếng Việt**
@@ -1050,30 +1055,33 @@ Status: `CONFIRMED_FROM_CODE` — `CatalogController` (`lang` param public),
 `AdminCatalogMutationService.applyProductPatch`, `JpaCatalogReadRepository` /
 `JpaContentReadRepository` (resolve locale), migration `V136`.
 
-### English URL slug — `slugEn` (V213/V214/V215/V216)
+### English URL slug — `slugEn` (V213/V214/V216; brand `slug_en` legacy)
 
-Danh mục, sản phẩm, thương hiệu, **bài viết** có thêm slug tiếng Anh tùy chọn. Áp dụng cho
-`GET /api/v1/categories/{slug}`, `/products/{slug}`, `/brands/{slug}`, `/articles/{slug}` và các endpoint
-admin upsert tương ứng. (Trang thông tin/chính sách nay tĩnh ở web — không qua backend; module pages đã gỡ 2026-06-24.)
+Danh mục, sản phẩm và **bài viết** có thêm slug tiếng Anh tùy chọn. Áp dụng cho
+`GET /api/v1/categories/{slug}`, `/products/{slug}`, `/articles/{slug}` và các endpoint
+admin upsert tương ứng. **Thương hiệu là ngoại lệ:** tên và slug thương hiệu dùng chung VI/EN
+(`BRAND_RULE_001`/`BRAND_RULE_003`); `brands.slug_en` chỉ là cột legacy, không còn được admin ghi/sửa
+và không trả làm slug điều hướng chính. (Trang thông tin/chính sách nay tĩnh ở web — không qua backend; module pages đã gỡ 2026-06-24.)
 
 **Lookup public — tra cứu theo vi HOẶC en slug:** path `{slug}` được resolve theo
 `slug` tiếng Việt **hoặc** `slug_en` (`findBySlug(slug).or(() -> findBySlugEn(slug))`, ưu tiên khớp
 vi trước). Cả URL vi lẫn URL en đều mở cùng entity. `lang` param vẫn quyết định ngôn
-ngữ **nội dung** (`PRODUCT_RULE_002`/`CATEGORY_RULE_002`/`BRAND_RULE_002`/`ARTICLE_RULE_002`); nó **không**
+ngữ **nội dung** (`PRODUCT_RULE_002`/`CATEGORY_RULE_002`/`ARTICLE_RULE_002`); nó **không**
 ảnh hưởng việc resolve slug.
 
 **Response — thêm trường `slugEn`:** public detail (và list) trả thêm
 `slugEn: string | null` cạnh `slug`. `slug` luôn là canonical tiếng Việt (không đổi
 theo `lang`); `slugEn` là giá trị thô của cột `slug_en` (null nếu chưa nhập). Web dùng
 `slug` cho canonical + `slugEn` cho URL/hreflang tiếng Anh (trống → URL EN lùi về `slug`).
+Riêng brand response luôn trả `slugEn = null`; URL VI/EN của thương hiệu dùng cùng `slug`.
 
 **Embedded summary cũng mang `slugEn`:** object `category`/`brand` nhúng trong response
 sản phẩm (`CategorySummary`/`BrandSummary` — dùng cho breadcrumb PDP) trả thêm
-`slugEn: string | null` cạnh `slug`, lấy thô từ `slug_en` của danh mục/thương hiệu đó.
-Cho phép breadcrumb PDP điều hướng tới URL tiếng Anh khi khách đang ở chế độ EN (trống →
-lùi về `slug` vi). Cả `category` và mọi phần tử embedded `categories[]` đều mang cùng shape `slugEn`, `visible`, `deleted`; `category` là phần tử đầu theo thứ tự gán.
+`slugEn: string | null` cạnh `slug`. Category lấy thô từ `categories.slug_en`; brand luôn
+trả `null` vì slug thương hiệu dùng chung. Cho phép breadcrumb PDP điều hướng tới URL tiếng Anh
+cho danh mục khi khách đang ở chế độ EN (trống → lùi về `slug` vi). Cả `category` và mọi phần tử embedded `categories[]` đều mang cùng shape `slugEn`, `visible`, `deleted`; `category` là phần tử đầu theo thứ tự gán.
 
-**Ghi — `POST/PATCH` admin categories/products/brands/articles:** `translations.en` nhận thêm
+**Ghi — `POST/PATCH` admin categories/products/articles:** `translations.en` nhận thêm
 khóa `slug` (optional): pattern `^[a-z0-9]+(?:-[a-z0-9]+)*$`, max 100. Bỏ trống/null →
 xoá `slug_en` (URL EN fallback về vi). Validation uniqueness: `slugEn` trùng `slug` vi
 của entity này, hoặc trùng `slug`/`slug_en` của entity khác cùng loại → lỗi
@@ -1087,13 +1095,14 @@ persistence, `PATCH /api/v1/admin/products/{id}` trả `409 DATA_CONFLICT` kèm 
 field-level thay vì câu chung "Operation violates a data integrity constraint" rỗng `details`:
 `ux_products_slug_en` → path `translations.en.slug`; `products_slug_key` (slug tiếng Việt) →
 path `slug`; `ux_product_variants_sku_lower` (xem `BUSINESS_RULES.md` `PRODUCT_RULE_SKU_001`) →
-path `variants`. Category/brand/article's tương ứng vẫn trả `409` rỗng `details[]` (chưa map).
+path `variants`. Category/article's tương ứng vẫn trả `409` rỗng `details[]` (chưa map).
 Constraint không nhận diện được vẫn giữ nguyên câu chung như cũ. `CONFIRMED_FROM_CODE` —
 `GlobalExceptionHandler.handleDataIntegrityViolation`/`friendlyConstraintError`.
 
 Status: `CONFIRMED_FROM_CODE` — `CatalogController`/`ContentController` (path resolve), `CategoryJpaRepository`/
-`ProductJpaRepository`/`BrandJpaRepository`/`ArticleJpaRepository` (`findBySlug`/`findBySlugEn`),
-`JpaCatalogReadRepository`/`JpaContentReadRepository` (map `slugEn` + OR-resolve), `*TranslationRequest`/`ArticleTranslationRequest` (field `slug`),
+`ProductJpaRepository`/`ArticleJpaRepository` (`findBySlug`/`findBySlugEn`),
+`BrandJpaRepository.findBySlugEn` chỉ còn cho legacy lookup; `JpaCatalogReadRepository`/`JpaContentReadRepository`
+(map `slugEn` + OR-resolve), `ProductTranslationRequest`/`CategoryTranslationRequest`/`ArticleTranslationRequest` (field `slug`),
 `AdminCatalogMutationService`/`AdminContentMutationService` (validate), migrations `V213`/`V214`/`V215`/`V216`.
 Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"English URL slug".
 

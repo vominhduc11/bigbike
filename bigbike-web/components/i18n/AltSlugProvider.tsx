@@ -5,7 +5,8 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 /**
  * Shares a detail page's vi + en URL slugs with the header `LanguageSwitcher`
  * so switching language NAVIGATES to the language-appropriate URL
- * (PRODUCT/CATEGORY/BRAND_RULE_003).
+ * (PRODUCT/CATEGORY/ARTICLE_RULE_003). Brand detail pages publish a null
+ * en slug because brand slugs are shared across VI/EN (BRAND_RULE_003).
  *
  * The switcher lives in the header (rendered by `app/layout.tsx`), which is a
  * SIBLING of the page — React context only flows down, so the provider is mounted

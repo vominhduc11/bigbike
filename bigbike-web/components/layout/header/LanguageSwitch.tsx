@@ -35,7 +35,7 @@ export function LanguageSwitch() {
         const slug = next === "en" ? altSlug.enSlug || altSlug.viSlug : altSlug.viSlug;
         if (altSlug.kind === "product") router.push(toProductPath(slug));
         else if (altSlug.kind === "category") router.push(toCategoryPath(slug, next, next === "en" && !!altSlug.enSlug));
-        else if (altSlug.kind === "brand") router.push(toBrandPath(slug));
+        else if (altSlug.kind === "brand") router.push(toBrandPath(altSlug.viSlug));
         else if (altSlug.kind === "article") router.push(toArticlePath(slug, next, next === "en" && !!altSlug.enSlug));
       } else if (pathname) {
         const targetPath = translatePath(pathname, next);
