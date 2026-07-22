@@ -138,6 +138,7 @@ Status: `CONFIRMED_FROM_CODE` — `AdminAuthService.java`, `AdminLoginAttemptSer
 |---|---|---|---|
 | `/ws` STOMP CONNECT | native `Authorization` bearer token required; admin account must be `ACTIVE` (DB-driven, cached, evicted on write — see `AdminAccountStatusService`) | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java` |
 | Admin order topic | Requires the `orders.read` permission (DB-driven via `AdminPermissionService.getPermissionsForRole`), not a hardcoded role — any built-in or custom role granted `orders.read` (e.g. `SHOP_MANAGER`) can subscribe. CONNECT validates the JWT and `ACTIVE` account; current account status and permission are then rechecked on **every SUBSCRIBE**, so a mid-session permission/status change cuts the admin off on its next subscribe. Client subscribes to `/topic/admin/orders`. | `CONFIRMED_FROM_CODE` (fixed 2026-07-06 — previously hardcoded to `ADMIN`/`SUPER_ADMIN`) | `WebSocketConfig.java`, `adminWebSocket.js` |
+| Admin presence topics | `/topic/admin/presence/order/{orderId}` requires `orders.read`; `/topic/admin/presence/product/{productId}` requires `products.read`. The same active-account check applies on SUBSCRIBE; join/leave commands are accepted only from the authenticated admin session and are not persisted. | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java`, `AdminPresenceController.java`, `AdminPresenceService.java` |
 
 ## Internal Redirect Caveat
 

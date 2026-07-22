@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import { AlertCircle, ArrowRight, ChevronRight } from 'lucide-react'
+import { Alert } from '@/components/ui/alert'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
@@ -14,6 +15,7 @@ import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '../lib/useUnsavedChanges'
 import { recordRecentItem } from '../lib/useRecentItems'
+import { useAdminPresence } from '../lib/useAdminPresence'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
@@ -70,6 +72,7 @@ function OrderDetailSkeleton() {
 export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const { hasOtherAdmin } = useAdminPresence('order', orderId)
   const orderQuery = useQuery({
     queryKey: ['order', orderId],
     queryFn: () => fetchOrderDetail(orderId),
@@ -322,6 +325,12 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       </div>
 
       {warning && <ReadOnlyBanner warning={warning} />}
+
+      {hasOtherAdmin ? (
+        <Alert tone="warning" size="sm" className="mb-4">
+          {t('presence.otherAdminOrder', { defaultValue: 'Có quản trị viên khác đang mở đơn này. Hãy kiểm tra dữ liệu trước khi lưu.' })}
+        </Alert>
+      ) : null}
 
       {/* Tầng 1 — dải trạng thái (trái) + việc cần làm tiếp (phải): toàn cảnh đơn
           hàng trong 1 lần nhìn, thay vì 3 khối trạng thái rời + panel hành động

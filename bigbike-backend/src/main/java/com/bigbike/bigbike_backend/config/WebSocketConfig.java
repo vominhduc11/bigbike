@@ -32,6 +32,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private static final String INVENTORY_PERMISSION = "inventory.read";
     private static final String REVIEWS_PERMISSION = "reviews.read";
     private static final String CUSTOMERS_PERMISSION = "customers.read";
+    private static final String PRODUCTS_PERMISSION = "products.read";
+    private static final String PRESENCE_DESTINATION = "/app/admin/presence";
     private static final String STATUS_ACTIVE = "ACTIVE";
     private static final String SESSION_ATTR_ADMIN_USER_ID = "adminUserId";
 
@@ -119,6 +121,17 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     }
                 }
 
+                if (StompCommand.SEND.equals(accessor.getCommand())) {
+                    Object rawUserId = accessor.getSessionAttributes() != null
+                            ? accessor.getSessionAttributes().get(SESSION_ATTR_ADMIN_USER_ID) : null;
+                    if (!(rawUserId instanceof UUID userId)
+                            || !PRESENCE_DESTINATION.equals(accessor.getDestination())
+                            || !isActive(userId)) {
+                        log.warn("WS SEND rejected for {} to {}", rawUserId, accessor.getDestination());
+                        throw new IllegalArgumentException("Invalid admin presence destination.");
+                    }
+                }
+
                 return message;
             }
 
@@ -131,9 +144,18 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     case "/topic/admin/inventory" -> INVENTORY_PERMISSION;
                     case "/topic/admin/reviews" -> REVIEWS_PERMISSION;
                     case "/topic/admin/customers" -> CUSTOMERS_PERMISSION;
-                    default -> null;
+                    default -> {
+                        if (destination.startsWith("/topic/admin/presence/order/")) yield ORDERS_PERMISSION;
+                        if (destination.startsWith("/topic/admin/presence/product/")) yield PRODUCTS_PERMISSION;
+                        yield null;
+                    }
                 };
                 return requiredPermission != null && hasPermission(userId, requiredPermission);
+            }
+
+            private boolean isActive(UUID userId) {
+                AdminAccountStatusService.Snapshot snapshot = adminAccountStatusService.getSnapshot(userId);
+                return snapshot != null && STATUS_ACTIVE.equals(snapshot.status());
             }
 
             private boolean hasPermission(UUID userId, String requiredPermission) {

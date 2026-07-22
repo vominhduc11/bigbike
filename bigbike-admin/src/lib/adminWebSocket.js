@@ -48,6 +48,7 @@ let reconnectTimer = null
 let reconnectAttempt = 0
 let authRejected = false
 let onReconnect = null   // callback fired on every CONNECTED (initial + reconnect)
+const reconnectListeners = new Set()
 
 function clearReconnect() {
   if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null }
@@ -97,6 +98,9 @@ function openConnection() {
       }
       // Notify caller so stale React Query caches can be invalidated after any (re-)connect
       if (typeof onReconnect === 'function') onReconnect()
+      reconnectListeners.forEach((listener) => {
+        try { listener() } catch { /* a screen listener must not break the shared connection */ }
+      })
     }
 
     if (frame.command === 'MESSAGE') {
@@ -142,11 +146,31 @@ export function disconnectAdminWs() {
   clearReconnect()
   getToken = null
   onReconnect = null
+  reconnectListeners.clear()
   if (ws) { ws.close(); ws = null }
 }
 
 export function setWsReconnectCallback(fn) {
   onReconnect = fn
+}
+
+export function registerAdminWsReconnectListener(listener) {
+  if (typeof listener !== 'function') return () => {}
+  reconnectListeners.add(listener)
+  return () => reconnectListeners.delete(listener)
+}
+
+export function sendAdminWs(destination, payload) {
+  if (!ws || ws.readyState !== WebSocket.OPEN || !destination) return false
+  try {
+    ws.send(buildFrame('SEND', {
+      destination,
+      'content-type': 'application/json',
+    }, JSON.stringify(payload)))
+    return true
+  } catch {
+    return false
+  }
 }
 
 export function subscribeAdminWs(destination, handler) {

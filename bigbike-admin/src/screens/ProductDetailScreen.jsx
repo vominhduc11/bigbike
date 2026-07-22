@@ -39,7 +39,9 @@ import { createBlock } from '../components/block-editor/constants'
 import { SortableList } from '../components/Sortable'
 import { LivePreview } from '../components/LivePreview'
 import { useAutoHideSidebar } from '../components/AdminShell'
+import { useAdminPresence } from '../lib/useAdminPresence'
 import { Button } from '@/components/ui/button'
+import { Alert } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
@@ -125,6 +127,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const { t } = useTranslation()
   const contentLang = useContentLang()
   const queryClient = useQueryClient()
+  const { hasOtherAdmin } = useAdminPresence('product', isCreate ? null : productId)
   const [form, setForm] = useState(buildEmptyForm)
   // Dirty tracking via boolean flag (set true on any field update, reset on
   // load/save). JSON.stringify(form) was the previous strategy but ran on
@@ -933,6 +936,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         />
 
         {/* Banners — read-only / draft-recovery */}
+        {hasOtherAdmin ? (
+          <Alert tone="warning" size="sm" className="mb-4">
+            {t('presence.otherAdminProduct', { defaultValue: 'Có quản trị viên khác đang mở sản phẩm này. Hãy kiểm tra dữ liệu trước khi lưu.' })}
+          </Alert>
+        ) : null}
+
         {!canUpdate && (
           <div className="bb-alert warning tight center">
             <Lock size={16} className="shrink-0" />

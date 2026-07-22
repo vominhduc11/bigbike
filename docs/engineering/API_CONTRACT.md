@@ -1388,6 +1388,10 @@ Persistent counterpart of the WebSocket order feed — admins offline when an ev
 | Inventory payload | `InventoryWsEvent` with `type`, `productId`, `timestamp`; subscription requires `inventory.read` | `CONFIRMED_FROM_CODE` | `InventoryWsEvent.java`, `WebSocketConfig.java` |
 | Confirmed topic | `/topic/admin/reviews` | `CONFIRMED_FROM_CODE` | `AdminReviewWsService.java`, `adminWebSocket.js` |
 | Review payload | `ReviewWsEvent` with `type`, `reviewId`, `productId`, `status`, `timestamp`; `REVIEW_SUBMITTED` is sent after the public review transaction commits and subscription requires `reviews.read` | `CONFIRMED_FROM_CODE` | `ReviewWsEvent.java`, `PublicReviewService.java`, `WebSocketConfig.java` |
+| Confirmed topic | `/topic/admin/customers` | `CONFIRMED_FROM_CODE` | `AdminCustomerWsService.java`, `adminWebSocket.js` |
+| Customer payload | `CustomerWsEvent` with `type`, `customerId`, `status`, `timestamp`; `CUSTOMER_REGISTERED` is sent after the customer registration transaction commits and subscription requires `customers.read` | `CONFIRMED_FROM_CODE` | `CustomerWsEvent.java`, `CustomerAuthService.java`, `WebSocketConfig.java` |
+| Presence topics | `/topic/admin/presence/order/{orderId}` requires `orders.read`; `/topic/admin/presence/product/{productId}` requires `products.read` | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java`, `AdminPresenceService.java` |
+| Presence command | STOMP `SEND` to `/app/admin/presence` with `{ action: JOIN|LEAVE, entityType: ORDER|PRODUCT, entityId }`; presence is in-memory per WebSocket session, removed on `LEAVE` or disconnect, and never replaces `@Version` conflict protection | `CONFIRMED_FROM_CODE` | `AdminPresenceController.java`, `AdminPresenceService.java`, `OrderEntity.java`, `ProductEntity.java` |
 
 ## Response Shape Caveats
 
@@ -1406,6 +1410,8 @@ invalidates `['orders']`, while `AdminShell.jsx` invalidates
 immediately. Both use the shared reconnecting STOMP client; the REST query
 remains the fallback when WebSocket delivery is unavailable.
 `/topic/admin/inventory` invalidates `['inventory-summary']` in `DashboardScreen.jsx`, and `/topic/admin/reviews` invalidates both `['reviews']` and `['review-summary']` in `ReviewListScreen.jsx`; the pending review count is a screen summary, not a separate sidebar badge.
+`/topic/admin/customers` invalidates both `['customers']` and `['customer-summary']` in `CustomerListScreen.jsx`; customer KPIs are a screen summary, not a separate sidebar badge.
+Presence is ephemeral and session-scoped: the detail screens send `JOIN`/`LEAVE` through `/app/admin/presence`, resubscribe and rejoin after reconnect, and show a warning when the same entity has more than one distinct active admin.
 `/topic/admin/customers` invalidates both `['customers']` and `['customer-summary']` in `CustomerListScreen.jsx`; customer KPIs are a screen summary, not a separate sidebar badge.
 
 ### Account page fields — address email, order product names (V127)
