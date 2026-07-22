@@ -1393,6 +1393,14 @@ The repo does not use one wrapper consistently across every controller:
 
 Status: `CONFIRMED_FROM_CODE`
 
+### Admin WebSocket consumers
+
+The existing `/topic/admin/orders` feed has two admin consumers: `OrderListScreen.jsx`
+invalidates `['orders']`, while `AdminShell.jsx` invalidates
+`['nav-badge', 'orders-pending']` so the pending-order sidebar count refetches
+immediately. Both use the shared reconnecting STOMP client; the REST query
+remains the fallback when WebSocket delivery is unavailable.
+
 ### Account page fields — address email, order product names (V127)
 
 Additive fields backing the rebuilt account pages:

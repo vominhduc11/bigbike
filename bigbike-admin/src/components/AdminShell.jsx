@@ -1,7 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, LogOut, Menu, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../lib/auth'
+import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { useNavBadges } from '../lib/useNavBadges'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -99,6 +101,7 @@ export function AdminShell({
 }) {
   const { logout } = useAuth()
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [previewActive, setPreviewActive] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -127,6 +130,13 @@ export function AdminShell({
     [navGroups],
   )
   const navBadges = useNavBadges(visiblePaths)
+
+  useEffect(() => {
+    if (!visiblePaths.has('/admin/orders')) return undefined
+    return subscribeAdminWs('/topic/admin/orders', () => {
+      queryClient.invalidateQueries({ queryKey: ['nav-badge', 'orders-pending'] })
+    })
+  }, [queryClient, visiblePaths])
 
   const closeSidebar = useCallback(() => setSidebarOpen(false), [])
 
