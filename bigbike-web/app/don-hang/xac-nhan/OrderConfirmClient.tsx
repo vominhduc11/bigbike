@@ -9,6 +9,9 @@ import { fetchOrderLookup, fetchPublicSettings } from "@/lib/api/client-api";
 import { queryKeys } from "@/lib/query/keys";
 import { OrderConfirmView } from "./OrderConfirmView";
 
+const ORDER_POLL_INTERVAL_MS = 15_000;
+const ORDER_TERMINAL_STATUSES = new Set(["COMPLETED", "CANCELLED"]);
+
 export function OrderConfirmClient() {
   const searchParams = useSearchParams();
   const locale = useLocale();
@@ -21,6 +24,16 @@ export function OrderConfirmClient() {
     queryFn: () => fetchOrderLookup(orderNumber!, orderKey!),
     enabled: canLookup,
     retry: false,
+    refetchOnWindowFocus: true,
+    // Chỉ bắt đầu polling sau khi đã tra cứu thành công để không lặp vô hạn
+    // với một liên kết sai hoặc lỗi xác thực cố định.
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      if (!status || ORDER_TERMINAL_STATUSES.has(status)) return false;
+      return ORDER_POLL_INTERVAL_MS;
+    },
+    // Mặc định không polling khi tab bị ẩn; lần focus tiếp theo sẽ refetch.
+    refetchIntervalInBackground: false,
   });
 
   const settingsQuery = useQuery({
