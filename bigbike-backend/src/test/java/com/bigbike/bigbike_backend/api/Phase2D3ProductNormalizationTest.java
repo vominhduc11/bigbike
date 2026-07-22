@@ -234,6 +234,32 @@ class Phase2D3ProductNormalizationTest {
         assertThat(saved.get().getId()).isEqualTo("wp-prod-80601");
     }
 
+    @Test
+    void wordpressImport_preservesAllOrderedCategorySlugs() {
+        CategoryEntity secondary = categoryRepo.findBySlug("test-norm-secondary").orElseGet(() -> {
+            CategoryEntity category = new CategoryEntity();
+            category.setId("test-norm-secondary");
+            category.setSlug("test-norm-secondary");
+            category.setName("Test Norm Secondary");
+            category.setVisible(true);
+            category.setCreatedAt(Instant.now());
+            category.setUpdatedAt(Instant.now());
+            return categoryRepo.save(category);
+        });
+        ResolvedProduct source = resolvedProduct(80602L, "multi-category-wp", "WordPress Multi", testCategory.getSlug());
+        ResolvedProduct product = new ResolvedProduct(
+                source.product(), testCategory.getSlug(),
+                List.of(testCategory.getSlug(), secondary.getSlug(), testCategory.getSlug()), null);
+
+        MigrationExecutionReport.DomainResult result =
+                productImporter.importBatch(List.of(product), importOpts(), Map.of(), MEDIA_PUBLIC_BASE_URL);
+
+        assertThat(result.inserted()).isEqualTo(1);
+        assertThat(productRepo.findById("wp-prod-80602").orElseThrow().getCategories())
+                .extracting(CategoryEntity::getSlug)
+                .containsExactly("test-norm-cat", "test-norm-secondary");
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // 7. Idempotency preserved after normalization
     // ─────────────────────────────────────────────────────────────────────────

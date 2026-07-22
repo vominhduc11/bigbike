@@ -6,6 +6,7 @@ public record CategoryPermanentDeleteImpactResponse(
         int requestedCategoryCount,
         List<String> rootCategoryIds,
         int descendantCategoryCount,
+        int affectedProductCount,
         int reassignedProductCount
 ) {
 }

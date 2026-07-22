@@ -197,7 +197,14 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   const negativeNotes = safeArray(product.negativeNotes);
 
   const brand = product.brand ?? null;
-  const category = product.category?.slug === "chua-phan-loai" ? null : (product.category ?? null);
+  const primaryCategory = product.category ?? product.categories?.[0] ?? null;
+  const category = primaryCategory &&
+    primaryCategory.slug !== "chua-phan-loai" &&
+    primaryCategory.slug !== "uncategorized" &&
+    primaryCategory.visible !== false &&
+    primaryCategory.deleted !== true
+    ? primaryCategory
+    : null;
 
   const recentRecord: RecentProduct = {
     id: product.id,
@@ -205,7 +212,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
     name: product.name,
     price: product.price?.retailPrice ?? null,
     imageUrl: product.image?.url ?? gallery[0]?.image?.url ?? null,
-    categoryName: product.category?.name ?? null,
+    categoryName: category?.name ?? null,
     rating: product.rating ?? null,
     ratingCount: product.ratingCount ?? null,
   };

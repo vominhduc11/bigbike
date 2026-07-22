@@ -4,7 +4,6 @@ import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import jakarta.persistence.LockModeType;
 import java.time.Instant;
@@ -42,23 +41,11 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Strin
 
     Optional<ProductEntity> findByLegacyId(String legacyId);
     long countByPublishStatus(PublishStatus publishStatus);
-    long countByCategory_Id(String categoryId);
+    long countByCategories_Id(String categoryId);
 
-    /** Ids of every product whose primary category is one of {@code categoryIds}. */
-    @Query("SELECT p.id FROM ProductEntity p WHERE p.category.id IN :categoryIds")
-    List<String> findIdsByCategory_IdIn(@Param("categoryIds") List<String> categoryIds);
-
-    /**
-     * Bulk-reassign every product currently in {@code sourceIds} categories to
-     * {@code target}. Used when a category is hard-deleted: its products fall
-     * back to the "uncategorized" bucket instead of being orphaned (see
-     * {@code AdminCatalogMutationService.hardDeleteCategory}). Returns rows moved.
-     */
-    @Modifying(flushAutomatically = true)
-    @Query("UPDATE ProductEntity p SET p.category = :target, p.updatedAt = :now WHERE p.category.id IN :sourceIds")
-    int reassignCategory(@Param("target") CategoryEntity target,
-                         @Param("sourceIds") List<String> sourceIds,
-                         @Param("now") Instant now);
+    /** Every product linked to one or more categories in the supplied set. */
+    @Query("SELECT DISTINCT p FROM ProductEntity p JOIN p.categories c WHERE c.id IN :categoryIds")
+    List<ProductEntity> findDistinctByCategories_IdIn(@Param("categoryIds") List<String> categoryIds);
 
     /** Ids of every product referencing {@code brandId}. */
     @Query("SELECT p.id FROM ProductEntity p WHERE p.brand.id = :brandId")

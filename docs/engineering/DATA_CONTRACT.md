@@ -843,6 +843,22 @@ Status: `CONFIRMED_FROM_CODE` — `ProductEntity.accessoryProducts`,
 `UpsertProductRequest.accessoryProductIds`, `AdminCatalogMutationService.resolveProductRefs`,
 `JpaCatalogReadRepository.toAccessoryProducts`, migration `V239`.
 
+### Product ↔ category — ordered many-to-many (V348)
+
+`products.category_id` đã được thay bằng bảng liên kết `product_category_map`:
+
+| Column | Type | Null | Notes |
+|---|---|---|---|
+| `product_id` | `VARCHAR(64)` | NO | FK → `products.id`, `ON DELETE CASCADE`. |
+| `category_id` | `VARCHAR(64)` | NO | FK → `categories.id`, `ON DELETE CASCADE`. |
+| `sort_order` | `INTEGER` | NO | Thứ tự danh mục của sản phẩm; `0` là danh mục chính. |
+
+Khóa chính `(product_id, category_id)` cấm một liên kết trùng; chỉ mục `(category_id, product_id)` phục vụ lọc catalog theo danh mục/cây con. Migration `V348__restore_product_category_map.sql` backfill đúng một liên kết `sort_order = 0` từ cột cũ cho từng sản phẩm rồi mới bỏ `products.category_id`. Vì migration `V110` đã xóa map lịch sử, V348 chỉ có thể bảo toàn danh mục chính còn lại tại thời điểm migrate.
+
+`ProductEntity.categories` là danh sách có thứ tự (`@OrderColumn`). API luôn trả `categories[]` không trùng, đầy đủ theo thứ tự; `category` là phần tử đầu để tương thích breadcrumb/SEO. `CategorySummary` có `visible` và `deleted`, cho phép client giữ liên kết cũ nhưng không tạo link công khai tới danh mục đã ẩn/xóa mềm.
+
+Status: `CONFIRMED_FROM_CODE` — `ProductEntity.categories`, `V348__restore_product_category_map.sql`, `JpaCatalogReadRepository`.
+
 ### Product tags — REMOVED (V243)
 
 The product tag feature was removed entirely on 2026-06-19. The storefront never consumed these tags (no tag-filter page or tag-aware search was ever wired), and the admin tag editor was removed, so the tables held only dead WordPress-import data. Migration `V243__drop_product_tags.sql` drops `product_tag_map` then `product_tags`; the `ProductTagEntity`, `ProductTagJpaRepository`, `AdminProductTagService`, `ProductTagsRequest`, the admin sub-resource, and `ProductEntity.tags` are all deleted.
@@ -1034,7 +1050,7 @@ Mỗi danh mục / sản phẩm / thương hiệu / **bài viết** có thêm c�
 
 **Lookup:** public read tra cứu theo **vi HOẶC en** slug (`findBySlug(slug).or(() -> findBySlugEn(slug))` — ưu tiên khớp vi trước cho tất định) nên cả hai URL mở cùng entity.
 
-**Response:** domain record trả cả `slug` (canonical vi, không đổi theo locale) lẫn `slugEn` (nullable). Web dùng `slug` cho canonical + `slugEn` cho URL/hreflang tiếng Anh; `slugEn` trống → URL EN lùi về `slug` vi. Các record summary nhúng trong response sản phẩm — `CategorySummary` (`category`) và `BrandSummary` (`brand`) — cũng mang thêm `slugEn` (nullable, thô từ `slug_en`) để breadcrumb PDP điều hướng đúng URL EN. Summary danh mục phụ (`categories[]`) **chưa** mang `slugEn`.
+**Response:** domain record trả cả `slug` (canonical vi, không đổi theo locale) lẫn `slugEn` (nullable). Web dùng `slug` cho canonical + `slugEn` cho URL/hreflang tiếng Anh; `slugEn` trống → URL EN lùi về `slug` vi. Mọi `CategorySummary` trong `category` và `categories[]` đều mang `slugEn`, `visible`, `deleted`; `category` là phần tử đầu của danh sách có thứ tự để breadcrumb PDP điều hướng đúng URL EN và chỉ tạo liên kết khi danh mục còn công khai.
 
 **Redirect:** catalog (danh mục/sản phẩm/thương hiệu) đổi/xoá `slug_en` tự sinh 301 (`autoCreateSlugRedirect`) — đổi → old-EN→new-EN; xoá → old-EN→URL vi; honored runtime bởi `bigbike-web/proxy.ts` qua `/api/internal/redirect`. **Bài viết KHÔNG có cơ chế redirect** (module nội dung không có `autoCreateSlugRedirect`) — đổi/xoá `slug_en` không sinh 301.
 

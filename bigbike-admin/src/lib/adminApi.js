@@ -559,6 +559,7 @@ export async function previewCategoryPermanentDelete(categoryIds) {
     requestedCategoryCount: Number(data.requestedCategoryCount) || 0,
     rootCategoryIds: Array.isArray(data.rootCategoryIds) ? data.rootCategoryIds.map(String) : [],
     descendantCategoryCount: Number(data.descendantCategoryCount) || 0,
+    affectedProductCount: Number(data.affectedProductCount) || 0,
     reassignedProductCount: Number(data.reassignedProductCount) || 0,
   }
 }

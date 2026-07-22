@@ -14,6 +14,7 @@ import com.bigbike.bigbike_backend.config.MediaUrlProperties;
 import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
@@ -34,6 +35,7 @@ class CatalogRequestValidatorTest {
     private CatalogRequestValidator validator;
     private MediaUrlProperties mediaUrlProperties;
     private ProductJpaRepository productJpaRepository;
+    private CategoryJpaRepository categoryJpaRepository;
     private HomeVideoUrlPolicy homeVideoUrlPolicy;
 
     @BeforeEach
@@ -41,7 +43,7 @@ class CatalogRequestValidatorTest {
     void setUp() {
         productJpaRepository = mock(ProductJpaRepository.class);
         ProductVariantJpaRepository productVariantJpaRepository = mock(ProductVariantJpaRepository.class);
-        CategoryJpaRepository categoryJpaRepository = mock(CategoryJpaRepository.class);
+        categoryJpaRepository = mock(CategoryJpaRepository.class);
         BrandJpaRepository brandJpaRepository = mock(BrandJpaRepository.class);
         mediaUrlProperties = mock(MediaUrlProperties.class);
 
@@ -126,6 +128,69 @@ class CatalogRequestValidatorTest {
 
         assertThat(errors.stream().map(ApiErrorDetail::field))
                 .doesNotContain("retailPrice", "categoryId");
+    }
+
+    @Test
+    void validateAndResolveCategories_preservesSubmittedOrderAndAcceptsLegacyAlias() {
+        CategoryEntity helmet = category("cat-helmet", true, false);
+        CategoryEntity jacket = category("cat-jacket", true, false);
+        when(categoryJpaRepository.findById("cat-jacket")).thenReturn(java.util.Optional.of(jacket));
+        when(categoryJpaRepository.findById("cat-helmet")).thenReturn(java.util.Optional.of(helmet));
+
+        UpsertProductRequest plural = new UpsertProductRequest();
+        plural.setCategoryIds(List.of("cat-jacket", "cat-helmet"));
+        List<ApiErrorDetail> pluralErrors = new ArrayList<>();
+
+        assertThat(validator.validateAndResolveCategories(plural, true, pluralErrors))
+                .extracting(CategoryEntity::getId)
+                .containsExactly("cat-jacket", "cat-helmet");
+        assertThat(pluralErrors).isEmpty();
+
+        UpsertProductRequest legacy = new UpsertProductRequest();
+        legacy.setCategoryId("cat-helmet");
+        List<ApiErrorDetail> legacyErrors = new ArrayList<>();
+
+        assertThat(validator.validateAndResolveCategories(legacy, true, legacyErrors))
+                .extracting(CategoryEntity::getId)
+                .containsExactly("cat-helmet");
+        assertThat(legacyErrors).isEmpty();
+    }
+
+    @Test
+    void validateAndResolveCategories_rejectsMissingDuplicateAndConflictingFields() {
+        UpsertProductRequest missingCreate = new UpsertProductRequest();
+        List<ApiErrorDetail> missingErrors = new ArrayList<>();
+        assertThat(validator.validateAndResolveCategories(missingCreate, true, missingErrors)).isNull();
+        assertThat(missingErrors).extracting(ApiErrorDetail::field).containsExactly("categoryIds");
+
+        UpsertProductRequest duplicate = new UpsertProductRequest();
+        duplicate.setCategoryIds(List.of("cat-helmet", "cat-helmet"));
+        List<ApiErrorDetail> duplicateErrors = new ArrayList<>();
+        validator.validateAndResolveCategories(duplicate, false, duplicateErrors);
+        assertThat(duplicateErrors).extracting(ApiErrorDetail::field).containsExactly("categoryIds[1]", "categoryIds");
+
+        UpsertProductRequest conflict = new UpsertProductRequest();
+        conflict.setCategoryIds(List.of("cat-helmet"));
+        conflict.setCategoryId("cat-jacket");
+        List<ApiErrorDetail> conflictErrors = new ArrayList<>();
+        assertThat(validator.validateAndResolveCategories(conflict, false, conflictErrors)).isNull();
+        assertThat(conflictErrors).extracting(ApiErrorDetail::code).containsExactly("CONFLICT");
+    }
+
+    @Test
+    void validateAndResolveCategories_rejectsUnknownHiddenAndTrashedCategories() {
+        CategoryEntity hidden = category("cat-hidden", false, false);
+        CategoryEntity trashed = category("cat-trash", true, true);
+        when(categoryJpaRepository.findById("cat-hidden")).thenReturn(java.util.Optional.of(hidden));
+        when(categoryJpaRepository.findById("cat-trash")).thenReturn(java.util.Optional.of(trashed));
+
+        UpsertProductRequest request = new UpsertProductRequest();
+        request.setCategoryIds(List.of("cat-missing", "cat-hidden", "cat-trash"));
+        List<ApiErrorDetail> errors = new ArrayList<>();
+
+        assertThat(validator.validateAndResolveCategories(request, true, errors)).isEmpty();
+        assertThat(errors).extracting(ApiErrorDetail::code)
+                .containsExactly("NOT_FOUND", "INVALID_STATE", "INVALID_STATE");
     }
 
     @Test
@@ -480,5 +545,13 @@ class CatalogRequestValidatorTest {
                     assertThat(error.code()).isEqualTo("DUPLICATE");
                     assertThat(error.message()).isEqualTo("English slug is already in use.");
                 });
+    }
+
+    private static CategoryEntity category(String id, boolean visible, boolean deleted) {
+        CategoryEntity category = new CategoryEntity();
+        category.setId(id);
+        category.setVisible(visible);
+        category.setDeleted(deleted);
+        return category;
     }
 }

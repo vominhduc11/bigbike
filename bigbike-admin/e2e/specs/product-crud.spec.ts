@@ -108,12 +108,15 @@ async function fillRequiredProductFields(page: Page, opts: FillOptions) {
   await basicCard.getByLabel('Tên', { exact: false }).fill(opts.name) // also auto-derives slug
   await basicCard.getByLabel('Mã model', { exact: false }).fill(opts.sku)
 
-  // Order in DOM within "Thông tin cơ bản": categoryId, brandId, then (after the
-  // "Thương hiệu (nước)" text input) gender — see ProductDetailScreen.jsx:1135-1196.
+  // The category picker is a multi-select popover; choose the first available
+  // category so it becomes the primary category. The remaining comboboxes are
+  // brand, then gender — see ProductDetailScreen.jsx.
+  await basicCard.getByRole('button', { name: '— Chọn danh mục —' }).click()
+  await page.getByRole('dialog').last().getByRole('checkbox').first().click()
+
   const combos = basicCard.locator('[role="combobox"]')
-  await pickFirstOption(page, combos.nth(0)) // categoryId — any real category is valid
-  await pickFirstOption(page, combos.nth(1)) // brandId — any real brand is valid
-  await combos.nth(2).click() // gender
+  await pickFirstOption(page, combos.nth(0)) // brandId — any real brand is valid
+  await combos.nth(1).click() // gender
   await page.getByRole('option', { name: 'Unisex', exact: true }).click()
 
   await fillRichText(basicCard, SHORT_DESCRIPTION_TEXT)

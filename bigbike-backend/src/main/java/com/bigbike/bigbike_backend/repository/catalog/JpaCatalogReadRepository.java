@@ -171,9 +171,12 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("publishStatus"), PublishStatus.PUBLISHED));
             if (categoryIds != null) {
-                predicates.add(categoryIds.isEmpty()
-                        ? cb.disjunction()
-                        : root.join("category", JoinType.LEFT).get("id").in(categoryIds));
+                if (categoryIds.isEmpty()) {
+                    predicates.add(cb.disjunction());
+                } else {
+                    predicates.add(root.join("categories", JoinType.INNER).get("id").in(categoryIds));
+                    query.distinct(true);
+                }
             }
             if (brandSlug != null && !brandSlug.isBlank()) {
                 predicates.add(cb.equal(root.join("brand", JoinType.LEFT).get("slug"), brandSlug));
@@ -296,10 +299,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     private Product toDomainListItem(ProductEntity entity, String locale) {
-        CategorySummary primaryCategory = toCategorySummary(entity.getCategory(), locale);
-        List<CategorySummary> categories = primaryCategory == null
-                ? List.of()
-                : List.of(primaryCategory);
+        List<CategorySummary> categories = toCategorySummaries(entity.getCategories(), locale);
+        CategorySummary primaryCategory = categories.isEmpty() ? null : categories.get(0);
         return new Product(
                 entity.getId(),
                 entity.getSku(),
@@ -366,10 +367,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
      * (list/facets never render variant media); see {@link #toVariantForListing}.
      */
     private Product toDomainListing(ProductEntity entity, String locale) {
-        CategorySummary primaryCategory = toCategorySummary(entity.getCategory(), locale);
-        List<CategorySummary> categories = primaryCategory == null
-                ? List.of()
-                : List.of(primaryCategory);
+        List<CategorySummary> categories = toCategorySummaries(entity.getCategories(), locale);
+        CategorySummary primaryCategory = categories.isEmpty() ? null : categories.get(0);
         return new Product(
                 entity.getId(),
                 entity.getSku(),
@@ -507,7 +506,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 predicates.add(cb.equal(root.join("brand", JoinType.LEFT).get("id"), brandId));
             }
             if (categoryIds != null && !categoryIds.isEmpty()) {
-                predicates.add(root.get("category").get("id").in(categoryIds));
+                predicates.add(root.join("categories", JoinType.INNER).get("id").in(categoryIds));
+                criteriaQuery.distinct(true);
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
@@ -724,10 +724,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     private Product toDomain(ProductEntity entity, boolean publicView, String locale) {
-        CategorySummary primaryCategory = toCategorySummary(entity.getCategory(), locale);
-        List<CategorySummary> categories = primaryCategory == null
-                ? List.of()
-                : List.of(primaryCategory);
+        List<CategorySummary> categories = toCategorySummaries(entity.getCategories(), locale);
+        CategorySummary primaryCategory = categories.isEmpty() ? null : categories.get(0);
 
         return new Product(
                 entity.getId(),
@@ -1187,11 +1185,19 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 || normalized.equals(normalizeVariantToken(value.getLabel()));
     }
 
+    private List<CategorySummary> toCategorySummaries(List<CategoryEntity> entities, String locale) {
+        if (entities == null || entities.isEmpty()) {
+            return List.of();
+        }
+        return entities.stream().map(entity -> toCategorySummary(entity, locale)).toList();
+    }
+
     private CategorySummary toCategorySummary(CategoryEntity entity, String locale) {
         if (entity == null) {
             return null;
         }
-        return new CategorySummary(entity.getId(), entity.getSlug(), entity.getSlugEn(), pick(entity.getName(), entity.getNameEn(), locale));
+        return new CategorySummary(entity.getId(), entity.getSlug(), entity.getSlugEn(),
+                pick(entity.getName(), entity.getNameEn(), locale), entity.isVisible(), entity.isDeleted());
     }
 
     private BrandSummary toBrandSummary(BrandEntity entity, String locale) {

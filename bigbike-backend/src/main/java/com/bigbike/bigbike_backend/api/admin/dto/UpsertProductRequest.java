@@ -39,8 +39,16 @@ public class UpsertProductRequest {
     @Size(max = 64, message = "Brand ID is too long.")
     private String brandId;
 
+    /** Deprecated singleton alias, retained for the transition release only. */
+    @Deprecated
     @Size(max = 64, message = "Category ID is too long.")
     private String categoryId;
+    private boolean categoryIdPresent = false;
+
+    /** Ordered category ids; the first id is the primary category. */
+    @Size(max = 100, message = "A product may not have more than 100 categories.")
+    private List<@Size(max = 64, message = "Category ID is too long.") String> categoryIds;
+    private boolean categoryIdsPresent = false;
 
     @Valid
     private ImageAssetRequest image;
@@ -182,6 +190,24 @@ public class UpsertProductRequest {
     @Valid
     private SizeGuideSection sizeGuideSection;
     private boolean sizeGuideSectionPresent = false;
+
+    public void setCategoryId(String categoryId) {
+        this.categoryId = categoryId;
+        this.categoryIdPresent = true;
+    }
+
+    public void setCategoryIds(List<String> categoryIds) {
+        this.categoryIds = categoryIds;
+        this.categoryIdsPresent = true;
+    }
+
+    /** Used by JSON import after resolving slugs to the normal internal-id contract. */
+    public void useResolvedCategoryIds(List<String> categoryIds) {
+        this.categoryIds = categoryIds;
+        this.categoryIdsPresent = true;
+        this.categoryId = null;
+        this.categoryIdPresent = false;
+    }
 
     public void setSku(String sku) {
         this.sku = sku;

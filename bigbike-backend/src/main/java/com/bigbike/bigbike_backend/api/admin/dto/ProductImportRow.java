@@ -28,6 +28,11 @@ import java.util.List;
 public class ProductImportRow {
 
     private String sku;
+    /** Canonical user-editable category identifiers for JSON import/export. */
+    private List<String> categorySlugs;
+    /** Optional system-generated alternative accepted when categorySlugs is absent. */
+    private List<String> categoryIds;
+    /** Deprecated singleton slug alias kept for files from the transition period. */
     private String categoryId;
     private String brandId;
     private String gender;

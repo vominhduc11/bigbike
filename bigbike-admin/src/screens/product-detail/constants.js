@@ -148,7 +148,7 @@ export function getPublishReadiness(form, t) {
     // song song với tên tiếng Việt để lỗi "thiếu tên EN" không còn bị ẩn trong tab EN.
     { id: 'nameEn',    label: t('products.detail.checklist.nameEn', { defaultValue: 'Tên tiếng Anh' }), ok: Boolean(form.translations?.en?.name?.trim()), required: true },
     { id: 'slug',      label: t('products.detail.checklist.slug', { defaultValue: 'Đường dẫn (slug)' }), ok: Boolean(form.slug?.trim()),                required: true  },
-    { id: 'category',  label: t('products.detail.checklist.category'),  ok: Boolean(form.categoryId),                                               required: true  },
+    { id: 'category',  label: t('products.detail.checklist.category'),  ok: Array.isArray(form.categoryIds) && form.categoryIds.length > 0,          required: true  },
     { id: 'brand',     label: t('products.detail.checklist.brand'),     ok: Boolean(form.brandId),                                                  required: true  },
     { id: 'gender',    label: t('products.detail.checklist.gender', { defaultValue: 'Đối tượng' }), ok: Boolean(form.gender?.trim()),                required: true  },
     { id: 'image',     label: t('products.detail.checklist.image'),     ok: Boolean(form.imageUrl?.trim()),                                         required: true  },
@@ -277,7 +277,10 @@ export function buildEmptyForm() {
     description: '',
     descriptionBlocks: null,
     brandId: '',
-    categoryId: '',
+    categoryIds: [],
+    // Giữ snapshot để PATCH không gửi lại các liên kết cũ đã bị ẩn/xóa mềm
+    // khi quản trị viên chỉ sửa nội dung khác của sản phẩm.
+    initialCategoryIds: [],
     retailPrice: '',
     salePrice: '',
     available: true,
@@ -450,6 +453,10 @@ export function buildFormFromItem(item) {
     imageMimeType: v.image?.mimeType || null,
   })))
 
+  const categoryIds = Array.isArray(item.categories) && item.categories.length > 0
+    ? item.categories.map((category) => category?.id).filter(Boolean)
+    : [item.categoryId || item.category?.id].filter(Boolean)
+
   const form = {
     sku: item.sku || '',
     slug: item.slug || '',
@@ -473,7 +480,8 @@ export function buildFormFromItem(item) {
     suitabilitySection: hydrateSuitabilitySection(item.suitabilitySection),
     sizeGuideSection: hydrateSizeGuideSection(item.sizeGuideSection),
     brandId: item.brandId || item.brand?.id || '',
-    categoryId: item.categoryId || item.category?.id || item.categories?.[0]?.id || '',
+    categoryIds,
+    initialCategoryIds: [...categoryIds],
     retailPrice:
       Number.isInteger(item.price?.retailPrice) && item.price.retailPrice >= 0
         ? String(item.price.retailPrice)
@@ -692,7 +700,7 @@ export function cleanSizeGuideSection(section) {
 // 5 phần PDP giờ hiện thuần theo nội dung, không còn bật/tắt từng phần. Cột section_visibility
 // đã DROP khỏi DB 2026-07-07 (V325__drop_dead_product_fields.sql) — không còn tồn tại, kể cả ngủ yên.
 
-export function toPayload(form) {
+export function toPayload(form, { includeCategoryIds = true } = {}) {
   // Canonical luôn tự sinh từ slug — không lấy từ ô nhập tay nữa.
   const canonicalUrl = canonicalUrlFromSlug(form.slug)
 
@@ -706,6 +714,10 @@ export function toPayload(form) {
   // Ưu/Nhược điểm: không còn gửi từ ô nhập riêng — admin nhập qua card riêng, lưu vào
   // positiveNotes/negativeNotes. Phù hợp với ai/Bảng size (V327/V328): field riêng suitabilitySection/
   // sizeGuideSection, gửi bên dưới (không còn qua khối trong descriptionBlocks).
+
+  const categoryIds = Array.isArray(form.categoryIds)
+    ? form.categoryIds.map((id) => String(id || '').trim()).filter(Boolean)
+    : []
 
   const payload = {
     sku: form.sku.trim() || null,
@@ -725,7 +737,6 @@ export function toPayload(form) {
     originBrandCountry: form.originBrandCountry.trim() ? form.originBrandCountry.trim() : null,
     gender: form.gender.trim() ? form.gender.trim() : null,
     brandId: form.brandId.trim() || undefined,
-    categoryId: form.categoryId.trim(),
     // Send null when cleared so backend (presence-flag logic) can distinguish
     // "user erased this" from "field not part of this request".
     retailPrice: toIntegerOrNull(form.retailPrice),
@@ -752,6 +763,8 @@ export function toPayload(form) {
     // (TRANSLATION_RULE_002, validated client-side by createProductSchema too).
     translations: { en: { ...translationToPayload(form.translations?.en) } },
   }
+
+  if (includeCategoryIds) payload.categoryIds = categoryIds
 
   payload.gallery = form.gallery
     // V248: giữ item có ảnh HOẶC video (gallery hỗn hợp).
@@ -1002,7 +1015,7 @@ export function computeAttrSetWarning(items, t) {
 // Field-prefix groups by section key — single source of truth used by both the
 // in-render sectionErrors derivation and the synchronous save-time tab switch.
 export const SECTION_FIELD_PREFIXES = {
-  basic:         ['name','slug','sku','gender','shortDescription','brandId','categoryId','publishStatus'],
+  basic:         ['name','slug','sku','gender','shortDescription','brandId','categoryIds','publishStatus'],
   description:   ['description'],
   pricing:       ['retailPrice','salePrice'],
   media:         ['imageUrl'],

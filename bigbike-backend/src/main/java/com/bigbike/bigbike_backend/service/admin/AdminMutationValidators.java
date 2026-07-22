@@ -513,8 +513,8 @@ final class AdminMutationValidators {
         if (trimToNull(entity.getSlug()) == null) {
             errors.add(new ApiErrorDetail("slug", REQUIRED, "Slug is required."));
         }
-        if (entity.getCategory() == null) {
-            errors.add(new ApiErrorDetail("categoryId", REQUIRED, "Category is required."));
+        if (entity.getCategories() == null || entity.getCategories().isEmpty()) {
+            errors.add(new ApiErrorDetail("categoryIds", REQUIRED, "At least one category is required."));
         }
         if (entity.getBrand() == null) {
             errors.add(new ApiErrorDetail("brandId", REQUIRED, "Brand is required."));

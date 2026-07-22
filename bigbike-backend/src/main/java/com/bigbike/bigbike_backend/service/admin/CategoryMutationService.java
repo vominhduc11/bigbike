@@ -10,6 +10,7 @@ import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.MutationNotImplementedException;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.repository.catalog.CatalogReadRepository;
@@ -195,12 +196,26 @@ public class CategoryMutationService {
         List<CategoryEntity> subtree = collectCategorySubtree(entity);
         List<String> subtreeIds = subtree.stream().map(CategoryEntity::getId).toList();
 
-        List<String> movedProductIds = productJpaRepository.findIdsByCategory_IdIn(subtreeIds);
-        if (!movedProductIds.isEmpty()) {
-            CategoryEntity uncategorized = categoryJpaRepository.findById(UNCATEGORIZED_CATEGORY_ID)
-                    .orElseThrow(() -> new ConflictException(
-                            "Danh mục \"Chưa phân loại\" không tồn tại — không thể chuyển sản phẩm. Liên hệ kỹ thuật."));
-            productJpaRepository.reassignCategory(uncategorized, subtreeIds, Instant.now());
+        List<ProductEntity> affectedProducts = productJpaRepository.findDistinctByCategories_IdIn(subtreeIds);
+        List<String> affectedProductIds = affectedProducts.stream().map(ProductEntity::getId).toList();
+        CategoryEntity uncategorized = null;
+        for (ProductEntity product : affectedProducts) {
+            List<CategoryEntity> remaining = product.getCategories().stream()
+                    .filter(category -> !subtreeIds.contains(category.getId()))
+                    .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+            if (remaining.isEmpty()) {
+                if (uncategorized == null) {
+                    uncategorized = categoryJpaRepository.findById(UNCATEGORIZED_CATEGORY_ID)
+                            .orElseThrow(() -> new ConflictException(
+                                    "Danh mục \"Chưa phân loại\" không tồn tại — không thể chuyển sản phẩm. Liên hệ kỹ thuật."));
+                }
+                remaining.add(uncategorized);
+            }
+            product.setCategories(remaining);
+            product.setUpdatedAt(Instant.now());
+        }
+        if (!affectedProducts.isEmpty()) {
+            productJpaRepository.saveAll(affectedProducts);
         }
 
         for (int i = subtree.size() - 1; i >= 0; i--) {
@@ -210,8 +225,8 @@ public class CategoryMutationService {
         }
 
         webRevalidationService.revalidateCategory(entity.getSlug(), null);
-        if (!movedProductIds.isEmpty()) {
-            webRevalidationService.revalidateProductsByIds(movedProductIds);
+        if (!affectedProductIds.isEmpty()) {
+            webRevalidationService.revalidateProductsByIds(affectedProductIds);
             webRevalidationService.revalidate(
                     "categories", "category:" + UNCATEGORIZED_CATEGORY_ID, "products", "menus");
         }

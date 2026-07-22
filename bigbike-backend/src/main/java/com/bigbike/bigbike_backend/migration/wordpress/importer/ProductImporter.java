@@ -15,6 +15,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepo
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -124,22 +125,22 @@ public class ProductImporter implements DomainImporter {
                 entity.setStockState(resolveStockState(mp.stockQuantity()));
                 entity.setPublishStatus(resolveStatus(mp.status()));
 
-                // Category link (required)
-                CategoryEntity category = null;
-                if (rp.categorySlug() != null) {
-                    category = categoryRepo.findBySlug(rp.categorySlug()).orElse(null);
+                // Ordered category links. The write-plan preserves the legacy
+                // canonical slug first, followed by any additional taxonomy links.
+                List<CategoryEntity> categories = new ArrayList<>();
+                for (String categorySlug : new LinkedHashSet<>(rp.categorySlugs())) {
+                    categoryRepo.findBySlug(categorySlug).ifPresent(categories::add);
                 }
-                if (category == null) {
-                    // Find or create an "Uncategorized" fallback
-                    category = categoryRepo.findBySlug("uncategorized").orElse(null);
+                if (categories.isEmpty()) {
+                    categoryRepo.findBySlug("uncategorized").ifPresent(categories::add);
                 }
-                if (category == null && isNew) {
+                if (categories.isEmpty() && isNew) {
                     warnings.add("No category found for product slug=" + slug
-                            + "; skipping (category FK is required)");
+                            + "; skipping (a category is required)");
                     skipped++;
                     continue;
                 }
-                if (category != null) entity.setCategory(category);
+                entity.setCategories(categories);
 
                 // Brand link (optional)
                 if (rp.brandSlug() != null) {

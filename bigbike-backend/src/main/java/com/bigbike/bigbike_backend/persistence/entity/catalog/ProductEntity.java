@@ -35,6 +35,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -77,9 +78,32 @@ public class ProductEntity {
     @JoinColumn(name = "brand_id")
     private BrandEntity brand;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
-    private CategoryEntity category;
+    /** Ordered product-category membership; the first item is the primary category. */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "product_category_map",
+            joinColumns = @JoinColumn(name = "product_id"),
+            inverseJoinColumns = @JoinColumn(name = "category_id")
+    )
+    @OrderColumn(name = "sort_order")
+    @BatchSize(size = 50)
+    private List<CategoryEntity> categories = new ArrayList<>();
+
+    /**
+     * Transitional source-compatible accessor. It is not persisted; new code must
+     * use the ordered {@link #getCategories()} relationship directly.
+     */
+    @Deprecated
+    @Transient
+    public CategoryEntity getCategory() {
+        return categories == null || categories.isEmpty() ? null : categories.get(0);
+    }
+
+    /** Transitional source-compatible writer for legacy fixtures only. */
+    @Deprecated
+    public void setCategory(CategoryEntity category) {
+        this.categories = category == null ? new ArrayList<>() : new ArrayList<>(List.of(category));
+    }
 
     private String imageId;
 

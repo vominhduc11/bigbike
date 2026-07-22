@@ -4,9 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.bigbike.bigbike_backend.api.admin.dto.ImportReportResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.ImportRowResult;
+import com.bigbike.bigbike_backend.api.admin.dto.ProductImportRow;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.service.admin.ProductImportService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.UUID;
@@ -87,6 +89,46 @@ class ProductImportRoundTripTest {
         assertThat(after.getRetailPrice())
                 .as("the field the file did touch was actually updated")
                 .isEqualByComparingTo("1200000");
+    }
+
+    @Test
+    void orderedCategorySlugsAreDeduplicatedAndSurviveExportReimport() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String sku = "MULTI-CATEGORY-" + suffix;
+        String slug = "multi-category-" + suffix;
+        String createArray = """
+                [
+                  {
+                    "sku": "%s",
+                    "slug": { "slugVI": "%s" },
+                    "name": { "nameVI": "Nhiều danh mục %s", "nameEN": "Multi category %s" },
+                    "categorySlugs": ["ao-giap-bao-ho", "mu-bao-hiem", "ao-giap-bao-ho"],
+                    "brandId": "ls2",
+                    "gender": "Unisex",
+                    "retailPrice": 1000000
+                  }
+                ]
+                """.formatted(sku, slug, suffix, suffix);
+
+        ImportReportResponse create = productImportService.commitImport(jsonFile(createArray), Set.of(), DEV_ADMIN_ID);
+        assertThat(create.errorCount()).isZero();
+
+        ProductImportService.ProductExportFile exported =
+                productImportService.exportProductAsTemplateJson(create.rows().get(0).productId());
+        ProductImportRow[] exportedRows = new ObjectMapper().readValue(exported.content(), ProductImportRow[].class);
+        assertThat(exportedRows).singleElement().satisfies(row ->
+                assertThat(row.getCategorySlugs()).containsExactly("ao-giap-bao-ho", "mu-bao-hiem"));
+
+        ImportReportResponse reimport = productImportService.commitImport(
+                new MockMultipartFile("file", "reimport.json", "application/json", exported.content()),
+                Set.of(), DEV_ADMIN_ID);
+        assertThat(reimport.errorCount()).isZero();
+        ProductImportService.ProductExportFile reexported =
+                productImportService.exportProductAsTemplateJson(create.rows().get(0).productId());
+        ProductImportRow[] reexportedRows = new ObjectMapper().readValue(reexported.content(), ProductImportRow[].class);
+        assertThat(reexportedRows).singleElement().satisfies(row ->
+                assertThat(row.getCategorySlugs())
+                        .containsExactly("ao-giap-bao-ho", "mu-bao-hiem"));
     }
 
     /** product-template/HUONG-DAN.md rule 1: {@code sku} is mandatory on every import row. */

@@ -7,6 +7,6 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface HomeHighlightJpaRepository extends JpaRepository<HomeHighlightEntity, Short> {
 
-    @Query("SELECT h FROM HomeHighlightEntity h JOIN FETCH h.product p JOIN FETCH p.category c WHERE p.publishStatus = 'PUBLISHED' ORDER BY h.slot")
+    @Query("SELECT DISTINCT h FROM HomeHighlightEntity h JOIN FETCH h.product p LEFT JOIN FETCH p.categories c WHERE p.publishStatus = 'PUBLISHED' ORDER BY h.slot")
     List<HomeHighlightEntity> findAllWithProductAndCategoryOrderBySlot();
 }

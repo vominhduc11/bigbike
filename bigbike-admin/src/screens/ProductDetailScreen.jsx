@@ -43,6 +43,8 @@ import { useAutoHideSidebar } from '../components/AdminShell'
 import { useAdminPresence } from '../lib/useAdminPresence'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
@@ -121,6 +123,7 @@ import { AssignmentConfigContext } from './product-detail/constants'
 // — không còn embedded trong descriptionBlocks, không cần helper lọc/ghép nữa.
 // Nhãn hiển thị cho giới tính khi contentLang='en' — value lưu DB vẫn luôn "Nam"/"Nữ" (DATA_CONTRACT.md).
 const GENDER_LABEL_EN = { Nam: 'Male', 'Nữ': 'Female' }
+const EMPTY_ITEMS = []
 
 // ── Main screen ────────────────────────────────────────────────────────────────
 
@@ -240,27 +243,46 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     queryFn: () => fetchProductAssignment(),
     staleTime: 5 * 60 * 1000,
   })
-  const categories = categoriesResult?.items ?? []
-  const brands = brandsResult?.items ?? []
+  const categories = categoriesResult?.items ?? EMPTY_ITEMS
+  const brands = brandsResult?.items ?? EMPTY_ITEMS
   const loadedProduct = fetchResult?.item ?? null
-  const selectedCategoryRef = findOptionById(
-    [
-      loadedProduct?.category,
-      ...(Array.isArray(loadedProduct?.categories) ? loadedProduct.categories : []),
-    ].filter(Boolean),
-    form.categoryId,
-  )
+  const loadedCategoryRefs = [
+    loadedProduct?.category,
+    ...(Array.isArray(loadedProduct?.categories) ? loadedProduct.categories : []),
+  ].filter(Boolean)
   const selectedBrandRef = findOptionById([loadedProduct?.brand].filter(Boolean), form.brandId)
-  const categoryOptions = prependSelectedOption(categories, selectedCategoryRef)
+  const categoryOptions = useMemo(() => {
+    const byId = new Map()
+    for (const category of [...categories, ...loadedCategoryRefs]) {
+      if (category?.id && !byId.has(category.id)) byId.set(category.id, category)
+    }
+    for (const id of form.categoryIds ?? []) {
+      if (!byId.has(id)) {
+        byId.set(id, {
+          id,
+          name: t('products.detail.optionNotFound', { id }),
+          slug: id,
+          visible: false,
+          deleted: true,
+        })
+      }
+    }
+    return [...byId.values()]
+  }, [categories, form.categoryIds, loadedCategoryRefs, t])
   const brandOptions = prependSelectedOption(brands, selectedBrandRef)
   // Nhãn "Cha › Con › Cháu" để phân biệt cha/con khi cây danh mục có nhiều cấp.
   const categoryPathById = useMemo(() => buildCategoryPathMap(categoryOptions), [categoryOptions])
   // Thứ tự cây + độ sâu để thụt lề con dưới cha trong ô chọn danh mục.
   const categoryTree = useMemo(() => buildCategoryTreeOrder(categoryOptions), [categoryOptions])
-  const selectedCategoryLabel =
-    categoryPathById.get(form.categoryId) ||
-    findOptionById(categoryOptions, form.categoryId)?.name ||
-    (form.categoryId ? t('products.detail.optionNotFound', { id: form.categoryId }) : undefined)
+  const selectedCategories = (form.categoryIds ?? []).map((id) => (
+    findOptionById(categoryOptions, id) || {
+      id,
+      name: t('products.detail.optionNotFound', { id }),
+      slug: id,
+      visible: false,
+      deleted: true,
+    }
+  ))
   const selectedBrandLabel =
     findOptionById(brandOptions, form.brandId)?.name ||
     (form.brandId ? t('products.detail.optionNotFound', { id: form.brandId }) : undefined)
@@ -380,6 +402,31 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       delete next[field]
       return next
     })
+  }
+
+  function setProductCategories(nextIds) {
+    const categoryIds = [...new Set(nextIds.map((id) => String(id || '').trim()).filter(Boolean))]
+    updateField('categoryIds', categoryIds)
+  }
+
+  function toggleProductCategory(categoryId) {
+    if (isReadOnly) return
+    const category = findOptionById(categoryOptions, categoryId)
+    const isLocked = category?.deleted === true || category?.visible === false || category?.isVisible === false
+    const selected = form.categoryIds?.includes(categoryId)
+    if (isLocked && !selected) return
+    setProductCategories(selected
+      ? form.categoryIds.filter((id) => id !== categoryId)
+      : [...(form.categoryIds ?? []), categoryId])
+  }
+
+  function moveProductCategory(categoryId, direction) {
+    const current = [...(form.categoryIds ?? [])]
+    const index = current.indexOf(categoryId)
+    const target = index + direction
+    if (index < 0 || target < 0 || target >= current.length) return
+    ;[current[index], current[target]] = [current[target], current[index]]
+    setProductCategories(current)
   }
 
   // Write one English product-level field (V136). Vietnamese stays on form[field].
@@ -707,9 +754,14 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       return
     }
 
+    const currentCategoryIds = formToSave.categoryIds ?? []
+    const initialCategoryIds = formToSave.initialCategoryIds ?? []
+    const categoriesChanged = currentCategoryIds.length !== initialCategoryIds.length ||
+      currentCategoryIds.some((id, index) => id !== initialCategoryIds[index])
+
     setIsSubmitting(true)
     setValidationErrors({})
-    saveMutation.mutate(toPayload(formToSave))
+    saveMutation.mutate(toPayload(formToSave, { includeCategoryIds: isCreate || categoriesChanged }))
   }
 
 
@@ -1101,22 +1153,117 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     />
                   </Field>
 
-                  <Field label={t('products.detail.categoryId')} required error={validationErrors.categoryId || (categoriesLoadError ? t('products.detail.categoriesLoadError', { defaultValue: 'Không tải được danh mục. Vui lòng tải lại trang.' }) : undefined)}>
-                    <Select value={form.categoryId} onValueChange={(val) => { if (val) updateField('categoryId', val) }} disabled={isReadOnly}>
-                      <SelectTrigger onBlur={() => validateFieldOnBlur('categoryId')}>
-                        <SelectValue placeholder={t('products.detail.categoryPlaceholder')}>{selectedCategoryLabel}</SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {form.categoryId && !categoryOptions.some((c) => c.id === form.categoryId) && (
-                          <SelectItem value={form.categoryId} disabled>{t('products.detail.optionNotFound', { id: form.categoryId })}</SelectItem>
-                        )}
-                        {categoryTree.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>
-                            <span style={{ paddingInlineStart: `${c.depth * 16}px` }}>{c.name}</span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <Field
+                    label={t('products.detail.categoryIds')}
+                    required
+                    error={validationErrors.categoryIds || (categoriesLoadError ? t('products.detail.categoriesLoadError', { defaultValue: 'Không tải được danh mục. Vui lòng tải lại trang.' }) : undefined)}
+                  >
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full justify-between font-normal"
+                          disabled={isReadOnly}
+                          onBlur={() => validateFieldOnBlur('categoryIds')}
+                        >
+                          {selectedCategories.length > 0
+                            ? t('products.detail.categorySelectedCount', { count: selectedCategories.length })
+                            : t('products.detail.categoryPlaceholder')}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent align="start" className="w-80 p-2">
+                        <p className="px-2 py-1 text-xs text-muted-foreground">
+                          {t('products.detail.categoryPickerHint')}
+                        </p>
+                        <div className="max-h-64 space-y-1 overflow-y-auto">
+                          {categoryTree.map((category) => {
+                            const selected = form.categoryIds?.includes(category.id)
+                            const locked = category.deleted === true || category.visible === false || category.isVisible === false
+                            return (
+                              <label
+                                key={category.id}
+                                className={cn(
+                                  'flex min-h-11 cursor-pointer items-center gap-3 px-2 py-2 text-sm hover:bg-muted',
+                                  locked && !selected && 'cursor-not-allowed opacity-60',
+                                )}
+                              >
+                                <Checkbox
+                                  checked={selected}
+                                  disabled={isReadOnly || (locked && !selected)}
+                                  onCheckedChange={() => toggleProductCategory(category.id)}
+                                />
+                                <span className="min-w-0 flex-1">
+                                  <span className="block truncate">{categoryPathById.get(category.id) || category.name}</span>
+                                  {locked && (
+                                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                      <Lock size={12} aria-hidden="true" />
+                                      {t('products.detail.categoryLocked')}
+                                    </span>
+                                  )}
+                                </span>
+                              </label>
+                            )
+                          })}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+
+                    <div className="mt-2 space-y-2">
+                      {selectedCategories.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">{t('products.detail.categoryEmpty')}</p>
+                      ) : selectedCategories.map((category, index) => {
+                        const locked = category.deleted === true || category.visible === false || category.isVisible === false
+                        return (
+                          <div key={category.id} className="flex items-center gap-2 border border-border bg-muted/30 p-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="truncate text-sm font-medium">{categoryPathById.get(category.id) || category.name}</span>
+                                {index === 0 && <span className="text-xs font-medium text-primary">{t('products.detail.categoryPrimary')}</span>}
+                                {locked && (
+                                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                    <Lock size={12} aria-hidden="true" />
+                                    {t('products.detail.categoryLocked')}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-2 text-xs"
+                                disabled={isReadOnly || locked || index === 0}
+                                onClick={() => moveProductCategory(category.id, -1)}
+                              >
+                                {t('products.detail.categoryMoveUp')}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-2 text-xs"
+                                disabled={isReadOnly || locked || index === selectedCategories.length - 1}
+                                onClick={() => moveProductCategory(category.id, 1)}
+                              >
+                                {t('products.detail.categoryMoveDown')}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-2 text-xs"
+                                disabled={isReadOnly}
+                                onClick={() => toggleProductCategory(category.id)}
+                              >
+                                {t('products.detail.categoryRemove')}
+                              </Button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
                   </Field>
 
                   <Field label={t('products.detail.brandId')} required error={validationErrors.brandId}>

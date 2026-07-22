@@ -106,7 +106,7 @@ public class ProductMutationService {
         requireJpaPersistenceEnabled();
 
         List<ApiErrorDetail> errors = new ArrayList<>();
-        CategoryEntity category = catalogRequestValidator.validateAndResolveCategory(request.getCategoryId(), true, errors);
+        List<CategoryEntity> categories = catalogRequestValidator.validateAndResolveCategories(request, true, errors);
         BrandEntity brand = catalogRequestValidator.validateAndResolveBrand(request.getBrandId(), errors);
         String slug = catalogRequestValidator.validateProductRequest(request, null, true, false, errors);
         AdminMutationValidators.throwIfErrors(errors);
@@ -117,7 +117,7 @@ public class ProductMutationService {
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
 
-        applyProductPatch(entity, request, slug, category, brand, true);
+        applyProductPatch(entity, request, slug, categories, brand, true);
 
         List<ApiErrorDetail> readinessErrors = new ArrayList<>();
         AdminMutationValidators.validateProductFieldsRequired(
@@ -138,7 +138,7 @@ public class ProductMutationService {
         requireJpaPersistenceEnabled();
 
         List<ApiErrorDetail> errors = new ArrayList<>();
-        CategoryEntity category = catalogRequestValidator.validateAndResolveCategory(request.getCategoryId(), true, errors);
+        List<CategoryEntity> categories = catalogRequestValidator.validateAndResolveCategories(request, true, errors);
         BrandEntity brand = catalogRequestValidator.validateAndResolveBrand(request.getBrandId(), errors);
         String slug = catalogRequestValidator.validateProductRequest(request, null, true, true, errors);
         AdminMutationValidators.throwIfErrors(errors);
@@ -148,7 +148,7 @@ public class ProductMutationService {
         entity.setId("prod_preview");
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
-        applyProductPatch(entity, request, slug, category, brand, true);
+        applyProductPatch(entity, request, slug, categories, brand, true);
 
         String locale = "en".equalsIgnoreCase(lang) ? "en" : "vi";
         return jpaCatalogReadRepository.mapPreviewProduct(entity, locale);
@@ -166,7 +166,7 @@ public class ProductMutationService {
         Map<String, String> inventoryBefore = inventoryStateSnapshot(entity);
 
         List<ApiErrorDetail> errors = new ArrayList<>();
-        CategoryEntity category = catalogRequestValidator.validateAndResolveCategory(request.getCategoryId(), false, errors);
+        List<CategoryEntity> categories = catalogRequestValidator.validateAndResolveCategories(request, false, errors);
         BrandEntity brand = catalogRequestValidator.validateAndResolveBrand(request.getBrandId(), errors);
         String slug = catalogRequestValidator.validateProductRequest(request, entity, false, false, errors);
         PublishStatus nextPublishStatus = request.getPublishStatus() == null ? entity.getPublishStatus() : request.getPublishStatus();
@@ -174,7 +174,7 @@ public class ProductMutationService {
         AdminMutationValidators.throwIfErrors(errors);
 
         entity.setUpdatedAt(Instant.now());
-        applyProductPatch(entity, request, slug, category, brand, false);
+        applyProductPatch(entity, request, slug, categories, brand, false);
 
         List<ApiErrorDetail> readinessErrors = new ArrayList<>();
         AdminMutationValidators.validateProductFieldsRequired(
@@ -334,7 +334,11 @@ public class ProductMutationService {
         fields.put("slug", nullSafe(e.getSlug()));
         fields.put("publishStatus", e.getPublishStatus() == null ? "" : e.getPublishStatus().toString());
         fields.put("brandId", e.getBrand() == null ? null : e.getBrand().getId());
-        fields.put("categoryId", e.getCategory() == null ? null : e.getCategory().getId());
+        List<String> categoryIds = e.getCategories() == null ? List.of() : e.getCategories().stream()
+                .map(CategoryEntity::getId)
+                .toList();
+        fields.put("categoryIds", categoryIds);
+        fields.put("primaryCategoryId", categoryIds.isEmpty() ? null : categoryIds.get(0));
         fields.put("shortDescription", e.getShortDescription());
         fields.put("description", e.getDescription());
         fields.put("imageUrl", e.getImageUrl());
@@ -381,7 +385,7 @@ public class ProductMutationService {
             ProductEntity entity,
             UpsertProductRequest request,
             String normalizedSlug,
-            CategoryEntity category,
+            List<CategoryEntity> categories,
             BrandEntity brand,
             boolean create
     ) {
@@ -403,8 +407,8 @@ public class ProductMutationService {
         if (create || request.getBrandId() != null) {
             entity.setBrand(brand);
         }
-        if (create || request.getCategoryId() != null) {
-            entity.setCategory(category);
+        if (create || request.isCategoryIdsPresent() || request.isCategoryIdPresent()) {
+            entity.setCategories(new ArrayList<>(categories));
         }
         if (create || request.isRetailPricePresent()) {
             entity.setRetailPrice(request.getRetailPrice() == null ? BigDecimal.ZERO : request.getRetailPrice());

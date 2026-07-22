@@ -223,7 +223,14 @@ function normalizeCategorySummary(input) {
     return undefined
   }
 
-  return { id, name, slug }
+  return {
+    id,
+    name,
+    slug,
+    slugEn: toTrimmedString(input.slugEn) || undefined,
+    visible: input.visible !== false && input.isVisible !== false,
+    deleted: input.deleted === true,
+  }
 }
 
 function normalizeBrandSummary(input) {
@@ -336,30 +343,28 @@ export function normalizeProduct(input) {
   const slug = toTrimmedString(source.slug) || id
   const brandSource = source.brand && typeof source.brand === 'object' ? source.brand : null
   const categorySource = source.category && typeof source.category === 'object' ? source.category : null
-  const categories = Array.isArray(source.categories)
+  const responseCategories = Array.isArray(source.categories)
     ? source.categories.map(normalizeCategorySummary).filter(Boolean)
     : []
   const brandId =
     toTrimmedString(source.brandId) ||
     (brandSource ? toTrimmedString(brandSource.id) : '')
-  const categoryId =
-    toTrimmedString(source.categoryId) ||
-    (categorySource ? toTrimmedString(categorySource.id) : '') ||
-    categories[0]?.id ||
-    ''
-  const category =
-    normalizeCategorySummary(categorySource) ||
-    (categoryId
-      ? {
-          id: categoryId,
-          name: toTrimmedString(categorySource?.name) || categoryId,
-          slug: toTrimmedString(categorySource?.slug) || categoryId,
-        }
-      : {
-          id: 'uncategorized',
-          name: 'Uncategorized',
-          slug: 'uncategorized',
-        })
+  const legacyCategory = normalizeCategorySummary(categorySource)
+  const categories = responseCategories.length > 0
+    ? responseCategories
+    : legacyCategory
+      ? [legacyCategory]
+      : toTrimmedString(source.categoryId)
+        ? [{
+            id: toTrimmedString(source.categoryId),
+            name: toTrimmedString(categorySource?.name) || toTrimmedString(source.categoryId),
+            slug: toTrimmedString(categorySource?.slug) || toTrimmedString(source.categoryId),
+            visible: true,
+            deleted: false,
+          }]
+        : []
+  const category = categories[0]
+  const categoryId = category?.id || undefined
 
   return {
     id,
@@ -394,7 +399,8 @@ export function normalizeProduct(input) {
     brand: normalizeBrandSummary(brandSource),
     brandId: brandId || undefined,
     category,
-    categoryId: categoryId || undefined,
+    categoryId,
+    categoryIds: categories.map((item) => item.id),
     categories,
     image: normalizeImageAsset(source.image),
     gallery: Array.isArray(source.gallery)
@@ -490,6 +496,7 @@ export function normalizeCategory(input) {
     mobileBannerImage: normalizeImageAsset(source.mobileBannerImage),
     seo: normalizeSeoMeta(source.seo),
     isVisible: source.isVisible !== false,
+    deleted: source.deleted === true,
     showOnHomepage: source.showOnHomepage === true,
     sortOrder: Number.isFinite(source.sortOrder) ? Number(source.sortOrder) : undefined,
     translations: {

@@ -32,7 +32,11 @@ final class ProductImportRowMapper {
         if (row.getSku() != null) {
             request.setSku(row.getSku());
         }
-        if (row.getCategoryId() != null) {
+        if (row.getCategorySlugs() != null) {
+            request.setCategoryIds(row.getCategorySlugs());
+        } else if (row.getCategoryIds() != null) {
+            request.setCategoryIds(row.getCategoryIds());
+        } else if (row.getCategoryId() != null) {
             request.setCategoryId(row.getCategoryId());
         }
         if (row.getBrandId() != null) {

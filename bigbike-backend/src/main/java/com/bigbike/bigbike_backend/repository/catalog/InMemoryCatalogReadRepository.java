@@ -441,7 +441,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
         List<Product> filtered = products.stream()
                 .filter(p -> p.publishStatus() == PublishStatus.PUBLISHED)
                 .filter(p -> categorySlug == null || categorySlug.isBlank()
-                        || (p.category() != null && categorySlug.equals(p.category().slug())))
+                        || safeCategories(p).stream().anyMatch(category -> categorySlug.equals(category.slug())))
                 .filter(p -> brandSlug == null || brandSlug.isBlank()
                         || (p.brand() != null && brandSlug.equals(p.brand().slug())))
                 .filter(p -> q == null || q.isBlank()
@@ -486,7 +486,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 .filter(p -> brandId == null || brandId.isBlank()
                         || (p.brand() != null && p.brand().id().equals(brandId)))
                 .filter(p -> categoryId == null || categoryId.isBlank()
-                        || (p.category() != null && p.category().id().equals(categoryId)))
+                        || safeCategories(p).stream().anyMatch(category -> categoryId.equals(category.id())))
                 .toList();
     }
 
@@ -626,8 +626,15 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
         return brands.stream().filter(brand -> brand.id().equals(id)).findFirst();
     }
 
+    private static List<CategorySummary> safeCategories(Product product) {
+        if (product.categories() != null && !product.categories().isEmpty()) {
+            return product.categories();
+        }
+        return product.category() == null ? List.of() : List.of(product.category());
+    }
+
     private static CategorySummary summaryOf(Category category) {
-        return new CategorySummary(category.id(), category.slug(), category.slugEn(), category.name());
+        return new CategorySummary(category.id(), category.slug(), category.slugEn(), category.name(), category.isVisible(), false);
     }
 
     private static BrandSummary summaryOf(Brand brand) {

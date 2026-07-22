@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import java.util.List;
@@ -45,15 +46,19 @@ class CategoryDeletionImpactServiceTest {
         when(categoryRepository.findByParent_Id("root")).thenReturn(List.of(child));
         when(categoryRepository.findByParent_Id("child")).thenReturn(List.of(grandchild));
         when(categoryRepository.findByParent_Id("grandchild")).thenReturn(List.of());
-        when(productRepository.findIdsByCategory_IdIn(List.of("root", "child", "grandchild")))
-                .thenReturn(List.of("product-1", "product-2", "product-3"));
+        when(productRepository.findDistinctByCategories_IdIn(List.of("root", "child", "grandchild")))
+                .thenReturn(List.of(
+                        product("product-1", root),
+                        product("product-2", root, category("other", false)),
+                        product("product-3", grandchild)));
 
         var impact = service.preview(List.of("root"));
 
         assertThat(impact.requestedCategoryCount()).isEqualTo(1);
         assertThat(impact.rootCategoryIds()).containsExactly("root");
         assertThat(impact.descendantCategoryCount()).isEqualTo(2);
-        assertThat(impact.reassignedProductCount()).isEqualTo(3);
+        assertThat(impact.affectedProductCount()).isEqualTo(3);
+        assertThat(impact.reassignedProductCount()).isEqualTo(2);
     }
 
     @Test
@@ -65,14 +70,15 @@ class CategoryDeletionImpactServiceTest {
         when(categoryRepository.findById("child")).thenReturn(Optional.of(child));
         when(categoryRepository.findByParent_Id("root")).thenReturn(List.of(child));
         when(categoryRepository.findByParent_Id("child")).thenReturn(List.of());
-        when(productRepository.findIdsByCategory_IdIn(List.of("root", "child")))
-                .thenReturn(List.of("product-1"));
+        when(productRepository.findDistinctByCategories_IdIn(List.of("root", "child")))
+                .thenReturn(List.of(product("product-1", root)));
 
         var impact = service.preview(List.of("root", "child", "root"));
 
         assertThat(impact.requestedCategoryCount()).isEqualTo(2);
         assertThat(impact.rootCategoryIds()).containsExactly("root");
         assertThat(impact.descendantCategoryCount()).isEqualTo(1);
+        assertThat(impact.affectedProductCount()).isEqualTo(1);
         assertThat(impact.reassignedProductCount()).isEqualTo(1);
     }
 
@@ -91,5 +97,12 @@ class CategoryDeletionImpactServiceTest {
         category.setId(id);
         category.setDeleted(deleted);
         return category;
+    }
+
+    private static ProductEntity product(String id, CategoryEntity... categories) {
+        ProductEntity product = new ProductEntity();
+        product.setId(id);
+        product.setCategories(new java.util.ArrayList<>(List.of(categories)));
+        return product;
     }
 }

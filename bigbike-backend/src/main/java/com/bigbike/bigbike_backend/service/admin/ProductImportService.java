@@ -50,6 +50,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -402,16 +403,34 @@ public class ProductImportService {
     }
 
     private void resolveCategoryAndBrand(UpsertProductRequest request, List<ApiErrorDetail> errors) {
-        String categorySlug = AdminMutationValidators.trimToNull(request.getCategoryId());
-        if (categorySlug == null) {
-            errors.add(new ApiErrorDetail("categoryId", "REQUIRED", "Thiếu danh mục."));
+        List<String> rawCategories = request.isCategoryIdsPresent()
+                ? request.getCategoryIds()
+                : (request.isCategoryIdPresent() ? java.util.Collections.singletonList(request.getCategoryId()) : List.of());
+        if (rawCategories == null || rawCategories.isEmpty()) {
+            errors.add(new ApiErrorDetail("categorySlugs", "REQUIRED", "Thiếu danh mục."));
         } else {
-            CategoryEntity category = categoryJpaRepository.findBySlug(categorySlug).orElse(null);
-            if (category == null) {
-                errors.add(new ApiErrorDetail("categoryId", "NOT_FOUND",
-                        "Danh mục '" + categorySlug + "' không tồn tại — kiểm tra lại slug."));
-            } else {
-                request.setCategoryId(category.getId());
+            LinkedHashSet<String> resolvedIds = new LinkedHashSet<>();
+            for (int index = 0; index < rawCategories.size(); index++) {
+                String raw = AdminMutationValidators.trimToNull(rawCategories.get(index));
+                if (raw == null) {
+                    errors.add(new ApiErrorDetail("categorySlugs[" + index + "]", "REQUIRED", "Thiếu danh mục."));
+                    continue;
+                }
+                CategoryEntity category = categoryJpaRepository.findById(raw)
+                        .or(() -> categoryJpaRepository.findBySlug(raw))
+                        .orElse(null);
+                if (category == null) {
+                    errors.add(new ApiErrorDetail("categorySlugs[" + index + "]", "NOT_FOUND",
+                            "Danh mục '" + raw + "' không tồn tại — kiểm tra lại slug hoặc id."));
+                } else if (category.isDeleted() || !category.isVisible()) {
+                    errors.add(new ApiErrorDetail("categorySlugs[" + index + "]", "INVALID_STATE",
+                            "Danh mục phải đang hiển thị và không nằm trong Thùng rác."));
+                } else {
+                    resolvedIds.add(category.getId());
+                }
+            }
+            if (!resolvedIds.isEmpty()) {
+                request.useResolvedCategoryIds(new ArrayList<>(resolvedIds));
             }
         }
         String brandSlug = AdminMutationValidators.trimToNull(request.getBrandId());
@@ -747,11 +766,21 @@ public class ProductImportService {
         }
         List<ParsedRow> rows = new ArrayList<>();
         for (int i = 0; i < array.length; i++) {
-            UpsertProductRequest request = ProductImportRowMapper.toUpsertRequest(array[i]);
+            ProductImportRow source = array[i];
+            UpsertProductRequest request = ProductImportRowMapper.toUpsertRequest(source);
             request.setPublishStatus(null);
             String rowIdentity = firstNonBlank(request.getSku(), request.getSlug(), "item");
             String rowKey = "row-" + (i + 1) + ":" + rowIdentity;
-            rows.add(new ParsedRow(i + 1, rowKey, request));
+            ParsedRow parsed = new ParsedRow(i + 1, rowKey, request);
+            if (source.getCategorySlugs() != null && source.getCategoryIds() != null) {
+                parsed.parseErrors.add(new ApiErrorDetail("categorySlugs", "CONFLICT",
+                        "Chỉ gửi categorySlugs hoặc categoryIds trong một dòng nhập."));
+            }
+            if ((source.getCategorySlugs() != null || source.getCategoryIds() != null) && source.getCategoryId() != null) {
+                parsed.parseErrors.add(new ApiErrorDetail("categoryId", "CONFLICT",
+                        "Không gửi categoryId cùng categorySlugs/categoryIds."));
+            }
+            rows.add(parsed);
         }
         return rows;
     }
@@ -807,7 +836,9 @@ public class ProductImportService {
     private ProductImportRow toExportRow(ProductEntity p) {
         ProductImportRow r = new ProductImportRow();
         r.setSku(p.getSku());
-        r.setCategoryId(p.getCategory() != null ? p.getCategory().getSlug() : null);
+        r.setCategorySlugs(p.getCategories() == null ? List.of() : p.getCategories().stream()
+                .map(CategoryEntity::getSlug)
+                .toList());
         r.setBrandId(p.getBrand() != null ? p.getBrand().getSlug() : null);
         r.setGender(p.getGender());
         r.setCurrency(p.getCurrency());

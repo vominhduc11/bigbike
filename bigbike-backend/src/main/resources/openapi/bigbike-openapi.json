@@ -2539,6 +2539,16 @@
             "AdminBearerAuth": []
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertProductRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -2591,6 +2601,16 @@
             "AdminBearerAuth": []
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertProductRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -6014,8 +6034,38 @@
           "slug": {
             "type": "string"
           },
+          "slugEn": {
+            "type": "string",
+            "nullable": true
+          },
           "name": {
             "type": "string"
+          },
+          "visible": {
+            "type": "boolean"
+          },
+          "deleted": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UpsertProductRequest": {
+        "type": "object",
+        "properties": {
+          "categoryIds": {
+            "type": "array",
+            "description": "Ordered category ids; the first item is the primary category. Required and non-empty on create; omitted on PATCH keeps the current links.",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "maxLength": 64
+            }
+          },
+          "categoryId": {
+            "type": "string",
+            "deprecated": true,
+            "description": "Temporary singular alias for a one-item categoryIds array. Must not be sent together with categoryIds."
           }
         }
       },
@@ -6036,10 +6086,12 @@
             "type": "string"
           },
           "category": {
-            "$ref": "#/components/schemas/CategorySummary"
+            "$ref": "#/components/schemas/CategorySummary",
+            "description": "Primary category: the first entry of categories, retained for compatibility."
           },
           "categories": {
             "type": "array",
+            "description": "All assigned categories in stable primary-first order, without duplicates.",
             "items": {
               "$ref": "#/components/schemas/CategorySummary"
             }
@@ -6153,6 +6205,7 @@
           "requestedCategoryCount",
           "rootCategoryIds",
           "descendantCategoryCount",
+          "affectedProductCount",
           "reassignedProductCount"
         ],
         "properties": {
@@ -6170,9 +6223,15 @@
             "type": "integer",
             "minimum": 0
           },
+          "affectedProductCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Products whose links to the deleted category tree will be removed."
+          },
           "reassignedProductCount": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "description": "Affected products with no remaining category links, which will receive uncategorized."
           }
         }
       },

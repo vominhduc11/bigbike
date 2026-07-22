@@ -358,7 +358,8 @@ export function CategoryListScreen({ navigate, canUpdate }) {
         t('categories.bulkPermanentDeleteImpactConfirm', {
           selectedCount: impact.requestedCategoryCount,
           descendantCount: impact.descendantCategoryCount,
-          productCount: impact.reassignedProductCount,
+          affectedProductCount: impact.affectedProductCount,
+          reassignedProductCount: impact.reassignedProductCount,
         }),
         t('categories.bulkPermanentDeleteTitle', { defaultValue: 'Xóa vĩnh viễn các danh mục đã chọn?' }),
         { variant: 'danger', confirmLabel: t('common.permanentDelete') },
@@ -551,7 +552,8 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       t('categories.permanentDeleteImpactConfirm', {
         name: category.name,
         descendantCount: impact.descendantCategoryCount,
-        productCount: impact.reassignedProductCount,
+        affectedProductCount: impact.affectedProductCount,
+        reassignedProductCount: impact.reassignedProductCount,
       }),
       t('categories.permanentDeleteConfirmTitle', { defaultValue: 'Xác nhận xóa vĩnh viễn' }),
       { confirmLabel: t('common.permanentDelete'), variant: 'danger' }

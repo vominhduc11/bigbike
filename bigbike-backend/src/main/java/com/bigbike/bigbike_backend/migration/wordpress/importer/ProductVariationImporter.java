@@ -182,7 +182,7 @@ public class ProductVariationImporter implements DomainImporter {
             }
             return categoryRepo.save(fallback);
         });
-        entity.setCategory(category);
+        entity.setCategories(new ArrayList<>(List.of(category)));
         entity.setRetailPrice(BigDecimal.ZERO);
         entity.setCurrency("VND");
         // STOCK_RULE_001: sản phẩm mới khởi tạo OUT_OF_STOCK tới khi có tồn/serial thật.

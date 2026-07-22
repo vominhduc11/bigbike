@@ -25,8 +25,11 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepo
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.service.security.HomeVideoUrlPolicy;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -520,20 +523,60 @@ public class CatalogRequestValidator {
         }
     }
 
-    public CategoryEntity validateAndResolveCategory(String categoryIdRaw, boolean create, List<ApiErrorDetail> errors) {
-        String categoryId = AdminMutationValidators.trimToNull(categoryIdRaw);
-        if (!create && categoryId == null) {
+    /** Resolves the ordered category relationship and enforces its write policy. */
+    public List<CategoryEntity> validateAndResolveCategories(
+            UpsertProductRequest request,
+            boolean create,
+            List<ApiErrorDetail> errors
+    ) {
+        boolean pluralPresent = request.isCategoryIdsPresent();
+        boolean singularPresent = request.isCategoryIdPresent();
+        if (pluralPresent && singularPresent) {
+            errors.add(new ApiErrorDetail("categoryIds", "CONFLICT",
+                    "Send categoryIds or deprecated categoryId, not both."));
             return null;
         }
-        if (create && categoryId == null) {
+        if (!pluralPresent && !singularPresent) {
+            if (create) {
+                errors.add(new ApiErrorDetail("categoryIds", "REQUIRED", "At least one category is required."));
+            }
             return null;
         }
-        CategoryEntity category = categoryJpaRepository.findById(categoryId).orElse(null);
-        if (category == null) {
-            errors.add(new ApiErrorDetail("categoryId", "NOT_FOUND", "Category does not exist."));
+
+        // singletonList intentionally accepts null so an explicit legacy
+        // categoryId:null is returned as a normal field validation error.
+        List<String> rawIds = pluralPresent ? request.getCategoryIds() : Collections.singletonList(request.getCategoryId());
+        if (rawIds == null || rawIds.isEmpty()) {
+            errors.add(new ApiErrorDetail("categoryIds", "REQUIRED", "At least one category is required."));
             return null;
         }
-        return category;
+
+        LinkedHashSet<String> orderedIds = new LinkedHashSet<>();
+        for (int index = 0; index < rawIds.size(); index++) {
+            String id = AdminMutationValidators.trimToNull(rawIds.get(index));
+            if (id == null) {
+                errors.add(new ApiErrorDetail("categoryIds[" + index + "]", "REQUIRED", "Category id is required."));
+            } else if (!orderedIds.add(id)) {
+                errors.add(new ApiErrorDetail("categoryIds[" + index + "]", "DUPLICATE", "Category id is duplicated."));
+            }
+        }
+        if (orderedIds.isEmpty()) {
+            return null;
+        }
+
+        List<CategoryEntity> categories = new ArrayList<>();
+        for (String id : orderedIds) {
+            CategoryEntity category = categoryJpaRepository.findById(id).orElse(null);
+            if (category == null) {
+                errors.add(new ApiErrorDetail("categoryIds", "NOT_FOUND", "Category does not exist."));
+            } else if (category.isDeleted() || !category.isVisible()) {
+                errors.add(new ApiErrorDetail("categoryIds", "INVALID_STATE",
+                        "Only visible categories outside Trash may be assigned to a product."));
+            } else {
+                categories.add(category);
+            }
+        }
+        return categories;
     }
 
     public BrandEntity validateAndResolveBrand(String brandIdRaw, List<ApiErrorDetail> errors) {

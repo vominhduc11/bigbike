@@ -319,7 +319,8 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     const message = t('categories.permanentDeleteImpactConfirm', {
       name,
       descendantCount: impact.descendantCategoryCount,
-      productCount: impact.reassignedProductCount,
+      affectedProductCount: impact.affectedProductCount,
+      reassignedProductCount: impact.reassignedProductCount,
     })
     // Nút xác nhận phải nêu rõ hành động (Xoá vĩnh viễn) thay vì "Xác nhận"
     // chung chung, để người dùng biết chính xác việc sắp làm (tiêu chí 7.5).

@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.MutationNotImplementedException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import java.util.ArrayDeque;
@@ -70,12 +71,17 @@ public class CategoryDeletionImpactService {
         }
 
         List<String> impactedCategoryIds = new ArrayList<>(impactedCategories.keySet());
-        int reassignedProductCount = productJpaRepository.findIdsByCategory_IdIn(impactedCategoryIds).size();
+        List<ProductEntity> affectedProducts = productJpaRepository.findDistinctByCategories_IdIn(impactedCategoryIds);
+        int reassignedProductCount = (int) affectedProducts.stream()
+                .filter(product -> product.getCategories().stream()
+                        .allMatch(category -> impactedCategoryIds.contains(category.getId())))
+                .count();
 
         return new CategoryPermanentDeleteImpactResponse(
                 requestedIds.size(),
                 rootCategoryIds,
                 impactedCategories.size() - rootCategoryIds.size(),
+                affectedProducts.size(),
                 reassignedProductCount
         );
     }

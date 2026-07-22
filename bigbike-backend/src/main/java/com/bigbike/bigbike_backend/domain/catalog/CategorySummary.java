@@ -1,5 +1,5 @@
 package com.bigbike.bigbike_backend.domain.catalog;
 
-public record CategorySummary(String id, String slug, String slugEn, String name) {
+public record CategorySummary(String id, String slug, String slugEn, String name, boolean visible, boolean deleted) {
 }
 

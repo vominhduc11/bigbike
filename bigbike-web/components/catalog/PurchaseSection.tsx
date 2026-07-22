@@ -197,7 +197,12 @@ export function PurchaseSection({
   const enCategory = useLocalizedField<CategorySummary>("category");
   const activeCategory = locale === "en" ? enCategory ?? product.category : product.category;
   const eyebrowCategory =
-    activeCategory?.slug === "chua-phan-loai" ? "" : safeText(activeCategory?.name, "");
+    activeCategory?.slug === "chua-phan-loai" ||
+    activeCategory?.slug === "uncategorized" ||
+    activeCategory?.visible === false ||
+    activeCategory?.deleted === true
+      ? ""
+      : safeText(activeCategory?.name, "");
   const enBrand = useLocalizedField<BrandSummary>("brand");
   const activeBrand = locale === "en" ? enBrand ?? product.brand : product.brand;
   const enOriginBrandCountry = useLocalizedField<string>("originBrandCountry");

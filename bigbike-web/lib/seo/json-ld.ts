@@ -43,6 +43,7 @@ export function buildProductJsonLd(product: Product): JsonLdObject {
   const images = collectProductImages(product);
   const priceCurrency = product.price?.currency ?? "VND";
   const offers = buildProductOffers(product, canonicalUrl, priceCurrency);
+  const primaryCategory = product.category ?? product.categories?.[0];
 
   return {
     "@context": "https://schema.org",
@@ -57,7 +58,7 @@ export function buildProductJsonLd(product: Product): JsonLdObject {
           name: product.brand.name,
         }
       : undefined,
-    category: product.category?.name || undefined,
+    category: isPublicProductCategory(primaryCategory) ? primaryCategory.name : undefined,
     url: canonicalUrl,
     offers,
     // CHỈ khai aggregateRating khi có review khách thật (ratingCount > 0). Không
@@ -128,6 +129,7 @@ export function buildArticleJsonLd(
 }
 
 export function buildBreadcrumbJsonLd(product: Product): JsonLdObject {
+  const primaryCategory = product.category ?? product.categories?.[0];
   const items: Array<{ position: number; name: string; item: string }> = [
     {
       position: 1,
@@ -144,15 +146,11 @@ export function buildBreadcrumbJsonLd(product: Product): JsonLdObject {
       name: product.brand.name,
       item: toCanonicalUrl(toBrandPath(product.brand.slug)),
     });
-  } else if (
-    product.category?.name &&
-    product.category.slug &&
-    product.category.slug !== "chua-phan-loai"
-  ) {
+  } else if (isPublicProductCategory(primaryCategory)) {
     items.push({
       position: items.length + 1,
-      name: product.category.name,
-      item: toCanonicalUrl(toCategoryPath(product.category.slug)),
+      name: primaryCategory.name,
+      item: toCanonicalUrl(toCategoryPath(primaryCategory.slug)),
     });
   }
 
@@ -170,6 +168,19 @@ export function buildBreadcrumbJsonLd(product: Product): JsonLdObject {
       ...item,
     })),
   };
+}
+
+function isPublicProductCategory(
+  category: Product["category"],
+): category is NonNullable<Product["category"]> {
+  return Boolean(
+    category?.name &&
+    category.slug &&
+    category.slug !== "chua-phan-loai" &&
+    category.slug !== "uncategorized" &&
+    category.visible !== false &&
+    category.deleted !== true,
+  );
 }
 
 export function buildArticleBreadcrumbJsonLd(article: Article): JsonLdObject {

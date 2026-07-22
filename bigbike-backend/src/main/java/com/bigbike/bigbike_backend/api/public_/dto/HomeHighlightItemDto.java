@@ -14,16 +14,18 @@ public record HomeHighlightItemDto(
 ) {
     public static HomeHighlightItemDto from(HomeHighlightEntity e, String lang) {
         var product = e.getProduct();
-        var category = product.getCategory();
+        var category = product.getCategories() == null || product.getCategories().isEmpty()
+                ? null
+                : product.getCategories().get(0);
         return new HomeHighlightItemDto(
                 e.getSlot(),
                 product.getId(),
                 product.getSlug(),
                 pick(product.getName(), product.getNameEn(), lang),
                 product.getImageUrl(),
-                category.getId(),
-                pick(category.getName(), category.getNameEn(), lang),
-                category.getSlug()
+                category == null ? null : category.getId(),
+                category == null ? null : pick(category.getName(), category.getNameEn(), lang),
+                category == null ? null : category.getSlug()
         );
     }
 

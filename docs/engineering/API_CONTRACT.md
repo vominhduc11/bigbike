@@ -365,14 +365,14 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
   - Đặt `deleted = false` trên danh mục mục tiêu và toàn bộ cây con của nó.
 - **Xóa vĩnh viễn**: `DELETE /api/v1/admin/categories/{id}/permanent`
   - Chặn lại bằng lỗi `409 Conflict` nếu danh mục chưa được xóa mềm (`deleted == false`).
-  - Tự động chuyển toàn bộ sản phẩm trong cây con sang danh mục hệ thống "Chưa phân loại" (`uncategorized`).
+  - Gỡ các liên kết thuộc cây danh mục bị xóa; chỉ sản phẩm không còn bất kỳ liên kết danh mục nào mới được gán danh mục hệ thống "Chưa phân loại" (`uncategorized`).
   - Thực hiện xóa cứng danh mục và toàn bộ cây con.
   - Chặn (409) mọi thao tác xóa (mềm/cứng) đối với danh mục hệ thống `uncategorized`.
 - **Xem trước ảnh hưởng xóa vĩnh viễn**: `POST /api/v1/admin/categories/permanent-delete-impact`
   - Request: `{ "categoryIds": string[] }` (1–100 mã danh mục trong Thùng rác).
-  - Response: `{ data: { requestedCategoryCount, rootCategoryIds, descendantCategoryCount, reassignedProductCount } }`.
+  - Response: `{ data: { requestedCategoryCount, rootCategoryIds, descendantCategoryCount, affectedProductCount, reassignedProductCount } }`. `affectedProductCount` là số sản phẩm bị gỡ liên kết trong cây xóa; `reassignedProductCount` là tập con không còn danh mục nào nên nhận `uncategorized`.
   - `rootCategoryIds` loại các mục đã nằm dưới một danh mục khác trong cùng lựa chọn để luồng xóa hàng loạt không xóa trùng cây.
-  - `descendantCategoryCount` là tổng số danh mục con trong hợp của các cây sẽ xóa; `reassignedProductCount` là số sản phẩm duy nhất trong các cây đó sẽ chuyển sang `uncategorized`.
+  - `descendantCategoryCount` là tổng số danh mục con trong hợp của các cây sẽ xóa; `affectedProductCount` là số sản phẩm duy nhất có liên kết bị gỡ, còn `reassignedProductCount` là tập con thực sự chuyển sang `uncategorized`.
   - Trả `404` nếu có mã không tồn tại; trả `409` nếu có danh mục chưa nằm trong Thùng rác hoặc là danh mục hệ thống `uncategorized`.
   - Admin phải gọi phép xem trước này trước hộp xác nhận xóa đơn lẻ/hàng loạt và hiển thị **đồng thời** hai số đếm theo `BUSINESS_RULES.md` `CATEGORY_RULE_004`.
 
@@ -547,7 +547,7 @@ Status: `CONFIRMED_FROM_CODE` — `CatalogController.java`, `CatalogReadService.
 
 `GET /api/v1/admin/products` (`categoryId` param) and `GET /api/v1/products` (category slug in the path/`category` param) both scope results to the requested category **and every category nested under it**, not just products assigned directly to that exact category (`BUSINESS_RULES.md` → `CATEGORY_RULE_006`). A leaf category (no children) behaves exactly as before — only its direct products.
 
-Resolution happens per-request: the full category set (~35 rows) is loaded and walked via BFS from the requested category id/slug to collect self + descendant ids, then the product query filters by `category.id IN (...)` instead of an exact match. An invalid/unresolvable category slug on the public endpoint still yields zero results (was: no match on the raw slug predicate; now: an always-false predicate after slug resolution fails) — no change in observable behaviour for that case.
+Resolution happens per-request: the full category set is loaded and walked via BFS from the requested category id/slug to collect self + descendant ids. The product query matches **any** `product_category_map.category_id` in that set and is distinct at product level, so a product linked to several matching categories occurs once only. An invalid/unresolvable category slug on the public endpoint yields zero results.
 
 Status: `CONFIRMED_FROM_CODE` — `JpaCatalogReadRepository.resolveCategoryIdWithDescendants` / `resolveCategorySlugWithDescendants`, called from `findProductsFiltered` (admin) and `findPublishedProductsPaged` (public) before building the respective `Specification`.
 
@@ -740,11 +740,11 @@ Lets a shop owner create/update many products at once from a single JSON file (t
 
 `ImportRowResult.rowKey` includes the one-based JSON row number plus its SKU/slug fallback. The key is stable when the identical file is re-sent and stays unique even when two rows repeat the same SKU; the admin must send back the exact keys returned by validate in `skipRowKeys`.
 
-**JSON row shape (V2026-07-07): `ProductImportRow`, a dedicated wire DTO — not `UpsertProductRequest` anymore.** Every bilingual column is nested as one VI/EN object at its own key (e.g. `name: {nameVI, nameEN}`, `seo: {titleVI, titleEN, descriptionVI, descriptionEN, canonicalUrl}`) instead of a Vietnamese top-level key plus a separate `translations.en.*` block. `ProductImportRowMapper.toUpsertRequest` converts every row to the exact `UpsertProductRequest` + `ProductTranslationRequest` shape the single-product admin form already uses — those two DTOs are unchanged and still deserialize/serialize the single-product API — so the rest of the pipeline (validation, category/brand resolution, create/update) is unaffected by the wire shape. As before, `categoryId`/`brandId` are interpreted as **slugs**, not literal database IDs (neither a shop owner nor an LLM can know real internal IDs). `relatedProductIds`/`accessoryProductIds` may appear in exported or hand-authored JSON, but bulk import is a Draft-editing workflow and ignores both fields instead of resolving/writing them. Related products and accessories are managed directly in Admin after import.
+**JSON row shape (V2026-07-22): `ProductImportRow`, a dedicated wire DTO — not `UpsertProductRequest` anymore.** Every bilingual column is nested as one VI/EN object at its own key (e.g. `name: {nameVI, nameEN}`, `seo: {titleVI, titleEN, descriptionVI, descriptionEN, canonicalUrl}`). The canonical category field is ordered `categorySlugs: string[]`; import also accepts `categoryIds: string[]` when `categorySlugs` is absent. Both are resolved in order, duplicate entries are collapsed to the first occurrence, and an invalid, hidden or trashed category is a row error. Legacy `categoryId` remains a one-slug alias during the transition only and cannot be combined with either array. `ProductImportRowMapper.toUpsertRequest` then supplies ordered internal `categoryIds` to the normal product upsert flow. `relatedProductIds`/`accessoryProductIds` may appear in exported or hand-authored JSON, but bulk import is a Draft-editing workflow and ignores both fields instead of resolving/writing them.
 
 **Upsert matching:** product-level `sku` first (fallback `slug`) — more than one product sharing the same `sku` is an ambiguous-row error rather than a guess, since `products.sku` has no DB uniqueness (`PRODUCT_RULE_SKU_001` only covers variant SKU). **Variants are matched by SKU** before the existing full-replace-by-id `applyVariants` logic runs — this preserves each variant's real database id (and therefore any dormant historical stock-movement links) across re-imports of an unchanged catalog. (A row can additionally supply a `variants[].id` hint, honored only after verifying it belongs to the target product; SKU is the primary match key.)
 
-**Validation note:** `validateImport` calls `CatalogRequestValidator.validateAndResolveCategory`/`validateAndResolveBrand`/`validateProductRequest` directly with `preview=false` — **not** `previewProduct` — because the preview/dry-run mode deliberately skips the English-name-required check and cross-product SKU/slug uniqueness (see "Product preview" above), which would under-report errors relative to what a real commit enforces.
+**Validation note:** `validateImport` resolves the ordered category list and brand, then calls `CatalogRequestValidator.validateProductRequest` with `preview=false` — **not** `previewProduct` — because the preview/dry-run mode deliberately skips the English-name-required check and cross-product SKU/slug uniqueness (see "Product preview" above), which would under-report errors relative to what a real commit enforces.
 
 **Publish status:** product import always saves rows as `DRAFT`, both for new products and updates to existing products, regardless of `publishStatus` in the file or the product's prior status. This keeps bulk import as a draft-editing workflow; publishing is a separate manual Admin action that runs the publish-readiness gate. Single-product JSON export includes `publishStatus` for completeness, but import ignores it.
 
@@ -756,9 +756,11 @@ Status: `CONFIRMED_FROM_CODE`
 
 Evidence: `AdminProductImportController.java` (`exportProduct`), `ProductImportRow.java` (bulk import/single-product export wire shape — nested VI/EN objects), `ProductImportRowMapper.java` (`toUpsertRequest`), `ProductImportService.java` (`parseJson`, `discardExportOnlyImportFields`, `preserveExistingMedia`, `exportProductAsTemplateJson`/`toExportRow`/`writeExportJson`), `ApiErrorDetail`/`ImportRowResult`/`ImportReportResponse`, `ProductJpaRepository.findAllBySkuIgnoreCase`/`findBySlug`/`findById`/`findByIdsWithVariants`, `ProductVariantJpaRepository.findBySkuIgnoreCase`/`findByIdsWithGallery`, `AdminCatalogMutationService.applyProductPatch` (image present-flag + gallery/videos null-is-untouched semantics), `V30__add_inventory_tracking.sql` (`stock_movements` cascade). See `BUSINESS_RULES.md` `PRODUCT_RULE_009`.
 
-### Product upsert — single category only
+### Product upsert — ordered categories
 
-A product belongs to exactly one category, written via `categoryId`. The legacy `product_category_map` M:N side table was dropped in migration `V110__drop_product_category_map.sql` (2026-05-14). The `categories[]` array in product responses now always contains exactly the primary category, preserved for API compatibility.
+`POST /api/v1/admin/products`, `PATCH /api/v1/admin/products/{id}` and preview accept ordered `categoryIds: string[]`. Create requires at least one id. On PATCH an omitted array preserves the relationship; an empty array, duplicate id, unknown id, hidden category or trashed category is rejected. The first id is the primary category.
+
+For this transition release, singular `categoryId` is a deprecated alias for one id. A request containing both `categoryId` and `categoryIds` is rejected. Responses retain singular `category` as the primary category and return every attachment in ordered `categories[]`; each summary exposes `visible` and `deleted` so clients can suppress inactive links safely.
 
 Status: `CONFIRMED_BACKEND_ENFORCED`
 
@@ -1069,7 +1071,7 @@ theo `lang`); `slugEn` là giá trị thô của cột `slug_en` (null nếu ch�
 sản phẩm (`CategorySummary`/`BrandSummary` — dùng cho breadcrumb PDP) trả thêm
 `slugEn: string | null` cạnh `slug`, lấy thô từ `slug_en` của danh mục/thương hiệu đó.
 Cho phép breadcrumb PDP điều hướng tới URL tiếng Anh khi khách đang ở chế độ EN (trống →
-lùi về `slug` vi). Embedded `categories[]` (danh mục phụ) giữ shape cũ, **chưa** mang `slugEn`.
+lùi về `slug` vi). Cả `category` và mọi phần tử embedded `categories[]` đều mang cùng shape `slugEn`, `visible`, `deleted`; `category` là phần tử đầu theo thứ tự gán.
 
 **Ghi — `POST/PATCH` admin categories/products/brands/articles:** `translations.en` nhận thêm
 khóa `slug` (optional): pattern `^[a-z0-9]+(?:-[a-z0-9]+)*$`, max 100. Bỏ trống/null →
@@ -1350,7 +1352,7 @@ Evidence: `AdminRedirectController.java`, `AdminRedirectService.java`, `Internal
 
 **Resource types written by backend:**
 - `ORDER` — order lifecycle events (`AdminOrderService`).
-- `PRODUCT` — create/update/publish/soft-delete/restore (AdminCatalogMutationService). Before/after snapshot (fixed 2026-07-04, was name/slug/status only) now includes sku, brandId, categoryId, shortDescription, description, imageUrl, retailPrice, salePrice, stockState, available (renamed from forceOutOfStock in V342) — captured **before** the patch is applied (previously several call sites passed `before = null` despite the entity already being loaded).
+- `PRODUCT` — create/update/publish/soft-delete/restore (AdminCatalogMutationService). Before/after snapshot includes sku, brandId, ordered `categoryIds` plus `primaryCategoryId`, shortDescription, description, imageUrl, retailPrice, salePrice, stockState, available (renamed from forceOutOfStock in V342) — captured **before** the patch is applied.
 - `CATEGORY` — create/update/soft-delete (AdminCatalogMutationService). Snapshot (fixed 2026-07-04) adds description, introContent, imageUrl, iconUrl, menuIconUrl, bannerUrl, parentId, sortOrder, showOnHomepage; before-snapshot bug fixed same as PRODUCT.
 - `BRAND` — create/update/soft-delete (AdminCatalogMutationService). Snapshot (fixed 2026-07-04) adds description, logoUrl, bannerUrl; before-snapshot bug fixed same as PRODUCT.
 - `INVENTORY` — manual availability changes (`AdminInventoryService`)

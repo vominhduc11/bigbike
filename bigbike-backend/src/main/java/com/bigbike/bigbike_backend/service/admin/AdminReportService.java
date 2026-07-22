@@ -300,7 +300,9 @@ public class AdminReportService {
                         CsvExportUtil.escape(nvl(p.getSku())),
                         CsvExportUtil.escape(p.getSlug()),
                         CsvExportUtil.escape(p.getName()),
-                        CsvExportUtil.escape(p.getCategory() != null ? p.getCategory().getName() : ""),
+                        CsvExportUtil.escape(p.getCategories() == null ? "" : p.getCategories().stream()
+                                .map(category -> category.getName() == null ? "" : category.getName())
+                                .collect(java.util.stream.Collectors.joining(" | "))),
                         CsvExportUtil.escape(p.getBrand() != null ? p.getBrand().getName() : ""),
                         formatDecimal(p.getRetailPrice()),
                         formatDecimal(p.getSalePrice()),

@@ -9,6 +9,7 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantOptionEntity;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -271,7 +272,7 @@ class AdminMutationValidatorsTest {
         AdminMutationValidators.validateProductFieldsRequired(entity, false, errors);
 
         assertThat(fields(errors)).containsExactlyInAnyOrder(
-                "name", "slug", "categoryId", "brandId", "gender", "sku", "retailPrice");
+                "name", "slug", "categoryIds", "brandId", "gender", "sku", "retailPrice");
     }
 
     @Test
@@ -282,7 +283,7 @@ class AdminMutationValidatorsTest {
         AdminMutationValidators.validateProductFieldsRequired(entity, true, errors);
 
         assertThat(fields(errors)).containsExactlyInAnyOrder(
-                "name", "slug", "categoryId", "brandId", "gender", "sku", "retailPrice", "imageUrl");
+                "name", "slug", "categoryIds", "brandId", "gender", "sku", "retailPrice", "imageUrl");
     }
 
     @Test
@@ -383,6 +384,10 @@ class AdminMutationValidatorsTest {
         entity.setRetailPrice(null);
         entity.setImageUrl("http://localhost:9000/bigbike-media/products/ls2-ff800/main.jpg");
         ProductVariantEntity variant = completeVariant();
+        ProductVariantOptionEntity color = new ProductVariantOptionEntity();
+        color.setOptionName("Màu sắc");
+        color.setOptionValue("Đỏ");
+        variant.setOptions(List.of(color));
         variant.setImageUrl(null);
         entity.setVariants(List.of(variant));
         List<ApiErrorDetail> errors = new ArrayList<>();
@@ -410,7 +415,7 @@ class AdminMutationValidatorsTest {
         ProductEntity entity = new ProductEntity();
         entity.setName("Mu bao hiem LS2 FF800");
         entity.setSlug("mu-bao-hiem-ls2-ff800");
-        entity.setCategory(new CategoryEntity());
+        entity.setCategories(List.of(new CategoryEntity()));
         entity.setBrand(new BrandEntity());
         entity.setGender("Unisex");
         entity.setSku("LS2-FF800");

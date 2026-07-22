@@ -38,7 +38,7 @@ The point-of-sale / walk-in ("bán tại quầy") workflow was removed entirely.
 
 | Step | Actor | Action | Status | Evidence |
 |---|---|---|---|---|
-| 1 | Admin / Editor (`products.update`) | Mở editor tạo/sửa sản phẩm và nhập nội dung (tên, ảnh, giá, mô tả, biến thể, SEO) | `CONFIRMED_FROM_CODE` | `ProductDetailScreen.jsx` |
+| 1 | Admin / Editor (`products.update`) | Mở editor tạo/sửa sản phẩm, chọn một hoặc nhiều danh mục theo thứ tự (mục đầu là danh mục chính), rồi nhập nội dung (tên, ảnh, giá, mô tả, biến thể, SEO) | `CONFIRMED_FROM_CODE` | `ProductDetailScreen.jsx`, `PRODUCT_RULE_010` |
 | 2 | System | Debounce form → `POST /api/v1/admin/products/preview` (dry-run, không lưu) → trả public `Product` | `CONFIRMED_FROM_CODE` | `AdminCatalogController.previewProduct`, `AdminCatalogMutationService.previewProduct` |
 | 3 | Admin | Xem preview "sống" trong khung nhúng — đúng template storefront, cập nhật theo từng thay đổi; chuyển vi/en và desktop/mobile | `CONFIRMED_FROM_CODE` | bigbike-web iframe `/preview/product`, `ProductView.tsx` |
 | 4 | Admin | Lưu khi ưng — editor **luôn lưu về Nháp** (sản phẩm mới/đang Nháp), hoặc lưu giữ nguyên nếu đang Đã xuất bản; không có nút đăng trực tiếp trong editor nữa (đổi 2026-07-19) | `CONFIRMED_FROM_CODE` | `ProductDetailScreen.jsx` (1 nút Lưu duy nhất), `BUSINESS_RULES.md` `PRODUCT_RULE_005` |

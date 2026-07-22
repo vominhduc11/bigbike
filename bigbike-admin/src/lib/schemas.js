@@ -69,11 +69,11 @@ function toInt(value) {
 export function createProductSchema(t, isCreate = false) {
   return z
     .object({
-      // PRODUCT_RULE_005 (2026-07-07) — name/slug/categoryId luôn bắt buộc (nháp lẫn xuất bản,
+      // PRODUCT_RULE_010 — name/slug/categoryIds luôn bắt buộc (nháp lẫn xuất bản,
       // tạo mới lẫn sửa) — không còn phân biệt theo isCreate.
       slug: slugField(t),
       name: z.string().min(1, t('products.detail.errNameRequired')),
-      categoryId: z.string().min(1, t('products.detail.errCategoryRequired')),
+      categoryIds: z.array(z.string().min(1)).min(1, t('products.detail.errCategoryRequired')),
       // Khai báo để superRefine nhìn thấy (z.object strip key lạ). Requiredness (chỉ khi
       // không có biến thể) nằm ở superRefine.
       sku: z.string().optional(),

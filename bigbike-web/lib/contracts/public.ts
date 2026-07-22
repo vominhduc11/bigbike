@@ -241,6 +241,9 @@ export type CategorySummary = {
   /** Optional English URL slug of the category (V213). Null/absent when unset — used for PDP breadcrumb. */
   slugEn?: string | null;
   name: string;
+  /** A retained historical product link may point to a hidden or soft-deleted category. */
+  visible?: boolean;
+  deleted?: boolean;
 };
 
 export type BrandSummary = {
@@ -261,7 +264,8 @@ export type Product = {
   shortDescription?: string;
   description?: string;
   brand?: BrandSummary;
-  category: CategorySummary;
+  /** First member of `categories`; retained for breadcrumb/SEO compatibility. */
+  category?: CategorySummary;
   categories?: CategorySummary[];
   image?: ImageAsset;
   gallery?: GalleryMedia[];
