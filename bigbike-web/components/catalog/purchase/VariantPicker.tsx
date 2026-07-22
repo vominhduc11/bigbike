@@ -44,7 +44,9 @@ export function VariantPicker({
             <p className="mb-3 font-cta text-a4-content font-semibold uppercase leading-none text-foreground">{attr}</p>
             <RadioGroup
               aria-label={attr}
-              className="flex flex-wrap gap-2.5"
+              // Luôn MỘT HÀNG, không xuống dòng: nhiều ô hơn bề ngang thì CUỘN NGANG
+              // (carousel) thay vì wrap — cùng convention với MobilePdpAnchorNav.
+              className="flex flex-nowrap gap-2.5 overflow-x-auto overscroll-x-contain pb-1 [scroll-snap-type:x_mandatory] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               value={selectedOptions[attr] ?? ""}
               // onValueChange chỉ bắn khi chọn option MỚI; bấm lại option đang chọn
               // không đổi value nên toggle-off xử lý ở onClick của từng item.
@@ -74,10 +76,10 @@ export function VariantPicker({
                       if (checked) onPick(attr, o.value);
                     }}
                     className={cn(
-                      "flex min-h-13 items-center justify-center px-5 font-body text-a4-content font-semibold uppercase text-foreground",
-                      // Ô chữ (Size…) giãn đều lấp hết bề ngang cột để khớp với
-                      // hàng nút mua bên dưới; ô màu là ẢNH vuông cố định — giữ nguyên.
-                      !color && "min-w-16 flex-1 basis-0",
+                      "flex shrink-0 items-center justify-center font-body text-a4-content font-semibold uppercase text-foreground [scroll-snap-align:start]",
+                      // Ô luôn VUÔNG (size-13) dù chữ hay ảnh — không còn giãn lấp hàng
+                      // để khớp chiều rộng đồng nhất trên hàng cuộn ngang.
+                      !color && "size-13 px-1",
                       color && "size-13 bg-cover bg-center p-0",
                       !optInStock && !checked && "opacity-45",
                     )}

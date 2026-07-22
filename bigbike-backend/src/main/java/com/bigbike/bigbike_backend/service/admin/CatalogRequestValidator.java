@@ -42,6 +42,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class CatalogRequestValidator {
 
+    // Mirrors ProductImportService.UNCATEGORIZED_CATEGORY_ID — the locked system category import
+    // falls back to for a new product that omits categorySlugs/categoryIds entirely (owner decision
+    // 2026-07-22, CATEGORY_RULE_005). ProductImportService resolves it first, but createProduct/
+    // updateProduct re-resolve every category id through this method, so the visible/deleted gate
+    // below must also let this one specific id through — otherwise the import-created row would fail
+    // here even though ProductImportService already approved it.
+    private static final String UNCATEGORIZED_CATEGORY_ID = "uncategorized";
+
     private final ProductJpaRepository productJpaRepository;
     private final ProductVariantJpaRepository productVariantJpaRepository;
     private final CategoryJpaRepository categoryJpaRepository;
@@ -569,7 +577,8 @@ public class CatalogRequestValidator {
             CategoryEntity category = categoryJpaRepository.findById(id).orElse(null);
             if (category == null) {
                 errors.add(new ApiErrorDetail("categoryIds", "NOT_FOUND", "Category does not exist."));
-            } else if (category.isDeleted() || !category.isVisible()) {
+            } else if (!UNCATEGORIZED_CATEGORY_ID.equals(category.getId())
+                    && (category.isDeleted() || !category.isVisible())) {
                 errors.add(new ApiErrorDetail("categoryIds", "INVALID_STATE",
                         "Only visible categories outside Trash may be assigned to a product."));
             } else {

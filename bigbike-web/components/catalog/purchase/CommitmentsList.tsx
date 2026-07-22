@@ -43,7 +43,7 @@ export function CommitmentsList({ commitments }: { commitments: ProductCommitmen
     <ul className="mt-4 divide-y divide-border border border-border">
       {commitments.map((c, i) =>
         c.title ? (
-          <li key={i} className="flex items-center gap-3.5 px-5 py-3.5">
+          <li key={i} className="flex items-center gap-3.5 px-5 py-3.5 max-md:gap-3 max-md:px-4 max-md:py-2.5">
             {(() => {
               const Icon = COMMITMENT_ICON_MAP[c.icon] ?? ShieldCheck;
               return <Icon className="size-6 shrink-0 text-brand" strokeWidth={1.75} aria-hidden="true" />;

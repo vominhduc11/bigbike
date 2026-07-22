@@ -99,6 +99,17 @@ INSERT INTO categories (id, slug, name, is_visible, show_on_homepage, sort_order
 SELECT 'cat_jacket', 'ao-giap-bao-ho', 'Ao giap bao ho', true, true, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM categories WHERE id = 'cat_jacket');
 
+-- Mirrors V292/V304 (real migrations don't run in tests — spring.flyway.enabled=false, schema
+-- comes from Hibernate ddl-auto=create-drop instead). id = slug on both, matching the real seed,
+-- since ProductImportService/CatalogRequestValidator look these literals up by id and by slug.
+INSERT INTO categories (id, slug, name, is_visible, show_on_homepage, sort_order, created_at, updated_at)
+SELECT 'uncategorized', 'uncategorized', 'Chua phan loai', false, false, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM categories WHERE id = 'uncategorized');
+
+INSERT INTO brands (id, slug, name, is_visible, created_at, updated_at)
+SELECT 'uncategorized-brand', 'uncategorized-brand', 'Chua phan loai', false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM brands WHERE id = 'uncategorized-brand');
+
 -- ── Products ──────────────────────────────────────────────────────────────────
 INSERT INTO products (id, slug, name, brand_id, retail_price, currency, stock_state, publish_status, homepage_block, rating, image_url, version, created_at, updated_at)
 SELECT 'prod_ls2_ff800', 'mu-bao-hiem-ls2-ff800', 'LS2 FF800 Storm', 'brand_ls2', 3290000, 'VND', 'IN_STOCK', 'PUBLISHED', 'FEATURED_GRID', 4.5, 'https://cdn.bigbike.local/products/ls2-ff800.jpg', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP

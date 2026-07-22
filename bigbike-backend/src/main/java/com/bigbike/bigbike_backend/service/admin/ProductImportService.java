@@ -92,6 +92,13 @@ public class ProductImportService {
     // field. No real content property name ends in "Present".
     private static final ObjectMapper EXPORT_MAPPER = buildExportMapper();
 
+    // Owner decision 2026-07-22: a NEW product created via import may omit category/brand entirely —
+    // it lands on the same locked system placeholders CategoryMutationService/BrandMutationService
+    // already reassign orphaned products to on hard-delete (CATEGORY_RULE_005/BRAND_RULE_004),
+    // instead of failing the row. See resolveCategoryAndBrand.
+    private static final String UNCATEGORIZED_CATEGORY_ID = "uncategorized";
+    private static final String UNCATEGORIZED_BRAND_ID = "uncategorized-brand";
+
     private static ObjectMapper buildExportMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
@@ -192,12 +199,12 @@ public class ProductImportService {
         checkRequiredSku(request, errors);
         checkImportDescriptionBlocks(request, errors);
         stripContentMedia(request);
-        resolveCategoryAndBrand(request, errors);
 
         ProductEntity existing = resolveExistingProduct(request, errors);
         boolean ambiguous = errors.stream().anyMatch(e -> "AMBIGUOUS".equals(e.code()));
         boolean isCreate = existing == null && !ambiguous;
 
+        resolveCategoryAndBrand(request, isCreate, errors);
         resolveSlug(request, isCreate, batchSlugsLower, errors);
         applyPublishStatusRule(request);
 
@@ -402,13 +409,27 @@ public class ProductImportService {
         return doc.body().html();
     }
 
-    private void resolveCategoryAndBrand(UpsertProductRequest request, List<ApiErrorDetail> errors) {
+    /**
+     * Owner decision 2026-07-22: a row that CREATES a new product may omit category/brand entirely —
+     * it defaults to the locked system placeholders ({@link #UNCATEGORIZED_CATEGORY_ID}/
+     * {@link #UNCATEGORIZED_BRAND_ID}) instead of failing, so admin can assign the real ones from the
+     * product detail screen before publishing (PRODUCT_RULE_005's publish gate is untouched — it still
+     * blocks going live without both). A row that UPDATES an existing product and omits these fields
+     * must NOT get this treatment — that means "don't touch categories/brand", handled by simply
+     * leaving {@code rawCategories}/{@code brandSlug} null so the resolve block below is skipped
+     * entirely and {@code request.categoryIds`/`brandId} stay unset, which
+     * {@code ProductMutationService#applyProductPatch} already treats as "leave existing value alone"
+     * on update. This is why {@code isCreate} must be resolved before this method runs (see the
+     * reordering in {@link #processRow}).
+     */
+    private void resolveCategoryAndBrand(UpsertProductRequest request, boolean isCreate, List<ApiErrorDetail> errors) {
         List<String> rawCategories = request.isCategoryIdsPresent()
                 ? request.getCategoryIds()
-                : (request.isCategoryIdPresent() ? java.util.Collections.singletonList(request.getCategoryId()) : List.of());
+                : (request.isCategoryIdPresent() ? java.util.Collections.singletonList(request.getCategoryId()) : null);
         if (rawCategories == null || rawCategories.isEmpty()) {
-            errors.add(new ApiErrorDetail("categorySlugs", "REQUIRED", "Thiếu danh mục."));
-        } else {
+            rawCategories = isCreate ? List.of(UNCATEGORIZED_CATEGORY_ID) : null;
+        }
+        if (rawCategories != null) {
             LinkedHashSet<String> resolvedIds = new LinkedHashSet<>();
             for (int index = 0; index < rawCategories.size(); index++) {
                 String raw = AdminMutationValidators.trimToNull(rawCategories.get(index));
@@ -422,7 +443,8 @@ public class ProductImportService {
                 if (category == null) {
                     errors.add(new ApiErrorDetail("categorySlugs[" + index + "]", "NOT_FOUND",
                             "Danh mục '" + raw + "' không tồn tại — kiểm tra lại slug hoặc id."));
-                } else if (category.isDeleted() || !category.isVisible()) {
+                } else if (!UNCATEGORIZED_CATEGORY_ID.equals(category.getId())
+                        && (category.isDeleted() || !category.isVisible())) {
                     errors.add(new ApiErrorDetail("categorySlugs[" + index + "]", "INVALID_STATE",
                             "Danh mục phải đang hiển thị và không nằm trong Thùng rác."));
                 } else {
@@ -434,6 +456,9 @@ public class ProductImportService {
             }
         }
         String brandSlug = AdminMutationValidators.trimToNull(request.getBrandId());
+        if (brandSlug == null && isCreate) {
+            brandSlug = UNCATEGORIZED_BRAND_ID;
+        }
         if (brandSlug != null) {
             BrandEntity brand = brandJpaRepository.findBySlug(brandSlug).orElse(null);
             if (brand == null) {
