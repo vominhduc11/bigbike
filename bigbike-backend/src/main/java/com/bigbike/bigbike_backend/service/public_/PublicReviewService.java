@@ -9,8 +9,11 @@ import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
+import com.bigbike.bigbike_backend.service.review.ReviewRatingLevels;
 import com.bigbike.bigbike_backend.service.ws.AdminReviewWsService;
 import com.bigbike.bigbike_backend.service.ws.ReviewWsEvent;
+import com.bigbike.bigbike_backend.api.error.ValidationException;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -53,14 +56,15 @@ public class PublicReviewService {
     }
 
     /**
-     * @param rating optional star filter (1..5); {@code null} returns every approved review.
+     * @param rating optional star filter, one of the 10 half-star levels 1..5 (REVIEW_RULE_008);
+     *               {@code null} returns every approved review.
      * @param sort   ordering key: {@code newest} (default), {@code highest}, {@code lowest}.
      *               The rating filter narrows only the list \u2014 avgRating, totalReviews and the
      *               ratingBreakdown histogram always reflect every approved review so the summary
      *               panel stays stable while the customer drills into one star bucket.
      */
     public PublicProductReviewsResponse getProductReviews(
-            String productId, int page, int size, Integer rating, String sort) {
+            String productId, int page, int size, BigDecimal rating, String sort) {
         if (!productRepo.existsById(productId)) {
             throw new NotFoundException("S\u1ea3n ph\u1ea9m kh\u00f4ng t\u1ed3n t\u1ea1i.");
         }
@@ -69,9 +73,8 @@ public class PublicReviewService {
         int normalizedSize = size <= 0 ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
 
         PageRequest pageRequest = PageRequest.of(normalizedPage - 1, normalizedSize, resolveSort(sort));
-        Page<ReviewEntity> approvedPage = (rating != null && rating >= 1 && rating <= 5)
-                ? reviewRepo.findByProductIdAndStatusAndRating(
-                        productId, APPROVED_STATUS, (short) rating.intValue(), pageRequest)
+        Page<ReviewEntity> approvedPage = ReviewRatingLevels.isValid(rating)
+                ? reviewRepo.findByProductIdAndStatusAndRating(productId, APPROVED_STATUS, rating, pageRequest)
                 : reviewRepo.findByProductIdAndStatus(productId, APPROVED_STATUS, pageRequest);
         ReviewJpaRepository.ReviewAggregate aggregate =
                 reviewRepo.findAggregateByProductIdAndStatus(productId, APPROVED_STATUS);
@@ -79,7 +82,7 @@ public class PublicReviewService {
         double avgRating = roundAverage(aggregate.getAvgRating());
         long totalReviews = aggregate.getTotalReviews() != null ? aggregate.getTotalReviews() : 0L;
 
-        Map<Integer, Long> ratingBreakdown = buildRatingBreakdown(productId);
+        Map<String, Long> ratingBreakdown = buildRatingBreakdown(productId);
 
         Map<UUID, String> avatarsByCustomerId = fetchAvatarsByCustomerId(approvedPage.getContent());
         List<PublicProductReviewsResponse.ReviewItem> reviews = approvedPage.getContent().stream()
@@ -110,10 +113,14 @@ public class PublicReviewService {
 
     @Transactional
     public void submitReview(
-            String productId, String authorName, String authorEmail, int rating, String comment,
+            String productId, String authorName, String authorEmail, BigDecimal rating, String comment,
             List<String> photos, UUID customerId) {
         productRepo.findById(productId)
                 .orElseThrow(() -> new NotFoundException("S\u1ea3n ph\u1ea9m kh\u00f4ng t\u1ed3n t\u1ea1i."));
+        if (!ReviewRatingLevels.isValid(rating)) {
+            throw ValidationException.fromField(
+                    "rating", "INVALID", "\u0110\u00e1nh gi\u00e1 ph\u1ea3i l\u00e0 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5 ho\u1eb7c 5 sao.");
+        }
 
         String normalizedName = authorName.trim();
         String normalizedEmail = (authorEmail != null && !authorEmail.isBlank())
@@ -144,7 +151,7 @@ public class PublicReviewService {
         entity.setProductId(productId);
         entity.setAuthorName(normalizedName);
         entity.setAuthorEmail(normalizedEmail);
-        entity.setRating((short) rating);
+        entity.setRating(rating);
         entity.setBody(normalizedComment);
         entity.setPhotos(normalizedPhotos.isEmpty() ? null : normalizedPhotos);
         entity.setStatus("PENDING");
@@ -199,22 +206,23 @@ public class PublicReviewService {
     }
 
     /**
-     * Approved-review counts keyed by star value 5→1. Every key is present
-     * (zero when no review at that level), so the storefront can render a
-     * complete histogram without filling gaps client-side.
+     * Approved-review counts keyed by star level 5→1, split into the 9 half-star
+     * buckets (REVIEW_RULE_008). Every key is present (zero when no review at that
+     * level), so the storefront can render a complete histogram without filling gaps
+     * client-side.
      */
-    private Map<Integer, Long> buildRatingBreakdown(String productId) {
-        Map<Integer, Long> breakdown = new LinkedHashMap<>();
-        for (int star = 5; star >= 1; star--) {
-            breakdown.put(star, 0L);
+    private Map<String, Long> buildRatingBreakdown(String productId) {
+        Map<String, Long> breakdown = new LinkedHashMap<>();
+        for (BigDecimal level : ReviewRatingLevels.DESCENDING) {
+            breakdown.put(ReviewRatingLevels.key(level), 0L);
         }
         for (Object[] row : reviewRepo.findRatingBreakdownByProductIdAndStatus(productId, APPROVED_STATUS)) {
             if (row.length < 2 || row[0] == null || row[1] == null) {
                 continue;
             }
-            int star = ((Number) row[0]).intValue();
-            if (star >= 1 && star <= 5) {
-                breakdown.put(star, ((Number) row[1]).longValue());
+            BigDecimal star = row[0] instanceof BigDecimal bd ? bd : BigDecimal.valueOf(((Number) row[0]).doubleValue());
+            if (ReviewRatingLevels.isValid(star)) {
+                breakdown.put(ReviewRatingLevels.key(star), ((Number) row[1]).longValue());
             }
         }
         return breakdown;

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { DetailSection } from '../components/DetailSection'
 import { MediaPreviewLightbox } from '../components/MediaPreviewLightbox'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
+import { ReviewStars } from '../components/ReviewStars'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { Screen, ScreenHeader, StickyActionBar } from '../components/layout'
@@ -20,15 +21,6 @@ import { toast } from '@/lib/toast'
 
 function readListQuery() {
   try { return sessionStorage.getItem('reviews:listQuery') || '' } catch { return '' }
-}
-
-function Stars({ rating }) {
-  const rounded = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)))
-  return (
-    <span className="inline-flex gap-px" role="img" aria-label={`${rounded}/5`}>
-      {Array.from({ length: 5 }, (_, index) => <span key={index} aria-hidden="true" className={index < rounded ? 'text-warning' : 'text-muted-foreground'}>★</span>)}
-    </span>
-  )
 }
 
 function DetailRow({ label, children }) {
@@ -188,7 +180,7 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
           <DetailSection title={t('reviews.detail.sectionReview')}>
             <dl className="m-0">
               <DetailRow label={t('reviews.colStatus')}><StatusBadge type="review" status={review.status} /></DetailRow>
-              <DetailRow label={t('reviews.colRating')}><span className="inline-flex items-center gap-2"><Stars rating={review.rating} /><span>{review.rating}/5</span></span></DetailRow>
+              <DetailRow label={t('reviews.colRating')}><span className="inline-flex items-center gap-2"><ReviewStars rating={review.rating} /><span>{review.rating}/5</span></span></DetailRow>
               <DetailRow label={t('reviews.colAuthor')}><span className="font-semibold">{authorName}</span></DetailRow>
               <DetailRow label={t('reviews.detail.authorEmail')}><span className="inline-flex flex-wrap items-center gap-2">{formatText(review.authorEmail, t('reviews.detail.emailMissing'))}{review.authorEmail ? <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={copyEmail}><Copy size={16} />{copyState === 'copied' ? t('reviews.detail.emailCopied') : t('reviews.detail.copyEmail')}</Button> : null}</span></DetailRow>
               <DetailRow label={t('reviews.colDate')}>{formatDateTime(review.createdAt)}</DetailRow>

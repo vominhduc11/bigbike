@@ -863,7 +863,7 @@ class Phase1NReviewsApiTest {
     void adminReviewSummary_countsApprovedAndPendingGlobally() throws Exception {
         long approvedBefore = reviewRepo.countByStatus("APPROVED");
         long pendingBefore = reviewRepo.countByStatus("PENDING");
-        long pendingOneStarBefore = reviewRepo.countByStatusAndRating("PENDING", (short) 1);
+        long pendingOneStarBefore = reviewRepo.countByStatusAndRating("PENDING", new BigDecimal("1.0"));
 
         insertReview(PRODUCT_ID, "Summary Approved", 1, "Public score", "APPROVED");
         insertReview(PRODUCT_ID, "Summary Approved 2", 5, "Public score", "APPROVED");
@@ -1077,7 +1077,7 @@ class Phase1NReviewsApiTest {
         ReviewEntity review = new ReviewEntity();
         review.setProductId(productId);
         review.setAuthorName(authorName);
-        review.setRating((short) rating);
+        review.setRating(BigDecimal.valueOf(rating));
         review.setBody(body);
         review.setStatus(status);
         review.setCreatedAt(createdAt);

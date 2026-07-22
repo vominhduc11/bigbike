@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
+
+const STAR_PATH = "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z";
 
 export function StarIcon({ filled, className }: { filled: boolean; className?: string }) {
   return (
@@ -14,43 +16,67 @@ export function StarIcon({ filled, className }: { filled: boolean; className?: s
       strokeWidth="1.8"
       className={cn("h-4 w-4", className)}
     >
-      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+      <path d={STAR_PATH} />
+    </svg>
+  );
+}
+
+// Sao tô một phần (0 < fill < 1, REVIEW_RULE_002 — không Math.round thành sao
+// đầy) dùng linearGradient tô màu NGAY TRONG path ngôi sao, không cắt hình chữ
+// nhật đè lên trên. Path 5 cánh có góc lõm nên clip theo width% từng làm vỡ nét/
+// méo hình ở cạnh cắt; gradient giữ nguyên toàn bộ hình sao, chỉ chuyển màu.
+export function PartialStarIcon({ fill, className, gradientId }: { fill: number; className?: string; gradientId: string }) {
+  const pct = Math.round(fill * 100);
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={cn("h-4 w-4 text-brand", className)}>
+      <defs>
+        <linearGradient id={gradientId}>
+          <stop offset={`${pct}%`} stopColor="currentColor" />
+          <stop offset={`${pct}%`} stopColor="currentColor" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={STAR_PATH} fill={`url(#${gradientId})`} stroke={`url(#${gradientId})`} strokeWidth="1.8" />
     </svg>
   );
 }
 
 export function StarRow({ rating, iconClassName }: { rating: number; iconClassName?: string }) {
   const t = useTranslations("Product.reviews");
+  const uid = useId();
   return (
     <span
       className="inline-flex items-center gap-0.5"
       aria-label={t("starsCount", { count: rating.toFixed(1) })}
     >
       {Array.from({ length: 5 }, (_, i) => {
-        // Tô theo tỷ lệ liên tục như RatingStars (REVIEW_RULE_002): 4.5 → nửa
-        // sao thứ 5, không Math.round thành 5 sao đầy. Sao lẻ = overlay sao đầy
-        // cắt theo % width trên nền sao rỗng.
         const fill = Math.max(0, Math.min(1, rating - i));
+        if (fill >= 1) {
+          return <StarIcon key={i} filled className={cn(iconClassName, "text-brand")} />;
+        }
+        if (fill <= 0) {
+          return (
+            <StarIcon key={i} filled={false} className={cn(iconClassName, "text-[var(--bb-text-secondary)]")} />
+          );
+        }
         return (
           <span key={i} className="relative inline-flex">
-            <StarIcon
-              filled={fill >= 1}
-              className={cn(iconClassName, fill >= 1 ? "text-brand" : "text-[var(--bb-text-secondary)]")}
-            />
-            {fill > 0 && fill < 1 && (
-              <span
-                aria-hidden="true"
-                className="absolute inset-0 overflow-hidden"
-                style={{ width: `${fill * 100}%` }}
-              >
-                <StarIcon filled className={cn(iconClassName, "text-brand")} />
-              </span>
-            )}
+            <StarIcon filled={false} className={cn(iconClassName, "text-[var(--bb-text-secondary)]")} />
+            <span className="absolute inset-0">
+              <PartialStarIcon fill={fill} className={iconClassName} gradientId={`${uid}-star-${i}`} />
+            </span>
           </span>
         );
       })}
     </span>
   );
+}
+
+// REVIEW_RULE_008: khách chọn được nửa sao — bấm/chạm nửa trái của sao thứ N
+// chọn (N - 0.5), nửa phải chọn N nguyên.
+function starValueFromPointer(e: { currentTarget: HTMLElement; clientX: number }, star: number): number {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const isLeftHalf = e.clientX - rect.left < rect.width / 2;
+  return isLeftHalf ? star - 0.5 : star;
 }
 
 export function StarRatingInput({
@@ -61,6 +87,7 @@ export function StarRatingInput({
   onChange: (next: number) => void;
 }) {
   const t = useTranslations("Product.reviews");
+  const uid = useId();
   const [hover, setHover] = useState(0);
   const display = hover || value;
 
@@ -73,7 +100,7 @@ export function StarRatingInput({
         onMouseLeave={() => setHover(0)}
       >
         {[1, 2, 3, 4, 5].map((star) => {
-          const active = display >= star;
+          const fill = Math.max(0, Math.min(1, display - (star - 1)));
           return (
             <button
               key={star}
@@ -81,14 +108,20 @@ export function StarRatingInput({
               role="radio"
               aria-checked={value === star}
               aria-label={t("starsCount", { count: star })}
-              onClick={() => onChange(star)}
-              onMouseEnter={() => setHover(star)}
-              className={cn(
-                "p-0.5 cursor-pointer transition-colors duration-[var(--bb-duration-fast)] outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2",
-                active ? "text-brand" : "text-[var(--bb-text-secondary)]",
-              )}
+              onClick={(e) => onChange(starValueFromPointer(e, star))}
+              onMouseMove={(e) => setHover(starValueFromPointer(e, star))}
+              className="relative cursor-pointer p-0.5 outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
             >
-              <StarIcon filled={active} className="h-8 w-8" />
+              <StarIcon filled={false} className="h-8 w-8 text-[var(--bb-text-secondary)]" />
+              {fill > 0 && (
+                <span className="pointer-events-none absolute inset-0.5">
+                  {fill >= 1 ? (
+                    <StarIcon filled className="h-8 w-8 text-brand" />
+                  ) : (
+                    <PartialStarIcon fill={fill} className="h-8 w-8" gradientId={`${uid}-input-star-${star}`} />
+                  )}
+                </span>
+              )}
             </button>
           );
         })}

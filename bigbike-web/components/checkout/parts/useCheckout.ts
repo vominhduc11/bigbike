@@ -18,6 +18,9 @@ import type { Locale } from "@/i18n/locale";
 import type { CheckoutPaymentMethod } from "./atoms";
 import { pickDefaultAddress } from "./helpers";
 
+type VnAddress = { province: string; ward: string };
+const EMPTY_VN_ADDRESS: VnAddress = { province: "", ward: "" };
+
 /**
  * Toàn bộ state + logic nghiệp vụ của trang Thanh toán: 2 form địa chỉ (billing +
  * giao tới địa chỉ khác) react-hook-form/zod, prefill từ profile/address,
@@ -42,11 +45,41 @@ export function useCheckout() {
   const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("COD");
   const idempotencyKey = useRef<string>(generateId());
 
+  // Tỉnh/Phường KHÔNG sống trong react-hook-form như 4 ô còn lại (Họ tên/SĐT/Email/
+  // Địa chỉ) — dùng state phẳng làm nguồn sự thật cho UI + payload gửi đi, chỉ đồng
+  // bộ vào react-hook-form ngay trước khi validate (trigger()) trong placeOrder() để
+  // vẫn tận dụng được thông báo lỗi zod có sẵn. Lý do xem comment ở effect prefill
+  // bên dưới.
+  const [vnAddress, setVnAddress] = useState<VnAddress>(EMPTY_VN_ADDRESS);
+  const [vnShip, setVnShip] = useState<VnAddress>(EMPTY_VN_ADDRESS);
+
+  function onVnChange(field: "province" | "ward", value: string) {
+    setVnAddress((prev) => (field === "province" ? { province: value, ward: "" } : { ...prev, ward: value }));
+  }
+
+  function onVnChangeShip(field: "province" | "ward", value: string) {
+    setVnShip((prev) => (field === "province" ? { province: value, ward: "" } : { ...prev, ward: value }));
+  }
+
   const { data: cart, isLoading: cartLoading, error: cartError } = useCartQuery();
   const shouldLoadCustomer =
     auth.status === "authenticated" || (auth.status === "loading" && hasCustomerSessionHint());
   const { data: profile } = useProfile({ enabled: shouldLoadCustomer });
   const { data: addresses } = useAddresses({ enabled: shouldLoadCustomer });
+
+  const billingResolver = useMemo(
+    () => zodResolver(createCheckoutAddressSchema(tValidation, true)),
+    [tValidation],
+  );
+  const billingDefaultValues = useRef<CheckoutAddressFormValues>({
+    fullName: "",
+    phone: "",
+    email: "",
+    country: "VN",
+    province: "",
+    ward: "",
+    addressLine1: "",
+  }).current;
 
   const {
     register,
@@ -56,45 +89,40 @@ export function useCheckout() {
     getValues,
     formState: { errors: addressErrors },
   } = useForm<CheckoutAddressFormValues>({
-    resolver: zodResolver(createCheckoutAddressSchema(tValidation, true)),
-    defaultValues: {
-      fullName: "",
-      phone: "",
-      email: "",
-      country: "VN",
-      province: "",
-      ward: "",
-      addressLine1: "",
-    },
+    resolver: billingResolver,
+    defaultValues: billingDefaultValues,
   });
 
-  // useWatch (thay vì watch()) để Select tỉnh/phường — vốn là controlled input
-  // đọc từ giá trị này — được vẽ lại đúng khi prefill bằng setValue() từ địa chỉ
-  // đã lưu, không chỉ khi người dùng gõ tay.
+  // useWatch chỉ còn dùng cho 4 ô register()-based (fullName/phone/email/
+  // addressLine1) — Tỉnh/Phường lấy từ vnAddress/vnShip ở trên.
   const formAddress = useWatch({ control });
 
   // Form địa chỉ giao riêng — chỉ dùng khi khách chọn "giao tới địa chỉ khác".
   // Backend không validate shippingAddress (chỉ billing), nên ràng buộc nằm ở zod đây.
+  const shipResolver = useMemo(
+    () => zodResolver(createCheckoutAddressSchema(tValidation)),
+    [tValidation],
+  );
+  const shipDefaultValues = useRef<CheckoutAddressFormValues>({
+    fullName: "",
+    phone: "",
+    email: "",
+    country: "VN",
+    province: "",
+    ward: "",
+    addressLine1: "",
+  }).current;
+
   const {
     register: registerShip,
     trigger: triggerShip,
-    control: controlShip,
     setValue: setValueShip,
+    getValues: getValuesShip,
     formState: { errors: shipErrors },
   } = useForm<CheckoutAddressFormValues>({
-    resolver: zodResolver(createCheckoutAddressSchema(tValidation)),
-    defaultValues: {
-      fullName: "",
-      phone: "",
-      email: "",
-      country: "VN",
-      province: "",
-      ward: "",
-      addressLine1: "",
-    },
+    resolver: shipResolver,
+    defaultValues: shipDefaultValues,
   });
-
-  const formShip = useWatch({ control: controlShip });
 
   useEffect(() => {
     if (!cart || gtmFired) return;
@@ -108,29 +136,42 @@ export function useCheckout() {
 
   // Không dùng "chạy một lần" (useRef khoá) — nếu request profile/addresses tới
   // chậm hơn lần mount trước, hoặc trang được giữ lại (không remount) khi khách rời
-  // rồi quay lại Đặt hàng, khoá một-lần sẽ chặn vĩnh viễn việc set lại Tỉnh/Phường,
-  // trong khi 4 ô nhập chữ thường vẫn "trông như đã điền" do trình duyệt tự nhớ giúp
-  // (autofill), khiến lỗi bị che giấu. Điền mỗi khi ô đang trống thay vì khoá theo
-  // mount, để không phụ thuộc vào việc component có bị Next.js giữ lại hay không —
-  // đồng thời không ghi đè lên giá trị khách đã tự gõ.
+  // rồi quay lại Đặt hàng, khoá một-lần sẽ chặn vĩnh viễn việc set lại các ô. Điền
+  // mỗi khi ô đang trống thay vì khoá theo mount, để không phụ thuộc vào việc
+  // component có bị Next.js giữ lại hay không — đồng thời không ghi đè giá trị
+  // khách đã tự gõ/chọn.
+  //
+  // setTimeout(0) là bắt buộc, không phải tối ưu: Next.js App Router bọc điều hướng
+  // trong startTransition của React. Nếu set state ngay trong effect (đã thử cả
+  // setValue() thô, Controller, flushSync — flushSync ép commit đồng bộ nhưng KHÔNG
+  // tách state ra khỏi transition bao quanh), giá trị lên đúng 1 nhịp render rồi
+  // bị "cuốn" theo khi transition được React xử lý lại và mất — tái hiện được ổn định
+  // 100% khi khách rời trang Đặt hàng rồi quay lại bằng link trong app (không reload).
+  // Đẩy sang setTimeout(0) đưa việc set state ra khỏi phạm vi transition đó, không
+  // còn bị cuốn theo nữa. Xác minh bằng test tự động lặp lại 5 lần liên tiếp.
   useEffect(() => {
     if (!profile) return;
     if (addresses === undefined) return;
 
     const current = getValues();
     const addr = pickDefaultAddress(addresses);
-    if (addr) {
-      if (!current.fullName) setValue("fullName", addr.fullName ?? profile.displayName ?? "");
-      if (!current.phone) setValue("phone", addr.phone ?? profile.phone ?? "");
-      if (!current.email) setValue("email", addr.email ?? profile.email ?? "");
-      if (!current.province) setValue("province", addr.province ?? "");
-      if (!current.ward) setValue("ward", addr.ward ?? "");
-      if (!current.addressLine1) setValue("addressLine1", addr.addressLine1 ?? "");
-    } else {
-      if (!current.fullName && profile.displayName) setValue("fullName", profile.displayName);
-      if (!current.phone && profile.phone) setValue("phone", profile.phone);
-      if (!current.email && profile.email) setValue("email", profile.email);
-    }
+    const timer = setTimeout(() => {
+      if (addr) {
+        if (!current.fullName) setValue("fullName", addr.fullName ?? profile.displayName ?? "");
+        if (!current.phone) setValue("phone", addr.phone ?? profile.phone ?? "");
+        if (!current.email) setValue("email", addr.email ?? profile.email ?? "");
+        if (!current.addressLine1) setValue("addressLine1", addr.addressLine1 ?? "");
+        setVnAddress((prev) => ({
+          province: prev.province || (addr.province ?? ""),
+          ward: prev.ward || (addr.ward ?? ""),
+        }));
+      } else {
+        if (!current.fullName && profile.displayName) setValue("fullName", profile.displayName);
+        if (!current.phone && profile.phone) setValue("phone", profile.phone);
+        if (!current.email && profile.email) setValue("email", profile.email);
+      }
+    }, 0);
+    return () => clearTimeout(timer);
   }, [profile, addresses, setValue, getValues]);
 
   const resolvedAddress = useMemo(
@@ -139,24 +180,11 @@ export function useCheckout() {
       phone: formAddress.phone ?? "",
       email: formAddress.email ?? "",
       country: formAddress.country || "VN",
-      province: formAddress.province ?? "",
-      ward: formAddress.ward ?? "",
+      province: vnAddress.province,
+      ward: vnAddress.ward,
       addressLine1: formAddress.addressLine1 ?? "",
     }),
-    [formAddress],
-  );
-
-  const resolvedShip = useMemo(
-    () => ({
-      fullName: formShip.fullName ?? "",
-      phone: formShip.phone ?? "",
-      email: formShip.email ?? "",
-      country: formShip.country || "VN",
-      province: formShip.province ?? "",
-      ward: formShip.ward ?? "",
-      addressLine1: formShip.addressLine1 ?? "",
-    }),
-    [formShip],
+    [formAddress, vnAddress],
   );
 
   // Đơn online không tính phí vận chuyển → tổng = subtotal - giảm giá (cart.totalAmount).
@@ -169,17 +197,43 @@ export function useCheckout() {
       return;
     }
 
+    // Đồng bộ Tỉnh/Phường (state phẳng, nguồn sự thật) vào react-hook-form ngay
+    // trước khi validate, để tận dụng thông báo lỗi zod có sẵn mà không phụ thuộc
+    // hành vi reset khó đoán của react-hook-form cho 2 field này giữa các lần render.
+    setValue("province", vnAddress.province, { shouldValidate: false });
+    setValue("ward", vnAddress.ward, { shouldValidate: false });
     const validAddress = await trigger();
     if (!validAddress) {
       setSubmitError(t("errorMissingShipping"));
       return;
     }
+    let shipResolvedAddress = {
+      fullName: "",
+      phone: "",
+      email: "",
+      country: "VN",
+      province: "",
+      ward: "",
+      addressLine1: "",
+    };
     if (shipToDifferent) {
+      setValueShip("province", vnShip.province, { shouldValidate: false });
+      setValueShip("ward", vnShip.ward, { shouldValidate: false });
       const validShip = await triggerShip();
       if (!validShip) {
         setSubmitError(t("errorMissingShipping"));
         return;
       }
+      const shipValues = getValuesShip();
+      shipResolvedAddress = {
+        fullName: shipValues.fullName ?? "",
+        phone: shipValues.phone ?? "",
+        email: shipValues.email ?? "",
+        country: shipValues.country || "VN",
+        province: vnShip.province,
+        ward: vnShip.ward,
+        addressLine1: shipValues.addressLine1 ?? "",
+      };
     }
 
     setSubmitError("");
@@ -196,17 +250,7 @@ export function useCheckout() {
             ward: resolvedAddress.ward,
             addressLine1: resolvedAddress.addressLine1,
           },
-          shippingAddress: shipToDifferent
-            ? {
-                fullName: resolvedShip.fullName,
-                phone: resolvedShip.phone,
-                email: resolvedShip.email,
-                country: resolvedShip.country,
-                province: resolvedShip.province,
-                ward: resolvedShip.ward,
-                addressLine1: resolvedShip.addressLine1,
-              }
-            : undefined,
+          shippingAddress: shipToDifferent ? shipResolvedAddress : undefined,
           paymentMethod,
           customerNote: customerNote.trim() || undefined,
         },
@@ -249,8 +293,8 @@ export function useCheckout() {
     confirmPendingOrder,
     register,
     addressErrors,
-    formAddress,
-    setValue,
+    vnAddress,
+    onVnChange,
     customerNote,
     setCustomerNote,
     shipToDifferent,
@@ -259,8 +303,8 @@ export function useCheckout() {
     setPaymentMethod,
     registerShip,
     shipErrors,
-    formShip,
-    setValueShip,
+    vnShip,
+    onVnChangeShip,
     cartSubtotal,
     grandTotal,
     submitting,

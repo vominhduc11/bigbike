@@ -25,7 +25,7 @@ const RAIL = {
   blog:
     "mx-auto w-full max-w-none px-[var(--bb-mobile-page-x)] " +
     "md:px-[15px] md:max-w-300 " +
-    "min-[1536px]:max-w-340 min-[1920px]:max-w-400 min-[2560px]:max-w-560",
+    "2xl:max-w-340 3xl:max-w-400 4xl:max-w-560",
 } as const;
 
 type ContainerProps = ComponentPropsWithoutRef<"div"> & {

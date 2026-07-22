@@ -14,6 +14,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepo
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.email.EmailDispatchService;
+import com.bigbike.bigbike_backend.service.review.ReviewRatingLevels;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -81,14 +82,14 @@ public class AdminReviewService {
     // — never hide untranslated records). Reviews are single-language user content, so
     // there is no server-side language filtering; the `lang` request param is accepted
     // for API compatibility but does not change the result set.
-    public PageResult<Map<String, Object>> listReviews(int page, int size, String q, String status, Integer rating, String lang) {
+    public PageResult<Map<String, Object>> listReviews(int page, int size, String q, String status, BigDecimal rating, String lang) {
         int normalizedPage = Math.max(1, page);
         int normalizedSize = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
 
         // Empty string (not null) keeps repository filter logic predictable for blank status values.
         String statusFilter = (status != null && !status.isBlank()) ? status.toUpperCase(Locale.ROOT) : "";
         String qFilter = (q != null && !q.isBlank()) ? q : "";
-        int ratingFilter = rating == null ? 0 : rating;
+        BigDecimal ratingFilter = ReviewRatingLevels.isValid(rating) ? rating : BigDecimal.ZERO;
 
         PageRequest pageRequest = PageRequest.of(
                 normalizedPage - 1,
@@ -118,13 +119,17 @@ public class AdminReviewService {
                 : BigDecimal.valueOf(approved.getAvgRating()).setScale(1, RoundingMode.HALF_UP);
 
         Map<String, Long> breakdown = new LinkedHashMap<>();
-        Map<Short, Long> grouped = reviewRepo.findGlobalRatingBreakdownByStatus(APPROVED_STATUS).stream()
+        Map<BigDecimal, Long> grouped = reviewRepo.findGlobalRatingBreakdownByStatus(APPROVED_STATUS).stream()
                 .collect(Collectors.toMap(
-                        row -> ((Number) row[0]).shortValue(),
+                        row -> row[0] instanceof BigDecimal bd ? bd : BigDecimal.valueOf(((Number) row[0]).doubleValue()),
                         row -> ((Number) row[1]).longValue()
                 ));
-        for (short star = 1; star <= 5; star++) {
-            breakdown.put(String.valueOf(star), grouped.getOrDefault(star, 0L));
+        for (BigDecimal level : ReviewRatingLevels.DESCENDING) {
+            long count = grouped.entrySet().stream()
+                    .filter(e -> e.getKey().compareTo(level) == 0)
+                    .mapToLong(Map.Entry::getValue)
+                    .sum();
+            breakdown.put(ReviewRatingLevels.key(level), count);
         }
 
         return new AdminReviewSummaryResponse(
@@ -135,7 +140,7 @@ public class AdminReviewService {
                 ),
                 new AdminReviewSummaryResponse.PendingSummary(
                         reviewRepo.countByStatus("PENDING"),
-                        reviewRepo.countByStatusAndRating("PENDING", (short) 1)
+                        reviewRepo.countByStatusAndRating("PENDING", new BigDecimal("1.0"))
                 )
         );
     }

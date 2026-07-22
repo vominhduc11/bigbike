@@ -9,11 +9,14 @@ import com.bigbike.bigbike_backend.service.admin.AdminReviewService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +49,7 @@ public class AdminReviewController extends AdminControllerSupport {
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) @Min(1) @Max(5) Integer rating,
+            @RequestParam(required = false) @DecimalMin("1.0") @DecimalMax("5.0") BigDecimal rating,
             @RequestParam(defaultValue = "vi") String lang,
             HttpServletRequest request
     ) {

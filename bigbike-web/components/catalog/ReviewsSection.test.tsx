@@ -143,6 +143,15 @@ describe("ReviewsSection", () => {
     return container.querySelector('span[aria-label="starsCount"]');
   }
 
+  /**
+   * Số điểm trung bình lớn (VD "3.5") — query theo class riêng thay vì
+   * screen.findByText, vì từ REVIEW_RULE_008 bảng phân bố có 9 dòng nửa sao
+   * (5, 4.5, 4, 3.5...) nên "3.5"/"4.5" có thể trùng chữ với nhãn dòng breakdown.
+   */
+  function avgScoreText(container: HTMLElement) {
+    return container.querySelector(".text-a1-title")?.textContent ?? null;
+  }
+
   it("0 review (totalReviews = 0) → ẨN hoàn toàn block summary sao", async () => {
     stubReviewsResponse({ avgRating: 0, totalReviews: 0 });
     const { container } = renderReviewsSection();
@@ -178,11 +187,13 @@ describe("ReviewsSection", () => {
     });
     const { container } = renderReviewsSection();
 
-    expect(await screen.findByText("3.5")).toBeInTheDocument();
+    await waitFor(() => expect(avgScoreText(container)).toBe("3.5"));
     const starRow = summaryStarRow(container);
     expect(starRow).not.toBeNull();
     const overlay = starRow!.querySelector<HTMLElement>("span.absolute");
     expect(overlay).not.toBeNull();
-    expect(overlay!.style.width).toBe("50%");
+    // Tô một phần dùng linearGradient (không cắt hình chữ nhật) — stop đầu ở đúng 50%.
+    const stop = overlay!.querySelector("stop");
+    expect(stop?.getAttribute("offset")).toBe("50%");
   });
 });

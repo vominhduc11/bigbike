@@ -69,7 +69,7 @@ public class ReviewImporter implements DomainImporter {
                 entity.setProductId(productId);
                 entity.setAuthorName(mr.authorName());
                 entity.setAuthorEmail(mr.authorEmail());
-                entity.setRating(mr.rating());
+                entity.setRating(BigDecimal.valueOf(mr.rating()));
                 entity.setBody(mr.body());
                 entity.setStatus(mr.status());
                 entity.setUpdatedAt(Instant.now());

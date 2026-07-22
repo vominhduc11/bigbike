@@ -164,22 +164,22 @@ Lists **APPROVED** reviews only (PENDING/SPAM/TRASH are never exposed). Response
 Query params (all optional):
 - `page` — 1-based page, `@Min(1)`, default `1`.
 - `size` — page size, `@Min(1) @Max(50)`, default `10`.
-- `rating` — star filter `@Min(1) @Max(5)`. When present, **only the `reviews` list is narrowed to that star**; `avgRating`, `totalReviews` and `ratingBreakdown` stay global (computed over all approved reviews) so the summary panel is stable while the customer drills into one bucket.
+- `rating` — star filter, accepts the 10 half-star levels `1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5` (`REVIEW_RULE_008`, changed 2026-07-22 from integer-only `@Min(1)@Max(5)`). When present, **only the `reviews` list is narrowed to that exact star level**; `avgRating`, `totalReviews` and `ratingBreakdown` stay global (computed over all approved reviews) so the summary panel is stable while the customer drills into one bucket.
 - `sort` — ordering of the list: `newest` (default — `createdAt` desc), `highest` (`rating` desc, then `createdAt` desc), `lowest` (`rating` asc, then `createdAt` desc). Unknown values fall back to `newest`.
 
 Response `data` shape:
 - `avgRating` (number, 1-decimal, **HALF_UP** — `PublicReviewService.roundAverage`), `totalReviews` (long) — **always global**, never affected by `rating`. Khi 0 review approved: `avgRating = 0.0` (không phải null) và `totalReviews = 0` — FE gate hiển thị sao bắt buộc bằng `totalReviews ≥ 1`, không bằng `avgRating > 0` (xem `BUSINESS_RULES.md` `REVIEW_RULE_003`).
-- `ratingBreakdown` — `{ "5": n, "4": n, "3": n, "2": n, "1": n }`, every key present, global counts.
-- `reviews` — `[{ id, authorName, rating, comment, photos, createdAt, authorAvatarUrl }]`, filtered + sorted per params. `photos` is an array of MinIO media URLs (`/media/reviews/...`, possibly empty) — customer-uploaded photos for that review, surfacing only for `APPROVED` reviews (moderated together with the review). `authorAvatarUrl` (string, nullable, added 2026-07-21) — the linked customer's **current** avatar URL when the review was submitted while logged in (`reviews.customer_id` non-null); resolved **live** at read time (not a snapshot frozen at submission — if the customer later changes/removes their avatar, already-published reviews reflect the new state on next read), batch-fetched for all distinct `customer_id`s on the page in one query (no N+1). `null` for guest-submitted reviews or when the linked customer currently has no avatar — client renders the initials fallback in both cases identically.
+- `ratingBreakdown` — **9 keys** (changed 2026-07-22, `REVIEW_RULE_008`): `{ "5": n, "4.5": n, "4": n, "3.5": n, "3": n, "2.5": n, "2": n, "1.5": n, "1": n }`, every key present (no trailing `.0` — whole levels are `"5"` not `"5.0"`), global counts. Each review's `rating` contributes to exactly one of these 9 buckets (no rounding/merging into an adjacent whole-star bucket).
+- `reviews` — `[{ id, authorName, rating, comment, photos, createdAt, authorAvatarUrl }]`, filtered + sorted per params. `rating` is now a decimal (one of the 10 half-star levels above), not always a whole integer. `photos` is an array of MinIO media URLs (`/media/reviews/...`, possibly empty) — customer-uploaded photos for that review, surfacing only for `APPROVED` reviews (moderated together with the review). `authorAvatarUrl` (string, nullable, added 2026-07-21) — the linked customer's **current** avatar URL when the review was submitted while logged in (`reviews.customer_id` non-null); resolved **live** at read time (not a snapshot frozen at submission — if the customer later changes/removes their avatar, already-published reviews reflect the new state on next read), batch-fetched for all distinct `customer_id`s on the page in one query (no N+1). `null` for guest-submitted reviews or when the linked customer currently has no avatar — client renders the initials fallback in both cases identically.
 - `pagination` — `{ page, pageSize, totalItems, totalPages, hasNext, hasPrevious }`. `totalItems`/`totalPages`/`hasNext` follow the **filtered** list (so "load more" pages correctly within one star bucket); when `rating` is absent these equal the global approved count.
 
-Out-of-range `page`/`size`/`rating` → `400 VALIDATION_ERROR`. Unknown `productId` → `404`.
+Out-of-range `page`/`size`/`rating` (not one of the 10 half-star levels) → `400 VALIDATION_ERROR`. Unknown `productId` → `404`.
 
 ### `POST /api/v1/products/{productId}/reviews`
 
 Submits a review (`status = PENDING`, awaits admin moderation). Honeypot `website` field → accept-and-drop silently. Duplicate guard: same `productId` + normalized author + normalized body within 24h → `409`. See `SubmitReviewRequest`.
 
-Body fields: `authorName` (required, ≤80), `rating` (required, 1..5), `comment` (optional, ≤1000), `website` (honeypot), plus `photos` (optional, `string[]`, ≤10). Each `photos[]` entry **must** be an internal MinIO media URL (`/media/...`) — external/hotlink URLs are rejected `400 VALIDATION_ERROR` (`photos/INVALID`); more than 10 entries → `photos/TOO_MANY`. Reuses `SafeMediaAssetUrlPolicy.validateImageUrlOrThrow`.
+Body fields: `authorName` (required, ≤80), `rating` (required, **decimal, one of `1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5`** — half-star step, `REVIEW_RULE_008`, changed 2026-07-22 from integer-only `1..5`), `comment` (optional, ≤1000), `website` (honeypot), plus `photos` (optional, `string[]`, ≤10). Any value outside the 10 half-star levels (e.g. `4.2`) → `400 VALIDATION_ERROR`. Each `photos[]` entry **must** be an internal MinIO media URL (`/media/...`) — external/hotlink URLs are rejected `400 VALIDATION_ERROR` (`photos/INVALID`); more than 10 entries → `photos/TOO_MANY`. Reuses `SafeMediaAssetUrlPolicy.validateImageUrlOrThrow`.
 
 **Customer linking (2026-07-21, owner decision):** this endpoint stays `permitAll()` (guest submission fully supported, unchanged), but when the request carries a valid `bb_session` cookie, `CustomerSessionFilter` (which runs globally except `/api/v1/admin/**`/`/api/v1/auth/**`) has already populated the `SecurityContext` with a `CustomerPrincipal` by the time this handler runs. The controller reads it optionally (non-throwing) and, when present, the review's `customer_id` is set server-side to that customer — **never client-supplied**. This is what makes `authorAvatarUrl` (below) resolvable for reviews submitted while logged in. `bigbike-web`'s same-origin proxy route (`app/api/products/[id]/reviews/route.ts`) forwards only the `bb_session` cookie value to the upstream call for this reason.
 
@@ -1416,7 +1416,7 @@ Admin review endpoints require an Admin JWT and the permission shown below. Evid
 
 | Method | Path | Permission | Purpose |
 |---|---|---|---|
-| `GET` | `/api/v1/admin/reviews` | `reviews.read` | Paginated review list. Optional `page`, `size`, `q`, `status`, `rating` (1–5), and `lang`. `pagination.totalItems` is the count after all supplied filters. |
+| `GET` | `/api/v1/admin/reviews` | `reviews.read` | Paginated review list. Optional `page`, `size`, `q`, `status`, `rating` (one of the 10 half-star levels `1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5` — `REVIEW_RULE_008`, changed 2026-07-22 from integer-only 1–5), and `lang`. `pagination.totalItems` is the count after all supplied filters. |
 | `GET` | `/api/v1/admin/reviews/{id}` | `reviews.read` | Review detail, including product metadata and review photos. |
 | `GET` | `/api/v1/admin/reviews/summary` | `reviews.read` | Whole-system moderation summary, independent of list filters and page. |
 | `PATCH` | `/api/v1/admin/reviews/{id}/status` | `reviews.write` | Apply one of the statuses currently accepted by the backend. This contract does not add or redefine lifecycle transitions. |
@@ -1431,7 +1431,7 @@ Admin review endpoints require an Admin JWT and the permission shown below. Evid
   "approved": {
     "averageRating": 4.2,
     "totalReviews": 120,
-    "ratingBreakdown": { "1": 2, "2": 5, "3": 13, "4": 40, "5": 60 }
+    "ratingBreakdown": { "1": 2, "1.5": 0, "2": 5, "2.5": 1, "3": 13, "3.5": 4, "4": 40, "4.5": 6, "5": 60 }
   },
   "pending": { "totalReviews": 8, "oneStarReviews": 2 }
 }
@@ -1439,7 +1439,8 @@ Admin review endpoints require an Admin JWT and the permission shown below. Evid
 
 `approved` includes only `APPROVED` reviews and follows `REVIEW_RULE_001`; the average is rounded
 to one decimal using `HALF_UP` and is `0.0` when there are no public reviews. `ratingBreakdown`
-contains all five keys. `pending` is counted across the whole system and is not affected by list
+contains all **nine** keys (half-star levels, `REVIEW_RULE_008`, changed 2026-07-22 from five whole-star
+keys — no trailing `.0` on whole levels). `pending` is counted across the whole system and is not affected by list
 filters. Review photos remain limited to the existing `REVIEW_RULE_005` constraints.
 
 The list `rating` filter affects only the returned rows and `pagination.totalItems`; it never changes

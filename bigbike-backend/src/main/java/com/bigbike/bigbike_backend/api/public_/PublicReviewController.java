@@ -10,9 +10,12 @@ import com.bigbike.bigbike_backend.service.public_.PublicReviewService;
 import com.bigbike.bigbike_backend.service.security.SafeMediaAssetUrlPolicy;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -48,7 +51,7 @@ public class PublicReviewController {
             @PathVariable @Size(max = 64) String productId,
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "10") @Min(1) @Max(50) int size,
-            @RequestParam(required = false) @Min(1) @Max(5) Integer rating,
+            @RequestParam(required = false) @DecimalMin("1.0") @DecimalMax("5.0") BigDecimal rating,
             @RequestParam(defaultValue = "newest") @Size(max = 16) String sort,
             HttpServletRequest request
     ) {

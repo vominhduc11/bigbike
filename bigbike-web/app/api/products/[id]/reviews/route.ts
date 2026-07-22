@@ -12,7 +12,18 @@ type Pagination = {
   hasPrevious: boolean;
 };
 
-const EMPTY_BREAKDOWN: Record<string, number> = { "5": 0, "4": 0, "3": 0, "2": 0, "1": 0 };
+// REVIEW_RULE_008: 9 mức nửa sao (5 → 1, bước 0,5).
+const EMPTY_BREAKDOWN: Record<string, number> = {
+  "5": 0,
+  "4.5": 0,
+  "4": 0,
+  "3.5": 0,
+  "3": 0,
+  "2.5": 0,
+  "2": 0,
+  "1.5": 0,
+  "1": 0,
+};
 
 const EMPTY = {
   avgRating: 0,
@@ -128,7 +139,8 @@ export async function POST(req: Request, { params }: ProductRouteParams) {
   if (!authorName?.trim()) {
     return NextResponse.json({ error: "Vui lòng nhập tên." }, { status: 400 });
   }
-  if (typeof rating !== "number" || rating < 1 || rating > 5) {
+  // REVIEW_RULE_008: bước 0,5 sao — nhân đôi phải ra số nguyên (1.0..5.0 → 2..10).
+  if (typeof rating !== "number" || rating < 1 || rating > 5 || !Number.isInteger(rating * 2)) {
     return NextResponse.json({ error: "Đánh giá phải từ 1 đến 5 sao." }, { status: 400 });
   }
   // Keep only string photo URLs, cap at 10 — backend re-validates they are MinIO URLs.

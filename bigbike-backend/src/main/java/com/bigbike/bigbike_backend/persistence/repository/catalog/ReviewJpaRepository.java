@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.repository.catalog;
 
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ReviewEntity;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -17,7 +18,7 @@ public interface ReviewJpaRepository extends JpaRepository<ReviewEntity, Long> {
     Page<ReviewEntity> findByProductIdAndStatus(String productId, String status, Pageable pageable);
 
     Page<ReviewEntity> findByProductIdAndStatusAndRating(
-            String productId, String status, short rating, Pageable pageable);
+            String productId, String status, BigDecimal rating, Pageable pageable);
 
     @Query("""
             SELECT AVG(r.rating) AS avgRating, COUNT(r) AS totalReviews
@@ -50,7 +51,7 @@ public interface ReviewJpaRepository extends JpaRepository<ReviewEntity, Long> {
     Page<ReviewEntity> findByFilters(
             @Param("status") String status,
             @Param("q") String q,
-            @Param("rating") int rating,
+            @Param("rating") BigDecimal rating,
             @Param("strictEnglish") boolean strictEnglish,
             Pageable pageable);
 
@@ -71,7 +72,7 @@ public interface ReviewJpaRepository extends JpaRepository<ReviewEntity, Long> {
 
     long countByStatus(String status);
 
-    long countByStatusAndRating(String status, short rating);
+    long countByStatusAndRating(String status, BigDecimal rating);
 
     @Query("""
             SELECT r FROM ReviewEntity r

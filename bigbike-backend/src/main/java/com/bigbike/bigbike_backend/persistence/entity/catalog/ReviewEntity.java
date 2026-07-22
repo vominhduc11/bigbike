@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -36,8 +37,9 @@ public class ReviewEntity {
     @Column(name = "author_email")
     private String authorEmail;
 
-    @Column(nullable = false)
-    private short rating;
+    // REVIEW_RULE_008: bước 0,5 (1.0..5.0), enforce ở request validation + DB check constraint (V347).
+    @Column(nullable = false, precision = 2, scale = 1)
+    private BigDecimal rating;
 
     @Column(columnDefinition = "text")
     private String body;

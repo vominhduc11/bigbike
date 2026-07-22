@@ -14,6 +14,7 @@ import { RecentItemsChips } from '../components/RecentItemsChips'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { PaginationControls } from '../components/PaginationControls'
+import { ReviewStars } from '../components/ReviewStars'
 import { FilterBar, Screen, ScreenHeader } from '../components/layout'
 import { showConfirm } from '../lib/confirm'
 import {
@@ -35,7 +36,9 @@ import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { toast } from '@/lib/toast'
 
 const STATUS_OPTIONS = ['ALL', 'APPROVED', 'PENDING', 'SPAM', 'TRASH']
-const RATING_OPTIONS = ['', '5', '4', '3', '2', '1']
+// REVIEW_RULE_008: 9 mức nửa sao (5 → 1, bước 0,5).
+const RATING_OPTIONS = ['', '5', '4.5', '4', '3.5', '3', '2.5', '2', '1.5', '1']
+const RATING_BREAKDOWN_LEVELS = [5, 4.5, 4, 3.5, 3, 2.5, 2, 1.5, 1]
 const AVATAR_COLORS = [
   'bg-primary text-primary-foreground',
   'bg-info-bg text-info',
@@ -67,17 +70,6 @@ function initials(name) {
   const words = String(name || '').trim().split(/\s+/).filter(Boolean)
   if (words.length > 1) return `${words[0].charAt(0)}${words[words.length - 1].charAt(0)}`.toUpperCase()
   return (words[0]?.charAt(0) || '?').toUpperCase()
-}
-
-function Stars({ rating, label }) {
-  const rounded = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)))
-  return (
-    <span className="inline-flex gap-px" role="img" aria-label={label || `${rounded}/5`}>
-      {Array.from({ length: 5 }, (_, index) => (
-        <span key={index} aria-hidden="true" className={index < rounded ? 'text-warning' : 'text-muted-foreground'}>★</span>
-      ))}
-    </span>
-  )
 }
 
 function AuthorIdentity({ review, t }) {
@@ -286,7 +278,7 @@ export function ReviewListScreen({ navigate, canUpdate }) {
     {
       key: 'rating',
       label: t('reviews.colRating'),
-      render: (review) => <div className="flex items-center gap-2"><Stars rating={review.rating} /><span className="text-sm">{review.rating}/5</span></div>,
+      render: (review) => <div className="flex items-center gap-2"><ReviewStars rating={review.rating} /><span className="text-sm">{review.rating}/5</span></div>,
     },
     {
       key: 'content',
@@ -330,7 +322,7 @@ export function ReviewListScreen({ navigate, canUpdate }) {
     subtitle: <ProductLink review={review} contentLang={contentLang} navigate={navigate} t={t} />,
     status: <StatusBadge type="review" status={review.status} />,
     meta: [
-      { label: t('reviews.colRating'), value: <div className="flex items-center gap-2"><Stars rating={review.rating} /><span>{review.rating}/5</span></div> },
+      { label: t('reviews.colRating'), value: <div className="flex items-center gap-2"><ReviewStars rating={review.rating} /><span>{review.rating}/5</span></div> },
       { label: t('reviews.colDate'), value: formatDateTime(review.createdAt) },
       { label: t('reviews.colPhotos'), value: review.photos?.length ? `${review.photos.length}` : '—' },
       { label: t('reviews.colContent'), value: formatText(review.body, t('reviews.contentMissing')) },
@@ -376,8 +368,8 @@ export function ReviewListScreen({ navigate, canUpdate }) {
           </div>
           {summaryLoading ? <div className="h-24 animate-pulse rounded-sm bg-surface-muted" aria-label={t('reviews.loading')} /> : summaryQuery.isError ? <p className="m-0 text-sm text-danger">{summaryQuery.error?.message || t('reviews.summaryError')}</p> : (
             <div className="grid gap-5 sm:grid-cols-2">
-              <div className="min-w-32 text-center"><div className="font-display text-4xl font-semibold text-primary">{Number(summary?.approved?.averageRating || 0).toFixed(1)}</div><Stars rating={summary?.approved?.averageRating} label={t('reviews.publicScore')} /><p className="mt-2 mb-0 text-sm text-muted-foreground">{t('reviews.publicReviewCount', { count: summary?.approved?.totalReviews || 0 })}</p></div>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-5">{[5, 4, 3, 2, 1].map((star) => <div key={star} className="flex flex-col gap-1 text-sm"><span className="font-semibold">{star} ★</span><span className="text-muted-foreground">{Number(ratingBreakdown[String(star)] || 0).toLocaleString()}</span></div>)}</div>
+              <div className="min-w-32 text-center"><div className="font-display text-4xl font-semibold text-primary">{Number(summary?.approved?.averageRating || 0).toFixed(1)}</div><ReviewStars rating={summary?.approved?.averageRating} label={t('reviews.publicScore')} /><p className="mt-2 mb-0 text-sm text-muted-foreground">{t('reviews.publicReviewCount', { count: summary?.approved?.totalReviews || 0 })}</p></div>
+              <div className="grid grid-cols-3 gap-x-6 gap-y-2 sm:grid-cols-5">{RATING_BREAKDOWN_LEVELS.map((star) => <div key={star} className="flex flex-col gap-1 text-sm"><span className="font-semibold">{star} ★</span><span className="text-muted-foreground">{Number(ratingBreakdown[String(star)] || 0).toLocaleString()}</span></div>)}</div>
             </div>
           )}
         </section>

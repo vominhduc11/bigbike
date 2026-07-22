@@ -56,8 +56,8 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
     confirmPendingOrder,
     register,
     addressErrors,
-    formAddress,
-    setValue,
+    vnAddress,
+    onVnChange,
     customerNote,
     setCustomerNote,
     shipToDifferent,
@@ -66,8 +66,8 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
     setPaymentMethod,
     registerShip,
     shipErrors,
-    formShip,
-    setValueShip,
+    vnShip,
+    onVnChangeShip,
     cartSubtotal,
     grandTotal,
     submitting,
@@ -145,11 +145,8 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
                 register={register}
                 errors={addressErrors}
                 includeEmail
-                vnValue={{
-                  province: formAddress.province ?? "",
-                  ward: formAddress.ward ?? "",
-                }}
-                onVnChange={(field, val) => setValue(field, val, { shouldValidate: true })}
+                vnValue={vnAddress}
+                onVnChange={onVnChange}
               />
 
               <div className="flex flex-col gap-1.5">
@@ -191,11 +188,8 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
                     register={registerShip}
                     errors={shipErrors}
                     includeEmail={false}
-                    vnValue={{
-                      province: formShip.province ?? "",
-                      ward: formShip.ward ?? "",
-                    }}
-                    onVnChange={(field, val) => setValueShip(field, val, { shouldValidate: true })}
+                    vnValue={vnShip}
+                    onVnChange={onVnChangeShip}
                   />
                 </div>
               </div>

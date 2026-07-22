@@ -855,7 +855,7 @@ Cache denormalized của review **APPROVED**, phục vụ list/detail đọc nha
 
 - `products.rating` — `numeric(3,2)`, nullable, **không có default** (thêm ở `V18`, check constraint `ck_products_rating`: `NULL` hoặc `0..5`). Giá trị = trung bình cộng điểm review đã duyệt, làm tròn **1 decimal HALF_UP** (`AdminReviewService.toCachedRating`).
 - `products.rating_count` — `integer`, nullable, **không có default** (thêm ở `V43`). Giá trị = số review đã duyệt.
-- `reviews.rating` — `smallint NOT NULL`, check `1..5` (`V14`) — nên hễ có ≥ 1 review đã duyệt thì trung bình luôn ≥ 1.
+- `reviews.rating` — `numeric(2,1) NOT NULL`, check giá trị thuộc tập `{1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5}` bước 0,5 (`V14` tạo `smallint 1..5`; **`V347` nới sang thập phân nửa sao** — `BUSINESS_RULES.md` `REVIEW_RULE_008`, owner decision 2026-07-22) — nên hễ có ≥ 1 review đã duyệt thì trung bình luôn ≥ 1.
 - `reviews.photos` — `jsonb`, nullable (`V234`). Mảng URL ảnh khách hàng trong MinIO (`/media/reviews/...`), tối đa 10. `NULL`/`[]` = không có ảnh. Map qua `@JdbcTypeCode(SqlTypes.JSON)` (mirror `products.description_blocks`, cùng cơ chế JSONB + converter). Chỉ phục vụ hiển thị khi review `APPROVED` (xem `BUSINESS_RULES.md` `REVIEW_RULE_005`). (Cột `reviews.title`, thêm cùng `V234`, đã bị **drop ở `V298`** — xem §"Review title — REMOVED (V298)".)
 
 **Recompute flow (đường duy nhất được ghi cache):** `AdminReviewService.recomputeProductReviewAggregate` chạy sau **mọi** chuyển trạng thái review (`updateStatus`, kể cả APPROVED → PENDING/SPAM/TRASH) và sau `deleteReview`. Khi 0 review approved: `rating = NULL` (không phải 0) và `rating_count = 0`. `PublicReviewService.submitReview` tạo review PENDING và **không** recompute (đúng — pending không được tính). Admin upsert product **không thể** set tay 2 field này (`UpsertProductRequest` cố ý không khai báo field; xem comment "Phase 2D" trong `AdminCatalogMutationService`).
@@ -868,7 +868,7 @@ Cache denormalized của review **APPROVED**, phục vụ list/detail đọc nha
 
 Status: `CONFIRMED_FROM_CODE` — `AdminReviewService.java`, `PublicReviewService.java`,
 `ReviewJpaRepository.java`, `ProductEntity.java`, `UpsertProductRequest.java`,
-`WordPressProductMapper.java`, `ProductImporter.java`, `ReviewImporter.java`, migrations `V14`, `V18`, `V43`, `V63`.
+`WordPressProductMapper.java`, `ProductImporter.java`, `ReviewImporter.java`, migrations `V14`, `V18`, `V43`, `V63`, `V347`.
 
 ### Review title — REMOVED (V298)
 

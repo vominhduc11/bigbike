@@ -32,7 +32,8 @@ export function RatingSummary({
       </div>
 
       <div className="flex flex-1 flex-col justify-center gap-1.5" role="group" aria-label={t("filterByStarHint")}>
-        {[5, 4, 3, 2, 1].map((star) => {
+        {/* REVIEW_RULE_008: 9 mức nửa sao (5 → 1, bước 0,5) — mỗi mức 1 dòng riêng, không gộp. */}
+        {[5, 4.5, 4, 3.5, 3, 2.5, 2, 1.5, 1].map((star) => {
           const count = breakdown?.[String(star)] ?? 0;
           const pct = total > 0 ? Math.round((count / total) * 100) : 0;
           const isActive = activeStar === star;
@@ -52,7 +53,7 @@ export function RatingSummary({
                 isActive && "bg-muted",
               )}
             >
-              <span className="flex w-9 shrink-0 items-center gap-1 text-a5-meta text-[var(--bb-text-secondary)]">
+              <span className="flex w-10 shrink-0 items-center gap-1 text-a5-meta text-[var(--bb-text-secondary)]">
                 {star}
                 <StarIcon filled className="h-3.5 w-3.5 text-brand" />
               </span>

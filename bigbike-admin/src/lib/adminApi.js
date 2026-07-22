@@ -1402,7 +1402,8 @@ export async function fetchReviewSummary() {
       approved: {
         averageRating: Number.isFinite(Number(approved.averageRating)) ? Number(approved.averageRating) : 0,
         totalReviews: Number.isFinite(Number(approved.totalReviews)) ? Number(approved.totalReviews) : 0,
-        ratingBreakdown: Object.fromEntries([1, 2, 3, 4, 5].map((star) => [
+        // REVIEW_RULE_008: 9 mức nửa sao (5 → 1, bước 0,5).
+        ratingBreakdown: Object.fromEntries([5, 4.5, 4, 3.5, 3, 2.5, 2, 1.5, 1].map((star) => [
           String(star),
           Number.isFinite(Number(ratingBreakdown[String(star)])) ? Number(ratingBreakdown[String(star)]) : 0,
         ])),

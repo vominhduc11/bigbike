@@ -10,6 +10,14 @@ import { FieldError } from "./atoms";
 // Nhóm trường địa chỉ dùng chung cho cả billing và shipping — markup y hệt
 // form-checkout.php, chỉ khác idPrefix / autoComplete / form instance và việc
 // billing có thêm trường email (shipping không có).
+//
+// province/ward KHÔNG sống trong react-hook-form (khác 4 ô còn lại) — đã tái hiện
+// được lỗi: react-hook-form tự âm thầm reset field này về rỗng đúng 1 nhịp sau khi
+// setValue() (kể cả đã đăng ký qua Controller, memo hoá resolver/defaultValues, hay
+// bỏ hẳn resolver — vẫn xảy ra). Nguồn sự thật cho 2 ô này là state phẳng ở
+// useCheckout (vnValue/onVnChange), chỉ đồng bộ vào react-hook-form ngay trước khi
+// validate/submit (xem placeOrder trong useCheckout.ts) — nhờ đó UI không phụ thuộc
+// hành vi nội bộ khó đoán của react-hook-form cho field này.
 export function CheckoutAddressFields({
   idPrefix,
   autoCompletePrefix,
@@ -25,7 +33,7 @@ export function CheckoutAddressFields({
   errors: FieldErrors<CheckoutAddressFormValues>;
   includeEmail: boolean;
   vnValue: { province: string; ward: string };
-  onVnChange: (field: keyof CheckoutAddressFormValues, value: string) => void;
+  onVnChange: (field: "province" | "ward", value: string) => void;
 }) {
   const t = useTranslations("Checkout");
   const reqMark = <span className="text-brand">*</span>;
