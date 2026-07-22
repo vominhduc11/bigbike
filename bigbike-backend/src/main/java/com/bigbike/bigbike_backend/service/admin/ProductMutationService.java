@@ -30,6 +30,8 @@ import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.service.catalog.DescriptionBlockRenderer;
 import com.bigbike.bigbike_backend.service.inventory.InventoryPolicyService;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
+import com.bigbike.bigbike_backend.service.ws.AdminInventoryWsService;
+import com.bigbike.bigbike_backend.service.ws.InventoryWsEvent;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,6 +66,7 @@ public class ProductMutationService {
     private final DescriptionBlockRenderer descriptionBlockRenderer;
     private final CatalogRequestValidator catalogRequestValidator;
     private final InventoryPolicyService inventoryPolicyService;
+    private final AdminInventoryWsService adminInventoryWsService;
     private final SlugRedirectHelper slugRedirectHelper;
 
     public ProductMutationService(
@@ -79,7 +82,8 @@ public class ProductMutationService {
             DescriptionBlockRenderer descriptionBlockRenderer,
             CatalogRequestValidator catalogRequestValidator,
             InventoryPolicyService inventoryPolicyService,
-            SlugRedirectHelper slugRedirectHelper
+            SlugRedirectHelper slugRedirectHelper,
+            AdminInventoryWsService adminInventoryWsService
     ) {
         this.productJpaRepository = productJpaRepositoryProvider.getIfAvailable();
         this.productVariantJpaRepository = productVariantJpaRepositoryProvider.getIfAvailable();
@@ -94,6 +98,7 @@ public class ProductMutationService {
         this.catalogRequestValidator = catalogRequestValidator;
         this.inventoryPolicyService = inventoryPolicyService;
         this.slugRedirectHelper = slugRedirectHelper;
+        this.adminInventoryWsService = adminInventoryWsService;
     }
 
     @Transactional
@@ -120,6 +125,7 @@ public class ProductMutationService {
         AdminMutationValidators.throwIfPublishErrors(readinessErrors);
 
         productJpaRepository.save(entity);
+        pushInventoryEventIfChanged(entity, Map.of());
         auditLog("PRODUCT_CREATED", "PRODUCT", adminId, null, productJson(entity));
         webRevalidationService.revalidateProduct(entity.getSlug(), null);
 
@@ -157,6 +163,7 @@ public class ProductMutationService {
         String previousSlug = entity.getSlug();
         String previousSlugEn = entity.getSlugEn();
         String before = productJson(entity);
+        Map<String, String> inventoryBefore = inventoryStateSnapshot(entity);
 
         List<ApiErrorDetail> errors = new ArrayList<>();
         CategoryEntity category = catalogRequestValidator.validateAndResolveCategory(request.getCategoryId(), false, errors);
@@ -175,6 +182,7 @@ public class ProductMutationService {
         AdminMutationValidators.throwIfPublishErrors(readinessErrors);
 
         productJpaRepository.save(entity);
+        pushInventoryEventIfChanged(entity, inventoryBefore);
         auditLog("PRODUCT_UPDATED", "PRODUCT", adminId, before, productJson(entity));
         if (!previousSlug.equals(entity.getSlug())) {
             slugRedirectHelper.autoCreateSlugRedirect("/product/" + previousSlug, "/product/" + entity.getSlug());
@@ -347,6 +355,26 @@ public class ProductMutationService {
 
     private static String nullSafe(String s) {
         return s == null ? "" : s;
+    }
+
+    private void pushInventoryEventIfChanged(ProductEntity product, Map<String, String> before) {
+        if (!before.equals(inventoryStateSnapshot(product))) {
+            adminInventoryWsService.pushEvent(new InventoryWsEvent(
+                    "INVENTORY_STATE_CHANGED",
+                    product.getId(),
+                    Instant.now()
+            ));
+        }
+    }
+
+    private static Map<String, String> inventoryStateSnapshot(ProductEntity product) {
+        Map<String, String> snapshot = new HashMap<>();
+        snapshot.put("product:" + product.getId(), String.valueOf(product.getStockState()));
+        if (product.getVariants() != null) {
+            product.getVariants().forEach(variant ->
+                    snapshot.put("variant:" + variant.getId(), String.valueOf(variant.getStockState())));
+        }
+        return snapshot;
     }
 
     private void applyProductPatch(

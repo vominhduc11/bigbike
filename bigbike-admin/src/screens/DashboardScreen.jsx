@@ -1,6 +1,6 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowRight,
   CircleDollarSign,
@@ -20,6 +20,7 @@ import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { formatVndShort, formatRelativeTime } from '../lib/formatters'
 import { useAuth } from '../lib/auth'
 import { useRecentItems } from '../lib/useRecentItems'
+import { subscribeAdminWs } from '../lib/adminWebSocket'
 import {
   fetchDashboardSummary,
   fetchInventorySummary,
@@ -86,6 +87,7 @@ function SkeletonBlock({ height = 280 }) {
 
 export function DashboardScreen({ navigate }) {
   const { t, i18n } = useTranslation()
+  const queryClient = useQueryClient()
   const { user } = useAuth()
   const [period, setPeriod] = useState('30d')
   // Số đếm (đơn/sản phẩm) format theo ngôn ngữ đang chọn — không cứng 'vi-VN'.
@@ -108,6 +110,10 @@ export function DashboardScreen({ navigate }) {
   // instant → polling định kỳ 90s + làm mới khi admin quay lại tab. Refetch chạy nền,
   // không show loading lại (refetchInterval mặc định không bật loading state).
   const DASHBOARD_REFRESH_MS = 90_000
+
+  useEffect(() => subscribeAdminWs('/topic/admin/inventory', () => {
+    queryClient.invalidateQueries({ queryKey: ['inventory-summary'] })
+  }), [queryClient])
 
   const { data: dashResult, isLoading, isError, refetch } = useQuery({
     queryKey: ['dashboard', period],

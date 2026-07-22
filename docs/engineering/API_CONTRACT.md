@@ -663,6 +663,7 @@ endpoints, both gated by `inventory.read`:
 | Endpoint | Current behavior |
 |---|---|
 | `GET /api/v1/admin/inventory` | Flat stock list (variants + no-variant products), filter `q`/`stockState`, paginated. Carries `available: boolean` (no quantities). |
+| WebSocket `/topic/admin/inventory` | `INVENTORY_STATE_CHANGED` after-commit event when a product or variant changes between `IN_STOCK` and `OUT_OF_STOCK`; gated by `inventory.read`. The Dashboard invalidates `['inventory-summary']` and keeps 90-second polling as fallback. |
 | `GET /api/v1/admin/inventory/summary` | `{ totalItems, inStockCount, outOfStockCount }` — powers the Dashboard "Hết hàng" alert. |
 
 **Removed (2026-07-15, AUD-056, owner decision #8):** `GET /grouped`, `GET /movements`,

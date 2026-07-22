@@ -29,6 +29,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private static final String ORDERS_PERMISSION = "orders.read";
+    private static final String INVENTORY_PERMISSION = "inventory.read";
     private static final String STATUS_ACTIVE = "ACTIVE";
     private static final String SESSION_ATTR_ADMIN_USER_ID = "adminUserId";
 
@@ -110,7 +111,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     Object rawUserId = accessor.getSessionAttributes() != null
                             ? accessor.getSessionAttributes().get(SESSION_ATTR_ADMIN_USER_ID) : null;
                     String destination = accessor.getDestination();
-                    if (!(rawUserId instanceof UUID userId) || !hasOrdersPermission(userId)) {
+                    if (!(rawUserId instanceof UUID userId) || !hasPermissionForDestination(userId, destination)) {
                         log.warn("WS SUBSCRIBE rejected for {} to {}", rawUserId, destination);
                         throw new IllegalArgumentException("Not permitted to subscribe to " + destination + ".");
                     }
@@ -119,13 +120,25 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 return message;
             }
 
-            private boolean hasOrdersPermission(UUID userId) {
+            private boolean hasPermissionForDestination(UUID userId, String destination) {
+                if (destination == null) {
+                    return false;
+                }
+                String requiredPermission = switch (destination) {
+                    case "/topic/admin/orders" -> ORDERS_PERMISSION;
+                    case "/topic/admin/inventory" -> INVENTORY_PERMISSION;
+                    default -> null;
+                };
+                return requiredPermission != null && hasPermission(userId, requiredPermission);
+            }
+
+            private boolean hasPermission(UUID userId, String requiredPermission) {
                 AdminAccountStatusService.Snapshot snapshot = adminAccountStatusService.getSnapshot(userId);
                 if (snapshot == null || !STATUS_ACTIVE.equals(snapshot.status())) {
                     return false;
                 }
                 List<String> permissions = adminPermissionService.getPermissionsForRole(snapshot.role());
-                return permissions.contains("*") || permissions.contains(ORDERS_PERMISSION);
+                return permissions.contains("*") || permissions.contains(requiredPermission);
             }
         });
     }
