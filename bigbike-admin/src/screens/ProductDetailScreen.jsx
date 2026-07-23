@@ -64,7 +64,10 @@ import {
   findOptionById,
   prependSelectedOption,
   buildCategoryPathMap,
+  buildCategoryParentPathMap,
   buildCategoryTreeOrder,
+  buildCategoryChildrenSet,
+  buildVisibleCategoryTreeRows,
   buildFormFromItem,
   toPayload,
   canonicalUrlFromSlug,
@@ -125,10 +128,9 @@ import { AssignmentConfigContext } from './product-detail/constants'
 // Nhãn hiển thị cho giới tính khi contentLang='en' — value lưu DB vẫn luôn "Nam"/"Nữ" (DATA_CONTRACT.md).
 const GENDER_LABEL_EN = { Nam: 'Male', 'Nữ': 'Female' }
 const EMPTY_ITEMS = []
-// Thụt lề theo cấp trong cây danh mục — bước token spacing 4px của admin
-// (pl-2/6/10/14 = +16px mỗi cấp); cấp sâu hơn dùng lại mức thụt lề sâu nhất
-// thay vì bịa class arbitrary.
-const CATEGORY_TREE_INDENT_CLASSES = ['pl-2', 'pl-6', 'pl-10', 'pl-14']
+// Thụt lề theo cấp trong cây danh mục bằng class Tailwind có sẵn; cấp sâu hơn
+// dùng lại mức sâu nhất để không cần arbitrary spacing.
+const CATEGORY_TREE_INDENT_CLASSES = ['pl-2', 'pl-6', 'pl-10', 'pl-14', 'pl-16', 'pl-20', 'pl-24', 'pl-28']
 
 // ── Main screen ────────────────────────────────────────────────────────────────
 
@@ -279,6 +281,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const brandOptions = prependSelectedOption(brands, selectedBrandRef)
   // Nhãn "Cha › Con › Cháu" để phân biệt cha/con khi cây danh mục có nhiều cấp.
   const categoryPathById = useMemo(() => buildCategoryPathMap(categoryOptions), [categoryOptions])
+  const categoryParentPathById = useMemo(() => buildCategoryParentPathMap(categoryOptions), [categoryOptions])
   // Thứ tự cây + độ sâu để thụt lề con dưới cha trong ô chọn danh mục.
   const categoryTree = useMemo(() => buildCategoryTreeOrder(categoryOptions), [categoryOptions])
   const selectedCategories = (form.categoryIds ?? []).map((id) => (
@@ -292,13 +295,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   ))
   // Cha (mọi cấp) có ít nhất 1 con trong categoryTree — quyết định hiện mũi tên
   // mở/thu ở ô chọn danh mục.
-  const categoryIdsWithChildren = useMemo(() => {
-    const set = new Set()
-    for (const node of categoryTree) {
-      if (node.parentId) set.add(node.parentId)
-    }
-    return set
-  }, [categoryTree])
+  const categoryIdsWithChildren = useMemo(() => buildCategoryChildrenSet(categoryTree), [categoryTree])
   // Tổ tiên (mọi cấp) của các danh mục đang được chọn — tự mở để không ẩn mất
   // lựa chọn hiện có khi sửa sản phẩm cũ.
   const autoExpandCategoryIds = useMemo(() => {
@@ -346,18 +343,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   }
   // Danh sách hiện trong popover: gốc luôn hiện, con chỉ hiện khi cha đang mở —
   // categoryTree đã depth-first nên cha luôn duyệt trước con.
-  const visibleCategoryTreeRows = useMemo(() => {
-    const visible = []
-    const openParentIds = new Set()
-    for (const node of categoryTree) {
-      const isRoot = node.depth === 0
-      if (isRoot || (node.parentId && openParentIds.has(node.parentId))) {
-        visible.push(node)
-        if (expandedCategoryIds.has(node.id)) openParentIds.add(node.id)
-      }
-    }
-    return visible
-  }, [categoryTree, expandedCategoryIds])
+  const visibleCategoryTreeRows = useMemo(
+    () => buildVisibleCategoryTreeRows(categoryTree, expandedCategoryIds),
+    [categoryTree, expandedCategoryIds],
+  )
   const selectedBrandLabel =
     findOptionById(brandOptions, form.brandId)?.name ||
     (form.brandId ? t('products.detail.optionNotFound', { id: form.brandId }) : undefined)
@@ -1290,9 +1279,11 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                             const locked = category.deleted === true || category.visible === false || category.isVisible === false
                             const hasChildren = categoryIdsWithChildren.has(category.id)
                             const isExpanded = expandedCategoryIds.has(category.id)
+                            const parentPath = categoryParentPathById.get(category.id)
                             return (
                               <label
                                 key={category.id}
+                                title={categoryPathById.get(category.id) || category.name}
                                 className={cn(
                                   'flex min-h-11 cursor-pointer items-center gap-3 py-2 pr-2 text-sm hover:bg-muted',
                                   CATEGORY_TREE_INDENT_CLASSES[Math.min(category.depth, CATEGORY_TREE_INDENT_CLASSES.length - 1)],
@@ -1325,7 +1316,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                                   onCheckedChange={() => toggleProductCategory(category.id)}
                                 />
                                 <span className="min-w-0 flex-1">
-                                  <span className="block truncate">{categoryPathById.get(category.id) || category.name}</span>
+                                  <span className="block truncate">{category.name}</span>
+                                  {parentPath && (
+                                    <span className="block truncate text-xs text-muted-foreground">{parentPath}</span>
+                                  )}
                                   {locked && (
                                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                                       <Lock size={12} aria-hidden="true" />

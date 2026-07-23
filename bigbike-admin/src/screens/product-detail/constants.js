@@ -385,6 +385,37 @@ export function buildCategoryPathMap(items, separator = ' › ') {
   return result
 }
 
+// Map id → đường dẫn cha, không gồm chính danh mục hiện tại.
+// Dùng trong dropdown để dòng con chỉ hiện tên ngắn, còn đường dẫn cha nằm ở dòng phụ.
+export function buildCategoryParentPathMap(items, separator = ' › ') {
+  const byId = new Map()
+  for (const it of items) {
+    if (it?.id) byId.set(it.id, it)
+  }
+  const cache = new Map()
+  const parentPathFor = (id, seen) => {
+    if (!id || !byId.has(id)) return ''
+    if (cache.has(id)) return cache.get(id)
+    const node = byId.get(id)
+    const parentId = node.parentId
+    if (!parentId || parentId === id || seen.has(id) || !byId.has(parentId)) {
+      cache.set(id, '')
+      return ''
+    }
+    seen.add(id)
+    const parent = byId.get(parentId)
+    const parentPath = parentPathFor(parent.id, seen)
+    const full = parentPath ? `${parentPath}${separator}${parent.name}` : parent.name
+    cache.set(id, full)
+    return full
+  }
+  const result = new Map()
+  for (const it of items) {
+    if (it?.id) result.set(it.id, parentPathFor(it.id, new Set()))
+  }
+  return result
+}
+
 // Sắp danh mục theo thứ tự cây (depth-first): con nằm ngay dưới cha, kèm `depth`
 // để thụt lề trong ô chọn. Mục thiếu parentId hoặc không tìm thấy cha được coi là
 // gốc; `seen` chặn vòng lặp parentId hỏng. Giữ nguyên thứ tự đầu vào trong mỗi cấp.
@@ -419,6 +450,29 @@ export function buildCategoryTreeOrder(items) {
     if (it?.id && !seen.has(it.id)) visit(it, 0)
   }
   return result
+}
+
+export function buildCategoryChildrenSet(items) {
+  const ids = new Set((items ?? []).map((item) => item?.id).filter(Boolean))
+  const result = new Set()
+  for (const item of items ?? []) {
+    if (item?.parentId && ids.has(item.parentId)) result.add(item.parentId)
+  }
+  return result
+}
+
+export function buildVisibleCategoryTreeRows(items, expandedIds) {
+  const expanded = expandedIds instanceof Set ? expandedIds : new Set(expandedIds ?? [])
+  const visible = []
+  const openParentIds = new Set()
+  for (const node of items ?? []) {
+    const isRoot = node.depth === 0
+    if (isRoot || (node.parentId && openParentIds.has(node.parentId))) {
+      visible.push(node)
+      if (expanded.has(node.id)) openParentIds.add(node.id)
+    }
+  }
+  return visible
 }
 
 export function buildFormFromItem(item) {
