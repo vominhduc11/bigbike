@@ -414,12 +414,17 @@ Status: `CONFIRMED_FROM_CODE` — derived from audit of `AdminReportService.java
 - `REPORT_RULE_009`: **topProducts** uses `COALESCE(product_pk, product_id::text)` as group key. Admin-created products have `product_id = NULL` and `product_pk` set; regular products have both. Filtering `product_id IS NOT NULL` (legacy behavior) silently excludes admin-created products. `CONFIRMED_FROM_CODE`
 - `REPORT_RULE_010`: **topCustomers** uses `COALESCE(customer_id::text, customer_email)` as group key to prevent the same customer appearing as multiple rows if their email changed over time. Display email is `MAX(customer_email)`. `CONFIRMED_FROM_CODE`
 
+### Custom Date Range Limit
+
+- `REPORT_RULE_011`: The admin Reports screen limits a custom `from`–`to` date range to a maximum of 90 days (inclusive) — enforced **client-side only** in `ReportsScreen.jsx` (`isRangeWithinLimit`). The backend `/admin/reports/analytics` endpoint does not itself reject wider ranges (it only validates `from <= to`). Selecting a wider custom range shows a validation message and blocks the query. Owner decision 2026-07-23: keep the limit as UI-only guardrail. `CONFIRMED_FROM_CODE` (frontend)
+
 Evidence:
 
 - `AdminReportService.java`
 - `OrderJpaRepository.java`
 - `OrderLineItemJpaRepository.java`
 - `AdminCustomerService.java`
+- `ReportsScreen.jsx` (bigbike-admin)
 
 ## Returns And Refunds
 

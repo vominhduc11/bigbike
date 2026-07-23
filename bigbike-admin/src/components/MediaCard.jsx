@@ -3,6 +3,7 @@ import { toast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
 import { formatText } from '../lib/formatters'
 import { formatBytes, toClipboardUrl } from './media-picker/pickerUtils'
+import { resolveThumbUrl } from '../lib/contracts'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 
@@ -19,6 +20,7 @@ export function MediaCard({
   const { t } = useTranslation()
   const filename = formatText((media.filename ?? '').split('/').pop())
   const displayName = media.title ? formatText(media.title) : filename
+  const thumbUrl = resolveThumbUrl(media)
   const dimensions = media.width && media.height ? `${media.width}×${media.height}` : null
   const meta = [formatBytes(media.fileSize), dimensions].filter(Boolean).join(' · ')
 
@@ -55,8 +57,8 @@ export function MediaCard({
       {/* Thumb là container KHÔNG tương tác; vùng "mở xem lớn" và vùng "nút thao
           tác" là hai phần tử ANH EM bên trong, không lồng nút-trong-nút. */}
       <div className="medialib-thumb-wrap">
-        {isImage(media.mimeType) && media.publicUrl ? (
-          <img src={media.publicUrl} alt={media.altText || filename} loading="lazy" />
+        {isImage(media.mimeType) && thumbUrl ? (
+          <img src={thumbUrl} alt={media.altText || filename} loading="lazy" />
         ) : isVideo(media.mimeType) && media.publicUrl ? (
           <video src={`${media.publicUrl}#t=0.001`} muted preload="metadata" />
         ) : (

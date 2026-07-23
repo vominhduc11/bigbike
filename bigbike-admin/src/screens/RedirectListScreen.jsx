@@ -11,6 +11,7 @@ import {
   createRedirect,
   deleteRedirect,
   fetchRedirects,
+  mapValidationErrors,
   updateRedirect,
 } from '../lib/adminApi'
 import { PaginationControls } from '../components/PaginationControls'
@@ -92,6 +93,7 @@ export function RedirectListScreen({ canUpdate }) {
   const [baseline, setBaseline] = useState(null)
   const [touched, setTouched] = useState({})
   const [formError, setFormError] = useState('')
+  const [validationErrors, setValidationErrors] = useState({})
   // O4: id redirect đang gọi API bật/tắt — disable đúng nút trên hàng đó.
   const [togglingId, setTogglingId] = useState(null)
   // O6: chọn nhiều dòng để bật/tắt/xoá hàng loạt.
@@ -150,7 +152,20 @@ export function RedirectListScreen({ canUpdate }) {
           : t('redirects.createSuccess', { defaultValue: 'Redirect created.' }),
       )
     },
-    onError: (err) => setFormError(err?.message || t('common.error')),
+    onError: (err) => {
+      if (err?.code === 'CONFLICT') {
+        setValidationErrors({
+          sourcePattern: t('redirects.errorSourceConflict', {
+            defaultValue: 'Nguồn này đã có chuyển hướng khác trỏ tới. Hãy dùng mẫu nguồn khác hoặc sửa bản ghi đang có.',
+          }),
+        })
+        setFormError('')
+        return
+      }
+      const fieldErrors = mapValidationErrors(err)
+      setValidationErrors(fieldErrors)
+      setFormError(Object.keys(fieldErrors).length > 0 ? '' : (err?.message || t('common.error')))
+    },
   })
 
   const deleteMutation = useMutation({
@@ -254,6 +269,7 @@ export function RedirectListScreen({ canUpdate }) {
     setBaseline(next)
     setTouched({})
     setFormError('')
+    setValidationErrors({})
     setAdvancedOpen(false)
     setShowForm(true)
   }
@@ -273,6 +289,7 @@ export function RedirectListScreen({ canUpdate }) {
     setBaseline(next)
     setTouched({})
     setFormError('')
+    setValidationErrors({})
     setAdvancedOpen(Boolean(next.notes) || next.legacyId !== '')
     setShowForm(true)
   }
@@ -284,6 +301,7 @@ export function RedirectListScreen({ canUpdate }) {
     setBaseline(null)
     setTouched({})
     setFormError('')
+    setValidationErrors({})
   }
 
   // F6: form đang có thay đổi chưa lưu khi đang mở và khác bản chụp lúc mở (mirror SliderListScreen).
@@ -348,6 +366,7 @@ export function RedirectListScreen({ canUpdate }) {
       return
     }
     setFormError('')
+    setValidationErrors({})
     saveMutation.mutate()
   }
 
@@ -530,7 +549,7 @@ export function RedirectListScreen({ canUpdate }) {
               <FormField
                 label={t('redirects.formSource', { defaultValue: 'Mẫu nguồn' })}
                 required
-                error={touched.sourcePattern ? sourceError : ''}
+                error={validationErrors.sourcePattern || (touched.sourcePattern ? sourceError : '')}
               >
                 <Input
                   value={form.sourcePattern}
@@ -542,7 +561,7 @@ export function RedirectListScreen({ canUpdate }) {
               <FormField
                 label={t('redirects.formTarget', { defaultValue: 'URL đích' })}
                 required
-                error={touched.targetUrl ? targetError : ''}
+                error={validationErrors.targetUrl || (touched.targetUrl ? targetError : '')}
               >
                 <Input
                   value={form.targetUrl}

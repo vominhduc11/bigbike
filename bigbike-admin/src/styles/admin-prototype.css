@@ -1721,8 +1721,9 @@ dl.bb-info-grid dd { color: var(--bb-text); }
 
 @media (min-width: 1280px) {
   .bb-kpi-grid { grid-template-columns: repeat(6, 1fr); }
-  /* O10 — khối tổng hợp 4 thẻ (CustomerListScreen) không dùng override 6-cột
-     trên (dựng cho Reports/Dashboard); auto-fit để 4 thẻ luôn giãn lấp hết hàng. */
+  /* O10 — khối tổng hợp 4 thẻ cố định (CustomerListScreen, Dashboard) dùng
+     modifier auto-fit này thay vì override 6-cột ở trên, để 4 thẻ luôn giãn
+     lấp hết hàng thay vì để trống cột ở ≥1280px. */
   .bb-kpi-grid-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
 }
 

@@ -12,6 +12,7 @@ import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepos
 import com.bigbike.bigbike_backend.service.auth.AdminPermissionService;
 import com.bigbike.bigbike_backend.service.auth.PermissionCatalog;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -30,6 +31,8 @@ public class AdminRoleService {
     /** Role IDs must be UPPER_CASE_WITH_UNDERSCORES, start with a letter, 2–50 chars. */
     private static final java.util.regex.Pattern ROLE_ID_PATTERN =
             java.util.regex.Pattern.compile("[A-Z][A-Z0-9_]{1,49}");
+    private static final Set<String> ASSIGNED_USER_STATUSES =
+            Set.of("ACTIVE", "INVITED", "DISABLED", "SUSPENDED");
 
     private final AdminRoleJpaRepository roleRepo;
     private final AdminUserJpaRepository adminUserRepo;
@@ -38,8 +41,9 @@ public class AdminRoleService {
     private final AuditLogFactory auditLogFactory;
 
     public List<Map<String, Object>> getAllRoles() {
+        Map<String, Long> assignedUserCounts = assignedUserCountsByRole();
         return roleRepo.findAll().stream()
-                .map(this::toMap)
+                .map(role -> toMap(role, assignedUserCounts.getOrDefault(role.getId(), 0L)))
                 .toList();
     }
 
@@ -86,7 +90,7 @@ public class AdminRoleService {
                 clientIp,
                 userAgent));
 
-        return toMap(saved);
+        return toMap(saved, assignedUserCountsByRole().getOrDefault(saved.getId(), 0L));
     }
 
     @Transactional
@@ -139,7 +143,7 @@ public class AdminRoleService {
                 clientIp,
                 userAgent));
 
-        return toMap(saved);
+        return toMap(saved, assignedUserCountsByRole().getOrDefault(saved.getId(), 0L));
     }
 
     @Transactional
@@ -189,13 +193,22 @@ public class AdminRoleService {
         }
     }
 
-    private Map<String, Object> toMap(AdminRoleEntity r) {
+    private Map<String, Long> assignedUserCountsByRole() {
+        Map<String, Long> counts = new HashMap<>();
+        for (Object[] row : adminUserRepo.countAssignedUsersByRoleAndStatusIn(ASSIGNED_USER_STATUSES)) {
+            counts.put((String) row[0], ((Number) row[1]).longValue());
+        }
+        return counts;
+    }
+
+    private Map<String, Object> toMap(AdminRoleEntity r, long assignedUserCount) {
         return Map.of(
                 "id", r.getId(),
                 "name", r.getName(),
                 "description", r.getDescription() != null ? r.getDescription() : "",
                 "isSystem", r.isSystem(),
                 "permissions", List.copyOf(r.getPermissions()),
+                "assignedUserCount", assignedUserCount,
                 "createdAt", r.getCreatedAt().toString(),
                 "updatedAt", r.getUpdatedAt().toString()
         );

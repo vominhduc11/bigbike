@@ -8,6 +8,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminRoleJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
@@ -43,6 +45,7 @@ class AdminRolesApiTest {
     @Autowired AdminUserJpaRepository adminUserRepo;
     @Autowired AdminRoleJpaRepository roleRepo;
     @Autowired PasswordService passwordService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private MockMvc mockMvc;
     private String superToken;
@@ -92,6 +95,33 @@ class AdminRolesApiTest {
         String json = result.getResponse().getContentAsString();
         assertThat(json).contains("SUPER_ADMIN");
         assertThat(json).contains("ADMIN");
+    }
+
+    @Test
+    void listRoles_assignedUserCountIncludesAllAdminStatusesAndDefaultsToZero() throws Exception {
+        String roleId = "COUNT_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+        String emptyRoleId = "EMPTY_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+        createCustomRole(roleId, "Count Test Role");
+        createCustomRole(emptyRoleId, "Empty Count Role");
+
+        for (String status : new String[] {"ACTIVE", "INVITED", "DISABLED", "SUSPENDED"}) {
+            ensureAdminUser(
+                    "role-count-" + status.toLowerCase() + "-" + UUID.randomUUID() + "@bigbike.test",
+                    "Temp@12345678", roleId, status);
+        }
+
+        MvcResult result = mockMvc.perform(get(ROLES_URL)
+                        .header("Authorization", "Bearer " + superToken))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode roles = objectMapper.readTree(result.getResponse().getContentAsString()).get("data");
+        JsonNode countedRole = findRole(roles, roleId);
+        JsonNode emptyRole = findRole(roles, emptyRoleId);
+        assertThat(countedRole).isNotNull();
+        assertThat(countedRole.path("assignedUserCount").asLong()).isEqualTo(4L);
+        assertThat(emptyRole).isNotNull();
+        assertThat(emptyRole.path("assignedUserCount").asLong()).isZero();
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -174,7 +204,8 @@ class AdminRolesApiTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.id").value(id))
                 .andExpect(jsonPath("$.data.isSystem").value(false))
-                .andExpect(jsonPath("$.data.permissions").isArray());
+                .andExpect(jsonPath("$.data.permissions").isArray())
+                .andExpect(jsonPath("$.data.assignedUserCount").value(0));
     }
 
     @Test
@@ -285,7 +316,8 @@ class AdminRolesApiTest {
                         .content("{\"permissions\":[\"orders.read\",\"customers.read\"]}")
                         .header("Authorization", "Bearer " + superToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.permissions").isArray());
+                .andExpect(jsonPath("$.data.permissions").isArray())
+                .andExpect(jsonPath("$.data.assignedUserCount").value(0));
     }
 
     @Test
@@ -389,13 +421,17 @@ class AdminRolesApiTest {
     }
 
     private void ensureAdminUser(String email, String password, String role) {
+        ensureAdminUser(email, password, role, "ACTIVE");
+    }
+
+    private void ensureAdminUser(String email, String password, String role, String status) {
         adminUserRepo.findByEmail(email).orElseGet(() -> {
             AdminUserEntity admin = new AdminUserEntity();
             admin.setEmail(email);
             admin.setPasswordHash(passwordService.hash(password));
             admin.setDisplayName("Roles Test " + role);
             admin.setRole(role);
-            admin.setStatus("ACTIVE");
+            admin.setStatus(status);
             Instant now = Instant.now();
             admin.setCreatedAt(now);
             admin.setUpdatedAt(now);
@@ -420,5 +456,12 @@ class AdminRolesApiTest {
         int end = json.indexOf("\"", start);
         if (end < 0) return null;
         return json.substring(start, end);
+    }
+
+    private JsonNode findRole(JsonNode roles, String roleId) {
+        for (JsonNode role : roles) {
+            if (roleId.equals(role.path("id").asText())) return role;
+        }
+        return null;
     }
 }

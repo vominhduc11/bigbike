@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   Info, TrendingUp, TrendingDown, Minus,
   CircleDollarSign, Wallet, RotateCcw, PiggyBank, ShoppingBag, Receipt,
-  Download, ChevronDown, ArrowRight,
+  ArrowRight,
 } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import {
@@ -17,12 +17,9 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { AdminTable } from '../components/AdminTable'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
-  DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
-} from '@/components/ui/dropdown-menu'
+import { ExportButton } from '../components/ExportButton'
 import { fetchAnalytics, exportOrdersCsv, exportProductsCsv, exportCustomersCsv } from '../lib/adminApi'
-import { formatCurrencyVnd } from '../lib/formatters'
+import { formatCurrencyVnd, fmtIsoDateShort } from '../lib/formatters'
 
 const PRESET_VALUES = [
   { key: 'preset7d',  value: '7d',  days: 7 },
@@ -34,7 +31,7 @@ function RevenueTooltip({ active, payload, label, locale }) {
   if (!active || !payload?.length) return null
   return (
     <div className="bb-dash-tooltip">
-      <div className="bb-dash-tooltip-date">{label}</div>
+      <div className="bb-dash-tooltip-date">{fmtIsoDateShort(label)}</div>
       {payload.map((p) => (
         <div key={p.dataKey} className="bb-dash-tooltip-row" style={{ color: p.color }}>
           {p.name}: {p.dataKey === 'revenue' ? formatCurrencyVnd(p.value, locale) : p.value}
@@ -377,35 +374,29 @@ export function ReportsScreen() {
               />
             </>
           )}
-          {canExport && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button type="button" variant="default">
-                <Download size={14} aria-hidden="true" />
-                {t('reports.exportData')}
-                <ChevronDown size={14} aria-hidden="true" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64">
-              <DropdownMenuItem
-                disabled={!shouldFetch}
-                onSelect={() => runExport(() => exportOrdersCsv({ from: exportFrom, to: exportTo }))}
-              >
-                {t('reports.exportOrders')}
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => runExport(() => exportProductsCsv())}>
-                {t('reports.exportProducts')}
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => runExport(() => exportCustomersCsv())}>
-                {t('reports.exportCustomers')}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="font-normal text-muted-foreground whitespace-normal">
-                {t('reports.exportAllHint')}
-              </DropdownMenuLabel>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          )}
+          <div className="flex gap-2">
+            <ExportButton
+              disabled={!canExport || !shouldFetch}
+              title={!canExport ? t('reports.requirePermission', { defaultValue: 'Yêu cầu quyền reports.export' }) : undefined}
+              onExport={() => runExport(() => exportOrdersCsv({ from: exportFrom, to: exportTo }))}
+            >
+              {t('reports.exportOrders')}
+            </ExportButton>
+            <ExportButton
+              disabled={!canExport}
+              title={!canExport ? t('reports.requirePermission', { defaultValue: 'Yêu cầu quyền reports.export' }) : t('reports.exportAllHint')}
+              onExport={() => runExport(() => exportProductsCsv())}
+            >
+              {t('reports.exportProducts')}
+            </ExportButton>
+            <ExportButton
+              disabled={!canExport}
+              title={!canExport ? t('reports.requirePermission', { defaultValue: 'Yêu cầu quyền reports.export' }) : t('reports.exportAllHint')}
+              onExport={() => runExport(() => exportCustomersCsv())}
+            >
+              {t('reports.exportCustomers')}
+            </ExportButton>
+          </div>
         </div>
       </div>
 
@@ -413,7 +404,7 @@ export function ReportsScreen() {
 
       {state.status === 'loading' && (
         <>
-          <div className="bb-kpi-grid">
+          <div className="bb-kpi-grid bb-kpi-grid-4">
             {[...Array(4)].map((_, i) => (
               <SkeletonBlock key={i} height={120} />
             ))}
@@ -448,7 +439,7 @@ export function ReportsScreen() {
       {state.status === 'success' && state.data && (
         <>
           {/* KPI row */}
-          <div className="bb-kpi-grid">
+          <div className="bb-kpi-grid bb-kpi-grid-4">
             {kpiCards.map((k) => {
               const trend = makeTrend(k.raw, k.prev, t)
               return (
@@ -479,7 +470,12 @@ export function ReportsScreen() {
 
           {/* Revenue trend chart */}
           <div className="bb-card mb-4">
-            <div className="bb-card-header"><h3>{t('reports.chartDailyRevenue')}</h3></div>
+            <div className="bb-card-header">
+              <div>
+                <h3>{t('reports.chartDailyRevenue')}</h3>
+                <p>{t('dashboard.revenueChart.subtitle')}</p>
+              </div>
+            </div>
             <div className="bb-card-body">
               {state.data.dailyRevenue?.length > 1 ? (
                 <ResponsiveContainer width="100%" height={240}>
@@ -497,6 +493,7 @@ export function ReportsScreen() {
                       tickLine={false}
                       axisLine={false}
                       interval="preserveStartEnd"
+                      tickFormatter={fmtIsoDateShort}
                     />
                     <YAxis
                       tickFormatter={tickFmt}
@@ -571,7 +568,6 @@ export function ReportsScreen() {
               title={t('reports.chartTopProducts')}
               rows={state.data.topProducts}
               noDataLabel={t('reports.noData')}
-              sortLabel={t('reports.sortBy', { defaultValue: 'Sắp xếp theo' })}
               cols={[
                 { key: 'productName', label: t('reports.colProduct') },
                 { key: 'unitsSold', label: t('reports.colUnitsSold'), right: true, sortable: true },
@@ -582,7 +578,6 @@ export function ReportsScreen() {
               title={t('reports.chartTopCustomers')}
               rows={state.data.topCustomers}
               noDataLabel={t('reports.noData')}
-              sortLabel={t('reports.sortBy', { defaultValue: 'Sắp xếp theo' })}
               cols={[
                 { key: 'customerEmail', label: t('reports.colEmail') },
                 { key: 'orderCount', label: t('reports.colOrders'), right: true, sortable: true },

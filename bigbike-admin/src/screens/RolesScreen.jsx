@@ -223,6 +223,11 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
     setSavePending({ added, removed })
   }
 
+  function handleRequestDelete(role) {
+    if (!role || Number(role.assignedUserCount) > 0) return
+    setDeletingRole(role)
+  }
+
   async function handleSave() {
     if (!selected || !draft) return
     setSaving(true)
@@ -257,7 +262,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
   }
 
   async function handleDeleteRole() {
-    if (!deletingRole) return
+    if (!deletingRole || Number(deletingRole.assignedUserCount) > 0) return
     setDeleteSaving(true)
     try {
       await deleteRole(deletingRole.id)
@@ -302,6 +307,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
       <SaveSummaryDialog
         pending={savePending}
         roleName={selectedDisplayName}
+        assignedUserCount={selected?.assignedUserCount}
         permLabels={permLabels}
         sensitiveKeys={SENSITIVE_PERMS}
         isOwnRole={isOwnRole}
@@ -412,7 +418,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
                 onRequestSave={handleRequestSave}
                 onToggle={handleToggle}
                 onToggleGroup={handleGroupBulk}
-                onDeleteRole={() => setDeletingRole(selected)}
+                onDeleteRole={() => handleRequestDelete(selected)}
               />
             ) : (
               <div className="flex items-center justify-center p-12 text-muted-foreground text-sm">

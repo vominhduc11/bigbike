@@ -479,6 +479,8 @@ Status: `CONFIRMED_FROM_CODE`
 | `GET /api/v1/admin/reports/customers/export?status=...` | `reports.export` | Exports customers matching filters to a UTF-8 BOM CSV file. | `CONFIRMED_FROM_CODE` | `AdminReportController.java`, `AdminReportService.java` |
 | `GET /api/v1/admin/reports/products/export?publishStatus=...` | `reports.export` | Exports the limited product report (13 reporting columns), optionally filtered by publish status, to a UTF-8 BOM CSV file. It is not the catalog backup/export endpoint. | `CONFIRMED_FROM_CODE` | `AdminReportController.java`, `AdminReportService.java` |
 
+**Custom range limit (frontend-only, `REPORT_RULE_011`):** The admin UI restricts the custom `from`/`to` range picker on the Reports screen to a maximum 90-day span. This is not enforced by `/analytics` itself, which only validates `from <= to`.
+
 ### Analytics Response Shape
 Returns `AdminAnalyticsResponse`. The `PeriodSummary` object inside `summary` contains:
 - `grossOrderValue`: GMV: SUM(totalAmount) excl CANCELLED.
@@ -1477,6 +1479,47 @@ filters. Review photos remain limited to the existing `REVIEW_RULE_005` constrai
 The list `rating` filter affects only the returned rows and `pagination.totalItems`; it never changes
 the summary endpoint. Unknown or missing products/authors remain representable in the response with
 empty nullable metadata so the admin UI can render an explicit fallback.
+
+## Admin Roles Contract
+
+Admin role and permission-catalog endpoints require an Admin JWT. Role reads and the permission
+catalog require `roles.read`; role creation, permission updates and deletion require `roles.write`.
+Evidence: `AdminRolesController.java`, `AdminPermissionsController.java`, `AdminRoleService.java`,
+`CreateRoleRequest.java`, `UpdateRolePermissionsRequest.java`.
+
+`Role` response objects have the following shape:
+
+```json
+{
+  "id": "EDITOR",
+  "name": "Editor",
+  "description": "Content editor",
+  "isSystem": true,
+  "permissions": ["content.read", "content.update"],
+  "assignedUserCount": 2,
+  "createdAt": "2026-01-01T00:00:00Z",
+  "updatedAt": "2026-01-01T00:00:00Z"
+}
+```
+
+`assignedUserCount` counts rows in `admin_users` whose `role` equals the role id and whose status is
+one of `ACTIVE`, `INVITED`, `DISABLED` or `SUSPENDED`. Roles with no matching users return `0`.
+The count is informational for the Roles screen; existing role guards and `409` deletion behavior
+remain unchanged.
+
+| Method | Path | Permission | Request | Response |
+|---|---|---|---|---|
+| `GET` | `/api/v1/admin/roles` | `roles.read` | None | `200 ApiDataResponse<Role[]>` |
+| `POST` | `/api/v1/admin/roles` | `roles.write` | `{id, name, description?, permissions?}`; id 2–50 chars, name required, permissions max 300 | `201 ApiDataResponse<Role>` |
+| `PUT` | `/api/v1/admin/roles/{id}/permissions` | `roles.write` | `{permissions?}`; max 300 permission keys | `200 ApiDataResponse<Role>` |
+| `DELETE` | `/api/v1/admin/roles/{id}` | `roles.write` | None | `204 No Content` |
+| `GET` | `/api/v1/admin/permissions` | `roles.read` | None | `200 ApiDataResponse<PermissionGroup[]>` |
+
+`PermissionGroup` is `{groupKey, permissions}`, and each permission entry is
+`{key, sensitive}`. Missing/invalid authentication returns `401`; insufficient permission returns
+`403`. Existing validation, not-found, conflict and unknown-permission responses remain unchanged.
+
+Status: `CONFIRMED_FROM_CODE`
 
 ## Response Shape Caveats
 

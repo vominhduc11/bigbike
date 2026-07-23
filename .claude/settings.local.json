@@ -222,7 +222,11 @@
       "Bash(dd if=\"e:/Project/bigbike/bigbike_vn__2026_04_17/files/wp-content/cache/page_enhanced/bigbike.vn/_index_slash_ssl.html\" bs=1 skip=41500 count=80000)",
       "Read(//e/Project/bigbike/bigbike-backend/src/main/resources/db/migration/**)",
       "Bash(sed -E 's/^V\\([0-9]+\\)__.*/\\\\1 &/')",
-      "Bash(sort -n -k1)"
+      "Bash(sort -n -k1)",
+      "Bash(exit 0)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('src/locales/vi.json','utf8'\\)\\); JSON.parse\\(require\\('fs'\\).readFileSync\\('src/locales/en.json','utf8'\\)\\); console.log\\('OK'\\)\")",
+      "Bash(npx eslint *)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\({scripts:p.scripts, lintStaged:p['lint-staged']}, null, 2\\)\\)\")"
     ],
     "additionalDirectories": [
       "e:\\Project\\bigbike\\bigbike_vn__2026_04_17\\files\\wp-content\\cache\\page_enhanced\\bigbike.vn"

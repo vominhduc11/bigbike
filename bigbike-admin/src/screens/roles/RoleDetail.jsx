@@ -24,6 +24,9 @@ export function RoleDetail({
   const desc = t(descKey, { defaultValue: role.description || '' })
   const displayName = getRoleDisplayName(role, t)
   const showDesc = desc && desc !== displayName
+  const assignedUserCount = Number.isFinite(Number(role.assignedUserCount))
+    ? Math.max(0, Math.trunc(Number(role.assignedUserCount)))
+    : 0
 
   function toggleGroup(groupKey) {
     setOpenGroups(prev => {
@@ -62,11 +65,29 @@ export function RoleDetail({
                 {t('roles.editBtn')}
               </Button>
               {!role.isSystem && (
-                <Button variant="ghost" size="sm" onClick={onDeleteRole}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onDeleteRole}
+                  disabled={assignedUserCount > 0}
+                  aria-describedby={assignedUserCount > 0 ? `delete-role-help-${role.id}` : undefined}
                   className="flex items-center gap-1.5 text-danger">
                   <Trash2 size={14} aria-hidden />
                   {t('roles.deleteRoleBtn')}
                 </Button>
+              )}
+              {!role.isSystem && assignedUserCount > 0 && (
+                <Alert
+                  id={`delete-role-help-${role.id}`}
+                  tone="warning"
+                  size="sm"
+                  className="basis-full"
+                >
+                  {t('roles.deleteRoleBlocked', {
+                    name: displayName,
+                    count: assignedUserCount,
+                  })}
+                </Alert>
               )}
             </>
           )}

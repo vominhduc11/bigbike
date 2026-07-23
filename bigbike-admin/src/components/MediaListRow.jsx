@@ -3,6 +3,7 @@ import { toast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
 import { formatText } from '../lib/formatters'
 import { formatBytes, toClipboardUrl } from './media-picker/pickerUtils'
+import { resolveThumbUrl } from '../lib/contracts'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 
@@ -17,6 +18,7 @@ export function MediaListRow({
 }) {
   const { t } = useTranslation()
   const filename = formatText((media.filename ?? '').split('/').pop())
+  const thumbUrl = resolveThumbUrl(media)
   const dimensions = media.width && media.height ? `${media.width}×${media.height}` : '—'
   const dateStr = media.createdAt ? new Date(media.createdAt).toLocaleDateString('vi-VN') : '—'
 
@@ -39,8 +41,8 @@ export function MediaListRow({
       <Button variant="unstyled" onClick={onPreview}
         aria-label={t('media.previewNamed', { name: filename, defaultValue: 'Xem lớn {{name}}' })}
         className="medialib-list-thumb">
-        {isImage(media.mimeType) && media.publicUrl ? (
-          <img src={media.publicUrl} alt={filename} loading="lazy" />
+        {isImage(media.mimeType) && thumbUrl ? (
+          <img src={thumbUrl} alt={filename} loading="lazy" />
         ) : isVideo(media.mimeType) && media.publicUrl ? (
           <video src={`${media.publicUrl}#t=0.001`} muted preload="metadata" />
         ) : (

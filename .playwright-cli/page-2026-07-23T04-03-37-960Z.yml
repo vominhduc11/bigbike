@@ -1,0 +1,255 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e32]:
+      - link "Bỏ qua tới nội dung" [ref=e33] [cursor=pointer]:
+        - /url: "#bb-main-content"
+      - complementary "Thanh điều hướng" [ref=e34]:
+        - generic [ref=e35]:
+          - generic [ref=e36]: BB
+          - generic [ref=e37]:
+            - generic [ref=e38]: BigBike
+            - generic [ref=e39]: Admin
+        - navigation "Điều hướng chính" [ref=e40]:
+          - group "Bán hàng" [ref=e41]:
+            - link "Tổng quan" [ref=e43] [cursor=pointer]:
+              - /url: /admin/dashboard
+            - link "Đơn hàng 388 mục cần xử lý" [ref=e50] [cursor=pointer]:
+              - /url: /admin/orders
+              - generic [ref=e55]: Đơn hàng
+              - generic "388 mục cần xử lý" [ref=e56]: 99+
+            - link "Khách hàng" [ref=e57] [cursor=pointer]:
+              - /url: /admin/customers
+            - link "Đánh giá" [ref=e64] [cursor=pointer]:
+              - /url: /admin/reviews
+          - group "Sản phẩm" [ref=e68]:
+            - link "Sản phẩm" [ref=e70] [cursor=pointer]:
+              - /url: /admin/products
+            - link "Sản phẩm nổi bật" [ref=e76] [cursor=pointer]:
+              - /url: /admin/featured-products
+            - link "Danh mục" [ref=e80] [cursor=pointer]:
+              - /url: /admin/categories
+            - link "Thương hiệu" [ref=e85] [cursor=pointer]:
+              - /url: /admin/brands
+          - group "Nội dung & Marketing" [ref=e90]:
+            - link "Tin tức" [ref=e92] [cursor=pointer]:
+              - /url: /admin/content
+            - link "Banner" [ref=e97] [cursor=pointer]:
+              - /url: /admin/sliders
+            - link "Video trang chủ" [ref=e100] [cursor=pointer]:
+              - /url: /admin/home-videos
+            - link "Highlights trang chủ" [ref=e103] [cursor=pointer]:
+              - /url: /admin/home-highlights
+            - link "Chuyển hướng" [ref=e110] [cursor=pointer]:
+              - /url: /admin/redirects
+            - link "Menu" [ref=e115] [cursor=pointer]:
+              - /url: /admin/menus
+            - link "Thư viện" [ref=e118] [cursor=pointer]:
+              - /url: /admin/media
+          - group "Báo cáo" [ref=e124]:
+            - link "Báo cáo" [ref=e126] [cursor=pointer]:
+              - /url: /admin/reports
+          - group "Hệ thống" [ref=e129]:
+            - link "Cài đặt" [ref=e131] [cursor=pointer]:
+              - /url: /admin/settings
+            - link "Quản trị viên" [ref=e136] [cursor=pointer]:
+              - /url: /admin/admin-users
+            - link "Phân quyền" [ref=e140] [cursor=pointer]:
+              - /url: /admin/roles
+            - link "Nhật ký" [ref=e145] [cursor=pointer]:
+              - /url: /admin/audit-logs
+        - strong [ref=e150]: Super Admin
+      - generic [ref=e151]:
+        - banner [ref=e152]:
+          - generic [ref=e153]: Tổng quan
+          - button "Mở tìm kiếm nhanh" [ref=e154]:
+            - generic [ref=e158]: Tìm đơn hàng, sản phẩm, khách hàng...
+            - generic [ref=e159]: ⌘K
+          - button "Chuyển sang chế độ tối" [ref=e160] [cursor=pointer]
+          - button "Thông báo" [ref=e163] [cursor=pointer]
+          - button "Super Admin Chủ hệ thống" [ref=e168] [cursor=pointer]:
+            - generic [ref=e169]: AS
+            - generic [ref=e170]:
+              - generic [ref=e171]: Super Admin
+              - generic [ref=e172]: Chủ hệ thống
+        - navigation "Breadcrumb" [ref=e175]:
+          - list [ref=e176]:
+            - listitem [ref=e177]:
+              - generic [ref=e178]: Tổng quan
+        - main [ref=e179]:
+          - generic [ref=e180]:
+            - generic [ref=e181]:
+              - generic [ref=e182]:
+                - paragraph [ref=e183]: Tổng quan
+                - heading "Chào buổi sáng, Admin 👋" [level=1] [ref=e184]
+                - paragraph [ref=e185]: Hôm nay là Thứ Năm, 23 tháng 7, 2026. Đây là tình hình kinh doanh của BigBike.
+              - group "Khoảng thời gian biểu đồ doanh thu" [ref=e187]:
+                - button "7 ngày" [ref=e188] [cursor=pointer]
+                - button "30 ngày" [pressed] [ref=e189] [cursor=pointer]
+                - button "90 ngày" [ref=e190] [cursor=pointer]
+            - generic [ref=e191]:
+              - button "Doanh thu hôm nay — xem báo cáo" [ref=e192] [cursor=pointer]:
+                - generic [ref=e194]:
+                  - text: Doanh thu hôm nay
+                  - generic [ref=e195]: Hôm nay
+                - generic [ref=e200]: 0 ₫
+                - generic [ref=e201]:
+                  - generic [ref=e202]: Chưa đủ dữ liệu so sánh
+                  - generic [ref=e204]: "Đã thu: 0 ₫"
+              - button "Đơn hàng hôm nay — xem đơn hàng" [ref=e205] [cursor=pointer]:
+                - generic [ref=e207]:
+                  - text: Đơn hàng hôm nay
+                  - generic [ref=e208]: Hôm nay
+                - generic [ref=e213]: "0"
+                - generic [ref=e214]:
+                  - generic [ref=e215]: Bằng hôm qua
+                  - generic [ref=e217]: Không tính đơn đã huỷ
+              - button "Đơn chờ xử lý — xem đơn hàng" [ref=e218] [cursor=pointer]:
+                - generic [ref=e220]:
+                  - text: Đơn chờ xử lý
+                  - generic [ref=e221]: Hiện tại
+                - generic [ref=e226]: "388"
+                - generic [ref=e227]: Đơn cần xác nhận
+              - button "Sản phẩm đang bán — xem sản phẩm" [ref=e229] [cursor=pointer]:
+                - generic [ref=e231]:
+                  - text: Sản phẩm đang bán
+                  - generic [ref=e232]: Hiện tại
+                - generic [ref=e238]: "150"
+                - generic [ref=e239]: Đang xuất bản
+            - generic [ref=e241]:
+              - generic [ref=e242]:
+                - generic [ref=e244]:
+                  - heading "Doanh thu theo ngày" [level=3] [ref=e245]
+                  - paragraph [ref=e246]: "Đơn vị: triệu ₫"
+                - group "Biểu đồ doanh thu theo ngày" [ref=e248]:
+                  - paragraph [ref=e249]: "Tổng doanh thu trong kỳ: 90.380.000 ₫. Ngày cao nhất: 25/6 với 72.000.000 ₫."
+                  - application [ref=e252]:
+                    - generic [ref=e263]:
+                      - generic [ref=e264]:
+                        - generic [ref=e265]: 24/6
+                        - generic [ref=e267]: 30/6
+                        - generic [ref=e269]: 6/7
+                        - generic [ref=e271]: 12/7
+                        - generic [ref=e273]: 18/7
+                      - generic [ref=e275]:
+                        - generic [ref=e276]: "0.0"
+                        - generic [ref=e278]: "20"
+                        - generic [ref=e280]: "40"
+                        - generic [ref=e282]: "60"
+                        - generic [ref=e284]: "80"
+              - generic [ref=e286]:
+                - generic [ref=e287]:
+                  - heading "Cơ cấu đơn hàng" [level=3] [ref=e288]
+                  - button "Xem tất cả đơn" [ref=e289] [cursor=pointer]
+                - generic [ref=e293]:
+                  - group "Biểu đồ cơ cấu đơn hàng theo trạng thái" [ref=e294]:
+                    - application [ref=e297]
+                  - generic [ref=e298]:
+                    - generic [ref=e299]:
+                      - generic [ref=e301]: Đang xử lý
+                      - generic [ref=e302]:
+                        - text: "6"
+                        - generic [ref=e303]: (43%)
+                    - generic [ref=e304]:
+                      - generic [ref=e306]: Đã huỷ
+                      - generic [ref=e307]:
+                        - text: "8"
+                        - generic [ref=e308]: (57%)
+                    - generic [ref=e309]:
+                      - generic [ref=e310]: Tổng đơn
+                      - strong [ref=e311]: "14"
+            - generic [ref=e312]:
+              - generic [ref=e314]:
+                - heading "Việc cần xử lý" [level=3] [ref=e315]
+                - paragraph [ref=e316]: Các đầu việc đang chờ bạn quyết định.
+              - generic [ref=e318]:
+                - 'button "Khẩn: Hết hàng (1490)" [ref=e319]':
+                  - generic [ref=e326]:
+                    - generic [ref=e327]: Hết hàng
+                    - generic [ref=e328]: Đang ở trạng thái hết hàng
+                  - generic [ref=e329]: "1490"
+                  - generic [ref=e330] [cursor=pointer]: Xử lý ngay
+                - 'button "Khẩn: Đơn chờ xác nhận (388)" [ref=e333]':
+                  - generic [ref=e339]:
+                    - generic [ref=e340]: Đơn chờ xác nhận
+                    - generic [ref=e341]: Đơn mới chưa được xác nhận
+                  - generic [ref=e342]: "388"
+                  - generic [ref=e343] [cursor=pointer]: Xử lý ngay
+            - generic [ref=e346]:
+              - generic [ref=e347]:
+                - generic [ref=e348]:
+                  - heading "Đơn hàng gần nhất" [level=3] [ref=e349]
+                  - button "Xem tất cả" [ref=e350] [cursor=pointer]
+                - table [ref=e356]:
+                  - rowgroup [ref=e357]:
+                    - row [ref=e358]:
+                      - columnheader "Mã đơn" [ref=e359]
+                      - columnheader "Khách hàng" [ref=e360]
+                      - columnheader "Tổng tiền" [ref=e361]
+                      - columnheader "Trạng thái" [ref=e362]
+                  - rowgroup [ref=e363]:
+                    - row [ref=e364]:
+                      - cell "BB-20260721-8E770D 2 ngày trước" [ref=e365]:
+                        - generic [ref=e366]:
+                          - button "BB-20260721-8E770D" [ref=e367] [cursor=pointer]
+                          - generic [ref=e368]: 2 ngày trước
+                      - cell "Võ Minh Đức" [ref=e369]
+                      - cell "6.380.000 ₫" [ref=e370]
+                      - cell [ref=e371]
+                    - row [ref=e374]:
+                      - cell "BB-20260721-C8FE09 2 ngày trước" [ref=e375]:
+                        - generic [ref=e376]:
+                          - button "BB-20260721-C8FE09" [ref=e377] [cursor=pointer]
+                          - generic [ref=e378]: 2 ngày trước
+                      - cell "Võ Minh Đức" [ref=e379]
+                      - cell "15.950.000 ₫" [ref=e380]
+                      - cell [ref=e381]
+                    - row [ref=e384]:
+                      - cell "BB-20260721-50525F 2 ngày trước" [ref=e385]:
+                        - generic [ref=e386]:
+                          - button "BB-20260721-50525F" [ref=e387] [cursor=pointer]
+                          - generic [ref=e388]: 2 ngày trước
+                      - cell "Võ Minh Đức" [ref=e389]
+                      - cell "9.570.000 ₫" [ref=e390]
+                      - cell [ref=e391]
+                    - row [ref=e394]:
+                      - cell "BB-20260721-3B87BF 2 ngày trước" [ref=e395]:
+                        - generic [ref=e396]:
+                          - button "BB-20260721-3B87BF" [ref=e397] [cursor=pointer]
+                          - generic [ref=e398]: 2 ngày trước
+                      - cell "Võ Minh Đức" [ref=e399]
+                      - cell "3.190.000 ₫" [ref=e400]
+                      - cell [ref=e401]
+                    - row [ref=e404]:
+                      - cell "BB-20260721-AB9179 2 ngày trước" [ref=e405]:
+                        - generic [ref=e406]:
+                          - button "BB-20260721-AB9179" [ref=e407] [cursor=pointer]
+                          - generic [ref=e408]: 2 ngày trước
+                      - cell "Võ Minh Đức" [ref=e409]
+                      - cell "3.190.000 ₫" [ref=e410]
+                      - cell [ref=e411]
+              - generic [ref=e414]:
+                - generic [ref=e415]:
+                  - heading "Sản phẩm bán chạy" [level=3] [ref=e416]
+                  - button "Xem tất cả" [ref=e417] [cursor=pointer]
+                - table [ref=e423]:
+                  - rowgroup [ref=e424]:
+                    - row [ref=e425]:
+                      - columnheader "#" [ref=e426]
+                      - columnheader "Sản phẩm" [ref=e427]
+                      - columnheader "Đã bán" [ref=e428]
+                      - columnheader "Doanh thu" [ref=e429]
+                  - rowgroup [ref=e430]:
+                    - row [ref=e431]:
+                      - cell "1" [ref=e432]
+                      - cell [ref=e434]:
+                        - button "CABERG TANAMI CARBON - 2 IN 1" [ref=e435] [cursor=pointer]
+                      - cell "7" [ref=e442]
+                      - cell "84.000.000 ₫" [ref=e443]
+                    - row [ref=e444]:
+                      - cell "2" [ref=e445]
+                      - cell [ref=e447]:
+                        - button "MŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06" [ref=e448] [cursor=pointer]
+                      - cell "2" [ref=e455]
+                      - cell "6.380.000 ₫" [ref=e456]
+    - region "Notifications alt+T"
+  - generic [ref=e457]: "0.0"

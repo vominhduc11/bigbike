@@ -67,7 +67,7 @@ function Toast({ toast, onDismiss, navigate }) {
   )
 }
 
-export function OrderNotificationToast({ navigate }) {
+export function OrderNotificationToast({ navigate, canViewOrders }) {
   const { t } = useTranslation()
   const [toasts, setToasts] = useState([])
   const counterRef = useRef(0)
@@ -92,6 +92,8 @@ export function OrderNotificationToast({ navigate }) {
   }, [clearTimer])
 
   useEffect(() => {
+    if (!canViewOrders) return undefined
+
     const timers = timersRef.current
     const unsubscribe = subscribeAdminWs('/topic/admin/orders', (event) => {
       const id = ++counterRef.current
@@ -103,14 +105,14 @@ export function OrderNotificationToast({ navigate }) {
       timers.forEach((handle) => clearTimeout(handle))
       timers.clear()
     }
-  }, [scheduleTimer])
+  }, [canViewOrders, scheduleTimer])
 
   const dismiss = (id) => {
     clearTimer(id)
     setToasts((prev) => prev.filter((item) => item.id !== id))
   }
 
-  if (toasts.length === 0) return null
+  if (!canViewOrders || toasts.length === 0) return null
 
   // Neo góc TRÊN-phải (dưới topbar) thay vì dưới-phải: tránh che thanh hành động dính
   // đáy (.sticky-action-bar) khi cuộn tới cuối form. z lấy theo token --admin-z-toast.

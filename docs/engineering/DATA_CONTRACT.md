@@ -231,6 +231,22 @@ After 5 consecutive failures the account is locked for 15 minutes (`AdminLoginAt
 
 Status: `CONFIRMED_FROM_CODE`
 
+### Admin role tables
+
+`admin_roles` stores role definitions: `id` (varchar(50), primary key), `name`, optional
+`description`, `is_system`, `created_at` and `updated_at`. `role_permissions` stores the permissions
+granted to each role: `role_id` (foreign key to `admin_roles.id`, cascade on role deletion) and
+`permission`; `(role_id, permission)` is the composite primary key.
+
+`admin_users.role` stores the role id assigned to an admin user and is the relation used by the
+admin role-management contract. `assignedUserCount` counts users linked through this column when
+their status is `ACTIVE`, `INVITED`, `DISABLED` or `SUSPENDED`. The separate
+`admin_user_roles` element-collection table is legacy/import compatibility and is not used for this
+role count.
+
+Evidence: `V2__create_admin_auth_tables.sql`, `V49__create_roles_permissions_tables.sql`,
+`AdminUserEntity.java`, `AdminRoleEntity.java`.
+
 ### Return / Refund data — removed (2026-06-23)
 
 > **Removed (2026-06-23).** The Return (RMA) and Refund data model — `returns` / `return_items` / `return_history` tables, the `refund_amount` / `refund_reason` / `refunded_at` columns on `orders` & `payments`, and the `REFUNDED` value on order status — was dropped. Old REFUNDED orders were migrated to CANCELLED.

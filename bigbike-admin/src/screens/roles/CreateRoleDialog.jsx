@@ -24,6 +24,7 @@ function stripDiacritics(v) {
 
 export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [] }) {
   const { t } = useTranslation()
+  const cloneableRoles = roles.filter((role) => role.id !== 'SUPER_ADMIN')
   const [name, setName] = useState('')
   const [id, setId]   = useState('')
   const [desc, setDesc] = useState('')
@@ -157,7 +158,7 @@ export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [] }) {
         </FormField>
 
         {/* F11 — nhân bản quyền từ vai trò có sẵn thay vì luôn bắt đầu trống. */}
-        {roles.length > 0 && (
+        {cloneableRoles.length > 0 && (
           <FormField
             label={t('roles.createRoleCloneLabel')}
             htmlFor="create-role-clone"
@@ -167,7 +168,7 @@ export function CreateRoleDialog({ onConfirm, onCancel, saving, roles = [] }) {
               <SelectTrigger id="create-role-clone"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={CLONE_NONE}>{t('roles.createRoleCloneNone')}</SelectItem>
-                {roles.map((r) => (
+                {cloneableRoles.map((r) => (
                   <SelectItem key={r.id} value={r.id}>{getRoleDisplayName(r, t)}</SelectItem>
                 ))}
               </SelectContent>

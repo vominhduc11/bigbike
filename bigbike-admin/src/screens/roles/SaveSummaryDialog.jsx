@@ -4,10 +4,16 @@ import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { Modal } from '@/components/layout/Modal'
 
-export function SaveSummaryDialog({ pending, roleName, permLabels, sensitiveKeys, isOwnRole, onConfirm, onCancel, saving }) {
+export function SaveSummaryDialog({
+  pending, roleName, assignedUserCount = 0, permLabels, sensitiveKeys,
+  isOwnRole, onConfirm, onCancel, saving,
+}) {
   const { t } = useTranslation()
   const added   = pending?.added   || []
   const removed = pending?.removed || []
+  const userCount = Number.isFinite(Number(assignedUserCount))
+    ? Math.max(0, Math.trunc(Number(assignedUserCount)))
+    : 0
   const sensitiveAdded   = added.filter(k => sensitiveKeys.has(k))
   const sensitiveRemoved = removed.filter(k => sensitiveKeys.has(k))
   const hasSensitive = sensitiveAdded.length > 0 || sensitiveRemoved.length > 0
@@ -33,6 +39,12 @@ export function SaveSummaryDialog({ pending, roleName, permLabels, sensitiveKeys
       <p className="m-0 mb-4 text-sm text-muted-foreground">
         {t('roles.saveSummaryRole', { name: roleName })}
       </p>
+
+      {userCount > 0 && (
+        <Alert tone="warning" size="sm" className="mb-4">
+          {t('roles.assignedUserWarning', { count: userCount })}
+        </Alert>
+      )}
 
       {added.length > 0 && (
         <div className="mb-3">

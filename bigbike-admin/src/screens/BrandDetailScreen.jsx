@@ -7,6 +7,7 @@ import {
   deleteBrand,
   fetchBrandDetail,
   mapValidationErrors,
+  restoreBrand,
   updateBrand,
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
@@ -251,6 +252,20 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     },
   })
 
+  const restoreMutation = useMutation({
+    mutationFn: () => restoreBrand(brandId),
+    onSuccess: (response) => {
+      toast.success(t('brands.detail.successRestore'))
+      queryClient.invalidateQueries({ queryKey: ['brands'] })
+      queryClient.setQueryData(['brand', brandId], response)
+      setIsSubmitting(false)
+    },
+    onError: (error) => {
+      toast.error(error.message || t('brands.detail.errRestoreFailed'))
+      setIsSubmitting(false)
+    },
+  })
+
   function updateField(field, value) {
     setForm((previous) => ({ ...previous, [field]: value }))
     setValidationErrors((previous) => {
@@ -436,26 +451,47 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
         </div>
         <div className="bb-screen-actions">
           {!isCreate && canUpdate && !isSystemBrand && (
-
-            <Button
-              type="button"
-              variant="secondary"
-              className="min-h-11 text-danger"
-              disabled={isReadOnly}
-              aria-busy={isSubmitting || undefined}
-              onClick={async () => {
-                const confirmed = await showConfirm(
-                  t('brands.detail.hideConfirm', { name: formatText(form.name || state.item?.name) }),
-                  t('brands.detail.hideConfirmTitle'),
-                  { variant: 'danger', confirmLabel: t('brands.detail.hideBtn') },
-                )
-                if (!confirmed) return
-                setIsSubmitting(true)
-                deleteMutation.mutate()
-              }}
-            >
-              {t('brands.detail.hideBtn')}
-            </Button>
+            state.item?.isVisible === false ? (
+              <Button
+                type="button"
+                variant="secondary"
+                className="min-h-11"
+                disabled={isReadOnly}
+                aria-busy={isSubmitting || undefined}
+                onClick={async () => {
+                  const confirmed = await showConfirm(
+                    t('brands.detail.restoreConfirm', { name: formatText(form.name || state.item?.name) }),
+                    t('brands.detail.restoreConfirmTitle'),
+                    { variant: 'default', confirmLabel: t('brands.detail.restoreBtn') },
+                  )
+                  if (!confirmed) return
+                  setIsSubmitting(true)
+                  restoreMutation.mutate()
+                }}
+              >
+                {t('brands.detail.restoreBtn')}
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="secondary"
+                className="min-h-11 text-danger"
+                disabled={isReadOnly}
+                aria-busy={isSubmitting || undefined}
+                onClick={async () => {
+                  const confirmed = await showConfirm(
+                    t('brands.detail.hideConfirm', { name: formatText(form.name || state.item?.name) }),
+                    t('brands.detail.hideConfirmTitle'),
+                    { variant: 'danger', confirmLabel: t('brands.detail.hideBtn') },
+                  )
+                  if (!confirmed) return
+                  setIsSubmitting(true)
+                  deleteMutation.mutate()
+                }}
+              >
+                {t('brands.detail.hideBtn')}
+              </Button>
+            )
           )}
         </div>
       </div>

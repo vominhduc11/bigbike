@@ -22,6 +22,18 @@ export function formatCurrencyVnd(amount, locale = activeLocale()) {
 /** Alias kept for backward compatibility — same output as formatCurrencyVnd. */
 export const formatVndShort = formatCurrencyVnd
 
+/** ISO "yyyy-mm-dd" → "d/m" (no leading zeros, no year) — chart axis/tooltip labels. */
+export function fmtIsoDateShort(isoDate) {
+  if (!isoDate || typeof isoDate !== 'string') return ''
+  const parts = isoDate.split('-')
+  if (parts.length < 3) return isoDate
+  const m = Number.parseInt(parts[1], 10)
+  const d = Number.parseInt(parts[2], 10)
+  // Ngày hỏng (thiếu phần/không phải số) → trả nguyên chuỗi gốc, tránh hiện "NaN/NaN".
+  if (Number.isNaN(m) || Number.isNaN(d)) return isoDate
+  return `${d}/${m}`
+}
+
 export function formatDateTime(value) {
   if (!value) {
     return '—'

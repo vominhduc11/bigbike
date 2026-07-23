@@ -257,7 +257,7 @@ export function DashboardScreen({ navigate }) {
 
       {state.status === 'loading' && !data && (
         <>
-          <div className="bb-kpi-grid">
+          <div className="bb-kpi-grid bb-kpi-grid-4">
             {[...Array(4)].map((_, i) => (
               <SkeletonBlock key={i} height={120} />
             ))}
@@ -273,7 +273,7 @@ export function DashboardScreen({ navigate }) {
       {data && (
         <>
           {/* KPI cards */}
-          <div className="bb-kpi-grid">
+          <div className="bb-kpi-grid bb-kpi-grid-4">
             <div
               className="bb-kpi clickable"
               {...clickableProps(

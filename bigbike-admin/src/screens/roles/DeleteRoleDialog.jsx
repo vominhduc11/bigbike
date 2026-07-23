@@ -6,6 +6,10 @@ import { getRoleDisplayName } from './constants'
 
 export function DeleteRoleDialog({ role, onConfirm, onCancel, saving }) {
   const { t } = useTranslation()
+  const assignedUserCount = Number.isFinite(Number(role?.assignedUserCount))
+    ? Math.max(0, Math.trunc(Number(role.assignedUserCount)))
+    : 0
+  const isBlocked = assignedUserCount > 0
   return (
     <Modal
       open={!!role}
@@ -21,14 +25,21 @@ export function DeleteRoleDialog({ role, onConfirm, onCancel, saving }) {
           <Button variant="ghost" size="sm" onClick={onCancel} disabled={saving}>
             {t('roles.cancelBtn')}
           </Button>
-          <Button variant="danger" size="sm" onClick={onConfirm} loading={saving}>
+          <Button variant="danger" size="sm" onClick={onConfirm} loading={saving} disabled={isBlocked}>
             {t('roles.deleteRoleBtn')}
           </Button>
         </>
       }
     >
       <p className="m-0 text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
-        {role ? t('roles.deleteRoleConfirm', { name: getRoleDisplayName(role, t) }) : ''}
+        {role
+          ? isBlocked
+            ? t('roles.deleteRoleBlocked', {
+              name: getRoleDisplayName(role, t),
+              count: assignedUserCount,
+            })
+            : t('roles.deleteRoleConfirm', { name: getRoleDisplayName(role, t) })
+          : ''}
       </p>
     </Modal>
   )

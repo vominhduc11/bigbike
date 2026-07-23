@@ -269,6 +269,7 @@ function AdminApp() {
     (permission) => permissions.has('*') || permissions.has(permission),
     [permissions],
   )
+  const canViewOrders = hasPermission('orders.read')
   const userRoles = useMemo(() => authState.user?.roles || [], [authState.user])
   // Route/nav không khai báo `roles` thì mọi vai trò đều qua; '*' luôn qua.
   const hasAnyRole = useCallback(
@@ -417,7 +418,7 @@ function AdminApp() {
     case 'review-detail':
       screen = <ReviewDetailScreen reviewId={route.reviewId} navigate={navigate} canUpdate={hasPermission('reviews.write')} />; break
     case 'admin-users':
-      screen = <AdminUsersScreen canUpdate={hasPermission('admin-users.write')} currentUserId={authState.user?.id} />; break
+      screen = <AdminUsersScreen canUpdate={hasPermission('admin-users.write')} isSuperAdmin={hasPermission('*')} currentUserId={authState.user?.id} />; break
     case 'settings':
       screen = <SettingsScreen canUpdate={hasPermission('settings.write')} isSuperAdmin={hasPermission('*')} navigate={navigate} />; break
     case 'audit-logs':
@@ -437,7 +438,9 @@ function AdminApp() {
       <Suspense fallback={SCREEN_SUSPENSE_FALLBACK}>
         {screen}
       </Suspense>
-      <OrderNotificationToast navigate={navigate} />
+      {canViewOrders ? (
+        <OrderNotificationToast navigate={navigate} canViewOrders={canViewOrders} />
+      ) : null}
     </AdminShell>
   )
 }

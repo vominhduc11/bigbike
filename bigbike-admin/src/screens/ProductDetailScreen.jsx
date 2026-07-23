@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
 import {
-  AlertCircle, Check, Eye, Info, Loader2, Lock, Save, Search as PfSearch, X,
+  AlertCircle, Check, ChevronDown, ChevronRight, Eye, Info, Loader2, Lock, Save, Search as PfSearch, X,
 } from 'lucide-react'
 
 import {
@@ -125,6 +125,10 @@ import { AssignmentConfigContext } from './product-detail/constants'
 // Nhãn hiển thị cho giới tính khi contentLang='en' — value lưu DB vẫn luôn "Nam"/"Nữ" (DATA_CONTRACT.md).
 const GENDER_LABEL_EN = { Nam: 'Male', 'Nữ': 'Female' }
 const EMPTY_ITEMS = []
+// Thụt lề theo cấp trong cây danh mục — bước token spacing 4px của admin
+// (pl-2/6/10/14 = +16px mỗi cấp); cấp sâu hơn dùng lại mức thụt lề sâu nhất
+// thay vì bịa class arbitrary.
+const CATEGORY_TREE_INDENT_CLASSES = ['pl-2', 'pl-6', 'pl-10', 'pl-14']
 
 // ── Main screen ────────────────────────────────────────────────────────────────
 
@@ -141,6 +145,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const [isDirty, setIsDirty] = useState(false)
   const [validationErrors, setValidationErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isRestoreConfirming, setIsRestoreConfirming] = useState(false)
+  const restoreConfirmingRef = useRef(false)
   const slugEditedByUser = useRef(false)
   const enSlugEditedByUser = useRef(false)
 
@@ -284,6 +290,74 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       deleted: true,
     }
   ))
+  // Cha (mọi cấp) có ít nhất 1 con trong categoryTree — quyết định hiện mũi tên
+  // mở/thu ở ô chọn danh mục.
+  const categoryIdsWithChildren = useMemo(() => {
+    const set = new Set()
+    for (const node of categoryTree) {
+      if (node.parentId) set.add(node.parentId)
+    }
+    return set
+  }, [categoryTree])
+  // Tổ tiên (mọi cấp) của các danh mục đang được chọn — tự mở để không ẩn mất
+  // lựa chọn hiện có khi sửa sản phẩm cũ.
+  const autoExpandCategoryIds = useMemo(() => {
+    const byId = new Map(categoryTree.map((node) => [node.id, node]))
+    const result = new Set()
+    for (const id of form.categoryIds ?? []) {
+      let node = byId.get(id)
+      while (node?.parentId && byId.has(node.parentId)) {
+        result.add(node.parentId)
+        node = byId.get(node.parentId)
+      }
+    }
+    return result
+  }, [categoryTree, form.categoryIds])
+  const [expandedCategoryIds, setExpandedCategoryIds] = useState(() => new Set(autoExpandCategoryIds))
+  // Đồng bộ trong lúc render (không phải effect) khi form.categoryIds đổi thật
+  // (load sản phẩm / tick chọn) — so sánh theo form.categoryIds (chỉ đổi
+  // reference qua setForm) chứ không theo autoExpandCategoryIds: categoryTree
+  // phía trên build lại object mỗi render (do loadedCategoryRefs không memo),
+  // so sánh trực tiếp Set đó sẽ luôn lệch → setState mỗi render → vòng lặp vô hạn.
+  const [syncedCategoryIds, setSyncedCategoryIds] = useState(form.categoryIds)
+  if (form.categoryIds !== syncedCategoryIds) {
+    setSyncedCategoryIds(form.categoryIds)
+    if (autoExpandCategoryIds.size > 0) {
+      setExpandedCategoryIds((previous) => {
+        let changed = false
+        const next = new Set(previous)
+        for (const id of autoExpandCategoryIds) {
+          if (!next.has(id)) {
+            next.add(id)
+            changed = true
+          }
+        }
+        return changed ? next : previous
+      })
+    }
+  }
+  function toggleCategoryExpanded(categoryId) {
+    setExpandedCategoryIds((previous) => {
+      const next = new Set(previous)
+      if (next.has(categoryId)) next.delete(categoryId)
+      else next.add(categoryId)
+      return next
+    })
+  }
+  // Danh sách hiện trong popover: gốc luôn hiện, con chỉ hiện khi cha đang mở —
+  // categoryTree đã depth-first nên cha luôn duyệt trước con.
+  const visibleCategoryTreeRows = useMemo(() => {
+    const visible = []
+    const openParentIds = new Set()
+    for (const node of categoryTree) {
+      const isRoot = node.depth === 0
+      if (isRoot || (node.parentId && openParentIds.has(node.parentId))) {
+        visible.push(node)
+        if (expandedCategoryIds.has(node.id)) openParentIds.add(node.id)
+      }
+    }
+    return visible
+  }, [categoryTree, expandedCategoryIds])
   const selectedBrandLabel =
     findOptionById(brandOptions, form.brandId)?.name ||
     (form.brandId ? t('products.detail.optionNotFound', { id: form.brandId }) : undefined)
@@ -912,10 +986,36 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       : t('products.detail.saveClean', { defaultValue: 'Đã lưu' })
 
   // Trang sửa chỉ còn 1 nút Lưu: sản phẩm đang PUBLISHED thì lưu giữ nguyên trạng thái
-  // (không bị lùi về Nháp chỉ vì sửa nội dung); còn lại luôn lưu về DRAFT — đăng bán
-  // là hành động riêng, chỉ làm được từ nút bật/tắt ở màn danh sách sản phẩm.
+  // (không bị lùi về Nháp chỉ vì sửa nội dung); sản phẩm TRASH cần xác nhận trước khi
+  // khôi phục về DRAFT; còn lại luôn lưu về DRAFT — đăng bán là hành động riêng, chỉ
+  // làm được từ nút bật/tắt ở màn danh sách sản phẩm.
   const isPublished = form.publishStatus === 'PUBLISHED'
-  const primaryLabel = isPublished ? t('products.detail.saveBtn') : t('products.detail.saveDraft')
+  const isTrashed = form.publishStatus === 'TRASH'
+  const primaryLabel = isTrashed
+    ? t('products.detail.restoreAndSave')
+    : isPublished ? t('products.detail.saveBtn') : t('products.detail.saveDraft')
+
+  async function handlePrimarySave() {
+    if (isTrashed) {
+      if (restoreConfirmingRef.current) return
+      restoreConfirmingRef.current = true
+      setIsRestoreConfirming(true)
+      try {
+        const confirmed = await showConfirm(
+          t('products.detail.restoreAndSaveConfirm'),
+          t('products.detail.restoreAndSaveConfirmTitle'),
+          { variant: 'default', confirmLabel: primaryLabel },
+        )
+        if (confirmed) await handleSave('DRAFT')
+      } finally {
+        restoreConfirmingRef.current = false
+        setIsRestoreConfirming(false)
+      }
+      return
+    }
+
+    handleSave(isPublished ? undefined : 'DRAFT')
+  }
 
   async function handleClose() {
     if (isDirty) {
@@ -989,7 +1089,14 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           }
         />
 
-        {/* Banners — read-only / draft-recovery */}
+        {/* Banners — trash / read-only / draft-recovery */}
+        {isTrashed && (
+          <div className="bb-alert warning wrap">
+            <AlertCircle size={16} className="shrink-0" />
+            <div className="bb-alert-main">{t('products.detail.trashWarning')}</div>
+          </div>
+        )}
+
         {hasOtherAdmin ? (
           <Alert tone="warning" size="sm" className="mb-4">
             {t('presence.otherAdminProduct', { defaultValue: 'Có quản trị viên khác đang mở sản phẩm này. Hãy kiểm tra dữ liệu trước khi lưu.' })}
@@ -1060,11 +1167,11 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         <form
           ref={formRef}
           className="flex flex-col gap-6 pb-24"
-          onSubmit={(e) => { e.preventDefault(); handleSave() }}
+          onSubmit={(e) => { e.preventDefault(); handlePrimarySave() }}
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !isReadOnly && isDirty) {
               e.preventDefault()
-              handleSave()
+              handlePrimarySave()
             }
           }}
         >
@@ -1178,17 +1285,40 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                           {t('products.detail.categoryPickerHint')}
                         </p>
                         <div className="max-h-64 space-y-1 overflow-y-auto">
-                          {categoryTree.map((category) => {
+                          {visibleCategoryTreeRows.map((category) => {
                             const selected = form.categoryIds?.includes(category.id)
                             const locked = category.deleted === true || category.visible === false || category.isVisible === false
+                            const hasChildren = categoryIdsWithChildren.has(category.id)
+                            const isExpanded = expandedCategoryIds.has(category.id)
                             return (
                               <label
                                 key={category.id}
                                 className={cn(
-                                  'flex min-h-11 cursor-pointer items-center gap-3 px-2 py-2 text-sm hover:bg-muted',
+                                  'flex min-h-11 cursor-pointer items-center gap-3 py-2 pr-2 text-sm hover:bg-muted',
+                                  CATEGORY_TREE_INDENT_CLASSES[Math.min(category.depth, CATEGORY_TREE_INDENT_CLASSES.length - 1)],
                                   locked && !selected && 'cursor-not-allowed opacity-60',
                                 )}
                               >
+                                {hasChildren ? (
+                                  <button
+                                    type="button"
+                                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted-foreground/10"
+                                    onClick={(e) => {
+                                      e.preventDefault()
+                                      e.stopPropagation()
+                                      toggleCategoryExpanded(category.id)
+                                    }}
+                                    aria-label={isExpanded
+                                      ? t('products.detail.categoryCollapse', { defaultValue: 'Thu gọn' })
+                                      : t('products.detail.categoryExpand', { defaultValue: 'Mở rộng' })}
+                                  >
+                                    {isExpanded
+                                      ? <ChevronDown size={14} aria-hidden="true" />
+                                      : <ChevronRight size={14} aria-hidden="true" />}
+                                  </button>
+                                ) : (
+                                  <span className="h-4 w-4 shrink-0" aria-hidden="true" />
+                                )}
                                 <Checkbox
                                   checked={selected}
                                   disabled={isReadOnly || (locked && !selected)}
@@ -2099,8 +2229,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
           <Button
             type="button"
-            disabled={isReadOnly || isSubmitting || !isDirty}
-            onClick={() => handleSave(isPublished ? undefined : 'DRAFT')}
+            disabled={isReadOnly || isSubmitting || isRestoreConfirming || !isDirty}
+            onClick={handlePrimarySave}
           >
             {isSubmitting && <Loader2 size={14} className="animate-spin mr-1.5" />}
             {primaryLabel}

@@ -67,6 +67,29 @@ const AVATAR_COLORS = [
   'bg-secondary text-secondary-foreground',
 ]
 
+const ADMIN_USER_BACKEND_ERROR_TRANSLATIONS = {
+  'Only a SUPER_ADMIN can modify a SUPER_ADMIN account': {
+    key: 'adminUsers.errSuperAdminModify',
+    defaultValue: 'Chỉ Chủ hệ thống mới sửa được tài khoản Chủ hệ thống khác.',
+  },
+  'Only a SUPER_ADMIN can grant the SUPER_ADMIN role': {
+    key: 'adminUsers.errSuperAdminGrant',
+    defaultValue: 'Chỉ Chủ hệ thống mới có thể cấp vai trò Chủ hệ thống.',
+  },
+  'Cannot disable the last active SUPER_ADMIN': {
+    key: 'adminUsers.errLastSuperAdminDisable',
+    defaultValue: 'Không thể vô hiệu hoá Chủ hệ thống cuối cùng đang hoạt động.',
+  },
+}
+
+function getAdminUserErrorMessage(error, t) {
+  const message = typeof error?.message === 'string' ? error.message.trim() : ''
+  const translation = ADMIN_USER_BACKEND_ERROR_TRANSLATIONS[message.replace(/\.$/, '')]
+  return translation
+    ? t(translation.key, { defaultValue: translation.defaultValue })
+    : message || t('common.error')
+}
+
 function RoleBadge({ role, label }) {
   return <span className={`bb-badge ${ROLE_BADGE[role] || 'bb-badge-neutral'}`}>{label || '—'}</span>
 }
@@ -81,7 +104,7 @@ function UserStatusBadge({ status, t }) {
   )
 }
 
-function PasswordField({ value, onChange, onBlur, placeholder, label, hint, error }) {
+function PasswordField({ value, onChange, onBlur, placeholder, label, hint, error, disabled }) {
   const inputId = useId()
   const errorId = `${inputId}-error`
   return (
@@ -93,6 +116,7 @@ function PasswordField({ value, onChange, onBlur, placeholder, label, hint, erro
         onChange={onChange}
         onBlur={onBlur}
         placeholder={placeholder}
+        disabled={disabled}
         autoComplete="new-password"
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errorId : undefined}
@@ -109,7 +133,7 @@ function PasswordField({ value, onChange, onBlur, placeholder, label, hint, erro
   )
 }
 
-export function AdminUsersScreen({ canUpdate, currentUserId }) {
+export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
   const { t } = useTranslation()
 
   // ── List state ──────────────────────────────────────────────────────────
@@ -139,6 +163,11 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
     const extras = dynamicRoles.filter((r) => !builtins.includes(r.id)).map((r) => r.id)
     return [...builtins, ...extras]
   }, [dynamicRoles])
+
+  const createRoleOptions = useMemo(
+    () => (isSuperAdmin ? roleOptions : roleOptions.filter((role) => role !== 'SUPER_ADMIN')),
+    [isSuperAdmin, roleOptions],
+  )
 
   // Đổi mã vai trò thô (vd vai trò tuỳ chỉnh) sang nhãn dễ đọc: ưu tiên nhãn i18n của
   // vai trò dựng sẵn, rồi tên hiển thị của vai trò tuỳ chỉnh, cuối cùng mới là mã.
@@ -307,6 +336,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
     const statusChanged = editForm.status !== editUser.status
     const roleChanged = editForm.role !== editUser.role
     const sensitiveStatus = statusChanged && editForm.status !== 'ACTIVE'
+    const passwordChanged = editForm.newPassword.trim() !== ''
 
     if (sensitiveStatus) {
       const ok = await showConfirm(
@@ -315,6 +345,16 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
         {
           variant: 'danger',
           confirmLabel: t('adminUsers.confirmDisableBtn', { defaultValue: 'Khoá tài khoản' }),
+        },
+      )
+      if (!ok) return
+    } else if (passwordChanged) {
+      const ok = await showConfirm(
+        t('adminUsers.confirmPasswordChange', { defaultValue: 'Bạn có chắc muốn đổi mật khẩu tài khoản này không?' }),
+        t('adminUsers.confirmSensitiveTitle'),
+        {
+          variant: 'danger',
+          confirmLabel: t('adminUsers.confirmPasswordChangeBtn', { defaultValue: 'Đổi mật khẩu' }),
         },
       )
       if (!ok) return
@@ -357,7 +397,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
       if (Object.keys(fieldErrs).length > 0) {
         setEditFieldErrors(fieldErrs)
       } else {
-        setEditError(err.message || t('common.error'))
+        setEditError(getAdminUserErrorMessage(err, t))
       }
     } finally {
       setEditSaving(false)
@@ -421,7 +461,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
       if (Object.keys(fieldErrs).length > 0) {
         setCreateFieldErrors(fieldErrs)
       } else {
-        setCreateError(err.message || t('common.error'))
+        setCreateError(getAdminUserErrorMessage(err, t))
       }
     } finally {
       setCreateSaving(false)
@@ -433,7 +473,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
       const r = await resendAdminInvite(user.id)
       setInviteInfo({ email: user.email, emailSent: r.inviteEmailSent, inviteUrl: r.inviteUrl })
     } catch (err) {
-      setInviteInfo({ email: user.email, emailSent: false, inviteUrl: '', error: err.message || t('common.error') })
+      setInviteInfo({ email: user.email, emailSent: false, inviteUrl: '', error: getAdminUserErrorMessage(err, t) })
     }
   }
 
@@ -456,7 +496,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
       setListState((p) => ({ ...p, items: p.items.map((x) => (x.id === user.id ? r.item : x)) }))
       toast.success(activating ? t('adminUsers.activatedToast') : t('adminUsers.lockedToast'))
     } catch (err) {
-      toast.error(err.message || t('common.error'))
+      toast.error(getAdminUserErrorMessage(err, t))
     } finally {
       setTogglingId(null)
     }
@@ -464,6 +504,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
 
   // ── Derived ──────────────────────────────────────────────────────────────
   const isSelf = editUser != null && currentUserId != null && editUser.id === currentUserId
+  const isSuperAdminAccountLocked = editUser?.role === 'SUPER_ADMIN' && !isSuperAdmin
   const hasFilters = searchInput.trim() !== '' || roleFilter !== '' || statusFilter !== ''
   const isEmptyResult = listState.status === 'success' && listState.items.length === 0
 
@@ -526,6 +567,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
   const statusToggleButton = (u) => {
     if (u.status === 'INVITED') return null
     if (currentUserId != null && u.id === currentUserId) return null
+    if (u.role === 'SUPER_ADMIN' && !isSuperAdmin) return null
     const activating = u.status !== 'ACTIVE'
     const label = activating ? t('adminUsers.actionActivate') : t('adminUsers.actionLock')
     return (
@@ -811,6 +853,11 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
                   {t('adminUsers.selfEditLocked')}
                 </Alert>
               )}
+              {isSuperAdminAccountLocked && (
+                <Alert tone="warning" size="sm" className="mb-3 break-words">
+                  {t('adminUsers.superAdminEditLocked', { defaultValue: 'Chỉ Chủ hệ thống mới sửa được tài khoản Chủ hệ thống khác.' })}
+                </Alert>
+              )}
               <div className="au-form-grid">
                 <FormField label={t('adminUsers.formDisplayName')} error={editFieldErrors.displayName}>
                   <Input
@@ -821,7 +868,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
                 <FormField label={t('adminUsers.formRole')} error={editFieldErrors.role}>
                   <Select
                     value={editForm.role}
-                    disabled={isSelf}
+                    disabled={isSelf || isSuperAdminAccountLocked}
                     onValueChange={(val) => setEditForm((p) => ({ ...p, role: val }))}
                   >
                     <SelectTrigger aria-invalid={editFieldErrors.role ? true : undefined}><SelectValue /></SelectTrigger>
@@ -835,7 +882,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
                 <FormField label={t('adminUsers.formStatus')} error={editFieldErrors.status}>
                   <Select
                     value={editForm.status}
-                    disabled={isSelf}
+                    disabled={isSelf || isSuperAdminAccountLocked}
                     onValueChange={(val) => setEditForm((p) => ({ ...p, status: val }))}
                   >
                     <SelectTrigger aria-invalid={editFieldErrors.status ? true : undefined}><SelectValue /></SelectTrigger>
@@ -855,6 +902,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
                 value={editForm.newPassword}
                 onChange={(e) => setEditForm((p) => ({ ...p, newPassword: e.target.value }))}
                 onBlur={() => validateEditField('newPassword')}
+                disabled={isSelf || isSuperAdminAccountLocked}
                 placeholder={t('adminUsers.formPasswordHint')}
                 label={t('adminUsers.formPasswordNew')}
                 hint={t('adminUsers.formPasswordStrengthHint')}
@@ -900,7 +948,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
             <Select value={createForm.role} onValueChange={(val) => setCreateForm((p) => ({ ...p, role: val }))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {roleOptions.map((r) => (
+                {createRoleOptions.map((r) => (
                   <SelectItem key={r} value={r}>{resolveRoleLabel(r)}</SelectItem>
                 ))}
               </SelectContent>

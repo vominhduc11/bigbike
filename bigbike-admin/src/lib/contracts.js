@@ -98,6 +98,11 @@ export function resolveDisplayUrl(url) {
   return rewriteInternalMinioUrl(url)
 }
 
+export function resolveThumbUrl(media) {
+  const thumb = media?.sizes?.thumb
+  return typeof thumb === 'string' && thumb.trim() ? thumb : media?.publicUrl
+}
+
 function rewriteInternalMinioUrl(url) {
   let rest = null
   for (const origin of [_MINIO_INTERNAL_ORIGIN, _MINIO_LOCALHOST_ORIGIN, ..._MINIO_EXTRA_ORIGINS]) {

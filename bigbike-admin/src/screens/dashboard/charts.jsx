@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Area,
@@ -11,7 +12,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { formatVndShort } from '../../lib/formatters'
+import { formatVndShort, fmtIsoDateShort } from '../../lib/formatters'
 
 // recharts (~346KB) lives only in this module so DashboardScreen can lazy-load it:
 // the dashboard shell (KPIs + tables) paints first, the charts stream in after.
@@ -19,17 +20,6 @@ import { formatVndShort } from '../../lib/formatters'
 function fmtAxisMillions(value) {
   if (!value && value !== 0) return ''
   return (value / 1_000_000).toFixed(value >= 10_000_000 ? 0 : 1)
-}
-
-function fmtIsoDateShort(isoDate) {
-  if (!isoDate || typeof isoDate !== 'string') return ''
-  const parts = isoDate.split('-')
-  if (parts.length < 3) return isoDate
-  const m = Number.parseInt(parts[1], 10)
-  const d = Number.parseInt(parts[2], 10)
-  // Ngày hỏng (thiếu phần/không phải số) → trả nguyên chuỗi gốc, tránh hiện "NaN/NaN".
-  if (Number.isNaN(m) || Number.isNaN(d)) return isoDate
-  return `${d}/${m}`
 }
 
 function RevenueTooltip({ active, payload, label, ordersUnit }) {
@@ -59,6 +49,21 @@ function PieTooltip({ active, payload, orderUnit }) {
       </div>
     </div>
   )
+}
+
+// Recharts' <ResponsiveContainer> measures its DOM node (ResizeObserver) as
+// soon as it mounts. Mounting from inside a just-resolved React.lazy +
+// Suspense boundary can leave that first measurement/commit racing the
+// Suspense reveal — recharts/recharts#2736. Deferring the container's own
+// mount by one browser frame guarantees it only ever mounts into an already
+// laid-out, visible node.
+function useMountedAfterLayout() {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setMounted(true))
+    return () => cancelAnimationFrame(frame)
+  }, [])
+  return mounted
 }
 
 export function RevenueAreaChart({ revenueData }) {
@@ -127,26 +132,29 @@ export function OrderStatusPie({ pieDataWithTotal }) {
   // Bản đọc-được cho biểu đồ tròn: legend dạng chữ đã có ở DashboardScreen,
   // nên ở đây chỉ cần tên truy cập tổng quát cho vùng đồ hoạ.
   const label = t('dashboard.orderStatusChart.a11yLabel')
+  const mounted = useMountedAfterLayout()
   return (
     <div role="group" aria-label={label}>
-    <ResponsiveContainer width="100%" height={200}>
-      <PieChart>
-        <Pie
-          data={pieDataWithTotal}
-          cx="50%" cy="50%"
-          innerRadius={58}
-          outerRadius={88}
-          paddingAngle={2}
-          dataKey="count"
-          nameKey="name"
-        >
-          {pieDataWithTotal.map((entry) => (
-            <Cell key={entry.status} fill={entry.color} stroke="transparent" />
-          ))}
-        </Pie>
-        <Tooltip content={<PieTooltip orderUnit={t('dashboard.orderStatusChart.orderUnit')} />} />
-      </PieChart>
-    </ResponsiveContainer>
+      {mounted && (
+      <ResponsiveContainer width="100%" height={200}>
+        <PieChart>
+          <Pie
+            data={pieDataWithTotal}
+            cx="50%" cy="50%"
+            innerRadius={58}
+            outerRadius={88}
+            paddingAngle={2}
+            dataKey="count"
+            nameKey="name"
+          >
+            {pieDataWithTotal.map((entry) => (
+              <Cell key={entry.status} fill={entry.color} stroke="transparent" />
+            ))}
+          </Pie>
+          <Tooltip content={<PieTooltip orderUnit={t('dashboard.orderStatusChart.orderUnit')} />} />
+        </PieChart>
+      </ResponsiveContainer>
+      )}
     </div>
   )
 }

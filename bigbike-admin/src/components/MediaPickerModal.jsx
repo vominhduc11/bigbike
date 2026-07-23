@@ -5,7 +5,7 @@ import { fetchMedia, uploadMedia, fetchMediaFolders, fetchMediaTags } from '../l
 import { showConfirm } from '../lib/confirm'
 import { useDebounce } from '../lib/useDebounce'
 import { useHasPermission } from '../lib/auth'
-import { resolveDisplayUrl } from '../lib/contracts'
+import { resolveDisplayUrl, resolveThumbUrl } from '../lib/contracts'
 import { MediaDetailModal } from './MediaDetailModal'
 import { MediaRequirementHint, MediaValidationError } from './MediaRequirementHint'
 import { useMediaValidation } from '../lib/useMediaDimensions'
@@ -445,6 +445,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
             <div className="mpicker-grid">
               {state.items.map((media) => {
                 const url = media.publicUrl
+                const thumbUrl = resolveThumbUrl(media)
                 const sel = isSelected(url)
                 return (
                   <div key={media.id} className="relative group">
@@ -455,9 +456,9 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
                       aria-pressed={sel}
                       title={media.filename?.split('/').pop() ?? ''}
                     >
-                      {url ? (
+                      {thumbUrl ? (
                         <img
-                          src={resolveDisplayUrl(url)}
+                          src={resolveDisplayUrl(thumbUrl)}
                           alt={media.altText ?? ''}
                           className="mpicker-thumb"
                           loading="lazy"

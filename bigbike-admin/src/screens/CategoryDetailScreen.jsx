@@ -12,6 +12,7 @@ import {
   hardDeleteCategory,
   previewCategoryPermanentDelete,
   mapValidationErrors,
+  restoreCategory,
   updateCategory,
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
@@ -236,7 +237,8 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   // Danh mục hệ thống "Chưa phân loại" bị khoá: chứa sản phẩm khi danh mục gốc bị
   // xoá, nên không cho sửa hay xoá (backend cũng chặn). Khoá form + ẩn nút xoá.
   const isUncategorized = !isCreate && categoryId === 'uncategorized'
-  const isReadOnly = !canUpdate || isSubmitting || isUncategorized
+  const isDeleted = !isCreate && currentItem?.deleted === true
+  const isReadOnly = !canUpdate || isSubmitting || isUncategorized || isDeleted
   const formRef = useRef(null)
 
   // Dấu * đỏ (glyph, không chỉ màu) cho nhãn ô bắt buộc — giúp admin biết ô nào
@@ -331,6 +333,30 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     })
     if (!confirmed) return
     hardDeleteMutation.mutate()
+  }
+
+  const restoreMutation = useMutation({
+    mutationFn: () => restoreCategory(categoryId),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      queryClient.invalidateQueries({ queryKey: ['categories', 'tree'] })
+      queryClient.setQueryData(['category', categoryId], response)
+      toast.success(t('categories.restoreSuccess'))
+    },
+    onError: (error) => {
+      toast.error(error.message || t('common.error'))
+    },
+  })
+
+  async function handleRestore() {
+    const name = form.name || categoryId
+    const confirmed = await showConfirm(
+      t('categories.restoreConfirm', { name, defaultValue: `Bạn có chắc chắn muốn khôi phục danh mục ${name}? Các danh mục con cũng sẽ được khôi phục.` }),
+      t('categories.restoreConfirmTitle', { defaultValue: 'Xác nhận khôi phục' }),
+      { confirmLabel: t('products.restore'), variant: 'default' }
+    )
+    if (!confirmed) return
+    restoreMutation.mutate()
   }
 
   function updateField(field, value) {
@@ -684,6 +710,14 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
         />
       ) : null}
 
+      {isDeleted ? (
+        <StatePanel
+          tone="warning"
+          title={t('categories.detail.trashedTitle', { defaultValue: 'Danh mục đã ở thùng rác.' })}
+          description={t('categories.detail.trashedDesc', { defaultValue: 'Khôi phục danh mục để tiếp tục chỉnh sửa.' })}
+        />
+      ) : null}
+
       {!isCreate && canUpdate && !menuNoticeDismissed && (
         <div
           className="bb-alert info wrap justify-between"
@@ -934,7 +968,13 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
         {/* Danger zone */}
         {!isCreate && canUpdate && !isUncategorized && (
-          <DangerZoneCard onHardDelete={handleHardDelete} pending={isHardDeletePreviewing || hardDeleteMutation.isPending} />
+          <DangerZoneCard
+            onHardDelete={handleHardDelete}
+            pending={isHardDeletePreviewing || hardDeleteMutation.isPending}
+            isDeleted={isDeleted}
+            onRestore={handleRestore}
+            restorePending={restoreMutation.isPending}
+          />
         )}
       </form>
     </div>

@@ -378,6 +378,18 @@ function translateValidationMessage(field, detail) {
   if (rawMessage === 'English slug is already in use.') {
     return 'Slug tiếng Anh này đã được dùng. Hãy đổi slug tiếng Anh hoặc để trống.'
   }
+  if (code === 'SELF_LOOP' && field === 'targetUrl') {
+    return 'URL đích không được trùng với mẫu nguồn.'
+  }
+  if (code === 'REDIRECT_LOOP' && field === 'targetUrl') {
+    return 'URL đích tạo vòng lặp chuyển hướng (trỏ vòng lại chính nó). Hãy chọn URL đích khác.'
+  }
+  if (code === 'EXTERNAL_TARGET' && field === 'targetUrl') {
+    return 'URL đích phải là đường dẫn nội bộ hoặc cùng tên miền với website — không được trỏ ra trang ngoài.'
+  }
+  if (code === 'UNSAFE_TARGET' && field === 'targetUrl') {
+    return 'URL đích không hợp lệ. Hãy dùng đường dẫn nội bộ bắt đầu bằng "/" (ví dụ /san-pham-moi).'
+  }
 
   return rawMessage || 'Giá trị chưa hợp lệ.'
 }
@@ -1691,12 +1703,16 @@ export async function fetchDashboardSummary(period = '30d') {
 
 function normalizeRole(input) {
   const r = input && typeof input === 'object' ? input : {}
+  const assignedUserCount = Number(r.assignedUserCount)
   return {
     id: String(r.id || ''),
     name: String(r.name || ''),
     description: String(r.description || ''),
     isSystem: r.isSystem === true,
     permissions: Array.isArray(r.permissions) ? r.permissions : [],
+    assignedUserCount: Number.isFinite(assignedUserCount)
+      ? Math.max(0, Math.trunc(assignedUserCount))
+      : 0,
     createdAt: r.createdAt || null,
     updatedAt: r.updatedAt || null,
   }
