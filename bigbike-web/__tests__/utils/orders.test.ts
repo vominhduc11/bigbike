@@ -7,8 +7,7 @@ describe("isCustomerCancellable", () => {
     expect(isCustomerCancellable({ status: "PROCESSING" })).toBe(true);
   });
 
-  it("blocks SHIPPING and terminal statuses", () => {
-    expect(isCustomerCancellable({ status: "SHIPPING" })).toBe(false);
+  it("blocks terminal statuses", () => {
     for (const status of ["COMPLETED", "CANCELLED"]) {
       expect(isCustomerCancellable({ status })).toBe(false);
     }

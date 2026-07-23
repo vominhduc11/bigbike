@@ -11,12 +11,13 @@ import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { FilterChips } from '../components/FilterChips'
 import { PaginationControls } from '../components/PaginationControls'
 import { AdminTable } from '../components/AdminTable'
+import { CustomerStatusReasonModal } from '../components/CustomerStatusReasonModal'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { RecentItemsChips } from '../components/RecentItemsChips'
 import { StatePanel } from '../components/StatePanel'
+import { StatusBadge } from '../components/StatusBadge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { exportCustomersCsv, fetchCustomers, fetchCustomerSummary, updateCustomerStatus } from '../lib/adminApi'
-import { showConfirm } from '../lib/confirm'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
 import { useColumnVisibility } from '../lib/useColumnVisibility'
@@ -38,7 +39,7 @@ const STATUS_BADGE = {
   UNKNOWN: 'bb-badge-neutral',
 }
 
-const INITIAL_QUERY = { search: '', status: 'ALL', page: 1, pageSize: 20 }
+const INITIAL_QUERY = { search: '', status: 'ALL', synthetic: 'ALL', page: 1, pageSize: 20 }
 
 // N5: khung skeleton cùng chiều cao 1 thẻ .bb-kpi thật, dự trữ không gian ngay từ lần
 // render đầu tiên (cùng cách DashboardScreen.jsx làm với khối bb-kpi-grid của nó).
@@ -72,6 +73,9 @@ export function CustomerListScreen({ navigate, canUpdate }) {
   const isFirstSearchRender = useRef(true)
   // O4: id khách hàng đang đổi trạng thái ngay trên dòng — khoá Select + chặn double-submit.
   const [statusSaving, setStatusSaving] = useState({})
+  // Đổi trạng thái sang BLOCKED/DISABLED mở modal xin lý do (tùy chọn) thay vì confirm
+  // đơn thuần — { customer, value } của dòng đang chờ xác nhận.
+  const [reasonModal, setReasonModal] = useState(null)
   // O9 — khách hàng admin vừa xem gần đây, cho phép quay lại nhanh.
   const recentCustomerItems = useRecentItems('recent:customers')
 
@@ -98,22 +102,18 @@ export function CustomerListScreen({ navigate, canUpdate }) {
     try { sessionStorage.setItem('customers:listQuery', window.location.search) } catch { /* ignore */ }
   }, [query])
 
-  // O4: đổi trạng thái ngay trên 1 dòng — tái dùng CUSTOMER_STATUSES + xác nhận
-  // BLOCKED/DISABLED của CustomerDetailScreen, không cần rời danh sách.
+  // O4: đổi trạng thái ngay trên 1 dòng — tái dùng CUSTOMER_STATUSES; BLOCKED/DISABLED
+  // mở modal xin lý do (tùy chọn) thay vì confirm đơn thuần, không cần rời danh sách.
   async function handleStatusChange(customer, value) {
     if (!value || value === customer.status || statusSaving[customer.id]) return
     if (value === 'BLOCKED' || value === 'DISABLED') {
-      const label = t(`status.customer.${value}`, { defaultValue: value })
-      const ok = await showConfirm(
-        t('customers.detail.statusConfirmBody', {
-          status: label,
-          defaultValue: `Đánh dấu tài khoản là "${label}". Trạng thái này dùng để quản lý nội bộ.`,
-        }),
-        t('customers.detail.statusConfirmTitle', { defaultValue: 'Đổi trạng thái tài khoản' }),
-        { confirmLabel: t('customers.detail.statusConfirmOk', { defaultValue: 'Đổi trạng thái' }) },
-      )
-      if (!ok) return
+      setReasonModal({ customer, value })
+      return
     }
+    await applyStatusChange(customer, value)
+  }
+
+  async function applyStatusChange(customer, value, reason) {
     setStatusSaving((prev) => ({ ...prev, [customer.id]: true }))
     // N7: cập nhật lạc quan ngay trên dòng đang xem, rollback nếu API lỗi — cùng
     // pattern optimistic đã có ở ReviewListScreen.handleStatusChange /
@@ -127,13 +127,15 @@ export function CustomerListScreen({ navigate, canUpdate }) {
         : old
     ))
     try {
-      await updateCustomerStatus(customer.id, value)
+      await updateCustomerStatus(customer.id, value, reason)
       queryClient.invalidateQueries({ queryKey: ['customers'] })
       queryClient.invalidateQueries({ queryKey: ['customer-summary'] })
       toast.success(t('customers.detail.statusUpdated'))
+      return true
     } catch (err) {
       if (previous !== undefined) queryClient.setQueryData(queryKey, previous)
       toast.error(err.message || t('common.error'))
+      return false
     } finally {
       setStatusSaving((prev) => {
         const next = { ...prev }
@@ -163,7 +165,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
 
   const items = state.items || []
   const pagination = state.pagination
-  const isFiltered = !!query.search || query.status !== 'ALL'
+  const isFiltered = !!query.search || query.status !== 'ALL' || query.synthetic !== 'ALL'
 
   const activeFilterChips = []
   if (query.search) {
@@ -186,6 +188,17 @@ export function CustomerListScreen({ navigate, canUpdate }) {
       }),
       removeLabel: t('customers.removeFilter', { filter: t('customers.filterStatus'), defaultValue: `Bỏ bộ lọc {{filter}}` }),
       onRemove: () => updateQuery({ status: 'ALL' }, { resetPage: true }),
+    })
+  }
+  if (query.synthetic !== 'ALL') {
+    activeFilterChips.push({
+      key: 'synthetic',
+      label: t('customers.filterChipSource', {
+        value: query.synthetic === 'true' ? t('customers.sourceSynthetic') : t('customers.sourceReal'),
+        defaultValue: `Nguồn: {{value}}`,
+      }),
+      removeLabel: t('customers.removeFilter', { filter: t('customers.filterSource'), defaultValue: `Bỏ bộ lọc {{filter}}` }),
+      onRemove: () => updateQuery({ synthetic: 'ALL' }, { resetPage: true }),
     })
   }
 
@@ -243,6 +256,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
     { key: 'orderCount', label: t('customers.colOrders'), align: 'right', render: (c) => c.orderCount },
     { key: 'totalSpent', label: t('customers.colSpent'), align: 'right', render: (c) => <span className="font-bold">{formatCurrencyVnd(c.totalSpent)}</span> },
     { key: 'createdAt', label: t('customers.colRegistered'), render: (c) => <span className="bb-muted text-xs">{formatDateTime(c.createdAt)}</span> },
+    { key: 'source', label: t('customers.colSource'), render: (c) => <StatusBadge type="source" status={c.isSynthetic} /> },
   ]
 
   // T7: cho phép ẩn/hiện cột trên bảng khách hàng, lưu lựa chọn theo trình duyệt.
@@ -257,6 +271,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
       { label: t('customers.colOrders'), value: c.orderCount },
       { label: t('customers.colSpent'), value: formatCurrencyVnd(c.totalSpent), tone: 'strong' },
       { label: t('customers.colRegistered'), value: formatDateTime(c.createdAt) },
+      { label: t('customers.colSource'), value: <StatusBadge type="source" status={c.isSynthetic} /> },
     ],
     // Parity với bảng desktop: cho đổi nhanh trạng thái ngay trên thẻ mobile (đặt ở
     // hàng thao tác, nằm ngoài vùng bấm mở chi tiết để không lồng nút).
@@ -388,6 +403,16 @@ export function CustomerListScreen({ navigate, canUpdate }) {
             { value: 'BLOCKED', label: t('status.customer.BLOCKED') },
           ]}
         />
+        <FilterSelect
+          value={query.synthetic}
+          onValueChange={(v) => updateQuery({ synthetic: v }, { resetPage: true })}
+          ariaLabel={t('customers.filterSource')}
+          options={[
+            { value: 'ALL', label: t('customers.filterSource') },
+            { value: 'false', label: t('customers.sourceReal') },
+            { value: 'true', label: t('customers.sourceSynthetic') },
+          ]}
+        />
         <PageSizeSelect
           value={query.pageSize}
           onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
@@ -436,6 +461,23 @@ export function CustomerListScreen({ navigate, canUpdate }) {
             />
           )}
         </div>
+      )}
+
+      {reasonModal && (
+        <CustomerStatusReasonModal
+          title={t('customers.detail.statusConfirmTitle', { defaultValue: 'Đổi trạng thái tài khoản' })}
+          description={t('customers.detail.statusConfirmBody', {
+            status: t(`status.customer.${reasonModal.value}`, { defaultValue: reasonModal.value }),
+            defaultValue: `Đánh dấu tài khoản là "{{status}}". Trạng thái này dùng để quản lý nội bộ.`,
+          })}
+          confirmLabel={t('customers.detail.statusConfirmOk', { defaultValue: 'Đổi trạng thái' })}
+          loading={!!statusSaving[reasonModal.customer.id]}
+          onConfirm={async (reason) => {
+            const ok = await applyStatusChange(reasonModal.customer, reasonModal.value, reason)
+            if (ok) setReasonModal(null)
+          }}
+          onClose={() => setReasonModal(null)}
+        />
       )}
     </div>
   )

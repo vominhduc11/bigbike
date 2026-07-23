@@ -46,15 +46,6 @@ public class OrderEntity {
     @Column(nullable = false, length = 50)
     private String status;
 
-    @Column(name = "tracking_number", length = 200)
-    private String trackingNumber;
-
-    @Column(name = "shipping_carrier", length = 100)
-    private String shippingCarrier;
-
-    @Column(name = "shipped_at")
-    private Instant shippedAt;
-
     @Column(name = "customer_email", length = 255)
     private String customerEmail;
 
@@ -117,6 +108,9 @@ public class OrderEntity {
 
     @Column(name = "cancelled_at")
     private Instant cancelledAt;
+
+    @Column(name = "cancel_reason", columnDefinition = "text")
+    private String cancelReason;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

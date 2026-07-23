@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import { AlertCircle, ArrowRight, ChevronRight, Package } from 'lucide-react'
+import { ArrowRight, ChevronRight, Package } from 'lucide-react'
 import { Alert } from '@/components/ui/alert'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
-import { addOrderNote, fetchOrderAllowedTransitions, fetchOrderAuditTrail, fetchOrderDetail, updateOrderStatus } from '../lib/adminApi'
+import { fetchOrderAllowedTransitions, fetchOrderAuditTrail, fetchOrderDetail, updateOrderStatus } from '../lib/adminApi'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { ORDER_STATUS_TONE } from '../lib/statusTone'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
@@ -16,9 +16,6 @@ import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '../lib/useUnsavedChanges'
 import { recordRecentItem } from '../lib/useRecentItems'
 import { useAdminPresence } from '../lib/useAdminPresence'
-import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import {
   REASON_REQUIRED, addressLine, sameAddress,
@@ -123,17 +120,9 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const [allowedTransitions, setAllowedTransitions] = useState([])
   const [transitionsError, setTransitionsError] = useState(false)
   const [transitionsKey, setTransitionsKey] = useState(0)
-  const [noteContent, setNoteContent] = useState('')
-  const [noteCustomerVisible, setNoteCustomerVisible] = useState(false)
-  const [submittingNote, setSubmittingNote] = useState(false)
-  const [showShipForm, setShowShipForm] = useState(false)
-  const [trackingNumber, setTrackingNumber] = useState('')
-  const [trackingError, setTrackingError] = useState('')
-  const [shippingCarrier, setShippingCarrier] = useState('')
   const [reasonModal, setReasonModal] = useState(null)
 
-  // F6: cảnh báo rời trang khi đang gõ dở ghi chú hoặc form giao hàng chưa lưu.
-  useUnsavedChanges(!!noteContent.trim() || showShipForm)
+  useUnsavedChanges(false)
 
   // O9: ghi lại đơn hàng vừa xem để hiện trong widget "Vừa xem gần đây".
   useEffect(() => {
@@ -165,11 +154,11 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
     return () => { active = false }
   }, [orderId, orderQuery.isSuccess, order?.orderStatus, transitionsKey])
 
-  async function doStatusChange(newStatus, reason, shipping) {
+  async function doStatusChange(newStatus, reason) {
     setSaving(true)
     setPendingAction(`status:${newStatus}`)
     try {
-      const response = await updateOrderStatus(orderId, newStatus, reason, shipping)
+      const response = await updateOrderStatus(orderId, newStatus, reason)
       const updatedOrder = response.item
       applyOrderUpdate(updatedOrder)
       toast.success(t('orders.detail.statusUpdated'))
@@ -188,10 +177,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       setReasonModal({ targetStatus: newStatus })
       return
     }
-    if (newStatus === 'SHIPPING') {
-      setShowShipForm(true)
-      return
-    }
     if (newStatus === 'COMPLETED') {
       const labelKeys = { COMPLETED: 'orders.detail.dangerCompleted' }
       const label = labelKeys[newStatus] ? t(labelKeys[newStatus]) : newStatus
@@ -202,45 +187,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       if (!confirmed) return
     }
     await doStatusChange(newStatus, undefined)
-  }
-
-  async function handleAddNote(e) {
-    e.preventDefault()
-    if (!noteContent.trim()) return
-    setSubmittingNote(true)
-    try {
-      const note = await addOrderNote(orderId, { content: noteContent.trim(), customerVisible: noteCustomerVisible })
-      queryClient.setQueryData(['order', orderId], (old) => ({
-        ...old,
-        item: { ...old.item, notes: [...(old.item.notes ?? []), note] },
-      }))
-      setNoteContent('')
-      setNoteCustomerVisible(false)
-      toast.success(t('orders.detail.noteAdded'))
-    } catch (err) {
-      toast.error(err.message || t('orders.detail.noteError'))
-    } finally {
-      setSubmittingNote(false)
-    }
-  }
-
-  async function handleShippingSubmit(e) {
-    e.preventDefault()
-    if (!trackingNumber.trim()) {
-      setTrackingError(t('orders.detail.trackingRequiredError'))
-      return
-    }
-    setTrackingError('')
-    const ok = await doStatusChange('SHIPPING', undefined, {
-      trackingNumber: trackingNumber.trim(),
-      shippingCarrier: shippingCarrier.trim() || undefined,
-    })
-    if (ok) {
-      setShowShipForm(false)
-      setTrackingNumber('')
-      setShippingCarrier('')
-      setTrackingError('')
-    }
   }
 
   if (status === 'loading') {
@@ -256,13 +202,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       actionLabel={t('common.back')} onAction={() => navigate('/admin/orders')} />
   }
 
-  const trackingSummary = order.trackingNumber
-    ? t('orders.detail.tileTrackingNumber', {
-      tracking: `${order.shippingCarrier ? `${order.shippingCarrier} · ` : ''}${order.trackingNumber}`,
-    })
-    : t('orders.detail.tileTrackingPending')
-  const shippingReference = [order.shippingCarrier, order.trackingNumber].filter(Boolean).join(' · ')
-
   // Khoá các nút chuyển trạng thái khi đang lưu HOẶC đang làm mới nền (dữ liệu/allowed
   // transitions có thể sắp thay) — tránh thao tác dựa trên trạng thái cũ.
   const actionsBusy = saving || orderQuery.isFetching
@@ -273,7 +212,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const hasOrderGroup = orderProgressTransitions.length > 0 || transitionsError
   const canCancelOrder = allowedTransitions.includes('CANCELLED')
   const hasAnyAction = hasOrderGroup || canCancelOrder
-  const hasShippingDetails = Boolean(shippingReference || order.shippedAt)
 
   return (
     <div>
@@ -310,15 +248,11 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           full-width như trước. */}
       {(() => {
         const tiles = (
-          <div className="bb-status-tiles bb-status-tiles--2">
+          <div className="bb-status-tiles bb-status-tiles--1">
             <div className={`bb-status-tile bb-status-tile--${ORDER_STATUS_TONE[order.orderStatus] ?? 'muted'}`}>
               <div className="bb-status-tile-k">{t('orders.detail.tileOrder')}</div>
               <StatusBadge type="order" status={order.orderStatus} />
               <div className="bb-cell-sub">{t('orders.detail.tileOrderDate', { date: formatDateTime(order.placedAt) })}</div>
-            </div>
-            <div className="bb-status-tile bb-status-tile--muted">
-              <div className="bb-status-tile-k">{t('orders.detail.tileShipping')}</div>
-              <div className="bb-cell-sub">{trackingSummary}</div>
             </div>
           </div>
         )
@@ -384,62 +318,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                             : getOrderStatusLabel('CANCELLED', order, t)}
                         </Button>
                       </div>
-                    </div>
-                  )}
-
-                  {/* Form nhập vận đơn — mở ngay tại khu hành động khi bấm "Giao hàng" (không phải cuộn xuống) */}
-                  {showShipForm && order.orderStatus === 'PROCESSING' && (
-                    <div className="bb-actionzone-group">
-                      <form
-                        id="ship-form"
-                        className="bb-detail-form w-full"
-                        onSubmit={handleShippingSubmit}
-                      >
-                        <div className="flex flex-col gap-1">
-                          <label htmlFor="ship-tracking-input" className="text-sm font-medium">
-                            {t('orders.detail.trackingLabel')} *
-                          </label>
-                          <p className="text-xs text-muted-foreground">
-                            <span className="text-danger" aria-hidden="true">*</span> {t('common.requiredLegend', { defaultValue: 'Bắt buộc' })}
-                          </p>
-                          <Input
-                            id="ship-tracking-input"
-                            type="text"
-                            placeholder={t('orders.detail.trackingPlaceholder')}
-                            value={trackingNumber}
-                            onChange={(e) => { setTrackingNumber(e.target.value); if (trackingError) setTrackingError('') }}
-                            onBlur={() => { if (!trackingNumber.trim()) setTrackingError(t('orders.detail.trackingRequiredError')) }}
-                            disabled={saving}
-                            required
-                            aria-invalid={trackingError ? true : undefined}
-                            aria-describedby={trackingError ? 'ship-tracking-error' : undefined}
-                          />
-                        </div>
-                        {trackingError ? (
-                          <p id="ship-tracking-error" role="alert" className="bb-error-inline">
-                            <AlertCircle size={13} aria-hidden="true" />
-                            {trackingError}
-                          </p>
-                        ) : (
-                          <p className="bb-muted text-xs">{t('orders.detail.trackingHint')}</p>
-                        )}
-                        <Input
-                          type="text"
-                          placeholder={t('orders.detail.carrierPlaceholder')}
-                          value={shippingCarrier}
-                          onChange={(e) => setShippingCarrier(e.target.value)}
-                          disabled={saving}
-                        />
-                        <div className="bb-detail-form-actions">
-                          <Button type="submit" size="sm" disabled={saving}>
-                            {saving ? t('orders.detail.savingShort') : t('orders.detail.confirmShipping')}
-                          </Button>
-                          <Button type="button" variant="secondary" size="sm" disabled={saving}
-                            onClick={() => { setShowShipForm(false); setTrackingNumber(''); setShippingCarrier(''); setTrackingError('') }}>
-                            {t('common.cancel')}
-                          </Button>
-                        </div>
-                      </form>
                     </div>
                   )}
                 </>
@@ -592,89 +470,46 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
             </div>
           )}
 
-          {/* Notes */}
+          {/* Audit trail */}
           <div className="bb-card">
-            <div className="bb-card-header"><h3>{t('orders.detail.notes')}</h3></div>
             <div className="bb-card-body">
-              {(order.notes ?? []).length === 0 ? (
-                <p className="bb-muted">{t('orders.detail.noNotes')}</p>
-              ) : (
-                <ul className="bb-list-clean bb-list-spaced">
-                  {(order.notes ?? []).map((note, i) => (
-                    <li key={note.id ?? i} className="bb-list-item">
-                      <span className="bb-muted mr-2">
-                        {note.createdAt ? formatDateTime(note.createdAt) : ''}
-                      </span>
-                      {note.content}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {canUpdate && (
-                <form onSubmit={handleAddNote} className="flex flex-col gap-2">
-                  <Textarea
-                    rows={3}
-                    placeholder={t('orders.detail.notePlaceholder')}
-                    value={noteContent}
-                    onChange={(e) => setNoteContent(e.target.value)}
-                    disabled={submittingNote}
-                    className="resize-y"
-                  />
-                  <div className="flex items-center gap-4">
-                    <label className="flex cursor-pointer items-center gap-2 text-sm">
-                      <Checkbox
-                        checked={noteCustomerVisible}
-                        onCheckedChange={(checked) => setNoteCustomerVisible(checked)}
-                        disabled={submittingNote}
-                      />
-                      {t('orders.detail.noteCustomerVisible')}
-                    </label>
-                    <Button type="submit" size="sm" disabled={submittingNote || !noteContent.trim()}>
-                      {submittingNote ? t('orders.detail.savingShort') : t('orders.detail.submitNote')}
-                    </Button>
-                  </div>
-                </form>
-              )}
+              <details className="bb-foldable">
+                <summary>
+                  {t('orders.audit.title')}
+                  <ChevronRight size={16} className="bb-foldable-chev" aria-hidden="true" />
+                </summary>
+                <div className="bb-foldable-body">
+                  {auditQuery.isLoading ? (
+                    <p className="bb-muted">{t('orders.audit.loading')}</p>
+                  ) : auditQuery.isError ? (
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <p className="bb-muted m-0">{t('orders.audit.error')}</p>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => auditQuery.refetch()}>
+                        {t('common.retry')}
+                      </Button>
+                    </div>
+                  ) : (auditQuery.data ?? []).length === 0 ? (
+                    <p className="bb-muted">{t('orders.audit.empty')}</p>
+                  ) : (
+                    <ul className="bb-list-clean">
+                      {(auditQuery.data ?? []).map((entry, i) => (
+                        <li key={entry.id ?? i} className="bb-list-item">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="bb-list-title">
+                              {t(`orders.audit.action.${entry.action}`, { defaultValue: entry.action })}
+                            </span>
+                            <span className="bb-muted">{entry.createdAt ? formatDateTime(entry.createdAt) : ''}</span>
+                          </div>
+                          <div className="bb-list-meta">
+                            {t(`orders.audit.actor.${entry.actorType}`, { defaultValue: entry.actorType })}{entry.ipAddress ? ` · ${entry.ipAddress}` : ''}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </details>
             </div>
-
-            {/* Lịch sử thao tác — gộp vào cuối card Ghi chú (thay vì card riêng), thu gọn
-                mặc định vì chỉ cần tra cứu khi có tranh chấp/kiểm tra, không phải xem hàng ngày. */}
-            <details className="bb-foldable">
-              <summary>
-                {t('orders.audit.title')}
-                <ChevronRight size={16} className="bb-foldable-chev" aria-hidden="true" />
-              </summary>
-              <div className="bb-foldable-body">
-                {auditQuery.isLoading ? (
-                  <p className="bb-muted">{t('orders.audit.loading')}</p>
-                ) : auditQuery.isError ? (
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <p className="bb-muted m-0">{t('orders.audit.error')}</p>
-                    <Button type="button" variant="ghost" size="sm" onClick={() => auditQuery.refetch()}>
-                      {t('common.retry')}
-                    </Button>
-                  </div>
-                ) : (auditQuery.data ?? []).length === 0 ? (
-                  <p className="bb-muted">{t('orders.audit.empty')}</p>
-                ) : (
-                  <ul className="bb-list-clean">
-                    {(auditQuery.data ?? []).map((entry, i) => (
-                      <li key={entry.id ?? i} className="bb-list-item">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="bb-list-title">
-                            {t(`orders.audit.action.${entry.action}`, { defaultValue: entry.action })}
-                          </span>
-                          <span className="bb-muted">{entry.createdAt ? formatDateTime(entry.createdAt) : ''}</span>
-                        </div>
-                        <div className="bb-list-meta">
-                          {t(`orders.audit.actor.${entry.actorType}`, { defaultValue: entry.actorType })}{entry.ipAddress ? ` · ${entry.ipAddress}` : ''}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </details>
           </div>
         </div>
 
@@ -715,34 +550,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
             </div>
           </div>
 
-          {/* Shipping metadata */}
-          {order.fulfillmentType === 'DELIVERY' && (
-            <div className="bb-card">
-              <div className="bb-card-header"><h3>{t('orders.detail.shipping')}</h3></div>
-              <div className="bb-card-body">
-                {hasShippingDetails && (
-                  <dl className="bb-info-grid">
-                  {shippingReference && (
-                    <>
-                      <dt>{t('orders.detail.colRma', { defaultValue: 'Mã vận đơn' })}</dt>
-                      <dd className="mono">
-                        {shippingReference}
-                      </dd>
-                    </>
-                  )}
-                  {order.shippedAt && (
-                    <>
-                      <dt>{t('orders.detail.shippedAtLabel')}</dt>
-                      <dd>{formatDateTime(order.shippedAt)}</dd>
-                    </>
-                  )}
-                  </dl>
-                )}
-                {!hasShippingDetails && <p className="bb-muted m-0">{t('orders.detail.shippingPendingInfo')}</p>}
-              </div>
-            </div>
-          )}
-
           {/* Timestamps */}
           <div className="bb-card">
             <div className="bb-card-header"><h3>{t('orders.detail.timestamps')}</h3></div>
@@ -752,6 +559,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                 {order.paidAt && (<><dt>{t('orders.detail.tsPaidAt')}</dt><dd>{formatDateTime(order.paidAt)}</dd></>)}
                 {order.completedAt && (<><dt>{t('orders.detail.tsCompletedAt')}</dt><dd>{formatDateTime(order.completedAt)}</dd></>)}
                 {order.cancelledAt && (<><dt>{t('orders.detail.tsCancelledAt')}</dt><dd>{formatDateTime(order.cancelledAt)}</dd></>)}
+                {order.cancelReason && (<><dt>{t('orders.detail.cancelReasonLabel')}</dt><dd>{order.cancelReason}</dd></>)}
                 {order.updatedAt && (<><dt>{t('orders.detail.tsUpdatedAt')}</dt><dd>{formatDateTime(order.updatedAt)}</dd></>)}
               </dl>
             </div>

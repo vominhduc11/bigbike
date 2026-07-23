@@ -742,22 +742,9 @@
       "orderStatus": {
         "PENDING": "Chờ xác nhận",
         "PROCESSING": "Đang xử lý",
-        "SHIPPING": "Đang giao",
         "COMPLETED": "Hoàn thành",
         "CANCELLED": "Đã huỷ",
         "UNKNOWN": "Đang cập nhật"
-      },
-      "timeline": {
-        "PENDING_LABEL": "Đã tiếp nhận",
-        "PENDING_SUB": "Đơn hàng đã được tạo thành công",
-        "PROCESSING_LABEL": "Đang xử lý",
-        "PROCESSING_SUB": "Đơn đang được đóng gói & kiểm tra",
-        "SHIPPING_LABEL": "Đang giao",
-        "SHIPPING_SUB": "Đơn hàng đã được bàn giao cho đơn vị vận chuyển",
-        "COMPLETED_LABEL": "Hoàn thành",
-        "COMPLETED_SUB": "Đơn hàng đã được giao thành công",
-        "CANCELLED_LABEL": "Đã huỷ",
-        "CANCELLED_SUB": "Đơn hàng đã bị huỷ"
       }
     },
     "addresses": {

@@ -4,7 +4,6 @@ import com.bigbike.bigbike_backend.api.order.dto.OrderAddressResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderDetailResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderLineItemResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderListItemResponse;
-import com.bigbike.bigbike_backend.api.order.dto.OrderNoteResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderPaymentResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderShippingItemResponse;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
@@ -12,7 +11,6 @@ import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.mapper.OrderAddressMapper;
 import com.bigbike.bigbike_backend.mapper.OrderItemMapper;
 import com.bigbike.bigbike_backend.mapper.OrderMapper;
-import com.bigbike.bigbike_backend.mapper.OrderNoteMapper;
 import com.bigbike.bigbike_backend.mapper.PaymentMapper;
 import com.bigbike.bigbike_backend.mapper.ShippingMapper;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
@@ -20,7 +18,6 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineIt
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAddressJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderNoteJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderShippingItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
@@ -51,14 +48,12 @@ public class OrderReadService {
     private final OrderLineItemThumbnailResolver thumbnailResolver;
     private final OrderAddressJpaRepository addressRepo;
     private final OrderShippingItemJpaRepository shippingItemRepo;
-    private final OrderNoteJpaRepository noteRepo;
     private final PaymentJpaRepository paymentRepo;
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
     private final OrderAddressMapper orderAddressMapper;
     private final ShippingMapper shippingMapper;
     private final PaymentMapper paymentMapper;
-    private final OrderNoteMapper orderNoteMapper;
 
     // ── Customer orders list ──────────────────────────────────────────────────
 
@@ -106,7 +101,7 @@ public class OrderReadService {
         if (!customerId.equals(order.getCustomerId())) {
             throw new NotFoundException("Order not found.");
         }
-        return toDetail(order, true, false);
+        return toDetail(order, false);
     }
 
     // ── Guest order lookup by orderNumber + orderKey ──────────────────────────
@@ -127,7 +122,7 @@ public class OrderReadService {
             throw new NotFoundException("Order not found.");
         }
 
-        return toDetail(order, true, true);
+        return toDetail(order, true);
     }
 
     // ── Mapping helpers ───────────────────────────────────────────────────────
@@ -156,11 +151,7 @@ public class OrderReadService {
                 ));
     }
 
-    private OrderDetailResponse toDetail(
-            OrderEntity order,
-            boolean customerVisibleNotesOnly,
-            boolean includeOrderKey
-    ) {
+    private OrderDetailResponse toDetail(OrderEntity order, boolean includeOrderKey) {
         List<OrderLineItemEntity> lineItemEntities = lineItemRepo.findByOrderId(order.getId());
         // Prefer the image snapshotted on the line at checkout (AUD-038); fall back to the
         // live catalog thumbnail only for legacy rows placed before V340 (null image_url).
@@ -179,15 +170,6 @@ public class OrderReadService {
         List<OrderPaymentResponse> payments = paymentRepo.findByOrderId(order.getId())
                 .stream().map(paymentMapper::toResponse).toList();
 
-        List<OrderNoteResponse> notes;
-        if (customerVisibleNotesOnly) {
-            notes = noteRepo.findByOrderIdAndCustomerVisibleOrderByCreatedAtAsc(order.getId(), true)
-                    .stream().map(orderNoteMapper::toCustomerResponse).toList();
-        } else {
-            notes = noteRepo.findByOrderIdOrderByCreatedAtAsc(order.getId())
-                    .stream().map(orderNoteMapper::toCustomerResponse).toList();
-        }
-
         String visibleOrderKey = includeOrderKey ? order.getOrderKey() : null;
         return orderMapper.toDetailResponse(
                 order,
@@ -195,8 +177,7 @@ public class OrderReadService {
                 lineItems,
                 addresses,
                 shippingItems,
-                payments,
-                notes
+                payments
         );
     }
 

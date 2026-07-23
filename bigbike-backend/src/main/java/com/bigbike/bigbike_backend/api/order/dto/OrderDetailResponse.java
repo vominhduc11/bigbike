@@ -26,6 +26,5 @@ public record OrderDetailResponse(
         List<OrderLineItemResponse> lineItems,
         List<OrderAddressResponse> addresses,
         List<OrderShippingItemResponse> shippingItems,
-        List<OrderPaymentResponse> payments,
-        List<OrderNoteResponse> notes
+        List<OrderPaymentResponse> payments
 ) {}

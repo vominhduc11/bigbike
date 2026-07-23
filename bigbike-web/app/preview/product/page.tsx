@@ -1,20 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ProductView } from "@/components/catalog/ProductView";
 import { Container } from "@/components/layout/Container";
 import { PreviewGuard } from "@/components/preview/PreviewGuard";
+import { useApplyPreviewLocale } from "@/components/providers/ClientIntlProvider";
 import { fetchPublicSettings } from "@/lib/api/client-api";
 import type { Product, PublicSiteSetting } from "@/lib/contracts/public";
 import { withFlatHighlights } from "@/lib/contracts/public";
+import { resolveLocale, type Locale } from "@/i18n/locale";
 import { env } from "@/env";
 
 // Origin của app admin — chỉ nhận postMessage từ đây (chống frame lạ chèn dữ liệu).
 // Header `frame-ancestors` ở next.config cũng chỉ cho admin nhúng route /preview/*.
 const ADMIN_ORIGIN = env.NEXT_PUBLIC_ADMIN_ORIGIN?.replace(/\/$/, "") ?? "";
 
-type PreviewInbound = { type: "bigbike-preview"; data: Product };
+type PreviewInbound = { type: "bigbike-preview"; data: Product; lang?: string };
 
 /**
  * Khung xem trước "sống" cho admin editor: KHÔNG tự fetch sản phẩm. Nhận dữ liệu
@@ -30,6 +32,10 @@ export default function ProductPreviewPage() {
   // truyền [] nên 2 ô Hotline/Địa chỉ bị trống. Lỗi/đang tải → giữ [] (ô rỗng tự ẩn,
   // không chặn preview).
   const [settings, setSettings] = useState<PublicSiteSetting[]>([]);
+  const applyPreviewLocale = useApplyPreviewLocale();
+  // Locale đã áp gần nhất — tránh swap message thừa mỗi lần data đổi (debounce ~400ms
+  // lúc admin đang gõ) khi lang thật ra không đổi.
+  const appliedLangRef = useRef<Locale | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -56,6 +62,11 @@ export default function ProductPreviewPage() {
       const inbound = event.data as PreviewInbound | undefined;
       if (!inbound || inbound.type !== "bigbike-preview" || !inbound.data) return;
       setProduct(withFlatHighlights(inbound.data));
+      const nextLang = resolveLocale(inbound.lang);
+      if (appliedLangRef.current !== nextLang) {
+        appliedLangRef.current = nextLang;
+        applyPreviewLocale(nextLang);
+      }
     }
 
     window.addEventListener("message", handleMessage);
@@ -64,6 +75,7 @@ export default function ProductPreviewPage() {
     window.parent?.postMessage({ type: "bigbike-preview-ready" }, ADMIN_ORIGIN || "*");
 
     return () => window.removeEventListener("message", handleMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-once listener; applyPreviewLocale identity is stable (context useMemo)
   }, []);
 
   if (!product) {

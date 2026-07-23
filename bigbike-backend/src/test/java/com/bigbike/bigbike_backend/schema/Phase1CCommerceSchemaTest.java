@@ -12,7 +12,6 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAddres
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderFeeItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineItemEntity;
-import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderNoteEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderShippingItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.payment.PaymentEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.payment.PaymentEventEntity;
@@ -22,7 +21,6 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAd
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderFeeItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderNoteJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderShippingItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentEventJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
@@ -51,7 +49,6 @@ class Phase1CCommerceSchemaTest {
     @Autowired OrderShippingItemJpaRepository shippingItemRepo;
     @Autowired OrderFeeItemJpaRepository feeItemRepo;
     @Autowired OrderAddressJpaRepository addressRepo;
-    @Autowired OrderNoteJpaRepository noteRepo;
     @Autowired PaymentJpaRepository paymentRepo;
     @Autowired PaymentEventJpaRepository paymentEventRepo;
     @Autowired WebApplicationContext webApplicationContext;
@@ -216,24 +213,6 @@ class Phase1CCommerceSchemaTest {
         Optional<OrderAddressEntity> found = addressRepo.findByOrderIdAndType(order.getId(), "BILLING");
         assertThat(found).isPresent();
         assertThat(found.get().getPhone()).isEqualTo("0912345678");
-    }
-
-    @Test
-    void orderNote_saveAndFindByOrderId() {
-        OrderEntity order = savedOrder();
-
-        OrderNoteEntity note = new OrderNoteEntity();
-        note.setOrder(order);
-        note.setAuthorType("admin");
-        note.setNoteType("SYSTEM");
-        note.setContent("Đơn hàng đã được tạo.");
-        note.setCustomerVisible(false);
-        note.setCreatedAt(Instant.now());
-        noteRepo.save(note);
-
-        List<OrderNoteEntity> notes = noteRepo.findByOrderIdOrderByCreatedAtAsc(order.getId());
-        assertThat(notes).hasSize(1);
-        assertThat(notes.get(0).getContent()).isEqualTo("Đơn hàng đã được tạo.");
     }
 
     @Test

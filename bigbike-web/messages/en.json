@@ -742,22 +742,9 @@
       "orderStatus": {
         "PENDING": "Pending",
         "PROCESSING": "Processing",
-        "SHIPPING": "Shipping",
         "COMPLETED": "Completed",
         "CANCELLED": "Cancelled",
         "UNKNOWN": "Updating"
-      },
-      "timeline": {
-        "PENDING_LABEL": "Received",
-        "PENDING_SUB": "Your order has been created successfully",
-        "PROCESSING_LABEL": "Processing",
-        "PROCESSING_SUB": "Your order is being packed and checked",
-        "SHIPPING_LABEL": "Shipping",
-        "SHIPPING_SUB": "Your order has been handed to the carrier",
-        "COMPLETED_LABEL": "Completed",
-        "COMPLETED_SUB": "Your order has been delivered successfully",
-        "CANCELLED_LABEL": "Cancelled",
-        "CANCELLED_SUB": "This order has been cancelled"
       }
     },
     "addresses": {

@@ -2,8 +2,6 @@ package com.bigbike.bigbike_backend.api.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderDetailResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderListItemResponse;
-import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderNoteResponse;
-import com.bigbike.bigbike_backend.api.admin.dto.order.CreateOrderNoteRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.OrderAuditLogResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.UpdateOrderStatusRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
@@ -22,7 +20,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -87,30 +84,6 @@ public class AdminOrderController extends AdminControllerSupport {
                         extractClientIp(request), request.getHeader("User-Agent")),
                 request
         );
-    }
-
-    @PostMapping("/{orderId}/notes")
-    public ApiDataResponse<AdminOrderNoteResponse> addNote(
-            @PathVariable UUID orderId,
-            @Valid @RequestBody CreateOrderNoteRequest body,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "orders.write");
-        UUID adminId = resolveAdminId();
-        return apiResponseFactory.data(
-                adminOrderService.addNote(orderId, adminId, body,
-                        extractClientIp(request), request.getHeader("User-Agent")),
-                request
-        );
-    }
-
-    @GetMapping("/{orderId}/notes")
-    public ApiDataResponse<List<AdminOrderNoteResponse>> listNotes(
-            @PathVariable UUID orderId,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "orders.read");
-        return apiResponseFactory.data(adminOrderService.listNotes(orderId), request);
     }
 
     @GetMapping("/{orderId}/audit")

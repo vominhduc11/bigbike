@@ -8,7 +8,6 @@ import { normalizePublishStatus } from './contracts'
 export const ORDER_STATUS_TONE = {
   PENDING:    'warning',
   PROCESSING: 'info',
-  SHIPPING:   'info',
   COMPLETED:  'success',
   CANCELLED:  'neutral',
   UNKNOWN:    'muted',

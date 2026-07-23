@@ -70,7 +70,7 @@
     },
     {
       "name": "Admin Orders",
-      "description": "Admin order list, detail, status update and notes — requires Admin JWT"
+      "description": "Admin order list, detail and status update — requires Admin JWT"
     },
     {
       "name": "Admin Customers",
@@ -1539,6 +1539,7 @@
           "Admin Orders"
         ],
         "summary": "Get admin order detail",
+        "description": "Admin order detail includes cancelReason when an admin cancellation reason has been recorded.",
         "operationId": "adminGetOrder",
         "security": [
           {
@@ -1572,6 +1573,7 @@
           "Admin Orders"
         ],
         "summary": "Update order status",
+        "description": "When status is CANCELLED, cancelReason is required and stored on orders.cancel_reason.",
         "operationId": "adminUpdateOrderStatus",
         "security": [
           {
@@ -1602,58 +1604,6 @@
         "responses": {
           "200": {
             "description": "Order status updated"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/orders/{orderId}/notes": {
-      "post": {
-        "tags": [
-          "Admin Orders"
-        ],
-        "summary": "Create order note (admin)",
-        "operationId": "adminCreateOrderNote",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "Admin Orders"
-        ],
-        "summary": "List order notes (admin)",
-        "operationId": "adminListOrderNotes",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "orderId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Order notes"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
           }
         }
       }
@@ -5843,24 +5793,13 @@
             "enum": [
               "PENDING",
               "PROCESSING",
-              "SHIPPING",
               "COMPLETED",
               "CANCELLED"
             ]
           },
-          "note": {
-            "type": "string"
-          },
-          "customerVisible": {
-            "type": "boolean"
-          },
-          "trackingNumber": {
+          "cancelReason": {
             "type": "string",
-            "description": "Required when status is SHIPPING."
-          },
-          "shippingCarrier": {
-            "type": "string",
-            "description": "Optional carrier label stored with shipment metadata."
+            "description": "Required when status is CANCELLED. Stored internally on orders.cancel_reason and not shown to customers."
           }
         }
       },

@@ -15,6 +15,7 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.entity.media.MediaEntity;
+import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
@@ -51,6 +52,7 @@ class Phase1IAdminManagementApiTest {
     @Autowired WebApplicationContext webApplicationContext;
     @Autowired AdminUserJpaRepository adminUserRepo;
     @Autowired CustomerJpaRepository customerRepo;
+    @Autowired AuditLogJpaRepository auditLogRepo;
     @Autowired MediaJpaRepository mediaRepo;
     @Autowired ProductJpaRepository productRepo;
     @Autowired CategoryJpaRepository categoryRepo;
@@ -232,6 +234,70 @@ class Phase1IAdminManagementApiTest {
         mockMvc.perform(patch("/api/v1/admin/customers/" + customerId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"ACTIVE\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+    }
+
+    // 8b. synthetic=true/false filters on isSynthetic (WordPress guest-order migration flag)
+    @Test
+    void adminCustomers_filterBySyntheticWorks() throws Exception {
+        String realEmail = "synth-real-" + UUID.randomUUID() + "@bigbike.test";
+        String syntheticEmail = "synth-flag-" + UUID.randomUUID() + "@bigbike.test";
+        createTestCustomer(realEmail, false);
+        createTestCustomer(syntheticEmail, true);
+
+        MvcResult syntheticResult = mockMvc.perform(get("/api/v1/admin/customers")
+                        .param("synthetic", "true")
+                        .param("q", syntheticEmail)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertThat(syntheticResult.getResponse().getContentAsString()).contains(syntheticEmail);
+
+        mockMvc.perform(get("/api/v1/admin/customers")
+                        .param("synthetic", "false")
+                        .param("q", syntheticEmail)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(0));
+    }
+
+    // 8c. Optional status-change reason is persisted only in the audit log, not on the customer row
+    @Test
+    void updateCustomerStatus_reason_isWrittenToAuditLog() throws Exception {
+        UUID customerId = createTestCustomer("reason-aud-" + UUID.randomUUID() + "@bigbike.test");
+        String reason = "Khách hàng báo cáo gian lận thanh toán";
+
+        mockMvc.perform(patch("/api/v1/admin/customers/" + customerId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"BLOCKED\",\"reason\":\"" + reason + "\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("BLOCKED"));
+
+        boolean hasReasonInAudit = auditLogRepo.findAll().stream()
+                .filter(a -> "CUSTOMER_STATUS_UPDATED".equals(a.getAction()))
+                .filter(a -> customerId.equals(a.getResourceId()))
+                .anyMatch(a -> a.getAfterData() != null && a.getAfterData().contains(reason));
+        assertThat(hasReasonInAudit).isTrue();
+    }
+
+    // 8d. Admin avatar removal — deletes + nulls, idempotent when already unset
+    @Test
+    void removeCustomerAvatar_nullsAvatarAndIsIdempotent() throws Exception {
+        UUID customerId = createTestCustomer("avatar-" + UUID.randomUUID() + "@bigbike.test");
+        CustomerEntity customer = customerRepo.findById(customerId).orElseThrow();
+        customer.setAvatarUrl("/media/customers/" + customerId + "/test-uuid/avatar.jpg");
+        customerRepo.saveAndFlush(customer);
+
+        mockMvc.perform(delete("/api/v1/admin/customers/" + customerId + "/avatar")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.avatarUrl").doesNotExist());
+        assertThat(customerRepo.findById(customerId).orElseThrow().getAvatarUrl()).isNull();
+
+        // Calling again with no avatar set is a no-op 200, not a 404.
+        mockMvc.perform(delete("/api/v1/admin/customers/" + customerId + "/avatar")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
     }
@@ -436,12 +502,17 @@ class Phase1IAdminManagementApiTest {
 
     /** Create a minimal customer entity directly in the DB and return its UUID. */
     private UUID createTestCustomer(String email) {
+        return createTestCustomer(email, false);
+    }
+
+    /** Create a minimal customer entity directly in the DB, with an explicit isSynthetic flag. */
+    private UUID createTestCustomer(String email, boolean synthetic) {
         CustomerEntity c = new CustomerEntity();
         c.setEmail(email);
         c.setPasswordHash(passwordService.hash("Test@12345"));
         c.setDisplayName("Test Customer");
         c.setStatus("ACTIVE");
-        c.setSynthetic(false);
+        c.setSynthetic(synthetic);
         Instant now = Instant.now();
         c.setCreatedAt(now);
         c.setUpdatedAt(now);

@@ -99,45 +99,44 @@ class Phase1HAdminOrderApiTest {
     }
 
     @Test
-    void processingToShippingRequiresTrackingAndWritesShippedAt() throws Exception {
+    void processingAllowedTransitionsAreCancelledAndCompleted() throws Exception {
         OrderInfo order = placeOrder(1_200_000);
         updateStatus(order.id(), "PROCESSING", null)
                 .andExpect(status().isOk());
 
-        updateStatus(order.id(), "SHIPPING", null)
-                .andExpect(status().isBadRequest());
-
-        updateStatus(order.id(), "SHIPPING", ",\"trackingNumber\":\"TRK-001\",\"shippingCarrier\":\"GHN\"")
+        mockMvc.perform(get("/api/v1/admin/orders/" + order.id() + "/allowed-transitions")
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("SHIPPING"))
-                .andExpect(jsonPath("$.data.trackingNumber").value("TRK-001"))
-                .andExpect(jsonPath("$.data.shippingCarrier").value("GHN"))
-                .andExpect(jsonPath("$.data.shippedAt").isNotEmpty());
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data[0]").value("CANCELLED"))
+                .andExpect(jsonPath("$.data[1]").value("COMPLETED"));
     }
 
     @Test
-    void shippingCanBeCancelledAndTerminalTransitionsStayBlocked() throws Exception {
+    void processingCanBeCancelledAndTerminalTransitionsStayBlocked() throws Exception {
         OrderInfo direct = placeOrder(1_300_000);
         updateStatus(direct.id(), "COMPLETED", null)
                 .andExpect(status().isConflict());
 
         updateStatus(direct.id(), "PROCESSING", null)
                 .andExpect(status().isOk());
-        updateStatus(direct.id(), "SHIPPING", ",\"trackingNumber\":\"TRK-002\"")
-                .andExpect(status().isOk());
 
+        String cancelReason = "Khách từ chối nhận hàng";
         updateStatus(direct.id(), "CANCELLED",
-                ",\"note\":\"Khách từ chối nhận hàng\",\"customerVisible\":true")
+                ",\"cancelReason\":\"" + cancelReason + "\"")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("CANCELLED"))
-                .andExpect(jsonPath("$.data.cancelledAt").isNotEmpty());
+                .andExpect(jsonPath("$.data.cancelledAt").isNotEmpty())
+                .andExpect(jsonPath("$.data.cancelReason").value(cancelReason));
 
         OrderEntity cancelled = orderRepo.findById(direct.id()).orElseThrow();
         assertThat(cancelled.getCancelledAt()).isNotNull();
+        assertThat(cancelled.getCancelReason()).isEqualTo(cancelReason);
         assertThat(auditLogRepo.findAll()).anySatisfy(audit -> {
             assertThat(audit.getAction()).isEqualTo("ORDER_STATUS_UPDATED");
             assertThat(audit.getResourceId()).isEqualTo(direct.id());
             assertThat(audit.getAfterData()).contains("CANCELLED");
+            assertThat(audit.getAfterData()).contains(cancelReason);
         });
 
         updateStatus(direct.id(), "PROCESSING", null)
@@ -148,12 +147,21 @@ class Phase1HAdminOrderApiTest {
         OrderInfo completed = placeOrder(1_350_000);
         updateStatus(completed.id(), "PROCESSING", null)
                 .andExpect(status().isOk());
-        updateStatus(completed.id(), "SHIPPING", ",\"trackingNumber\":\"TRK-003\"")
-                .andExpect(status().isOk());
         updateStatus(completed.id(), "COMPLETED", null)
                 .andExpect(status().isOk());
         updateStatus(completed.id(), "CANCELLED", null)
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    void cancellingWithoutReasonIsRejected() throws Exception {
+        OrderInfo order = placeOrder(1_360_000);
+        updateStatus(order.id(), "PROCESSING", null)
+                .andExpect(status().isOk());
+
+        updateStatus(order.id(), "CANCELLED", null)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].field").value("cancelReason"));
     }
 
     @Test

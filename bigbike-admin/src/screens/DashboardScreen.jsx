@@ -31,7 +31,6 @@ const PENDING_WARN_THRESHOLD = 5
 const ORDER_STATUS_COLORS = {
   PENDING:    'var(--admin-color-status-warning-text)',
   PROCESSING: 'var(--admin-color-status-info-text)',
-  SHIPPING:   'var(--admin-color-status-info-text)',
   COMPLETED:  'var(--admin-color-status-success-text)',
   CANCELLED:  'var(--admin-color-status-danger-text)',
 }

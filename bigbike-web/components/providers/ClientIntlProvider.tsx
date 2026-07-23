@@ -1,6 +1,7 @@
 "use client";
 
 import { NextIntlClientProvider } from "next-intl";
+import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ComponentProps } from "react";
 import { DEFAULT_LOCALE, DEFAULT_TIME_ZONE, LOCALE_COOKIE, resolveLocale, type Locale } from "@/i18n/locale";
 
@@ -24,6 +25,19 @@ const SetLocaleContext = createContext<SetLocale>(() => {});
 /** Đổi ngôn ngữ ở client (ghi cookie + swap message). Dùng trong LanguageSwitcher. */
 export function useSetLocale(): SetLocale {
   return useContext(SetLocaleContext);
+}
+
+const ApplyPreviewLocaleContext = createContext<SetLocale>(() => {});
+
+/**
+ * Đổi ngôn ngữ CHỈ trong bộ nhớ (swap message, KHÔNG ghi cookie NEXT_LOCALE) — dùng
+ * riêng cho khung xem trước sản phẩm/bài viết (`app/preview/*`), nơi cookie dùng
+ * chung toàn origin/mọi tab nên không được đổi theo lựa chọn VI/EN của admin (sẽ
+ * rò sang tab thật của khách đang mở cùng trình duyệt). An toàn vì mỗi iframe
+ * preview đã là một browsing context riêng — chỉ cần không đụng `document.cookie`.
+ */
+export function useApplyPreviewLocale(): SetLocale {
+  return useContext(ApplyPreviewLocaleContext);
 }
 
 function readLocaleCookie(): Locale {
@@ -73,8 +87,12 @@ export function ClientIntlProvider({
 
   // Sau mount: nếu cookie là en (visitor đã chọn từ trước) thì nạp + swap sang en.
   // Mọi setState nằm trong callback async (.then) — đồng bộ với hệ ngoài (cookie),
-  // không phải setState đồng bộ trong thân effect.
+  // không phải setState đồng bộ trong thân effect. Bỏ qua trên /preview/* — route đó
+  // tự đổi locale qua `useApplyPreviewLocale()` theo postMessage của admin, đọc cookie
+  // ở đây có thể "thắng" race và đè locale preview về cookie cũ của khách thật.
+  const pathname = usePathname();
   useEffect(() => {
+    if (pathname?.startsWith("/preview")) return;
     const cookieLocale = readLocaleCookie();
     if (cookieLocale === DEFAULT_LOCALE) return;
     let cancelled = false;
@@ -87,7 +105,7 @@ export function ClientIntlProvider({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [pathname]);
 
   const setLocale = useCallback<SetLocale>(
     (next) => {
@@ -98,12 +116,15 @@ export function ClientIntlProvider({
   );
 
   const value = useMemo(() => setLocale, [setLocale]);
+  const applyPreviewValue = useMemo(() => applyLocale, [applyLocale]);
 
   return (
     <SetLocaleContext.Provider value={value}>
-      <NextIntlClientProvider locale={locale} messages={messages} timeZone={DEFAULT_TIME_ZONE}>
-        {children}
-      </NextIntlClientProvider>
+      <ApplyPreviewLocaleContext.Provider value={applyPreviewValue}>
+        <NextIntlClientProvider locale={locale} messages={messages} timeZone={DEFAULT_TIME_ZONE}>
+          {children}
+        </NextIntlClientProvider>
+      </ApplyPreviewLocaleContext.Provider>
     </SetLocaleContext.Provider>
   );
 }

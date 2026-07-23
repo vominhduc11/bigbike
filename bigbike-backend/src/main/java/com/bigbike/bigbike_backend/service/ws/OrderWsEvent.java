@@ -8,7 +8,6 @@ public record OrderWsEvent(
         // type values:
         //   "NEW_ORDER"                  — new order placed (paymentMethod = payment method string, e.g. "COD")
         //   "ORDER_STATUS_CHANGED"       — order status updated (paymentMethod = current method)
-        //   "ORDER_NOTE_ADDED"           — note added to order (paymentMethod = current method)
         String type,
         UUID orderId,
         String orderNumber,

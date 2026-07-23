@@ -51,6 +51,16 @@ export function StatusBadge({ status, type = 'order', className }) {
   } else if (type === 'customer') {
     tone = CUSTOMER_STATUS_TONE[status] ?? 'muted'
     label = t(`status.customer.${status}`, { defaultValue: status })
+  } else if (type === 'source') {
+    // Nguồn tài khoản: true = tạo tự động từ đơn hàng cũ khi migrate (không có đăng nhập
+    // thật), false = khách đăng ký/OAuth thật. Xem DATA_CONTRACT.md "Customer isSynthetic Flag".
+    if (status !== true && status !== false) {
+      return <Badge tone="muted" className={className}>{t('common.unknown')}</Badge>
+    }
+    tone = status ? 'neutral' : 'success'
+    label = status
+      ? t('customers.sourceSynthetic', { defaultValue: 'Từ đơn hàng cũ' })
+      : t('customers.sourceReal', { defaultValue: 'Tài khoản thật' })
   } else if (type === 'review') {
     tone = REVIEW_STATUS_TONE[status] ?? 'muted'
     label = t(`reviews.status${String(status).charAt(0) + String(status).slice(1).toLowerCase()}`, { defaultValue: t('common.unknown') })

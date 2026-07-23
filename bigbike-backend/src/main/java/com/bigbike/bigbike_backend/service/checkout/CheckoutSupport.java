@@ -10,7 +10,6 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartItemEnti
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAddressEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineItemEntity;
-import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderNoteEntity;
 import com.bigbike.bigbike_backend.service.pricing.VariantPricing;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
 import java.math.BigDecimal;
@@ -206,17 +205,6 @@ final class CheckoutSupport {
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
         return entity;
-    }
-
-    static OrderNoteEntity buildSystemNote(OrderEntity order, String content, Instant now) {
-        OrderNoteEntity note = new OrderNoteEntity();
-        note.setOrder(order);
-        note.setAuthorType("SYSTEM");
-        note.setNoteType("SYSTEM");
-        note.setContent(content);
-        note.setCustomerVisible(false);
-        note.setCreatedAt(now);
-        return note;
     }
 
     static OrderSummaryResponse toSummary(OrderEntity order, String paymentMethod,

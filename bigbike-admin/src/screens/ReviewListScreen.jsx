@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Check, Eye, EyeOff, Image as ImageIcon, Loader2, MessageSquare, RefreshCw, Trash2 } from 'lucide-react'
+import { Check, Eye, EyeOff, Image as ImageIcon, Loader2, MessageSquare, Trash2 } from 'lucide-react'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { FilterSelect } from '../components/FilterSelect'
@@ -183,12 +183,6 @@ export function ReviewListScreen({ navigate, canUpdate }) {
   const summary = summaryQuery.data
   const ratingBreakdown = summary?.approved?.ratingBreakdown || {}
 
-  const refetchReviews = state.refetch
-  const refetchSummary = summaryQuery.refetch
-  const refresh = useCallback(async () => {
-    await Promise.all([refetchReviews(), refetchSummary()])
-  }, [refetchReviews, refetchSummary])
-
   const confirmSpam = useCallback(async (count) => showConfirm(
     t('reviews.spamConfirmMany', { count, defaultValue: `Đánh dấu ${count} đánh giá là spam? Đánh giá và ảnh sẽ không còn hiển thị công khai.` }),
     t('reviews.spamConfirmTitle'),
@@ -346,12 +340,6 @@ export function ReviewListScreen({ navigate, canUpdate }) {
         eyebrow={t('reviews.eyebrow')}
         title={t('reviews.title')}
         description={t('reviews.description')}
-        actions={(
-          <Button type="button" variant="secondary" className="min-h-11" onClick={refresh} disabled={state.isFetching || summaryQuery.isFetching}>
-            <RefreshCw size={16} className={state.isFetching || summaryQuery.isFetching ? 'animate-spin' : ''} />
-            {state.isFetching || summaryQuery.isFetching ? t('reviews.refreshing') : t('reviews.refresh')}
-          </Button>
-        )}
       />
 
       {state.isFetching || summaryQuery.isFetching ? <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground" role="status" aria-live="polite"><Loader2 size={16} className="animate-spin" />{t('reviews.refreshing')}</div> : null}

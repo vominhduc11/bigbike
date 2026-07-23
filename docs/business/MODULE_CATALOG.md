@@ -19,7 +19,7 @@
 | Module | Surface | Current implementation | Status | Evidence |
 |---|---|---|---|---|
 | Catalog admin | admin, backend | Product/category/brand CRUD and related reads. A product has ordered multiple categories; the first is primary for breadcrumb/SEO. The product editor uses multi-select and ordering; list filters still select one category but match any direct/descendant attachment. JSON import validates each row independently and uses ordered `categorySlugs` (or `categoryIds`); single-product export emits the complete category list. | `CONFIRMED_BACKEND_ENFORCED` | `ProductMutationService.java`, `ProductImportService.java`, `ProductDetailScreen.jsx`, `V348__restore_product_category_map.sql` |
-| Order admin | admin, backend | Order list/detail/status/payment/note workflows | `CONFIRMED_FROM_CODE` | `AdminOrderController.java`, admin app |
+| Order admin | admin, backend | Order list/detail/status/payment workflows | `CONFIRMED_FROM_CODE` | `AdminOrderController.java`, admin app |
 | Customer admin | admin, backend | Customer list/detail/update | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java` |
 | Reviews admin | admin, backend, web | Duyệt đánh giá sản phẩm: list/detail (`reviews.read`), đổi trạng thái + xóa + bulk (`reviews.write`); khách gửi đánh giá (kèm ảnh, email) qua form trên PDP web, hiển thị công khai sau khi duyệt. *(Bổ sung vào catalog 2026-07-15, AUD-076 — module đã tồn tại từ trước.)* | `CONFIRMED_FROM_CODE` | `AdminReviewController.java`, `ReviewListScreen.jsx`, `ReviewDetailScreen.jsx`, web `WriteReviewForm.tsx` |
 | Media admin | admin, backend | Upload/list/detail/update/delete/restore media | `CONFIRMED_FROM_CODE` | `AdminMediaController.java`, `AdminMediaService.java` |

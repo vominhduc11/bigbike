@@ -5,7 +5,7 @@ import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
-import { ChevronRight, Copy, ExternalLink, GripVertical, ImageOff, Plus } from 'lucide-react'
+import { ChevronRight, Copy, ExternalLink, Eye, EyeOff, GripVertical, ImageOff, MoreHorizontal, Pencil, Plus, Trash2, Undo2 } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -34,11 +34,10 @@ import { useDebounce } from '../lib/useDebounce'
 import { useRecentItems } from '../lib/useRecentItems'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { queryKeys } from '../lib/queryKeys'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import {
   DUPLICATE_SESSION_KEY,
   EMPTY_ITEMS,
@@ -101,6 +100,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   })
   const [expandedIds, setExpandedIds] = useState(() => new Set())
   const [togglingId, setTogglingId] = useState(null)
+  const [rowActionBusy, setRowActionBusy] = useState(null)
   const [selectedIds, setSelectedIds] = useState(() => new Set())
   const [bulkProgress, setBulkProgress] = useState(null) // {done,total} or null
   const debouncedSearch = useDebounce(searchInput, 300)
@@ -287,7 +287,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   }
 
   function toggleSelected(id) {
-    if (id === 'uncategorized') return
+    if (id === 'uncategorized' || bulkProgress) return
     setSelectedIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
@@ -513,6 +513,8 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   // điều hướng sang màn tạo mới; CategoryDetailScreen đọc bản nháp đó khi mount
   // (cùng cơ chế "Sao chép" đã có ở Sản phẩm).
   const handleDuplicate = async (category) => {
+    if (rowActionBusy || bulkProgress) return
+    setRowActionBusy(`duplicate:${category.id}`)
     try {
       const result = await fetchCategoryDetail(category.id)
       const item = result?.item
@@ -523,10 +525,13 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       navigate('/admin/categories/new')
     } catch {
       toast.error(t('categories.dupLoadError', { defaultValue: 'Không thể tải dữ liệu danh mục để sao chép.' }))
+    } finally {
+      setRowActionBusy(null)
     }
   }
 
   const handleSoftDelete = async (category) => {
+    if (rowActionBusy || bulkProgress) return
     const confirmed = await showConfirm(
       t('categories.deleteConfirm', { name: category.name, defaultValue: `Bạn có chắc chắn muốn xóa danh mục ${category.name}? Các danh mục con cũng sẽ bị xóa mềm.` }),
       t('categories.deleteConfirmTitle', { defaultValue: 'Xác nhận xóa' }),
@@ -534,6 +539,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     )
     if (!confirmed) return
 
+    setRowActionBusy(`delete:${category.id}`)
     try {
       await softDeleteCategory(category.id)
       queryClient.invalidateQueries({ queryKey: ['categories'] })
@@ -541,10 +547,13 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       toast.success(t('categories.deleteSuccess', { defaultValue: 'Đã chuyển danh mục vào Thùng rác.' }))
     } catch (error) {
       toast.error(error.message || t('common.error'))
+    } finally {
+      setRowActionBusy(null)
     }
   }
 
   const handleRestore = async (category) => {
+    if (rowActionBusy || bulkProgress) return
     const confirmed = await showConfirm(
       t('categories.restoreConfirm', { name: category.name, defaultValue: `Bạn có chắc chắn muốn khôi phục danh mục ${category.name}? Các danh mục con cũng sẽ được khôi phục.` }),
       t('categories.restoreConfirmTitle', { defaultValue: 'Xác nhận khôi phục' }),
@@ -552,6 +561,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     )
     if (!confirmed) return
 
+    setRowActionBusy(`restore:${category.id}`)
     try {
       await restoreCategory(category.id)
       queryClient.invalidateQueries({ queryKey: ['categories'] })
@@ -559,15 +569,20 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       toast.success(t('categories.restoreSuccess', { defaultValue: 'Khôi phục danh mục thành công.' }))
     } catch (error) {
       toast.error(error.message || t('common.error'))
+    } finally {
+      setRowActionBusy(null)
     }
   }
 
   const handlePermanentDelete = async (category) => {
+    if (rowActionBusy || bulkProgress) return
+    setRowActionBusy(`permanent:${category.id}`)
     let impact
     try {
       impact = await previewCategoryPermanentDelete([category.id])
     } catch (error) {
       toast.error(error.message || t('categories.permanentDeleteImpactError'))
+      setRowActionBusy(null)
       return
     }
     const confirmed = await showConfirm(
@@ -580,7 +595,10 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       t('categories.permanentDeleteConfirmTitle', { defaultValue: 'Xác nhận xóa vĩnh viễn' }),
       { confirmLabel: t('common.permanentDelete'), variant: 'danger' }
     )
-    if (!confirmed) return
+    if (!confirmed) {
+      setRowActionBusy(null)
+      return
+    }
 
     try {
       await hardDeleteCategory(category.id)
@@ -589,6 +607,8 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       toast.success(t('categories.permanentDeleteSuccess', { defaultValue: 'Xóa vĩnh viễn danh mục thành công.' }))
     } catch (error) {
       toast.error(error.message || t('common.error'))
+    } finally {
+      setRowActionBusy(null)
     }
   }
 
@@ -670,76 +690,149 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   ) : null
 
   // Nút thao tác dòng danh mục — dùng chung cho bảng (.cat-actions) và thẻ mobile (P2-2).
-  const renderCategoryRowActions = (category) => (
-    <>
-      {category.slug && (
-        <Button asChild variant="ghost" size="icon">
-          <a
-            href={`${STOREFRONT_BASE}/${category.slug}`}
-            target="_blank"
-            rel="noopener noreferrer"
+  const renderCategoryRowActions = (category) => {
+    const isSystemCategory = category.id === 'uncategorized'
+    const detailPath = `/admin/categories/${category.id}`
+    const actionForRow = rowActionBusy?.endsWith(`:${category.id}`)
+    const rowBusy = actionForRow || togglingId === category.id || Boolean(bulkProgress)
+    const storefrontAvailable = Boolean(category.slug && category.isVisible && !query.deleted)
+
+    return (
+      <div className="cat-actions" onClick={(event) => event.stopPropagation()}>
+        <Button
+          variant="unstyled"
+          size="icon"
+          type="button"
+          className="bb-icon-btn min-h-11 min-w-11"
+          title={t('common.edit', { defaultValue: 'Chỉnh sửa' })}
+          aria-label={t('common.edit', { defaultValue: 'Chỉnh sửa' })}
+          onClick={() => navigate(detailPath)}
+        >
+          <Pencil size={15} aria-hidden="true" />
+        </Button>
+
+        {storefrontAvailable && (
+          <Button
+            asChild
+            variant="unstyled"
+            size="icon"
+            className="bb-icon-btn min-h-11 min-w-11"
             title={t('categories.viewOnSite')}
             aria-label={t('categories.viewOnSite')}
           >
-            <ExternalLink size={14} aria-hidden="true" />
-          </a>
-        </Button>
-      )}
-      {canUpdate && category.id !== 'uncategorized' && !query.deleted && (
-        <Button variant="ghost" size="icon" onClick={() => handleDuplicate(category)} title={t('categories.duplicate')} aria-label={t('categories.duplicate')}>
-          <Copy size={14} aria-hidden="true" />
-        </Button>
-      )}
-      {canUpdate && category.id !== 'uncategorized' && !query.deleted && (
-        <Button
-          variant="outline"
-          size="sm"
-          className={category.isVisible ? 'text-destructive hover:text-destructive' : 'text-success hover:text-success'}
-          disabled={toggleVisibilityMutation.isPending || Boolean(bulkProgress)}
-          onClick={() => handleToggleVisibility(category)}
-          title={category.isVisible ? t('categories.hideAction') : t('categories.restoreAction')}
-        >
-          {togglingId === category.id
-            ? '…'
-            : category.isVisible
-              ? t('categories.unpublishAction')
-              : t('categories.republishAction')}
-        </Button>
-      )}
-      {canUpdate && category.id !== 'uncategorized' && !query.deleted && (
-        <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleSoftDelete(category)}>
-          {t('common.delete')}
-        </Button>
-      )}
-      {canUpdate && category.id !== 'uncategorized' && query.deleted && (
-        <>
-          <Button variant="outline" size="sm" className="text-success hover:text-success" onClick={() => handleRestore(category)}>
-            {t('products.restore')}
+            <a
+              href={`${STOREFRONT_BASE}/${category.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ExternalLink size={15} aria-hidden="true" />
+            </a>
           </Button>
-          <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => handlePermanentDelete(category)}>
-            {t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' })}
+        )}
+
+        {canUpdate && !isSystemCategory && !query.deleted && (
+          <Button
+            variant="unstyled"
+            size="icon"
+            type="button"
+            className="bb-icon-btn min-h-11 min-w-11"
+            loading={togglingId === category.id}
+            disabled={rowBusy || toggleVisibilityMutation.isPending}
+            onClick={() => handleToggleVisibility(category)}
+            title={category.isVisible
+              ? t('categories.hideAction', { defaultValue: 'Ẩn khỏi website' })
+              : t('categories.showAction', { defaultValue: 'Hiện trên website' })}
+            aria-label={category.isVisible
+              ? t('categories.hideAction', { defaultValue: 'Ẩn khỏi website' })
+              : t('categories.showAction', { defaultValue: 'Hiện trên website' })}
+          >
+            {category.isVisible ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}
           </Button>
-        </>
-      )}
-    </>
-  )
+        )}
+
+        {canUpdate && !isSystemCategory && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="unstyled"
+                size="icon"
+                type="button"
+                className="bb-icon-btn min-h-11 min-w-11"
+                title={t('common.actions', { defaultValue: 'Thao tác' })}
+                aria-label={t('common.actions', { defaultValue: 'Thao tác' })}
+                disabled={rowBusy}
+              >
+                <MoreHorizontal size={16} aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {!query.deleted && (
+                <>
+                  <DropdownMenuItem disabled={rowBusy} onSelect={() => handleDuplicate(category)}>
+                    <Copy size={14} className="mr-2" aria-hidden="true" />
+                    {t('categories.duplicate')}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    disabled={rowBusy}
+                    onSelect={() => handleSoftDelete(category)}
+                    className="text-danger focus:text-danger"
+                  >
+                    <Trash2 size={14} className="mr-2" aria-hidden="true" />
+                    {t('common.delete')}
+                  </DropdownMenuItem>
+                </>
+              )}
+              {query.deleted && (
+                <>
+                  <DropdownMenuItem disabled={rowBusy} onSelect={() => handleRestore(category)}>
+                    <Undo2 size={14} className="mr-2" aria-hidden="true" />
+                    {t('products.restore')}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    disabled={rowBusy}
+                    onSelect={() => handlePermanentDelete(category)}
+                    className="text-danger focus:text-danger"
+                  >
+                    <Trash2 size={14} className="mr-2" aria-hidden="true" />
+                    {t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' })}
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+    )
+  }
 
   // Thẻ mobile cho 1 danh mục — thay bảng cuộn ngang trên điện thoại (P2-2).
   // Kéo-thả sắp xếp vẫn chỉ ở desktop; mobile hiển thị dạng danh sách phẳng.
   const mobileCategoryCard = (category) => {
     const breadcrumb = breadcrumbMap.get(category.id) || category.name
-    const hasActions = Boolean(category.slug) || canUpdate
+    const descText = stripHtml(category.description)
     return (
       <MobileCard
         key={category.id}
         title={formatText(category.name)}
         subtitle={breadcrumb && breadcrumb !== category.name ? breadcrumb : (category.slug ? `/${category.slug}` : undefined)}
-        status={<StatusBadge type="visibility" status={category.isVisible} />}
+        status={(
+          <span className="flex flex-wrap justify-end gap-1">
+            <StatusBadge type="visibility" status={category.isVisible} />
+            <StatusBadge type="homepage" status={Boolean(category.showOnHomepage)} />
+            {query.deleted ? <StatusBadge type="trash" status /> : null}
+          </span>
+        )}
         meta={[
+          { label: t('categories.colDescription'), value: descText || <span className="bb-muted">—</span> },
           { label: t('categories.colUpdated'), value: formatDateTime(category.updatedAt) },
         ]}
         onClick={() => navigate(`/admin/categories/${category.id}`)}
-        actions={hasActions ? renderCategoryRowActions(category) : undefined}
+        selectable={canUpdate && category.id !== 'uncategorized'}
+        selected={selectedIds.has(category.id)}
+        onSelectChange={() => toggleSelected(category.id)}
+        actions={renderCategoryRowActions(category)}
       />
     )
   }
@@ -841,10 +934,6 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               {!useTreeMode && category.parentId && (
                 <span className="cat-breadcrumb">{breadcrumb}</span>
               )}
-              <span className="mt-1 flex flex-wrap gap-1">
-                {query.deleted ? <StatusBadge type="trash" status /> : null}
-                <StatusBadge type="homepage" status={Boolean(category.showOnHomepage)} />
-              </span>
             </a>
           </div>
         </td>
@@ -856,9 +945,13 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           </td>
         )}
 
-        {/* Visibility badge */}
+        {/* Status badges: visibility, homepage, trash */}
         <td>
-          <StatusBadge type="visibility" status={category.isVisible} className="cat-status-badge" />
+          <span className="flex flex-wrap gap-1">
+            <StatusBadge type="visibility" status={category.isVisible} className="cat-status-badge" />
+            <StatusBadge type="homepage" status={Boolean(category.showOnHomepage)} />
+            {query.deleted ? <StatusBadge type="trash" status /> : null}
+          </span>
         </td>
 
         {/* Sort order — flat mode only */}
@@ -871,9 +964,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
 
         {/* Actions */}
         <td className="align-right">
-          <div className="cat-actions">
-            {renderCategoryRowActions(category)}
-          </div>
+          {renderCategoryRowActions(category)}
         </td>
       </tr>
     )
@@ -899,6 +990,20 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       },
     })
   }
+  if (query.deleted) {
+    activeFilterChips.push({
+      key: 'deleted',
+      label: t('categories.filterChipTrash', {
+        value: t('categories.filterTrashTab', { defaultValue: 'Thùng rác' }),
+        defaultValue: 'Trạng thái: {{value}}',
+      }),
+      removeLabel: t('categories.removeFilter', {
+        filter: t('categories.filterTrash', { defaultValue: 'Trạng thái' }),
+        defaultValue: 'Bỏ lọc {{filter}}',
+      }),
+      onRemove: () => updateQuery({ deleted: false }, { resetPage: true }),
+    })
+  }
   if (query.visibility !== 'ALL') {
     activeFilterChips.push({
       key: 'visibility',
@@ -919,6 +1024,19 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       onRemove: () => updateQuery({ sort: 'sortOrder:asc' }, { resetPage: true }),
     })
   }
+
+  const resultAnnounce = useTreeMode
+    ? t('categories.resultsAnnounceTree', {
+      shown: visibleTreeRows.length,
+      total: allItems.length,
+      defaultValue: `Đang hiển thị ${visibleTreeRows.length}/${allItems.length} danh mục trong cây`,
+    })
+    : flatModeStatus === 'success'
+      ? t('categories.resultsAnnounce', {
+        count: paginatedState.pagination?.totalItems ?? flatItems.length,
+        defaultValue: `Đã lọc: ${paginatedState.pagination?.totalItems ?? flatItems.length} danh mục`,
+      })
+      : ''
 
   return (
     <div>
@@ -954,10 +1072,9 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           "Dạng danh sách" tự set sort sang updatedAt:desc (thoát khỏi điều
           kiện cây), bấm "Dạng cây" reset lại visibility/sort mặc định. */}
       <div
-        className="bb-seg"
+        className="bb-seg mb-3"
         role="tablist"
         aria-label={t('categories.viewModeAria')}
-        style={{ marginBottom: 'var(--admin-space-3)' }}
       >
         <Button variant="unstyled"
           type="button"
@@ -1004,6 +1121,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           value={searchInput}
           onChange={setSearchInput}
           placeholder={t('categories.searchPlaceholder')}
+          wrapperClassName="flex-1 min-w-56"
         />
         <FilterSelect
           value={query.deleted ? 'TRASH' : 'ACTIVE'}
@@ -1042,13 +1160,13 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           />
         )}
         {useTreeMode && (
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="ml-auto flex items-center gap-2">
             {/* Chế độ cây ẩn phân trang nên không có tổng số bản ghi; hiện
                 tổng số danh mục để admin vẫn biết quy mô dữ liệu (tiêu chí 6.3). */}
-            <span className="bb-muted" style={{ fontSize: 12 }}>
+            <span className="bb-muted text-xs">
               {t('categories.treeTotalCount', { count: allItems.length, defaultValue: `${allItems.length} danh mục` })}
             </span>
-            <div style={{ display: 'flex', gap: 4 }}>
+            <div className="flex gap-1">
               <Button type="button" variant="ghost" size="sm" onClick={expandAll}>
                 {t('categories.expandAll')}
               </Button>
@@ -1071,6 +1189,10 @@ export function CategoryListScreen({ navigate, canUpdate }) {
         removeChipLabel={t('common.clear')}
         ariaLabel={t('categories.activeFiltersAria')}
       />
+
+      <span className="sr-only" role="status" aria-live="polite">
+        {resultAnnounce}
+      </span>
 
       {/* ── Bulk action bar ── */}
       {/* Hợp đồng BulkActionBar: số → bar tự dịch "{n} đã chọn"; chuỗi → hiện
@@ -1118,19 +1240,23 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       {useTreeMode && (
         <div className="cat-tree-wrap">
           {allCatsResult == null ? (
-            <div className="table-scroll-wrap">
-              <table className="admin-table cat-tree-table cat-table-tree" aria-busy="true">
-                <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenColumnKeys} />
-                <tbody>
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <tr key={i} className="skel-row">
-                      {Array.from({ length: (canUpdate ? 6 : 5) - hiddenColumnKeys.length }).map((__, j) => (
-                        <td key={j}><span className="bb-skel w-4/5 h-5" /></td>
+            <div className="bb-card">
+              <div className="bb-card-body bb-card-body--flush">
+                <div className="table-scroll-wrap">
+                  <table className="admin-table cat-tree-table cat-table-tree" aria-busy="true">
+                    <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenColumnKeys} />
+                    <tbody>
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <tr key={i} className="skel-row">
+                          {Array.from({ length: (canUpdate ? 6 : 5) - hiddenColumnKeys.length }).map((__, j) => (
+                            <td key={j}><span className="bb-skel w-4/5 h-5" /></td>
+                          ))}
+                        </tr>
                       ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           ) : visibleTreeRows.length === 0 ? (
             <CategoryEmptyState
@@ -1141,35 +1267,37 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               onCreate={() => navigate('/admin/categories/new')}
             />
           ) : (
-            <>
-            <div className="table-scroll-wrap hide-on-mobile">
-              <DndContext
-                sensors={dndSensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={visibleTreeRows.map((r) => r.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-              <table className="admin-table cat-tree-table cat-table-tree">
-                <caption className="sr-only">{t('categories.tableCaption')}</caption>
-                <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenColumnKeys} />
-                <tbody>
-                  {visibleTreeRows.map((row) =>
-                    canUpdate && !searchTerm
-                      ? <SortableTreeRow key={row.id} category={row} depth={row._depth} renderCategoryRow={renderCategoryRow} />
-                      : renderCategoryRow(row, row._depth)
-                  )}
-                </tbody>
-              </table>
-                </SortableContext>
-              </DndContext>
+            <div className="bb-card">
+              <div className="bb-card-body bb-card-body--flush">
+                <div className="table-scroll-wrap hide-on-mobile">
+                  <DndContext
+                    sensors={dndSensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={visibleTreeRows.map((r) => r.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <table className="admin-table cat-tree-table cat-table-tree">
+                        <caption className="sr-only">{t('categories.tableCaption')}</caption>
+                        <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenColumnKeys} />
+                        <tbody>
+                          {visibleTreeRows.map((row) =>
+                            canUpdate && !searchTerm
+                              ? <SortableTreeRow key={row.id} category={row} depth={row._depth} renderCategoryRow={renderCategoryRow} />
+                              : renderCategoryRow(row, row._depth)
+                          )}
+                        </tbody>
+                      </table>
+                    </SortableContext>
+                  </DndContext>
+                </div>
+                <MobileCardList>
+                  {visibleTreeRows.map((cat) => mobileCategoryCard(cat))}
+                </MobileCardList>
+              </div>
             </div>
-            <MobileCardList>
-              {visibleTreeRows.map((cat) => mobileCategoryCard(cat))}
-            </MobileCardList>
-            </>
           )}
         </div>
       )}
@@ -1198,36 +1326,38 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           ) : null}
 
           {flatModeStatus === 'loading' || (flatModeStatus === 'success' && flatItems.length > 0) ? (
-            <>
-              <div className="table-scroll-wrap hide-on-mobile">
-                <table className="admin-table cat-tree-table cat-table-flat">
-                  <caption className="sr-only">{t('categories.tableCaption')}</caption>
-                  <CategoryFlatTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenColumnKeys} />
-                  <tbody>
-                    {flatModeStatus === 'loading'
-                      ? Array.from({ length: query.pageSize }).map((_, i) => (
-                          <tr key={i} className="skel-row">
-                            {Array.from({ length: (canUpdate ? 7 : 6) - hiddenColumnKeys.length }).map((__, j) => (
-                              <td key={j}><span className="bb-skel w-4/5 h-5" /></td>
-                            ))}
-                          </tr>
-                        ))
-                      : flatItems.map((cat) => renderCategoryRow(cat, 0))}
-                  </tbody>
-                </table>
+            <div className="bb-card">
+              <div className="bb-card-body bb-card-body--flush">
+                <div className="table-scroll-wrap hide-on-mobile">
+                  <table className="admin-table cat-tree-table cat-table-flat">
+                    <caption className="sr-only">{t('categories.tableCaption')}</caption>
+                    <CategoryFlatTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenColumnKeys} />
+                    <tbody>
+                      {flatModeStatus === 'loading'
+                        ? Array.from({ length: query.pageSize }).map((_, i) => (
+                            <tr key={i} className="skel-row">
+                              {Array.from({ length: (canUpdate ? 7 : 6) - hiddenColumnKeys.length }).map((__, j) => (
+                                <td key={j}><span className="bb-skel w-4/5 h-5" /></td>
+                              ))}
+                            </tr>
+                          ))
+                        : flatItems.map((cat) => renderCategoryRow(cat, 0))}
+                    </tbody>
+                  </table>
+                </div>
+                {flatModeStatus === 'success' && flatItems.length > 0 && (
+                  <MobileCardList>
+                    {flatItems.map((cat) => mobileCategoryCard(cat))}
+                  </MobileCardList>
+                )}
               </div>
-              {flatModeStatus === 'success' && flatItems.length > 0 && (
-                <MobileCardList>
-                  {flatItems.map((cat) => mobileCategoryCard(cat))}
-                </MobileCardList>
-              )}
               {flatModeStatus === 'success' && (
                 <PaginationControls
                   pagination={paginatedState.pagination}
                   onPageChange={(nextPage) => updateQuery({ page: nextPage })}
                 />
               )}
-            </>
+            </div>
           ) : null}
         </>
       )}

@@ -195,7 +195,7 @@ type TFn = (key: string) => string;
 /** Locale-aware variant of stockStateLabel. Pass t from useTranslations("Product"). */
 /** Locale-aware variant of orderStatusLabel. Pass t from useTranslations("Account.orders"). */
 export function orderStatusLabelWithT(status: string | null | undefined, t: TFn): string {
-  const known = ["PENDING", "PROCESSING", "SHIPPING", "COMPLETED", "CANCELLED"];
+  const known = ["PENDING", "PROCESSING", "COMPLETED", "CANCELLED"];
   if (status && known.includes(status)) return t(`orderStatus.${status}`);
   return status ?? t("orderStatus.UNKNOWN");
 }

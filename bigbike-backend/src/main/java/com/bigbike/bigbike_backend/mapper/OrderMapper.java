@@ -5,7 +5,6 @@ import com.bigbike.bigbike_backend.api.order.dto.OrderAddressResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderDetailResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderLineItemResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderListItemResponse;
-import com.bigbike.bigbike_backend.api.order.dto.OrderNoteResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderPaymentResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderShippingItemResponse;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
@@ -31,7 +30,6 @@ public interface OrderMapper {
     @Mapping(target = "addresses", source = "addresses")
     @Mapping(target = "shippingItems", source = "shippingItems")
     @Mapping(target = "payments", source = "payments")
-    @Mapping(target = "notes", source = "notes")
     @Mapping(target = "channel", source = "entity.channel")
     OrderDetailResponse toDetailResponse(
             OrderEntity entity,
@@ -39,7 +37,6 @@ public interface OrderMapper {
             List<OrderLineItemResponse> lineItems,
             List<OrderAddressResponse> addresses,
             List<OrderShippingItemResponse> shippingItems,
-            List<OrderPaymentResponse> payments,
-            List<OrderNoteResponse> notes
+            List<OrderPaymentResponse> payments
     );
 }

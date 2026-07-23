@@ -275,7 +275,7 @@ public class OrderImporter implements DomainImporter {
         return switch (rawStatus.trim().toUpperCase()) {
             case "PENDING", "PENDING_PAYMENT" -> "PENDING";
             case "ON_HOLD", "PROCESSING" -> "PROCESSING";
-            case "SHIPPING", "SHIPPED" -> hasCompletedAt ? "COMPLETED" : "SHIPPING";
+            case "SHIPPING", "SHIPPED" -> hasCompletedAt ? "COMPLETED" : "PROCESSING";
             case "COMPLETED" -> "COMPLETED";
             case "CANCELLED", "FAILED", "REFUNDED" -> "CANCELLED";
             default -> "PENDING";

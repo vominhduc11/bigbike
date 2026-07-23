@@ -2,9 +2,7 @@ package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderDetailResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderListItemResponse;
-import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderNoteResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.OrderAuditLogResponse;
-import com.bigbike.bigbike_backend.api.admin.dto.order.CreateOrderNoteRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.UpdateOrderStatusRequest;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
@@ -17,13 +15,11 @@ import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.mapper.OrderAddressMapper;
 import com.bigbike.bigbike_backend.mapper.OrderItemMapper;
 import com.bigbike.bigbike_backend.mapper.OrderMapper;
-import com.bigbike.bigbike_backend.mapper.OrderNoteMapper;
 import com.bigbike.bigbike_backend.mapper.PaymentMapper;
 import com.bigbike.bigbike_backend.mapper.ShippingMapper;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAddressEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineItemEntity;
-import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderNoteEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderShippingItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.payment.PaymentEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
@@ -31,7 +27,6 @@ import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAddressJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderNoteJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderShippingItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
 import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
@@ -40,20 +35,20 @@ import com.bigbike.bigbike_backend.service.order.OrderLineItemThumbnailResolver;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
-import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
-import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.buildNote;
 import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.buildStatusChangedEvent;
 import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.parseFromDate;
 import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.parseToDate;
 import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.resolveSort;
-import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.safeCustomerName;
 import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.withResolvedCustomerName;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -74,9 +69,10 @@ public class AdminOrderService {
 
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
+    private static final ObjectMapper AUDIT_MAPPER = new ObjectMapper();
 
     private static final Set<String> ALLOWED_ORDER_STATUSES = Set.of(
-            "PENDING", "PROCESSING", "SHIPPING", "COMPLETED", "CANCELLED"
+            "PENDING", "PROCESSING", "COMPLETED", "CANCELLED"
     );
 
 
@@ -84,8 +80,7 @@ public class AdminOrderService {
     static {
         ALLOWED_TRANSITIONS = new HashMap<>();
         ALLOWED_TRANSITIONS.put("PENDING",    Set.of("PROCESSING", "CANCELLED"));
-        ALLOWED_TRANSITIONS.put("PROCESSING", Set.of("SHIPPING", "CANCELLED"));
-        ALLOWED_TRANSITIONS.put("SHIPPING",   Set.of("COMPLETED", "CANCELLED"));
+        ALLOWED_TRANSITIONS.put("PROCESSING", Set.of("COMPLETED", "CANCELLED"));
         ALLOWED_TRANSITIONS.put("COMPLETED",  Set.of());
         ALLOWED_TRANSITIONS.put("CANCELLED",  Set.of());
     }
@@ -94,7 +89,6 @@ public class AdminOrderService {
     private final OrderLineItemJpaRepository lineItemRepo;
     private final OrderAddressJpaRepository addressRepo;
     private final OrderShippingItemJpaRepository shippingItemRepo;
-    private final OrderNoteJpaRepository noteRepo;
     private final PaymentJpaRepository paymentRepo;
     private final AuditLogJpaRepository auditLogRepo;
     private final AuditLogWriter auditLogWriter;
@@ -108,9 +102,8 @@ public class AdminOrderService {
     private final OrderAddressMapper orderAddressMapper;
     private final ShippingMapper shippingMapper;
     private final PaymentMapper paymentMapper;
-    private final OrderNoteMapper orderNoteMapper;
 
-    // ── List ──────────────────────────────────────────────────────────────────
+    // List
 
     @Transactional(readOnly = true)
     public PageResult<AdminOrderListItemResponse> listOrders(
@@ -165,7 +158,7 @@ public class AdminOrderService {
                 orderPage.getTotalElements(), orderPage.getTotalPages());
     }
 
-    // ── Detail ────────────────────────────────────────────────────────────────
+    // Detail
 
     @Transactional(readOnly = true)
     public AdminOrderDetailResponse getOrderDetail(UUID orderId) {
@@ -183,7 +176,7 @@ public class AdminOrderService {
         return allowed.stream().sorted().toList();
     }
 
-    // ── Update order status ───────────────────────────────────────────────────
+    // Update order status
 
     @Transactional
     public AdminOrderDetailResponse updateOrderStatus(UUID orderId, UUID adminId, UpdateOrderStatusRequest req,
@@ -198,23 +191,15 @@ public class AdminOrderService {
 
         String currentStatus = order.getStatus();
 
-        // Idempotent: same status → return current state, no write
+        // Idempotent: same status -> return current state, no write.
         if (currentStatus.equals(newStatus)) {
             return toDetail(order);
         }
 
-        // Transition validation is the complete business rule for the single axis.
         Set<String> allowed = ALLOWED_TRANSITIONS.getOrDefault(currentStatus, Set.of());
         if (!allowed.contains(newStatus)) {
             throw new ConflictException(
                     "Cannot transition order from " + currentStatus + " to " + newStatus + ".");
-        }
-
-        if ("SHIPPING".equals(newStatus)) {
-            if (req.trackingNumber() == null || req.trackingNumber().isBlank()) {
-                throw ValidationException.fromField("trackingNumber", "REQUIRED",
-                        "Mã vận đơn (trackingNumber) là bắt buộc khi chuyển sang Đang giao.");
-            }
         }
 
         String beforeStatus = order.getStatus();
@@ -228,101 +213,38 @@ public class AdminOrderService {
         if ("CANCELLED".equals(newStatus) && order.getCancelledAt() == null) {
             order.setCancelledAt(now);
         }
-
-        if ("SHIPPING".equals(newStatus)) {
-            order.setTrackingNumber(req.trackingNumber().trim());
-            if (req.shippingCarrier() != null && !req.shippingCarrier().isBlank()) {
-                order.setShippingCarrier(req.shippingCarrier().trim());
+        if ("CANCELLED".equals(newStatus)) {
+            if (req.cancelReason() == null || req.cancelReason().isBlank()) {
+                throw ValidationException.fromField("cancelReason", "REQUIRED",
+                        "Lý do huỷ đơn là bắt buộc.");
             }
-            if (order.getShippedAt() == null) {
-                order.setShippedAt(now);
-            }
+            order.setCancelReason(req.cancelReason().trim());
         }
 
         orderRepo.save(order);
 
-        // Web cache side-effects.
-        if ("COMPLETED".equals(newStatus)) {
-            webRevalidationService.revalidateProductsForOrder(orderId);
-        } else if ("CANCELLED".equals(newStatus)) {
-            // Inventory is boolean availability only (owner decision 2026-06-23) — nothing to
-            // restore on cancel. Just refresh the web cache.
+        if ("COMPLETED".equals(newStatus) || "CANCELLED".equals(newStatus)) {
             webRevalidationService.revalidateProductsForOrder(orderId);
         }
 
-        // Add note if provided
-        if (req.note() != null && !req.note().isBlank()) {
-            boolean visible = Boolean.TRUE.equals(req.customerVisible());
-            noteRepo.save(buildNote(order, adminId, "ADMIN", req.note(), visible, now));
+        Map<String, Object> beforeData = new LinkedHashMap<>();
+        beforeData.put("status", beforeStatus);
+        Map<String, Object> afterData = new LinkedHashMap<>();
+        afterData.put("status", newStatus);
+        if ("CANCELLED".equals(newStatus)) {
+            afterData.put("cancelReason", order.getCancelReason());
         }
-
-        // Audit log
         auditLogWriter.save(auditLogFactory.build("ADMIN", adminId, "ORDER_STATUS_UPDATED", "ORDER", order.getId(),
-                "{\"status\":\"" + beforeStatus + "\"}",
-                "{\"status\":\"" + newStatus + "\"}", clientIp, userAgent));
+                writeAuditJson(beforeData), writeAuditJson(afterData), clientIp, userAgent));
 
-        // Email customer when status is customer-visible (after commit so DB state is consistent)
-        String customerNote = (req.note() != null && Boolean.TRUE.equals(req.customerVisible()))
-                ? req.note() : null;
         OrderEntity statusSnapshot = order;
         String statusForEmail = newStatus;
-        String noteForEmail = customerNote;
-        // pushEvent() already defers its own send until after-commit — call it directly here,
-        // not nested inside runAfterCommit below (a TransactionSynchronization registered from
-        // inside another synchronization's afterCommit() of the same transaction is silently
-        // dropped by Spring, which was swallowing this admin push).
         adminOrderWsService.pushEvent(buildStatusChangedEvent(order, newStatus));
-        runAfterCommit(() -> orderNotificationService.sendOrderStatusUpdate(statusSnapshot, statusForEmail, noteForEmail));
+        runAfterCommit(() -> orderNotificationService.sendOrderStatusUpdate(statusSnapshot, statusForEmail));
 
         return toDetail(orderRepo.findById(orderId).orElseThrow());
     }
 
-    // ── Add note ──────────────────────────────────────────────────────────────
-
-    @Transactional
-    public AdminOrderNoteResponse addNote(UUID orderId, UUID adminId, CreateOrderNoteRequest req,
-            String clientIp, String userAgent) {
-        OrderEntity order = orderRepo.findById(orderId)
-                .orElseThrow(() -> new NotFoundException("Order not found."));
-
-        Instant now = Instant.now();
-        String noteType = (req.noteType() != null && !req.noteType().isBlank()) ? req.noteType() : "ADMIN";
-        boolean visible = Boolean.TRUE.equals(req.customerVisible());
-
-        OrderNoteEntity note = buildNote(order, adminId, noteType, req.content(), visible, now);
-        note = noteRepo.save(note);
-
-        auditLogWriter.save(auditLogFactory.build("ADMIN", adminId, "ORDER_NOTE_CREATED", "ORDER", orderId,
-                null,
-                "{\"noteType\":\"" + noteType + "\",\"customerVisible\":" + visible + "}",
-                clientIp, userAgent));
-
-        // pushEvent() defers its own send until after commit.
-        adminOrderWsService.pushEvent(new OrderWsEvent(
-                "ORDER_NOTE_ADDED", order.getId(), order.getOrderNumber(),
-                safeCustomerName(order), order.getTotalAmount(),
-                order.getStatus(), order.getPaymentMethod(), now));
-
-        return toAdminNote(note);
-    }
-
-    // ── List notes ────────────────────────────────────────────────────────────
-
-    @Transactional(readOnly = true)
-    public List<AdminOrderNoteResponse> listNotes(UUID orderId) {
-        if (!orderRepo.existsById(orderId)) {
-            throw new NotFoundException("Order not found.");
-        }
-        return noteRepo.findByOrderIdOrderByCreatedAtAsc(orderId)
-                .stream().map(this::toAdminNote).toList();
-    }
-
-    // ── Audit trail ───────────────────────────────────────────────────────────
-
-    /**
-     * Read-only audit trail for an order: every status/payment-record/shipping-metadata/note
-     * change recorded in {@code audit_logs} (resource_type = ORDER), newest first.
-     */
     @Transactional(readOnly = true)
     public List<OrderAuditLogResponse> listAuditTrail(UUID orderId) {
         if (!orderRepo.existsById(orderId)) {
@@ -337,9 +259,6 @@ public class AdminOrderService {
                         a.getBeforeData(), a.getAfterData(), a.getIpAddress(), a.getCreatedAt()))
                 .toList();
     }
-
-    // ── Mapping ───────────────────────────────────────────────────────────────
-
     private Map<UUID, Long> batchCountLineItems(List<UUID> orderIds) {
         if (orderIds.isEmpty()) return Map.of();
         Map<UUID, Long> result = new HashMap<>();
@@ -355,7 +274,7 @@ public class AdminOrderService {
     /**
      * Batch-loads the shipping-address full name for the given orders, keyed by
      * order id. Used as a fallback for legacy orders whose own customer_name is
-     * null even though the address carries the real name. One query, no N+1 —
+     * null even though the address carries the real name. One query, no N+1.
      * {@code getOrder().getId()} reads the FK off the lazy proxy without a fetch.
      */
     private Map<UUID, String> batchShippingNames(List<UUID> orderIds) {
@@ -385,10 +304,6 @@ public class AdminOrderService {
         List<OrderPaymentResponse> payments = paymentRepo.findByOrderId(order.getId())
                 .stream().map(this::toPayment).toList();
 
-        // Admin sees ALL notes (customerVisible=true AND false)
-        List<AdminOrderNoteResponse> notes = noteRepo.findByOrderIdOrderByCreatedAtAsc(order.getId())
-                .stream().map(this::toAdminNote).toList();
-
         String customerName = (order.getCustomerName() != null && !order.getCustomerName().isBlank())
                 ? order.getCustomerName()
                 : addresses.stream()
@@ -404,9 +319,6 @@ public class AdminOrderService {
                 order.getOrderKey(),
                 order.getStatus(),
                 order.getFulfillmentType(),
-                order.getTrackingNumber(),
-                order.getShippingCarrier(),
-                order.getShippedAt(),
                 order.getCustomerEmail(),
                 order.getCustomerPhone(),
                 customerName,
@@ -424,11 +336,11 @@ public class AdminOrderService {
                 order.getPaidAt(),
                 order.getCompletedAt(),
                 order.getCancelledAt(),
+                order.getCancelReason(),
                 lineItems,
                 addresses,
                 shippingItems,
-                payments,
-                notes
+                payments
         );
     }
 
@@ -454,10 +366,6 @@ public class AdminOrderService {
         return paymentMapper.toResponse(e);
     }
 
-    private AdminOrderNoteResponse toAdminNote(OrderNoteEntity e) {
-        return orderNoteMapper.toAdminResponse(e);
-    }
-
     private void runAfterCommit(Runnable action) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
@@ -468,6 +376,14 @@ public class AdminOrderService {
             });
         } else {
             action.run();
+        }
+    }
+
+    private static String writeAuditJson(Map<String, Object> fields) {
+        try {
+            return AUDIT_MAPPER.writeValueAsString(fields);
+        } catch (JsonProcessingException ex) {
+            return "{\"_serialization_error\":true}";
         }
     }
 }

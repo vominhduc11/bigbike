@@ -18,7 +18,7 @@
 
 1. Customer or guest builds cart.
 2. Checkout revalidates product price/stock.
-3. Backend creates the order, payment row, shipping row, and order notes. (No quantity decrement — boolean availability, V261.)
+3. Backend creates the order, payment row, and shipping-address rows. (No quantity decrement — boolean availability, V261; no order notes are created.)
 4. Backend sends email and pushes `/topic/admin/orders` event.
 
 Status: `CONFIRMED_FROM_CODE`
@@ -44,7 +44,7 @@ These business processes are **expected to exist** for a Vietnamese online e-com
 | Invoice / e-invoice (hóa đơn điện tử) | No `invoice` entity, no service, no provider integration. **Owner decision 2026-07-06: KHÔNG triển khai hoá đơn điện tử trong hệ thống** — xuất hoá đơn (nếu có) xử lý thủ công ngoài hệ thống. | `OUT_OF_SCOPE` | Trước cờ NEEDS_BUSINESS_CONFIRMATION theo NĐ 123/2020/NĐ-CP; owner đã chốt không làm. Tuân thủ pháp lý do chủ shop tự chịu ngoài hệ thống. |
 | Legacy bank-transfer reconcile (BACS) | Storefront mới nhận `COD` hoặc mã chuyển khoản thủ công mới `BANK_TRANSFER`; `BACS` vẫn bị từ chối ở checkout. Admin vẫn đọc và đối soát thủ công các đơn BACS cũ qua dữ liệu payment/payment record và `paidAmount`. | `LEGACY_COMPATIBILITY` | Không tái sử dụng BACS cho lựa chọn mới; giữ khả năng vận hành dữ liệu cũ. |
 | External payment provider / webhook | Không có cổng thanh toán tự động. Kế hoạch tích hợp Alepay/ZaloPay đã bị bỏ — đơn storefront mới dùng COD hoặc chuyển khoản thủ công, không có redirect hay webhook. | `NOT_FOUND_IN_REPO` | Shop xác nhận đơn qua điện thoại trước khi xử lý; mọi khoản tiền do admin đối soát thủ công. Xem `INTEGRATION_GUIDE.md`. |
-| External shipping carrier (GHN/GHTK/ViettelPost) | Không có carrier integration/waybill tự động. Shop tự sắp xếp giao hàng bằng metadata `trackingNumber`/`shippingCarrier`; khách được miễn phí giao hàng theo `SHIP_RULE_001`. | `NOT_FOUND_IN_REPO` | Giao hàng chạy thủ công; không có cấu hình phương thức/phí giao hàng trong hệ thống. |
+| External shipping carrier (GHN/GHTK/ViettelPost) | Không có carrier integration/waybill tự động. Shop tự sắp xếp giao hàng thủ công, không lưu mã vận đơn/đơn vị vận chuyển trong hệ thống (`trackingNumber`/`shippingCarrier` đã bị gỡ bỏ hoàn toàn, quyết định chủ 2026-07-23); khách được miễn phí giao hàng theo `SHIP_RULE_001`. | `NOT_FOUND_IN_REPO` | Giao hàng chạy thủ công; không có cấu hình phương thức/phí giao hàng trong hệ thống. |
 | Stock receiving workflow | Receipt tables (V52/V53/V55) were dropped in V120 by business decision — never built. The current Còn/Hết model has no receiving or quantity movement workflow. | `REMOVED` | Resolved 2026-05-16; boolean availability since V261. |
 | Warranty / product-serial lifecycle | **Both removed.** Serial-number tracking was removed 2026-06-23 (V259); the **warranty feature was removed entirely 2026-06-23 (V266)** — no warranty records, no creation on `COMPLETED`/POS sale, no void, no lookup page, no claim/repair workflow. Customer-facing warranty wording survives only as CMS policy content and per-product marketing rows. | `REMOVED` | `V259__remove_serial_management.sql`, `V266__remove_warranty.sql`. |
 | Customer-data export / delete (right to be forgotten) | No `GET /api/v1/customer/me/export` or `DELETE /api/v1/customer/me`; no anonymize-on-request endpoint. | `NOT_FOUND_IN_REPO` | Required by Nghị định 13/2023/NĐ-CP về dữ liệu cá nhân. |

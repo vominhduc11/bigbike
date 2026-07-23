@@ -232,7 +232,7 @@ Nguyên tắc đọc file này:
 | Category | Business Term |
 | Definition | Đơn hàng chính thức được tạo từ cart checkout. |
 | BigBike Context | Order có một trục status, payment method/records, line items, shipping item, address snapshot, note và audit/notification side effects theo docs. |
-| Example | Checkout mới chọn COD hoặc `BANK_TRANSFER` và tạo order ban đầu `PENDING`; trạng thái đi qua `PROCESSING`, `SHIPPING`, rồi `COMPLETED`. |
+| Example | Checkout mới chọn COD hoặc `BANK_TRANSFER` và tạo order ban đầu `PENDING`; trạng thái đi qua `PROCESSING` rồi `COMPLETED`. |
 | Related Docs | `BUSINESS_PROCESS.md`, `WORKFLOW_OVERVIEW.md`, `STATE_MACHINES.md` |
 | Status | `CONFIRMED_FROM_REPO` |
 | Evidence | `CheckoutController.java`, `BUSINESS_PROCESS.md`, `STATE_MACHINES.md` |
@@ -517,7 +517,7 @@ Nguyên tắc đọc file này:
 |---|---|
 | Definition | State Machine mô tả các trạng thái hợp lệ và transition giữa chúng. State/Status là giá trị hiện tại; Transition là hành động đổi trạng thái. |
 | BigBike Context | Product publish status, order status, payment-record status, media status, admin user status. |
-| Example | Product `DRAFT -> PUBLISHED`; Order `PROCESSING -> SHIPPING -> COMPLETED`; payment record stores its own technical snapshot. |
+| Example | Product `DRAFT -> PUBLISHED`; Order `PROCESSING -> COMPLETED`; payment record stores its own technical snapshot. |
 | Related Docs | `STATE_MACHINES.md` |
 | Status | `STANDARD_ANALYSIS_TERM` / status values `CONFIRMED_FROM_REPO` |
 | Evidence | `PublishStatus.java`, `ProductStockState.java`, `STATE_MACHINES.md` |

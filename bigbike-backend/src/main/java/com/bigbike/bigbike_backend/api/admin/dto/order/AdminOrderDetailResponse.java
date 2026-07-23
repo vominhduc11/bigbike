@@ -15,9 +15,6 @@ public record AdminOrderDetailResponse(
         String orderKey,
         String status,
         String fulfillmentType,
-        String trackingNumber,
-        String shippingCarrier,
-        Instant shippedAt,
         String customerEmail,
         String customerPhone,
         String customerName,
@@ -35,9 +32,9 @@ public record AdminOrderDetailResponse(
         Instant paidAt,
         Instant completedAt,
         Instant cancelledAt,
+        String cancelReason,
         List<OrderLineItemResponse> lineItems,
         List<OrderAddressResponse> addresses,
         List<OrderShippingItemResponse> shippingItems,
-        List<OrderPaymentResponse> payments,
-        List<AdminOrderNoteResponse> notes
+        List<OrderPaymentResponse> payments
 ) {}

@@ -198,6 +198,16 @@ The POS flow was removed entirely; there is no longer any code that writes `chan
 
 The `orders.channel`, `orders.fulfillment_type`, and `orders.source` columns **still exist** — online orders use `fulfillmentType = DELIVERY` and `channel = WEB`. Only the `IN_STORE` / `'pos'` values are no longer written. `AdminOrderListItemResponse.source` is retained on the order list/detail responses but only ever carries online values now.
 
+### Order cancellation reason
+
+`orders.cancel_reason` (`TEXT` nullable, migration `V351`) stores the admin-entered reason when an order is moved to `CANCELLED`. It is required by backend validation for admin cancellation requests (`UpdateOrderStatusRequest.cancelReason`) but remains nullable for non-cancelled orders and legacy data.
+
+`V351__add_orders_cancel_reason.sql` backfills best-effort from the latest `order_notes.note_type = 'ADMIN'` row for already-cancelled orders. From this change onward, the application no longer writes to `order_notes`; the table is intentionally not dropped in this PR and awaits a separate backup + user-confirmed drop migration.
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence: `OrderEntity.cancelReason`, `AdminOrderService.updateOrderStatus`, `V351__add_orders_cancel_reason.sql`
+
 **Phone normalization:** `customers.phone` is stored in normalized form (`PhoneNumbers.normalize`: strip spaces/dashes, `+84`/`84` → `0`) consistently across **online registration, login, profile update, and admin customer edit**. This makes phone a reliable identity key (the same person typing `+84…` or `0…` resolves to one profile). Lookups also try the `+84…` variant so pre-existing rows stored before this change (no backfill performed) still match. The WordPress importer (`CustomerImporter`) is intentionally excluded — historical import data is left as-is.
 
 Status: `CONFIRMED_FROM_CODE`
@@ -1493,6 +1503,16 @@ A `CustomerStatus` Java enum (`domain/customer/CustomerStatus.java`) codifies th
 Status: `CONFIRMED_FROM_CODE`
 
 Evidence: `AdminCustomerService.java` line 48, `deriveSegment()` method
+
+## Customer `isSynthetic` Flag
+
+`customers.is_synthetic` (`BOOLEAN NOT NULL`) marks a customer row that was auto-created from a **guest order's billing metadata during the WordPress migration** — it never registered an account and has no password (`WordPressCustomerMapper.mapSynthetic`, called when a legacy guest order has no matching WP user). `isSynthetic = false` is every normal path: self-registration, admin-visible orders placed by a real account, and OAuth-linked accounts (`CustomerAuthService.java` explicitly sets `setSynthetic(false)` on registration/OAuth-create). There is no code path that flips the flag after creation.
+
+Both `AdminCustomerListItemResponse.isSynthetic` and `AdminCustomerDetailResponse.isSynthetic` expose the flag to the admin API, and `GET /api/v1/admin/customers` accepts a `synthetic` boolean query filter (see API_CONTRACT.md "Customer Admin").
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence: `CustomerEntity.java` (`is_synthetic` column), `WordPressCustomerMapper.java` (`mapSynthetic`), `CustomerImporter.java`, `CustomerAuthService.java` (`setSynthetic(false)`), `AdminCustomerListItemResponse.java`, `AdminCustomerDetailResponse.java`
 
 ## Reports Analytics Response Shape
 

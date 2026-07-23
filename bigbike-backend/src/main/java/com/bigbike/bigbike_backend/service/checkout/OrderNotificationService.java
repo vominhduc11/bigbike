@@ -20,7 +20,7 @@ public class OrderNotificationService {
 
     /** Statuses that customers care enough about to receive an email notification. */
     private static final Set<String> CUSTOMER_NOTIFIABLE_STATUSES =
-            Set.of("PROCESSING", "SHIPPING", "COMPLETED", "CANCELLED");
+            Set.of("PROCESSING", "COMPLETED", "CANCELLED");
 
     private final EmailDispatchService emailDispatch;
     private final String adminEmail;
@@ -99,7 +99,7 @@ public class OrderNotificationService {
     // ── Customer: order status update ─────────────────────────────────────────
 
     @Async
-    public void sendOrderStatusUpdate(OrderEntity order, String newStatus, String customerVisibleNote) {
+    public void sendOrderStatusUpdate(OrderEntity order, String newStatus) {
         if (!CUSTOMER_NOTIFIABLE_STATUSES.contains(newStatus)) return;
 
         String customerEmail = order.getCustomerEmail();
@@ -117,8 +117,6 @@ public class OrderNotificationService {
         ctx.setVariable("badgeTextColor", content.badgeTextColor());
         ctx.setVariable("headline", content.headline());
         ctx.setVariable("bodyText", content.bodyText());
-        ctx.setVariable("hasNote", customerVisibleNote != null && !customerVisibleNote.isBlank());
-        ctx.setVariable("note", customerVisibleNote);
         ctx.setVariable("orderUrl", siteBaseUrl + "/don-hang/xac-nhan"
                 + "?so=" + order.getOrderNumber() + "&key=" + order.getOrderKey());
 
@@ -129,39 +127,6 @@ public class OrderNotificationService {
                 ctx);
 
         log.info("Order status update ({}) sent for order {}.", newStatus, order.getOrderNumber());
-    }
-
-    // ── Customer: order shipped ───────────────────────────────────────────────
-
-    @Async
-    public void sendOrderShipped(OrderEntity order, String customerVisibleNote) {
-        String customerEmail = order.getCustomerEmail();
-        if (customerEmail == null || customerEmail.isBlank()) return;
-        if (!emailDispatch.isEnabled()) {
-            log.info("Mail not configured — shipment notification skipped for order {}.", order.getOrderNumber());
-            return;
-        }
-
-        Context ctx = new Context();
-        ctx.setVariable("customerName", safeCustomerName(order));
-        ctx.setVariable("orderNumber", order.getOrderNumber());
-        ctx.setVariable("totalFormatted", formatVnd(order.getTotalAmount()));
-        ctx.setVariable("hasTrackingNumber",
-                order.getTrackingNumber() != null && !order.getTrackingNumber().isBlank());
-        ctx.setVariable("trackingNumber", order.getTrackingNumber());
-        ctx.setVariable("shippingCarrier", order.getShippingCarrier());
-        ctx.setVariable("hasNote", customerVisibleNote != null && !customerVisibleNote.isBlank());
-        ctx.setVariable("note", customerVisibleNote);
-        ctx.setVariable("orderUrl", siteBaseUrl + "/don-hang/xac-nhan"
-                + "?so=" + order.getOrderNumber() + "&key=" + order.getOrderKey());
-
-        emailDispatch.send(
-                customerEmail,
-                "[BigBike] Đơn hàng #" + order.getOrderNumber() + " đang trên đường giao đến bạn",
-                "order-shipped",
-                ctx);
-
-        log.info("Shipment notification sent for order {}.", order.getOrderNumber());
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -204,13 +169,8 @@ public class OrderNotificationService {
             case "PROCESSING" -> new StatusContent(
                     "ĐANG XỬ LÝ", "#dbeafe", "#1e40af",
                     "Đơn hàng đang được xử lý",
-                    "Chúng tôi đã nhận và đang chuẩn bị đơn hàng của bạn. Bạn sẽ được thông báo khi hàng được giao cho đơn vị vận chuyển.",
+                    "Chúng tôi đã nhận và đang chuẩn bị đơn hàng của bạn. Bạn sẽ được thông báo khi đơn hàng hoàn thành.",
                     "Đơn hàng đang xử lý");
-            case "SHIPPING" -> new StatusContent(
-                    "ĐANG GIAO", "#dbeafe", "#1e40af",
-                    "Đơn hàng đang được giao đến bạn",
-                    "Đơn hàng đã được bàn giao cho đơn vị vận chuyển.",
-                    "Đơn hàng đang giao");
             case "COMPLETED" -> new StatusContent(
                     "HOÀN THÀNH", "#dcfce7", "#166534",
                     "Đơn hàng đã hoàn thành!",

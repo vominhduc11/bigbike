@@ -638,7 +638,7 @@ export function normalizeRedirect(input) {
 }
 
 export const ORDER_STATUS_VALUES = [
-  'PENDING', 'PROCESSING', 'SHIPPING', 'COMPLETED', 'CANCELLED',
+  'PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED',
 ]
 
 function toTrimmedStringLocal(value) {
@@ -687,15 +687,6 @@ function normalizeAddress(input) {
   }
 }
 
-function normalizeOrderNote(input) {
-  const s = input && typeof input === 'object' ? input : {}
-  return {
-    id: toTrimmedStringLocal(s.id) || 'unknown',
-    content: toTrimmedStringLocal(s.content) || '',
-    createdAt: toTrimmedStringLocal(s.createdAt) || undefined,
-  }
-}
-
 export function normalizeOrder(input) {
   const s = input && typeof input === 'object' ? input : {}
 
@@ -735,9 +726,6 @@ export function normalizeOrder(input) {
     customerNote: toTrimmedStringLocal(s.customerNote) || undefined,
     orderStatus: normalizeOrderStatus(s.status ?? s.orderStatus),
     fulfillmentType: toTrimmedStringLocal(s.fulfillmentType) || 'DELIVERY',
-    trackingNumber: toTrimmedStringLocal(s.trackingNumber) || undefined,
-    shippingCarrier: toTrimmedStringLocal(s.shippingCarrier) || undefined,
-    shippedAt: toTrimmedStringLocal(s.shippedAt) || undefined,
     paymentMethod,
     source: toTrimmedStringLocal(s.source) || undefined,
     // Line items — backend field is lineItems (not items)
@@ -747,7 +735,6 @@ export function normalizeOrder(input) {
     shippingAddress,
     billingAddress,
     payments,
-    notes: Array.isArray(s.notes) ? s.notes.map(normalizeOrderNote) : [],
     // Amounts — backend uses *Amount suffix
     subtotal: toIntegerLocal(s.subtotalAmount, 0),
     shippingFee: toIntegerLocal(s.shippingAmount, 0),
@@ -762,6 +749,7 @@ export function normalizeOrder(input) {
     paidAt: toTrimmedStringLocal(s.paidAt) || undefined,
     completedAt: toTrimmedStringLocal(s.completedAt) || undefined,
     cancelledAt: toTrimmedStringLocal(s.cancelledAt) || undefined,
+    cancelReason: toTrimmedStringLocal(s.cancelReason) || undefined,
     createdAt: toTrimmedStringLocal(s.placedAt) || undefined,
     updatedAt: toTrimmedStringLocal(s.updatedAt) || undefined,
   }
@@ -788,6 +776,9 @@ export function normalizeCustomer(input) {
     phone: toTrimmedStringLocal(s.phone) || undefined,
     avatarUrl: resolveDisplayUrl(toTrimmedStringLocal(s.avatarUrl)) || undefined,
     status: normalizeCustomerStatus(s.status),
+    // Tài khoản tạo tự động từ đơn hàng khách vãng lai khi migrate WordPress (không có
+    // đăng nhập thật) — phân biệt với khách đăng ký/OAuth thật. Xem DATA_CONTRACT.md.
+    isSynthetic: Boolean(s.isSynthetic),
     emailVerifiedAt: toTrimmedStringLocal(s.emailVerifiedAt) || undefined,
     phoneVerifiedAt: toTrimmedStringLocal(s.phoneVerifiedAt) || undefined,
     lastLoginAt: toTrimmedStringLocal(s.lastLoginAt) || undefined,

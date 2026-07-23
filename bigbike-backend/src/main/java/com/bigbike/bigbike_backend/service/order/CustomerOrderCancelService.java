@@ -75,7 +75,7 @@ public class CustomerOrderCancelService {
 
         OrderEntity emailSnapshot = order;
         runAfterCommit(() ->
-                orderNotificationService.sendOrderStatusUpdate(emailSnapshot, "CANCELLED", null));
+                orderNotificationService.sendOrderStatusUpdate(emailSnapshot, "CANCELLED"));
 
         return orderReadService.getCustomerOrderDetail(customerId, orderId);
     }
@@ -93,7 +93,7 @@ public class CustomerOrderCancelService {
         }
     }
 
-    /** Customer may cancel only before the order enters shipping. */
+    /** Customer may cancel only while the order is still pending or being processed. */
     private static boolean isCustomerCancellable(OrderEntity order) {
         String status = order.getStatus();
         return "PENDING".equals(status) || "PROCESSING".equals(status);

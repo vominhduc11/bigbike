@@ -19,7 +19,6 @@ export function sameAddress(a, b) {
 
 export const ORDER_STATUS_ACTION = {
   PROCESSING: { labelKey: 'orders.detail.actionProcessing', variant: 'primary',     confirm: false },
-  SHIPPING:   { labelKey: 'orders.detail.actionShipping',   variant: 'primary',     confirm: false },
   COMPLETED:  { labelKey: 'orders.detail.actionCompleted',  variant: 'success',     confirm: true  },
   CANCELLED:  { labelKey: 'orders.detail.actionCancelled',  variant: 'destructive', confirm: true  },
 }

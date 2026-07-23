@@ -36,7 +36,7 @@ public class AdminDashboardService {
 
     // Real OrderStatus values (mirrors OrderStatus enum)
     private static final List<String> STATUS_ORDER = List.of(
-            "PENDING", "PROCESSING", "SHIPPING", "COMPLETED", "CANCELLED");
+            "PENDING", "PROCESSING", "COMPLETED", "CANCELLED");
 
     // Orders excluded from revenue KPIs — consistent with Reports module
     private static final List<String> REVENUE_EXCLUDED_STATUSES = List.of("CANCELLED");

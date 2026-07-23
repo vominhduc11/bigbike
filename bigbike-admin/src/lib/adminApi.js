@@ -833,13 +833,9 @@ export async function fetchOrderDetail(orderId) {
   }
 }
 
-export async function updateOrderStatus(orderId, orderStatus, reason, shipping = undefined) {
+export async function updateOrderStatus(orderId, orderStatus, reason) {
   const body = { status: orderStatus }
-  // BE DTO UpdateOrderStatusRequest field is `note` (not `reason`); the cancel/fail reason
-  // the admin types is persisted as the order note. Sending `reason` was silently dropped.
-  if (reason) body.note = reason
-  if (shipping?.trackingNumber) body.trackingNumber = shipping.trackingNumber
-  if (shipping?.shippingCarrier) body.shippingCarrier = shipping.shippingCarrier
+  if (reason) body.cancelReason = reason
   const payload = await requestJson(`/admin/orders/${orderId}/status`, {
     method: 'PATCH',
     body,
@@ -857,14 +853,6 @@ export async function fetchOrderAllowedTransitions(orderId) {
   }
 }
 
-export async function addOrderNote(orderId, { content, customerVisible = false }) {
-  const payload = await requestJson(`/admin/orders/${orderId}/notes`, {
-    method: 'POST',
-    body: { content, customerVisible },
-  })
-  return payload?.data ?? null
-}
-
 export async function fetchOrderAuditTrail(orderId) {
   try {
     const payload = await requestJson(`/admin/orders/${orderId}/audit`)
@@ -879,7 +867,9 @@ export async function fetchOrderAuditTrail(orderId) {
 export async function fetchCustomers(query) {
   try {
     const payload = await requestJson('/admin/customers', {
-      query: { page: query?.page, size: query?.pageSize, q: query?.search, status: query?.status, emailVerified: query?.emailVerified },
+      // toQueryString() bỏ qua 'ALL' — cùng cơ chế với status, nên synthetic ('ALL'/'true'/'false')
+      // chỉ thực sự lên query string khi khác 'ALL'.
+      query: { page: query?.page, size: query?.pageSize, q: query?.search, status: query?.status, synthetic: query?.synthetic, emailVerified: query?.emailVerified },
     })
     return withLiveData(parseListPayload(payload, normalizeCustomer, Number(query?.pageSize) || 10))
   } catch (error) {
@@ -907,10 +897,11 @@ export async function fetchCustomerDetail(customerId) {
   }
 }
 
-export async function updateCustomerStatus(customerId, status) {
+export async function updateCustomerStatus(customerId, status, reason) {
+  const trimmedReason = typeof reason === 'string' ? reason.trim() : ''
   const payload = await requestJson(`/admin/customers/${customerId}/status`, {
     method: 'PATCH',
-    body: { status },
+    body: trimmedReason ? { status, reason: trimmedReason } : { status },
   })
   return parseDetailPayload(payload, normalizeCustomer)
 }

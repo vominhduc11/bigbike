@@ -296,11 +296,10 @@ class Phase1GOrderReadApiTest {
                 .andExpect(status().isBadRequest());
     }
 
-    // ── 15. Guest lookup — does not expose internal notes ────────────────────
+    // ── 15. Guest lookup — does not expose notes ─────────────────────────────
 
     @Test
     void guestLookup_doesNotExposeInternalNotes() throws Exception {
-        // Checkout creates a system note with customerVisible=false
         GuestOrderResult order = placeGuestOrder(3000000);
 
         MvcResult result = mockMvc.perform(get("/api/v1/orders/lookup")
@@ -310,8 +309,7 @@ class Phase1GOrderReadApiTest {
                 .andReturn();
 
         String body = result.getResponse().getContentAsString();
-        // notes array should be empty — system note has customerVisible=false
-        assertThat(body).contains("\"notes\":[]");
+        assertThat(body).doesNotContain("\"notes\"");
     }
 
     // ── 16. Order-received flow — checkout then lookup ────────────────────────
@@ -426,13 +424,12 @@ class Phase1GOrderReadApiTest {
     }
 
     @Test
-    void customerCancel_shipped_isRejected() throws Exception {
-        String email = "cancel-shipped-" + UUID.randomUUID() + "@bigbike.vn";
+    void customerCancel_completed_isRejected() throws Exception {
+        String email = "cancel-completed-" + UUID.randomUUID() + "@bigbike.vn";
         AuthSession session = loginAndCheckout(email, 1900000);
 
         OrderEntity order = orderRepo.findById(UUID.fromString(session.orderId)).orElseThrow();
-        order.setStatus("SHIPPING");
-        order.setShippedAt(Instant.now());
+        order.setStatus("COMPLETED");
         order.setUpdatedAt(Instant.now());
         orderRepo.save(order);
 

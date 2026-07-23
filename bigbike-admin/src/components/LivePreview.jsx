@@ -83,6 +83,7 @@ export function LivePreview({
   const iframeRef = useRef(null)
   const readyRef = useRef(false)
   const dataRef = useRef(data)
+  const langRef = useRef(lang)
   const frameHostRef = useRef(null)
   const asideRef = useRef(null)
   const dragRef = useRef(null)
@@ -198,7 +199,7 @@ export function LivePreview({
       const current = dataRef.current
       if (current) {
         iframeRef.current?.contentWindow?.postMessage(
-          { type: 'bigbike-preview', data: current },
+          { type: 'bigbike-preview', data: current, lang: langRef.current },
           webOrigin || '*',
         )
       }
@@ -207,16 +208,19 @@ export function LivePreview({
     return () => window.removeEventListener('message', onMessage)
   }, [webOrigin])
 
-  // Lưu data mới nhất + gửi sang iframe nếu đã bắt tay xong.
+  // Lưu data/lang mới nhất + gửi sang iframe nếu đã bắt tay xong. `lang` nằm trong
+  // dependency để đổi VI/EN bắn ngay 1 message cập nhật chrome, không phải chờ
+  // debounce fetch data mới ở màn hình cha xong mới đồng bộ.
   useEffect(() => {
     dataRef.current = data
+    langRef.current = lang
     if (readyRef.current && data) {
       iframeRef.current?.contentWindow?.postMessage(
-        { type: 'bigbike-preview', data },
+        { type: 'bigbike-preview', data, lang },
         webOrigin || '*',
       )
     }
-  }, [data, webOrigin])
+  }, [data, lang, webOrigin])
 
   // Đóng pane → reset readiness (ref mutation, không phải setState).
   useEffect(() => {

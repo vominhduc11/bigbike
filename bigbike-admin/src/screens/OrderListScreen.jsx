@@ -26,7 +26,7 @@ import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { useHasPermission } from '../lib/auth'
 
-const ORDER_STATUS_KEYS = ['PENDING', 'PROCESSING', 'SHIPPING', 'COMPLETED', 'CANCELLED']
+const ORDER_STATUS_KEYS = ['PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED']
 
 // T2 — CTA cho trạng thái "chưa từng có đơn nào" (không phải do lọc).
 const STOREFRONT_BASE = (import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn').replace(/\/$/, '')

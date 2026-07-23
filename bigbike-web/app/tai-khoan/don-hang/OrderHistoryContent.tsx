@@ -19,7 +19,7 @@ const ORDERS_PATH = "/tai-khoan/don-hang/";
 
 // Trùng tập trạng thái backend (OrderStatus) — lọc theo trạng thái đơn, ?status= được
 // CustomerOrderController hỗ trợ sẵn. Nhãn dùng lại Account.orders.orderStatus.*.
-const STATUS_FILTERS = ["PENDING", "PROCESSING", "SHIPPING", "COMPLETED", "CANCELLED"] as const;
+const STATUS_FILTERS = ["PENDING", "PROCESSING", "COMPLETED", "CANCELLED"] as const;
 
 const filterHref = (status?: string) => orderFilterHref(ORDERS_PATH, status);
 

@@ -2,7 +2,6 @@ package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderListItemResponse;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
-import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderNoteEntity;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -48,19 +47,6 @@ final class AdminOrderSupport {
             return order.getCustomerName();
         }
         return "Khách hàng";
-    }
-
-    static OrderNoteEntity buildNote(OrderEntity order, UUID adminId, String noteType,
-            String content, boolean customerVisible, Instant now) {
-        OrderNoteEntity note = new OrderNoteEntity();
-        note.setOrder(order);
-        note.setAuthorType("ADMIN");
-        note.setAuthorId(adminId);
-        note.setNoteType(noteType);
-        note.setContent(content);
-        note.setCustomerVisible(customerVisible);
-        note.setCreatedAt(now);
-        return note;
     }
 
     static Instant parseFromDate(String date) {

@@ -53,7 +53,7 @@ File này liên quan trực tiếp đến:
 | Product | `publishStatus` | `DRAFT`, `PUBLISHED`, `TRASH` | Controlled publish transitions (DRAFT ↔ PUBLISHED allowed both directions); soft-delete sequences `PUBLISHED → DRAFT → TRASH` in one request; restore `TRASH -> DRAFT`. Legacy values `HIDDEN`, `ARCHIVED`, `PENDING`, `PRIVATE` all migrated to `DRAFT` (V324). | Backend validator | `CONFIRMED_BACKEND_ENFORCED` | `PublishStatus.java`, `AdminMutationValidators.java`, `ProductMutationService.java`, `CatalogReadService.java` |
 | Category | `deleted` + `isVisible` | `deleted`: `false`, `true`; `isVisible`: `true`, `false` | `deleted` is the independent Trash lifecycle; `isVisible` independently controls storefront display. Soft-delete/restore cascade the tree; hiding is rejected when a direct child remains visible. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `CategoryMutationService.java`, `CatalogReadService.java` |
 | Brand | `visible` | `true`, `false` | Delete sets visible false; public only visible. | Backend service | `CONFIRMED_BACKEND_ENFORCED` for visibility; no full transition map | `BrandMutationService.java`, `CatalogReadService.java` |
-| Order | `status` | `PENDING`, `PROCESSING`, `SHIPPING`, `COMPLETED`, `CANCELLED` | Một state machine duy nhất; tracking là dữ liệu tham khảo, không phải state. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java`, `CheckoutService.java` |
+| Order | `status` | `PENDING`, `PROCESSING`, `COMPLETED`, `CANCELLED` | Một state machine duy nhất; không còn shipment-tracking metadata (đã gỡ bỏ 2026-07-23). | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java`, `CheckoutService.java` |
 | Payment record | `status` on Payment | Payment record giữ lifecycle kỹ thuật nội bộ để lưu snapshot giao dịch; không tạo thêm trục trạng thái trên Order. | Không dùng để điều khiển chuyển trạng thái đơn. | Backend service | `STATUS_ONLY` | `CheckoutService.java`, payment persistence |
 | Inventory / Stock | `stockState`, availability flag | `IN_STOCK`, `OUT_OF_STOCK` | `stockState` mirrors the boolean availability toggle (V261). New variants default available; a new no-variant product defaults `IN_STOCK` unless admin marks it Hết. Selling/cancelling does not change availability. | Backend policy/service | `CONFIRMED_BACKEND_ENFORCED` | `ProductStockState.java`, `InventoryPolicyService.java`, `ProductMutationService.java`, `CheckoutService.java`, `BUSINESS_RULES.md` STOCK_RULE_001–009 |
 | Admin User | `status`, `role` | Status: `INVITED`, `ACTIVE`, `DISABLED`, `SUSPENDED`; Roles: `SUPER_ADMIN`, `ADMIN`, `EDITOR`, `SHOP_MANAGER` (built-in, V211) + custom roles. New users start `INVITED` (no password) and become `ACTIVE` on accepting an email invite. | Status/role update validation; self-deactivation and Super Admin demotion guardrails; invite token lifecycle. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminAdminUsersService.java`, `AdminInviteService.java`, `SecurityConfig.java` |
@@ -228,7 +228,7 @@ Evidence: `CategoryEntity.showOnHomepage`, `UpsertCategoryRequest.showOnHomepage
 
 ### Purpose
 
-Order state machine kiểm soát vòng đời duy nhất của đơn hàng sau checkout: `PENDING → PROCESSING → SHIPPING → COMPLETED`, với nhánh `CANCELLED` từ `PENDING`, `PROCESSING` hoặc `SHIPPING`.
+Order state machine kiểm soát vòng đời duy nhất của đơn hàng sau checkout: `PENDING → PROCESSING → COMPLETED`, với nhánh `CANCELLED` từ `PENDING` hoặc `PROCESSING`.
 
 ### State Field
 
@@ -240,18 +240,17 @@ From `AdminOrderService.ALLOWED_ORDER_STATUSES`:
 
 - `PENDING`
 - `PROCESSING`
-- `SHIPPING`
 - `COMPLETED`
 - `CANCELLED`
 
-(`ON_HOLD` is migrated to `PROCESSING`; old `FAILED`/`REFUNDED` rows remain mapped to `CANCELLED`. Tracking is metadata, not a second state axis.)
+(`ON_HOLD` is migrated to `PROCESSING`; old `FAILED`/`REFUNDED`/`SHIPPING` rows remain mapped to `CANCELLED`/`COMPLETED` respectively — see migration `V350`. There is no shipment-tracking metadata or second state axis.)
 
 ### Initial State
 
 From checkout behavior:
 
 - New checkout orders start at `PENDING`. `COD` and `BANK_TRANSFER` are manual payment methods; the system does not expose a payment state on the order.
-- `PROCESSING → SHIPPING` is the shop's operational confirmation that a manual transfer has been received. `SHIPPING → COMPLETED` confirms successful delivery, including COD collection.
+- `PROCESSING → COMPLETED` is the shop's direct confirmation of successful delivery, including COD collection. There is no intermediate shipment hand-off step.
 
 ### Terminal States
 
@@ -264,18 +263,15 @@ From checkout behavior:
 | From | To | Actor / Role | Preconditions | Side Effects | Enforcement | Evidence |
 |---|---|---|---|---|---|---|
 | `PENDING` | `PROCESSING` | Admin / `orders.write` | Order exists. | Audit log, status email, websocket event. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PROCESSING` | `SHIPPING` | Admin / `orders.write` | Tracking number required; transfer confirmation is external/manual. | Stores tracking metadata, `shippedAt`, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PENDING` | `CANCELLED` | Admin / `orders.write` | Order exists and has not been processed. | Set `cancelledAt`, audit, notification, websocket. (No stock restore — availability is a manual boolean.) | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `SHIPPING` | `COMPLETED` | Admin / `orders.write` | Delivery confirmed by the shop. | Sets `completedAt`, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PROCESSING` | `CANCELLED` | Admin / `orders.write` | Order exists and has not entered shipping. | Set `cancelledAt`, audit, notification, websocket. (No stock restore — availability is a manual boolean.) | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `SHIPPING` | `CANCELLED` | Admin / `orders.write` | Delivery failed, customer refused receipt, or shipper returned the parcel; cancellation reason required. | Set `cancelledAt`, audit log, email notification and websocket event. No stock restore and no automatic refund; any refund is handled manually. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
+| `PROCESSING` | `COMPLETED` | Admin / `orders.write` | Delivery confirmed by the shop. | Sets `completedAt`, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
+| `PENDING` | `CANCELLED` | Admin / `orders.write` | Order exists, has not been processed, and request includes non-blank `cancelReason`. | Set `cancelledAt`, store `cancel_reason`, audit, notification, websocket. (No stock restore — availability is a manual boolean.) | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
+| `PROCESSING` | `CANCELLED` | Admin / `orders.write` | Order exists, has not been completed, and request includes non-blank `cancelReason`. | Set `cancelledAt`, store `cancel_reason`, audit, notification, websocket. (No stock restore — availability is a manual boolean.) | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
 
 ### Forbidden Transitions
 
 | From | To | Reason | Enforcement | Evidence |
 |---|---|---|---|---|
 | `COMPLETED` | any other status | `COMPLETED` is terminal in `ALLOWED_TRANSITIONS`. | Backend throws conflict. | `AdminOrderService.java` |
-| `PENDING` / `PROCESSING` | `COMPLETED` | Must pass through `SHIPPING`, which represents successful delivery readiness and shipment. | Backend throws conflict. | `AdminOrderService.java` |
 | `CANCELLED` | any other status | Terminal state, no outgoing transitions. | Backend throws conflict. | `AdminOrderService.java` |
 | any status | unknown status | Not in `ALLOWED_ORDER_STATUSES`. | Backend validation error. | `AdminOrderService.java` |
 | same status | same status | Idempotent no-op; returns current detail. | Backend no write. | `AdminOrderService.java` |
@@ -286,9 +282,8 @@ From checkout behavior:
 |---|---|---|
 | ~~`CANCELLED` triggers stock restore.~~ **Removed (V261):** availability is a manual boolean, so cancelling an order no longer restores any quantity. Other side-effects (audit, notification, websocket) are unchanged. | `AdminOrderService.java` | `CONFIRMED_FROM_CODE` |
 | `COMPLETED` sets `completedAt` if missing. | `AdminOrderService.java` | `CONFIRMED_BACKEND_ENFORCED` |
-| `CANCELLED` sets `cancelledAt` if missing. | `AdminOrderService.java` | `CONFIRMED_BACKEND_ENFORCED` |
-| `SHIPPING → CANCELLED` sets `cancelledAt`, records the required reason, and sends the existing audit/notification/websocket side effects. No automatic refund or stock restore. | `AdminOrderService.java` | `CONFIRMED_BACKEND_ENFORCED` |
-| `SHIPPING` orders can be COMPLETED only through the single order-status transition. | `AdminOrderService.java` | `CONFIRMED_BACKEND_ENFORCED` |
+| `CANCELLED` sets `cancelledAt` if missing and stores required admin `cancelReason` in `orders.cancel_reason`. | `AdminOrderService.java` | `CONFIRMED_BACKEND_ENFORCED` |
+| `PROCESSING → COMPLETED` is the shop's single direct delivery-confirmation transition; there is no shipment-tracking metadata to record. | `AdminOrderService.java` | `CONFIRMED_BACKEND_ENFORCED` |
 | `listAllowedTransitions` returns only the next order-status actions. | `AdminOrderService.java` | `CONFIRMED_BACKEND_ENFORCED` |
 
 ### Frontend Behavior
@@ -304,14 +299,14 @@ From checkout behavior:
 
 ### Test Coverage
 
-- `Phase1HAdminOrderApiTest.shippingCanBeCancelledAndTerminalTransitionsStayBlocked` covers the allowed `PENDING -> PROCESSING -> SHIPPING -> CANCELLED` path, `cancelledAt`, audit logging, and terminal guards for both `CANCELLED` and `COMPLETED`.
+- `Phase1HAdminOrderApiTest.processingAllowedTransitionsAreCancelledAndCompleted` and `.processingCanBeCancelledAndTerminalTransitionsStayBlocked` cover the allowed `PENDING -> PROCESSING -> COMPLETED` and `PENDING -> PROCESSING -> CANCELLED` paths, `cancelledAt`, audit logging, and terminal guards for both `CANCELLED` and `COMPLETED`.
 - ~~Stock restore on cancel.~~ No longer applicable (V261) — availability is a manual boolean; cancel does not touch inventory.
 - Status: `CONFIRMED_TEST_COVERAGE` for the order transition map and terminal-state guards; restore-impact covered by `QaBug2StockRestoreTest`.
 
 ### Needs Verification
 
 - Fresh tests for every allowed and forbidden transition.
-- Migration verification against the production order snapshot before applying V345.
+- Migration verification against the production order snapshot before applying V350.
 
 ## 7. Payment State Machine — Removed
 
@@ -319,7 +314,7 @@ Order-level payment state is no longer part of the contract. Payment records may
 
 ## 8. Shipping / Fulfillment State Machine — Removed
 
-Shipping and fulfillment no longer have an independent state machine. `trackingNumber`, `shippingCarrier` and `shippedAt` remain order metadata and are written during the single `PROCESSING → SHIPPING` transition.
+Shipping and fulfillment no longer have an independent state machine, and no longer have shipment-tracking metadata either. The `SHIPPING` order status and the `trackingNumber`, `shippingCarrier` and `shippedAt` fields were removed entirely from `OrderEntity` (owner decision 2026-07-23, migration `V350`). Delivery is tracked only as the order reaching `COMPLETED` — there is no separate metadata to capture a carrier hand-off.
 
 ## 9. Inventory / Stock State Machine
 
@@ -695,9 +690,8 @@ Order events are persisted in a shared admin notification backlog so staff who w
 | Product | Forbidden transitions such as `PUBLISHED -> DRAFT`, `TRASH -> PUBLISHED` | Needed | Needed | `MISSING_TEST_COVERAGE` |
 | Category | Hide category without visible children | Needed | Needed for visible child conflict | `MISSING_TEST_COVERAGE` |
 | Brand | Visible true/false public filtering | Needed | Needed | `MISSING_TEST_COVERAGE` |
-| Order | Allowed order transitions map, including `SHIPPING -> CANCELLED` | `Phase1HAdminOrderApiTest` covers allowed transitions and `cancelledAt`/audit side effects | The same test covers `CANCELLED`/`COMPLETED` terminal guards | `CONFIRMED_TEST_COVERAGE` |
+| Order | Allowed order transitions map, including `PROCESSING -> COMPLETED` | `Phase1HAdminOrderApiTest` covers allowed transitions and `cancelledAt`/audit side effects | The same test covers `CANCELLED`/`COMPLETED` terminal guards | `CONFIRMED_TEST_COVERAGE` |
 | Payment record | Technical payment-record persistence | Needed | Verify historical snapshot fields remain readable | `PARTIAL_TEST_COVERAGE` |
-| Shipping metadata | `PROCESSING → SHIPPING` tracking requirement | Needed | Verify tracking is required and `shippedAt` is written | `CONFIRMED_TEST_COVERAGE` |
 | Inventory | Availability boolean toggle | Per-variant `isAvailable` checkout gate covered by checkout API tests | Availability-toggle endpoint tests still needed (V261) | `PARTIAL_TEST_COVERAGE` |
 | Admin User | `ACTIVE -> DISABLED/SUSPENDED`, restore to active | Needed | Needed for self-deactivation/Super Admin demotion | `MISSING_TEST_COVERAGE` |
 | Content | Publish transitions and delete to archive | Needed | Needed for forbidden transitions | `MISSING_TEST_COVERAGE` |
@@ -714,7 +708,7 @@ Notes:
 | Entity / State Machine | Status | Gap |
 |---|---|---|
 | Payment Provider/Webhook lifecycle | `NOT_FOUND_IN_REPO` | No automatic payment gateway. New storefront orders use manual `COD` or `BANK_TRANSFER`; shop staff confirm by phone before operational processing, and bank-account details are sent to a transfer customer only by phone/Zalo afterward. `BACS` is legacy-order compatibility only. No payment redirect or provider webhook; the Alepay/ZaloPay plan was dropped. |
-| Shipping Provider/Tracking automation | `NOT_FOUND_IN_REPO` | No carrier integration found; tracking remains order metadata. |
+| Shipping Provider/Tracking automation | `NOT_FOUND_IN_REPO` | No carrier integration found; shipment-tracking metadata was removed entirely (2026-07-23). |
 | Serial lifecycle | `REMOVED` | Serial-number tracking was removed platform-wide (2026-06-23, V259). There is no serial lifecycle. Inventory is manual boolean availability only. |
 | Settings lifecycle | `STATUS_ONLY` / `NEEDS_VERIFICATION` | Settings APIs exist; no state machine confirmed. |
 | Review moderation lifecycle | `NEEDS_VERIFICATION` | Review controllers exist in prior docs, but review status transitions not audited here. |
@@ -748,10 +742,10 @@ Notes:
 1. Product/content both use shared `PublishStatus`; content admin controller status regex now exposes only `DRAFT`, `PUBLISHED`, `TRASH` for filters (`HIDDEN` removed 2026-07-07 — legacy-only, no live rows after V324). DTO acceptance for legacy `PENDING`, `PRIVATE`, `HIDDEN` as mutation targets is confirmed rejected via `RESERVED_PUBLISH_STATUS`.
 2. Product public visibility is confirmed in `CatalogReadService`, but cache/revalidation/public UI behavior should be verified.
 3. Content public visibility filtering needs deeper audit of public content read service.
-4. Order transitions are backend-enforced. Tracking metadata is written as part of `PROCESSING → SHIPPING`; external carrier automation is not present.
+4. Order transitions are backend-enforced. Shipment-tracking metadata was removed entirely (2026-07-23); external carrier automation was never present.
 5. `PaymentEntity.status` full lifecycle is only partially observed through order service side effects; full enum/status source should be audited.
 6. Inventory availability is a per-variant / per-product boolean toggle (V261); `stockState` mirrors it. Selling does not change availability — admin marks items "Hết hàng" by hand (oversell not auto-prevented). Serial tracking removed in V259.
-7. Shipping metadata is backend-enforced through the `PROCESSING → SHIPPING` transition; external carrier automation remains absent.
+7. Shipment tracking no longer exists in the order model (removed 2026-07-23); external carrier automation remains absent.
 8. Admin user `DISABLED`/`SUSPENDED` status updates are backend-enforced, but login/API blocking behavior for those statuses needs auth-service audit.
 9. Media `INACTIVE` status exists, but whether inactive media can be rendered by product/content public pages needs verification.
 10. Notification read/unread is confirmed per admin via the V339 high-water mark and target tests. Archive/delete is intentionally outside the current notification contract.

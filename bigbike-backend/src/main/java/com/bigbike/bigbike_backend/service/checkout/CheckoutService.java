@@ -23,7 +23,6 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.order.Checkou
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAddressJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderNoteJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
 import com.bigbike.bigbike_backend.service.cart.CartCalculator;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
@@ -59,7 +58,6 @@ public class CheckoutService {
     private final OrderJpaRepository orderRepo;
     private final OrderLineItemJpaRepository lineItemRepo;
     private final OrderAddressJpaRepository addressRepo;
-    private final OrderNoteJpaRepository noteRepo;
     private final PaymentJpaRepository paymentRepo;
     private final ProductJpaRepository productRepo;
     private final ProductVariantJpaRepository variantRepo;
@@ -164,10 +162,6 @@ public class CheckoutService {
 
         // Payment
         paymentRepo.save(buildPayment(savedOrder, paymentMethod, total, now));
-
-        // System note
-        noteRepo.save(buildSystemNote(savedOrder,
-                "Đơn hàng được tạo. Phương thức thanh toán: " + paymentMethod + ".", now));
 
         // Mark cart converted
         cart.setStatus(CART_STATUS_CONVERTED);
