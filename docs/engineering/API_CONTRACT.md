@@ -512,7 +512,7 @@ This is a reporting-only export. The Product module's **"Xuất CSV"** action mu
 
 The response is `text/csv; charset=UTF-8`, has a UTF-8 BOM for Excel, and sets a `Content-Disposition` attachment filename. One CSV row represents one product. Scalar data is emitted in these columns, in order:
 
-`id`, `legacy_id`, `sku`, `slug`, `slug_en`, `name_vi`, `name_en`, `short_description_vi`, `short_description_en`, `description_vi`, `description_en`, `category_id`, `category_slug`, `category_name_vi`, `category_name_en`, `brand_id`, `brand_slug`, `brand_name_vi`, `brand_name_en`, `image_id`, `image_url`, `image_alt`, `image_width`, `image_height`, `image_mime_type`, `retail_price`, `sale_price`, `currency`, `stock_state`, `stock_quantity`, `manage_stock`, `backorders`, `length_cm`, `width_cm`, `height_cm`, `available`, `discount_percent_override`, `publish_status`, `homepage_block`, `homepage_order`, `rating`, `rating_count`, `pdp_shipping_line`, `pdp_return_line`, `origin_brand_country_vi`, `origin_brand_country_en`, `size_guide_vi`, `size_guide_en`, `suitability_advisory_vi`, `suitability_advisory_en`, `specifications_vi`, `specifications_en`, `spec_stats_vi`, `spec_stats_en`, `trust_badges_vi`, `trust_badges_en`, `quick_answer_summary_vi`, `quick_answer_summary_en`, `gender`, `seo_title_vi`, `seo_title_en`, `seo_description_vi`, `seo_description_en`, `seo_canonical_url`, `seo_og_image_id`, `seo_og_image_url`, `seo_og_image_alt`, `seo_og_image_width`, `seo_og_image_height`, `seo_og_image_mime_type`, `created_at`, `updated_at`, `version`.
+`id`, `legacy_id`, `sku`, `slug`, `slug_en`, `name_vi`, `name_en`, `short_description_vi`, `short_description_en`, `description_vi`, `description_en`, `category_id`, `category_slug`, `category_name_vi`, `category_name_en`, `brand_id`, `brand_slug`, `brand_name`, `image_id`, `image_url`, `image_alt`, `image_width`, `image_height`, `image_mime_type`, `retail_price`, `sale_price`, `currency`, `stock_state`, `stock_quantity`, `manage_stock`, `backorders`, `length_cm`, `width_cm`, `height_cm`, `available`, `discount_percent_override`, `publish_status`, `homepage_block`, `homepage_order`, `rating`, `rating_count`, `pdp_shipping_line`, `pdp_return_line`, `origin_brand_country_vi`, `origin_brand_country_en`, `size_guide_vi`, `size_guide_en`, `suitability_advisory_vi`, `suitability_advisory_en`, `specifications_vi`, `specifications_en`, `spec_stats_vi`, `spec_stats_en`, `trust_badges_vi`, `trust_badges_en`, `quick_answer_summary_vi`, `quick_answer_summary_en`, `gender`, `seo_title_vi`, `seo_title_en`, `seo_description_vi`, `seo_description_en`, `seo_canonical_url`, `seo_og_image_id`, `seo_og_image_url`, `seo_og_image_alt`, `seo_og_image_width`, `seo_og_image_height`, `seo_og_image_mime_type`, `created_at`, `updated_at`, `version`.
 
 The following columns hold valid compact JSON strings, so nested/multi-row contract data is preserved without flattening or omission: `description_blocks_json`, `suitability_section_json`, `size_guide_section_json`, `faqs_json`, `commitments_json`, `highlights_json`, `gallery_json`, `videos_json`, `variants_json`, `related_products_json`, `accessory_products_json`.
 
@@ -1077,13 +1077,14 @@ Status: `CONFIRMED_FROM_CODE` — `CatalogController` (`lang` param public),
 `AdminCatalogMutationService.applyProductPatch`, `JpaCatalogReadRepository` /
 `JpaContentReadRepository` (resolve locale), migration `V136`.
 
-### English URL slug — `slugEn` (V213/V214/V216; brand `slug_en` legacy)
+### English URL slug — `slugEn` (V213/V214/V216)
 
 Danh mục, sản phẩm và **bài viết** có thêm slug tiếng Anh tùy chọn. Áp dụng cho
 `GET /api/v1/categories/{slug}`, `/products/{slug}`, `/articles/{slug}` và các endpoint
 admin upsert tương ứng. **Thương hiệu là ngoại lệ:** tên và slug thương hiệu dùng chung VI/EN
-(`BRAND_RULE_001`/`BRAND_RULE_003`); `brands.slug_en` chỉ là cột legacy, không còn được admin ghi/sửa
-và không trả làm slug điều hướng chính. (Trang thông tin/chính sách nay tĩnh ở web — không qua backend; module pages đã gỡ 2026-06-24.)
+(`BRAND_RULE_001`/`BRAND_RULE_003`) — không có khái niệm `slugEn`/`nameEn` cho brand nữa; cột
+`brands.name_en`/`brands.slug_en` (legacy, chưa từng khác dữ liệu chính) đã **xoá hẳn ở V352**.
+(Trang thông tin/chính sách nay tĩnh ở web — không qua backend; module pages đã gỡ 2026-06-24.)
 
 **Lookup public — tra cứu theo vi HOẶC en slug:** path `{slug}` được resolve theo
 `slug` tiếng Việt **hoặc** `slug_en` (`findBySlug(slug).or(() -> findBySlugEn(slug))`, ưu tiên khớp
@@ -1091,17 +1092,22 @@ vi trước). Cả URL vi lẫn URL en đều mở cùng entity. `lang` param v�
 ngữ **nội dung** (`PRODUCT_RULE_002`/`CATEGORY_RULE_002`/`ARTICLE_RULE_002`); nó **không**
 ảnh hưởng việc resolve slug.
 
-**Response — thêm trường `slugEn`:** public detail (và list) trả thêm
+**Response — thêm trường `slugEn`:** public detail (và list) của category/product/article trả thêm
 `slugEn: string | null` cạnh `slug`. `slug` luôn là canonical tiếng Việt (không đổi
-theo `lang`); `slugEn` là giá trị thô của cột `slug_en` (null nếu chưa nhập). Web dùng
-`slug` cho canonical + `slugEn` cho URL/hreflang tiếng Anh (trống → URL EN lùi về `slug`).
-Riêng brand response luôn trả `slugEn = null`; URL VI/EN của thương hiệu dùng cùng `slug`.
+theo `lang`); `slugEn` là giá trị thô của cột `slug_en` (null nếu chưa nhập). Từ 2026-07-24,
+`slugEn` khi có giá trị trỏ tới **1 trang tiếng Anh thật, server-render riêng** (`/products/`,
+`/categories/`, `/news/` — xem `PRODUCT_RULE_003`/`CATEGORY_RULE_003`/`ARTICLE_RULE_003`), không
+phải chỉ để dựng hreflang. `slugEn` rỗng → không có trang EN cho bản ghi đó (không phải "URL EN
+lùi về slug VI" như trước). Brand response **không có field `slugEn`**; URL VI/EN của thương hiệu
+dùng cùng `slug`.
 
-**Embedded summary cũng mang `slugEn`:** object `category`/`brand` nhúng trong response
-sản phẩm (`CategorySummary`/`BrandSummary` — dùng cho breadcrumb PDP) trả thêm
-`slugEn: string | null` cạnh `slug`. Category lấy thô từ `categories.slug_en`; brand luôn
-trả `null` vì slug thương hiệu dùng chung. Cho phép breadcrumb PDP điều hướng tới URL tiếng Anh
-cho danh mục khi khách đang ở chế độ EN (trống → lùi về `slug` vi). Cả `category` và mọi phần tử embedded `categories[]` đều mang cùng shape `slugEn`, `visible`, `deleted`; `category` là phần tử đầu theo thứ tự gán.
+**Embedded summary:** object `category` nhúng trong response sản phẩm (`CategorySummary` —
+dùng cho breadcrumb PDP) trả thêm `slugEn: string | null` cạnh `slug`, lấy thô từ
+`categories.slug_en`, cho phép breadcrumb PDP điều hướng tới URL tiếng Anh cho danh mục khi
+khách đang ở chế độ EN (trống → lùi về `slug` vi). Cả `category` và mọi phần tử embedded
+`categories[]` đều mang cùng shape `slugEn`, `visible`, `deleted`; `category` là phần tử đầu
+theo thứ tự gán. Object `brand` nhúng (`BrandSummary`) chỉ mang `id`/`slug`/`name` — không có
+`slugEn`.
 
 **Ghi — `POST/PATCH` admin categories/products/articles:** `translations.en` nhận thêm
 khóa `slug` (optional): pattern `^[a-z0-9]+(?:-[a-z0-9]+)*$`, max 100. Bỏ trống/null →
@@ -1122,8 +1128,8 @@ Constraint không nhận diện được vẫn giữ nguyên câu chung như cũ
 `GlobalExceptionHandler.handleDataIntegrityViolation`/`friendlyConstraintError`.
 
 Status: `CONFIRMED_FROM_CODE` — `CatalogController`/`ContentController` (path resolve), `CategoryJpaRepository`/
-`ProductJpaRepository`/`ArticleJpaRepository` (`findBySlug`/`findBySlugEn`),
-`BrandJpaRepository.findBySlugEn` chỉ còn cho legacy lookup; `JpaCatalogReadRepository`/`JpaContentReadRepository`
+`ProductJpaRepository`/`ArticleJpaRepository` (`findBySlug`/`findBySlugEn`); `BrandJpaRepository` has no
+`findBySlugEn` overload; `JpaCatalogReadRepository`/`JpaContentReadRepository`
 (map `slugEn` + OR-resolve), `ProductTranslationRequest`/`CategoryTranslationRequest`/`ArticleTranslationRequest` (field `slug`),
 `AdminCatalogMutationService`/`AdminContentMutationService` (validate), migrations `V213`/`V214`/`V215`/`V216`.
 Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"English URL slug".
@@ -1148,30 +1154,45 @@ Status: `CONFIRMED_FROM_CODE` — `PublicMenuController` (`lang` param),
 `CreateMenuItemRequest` / `UpdateMenuItemRequest` / `AdminMenuItemResponse`,
 migration `V160`.
 
-### Menu item URL tự resolve theo danh mục — `targetType=CATEGORY`
+### Menu item nhãn & URL tự resolve theo danh mục — `targetType=CATEGORY`
 
-Mục menu có thể **liên kết thẳng tới một danh mục** thay vì lưu URL tĩnh: đặt
-`targetType="CATEGORY"` + `targetId=<category id>` (2 cột đã có sẵn trên
+Mục menu có thể **liên kết thẳng tới một danh mục** thay vì lưu tên/URL tĩnh:
+đặt `targetType="CATEGORY"` + `targetId=<category id>` (2 cột đã có sẵn trên
 `menu_items` từ trước, trước bản này chưa được diễn giải). Khi liên kết còn
-hiệu lực, `url` trả về ở `GET /api/v1/menus/{location}?lang=` **được tính lại
-tại thời điểm đọc** theo `lang` — dùng `CategoryEntity.slug` (vi) hoặc
-`slugEn` (en, lùi về `slug` khi rỗng) thay vì cột `url` đã lưu trong DB.
+hiệu lực, cả `label` lẫn `url` trả về ở `GET /api/v1/menus/{location}?lang=`
+**được tính lại tại thời điểm đọc** theo `lang`, không dùng cột `label`/
+`label_en`/`url` đã lưu trong DB:
+- `label` = `CategoryEntity.name` (vi) hoặc `nameEn` (en, lùi về `name` khi rỗng).
+- `url` = `CategoryEntity.slug` (vi) hoặc `slugEn` (en, lùi về `slug` khi rỗng).
 
-Cột `url` đã lưu vẫn được giữ làm giá trị hiển thị VI mặc định trong bảng
-danh sách admin và làm **fallback**: nếu danh mục bị xóa sau khi liên kết,
-public read trả lại nguyên `url` đã lưu (không lỗi, không mất mục menu).
+Đọc admin (`GET /api/v1/admin/menus/...`) cũng resolve **live** theo cùng
+cơ chế (bản VI) — bảng danh sách/form sửa trong admin luôn hiển thị đúng tên
+& đường dẫn hiện tại của danh mục, không cần admin tự vào sửa lại sau khi
+đổi tên/slug danh mục.
+
+Cột `label`/`label_en`/`url` đã lưu trong DB vẫn được giữ làm **snapshot
+fallback**: nếu danh mục bị xóa sau khi liên kết, cả đọc public lẫn đọc admin
+trả lại nguyên giá trị đã lưu (không lỗi, không mất mục menu). Xem
+[DATA_CONTRACT.md](DATA_CONTRACT.md) §"Menu item bilingual label".
 
 Mục `targetType="CUSTOM"` (mặc định, link ngoài/trang tĩnh/tel/mailto/#)
-**không đổi hành vi** — vẫn trả nguyên `url` đã lưu bất kể `lang`.
+**không đổi hành vi** — vẫn trả nguyên `label`/`url` đã lưu bất kể `lang`.
 
 **Ghi admin:** `POST/PATCH /api/v1/admin/menus/{menuId}/items` nhận
 `targetType`/`targetId` như cũ; khi `targetType="CATEGORY"`, `targetId` bắt
 buộc phải trỏ tới một danh mục tồn tại — sai → `400 VALIDATION_ERROR`
-(field `targetId`, code `CATEGORY_NOT_FOUND`).
+(field `targetId`, code `CATEGORY_NOT_FOUND`). Khi `targetType="CATEGORY"`,
+backend **bỏ qua hoàn toàn** `label`/`labelEn`/`url` client gửi lên — luôn
+tính lại và lưu snapshot từ danh mục hiện tại (admin không sửa tay 2 trường
+này được nữa, chỉ chọn danh mục). Vì vậy `label` trên `CreateMenuItemRequest`
+**không còn bắt buộc ở tầng annotation** (`@NotBlank` đã bỏ) — chỉ bắt buộc
+có điều kiện khi `targetType≠CATEGORY`, validate thủ công trong service
+(thiếu → `400 VALIDATION_ERROR`, field `label`, code `REQUIRED`).
 
 Status: `CONFIRMED_FROM_CODE` — `AdminMenuService.validateCategoryTarget`,
-`AdminMenuService.resolveDisplayUrl`, `MenuItemEntity.targetType/targetId`
-(cột có sẵn, không migration mới), `CategoryEntity.slug/slugEn`,
+`AdminMenuService.resolveDisplayLabel`/`resolveDisplayUrl`,
+`AdminMenuService.toAdminItemResponse`, `MenuItemEntity.targetType/targetId`
+(cột có sẵn, không migration mới), `CategoryEntity.name/nameEn/slug/slugEn`,
 `AdminMenuServiceTest`.
 
 ### Menu/category line-icon — DB-driven (V213)

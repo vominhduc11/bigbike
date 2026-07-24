@@ -35,8 +35,8 @@ export const SECTION_FIELD_PREFIXES = {
 
 // Group the 5 sections into 2 fixed tabs to mirror writer vs publisher workflows.
 export const TAB_SECTIONS = {
-  content: ['basic', 'body', 'media'],
-  seo:     ['seo', 'publish'],
+  content: ['basic', 'body', 'media', 'publish'],
+  seo:     ['seo'],
 }
 
 export function computeSectionErrorsFromMap(errors) {

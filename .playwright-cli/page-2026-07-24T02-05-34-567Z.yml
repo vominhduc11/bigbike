@@ -1,0 +1,378 @@
+- generic [ref=f7e2]:
+  - generic [ref=f7e9]:
+    - link "Bỏ qua tới nội dung" [ref=f7e10] [cursor=pointer]:
+      - /url: "#bb-main-content"
+    - complementary "Thanh điều hướng" [ref=f7e11]:
+      - generic [ref=f7e12]:
+        - generic [ref=f7e13]: BB
+        - generic [ref=f7e14]:
+          - generic [ref=f7e15]: BigBike
+          - generic [ref=f7e16]: Admin
+      - navigation "Điều hướng chính" [ref=f7e17]:
+        - group "Bán hàng" [ref=f7e18]:
+          - link "Tổng quan" [ref=f7e20] [cursor=pointer]:
+            - /url: /admin/dashboard
+          - link "Đơn hàng 388 mục cần xử lý" [ref=f7e27] [cursor=pointer]:
+            - /url: /admin/orders
+            - generic [ref=f7e32]: Đơn hàng
+            - generic "388 mục cần xử lý" [ref=f7e33]: 99+
+          - link "Khách hàng" [ref=f7e34] [cursor=pointer]:
+            - /url: /admin/customers
+          - link "Đánh giá" [ref=f7e41] [cursor=pointer]:
+            - /url: /admin/reviews
+        - group "Sản phẩm" [ref=f7e45]:
+          - link "Sản phẩm" [ref=f7e47] [cursor=pointer]:
+            - /url: /admin/products
+          - link "Sản phẩm nổi bật" [ref=f7e53] [cursor=pointer]:
+            - /url: /admin/featured-products
+          - link "Danh mục" [ref=f7e57] [cursor=pointer]:
+            - /url: /admin/categories
+          - link "Thương hiệu" [ref=f7e62] [cursor=pointer]:
+            - /url: /admin/brands
+        - group "Nội dung & Marketing" [ref=f7e67]:
+          - link "Tin tức" [ref=f7e69] [cursor=pointer]:
+            - /url: /admin/content
+          - link "Banner" [ref=f7e74] [cursor=pointer]:
+            - /url: /admin/sliders
+          - link "Video trang chủ" [ref=f7e77] [cursor=pointer]:
+            - /url: /admin/home-videos
+          - link "Highlights trang chủ" [ref=f7e80] [cursor=pointer]:
+            - /url: /admin/home-highlights
+          - link "Chuyển hướng" [ref=f7e87] [cursor=pointer]:
+            - /url: /admin/redirects
+          - link "Menu" [ref=f7e92] [cursor=pointer]:
+            - /url: /admin/menus
+          - link "Thư viện" [ref=f7e95] [cursor=pointer]:
+            - /url: /admin/media
+        - group "Báo cáo" [ref=f7e101]:
+          - link "Báo cáo" [ref=f7e103] [cursor=pointer]:
+            - /url: /admin/reports
+        - group "Hệ thống" [ref=f7e106]:
+          - link "Cài đặt" [ref=f7e108] [cursor=pointer]:
+            - /url: /admin/settings
+          - link "Quản trị viên" [ref=f7e113] [cursor=pointer]:
+            - /url: /admin/admin-users
+          - link "Phân quyền" [ref=f7e117] [cursor=pointer]:
+            - /url: /admin/roles
+          - link "Nhật ký" [ref=f7e122] [cursor=pointer]:
+            - /url: /admin/audit-logs
+      - strong [ref=f7e127]: Super Admin
+    - generic [ref=f7e128]:
+      - banner [ref=f7e129]:
+        - generic [ref=f7e130]: Sản phẩm
+        - button "Mở tìm kiếm nhanh" [ref=f7e131]:
+          - generic [ref=f7e135]: Tìm đơn hàng, sản phẩm, khách hàng...
+          - generic [ref=f7e136]: ⌘K
+        - button "Chuyển sang chế độ tối" [ref=f7e137] [cursor=pointer]
+        - button "Thông báo" [ref=f7e140] [cursor=pointer]
+        - button "Super Admin Chủ hệ thống" [ref=f7e145] [cursor=pointer]:
+          - generic [ref=f7e146]: AS
+          - generic [ref=f7e147]:
+            - generic [ref=f7e148]: Super Admin
+            - generic [ref=f7e149]: Chủ hệ thống
+      - navigation "Breadcrumb" [ref=f7e152]:
+        - list [ref=f7e153]:
+          - listitem [ref=f7e154]:
+            - link "Tổng quan" [ref=f7e155] [cursor=pointer]:
+              - /url: /admin/dashboard
+          - listitem [ref=f7e156]: /
+          - listitem [ref=f7e157]:
+            - link "Sản phẩm" [ref=f7e158] [cursor=pointer]:
+              - /url: /admin/products
+          - listitem [ref=f7e159]: /
+          - listitem [ref=f7e160]:
+            - generic [ref=f7e161]: Chi tiết
+      - main [ref=f7e162]:
+        - generic [ref=f7e165]:
+          - generic [ref=f7e166]:
+            - generic [ref=f7e167]:
+              - paragraph [ref=f7e168]: Danh mục
+              - generic [ref=f7e169]:
+                - heading "SCS S13" [level=1] [ref=f7e170]
+                - generic [ref=f7e171]:
+                  - generic [ref=f7e172]: Nháp
+                  - button "Xuất bản" [ref=f7e173] [cursor=pointer]
+              - paragraph [ref=f7e177]:
+                - generic [ref=f7e178]: "Cập nhật lần cuối: 23:18 06/07/2026"
+            - button "Huỷ" [ref=f7e181] [cursor=pointer]
+          - generic [ref=f7e185]:
+            - generic [ref=f7e186]: Phân công
+            - generic [ref=f7e193]:
+              - generic [ref=f7e194]:
+                - generic [ref=f7e195]: Content
+                - generic [ref=f7e196]: Thông tin cơ bản · Ảnh đại diện · Bộ sưu tập ảnh · Video · Thông số kỹ thuật · Hướng dẫn lắp đặt · Câu hỏi thường gặp · Biến thể · Sản phẩm liên quan · Nội dung SEO dưới
+              - generic [ref=f7e197]:
+                - generic [ref=f7e198]: SEO
+                - generic [ref=f7e199]: Thông tin SEO (Title, Meta, OG image) · Đường dẫn (slug) · Kiểm tra checklist trước khi đăng
+              - generic [ref=f7e200]:
+                - generic [ref=f7e201]: Quản lý
+                - generic [ref=f7e202]: Giá & trạng thái · Duyệt đăng sản phẩm
+          - tablist "Phần của sản phẩm" [ref=f7e203]:
+            - tab "Thông tin sản phẩm" [selected] [ref=f7e204] [cursor=pointer]
+            - tab "SEO" [ref=f7e206] [cursor=pointer]
+          - generic [ref=f7e208]:
+            - generic [ref=f7e209]:
+              - 'button "Bán hàng & hình ảnh · Thông tin để bán: cơ bản, ảnh, giá, biến thể" [expanded] [ref=f7e210] [cursor=pointer]':
+                - generic [ref=f7e213]: Bán hàng & hình ảnh
+                - generic [ref=f7e214]: "· Thông tin để bán: cơ bản, ảnh, giá, biến thể"
+              - generic [ref=f7e215]:
+                - generic [ref=f7e216]:
+                  - generic [ref=f7e217]:
+                    - heading "Thông tin cơ bảnBắt buộc" [level=3] [ref=f7e218]: Thông tin cơ bản*
+                    - generic [ref=f7e219]:
+                      - generic [ref=f7e220]: Content
+                      - generic [ref=f7e221]: SEO
+                  - generic [ref=f7e223]:
+                    - generic [ref=f7e224]:
+                      - generic [ref=f7e225]:
+                        - generic [ref=f7e226]:
+                          - text: Tên
+                          - generic [ref=f7e227]: "*"
+                        - generic [ref=f7e228]: 7 / 255
+                      - textbox "Tên" [ref=f7e229]: SCS S13
+                    - generic [ref=f7e230]:
+                      - generic [ref=f7e232]:
+                        - text: Slug
+                        - generic [ref=f7e233]: "*"
+                      - textbox "Slug" [ref=f7e234]:
+                        - /placeholder: "vd: mu-bao-hiem-fullface-agv-k1s"
+                        - text: tai-nghe-bluetooth-intercom-scs-s13
+                      - generic [ref=f7e235]: Chỉ chữ thường a–z, số 0–9 và dấu gạch ngang. Tự điền từ tên sản phẩm.
+                    - generic [ref=f7e236]:
+                      - generic [ref=f7e237]:
+                        - generic [ref=f7e238]:
+                          - text: SKU
+                          - generic [ref=f7e239]: "*"
+                        - generic [ref=f7e240]: 11 / 100
+                      - textbox "SKU" [ref=f7e241]: TNB-SCS-S13
+                      - generic [ref=f7e242]: SKU cấp sản phẩm — luôn bắt buộc. Khi sản phẩm có biến thể, mỗi biến thể bên dưới cũng cần SKU riêng.
+                    - generic [ref=f7e243]:
+                      - generic [ref=f7e245]:
+                        - text: Danh mục
+                        - generic [ref=f7e246]: "*"
+                      - button "Đã chọn 1 danh mục" [ref=f7e247] [cursor=pointer]
+                      - generic [ref=f7e249]:
+                        - generic [ref=f7e251]:
+                          - generic [ref=f7e252]: TAI NGHE BLUETOOTH MŨ BẢO HIỂM
+                          - generic [ref=f7e253]: Danh mục chính
+                        - generic [ref=f7e254]:
+                          - button "Lên" [disabled]
+                          - button "Xuống" [disabled]
+                          - button "Bỏ" [ref=f7e255] [cursor=pointer]
+                    - generic [ref=f7e256]:
+                      - generic [ref=f7e258]:
+                        - text: Thương hiệu
+                        - generic [ref=f7e259]: "*"
+                      - combobox "Tìm hoặc tạo thương hiệu…" [ref=f7e261]: SCS
+                    - generic [ref=f7e262]:
+                      - generic [ref=f7e263]: Thương hiệu (nước)
+                      - textbox "Thương hiệu (nước)" [ref=f7e265]:
+                        - /placeholder: "vd: Ý"
+                      - generic [ref=f7e266]: "Nhập riêng cho từng ngôn ngữ — chuyển tab VI/EN ở góc trên để nhập bản còn lại (vd: \"Nhật Bản\" ở tab VI, \"Japan\" ở tab EN)."
+                    - generic [ref=f7e267]:
+                      - generic [ref=f7e269]:
+                        - text: Giới tính
+                        - generic [ref=f7e270]: "*"
+                      - combobox [ref=f7e271]:
+                        - generic: Không chọn
+                      - combobox [ref=f7e274]
+                    - generic [ref=f7e275]:
+                      - generic [ref=f7e276]: Mô tả ngắn
+                      - generic [ref=f7e278]:
+                        - group "Thanh công cụ định dạng" [ref=f7e279]:
+                          - button "Hoàn tác (Ctrl+Z)" [ref=f7e280] [cursor=pointer]
+                          - button "Làm lại (Ctrl+Y)" [disabled]
+                          - button "Đậm (Ctrl+B)" [ref=f7e285] [cursor=pointer]
+                          - button "Nghiêng (Ctrl+I)" [ref=f7e288] [cursor=pointer]
+                          - button "Gạch chân (Ctrl+U)" [ref=f7e291] [cursor=pointer]
+                          - button "Gạch ngang" [ref=f7e294] [cursor=pointer]
+                          - button "Tiêu đề H2" [ref=f7e299] [cursor=pointer]
+                          - button "Tiêu đề H3" [ref=f7e302] [cursor=pointer]
+                          - button "Danh sách chấm" [ref=f7e307] [cursor=pointer]
+                          - button "Danh sách số" [ref=f7e309] [cursor=pointer]
+                          - button "Trích dẫn" [ref=f7e313] [cursor=pointer]
+                          - button "Chèn liên kết" [ref=f7e318] [cursor=pointer]
+                          - button "Căn trái" [ref=f7e323] [cursor=pointer]
+                          - button "Căn giữa" [ref=f7e325] [cursor=pointer]
+                          - button "Căn phải" [ref=f7e327] [cursor=pointer]
+                          - button "Thêm" [ref=f7e330] [cursor=pointer]
+                        - 'textbox "Vd: Mũ fullface AGV K1S đạt chuẩn ECE 22.06, vỏ composite 1.5kg, kính chống xước, phù hợp đi đường trường…" [ref=f7e336]':
+                          - paragraph [ref=f7e337]
+                          - paragraph [ref=f7e338]: Tai nghe Intercom Bluetooth trang bị công nghệ Mesh thế hệ mới, cho phép kết nối liên lạc lên đến 10 người cùng lúc. Khoảng cách nhóm xa đến 2000m, là bản nâng cấp hoàn hảo cho các đoàn phượt đông thành viên. Phân phối chính hãng tại BigBike qua 4T Hitek.
+                        - generic [ref=f7e339]: 257 ký tự
+                      - generic [ref=f7e340]: Hiển thị dưới tiêu đề ở trang chi tiết và trong danh sách sản phẩm. Tối thiểu 20 ký tự, lý tưởng 80–160 ký tự.
+                - generic [ref=f7e341]:
+                  - generic [ref=f7e342]:
+                    - heading "Ảnh đại diệnBắt buộc" [level=3] [ref=f7e343]: Ảnh đại diện*
+                    - generic [ref=f7e344]: Content
+                  - generic [ref=f7e346]:
+                    - generic [ref=f7e347]:
+                      - button "Đổi ảnh" [ref=f7e348] [cursor=pointer]
+                      - button "Xóa ảnh" [ref=f7e353] [cursor=pointer]
+                    - paragraph [ref=f7e357]: Khuyến nghị nên dùng ảnh/video nét, ví dụ ≥ 1800×1800px (bắt buộc tỉ lệ 1:1)
+                    - generic [ref=f7e358]: URL ảnh không hợp lệ
+                - generic [ref=f7e359]:
+                  - generic [ref=f7e360]:
+                    - heading "Gallery ảnh" [level=3] [ref=f7e361]
+                    - generic [ref=f7e362]:
+                      - generic [ref=f7e363]: 2 ảnh
+                      - generic [ref=f7e364]: Content
+                  - generic [ref=f7e366]:
+                    - paragraph [ref=f7e367]: Khuyến nghị nên dùng ảnh/video nét, ví dụ ≥ 1800×1800px (bắt buộc tỉ lệ 1:1)
+                    - generic [ref=f7e368]:
+                      - generic [ref=f7e369]:
+                        - generic [ref=f7e370] [cursor=pointer]:
+                          - button "Kéo để sắp xếp thứ tự hiển thị" [ref=f7e371]
+                          - button "Xoá ảnh" [ref=f7e379]
+                        - button "Đổi ảnh" [ref=f7e384] [cursor=pointer]
+                      - generic [ref=f7e385]:
+                        - generic [ref=f7e386] [cursor=pointer]:
+                          - button "Kéo để sắp xếp thứ tự hiển thị" [ref=f7e387]
+                          - button "Xoá ảnh" [ref=f7e395]
+                        - button "Đổi ảnh" [ref=f7e400] [cursor=pointer]
+                      - button "Thêm ảnh" [ref=f7e401] [cursor=pointer]
+                    - status [ref=f7e405]
+                    - button "+ Thêm video" [ref=f7e407] [cursor=pointer]
+                - generic [ref=f7e408]:
+                  - generic [ref=f7e409]:
+                    - heading "Giá & trạng tháiBắt buộc" [level=3] [ref=f7e410]: Giá & trạng thái*
+                    - generic [ref=f7e411]: Quản lý
+                  - generic [ref=f7e412]:
+                    - generic [ref=f7e413]: Sản phẩm này có biến thể. Giá ở đây (từ 2026-07-07) là "giá chung" — biến thể nào chưa điền giá riêng ở mục "Biến thể sản phẩm" bên dưới sẽ tự dùng giá chung này (kể cả giá sale); biến thể nào đã điền giá riêng thì dùng đúng giá riêng đó, không lấy giá chung nữa.
+                    - generic [ref=f7e417]:
+                      - generic [ref=f7e418]:
+                        - generic [ref=f7e419]: Giá niêm yết (VND)
+                        - textbox "Giá niêm yết (VND)" [ref=f7e421]:
+                          - /placeholder: "vd: 5.900.000"
+                          - text: 3.190.000
+                      - generic [ref=f7e422]:
+                        - generic [ref=f7e423]: Giá sale (VND)
+                        - generic [ref=f7e425]:
+                          - 'textbox "vd: 5.500.000" [ref=f7e426]'
+                          - button "% giảm" [ref=f7e427] [cursor=pointer]
+                - generic [ref=f7e428]:
+                  - generic [ref=f7e429]:
+                    - heading "Biến thể sản phẩm" [level=3] [ref=f7e430]
+                    - generic [ref=f7e431]:
+                      - generic [ref=f7e432]: 2 biến thể
+                      - generic [ref=f7e433]: Content
+                  - generic [ref=f7e435]:
+                    - button "Thêm biến thể" [ref=f7e437] [cursor=pointer]
+                    - table [ref=f7e442]:
+                      - rowgroup [ref=f7e443]:
+                        - row [ref=f7e444]:
+                          - columnheader "Kéo để sắp xếp" [ref=f7e445]
+                          - columnheader [ref=f7e447]:
+                            - checkbox "Chọn tất cả biến thể đang hiển thị" [ref=f7e448]
+                            - checkbox
+                          - columnheader "Ảnh" [ref=f7e449]
+                          - columnheader "Biến thể" [ref=f7e450]
+                          - columnheader "SKU" [ref=f7e451]
+                          - columnheader "Giá niêm yết" [ref=f7e452]
+                          - columnheader "Giá sale" [ref=f7e453]
+                          - columnheader "Trạng thái" [ref=f7e454]
+                          - columnheader "Thao tác" [ref=f7e455]
+                      - rowgroup [ref=f7e461]:
+                        - row [ref=f7e462]:
+                          - cell [ref=f7e463]:
+                            - button "Kéo để sắp xếp" [ref=f7e464]
+                          - cell [ref=f7e472]:
+                            - checkbox "Chọn Đen" [ref=f7e473]
+                            - checkbox
+                          - cell [ref=f7e474]:
+                            - img "Đen" [ref=f7e475]
+                          - cell [ref=f7e476]:
+                            - 'button "#1 Đen màu sắc: Đen" [ref=f7e477] [cursor=pointer]':
+                              - generic [ref=f7e478]:
+                                - generic [ref=f7e479]:
+                                  - generic [ref=f7e480]: "#1"
+                                  - generic [ref=f7e481]: Đen
+                                - generic [ref=f7e482]: "màu sắc: Đen"
+                          - cell [ref=f7e485]:
+                            - textbox "SKU *" [ref=f7e486]: TNB-SCS-S13-DEN
+                          - cell [ref=f7e487]:
+                            - textbox "Giá niêm yết (VND) *" [ref=f7e488]: 3.190.000
+                          - cell [ref=f7e489]:
+                            - textbox "Giá sale (VND)" [ref=f7e490]
+                          - cell "Kích hoạt bán Còn hàng" [ref=f7e491]:
+                            - generic [ref=f7e492]:
+                              - switch "Kích hoạt bán" [checked] [ref=f7e493] [cursor=pointer]
+                              - checkbox [checked]
+                              - generic [ref=f7e494]: Còn hàng
+                          - cell [ref=f7e495]:
+                            - button "Thao tác với Đen" [ref=f7e496] [cursor=pointer]
+                        - row [ref=f7e501]:
+                          - cell [ref=f7e502]:
+                            - button "Kéo để sắp xếp" [ref=f7e503]
+                          - cell [ref=f7e511]:
+                            - checkbox "Chọn Bạc" [ref=f7e512]
+                            - checkbox
+                          - cell [ref=f7e513]:
+                            - img "Bạc" [ref=f7e514]
+                          - cell [ref=f7e515]:
+                            - 'button "#2 Bạc màu sắc: BẠC" [ref=f7e516] [cursor=pointer]':
+                              - generic [ref=f7e517]:
+                                - generic [ref=f7e518]:
+                                  - generic [ref=f7e519]: "#2"
+                                  - generic [ref=f7e520]: Bạc
+                                - generic [ref=f7e521]: "màu sắc: BẠC"
+                          - cell [ref=f7e524]:
+                            - textbox "SKU *" [ref=f7e525]: TNB-SCS-S13-BAC
+                          - cell [ref=f7e526]:
+                            - textbox "Giá niêm yết (VND) *" [ref=f7e527]: 3.190.000
+                          - cell [ref=f7e528]:
+                            - textbox "Giá sale (VND)" [ref=f7e529]
+                          - cell "Kích hoạt bán Còn hàng" [ref=f7e530]:
+                            - generic [ref=f7e531]:
+                              - switch "Kích hoạt bán" [checked] [ref=f7e532] [cursor=pointer]
+                              - checkbox [checked]
+                              - generic [ref=f7e533]: Còn hàng
+                          - cell [ref=f7e534]:
+                            - button "Thao tác với Bạc" [ref=f7e535] [cursor=pointer]
+                      - status [ref=f7e540]
+                - generic [ref=f7e541]:
+                  - generic [ref=f7e542]:
+                    - heading "Dải tin cậy (trên tên sản phẩm)" [level=3] [ref=f7e543]
+                    - generic [ref=f7e544]:
+                      - generic [ref=f7e545]: 3 nhãn
+                      - generic [ref=f7e546]: Content
+                  - generic [ref=f7e547]:
+                    - paragraph [ref=f7e548]: "Các nhãn ngắn hiển thị NGAY TRÊN tên sản phẩm (vd: \"Chính hãng\", \"BH 2 năm\", \"Freeship\"). Để trống → web ẩn dải tin cậy. Mỗi sản phẩm tự nhập riêng."
+                    - generic [ref=f7e549]:
+                      - tablist [ref=f7e550]:
+                        - tab "Nhập có cấu trúc" [selected] [ref=f7e551]
+                        - tab "Dán mã HTML" [ref=f7e552]
+                      - tabpanel "Nhập có cấu trúc" [ref=f7e553]:
+                        - generic [ref=f7e554]:
+                          - generic [ref=f7e555]:
+                            - button "Kéo để sắp xếp" [ref=f7e556]
+                            - textbox "Nhãn tin cậy" [ref=f7e565]:
+                              - /placeholder: "vd: Chính hãng"
+                              - text: Phân phối chính hãng
+                            - button "Xóa nhãn" [ref=f7e566] [cursor=pointer]
+                          - generic [ref=f7e570]:
+                            - button "Kéo để sắp xếp" [ref=f7e571]
+                            - textbox "Nhãn tin cậy" [ref=f7e580]:
+                              - /placeholder: "vd: Chính hãng"
+                              - text: Bảo hành 2 năm
+                            - button "Xóa nhãn" [ref=f7e581] [cursor=pointer]
+                          - generic [ref=f7e585]:
+                            - button "Kéo để sắp xếp" [ref=f7e586]
+                            - textbox "Nhãn tin cậy" [ref=f7e595]:
+                              - /placeholder: "vd: Chính hãng"
+                              - text: Freeship toàn quốc
+                            - button "Xóa nhãn" [ref=f7e596] [cursor=pointer]
+                          - button "+ Thêm nhãn" [ref=f7e600] [cursor=pointer]
+                        - status [ref=f7e601]
+            - button "Nội dung trang · Mô tả, thông số, FAQ, tư vấn — phần lớn không bắt buộc" [ref=f7e603] [cursor=pointer]:
+              - generic [ref=f7e606]: Nội dung trang
+              - generic [ref=f7e607]: · Mô tả, thông số, FAQ, tư vấn — phần lớn không bắt buộc
+            - button "Video, cam kết & bán kèm · Không bắt buộc" [ref=f7e609] [cursor=pointer]:
+              - generic [ref=f7e612]: Video, cam kết & bán kèm
+              - generic [ref=f7e613]: · Không bắt buộc
+          - toolbar "Thanh thao tác" [ref=f7e614]:
+            - status [ref=f7e615]:
+              - generic [ref=f7e616]: Đã lưu
+            - button "Xem trước" [ref=f7e619] [cursor=pointer]
+            - button "Lưu nháp" [disabled]
+  - region "Notifications alt+T"

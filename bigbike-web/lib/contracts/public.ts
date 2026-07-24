@@ -249,8 +249,6 @@ export type CategorySummary = {
 export type BrandSummary = {
   id: string;
   slug: string;
-  /** Legacy-only; brand links use the shared `slug` in every locale (BRAND_RULE_003). */
-  slugEn?: string | null;
   name: string;
 };
 
@@ -374,8 +372,6 @@ export type Category = {
 export type Brand = {
   id: string;
   slug: string;
-  /** Legacy-only; brand detail URL uses the shared `slug` in every locale (BRAND_RULE_003). */
-  slugEn?: string | null;
   name: string;
   description?: string;
   logo?: ImageAsset;

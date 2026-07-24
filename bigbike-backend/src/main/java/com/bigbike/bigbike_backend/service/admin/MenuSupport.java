@@ -1,7 +1,6 @@
 package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.menu.AdminMenuItemResponse;
-import com.bigbike.bigbike_backend.api.admin.dto.menu.AdminMenuResponse;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.persistence.entity.menu.MenuEntity;
 import com.bigbike.bigbike_backend.persistence.entity.menu.MenuItemEntity;
@@ -126,14 +125,6 @@ final class MenuSupport {
     }
 
     // ── Mapping ───────────────────────────────────────────────────────────────
-
-    static AdminMenuResponse toMenuResponse(MenuEntity m, List<MenuItemEntity> items) {
-        return new AdminMenuResponse(
-                m.getId(), m.getLocation(), m.getName(), m.getStatus(),
-                m.getCreatedAt(), m.getUpdatedAt(),
-                items.stream().map(MenuSupport::toItemResponse).toList()
-        );
-    }
 
     static AdminMenuItemResponse toItemResponse(MenuItemEntity i) {
         return new AdminMenuItemResponse(

@@ -3,7 +3,7 @@
 import { Clock, MapPin, Phone, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import { LocalizedSetting } from "@/components/i18n/LocalizedSetting";
 import { HeaderCartLink } from "@/components/layout/header/HeaderCartLink";
@@ -32,7 +32,8 @@ export type HeaderContact = {
 };
 
 type HeaderClientProps = {
-  menuNodes: HeaderNavNode[];
+  menuNodesVi: HeaderNavNode[];
+  menuNodesEn: HeaderNavNode[];
   contact: HeaderContact;
 };
 
@@ -107,8 +108,12 @@ function ContactDetails({ contact, dark = false }: { contact: HeaderContact; dar
   );
 }
 
-export function HeaderClient({ menuNodes, contact }: HeaderClientProps) {
+export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClientProps) {
   const t = useTranslations("Header");
+  const locale = useLocale();
+  // menuNodesEn rỗng (chưa admin nhập nhãn EN cho mục nào) → fallback về VI thay vì
+  // hiện menu trống — cùng nguyên tắc field-level fallback áp dụng cho name/label khác.
+  const menuNodes = locale === "en" && menuNodesEn.length > 0 ? menuNodesEn : menuNodesVi;
   const { closePanel, isPanelOpen, togglePanel } = useHeaderUi();
   const [scrolled, setScrolled] = useState(false);
   const mobileMenuOpen = isPanelOpen("mobile-menu");

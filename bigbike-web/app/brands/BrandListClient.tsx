@@ -120,7 +120,6 @@ export function BrandListClient({
                 key={brand.id}
                 kind="brand"
                 viSlug={brand.slug}
-                enSlug={brand.slugEn}
                 title={name}
                 className="group flex h-full flex-col items-center justify-between gap-4 border border-border bg-white p-5 no-underline transition-colors hover:border-foreground"
               >

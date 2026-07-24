@@ -660,7 +660,6 @@ export function createContentSchema(t, _isCreate, normalizedType) {
     productImageUrl: z.string().optional(),
     relatedProductIds: z.array(z.string()).optional(),
     accessoryProductIds: z.array(z.string()).optional(),
-    seoCanonicalUrl: z.string().optional(),
     seoOgImageUrl: z.string().optional(),
     // English content (V138 + V216 slug). TRANSLATION_RULE_002: `title` is required
     // (mirrors VI `title`); `body`/`bodyBlocks` stay optional in EN even though VI body is
@@ -713,9 +712,6 @@ export function createContentSchema(t, _isCreate, normalizedType) {
     }
     if (data.productImageUrl?.trim() && !MEDIA_URL_REGEX.test(data.productImageUrl.trim())) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('content.detail.errProductImageUrl'), path: ['productImageUrl'] })
-    }
-    if (data.seoCanonicalUrl?.trim() && !URL_REGEX.test(data.seoCanonicalUrl.trim())) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('content.detail.errSeoCanonicalUrl'), path: ['seoCanonicalUrl'] })
     }
     if (data.seoOgImageUrl?.trim() && !MEDIA_URL_REGEX.test(data.seoOgImageUrl.trim())) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('content.detail.errSeoOgImageUrl'), path: ['seoOgImageUrl'] })

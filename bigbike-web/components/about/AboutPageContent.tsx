@@ -119,7 +119,6 @@ export function AboutPageContent({
                 key={brand.id}
                 kind="brand"
                 viSlug={brand.slug}
-                enSlug={brand.slugEn}
                 title={brand.name}
                 className="flex items-center justify-center"
               >

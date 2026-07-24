@@ -35,10 +35,11 @@ function MenuParentSelect({ value, onChange, options, label, rootLabel }) {
   )
 }
 
-// Chọn 1 danh mục có sẵn để tự điền URL, thay vì admin phải gõ tay/nhớ slug.
-// Chọn xong sẽ liên kết mục menu này với danh mục (targetType=CATEGORY) — nhờ
-// vậy web tự đổi đúng đường link theo ngôn ngữ VI/EN. Gõ tay lại ô URL bên
-// dưới sẽ huỷ liên kết này (xem onChange của ô URL).
+// Chọn 1 danh mục có sẵn để tự điền Tên + URL, thay vì admin phải gõ tay/nhớ
+// slug. Chọn xong sẽ liên kết mục menu này với danh mục (targetType=CATEGORY)
+// — nhờ vậy tên & đường link luôn tự cập nhật theo danh mục (kể cả sau khi
+// đổi tên/slug danh mục), 2 ô Tên/URL bên dưới khoá lại không sửa tay được.
+// Chọn "— Không liên kết danh mục —" để huỷ liên kết và tự nhập tay.
 function MenuCategoryPicker({ value, onChange, options, label, noneLabel }) {
   const selectedValue = value.targetType === 'CATEGORY' && value.targetId ? value.targetId : NONE_VALUE
   return (
@@ -53,7 +54,12 @@ function MenuCategoryPicker({ value, onChange, options, label, noneLabel }) {
           }
           const category = options.find((c) => c.id === v)
           if (!category) return
-          onChange({ url: buildCategoryMenuUrl(category), targetType: 'CATEGORY', targetId: category.id })
+          onChange({
+            url: buildCategoryMenuUrl(category),
+            label: category.name,
+            targetType: 'CATEGORY',
+            targetId: category.id,
+          })
         }}
       ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
         <SelectItem value={NONE_VALUE}>{noneLabel}</SelectItem>
@@ -75,9 +81,10 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
   const [advancedOpen, setAdvancedOpen] = useState(() =>
     Boolean(value.labelEn || value.parentId || value.openInNewTab || value.status === 'INACTIVE'),
   )
-  const urlInvalid = value.url.trim() !== '' && !isValidCustomUrl(value.url)
+  const categoryLinked = value.targetType === 'CATEGORY'
+  const urlInvalid = !categoryLinked && value.url.trim() !== '' && !isValidCustomUrl(value.url)
   const labelMissing = value.label.trim() === ''
-  const showLabelError = labelTouched && labelMissing
+  const showLabelError = !categoryLinked && labelTouched && labelMissing
   return (
     <div className="form-grid">
       {/* Chú thích trường bắt buộc */}
@@ -86,11 +93,11 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
         {t('menus.requiredLegend', { defaultValue: 'Bắt buộc' })}
       </p>
 
-      {/* Label — required (Vietnamese) */}
+      {/* Label — required (Vietnamese); khoá lại khi đã liên kết danh mục (tự lấy theo tên danh mục) */}
       <label className="form-field form-field-wide" htmlFor="menu-item-label">
         <span>
           {t('menus.itemLabel')}
-          <RequiredMark />
+          {!categoryLinked && <RequiredMark />}
         </span>
         <Input
           id="menu-item-label"
@@ -99,11 +106,15 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
           onBlur={() => setLabelTouched(true)}
           placeholder={t('menus.itemLabelPlaceholder')}
           autoFocus={isNew}
-          aria-required="true"
+          readOnly={categoryLinked}
+          disabled={categoryLinked}
+          aria-required={!categoryLinked}
           aria-invalid={showLabelError || undefined}
-          aria-describedby={showLabelError ? 'menu-item-label-error' : undefined}
+          aria-describedby={showLabelError ? 'menu-item-label-error' : categoryLinked ? 'menu-item-label-hint' : undefined}
          />
-        {showLabelError && (
+        {categoryLinked ? (
+          <small id="menu-item-label-hint" className="menu-form-hint">{t('menus.itemLabelCategoryLinkedHint')}</small>
+        ) : showLabelError && (
           <small id="menu-item-label-error" className="menu-form-hint menu-form-hint--danger" role="alert">
             {t('menus.itemLabelRequired', { defaultValue: 'Vui lòng nhập tên hiển thị.' })}
           </small>
@@ -125,22 +136,24 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
         </p>
       ) : null}
 
-      {/* URL */}
+      {/* URL — khoá lại khi đã liên kết danh mục (tự lấy theo đường dẫn danh mục) */}
       <label className="form-field form-field-wide" htmlFor="menu-item-url">
         <span>
           {t('menus.itemUrlCustom')}
-          <RequiredMark />
+          {!categoryLinked && <RequiredMark />}
         </span>
         <Input
           id="menu-item-url"
           value={value.url}
           onChange={(e) => onChange({ url: e.target.value, targetType: 'CUSTOM', targetId: null })}
           placeholder="/danh-muc-san-pham/... hoặc https://..."
-          aria-required="true"
+          readOnly={categoryLinked}
+          disabled={categoryLinked}
+          aria-required={!categoryLinked}
           aria-invalid={urlInvalid || undefined}
           aria-describedby="menu-item-url-hint"
          />
-        {value.targetType === 'CATEGORY' ? (
+        {categoryLinked ? (
           <small id="menu-item-url-hint" className="menu-form-hint">{t('menus.itemCategoryLinkedHint')}</small>
         ) : value.url.trim() ? (
           urlInvalid && (
@@ -163,15 +176,19 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
           keepMounted
         >
           <div className="form-grid">
-            {/* Label — English (optional) */}
+            {/* Label — English (optional); khoá lại khi đã liên kết danh mục (tự lấy theo tên tiếng Anh của danh mục) */}
             <label className="form-field form-field-wide">
               {t('menus.itemLabelEn')}
               <Input
                 value={value.labelEn}
                 onChange={(e) => onChange({ labelEn: e.target.value })}
                 placeholder={t('menus.itemLabelEnPlaceholder')}
+                readOnly={categoryLinked}
+                disabled={categoryLinked}
                />
-              <small className="menu-form-hint">{t('menus.itemLabelEnHint')}</small>
+              <small className="menu-form-hint">
+                {categoryLinked ? t('menus.itemLabelCategoryLinkedHint') : t('menus.itemLabelEnHint')}
+              </small>
             </label>
 
             {/* Parent — bao gồm lựa chọn "cấp gốc" để có thể đưa mục con lên cấp đầu */}

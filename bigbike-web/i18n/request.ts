@@ -1,19 +1,26 @@
 import { getRequestConfig } from "next-intl/server";
-import { DEFAULT_LOCALE, DEFAULT_TIME_ZONE } from "./locale";
+import { DEFAULT_TIME_ZONE, resolveLocale } from "./locale";
 
 /**
- * Server luôn render bằng locale canonical `vi` — KHÔNG đọc cookie ở tầng server.
- * Đọc cookie (next/headers) sẽ ép mọi route thành dynamic (SSR); để đạt kiến trúc
- * ISR/SSG, locale phải tĩnh ở server. Tiếng Anh được xử lý ở CLIENT qua
- * `ClientIntlProvider` (đọc cookie NEXT_LOCALE sau khi mount và nạp `messages/en.json`).
+ * Server render tĩnh theo locale — mặc định `vi`, KHÔNG đọc cookie/header ở tầng
+ * này (đọc cookie sẽ ép mọi route thành dynamic/SSR, mất ISR/SSG).
  *
- * Nội dung dữ liệu EN vốn fallback về VI field-by-field (PRODUCT_RULE_001/002), nên
- * bản server (vi) là bản SEO canonical; URL vẫn dùng chung mọi ngôn ngữ (PRODUCT_RULE_003).
+ * Route Sản phẩm/Danh mục/Bài viết tiếng Anh thật (`app/products/[slug]`,
+ * `app/categories/[slug]`, `app/news/[slug]`) tự truyền `{ locale: "en" }` tường
+ * minh vào từng lời gọi `getTranslations`/`getFormatter` — giá trị đó đi thẳng vào
+ * tham số `locale` bên dưới mà KHÔNG cần đọc `requestLocale` (next-intl chỉ resolve
+ * `requestLocale` qua `next/headers` khi callback này thực sự đọc nó — cố tình
+ * KHÔNG destructure `requestLocale` ở đây để mọi route khác không vô tình bị ép
+ * dynamic). Mọi route còn lại (không truyền `locale` tường minh) tiếp tục nhận
+ * `vi` như trước — hành vi không đổi.
+ *
+ * Nội dung dữ liệu EN vốn fallback về VI field-by-field (PRODUCT_RULE_001/002).
  */
-export default getRequestConfig(async () => {
+export default getRequestConfig(async ({ locale }) => {
+  const resolved = resolveLocale(locale);
   return {
-    locale: DEFAULT_LOCALE,
+    locale: resolved,
     timeZone: DEFAULT_TIME_ZONE,
-    messages: (await import(`../messages/${DEFAULT_LOCALE}.json`)).default,
+    messages: (await import(`../messages/${resolved}.json`)).default,
   };
 });

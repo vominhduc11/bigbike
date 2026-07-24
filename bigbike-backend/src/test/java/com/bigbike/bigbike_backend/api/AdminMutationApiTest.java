@@ -1183,8 +1183,7 @@ class AdminMutationApiTest {
 
         BrandEntity brand = brandJpaRepository.findBySlug(slug).orElseThrow();
         assertThat(brand.getName()).isEqualTo("Shared Brand " + suffix);
-        assertThat(brand.getNameEn()).isNull();
-        assertThat(brand.getSlugEn()).isNull();
+        assertThat(brand.getSlug()).isEqualTo(slug);
     }
 
     @Test

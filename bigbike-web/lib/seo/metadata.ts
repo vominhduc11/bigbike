@@ -11,6 +11,8 @@ type PublicMetadataInput = {
   ogImage?: string;
   ogType?: "website" | "article";
   siteName?: string;
+  /** Open Graph locale of the page being rendered. Defaults to "vi". */
+  locale?: "vi" | "en";
   /**
    * Per-language URL paths for `hreflang` alternates (PRODUCT/CATEGORY/ARTICLE_RULE_003).
    * Canonical stays the vi URL; emit this when an entity has a distinct English slug
@@ -44,7 +46,7 @@ export function buildPublicMetadata(input: PublicMetadataInput): Metadata {
       url: canonicalUrl,
       ...(input.siteName ? { siteName: input.siteName } : {}),
       images: [{ url: ogImageUrl }],
-      locale: "vi_VN",
+      locale: input.locale === "en" ? "en_US" : "vi_VN",
       type: input.ogType ?? "website",
     },
     twitter: {

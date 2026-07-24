@@ -719,17 +719,57 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       recommend={IMAGE_RECO.cover}
                     />
                   </Field>
-                  <Field full label={t('content.detail.productImageUrl', { defaultValue: 'Ảnh sản phẩm (overlay carousel)' })} helper={t('content.detail.productImageUrlHint', { defaultValue: 'Ảnh PNG nền trong hiển thị chồng lên ảnh bìa trong carousel Góc Trải Nghiệm ở trang chủ.' })}>
-                    <ImageUrlInput
-                      value={form.productImageUrl}
-                      onChange={(url) => updateField('productImageUrl', url)}
-                      alt={form.productImageAlt}
-                      onAltChange={(v) => updateField('productImageAlt', v)}
-                      disabled={isReadOnly}
-                      error={validationErrors.productImageUrl}
-                      recommend={IMAGE_RECO.squareMedium}
-                    />
+                  {isArticle && form.homeExperience && (
+                    <Field full label={t('content.detail.productImageUrl', { defaultValue: 'Ảnh sản phẩm (overlay carousel)' })} helper={t('content.detail.productImageUrlHint', { defaultValue: 'Ảnh PNG nền trong hiển thị chồng lên ảnh bìa trong carousel Góc Trải Nghiệm ở trang chủ.' })}>
+                      <ImageUrlInput
+                        value={form.productImageUrl}
+                        onChange={(url) => updateField('productImageUrl', url)}
+                        alt={form.productImageAlt}
+                        onAltChange={(v) => updateField('productImageAlt', v)}
+                        disabled={isReadOnly}
+                        error={validationErrors.productImageUrl}
+                        recommend={IMAGE_RECO.squareMedium}
+                      />
+                    </Field>
+                  )}
+                </div>
+              </SectionCard>
+
+              {/* ── Card: Hiển thị ── */}
+              <SectionCard title={t('content.detail.sectionPublish', { defaultValue: 'Hiển thị' })} required>
+                <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
+                  <Field label={t('content.detail.publishStatus')} error={validationErrors.publishStatus}>
+                    <Select value={form.publishStatus} onValueChange={(val) => updateField('publishStatus', val)} disabled={isReadOnly}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {publishOptions.map((status) => (
+                          <SelectItem key={status} value={status}>{t(`status.publish.${status}`)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </Field>
+                  {isArticle && (
+                    <div className="@xl:col-span-2 flex flex-col gap-1.5">
+                      <label className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
+                        <Checkbox
+                          checked={form.featured}
+                          onCheckedChange={(checked) => updateField('featured', checked === true)}
+                          disabled={isReadOnly}
+                        />
+                        <span>{t('content.detail.featured')}</span>
+                      </label>
+                      <span className="text-xs text-muted-foreground">{t('content.detail.featuredHint')}</span>
+                      <label className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
+                        <Checkbox
+                          checked={form.homeExperience}
+                          onCheckedChange={(checked) => updateField('homeExperience', checked === true)}
+                          disabled={isReadOnly}
+                        />
+                        <span>{t('content.detail.homeExperience', { defaultValue: 'Hiển thị ở "Góc trải nghiệm" trang chủ' })}</span>
+                      </label>
+                      <span className="text-xs text-muted-foreground">{t('content.detail.homeExperienceHint', { defaultValue: 'Bật để chọn bài này vào băng chuyền "Góc trải nghiệm cùng BigBike" ở trang chủ. Hiển thị tối đa 3 bài được chọn (mới nhất trước). Nếu không chọn bài nào, trang chủ tự lấy 3 bài Reviews mới nhất.' })}</span>
+                    </div>
+                  )}
                 </div>
               </SectionCard>
             </>
@@ -747,19 +787,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       <span>{t('content.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
                     </div>
                     <div className="text-xs text-google-url break-all mb-1">
-                      {(() => {
-                        const canonical = form.seoCanonicalUrl?.trim()
-                        if (!canonical) {
-                          return <>{storefrontOrigin}<span className="text-google-crumb"> › {isArticle ? 'tin-tuc' : 'trang'} › {form.slug || 'duong-dan'}</span></>
-                        }
-                        try {
-                          const u = new URL(canonical)
-                          const parts = u.pathname.split('/').filter(Boolean)
-                          return <>{u.hostname}{parts.length > 0 && <span className="text-google-crumb">{' › ' + parts.join(' › ')}</span>}</>
-                        } catch {
-                          return <>{canonical}</>
-                        }
-                      })()}
+                      {storefrontOrigin}<span className="text-google-crumb"> › {isArticle ? 'tin-tuc' : 'trang'} › {form.slug || 'duong-dan'}</span>
                     </div>
                     <div className="text-lg leading-snug text-google-title break-words mb-1">
                       {(langValue('seoTitle') || form.title || t('content.detail.serpTitleFallback', { defaultValue: 'Tiêu đề trên Google' })).slice(0, 60)}
@@ -809,22 +837,11 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                 {/* Tùy chọn nâng cao: canonical + ảnh chia sẻ + noindex — thu gọn sẵn (P2-4) */}
                 <CollapsibleSection
                   title={t('content.detail.seoAdvanced', { defaultValue: 'Tùy chọn nâng cao' })}
-                  hint={t('content.detail.seoAdvancedHint', { defaultValue: 'URL canonical, ảnh chia sẻ, chặn lập chỉ mục' })}
+                  hint={t('content.detail.seoAdvancedHint', { defaultValue: 'Ảnh chia sẻ, chặn lập chỉ mục' })}
                   open={seoAdvancedOpen}
                   onToggle={() => setSeoAdvancedOpen((v) => !v)}
                 >
                   <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
-                    <Field full label={t('content.detail.seoCanonicalUrl', { defaultValue: 'URL canonical' })} error={validationErrors.seoCanonicalUrl}>
-                      <Input
-                        value={form.seoCanonicalUrl}
-                        onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
-                        onBlur={() => validateFieldOnBlur('seoCanonicalUrl')}
-                        disabled={isReadOnly}
-                        placeholder="https://bigbike.vn/..."
-                        className={validationErrors.seoCanonicalUrl ? 'border-danger' : undefined}
-                      />
-                    </Field>
-
                     <Field
                       full
                       label={t('content.detail.seoOgImageUrl', { defaultValue: 'SEO OG image URL' })}
@@ -890,44 +907,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       </div>
                     ))}
                   </div>
-                </div>
-              </SectionCard>
-
-              {/* ── Card: Hiển thị ── */}
-              <SectionCard title={t('content.detail.sectionPublish', { defaultValue: 'Hiển thị' })} required>
-                <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
-                  <Field label={t('content.detail.publishStatus')} error={validationErrors.publishStatus}>
-                    <Select value={form.publishStatus} onValueChange={(val) => updateField('publishStatus', val)} disabled={isReadOnly}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {publishOptions.map((status) => (
-                          <SelectItem key={status} value={status}>{t(`status.publish.${status}`)}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                  {isArticle && (
-                    <div className="@xl:col-span-2 flex flex-col gap-1.5">
-                      <label className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
-                        <Checkbox
-                          checked={form.featured}
-                          onCheckedChange={(checked) => updateField('featured', checked === true)}
-                          disabled={isReadOnly}
-                        />
-                        <span>{t('content.detail.featured')}</span>
-                      </label>
-                      <span className="text-xs text-muted-foreground">{t('content.detail.featuredHint')}</span>
-                      <label className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
-                        <Checkbox
-                          checked={form.homeExperience}
-                          onCheckedChange={(checked) => updateField('homeExperience', checked === true)}
-                          disabled={isReadOnly}
-                        />
-                        <span>{t('content.detail.homeExperience', { defaultValue: 'Hiển thị ở "Góc trải nghiệm" trang chủ' })}</span>
-                      </label>
-                      <span className="text-xs text-muted-foreground">{t('content.detail.homeExperienceHint', { defaultValue: 'Bật để chọn bài này vào băng chuyền "Góc trải nghiệm cùng BigBike" ở trang chủ. Hiển thị tối đa 3 bài được chọn (mới nhất trước). Nếu không chọn bài nào, trang chủ tự lấy 3 bài Reviews mới nhất.' })}</span>
-                    </div>
-                  )}
                 </div>
               </SectionCard>
             </>

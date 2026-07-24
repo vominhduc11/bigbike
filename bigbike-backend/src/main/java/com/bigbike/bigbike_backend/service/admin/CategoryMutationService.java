@@ -120,7 +120,7 @@ public class CategoryMutationService {
         if (!previousSlug.equals(entity.getSlug())) {
             slugRedirectHelper.autoCreateSlugRedirect("/danh-muc-san-pham/" + previousSlug, "/danh-muc-san-pham/" + entity.getSlug());
         }
-        slugRedirectHelper.autoCreateSlugEnRedirect("/danh-muc-san-pham/", previousSlugEn, entity.getSlugEn(), entity.getSlug());
+        slugRedirectHelper.autoCreateSlugEnRedirect("/categories/", "/danh-muc-san-pham/", previousSlugEn, entity.getSlugEn(), entity.getSlug());
         webRevalidationService.revalidateCategory(entity.getSlug(), previousSlug);
 
         return catalogReadRepository.findCategoryById(entity.getId())

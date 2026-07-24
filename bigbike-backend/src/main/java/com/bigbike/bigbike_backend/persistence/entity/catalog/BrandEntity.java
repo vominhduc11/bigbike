@@ -20,9 +20,6 @@ public class BrandEntity {
     @Column(nullable = false, unique = true)
     private String slug;
 
-    @Column(name = "slug_en")
-    private String slugEn;
-
     @Column(nullable = false)
     private String name;
 
@@ -66,8 +63,6 @@ public class BrandEntity {
     private Integer seoOgImageWidth;
     private Integer seoOgImageHeight;
     private String seoOgImageMimeType;
-
-    private String nameEn;
 
     @Column(columnDefinition = "text")
     private String descriptionEn;

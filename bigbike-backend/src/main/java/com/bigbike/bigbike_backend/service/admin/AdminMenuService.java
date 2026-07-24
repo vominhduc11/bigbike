@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -71,8 +72,8 @@ public class AdminMenuService {
     }
 
     // A menu item can link straight to a category (targetType=CATEGORY, targetId=category id)
-    // instead of a hand-typed URL. Public read resolves the locale-appropriate slug at request
-    // time — see resolveDisplayUrl().
+    // instead of a hand-typed label/URL. Public + admin reads resolve the locale-appropriate
+    // name/slug at request time — see resolveLinkedCategory(), resolveDisplayLabel/Url().
     private void validateCategoryTarget(String targetType, String targetId) {
         if (!"CATEGORY".equalsIgnoreCase(targetType)) return;
         if (targetId == null || categoryRepo.findById(targetId).isEmpty()) {
@@ -81,16 +82,55 @@ public class AdminMenuService {
         }
     }
 
+    private Optional<CategoryEntity> resolveLinkedCategory(MenuItemEntity item) {
+        if (!"CATEGORY".equalsIgnoreCase(item.getTargetType()) || item.getTargetId() == null) {
+            return Optional.empty();
+        }
+        return categoryRepo.findById(item.getTargetId());
+    }
+
+    // Category-linked items resolve their label dynamically per lang (VI name vs EN name)
+    // instead of using the stored label/label_en columns. Falls back to the stored label if the
+    // linked category was since deleted, so a stale link never breaks the menu.
+    private String resolveDisplayLabel(MenuItemEntity item, String lang) {
+        return resolveLinkedCategory(item)
+                .map(cat -> pick(cat.getName(), cat.getNameEn(), lang))
+                .orElseGet(() -> pick(item.getLabel(), item.getLabelEn(), lang));
+    }
+
     // Category-linked items resolve their URL dynamically per lang (VI slug vs EN slug) instead
     // of using the stored url column. Falls back to the stored url if the linked category was
     // since deleted, so a stale link never breaks the menu.
     private String resolveDisplayUrl(MenuItemEntity item, String lang) {
-        if ("CATEGORY".equalsIgnoreCase(item.getTargetType()) && item.getTargetId() != null) {
-            return categoryRepo.findById(item.getTargetId())
-                    .map(cat -> CATEGORY_URL_PREFIX + pick(cat.getSlug(), cat.getSlugEn(), lang))
-                    .orElse(item.getUrl());
+        return resolveLinkedCategory(item)
+                .map(cat -> CATEGORY_URL_PREFIX + pick(cat.getSlug(), cat.getSlugEn(), lang))
+                .orElseGet(item::getUrl);
+    }
+
+    // Admin reads (list/detail/create/update) show the same live-resolved label/url as the
+    // public site (default VI) instead of the possibly-stale stored snapshot, so admins never
+    // need to hand-edit a menu item after renaming its linked category.
+    private AdminMenuItemResponse toAdminItemResponse(MenuItemEntity i) {
+        Optional<CategoryEntity> cat = resolveLinkedCategory(i);
+        if (cat.isEmpty()) {
+            return toItemResponse(i);
         }
-        return item.getUrl();
+        CategoryEntity category = cat.get();
+        return new AdminMenuItemResponse(
+                i.getId(), i.getMenu().getId(), i.getParentId(),
+                category.getName(), category.getNameEn(), CATEGORY_URL_PREFIX + category.getSlug(),
+                i.getTargetType(), i.getTargetId(),
+                i.getSortOrder(), i.isOpenInNewTab(), i.getCssClass(),
+                i.getStatus(), i.getCreatedAt(), i.getUpdatedAt()
+        );
+    }
+
+    private AdminMenuResponse toAdminMenuResponse(MenuEntity m, List<MenuItemEntity> items) {
+        return new AdminMenuResponse(
+                m.getId(), m.getLocation(), m.getName(), m.getStatus(),
+                m.getCreatedAt(), m.getUpdatedAt(),
+                items.stream().map(this::toAdminItemResponse).toList()
+        );
     }
 
     private final MenuJpaRepository menuRepo;
@@ -120,7 +160,7 @@ public class AdminMenuService {
 
         List<AdminMenuResponse> items = stream
                 .sorted(Comparator.comparing(MenuEntity::getCreatedAt, Comparator.reverseOrder()))
-                .map(m -> toMenuResponse(m, menuItemRepo.findByMenuIdOrderBySortOrderAsc(m.getId())))
+                .map(m -> toAdminMenuResponse(m, menuItemRepo.findByMenuIdOrderBySortOrderAsc(m.getId())))
                 .toList();
 
         return paginationService.paginate(items, normalizedPage, normalizedSize);
@@ -131,7 +171,7 @@ public class AdminMenuService {
     public AdminMenuResponse getMenuById(UUID menuId) {
         MenuEntity menu = menuRepo.findById(menuId)
                 .orElseThrow(() -> new NotFoundException("Menu not found."));
-        return toMenuResponse(menu, menuItemRepo.findByMenuIdOrderBySortOrderAsc(menuId));
+        return toAdminMenuResponse(menu, menuItemRepo.findByMenuIdOrderBySortOrderAsc(menuId));
     }
 
     // ── Get menu by location ──────────────────────────────────────────────────
@@ -139,7 +179,7 @@ public class AdminMenuService {
     public AdminMenuResponse getMenuByLocation(String location) {
         MenuEntity menu = menuRepo.findByLocation(location)
                 .orElseThrow(() -> new NotFoundException("Menu not found for location: " + location));
-        return toMenuResponse(menu, menuItemRepo.findByMenuIdOrderBySortOrderAsc(menu.getId()));
+        return toAdminMenuResponse(menu, menuItemRepo.findByMenuIdOrderBySortOrderAsc(menu.getId()));
     }
 
     // ── Create menu ───────────────────────────────────────────────────────────
@@ -178,7 +218,7 @@ public class AdminMenuService {
         auditLogWriter.save(auditLogFactory.build("ADMIN", adminId, "MENU_CREATED", "MENU", entity.getId(), null,
                 "{\"location\":\"" + escapeJson(entity.getLocation()) + "\",\"name\":\"" + escapeJson(entity.getName()) + "\"}"));
 
-        return toMenuResponse(entity, List.of());
+        return toAdminMenuResponse(entity, List.of());
     }
 
     // ── Update menu ───────────────────────────────────────────────────────────
@@ -208,7 +248,7 @@ public class AdminMenuService {
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "MENU_UPDATED", "MENU", menuId, before, menuSnapshot(entity)));
 
-        return toMenuResponse(entity, menuItemRepo.findByMenuIdOrderBySortOrderAsc(menuId));
+        return toAdminMenuResponse(entity, menuItemRepo.findByMenuIdOrderBySortOrderAsc(menuId));
     }
 
     // ── Delete menu ───────────────────────────────────────────────────────────
@@ -252,9 +292,6 @@ public class AdminMenuService {
                     "Menu item status must be ACTIVE or INACTIVE.");
         }
 
-        // URL scheme validation — block dangerous/unexpected schemes
-        validateMenuItemUrl(req.url());
-
         // Parent validation: must exist in same menu; new items can't create cycles
         if (req.parentId() != null) {
             List<MenuItemEntity> allItems = menuItemRepo.findByMenuId(menuId);
@@ -268,9 +305,24 @@ public class AdminMenuService {
         MenuItemEntity item = new MenuItemEntity();
         item.setMenu(menu);
         item.setParentId(req.parentId());
-        item.setLabel(req.label().trim());
-        item.setLabelEn(normalizeOptional(req.labelEn()));
-        item.setUrl(req.url());
+        if ("CATEGORY".equalsIgnoreCase(req.targetType())) {
+            // Manual label/labelEn/url are ignored — always derived from the linked category so
+            // the item stays in sync automatically. Snapshot into the columns as a delete-fallback.
+            CategoryEntity category = categoryRepo.findById(req.targetId()).orElseThrow();
+            item.setLabel(category.getName());
+            item.setLabelEn(category.getNameEn());
+            item.setUrl(CATEGORY_URL_PREFIX + category.getSlug());
+        } else {
+            if (req.label() == null || req.label().isBlank()) {
+                throw ValidationException.fromField("label", "REQUIRED",
+                        "Label is required unless targetType is CATEGORY.");
+            }
+            // URL scheme validation — block dangerous/unexpected schemes
+            validateMenuItemUrl(req.url());
+            item.setLabel(req.label().trim());
+            item.setLabelEn(normalizeOptional(req.labelEn()));
+            item.setUrl(req.url());
+        }
         item.setTargetType(req.targetType());
         item.setTargetId(req.targetId());
         item.setSortOrder(req.sortOrder() != null ? req.sortOrder() : 0);
@@ -285,7 +337,7 @@ public class AdminMenuService {
         auditLogWriter.save(auditLogFactory.build("ADMIN", adminId, "MENU_ITEM_CREATED", "MENU_ITEM", item.getId(), null,
                 "{\"label\":\"" + escapeJson(item.getLabel()) + "\",\"menuId\":\"" + menuId + "\"}"));
 
-        return toItemResponse(item);
+        return toAdminItemResponse(item);
     }
 
     // ── Update menu item ──────────────────────────────────────────────────────
@@ -311,17 +363,6 @@ public class AdminMenuService {
             validateNoDeepCycle(allItems, itemId, req.parentId());
             item.setParentId(req.parentId());
         }
-        if (req.label() != null && !req.label().isBlank()) {
-            item.setLabel(req.label().trim());
-        }
-        // Presence-flag: omit labelEn → unchanged; send blank → clears the English label.
-        if (req.labelEn() != null) {
-            item.setLabelEn(normalizeOptional(req.labelEn()));
-        }
-        if (req.url() != null) {
-            validateMenuItemUrl(req.url());
-            item.setUrl(req.url());
-        }
         if (req.targetType() != null) {
             item.setTargetType(req.targetType());
             if ("CUSTOM".equalsIgnoreCase(req.targetType())) {
@@ -333,6 +374,28 @@ public class AdminMenuService {
         }
         if (req.targetType() != null || req.targetId() != null) {
             validateCategoryTarget(item.getTargetType(), item.getTargetId());
+        }
+
+        Optional<CategoryEntity> linkedCategory = resolveLinkedCategory(item);
+        if (linkedCategory.isPresent()) {
+            // Manual label/labelEn/url are ignored — always re-derived from the linked category,
+            // even on patches that don't touch targetType/targetId, so a rename never goes stale.
+            CategoryEntity category = linkedCategory.get();
+            item.setLabel(category.getName());
+            item.setLabelEn(category.getNameEn());
+            item.setUrl(CATEGORY_URL_PREFIX + category.getSlug());
+        } else {
+            if (req.label() != null && !req.label().isBlank()) {
+                item.setLabel(req.label().trim());
+            }
+            // Presence-flag: omit labelEn → unchanged; send blank → clears the English label.
+            if (req.labelEn() != null) {
+                item.setLabelEn(normalizeOptional(req.labelEn()));
+            }
+            if (req.url() != null) {
+                validateMenuItemUrl(req.url());
+                item.setUrl(req.url());
+            }
         }
         if (req.sortOrder() != null) {
             item.setSortOrder(req.sortOrder());
@@ -358,7 +421,7 @@ public class AdminMenuService {
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "MENU_ITEM_UPDATED", "MENU_ITEM", itemId, before, itemSnapshot(item)));
 
-        return toItemResponse(item);
+        return toAdminItemResponse(item);
     }
 
     // ── Delete menu item (physical) ───────────────────────────────────────────
@@ -447,7 +510,7 @@ public class AdminMenuService {
         auditLogWriter.save(auditLogFactory.build("ADMIN", adminId, "MENU_ITEMS_REORDERED", "MENU", menuId, null,
                 "{\"itemCount\":" + req.items().size() + "}"));
 
-        return toMenuResponse(menu, menuItemRepo.findByMenuIdOrderBySortOrderAsc(menuId));
+        return toAdminMenuResponse(menu, menuItemRepo.findByMenuIdOrderBySortOrderAsc(menuId));
     }
 
     // ── Public menu ───────────────────────────────────────────────────────────
@@ -472,7 +535,7 @@ public class AdminMenuService {
                 .filter(i -> isAncestorChainActive(i, activeById))
                 .sorted(Comparator.comparingInt(MenuItemEntity::getSortOrder))
                 .map(i -> new PublicMenuItemResponse(
-                        i.getId(), i.getParentId(), pick(i.getLabel(), i.getLabelEn(), lang),
+                        i.getId(), i.getParentId(), resolveDisplayLabel(i, lang),
                         resolveDisplayUrl(i, lang),
                         i.getSortOrder(), i.isOpenInNewTab(), i.getCssClass(),
                         resolveMenuIconUrl(i.getUrl())))

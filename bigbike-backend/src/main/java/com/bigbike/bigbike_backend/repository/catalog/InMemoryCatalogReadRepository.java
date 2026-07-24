@@ -108,7 +108,6 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
         Brand ls2 = new Brand(
                 "brand_ls2",
                 "ls2",
-                null,                       // slugEn
                 "LS2",
                 "Thương hiệu mũ bảo hiểm và đồ bảo hộ.",
                 new ImageAsset(
@@ -138,7 +137,6 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
         Brand kyt = new Brand(
                 "brand_kyt",
                 "kyt",
-                null,                       // slugEn
                 "KYT",
                 "Thương hiệu mũ bảo hiểm KYT.",
                 new ImageAsset(
@@ -640,6 +638,6 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     }
 
     private static BrandSummary summaryOf(Brand brand) {
-        return new BrandSummary(brand.id(), brand.slug(), null, brand.name());
+        return new BrandSummary(brand.id(), brand.slug(), brand.name());
     }
 }

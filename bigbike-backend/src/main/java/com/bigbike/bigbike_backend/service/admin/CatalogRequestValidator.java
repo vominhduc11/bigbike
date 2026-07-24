@@ -749,13 +749,13 @@ public class CatalogRequestValidator {
                 errors
         );
 
-        validateVietnameseSlugAgainstEnglish(
-                slug,
-                current == null ? null : current.getId(),
-                s -> brandJpaRepository.findBySlug(s).map(BrandEntity::getId),
-                s -> brandJpaRepository.findBySlugEn(s).map(BrandEntity::getId),
-                errors
-        );
+        if (slug != null) {
+            Optional<String> existingId = brandJpaRepository.findBySlug(slug).map(BrandEntity::getId);
+            if (existingId.isPresent()
+                    && (current == null || !existingId.get().equals(current.getId()))) {
+                errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use."));
+            }
+        }
 
         return slug;
     }

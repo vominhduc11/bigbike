@@ -61,6 +61,7 @@ public class AdminContentMutationService {
     private final MinioProperties minioProperties;
     private final ImageVariantService imageVariantService;
     private final MediaReferenceService mediaReferenceService;
+    private final SlugRedirectHelper slugRedirectHelper;
 
     public AdminContentMutationService(
             ObjectProvider<ArticleJpaRepository> articleJpaRepositoryProvider,
@@ -76,7 +77,8 @@ public class AdminContentMutationService {
             MinioClient minioClient,
             MinioProperties minioProperties,
             ImageVariantService imageVariantService,
-            MediaReferenceService mediaReferenceService
+            MediaReferenceService mediaReferenceService,
+            SlugRedirectHelper slugRedirectHelper
     ) {
         this.articleJpaRepository = articleJpaRepositoryProvider.getIfAvailable();
         this.contentCategoryJpaRepository = contentCategoryJpaRepositoryProvider.getIfAvailable();
@@ -92,6 +94,7 @@ public class AdminContentMutationService {
         this.minioProperties = minioProperties;
         this.imageVariantService = imageVariantService;
         this.mediaReferenceService = mediaReferenceService;
+        this.slugRedirectHelper = slugRedirectHelper;
     }
 
     @Transactional
@@ -161,6 +164,7 @@ public class AdminContentMutationService {
         ArticleEntity entity = articleJpaRepository.findById(articleId)
                 .orElseThrow(() -> new NotFoundException("Content not found."));
         String previousSlug = entity.getSlug();
+        String previousSlugEn = entity.getSlugEn();
         String before = articleJson(entity);
 
         List<ApiErrorDetail> errors = new ArrayList<>();
@@ -175,6 +179,10 @@ public class AdminContentMutationService {
         articleJpaRepository.save(entity);
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "CONTENT_ARTICLE_UPDATED", "CONTENT", null, before, articleJson(entity)));
+        if (!previousSlug.equals(entity.getSlug())) {
+            slugRedirectHelper.autoCreateSlugRedirect("/tin-tuc/" + previousSlug, "/tin-tuc/" + entity.getSlug());
+        }
+        slugRedirectHelper.autoCreateSlugEnRedirect("/news/", "/tin-tuc/", previousSlugEn, entity.getSlugEn(), entity.getSlug());
         revalidateArticle(entity, previousSlug);
 
         Article article = contentReadRepository.findArticleById(entity.getId())

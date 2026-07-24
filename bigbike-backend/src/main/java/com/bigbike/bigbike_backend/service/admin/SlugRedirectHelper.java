@@ -22,16 +22,20 @@ public class SlugRedirectHelper {
 
     /**
      * 301-redirect bookkeeping when the optional English slug changes
-     * (PRODUCT/CATEGORY_RULE_003). {@code pathPrefix} is e.g. {@code "/product/"}.
-     * Changed → old-EN → new-EN; cleared → old-EN → vi URL. No-op when there was no
-     * previous English slug or it is unchanged.
+     * (PRODUCT/CATEGORY/ARTICLE_RULE_003). English URLs now live at their own real
+     * route prefix (e.g. {@code "/products/"}, {@code "/categories/"}, {@code "/news/"}
+     * — see {@code app/products|categories|news/[slug]/page.tsx} on the web side),
+     * separate from the vi detail prefix (e.g. {@code "/product/"}). Changed →
+     * old-EN-URL → new-EN-URL; cleared → old-EN-URL → vi URL. No-op when there was
+     * no previous English slug or it is unchanged.
      */
-    public void autoCreateSlugEnRedirect(String pathPrefix, String previousSlugEn, String newSlugEn, String viSlug) {
+    public void autoCreateSlugEnRedirect(
+            String enPathPrefix, String viPathPrefix, String previousSlugEn, String newSlugEn, String viSlug) {
         if (previousSlugEn == null || previousSlugEn.equals(newSlugEn)) {
             return;
         }
-        String target = newSlugEn != null ? pathPrefix + newSlugEn : pathPrefix + viSlug;
-        autoCreateSlugRedirect(pathPrefix + previousSlugEn, target);
+        String target = newSlugEn != null ? enPathPrefix + newSlugEn : viPathPrefix + viSlug;
+        autoCreateSlugRedirect(enPathPrefix + previousSlugEn, target);
     }
 
     /**

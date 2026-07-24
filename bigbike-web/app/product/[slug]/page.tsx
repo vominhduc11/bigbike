@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
 
 import { AltSlugRegistrar } from "@/components/i18n/AltSlugProvider";
@@ -39,9 +39,10 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
     description: product.seo?.description ?? product.shortDescription ?? product.name,
     canonicalPath,
     ogImage: product.seo?.ogImage?.url ?? product.image?.url ?? undefined,
-    // hreflang vi/en khi sản phẩm có slug tiếng Anh riêng (PRODUCT_RULE_003).
+    // hreflang vi/en khi sản phẩm có slug tiếng Anh riêng (PRODUCT_RULE_003) — trang EN
+    // thật nằm ở /products/{slugEn}/ (app/products/[slug]/page.tsx).
     languageAlternates: product.slugEn
-      ? { vi: canonicalPath, en: toProductPath(product.slugEn) }
+      ? { vi: canonicalPath, en: toProductPath(product.slugEn, "en", true) }
       : undefined,
   });
 }
@@ -58,6 +59,12 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
 
   const product = result.data;
   if (!product) notFound();
+  // Legacy accidental URL: backend OR-resolves by slug hoặc slugEn, nên gõ đúng slugEn
+  // vào route VI này vẫn trả 200. Trang EN thật giờ nằm ở /products/{slugEn}/ — chuyển
+  // hẳn sang đó để chỉ còn 1 URL phục vụ nội dung EN (tránh trùng nội dung).
+  if (product.slugEn && slug === product.slugEn && slug !== product.slug) {
+    redirect(toProductPath(product.slugEn, "en", true));
+  }
 
   const settings = settingsResult.data ?? [];
   const faqs = safeArray(product.faqs);

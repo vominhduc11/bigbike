@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { PageHero, type PageHeroCrumb } from "@/components/layout/PageHero";
 import { Container } from "@/components/layout/Container";
@@ -76,7 +76,7 @@ export async function generateMetadata({ params }: CategoryDetailPageProps): Pro
       (category.description
         ? category.description.replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim().slice(0, 160) || defaultDescription
         : defaultDescription),
-    canonicalPath: toCategoryPath(category.slug),
+    canonicalPath: category.seo?.canonicalUrl ?? toCategoryPath(category.slug),
     ogImage: category.seo?.ogImage?.url ?? (category.image ?? category.icon)?.url ?? undefined,
     // hreflang vi/en khi danh mục có slug tiếng Anh riêng (CATEGORY_RULE_003).
     languageAlternates: category.slugEn
@@ -117,6 +117,12 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
   }
 
   const category = categoryResult.data;
+  // Legacy accidental URL: backend OR-resolve theo slug hoặc slugEn, nên gõ đúng
+  // slugEn vào route VI này vẫn trả 200. Trang EN thật giờ nằm ở /categories/{slugEn}/
+  // — chuyển hẳn sang đó để chỉ còn 1 URL phục vụ nội dung EN.
+  if (category.slugEn && slug === category.slugEn && slug !== category.slug) {
+    redirect(toCategoryPath(category.slugEn, "en", true));
+  }
   // Shell tĩnh theo slug — KHÔNG đọc searchParams (lưới lọc/phân trang nằm ở client).
   // Facets fetch theo category (không kèm q) làm base; lựa chọn "current" tính ở client.
   const [brandsResult, allCategoriesResult, facetsResult, productsResult] = await Promise.all([
@@ -126,7 +132,7 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
     listProducts({ page: 1, size: DEFAULT_PRODUCT_PAGE_SIZE, sort: DEFAULT_PRODUCT_SORT, category: category.slug, lang: locale }),
   ]);
 
-  const canonicalPath = toCategoryPath(category.slug);
+  const canonicalPath = category.seo?.canonicalUrl ?? toCategoryPath(category.slug);
   const allCategories = allCategoriesResult.data ?? [];
   const parentCategory = category.parentId
     ? (allCategories.find((c) => c.id === category.parentId) ?? null)

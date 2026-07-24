@@ -285,12 +285,6 @@ public class BrandMutationService {
             entity.setSeoTitleEn(null);
             entity.setSeoDescriptionEn(null);
         }
-        if (create || request.getName() != null) {
-            entity.setNameEn(null);
-        }
-        if (create || request.getSlug() != null) {
-            entity.setSlugEn(null);
-        }
     }
 
     private static String generateId(String prefix) {

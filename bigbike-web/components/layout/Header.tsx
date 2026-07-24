@@ -9,7 +9,13 @@ function filterMenuNodes(nodes: HeaderNavNode[]): HeaderNavNode[] {
     .map((node) => ({ ...node, children: filterMenuNodes(node.children) }));
 }
 
-export async function Header({ menuNodes }: { menuNodes: HeaderNavNode[] }) {
+export async function Header({
+  menuNodesVi,
+  menuNodesEn,
+}: {
+  menuNodesVi: HeaderNavNode[];
+  menuNodesEn: HeaderNavNode[];
+}) {
   const [settingsVi, settingsEn] = await Promise.all([
     listPublicSettings("vi"),
     listPublicSettings("en"),
@@ -18,7 +24,8 @@ export async function Header({ menuNodes }: { menuNodes: HeaderNavNode[] }) {
 
   return (
     <HeaderClient
-      menuNodes={filterMenuNodes(menuNodes)}
+      menuNodesVi={filterMenuNodes(menuNodesVi)}
+      menuNodesEn={filterMenuNodes(menuNodesEn)}
       contact={{
         address: pickSetting(settings, ["contact_address"]),
         phones: [

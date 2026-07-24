@@ -42,13 +42,11 @@ const STATIC_PAGE_DATES = {
   policy: new Date("2025-01-01"),
 };
 
-// SITEMAP CHỈ KHAI URL VI CANONICAL (AUD-015). Tiếng Anh của site là trải nghiệm
-// CLIENT-SIDE (cookie NEXT_LOCALE + swap message/data — xem i18n/request.ts): các
-// alias EN như /products/, /news/, /policy/... bị proxy 307 về URL VI khi crawler
-// không mang cookie, tức KHÔNG tồn tại trang EN độc lập để index. Khai chúng trong
-// sitemap (kèm hreflang en) khiến Google coi là redirect/duplicate — nên bỏ hẳn,
-// sitemap phản ánh đúng nội dung thực. Nếu sau này dựng routing EN độc lập
-// (prefix /en/...), thêm lại alternates ở đây.
+// Sản phẩm/Danh mục/Bài viết: khai cả URL VI (canonical) lẫn URL EN thật
+// (/products|categories|news/{slugEn}/ — server-render riêng, xem
+// app/products|categories|news/[slug]/page.tsx) khi bản ghi có `slugEn`. Bỏ qua
+// hoàn toàn khi thiếu `slugEn` — không tạo link chết. Thương hiệu và các trang
+// tĩnh khác không có URL EN riêng (BRAND_RULE_003) nên chỉ khai 1 URL VI.
 
 async function fetchAll<T>(
   fetcher: (page: number) => Promise<{ data: T[]; pagination: { totalPages?: number } | null }>,
@@ -131,6 +129,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.8,
     });
+    if (p.slugEn) {
+      entries.push({
+        url: toCanonicalUrl(toProductPath(p.slugEn, "en", true)),
+        lastModified: p.updatedAt ? new Date(p.updatedAt) : STATIC_PAGE_DATES.home,
+        changeFrequency: "weekly",
+        priority: 0.8,
+      });
+    }
   }
 
   for (const c of categories) {
@@ -140,6 +146,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.6,
     });
+    if (c.slugEn) {
+      entries.push({
+        url: toCanonicalUrl(toCategoryPath(c.slugEn, "en", true)),
+        lastModified: c.updatedAt ? new Date(c.updatedAt) : STATIC_PAGE_DATES.home,
+        changeFrequency: "weekly",
+        priority: 0.6,
+      });
+    }
   }
 
   for (const b of brands) {
@@ -159,6 +173,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly",
       priority: 0.4,
     });
+    if (a.slugEn) {
+      entries.push({
+        url: toCanonicalUrl(toArticlePath(a.slugEn, "en", true)),
+        lastModified: a.updatedAt ? new Date(a.updatedAt) : STATIC_PAGE_DATES.home,
+        changeFrequency: "monthly",
+        priority: 0.4,
+      });
+    }
   }
 
   // Trang chính sách tĩnh — đúng 3 trang (owner decision 2026-07-15, FIX_PROMPT §2 #6)

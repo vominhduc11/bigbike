@@ -688,9 +688,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     @Override
     public Optional<Brand> findBrandBySlug(String slug, String locale) {
-        // vi slug first; legacy slug_en lookup is retained only so old brand URLs do not break.
         return brandJpaRepository.findBySlug(slug)
-                .or(() -> brandJpaRepository.findBySlugEn(slug))
                 .map(entity -> toDomain(entity, locale));
     }
 
@@ -873,7 +871,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         return new Brand(
                 entity.getId(),
                 entity.getSlug(),
-                null,
                 entity.getName(),
                 pick(entity.getDescription(), entity.getDescriptionEn(), locale),
                 toImageAsset(
@@ -1212,6 +1209,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         if (publicView && !entity.isVisible()) {
             return null;
         }
-        return new BrandSummary(entity.getId(), entity.getSlug(), null, entity.getName());
+        return new BrandSummary(entity.getId(), entity.getSlug(), entity.getName());
     }
 }

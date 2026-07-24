@@ -56,7 +56,7 @@ export async function generateMetadata({ params }: BrandDetailPageProps): Promis
   return buildPublicMetadata({
     title: brand.seo?.title ?? brand.name,
     description: brand.seo?.description ?? brand.description ?? "Chi tiết thương hiệu BigBike.",
-    canonicalPath: toBrandPath(brand.slug),
+    canonicalPath: brand.seo?.canonicalUrl ?? toBrandPath(brand.slug),
     ogImage: brand.seo?.ogImage?.url ?? brand.logo?.url ?? undefined,
     // BRAND_RULE_003: brand slug is shared across VI/EN; no separate hreflang URL.
     languageAlternates: undefined,
@@ -110,7 +110,7 @@ export default async function BrandDetailPage({ params }: BrandDetailPageProps) 
     brand: brand.slug,
     lang: locale,
   });
-  const canonicalPath = toBrandPath(brand.slug);
+  const canonicalPath = brand.seo?.canonicalUrl ?? toBrandPath(brand.slug);
   const filterCategories = (categoriesResult.data ?? []).filter((c) => c.isVisible);
   const breadcrumbJsonLd = serializeJsonLd(buildBrandBreadcrumbJsonLd(brand));
   const brandName = safeText(brand.name, "Thương hiệu");

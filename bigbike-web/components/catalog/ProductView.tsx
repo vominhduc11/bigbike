@@ -421,7 +421,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
               <>
                 <li aria-hidden>/</li>
                 <li>
-                  <LocalizedLink kind="brand" viSlug={brand.slug} enSlug={brand.slugEn} className="font-semibold hover:text-brand">
+                  <LocalizedLink kind="brand" viSlug={brand.slug} className="font-semibold hover:text-brand">
                     <span property="name"><LocalizedTaxonomyName field="brand" viName={brand.name} /></span>
                   </LocalizedLink>
                 </li>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
-import { AlertCircle, ArrowLeft, Check, Copy, ExternalLink, Hash, Loader2, Package, Save, X as XIcon } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Check, Copy, Hash, Loader2, Package, Save, X as XIcon } from 'lucide-react'
 
 import {
   createCategory,
@@ -633,20 +633,6 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
           )}
         </div>
         <div className="bb-screen-actions">
-          {!isCreate && state.item?.slug && (
-
-            <a
-              className="bb-btn bb-btn-secondary"
-
-              href={`${STOREFRONT_BASE}/${state.item.slug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              title={t('categories.detail.viewOnSiteTitle')}
-            >
-              <ExternalLink size={14} aria-hidden="true" />
-              {t('categories.detail.viewOnSite')}
-            </a>
-          )}
           {!isEnLang && (
             <span className="bb-muted text-xs">
               {t('categories.detail.formProgress', { filled: requiredFieldsFilled, total: requiredFieldsTotal })}

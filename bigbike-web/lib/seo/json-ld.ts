@@ -38,8 +38,8 @@ export function serializeJsonLd(data: JsonLdObject): string {
     .replace(/&/g, "\\u0026");
 }
 
-export function buildProductJsonLd(product: Product): JsonLdObject {
-  const canonicalUrl = toCanonicalUrl(product.seo?.canonicalUrl ?? toProductPath(product.slug));
+export function buildProductJsonLd(product: Product, canonicalPathOverride?: string): JsonLdObject {
+  const canonicalUrl = toCanonicalUrl(canonicalPathOverride ?? product.seo?.canonicalUrl ?? toProductPath(product.slug));
   const images = collectProductImages(product);
   const priceCurrency = product.price?.currency ?? "VND";
   const offers = buildProductOffers(product, canonicalUrl, priceCurrency);
@@ -109,8 +109,9 @@ export function buildArticleJsonLd(
   article: Article,
   publisherName?: string,
   publisherLogoPath = DEFAULT_ORG_LOGO_PATH,
+  canonicalPathOverride?: string,
 ): JsonLdObject {
-  const canonicalUrl = toCanonicalUrl(article.seo?.canonicalUrl ?? toArticlePath(article.slug));
+  const canonicalUrl = toCanonicalUrl(canonicalPathOverride ?? article.seo?.canonicalUrl ?? toArticlePath(article.slug));
   const images = article.coverImage?.url ? [article.coverImage.url] : [];
 
   return {
@@ -128,7 +129,7 @@ export function buildArticleJsonLd(
   };
 }
 
-export function buildBreadcrumbJsonLd(product: Product): JsonLdObject {
+export function buildBreadcrumbJsonLd(product: Product, canonicalPathOverride?: string): JsonLdObject {
   const primaryCategory = product.category ?? product.categories?.[0];
   const items: Array<{ position: number; name: string; item: string }> = [
     {
@@ -157,7 +158,7 @@ export function buildBreadcrumbJsonLd(product: Product): JsonLdObject {
   items.push({
     position: items.length + 1,
     name: product.name,
-    item: toCanonicalUrl(toProductPath(product.slug)),
+    item: toCanonicalUrl(canonicalPathOverride ?? toProductPath(product.slug)),
   });
 
   return {
@@ -183,7 +184,7 @@ function isPublicProductCategory(
   );
 }
 
-export function buildArticleBreadcrumbJsonLd(article: Article): JsonLdObject {
+export function buildArticleBreadcrumbJsonLd(article: Article, canonicalPathOverride?: string): JsonLdObject {
   const items: Array<{ position: number; name: string; item: string }> = [
     {
       position: 1,
@@ -200,7 +201,7 @@ export function buildArticleBreadcrumbJsonLd(article: Article): JsonLdObject {
   items.push({
     position: items.length + 1,
     name: article.title,
-    item: toCanonicalUrl(toArticlePath(article.slug)),
+    item: toCanonicalUrl(canonicalPathOverride ?? toArticlePath(article.slug)),
   });
 
   return {
@@ -216,6 +217,7 @@ export function buildArticleBreadcrumbJsonLd(article: Article): JsonLdObject {
 export function buildCategoryBreadcrumbJsonLd(
   category: Category,
   parent?: Category | null,
+  canonicalPathOverride?: string,
 ): JsonLdObject {
   const items: Array<{ "@type": "ListItem"; position: number; name: string; item: string }> = [
     {
@@ -245,7 +247,7 @@ export function buildCategoryBreadcrumbJsonLd(
     "@type": "ListItem",
     position: items.length + 1,
     name: category.name,
-    item: toCanonicalUrl(category.seo?.canonicalUrl ?? toCategoryPath(category.slug)),
+    item: toCanonicalUrl(canonicalPathOverride ?? category.seo?.canonicalUrl ?? toCategoryPath(category.slug)),
   });
 
   return {

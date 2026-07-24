@@ -12,6 +12,7 @@ import { buildPublicMenuTree } from "@/lib/utils/public-menu";
 import { ClientIntlProvider } from "@/components/providers/ClientIntlProvider";
 import { DEFAULT_LOCALE } from "@/i18n/locale";
 import viMessages from "@/messages/vi.json";
+import enMessages from "@/messages/en.json";
 import { FloatingChatLoader } from "@/components/layout/FloatingChatLoader";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { ScrollToTopFab } from "@/components/layout/ScrollToTopFab";
@@ -78,12 +79,19 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   // Shell render MỘT LẦN ở layout, KHÔNG đọc pathname/cookie ở server (giữ layout tĩnh để
-  // route đạt ISR/SSG). Menu nạp bằng locale canonical `vi` (ISR theo tag "menus").
-  // Footer không còn nạp menu động — nội dung hardcode trong Footer (2026-07-03).
-  let primaryNodes: HeaderNavNode[] = [];
-  const primaryMenuResult = await getPublicMenu("primary", DEFAULT_LOCALE);
-  primaryNodes = primaryMenuResult.data?.items?.length
+  // route đạt ISR/SSG). Nạp cả 2 bản menu (vi + en, ISR theo tag "menus") — Header chọn
+  // bản hiển thị theo locale ở client (cần cho 3 route EN-only /products|categories|news/
+  // vốn không phụ thuộc cookie, xem ClientIntlProvider). Footer không còn nạp menu động
+  // — nội dung hardcode trong Footer (2026-07-03).
+  const [primaryMenuResult, primaryMenuResultEn] = await Promise.all([
+    getPublicMenu("primary", DEFAULT_LOCALE),
+    getPublicMenu("primary", "en"),
+  ]);
+  const primaryNodes: HeaderNavNode[] = primaryMenuResult.data?.items?.length
     ? buildPublicMenuTree(primaryMenuResult.data.items)
+    : [];
+  const primaryNodesEn: HeaderNavNode[] = primaryMenuResultEn.data?.items?.length
+    ? buildPublicMenuTree(primaryMenuResultEn.data.items)
     : [];
   return (
     <html lang={DEFAULT_LOCALE} className={`h-full antialiased ${fontBarlowCondensed.variable}`} suppressHydrationWarning>
@@ -108,12 +116,12 @@ export default async function RootLayout({
             />
           </noscript>
         )}
-        <ClientIntlProvider initialMessages={viMessages}>
+        <ClientIntlProvider initialMessages={viMessages} enMessages={enMessages}>
           <QueryProvider>
             <HeaderUiProvider>
               <CartProvider>
                 <AltSlugProvider>
-                  <Header menuNodes={primaryNodes} />
+                  <Header menuNodesVi={primaryNodes} menuNodesEn={primaryNodesEn} />
                   <main className="bb-main">{children}</main>
                   <div className="block md:hidden">
                     <MobileBottomNav />

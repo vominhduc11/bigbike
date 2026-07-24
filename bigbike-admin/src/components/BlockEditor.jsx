@@ -102,7 +102,7 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
     onChange(next)
   }
 
-  const hasFallback = showFallbackHtml && Boolean(fallbackHtml && fallbackHtml.trim().length > 0)
+  const hasFallback = showFallbackHtml && blocks.length === 0 && Boolean(fallbackHtml && fallbackHtml.trim().length > 0)
 
   // Gợi ý so le tự động cho khối cuối (productMode) — chỉ gợi ý UX, giá trị lưu vẫn 'left'/'right'
   // tường minh (xem nextProductFeatureSide trong constants.js).
@@ -122,9 +122,7 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml,
             dangerouslySetInnerHTML={{ __html: sanitizeHtml(fallbackHtml) }}
           />
           <p className="text-xs text-muted-foreground">
-            {blocks.length > 0
-              ? t('products.detail.blocks.fallbackReplacedHint', { defaultValue: 'Nội dung cũ ở trên sẽ được thay bằng các khối bên dưới sau khi lưu.' })
-              : t('products.detail.blocks.fallbackHint')}
+            {t('products.detail.blocks.fallbackHint')}
           </p>
         </div>
       )}

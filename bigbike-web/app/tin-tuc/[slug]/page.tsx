@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import { PageHero } from "@/components/layout/PageHero";
@@ -79,6 +79,13 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
   const result = await getArticleBySlug(slug, locale);
   if (!result.data && result.error?.status === 404) {
     notFound();
+  }
+
+  // Legacy accidental URL: backend OR-resolve theo slug hoặc slugEn, nên gõ đúng
+  // slugEn vào route VI này vẫn trả 200. Trang EN thật giờ nằm ở /news/{slugEn}/ —
+  // chuyển hẳn sang đó để chỉ còn 1 URL phục vụ nội dung EN.
+  if (result.data?.slugEn && slug === result.data.slugEn && slug !== result.data.slug) {
+    redirect(toArticlePath(result.data.slugEn, "en", true));
   }
 
   const [settingsResult] = await Promise.all([listPublicSettings(locale)]);

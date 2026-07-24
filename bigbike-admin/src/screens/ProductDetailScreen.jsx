@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
 import {
-  AlertCircle, Check, ChevronDown, ChevronRight, Eye, Info, Loader2, Lock, Save, Search as PfSearch, X,
+  AlertCircle, Check, ChevronDown, ChevronRight, Eye, EyeOff, Info, Loader2, Lock, Save, Search as PfSearch, X,
 } from 'lucide-react'
 
 import {
@@ -14,6 +14,7 @@ import {
   fetchProductDetail,
   mapValidationErrors,
   previewProduct,
+  publishProduct,
   updateProduct,
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
@@ -75,6 +76,7 @@ import {
   computeSectionErrorsFromMap,
   findTabForErrors,
   computeAttrSetWarning,
+  getPublishReadiness,
   MAIN_SECTION_GROUPS,
   MAIN_GROUPS_DEFAULT_OPEN,
   groupsWithErrors,
@@ -105,6 +107,7 @@ import {
   SpecStatEditor,
   TrustBadgesEditor,
 } from './product-detail/RowEditors'
+import { PublishChecklistModal } from './product-detail/Modals'
 
 import {
   VariantsEditor,
@@ -148,6 +151,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const [validationErrors, setValidationErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isRestoreConfirming, setIsRestoreConfirming] = useState(false)
+  const [publishChecklist, setPublishChecklist] = useState(null)
+  const [variantsDeletedToEmpty, setVariantsDeletedToEmpty] = useState(false)
   const restoreConfirmingRef = useRef(false)
   const slugEditedByUser = useRef(false)
   const enSlugEditedByUser = useRef(false)
@@ -750,6 +755,23 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     },
   })
 
+  const publishStatusMutation = useMutation({
+    mutationFn: ({ id, nextStatus }) => publishProduct(id, nextStatus),
+    onSuccess: (response, variables) => {
+      const nextStatus = response?.item?.publishStatus || variables.nextStatus
+      setForm((previous) => ({ ...previous, publishStatus: nextStatus }))
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.setQueryData(['product', variables.id], (old) => {
+        if (!old?.item) return old
+        return { ...old, item: { ...old.item, publishStatus: nextStatus } }
+      })
+      toast.success(t('products.publishToggleSuccess', { defaultValue: 'Đã đổi trạng thái xuất bản.' }))
+    },
+    onError: (error) => {
+      toast.error(error?.message || t('products.detail.errPublishFailed', { defaultValue: 'Không thể cập nhật trạng thái xuất bản.' }))
+    },
+  })
+
   function focusFirstError() {
     // Use double-rAF so we run AFTER React's commit phase, including the
     // adjust-state-during-render pass that auto-expands a variant card.
@@ -789,7 +811,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   }
 
   async function handleSave(overridePublishStatus) {
-    if (!canUpdate) return
+    if (!canUpdate) return null
 
     let formToSave = overridePublishStatus
       ? { ...form, publishStatus: overridePublishStatus }
@@ -815,7 +837,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       if (attrWarn) toast.error(t('products.detail.variant.attrSetErrorToast'))
       setValidationErrors(clientErrors)
       revealErrorSections(clientErrors)
-      return
+      return null
     }
 
     const currentCategoryIds = formToSave.categoryIds ?? []
@@ -825,7 +847,14 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
     setIsSubmitting(true)
     setValidationErrors({})
-    saveMutation.mutate(toPayload(formToSave, { includeCategoryIds: isCreate || categoriesChanged }))
+    try {
+      const response = await saveMutation.mutateAsync(
+        toPayload(formToSave, { includeCategoryIds: isCreate || categoriesChanged }),
+      )
+      return response?.item ? buildFormFromItem(response.item) : null
+    } catch {
+      return null
+    }
   }
 
 
@@ -984,6 +1013,57 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     ? t('products.detail.restoreAndSave')
     : isPublished ? t('products.detail.saveBtn') : t('products.detail.saveDraft')
 
+  async function handleQuickUnpublish() {
+    if (isCreate || !productId || publishStatusMutation.isPending) return
+    if (isDirty) {
+      const confirmed = await showConfirm(
+        t('products.detail.unpublishDirtyConfirm'),
+        t('products.detail.unpublishDirtyTitle'),
+        { variant: 'default', confirmLabel: t('products.unpublishAction') },
+      )
+      if (!confirmed) return
+    }
+
+    try {
+      await publishStatusMutation.mutateAsync({ id: productId, nextStatus: 'DRAFT' })
+    } catch {
+      // The mutation's onError already presents the API error to the admin.
+    }
+  }
+
+  async function handleQuickPublish() {
+    if (isCreate || !productId || publishStatusMutation.isPending || isSubmitting) return
+
+    let readinessForm = form
+    if (isDirty) {
+      const savedForm = await handleSave()
+      if (!savedForm) return
+      readinessForm = savedForm
+    }
+
+    const blockers = getPublishReadiness(readinessForm, t).filter((item) => item.required && !item.ok)
+    if (blockers.length > 0) {
+      setPublishChecklist(readinessForm)
+      return
+    }
+
+    try {
+      await publishStatusMutation.mutateAsync({ id: productId, nextStatus: 'PUBLISHED' })
+    } catch {
+      // The mutation's onError already presents the API error to the admin.
+    }
+  }
+
+  async function confirmPublishFromChecklist() {
+    if (!publishChecklist || !productId || publishStatusMutation.isPending) return
+    setPublishChecklist(null)
+    try {
+      await publishStatusMutation.mutateAsync({ id: productId, nextStatus: 'PUBLISHED' })
+    } catch {
+      // The mutation's onError already presents the API error to the admin.
+    }
+  }
+
   async function handlePrimarySave() {
     if (isTrashed) {
       if (restoreConfirmingRef.current) return
@@ -1055,6 +1135,30 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <span className={publishBadgeClass(form.publishStatus)}>
                 {t(`status.publish.${form.publishStatus}`, { defaultValue: form.publishStatus })}
               </span>
+              {!isCreate && canUpdate && isPublished && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isReadOnly || publishStatusMutation.isPending}
+                  onClick={handleQuickUnpublish}
+                >
+                  <EyeOff size={14} className="mr-1.5" />
+                  {t('products.unpublishAction')}
+                </Button>
+              )}
+              {!isCreate && canUpdate && form.publishStatus === 'DRAFT' && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isReadOnly || publishStatusMutation.isPending}
+                  onClick={handleQuickPublish}
+                >
+                  <Eye size={14} className="mr-1.5" />
+                  {t('products.publishAction')}
+                </Button>
+              )}
               {isReadOnly && (
                 <span className="bb-badge bb-badge-warning">
                   <Lock size={11} />
@@ -1491,6 +1595,11 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
               {/* ── Card: Giá & trạng thái ── */}
               <SectionCard title={t('products.detail.sectionPricing')} required badge={<RoleBadge role="manager" />}>
+                {variantsDeletedToEmpty && form.variants.length === 0 && (
+                  <Alert tone="warning" size="sm" className="mb-4">
+                    {t('products.detail.variantsEmptyWarning')}
+                  </Alert>
+                )}
                 {form.variants.length > 0 && (
                   <div className="bb-alert info tight">
                     <Info size={14} className="mt-0.5 shrink-0" />
@@ -1612,7 +1721,11 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               >
                 <VariantsEditor
                   items={form.variants}
-                  onChange={(next) => updateField('variants', next)}
+                  onChange={(next) => {
+                    if (form.variants.length > 0 && next.length === 0) setVariantsDeletedToEmpty(true)
+                    if (next.length > 0) setVariantsDeletedToEmpty(false)
+                    updateField('variants', next)
+                  }}
                   disabled={isReadOnly}
                   validationErrors={validationErrors}
                   onOpenMatrixWizard={() => setShowMatrixWizard(true)}
@@ -2259,7 +2372,15 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             onClose={() => setShowMatrixWizard(false)}
           />
         )}
-    </Screen>
+
+        {publishChecklist && (
+          <PublishChecklistModal
+            form={publishChecklist}
+            onConfirm={confirmPublishFromChecklist}
+            onCancel={() => setPublishChecklist(null)}
+          />
+        )}
+      </Screen>
     </div>
         <LivePreview
           open={previewOpen}

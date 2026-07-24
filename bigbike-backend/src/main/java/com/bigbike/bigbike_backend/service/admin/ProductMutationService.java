@@ -187,7 +187,7 @@ public class ProductMutationService {
         if (!previousSlug.equals(entity.getSlug())) {
             slugRedirectHelper.autoCreateSlugRedirect("/product/" + previousSlug, "/product/" + entity.getSlug());
         }
-        slugRedirectHelper.autoCreateSlugEnRedirect("/product/", previousSlugEn, entity.getSlugEn(), entity.getSlug());
+        slugRedirectHelper.autoCreateSlugEnRedirect("/products/", "/product/", previousSlugEn, entity.getSlugEn(), entity.getSlug());
         webRevalidationService.revalidateProduct(entity.getSlug(), previousSlug);
 
         return catalogReadRepository.findProductById(entity.getId())

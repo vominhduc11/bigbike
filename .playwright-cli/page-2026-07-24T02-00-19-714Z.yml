@@ -1,0 +1,330 @@
+- generic [ref=f5e2]:
+  - generic [ref=f5e9]:
+    - link "Bỏ qua tới nội dung" [ref=f5e10] [cursor=pointer]:
+      - /url: "#bb-main-content"
+    - complementary "Thanh điều hướng" [ref=f5e11]:
+      - generic [ref=f5e12]:
+        - generic [ref=f5e13]: BB
+        - generic [ref=f5e14]:
+          - generic [ref=f5e15]: BigBike
+          - generic [ref=f5e16]: Admin
+      - navigation "Điều hướng chính" [ref=f5e17]:
+        - group "Bán hàng" [ref=f5e18]:
+          - link "Tổng quan" [ref=f5e20] [cursor=pointer]:
+            - /url: /admin/dashboard
+          - link "Đơn hàng 388 mục cần xử lý" [ref=f5e27] [cursor=pointer]:
+            - /url: /admin/orders
+            - generic [ref=f5e32]: Đơn hàng
+            - generic "388 mục cần xử lý" [ref=f5e33]: 99+
+          - link "Khách hàng" [ref=f5e34] [cursor=pointer]:
+            - /url: /admin/customers
+          - link "Đánh giá" [ref=f5e41] [cursor=pointer]:
+            - /url: /admin/reviews
+        - group "Sản phẩm" [ref=f5e45]:
+          - link "Sản phẩm" [ref=f5e47] [cursor=pointer]:
+            - /url: /admin/products
+          - link "Sản phẩm nổi bật" [ref=f5e53] [cursor=pointer]:
+            - /url: /admin/featured-products
+          - link "Danh mục" [ref=f5e57] [cursor=pointer]:
+            - /url: /admin/categories
+          - link "Thương hiệu" [ref=f5e62] [cursor=pointer]:
+            - /url: /admin/brands
+        - group "Nội dung & Marketing" [ref=f5e67]:
+          - link "Tin tức" [ref=f5e69] [cursor=pointer]:
+            - /url: /admin/content
+          - link "Banner" [ref=f5e74] [cursor=pointer]:
+            - /url: /admin/sliders
+          - link "Video trang chủ" [ref=f5e77] [cursor=pointer]:
+            - /url: /admin/home-videos
+          - link "Highlights trang chủ" [ref=f5e80] [cursor=pointer]:
+            - /url: /admin/home-highlights
+          - link "Chuyển hướng" [ref=f5e87] [cursor=pointer]:
+            - /url: /admin/redirects
+          - link "Menu" [ref=f5e92] [cursor=pointer]:
+            - /url: /admin/menus
+          - link "Thư viện" [ref=f5e95] [cursor=pointer]:
+            - /url: /admin/media
+        - group "Báo cáo" [ref=f5e101]:
+          - link "Báo cáo" [ref=f5e103] [cursor=pointer]:
+            - /url: /admin/reports
+        - group "Hệ thống" [ref=f5e106]:
+          - link "Cài đặt" [ref=f5e108] [cursor=pointer]:
+            - /url: /admin/settings
+          - link "Quản trị viên" [ref=f5e113] [cursor=pointer]:
+            - /url: /admin/admin-users
+          - link "Phân quyền" [ref=f5e117] [cursor=pointer]:
+            - /url: /admin/roles
+          - link "Nhật ký" [ref=f5e122] [cursor=pointer]:
+            - /url: /admin/audit-logs
+      - strong [ref=f5e127]: Super Admin
+    - generic [ref=f5e128]:
+      - banner [ref=f5e129]:
+        - generic [ref=f5e130]: Sản phẩm
+        - button "Mở tìm kiếm nhanh" [ref=f5e131]:
+          - generic [ref=f5e135]: Tìm đơn hàng, sản phẩm, khách hàng...
+          - generic [ref=f5e136]: ⌘K
+        - button "Chuyển sang chế độ tối" [ref=f5e137] [cursor=pointer]
+        - button "Thông báo" [ref=f5e140] [cursor=pointer]
+        - button "Super Admin Chủ hệ thống" [ref=f5e145] [cursor=pointer]:
+          - generic [ref=f5e146]: AS
+          - generic [ref=f5e147]:
+            - generic [ref=f5e148]: Super Admin
+            - generic [ref=f5e149]: Chủ hệ thống
+      - navigation "Breadcrumb" [ref=f5e152]:
+        - list [ref=f5e153]:
+          - listitem [ref=f5e154]:
+            - link "Tổng quan" [ref=f5e155] [cursor=pointer]:
+              - /url: /admin/dashboard
+          - listitem [ref=f5e156]: /
+          - listitem [ref=f5e157]:
+            - link "Sản phẩm" [ref=f5e158] [cursor=pointer]:
+              - /url: /admin/products
+          - listitem [ref=f5e159]: /
+          - listitem [ref=f5e160]:
+            - generic [ref=f5e161]: Chi tiết
+      - main [ref=f5e162]:
+        - generic [ref=f5e165]:
+          - generic [ref=f5e166]:
+            - generic [ref=f5e167]:
+              - paragraph [ref=f5e168]: Danh mục
+              - generic [ref=f5e169]:
+                - heading "MÓC TREO ĐỒ DÀNH CHO MOTOR/XE MÁY KEWIG KWG-CBK-2" [level=1] [ref=f5e170]
+                - generic [ref=f5e171]:
+                  - generic [ref=f5e172]: Đã xuất bản
+                  - button "Chuyển về Nháp" [ref=f5e173] [cursor=pointer]
+              - paragraph [ref=f5e179]:
+                - generic [ref=f5e180]: "Cập nhật lần cuối: 08:58 24/07/2026"
+            - button "Huỷ" [ref=f5e183] [cursor=pointer]
+          - generic [ref=f5e196]:
+            - generic [ref=f5e197]: Phân công
+            - generic [ref=f5e204]:
+              - generic [ref=f5e205]:
+                - generic [ref=f5e206]: Content
+                - generic [ref=f5e207]: Thông tin cơ bản · Ảnh đại diện · Bộ sưu tập ảnh · Video · Thông số kỹ thuật · Hướng dẫn lắp đặt · Câu hỏi thường gặp · Biến thể · Sản phẩm liên quan · Nội dung SEO dưới
+              - generic [ref=f5e208]:
+                - generic [ref=f5e209]: SEO
+                - generic [ref=f5e210]: Thông tin SEO (Title, Meta, OG image) · Đường dẫn (slug) · Kiểm tra checklist trước khi đăng
+              - generic [ref=f5e211]:
+                - generic [ref=f5e212]: Quản lý
+                - generic [ref=f5e213]: Giá & trạng thái · Duyệt đăng sản phẩm
+          - tablist "Phần của sản phẩm" [ref=f5e214]:
+            - tab "Thông tin sản phẩm" [selected] [ref=f5e215] [cursor=pointer]
+            - tab "SEO" [ref=f5e217] [cursor=pointer]
+          - generic [ref=f5e219]:
+            - generic [ref=f5e220]:
+              - 'button "Bán hàng & hình ảnh · Thông tin để bán: cơ bản, ảnh, giá, biến thể" [expanded] [ref=f5e221] [cursor=pointer]':
+                - generic [ref=f5e224]: Bán hàng & hình ảnh
+                - generic [ref=f5e225]: "· Thông tin để bán: cơ bản, ảnh, giá, biến thể"
+              - generic [ref=f5e226]:
+                - generic [ref=f5e227]:
+                  - generic [ref=f5e228]:
+                    - heading "Thông tin cơ bảnBắt buộc" [level=3] [ref=f5e229]: Thông tin cơ bản*
+                    - generic [ref=f5e230]:
+                      - generic [ref=f5e231]: Content
+                      - generic [ref=f5e232]: SEO
+                  - generic [ref=f5e234]:
+                    - generic [ref=f5e235]:
+                      - generic [ref=f5e236]:
+                        - generic [ref=f5e237]:
+                          - text: Tên
+                          - generic [ref=f5e238]: "*"
+                        - generic [ref=f5e239]: 49 / 255
+                      - textbox "Tên" [ref=f5e240]: MÓC TREO ĐỒ DÀNH CHO MOTOR/XE MÁY KEWIG KWG-CBK-2
+                    - generic [ref=f5e241]:
+                      - generic [ref=f5e243]:
+                        - text: Slug
+                        - generic [ref=f5e244]: "*"
+                      - textbox "Slug" [ref=f5e245]:
+                        - /placeholder: "vd: mu-bao-hiem-fullface-agv-k1s"
+                        - text: moc-treo-do-danh-cho-motor-xe-may-kewig-kwg-cbk-2
+                      - generic [ref=f5e246]: Chỉ chữ thường a–z, số 0–9 và dấu gạch ngang. Tự điền từ tên sản phẩm.
+                    - generic [ref=f5e247]:
+                      - generic [ref=f5e248]:
+                        - generic [ref=f5e249]:
+                          - text: SKU
+                          - generic [ref=f5e250]: "*"
+                        - generic [ref=f5e251]: 12 / 100
+                      - textbox "SKU" [ref=f5e252]: KW-KWG-CBK-2
+                      - generic [ref=f5e253]: SKU cấp sản phẩm — luôn bắt buộc. Khi sản phẩm có biến thể, mỗi biến thể bên dưới cũng cần SKU riêng.
+                    - generic [ref=f5e254]:
+                      - generic [ref=f5e256]:
+                        - text: Danh mục
+                        - generic [ref=f5e257]: "*"
+                      - button "Đã chọn 2 danh mục" [ref=f5e258] [cursor=pointer]
+                      - generic [ref=f5e259]:
+                        - generic [ref=f5e260]:
+                          - generic [ref=f5e262]:
+                            - generic [ref=f5e263]: KHUYẾN MÃI HOT
+                            - generic [ref=f5e264]: Danh mục chính
+                          - generic [ref=f5e265]:
+                            - button "Lên" [disabled]
+                            - button "Xuống" [ref=f5e266] [cursor=pointer]
+                            - button "Bỏ" [ref=f5e267] [cursor=pointer]
+                        - generic [ref=f5e268]:
+                          - generic [ref=f5e269]: MŨ BẢO HIỂM
+                          - generic [ref=f5e272]:
+                            - button "Lên" [ref=f5e273] [cursor=pointer]
+                            - button "Xuống" [disabled]
+                            - button "Bỏ" [ref=f5e274] [cursor=pointer]
+                    - generic [ref=f5e275]:
+                      - generic [ref=f5e277]:
+                        - text: Thương hiệu
+                        - generic [ref=f5e278]: "*"
+                      - combobox "Tìm hoặc tạo thương hiệu…" [ref=f5e280]: KEWIG
+                    - generic [ref=f5e281]:
+                      - generic [ref=f5e282]: Thương hiệu (nước)
+                      - textbox "Thương hiệu (nước)" [ref=f5e284]:
+                        - /placeholder: "vd: Ý"
+                      - generic [ref=f5e285]: "Nhập riêng cho từng ngôn ngữ — chuyển tab VI/EN ở góc trên để nhập bản còn lại (vd: \"Nhật Bản\" ở tab VI, \"Japan\" ở tab EN)."
+                    - generic [ref=f5e286]:
+                      - generic [ref=f5e288]:
+                        - text: Giới tính
+                        - generic [ref=f5e289]: "*"
+                      - combobox [ref=f5e290]:
+                        - generic: Unisex
+                      - combobox [ref=f5e293]
+                    - generic [ref=f5e294]:
+                      - generic [ref=f5e295]: Mô tả ngắn
+                      - generic [ref=f5e297]:
+                        - group "Thanh công cụ định dạng" [ref=f5e298]:
+                          - button "Hoàn tác (Ctrl+Z)" [disabled]
+                          - button "Làm lại (Ctrl+Y)" [disabled]
+                          - button "Đậm (Ctrl+B)" [ref=f5e300] [cursor=pointer]
+                          - button "Nghiêng (Ctrl+I)" [ref=f5e303] [cursor=pointer]
+                          - button "Gạch chân (Ctrl+U)" [ref=f5e306] [cursor=pointer]
+                          - button "Gạch ngang" [ref=f5e309] [cursor=pointer]
+                          - button "Tiêu đề H2" [ref=f5e314] [cursor=pointer]
+                          - button "Tiêu đề H3" [ref=f5e317] [cursor=pointer]
+                          - button "Danh sách chấm" [ref=f5e322] [cursor=pointer]
+                          - button "Danh sách số" [ref=f5e324] [cursor=pointer]
+                          - button "Trích dẫn" [ref=f5e328] [cursor=pointer]
+                          - button "Chèn liên kết" [ref=f5e333] [cursor=pointer]
+                          - button "Căn trái" [ref=f5e338] [cursor=pointer]
+                          - button "Căn giữa" [ref=f5e340] [cursor=pointer]
+                          - button "Căn phải" [ref=f5e342] [cursor=pointer]
+                          - button "Thêm" [ref=f5e345] [cursor=pointer]
+                        - 'textbox "Vd: Mũ fullface AGV K1S đạt chuẩn ECE 22.06, vỏ composite 1.5kg, kính chống xước, phù hợp đi đường trường…" [ref=f5e351]':
+                          - paragraph [ref=f5e352]: "Vd: Mũ fullface AGV K1S đạt chuẩn ECE 22.06, vỏ composite 1.5kg, kính chống xước, phù hợp đi đường trường…"
+                        - generic [ref=f5e353]: 0 ký tự
+                      - generic [ref=f5e354]: Hiển thị dưới tiêu đề ở trang chi tiết và trong danh sách sản phẩm. Tối thiểu 20 ký tự, lý tưởng 80–160 ký tự.
+                - generic [ref=f5e355]:
+                  - generic [ref=f5e356]:
+                    - heading "Ảnh đại diệnBắt buộc" [level=3] [ref=f5e357]: Ảnh đại diện*
+                    - generic [ref=f5e358]: Content
+                  - generic [ref=f5e360]:
+                    - generic [ref=f5e361]:
+                      - button "Đổi ảnh" [ref=f5e362] [cursor=pointer]
+                      - button "Xóa ảnh" [ref=f5e367] [cursor=pointer]
+                    - paragraph [ref=f5e371]: Khuyến nghị nên dùng ảnh/video nét, ví dụ ≥ 1800×1800px (bắt buộc tỉ lệ 1:1)
+                    - img "Xem trước ảnh" [ref=f5e372]
+                - generic [ref=f5e373]:
+                  - generic [ref=f5e374]:
+                    - heading "Gallery ảnh" [level=3] [ref=f5e375]
+                    - generic [ref=f5e376]:
+                      - generic [ref=f5e377]: 4 ảnh
+                      - generic [ref=f5e378]: Content
+                  - generic [ref=f5e380]:
+                    - paragraph [ref=f5e381]: Khuyến nghị nên dùng ảnh/video nét, ví dụ ≥ 1800×1800px (bắt buộc tỉ lệ 1:1)
+                    - generic [ref=f5e382]:
+                      - generic [ref=f5e383]:
+                        - generic [ref=f5e384] [cursor=pointer]:
+                          - button "Kéo để sắp xếp thứ tự hiển thị" [ref=f5e385]
+                          - button "Xoá ảnh" [ref=f5e393]
+                        - button "Đổi ảnh" [ref=f5e398] [cursor=pointer]
+                      - generic [ref=f5e399]:
+                        - generic [ref=f5e400] [cursor=pointer]:
+                          - button "Kéo để sắp xếp thứ tự hiển thị" [ref=f5e401]
+                          - button "Xoá ảnh" [ref=f5e409]
+                        - button "Đổi ảnh" [ref=f5e414] [cursor=pointer]
+                      - generic [ref=f5e415]:
+                        - generic [ref=f5e416] [cursor=pointer]:
+                          - button "Kéo để sắp xếp thứ tự hiển thị" [ref=f5e417]
+                          - button "Xoá ảnh" [ref=f5e425]
+                        - button "Đổi ảnh" [ref=f5e430] [cursor=pointer]
+                      - generic [ref=f5e431]:
+                        - generic [ref=f5e432] [cursor=pointer]:
+                          - button "Kéo để sắp xếp thứ tự hiển thị" [ref=f5e433]
+                          - button "Xoá ảnh" [ref=f5e441]
+                        - button "Đổi ảnh" [ref=f5e446] [cursor=pointer]
+                      - button "Thêm ảnh" [ref=f5e447] [cursor=pointer]
+                    - status [ref=f5e451]
+                    - button "+ Thêm video" [ref=f5e453] [cursor=pointer]
+                - generic [ref=f5e454]:
+                  - generic [ref=f5e455]:
+                    - heading "Giá & trạng tháiBắt buộc" [level=3] [ref=f5e456]: Giá & trạng thái*
+                    - generic [ref=f5e457]: Quản lý
+                  - generic [ref=f5e459]:
+                    - generic [ref=f5e460]:
+                      - generic [ref=f5e462]:
+                        - text: Giá niêm yết (VND)
+                        - generic [ref=f5e463]: "*"
+                      - textbox "Giá niêm yết (VND)" [ref=f5e464]:
+                        - /placeholder: "vd: 5.900.000"
+                        - text: "250.000"
+                    - generic [ref=f5e465]:
+                      - generic [ref=f5e466]: Giá sale (VND)
+                      - generic [ref=f5e468]:
+                        - 'textbox "vd: 5.500.000" [ref=f5e469]'
+                        - button "% giảm" [ref=f5e470] [cursor=pointer]
+                    - generic [ref=f5e471]:
+                      - switch "Tình trạng còn hàng" [checked] [ref=f5e472] [cursor=pointer]
+                      - checkbox [checked]
+                      - generic [ref=f5e473]: Còn hàng
+                      - generic [ref=f5e474]: — Bật để bán, tắt để hiển thị "Hết hàng" trên web.
+                - generic [ref=f5e475]:
+                  - generic [ref=f5e476]:
+                    - heading "Biến thể sản phẩm" [level=3] [ref=f5e477]
+                    - generic [ref=f5e478]:
+                      - generic [ref=f5e479]: 0 biến thể
+                      - generic [ref=f5e480]: Content
+                  - generic [ref=f5e482]:
+                    - button "Thêm biến thể" [ref=f5e484] [cursor=pointer]
+                    - table [ref=f5e489]:
+                      - rowgroup [ref=f5e490]:
+                        - row [ref=f5e491]:
+                          - columnheader "Kéo để sắp xếp" [ref=f5e492]
+                          - columnheader [ref=f5e494]:
+                            - checkbox "Chọn tất cả biến thể đang hiển thị" [disabled] [ref=f5e495]
+                            - checkbox [disabled]
+                          - columnheader "Ảnh" [ref=f5e496]
+                          - columnheader "Biến thể" [ref=f5e497]
+                          - columnheader "SKU" [ref=f5e498]
+                          - columnheader "Giá niêm yết" [ref=f5e499]
+                          - columnheader "Giá sale" [ref=f5e500]
+                          - columnheader "Trạng thái" [ref=f5e501]
+                          - columnheader "Thao tác" [ref=f5e502]
+                      - rowgroup
+                      - status [ref=f5e508]
+                - generic [ref=f5e509]:
+                  - generic [ref=f5e510]:
+                    - heading "Dải tin cậy (trên tên sản phẩm)" [level=3] [ref=f5e511]
+                    - generic [ref=f5e512]:
+                      - generic [ref=f5e513]: 0 nhãn
+                      - generic [ref=f5e514]: Content
+                  - generic [ref=f5e515]:
+                    - paragraph [ref=f5e516]: "Các nhãn ngắn hiển thị NGAY TRÊN tên sản phẩm (vd: \"Chính hãng\", \"BH 2 năm\", \"Freeship\"). Để trống → web ẩn dải tin cậy. Mỗi sản phẩm tự nhập riêng."
+                    - generic [ref=f5e517]:
+                      - tablist [ref=f5e518]:
+                        - tab "Nhập có cấu trúc" [selected] [ref=f5e519]
+                        - tab "Dán mã HTML" [ref=f5e520]
+                      - tabpanel "Nhập có cấu trúc" [ref=f5e521]:
+                        - generic [ref=f5e522]:
+                          - generic [ref=f5e523]:
+                            - button "Kéo để sắp xếp" [ref=f5e524]
+                            - textbox "Nhãn tin cậy" [ref=f5e533]:
+                              - /placeholder: "vd: Chính hãng"
+                            - button "Xóa nhãn" [ref=f5e534] [cursor=pointer]
+                          - button "+ Thêm nhãn" [ref=f5e538] [cursor=pointer]
+                        - status [ref=f5e539]
+            - button "Nội dung trang · Mô tả, thông số, FAQ, tư vấn — phần lớn không bắt buộc" [ref=f5e541] [cursor=pointer]:
+              - generic [ref=f5e544]: Nội dung trang
+              - generic [ref=f5e545]: · Mô tả, thông số, FAQ, tư vấn — phần lớn không bắt buộc
+            - button "Video, cam kết & bán kèm · Không bắt buộc" [ref=f5e547] [cursor=pointer]:
+              - generic [ref=f5e550]: Video, cam kết & bán kèm
+              - generic [ref=f5e551]: · Không bắt buộc
+          - toolbar "Thanh thao tác" [ref=f5e552]:
+            - status [ref=f5e553]:
+              - generic [ref=f5e554]: Đã lưu
+            - button "Xem trước" [ref=f5e557] [cursor=pointer]
+            - button "Lưu thay đổi" [disabled]
+  - region "Notifications alt+T"

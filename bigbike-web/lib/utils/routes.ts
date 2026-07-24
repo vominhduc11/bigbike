@@ -94,7 +94,12 @@ export function translatePath(pathname: string, targetLocale: Locale): string {
     else if (seg0 === "register") mapped = ["dang-ky"];
     else if (seg0 === "forgot-password") mapped = ["quen-mat-khau"];
     else if (seg0 === "verify-email") mapped = ["xac-nhan-email"];
-    else if (seg0 === "products") mapped = ["san-pham"];
+    else if (seg0 === "products") {
+      // Only the bare list path is an alias for the VI list page — /products/{slug}/
+      // is now a real EN product detail route (app/products/[slug]/page.tsx) and
+      // must not be rewritten/redirected away.
+      if (segments.length === 1) mapped = ["san-pham"];
+    }
     else if (seg0 === "contact") mapped = ["lien-he"];
     else if (seg0 === "about") mapped = ["gioi-thieu"];
     else if (seg0 === "policy") {
@@ -106,8 +111,14 @@ export function translatePath(pathname: string, targetLocale: Locale): string {
       if (seg1) mapped.push(seg1, ...remaining);
     }
     else if (seg0 === "search") mapped = ["tim-kiem"];
-    else if (seg0 === "categories") mapped = ["danh-muc-san-pham", ...segments.slice(1)];
-    else if (seg0 === "news") mapped = ["tin-tuc", ...segments.slice(1)];
+    else if (seg0 === "categories") {
+      // Same reasoning: /categories/{slug}/ is now a real EN category detail route.
+      if (segments.length === 1) mapped = ["danh-muc-san-pham"];
+    }
+    else if (seg0 === "news") {
+      // Same reasoning: /news/{slug}/ is now a real EN article detail route.
+      if (segments.length === 1) mapped = ["tin-tuc"];
+    }
   }
 
   if (!mapped) return pathname;
@@ -118,7 +129,11 @@ export function translatePath(pathname: string, targetLocale: Locale): string {
 
 
 
-export function toProductPath(slug: string): string {
+export function toProductPath(slug: string, locale?: Locale, isEnSlug?: boolean): string {
+  const currentLocale = locale || getActiveLocale();
+  if (currentLocale === "en" && isEnSlug) {
+    return `/products/${slug}/`;
+  }
   return `/product/${slug}/`;
 }
 

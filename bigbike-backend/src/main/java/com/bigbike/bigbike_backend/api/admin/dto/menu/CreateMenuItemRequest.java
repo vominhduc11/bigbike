@@ -1,13 +1,14 @@
 package com.bigbike.bigbike_backend.api.admin.dto.menu;
 
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.util.UUID;
 
 public record CreateMenuItemRequest(
         UUID parentId,
-        @NotBlank @Size(max = 255) String label,
+        // Not @NotBlank: required only when targetType != CATEGORY, enforced in
+        // AdminMenuService.createMenuItem (label is auto-derived from the linked category).
+        @Size(max = 255) String label,
         @Size(max = 255) String labelEn,
         @Size(max = 2048)
         String url,

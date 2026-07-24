@@ -1384,6 +1384,26 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
     )))
   }
 
+  async function applyBulkDelete() {
+    const selected = new Set(activeSelectedKeys)
+    const count = selected.size
+    if (!count) return
+
+    const confirmed = await showConfirm(
+      t('products.detail.variant.bulkDeleteConfirm', { count }),
+      t('products.detail.variant.bulkDelete'),
+      { variant: 'danger', confirmLabel: t('products.detail.variant.bulkDelete') },
+    )
+    if (!confirmed) return
+
+    const remaining = items.filter((variant) => !selected.has(variant._key))
+    onChange(remaining)
+    setSelectedKeys([])
+    if (expandedKey && selected.has(expandedKey)) {
+      setExpandedKey(remaining[0]?._key ?? null)
+    }
+  }
+
   function applyBulkPrices() {
     const selected = new Set(selectedKeys)
     const retailPrice = bulkRetailPrice.replace(/\D/g, '')
@@ -1509,6 +1529,11 @@ export function VariantsEditor({ items, onChange, disabled, validationErrors = {
           {
             label: t('products.detail.variant.bulkMarkInStock'),
             onClick: () => applyBulkAvailability(true),
+          },
+          {
+            label: t('products.detail.variant.bulkDelete'),
+            tone: 'danger',
+            onClick: applyBulkDelete,
           },
         ]}
       />
