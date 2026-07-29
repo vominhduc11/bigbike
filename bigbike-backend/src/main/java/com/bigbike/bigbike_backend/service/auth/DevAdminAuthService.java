@@ -65,10 +65,23 @@ public class DevAdminAuthService {
      * When no JWT auth exists (dev/test bypass path), the legacy header-based logic is used.
      */
     public AdminUserProfile requirePermission(HttpServletRequest request, String requiredPermission) {
+        return requireAnyPermission(request, requiredPermission);
+    }
+
+    /**
+     * Checks that the caller has at least one of the supplied permissions.
+     *
+     * <p>The wildcard grants every permission. JWT callers are resolved from persisted role
+     * permissions; dev/test callers use the same guarded header path as {@link #requirePermission}.
+     */
+    public AdminUserProfile requireAnyPermission(HttpServletRequest request, String... requiredPermissions) {
+        if (requiredPermissions == null || requiredPermissions.length == 0) {
+            throw new IllegalArgumentException("At least one permission is required.");
+        }
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof AdminPrincipal principal) {
             List<String> permissions = adminPermissionService.getPermissionsForRole(principal.role());
-            boolean granted = permissions.contains("*") || permissions.contains(requiredPermission);
+            boolean granted = hasAnyPermission(permissions, requiredPermissions);
             if (!granted) {
                 throw new ForbiddenException("Permission denied.");
             }
@@ -89,11 +102,18 @@ public class DevAdminAuthService {
             throw new UnauthorizedException("No authenticated admin principal.");
         }
         AdminUserProfile user = currentAdminUser(request);
-        boolean granted = user.permissions().contains("*") || user.permissions().contains(requiredPermission);
+        boolean granted = hasAnyPermission(user.permissions(), requiredPermissions);
         if (!granted) {
             throw new ForbiddenException("Permission denied.");
         }
         return user;
+    }
+
+    private static boolean hasAnyPermission(List<String> permissions, String... requiredPermissions) {
+        if (permissions.contains("*")) {
+            return true;
+        }
+        return Arrays.stream(requiredPermissions).anyMatch(permissions::contains);
     }
 
     private void ensureDevMockProfile() {

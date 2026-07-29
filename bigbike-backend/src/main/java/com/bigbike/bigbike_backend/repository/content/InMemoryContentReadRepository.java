@@ -152,7 +152,9 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
     public org.springframework.data.domain.Page<Article> listArticlesAdmin(
             PublishStatus publishStatus, String q, Pageable pageable, String locale) {
         List<Article> filtered = articles.stream()
-                .filter(a -> publishStatus == null || a.publishStatus() == publishStatus)
+                .filter(a -> publishStatus == null
+                        ? a.publishStatus() != PublishStatus.TRASH
+                        : a.publishStatus() == publishStatus)
                 .filter(a -> matchesArticleAdminQuery(a, q))
                 .toList();
         return toSpringPage(filtered, pageable, InMemoryContentReadRepository::articleComparator);
@@ -161,7 +163,9 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
     @Override
     public List<Article> findArticlesByFilter(PublishStatus publishStatus, String q, String locale) {
         return articles.stream()
-                .filter(a -> publishStatus == null || a.publishStatus() == publishStatus)
+                .filter(a -> publishStatus == null
+                        ? a.publishStatus() != PublishStatus.TRASH
+                        : a.publishStatus() == publishStatus)
                 .filter(a -> matchesArticleAdminQuery(a, q))
                 .toList();
     }

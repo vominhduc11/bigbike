@@ -77,7 +77,8 @@ public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, Strin
      */
     @Query(value = """
             SELECT a.id FROM ArticleEntity a
-            WHERE (:publishStatus IS NULL OR a.publishStatus = :publishStatus)
+            WHERE ((:publishStatus IS NULL AND a.publishStatus <> :trashStatus)
+                OR a.publishStatus = :publishStatus)
             AND (:q IS NULL
                  OR LOWER(a.title) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))
                  OR LOWER(a.excerpt) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))
@@ -85,7 +86,8 @@ public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, Strin
             """,
             countQuery = """
             SELECT COUNT(a) FROM ArticleEntity a
-            WHERE (:publishStatus IS NULL OR a.publishStatus = :publishStatus)
+            WHERE ((:publishStatus IS NULL AND a.publishStatus <> :trashStatus)
+                OR a.publishStatus = :publishStatus)
             AND (:q IS NULL
                  OR LOWER(a.title) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))
                  OR LOWER(a.excerpt) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))
@@ -93,6 +95,7 @@ public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, Strin
             """)
     Page<String> findAdminArticleIds(
             @Param("publishStatus") PublishStatus publishStatus,
+            @Param("trashStatus") PublishStatus trashStatus,
             @Param("q") String q,
             Pageable pageable);
 
@@ -114,7 +117,8 @@ public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, Strin
     @Query("""
             SELECT a FROM ArticleEntity a
             LEFT JOIN FETCH a.category
-            WHERE (:publishStatus IS NULL OR a.publishStatus = :publishStatus)
+            WHERE ((:publishStatus IS NULL AND a.publishStatus <> :trashStatus)
+                OR a.publishStatus = :publishStatus)
             AND (:q IS NULL
                  OR LOWER(a.title) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))
                  OR LOWER(a.excerpt) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))
@@ -122,5 +126,6 @@ public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, Strin
             """)
     List<ArticleEntity> findByFilter(
             @Param("publishStatus") PublishStatus publishStatus,
+            @Param("trashStatus") PublishStatus trashStatus,
             @Param("q") String q);
 }

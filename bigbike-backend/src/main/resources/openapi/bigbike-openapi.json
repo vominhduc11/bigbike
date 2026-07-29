@@ -3176,6 +3176,7 @@
           "Admin Content"
         ],
         "summary": "List content items (admin)",
+        "description": "Requires content.read. When publishStatus is omitted, TRASH articles are excluded. Use publishStatus=TRASH for the Trash view.",
         "operationId": "adminListContent",
         "security": [
           {
@@ -3188,7 +3189,8 @@
             "in": "query",
             "schema": {
               "type": "integer",
-              "default": 1
+              "default": 1,
+              "minimum": 1
             }
           },
           {
@@ -3196,49 +3198,128 @@
             "in": "query",
             "schema": {
               "type": "integer",
-              "default": 20
+              "default": 20,
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Legacy alias for size; size takes precedence when both are supplied.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
             }
           },
           {
             "name": "sort",
             "in": "query",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "default": "updatedAt:desc",
+                "pattern": "^(title|publishStatus|createdAt|updatedAt|publishedAt):(asc|desc)$"
             }
           },
           {
             "name": "q",
             "in": "query",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Legacy alias for q; q takes precedence when both are supplied.",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
             }
           },
           {
             "name": "type",
             "in": "query",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "ARTICLE"
+              ]
             }
           },
           {
             "name": "publishStatus",
             "in": "query",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "DRAFT",
+                "PUBLISHED",
+                "TRASH"
+              ]
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "vi",
+                "en"
+              ],
+              "default": "vi"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Content list"
+            "description": "Article list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminContentListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
     },
     "/api/v1/admin/content/{type}/{id}": {
+      "parameters": [
+        {
+          "name": "type",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "article"
+            ]
+          }
+        },
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]+$"
+          }
+        }
+      ],
       "get": {
         "tags": [
           "Admin Content"
@@ -3250,30 +3331,28 @@
             "AdminBearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "type",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "responses": {
           "200": {
-            "description": "Content detail"
+            "description": "Article detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminContentItemDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
@@ -3282,6 +3361,7 @@
           "Admin Content"
         ],
         "summary": "Delete content item (admin)",
+        "description": "Requires content.update. Soft-deletes the article by moving it to TRASH.",
         "operationId": "adminDeleteContentItem",
         "security": [
           {
@@ -3289,11 +3369,30 @@
           }
         ],
         "responses": {
-          "204": {
-            "description": "No content"
+          "200": {
+            "description": "Article moved to Trash",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminContentItemDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
         }
       }
@@ -3304,26 +3403,45 @@
           "Admin Content"
         ],
         "summary": "Create article (admin)",
+        "description": "Requires content.update.",
         "operationId": "adminCreateArticle",
         "security": [
           {
             "AdminBearerAuth": []
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertArticleRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "Category and descendants moved to Trash",
+            "description": "Created article",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/CategoryDataResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/AdminContentItemDataResponse"
+                }
               }
             }
           },
-          "403": { "$ref": "#/components/responses/Forbidden" },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "409": { "$ref": "#/components/responses/Conflict" },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
         }
       }
@@ -3350,23 +3468,64 @@
       }
     },
     "/api/v1/admin/content/articles/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]+$"
+          }
+        }
+      ],
       "patch": {
         "tags": [
           "Admin Content"
         ],
         "summary": "Update article (admin)",
+        "description": "Requires content.update.",
         "operationId": "adminUpdateArticle",
         "security": [
           {
             "AdminBearerAuth": []
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertArticleRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Updated article",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminContentItemDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
         }
       }
@@ -5046,6 +5205,192 @@
           }
         }
       }
+    },
+    "/api/v1/admin/content/articles/preview": {
+      "post": {
+        "tags": [
+          "Admin Content"
+        ],
+        "summary": "Preview an unsaved article (admin)",
+        "description": "Requires content.update. Validates and renders the current payload without persistence.",
+        "operationId": "adminPreviewArticle",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "vi",
+                "en"
+              ],
+              "default": "vi"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertArticleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rendered public article shape",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArticleDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/content/articles/{id}/restore": {
+      "post": {
+        "tags": [
+          "Admin Content"
+        ],
+        "summary": "Restore an article from Trash (admin)",
+        "description": "Requires content.update. Only a TRASH article can be restored; it returns to DRAFT.",
+        "operationId": "adminRestoreArticle",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restored article",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminContentItemDataResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/content/articles/{id}/permanent": {
+      "delete": {
+        "tags": [
+          "Admin Content"
+        ],
+        "summary": "Permanently delete an article (admin)",
+        "description": "Requires content.update. Only a TRASH article can be permanently deleted.",
+        "operationId": "adminPermanentlyDeleteArticle",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Article permanently deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/product-assignment": {
+      "get": {
+        "tags": [
+          "Admin Settings"
+        ],
+        "summary": "Get the shared product/article assignment guide",
+        "description": "Requires at least one of products.read or content.read. Editing the underlying product_assign settings remains SUPER_ADMIN-only.",
+        "operationId": "adminGetProductAssignment",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shared assignment guide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProductAssignmentDataResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -6493,12 +6838,32 @@
       },
       "ArticleResponse": {
         "type": "object",
+        "required": [
+          "id",
+          "type",
+          "slug",
+          "title",
+          "body",
+          "publishStatus",
+          "createdAt",
+          "updatedAt"
+        ],
         "properties": {
           "id": {
             "type": "string"
           },
+          "type": {
+            "type": "string",
+            "enum": [
+              "ARTICLE"
+            ]
+          },
           "slug": {
             "type": "string"
+          },
+          "slugEn": {
+            "type": "string",
+            "nullable": true
           },
           "title": {
             "type": "string"
@@ -6516,8 +6881,33 @@
           "productImage": {
             "$ref": "#/components/schemas/ImageAsset"
           },
+          "featured": {
+            "type": "boolean"
+          },
+          "homeExperience": {
+            "type": "boolean"
+          },
+          "seo": {
+            "$ref": "#/components/schemas/ArticleSeoMetaRequest"
+          },
+          "translations": {
+            "$ref": "#/components/schemas/ArticleTranslationRequest"
+          },
+          "bodyBlocks": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
           "category": {
             "$ref": "#/components/schemas/ContentCategorySummary"
+          },
+          "categoryId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Persisted category id; article writes are normalized to the tin-tuc category."
           },
           "categories": {
             "type": "array",
@@ -6526,7 +6916,12 @@
             }
           },
           "publishStatus": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "PUBLISHED",
+              "TRASH"
+            ]
           },
           "publishedAt": {
             "type": "string",
@@ -6683,6 +7078,134 @@
           },
           "message": {
             "type": "string"
+          }
+        }
+      },
+      "ArticleTranslationRequest": {
+        "type": "object",
+        "properties": {
+          "en": {
+            "type": "object",
+            "properties": {
+              "slug": {
+                "type": "string",
+                "maxLength": 100,
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 255
+              },
+              "excerpt": {
+                "type": "string",
+                "maxLength": 5000
+              },
+              "body": {
+                "type": "string",
+                "maxLength": 65535
+              },
+              "seoTitle": {
+                "type": "string",
+                "maxLength": 255
+              },
+              "seoDescription": {
+                "type": "string",
+                "maxLength": 5000
+              }
+            }
+          }
+        }
+      },
+      "ArticleSeoMetaRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "canonicalUrl": {
+            "type": "string",
+            "maxLength": 2048
+          },
+          "ogImage": {
+            "$ref": "#/components/schemas/ImageAsset"
+          },
+          "noIndex": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UpsertArticleRequest": {
+        "type": "object",
+        "description": "Presence-flag upsert payload. BigBike Admin sends categoryId as an empty string to normalize to tin-tuc and derives seo.canonicalUrl from the Vietnamese slug.",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "excerpt": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "body": {
+            "type": "string"
+          },
+          "bodyBlocks": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "coverImage": {
+            "$ref": "#/components/schemas/ImageAsset"
+          },
+          "productImage": {
+            "$ref": "#/components/schemas/ImageAsset"
+          },
+          "categoryId": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "publishStatus": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "PUBLISHED",
+              "TRASH"
+            ]
+          },
+          "featured": {
+            "type": "boolean"
+          },
+          "homeExperience": {
+            "type": "boolean"
+          },
+          "seo": {
+            "$ref": "#/components/schemas/ArticleSeoMetaRequest"
+          },
+          "translations": {
+            "$ref": "#/components/schemas/ArticleTranslationRequest"
+          }
+        }
+      },
+      "ArticleDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ArticleResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
           }
         }
       }

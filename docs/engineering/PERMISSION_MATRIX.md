@@ -43,6 +43,7 @@
 |---|---|---|---|
 | `catalog.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER`, `EDITOR` | `GET /api/v1/admin/brands`, `GET /api/v1/admin/brands/{id}` and other catalog taxonomy reads | `V49__create_roles_permissions_tables.sql`, `AdminCatalogController.java`, `PermissionCatalog.java` |
 | `catalog.update` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `POST/PATCH /api/v1/admin/brands`, `DELETE /api/v1/admin/brands/{id}`, `POST /api/v1/admin/brands/{id}/restore`, `DELETE /api/v1/admin/brands/{id}/permanent` and other catalog taxonomy mutations | `V49__create_roles_permissions_tables.sql`, `AdminCatalogController.java`, `PermissionCatalog.java` |
+| `products.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER`, `EDITOR` | `GET /api/v1/admin/products`, `GET /api/v1/admin/products/{id}`, product presence topic; also one accepted read permission for `GET /api/v1/admin/product-assignment` | `V49__create_roles_permissions_tables.sql`, `V121__realign_inventory_warranty_permissions.sql`, `AdminCatalogController.java`, `WebSocketConfig.java` |
 | `products.update` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `POST/PATCH /api/v1/admin/products`, `POST /api/v1/admin/products/preview`, `PATCH /api/v1/admin/products/{id}/publish`, `DELETE /api/v1/admin/products/{id}[/permanent]`, `POST /api/v1/admin/products/{id}/restore`, `POST /api/v1/admin/products/import/validate`, `POST /api/v1/admin/products/import/commit`, `GET /api/v1/admin/products/import/export/{id}` | `V49__create_roles_permissions_tables.sql`, `AdminCatalogController.java`, `AdminProductImportController.java` |
 
 `EDITOR` holds `products.read`/`catalog.read` only, not `products.update` — confirmed via `V121__realign_inventory_warranty_permissions.sql`'s own comment describing `EDITOR` as a role that "only had products.read."
@@ -57,7 +58,7 @@ The bulk product import endpoints are gated by the same `products.update` permis
 >
 > **Warranty module removed (2026-06-23, V266).** The `warranty.read` / `warranty.write` permissions were **deleted** together with the warranty feature (admin warranty endpoints, public lookup, records, and the `/bao-hanh` page). They were dropped from `PermissionCatalog` and revoked from every role by the migration.
 >
-> **Pages + Guide-page modules removed (2026-06-24).** `content.read` / `content.update` now scope to **articles (Tin tức) only** — the static CMS pages module and the guide-page builder were removed (tables `pages` + `guide_page_layout` dropped at `V271`; admin pages CRUD, `reference/pages`, and the `GET`/`PUT /admin/guide-page` endpoints deleted). The 10 info/policy pages are now hardcoded in `bigbike-web`. The permission keys themselves are **unchanged** (still `content.read` / `content.update`); only their reach shrank to article management.
+> **Pages + Guide-page modules removed (2026-06-24).** `content.read` / `content.update` now scope to **articles (Tin tức) only** — the static CMS pages module and the guide-page builder were removed (tables `pages` + `guide_page_layout` dropped at `V271`; admin pages CRUD, `reference/pages`, and the `GET`/`PUT /admin/guide-page` endpoints deleted). The 10 info/policy pages are now hardcoded in `bigbike-web`. The permission keys themselves are **unchanged** (still `content.read` / `content.update`); only their reach shrank to article management. `content.read` is also one accepted read permission for the shared `GET /api/v1/admin/product-assignment` banner.
 
 ## Roles
 
@@ -92,10 +93,10 @@ Enforced in `AdminRoleService` (Admin Roles API, gated by `roles.write`):
 The `product_assign` site-setting keys — `product_assign_title` and `product_assign_roles` (a JSON array of 1–6 dynamic role entries, consolidated from 6 legacy keys by `V318`; see `DATA_CONTRACT.md`) — back the editable "Phân công" guide shown on BOTH the product and content/article create-edit screens (same data, same endpoint). Both keys are flagged `superAdminOnly` in `SettingDefinitionRegistry`. There is **no dedicated permission key** for them — the gate is the wildcard `*` itself:
 
 - **Write** (`PATCH /api/v1/admin/settings[/{key}]`): `AdminSettingsService` rejects the write with 403 unless the caller's resolved permissions contain `*`. So only `SUPER_ADMIN` can edit; `ADMIN` is blocked even though it holds `settings.write`. `product_assign_roles` additionally enforces a 1–6 array-size + required-field structural check in `SettingValueValidator` regardless of caller.
-- **Read for the banner** (`GET /api/v1/admin/product-assignment`): gated by `products.read`, so every role that can open the product editor (`SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER`, `EDITOR`) sees the banner; the content/article editor banner reads the same endpoint.
+- **Read for the banner** (`GET /api/v1/admin/product-assignment`): requires at least one of `products.read` or `content.read`, so a role that can open either the product editor or the content/article editor sees the shared banner.
 - **Admin UI**: the "Phân công sản phẩm" settings tab is a bespoke synthetic tab (`AssignmentRolesScreen.jsx`, outside the generic per-field settings flow as of V318 — the group is in `HIDDEN_GROUPS`) explicitly gated on `isSuperAdmin` in `SettingsScreen.jsx` — non-super-admins never see the tab button.
 
-Status: `CONFIRMED_FROM_CODE` — `SettingDefinitionRegistry.java`, `AdminSettingsService.java`, `AdminProductAssignmentController.java`, `SettingsScreen.jsx`
+Status: `CONFIRMED_FROM_OWNER_DECISION` — `SettingDefinitionRegistry.java`, `AdminSettingsService.java`, `AdminProductAssignmentController.java`, `SettingsScreen.jsx`
 
 ## Audit Log Permission
 

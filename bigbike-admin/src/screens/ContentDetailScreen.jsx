@@ -2,22 +2,23 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
-import { AlertCircle, Check, Eye, Info, Loader2, Lock, Save, Search, Trash2, X } from 'lucide-react'
+import { Check, Eye, Loader2, Lock, Save, Search, Trash2, X } from 'lucide-react'
 
 import {
   createContent,
   deleteContent,
   fetchContentDetail,
-
   mapValidationErrors,
+  permanentDeleteContent,
   previewArticle,
+  restoreContent,
   updateContent,
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '../lib/useUnsavedChanges'
 import { clearNavGuard } from '../lib/navigationGuard'
 import { formatDateTime } from '../lib/formatters'
-import { useContentLang } from '../lib/contentLang'
+import { setContentLang, useContentLang } from '../lib/contentLang'
 import { recordRecentItem } from '../lib/useRecentItems'
 import { createContentSchema, zodErrors } from '../lib/schemas'
 import { allowedPublishOptions } from '../lib/contentPublishTransitions'
@@ -26,6 +27,7 @@ import { BlockEditor } from '../components/BlockEditor'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { StatePanel } from '../components/StatePanel'
+import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { LivePreview } from '../components/LivePreview'
 import { useAutoHideSidebar } from '../components/AdminShell'
 import { Screen, ScreenHeader, StickyActionBar, Tabs } from '../components/layout'
@@ -34,6 +36,7 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
+import { Alert } from '@/components/ui/alert'
 import { cn } from '@/lib/utils'
 import {
   buildEmptyForm,
@@ -73,6 +76,8 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   const [enSlugManuallyEdited, setEnSlugManuallyEdited] = useState(false)
   // F12: BÀI VIẾT MỚI, tiếng Việt: gõ tiêu đề tự gợi ý đường dẫn khi chưa sửa tay.
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
+  const restoreConfirmingRef = useRef(false)
+  const [isRestoreConfirming, setIsRestoreConfirming] = useState(false)
 
   // ── Live preview (xem trước storefront — chỉ bài viết) ───────────────────────
   // Pane nhúng iframe bigbike-web /preview/article; debounce form rồi gọi dry-run
@@ -88,10 +93,10 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
   // Mở panel Xem trước → tự ẩn sidebar bên trái, nhường chỗ cho form (màn hình vốn đã
   // chật vì có thêm panel 520px). Đóng preview hoặc rời trang → sidebar hiện lại.
-  useAutoHideSidebar(previewOpen)
+  useAutoHideSidebar(previewOpen && canUpdate)
 
   useEffect(() => {
-    if (!previewOpen) return
+    if (!previewOpen || !canUpdate) return
     let cancelled = false
     const handle = setTimeout(async () => {
       setPreviewLoading(true)
@@ -111,7 +116,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
       cancelled = true
       clearTimeout(handle)
     }
-  }, [previewOpen, previewLang, form, isCreate])
+  }, [canUpdate, previewOpen, previewLang, form, isCreate])
 
   const autosaveKey = getAutosaveKey(normalizedType, contentId, isCreate)
   const [draftRecovery, setDraftRecovery] = useState(null)
@@ -156,18 +161,21 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
   const isDirty = useMemo(() => JSON.stringify(form) !== initialSnapshot, [form, initialSnapshot])
   const isReadOnly = !canUpdate || isSubmitting
+  const persistedTrash = !isCreate && state.item?.publishStatus === 'TRASH'
   // Publish targets limited to what the backend accepts from the persisted state.
   // On create there is no persisted state, so all standard targets are offered.
   const publishOptions = useMemo(
-    () => allowedPublishOptions(isCreate ? null : state.item?.publishStatus),
-    [isCreate, state.item?.publishStatus],
+    () => persistedTrash
+      ? ['TRASH']
+      : allowedPublishOptions(isCreate ? null : state.item?.publishStatus),
+    [isCreate, persistedTrash, state.item?.publishStatus],
   )
   const formRef = useRef(null)
 
   // F6: cảnh báo khi rời trang lúc còn thay đổi chưa lưu — phủ CẢ điều hướng nội bộ
   // (sidebar/breadcrumb qua navigationGuard) lẫn reload/đóng tab (beforeunload); trước đây
   // chỉ tự gắn beforeunload nên đi sidebar không hỏi. Message giống hộp thoại của handleClose.
-  useUnsavedChanges(isDirty, t('products.detail.unsavedChangesConfirm', { defaultValue: 'Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?' }))
+  useUnsavedChanges(isDirty, t('content.detail.unsavedChangesConfirm'))
 
   useEffect(() => {
     if (!isCreate) return
@@ -197,8 +205,8 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
       queryClient.invalidateQueries({ queryKey: ['content'] })
       if (!isCreate) queryClient.setQueryData(['content', normalizedType, contentId], response)
       const successKey = isCreate
-        ? (normalizedType === 'ARTICLE' ? 'content.detail.successCreateArticle' : 'content.detail.successCreatePage')
-        : (normalizedType === 'ARTICLE' ? 'content.detail.successUpdateArticle' : 'content.detail.successUpdatePage')
+        ? 'content.detail.successCreateArticle'
+        : 'content.detail.successUpdateArticle'
       toast.success(t(successKey))
       setIsSubmitting(false)
       setSavedFlash(true)
@@ -211,7 +219,9 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
       }
     },
     onError: (error) => {
-      setValidationErrors(mapValidationErrors(error))
+      const serverErrors = mapValidationErrors(error)
+      setValidationErrors(serverErrors)
+      revealValidationErrors(serverErrors)
       toast.error(error.message || t('content.detail.errSaveFailed'))
       setIsSubmitting(false)
     },
@@ -230,12 +240,46 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     },
   })
 
+  const permanentDeleteMutation = useMutation({
+    mutationFn: () => permanentDeleteContent(normalizedType, contentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['content'] })
+      clearFormFromStorage(autosaveKey)
+      clearNavGuard()
+      toast.success(t('content.permanentDeleteSuccess'))
+      navigate('/admin/content')
+    },
+    onError: (error) => {
+      toast.error(error?.message || t('content.detail.errPermanentDeleteFailed'))
+      setIsSubmitting(false)
+    },
+  })
+
   function updateField(field, value) {
     setForm((previous) => ({ ...previous, [field]: value }))
     setValidationErrors((previous) => {
       if (!previous[field]) return previous
       const next = { ...previous }
       delete next[field]
+      return next
+    })
+  }
+
+  function updateImageAsset(prefix, url, media) {
+    setForm((previous) => {
+      const changed = url !== previous[`${prefix}Url`]
+      return {
+        ...previous,
+        [`${prefix}Url`]: url,
+        [`${prefix}Width`]: media?.width ?? (changed ? null : previous[`${prefix}Width`]),
+        [`${prefix}Height`]: media?.height ?? (changed ? null : previous[`${prefix}Height`]),
+        [`${prefix}MimeType`]: media?.mimeType ?? (changed ? '' : previous[`${prefix}MimeType`]),
+      }
+    })
+    setValidationErrors((previous) => {
+      if (!previous[`${prefix}Url`]) return previous
+      const next = { ...previous }
+      delete next[`${prefix}Url`]
       return next
     })
   }
@@ -258,29 +302,115 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     })
   }
 
-  async function handleSubmit(event) {
-    if (event && typeof event.preventDefault === 'function') event.preventDefault()
-    if (!canUpdate) return
-
-    const schema = createContentSchema(t, isCreate, normalizedType)
-    const result = schema.safeParse(form)
-    const clientErrors = zodErrors(result)
-    if (Object.keys(clientErrors).length > 0) {
-      setValidationErrors(clientErrors)
-      const failedTab = findTabForErrors(computeSectionErrorsFromMap(clientErrors))
-      if (failedTab && failedTab !== activeTab) setActiveTab(failedTab)
-      return
+  function revealValidationErrors(errors) {
+    const keys = Object.keys(errors)
+    if (keys.some((key) => key.startsWith('translations.en.'))) {
+      setContentLang('en')
+    } else if (keys.length > 0) {
+      setContentLang('vi')
     }
+    const failedTab = findTabForErrors(computeSectionErrorsFromMap(errors))
+    if (failedTab) setActiveTab(failedTab)
+    if (keys.some((key) => key.startsWith('seoOgImage'))) {
+      setSeoAdvancedOpen(true)
+    }
+    window.setTimeout(() => {
+      formRef.current?.querySelector('[aria-invalid="true"]')?.focus()
+    }, 0)
+  }
 
+  function validateCandidate(candidate) {
+    const schema = createContentSchema(t, isCreate, normalizedType)
+    const clientErrors = zodErrors(schema.safeParse(candidate))
+    if (Object.keys(clientErrors).length === 0) return true
+    setValidationErrors(clientErrors)
+    revealValidationErrors(clientErrors)
+    return false
+  }
+
+  async function saveCandidate(candidate) {
+    if (!validateCandidate(candidate)) return false
     setIsSubmitting(true)
     setValidationErrors({})
-
     try {
-      await saveMutation.mutateAsync(toPayload(form, isCreate))
+      await saveMutation.mutateAsync(toPayload(candidate, isCreate))
+      return true
     } catch {
-      // Lỗi đã được toast ở onError của mutation. Ở đây chỉ cần kết thúc trạng thái.
+      return false
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  async function handlePrimarySave() {
+    if (!persistedTrash) {
+      await saveCandidate(form)
+      return
+    }
+    if (restoreConfirmingRef.current) return
+    const candidate = { ...form, publishStatus: 'DRAFT' }
+    const validationCandidate = {
+      ...candidate,
+      // Soft delete appends the article id to persisted slugs. Those server-generated
+      // tombstone values are replaced by the restored slugs before the update call.
+      slug: form.slug === state.item?.slug ? 'restoring-article' : form.slug,
+      translations: {
+        ...candidate.translations,
+        en: {
+          ...candidate.translations?.en,
+          slug: form.translations?.en?.slug === state.item?.slugEn
+            ? ''
+            : form.translations?.en?.slug,
+        },
+      },
+    }
+    if (!validateCandidate(validationCandidate)) return
+
+    restoreConfirmingRef.current = true
+    setIsRestoreConfirming(true)
+    try {
+      const confirmed = await showConfirm(
+        t('content.detail.restoreAndSaveConfirm'),
+        t('content.detail.restoreAndSaveConfirmTitle'),
+        { variant: 'default', confirmLabel: t('content.detail.restoreAndSave') },
+      )
+      if (!confirmed) return
+
+      setIsSubmitting(true)
+      let restored = false
+      try {
+        const response = await restoreContent(normalizedType, contentId)
+        restored = true
+        const restoredItem = response?.item
+        const finalCandidate = {
+          ...candidate,
+          slug: form.slug === state.item?.slug ? (restoredItem?.slug || form.slug) : form.slug,
+          translations: {
+            ...candidate.translations,
+            en: {
+              ...candidate.translations?.en,
+              slug: form.translations?.en?.slug === state.item?.slugEn
+                ? (restoredItem?.slugEn || '')
+                : form.translations?.en?.slug,
+            },
+          },
+        }
+        await saveMutation.mutateAsync(toPayload(finalCandidate, false))
+      } catch (error) {
+        if (!restored) {
+          const errors = mapValidationErrors(error)
+          setValidationErrors(errors)
+          revealValidationErrors(errors)
+          toast.error(error?.message || t('content.detail.errRestoreFailed'))
+        } else {
+          await refetch()
+        }
+      } finally {
+        setIsSubmitting(false)
+      }
+    } finally {
+      restoreConfirmingRef.current = false
+      setIsRestoreConfirming(false)
     }
   }
 
@@ -346,8 +476,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     // chính, Nội dung chính, Hình ảnh) chứ không phải một panel nhỏ. Cùng kiểu dựng
     // animate-pulse như ProductDetailScreen/CategoryDetailScreen, khớp bố cục riêng của màn này.
     return (
-      <div className="bb-proto">
-        <Screen maxWidth="1200px">
+        <Screen>
           <div className="animate-pulse" aria-hidden="true">
             <header className="bb-screen-header">
               <div className="bb-screen-title flex flex-col gap-2">
@@ -392,11 +521,21 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
             </div>
           </div>
         </Screen>
-      </div>
     )
   }
 
   if (state.status === 'error') {
+    if (fetchError?.status === 404) {
+      return (
+        <StatePanel
+          tone="neutral"
+          title={t('content.detail.notFound')}
+          description={t('content.detail.notFoundDesc')}
+          actionLabel={t('content.detail.backToList')}
+          onAction={() => navigate('/admin/content')}
+        />
+      )
+    }
     return (
       <div className="flex flex-col items-center gap-3">
         <StatePanel
@@ -406,10 +545,10 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
           actionLabel={t('common.retry', { defaultValue: 'Thử lại' })}
           onAction={() => refetch()}
         />
-        <Button variant="unstyled"
+        <Button variant="ghost"
           type="button"
           onClick={() => navigate('/admin/content')}
-          className="text-sm font-medium underline hover:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--bb-primary)]"
+          className="min-h-11"
         >
           {t('content.detail.backToList')}
         </Button>
@@ -429,21 +568,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     )
   }
 
-  const isArticle = normalizedType === 'ARTICLE'
-
-  // Nhãn cho ô bắt buộc — gắn dấu * đỏ ngay sau tên ô (cùng kiểu với SectionCard)
-  // để admin biết chính xác ô nào trong thẻ "bắt buộc" phải điền (tiêu chí 7.8).
-  const requiredLabel = (text) => (
-    <>
-      {text}
-      <span
-        className="ml-0.5 text-[var(--admin-color-status-danger-text)]"
-        aria-label={t('common.required', { defaultValue: 'bắt buộc' })}
-        title={t('common.required', { defaultValue: 'Bắt buộc' })}
-      >*</span>
-    </>
-  )
-
   const sectionErrors = computeSectionErrorsFromMap(validationErrors)
   const tabCounts = Object.fromEntries(
     Object.entries(TAB_SECTIONS).map(([tab, keys]) => [tab, keys.filter((k) => sectionErrors[k]).length]),
@@ -455,16 +579,16 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     { ok: seoTitleVal.length >= 30 && seoTitleVal.length <= 60, hint: seoTitleVal.length, label: t('content.detail.seoCheckTitle', { defaultValue: 'SEO title 30–60 ký tự' }) },
     { ok: seoDescVal.length >= 140 && seoDescVal.length <= 160, hint: seoDescVal.length, label: t('content.detail.seoCheckDesc', { defaultValue: 'SEO description 140–160 ký tự' }) },
     { ok: !!form.slug && /^[a-z0-9-]+$/.test(form.slug), label: t('content.detail.seoCheckSlug', { defaultValue: 'Slug chữ thường, không dấu, dùng "-"' }) },
-    ...(isArticle ? [{ ok: !!form.coverImageUrl?.trim() && !!form.coverImageAlt?.trim(), label: t('content.detail.seoCheckImageAlt', { defaultValue: 'Ảnh bìa có alt text' }) }] : []),
+    { ok: !!form.coverImageUrl?.trim() && !!form.coverImageAlt?.trim(), label: t('content.detail.seoCheckImageAlt') },
     { ok: !!form.seoOgImageUrl?.trim(), label: t('content.detail.seoCheckOg', { defaultValue: 'OG image cho chia sẻ MXH' }) },
   ]
   const seoPassed = seoChecks.filter((c) => c.ok).length
 
   const saveDotState = isSubmitting ? 'saving' : savedFlash ? 'saved' : isDirty ? 'dirty' : 'saved'
   const saveDotClass =
-    saveDotState === 'saving' ? 'bg-[var(--admin-color-status-info-text)] animate-pulse'
-    : saveDotState === 'dirty' ? 'bg-[var(--admin-color-status-warning-text)] animate-pulse'
-    :                            'bg-[var(--admin-color-status-success-text)]'
+    saveDotState === 'saving' ? 'bg-info animate-pulse'
+    : saveDotState === 'dirty' ? 'bg-warning animate-pulse'
+    :                            'bg-success'
   const saveLabel = isSubmitting
     ? t('content.detail.savingShort', { defaultValue: 'Đang lưu...' })
     : isDirty
@@ -472,18 +596,20 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
       : t('content.detail.saveClean', { defaultValue: 'Đã lưu' })
 
   const screenTitle = isCreate
-    ? t(isArticle ? 'content.detail.createArticleTitle' : 'content.detail.createPageTitle')
-    : (form.title || t(isArticle ? 'content.detail.editArticleTitle' : 'content.detail.editPageTitle'))
+    ? t('content.detail.createArticleTitle')
+    : (form.title || t('content.detail.editArticleTitle'))
 
-  const primaryLabel = isCreate
-    ? t(isArticle ? 'content.detail.createArticleBtn' : 'content.detail.createPageBtn')
-    : t('content.detail.saveBtn')
+  const primaryLabel = persistedTrash
+    ? t('content.detail.restoreAndSave')
+    : isCreate
+      ? t('content.detail.createArticleBtn')
+      : t('content.detail.saveBtn')
 
   async function handleClose() {
     if (isDirty) {
       const confirmed = await showConfirm(
-        t('products.detail.unsavedChangesConfirm', { defaultValue: 'Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?' }),
-        t('products.detail.unsavedChangesTitle', { defaultValue: 'Có thay đổi chưa lưu' }),
+        t('content.detail.unsavedChangesConfirm'),
+        t('content.detail.unsavedChangesTitle'),
       )
       if (!confirmed) return
       // F6: đã xác nhận qua hộp thoại riêng ở trên — bỏ qua lời nhắc trùng lặp của
@@ -503,13 +629,23 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     archiveMutation.mutate()
   }
 
+  async function handlePermanentDelete() {
+    const confirmed = await showConfirm(
+      t('content.permanentDeleteConfirm', { title: form.title }),
+      t('content.permanentDeleteConfirmTitle'),
+      { variant: 'danger', confirmLabel: t('common.permanentDelete') },
+    )
+    if (!confirmed) return
+    setIsSubmitting(true)
+    permanentDeleteMutation.mutate()
+  }
+
   return (
-    <div className="bb-proto">
     <div className="flex w-full min-w-0 items-start gap-6">
     {/* @container: lưới trong form co theo bề rộng cột này (xem ProductDetailScreen) —
         kéo khung xem trước rộng ra làm cột hẹp thì lưới tự về 1 cột, không chật. */}
     <div className="@container min-w-0 flex-1 basis-0">
-      <Screen maxWidth="1200px">
+      <Screen>
         <ScreenHeader
           eyebrow={t('content.detail.eyebrow')}
           title={screenTitle}
@@ -525,10 +661,10 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
               <span className={publishBadgeClass(form.publishStatus)}>
                 {t(`status.publish.${form.publishStatus}`, { defaultValue: form.publishStatus })}
               </span>
-              {isReadOnly && (
+              {!canUpdate && (
                 <span className="bb-badge bb-badge-warning">
-                  <Lock size={11} />
-                  {t('content.detail.readOnlyBadge', { defaultValue: 'Chỉ đọc' })}
+                  <Lock size={11} aria-hidden="true" />
+                  {t('content.detail.readOnlyBadge')}
                 </span>
               )}
             </span>
@@ -537,52 +673,51 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
             <Button
               variant="ghost"
               size="icon"
+              className="min-h-11 min-w-11"
               onClick={handleClose}
               aria-label={t('content.detail.backToList')}
               data-screen-close="true"
             >
-              <X size={18} />
+              <X size={18} aria-hidden="true" />
             </Button>
           }
         />
 
         {/* Banners — read-only */}
-        {!canUpdate && (
-          <div className="bb-alert warning center">
-            <Lock size={16} />
-            <span>{t('content.detail.permissionDesc')}</span>
-          </div>
-        )}
+        {!canUpdate ? <ReadOnlyBanner warning={t('content.detail.permissionDesc')} /> : null}
 
-        {state.warning && (
-          <div className="bb-alert warning center">
-            <AlertCircle size={16} />
-            <div className="bb-alert-main">{state.warning}</div>
-          </div>
-        )}
+        {state.warning ? <Alert tone="warning">{state.warning}</Alert> : null}
+
+        {persistedTrash ? (
+          <Alert tone="warning">
+            <strong>{t('content.detail.trashWarningTitle')}</strong>{' '}
+            {t('content.detail.trashWarningDesc')}
+          </Alert>
+        ) : null}
 
         {draftRecovery && (
-          <div className="bb-alert info center wrap">
-            <Save size={14} className="shrink-0" />
-            <span className="bb-alert-main truncate">
-              <strong>{t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}</strong>
+          <Alert tone="info" icon={Save}>
+            <div className="flex flex-wrap items-center gap-2">
+            <span className="min-w-0 flex-1 truncate">
+              <strong>{t('content.detail.draftFoundShort')}</strong>
               {' · '}{formatDateTime(new Date(draftRecovery.ts).toISOString())}
             </span>
-            <Button variant="unstyled"
+            <Button variant="ghost"
+              size="sm"
               type="button"
-              className="text-xs font-semibold underline hover:no-underline"
               onClick={() => { setForm(draftRecovery.form); setEnSlugManuallyEdited(Boolean(draftRecovery.form?.translations?.en?.slug)); setDraftRecovery(null) }}
             >
-              {t('products.detail.draftRestore', { defaultValue: 'Khôi phục' })}
+              {t('content.detail.draftRestore')}
             </Button>
-            <Button variant="unstyled"
+            <Button variant="ghost"
+              size="sm"
               type="button"
-              className="text-xs opacity-70 hover:opacity-100"
               onClick={() => { clearFormFromStorage(autosaveKey); setDraftRecovery(null) }}
             >
-              {t('products.detail.draftDiscard', { defaultValue: 'Bỏ qua' })}
+              {t('content.detail.draftDiscard')}
             </Button>
-          </div>
+            </div>
+          </Alert>
         )}
 
         {/* Assignment banner — always visible */}
@@ -600,7 +735,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
         {/* F2: chú thích dấu * cho ô/thẻ bắt buộc — đặt đầu form, dùng token muted */}
         <p className="text-xs text-muted-foreground">
-          <span className="text-[var(--admin-color-status-danger-text)]" aria-hidden="true">*</span>
+          <span className="text-danger" aria-hidden="true">*</span>
           {' '}
           {t('common.requiredLegend', { defaultValue: 'Trường bắt buộc' })}
         </p>
@@ -608,10 +743,14 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
         <form
           ref={formRef}
           className="flex flex-col gap-6 pb-4"
-          onSubmit={handleSubmit}
+          onSubmit={(event) => {
+            event.preventDefault()
+            handlePrimarySave()
+          }}
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !isReadOnly && isDirty) {
-              handleSubmit(e)
+              e.preventDefault()
+              handlePrimarySave()
             }
           }}
         >
@@ -623,18 +762,26 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                 required
               >
                 <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
-                  <Field full label={requiredLabel(t('content.detail.title'))} error={isEnLang ? validationErrors['translations.en.title'] : validationErrors.title}>
+                  <Field
+                    full
+                    required
+                    label={t('content.detail.title')}
+                    count={`${langValue('title').length} / 255`}
+                    countWarn={langValue('title').length > 240}
+                    error={isEnLang ? validationErrors['translations.en.title'] : validationErrors.title}
+                  >
                     <Input
                       value={isEnLang ? (form.translations?.en?.title ?? '') : form.title}
-                      onChange={(e) => isEnLang ? (isArticle ? handleEnTitleChange(e.target.value) : updateTranslation('title', e.target.value)) : handleTitleChange(e.target.value)}
+                      onChange={(e) => isEnLang ? handleEnTitleChange(e.target.value) : handleTitleChange(e.target.value)}
                       onBlur={() => validateFieldOnBlur(isEnLang ? 'translations.en.title' : 'title')}
                       disabled={isReadOnly}
                       placeholder={isEnLang ? t('content.detail.titlePlaceholderEn') : undefined}
+                      maxLength={255}
                     />
                   </Field>
 
                   {/* Đường dẫn URL theo ngôn ngữ — slug tiếng Anh cho BÀI VIẾT (ARTICLE_RULE_003). */}
-                  {isEnLang && isArticle ? (
+                  {isEnLang ? (
                     <Field
                       full
                       label={t('content.detail.slug')}
@@ -651,7 +798,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       />
                     </Field>
                   ) : (
-                    <Field full label={requiredLabel(t('content.detail.slug'))} error={validationErrors.slug}>
+                    <Field full required label={t('content.detail.slug')} error={validationErrors.slug}>
                       <Input
                         value={form.slug}
                         onChange={(e) => handleSlugChange(e.target.value)}
@@ -665,53 +812,69 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                   {/* Ô "Danh mục" đã gỡ: sau khi gộp nhóm bài viết còn 1 "Tin tức" (V275),
                       backend tự gán mọi bài vào nhóm này nên không cần cho admin chọn. */}
 
-                  {isArticle && (
-                    <Field full label={t('content.detail.excerpt')} helper={isEnLang ? t('content.detail.enFieldHint') : undefined}>
+                    <Field
+                      full
+                      label={t('content.detail.excerpt')}
+                      count={`${langValue('excerpt').length} / 5000`}
+                      countWarn={langValue('excerpt').length > 4500}
+                      error={isEnLang ? validationErrors['translations.en.excerpt'] : validationErrors.excerpt}
+                      helper={isEnLang ? t('content.detail.enFieldHint') : undefined}
+                    >
                       <Textarea
                         value={isEnLang ? (form.translations?.en?.excerpt ?? '') : form.excerpt}
                         onChange={(e) => isEnLang ? updateTranslation('excerpt', e.target.value) : updateField('excerpt', e.target.value)}
                         disabled={isReadOnly}
+                        maxLength={5000}
                       />
                     </Field>
-                  )}
                 </div>
               </SectionCard>
 
               {/* ── Card: Nội dung chính ── */}
-              <SectionCard title={t('content.detail.sectionBody', { defaultValue: 'Nội dung chính' })} required>
-                {isEnLang ? (
-                  <RichTextEditor
-                    key={`body-${contentLang}`}
-                    value={form.translations?.en?.body ?? ''}
-                    onChange={(html) => updateTranslation('body', html)}
-                    placeholder={t('content.detail.bodyPlaceholder', { defaultValue: 'Nhập nội dung...' })}
-                    disabled={isReadOnly}
-                    enableImagePicker
-                  />
-                ) : (
-                  <BlockEditor
-                    key={`bodyBlocks-${contentLang}`}
-                    value={form.bodyBlocks}
-                    onChange={(blocks) => updateField('bodyBlocks', blocks)}
-                    disabled={isReadOnly}
-                    hasError={Boolean(validationErrors.bodyBlocks)}
-                    fallbackHtml={form.body}
-                  />
-                )}
-                {!isEnLang && validationErrors.bodyBlocks && (
-                  <span className="text-xs text-[var(--admin-color-status-danger-text)] font-semibold mt-2 block">
-                    {validationErrors.bodyBlocks}
-                  </span>
-                )}
+              <SectionCard title={t('content.detail.sectionBody')} required={!isEnLang}>
+                <Field
+                  full
+                  required={!isEnLang}
+                  label={t('content.detail.body')}
+                  error={isEnLang ? validationErrors['translations.en.body'] : validationErrors.bodyBlocks}
+                  helper={isEnLang ? t('content.detail.enBodyOptionalHint') : undefined}
+                >
+                  <div role="group">
+                    {isEnLang ? (
+                      <RichTextEditor
+                        key={`body-${contentLang}`}
+                        value={form.translations?.en?.body ?? ''}
+                        onChange={(html) => updateTranslation('body', html)}
+                        placeholder={t('content.detail.bodyPlaceholder')}
+                        disabled={isReadOnly}
+                        enableImagePicker
+                      />
+                    ) : (
+                      <BlockEditor
+                        key={`bodyBlocks-${contentLang}`}
+                        value={form.bodyBlocks}
+                        onChange={(blocks) => updateField('bodyBlocks', blocks)}
+                        disabled={isReadOnly}
+                        hasError={Boolean(validationErrors.bodyBlocks)}
+                        fallbackHtml={form.body}
+                      />
+                    )}
+                  </div>
+                </Field>
               </SectionCard>
 
               {/* ── Card: Hình ảnh — article gallery / page hero ── */}
               <SectionCard title={t('content.detail.sectionMedia')}>
                 <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
-                  <Field full label={t('content.detail.coverImageUrl')} helper={t('content.detail.coverImageUrlHint')}>
+                  <Field
+                    full
+                    label={t('content.detail.coverImageUrl')}
+                    helper={t('content.detail.coverImageUrlHint')}
+                    error={validationErrors.coverImageUrl || validationErrors.coverImageAlt}
+                  >
                     <ImageUrlInput
                       value={form.coverImageUrl}
-                      onChange={(url) => updateField('coverImageUrl', url)}
+                      onChange={(url, media) => updateImageAsset('coverImage', url, media)}
                       alt={form.coverImageAlt}
                       onAltChange={(v) => updateField('coverImageAlt', v)}
                       disabled={isReadOnly}
@@ -719,7 +882,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       recommend={IMAGE_RECO.cover}
                     />
                   </Field>
-                  {isArticle && form.homeExperience && (
+                  {form.homeExperience && (
                     <Field full label={t('content.detail.productImageUrl', { defaultValue: 'Ảnh sản phẩm (overlay carousel)' })} helper={t('content.detail.productImageUrlHint', { defaultValue: 'Ảnh PNG nền trong hiển thị chồng lên ảnh bìa trong carousel Góc Trải Nghiệm ở trang chủ.' })}>
                       <ImageUrlInput
                         value={form.productImageUrl}
@@ -738,8 +901,12 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
               {/* ── Card: Hiển thị ── */}
               <SectionCard title={t('content.detail.sectionPublish', { defaultValue: 'Hiển thị' })} required>
                 <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
-                  <Field label={t('content.detail.publishStatus')} error={validationErrors.publishStatus}>
-                    <Select value={form.publishStatus} onValueChange={(val) => updateField('publishStatus', val)} disabled={isReadOnly}>
+                  <Field required label={t('content.detail.publishStatus')} error={validationErrors.publishStatus}>
+                    <Select
+                      value={form.publishStatus}
+                      onValueChange={(val) => updateField('publishStatus', val)}
+                      disabled={isReadOnly || persistedTrash}
+                    >
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {publishOptions.map((status) => (
@@ -748,7 +915,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       </SelectContent>
                     </Select>
                   </Field>
-                  {isArticle && (
                     <div className="@xl:col-span-2 flex flex-col gap-1.5">
                       <label className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
                         <Checkbox
@@ -769,7 +935,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       </label>
                       <span className="text-xs text-muted-foreground">{t('content.detail.homeExperienceHint', { defaultValue: 'Bật để chọn bài này vào băng chuyền "Góc trải nghiệm cùng BigBike" ở trang chủ. Hiển thị tối đa 3 bài được chọn (mới nhất trước). Nếu không chọn bài nào, trang chủ tự lấy 3 bài Reviews mới nhất.' })}</span>
                     </div>
-                  )}
                 </div>
               </SectionCard>
             </>
@@ -783,11 +948,11 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                 <div className="mb-4 rte-canvas-frame">
                   <div className="p-3 border border-border bg-white">
                     <div className="flex items-center gap-1 text-xs text-google-url mb-1">
-                      <Search size={12} />
+                      <Search size={12} aria-hidden="true" />
                       <span>{t('content.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
                     </div>
                     <div className="text-xs text-google-url break-all mb-1">
-                      {storefrontOrigin}<span className="text-google-crumb"> › {isArticle ? 'tin-tuc' : 'trang'} › {form.slug || 'duong-dan'}</span>
+                      {storefrontOrigin}<span className="text-google-crumb"> › tin-tuc › {form.slug || 'duong-dan'}</span>
                     </div>
                     <div className="text-lg leading-snug text-google-title break-words mb-1">
                       {(langValue('seoTitle') || form.title || t('content.detail.serpTitleFallback', { defaultValue: 'Tiêu đề trên Google' })).slice(0, 60)}
@@ -804,7 +969,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                     label={t('content.detail.seoTitle', { defaultValue: 'Tiêu đề SEO' })}
                     count={`${langValue('seoTitle').length} / 255`}
                     countWarn={langValue('seoTitle').length > 230}
-                    error={!isEnLang ? validationErrors.seoTitle : undefined}
+                    error={isEnLang ? validationErrors['translations.en.seoTitle'] : validationErrors.seoTitle}
                     helper={isEnLang ? t('content.detail.enFieldHint') : undefined}
                   >
                     <Input
@@ -812,6 +977,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       onChange={(e) => isEnLang ? updateTranslation('seoTitle', e.target.value) : updateField('seoTitle', e.target.value)}
                       disabled={isReadOnly}
                       placeholder={form.title || t('content.detail.seoTitle', { defaultValue: 'Tiêu đề SEO' })}
+                      maxLength={255}
                     />
                   </Field>
 
@@ -820,7 +986,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                     label={t('content.detail.seoDescription', { defaultValue: 'Mô tả SEO' })}
                     count={`${langValue('seoDescription').length} / 5000`}
                     countWarn={langValue('seoDescription').length > 4500}
-                    error={!isEnLang ? validationErrors.seoDescription : undefined}
+                    error={isEnLang ? validationErrors['translations.en.seoDescription'] : validationErrors.seoDescription}
                     helper={isEnLang ? t('content.detail.enFieldHint') : undefined}
                   >
                     <Textarea
@@ -828,7 +994,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       onChange={(e) => isEnLang ? updateTranslation('seoDescription', e.target.value) : updateField('seoDescription', e.target.value)}
                       disabled={isReadOnly}
                       rows={3}
-                      className={!isEnLang && validationErrors.seoDescription ? 'border-danger' : undefined}
+                      maxLength={5000}
                     />
                   </Field>
 
@@ -846,11 +1012,11 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       full
                       label={t('content.detail.seoOgImageUrl', { defaultValue: 'SEO OG image URL' })}
                       helper={t('content.detail.seoOgImageUrlHint', { defaultValue: 'Ảnh chia sẻ MXH, 1200×630px.' })}
-                      error={validationErrors.seoOgImageUrl}
+                      error={validationErrors.seoOgImageUrl || validationErrors.seoOgImageAlt}
                     >
                       <ImageUrlInput
                         value={form.seoOgImageUrl}
-                        onChange={(url) => updateField('seoOgImageUrl', url)}
+                        onChange={(url, media) => updateImageAsset('seoOgImage', url, media)}
                         alt={form.seoOgImageAlt}
                         onAltChange={(alt) => updateField('seoOgImageAlt', alt)}
                         disabled={isReadOnly}
@@ -861,7 +1027,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                   </div>
 
                   {/* noindex toggle — chỉ bài viết */}
-                  {isArticle && (
                     <div className="mt-4 flex flex-col gap-1.5">
                       <label className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
                         <Checkbox
@@ -873,17 +1038,16 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       </label>
                       <span className="text-xs text-muted-foreground">{t('content.detail.seoNoIndexHint')}</span>
                     </div>
-                  )}
                 </CollapsibleSection>
 
                 {/* SEO checklist */}
                 <div className="mt-4 p-3 border border-border bg-muted/30">
                   <div className="flex items-center justify-between mb-2">
                     <span className="flex items-center gap-1.5 text-sm font-semibold">
-                      <Check size={14} />
+                      <Check size={14} aria-hidden="true" />
                       {t('content.detail.seoChecklist', { defaultValue: 'Checklist SEO' })}
                     </span>
-                    <span className="font-mono font-bold text-sm text-[var(--admin-color-status-success-text)]">
+                    <span className="font-mono text-sm font-bold text-success">
                       {seoPassed} / {seoChecks.length}
                     </span>
                   </div>
@@ -893,10 +1057,10 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                         <span className={cn(
                           'w-4 h-4 flex items-center justify-center',
                           c.ok
-                            ? 'bg-[var(--admin-color-status-success-bg)] text-[var(--admin-color-status-success-text)]'
+                            ? 'bg-success-bg text-success'
                             : 'bg-muted',
                         )}>
-                          {c.ok ? <Check size={11} /> : null}
+                          {c.ok ? <Check size={11} aria-hidden="true" /> : null}
                         </span>
                         <span>
                           {c.label}
@@ -923,42 +1087,56 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
           }
         >
 
-          {isArticle && (
+          {canUpdate && (
             <Button
-
               variant="outline"
               type="button"
+              className="min-h-11"
+              disabled={isSubmitting}
               onClick={() => setPreviewOpen(true)}
               title={t('content.detail.preview.title', { defaultValue: 'Xem trước bài viết' })}
             >
-              <Eye size={14} className="mr-1.5" />
+              <Eye size={14} className="mr-1.5" aria-hidden="true" />
               {t('content.detail.preview.open', { defaultValue: 'Xem trước' })}
             </Button>
           )}
-          {!isCreate && canUpdate && (
+          {!isCreate && canUpdate && !persistedTrash && (
             <Button
               variant="outline"
               type="button"
+              className="min-h-11 text-destructive hover:text-destructive"
               disabled={isSubmitting}
               onClick={handleArchive}
-              className="text-[var(--admin-color-status-danger-text)]"
             >
-              <Trash2 size={14} className="mr-1.5" />
+              <Trash2 size={14} className="mr-1.5" aria-hidden="true" />
               {t('content.detail.archiveBtn')}
             </Button>
           )}
+          {canUpdate && persistedTrash ? (
+            <Button
+              variant="outline"
+              type="button"
+              className="min-h-11 text-destructive hover:text-destructive"
+              disabled={isSubmitting}
+              onClick={handlePermanentDelete}
+            >
+              <Trash2 size={14} className="mr-1.5" aria-hidden="true" />
+              {t('common.permanentDelete')}
+            </Button>
+          ) : null}
           <Button
             type="button"
-            disabled={isReadOnly || (!isCreate && !isDirty)}
-            onClick={handleSubmit}
+            className="min-h-11"
+            disabled={!canUpdate || isSubmitting || isRestoreConfirming || (!isCreate && !isDirty && !persistedTrash)}
+            onClick={handlePrimarySave}
           >
-            {isSubmitting && <Loader2 size={14} className="animate-spin mr-1.5" />}
+            {isSubmitting && <Loader2 size={14} className="animate-spin mr-1.5" aria-hidden="true" />}
             {primaryLabel}
           </Button>
         </StickyActionBar>
       </Screen>
     </div>
-        {isArticle && (
+        {canUpdate && (
           <LivePreview
             open={previewOpen}
             onClose={() => setPreviewOpen(false)}
@@ -975,7 +1153,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
             t={t}
           />
         )}
-    </div>
     </div>
   )
 }

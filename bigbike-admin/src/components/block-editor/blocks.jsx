@@ -907,11 +907,14 @@ export function SizeGuideBlockEditor({ block, onChange, disabled, contentLang = 
   )
 }
 
-export function BlockTypeLabel({ type }) {
+export function BlockTypeLabel({ type, compactMobile = false }) {
   const { t } = useTranslation()
   const key = `products.detail.blocks.blockType${type.charAt(0).toUpperCase()}${type.slice(1)}`
   return (
-    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide w-20 shrink-0 pt-1">
+    <span className={cn(
+      'text-xs font-medium text-muted-foreground uppercase tracking-wide w-20 shrink-0 pt-1',
+      compactMobile && 'max-sm:hidden',
+    )}>
       {t(key, { defaultValue: type })}
     </span>
   )
@@ -927,7 +930,10 @@ export function BlockCard({ block, disabled, structDisabled, contentLang, sortab
     <div
       ref={sortable?.setNodeRef}
       style={{ ...sortable?.style, opacity: sortable?.isDragging ? 0.5 : undefined }}
-      className="flex gap-2 p-3 border border-border rounded-sm bg-background hover:bg-muted/30 transition-colors"
+      className={cn(
+        'flex gap-2 p-3 border border-border rounded-sm bg-background hover:bg-muted/30 transition-colors',
+        !productMode && 'max-sm:flex-wrap',
+      )}
     >
       {!dragDisabled && sortable && (
         <Button
@@ -952,8 +958,11 @@ export function BlockCard({ block, disabled, structDisabled, contentLang, sortab
           <ChevronDown size={16} className={cn('transition-transform', collapsed && '-rotate-90')} aria-hidden="true" />
         </Button>
       )}
-      <BlockTypeLabel type={block.type} />
-      <div className="flex-1 min-w-0">
+      <BlockTypeLabel type={block.type} compactMobile={!productMode} />
+      <div className={cn(
+        'flex-1 min-w-0',
+        !productMode && 'max-sm:order-last max-sm:basis-full',
+      )}>
         {collapsed ? (
           <Button
             variant="unstyled"

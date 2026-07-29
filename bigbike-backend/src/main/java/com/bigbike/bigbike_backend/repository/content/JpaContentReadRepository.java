@@ -129,7 +129,8 @@ public class JpaContentReadRepository implements ContentReadRepository {
         String normalizedQ = normalizeQuery(q);
 
         org.springframework.data.domain.Page<String> idPage =
-                articleJpaRepository.findAdminArticleIds(publishStatus, normalizedQ, pageable);
+                articleJpaRepository.findAdminArticleIds(
+                        publishStatus, PublishStatus.TRASH, normalizedQ, pageable);
 
         return fetchAndOrderArticles(idPage, pageable, locale);
     }
@@ -138,7 +139,8 @@ public class JpaContentReadRepository implements ContentReadRepository {
 
     @Override
     public List<Article> findArticlesByFilter(PublishStatus publishStatus, String q, String locale) {
-        return articleJpaRepository.findByFilter(publishStatus, normalizeQuery(q))
+        return articleJpaRepository.findByFilter(
+                        publishStatus, PublishStatus.TRASH, normalizeQuery(q))
                 .stream()
                 .map(e -> toDomain(e, locale, false)).toList();
     }

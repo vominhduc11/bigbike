@@ -14,9 +14,10 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Read endpoint for the editable "Phân công" guide on the product create/edit screen.
  *
- * <p>Read is gated by {@code products.read} (not {@code settings.read}) so every role that can open
- * the product editor — SUPER_ADMIN, ADMIN, SHOP_MANAGER, EDITOR — can render the banner. Editing is
- * SUPER_ADMIN-only via the {@code superAdminOnly} {@code product_assign_*} settings keys
+ * <p>Read is gated by either {@code products.read} or {@code content.read} (not
+ * {@code settings.read}) so every role that can open the product or article editor can render the
+ * shared banner. Editing is SUPER_ADMIN-only via the {@code superAdminOnly}
+ * {@code product_assign_*} settings keys
  * (see {@link AdminSettingsController}).
  */
 @RestController
@@ -30,7 +31,7 @@ public class AdminProductAssignmentController extends AdminControllerSupport {
 
     @GetMapping
     public ApiDataResponse<AdminProductAssignmentResponse> getProductAssignment(HttpServletRequest request) {
-        devAdminAuthService.requirePermission(request, "products.read");
+        devAdminAuthService.requireAnyPermission(request, "products.read", "content.read");
         return apiResponseFactory.data(adminSettingsService.getProductAssignment(), request);
     }
 }

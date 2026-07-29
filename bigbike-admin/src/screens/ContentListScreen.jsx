@@ -1,74 +1,90 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
+import { Eye, FileText, Pencil, Plus, RefreshCw, Trash2, Undo2 } from 'lucide-react'
 import { toast } from '@/lib/toast'
-import { FilterSelect } from '../components/FilterSelect'
-import { PageSizeSelect } from '../components/PageSizeSelect'
-import { FilterSearchInput } from '../components/FilterSearchInput'
-import { FileText, Plus, Pencil, Trash2, Undo2 } from 'lucide-react'
-import { PaginationControls } from '../components/PaginationControls'
-import { AdminTable } from '../components/AdminTable'
 import { Button } from '@/components/ui/button'
+import { AdminTable } from '../components/AdminTable'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { FilterChips } from '../components/FilterChips'
+import { FilterSearchInput } from '../components/FilterSearchInput'
+import { FilterSelect } from '../components/FilterSelect'
+import { PageSizeSelect } from '../components/PageSizeSelect'
+import { PaginationControls } from '../components/PaginationControls'
 import { PublishStatusBadge } from '../components/StatusBadge'
-import { publishRowAccent } from '../lib/statusTone'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { RecentItemsChips } from '../components/RecentItemsChips'
 import { StatePanel } from '../components/StatePanel'
-import { deleteContent, fetchContent, updateContent, restoreContent, permanentDeleteContent } from '../lib/adminApi'
+import { FilterBar, Screen, ScreenHeader } from '../components/layout'
+import {
+  deleteContent,
+  fetchContent,
+  fetchContentDetail,
+  permanentDeleteContent,
+  restoreContent,
+  updateContent,
+} from '../lib/adminApi'
 import { allowedPublishOptions } from '../lib/contentPublishTransitions'
 import { showConfirm } from '../lib/confirm'
-import { formatDateTime, formatText } from '../lib/formatters'
-import { useAdminList } from '../lib/useAdminList'
 import { useContentLang } from '../lib/contentLang'
 import { useDebounce } from '../lib/useDebounce'
+import { formatDateTime, formatText } from '../lib/formatters'
+import { useAdminList } from '../lib/useAdminList'
 import { useRecentItems } from '../lib/useRecentItems'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
-
-// Module chỉ còn quản lý BÀI VIẾT (Tin tức). Trang thông tin tĩnh (chính sách, hướng dẫn…)
-// đã đóng cứng trong web (owner 2026-06-24), không còn quản lý trong admin. type cố định ARTICLE.
-const ARTICLE_TYPE = 'ARTICLE'
-
-const INITIAL_QUERY = {
-  search: '',
-  type: ARTICLE_TYPE,
-  publishStatus: 'ALL',
-  sort: 'updatedAt:desc',
-  page: 1,
-  pageSize: 20,
-}
+import { publishRowAccent } from '../lib/statusTone'
+import {
+  CONTENT_SORT_OPTIONS,
+  INITIAL_CONTENT_QUERY,
+  contentDetailPath,
+  isContentActionEligible,
+} from './content-list/constants'
+import { buildFormFromItem, toPayload } from './content-detail/constants'
 
 export function ContentListScreen({ navigate, canUpdate }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
   const queryClient = useQueryClient()
-  const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
+  const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_CONTENT_QUERY))
   const [searchInput, setSearchInput] = useState(() => {
     const params = new URLSearchParams(window.location.search)
-    return params.get('search') || INITIAL_QUERY.search
+    return params.get('search') || INITIAL_CONTENT_QUERY.search
   })
   const debouncedSearch = useDebounce(searchInput, 300)
   const isFirstSearchRender = useRef(true)
-  const [selected, setSelected] = useState([])
+  const [selected, setSelected] = useState(() => new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
-  // O9: "Vừa xem/sửa" — bài viết vừa mở ở ContentDetailScreen (ghi qua recordRecentItem).
+  const [rowBusy, setRowBusy] = useState(null)
   const recentContentItems = useRecentItems('recent:content')
-
   const state = useAdminList(['content', query, contentLang], () => fetchContent(query))
 
   useEffect(() => {
-    syncQueryToUrl(query, INITIAL_QUERY)
+    syncQueryToUrl(query, INITIAL_CONTENT_QUERY)
   }, [query])
 
   useEffect(() => {
-    if (isFirstSearchRender.current) { isFirstSearchRender.current = false; return }
-    setSelected([])
-    setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
+    if (isFirstSearchRender.current) {
+      isFirstSearchRender.current = false
+      return
+    }
+    setSelected(new Set())
+    setQuery((previous) => ({ ...previous, search: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
 
+  const items = useMemo(() => state.items || [], [state.items])
+  const pagination = state.pagination
+
+  useEffect(() => {
+    if (state.status !== 'success' || state.isFetching || !pagination) return
+    const lastPage = Math.max(1, Number(pagination.totalPages) || 1)
+    if (query.page <= lastPage) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelected(new Set())
+    setQuery((previous) => ({ ...previous, page: lastPage }))
+  }, [pagination, query.page, state.isFetching, state.status])
+
   function updateQuery(partial, options = { resetPage: false }) {
-    setSelected([])
+    setSelected(new Set())
     setQuery((previous) => {
       const next = { ...previous, ...partial }
       if (options.resetPage) next.page = 1
@@ -77,197 +93,273 @@ export function ContentListScreen({ navigate, canUpdate }) {
   }
 
   function resetFilters() {
-    setSearchInput(INITIAL_QUERY.search)
-    setSelected([])
-    setQuery(INITIAL_QUERY)
+    setSearchInput(INITIAL_CONTENT_QUERY.search)
+    setSelected(new Set())
+    setQuery(INITIAL_CONTENT_QUERY)
   }
 
-  const items = state.items || []
-  const pagination = state.pagination
-  const createPath = '/admin/content/articles/new'
+  async function refreshContent(item) {
+    await queryClient.invalidateQueries({ queryKey: ['content'] })
+    if (item?.id) {
+      await queryClient.invalidateQueries({ queryKey: ['content', item.type, item.id] })
+    }
+  }
 
-  const isFiltered = query.search !== INITIAL_QUERY.search
-    || query.publishStatus !== INITIAL_QUERY.publishStatus
-
-  const isTrashView = query.publishStatus === 'TRASH'
-
-  // Áp hành động hàng loạt: lặp lại đúng thao tác đơn lẻ đã được phép (xoá vào
-  // thùng rác / đổi trạng thái xuất bản), nhưng TÔN TRỌNG state machine — chỉ áp
-  // cho hàng có chuyển trạng thái hợp lệ (allowedPublishOptions, mirror
-  // STATE_MACHINES.md). Hàng không hợp lệ bị bỏ qua và báo trong toast.
-  async function runBulk({ confirmKey, titleKey, confirmLabel, variant, action, isEligible }) {
-    const targets = items.filter((row) => selected.includes(row.id) && (isEligible ? isEligible(row) : true))
-    if (targets.length === 0) return
-    const skipped = selected.length - targets.length
+  async function runSingle({ item, action, confirmKey, titleKey, confirmLabel, variant, successKey }) {
     const confirmed = await showConfirm(
-      t(confirmKey, { count: targets.length }),
+      t(confirmKey, { title: item.title }),
       t(titleKey),
       { confirmLabel: t(confirmLabel), variant },
     )
     if (!confirmed) return
-    setBulkBusy(true)
+    setRowBusy(`${action}:${item.id}`)
     try {
-      const results = await Promise.allSettled(targets.map((row) => action(row)))
-      const ok = results.filter((r) => r.status === 'fulfilled').length
-      const fail = results.length - ok
-      queryClient.invalidateQueries({ queryKey: ['content'] })
-      setSelected([])
-      if (fail === 0 && skipped === 0) {
-        toast.success(t('content.bulkSuccess', { count: ok, defaultValue: `Đã cập nhật ${ok} mục.` }))
-      } else {
-        toast.warning(t('content.bulkPartial', {
-          ok, fail, skipped,
-          defaultValue: `Thành công ${ok}, lỗi ${fail}, bỏ qua ${skipped}.`,
-        }))
-      }
+      if (action === 'trash') await deleteContent(item.type, item.id)
+      if (action === 'restore') await restoreContent(item.type, item.id)
+      if (action === 'permanent') await permanentDeleteContent(item.type, item.id)
+      await refreshContent(item)
+      toast.success(t(successKey))
+    } catch (error) {
+      toast.error(error?.message || t('common.error'))
     } finally {
-      setBulkBusy(false)
+      setRowBusy(null)
     }
   }
 
-  const handleSoftDelete = async (item) => {
+  const handleSoftDelete = (item) => runSingle({
+    item,
+    action: 'trash',
+    confirmKey: 'content.deleteConfirm',
+    titleKey: 'content.deleteConfirmTitle',
+    confirmLabel: 'common.delete',
+    variant: 'danger',
+    successKey: 'content.deleteSuccess',
+  })
+
+  const handleRestore = (item) => runSingle({
+    item,
+    action: 'restore',
+    confirmKey: 'content.restoreConfirm',
+    titleKey: 'content.restoreConfirmTitle',
+    confirmLabel: 'content.restore',
+    variant: 'default',
+    successKey: 'content.restoreSuccess',
+  })
+
+  const handlePermanentDelete = (item) => runSingle({
+    item,
+    action: 'permanent',
+    confirmKey: 'content.permanentDeleteConfirm',
+    titleKey: 'content.permanentDeleteConfirmTitle',
+    confirmLabel: 'common.permanentDelete',
+    variant: 'danger',
+    successKey: 'content.permanentDeleteSuccess',
+  })
+
+  async function publishFullArticle(item) {
+    const detail = await fetchContentDetail(item.type, item.id)
+    const form = buildFormFromItem(item.type, detail.item)
+    await updateContent(item.type, item.id, toPayload({ ...form, publishStatus: 'PUBLISHED' }, false))
+  }
+
+  async function runBulk({ action, confirmKey, titleKey, confirmLabel, variant }) {
+    const selectedRows = items.filter((item) => selected.has(item.id))
+    const eligible = selectedRows.filter((item) => {
+      if (action === 'publish') {
+        return allowedPublishOptions(item.publishStatus).includes('PUBLISHED')
+      }
+      return isContentActionEligible(item, action)
+    })
+    const skipped = selected.size - eligible.length
+    if (eligible.length === 0) {
+      toast.warning(t('content.bulkNothingEligible', { skipped }))
+      return
+    }
     const confirmed = await showConfirm(
-      t('content.deleteConfirm', { title: item.title, defaultValue: `Bạn có chắc chắn muốn xóa bài viết "${item.title}"?` }),
-      t('content.deleteConfirmTitle', { defaultValue: 'Xác nhận xóa' }),
-      { confirmLabel: t('common.delete'), variant: 'danger' }
+      t(confirmKey, { count: eligible.length }),
+      t(titleKey),
+      { confirmLabel: t(confirmLabel), variant },
     )
     if (!confirmed) return
 
-    try {
-      await deleteContent(item.type, item.id)
-      queryClient.invalidateQueries({ queryKey: ['content'] })
-      toast.success(t('content.deleteSuccess', { defaultValue: 'Đã chuyển bài viết vào Thùng rác.' }))
-    } catch (error) {
-      toast.error(error.message || t('common.error'))
+    setBulkBusy(true)
+    const successfulIds = []
+    let failed = 0
+    for (const item of eligible) {
+      try {
+        if (action === 'publish') await publishFullArticle(item)
+        if (action === 'trash') await deleteContent(item.type, item.id)
+        if (action === 'restore') await restoreContent(item.type, item.id)
+        if (action === 'permanent') await permanentDeleteContent(item.type, item.id)
+        successfulIds.push(item.id)
+      } catch {
+        failed += 1
+      }
+    }
+    await refreshContent()
+    setSelected((previous) => {
+      const next = new Set(previous)
+      successfulIds.forEach((id) => next.delete(id))
+      return next
+    })
+    setBulkBusy(false)
+
+    if (failed === 0 && skipped === 0) {
+      toast.success(t('content.bulkSuccess', { count: successfulIds.length }))
+    } else {
+      toast.warning(t('content.bulkPartial', {
+        ok: successfulIds.length,
+        fail: failed,
+        skipped,
+      }))
     }
   }
 
-  const handleRestore = async (item) => {
-    const confirmed = await showConfirm(
-      t('content.restoreConfirm', { title: item.title, defaultValue: `Bạn có chắc chắn muốn khôi phục bài viết "${item.title}"?` }),
-      t('content.restoreConfirmTitle', { defaultValue: 'Xác nhận khôi phục' }),
-      { confirmLabel: t('products.restore'), variant: 'default' }
-    )
-    if (!confirmed) return
-
-    try {
-      await restoreContent(item.type, item.id)
-      queryClient.invalidateQueries({ queryKey: ['content'] })
-      toast.success(t('content.restoreSuccess', { defaultValue: 'Khôi phục bài viết thành công.' }))
-    } catch (error) {
-      toast.error(error.message || t('common.error'))
-    }
-  }
-
-  const handlePermanentDelete = async (item) => {
-    const confirmed = await showConfirm(
-      t('content.permanentDeleteConfirm', { title: item.title, defaultValue: `Bạn có chắc chắn muốn xóa vĩnh viễn bài viết "${item.title}"? Thao tác này không thể hoàn tác.` }),
-      t('content.permanentDeleteConfirmTitle', { defaultValue: 'Xác nhận xóa vĩnh viễn' }),
-      { confirmLabel: t('common.permanentDelete'), variant: 'danger' }
-    )
-    if (!confirmed) return
-
-    try {
-      await permanentDeleteContent(item.type, item.id)
-      queryClient.invalidateQueries({ queryKey: ['content'] })
-      toast.success(t('content.permanentDeleteSuccess', { defaultValue: 'Xóa vĩnh viễn bài viết thành công.' }))
-    } catch (error) {
-      toast.error(error.message || t('common.error'))
-    }
-  }
-
-  function handleBulkTrash() {
-    runBulk({
-      confirmKey: 'content.bulkTrashConfirm',
-      titleKey: 'content.bulkTrashTitle',
-      confirmLabel: 'content.bulkTrashConfirmCta',
-      variant: 'danger',
-      action: (row) => deleteContent(row.type, row.id),
-    })
-  }
-
-  function handleBulkRestore() {
-    runBulk({
-      confirmKey: 'content.bulkRestoreConfirm',
-      titleKey: 'content.bulkRestoreTitle',
-      confirmLabel: 'products.restore',
-      variant: 'default',
-      action: (row) => restoreContent(row.type, row.id),
-    })
-  }
-
-  function handleBulkHardDelete() {
-    runBulk({
-      confirmKey: 'content.bulkHardDeleteConfirm',
-      titleKey: 'content.bulkHardDeleteTitle',
-      confirmLabel: 'common.permanentDelete',
-      variant: 'danger',
-      action: (row) => permanentDeleteContent(row.type, row.id),
-    })
-  }
-
-  function handleBulkPublishStatus(target, confirmKey, titleKey, confirmLabel) {
-    runBulk({
-      confirmKey, titleKey, confirmLabel,
-      isEligible: (row) => allowedPublishOptions(row.publishStatus).includes(target),
-      action: (row) => updateContent(row.type, row.id, { publishStatus: target }),
-    })
-  }
+  const isTrashView = query.publishStatus === 'TRASH'
+  const isFiltered = Boolean(query.search) || query.publishStatus !== 'ALL'
+  const totalItems = pagination?.totalItems ?? items.length
+  const createPath = '/admin/content/articles/new'
+  const [sortField, sortDir] = (query.sort || '').split(':')
+  const anyBusy = bulkBusy || Boolean(rowBusy)
 
   const bulkActions = canUpdate
     ? (isTrashView
         ? [
             {
-              label: t('content.bulkRestore', { defaultValue: 'Khôi phục' }),
-              onClick: handleBulkRestore,
-              disabled: bulkBusy,
+              label: t('content.bulkRestore'),
+              disabled: anyBusy,
+              onClick: () => runBulk({
+                action: 'restore',
+                confirmKey: 'content.bulkRestoreConfirm',
+                titleKey: 'content.bulkRestoreTitle',
+                confirmLabel: 'content.restore',
+              }),
             },
             {
-              label: t('content.bulkHardDelete', { defaultValue: 'Xóa vĩnh viễn' }),
+              label: t('content.bulkHardDelete'),
               tone: 'danger',
-              onClick: handleBulkHardDelete,
-              disabled: bulkBusy,
-            }
+              disabled: anyBusy,
+              onClick: () => runBulk({
+                action: 'permanent',
+                confirmKey: 'content.bulkHardDeleteConfirm',
+                titleKey: 'content.bulkHardDeleteTitle',
+                confirmLabel: 'common.permanentDelete',
+                variant: 'danger',
+              }),
+            },
           ]
         : [
             {
-              label: t('content.bulkPublish', { defaultValue: 'Xuất bản' }),
-              onClick: () => handleBulkPublishStatus('PUBLISHED', 'content.bulkPublishConfirm', 'content.bulkPublishTitle', 'content.bulkPublishCta'),
-              disabled: bulkBusy,
+              label: t('content.bulkPublish'),
+              disabled: anyBusy,
+              onClick: () => runBulk({
+                action: 'publish',
+                confirmKey: 'content.bulkPublishConfirm',
+                titleKey: 'content.bulkPublishTitle',
+                confirmLabel: 'content.bulkPublishCta',
+              }),
             },
             {
-              label: t('content.bulkTrash', { defaultValue: 'Chuyển vào thùng rác' }),
+              label: t('content.bulkTrash'),
               tone: 'danger',
-              onClick: handleBulkTrash,
-              disabled: bulkBusy,
+              disabled: anyBusy,
+              onClick: () => runBulk({
+                action: 'trash',
+                confirmKey: 'content.bulkTrashConfirm',
+                titleKey: 'content.bulkTrashTitle',
+                confirmLabel: 'content.bulkTrashConfirmCta',
+                variant: 'danger',
+              }),
             },
           ])
     : []
 
-  // Chip bộ lọc đang bật (ngoài mặc định) — mỗi chip có nút X để gỡ riêng.
   const filterChips = useMemo(() => {
     const chips = []
     if (query.search) {
       chips.push({
         key: 'search',
-        label: `${t('common.search', { defaultValue: 'Tìm kiếm' })}: ${query.search}`,
-        onRemove: () => setSearchInput(INITIAL_QUERY.search),
+        label: `${t('common.search')}: ${query.search}`,
+        onRemove: () => setSearchInput(INITIAL_CONTENT_QUERY.search),
       })
     }
     if (query.publishStatus !== 'ALL') {
       chips.push({
         key: 'publish',
-        label: `${t('content.filterPublish')}: ${t(`status.publish.${query.publishStatus}`, { defaultValue: query.publishStatus })}`,
+        label: `${t('content.filterPublish')}: ${t(`status.publish.${query.publishStatus}`)}`,
         onRemove: () => updateQuery({ publishStatus: 'ALL' }, { resetPage: true }),
       })
     }
     return chips
-  }, [query.search, query.publishStatus, t])
+  }, [query.publishStatus, query.search, t])
 
-  // Sort phía máy chủ — endpoint content nhận "field:dir" (mặc định updatedAt:desc).
-  const [sortField, sortDir] = (query.sort || '').split(':')
-  function handleSortChange(key, dir) {
-    updateQuery({ sort: `${key}:${dir}` }, { resetPage: true })
+  function renderRowActions(item) {
+    const isTrashed = item.publishStatus === 'TRASH'
+    const isBusy = rowBusy?.endsWith(`:${item.id}`)
+    const detailLabel = canUpdate && !isTrashed ? t('common.edit') : t('common.view')
+    return (
+      <div className="flex items-center justify-end gap-1" onClick={(event) => event.stopPropagation()}>
+        <Button
+          variant="ghost"
+          size="icon"
+          type="button"
+          className="min-h-11 min-w-11"
+          disabled={isBusy}
+          title={detailLabel}
+          aria-label={detailLabel}
+          onClick={() => navigate(contentDetailPath(item))}
+        >
+          {canUpdate && !isTrashed
+            ? <Pencil size={16} aria-hidden="true" />
+            : <Eye size={16} aria-hidden="true" />}
+        </Button>
+        {canUpdate && !isTrashed ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            type="button"
+            className="min-h-11 min-w-11 text-destructive hover:text-destructive"
+            loading={rowBusy === `trash:${item.id}`}
+            disabled={isBusy}
+            title={t('content.moveToTrash')}
+            aria-label={t('content.moveToTrash')}
+            onClick={() => handleSoftDelete(item)}
+          >
+            <Trash2 size={16} aria-hidden="true" />
+          </Button>
+        ) : null}
+        {canUpdate && isTrashed ? (
+          <>
+            <Button
+              variant="ghost"
+              size="icon"
+              type="button"
+              className="min-h-11 min-w-11"
+              loading={rowBusy === `restore:${item.id}`}
+              disabled={isBusy}
+              title={t('content.restore')}
+              aria-label={t('content.restore')}
+              onClick={() => handleRestore(item)}
+            >
+              <Undo2 size={16} aria-hidden="true" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              type="button"
+              className="min-h-11 min-w-11 text-destructive hover:text-destructive"
+              loading={rowBusy === `permanent:${item.id}`}
+              disabled={isBusy}
+              title={t('common.permanentDelete')}
+              aria-label={t('common.permanentDelete')}
+              onClick={() => handlePermanentDelete(item)}
+            >
+              <Trash2 size={16} aria-hidden="true" />
+            </Button>
+          </>
+        ) : null}
+      </div>
+    )
   }
 
   const columns = [
@@ -277,30 +369,30 @@ export function ContentListScreen({ navigate, canUpdate }) {
       sortable: true,
       skeletonWidth: '80%',
       render: (item) => (
-        <div className="product-cell">
-          <span className="bb-product-thumb">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="bb-product-thumb h-10 w-10 shrink-0">
             {item.coverImage?.url ? (
               <img
                 src={item.coverImage.url}
                 alt={item.coverImage.alt || item.title}
                 referrerPolicy="no-referrer"
                 loading="lazy"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                className="h-full w-full object-cover"
               />
-            ) : <FileText size={16} />}
+            ) : (
+              <FileText size={18} aria-hidden="true" />
+            )}
           </span>
-          <div className="info">
-            <div className="name">{formatText(item.title)}</div>
-            <div className="sku">/{item.slug}</div>
-          </div>
+          <span className="min-w-0">
+            <span className="block truncate font-semibold text-foreground">{formatText(item.title)}</span>
+            <span className="block truncate text-xs text-muted-foreground">/{formatText(item.slug)}</span>
+          </span>
         </div>
       ),
     },
     {
       key: 'publishStatus',
       label: t('content.colPublish'),
-      // Backend whitelist content sort gồm publishStatus (CONTENT_SORT_FIELDS) →
-      // sort theo trạng thái xuất bản để gom nhóm bản nháp/đã đăng khi triage.
       sortable: true,
       render: (item) => <PublishStatusBadge value={item.publishStatus} />,
     },
@@ -308,186 +400,137 @@ export function ContentListScreen({ navigate, canUpdate }) {
       key: 'updatedAt',
       label: t('content.colUpdated'),
       sortable: true,
-      render: (item) => <span className="bb-muted" style={{ fontSize: 12 }}>{formatDateTime(item.updatedAt)}</span>,
+      render: (item) => <span className="text-xs text-muted-foreground">{formatDateTime(item.updatedAt)}</span>,
     },
     {
       key: 'actions',
       label: '',
       align: 'right',
-      render: (item) => {
-        const isTrashed = query.publishStatus === 'TRASH'
-        return (
-          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
-            {!isTrashed && (
-              <Button variant="unstyled"
-                type="button"
-                className="bb-icon-btn"
-                title={t('common.edit')}
-                aria-label={t('common.edit')}
-                onClick={() => navigate(`/admin/content/${item.type.toLowerCase()}/${item.id}`)}
-              >
-                <Pencil size={14} />
-              </Button>
-            )}
-            {canUpdate && !isTrashed && (
-              <Button variant="unstyled"
-                type="button"
-                className="bb-icon-btn danger"
-                title={t('common.delete')}
-                aria-label={t('common.delete')}
-                onClick={() => handleSoftDelete(item)}
-              >
-                <Trash2 size={14} />
-              </Button>
-            )}
-            {canUpdate && isTrashed && (
-              <>
-                <Button variant="unstyled"
-                  type="button"
-                  className="bb-icon-btn"
-                  title={t('products.restore')}
-                  aria-label={t('products.restore')}
-                  onClick={() => handleRestore(item)}
-                >
-                  <Undo2 size={14} />
-                </Button>
-                <Button variant="unstyled"
-                  type="button"
-                  className="bb-icon-btn danger"
-                  title={t('common.permanentDelete')}
-                  aria-label={t('common.permanentDelete')}
-                  onClick={() => handlePermanentDelete(item)}
-                >
-                  <Trash2 size={14} />
-                </Button>
-              </>
-            )}
-          </div>
-        )
-      },
+      render: renderRowActions,
     },
   ]
 
-  const mobileCard = (item) => {
-    const isTrashed = query.publishStatus === 'TRASH'
+  function mobileCard(item) {
     return {
       title: formatText(item.title),
-      subtitle: `/${item.slug}`,
+      subtitle: `/${formatText(item.slug)}`,
       status: <PublishStatusBadge value={item.publishStatus} />,
-      meta: [
-        { label: t('content.colUpdated'), value: formatDateTime(item.updatedAt) },
-      ],
-      actions: (
-        <div style={{ display: 'flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
-          {!isTrashed && (
-            <Button variant="unstyled"
-              type="button"
-              className="bb-icon-btn"
-              title={t('common.edit')}
-              onClick={() => navigate(`/admin/content/${item.type.toLowerCase()}/${item.id}`)}
-            >
-              <Pencil size={14} />
-            </Button>
-          )}
-          {canUpdate && !isTrashed && (
-            <Button variant="unstyled"
-              type="button"
-              className="bb-icon-btn danger"
-              title={t('common.delete')}
-              onClick={() => handleSoftDelete(item)}
-            >
-              <Trash2 size={14} />
-            </Button>
-          )}
-          {canUpdate && isTrashed && (
-            <>
-              <Button variant="unstyled"
-                type="button"
-                className="bb-icon-btn"
-                disabled={bulkBusy}
-                title={t('products.restore')}
-                onClick={() => handleRestore(item)}
-              >
-                <Undo2 size={14} />
-              </Button>
-              <Button variant="unstyled"
-                type="button"
-                className="bb-icon-btn danger"
-                disabled={bulkBusy}
-                title={t('common.permanentDelete')}
-                onClick={() => handlePermanentDelete(item)}
-              >
-                <Trash2 size={14} />
-              </Button>
-            </>
-          )}
-        </div>
-      ),
-      onClick: () => navigate(`/admin/content/${item.type.toLowerCase()}/${item.id}`),
+      meta: [{ label: t('content.colUpdated'), value: formatDateTime(item.updatedAt) }],
+      actions: renderRowActions(item),
+      onClick: () => navigate(contentDetailPath(item)),
     }
   }
 
+  const emptyState = isTrashView
+    ? {
+        title: t('content.emptyTrash'),
+        description: t('content.emptyTrashDesc'),
+      }
+    : isFiltered
+      ? {
+          title: t('content.empty'),
+          description: t('content.emptyDesc'),
+        }
+      : {
+          title: t('content.emptyNoData'),
+          description: t('content.emptyNoDataDesc'),
+        }
+
   return (
-    <div>
-      <div className="bb-screen-header">
-        <div className="bb-screen-title">
-          <p className="bb-screen-eyebrow">{t('content.eyebrow')}</p>
-          <h1>{t('content.title')}</h1>
-          <p className="bb-muted">{t('content.description')}</p>
-        </div>
-        <div className="bb-screen-actions">
+    <Screen>
+      <ScreenHeader
+        eyebrow={t('content.eyebrow')}
+        title={t('content.title')}
+        description={t('content.description')}
+        actions={(
           <Button
             type="button"
             disabled={!canUpdate}
+            title={!canUpdate ? t('content.requireUpdatePermission') : undefined}
             onClick={() => navigate(createPath)}
           >
-            <Plus size={14} />
-            {t('content.newArticle')}
+            <Plus size={16} aria-hidden="true" />
+            {canUpdate ? t('content.newArticle') : t('common.noPermission')}
           </Button>
-        </div>
-      </div>
+        )}
+      />
 
-      {/* O9 — Vừa xem/sửa */}
-      <RecentItemsChips items={recentContentItems} onSelect={(item) => navigate(`/admin/content/article/${item.id}`)} />
+      <RecentItemsChips
+        items={recentContentItems}
+        onSelect={(item) => navigate(`/admin/content/article/${item.id}`)}
+      />
 
-      {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
+      {!canUpdate ? (
+        <ReadOnlyBanner warning={t('content.readOnly')} />
+      ) : state.warning ? (
+        <ReadOnlyBanner warning={state.warning} />
+      ) : null}
 
-      {/* Filter bar */}
-      <div className="bb-filter-bar">
+      <FilterBar ariaLabel={t('content.filterAria')} className="mt-4">
         <FilterSearchInput
           value={searchInput}
           onChange={setSearchInput}
           placeholder={t('content.searchPlaceholder')}
+          wrapperClassName="min-w-52 flex-1"
         />
         <FilterSelect
           value={query.publishStatus}
-          onValueChange={(v) => updateQuery({ publishStatus: v }, { resetPage: true })}
+          onValueChange={(value) => updateQuery({ publishStatus: value }, { resetPage: true })}
           ariaLabel={t('content.filterPublish')}
           options={[
-            { value: 'ALL', label: t('content.filterPublish') },
+            { value: 'ALL', label: t('content.filterAll') },
             { value: 'DRAFT', label: t('status.publish.DRAFT') },
             { value: 'PUBLISHED', label: t('status.publish.PUBLISHED') },
             { value: 'TRASH', label: t('status.publish.TRASH') },
           ]}
         />
+        <FilterSelect
+          value={query.sort}
+          onValueChange={(value) => updateQuery({ sort: value }, { resetPage: true })}
+          ariaLabel={t('content.filterSort')}
+          options={CONTENT_SORT_OPTIONS.map(([value, key]) => ({ value, label: t(key) }))}
+        />
         <PageSizeSelect
           value={query.pageSize}
-          onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
+          onChange={(pageSize) => updateQuery({ pageSize }, { resetPage: true })}
         />
-      </div>
+        <Button
+          type="button"
+          variant="secondary"
+          className="min-h-11"
+          disabled={state.isFetching || anyBusy}
+          onClick={() => state.refetch()}
+        >
+          <RefreshCw
+            size={16}
+            className={state.isFetching ? 'animate-spin' : undefined}
+            aria-hidden="true"
+          />
+          {t('common.refresh')}
+        </Button>
+        {state.isFetching && state.status === 'success' ? (
+          <span className="text-sm text-muted-foreground" role="status" aria-live="polite">
+            {t('content.refreshing')}
+          </span>
+        ) : null}
+      </FilterBar>
 
       <FilterChips
         chips={filterChips}
         onClearAll={filterChips.length > 1 ? resetFilters : undefined}
         clearAllLabel={t('common.resetFilters')}
         removeChipLabel={t('common.resetFilters')}
-        ariaLabel={t('content.activeFilters', { defaultValue: 'Bộ lọc đang áp dụng' })}
+        ariaLabel={t('content.activeFilters')}
       />
+
+      <span className="sr-only" role="status" aria-live="polite">
+        {state.status === 'success' ? t('content.resultsAnnounce', { count: totalItems }) : ''}
+      </span>
 
       {canUpdate ? (
         <BulkActionBar
-          selectedCount={selected.length}
-          onClear={() => setSelected([])}
+          selectedCount={selected.size}
+          onClear={() => setSelected(new Set())}
           actions={bulkActions}
         />
       ) : null}
@@ -503,26 +546,16 @@ export function ContentListScreen({ navigate, canUpdate }) {
       ) : null}
 
       {state.status === 'success' && items.length === 0 ? (
-        isFiltered ? (
-          <StatePanel
-            tone="neutral"
-            title={t('content.empty')}
-            description={t('content.emptyDesc')}
-            actionLabel={t('common.resetFilters')}
-            onAction={resetFilters}
-          />
-        ) : (
-          <StatePanel
-            tone="neutral"
-            title={t('content.emptyNoData', { defaultValue: 'Chưa có bài viết nào' })}
-            description={t('content.emptyNoDataDesc', { defaultValue: 'Bắt đầu bằng cách tạo bài viết đầu tiên.' })}
-            actionLabel={canUpdate ? t('content.newArticle') : undefined}
-            onAction={canUpdate ? () => navigate(createPath) : undefined}
-          />
-        )
+        <StatePanel
+          tone="neutral"
+          title={emptyState.title}
+          description={emptyState.description}
+          actionLabel={isFiltered ? t('common.resetFilters') : (canUpdate ? t('content.newArticle') : undefined)}
+          onAction={isFiltered ? resetFilters : (canUpdate ? () => navigate(createPath) : undefined)}
+        />
       ) : null}
 
-      {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
+      {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) ? (
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
             <AdminTable
@@ -530,26 +563,27 @@ export function ContentListScreen({ navigate, canUpdate }) {
               rows={items}
               loading={state.status === 'loading'}
               pageSize={query.pageSize}
-              onRowClick={(item) => navigate(`/admin/content/${item.type.toLowerCase()}/${item.id}`)}
-              rowHref={(item) => `/admin/content/${item.type.toLowerCase()}/${item.id}`}
+              onRowClick={(item) => navigate(contentDetailPath(item))}
+              rowHref={contentDetailPath}
               mobileCard={mobileCard}
               rowClassName={(item) => publishRowAccent(item.publishStatus)}
               sortKey={sortField}
               sortDir={sortDir}
-              onSortChange={handleSortChange}
+              onSortChange={(key, direction) => updateQuery({ sort: `${key}:${direction}` }, { resetPage: true })}
               selectable={canUpdate}
-              selectedIds={selected}
-              onSelectionChange={setSelected}
+              selectedIds={[...selected]}
+              onSelectionChange={(ids) => setSelected(new Set(ids))}
             />
           </div>
-          {state.status === 'success' && pagination && (
+          {state.status === 'success' && pagination ? (
             <PaginationControls
               pagination={pagination}
-              onPageChange={(p) => updateQuery({ page: p })}
+              disabled={state.isFetching || anyBusy}
+              onPageChange={(page) => updateQuery({ page })}
             />
-          )}
+          ) : null}
         </div>
-      )}
-    </div>
+      ) : null}
+    </Screen>
   )
 }

@@ -264,6 +264,8 @@ Status: `CONFIRMED_FROM_CODE` — `ContentController.listArticles`, `UpsertArtic
 
 `GET /api/v1/admin/content` accepts an optional `sort` param in `field:direction` format (default `updatedAt:desc`). The allowed sort fields are whitelisted by `AdminContentReadService.CONTENT_SORT_FIELDS`:
 
+When `publishStatus` is omitted, the endpoint returns every non-trashed article (`publishStatus != TRASH`). The Trash view is explicit: `publishStatus=TRASH`. This is a backend filter, so `totalItems` and pagination never count hidden Trash rows in the default view.
+
 | Field | Notes |
 |---|---|
 | `title` | Case-insensitive. |
@@ -271,9 +273,15 @@ Status: `CONFIRMED_FROM_CODE` — `ContentController.listArticles`, `UpsertArtic
 | `type` | `ARTICLE` only (pages module gỡ 2026-06-24). DB-paginated path falls back to `updatedAt` (not a DB column). |
 | `publishStatus` | Sort theo trạng thái xuất bản (gom nhóm bản nháp/đã đăng khi triage nội dung). |
 
-An unsupported field returns `400 UNSUPPORTED_SORT_FIELD` (not a silent fallback) via `SortParser`. The admin content list screen exposes column sort on `title`, `publishStatus`, and `updatedAt`.
+An unsupported field returns `400 UNSUPPORTED_SORT_FIELD` (not a silent fallback) via `SortParser`. The admin content list screen exposes both directions for `title`, `publishStatus`, `createdAt`, `updatedAt`, and `publishedAt`; `type` remains accepted for compatibility but is not shown because this module is Article-only.
 
 Status: `CONFIRMED_FROM_CODE` — `AdminContentReadService.CONTENT_SORT_FIELDS` + `contentComparator`, `SortParser.parse`.
+
+### Article admin save defaults — category and canonical
+
+Every Article create/update request from BigBike Admin sends `categoryId=""`, which instructs `ContentRequestValidator.resolveCategory` to normalize the record to the sole `tin-tuc` category, including legacy records with a stale category. The form does not expose a category picker.
+
+The form does not expose `seo.canonicalUrl`. It derives the Vietnamese canonical URL from `slug` as `https://bigbike.vn/tin-tuc/{slug}/` (or the literal localhost/127.0.0.1 origin in local development). The English URL remains independently controlled by optional `translations.en.slug` / `slugEn` and the `/news/{slugEn}/` contract.
 
 ### Article preview — admin dry-run render (`POST /api/v1/admin/content/articles/preview`)
 
@@ -1292,7 +1300,7 @@ Status: `REMOVED`
 | ~~`GET /api/v1/admin/settings/{key}`~~ | — | **Removed 2026-07-15 (AUD-068)** — no UI caller; the settings screen loads the full list via `GET /admin/settings`. | `REMOVED` | `AdminSettingsController.java` |
 | `PATCH /api/v1/admin/settings/{key}` | `settings.write` | Update single setting (value, valueEn, group, isPublic, description). Validates type/range per `SettingDefinitionRegistry`; **translatable + `.required()` keys (currently only `site_name`) also require non-blank `valueEn`** — `400 VALIDATION_ERROR` (field `valueEn`, code `REQUIRED`) if blank. Sensitive keys cannot be made public. **Keys flagged `superAdminOnly` (group `product_assign`) reject the write with 403 unless the caller holds wildcard `*` (`SUPER_ADMIN`)** — `ADMIN` is blocked despite having `settings.write`. | `CONFIRMED_FROM_CODE` | `AdminSettingsController.java` |
 | `PATCH /api/v1/admin/settings` | `settings.write` | **Batch update** — atomically update multiple settings in one transaction. Body: `{"updates":[{"key":"…","value":"…","valueEn":"…"}]}` (`valueEn` optional, null = unchanged; same required-`valueEn`-for-translatable-required-keys rule as the single-update path). All validations run before any mutation; if any item is invalid the whole request fails with 400 and no settings are changed. Same `superAdminOnly` 403 gate as the single-update path. | `CONFIRMED_FROM_CODE` | `AdminSettingsController.java`, `AdminSettingsService.batchUpdateSettings` |
-| `GET /api/v1/admin/product-assignment` | `products.read` | Returns the editable "Phân công" guide for the product AND content/article create-edit banners (same endpoint, same data): `{title, roles: [{id, name, items}]}` — `roles` is a dynamic list, 1–6 entries, Super-Admin managed; `items` is a single free-text field (not a nested array). Read uses `products.read` (not `settings.read`) so `SHOP_MANAGER`/`EDITOR` who edit products can render the banner. Write is via the `product_assign_title` + `product_assign_roles` `superAdminOnly` settings keys above. | `CONFIRMED_FROM_CODE` | `AdminProductAssignmentController.java` |
+| `GET /api/v1/admin/product-assignment` | `products.read` **or** `content.read` | Returns the editable "Phân công" guide for the product AND content/article create-edit banners (same endpoint, same data): `{title, roles: [{id, name, items}]}` — `roles` is a dynamic list, 1–6 entries, Super-Admin managed; `items` is a single free-text field (not a nested array). A caller who can open either editor may read it. Write is via the `product_assign_title` + `product_assign_roles` `superAdminOnly` settings keys above. | `CONFIRMED_FROM_OWNER_DECISION` | `AdminProductAssignmentController.java`, `DevAdminAuthService.java` |
 | `GET /api/v1/settings/public` | public | List settings marked `isPublic=true` that are on the registry public allowlist. Sensitive keys are never exposed regardless of DB flag. | `CONFIRMED_FROM_CODE` | `PublicSettingsController.java` |
 
 **Batch update response shape:** `ApiDataResponse<List<AdminSiteSettingResponse>>` — items in same order as request `updates` array. `AdminSiteSettingResponse` no longer includes `enLocked` (dropped V312 with the Gemini auto-translation removal) — English values are entered manually, no lock/skip state to track.

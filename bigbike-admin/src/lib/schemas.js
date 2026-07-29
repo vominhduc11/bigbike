@@ -646,10 +646,11 @@ export function createBrandSchema(t) {
 
 // ── Content ───────────────────────────────────────────────────────────────────
 
-export function createContentSchema(t, _isCreate, normalizedType) {
+export function createContentSchema(t, _isCreate, _normalizedType) {
   return z.object({
     slug: z.string(),
-    title: z.string(),
+    title: z.string().max(255, t('content.detail.errTitleTooLong')),
+    excerpt: z.string().max(5000, t('content.detail.errExcerptTooLong')),
     body: z.string(),
     bodyBlocks: z.array(z.any()).nullable().optional(),
     publishStatus: z.string(),
@@ -657,10 +658,19 @@ export function createContentSchema(t, _isCreate, normalizedType) {
     featured: z.boolean().optional(),
     seoNoIndex: z.boolean().optional(),
     coverImageUrl: z.string().optional(),
+    coverImageAlt: z.string().max(255, t('content.detail.errImageAltTooLong')).optional(),
+    coverImageWidth: z.number().nullable().optional(),
+    coverImageHeight: z.number().nullable().optional(),
+    coverImageMimeType: z.string().max(100).optional(),
     productImageUrl: z.string().optional(),
-    relatedProductIds: z.array(z.string()).optional(),
-    accessoryProductIds: z.array(z.string()).optional(),
+    productImageAlt: z.string().max(255, t('content.detail.errImageAltTooLong')).optional(),
+    seoTitle: z.string().max(255, t('content.detail.errSeoTitleTooLong')).optional(),
+    seoDescription: z.string().max(5000, t('content.detail.errSeoDescriptionTooLong')).optional(),
     seoOgImageUrl: z.string().optional(),
+    seoOgImageAlt: z.string().max(255, t('content.detail.errImageAltTooLong')).optional(),
+    seoOgImageWidth: z.number().nullable().optional(),
+    seoOgImageHeight: z.number().nullable().optional(),
+    seoOgImageMimeType: z.string().max(100).optional(),
     // English content (V138 + V216 slug). TRANSLATION_RULE_002: `title` is required
     // (mirrors VI `title`); `body`/`bodyBlocks` stay optional in EN even though VI body is
     // required (business exception — treated like a long-form content block, not a core
@@ -668,18 +678,15 @@ export function createContentSchema(t, _isCreate, normalizedType) {
     translations: z.object({
       en: z.object({
         slug: z.string().optional(),
-        title: z.string().optional(),
-        excerpt: z.string().optional(),
+        title: z.string().max(255, t('content.detail.errTitleTooLong')).optional(),
+        excerpt: z.string().max(5000, t('content.detail.errExcerptTooLong')).optional(),
         body: z.string().optional(),
-        seoTitle: z.string().optional(),
-        seoDescription: z.string().optional(),
+        seoTitle: z.string().max(255, t('content.detail.errSeoTitleTooLong')).optional(),
+        seoDescription: z.string().max(5000, t('content.detail.errSeoDescriptionTooLong')).optional(),
       }).optional(),
     }).optional(),
   }).superRefine((data, ctx) => {
-    // English URL slug chỉ có ở bài viết (ARTICLE_RULE_003); trang tĩnh giữ PAGE_RULE_003.
-    if (normalizedType === 'ARTICLE') {
-      validateEnSlug(t, data.translations?.en?.slug, ctx)
-    }
+    validateEnSlug(t, data.translations?.en?.slug, ctx)
     if (!String(data.translations?.en?.title ?? '').trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

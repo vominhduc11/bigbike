@@ -1205,7 +1205,7 @@ Owner decision 2026-06-24: bỏ phân biệt nhóm bài viết. Migration `V275_
 Sau migration **chỉ còn 1 content category**. Hệ quả:
 - Trang `/tin-tuc`: sidebar lọc theo `articleCount > 0` nên tự rút còn 1 nhóm — không cần đổi code filter.
 - Khối "Góc trải nghiệm" trang chủ: fallback chuyển từ `category=reviews` → 3 bài mới nhất bất kỳ.
-- **Admin form bài viết bỏ ô "Danh mục".** Backend `ContentRequestValidator.resolveCategory` mặc định gán nhóm `tin-tuc` khi upsert không gửi `categoryId` (trước đây null = không nhóm) → bài luôn thuộc "Tin tức". Endpoint `/admin/content/reference/categories` thành orphan và đã bị xóa 2026-07-15 (AUD-056).
+- **Admin form bài viết bỏ ô "Danh mục".** Backend `ContentRequestValidator.resolveCategory` mặc định gán nhóm `tin-tuc` khi upsert không gửi hoặc gửi trống `categoryId` (trước đây null = không nhóm). Từ quyết định 2026-07-29, form luôn gửi `categoryId=""` khi lưu để cả bản ghi legacy đang mang danh mục cũ cũng được chuẩn hóa lại về `tin-tuc`. Endpoint `/admin/content/reference/categories` thành orphan và đã bị xóa 2026-07-15 (AUD-056).
 - **Một chiều:** không khôi phục được bài nào từng là Reviews vs Tin tức.
 
 Status: `CONFIRMED_FROM_CODE` — migration `V275__merge_content_categories_into_news.sql`.
@@ -1681,7 +1681,7 @@ Status: `CONFIRMED_FROM_CODE`
 Evidence:
 - `SettingDefinitionRegistry.java` — registers keys for `general`/`contact`/`payment`/`public_hero`/`seo`/`store`/`product_assign` (the `seo` group now has only `home_content_bottom_html` after V337; the `promo`/`tax`/`inventory`/`public_product`/`security`/`public_about`/`public_home` groups have **no** registered keys)
 - `V157__seed_product_assignment_settings.sql` — original 7-key seed; `V318__consolidate_product_assignment_roles.sql` — consolidation to the 2-key JSON shape
-- `AdminProductAssignmentController.java` — `GET /api/v1/admin/product-assignment` (read for the banner, `products.read`)
+- `AdminProductAssignmentController.java` — `GET /api/v1/admin/product-assignment` (read for the banner, one of `products.read` / `content.read`)
 - `SettingsScreen.jsx` — `HIDDEN_GROUPS` now includes `product_assign` (bypasses the generic per-field settings flow; rendered instead by the bespoke `AssignmentRolesScreen.jsx`, same pattern as `public_hero`/`BannerScreen.jsx`), explicit `isSuperAdmin` gate on the synthetic tab
 - `bigbike-admin/src/screens/product-detail/Layout.jsx` (`useRoleLabel`/`AssignmentBanner`), `bigbike-admin/src/screens/content-detail/ContentAssignmentBanner.jsx` (reads the same endpoint/query key)
 - `V59__remove_sepay_payment_artifacts.sql`, `V132__cleanup_sepay_and_normalize_inventory_settings.sql`

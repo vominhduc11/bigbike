@@ -4,16 +4,6 @@
 
 import { generateId } from '@/lib/utils'
 
-export function findOptionById(items, id) {
-  if (!id) return null
-  return (items || []).find((item) => item?.id === id) || null
-}
-
-export function prependSelectedOption(items, selected) {
-  if (!selected?.id || findOptionById(items, selected.id)) return items
-  return [selected, ...items]
-}
-
 // Content chỉ còn ARTICLE (PAGE đã gỡ khỏi backend) — luôn resolve về ARTICLE/articles.
 export function normalizeContentType(_value) {
   return 'ARTICLE'
@@ -23,13 +13,35 @@ export function mutationPath(_contentType) {
   return 'articles'
 }
 
+function resolveArticleStorefrontBase() {
+  const raw = import.meta.env.VITE_STOREFRONT_BASE_URL
+  if (raw) {
+    try {
+      const host = new URL(raw).hostname
+      if (host === 'localhost' || host === '127.0.0.1') {
+        return `${raw.replace(/\/$/, '')}/tin-tuc`
+      }
+    } catch {
+      // Invalid preview URL: canonical must still fall back to the production host.
+    }
+  }
+  return 'https://bigbike.vn/tin-tuc'
+}
+
+const ARTICLE_STOREFRONT_BASE = resolveArticleStorefrontBase()
+
+export function canonicalUrlFromSlug(slug) {
+  const normalized = String(slug || '').trim()
+  return normalized ? `${ARTICLE_STOREFRONT_BASE}/${normalized}/` : null
+}
+
 // Validation-error field prefixes per section key — single source of truth
 // for derived `sectionErrors` and tab-error counts.
 export const SECTION_FIELD_PREFIXES = {
-  basic:   ['title', 'slug', 'categoryId', 'excerpt'],
-  body:    ['body', 'bodyBlocks'],
+  basic:   ['title', 'slug', 'excerpt', 'translations.en.title', 'translations.en.slug', 'translations.en.excerpt'],
+  body:    ['body', 'bodyBlocks', 'translations.en.body'],
   media:   ['coverImageUrl'],
-  seo:     ['seoTitle', 'seoDescription', 'seoCanonicalUrl', 'seoOgImageUrl'],
+  seo:     ['seoTitle', 'seoDescription', 'seoOgImageUrl', 'translations.en.seoTitle', 'translations.en.seoDescription'],
   publish: ['publishStatus'],
 }
 
@@ -79,17 +91,21 @@ export function buildEmptyForm(contentType) {
     featured: false,
     homeExperience: false,
     seoNoIndex: false,
-    categoryId: '',
     coverImageUrl: '',
     coverImageAlt: '',
+    coverImageWidth: null,
+    coverImageHeight: null,
+    coverImageMimeType: '',
     productImageUrl: '',
     productImageAlt: '',
     bodyBlocks: null,
     seoTitle: '',
     seoDescription: '',
-    seoCanonicalUrl: '',
     seoOgImageUrl: '',
     seoOgImageAlt: '',
+    seoOgImageWidth: null,
+    seoOgImageHeight: null,
+    seoOgImageMimeType: '',
     type: normalizeContentType(contentType),
     translations: {
       en: { slug: '', title: '', excerpt: '', body: '', seoTitle: '', seoDescription: '' },
@@ -110,19 +126,23 @@ export function buildFormFromItem(contentType, item) {
     featured: Boolean(item.featured),
     homeExperience: Boolean(item.homeExperience),
     seoNoIndex: Boolean(item.seo?.noIndex),
-    categoryId: item.categoryId || '',
-    coverImageUrl: item.coverImage?.url || '',
+    coverImageUrl: item.coverImage?.rawUrl || item.coverImage?.url || '',
     coverImageAlt: item.coverImage?.alt || '',
-    productImageUrl: item.productImage?.url || '',
+    coverImageWidth: item.coverImage?.width ?? null,
+    coverImageHeight: item.coverImage?.height ?? null,
+    coverImageMimeType: item.coverImage?.mimeType || '',
+    productImageUrl: item.productImage?.rawUrl || item.productImage?.url || '',
     productImageAlt: item.productImage?.alt || '',
     bodyBlocks: Array.isArray(item.bodyBlocks)
       ? item.bodyBlocks.map((b) => (b._key ? b : { ...b, _key: generateId() }))
       : null,
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
-    seoCanonicalUrl: item.seo?.canonicalUrl || '',
-    seoOgImageUrl: item.seo?.ogImage?.url || '',
+    seoOgImageUrl: item.seo?.ogImage?.rawUrl || item.seo?.ogImage?.url || '',
     seoOgImageAlt: item.seo?.ogImage?.alt || '',
+    seoOgImageWidth: item.seo?.ogImage?.width ?? null,
+    seoOgImageHeight: item.seo?.ogImage?.height ?? null,
+    seoOgImageMimeType: item.seo?.ogImage?.mimeType || '',
     type: normalizeContentType(item.type || contentType),
     translations: {
       en: {
@@ -214,36 +234,40 @@ export function toPayload(form, _isCreate) {
     payload.body = form.body
   }
 
-  if (form.type === 'ARTICLE') {
-    payload.excerpt = form.excerpt.trim() || undefined
+  // Empty strings are deliberate presence flags: excerpt and images can be cleared.
+  payload.excerpt = form.excerpt.trim()
+  payload.coverImage = form.coverImageUrl.trim()
+    ? {
+        url: form.coverImageUrl.trim(),
+        alt: form.coverImageAlt?.trim() || null,
+        width: Number.isFinite(form.coverImageWidth) ? form.coverImageWidth : null,
+        height: Number.isFinite(form.coverImageHeight) ? form.coverImageHeight : null,
+        mimeType: form.coverImageMimeType?.trim() || null,
+      }
+    : { url: '' }
+  payload.productImage = form.productImageUrl.trim()
+    ? { url: form.productImageUrl.trim(), alt: form.productImageAlt?.trim() || null }
+    : { url: '' }
 
-    // Always send coverImage so clearing a URL removes it on backend
-    payload.coverImage = form.coverImageUrl.trim()
-      ? { url: form.coverImageUrl.trim() }
-      : { url: '' }
-
-    // Always send productImage so clearing a URL removes it on backend
-    payload.productImage = form.productImageUrl.trim()
-      ? { url: form.productImageUrl.trim() }
-      : { url: '' }
-
-    // Always send categoryId — empty string clears the category
-    payload.categoryId = form.categoryId || ''
-
-    // Bài viết nổi bật — chỉ áp dụng cho ARTICLE; gửi boolean để backend áp dụng.
-    payload.featured = Boolean(form.featured)
-
-    // Chọn vào "Góc trải nghiệm" trang chủ — chỉ ARTICLE; gửi boolean để backend áp dụng.
-    payload.homeExperience = Boolean(form.homeExperience)
-  }
+  // The only Article category is tin-tuc. Sending the blank presence flag forces
+  // legacy records with stale categories through the backend's default resolver.
+  payload.categoryId = ''
+  payload.featured = Boolean(form.featured)
+  payload.homeExperience = Boolean(form.homeExperience)
 
   // Always send seo as non-null object so backend can clear fields when all are empty
   payload.seo = {
     title: form.seoTitle.trim() || null,
     description: form.seoDescription.trim() || null,
-    canonicalUrl: form.seoCanonicalUrl.trim() || null,
+    canonicalUrl: canonicalUrlFromSlug(form.slug),
     ogImage: form.seoOgImageUrl.trim()
-      ? { url: form.seoOgImageUrl.trim() }
+      ? {
+          url: form.seoOgImageUrl.trim(),
+          alt: form.seoOgImageAlt?.trim() || null,
+          width: Number.isFinite(form.seoOgImageWidth) ? form.seoOgImageWidth : null,
+          height: Number.isFinite(form.seoOgImageHeight) ? form.seoOgImageHeight : null,
+          mimeType: form.seoOgImageMimeType?.trim() || null,
+        }
       : null,
     // noindex toggle — gửi boolean trong object seo cùng các field SEO khác.
     noIndex: Boolean(form.seoNoIndex),
@@ -251,10 +275,7 @@ export function toPayload(form, _isCreate) {
 
   payload.translations = {
     en: {
-      // English URL slug chỉ áp dụng cho BÀI VIẾT (ARTICLE_RULE_003); trang tĩnh không gửi.
-      ...(form.type === 'ARTICLE'
-        ? { slug: form.translations?.en?.slug?.trim() || null }
-        : {}),
+      slug: form.translations?.en?.slug?.trim() || null,
       title: form.translations?.en?.title?.trim() || null,
       excerpt: form.translations?.en?.excerpt?.trim() || null,
       body: form.translations?.en?.body?.trim() || null,

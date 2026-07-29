@@ -71,6 +71,29 @@ class AdminContentApiTest {
     }
 
     @Test
+    @Sql(
+            statements = "INSERT INTO articles (id, slug, title, body, category_id, publish_status, created_at, updated_at, featured, seo_no_index, home_experience) VALUES ('article_trash_contract', 'article-trash-contract', 'Article trash contract', '<p>Trash.</p>', 'cc_blog', 'TRASH', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false, false)",
+            executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+    @Sql(
+            statements = "DELETE FROM articles WHERE id = 'article_trash_contract'",
+            executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+    void shouldExcludeTrashByDefaultAndReturnItWhenExplicitlyFiltered() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/content")
+                        .param("q", "article-trash-contract")
+                        .header("X-Admin-Permissions", "content.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pagination.totalItems").value(0));
+
+        mockMvc.perform(get("/api/v1/admin/content")
+                        .param("publishStatus", "TRASH")
+                        .param("q", "article-trash-contract")
+                        .header("X-Admin-Permissions", "content.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pagination.totalItems").value(1))
+                .andExpect(jsonPath("$.data[0].publishStatus").value("TRASH"));
+    }
+
+    @Test
     void shouldListContentWithoutTypeFilter() throws Exception {
         // Module Trang đã gỡ — content giờ chỉ còn Bài viết (3 blog articles seed).
         mockMvc.perform(get("/api/v1/admin/content")
