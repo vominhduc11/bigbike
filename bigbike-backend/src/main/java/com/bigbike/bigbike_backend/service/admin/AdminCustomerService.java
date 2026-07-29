@@ -25,6 +25,9 @@ import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.customer.CustomerAvatarStorageService;
 import com.bigbike.bigbike_backend.service.customer.CustomerSessionService;
 import com.bigbike.bigbike_backend.util.PhoneNumbers;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -33,11 +36,13 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -46,6 +51,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @RequiredArgsConstructor
@@ -53,6 +60,8 @@ public class AdminCustomerService {
 
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
+    private static final ObjectMapper AUDIT_MAPPER = JsonMapper.builder().findAndAddModules().build();
+    private static final Pattern PHONE_INPUT_PATTERN = Pattern.compile("^\\+?[0-9() .-]+$");
     /** Lifetime order total (VND) at which a customer is classified VIP — see {@link #deriveSegment}. */
     private static final BigDecimal VIP_MIN_SPENT = new BigDecimal("10000000");
     // Derived from CustomerStatus enum — single source of truth for valid DB status values.
@@ -77,8 +86,9 @@ public class AdminCustomerService {
     ) {
         int normalizedPage = Math.max(1, page);
         int normalizedSize = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
+        String normalizedStatus = normalizeOptionalStatus(status);
 
-        Specification<CustomerEntity> spec = buildSpec(q, status, synthetic, emailVerified);
+        Specification<CustomerEntity> spec = buildSpec(q, normalizedStatus, synthetic, emailVerified);
         org.springframework.data.domain.Pageable pageable = PageRequest.of(
                 normalizedPage - 1, normalizedSize, Sort.by(Sort.Direction.DESC, "createdAt"));
 
@@ -99,19 +109,21 @@ public class AdminCustomerService {
                 customerPage.getTotalElements(), customerPage.getTotalPages());
     }
 
-    private Specification<CustomerEntity> buildSpec(String q, String status, Boolean synthetic, Boolean emailVerified) {
+    static Specification<CustomerEntity> buildSpec(
+            String q, String status, Boolean synthetic, Boolean emailVerified
+    ) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (q != null && !q.isBlank()) {
-                String pattern = "%" + q.toLowerCase(Locale.ROOT) + "%";
+                String pattern = "%" + escapeLike(q.toLowerCase(Locale.ROOT)) + "%";
                 predicates.add(cb.or(
-                        cb.like(cb.lower(root.get("email")), pattern),
-                        cb.like(cb.lower(root.get("phone")), pattern),
-                        cb.like(cb.lower(root.get("displayName")), pattern)
+                        cb.like(cb.lower(root.get("email")), pattern, '\\'),
+                        cb.like(cb.lower(root.get("phone")), pattern, '\\'),
+                        cb.like(cb.lower(root.get("displayName")), pattern, '\\')
                 ));
             }
             if (status != null && !status.isBlank()) {
-                predicates.add(cb.equal(root.get("status"), status.toUpperCase(Locale.ROOT)));
+                predicates.add(cb.equal(root.get("status"), status));
             }
             if (synthetic != null) {
                 predicates.add(cb.equal(root.get("isSynthetic"), synthetic));
@@ -144,8 +156,9 @@ public class AdminCustomerService {
     public AdminCustomerSummaryResponse getCustomerSummary() {
         long total = customerRepo.count();
         long vip = orderRepo.findVipCustomerIds(VIP_MIN_SPENT).size();
-        long newLast30Days = customerRepo.countByCreatedAtAfter(Instant.now().minus(30, ChronoUnit.DAYS));
-        long active = customerRepo.countByStatus("ACTIVE");
+        long newLast30Days =
+                customerRepo.countNonSyntheticCreatedAfter(Instant.now().minus(30, ChronoUnit.DAYS));
+        long active = customerRepo.countNonSyntheticByStatus("ACTIVE");
         return new AdminCustomerSummaryResponse(total, vip, newLast30Days, active);
     }
 
@@ -173,50 +186,34 @@ public class AdminCustomerService {
 
         String beforeSnapshot = snapshot(customer);
 
-        // Email uniqueness check
-        if (req.email() != null && !req.email().isBlank()) {
-            String newEmail = req.email().toLowerCase(Locale.ROOT).trim();
-            customerRepo.findByEmail(newEmail).ifPresent(existing -> {
-                if (!existing.getId().equals(customerId)) {
-                    throw new ConflictException("Email already in use by another customer.");
-                }
-            });
-            if (!newEmail.equals(customer.getEmail())) {
-                customer.setEmail(newEmail);
-                // Ownership of the new address is unproven — drop verified status so
-                // guest orders of the new email cannot be auto-linked until re-verified (AUD-001).
-                customer.setEmailVerifiedAt(null);
-            }
-        }
+        rejectReadOnlyProfileFields(req);
 
         // Phone uniqueness check — chuẩn hóa SĐT (nhất quán với đăng ký) trước khi đối chiếu/lưu
         if (req.phone() != null) {
             if (req.phone().isBlank()) {
                 customer.setPhone(null);
             } else {
-                String normalizedPhone = PhoneNumbers.normalize(req.phone());
-                if (normalizedPhone == null) {
+                String rawPhone = req.phone().trim();
+                String normalizedPhone = PhoneNumbers.normalize(rawPhone);
+                if (!PHONE_INPUT_PATTERN.matcher(rawPhone).matches()
+                        || normalizedPhone == null
+                        || normalizedPhone.length() < 8
+                        || normalizedPhone.length() > 15) {
                     throw ValidationException.fromField(
                             "phone", "INVALID_PHONE", "Số điện thoại không hợp lệ.");
                 }
-                customerRepo.findByPhone(normalizedPhone).ifPresent(existing -> {
-                    if (!existing.getId().equals(customerId)) {
-                        throw new ConflictException("Phone already in use by another customer.");
-                    }
-                });
+                rejectPhoneOwnedByAnotherCustomer(customerId, normalizedPhone);
                 customer.setPhone(normalizedPhone);
             }
         }
 
         if (req.displayName() != null) customer.setDisplayName(req.displayName());
-        if (req.firstName() != null) customer.setFirstName(req.firstName());
-        if (req.lastName() != null) customer.setLastName(req.lastName());
 
         customer.setUpdatedAt(Instant.now());
         try {
             customerRepo.saveAndFlush(customer);
         } catch (org.springframework.dao.DataIntegrityViolationException ex) {
-            throw new ConflictException("Email or phone is already in use by another customer.");
+            throw new ConflictException("Phone is already in use by another customer.");
         }
 
         auditLogWriter.save(auditLogFactory.build(
@@ -228,7 +225,7 @@ public class AdminCustomerService {
     // ── Remove avatar (admin — view + remove only, never upload) ──────────────
 
     @Transactional
-    public AdminCustomerDetailResponse removeAvatar(UUID customerId) {
+    public AdminCustomerDetailResponse removeAvatar(UUID customerId, UUID adminId) {
         CustomerEntity customer = customerRepo.findById(customerId)
                 .orElseThrow(() -> new NotFoundException("Customer not found."));
 
@@ -237,25 +234,50 @@ public class AdminCustomerService {
             customer.setAvatarUrl(null);
             customer.setUpdatedAt(Instant.now());
             customerRepo.saveAndFlush(customer);
-            customerAvatarStorageService.deleteAvatar(previousUrl);
+            auditLogWriter.save(auditLogFactory.build(
+                    "ADMIN",
+                    adminId,
+                    "CUSTOMER_AVATAR_REMOVED",
+                    "CUSTOMER",
+                    customerId,
+                    auditJson(Map.of("avatarPresent", true)),
+                    auditJson(Map.of("avatarPresent", false))));
+            deleteAvatarAfterCommit(previousUrl);
         }
 
         return getCustomerDetail(customerId);
+    }
+
+    void deleteAvatarAfterCommit(String previousUrl) {
+        Runnable cleanup = () -> customerAvatarStorageService.deleteAvatar(previousUrl);
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    cleanup.run();
+                }
+            });
+            return;
+        }
+        cleanup.run();
     }
 
     // ── Update customer status ─────────────────────────────────────────────────
 
     @Transactional
     public AdminCustomerDetailResponse updateCustomerStatus(UUID customerId, UUID adminId, UpdateCustomerStatusRequest req) {
-        String newStatus = req.status().toUpperCase(Locale.ROOT);
-        if (!ALLOWED_STATUSES.contains(newStatus)) {
-            throw ValidationException.fromField("status", "INVALID", "Unknown customer status: " + newStatus);
-        }
+        String newStatus = normalizeRequiredStatus(req.status());
 
         CustomerEntity customer = customerRepo.findById(customerId)
                 .orElseThrow(() -> new NotFoundException("Customer not found."));
+        if (customer.isSynthetic()) {
+            if (!newStatus.equals(customer.getStatus())) {
+                throw new ConflictException("Synthetic customer status cannot be changed.");
+            }
+            return getCustomerDetail(customerId);
+        }
 
-        String before = "{\"status\":\"" + customer.getStatus() + "\"}";
+        String before = auditJson(Map.of("status", nvl(customer.getStatus())));
         customer.setStatus(newStatus);
         customer.setUpdatedAt(Instant.now());
         customerRepo.save(customer);
@@ -267,8 +289,10 @@ public class AdminCustomerService {
             customerSessionService.revokeAllSessions(customerId);
         }
 
-        String after = "{\"status\":\"" + newStatus + "\",\"reason\":" +
-                (req.reason() != null ? "\"" + escapeJson(req.reason()) + "\"" : "null") + "}";
+        Map<String, Object> afterValues = new LinkedHashMap<>();
+        afterValues.put("status", newStatus);
+        afterValues.put("reason", req.reason());
+        String after = auditJson(afterValues);
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "CUSTOMER_STATUS_UPDATED", "CUSTOMER", customerId, before, after));
 
@@ -279,13 +303,16 @@ public class AdminCustomerService {
 
     private AdminCustomerOrderSummaryResponse buildOrderSummary(UUID customerId) {
         List<OrderEntity> orders = orderRepo.findByCustomerId(customerId);
+        List<OrderEntity> qualifyingOrders = orders.stream()
+                .filter(order -> !"CANCELLED".equals(order.getStatus()))
+                .toList();
 
-        BigDecimal totalSpent = orders.stream()
+        BigDecimal totalSpent = qualifyingOrders.stream()
                 .map(OrderEntity::getTotalAmount)
                 .filter(a -> a != null)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        int count = orders.size();
+        int count = qualifyingOrders.size();
         BigDecimal avgOrderValue = count > 0
                 ? totalSpent.divide(BigDecimal.valueOf(count), 0, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
@@ -334,14 +361,67 @@ public class AdminCustomerService {
     // ── Build helpers ─────────────────────────────────────────────────────────
 
     private static String snapshot(CustomerEntity c) {
-        return "{\"email\":\"" + nvl(c.getEmail()) + "\",\"phone\":\"" + nvl(c.getPhone()) +
-               "\",\"displayName\":\"" + nvl(c.getDisplayName()) +
-               "\",\"status\":\"" + nvl(c.getStatus()) + "\"}";
+        Map<String, Object> values = new LinkedHashMap<>();
+        values.put("email", nvl(c.getEmail()));
+        values.put("phone", nvl(c.getPhone()));
+        values.put("displayName", nvl(c.getDisplayName()));
+        values.put("status", nvl(c.getStatus()));
+        return auditJson(values);
     }
 
     private static String nvl(String s) { return s != null ? s : ""; }
 
-    private static String escapeJson(String s) {
-        return s.replace("\\", "\\\\").replace("\"", "\\\"");
+    static String normalizeOptionalStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+        return normalizeRequiredStatus(status);
+    }
+
+    private static String normalizeRequiredStatus(String status) {
+        if (status == null || status.isBlank()) {
+            throw ValidationException.fromField("status", "INVALID", "Customer status must not be blank.");
+        }
+        String normalized = status.toUpperCase(Locale.ROOT);
+        if (!ALLOWED_STATUSES.contains(normalized)) {
+            throw ValidationException.fromField("status", "INVALID", "Unknown customer status: " + normalized);
+        }
+        return normalized;
+    }
+
+    private static String escapeLike(String value) {
+        return value
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
+    }
+
+    private static void rejectReadOnlyProfileFields(UpdateCustomerRequest req) {
+        if (req.email() != null) {
+            throw ValidationException.fromField(
+                    "email", "READ_ONLY", "Email cannot be changed from the admin customer API.");
+        }
+        if (req.firstName() != null) {
+            throw ValidationException.fromField(
+                    "firstName", "READ_ONLY", "First name cannot be changed from the admin customer API.");
+        }
+        if (req.lastName() != null) {
+            throw ValidationException.fromField(
+                    "lastName", "READ_ONLY", "Last name cannot be changed from the admin customer API.");
+        }
+    }
+
+    private void rejectPhoneOwnedByAnotherCustomer(UUID customerId, String normalizedPhone) {
+        if (customerRepo.countByNormalizedPhoneExcludingId(normalizedPhone, customerId) > 0) {
+            throw new ConflictException("Phone already in use by another customer.");
+        }
+    }
+
+    private static String auditJson(Map<String, ?> values) {
+        try {
+            return AUDIT_MAPPER.writeValueAsString(values);
+        } catch (JsonProcessingException ex) {
+            throw new IllegalStateException("Unable to serialize customer audit snapshot.", ex);
+        }
     }
 }

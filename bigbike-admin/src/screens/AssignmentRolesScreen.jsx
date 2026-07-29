@@ -26,6 +26,8 @@ function RoleCard({ role, open, showError, canUpdate, atMin, onToggle, onUpdate,
     ? t('settings.assign.roleNameRequired', { defaultValue: 'Nhập tên vai trò' })
     : ''
   const displayTitle = role.name.trim() || t('settings.assign.roleUntitled', { defaultValue: 'Vai trò chưa đặt tên' })
+  const nameId = `assignment-role-name-${role.id}`
+  const itemsId = `assignment-role-items-${role.id}`
   return (
     <CollapsibleSection
       title={displayTitle}
@@ -36,7 +38,11 @@ function RoleCard({ role, open, showError, canUpdate, atMin, onToggle, onUpdate,
       <div className="flex flex-col gap-2">
         <div className="flex items-start gap-2">
           <div className="flex-1 flex flex-col gap-1">
+            <label className="sr-only" htmlFor={nameId}>
+              {t('settings.assign.roleNameLabel')}
+            </label>
             <Input
+              id={nameId}
               className="font-bold"
               placeholder={t('settings.assign.roleNamePlaceholder', { defaultValue: 'Tên vai trò' })}
               value={role.name}
@@ -59,7 +65,11 @@ function RoleCard({ role, open, showError, canUpdate, atMin, onToggle, onUpdate,
             <Trash2 size={15} />
           </Button>
         </div>
+        <label className="sr-only" htmlFor={itemsId}>
+          {t('settings.assign.itemsLabel')}
+        </label>
         <Textarea
+          id={itemsId}
           placeholder={t('settings.assign.itemsPlaceholder', { defaultValue: 'Công việc phụ trách...' })}
           value={role.items}
           onChange={(e) => onUpdate({ items: e.target.value })}
@@ -217,13 +227,13 @@ export function AssignmentRolesScreen({ canUpdate = false, embedded = false }) {
   let statusInfo
   if (saveError) {
     statusInfo = (
-      <span className="inline-flex items-center gap-1.5 text-sm text-danger">
+      <span role="alert" className="inline-flex items-center gap-1.5 text-sm text-danger">
         <AlertCircle size={14} aria-hidden /> {saveError}
       </span>
     )
   } else if (saveSuccess) {
     statusInfo = (
-      <span className="inline-flex items-center gap-1.5 text-sm text-success">
+      <span role="status" className="inline-flex items-center gap-1.5 text-sm text-success">
         <CheckCircle2 size={15} aria-hidden /> {t('settings.saveSuccess')}
       </span>
     )
@@ -250,10 +260,19 @@ export function AssignmentRolesScreen({ canUpdate = false, embedded = false }) {
       )}
 
       <div className="flex flex-col gap-1 mb-4">
-        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        <label
+          htmlFor="assignment-banner-title"
+          className="text-xs font-medium text-muted-foreground uppercase tracking-wide"
+        >
           {t('settings.assign.titleLabel', { defaultValue: 'Tiêu đề banner' })}
         </label>
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} disabled={!canUpdate} maxLength={1000} />
+        <Input
+          id="assignment-banner-title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          disabled={!canUpdate}
+          maxLength={1000}
+        />
       </div>
 
       <div className="flex flex-col gap-3">

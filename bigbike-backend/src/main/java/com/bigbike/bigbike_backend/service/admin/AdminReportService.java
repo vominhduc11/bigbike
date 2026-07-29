@@ -5,20 +5,15 @@ import com.bigbike.bigbike_backend.api.admin.dto.report.AdminAnalyticsResponse.D
 import com.bigbike.bigbike_backend.api.admin.dto.report.AdminAnalyticsResponse.PeriodSummary;
 import com.bigbike.bigbike_backend.api.admin.dto.report.AdminAnalyticsResponse.TopCustomerItem;
 import com.bigbike.bigbike_backend.api.admin.dto.report.AdminAnalyticsResponse.TopProductItem;
-import com.bigbike.bigbike_backend.domain.customer.CustomerStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
-import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
-import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import jakarta.persistence.criteria.Predicate;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.math.BigDecimal;
@@ -27,8 +22,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -69,7 +62,6 @@ public class AdminReportService {
 
     private final OrderJpaRepository orderRepo;
     private final OrderLineItemJpaRepository lineItemRepo;
-    private final CustomerJpaRepository customerRepo;
     private final ProductJpaRepository productRepo;
     private final AuditLogWriter auditLogWriter;
     private final AuditLogFactory auditLogFactory;
@@ -155,120 +147,6 @@ public class AdminReportService {
         return new AdminAnalyticsResponse(summary, dailyRevenue, topProducts, topCustomers);
     }
 
-    public ExportResult exportOrdersCsv(String status, String from, String to) {
-        Instant fromInstant = parseFromDate(from);
-        Instant toInstant = parseToDate(to);
-
-        Specification<OrderEntity> spec = (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            if (status != null && !status.isBlank()) {
-                predicates.add(cb.equal(root.get("status"), status.toUpperCase(Locale.ROOT)));
-            }
-            if (fromInstant != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("placedAt"), fromInstant));
-            }
-            if (toInstant != null) {
-                predicates.add(cb.lessThan(root.get("placedAt"), toInstant));
-            }
-            query.orderBy(cb.desc(root.get("placedAt")));
-            return cb.and(predicates.toArray(Predicate[]::new));
-        };
-
-        List<OrderEntity> orders = orderRepo.findAll(
-                spec, PageRequest.of(0, EXPORT_MAX_ROWS + 1, Sort.by("placedAt").descending())
-        ).getContent();
-
-        StringWriter sw = new StringWriter();
-        CSVFormat format = CSVFormat.DEFAULT.builder()
-                .setHeader("order_number", "status", "customer_email",
-                        "customer_phone", "currency", "subtotal", "shipping",
-                        "total", "paid_amount", "placed_at", "paid_at",
-                        "completed_at", "cancelled_at")
-                .build();
-
-        try (CSVPrinter printer = new CSVPrinter(sw, format)) {
-            int count = 0;
-            for (OrderEntity o : orders) {
-                if (count >= EXPORT_MAX_ROWS) break;
-                printer.printRecord(
-                        o.getOrderNumber(),
-                        o.getStatus(),
-                        CsvExportUtil.escape(nvl(o.getCustomerEmail())),
-                        CsvExportUtil.escape(nvl(o.getCustomerPhone())),
-                        o.getCurrency(),
-                        formatDecimal(o.getSubtotalAmount()),
-                        formatDecimal(o.getShippingAmount()),
-                        formatDecimal(o.getTotalAmount()),
-                        formatDecimal(o.getPaidAmount()),
-                        formatInstant(o.getPlacedAt()),
-                        formatInstant(o.getPaidAt()),
-                        formatInstant(o.getCompletedAt()),
-                        formatInstant(o.getCancelledAt())
-                );
-                count++;
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to generate CSV export.", e);
-        }
-
-        byte[] csv = CsvExportUtil.withBom(sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        return new ExportResult(csv, orders.size() > EXPORT_MAX_ROWS);
-    }
-
-    public ExportResult exportCustomersCsv(String status) {
-        // Filter status at DB level via JpaSpecificationExecutor to avoid loading all customers
-        // and then filtering in memory (which would silently miss customers beyond EXPORT_MAX_ROWS).
-        Specification<CustomerEntity> spec = (root, query, cb) -> {
-            if (status == null || status.isBlank()) return cb.conjunction();
-            String normalized = status.toUpperCase(Locale.ROOT);
-            // Only allow valid CustomerStatus values to prevent unsolicited SQL
-            boolean valid = Arrays.stream(CustomerStatus.values())
-                    .anyMatch(s -> s.name().equals(normalized));
-            if (!valid) {
-                throw com.bigbike.bigbike_backend.api.error.ValidationException.fromField("status", "INVALID_CUSTOMER_STATUS",
-                        "Unknown customer status: " + status);
-            }
-            return cb.equal(root.get("status"), normalized);
-        };
-
-        List<CustomerEntity> customers = customerRepo.findAll(
-                spec, PageRequest.of(0, EXPORT_MAX_ROWS + 1, Sort.by("createdAt").descending())
-        ).getContent();
-
-        StringWriter sw = new StringWriter();
-        CSVFormat format = CSVFormat.DEFAULT.builder()
-                .setHeader("id", "email", "phone", "display_name",
-                        "first_name", "last_name", "status", "gender",
-                        "email_verified_at", "last_login_at", "created_at")
-                .build();
-
-        try (CSVPrinter printer = new CSVPrinter(sw, format)) {
-            int count = 0;
-            for (CustomerEntity c : customers) {
-                if (count >= EXPORT_MAX_ROWS) break;
-                printer.printRecord(
-                        c.getId(),
-                        CsvExportUtil.escape(nvl(c.getEmail())),
-                        CsvExportUtil.escape(nvl(c.getPhone())),
-                        CsvExportUtil.escape(nvl(c.getDisplayName())),
-                        CsvExportUtil.escape(nvl(c.getFirstName())),
-                        CsvExportUtil.escape(nvl(c.getLastName())),
-                        c.getStatus(),
-                        CsvExportUtil.escape(nvl(c.getGender())),
-                        formatInstant(c.getEmailVerifiedAt()),
-                        formatInstant(c.getLastLoginAt()),
-                        formatInstant(c.getCreatedAt())
-                );
-                count++;
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to generate customer CSV export.", e);
-        }
-
-        byte[] csv = CsvExportUtil.withBom(sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        return new ExportResult(csv, customers.size() > EXPORT_MAX_ROWS);
-    }
-
     public ExportResult exportProductsCsv(String publishStatus) {
         Specification<ProductEntity> spec = (root, query, cb) -> {
             if (publishStatus == null || publishStatus.isBlank()) return cb.conjunction();
@@ -329,10 +207,31 @@ public class AdminReportService {
             String ipAddress,
             String userAgent
     ) {
+        recordExportAudit(
+                actorId,
+                exportType,
+                filters,
+                EXPORT_MAX_ROWS,
+                false,
+                ipAddress,
+                userAgent
+        );
+    }
+
+    public void recordExportAudit(
+            String actorId,
+            String exportType,
+            Map<String, Object> filters,
+            Integer rowLimit,
+            boolean uncapped,
+            String ipAddress,
+            String userAgent
+    ) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("exportType", exportType);
         payload.put("filters", filters != null ? filters : Map.of());
-        payload.put("rowLimit", EXPORT_MAX_ROWS);
+        payload.put("rowLimit", rowLimit);
+        payload.put("uncapped", uncapped);
 
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN",

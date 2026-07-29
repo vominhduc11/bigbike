@@ -1,0 +1,4 @@
+interface:
+  display_name: "Admin Audit All"
+  short_description: "Audit all admin modules end to end"
+  default_prompt: "Use $admin-audit-all to audit every remaining bigbike-admin module and update the admin audit board."

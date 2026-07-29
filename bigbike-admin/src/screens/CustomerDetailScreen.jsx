@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ArrowLeft,
@@ -35,7 +35,7 @@ import { Button } from '@/components/ui/button'
 import { FormField, Screen, ScreenHeader } from '../components/layout'
 import { useQueryClient } from '@tanstack/react-query'
 
-const CUSTOMER_STATUSES = ['ACTIVE', 'DISABLED', 'BLOCKED']
+const CUSTOMER_STATUSES = ['ACTIVE', 'PENDING', 'DISABLED', 'BLOCKED']
 
 // T9: đọc lại query string (filter/trang) mà CustomerListScreen đã lưu trước khi
 // điều hướng sang trang chi tiết, để nút "Quay lại danh sách" không làm mất bộ lọc.
@@ -49,10 +49,25 @@ function readListQuery() {
 
 // Kiểm tra tại form, cùng quy tắc backend (chỉ báo trước, backend vẫn là chốt chặn cuối).
 // Các ô đều tùy chọn: để trống là hợp lệ, chỉ chặn khi nhập giá trị sai.
-const PHONE_PATTERN = /^\+?[0-9]{8,15}$/
+const PHONE_INPUT_PATTERN = /^\+?[0-9\s().-]+$/
+const NORMALIZED_PHONE_PATTERN = /^[0-9]{8,15}$/
+
+function normalizePhoneInput(phone) {
+  const raw = (phone || '').trim()
+  if (!raw) return ''
+
+  let digits = raw.replace(/[^0-9]/g, '')
+  if (digits.startsWith('84') && digits.length >= 11) {
+    digits = `0${digits.slice(2)}`
+  }
+  return digits
+}
+
 function isPhoneInvalid(phone) {
-  const v = (phone || '').trim()
-  return v !== '' && !PHONE_PATTERN.test(v)
+  const raw = (phone || '').trim()
+  if (!raw) return false
+  if (!PHONE_INPUT_PATTERN.test(raw)) return true
+  return !NORMALIZED_PHONE_PATTERN.test(normalizePhoneInput(raw))
 }
 // Nhãn loại địa chỉ đã lưu (i18n, có fallback về mã gốc nếu là loại lạ).
 function addressTypeLabel(type, t) {
@@ -83,9 +98,18 @@ const SEGMENT_BADGE_TONE = {
 // đầu trên nền trung tính (đây là công cụ nội bộ, không phải bề mặt thương hiệu
 // khách hàng nên không dùng đỏ brand như trên web).
 function CustomerAvatar({ avatarUrl, name }) {
+  const [failedUrl, setFailedUrl] = useState('')
   const initial = (name || '?').trim().charAt(0).toUpperCase() || '?'
-  if (avatarUrl) {
-    return <img src={avatarUrl} alt="" className="size-14 shrink-0 rounded-full object-cover" />
+
+  if (avatarUrl && failedUrl !== avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt=""
+        className="size-14 shrink-0 rounded-full object-cover"
+        onError={() => setFailedUrl(avatarUrl)}
+      />
+    )
   }
   return (
     <span
@@ -154,27 +178,61 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [state, setState] = useState({ status: 'loading', customer: null, warning: '' })
-  const [saving, setSaving] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [editForm, setEditForm] = useState({ displayName: '', phone: '' })
   const [editBaseline, setEditBaseline] = useState(null)
-  const [editSaving, setEditSaving] = useState(false)
+  const mutationLockRef = useRef(false)
+  const [mutationAction, setMutationAction] = useState(null)
   // F1: lỗi validate backend gắn theo từng ô (vd SĐT trùng), tách khỏi toast.
   const [fieldErrors, setFieldErrors] = useState({})
-  // Đổi trạng thái sang BLOCKED/DISABLED mở modal xin lý do (tùy chọn) — value đang chờ xác nhận.
+  // Every non-ACTIVE target revokes all active sessions, so it requires an
+  // explicit confirmation. The optional reason is stored in the audit log.
   const [reasonModal, setReasonModal] = useState(null)
 
   // F6: form sửa hồ sơ đang mở và nội dung khác baseline → còn thay đổi chưa lưu.
+  const normalizedEditForm = {
+    displayName: editForm.displayName,
+    phone: normalizePhoneInput(editForm.phone),
+  }
   const isDirty = editOpen && editBaseline != null &&
-    JSON.stringify(editForm) !== JSON.stringify(editBaseline)
+    JSON.stringify(normalizedEditForm) !== JSON.stringify(editBaseline)
   useUnsavedChanges(isDirty)
+
+  const beginMutation = useCallback((action) => {
+    if (mutationLockRef.current) return false
+    mutationLockRef.current = true
+    setMutationAction(action)
+    return true
+  }, [])
+
+  const endMutation = useCallback(() => {
+    mutationLockRef.current = false
+    setMutationAction(null)
+  }, [])
+
+  const mutationBusy = mutationAction != null
+  const statusSaving = mutationAction === 'status'
+  const avatarSaving = mutationAction === 'avatar'
+  const editSaving = mutationAction === 'profile'
 
   // N2: tách hàm tải để nút "Thử lại" gọi lại được khi lỗi mạng/API.
   // active flag: chỉ áp kết quả khi component còn mount / lần tải còn hiệu lực.
   const fetchInto = useCallback((isActive) => {
     fetchCustomerDetail(customerId)
       .then((r) => { if (isActive()) setState({ status: 'success', customer: r.item, warning: '' }) })
-      .catch((e) => { if (isActive()) setState({ status: 'error', customer: null, warning: '', error: e.message }) })
+      .catch((e) => {
+        if (!isActive()) return
+        if (e?.status === 404) {
+          setState({ status: 'success', customer: null, warning: '' })
+          return
+        }
+        setState({
+          status: 'error',
+          customer: null,
+          warning: '',
+          error: e?.message || '',
+        })
+      })
   }, [customerId])
 
   useEffect(() => {
@@ -201,11 +259,8 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
 
   async function handleStatusChange(value) {
     // Radix Select truyền thẳng value (chuỗi), không phải DOM event.
-    if (!value || value === state.customer?.status) return
-    // Q4: DISABLED/BLOCKED là nhãn quản lý nội bộ (lifecycle chưa được xác thực) →
-    // mở modal xin lý do (tùy chọn) bằng câu trung tính, không khẳng định chặn đăng
-    // nhập/mua hàng.
-    if (value === 'BLOCKED' || value === 'DISABLED') {
+    if (mutationLockRef.current || !value || value === state.customer?.status) return
+    if (value !== 'ACTIVE') {
       setReasonModal({ value })
       return
     }
@@ -213,6 +268,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
   }
 
   async function applyStatusChange(value, reason) {
+    if (!beginMutation('status')) return false
     // N7: transition không phá huỷ (vd chuyển sang ACTIVE) — cập nhật lạc quan ngay
     // trên UI, rollback về giá trị cũ nếu API lỗi (theo pattern optimistic đã có ở
     // ReviewListScreen.handleStatusChange).
@@ -221,7 +277,6 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
     if (isOptimistic) {
       setState((p) => ({ ...p, customer: { ...p.customer, status: value } }))
     }
-    setSaving(true)
     try {
       const r = await updateCustomerStatus(customerId, value, reason)
       setState((p) => ({ ...p, customer: r.item }))
@@ -237,11 +292,12 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
       toast.error(err.message || t('common.error'))
       return false
     } finally {
-      setSaving(false)
+      endMutation()
     }
   }
 
   async function handleRemoveAvatar() {
+    if (mutationLockRef.current) return
     const ok = await showConfirm(
       t('customers.detail.avatarRemoveConfirmBody', {
         defaultValue: 'Xoá ảnh đại diện của khách hàng này? Khách sẽ cần tự tải ảnh mới nếu muốn.',
@@ -250,7 +306,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
       { variant: 'danger', confirmLabel: t('customers.detail.avatarRemoveConfirmOk', { defaultValue: 'Xoá ảnh' }) },
     )
     if (!ok) return
-    setSaving(true)
+    if (!beginMutation('avatar')) return
     try {
       const r = await removeCustomerAvatar(customerId)
       setState((p) => ({ ...p, customer: r.item }))
@@ -260,19 +316,21 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
     } catch (err) {
       toast.error(err.message || t('common.error'))
     } finally {
-      setSaving(false)
+      endMutation()
     }
   }
 
   function handleEditOpen(customer) {
+    if (mutationLockRef.current) return
     const initial = {
-      displayName: customer.displayName || customer.fullName || '',
-      firstName: customer.firstName || '',
-      lastName: customer.lastName || '',
+      displayName: customer.displayName || '',
       phone: customer.phone || '',
     }
     setEditForm(initial)
-    setEditBaseline(initial)
+    setEditBaseline({
+      displayName: initial.displayName,
+      phone: normalizePhoneInput(initial.phone),
+    })
     setFieldErrors({})
     setEditOpen(true)
   }
@@ -285,19 +343,22 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
 
   const handleEditSave = useCallback(async (e) => {
     e.preventDefault()
+    if (!isDirty || mutationLockRef.current) return
     if (isPhoneInvalid(editForm.phone)) {
       toast.error(t('customers.detail.phoneInvalidToast', { defaultValue: 'Số điện thoại không hợp lệ.' }))
       return
     }
-    setEditSaving(true)
+    if (!beginMutation('profile')) return
     setFieldErrors({})
     try {
-      const r = await updateCustomer(customerId, {
-        displayName: editForm.displayName,
-        firstName: editForm.firstName,
-        lastName: editForm.lastName,
-        phone: editForm.phone,
-      })
+      const payload = {}
+      if (editForm.displayName !== editBaseline.displayName) {
+        payload.displayName = editForm.displayName
+      }
+      if (normalizedEditForm.phone !== editBaseline.phone) {
+        payload.phone = normalizedEditForm.phone
+      }
+      const r = await updateCustomer(customerId, payload)
       setState((p) => ({ ...p, customer: r.item }))
       setEditOpen(false)
       setEditBaseline(null)
@@ -313,22 +374,50 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
       }
       toast.error(err.message || t('common.error'))
     } finally {
-      setEditSaving(false)
+      endMutation()
     }
-  }, [customerId, editForm, t, queryClient])
+  }, [
+    beginMutation,
+    customerId,
+    editBaseline,
+    editForm.displayName,
+    editForm.phone,
+    endMutation,
+    isDirty,
+    normalizedEditForm.phone,
+    queryClient,
+    t,
+  ])
 
   // O3: Ctrl/Cmd+S lưu form sửa hồ sơ khi đang mở.
-  useSaveShortcut(editOpen, handleEditSave)
+  useSaveShortcut(editOpen && !mutationBusy, handleEditSave)
 
   if (state.status === 'loading') return <Screen><StatePanel tone="info" title={t('customers.detail.loading')} description={t('common.pleaseWait')} /></Screen>
-  if (state.status === 'error') return <Screen><StatePanel tone="danger" title={t('customers.detail.error')} description={state.error} actionLabel={t('common.retry', { defaultValue: 'Thử lại' })} onAction={handleRetry} /></Screen>
-  if (!state.customer) return <Screen><StatePanel tone="neutral" title={t('customers.detail.notFound')} description={`ID: ${customerId}`} actionLabel={t('common.back')} onAction={() => navigate('/admin/customers')} /></Screen>
+  if (state.status === 'error') return <Screen><StatePanel tone="danger" title={t('customers.detail.error')} description={state.error || t('common.error')} actionLabel={t('common.retry', { defaultValue: 'Thử lại' })} onAction={handleRetry} /></Screen>
+  if (!state.customer) return (
+    <Screen>
+      <StatePanel
+        tone="neutral"
+        title={t('customers.detail.notFound')}
+        description={t('customers.detail.notFoundDesc')}
+        actionLabel={t('common.back')}
+        onAction={() => navigate('/admin/customers')}
+      />
+    </Screen>
+  )
 
   const { customer } = state
 
   const phoneError = isPhoneInvalid(editForm.phone)
   const editAction = !editOpen ? (
-    <Button type="button" variant="secondary" className="min-h-11" onClick={() => handleEditOpen(customer)} disabled={!canUpdate}>
+    <Button
+      type="button"
+      variant="secondary"
+      className="min-h-11"
+      onClick={() => handleEditOpen(customer)}
+      disabled={!canUpdate || mutationBusy}
+      aria-disabled={!canUpdate || mutationBusy}
+    >
       <Edit3 size={16} aria-hidden="true" />
       {t('common.edit')}
     </Button>
@@ -340,16 +429,23 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
         eyebrow={t('customers.detail.eyebrow')}
         title={(
           <span className="flex min-w-0 items-center gap-3">
-            <CustomerAvatar avatarUrl={customer.avatarUrl} name={customer.fullName} />
-            <span className="min-w-0 truncate">{formatText(customer.fullName)}</span>
+            <CustomerAvatar avatarUrl={customer.avatarUrl} name={customer.fullName || customer.email} />
+            <span className="min-w-0 truncate">{formatText(customer.fullName, customer.email)}</span>
           </span>
         )}
-        description={formatText(customer.email)}
+        description={customer.fullName ? formatText(customer.email) : undefined}
         badge={<StatusBadge type="customer" status={customer.status} />}
         actions={(
           <div className="flex flex-wrap justify-end gap-2">
           {customer.avatarUrl && (
-            <Button type="button" variant="outline" className="min-h-11" onClick={handleRemoveAvatar} disabled={!canUpdate || saving}>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11"
+              onClick={handleRemoveAvatar}
+              loading={avatarSaving}
+              disabled={!canUpdate || mutationBusy}
+            >
               <ImageOff size={16} aria-hidden="true" />
               {t('customers.detail.removeAvatar', { defaultValue: 'Xoá ảnh đại diện' })}
             </Button>
@@ -410,6 +506,16 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
               <DetailRow label={t('customers.detail.email')} icon={Mail}>
                 {formatText(customer.email)}
               </DetailRow>
+              {customer.firstName ? (
+                <DetailRow label={t('customers.detail.fieldFirstName')} icon={UserRound}>
+                  {formatText(customer.firstName)}
+                </DetailRow>
+              ) : null}
+              {customer.lastName ? (
+                <DetailRow label={t('customers.detail.fieldLastName')} icon={UserRound}>
+                  {formatText(customer.lastName)}
+                </DetailRow>
+              ) : null}
               <DetailRow label={t('customers.detail.phone')} icon={Phone}>
                 {formatText(customer.phone)}
               </DetailRow>
@@ -495,15 +601,15 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
                 <span className="text-sm font-semibold text-muted-foreground">{t('customers.detail.accountStatus')}</span>
                 <StatusBadge type="customer" status={customer.status} />
               </div>
-              {/* Trạng thái ngoài nhóm set-được (vd PENDING "chờ duyệt") → huy hiệu chỉ-đọc,
-                  không để Select trống trông như lỗi (audit P0-5). */}
-              {(canUpdate && CUSTOMER_STATUSES.includes(customer.status)) ? (
+              {/* Unknown status, synthetic records, or view-only permission use a
+                  read-only explanation instead of an empty Select. */}
+              {(canUpdate && !customer.isSynthetic && CUSTOMER_STATUSES.includes(customer.status)) ? (
                 <Select
                   value={customer.status}
                   onValueChange={handleStatusChange}
-                  disabled={saving}
+                  disabled={mutationBusy}
                 >
-                  <SelectTrigger aria-label={t('customers.detail.accountStatus')}>
+                  <SelectTrigger className="min-h-11" aria-label={t('customers.detail.accountStatus')}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -514,7 +620,9 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
                 </Select>
               ) : (
                 <p className="m-0 text-sm text-muted-foreground">
-                  {t('customers.detail.statusReadOnly', { defaultValue: 'Trạng thái này chỉ có thể xem tại màn hiện tại.' })}
+                  {customer.isSynthetic
+                    ? t('customers.detail.syntheticStatusReadOnly')
+                    : t('customers.detail.statusReadOnly')}
                 </p>
               )}
             </div>
@@ -536,71 +644,44 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
                   <Input
                     type="text"
                     value={editForm.displayName}
-                    maxLength={120}
+                    maxLength={255}
                     onChange={(e) => {
                       setEditForm((p) => ({ ...p, displayName: e.target.value }))
                       if (fieldErrors.displayName) setFieldErrors((p) => ({ ...p, displayName: undefined }))
                     }}
-                    disabled={editSaving}
-                  />
-                </FormField>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                  <FormField label={t('customers.detail.fieldFirstName', { defaultValue: 'Tên' })} error={fieldErrors.firstName}>
-                    <Input
-                      type="text"
-                      value={editForm.firstName}
-                      onChange={(e) => {
-                        setEditForm((p) => ({ ...p, firstName: e.target.value }))
-                        if (fieldErrors.firstName) setFieldErrors((p) => ({ ...p, firstName: undefined }))
-                      }}
-                      disabled={editSaving}
-                    />
-                  </FormField>
-                  <FormField label={t('customers.detail.fieldLastName', { defaultValue: 'Họ' })} error={fieldErrors.lastName}>
-                    <Input
-                      type="text"
-                      value={editForm.lastName}
-                      onChange={(e) => {
-                        setEditForm((p) => ({ ...p, lastName: e.target.value }))
-                        if (fieldErrors.lastName) setFieldErrors((p) => ({ ...p, lastName: undefined }))
-                      }}
-                      disabled={editSaving}
-                    />
-                  </FormField>
-                </div>
-                <FormField label={t('customers.detail.fieldEmail', { defaultValue: 'Email' })}>
-                  <Input
-                    type="text"
-                    value={customer.email || ''}
-                    readOnly
-                    disabled
-                    className="opacity-60"
+                    disabled={mutationBusy}
                   />
                 </FormField>
                 <FormField
                   label={t('customers.detail.fieldPhone', { defaultValue: 'Số điện thoại' })}
                   error={phoneError
-                    ? t('customers.detail.phoneFormatHint', { defaultValue: 'Số điện thoại phải gồm 8–15 chữ số (có thể bắt đầu bằng dấu +).' })
+                    ? t('customers.detail.phoneFormatHint', { defaultValue: 'Số điện thoại sau chuẩn hoá phải gồm 8–15 chữ số; có thể nhập dấu +, khoảng trắng, dấu chấm, gạch ngang hoặc ngoặc.' })
                     : fieldErrors.phone}
-                  helper={t('customers.detail.phoneEmptyHint', { defaultValue: 'Để trống nếu chưa có. VD: 0901234567' })}
+                  helper={t('customers.detail.phoneEmptyHint', { defaultValue: 'Để trống nếu chưa có.' })}
                 >
                   <Input
                     type="text"
                     inputMode="tel"
+                    maxLength={50}
                     value={editForm.phone}
                     onChange={(e) => {
                       setEditForm((p) => ({ ...p, phone: e.target.value }))
                       if (fieldErrors.phone) setFieldErrors((p) => ({ ...p, phone: undefined }))
                     }}
-                    disabled={editSaving}
+                    disabled={mutationBusy}
                   />
                 </FormField>
                 <div className="flex flex-wrap gap-2 pt-1">
-                  <Button type="submit" className="min-h-11" loading={editSaving} disabled={phoneError}>
+                  <Button
+                    type="submit"
+                    className="min-h-11"
+                    loading={editSaving}
+                    disabled={mutationBusy || phoneError || !isDirty}
+                  >
                     <Save size={16} aria-hidden="true" />
                     {t('common.save')}
                   </Button>
-                  <Button type="button" variant="outline" className="min-h-11" onClick={handleEditCancel} disabled={editSaving}>
+                  <Button type="button" variant="outline" className="min-h-11" onClick={handleEditCancel} disabled={mutationBusy}>
                     <X size={16} aria-hidden="true" />
                     {t('common.cancel')}
                   </Button>
@@ -616,10 +697,10 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
           title={t('customers.detail.statusConfirmTitle', { defaultValue: 'Đổi trạng thái tài khoản' })}
           description={t('customers.detail.statusConfirmBody', {
             status: t(`status.customer.${reasonModal.value}`, { defaultValue: reasonModal.value }),
-            defaultValue: `Đánh dấu tài khoản là "{{status}}". Trạng thái này dùng để quản lý nội bộ.`,
           })}
           confirmLabel={t('customers.detail.statusConfirmOk', { defaultValue: 'Đổi trạng thái' })}
-          loading={saving}
+          confirmVariant={reasonModal.value === 'BLOCKED' || reasonModal.value === 'DISABLED' ? 'danger' : 'default'}
+          loading={statusSaving}
           onConfirm={async (reason) => {
             const ok = await applyStatusChange(reasonModal.value, reason)
             if (ok) setReasonModal(null)

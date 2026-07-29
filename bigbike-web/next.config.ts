@@ -238,6 +238,63 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      // Canonical Vietnamese catalog URLs (CATEGORY_RULE_003).
+      // Use an explicit statusCode because Next's `permanent: true` emits 308, not 301.
+      {
+        source: "/danh-muc-san-pham/:slug/",
+        destination: "/danh-muc/:slug/",
+        statusCode: 301,
+      },
+      {
+        source: "/danh-muc-san-pham/:slug",
+        destination: "/danh-muc/:slug/",
+        statusCode: 301,
+      },
+      {
+        source: "/danh-muc-san-pham/",
+        destination: "/sp/",
+        statusCode: 301,
+      },
+      {
+        source: "/danh-muc-san-pham",
+        destination: "/sp/",
+        statusCode: 301,
+      },
+      {
+        source: "/danh-muc-san-pham.html",
+        destination: "/sp/",
+        statusCode: 301,
+      },
+      {
+        source: "/danh-muc/",
+        destination: "/sp/",
+        statusCode: 301,
+      },
+      {
+        source: "/danh-muc",
+        destination: "/sp/",
+        statusCode: 301,
+      },
+      {
+        source: "/san-pham/",
+        destination: "/sp/",
+        statusCode: 301,
+      },
+      {
+        source: "/san-pham",
+        destination: "/sp/",
+        statusCode: 301,
+      },
+      {
+        source: "/categories/",
+        destination: "/products/",
+        statusCode: 301,
+      },
+      {
+        source: "/categories",
+        destination: "/products/",
+        statusCode: 301,
+      },
       // Redirect legacy/existing checkout paths to new order path
       {
         source: "/thanh-toan/",
@@ -258,49 +315,49 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/san-pham.html",
-        destination: "/san-pham/",
-        permanent: true,
+        destination: "/sp/",
+        statusCode: 301,
       },
       // Category slugs renamed in migration — must precede the generic /{slug}.html→/{slug}/ CSV rule.
       {
         source: "/mu-bao-hiem.html",
-        destination: "/danh-muc-san-pham/non-bao-hiem-moto/",
-        permanent: true,
+        destination: "/danh-muc/non-bao-hiem-moto/",
+        statusCode: 301,
       },
       {
         source: "/mu-bao-hiem",
-        destination: "/danh-muc-san-pham/non-bao-hiem-moto/",
-        permanent: true,
+        destination: "/danh-muc/non-bao-hiem-moto/",
+        statusCode: 301,
       },
       {
         source: "/ao-quan-bao-ho.html",
-        destination: "/danh-muc-san-pham/quan-ao-bao-ho-moto/",
-        permanent: true,
+        destination: "/danh-muc/quan-ao-bao-ho-moto/",
+        statusCode: 301,
       },
       {
         source: "/ao-quan-bao-ho",
-        destination: "/danh-muc-san-pham/quan-ao-bao-ho-moto/",
-        permanent: true,
+        destination: "/danh-muc/quan-ao-bao-ho-moto/",
+        statusCode: 301,
       },
       {
         source: "/phu-kien-khac.html",
-        destination: "/san-pham/",
-        permanent: true,
+        destination: "/sp/",
+        statusCode: 301,
       },
       {
         source: "/phu-kien-khac",
-        destination: "/san-pham/",
-        permanent: true,
+        destination: "/sp/",
+        statusCode: 301,
       },
       {
         source: "/san-pham-khuyen-mai.html",
-        destination: "/san-pham/",
-        permanent: true,
+        destination: "/sp/",
+        statusCode: 301,
       },
       {
         source: "/san-pham-khuyen-mai",
-        destination: "/san-pham/",
-        permanent: true,
+        destination: "/sp/",
+        statusCode: 301,
       },
       // Legacy buying-guide URLs. Bộ hướng dẫn tĩnh hiện chỉ có 2 trang con
       // (size-mu, size-trang-phuc) — không có nội dung "mua hàng" riêng, nên mọi
@@ -389,11 +446,6 @@ const nextConfig: NextConfig = {
           source: "/tin-tuc/:slug.html",
           destination: "/tin-tuc/:slug/",
         },
-        // Shop listing: /danh-muc-san-pham.html → /san-pham/
-        {
-          source: "/danh-muc-san-pham.html",
-          destination: "/san-pham/",
-        },
         // Known static page .html → internal trailing-slash routes
         {
           source: "/gio-hang.html",
@@ -433,17 +485,17 @@ const nextConfig: NextConfig = {
           source: "/lien-he.html",
           destination: "/lien-he/",
         },
-        // Hierarchical category URLs: /{parent}/{child}.html → /danh-muc-san-pham/{child}/
+        // Hierarchical category URLs: /{parent}/{child}.html → /danh-muc/{child}/
         // (simplified; parent context not used by current category page)
         {
           source: "/:parent/:child.html",
-          destination: "/danh-muc-san-pham/:child/",
+          destination: "/danh-muc/:child/",
         },
-        // Catch-all for flat category URLs: /{cat}.html → /danh-muc-san-pham/{cat}/
+        // Catch-all for flat category URLs: /{cat}.html → /danh-muc/{cat}/
         // Must be last — specific rules above take precedence by ordering.
         {
           source: "/:slug.html",
-          destination: "/danh-muc-san-pham/:slug/",
+          destination: "/danh-muc/:slug/",
         },
       ],
       fallback: [],
@@ -467,7 +519,7 @@ const nextConfig: NextConfig = {
         `media-src 'self' blob: https:${MEDIA_ORIGIN ? " " + MEDIA_ORIGIN : ""}`,
         "font-src 'self' data:",
         `connect-src 'self' https: ${API_ORIGIN} https://www.google-analytics.com`,
-        "frame-src https://www.google.com https://maps.google.com https://www.youtube-nocookie.com https://www.youtube.com",
+        "frame-src https://www.google.com https://maps.google.com https://www.youtube-nocookie.com https://www.youtube.com https://www.tiktok.com https://www.facebook.com",
         `frame-ancestors ${frameAncestors}`,
         "base-uri 'self'",
         "form-action 'self'",

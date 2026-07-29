@@ -5,16 +5,29 @@
 import { formatDateTimeWithSeconds } from '../../lib/formatters'
 
 // ── Actions that are dangerous — shown with a warning indicator ────────────────
+// Đối chiếu với mã hành động backend thật sự ghi (grep `auditLogFactory.build`)
+// + mã còn tồn tại trong dữ liệu cũ. Trước đây tập này bỏ sót TOÀN BỘ nhóm
+// `*_HARD_DELETED` (xoá vĩnh viễn — không khôi phục được) nên thao tác phá huỷ
+// nhất lại hiển thị như dòng thường.
 export const DANGEROUS_ACTIONS = new Set([
-  'ORDER_CANCELLED',
-  'PRODUCT_DELETED', 'PRODUCT_SOFT_DELETED',
-  'CUSTOMER_DELETED',
-  'CATEGORY_DELETED', 'CATEGORY_SOFT_DELETED',
-  'BRAND_DELETED', 'BRAND_SOFT_DELETED',
-  'MEDIA_DELETED', 'MEDIA_HARD_DELETED',
-  'MENU_ITEM_DELETED', 'ROLE_DELETED', 'REDIRECT_DELETED',
-  'CONTENT_ARTICLE_DELETED',
+  // Xoá vĩnh viễn — không thể khôi phục
+  'PRODUCT_HARD_DELETED', 'CATEGORY_HARD_DELETED', 'BRAND_HARD_DELETED',
+  'CONTENT_ARTICLE_HARD_DELETED', 'MEDIA_HARD_DELETED',
+  // Chuyển vào Thùng rác / xoá mềm
+  'PRODUCT_SOFT_DELETED', 'CATEGORY_SOFT_DELETED', 'BRAND_SOFT_DELETED',
+  'CONTENT_ARTICLE_DELETED', 'MEDIA_DELETED',
+  // Xoá bản ghi cấu hình / nội dung
+  'MENU_DELETED', 'MENU_ITEM_DELETED', 'ROLE_DELETED', 'REDIRECT_DELETED',
+  'SLIDER_DELETED', 'HOME_VIDEO_DELETED', 'MEDIA_FOLDER_DELETED',
+  'ATTRIBUTE_DELETED', 'ATTRIBUTE_VALUE_DELETED', 'REVIEW_DELETED',
+  'CUSTOMER_AVATAR_REMOVED',
+  // Khoá quyền truy cập của người dùng quản trị
+  'ADMIN_USER_DISABLED', 'ADMIN_USER_SUSPENDED',
+  // Sự cố đăng nhập
   'ADMIN_LOGIN_FAILED', 'ADMIN_ACCOUNT_LOCKED',
+  // Mã cũ — giữ lại để bản ghi lịch sử vẫn được đánh dấu đúng
+  'ORDER_CANCELLED', 'PRODUCT_DELETED', 'CUSTOMER_DELETED',
+  'CATEGORY_DELETED', 'BRAND_DELETED',
 ])
 
 // Values considered dangerous in diff table (shown with danger highlight)
@@ -69,7 +82,10 @@ export function getModuleLabel(t, resourceType) {
 
 export function getActionLabel(t, action) {
   if (!action) return '—'
-  return t(`auditLog.action.${action}`, { defaultValue: null }) ?? t('auditLog.actionOther', { code: action })
+  const key = `auditLog.action.${action}`
+  const translated = t(key, { defaultValue: '' })
+  if (translated && translated !== key) return translated
+  return t('auditLog.actionOther', { code: action, defaultValue: `(${action})` })
 }
 
 // ── Diff helpers ───────────────────────────────────────────────────────────────
@@ -87,6 +103,11 @@ export function buildCsvRow(log, t) {
   return [formatDateTimeWithSeconds(log.createdAt), actor, actorType, action, module, entity]
 }
 
+export function sanitizeSpreadsheetCell(value) {
+  const text = String(value ?? '')
+  return /^[\t\r ]*[=+\-@]/.test(text) ? `'${text}` : text
+}
+
 export function exportToCsv(items, t) {
   const headers = [
     t('auditLog.colTime'),
@@ -98,7 +119,7 @@ export function exportToCsv(items, t) {
   ]
   const rows = items.map((log) => buildCsvRow(log, t))
   const csvContent = [headers, ...rows]
-    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    .map((row) => row.map((cell) => `"${sanitizeSpreadsheetCell(cell).replace(/"/g, '""')}"`).join(','))
     .join('\n')
   const bom = '﻿'
   const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' })

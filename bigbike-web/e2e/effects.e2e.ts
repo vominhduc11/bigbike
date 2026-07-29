@@ -335,7 +335,7 @@ test.describe("Effects — mobile @390", () => {
   });
 
   test("floating chat opens on mobile without shifting page content", async ({ page }) => {
-    await gotoAndSettle(page, "/san-pham/", { scroll: false });
+    await gotoAndSettle(page, "/sp/", { scroll: false });
     const fab = floatingChatTrigger(page);
     if ((await fab.count()) === 0 || !(await fab.isVisible().catch(() => false))) {
       test.skip(true, "Floating chat FAB not present/visible");
@@ -375,7 +375,7 @@ test.describe("Effects — mobile @390", () => {
   });
 
   test("bottom nav is anchored at the bottom and main clears it", async ({ page }) => {
-    await gotoAndSettle(page, "/san-pham/");
+    await gotoAndSettle(page, "/sp/");
     const nav = page.locator("nav.bb-bottom-nav");
     await expect(nav).toBeVisible();
     const box = await nav.boundingBox();

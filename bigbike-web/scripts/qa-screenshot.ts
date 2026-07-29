@@ -183,8 +183,8 @@ async function main() {
     }
 
     // ── CATALOG ─────────────────────────────────────────────────────────────
-    console.log("\n  → /san-pham/");
-    if (await goto(page, `${BASE_URL}/san-pham/`, ".bb-product-card")) {
+    console.log("\n  → /sp/");
+    if (await goto(page, `${BASE_URL}/sp/`, ".bb-product-card")) {
       await shotViewport(page, `${vp.name}--catalog-top`);
       if (vp.width >= 1200) {
         // Product card clip from DOM coords

@@ -117,4 +117,15 @@ describe('BrandListScreen', () => {
     await waitFor(() => expect(mocks.deleteBrand).toHaveBeenCalledWith('brand_ls2'))
     expect(mocks.fetchBrands).toHaveBeenLastCalledWith(expect.objectContaining({ visibility: 'VISIBLE' }))
   })
+
+  it('hiện dải "Vừa xem gần đây" từ thương hiệu đã mở ở màn chi tiết', async () => {
+    localStorage.setItem('recent:brands', JSON.stringify([{ id: 'brand_ls2', label: 'LS2' }]))
+    const { navigate } = renderScreen()
+    const user = userEvent.setup()
+
+    const chip = await screen.findByRole('button', { name: 'LS2' })
+    await user.click(chip)
+    expect(navigate).toHaveBeenCalledWith('/admin/brands/brand_ls2')
+    localStorage.removeItem('recent:brands')
+  })
 })

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { FolderTree, FileText, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { FolderTree, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { StatePanel } from '../components/StatePanel'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -9,6 +9,7 @@ import { fetchSettings, batchUpdateSettings, mapValidationErrors } from '../lib/
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { resolveDisplayUrl } from '@/lib/contracts'
+import { useContentLang } from '@/lib/contentLang'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
@@ -23,9 +24,9 @@ const THEME_FALLBACK_ILLUSTRATION = '/wp-content/themes/bigbike/images/mu-bao-hi
 
 // 3 trang listing không có PageEntity — mỗi trang một bộ key trong group public_hero.
 const PAGES = [
-  { prefix: 'hero_products', title: 'Tất cả sản phẩm', path: '/san-pham' },
-  { prefix: 'hero_brands', title: 'Thương hiệu', path: '/brands' },
-  { prefix: 'hero_news', title: 'Tin tức', path: '/tin-tuc' },
+  { prefix: 'hero_products', titleKey: 'banners.pageProducts', path: '/sp/' },
+  { prefix: 'hero_brands', titleKey: 'banners.pageBrands', path: '/brands' },
+  { prefix: 'hero_news', titleKey: 'banners.pageNews', path: '/tin-tuc' },
 ]
 
 // Một số giá trị về từ backend có thể bị bọc dấu nháy — gỡ cho sạch trước khi hiển thị.
@@ -87,40 +88,65 @@ function SourceBadge({ source, t }) {
 }
 
 // ── Một ô ảnh ───────────────────────────────────────────────────────────────
-function ImageField({ label, hint, value, onChange, recommend, disabled, badge, error }) {
+function ImageField({
+  label, hint, value, onChange, alt, onAltChange, recommend, disabled, badge, error,
+}) {
   return (
     <div className="form-field">
       <span className="bb-row">
         {label}
         {badge}
       </span>
-      <ImageUrlInput value={value} onChange={onChange} recommend={recommend} disabled={disabled} error={error} />
+      <ImageUrlInput
+        value={value}
+        onChange={onChange}
+        alt={alt}
+        onAltChange={onAltChange}
+        previewAlt={alt}
+        recommend={recommend}
+        disabled={disabled}
+        error={error}
+      />
       {hint && <span className="hint">{hint}</span>}
     </div>
   )
 }
 
-// ── Một ô chữ (VI + EN) ─────────────────────────────────────────────────────
-function TextField({ label, value, valueEn, onChange, onChangeEn, onBlur, disabled, t, error, errorEn }) {
+// ── Một ô chữ theo ngôn ngữ nội dung đang chọn ở header ─────────────────────
+function TextField({ fieldKey, label, value, onChange, disabled, contentLang, t, error }) {
+  const controlId = `banner-${fieldKey}-${contentLang}`
+  const errorId = `${controlId}-error`
   return (
     <div className="form-field">
-      <span>{label}</span>
-      <Input value={value} onChange={(e) => onChange(e.target.value)} onBlur={onBlur} disabled={disabled} aria-invalid={error ? true : undefined} />
-      {error && <small className="field-error" role="alert">{error}</small>}
-      <span className="hint mt-1.5">{t('banners.englishLabel')}</span>
-      <Input value={valueEn} onChange={(e) => onChangeEn(e.target.value)} disabled={disabled} className="mt-1" aria-invalid={errorEn ? true : undefined} />
-      {errorEn && <small className="field-error" role="alert">{errorEn}</small>}
+      <label htmlFor={controlId}>{label}</label>
+      <span className="hint">
+        {contentLang === 'en' ? t('banners.editingEnglish') : t('banners.editingVietnamese')}
+      </span>
+      <Input
+        id={controlId}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        maxLength={1000}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
+      />
+      {error && <small id={errorId} className="field-error" role="alert">{error}</small>}
     </div>
   )
 }
 
 // ── Thẻ một trang ────────────────────────────────────────────────────────────
-function PageBannerCard({ page, get, getEn, set, setEn, defaults, canUpdate, t, errors, errorsEn }) {
+function PageBannerCard({
+  page, get, getEn, set, setEn, defaults, canUpdate, contentLang, t, errors, errorsEn,
+}) {
   const k = (suffix) => `${page.prefix}_${suffix}`
-
-
   const ownBg = get(k('image_url'))
   const ownIllu = get(k('illustration_url'))
+  const activeValue = contentLang === 'en' ? getEn : get
+  const activeSet = contentLang === 'en' ? setEn : set
+  const activeErrors = contentLang === 'en' ? errorsEn : errors
+  const pageTitle = t(page.titleKey)
 
   // Cascade preview: ảnh riêng → mặc định chung → fallback theme.
   const bg = ownBg
@@ -137,21 +163,24 @@ function PageBannerCard({ page, get, getEn, set, setEn, defaults, canUpdate, t, 
   return (
     <div className="bb-card">
       <div className="bb-card-header">
-        <h3>{page.title}</h3>
+        <h3>{pageTitle}</h3>
       </div>
       <div className="bb-card-body bb-form-grid">
-        <BannerPreview bg={bg} illustration={illustration} title={get(k('title')) || page.title} />
+        <BannerPreview
+          bg={bg}
+          illustration={illustration}
+          title={activeValue(k('title')) || pageTitle}
+        />
 
         <TextField
+          fieldKey={k('title')}
           label={t('banners.fieldTitle')}
-          value={get(k('title'))}
-          valueEn={getEn(k('title'))}
-          onChange={(v) => set(k('title'), v)}
-          onChangeEn={(v) => setEn(k('title'), v)}
+          value={activeValue(k('title'))}
+          onChange={(v) => activeSet(k('title'), v)}
           disabled={!canUpdate}
+          contentLang={contentLang}
           t={t}
-          error={errors[k('title')]}
-          errorEn={errorsEn[k('title')]}
+          error={activeErrors[k('title')]}
         />
 
         <div className="bb-form-grid bb-form-grid-2">
@@ -160,6 +189,8 @@ function PageBannerCard({ page, get, getEn, set, setEn, defaults, canUpdate, t, 
             hint={t('banners.hintBgDesktop')}
             value={ownBg}
             onChange={(url) => set(k('image_url'), url)}
+            alt={activeValue(k('image_alt'))}
+            onAltChange={(alt) => activeSet(k('image_alt'), alt)}
             recommend={IMAGE_RECO.bannerWide}
             disabled={!canUpdate}
             badge={<SourceBadge source={bg.source} t={t} />}
@@ -176,6 +207,16 @@ function PageBannerCard({ page, get, getEn, set, setEn, defaults, canUpdate, t, 
             error={errors[k('illustration_url')]}
           />
         </div>
+        <TextField
+          fieldKey={k('image_alt')}
+          label={t('banners.fieldAlt')}
+          value={activeValue(k('image_alt'))}
+          onChange={(v) => activeSet(k('image_alt'), v)}
+          disabled={!canUpdate}
+          contentLang={contentLang}
+          t={t}
+          error={activeErrors[k('image_alt')]}
+        />
       </div>
     </div>
   )
@@ -231,18 +272,6 @@ function CrossLinksCard({ navigate, t }) {
             {t('banners.openCategories')}
           </Button>
         </div>
-        <div className="bb-link-card-item">
-          <div className="bb-link-card-copy">
-            <FileText size={18} className="bb-link-card-icon" />
-            <div>
-              <div className="bb-link-card-title">{t('banners.contentLinkTitle')}</div>
-              <div className="bb-link-card-desc">{t('banners.contentLinkDesc')}</div>
-            </div>
-          </div>
-          <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/admin/content')}>
-            {t('banners.openContent')}
-          </Button>
-        </div>
       </div>
     </div>
   )
@@ -253,6 +282,7 @@ function CrossLinksCard({ navigate, t }) {
 // (tránh trùng heading), chỉ giữ phần mô tả ngắn để có ngữ cảnh.
 export function BannerScreen({ canUpdate = false, navigate, embedded = false }) {
   const { t } = useTranslation()
+  const contentLang = useContentLang()
   const [state, setState] = useState({ status: 'loading', items: [], warning: '' })
   const [fetchKey, setFetchKey] = useState(0)
   const [drafts, setDrafts] = useState({})
@@ -396,6 +426,9 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false }) 
       )}
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
+      {!embedded && !canUpdate && !state.warning && (
+        <ReadOnlyBanner warning={t('banners.readOnlyHint')} />
+      )}
 
       <div className="bb-stack">
         {PAGES.map((page) => (
@@ -408,6 +441,7 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false }) 
             setEn={setEn}
             defaults={defaults}
             canUpdate={canUpdate}
+            contentLang={contentLang}
             t={t}
             errors={fieldErrors}
             errorsEn={fieldErrorsEn}

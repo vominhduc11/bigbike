@@ -286,7 +286,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 64
             }
           },
           {
@@ -307,6 +308,27 @@
               "minimum": 1,
               "maximum": 50
             }
+          },
+          {
+            "name": "rating",
+            "in": "query",
+            "description": "Exact half-star filter. Summary metrics remain global.",
+            "schema": {
+              "$ref": "#/components/schemas/ReviewRating"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "highest",
+                "lowest"
+              ],
+              "default": "newest"
+            }
           }
         ],
         "responses": {
@@ -319,6 +341,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -337,7 +362,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 64
             }
           }
         ],
@@ -353,19 +379,87 @@
         },
         "responses": {
           "201": {
-            "description": "Review submitted and pending moderation. Also returned (with no persistence) when honeypot is filled."
+            "description": "Review submitted and pending moderation. Also returned (with no persistence) when honeypot is filled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmitReviewSuccessDataResponse"
+                }
+              }
+            }
           },
           "400": {
-            "description": "Validation error (missing/invalid authorName, rating, or comment)"
+            "$ref": "#/components/responses/ValidationError"
           },
           "404": {
-            "description": "Product not found"
+            "$ref": "#/components/responses/NotFound"
           },
           "409": {
-            "description": "Duplicate review — same productId + normalized (trim/lowercase/collapsed-whitespace) authorName + comment submitted within the last 24 hours. Rating is not part of the duplicate key, and reviews in any moderation status (PENDING/APPROVED/SPAM/TRASH) are counted."
+            "description": "Duplicate review, or a photo is missing, belongs to another product, is duplicated, or was already claimed."
           },
           "429": {
             "description": "Rate limit exceeded — 5 submissions per IP per minute"
+          }
+        }
+      }
+    },
+    "/api/v1/products/{productId}/reviews/photos": {
+      "post": {
+        "tags": [
+          "Public Catalog"
+        ],
+        "summary": "Upload one product-review photo",
+        "operationId": "uploadProductReviewPhoto",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "JPEG, PNG or WebP; maximum 8 MB. Declared Content-Type must exactly match magic-byte detection; the stored filename extension is canonicalized to the verified type."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stored under /media/reviews/ and recorded as an unclaimed upload for 24 hours.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewPhotoUploadDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "description": "Review-photo upload rate limit exceeded."
           }
         }
       }
@@ -1497,6 +1591,7 @@
             "in": "query",
             "schema": {
               "type": "integer",
+              "minimum": 1,
               "default": 1
             }
           },
@@ -1505,6 +1600,8 @@
             "in": "query",
             "schema": {
               "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
               "default": 20
             }
           },
@@ -1512,7 +1609,13 @@
             "name": "status",
             "in": "query",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "PROCESSING",
+                "COMPLETED",
+                "CANCELLED"
+              ]
             }
           },
           {
@@ -1521,14 +1624,53 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Inclusive start date at the Asia/Ho_Chi_Minh calendar-day boundary.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Inclusive end date at the Asia/Ho_Chi_Minh calendar-day boundary. Implemented as the next local day at 00:00 exclusive.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "placedAt:desc"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Admin order list"
+            "description": "Admin order list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOrderListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -1559,7 +1701,20 @@
         ],
         "responses": {
           "200": {
-            "description": "Order detail"
+            "description": "Order detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOrderDetailDataResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -1573,7 +1728,7 @@
           "Admin Orders"
         ],
         "summary": "Update order status",
-        "description": "When status is CANCELLED, cancelReason is required and stored on orders.cancel_reason.",
+        "description": "When transitioning into CANCELLED, cancelReason is required and stored on orders.cancel_reason. Repeating the current status is an idempotent no-op.",
         "operationId": "adminUpdateOrderStatus",
         "security": [
           {
@@ -1603,7 +1758,29 @@
         },
         "responses": {
           "200": {
-            "description": "Order status updated"
+            "description": "Order status updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOrderDetailDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
         }
       }
@@ -1614,6 +1791,7 @@
           "Admin Customers"
         ],
         "summary": "List customers (admin)",
+        "description": "Requires customers.read. Search treats %, _ and backslash as literal characters. Customer purchase aggregates exclude CANCELLED orders.",
         "operationId": "adminListCustomers",
         "security": [
           {
@@ -1626,6 +1804,7 @@
             "in": "query",
             "schema": {
               "type": "integer",
+              "minimum": 1,
               "default": 1
             }
           },
@@ -1634,12 +1813,15 @@
             "in": "query",
             "schema": {
               "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
               "default": 20
             }
           },
           {
             "name": "q",
             "in": "query",
+            "description": "Case-insensitive literal substring search across email, phone and displayName.",
             "schema": {
               "type": "string"
             }
@@ -1648,16 +1830,78 @@
             "name": "status",
             "in": "query",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/CustomerStatus"
+            }
+          },
+          {
+            "name": "synthetic",
+            "in": "query",
+            "description": "Filter by WordPress guest-order synthetic-customer flag.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "emailVerified",
+            "in": "query",
+            "description": "true requires emailVerifiedAt; false requires it to be null.",
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Customer list"
+            "description": "Customer list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCustomerListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/customers/summary": {
+      "get": {
+        "tags": [
+          "Admin Customers"
+        ],
+        "summary": "Get customer screen summary (admin)",
+        "description": "Requires customers.read. total and vip include synthetic rows; active and newLast30Days exclude synthetic rows. VIP qualification excludes CANCELLED orders.",
+        "operationId": "adminGetCustomerSummary",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer KPI summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCustomerSummaryDataResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -1680,16 +1924,30 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Customer detail"
+            "description": "Customer detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCustomerDetailDataResponse"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
@@ -1704,12 +1962,52 @@
             "AdminBearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCustomerRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Updated customer detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCustomerDetailDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
         }
       }
@@ -1726,12 +2024,99 @@
             "AdminBearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCustomerStatusRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Updated customer detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCustomerDetailDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/customers/{customerId}/avatar": {
+      "delete": {
+        "tags": [
+          "Admin Customers"
+        ],
+        "summary": "Remove customer avatar (admin)",
+        "description": "Requires customers.write. An actual removal writes CUSTOMER_AVATAR_REMOVED; an idempotent no-op writes no false audit event. There is no admin avatar-upload endpoint.",
+        "operationId": "adminRemoveCustomerAvatar",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer detail with avatarUrl cleared",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCustomerDetailDataResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -2457,6 +2842,20 @@
             }
           },
           {
+            "name": "filter_gender",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 20,
+              "enum": [
+                "Nam",
+                "Nữ",
+                "Unisex"
+              ]
+            },
+            "description": "Case-insensitive exact product-level gender filter."
+          },
+          {
             "name": "homepageBlock",
             "in": "query",
             "schema": {
@@ -2467,14 +2866,39 @@
               ]
             },
             "description": "Filter to a single homepage placement slot."
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "vi",
+              "enum": [
+                "vi",
+                "en"
+              ]
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Product list"
+            "description": "Product list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       },
@@ -2501,10 +2925,23 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Draft product created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -2533,10 +2970,23 @@
         ],
         "responses": {
           "200": {
-            "description": "Product detail"
+            "description": "Product detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDataResponse"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
@@ -2551,6 +3001,16 @@
             "AdminBearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -2563,10 +3023,26 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Product content saved without changing lifecycle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
@@ -2581,12 +3057,35 @@
             "AdminBearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Product moved to trash",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDataResponse"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -2603,12 +3102,445 @@
             "AdminBearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductPublishRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Publish state updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/products/preview": {
+      "post": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "Preview unsaved product without persistence (admin)",
+        "operationId": "adminPreviewProduct",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "vi",
+              "enum": [
+                "vi",
+                "en"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertProductRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transient storefront product render",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/products/{id}/restore": {
+      "post": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "Restore trashed product to draft (admin)",
+        "operationId": "adminRestoreProduct",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product restored to draft",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDataResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/products/{id}/permanent": {
+      "delete": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "Permanently delete trashed product (admin)",
+        "operationId": "adminPermanentlyDeleteProduct",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Product permanently deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/products/homepage-blocks": {
+      "post": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "Replace ordered featured products (admin)",
+        "operationId": "adminSetProductHomepageBlocks",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetHomepageBlocksRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated featured products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductArrayDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/products/export.csv": {
+      "get": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "Export the complete product catalog as CSV (admin)",
+        "operationId": "adminExportFullProductCatalogCsv",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Uncapped, streamed UTF-8 BOM CSV",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Export-Streamed": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/products/import/validate": {
+      "post": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "Validate product import JSON without persistence (admin)",
+        "operationId": "adminValidateProductImport",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Validation report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportReportDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/products/import/commit": {
+      "post": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "Commit valid product import rows as drafts (admin)",
+        "operationId": "adminCommitProductImport",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "skipRowKeys": {
+                    "type": "string",
+                    "description": "Comma-separated row keys returned by validation."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Commit report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportReportDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/products/import/export/{id}": {
+      "get": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "Export one product as round-trip JSON (admin)",
+        "operationId": "adminExportProductJson",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One-element ProductImportRow array",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 1,
+                  "items": {
+                    "$ref": "#/components/schemas/ProductImportRow"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -3007,14 +3939,32 @@
           {
             "name": "visibility",
             "in": "query",
+            "description": "VISIBLE (default view) or HIDDEN (Trash view).",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "VISIBLE",
+                "HIDDEN"
+              ]
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "description": "Content locale. Brand name/slug are shared across VI/EN (BRAND_RULE_001/003), so this only affects translated fields.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "vi",
+                "en"
+              ],
+              "default": "vi"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Brand list"
+            "description": "Brand list. The locked system brand uncategorized-brand is always excluded."
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -3032,12 +3982,28 @@
             "AdminBearerAuth": []
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertBrandRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Created brand. New brands always start visible (isVisible = true) and showOnHomepage defaults to true."
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -3084,12 +4050,44 @@
             "AdminBearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertBrandRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Updated brand"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
         }
       },
@@ -3097,19 +4095,38 @@
         "tags": [
           "Admin Catalog"
         ],
-        "summary": "Delete brand (admin)",
+        "summary": "Soft-delete a brand (move to Trash) (admin)",
         "operationId": "adminDeleteBrand",
         "security": [
           {
             "AdminBearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Brand payload with isVisible = false. Calling this on a brand already in Trash is a no-op and still returns 200."
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
         }
       }
@@ -3126,9 +4143,19 @@
             "AdminBearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Restored brand"
+            "description": "Brand payload with isVisible = true. Calling this on an already visible brand is a no-op and still returns 200."
           },
           "403": {
             "description": "Forbidden"
@@ -3154,9 +4181,39 @@
             "AdminBearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Brand permanently deleted; data.reassignedProductCount is the number of products reassigned to uncategorized-brand"
+            "description": "Brand permanently deleted; data.reassignedProductCount is the number of products reassigned to uncategorized-brand",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "reassignedProductCount": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ApiMeta"
+                    }
+                  }
+                }
+              }
+            }
           },
           "403": {
             "description": "Forbidden"
@@ -3446,6 +4503,66 @@
         }
       }
     },
+    "/api/v1/admin/content/articles/preview": {
+      "post": {
+        "tags": [
+          "Admin Content"
+        ],
+        "summary": "Preview an unsaved article (admin)",
+        "description": "Requires content.update. Validates and renders the current payload without persistence.",
+        "operationId": "adminPreviewArticle",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "vi",
+                "en"
+              ],
+              "default": "vi"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertArticleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rendered public article shape",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArticleDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
     "/api/v1/admin/categories/tree": {
       "get": {
         "tags": ["Admin Catalog"],
@@ -3530,6 +4647,132 @@
         }
       }
     },
+    "/api/v1/admin/content/articles/{id}/restore": {
+      "post": {
+        "tags": [
+          "Admin Content"
+        ],
+        "summary": "Restore an article from Trash (admin)",
+        "description": "Requires content.update. Only a TRASH article can be restored; it returns to DRAFT.",
+        "operationId": "adminRestoreArticle",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restored article",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminContentItemDataResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/content/articles/{id}/permanent": {
+      "delete": {
+        "tags": [
+          "Admin Content"
+        ],
+        "summary": "Permanently delete an article (admin)",
+        "description": "Requires content.update. Only a TRASH article can be permanently deleted.",
+        "operationId": "adminPermanentlyDeleteArticle",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Article permanently deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/product-assignment": {
+      "get": {
+        "tags": [
+          "Admin Settings"
+        ],
+        "summary": "Get the shared product/article assignment guide",
+        "description": "Requires at least one of products.read or content.read. Editing the underlying product_assign settings remains SUPER_ADMIN-only.",
+        "operationId": "adminGetProductAssignment",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shared assignment guide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProductAssignmentDataResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
     "/api/v1/admin/media/{mediaId}/restore": {
       "post": {
         "tags": [
@@ -3570,7 +4813,8 @@
             "in": "query",
             "schema": {
               "type": "integer",
-              "default": 1
+              "default": 1,
+              "minimum": 1
             }
           },
           {
@@ -3578,7 +4822,9 @@
             "in": "query",
             "schema": {
               "type": "integer",
-              "default": 20
+              "default": 20,
+              "minimum": 1,
+              "maximum": 100
             }
           },
           {
@@ -3592,17 +4838,21 @@
             "name": "status",
             "in": "query",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "SPAM",
+                "TRASH"
+              ]
             }
           },
             {
               "name": "rating",
               "in": "query",
-              "description": "Optional exact star filter from 1 to 5. The pagination total is filtered; the summary endpoint is not.",
+              "description": "Optional exact half-star filter. The pagination total is filtered; the summary endpoint is not.",
               "schema": {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 5
+                "$ref": "#/components/schemas/ReviewRating"
               }
             },
             {
@@ -3625,6 +4875,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -3685,7 +4938,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "integer"
+              "type": "integer",
+              "format": "int64"
             }
           }
         ],
@@ -3699,6 +4953,9 @@
                 }
               }
             }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -3719,15 +4976,42 @@
             "AdminBearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "expectedVersion",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          }
+        ],
         "responses": {
           "204": {
-            "description": "No content"
+            "description": "Review in TRASH permanently deleted by a SUPER_ADMIN."
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
         }
       }
@@ -3742,6 +5026,17 @@
         "security": [
           {
             "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
           }
         ],
         "requestBody": {
@@ -3760,16 +5055,25 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminReviewDataResponse"
+                  "$ref": "#/components/schemas/AdminReviewMutationDataResponse"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
         }
       }
@@ -3798,7 +5102,7 @@
         },
         "responses": {
           "200": {
-            "description": "Number of existing reviews affected",
+            "description": "Best-effort result with affected distinct items and transparent skipped reasons.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3806,6 +5110,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -3840,7 +5147,7 @@
         },
         "responses": {
           "200": {
-            "description": "Number of existing reviews permanently deleted, including review photos",
+            "description": "SUPER_ADMIN best-effort result for TRASH reviews, with skipped reasons.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3848,6 +5155,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -3955,6 +5265,16 @@
             "AdminBearerAuth": []
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertHomeVideoRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "Created"
@@ -3999,6 +5319,16 @@
             "AdminBearerAuth": []
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchHomeVideoRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -4167,7 +5497,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest"
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -4180,7 +5510,8 @@
         "tags": [
           "Admin Reports"
         ],
-        "summary": "Export orders report CSV (admin)",
+        "summary": "Export every matching order as CSV (admin)",
+        "description": "Streams every order matching q, status, from and to across all result pages. The order export is not capped.",
         "operationId": "adminReportsOrdersExport",
         "security": [
           {
@@ -4189,33 +5520,91 @@
         ],
         "parameters": [
           {
+            "name": "q",
+            "in": "query",
+            "description": "Search order number/key or customer email/phone.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "status",
             "in": "query",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "PROCESSING",
+                "COMPLETED",
+                "CANCELLED"
+              ]
             }
           },
           {
             "name": "from",
             "in": "query",
+            "description": "Inclusive start date at the Asia/Ho_Chi_Minh calendar-day boundary.",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "date"
             }
           },
           {
             "name": "to",
             "in": "query",
+            "description": "Inclusive end date at the Asia/Ho_Chi_Minh calendar-day boundary. Implemented as the next local day at 00:00 exclusive.",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "date"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "CSV export"
+            "description": "Uncapped streamed CSV export",
+            "headers": {
+              "X-Export-Uncapped": {
+                "description": "Always true for this order export.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -4225,7 +5614,8 @@
         "tags": [
           "Admin Reports"
         ],
-        "summary": "Export customers report CSV (admin)",
+        "summary": "Export every matching customer as CSV (admin)",
+        "description": "Streams every customer matching the Customers-screen q, status, synthetic and emailVerified filters across all result pages. The customer export is not capped.",
         "operationId": "adminReportsCustomersExport",
         "security": [
           {
@@ -4234,19 +5624,72 @@
         ],
         "parameters": [
           {
+            "name": "q",
+            "in": "query",
+            "description": "Case-insensitive literal substring search over email, phone and displayName.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "status",
             "in": "query",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/CustomerStatus"
+            }
+          },
+          {
+            "name": "synthetic",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "emailVerified",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "CSV export"
+            "description": "Uncapped streamed CSV export",
+            "headers": {
+              "X-Export-Uncapped": {
+                "description": "Always true for this customer export.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
         }
       }
@@ -4636,16 +6079,76 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Allowed transitions"
+            "description": "Allowed transitions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOrderAllowedTransitionsDataResponse"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/orders/{orderId}/audit": {
+      "get": {
+        "tags": [
+          "Admin Orders"
+        ],
+        "summary": "Get admin order audit trail",
+        "operationId": "adminGetOrderAuditTrail",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order audit trail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOrderAuditTrailDataResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -5205,192 +6708,6 @@
           }
         }
       }
-    },
-    "/api/v1/admin/content/articles/preview": {
-      "post": {
-        "tags": [
-          "Admin Content"
-        ],
-        "summary": "Preview an unsaved article (admin)",
-        "description": "Requires content.update. Validates and renders the current payload without persistence.",
-        "operationId": "adminPreviewArticle",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "lang",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "vi",
-                "en"
-              ],
-              "default": "vi"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpsertArticleRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Rendered public article shape",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ArticleDataResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/ValidationError"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/content/articles/{id}/restore": {
-      "post": {
-        "tags": [
-          "Admin Content"
-        ],
-        "summary": "Restore an article from Trash (admin)",
-        "description": "Requires content.update. Only a TRASH article can be restored; it returns to DRAFT.",
-        "operationId": "adminRestoreArticle",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^[A-Za-z0-9_-]+$"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Restored article",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminContentItemDataResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/content/articles/{id}/permanent": {
-      "delete": {
-        "tags": [
-          "Admin Content"
-        ],
-        "summary": "Permanently delete an article (admin)",
-        "description": "Requires content.update. Only a TRASH article can be permanently deleted.",
-        "operationId": "adminPermanentlyDeleteArticle",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^[A-Za-z0-9_-]+$"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Article permanently deleted"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/product-assignment": {
-      "get": {
-        "tags": [
-          "Admin Settings"
-        ],
-        "summary": "Get the shared product/article assignment guide",
-        "description": "Requires at least one of products.read or content.read. Editing the underlying product_assign settings remains SUPER_ADMIN-only.",
-        "operationId": "adminGetProductAssignment",
-        "security": [
-          {
-            "AdminBearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Shared assignment guide",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminProductAssignmentDataResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          }
-        }
-      }
     }
   },
   "components": {
@@ -5467,8 +6784,38 @@
       }
     },
     "schemas": {
-      "AdminReview": {
+      "ReviewRating": {
+        "type": "number",
+        "format": "double",
+        "enum": [
+          1,
+          1.5,
+          2,
+          2.5,
+          3,
+          3.5,
+          4,
+          4.5,
+          5
+        ]
+      },
+      "ReviewStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "APPROVED",
+          "SPAM",
+          "TRASH"
+        ]
+      },
+      "AdminReviewListItem": {
         "type": "object",
+        "required": [
+          "id",
+          "rating",
+          "status",
+          "version"
+        ],
         "properties": {
           "id": { "type": "integer", "format": "int64" },
           "productId": { "type": "string", "nullable": true },
@@ -5476,19 +6823,44 @@
           "productNameEn": { "type": "string", "nullable": true },
           "productSlug": { "type": "string", "nullable": true },
           "authorName": { "type": "string" },
-          "authorEmail": { "type": "string" },
-          "rating": { "type": "integer", "minimum": 1, "maximum": 5 },
+          "rating": { "$ref": "#/components/schemas/ReviewRating" },
           "body": { "type": "string" },
-          "photos": { "type": "array", "items": { "type": "string" }, "maxItems": 10 },
-          "status": { "type": "string" },
+          "photos": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "type": "string",
+              "pattern": "^/media/reviews/"
+            }
+          },
+          "status": { "$ref": "#/components/schemas/ReviewStatus" },
+          "version": { "type": "integer", "format": "int64", "minimum": 0 },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" }
         }
       },
+      "AdminReview": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AdminReviewListItem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "authorEmail": {
+                "type": "string",
+                "format": "email",
+                "nullable": true,
+                "description": "Detail-only; omitted from admin list items."
+              }
+            }
+          }
+        ]
+      },
       "AdminReviewListResponse": {
         "type": "object",
         "properties": {
-          "data": { "type": "array", "items": { "$ref": "#/components/schemas/AdminReview" } },
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/AdminReviewListItem" } },
           "pagination": { "$ref": "#/components/schemas/PaginationMeta" },
           "meta": { "$ref": "#/components/schemas/ApiMeta" }
         }
@@ -5497,6 +6869,13 @@
         "type": "object",
         "properties": {
           "data": { "$ref": "#/components/schemas/AdminReview" },
+          "meta": { "$ref": "#/components/schemas/ApiMeta" }
+        }
+      },
+      "AdminReviewMutationDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/AdminReviewListItem" },
           "meta": { "$ref": "#/components/schemas/ApiMeta" }
         }
       },
@@ -5515,8 +6894,8 @@
           "ratingBreakdown": {
             "type": "object",
             "additionalProperties": { "type": "integer", "format": "int64" },
-            "minProperties": 5,
-            "maxProperties": 5
+            "minProperties": 9,
+            "maxProperties": 9
           }
         }
       },
@@ -5536,33 +6915,461 @@
       },
       "UpdateReviewStatusRequest": {
         "type": "object",
-        "required": ["status"],
-        "properties": { "status": { "type": "string" } }
+        "required": [
+          "status",
+          "expectedVersion"
+        ],
+        "properties": {
+          "status": { "$ref": "#/components/schemas/ReviewStatus" },
+          "expectedVersion": { "type": "integer", "format": "int64", "minimum": 0 }
+        }
+      },
+      "VersionedReviewItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "expectedVersion"
+        ],
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "expectedVersion": { "type": "integer", "format": "int64", "minimum": 0 }
+        }
       },
       "BulkReviewStatusRequest": {
         "type": "object",
-        "required": ["ids", "status"],
+        "required": ["items", "status"],
         "properties": {
-          "ids": { "type": "array", "minItems": 1, "maxItems": 500, "items": { "type": "integer", "format": "int64" } },
-          "status": { "type": "string" }
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 500,
+            "items": { "$ref": "#/components/schemas/VersionedReviewItem" }
+          },
+          "status": { "$ref": "#/components/schemas/ReviewStatus" }
         }
       },
       "BulkReviewIdsRequest": {
         "type": "object",
-        "required": ["ids"],
+        "required": ["items"],
         "properties": {
-          "ids": { "type": "array", "minItems": 1, "maxItems": 500, "items": { "type": "integer", "format": "int64" } }
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 500,
+            "items": { "$ref": "#/components/schemas/VersionedReviewItem" }
+          }
+        }
+      },
+      "AdminReviewBulkSkipped": {
+        "type": "object",
+        "required": [
+          "id",
+          "reason"
+        ],
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "DUPLICATE_ID",
+              "NOT_FOUND",
+              "VERSION_CONFLICT",
+              "INVALID_TRANSITION",
+              "NOT_IN_TRASH",
+              "NO_CHANGE"
+            ]
+          }
         }
       },
       "AdminReviewBulkResult": {
         "type": "object",
-        "properties": { "affected": { "type": "integer", "format": "int32" } }
+        "required": [
+          "affected",
+          "skipped"
+        ],
+        "properties": {
+          "affected": { "type": "integer", "format": "int32", "minimum": 0 },
+          "skipped": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/AdminReviewBulkSkipped" }
+          }
+        }
       },
       "AdminReviewBulkResultDataResponse": {
         "type": "object",
         "properties": {
           "data": { "$ref": "#/components/schemas/AdminReviewBulkResult" },
           "meta": { "$ref": "#/components/schemas/ApiMeta" }
+        }
+      },
+      "CustomerStatus": {
+        "type": "string",
+        "enum": [
+          "ACTIVE",
+          "DISABLED",
+          "PENDING",
+          "BLOCKED"
+        ]
+      },
+      "UpdateCustomerRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Admin-editable profile fields only. email, firstName and lastName are read-only on this API.",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 255,
+            "description": "Null or omitted leaves the stored display name unchanged."
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 50,
+            "pattern": "^(?:\\s*|\\s*\\+?[0-9() .-]+\\s*)$",
+            "description": "Null or omitted leaves the phone unchanged; blank clears it. Common separators are accepted, then the value is normalized and checked against both local 0… and legacy +84… forms before storage."
+          }
+        }
+      },
+      "UpdateCustomerStatusRequest": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/CustomerStatus"
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 1000,
+            "description": "Audit-only reason; not stored on the customer row."
+          }
+        }
+      },
+      "AdminCustomerListItemResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "legacyId": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/CustomerStatus"
+          },
+          "isSynthetic": {
+            "type": "boolean"
+          },
+          "lastLoginAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "orderCount": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Count of non-CANCELLED orders."
+          },
+          "totalSpent": {
+            "type": "number",
+            "description": "Sum of non-CANCELLED order totals."
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "AdminCustomerListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminCustomerListItemResponse"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMeta"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
+      "AdminCustomerAddressResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "fullName": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "country": {
+            "type": "string",
+            "nullable": true
+          },
+          "province": {
+            "type": "string",
+            "nullable": true
+          },
+          "district": {
+            "type": "string",
+            "nullable": true
+          },
+          "ward": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressLine1": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressLine2": {
+            "type": "string",
+            "nullable": true
+          },
+          "isDefault": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AdminCustomerLatestOrderResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "totalAmount": {
+            "type": "number"
+          },
+          "placedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "AdminCustomerOrderSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "orderCount": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Count of non-CANCELLED orders."
+          },
+          "totalSpent": {
+            "type": "number",
+            "description": "Sum of non-CANCELLED order totals."
+          },
+          "avgOrderValue": {
+            "type": "number",
+            "description": "Non-CANCELLED totalSpent divided by non-CANCELLED orderCount; zero when count is zero."
+          },
+          "segment": {
+            "type": "string",
+            "enum": [
+              "INACTIVE",
+              "NEW",
+              "REGULAR",
+              "LOYAL",
+              "VIP"
+            ]
+          },
+          "firstOrderAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Full-history timestamp; cancelled orders remain included."
+          },
+          "lastOrderAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Full-history timestamp; cancelled orders remain included."
+          },
+          "latestOrders": {
+            "type": "array",
+            "maxItems": 5,
+            "description": "Full history, including cancelled orders.",
+            "items": {
+              "$ref": "#/components/schemas/AdminCustomerLatestOrderResponse"
+            }
+          }
+        }
+      },
+      "AdminCustomerDetailResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "legacyId": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "nullable": true,
+            "readOnly": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/CustomerStatus"
+          },
+          "isSynthetic": {
+            "type": "boolean"
+          },
+          "emailVerifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "phoneVerifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastLoginAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "addresses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminCustomerAddressResponse"
+            }
+          },
+          "orderSummary": {
+            "$ref": "#/components/schemas/AdminCustomerOrderSummaryResponse"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "AdminCustomerDetailDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AdminCustomerDetailResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
+      "AdminCustomerSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "All customer rows, including synthetic guest-order rows."
+          },
+          "vip": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Customer rows, including synthetic rows, whose non-CANCELLED lifetime spend reaches 10,000,000 VND."
+          },
+          "newLast30Days": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Non-synthetic registered accounts created in the previous 30 days."
+          },
+          "active": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Non-synthetic registered accounts whose status is ACTIVE."
+          }
+        }
+      },
+      "AdminCustomerSummaryDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AdminCustomerSummaryResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
         }
       },
       "AdminAnalyticsResponse": {
@@ -6011,6 +7818,428 @@
           }
         }
       },
+      "AdminOrderListItemResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "fulfillmentType": {
+            "type": "string"
+          },
+          "customerEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerName": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalAmount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "placedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "itemCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "source": {
+            "type": "string"
+          }
+        }
+      },
+      "AdminOrderListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminOrderListItemResponse"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMeta"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
+      "AdminOrderAllowedTransitionsDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "PROCESSING",
+                "COMPLETED",
+                "CANCELLED"
+              ]
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
+      "OrderAuditLogResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "action": {
+            "type": "string"
+          },
+          "actorType": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "beforeData": {
+            "type": "string",
+            "nullable": true
+          },
+          "afterData": {
+            "type": "string",
+            "nullable": true
+          },
+          "ipAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AdminOrderAuditTrailDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderAuditLogResponse"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
+      "AdminOrderDetailDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AdminOrderDetailResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
+      "AdminOrderDetailResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "orderKey": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "fulfillmentType": {
+            "type": "string"
+          },
+          "customerEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerName": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "subtotalAmount": {
+            "type": "number"
+          },
+          "discountAmount": {
+            "type": "number"
+          },
+          "shippingAmount": {
+            "type": "number"
+          },
+          "feeAmount": {
+            "type": "number"
+          },
+          "taxAmount": {
+            "type": "number"
+          },
+          "totalAmount": {
+            "type": "number"
+          },
+          "paidAmount": {
+            "type": "number"
+          },
+          "placedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "paidAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "cancelledAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "cancelReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "lineItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderLineItemResponse"
+            }
+          },
+          "addresses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderAddressResponse"
+            }
+          },
+          "shippingItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderShippingItemResponse"
+            }
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderPaymentResponse"
+            }
+          }
+        }
+      },
+      "OrderLineItemResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "productId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "productVariantId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "sku": {
+            "type": "string",
+            "nullable": true
+          },
+          "productName": {
+            "type": "string"
+          },
+          "variantName": {
+            "type": "string",
+            "nullable": true
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unitPrice": {
+            "type": "number"
+          },
+          "lineSubtotal": {
+            "type": "number"
+          },
+          "lineDiscount": {
+            "type": "number"
+          },
+          "lineTotal": {
+            "type": "number"
+          },
+          "productThumbnailUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "OrderAddressResponse": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "country": {
+            "type": "string",
+            "nullable": true
+          },
+          "province": {
+            "type": "string",
+            "nullable": true
+          },
+          "district": {
+            "type": "string",
+            "nullable": true
+          },
+          "ward": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressLine1": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressLine2": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "OrderShippingItemResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "methodCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "methodTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "amount": {
+            "type": "number"
+          }
+        }
+      },
+      "OrderPaymentResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "SUCCEEDED",
+              "FAILED",
+              "CANCELLED"
+            ],
+            "description": "Canonical read-only payment snapshot status (PAY_RULE_003)."
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "transactionId": {
+            "type": "string",
+            "nullable": true
+          },
+          "paidAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
       "OrderSummaryResponse": {
         "type": "object",
         "properties": {
@@ -6051,10 +8280,18 @@
             "type": "string"
           },
           "rating": {
-            "type": "integer"
+            "$ref": "#/components/schemas/ReviewRating"
           },
           "comment": {
             "type": "string"
+          },
+          "photos": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "type": "string",
+              "pattern": "^/media/reviews/"
+            }
           },
           "createdAt": {
             "type": "string",
@@ -6077,6 +8314,15 @@
           "totalReviews": {
             "type": "integer",
             "format": "int64"
+          },
+          "ratingBreakdown": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "minProperties": 9,
+            "maxProperties": 9
           },
           "reviews": {
             "type": "array",
@@ -6103,27 +8349,65 @@
       "SubmitReviewRequest": {
         "type": "object",
         "required": [
-          "authorName",
           "rating"
         ],
         "properties": {
           "authorName": {
             "type": "string",
-            "maxLength": 80
+            "maxLength": 80,
+            "description": "Required for guests. Ignored for an authenticated customer."
+          },
+          "authorEmail": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 255,
+            "description": "Optional for guests. Ignored for an authenticated customer."
           },
           "rating": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 5
+            "$ref": "#/components/schemas/ReviewRating"
           },
           "comment": {
             "type": "string",
             "maxLength": 1000
           },
+          "photos": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "type": "string",
+              "pattern": "^/media/reviews/"
+            },
+            "description": "Each object must be an unclaimed upload for the same product."
+          },
           "website": {
             "type": "string",
             "description": "Honeypot field — real clients leave this empty/omitted. Non-empty value (after trim) is silently dropped server-side: response is success-shaped 201 but no review is persisted.",
             "example": ""
+          }
+        }
+      },
+      "SubmitReviewSuccess": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        }
+      },
+      "SubmitReviewSuccessDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SubmitReviewSuccess"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
           }
         }
       },
@@ -6535,9 +8819,368 @@
           }
         }
       },
-      "UpsertProductRequest": {
+      "ProductPublishRequest": {
+        "type": "object",
+        "required": [
+          "publishStatus"
+        ],
+        "properties": {
+          "publishStatus": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "PUBLISHED"
+            ]
+          }
+        }
+      },
+      "ReviewPhotoUploadResponse": {
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "pattern": "^/media/reviews/"
+          }
+        }
+      },
+      "ReviewPhotoUploadDataResponse": {
         "type": "object",
         "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ReviewPhotoUploadResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
+      "SetHomepageBlocksRequest": {
+        "type": "object",
+        "required": [
+          "featuredGrid"
+        ],
+        "properties": {
+          "featuredGrid": {
+            "type": "array",
+            "maxItems": 12,
+            "items": {
+              "type": "string",
+              "maxLength": 64
+            }
+          }
+        }
+      },
+      "SeoMetaRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 5000,
+            "nullable": true
+          },
+          "canonicalUrl": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true
+          },
+          "ogImage": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ImageAsset"
+              }
+            ],
+            "nullable": true
+          },
+          "noIndex": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ProductTranslationContent": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "maxLength": 100,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "shortDescription": {
+            "type": "string",
+            "maxLength": 2000,
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 20000,
+            "nullable": true
+          },
+          "sizeGuide": {
+            "type": "string",
+            "maxLength": 20000,
+            "nullable": true
+          },
+          "suitabilityAdvisory": {
+            "type": "string",
+            "maxLength": 20000,
+            "nullable": true
+          },
+          "specifications": {
+            "type": "string",
+            "maxLength": 50000,
+            "nullable": true
+          },
+          "specStats": {
+            "type": "string",
+            "maxLength": 50000,
+            "nullable": true
+          },
+          "trustBadges": {
+            "type": "string",
+            "maxLength": 50000,
+            "nullable": true
+          },
+          "quickAnswerSummary": {
+            "type": "string",
+            "maxLength": 600,
+            "nullable": true
+          },
+          "seoTitle": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "seoDescription": {
+            "type": "string",
+            "maxLength": 5000,
+            "nullable": true
+          },
+          "originBrandCountry": {
+            "type": "string",
+            "maxLength": 120,
+            "nullable": true
+          }
+        }
+      },
+      "ProductTranslationRequest": {
+        "type": "object",
+        "properties": {
+          "en": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProductTranslationContent"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "WritableVideoProvider": {
+        "type": "string",
+        "enum": [
+          "youtube",
+          "upload"
+        ],
+        "description": "Providers accepted on write. TikTok/Facebook may exist only in legacy read responses."
+      },
+      "GalleryImageWriteRequest": {
+        "type": "object",
+        "properties": {
+          "mediaType": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video"
+            ]
+          },
+          "videoUrl": {
+            "type": "string",
+            "maxLength": 2048,
+            "nullable": true,
+            "description": "For video items: a YouTube URL or an internal Media Library video URL matching videoProvider."
+          },
+          "videoProvider": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/WritableVideoProvider"
+              }
+            ],
+            "nullable": true
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 2048,
+            "nullable": true
+          },
+          "alt": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "width": {
+            "type": "integer",
+            "nullable": true
+          },
+          "height": {
+            "type": "integer",
+            "nullable": true
+          },
+          "mimeType": {
+            "type": "string",
+            "maxLength": 100,
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "VideoWriteRequest": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "maxLength": 2048,
+            "nullable": true,
+            "description": "YouTube URL or internal Media Library video URL matching provider."
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "provider": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/WritableVideoProvider"
+              }
+            ],
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 5000,
+            "nullable": true
+          },
+          "thumbnailUrl": {
+            "type": "string",
+            "maxLength": 2048,
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "ProductVariantRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "sku": {
+            "type": "string",
+            "maxLength": 100,
+            "nullable": true
+          },
+          "retailPrice": {
+            "type": "number",
+            "minimum": 0,
+            "nullable": true
+          },
+          "salePrice": {
+            "type": "number",
+            "minimum": 0,
+            "nullable": true
+          },
+          "isAvailable": {
+            "type": "boolean"
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "imageAlt": {
+            "type": "string",
+            "nullable": true
+          },
+          "imageWidth": {
+            "type": "integer",
+            "nullable": true
+          },
+          "imageHeight": {
+            "type": "integer",
+            "nullable": true
+          },
+          "imageMimeType": {
+            "type": "string",
+            "nullable": true
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "gallery": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GalleryImageWriteRequest"
+            }
+          }
+        }
+      },
+      "UpsertProductRequest": {
+        "type": "object",
+        "description": "Full product create/update payload. Create accepts DRAFT only; ordinary PATCH keeps the stored lifecycle. Publishing uses ProductPublishRequest.",
+        "properties": {
+          "sku": {
+            "type": "string",
+            "maxLength": 100,
+            "nullable": true
+          },
+          "slug": {
+            "type": "string",
+            "maxLength": 200,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "shortDescription": {
+            "type": "string",
+            "maxLength": 2000,
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 20000,
+            "nullable": true
+          },
+          "brandId": {
+            "type": "string",
+            "maxLength": 64,
+            "nullable": true
+          },
           "categoryIds": {
             "type": "array",
             "description": "Ordered category ids; the first item is the primary category. Required and non-empty on create; omitted on PATCH keeps the current links.",
@@ -6552,11 +9195,210 @@
             "type": "string",
             "deprecated": true,
             "description": "Temporary singular alias for a one-item categoryIds array. Must not be sent together with categoryIds."
+          },
+          "image": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ImageAsset"
+              }
+            ],
+            "nullable": true
+          },
+          "retailPrice": {
+            "type": "number",
+            "minimum": 0,
+            "nullable": true
+          },
+          "salePrice": {
+            "type": "number",
+            "minimum": 0,
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "VND"
+            ]
+          },
+          "publishStatus": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "PUBLISHED"
+            ],
+            "description": "Lifecycle hint constrained by the operation: create must be DRAFT and ordinary update cannot change the stored state."
+          },
+          "available": {
+            "type": "boolean",
+            "description": "Availability toggle for products without variants."
+          },
+          "homepageBlock": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "FEATURED_GRID"
+            ]
+          },
+          "homepageOrder": {
+            "type": "integer",
+            "nullable": true
+          },
+          "originBrandCountry": {
+            "type": "string",
+            "maxLength": 120,
+            "nullable": true
+          },
+          "sizeGuide": {
+            "type": "string",
+            "maxLength": 20000,
+            "nullable": true
+          },
+          "suitabilityAdvisory": {
+            "type": "string",
+            "maxLength": 20000,
+            "nullable": true
+          },
+          "specifications": {
+            "type": "string",
+            "maxLength": 50000,
+            "nullable": true
+          },
+          "specStats": {
+            "type": "string",
+            "maxLength": 50000,
+            "nullable": true
+          },
+          "trustBadges": {
+            "type": "string",
+            "maxLength": 50000,
+            "nullable": true
+          },
+          "quickAnswerSummary": {
+            "type": "string",
+            "maxLength": 600,
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "maxLength": 20,
+            "nullable": true
+          },
+          "seo": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SeoMetaRequest"
+              }
+            ],
+            "nullable": true
+          },
+          "translations": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProductTranslationRequest"
+              }
+            ],
+            "nullable": true
+          },
+          "gallery": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "$ref": "#/components/schemas/GalleryImageWriteRequest"
+            }
+          },
+          "videos": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "$ref": "#/components/schemas/VideoWriteRequest"
+            }
+          },
+          "faqs": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "type": "object"
+            }
+          },
+          "commitments": {
+            "type": "array",
+            "maxItems": 12,
+            "items": {
+              "type": "object"
+            }
+          },
+          "highlights": {
+            "type": "object",
+            "nullable": true
+          },
+          "variants": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "$ref": "#/components/schemas/ProductVariantRequest"
+            }
+          },
+          "relatedProductIds": {
+            "type": "array",
+            "maxItems": 24,
+            "items": {
+              "type": "string"
+            }
+          },
+          "accessoryProductIds": {
+            "type": "array",
+            "maxItems": 24,
+            "items": {
+              "type": "string"
+            }
+          },
+          "descriptionBlocks": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "type": "object",
+              "description": "Polymorphic bilingual DescriptionBlock. Video blocks accept provider youtube or upload on write; legacy TikTok/Facebook values are read-only compatibility."
+            }
+          },
+          "suitabilitySection": {
+            "type": "object",
+            "nullable": true
+          },
+          "sizeGuideSection": {
+            "type": "object",
+            "nullable": true
+          }
+        }
+      },
+      "ProductPrice": {
+        "type": "object",
+        "properties": {
+          "retailPrice": {
+            "type": "number",
+            "nullable": true
+          },
+          "salePrice": {
+            "type": "number",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "VND"
+            ]
           }
         }
       },
       "ProductResponse": {
         "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "categories",
+          "stockState",
+          "publishStatus"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -6568,12 +9410,33 @@
           "slug": {
             "type": "string"
           },
+          "slugEn": {
+            "type": "string",
+            "nullable": true
+          },
           "name": {
             "type": "string"
           },
+          "shortDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "brand": {
+            "type": "object",
+            "nullable": true
+          },
           "category": {
-            "$ref": "#/components/schemas/CategorySummary",
-            "description": "Primary category: the first entry of categories, retained for compatibility."
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CategorySummary"
+              }
+            ],
+            "description": "Primary category: the first entry of categories, retained for compatibility.",
+            "nullable": true
           },
           "categories": {
             "type": "array",
@@ -6583,7 +9446,52 @@
             }
           },
           "image": {
-            "$ref": "#/components/schemas/ImageAsset"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ImageAsset"
+              }
+            ],
+            "nullable": true
+          },
+          "gallery": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "videos": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "price": {
+            "$ref": "#/components/schemas/ProductPrice"
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "stockState": {
+            "type": "string",
+            "enum": [
+              "IN_STOCK",
+              "OUT_OF_STOCK"
+            ]
+          },
+          "available": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "publishStatus": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "PUBLISHED",
+              "TRASH"
+            ]
           },
           "homepageBlock": {
             "type": "string",
@@ -6604,14 +9512,105 @@
             "format": "double",
             "minimum": 0,
             "maximum": 5,
-            "description": "Denormalized cache of the approved-review average used by product list/detail reads.",
+            "description": "Approved-review average cache.",
             "nullable": true
           },
           "ratingCount": {
             "type": "integer",
             "format": "int32",
             "minimum": 0,
-            "description": "Denormalized cache of the approved-review count used by product list/detail reads.",
+            "description": "Approved-review count cache.",
+            "nullable": true
+          },
+          "faqs": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "commitments": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "highlights": {
+            "type": "object",
+            "nullable": true
+          },
+          "originBrandCountry": {
+            "type": "string",
+            "nullable": true
+          },
+          "sizeGuide": {
+            "type": "string",
+            "nullable": true
+          },
+          "suitabilityAdvisory": {
+            "type": "string",
+            "nullable": true
+          },
+          "specifications": {
+            "type": "string",
+            "nullable": true
+          },
+          "specStats": {
+            "type": "string",
+            "nullable": true
+          },
+          "trustBadges": {
+            "type": "string",
+            "nullable": true
+          },
+          "quickAnswerSummary": {
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true
+          },
+          "relatedProducts": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "accessoryProducts": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "descriptionBlocks": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "object"
+            }
+          },
+          "suitabilitySection": {
+            "type": "object",
+            "nullable": true
+          },
+          "sizeGuideSection": {
+            "type": "object",
+            "nullable": true
+          },
+          "seo": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SeoMetaRequest"
+              }
+            ],
+            "nullable": true
+          },
+          "translations": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProductTranslationRequest"
+              }
+            ],
             "nullable": true
           },
           "createdAt": {
@@ -6621,6 +9620,212 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "ProductImportRow": {
+        "type": "object",
+        "required": [
+          "sku"
+        ],
+        "properties": {
+          "sku": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "object",
+            "nullable": true
+          },
+          "name": {
+            "type": "object",
+            "nullable": true
+          },
+          "categorySlugs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "categoryIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "categoryId": {
+            "type": "string",
+            "deprecated": true,
+            "nullable": true
+          },
+          "brandId": {
+            "type": "string",
+            "description": "Brand slug on the import wire.",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true
+          },
+          "retailPrice": {
+            "type": "number",
+            "nullable": true
+          },
+          "salePrice": {
+            "type": "number",
+            "nullable": true
+          },
+          "publishStatus": {
+            "type": "string",
+            "description": "Exported for completeness and ignored on import; import always saves DRAFT.",
+            "nullable": true
+          },
+          "descriptionBlocks": {
+            "type": "array",
+            "description": "Import accepts only feature blocks with side left or right.",
+            "items": {
+              "type": "object"
+            }
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductVariantRequest"
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "ImportRowResult": {
+        "type": "object",
+        "properties": {
+          "rowNumber": {
+            "type": "integer"
+          },
+          "rowKey": {
+            "type": "string"
+          },
+          "productId": {
+            "type": "string",
+            "nullable": true
+          },
+          "productName": {
+            "type": "string",
+            "nullable": true
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "CREATE",
+              "UPDATE",
+              "SKIPPED_BY_USER"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OK",
+              "WARNING",
+              "ERROR"
+            ]
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiErrorDetail"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiErrorDetail"
+            }
+          },
+          "variantsInFile": {
+            "type": "integer"
+          },
+          "variantsAdded": {
+            "type": "integer"
+          },
+          "variantsUpdated": {
+            "type": "integer"
+          },
+          "variantsRemoved": {
+            "type": "integer"
+          },
+          "removedVariantSkus": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ImportReportResponse": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "VALIDATE",
+              "COMMIT"
+            ]
+          },
+          "totalRows": {
+            "type": "integer"
+          },
+          "okCount": {
+            "type": "integer"
+          },
+          "warningCount": {
+            "type": "integer"
+          },
+          "errorCount": {
+            "type": "integer"
+          },
+          "skippedCount": {
+            "type": "integer"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportRowResult"
+            }
+          }
+        }
+      },
+      "ProductDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ProductResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
+      "ProductArrayDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductResponse"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
+      "ImportReportDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ImportReportResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
           }
         }
       },
@@ -6758,6 +9963,36 @@
           "meta": { "$ref": "#/components/schemas/ApiMeta" }
         }
       },
+      "BrandTranslationContent": {
+        "type": "object",
+        "description": "Brand name and slug are shared across VI/EN (BRAND_RULE_001/003) and are NOT part of this block. Legacy clients may still send name/slug here; the server ignores them.",
+        "properties": {
+          "description": { "type": "string", "nullable": true, "maxLength": 5000 },
+          "seoTitle": { "type": "string", "nullable": true, "maxLength": 255 },
+          "seoDescription": { "type": "string", "nullable": true, "maxLength": 5000 }
+        }
+      },
+      "BrandTranslations": {
+        "type": "object",
+        "properties": {
+          "en": { "$ref": "#/components/schemas/BrandTranslationContent", "nullable": true }
+        }
+      },
+      "UpsertBrandRequest": {
+        "type": "object",
+        "description": "Create requires slug and name. PATCH is presence-sensitive: an omitted field stays unchanged, so clearing text requires sending an empty string (description) and clearing an image requires url: \"\". Neither visible nor isVisible is accepted here — Trash/restore go through the dedicated endpoints.",
+        "properties": {
+          "slug": { "type": "string", "maxLength": 100, "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "description": "Shared VI/EN URL path. Changing it auto-creates a 301 redirect from the previous /brands/{slug}." },
+          "name": { "type": "string", "maxLength": 255, "description": "Shared VI/EN brand name." },
+          "description": { "type": "string", "nullable": true, "maxLength": 5000, "description": "Send \"\" to clear; omit to preserve." },
+          "showOnHomepage": { "type": "boolean", "description": "Independent homepage brand-carousel placement; defaults to true on create." },
+          "logo": { "$ref": "#/components/schemas/ImageAsset", "description": "MinIO whitelist applies to a new url (MEDIA_RULE_002); alt is overwritten on every save, so always send it." },
+          "banner": { "$ref": "#/components/schemas/ImageAsset", "description": "Desktop brand hero. Same MinIO whitelist and alt-overwrite behaviour as logo." },
+          "mobileBanner": { "$ref": "#/components/schemas/ImageAsset", "description": "Stored but not currently rendered by the storefront; same MinIO whitelist as logo/banner." },
+          "seo": { "$ref": "#/components/schemas/CategorySeoMeta", "description": "Omit to preserve; {} clears all stored Brand SEO including the share image." },
+          "translations": { "$ref": "#/components/schemas/BrandTranslations" }
+        }
+      },
       "CategoryPermanentDeleteImpactRequest": {
         "type": "object",
         "required": [
@@ -6833,6 +10068,297 @@
           },
           "name": {
             "type": "string"
+          }
+        }
+      },
+      "ArticleTranslationRequest": {
+        "type": "object",
+        "properties": {
+          "en": {
+            "type": "object",
+            "properties": {
+              "slug": {
+                "type": "string",
+                "maxLength": 100,
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 255
+              },
+              "excerpt": {
+                "type": "string",
+                "maxLength": 5000
+              },
+              "body": {
+                "type": "string",
+                "maxLength": 65535
+              },
+              "seoTitle": {
+                "type": "string",
+                "maxLength": 255
+              },
+              "seoDescription": {
+                "type": "string",
+                "maxLength": 5000
+              }
+            }
+          }
+        }
+      },
+      "ArticleSeoMetaRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "canonicalUrl": {
+            "type": "string",
+            "maxLength": 2048
+          },
+          "ogImage": {
+            "$ref": "#/components/schemas/ImageAsset"
+          },
+          "noIndex": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UpsertArticleRequest": {
+        "type": "object",
+        "description": "Presence-flag upsert payload. BigBike Admin sends categoryId as an empty string to normalize to tin-tuc and derives seo.canonicalUrl from the Vietnamese slug.",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "excerpt": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "body": {
+            "type": "string"
+          },
+          "bodyBlocks": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "coverImage": {
+            "$ref": "#/components/schemas/ImageAsset"
+          },
+          "productImage": {
+            "$ref": "#/components/schemas/ImageAsset"
+          },
+          "categoryId": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "publishStatus": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "PUBLISHED",
+              "TRASH"
+            ]
+          },
+          "featured": {
+            "type": "boolean"
+          },
+          "homeExperience": {
+            "type": "boolean"
+          },
+          "seo": {
+            "$ref": "#/components/schemas/ArticleSeoMetaRequest"
+          },
+          "translations": {
+            "$ref": "#/components/schemas/ArticleTranslationRequest"
+          }
+        }
+      },
+      "AdminContentItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "ARTICLE"
+            ]
+          },
+          "slug": {
+            "type": "string"
+          },
+          "slugEn": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string"
+          },
+          "excerpt": {
+            "type": "string",
+            "nullable": true
+          },
+          "body": {
+            "type": "string",
+            "nullable": true
+          },
+          "bodyBlocks": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "coverImage": {
+            "$ref": "#/components/schemas/ImageAsset"
+          },
+          "productImage": {
+            "$ref": "#/components/schemas/ImageAsset"
+          },
+          "publishStatus": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "PUBLISHED",
+              "TRASH"
+            ]
+          },
+          "featured": {
+            "type": "boolean"
+          },
+          "homeExperience": {
+            "type": "boolean"
+          },
+          "seo": {
+            "$ref": "#/components/schemas/ArticleSeoMetaRequest"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "category": {
+            "$ref": "#/components/schemas/ContentCategorySummary"
+          },
+          "categoryId": {
+            "type": "string",
+            "nullable": true
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContentCategorySummary"
+            }
+          },
+          "translations": {
+            "$ref": "#/components/schemas/ArticleTranslationRequest"
+          }
+        }
+      },
+      "AdminContentItemDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AdminContentItem"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
+      "AdminContentListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminContentItem"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMeta"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
+      "ArticleDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ArticleResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
+      "AdminProductAssignmentResponse": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 6,
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "items"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "AdminProductAssignmentDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AdminProductAssignmentResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
           }
         }
       },
@@ -6989,6 +10515,79 @@
           }
         }
       },
+      "UpsertHomeVideoRequest": {
+        "type": "object",
+        "required": [
+          "title",
+          "videoUrl",
+          "sortOrder"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "titleEn": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "videoUrl": {
+            "type": "string",
+            "maxLength": 2048,
+            "description": "Writable sources are a valid YouTube URL or an internal Media Library video URL."
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "thumbnail": {
+            "type": "object",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean",
+            "nullable": true
+          }
+        }
+      },
+      "PatchHomeVideoRequest": {
+        "type": "object",
+        "description": "Omitting videoUrl preserves a legacy URL while updating unrelated fields. Supplying videoUrl enforces YouTube or internal Media Library only.",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "titleEn": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "videoUrl": {
+            "type": "string",
+            "maxLength": 2048,
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true
+          },
+          "thumbnail": {
+            "type": "object",
+            "nullable": true
+          },
+          "clearThumbnail": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean",
+            "nullable": true
+          }
+        }
+      },
       "PublicHomeVideoResponse": {
         "type": "object",
         "properties": {
@@ -7078,134 +10677,6 @@
           },
           "message": {
             "type": "string"
-          }
-        }
-      },
-      "ArticleTranslationRequest": {
-        "type": "object",
-        "properties": {
-          "en": {
-            "type": "object",
-            "properties": {
-              "slug": {
-                "type": "string",
-                "maxLength": 100,
-                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
-              },
-              "title": {
-                "type": "string",
-                "maxLength": 255
-              },
-              "excerpt": {
-                "type": "string",
-                "maxLength": 5000
-              },
-              "body": {
-                "type": "string",
-                "maxLength": 65535
-              },
-              "seoTitle": {
-                "type": "string",
-                "maxLength": 255
-              },
-              "seoDescription": {
-                "type": "string",
-                "maxLength": 5000
-              }
-            }
-          }
-        }
-      },
-      "ArticleSeoMetaRequest": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "maxLength": 255
-          },
-          "description": {
-            "type": "string",
-            "maxLength": 5000
-          },
-          "canonicalUrl": {
-            "type": "string",
-            "maxLength": 2048
-          },
-          "ogImage": {
-            "$ref": "#/components/schemas/ImageAsset"
-          },
-          "noIndex": {
-            "type": "boolean"
-          }
-        }
-      },
-      "UpsertArticleRequest": {
-        "type": "object",
-        "description": "Presence-flag upsert payload. BigBike Admin sends categoryId as an empty string to normalize to tin-tuc and derives seo.canonicalUrl from the Vietnamese slug.",
-        "properties": {
-          "slug": {
-            "type": "string",
-            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
-          },
-          "title": {
-            "type": "string",
-            "maxLength": 255
-          },
-          "excerpt": {
-            "type": "string",
-            "maxLength": 5000
-          },
-          "body": {
-            "type": "string"
-          },
-          "bodyBlocks": {
-            "type": "array",
-            "maxItems": 200,
-            "items": {
-              "type": "object",
-              "additionalProperties": true
-            }
-          },
-          "coverImage": {
-            "$ref": "#/components/schemas/ImageAsset"
-          },
-          "productImage": {
-            "$ref": "#/components/schemas/ImageAsset"
-          },
-          "categoryId": {
-            "type": "string",
-            "maxLength": 64
-          },
-          "publishStatus": {
-            "type": "string",
-            "enum": [
-              "DRAFT",
-              "PUBLISHED",
-              "TRASH"
-            ]
-          },
-          "featured": {
-            "type": "boolean"
-          },
-          "homeExperience": {
-            "type": "boolean"
-          },
-          "seo": {
-            "$ref": "#/components/schemas/ArticleSeoMetaRequest"
-          },
-          "translations": {
-            "$ref": "#/components/schemas/ArticleTranslationRequest"
-          }
-        }
-      },
-      "ArticleDataResponse": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/ArticleResponse"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/ApiMeta"
           }
         }
       }

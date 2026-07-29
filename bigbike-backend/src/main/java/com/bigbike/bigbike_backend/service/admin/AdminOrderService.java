@@ -36,16 +36,13 @@ import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.buildStatusChangedEvent;
-import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.parseFromDate;
-import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.parseToDate;
+import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.buildFilterSpecification;
 import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.resolveSort;
 import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.withResolvedCustomerName;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -112,31 +109,7 @@ public class AdminOrderService {
         int normalizedPage = Math.max(1, page);
         int normalizedSize = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
 
-        Instant fromInstant = parseFromDate(from);
-        Instant toInstant = parseToDate(to);
-
-        Specification<OrderEntity> spec = (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            if (status != null && !status.isBlank()) {
-                predicates.add(cb.equal(root.get("status"), status.toUpperCase(Locale.ROOT)));
-            }
-            if (q != null && !q.isBlank()) {
-                String pattern = "%" + q.toLowerCase(Locale.ROOT) + "%";
-                predicates.add(cb.or(
-                        cb.like(cb.lower(root.get("orderNumber")), pattern),
-                        cb.like(cb.lower(root.get("orderKey")), pattern),
-                        cb.like(cb.lower(root.get("customerEmail")), pattern),
-                        cb.like(cb.lower(root.get("customerPhone")), pattern)
-                ));
-            }
-            if (fromInstant != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("placedAt"), fromInstant));
-            }
-            if (toInstant != null) {
-                predicates.add(cb.lessThan(root.get("placedAt"), toInstant));
-            }
-            return cb.and(predicates.toArray(new Predicate[0]));
-        };
+        Specification<OrderEntity> spec = buildFilterSpecification(status, q, from, to);
 
         PageRequest pageable = PageRequest.of(
                 normalizedPage - 1, normalizedSize,

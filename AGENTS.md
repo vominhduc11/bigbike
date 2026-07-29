@@ -1070,6 +1070,53 @@ Không claim imaginary test result.
 
 ---
 
+## 19. Agent Workflows — quy trình dựng sẵn, dùng chung mọi AI agent
+
+Repo có sẵn **11 quy trình viết thành file**. Nội dung nằm ở `.claude/skills/<tên>/SKILL.md` (file thường trong git, **mọi agent đọc được** — không riêng Claude Code). Đây là **một nguồn duy nhất**; không tạo bản sao ở nơi khác để tránh 2 bản lệch nhau.
+
+Docs-First (§2) **không** có skill riêng — bảng tra "sửa cái này thì đọc docs nào" nằm ngay ở §3–§4 và trong `CLAUDE.md`, đọc thẳng ở đó.
+
+| Quy trình | Dùng khi | File |
+|---|---|---|
+| `admin-module-audit` | Audit + sửa **1 module** admin (cặp list/detail) | `.claude/skills/admin-module-audit/SKILL.md` |
+| `admin-audit-all` | Quét audit **toàn bộ** module admin, có sổ tiến độ | `.claude/skills/admin-audit-all/SKILL.md` |
+| `feature-audit` | Audit **1 tính năng** xuyên web + admin + backend + docs | `.claude/skills/feature-audit/SKILL.md` |
+| `workflow-audit-all` | Quét audit **toàn bộ luồng nghiệp vụ** đầu-cuối của hệ thống, có sổ tiến độ | `.claude/skills/workflow-audit-all/SKILL.md` |
+| `feature-build` | Làm mới/mở rộng **1 tính năng** đi hết chặng 3 app (quy trình tổng, gọi các quy trình lẻ) | `.claude/skills/feature-build/SKILL.md` |
+| `admin-screen` | Tạo screen mới trong bigbike-admin | `.claude/skills/admin-screen/SKILL.md` |
+| `web-page` | Tạo route/page mới trong bigbike-web | `.claude/skills/web-page/SKILL.md` |
+| `backend-endpoint` | Thêm endpoint/resource mới vào bigbike-backend | `.claude/skills/backend-endpoint/SKILL.md` |
+| `e2e` | Viết/chạy kịch bản kiểm thử đầu-cuối (Playwright) trên hệ thống thật | `.claude/skills/e2e/SKILL.md` |
+| `hygiene` | Trước khi finalize thay đổi UI/text — dead CSS, mojibake, business-data hardcode | `.claude/skills/hygiene/SKILL.md` |
+| `preflight` | Trước khi commit/push/mở PR — chạy đúng gate của sub-project đã đổi | `.claude/skills/preflight/SKILL.md` |
+
+Ngoài ra `bigbike-admin/.claude/skills/run-bigbike-admin/SKILL.md` — cách chạy/chụp màn hình admin thật qua container `:4000`.
+
+### Cách gọi theo từng agent
+
+- **Claude Code:** gõ `/<tên quy trình> <tham số>` — tự nạp.
+- **Codex / agent khác:** **đọc file `SKILL.md` tương ứng rồi làm theo từng bước**. Không tự bịa quy trình riêng khi repo đã có file. Kết quả phải theo đúng format báo cáo ghi trong file đó.
+
+### Chế độ chạy — áp dụng cho mọi agent
+
+- Một lần gọi = **chạy tới xong trong phiên**. Không dừng giữa chừng để xin duyệt, không hỏi "có làm tiếp không?".
+- Gặp điểm **cần owner quyết** (2 đầu lệch nhau mà docs không chốt bên nào đúng, `NEEDS_VERIFICATION`, `CONFLICTING_EVIDENCE`, đổi rule kinh doanh): **hỏi ngay rồi chạy tiếp** — không tự quyết, cũng không kết thúc phiên.
+  - Agent có công cụ hỏi-chọn-phương án (Claude Code: `AskUserQuestion`) → dùng nó.
+  - Agent **không có** → liệt kê 2–4 phương án đánh số, phương án đề xuất để đầu, mỗi phương án nói **hậu quả vận hành** (đơn hàng/khách/nhân viên) chứ không nói thuật ngữ kỹ thuật, rồi hỏi trong cùng lượt.
+- Vướng **kỹ thuật** không cần owner quyết (container chưa chạy, thiếu dữ liệu, lỗi đã mang mã `AUD-xxx` trong `docs/audits/`): ghi `Not run: <lý do>` hoặc trích mã AUD rồi **chạy tiếp** — không hỏi, không dừng.
+
+### Chạy nhiều agent song song trên cùng repo
+
+Khi dùng đồng thời (ví dụ Claude Code + Codex), chọn **một** cách chia và ghi rõ trước khi bắt đầu:
+
+1. **Chia theo app** — mỗi agent một sub-project (`bigbike-admin` / `bigbike-web` / `bigbike-backend`). Đơn giản nhất, ít đụng độ nhất.
+2. **Chia theo module** — dùng cột "Ai đang làm" trong `docs/audits/ADMIN_AUDIT_BOARD.md`. Agent thấy module đã có tên agent khác thì **bỏ qua, lấy module kế**.
+3. **Chia theo nhánh git** — mỗi agent một branch, owner gộp sau.
+
+Bất kể cách nào: **không hai agent cùng sửa một file**; không agent nào tự `git commit/push` khi user không yêu cầu; ai chạm `docs/` phải cập nhật ngay để agent kia đọc được trạng thái mới nhất.
+
+---
+
 ## Final Rule
 
 An AI agent must leave the repository **more consistent** than it found it.

@@ -71,6 +71,16 @@ public class AdminRoleService {
         }
 
         validatePermissionKeys(permissions);
+        if (actorId != null) {
+            adminUserRepo.findById(actorId)
+                    .filter(actor -> role.getId().equals(actor.getRole()))
+                    .ifPresent(actor -> {
+                        if (!permissions.contains("roles.read") || !permissions.contains("roles.write")) {
+                            throw new ConflictException(
+                                    "Cannot remove role-management permissions from your own role.");
+                        }
+                    });
+        }
 
         Set<String> before = new LinkedHashSet<>(role.getPermissions());
         role.setPermissions(new LinkedHashSet<>(permissions));

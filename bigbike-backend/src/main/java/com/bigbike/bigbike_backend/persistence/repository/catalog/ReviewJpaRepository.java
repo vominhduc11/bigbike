@@ -40,13 +40,12 @@ public interface ReviewJpaRepository extends JpaRepository<ReviewEntity, Long> {
             WHERE (:status = '' OR UPPER(r.status) = UPPER(:status))
               AND (:rating = 0 OR r.rating = :rating)
               AND (:q = ''
-                   OR LOWER(r.authorName) LIKE LOWER(CONCAT('%', :q, '%'))
-                   OR LOWER(r.body)       LIKE LOWER(CONCAT('%', :q, '%')))
+                   OR LOWER(r.authorName) LIKE LOWER(CONCAT('%', :q, '%')) ESCAPE '!'
+                   OR LOWER(r.body)       LIKE LOWER(CONCAT('%', :q, '%')) ESCAPE '!')
               AND (:strictEnglish = FALSE
                    OR EXISTS (SELECT 1 FROM ProductEntity p
                               WHERE p.id = r.productId
                                 AND p.nameEn IS NOT NULL AND TRIM(p.nameEn) <> ''))
-            ORDER BY r.createdAt DESC
             """)
     Page<ReviewEntity> findByFilters(
             @Param("status") String status,
@@ -82,6 +81,17 @@ public interface ReviewJpaRepository extends JpaRepository<ReviewEntity, Long> {
     List<ReviewEntity> findRecentByProductId(
             @Param("productId") String productId,
             @Param("since") Instant since);
+
+    /**
+     * Reviews that currently reference at least one photo. Cleanup code intentionally
+     * checks object keys in Java so both canonical relative URLs and legacy absolute
+     * URLs resolve to the same MinIO object.
+     */
+    @Query("""
+            SELECT r FROM ReviewEntity r
+            WHERE r.photos IS NOT NULL
+            """)
+    List<ReviewEntity> findAllWithPhotos();
 
     /**
      * Approved-review count grouped by star rating. Each row is

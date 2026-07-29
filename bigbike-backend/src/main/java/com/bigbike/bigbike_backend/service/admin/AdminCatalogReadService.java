@@ -61,6 +61,7 @@ public class AdminCatalogReadService {
             String stockState,
             String brandId,
             String categoryId,
+            String filterGender,
             String homepageBlock,
             String lang
     ) {
@@ -68,7 +69,8 @@ public class AdminCatalogReadService {
         String query = coalesceSearch(q, search);
         com.bigbike.bigbike_backend.domain.catalog.HomepageBlock blockFilter = parseHomepageBlock(homepageBlock);
 
-        List<Product> result = catalogReadRepository.findProductsFiltered(query, publishStatus, stockState, brandId, categoryId, normalizeLocale(lang))
+        List<Product> result = catalogReadRepository.findProductsFiltered(
+                        query, publishStatus, stockState, brandId, categoryId, filterGender, normalizeLocale(lang))
                 .stream()
                 .filter(product -> blockFilter == null || product.homepageBlock() == blockFilter)
                 .sorted(productComparator(sortSpec))

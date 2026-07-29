@@ -1,17 +1,22 @@
 package com.bigbike.bigbike_backend.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
+import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -46,6 +51,7 @@ class AdminReportApiTest {
     @Autowired WebApplicationContext webApplicationContext;
     @Autowired AdminUserJpaRepository adminUserRepo;
     @Autowired OrderJpaRepository orderRepo;
+    @Autowired CustomerJpaRepository customerRepo;
     @Autowired AuditLogJpaRepository auditLogRepo;
     @Autowired PasswordService passwordService;
 
@@ -125,6 +131,25 @@ class AdminReportApiTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void exportOrders_editorWithoutExportPermission_returns403() throws Exception {
+        String editorToken = loginAs(EDITOR_EMAIL, EDITOR_PASS);
+        mockMvc.perform(get("/api/v1/admin/reports/orders/export")
+                        .header("Authorization", "Bearer " + editorToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void exportOrders_rejectsInvalidOrReversedCalendarDates() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/reports/orders/export?from=not-a-date")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/v1/admin/reports/orders/export?from=2026-07-22&to=2026-07-21")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
     // ── 4. GMV excludes CANCELLED ─────────────────────────────────────────────
 
     @Test
@@ -147,10 +172,19 @@ class AdminReportApiTest {
     @Test
     void exportOrders_writesAuditLog() throws Exception {
         long before = countExportAuditLogs("ORDERS");
+        String privateSearch = "private-" + UUID.randomUUID() + "@bigbike.test";
 
-        mockMvc.perform(get("/api/v1/admin/reports/orders/export?status=COMPLETED&from=" + TODAY + "&to=" + TODAY)
+        MvcResult started = mockMvc.perform(get("/api/v1/admin/reports/orders/export")
+                        .param("q", privateSearch)
+                        .param("status", "COMPLETED")
+                        .param("from", TODAY)
+                        .param("to", TODAY)
                         .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
+                .andExpect(request().asyncStarted())
+                .andReturn();
+        mockMvc.perform(asyncDispatch(started))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-Export-Uncapped", "true"));
 
         List<AuditLogEntity> logs = exportAuditLogs("ORDERS");
         assertThat(logs).hasSizeGreaterThan((int) before);
@@ -159,19 +193,70 @@ class AdminReportApiTest {
         assertThat(log.getAction()).isEqualTo("REPORT_EXPORT_CREATED");
         assertThat(log.getAfterData()).contains("\"exportType\":\"ORDERS\"");
         assertThat(log.getAfterData()).contains("\"status\":\"COMPLETED\"");
-        assertThat(log.getAfterData()).contains("\"rowLimit\":10000");
+        assertThat(log.getAfterData()).contains("\"searchApplied\":true");
+        assertThat(log.getAfterData()).contains("\"rowLimit\":null");
+        assertThat(log.getAfterData()).contains("\"uncapped\":true");
+        assertThat(log.getAfterData()).doesNotContain(privateSearch);
         assertThat(log.getAfterData()).doesNotContain("email");
         assertThat(log.getAfterData()).doesNotContain("phone");
         assertThat(log.getAfterData()).doesNotContain("name");
     }
 
     @Test
+    void exportOrders_appliesSearchStatusAndVietnamCalendarBoundaries() throws Exception {
+        String searchToken = "csv-" + UUID.randomUUID();
+        OrderEntity included = buildOrder(
+                "PROCESSING", "700000", null, Instant.parse("2026-07-21T16:59:59Z")
+        );
+        included.setCustomerEmail(searchToken + "-included@example.com");
+        orderRepo.save(included);
+
+        OrderEntity wrongStatus = buildOrder(
+                "CANCELLED", "800000", null, Instant.parse("2026-07-21T12:00:00Z")
+        );
+        wrongStatus.setCustomerEmail(searchToken + "-wrong-status@example.com");
+        orderRepo.save(wrongStatus);
+
+        OrderEntity nextVietnamDay = buildOrder(
+                "PROCESSING", "900000", null, Instant.parse("2026-07-21T17:00:00Z")
+        );
+        nextVietnamDay.setCustomerEmail(searchToken + "-outside@example.com");
+        orderRepo.save(nextVietnamDay);
+
+        MvcResult started = mockMvc.perform(get("/api/v1/admin/reports/orders/export")
+                        .param("q", searchToken)
+                        .param("status", "PROCESSING")
+                        .param("from", "2026-07-21")
+                        .param("to", "2026-07-21")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+        MvcResult completed = mockMvc.perform(asyncDispatch(started))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String csv = completed.getResponse().getContentAsString();
+        assertThat(csv).contains(included.getOrderNumber());
+        assertThat(csv).doesNotContain(wrongStatus.getOrderNumber());
+        assertThat(csv).doesNotContain(nextVietnamDay.getOrderNumber());
+    }
+
+    @Test
     void exportCustomers_writesAuditLog() throws Exception {
         long before = countExportAuditLogs("CUSTOMERS");
+        String privateSearch = "private-customer-" + UUID.randomUUID();
 
-        mockMvc.perform(get("/api/v1/admin/reports/customers/export?status=ACTIVE")
+        MvcResult started = mockMvc.perform(get("/api/v1/admin/reports/customers/export")
+                        .param("q", privateSearch)
+                        .param("status", "ACTIVE")
+                        .param("synthetic", "true")
+                        .param("emailVerified", "false")
                         .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
+                .andExpect(request().asyncStarted())
+                .andReturn();
+        mockMvc.perform(asyncDispatch(started))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-Export-Uncapped", "true"));
 
         List<AuditLogEntity> logs = exportAuditLogs("CUSTOMERS");
         assertThat(logs).hasSizeGreaterThan((int) before);
@@ -180,9 +265,45 @@ class AdminReportApiTest {
         assertThat(log.getAction()).isEqualTo("REPORT_EXPORT_CREATED");
         assertThat(log.getAfterData()).contains("\"exportType\":\"CUSTOMERS\"");
         assertThat(log.getAfterData()).contains("\"status\":\"ACTIVE\"");
-        assertThat(log.getAfterData()).doesNotContain("email");
-        assertThat(log.getAfterData()).doesNotContain("phone");
-        assertThat(log.getAfterData()).doesNotContain("name");
+        assertThat(log.getAfterData()).contains("\"searchApplied\":true");
+        assertThat(log.getAfterData()).contains("\"synthetic\":true");
+        assertThat(log.getAfterData()).contains("\"emailVerified\":false");
+        assertThat(log.getAfterData()).contains("\"rowLimit\":null");
+        assertThat(log.getAfterData()).contains("\"uncapped\":true");
+        assertThat(log.getAfterData()).doesNotContain(privateSearch);
+    }
+
+    @Test
+    void exportCustomersAppliesEveryCustomersScreenFilter() throws Exception {
+        String marker = "customer-csv-" + UUID.randomUUID();
+        CustomerEntity included = buildCustomer(marker + "-included@bigbike.test", "DISABLED", true, true);
+        CustomerEntity wrongStatus =
+                buildCustomer(marker + "-wrong-status@bigbike.test", "ACTIVE", true, true);
+        CustomerEntity wrongSynthetic =
+                buildCustomer(marker + "-wrong-synthetic@bigbike.test", "DISABLED", false, true);
+        CustomerEntity wrongVerification =
+                buildCustomer(marker + "-wrong-verification@bigbike.test", "DISABLED", true, false);
+        customerRepo.saveAllAndFlush(
+                List.of(included, wrongStatus, wrongSynthetic, wrongVerification));
+
+        MvcResult started = mockMvc.perform(get("/api/v1/admin/reports/customers/export")
+                        .param("q", marker)
+                        .param("status", "disabled")
+                        .param("synthetic", "true")
+                        .param("emailVerified", "true")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+        MvcResult completed = mockMvc.perform(asyncDispatch(started))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-Export-Uncapped", "true"))
+                .andReturn();
+
+        String csv = completed.getResponse().getContentAsString();
+        assertThat(csv).contains(included.getEmail());
+        assertThat(csv).doesNotContain(wrongStatus.getEmail());
+        assertThat(csv).doesNotContain(wrongSynthetic.getEmail());
+        assertThat(csv).doesNotContain(wrongVerification.getEmail());
     }
 
     @Test
@@ -251,6 +372,22 @@ class AdminReportApiTest {
         o.setCreatedAt(placedAt);
         o.setUpdatedAt(placedAt);
         return o;
+    }
+
+    private CustomerEntity buildCustomer(
+            String email, String status, boolean synthetic, boolean emailVerified
+    ) {
+        CustomerEntity customer = new CustomerEntity();
+        customer.setEmail(email);
+        customer.setDisplayName("Report Customer");
+        customer.setStatus(status);
+        customer.setSynthetic(synthetic);
+        if (emailVerified) {
+            customer.setEmailVerifiedAt(Instant.now());
+        }
+        customer.setCreatedAt(Instant.now());
+        customer.setUpdatedAt(customer.getCreatedAt());
+        return customer;
     }
 
     private void ensureAdmin() {

@@ -121,4 +121,120 @@ class ContentP1ApiTest {
     //  /admin/content/authors and /admin/content/content-categories endpoints no longer
     //  exist — stale expectations cleaned per AUD-046. The reference/categories endpoint
     //  and its tests were removed 2026-07-15 per AUD-056 — no caller since V275.)
+
+    // ── Article productImage whitelist (audit module Tin tức 2026-07-29) ─────────
+    // MEDIA_RULE_002: coverImage was whitelisted, productImage was not — an admin could
+    // save an article product image pointing at an external host. Now both are guarded.
+    @Test
+    void articleProductImageShouldRejectUrlOutsideTheMediaLibrary() throws Exception {
+        long ts = System.currentTimeMillis();
+        String slug = "product-image-external-" + ts;
+
+        String payload = """
+                {
+                  "slug": "%s",
+                  "title": "Ảnh sản phẩm ngoài %s",
+                  "body": "<p>test</p>",
+                  "categoryId": "cc_blog",
+                  "publishStatus": "DRAFT",
+                  "translations": { "en": { "title": "External product image %s" } },
+                  "productImage": { "url": "https://cdn.ben-thu-ba.com/product.jpg" }
+                }
+                """.formatted(slug, ts, ts);
+
+        mockMvc.perform(post("/api/v1/admin/content/articles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "content.update")
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].field").value("productImage.url"))
+                .andExpect(jsonPath("$.error.details[0].code").value("INVALID_VALUE"));
+    }
+
+    @Test
+    void articleProductImageFromMediaLibraryShouldSaveWithAltText() throws Exception {
+        long ts = System.currentTimeMillis();
+        String slug = "product-image-ok-" + ts;
+
+        String payload = """
+                {
+                  "slug": "%s",
+                  "title": "Ảnh sản phẩm nội bộ %s",
+                  "body": "<p>test</p>",
+                  "categoryId": "cc_blog",
+                  "publishStatus": "DRAFT",
+                  "translations": { "en": { "title": "Internal product image %s" } },
+                  "coverImage": { "url": "/media/articles/cover.jpg", "alt": "Ảnh bìa" },
+                  "productImage": { "url": "/media/articles/product.jpg", "alt": "Ảnh sản phẩm trong bài" }
+                }
+                """.formatted(slug, ts, ts);
+
+        mockMvc.perform(post("/api/v1/admin/content/articles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "content.update")
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.coverImage.alt").value("Ảnh bìa"))
+                .andExpect(jsonPath("$.data.productImage.alt").value("Ảnh sản phẩm trong bài"));
+    }
+
+    @Test
+    void articleVideoBlockAcceptsYoutubeAndUploadOnly() throws Exception {
+        long ts = System.currentTimeMillis();
+
+        for (String[] source : new String[][] {
+                { "youtube", "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
+                { "upload", "/media/articles/demo.mp4" }
+        }) {
+            String payload = """
+                    {
+                      "slug": "article-video-%s-%s",
+                      "title": "Video bài viết %s",
+                      "categoryId": "cc_blog",
+                      "publishStatus": "DRAFT",
+                      "translations": { "en": { "title": "Article video %s" } },
+                      "bodyBlocks": [
+                        { "type": "video", "provider": "%s", "url": "%s" }
+                      ]
+                    }
+                    """.formatted(source[0], ts, source[0], source[0], source[0], source[1]);
+
+            mockMvc.perform(post("/api/v1/admin/content/articles")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .characterEncoding(StandardCharsets.UTF_8)
+                            .header("X-Admin-Permissions", "content.update")
+                            .content(payload))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.bodyBlocks[0].provider").value(source[0]));
+        }
+
+        for (String[] legacy : new String[][] {
+                { "tiktok", "https://www.tiktok.com/@bigbike/video/7251234567890123456" },
+                { "facebook", "https://www.facebook.com/BigBike/videos/1234567890" }
+        }) {
+            String payload = """
+                    {
+                      "slug": "article-video-legacy-%s-%s",
+                      "title": "Video legacy %s",
+                      "categoryId": "cc_blog",
+                      "publishStatus": "DRAFT",
+                      "translations": { "en": { "title": "Legacy video %s" } },
+                      "bodyBlocks": [
+                        { "type": "video", "provider": "%s", "url": "%s" }
+                      ]
+                    }
+                    """.formatted(legacy[0], ts, legacy[0], legacy[0], legacy[0], legacy[1]);
+
+            mockMvc.perform(post("/api/v1/admin/content/articles")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .characterEncoding(StandardCharsets.UTF_8)
+                            .header("X-Admin-Permissions", "content.update")
+                            .content(payload))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+        }
+    }
 }

@@ -122,7 +122,11 @@ public class ProductImporter implements DomainImporter {
                 entity.setSalePrice(salePrice != null && salePrice.signum() > 0 ? salePrice : null);
                 entity.setCurrency("VND");
 
-                entity.setStockState(resolveStockState(mp.stockQuantity()));
+                // Legacy quantity columns are dormant in the boolean availability model.
+                // A WordPress product import has no trusted admin availability decision, so
+                // keep it unavailable until staff explicitly reviews and enables it.
+                entity.setStockState(ProductStockState.OUT_OF_STOCK);
+                entity.setAvailable(false);
                 entity.setPublishStatus(resolveStatus(mp.status()));
 
                 // Ordered category links. The write-plan preserves the legacy
@@ -219,15 +223,6 @@ public class ProductImporter implements DomainImporter {
             return product.sku();
         }
         return fallbackSlug;
-    }
-
-    private ProductStockState resolveStockState(Integer stockQuantity) {
-        // STOCK_RULE_001/003: stockState là field SUY RA từ tồn thật, KHÔNG lấy theo
-        // cờ "instock/outofstock" của WP — cờ đó tạo "còn hàng ảo" khi tồn = 0.
-        // Sản phẩm không biến thể: suy ra từ stockQuantity đã quản lý; không có tồn
-        // → OUT_OF_STOCK; ngược lại IN_STOCK (mô hình boolean — không còn tầng "còn ít").
-        if (stockQuantity == null || stockQuantity <= 0) return ProductStockState.OUT_OF_STOCK;
-        return ProductStockState.IN_STOCK;
     }
 
     private PublishStatus resolveStatus(String status) {

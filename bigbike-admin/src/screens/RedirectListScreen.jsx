@@ -503,6 +503,7 @@ export function RedirectListScreen({ canUpdate }) {
 
   const mobileCard = (redirect) => ({
     title: <span className="mono" style={{ wordBreak: 'break-all' }}>{redirect.sourcePattern}</span>,
+    selectionLabel: t('common.selectNamedRow', { name: redirect.sourcePattern }),
     subtitle: redirect.targetUrl,
     status: enabledBadge(redirect),
     meta: [

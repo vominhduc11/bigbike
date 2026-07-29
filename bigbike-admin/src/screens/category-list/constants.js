@@ -2,7 +2,7 @@
 // CategoryListScreen. Extracted to keep the screen file focused on behaviour.
 // Kept in a .js (no JSX) file so fast-refresh stays component-only elsewhere.
 
-export const STOREFRONT_BASE = `${import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn'}/danh-muc-san-pham`
+export const STOREFRONT_BASE = `${import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn'}/danh-muc`
 
 // F11: khoá sessionStorage dùng để chuyển bản nháp "Nhân bản" sang màn tạo mới
 // (CategoryDetailScreen đọc — cùng cơ chế DUPLICATE_SESSION_KEY của Sản phẩm).

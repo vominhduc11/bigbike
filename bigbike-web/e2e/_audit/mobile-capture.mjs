@@ -136,7 +136,7 @@ async function run() {
   page.on("pageerror", (e) => consoleErrors.push("PAGEERROR: " + String(e).slice(0, 300)));
 
   // discover a product url
-  await page.goto(BASE + "/san-pham", { waitUntil: "load", timeout: 45000 });
+  await page.goto(BASE + "/sp", { waitUntil: "load", timeout: 45000 });
   await page.waitForTimeout(1000);
   let productUrl = await page.$$eval("a[href*='/product/']", (as) => as.map((a) => a.getAttribute("href")).find(Boolean));
   if (productUrl && productUrl.startsWith("http")) productUrl = new URL(productUrl).pathname;
@@ -145,8 +145,8 @@ async function run() {
 
   const ROUTES = [
     ["home", "/"],
-    ["listing", "/san-pham"],
-    ["category-index", "/danh-muc-san-pham"],
+    ["listing", "/sp"],
+    ["category-index", "/sp"],
     ["pdp", productUrl],
     ["cart", "/gio-hang"],
     ["checkout", "/dat-hang"],
@@ -274,7 +274,7 @@ async function run() {
 
   // ---- listing filter ----
   try {
-    await page.goto(BASE + "/san-pham", { waitUntil: "load", timeout: 45000 });
+    await page.goto(BASE + "/sp", { waitUntil: "load", timeout: 45000 });
     await settle(page, 800);
     await shot(page, "listing__top");
     // look for a filter trigger button on mobile

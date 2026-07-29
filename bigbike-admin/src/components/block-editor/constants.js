@@ -3,8 +3,8 @@
 // (pure constants/helpers live here to keep fast-refresh happy).
 import { generateId } from '@/lib/utils'
 
-// Vốn từ khối cho Content (bài viết Tin tức). Video dùng một block chung và chọn provider
-// YouTube/TikTok/Facebook/upload trong editor (MEDIA_RULE_004).
+// Vốn từ khối cho Content (bài viết Tin tức). Video dùng một block chung và chỉ ghi
+// provider YouTube/upload; renderer vẫn đọc dữ liệu legacy (MEDIA_RULE_004).
 export const CONTENT_MENU = ['heading', 'paragraph', 'list', 'image', 'video'].map((type) => ({
   type,
   labelKey: `products.detail.blocks.blockType${type.charAt(0).toUpperCase()}${type.slice(1)}`,

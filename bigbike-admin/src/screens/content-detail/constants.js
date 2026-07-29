@@ -218,6 +218,9 @@ export function toPayload(form, _isCreate) {
             const { alt: _alt, ...keep } = rest
             return keep
           }
+          if (rest.type === 'video' && !['youtube', 'upload'].includes(rest.provider)) {
+            return { ...rest, provider: undefined }
+          }
           return rest
         }).filter(isBlockValid)
       : undefined,

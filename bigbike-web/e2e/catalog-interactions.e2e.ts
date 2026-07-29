@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 async function openCatalog(page: Page) {
-  await page.goto("/san-pham/", { waitUntil: "domcontentloaded" });
+  await page.goto("/sp/", { waitUntil: "domcontentloaded" });
   await page.locator("[data-product-card]").first().waitFor({ state: "visible" });
 }
 

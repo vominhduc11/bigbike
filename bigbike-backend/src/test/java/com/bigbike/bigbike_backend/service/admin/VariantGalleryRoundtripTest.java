@@ -61,6 +61,7 @@ class VariantGalleryRoundtripTest {
             c.setId("test-cat-vgallery");
             c.setSlug("test-cat-vgallery");
             c.setName("Test Cat VGallery");
+            c.setVisible(true);
             c.setCreatedAt(Instant.now());
             c.setUpdatedAt(Instant.now());
             return categoryRepo.save(c);
@@ -741,7 +742,7 @@ class VariantGalleryRoundtripTest {
         req.setGender("Unisex");
         req.setSku("SKU-" + slug);
         req.setRetailPrice(new BigDecimal("1000000"));
-        req.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+        req.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.DRAFT);
         com.bigbike.bigbike_backend.api.admin.dto.ImageAssetRequest image = new com.bigbike.bigbike_backend.api.admin.dto.ImageAssetRequest();
         image.setUrl("http://localhost:9000/bigbike-media/products/test.jpg");
         image.setAlt("test");
@@ -769,8 +770,14 @@ class VariantGalleryRoundtripTest {
         sizeOnly.setOptions(List.of(option("Size", "M")));  // Size only — NO color option
         create.setVariants(List.of(sizeOnly));
 
+        Product draft = mutationService.createProduct(create, DEV_ADMIN_ID);
+
         // Must not throw PublishGateException even though the variant carries no image.
-        Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
+        Product saved = mutationService.updateProductPublishStatus(
+                draft.id(),
+                com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED,
+                DEV_ADMIN_ID
+        );
 
         assertThat(saved.publishStatus())
                 .isEqualTo(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);

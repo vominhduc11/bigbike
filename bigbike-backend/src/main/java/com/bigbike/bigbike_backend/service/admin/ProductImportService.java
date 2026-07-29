@@ -978,15 +978,37 @@ public class ProductImportService {
         return r;
     }
 
-    private static List<DescriptionBlock> exportableProductDescriptionBlocks(List<DescriptionBlock> blocks) {
+    static List<DescriptionBlock> exportableProductDescriptionBlocks(List<DescriptionBlock> blocks) {
         if (blocks == null || blocks.isEmpty()) {
             return List.of();
         }
-        return blocks.stream()
-                .filter(block -> block instanceof DescriptionBlock.ParagraphBlock
-                        || block instanceof DescriptionBlock.ImageBlock
-                        || block instanceof DescriptionBlock.FeatureBlock)
-                .toList();
+        List<DescriptionBlock> result = new ArrayList<>();
+        int featureIndex = 0;
+        for (DescriptionBlock block : blocks) {
+            if (!(block instanceof DescriptionBlock.FeatureBlock feature)) {
+                continue;
+            }
+            String side = "left".equals(feature.getSide()) || "right".equals(feature.getSide())
+                    ? feature.getSide()
+                    : (featureIndex % 2 == 0 ? "right" : "left");
+            result.add(DescriptionBlock.FeatureBlock.builder()
+                    .type(feature.getType())
+                    .side(side)
+                    .url(feature.getUrl())
+                    .alt(feature.getAlt())
+                    .altEn(feature.getAltEn())
+                    .caption(feature.getCaption())
+                    .captionEn(feature.getCaptionEn())
+                    .subheading(feature.getSubheading())
+                    .subheadingEn(feature.getSubheadingEn())
+                    .heading(feature.getHeading())
+                    .headingEn(feature.getHeadingEn())
+                    .html(feature.getHtml())
+                    .htmlEn(feature.getHtmlEn())
+                    .build());
+            featureIndex++;
+        }
+        return List.copyOf(result);
     }
 
     private VariantRequest toVariantRequest(ProductVariantEntity v) {

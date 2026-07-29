@@ -163,6 +163,8 @@ public class GlobalExceptionHandler {
         String message = "This record was modified by another request. Please retry.";
         if (ex.getPersistentClassName() != null && ex.getPersistentClassName().contains("Article")) {
             message = "Bài viết đã được người khác cập nhật, vui lòng tải lại trang.";
+        } else if (ex.getPersistentClassName() != null && ex.getPersistentClassName().contains("Review")) {
+            message = "Đánh giá đã được người khác cập nhật, vui lòng tải lại dữ liệu.";
         }
         return build(HttpStatus.CONFLICT, "CONCURRENT_MODIFICATION", message, List.of(), request);
     }

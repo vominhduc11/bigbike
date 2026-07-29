@@ -6,6 +6,7 @@ import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressWooCommer
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressWooCommerceOrderItemMapper.MappedLineItem;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressWooCommerceOrderItemMapper.MappedShippingItem;
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationDomain;
+import com.bigbike.bigbike_backend.domain.commerce.PaymentRecordStatus;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAddressEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderFeeItemEntity;
@@ -261,7 +262,9 @@ public class OrderImporter implements DomainImporter {
         entity.setOrder(order);
         entity.setPaymentMethod(payment.paymentMethod() != null ? payment.paymentMethod() : "cod");
         entity.setProvider(payment.provider());
-        entity.setStatus(payment.status() != null ? payment.status() : "PENDING");
+        entity.setStatus(payment.status() != null
+                ? PaymentRecordStatus.valueOf(payment.status())
+                : PaymentRecordStatus.PENDING);
         entity.setAmount(safe(payment.amount()));
         entity.setCurrency(payment.currency() != null ? payment.currency() : "VND");
         entity.setTransactionId(payment.transactionId());

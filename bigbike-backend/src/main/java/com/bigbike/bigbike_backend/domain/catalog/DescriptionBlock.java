@@ -224,7 +224,7 @@ public sealed interface DescriptionBlock
         private String captionEn;
     }
 
-    /** { type: "video", provider: "youtube"|"tiktok"|"facebook"|"upload", url: string, caption?: string, captionEn?: string } */
+    /** { type: "video", provider: "youtube"|"upload", url: string, caption?: string, captionEn?: string } */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
     final class VideoBlock implements DescriptionBlock {
@@ -232,8 +232,8 @@ public sealed interface DescriptionBlock
 
         @NotNull(message = "video.provider is required.")
         @Pattern(
-                regexp = "youtube|tiktok|facebook|upload",
-                message = "video.provider must be 'youtube', 'tiktok', 'facebook', or 'upload'."
+                regexp = "youtube|upload",
+                message = "video.provider must be 'youtube' or 'upload'."
         )
         private String provider;
 

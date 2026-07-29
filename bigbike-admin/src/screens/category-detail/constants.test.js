@@ -39,4 +39,34 @@ describe('Category payload contract', () => {
     expect(payload.banner.alt).toBe('Ảnh banner')
     expect(payload.mobileBanner.alt).toBe('Ảnh banner mobile')
   })
+
+  it('luôn gửi mô tả và khối giới thiệu kể cả khi rỗng để admin xóa được nội dung cũ', () => {
+    const payload = toPayload({ ...buildEmptyForm(), description: '', introContent: '' })
+
+    expect(payload).toHaveProperty('description')
+    expect(payload).toHaveProperty('introContent')
+    expect(payload.description).toBe('')
+    expect(payload.introContent).toBe('')
+  })
+
+  it('gửi đúng nội dung mô tả và khối giới thiệu đã nhập', () => {
+    const payload = toPayload({
+      ...buildEmptyForm(),
+      description: '  <p>Mũ bảo hiểm fullface</p>  ',
+      introContent: '  <p>Giới thiệu danh mục</p>  ',
+    })
+
+    expect(payload.description).toBe('<p>Mũ bảo hiểm fullface</p>')
+    expect(payload.introContent).toBe('<p>Giới thiệu danh mục</p>')
+  })
+
+  it('gửi rỗng ảnh thành url null để xóa từng vai trò ảnh riêng biệt', () => {
+    const payload = toPayload(buildEmptyForm())
+
+    expect(payload.image).toEqual({ url: null })
+    expect(payload.banner).toEqual({ url: null })
+    expect(payload.mobileBanner).toEqual({ url: null })
+    expect(payload.icon).toEqual({ url: null })
+    expect(payload.menuIcon).toEqual({ url: null })
+  })
 })

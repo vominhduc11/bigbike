@@ -1,7 +1,7 @@
 // Constants and pure form/helpers for CategoryDetailScreen.
 // Extracted from CategoryDetailScreen.jsx to keep the screen file focused on behaviour.
 
-export const STOREFRONT_BASE = `${import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn'}/danh-muc-san-pham`
+export const STOREFRONT_BASE = `${import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn'}/danh-muc`
 export const MENU_NOTICE_DISMISSED_KEY = 'bigbike-admin-cat-menu-notice-dismissed'
 
 // Slugify dùng chung — tách sang src/lib/slug.js (khử trùng lặp với Brand/Content).
@@ -112,8 +112,12 @@ export function toPayload(form, { isCreate = false } = {}) {
   const payload = {
     slug: form.slug.trim(),
     name: form.name.trim(),
-    description: form.description.trim() || undefined,
-    introContent: form.introContent.trim() || undefined,
+    // Luôn gửi mô tả + khối giới thiệu đầu trang, kể cả khi rỗng: backend dùng presence-flag
+    // (thiếu khóa = giữ nguyên giá trị cũ, chuỗi rỗng = xóa). Bỏ khóa khi rỗng khiến admin
+    // không thể xóa nội dung cũ, trong khi bản tiếng Anh vẫn gửi null nên xóa được — hai bên
+    // phải nhất quán. Cùng lỗi đã vá cho Thương hiệu ngày 2026-07-28.
+    description: form.description.trim(),
+    introContent: form.introContent.trim(),
     parentId: form.parentId.trim(),
   }
 

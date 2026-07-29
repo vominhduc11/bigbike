@@ -5,12 +5,22 @@
 import { createContext } from 'react'
 import { serializeSuitabilityCards, suitabilityCardHasContent } from '../../lib/suitabilityCards'
 import { normalizeVariantToken, isColorAttributeName } from '../../lib/schemas'
+import { extractAllowedYouTubeId, isAllowedMediaVideoUrl } from '../../lib/urlPolicies'
 import { generateId } from '@/lib/utils'
 
 // Editable "Phân công" guide text (role names + task lists), fetched from
 // GET /admin/product-assignment. SUPER_ADMIN edits it in Cài đặt → Phân công sản phẩm.
 // Components read this via context and fall back to the i18n defaults if empty/unloaded.
 export const AssignmentConfigContext = createContext(null)
+export const SYSTEM_CATEGORY_ID = 'uncategorized'
+export const SYSTEM_BRAND_ID = 'uncategorized-brand'
+
+function isWritableVideoInput(provider, url) {
+  const normalizedUrl = (url || '').trim()
+  if (provider === 'youtube') return Boolean(extractAllowedYouTubeId(normalizedUrl))
+  if (provider === 'upload') return isAllowedMediaVideoUrl(normalizedUrl)
+  return false
+}
 
 // Base URL trang sản phẩm trên storefront. Canonical luôn tự sinh từ slug
 // (https://bigbike.vn/product/{slug}) — admin không nhập tay (khớp PRODUCT_DATA_COMPLETENESS_AUDIT).
@@ -53,25 +63,12 @@ export function extractYouTubeId(url) {
   return m ? m[1] : null
 }
 
-// Matches TikTok numeric video IDs (full links only; vt./vm. short links unsupported).
-export function extractTikTokId(url) {
-  if (!url || typeof url !== 'string') return null
-  const m = url.match(/(?:www\.|m\.)?tiktok\.com\/(?:@[\w.-]+\/video\/|video\/|v\/|embed\/v2\/|embed\/)(\d{6,30})/)
-  return m ? m[1] : null
-}
-
-// Facebook video: nhúng cả link gốc (fb.watch rút gọn không hỗ trợ).
-export function isFacebookVideoUrl(url) {
-  if (!url || typeof url !== 'string') return false
-  return /^https?:\/\/(?:www\.|m\.|web\.)?facebook\.com\/(?:[^?#]*\/videos\/|reel\/|watch\/?(?:\?|$)|[^?#]*video\.php)/i.test(url)
-}
-
 export function inferVideoType(url, provider) {
-  if (provider === 'youtube' || provider === 'tiktok' || provider === 'facebook' || provider === 'upload') return provider
+  if (provider === 'youtube' || provider === 'upload') return provider
+  if (provider) return ''
   if (extractYouTubeId(url)) return 'youtube'
-  if (extractTikTokId(url)) return 'tiktok'
-  if (isFacebookVideoUrl(url)) return 'facebook'
-  return url ? 'upload' : 'youtube'
+  if (isAllowedMediaVideoUrl(url)) return 'upload'
+  return url ? '' : 'youtube'
 }
 
 // ── Slug generation ────────────────────────────────────────────────────────────
@@ -148,8 +145,20 @@ export function getPublishReadiness(form, t) {
     // song song với tên tiếng Việt để lỗi "thiếu tên EN" không còn bị ẩn trong tab EN.
     { id: 'nameEn',    label: t('products.detail.checklist.nameEn', { defaultValue: 'Tên tiếng Anh' }), ok: Boolean(form.translations?.en?.name?.trim()), required: true },
     { id: 'slug',      label: t('products.detail.checklist.slug', { defaultValue: 'Đường dẫn (slug)' }), ok: Boolean(form.slug?.trim()),                required: true  },
-    { id: 'category',  label: t('products.detail.checklist.category'),  ok: Array.isArray(form.categoryIds) && form.categoryIds.length > 0,          required: true  },
-    { id: 'brand',     label: t('products.detail.checklist.brand'),     ok: Boolean(form.brandId),                                                  required: true  },
+    {
+      id: 'category',
+      label: t('products.detail.checklist.category'),
+      ok: Array.isArray(form.categoryIds)
+        && form.categoryIds.length > 0
+        && form.categoryIds.every((id) => id !== SYSTEM_CATEGORY_ID),
+      required: true,
+    },
+    {
+      id: 'brand',
+      label: t('products.detail.checklist.brand'),
+      ok: Boolean(form.brandId) && form.brandId !== SYSTEM_BRAND_ID,
+      required: true,
+    },
     { id: 'gender',    label: t('products.detail.checklist.gender', { defaultValue: 'Đối tượng' }), ok: Boolean(form.gender?.trim()),                required: true  },
     { id: 'image',     label: t('products.detail.checklist.image'),     ok: Boolean(form.imageUrl?.trim()),                                         required: true  },
     // SKU cấp sản phẩm: luôn luôn bắt buộc.
@@ -287,11 +296,17 @@ export function buildEmptyForm() {
     publishStatus: 'DRAFT',
     imageUrl: '',
     imageAlt: '',
+    imageWidth: null,
+    imageHeight: null,
+    imageMimeType: null,
     seoTitle: '',
     seoTitleManuallyEdited: false,
     seoDescription: '',
     seoOgImageUrl: '',
     seoOgImageAlt: '',
+    seoOgImageWidth: null,
+    seoOgImageHeight: null,
+    seoOgImageMimeType: null,
     gallery: [],
     videos: [],
     // Chế độ "Dán mã HTML" cho khối Thông số kỹ thuật (V255) — bản vi; bản en ở translations.en.
@@ -498,7 +513,17 @@ export function buildFormFromItem(item) {
       value: o.value || '',
       attributeValueId: o.attributeValueId || null,
     })),
-    gallery: (v.gallery || []).map((img) => ({ _key: generateId(), mediaType: img.mediaType || 'image', url: img.rawUrl || img.url || '', alt: img.alt || '', videoUrl: img.videoUrl || '', provider: img.provider || 'youtube' })),
+    gallery: (v.gallery || []).map((img) => ({
+      _key: generateId(),
+      mediaType: img.mediaType || 'image',
+      url: img.rawUrl || img.url || '',
+      alt: img.alt || '',
+      width: img.width ?? null,
+      height: img.height ?? null,
+      mimeType: img.mimeType ?? null,
+      videoUrl: img.videoUrl || '',
+      provider: inferVideoType(img.videoUrl || '', img.provider),
+    })),
     imageUrl: v.image?.url || '',
     imageAlt: v.image?.alt || '',
     imageWidth: v.image?.width || null,
@@ -547,12 +572,28 @@ export function buildFormFromItem(item) {
     publishStatus: item.publishStatus,
     imageUrl: item.image?.rawUrl || item.image?.url || '',
     imageAlt: item.image?.alt || '',
+    imageWidth: item.image?.width ?? null,
+    imageHeight: item.image?.height ?? null,
+    imageMimeType: item.image?.mimeType ?? null,
     seoTitle: item.seo?.title || '',
     seoTitleManuallyEdited: Boolean(item.seo?.title),
     seoDescription: item.seo?.description || '',
     seoOgImageUrl: item.seo?.ogImage?.rawUrl || item.seo?.ogImage?.url || '',
     seoOgImageAlt: item.seo?.ogImage?.alt || '',
-    gallery: (item.gallery || []).map((img) => ({ _key: generateId(), mediaType: img.mediaType || 'image', url: img.rawUrl || img.url || '', alt: img.alt || '', videoUrl: img.videoUrl || '', provider: img.provider || 'youtube' })),
+    seoOgImageWidth: item.seo?.ogImage?.width ?? null,
+    seoOgImageHeight: item.seo?.ogImage?.height ?? null,
+    seoOgImageMimeType: item.seo?.ogImage?.mimeType ?? null,
+    gallery: (item.gallery || []).map((img) => ({
+      _key: generateId(),
+      mediaType: img.mediaType || 'image',
+      url: img.rawUrl || img.url || '',
+      alt: img.alt || '',
+      width: img.width ?? null,
+      height: img.height ?? null,
+      mimeType: img.mimeType ?? null,
+      videoUrl: img.videoUrl || '',
+      provider: inferVideoType(img.videoUrl || '', img.provider),
+    })),
     videos: (item.videos || []).map((v) => ({
       url: v.url || '',
       title: v.title || '',
@@ -686,7 +727,7 @@ export function cleanDescriptionBlocks(blocks) {
         case 'list':      return (b.items ?? []).some((it) => (it ?? '').trim().length > 0)
           || (b.itemsEn ?? []).some((it) => (it ?? '').trim().length > 0)
         case 'image':     return (b.url ?? '').trim().length > 0
-        case 'video':     return (b.url ?? '').trim().length > 0
+        case 'video':     return isWritableVideoInput(b.provider, b.url)
         case 'callout':   return (b.html ?? '').trim().length > 0 || (b.htmlEn ?? '').trim().length > 0
         case 'feature': {
           const hasImage = (b.url ?? '').trim().length > 0
@@ -704,18 +745,18 @@ export function cleanDescriptionBlocks(blocks) {
       }
     })
     .map(({ _key, ...rest }) => {
-      // Khối image: bỏ alt text
-      if (rest.type === 'image') {
-        const { alt: _alt, ...keep } = rest
-        return keep
-      }
-      // Khối feature: bỏ alt text và bỏ các dòng danh sách rỗng để không gửi item trắng xuống backend.
+      // Khối feature: bỏ các dòng danh sách rỗng để không gửi item trắng xuống backend.
+      // Giữ nguyên alt/altEn: đây là metadata SEO/trợ năng thuộc hợp đồng block.
       if (rest.type === 'feature') {
-        const { alt: _alt, ...keep } = rest
-        if (Array.isArray(keep.items)) {
-          return { ...keep, items: keep.items.filter((it) => (it ?? '').trim().length > 0) }
+        if (Array.isArray(rest.items)) {
+          return {
+            ...rest,
+            items: rest.items.filter((it) => (it ?? '').trim().length > 0),
+            itemsEn: Array.isArray(rest.itemsEn)
+              ? rest.itemsEn.filter((it) => (it ?? '').trim().length > 0)
+              : rest.itemsEn,
+          }
         }
-        return keep
       }
       return rest
     })
@@ -800,15 +841,27 @@ export function toPayload(form, { includeCategoryIds = true } = {}) {
       ? {
           title: form.seoTitle.trim() || null,
           description: form.seoDescription.trim() || null,
-          canonicalUrl,
-          ogImage: form.seoOgImageUrl.trim()
-            ? { url: form.seoOgImageUrl.trim() }
+           canonicalUrl,
+           ogImage: form.seoOgImageUrl.trim()
+            ? {
+                url: form.seoOgImageUrl.trim(),
+                alt: form.seoOgImageAlt.trim() || null,
+                width: form.seoOgImageWidth ?? null,
+                height: form.seoOgImageHeight ?? null,
+                mimeType: form.seoOgImageMimeType ?? null,
+              }
             : null,
         }
       : null,
     // Always include image — null signals "clear the primary image".
     image: form.imageUrl.trim()
-      ? { url: form.imageUrl.trim() }
+      ? {
+          url: form.imageUrl.trim(),
+          alt: form.imageAlt.trim() || null,
+          width: form.imageWidth ?? null,
+          height: form.imageHeight ?? null,
+          mimeType: form.imageMimeType ?? null,
+        }
       : null,
     // English content (V136), entered manually. Always sent so the backend full-replaces
     // the English columns; empty fields clear them — except `name`, which is required
@@ -820,26 +873,40 @@ export function toPayload(form, { includeCategoryIds = true } = {}) {
 
   payload.gallery = form.gallery
     // V248: giữ item có ảnh HOẶC video (gallery hỗn hợp).
-    .filter((img) => (img.url || '').trim() || (img.mediaType === 'video' && (img.videoUrl || '').trim()))
+    .filter((img) => img.mediaType === 'video'
+      ? isWritableVideoInput(img.provider, img.videoUrl)
+      : (img.url || '').trim())
     .map((img, i) => (
       img.mediaType === 'video'
         ? {
             mediaType: 'video',
             videoUrl: (img.videoUrl || '').trim(),
-            videoProvider: img.provider || 'youtube',
-            url: (img.url || '').trim() || undefined,
+            videoProvider: ['youtube', 'upload'].includes(img.provider) ? img.provider : undefined,
+            url: (img.url || '').trim() || null,
+            alt: (img.alt || '').trim() || null,
+            width: img.width ?? null,
+            height: img.height ?? null,
+            mimeType: img.mimeType ?? null,
             sortOrder: i,
           }
-        : { mediaType: 'image', url: img.url.trim(), sortOrder: i }
+        : {
+            mediaType: 'image',
+            url: img.url.trim(),
+            alt: (img.alt || '').trim() || null,
+            width: img.width ?? null,
+            height: img.height ?? null,
+            mimeType: img.mimeType ?? null,
+            sortOrder: i,
+          }
     ))
 
   payload.videos = form.videos
-    .filter((v) => v.url.trim())
+    .filter((v) => isWritableVideoInput(v.type, v.url))
     .map((v, i) => ({
       url: v.url.trim(),
       title: v.title.trim() || undefined,
       description: (v.description || '').trim() || undefined,
-      provider: v.type === 'upload' ? 'upload' : v.type === 'tiktok' ? 'tiktok' : v.type === 'facebook' ? 'facebook' : 'youtube',
+      provider: ['youtube', 'upload'].includes(v.type) ? v.type : undefined,
       thumbnailUrl: v.type === 'upload' ? (v.thumbnailUrl?.trim() || undefined) : undefined,
       sortOrder: i,
     }))
@@ -910,17 +977,31 @@ export function toPayload(form, { includeCategoryIds = true } = {}) {
     const colorKey = getVariantColorKey(v)
     const gallery = (v.gallery ?? [])
       // V248: gallery biến thể cũng chứa cả ảnh lẫn video.
-      .filter((img) => (img.url || '').trim() || (img.mediaType === 'video' && (img.videoUrl || '').trim()))
+      .filter((img) => img.mediaType === 'video'
+        ? isWritableVideoInput(img.provider, img.videoUrl)
+        : (img.url || '').trim())
       .map((img, j) => (
         img.mediaType === 'video'
           ? {
               mediaType: 'video',
               videoUrl: (img.videoUrl || '').trim(),
-              videoProvider: img.provider || 'youtube',
-              url: (img.url || '').trim() || undefined,
+              videoProvider: ['youtube', 'upload'].includes(img.provider) ? img.provider : undefined,
+              url: (img.url || '').trim() || null,
+              alt: (img.alt || '').trim() || null,
+              width: img.width ?? null,
+              height: img.height ?? null,
+              mimeType: img.mimeType ?? null,
               sortOrder: j,
             }
-          : { mediaType: 'image', url: img.url.trim(), sortOrder: j }
+          : {
+              mediaType: 'image',
+              url: img.url.trim(),
+              alt: (img.alt || '').trim() || null,
+              width: img.width ?? null,
+              height: img.height ?? null,
+              mimeType: img.mimeType ?? null,
+              sortOrder: j,
+            }
       ))
 
     const shouldSendGallery = Boolean(colorKey && gallery.length > 0 && !emittedGalleryColors.has(colorKey))
@@ -929,7 +1010,6 @@ export function toPayload(form, { includeCategoryIds = true } = {}) {
     return {
       id: v.id || undefined,
       sku: v.sku.trim() || undefined,
-      name: v.name.trim(),
       // Variant price is authoritative once the product has variants (2026-07-06) — always
       // send the key (null when cleared) so the backend presence-flag can tell "cleared" from
       // "not sent" (mirrors the product-level retailPrice/salePrice above).
@@ -937,6 +1017,7 @@ export function toPayload(form, { includeCategoryIds = true } = {}) {
       salePrice: toIntegerOrNull(v.salePrice),
       // Representation image (ảnh đại diện màu) is a separate variant field, scoped per-color.
       imageUrl: v.imageUrl?.trim() || undefined,
+      imageAlt: v.imageAlt?.trim() || null,
       imageWidth: v.imageWidth ?? undefined,
       imageHeight: v.imageHeight ?? undefined,
       imageMimeType: v.imageMimeType ?? undefined,
@@ -981,11 +1062,14 @@ export const SECTION_DEFS = [
 // (ProductView.tsx dòng 258-262) + specStats/quickAnswer: specStats (#2) → quickAnswer (#3) →
 // description (#4) → highlights+related (#5) → suitability/sizeGuide (chưa có entry
 // SECTION_FIELD_PREFIXES riêng, xem field trong descriptionBuilder) → specs (#8) → faqs (#9) →
-// videos (#10) → commitments (khối Trust "Mua tại BigBike.vn", #11) → accessories (#12). `seo` không map
-// vào khối nào trên PDP (không hiển thị dạng block riêng). Keys phải khớp SECTION_DEFS keys; drives the
-// per-tab error badge + findTabForErrors.
+// videos (#10) → accessories (#12). `commitments` (cam kết) đặt NGAY SAU trustBadges trong nhóm khu mua
+// hàng thay vì theo thứ tự #11 — vì trên web nội dung này render sớm nhất ở PurchaseSection.tsx (khối
+// CommitmentsList NGAY DƯỚI nút mua hàng, đầu trang), khối Trust "Mua tại BigBike.vn" cuối trang chỉ lặp
+// lại cùng dữ liệu. Form ưu tiên vị trí xuất hiện SỚM NHẤT trên web. `seo` không map vào khối nào trên
+// PDP (không hiển thị dạng block riêng). Keys phải khớp SECTION_DEFS keys; drives the per-tab error
+// badge + findTabForErrors.
 export const TAB_SECTIONS = {
-  main: ['basic', 'media', 'pricing', 'variants', 'gallery', 'trustBadges', 'specStats', 'description', 'highlights', 'related', 'specs', 'faqs', 'videos', 'commitments', 'accessories'],
+  main: ['basic', 'media', 'pricing', 'variants', 'gallery', 'trustBadges', 'commitments', 'specStats', 'description', 'highlights', 'related', 'specs', 'faqs', 'videos', 'accessories'],
   seo:  ['seo'],
 }
 
@@ -995,9 +1079,9 @@ export const TAB_SECTIONS = {
 // bung nhóm khi lưu lỗi. Field originBrandCountry ("Thương hiệu (nước)") hiển thị ở khối "Mua tại
 // BigBike.vn" cuối PDP nhưng NHẬP LIỆU nằm ở "Thông tin cơ bản" — form KHÔNG mirror 1:1 vị trí hiển thị.
 export const MAIN_SECTION_GROUPS = [
-  { id: 'sales',   sections: ['basic', 'media', 'gallery', 'pricing', 'variants', 'trustBadges'] },
+  { id: 'sales',   sections: ['basic', 'media', 'gallery', 'pricing', 'variants', 'trustBadges', 'commitments'] },
   { id: 'content', sections: ['specStats', 'quickAnswer', 'description', 'highlights', 'related', 'suitability', 'sizeGuide', 'specs', 'faqs'] },
-  { id: 'extras',  sections: ['videos', 'commitments', 'accessories'] },
+  { id: 'extras',  sections: ['videos', 'accessories'] },
 ]
 
 // Nhóm mở sẵn khi vào trang (nhóm bán hàng cốt lõi); 2 nhóm còn lại thu gọn để form đỡ dài.

@@ -23,6 +23,18 @@ vi.mock('react-i18next', () => ({
       'products.detail.faqs.questionPlaceholder': 'Question *',
       'products.detail.faqs.answerPlaceholder': 'Answer *',
       'products.detail.faqs.empty': 'No questions',
+      'products.detail.video.fromLibrary': 'Upload / media library',
+      'products.detail.video.pickFromLibrary': 'Pick from library',
+      'products.detail.video.legacySourceWarning': 'Legacy source must be replaced',
+      'products.detail.video.addVideo': 'Add video',
+      'products.detail.video.removeVideo': 'Remove video',
+      'products.detail.video.titlePlaceholder': 'Video title',
+      'products.detail.video.descriptionPlaceholder': 'Video description',
+      'products.detail.video.urlLabel': 'Video link',
+      'products.detail.video.titleLabel': 'Video title',
+      'products.detail.video.descriptionLabel': 'Video description',
+      'products.detail.gallery.videoUpload': 'Upload / media library',
+      'products.detail.gallery.legacySourceWarning': 'Legacy gallery source must be replaced',
     }[key] || key),
   }),
 }))
@@ -40,6 +52,14 @@ vi.mock('../../components/RichTextEditor', () => ({
 }))
 
 vi.mock('../../components/AiHtmlBrief', () => ({ default: () => null }))
+vi.mock('../../components/MediaPickerModal', () => ({ MediaPickerModal: () => null }))
+vi.mock('../../components/VideoPickerModal', () => ({
+  VideoPickerModal: ({ onSelect }) => (
+    <button type="button" onClick={() => onSelect('/media/videos/library.mp4', { title: 'Library video' })}>
+      Select library video
+    </button>
+  ),
+}))
 
 vi.mock('../../components/Sortable', () => ({
   SortableList: ({ items, renderItem, footer }) => (
@@ -52,7 +72,7 @@ vi.mock('../../components/Sortable', () => ({
 
 vi.mock('../../lib/confirm', () => ({ showConfirm: vi.fn() }))
 
-import { FaqEditor, HighlightsEditor, HighlightsHtmlEditor } from './ContentEditors'
+import { FaqEditor, GalleryEditor, HighlightsEditor, HighlightsHtmlEditor, VideoEditor } from './ContentEditors'
 
 function FaqHarness() {
   const [items, setItems] = useState([
@@ -147,5 +167,59 @@ describe('FaqEditor HTML tab', () => {
     await user.click(screen.getByRole('tab', { name: 'Structured input' }))
     expect(screen.getByPlaceholderText('Question *')).toHaveValue('Có kèm Pinlock không?')
     expect(screen.getByTestId('rich-text')).toHaveValue('<p>Có.</p>')
+  })
+})
+
+describe('Video editors only expose writable sources', () => {
+  it('video sản phẩm chỉ có YouTube và Upload / media library, đồng thời chọn được video thư viện', async () => {
+    const user = userEvent.setup()
+
+    function Harness() {
+      const [items, setItems] = useState([
+        { _key: 'video-1', url: '', title: '', description: '', type: 'youtube', thumbnailUrl: '' },
+      ])
+      return <VideoEditor items={items} onChange={setItems} validationErrors={{}} />
+    }
+
+    render(<Harness />)
+    expect(screen.getByRole('button', { name: 'YouTube' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Upload / media library' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /TikTok/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Facebook/i })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Upload / media library' }))
+    await user.click(screen.getByRole('button', { name: 'Pick from library' }))
+    await user.click(screen.getByRole('button', { name: 'Select library video' }))
+
+    expect(screen.getByText('library.mp4')).toBeInTheDocument()
+  })
+
+  it('video sản phẩm và gallery legacy hiện cảnh báo nhưng không hiện lựa chọn legacy', () => {
+    const { rerender } = render(
+      <VideoEditor
+        items={[{ _key: 'legacy', url: 'https://www.tiktok.com/@x/video/1234567890123456789', type: '' }]}
+        onChange={() => {}}
+        validationErrors={{ 'videos.0.url': 'Source must be replaced' }}
+      />,
+    )
+    expect(screen.getByText('Legacy source must be replaced')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /TikTok/i })).not.toBeInTheDocument()
+
+    rerender(
+      <GalleryEditor
+        items={[{
+          _key: 'legacy-gallery',
+          mediaType: 'video',
+          provider: '',
+          videoUrl: 'https://www.facebook.com/x/videos/123',
+          url: '',
+          alt: '',
+        }]}
+        onChange={() => {}}
+        validationErrors={{ 'gallery.0.videoUrl': 'Source must be replaced' }}
+      />,
+    )
+    expect(screen.getByText('Legacy gallery source must be replaced')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Facebook/i })).not.toBeInTheDocument()
   })
 })

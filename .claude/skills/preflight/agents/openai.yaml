@@ -1,0 +1,4 @@
+interface:
+  display_name: "Preflight"
+  short_description: "Run BigBike pre-PR checks"
+  default_prompt: "Use $preflight to run the right checks for changed BigBike sub-projects and prepare the PR summary."

@@ -8,6 +8,7 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
+import { StickyActionBar } from '../components/layout'
 import { fetchOrderAllowedTransitions, fetchOrderAuditTrail, fetchOrderDetail, updateOrderStatus } from '../lib/adminApi'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { ORDER_STATUS_TONE } from '../lib/statusTone'
@@ -19,7 +20,7 @@ import { useAdminPresence } from '../lib/useAdminPresence'
 import { Button } from '@/components/ui/button'
 import {
   REASON_REQUIRED, addressLine, sameAddress,
-  ORDER_STATUS_ACTION, getOrderStatusLabel,
+  ORDER_STATUS_ACTION, getOrderStatusLabel, getOrderMutationError, getOrderAuditDetails,
 } from './order-detail/constants'
 import { ReasonConfirmModal } from './order-detail/ReasonConfirmModal'
 
@@ -36,30 +37,31 @@ function readListQuery() {
 // N5: khung skeleton phỏng theo bố cục thật (header + action panel + 2 cột card)
 // để tránh dịch chuyển layout (CLS) khi dữ liệu đơn hàng về — cùng cách làm với
 // DashboardScreen.jsx (SkeletonBlock).
-function SkeletonBlock({ height }) {
-  return <div className="bb-skeleton-block" style={{ height }} />
+function SkeletonBlock({ className = '' }) {
+  return <div className={`bb-skeleton-block ${className}`} />
 }
 
-function OrderDetailSkeleton() {
+function OrderDetailSkeleton({ label }) {
   return (
-    <div>
+    <div role="status" aria-busy="true" aria-label={label}>
+      <span className="sr-only">{label}</span>
       <div className="bb-screen-header">
         <div className="bb-screen-title bb-stack-xs">
-          <SkeletonBlock height={28} />
-          <SkeletonBlock height={16} />
+          <SkeletonBlock className="h-7 w-64 max-w-full" />
+          <SkeletonBlock className="h-4 w-48 max-w-full" />
         </div>
       </div>
-      <div className="mb-4"><SkeletonBlock height={84} /></div>
+      <div className="mb-4"><SkeletonBlock className="h-20" /></div>
       <div className="bb-grid-2-1">
         <div className="bb-stack">
-          <SkeletonBlock height={220} />
-          <SkeletonBlock height={140} />
-          <SkeletonBlock height={140} />
+          <SkeletonBlock className="h-56" />
+          <SkeletonBlock className="h-36" />
+          <SkeletonBlock className="h-36" />
         </div>
         <div className="bb-stack">
-          <SkeletonBlock height={180} />
-          <SkeletonBlock height={160} />
-          <SkeletonBlock height={140} />
+          <SkeletonBlock className="h-44" />
+          <SkeletonBlock className="h-40" />
+          <SkeletonBlock className="h-36" />
         </div>
       </div>
     </div>
@@ -99,7 +101,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
     enabled: Boolean(orderId),
   })
 
-  // Live-refresh khi đơn ĐANG XEM có thay đổi (trạng thái/thanh toán/note/refund) đẩy về
+  // Live-refresh khi đơn đang xem có thay đổi trạng thái đẩy về
   // qua WebSocket admin. Chỉ refetch khi event đúng orderId này — tránh refetch thừa.
   useEffect(() => {
     const unsubscribe = subscribeAdminWs('/topic/admin/orders', (event) => {
@@ -112,14 +114,19 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   }, [orderId, queryClient])
 
   const order = orderQuery.data?.item ?? null
-  const warning = ''
-  const status = orderQuery.isLoading ? 'loading' : orderQuery.isError ? 'error' : 'success'
+  const transitionsQuery = useQuery({
+    queryKey: ['order-transitions', orderId, order?.orderStatus],
+    queryFn: () => fetchOrderAllowedTransitions(orderId),
+    enabled: Boolean(canUpdate && orderQuery.isSuccess && order?.orderStatus),
+  })
+  const status = orderQuery.isLoading
+    ? 'loading'
+    : orderQuery.isError && !orderQuery.data
+      ? 'error'
+      : 'success'
 
   const [saving, setSaving] = useState(false)
   const [pendingAction, setPendingAction] = useState(null)
-  const [allowedTransitions, setAllowedTransitions] = useState([])
-  const [transitionsError, setTransitionsError] = useState(false)
-  const [transitionsKey, setTransitionsKey] = useState(0)
   const [reasonModal, setReasonModal] = useState(null)
 
   useUnsavedChanges(false)
@@ -137,23 +144,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
     queryClient.invalidateQueries({ queryKey: ['order-audit', orderId] })
   }
 
-  useEffect(() => {
-    if (!orderQuery.isSuccess || !order?.orderStatus) return undefined
-    let active = true
-    fetchOrderAllowedTransitions(orderId)
-      .then((response) => {
-        if (!active) return
-        setAllowedTransitions(response.transitions || [])
-        setTransitionsError(false)
-      })
-      .catch(() => {
-        if (!active) return
-        setAllowedTransitions([])
-        setTransitionsError(true)
-      })
-    return () => { active = false }
-  }, [orderId, orderQuery.isSuccess, order?.orderStatus, transitionsKey])
-
   async function doStatusChange(newStatus, reason) {
     setSaving(true)
     setPendingAction(`status:${newStatus}`)
@@ -164,7 +154,21 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       toast.success(t('orders.detail.statusUpdated'))
       return true
     } catch (err) {
-      toast.error(err.message || t('orders.detail.updateStatusError'))
+      toast.error(getOrderMutationError(err, t))
+      const errorStatus = Number(err?.status)
+      if (errorStatus === 404) {
+        setReasonModal(null)
+        queryClient.invalidateQueries({ queryKey: ['orders'] })
+        navigate('/admin/orders')
+      } else if (errorStatus === 409) {
+        setReasonModal(null)
+        queryClient.invalidateQueries({ queryKey: ['orders'] })
+        await Promise.allSettled([
+          orderQuery.refetch(),
+          transitionsQuery.refetch(),
+          auditQuery.refetch(),
+        ])
+      }
       return false
     } finally {
       setSaving(false)
@@ -190,11 +194,20 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   }
 
   if (status === 'loading') {
-    return <OrderDetailSkeleton />
+    return <OrderDetailSkeleton label={t('orders.detail.loading')} />
   }
   if (status === 'error') {
+    if (Number(orderQuery.error?.status) === 404) {
+      return <StatePanel tone="neutral" title={t('orders.detail.notFound')} description={`ID: ${orderId}`}
+        actionLabel={t('common.back')} onAction={() => navigate('/admin/orders')} />
+    }
+    if (Number(orderQuery.error?.status) === 403) {
+      return <StatePanel tone="danger" title={t('orders.detail.loadForbidden')}
+        description={t('orders.detail.loadForbiddenDesc')}
+        actionLabel={t('common.back')} onAction={() => navigate('/admin/orders')} />
+    }
     return <StatePanel tone="danger" title={t('orders.detail.loadError')}
-      description={t('orders.detail.loadErrorDesc', { defaultValue: 'Không thể tải chi tiết đơn hàng. Vui lòng thử lại.' })}
+      description={t('orders.detail.loadErrorDesc')}
       actionLabel={t('common.retry')} onAction={() => orderQuery.refetch()} />
   }
   if (!order) {
@@ -202,19 +215,62 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       actionLabel={t('common.back')} onAction={() => navigate('/admin/orders')} />
   }
 
-  // Khoá các nút chuyển trạng thái khi đang lưu HOẶC đang làm mới nền (dữ liệu/allowed
-  // transitions có thể sắp thay) — tránh thao tác dựa trên trạng thái cũ.
-  const actionsBusy = saving || orderQuery.isFetching
+  const allowedTransitions = transitionsQuery.data?.transitions ?? []
+  const transitionsLoading = transitionsQuery.isFetching && !transitionsQuery.data
+  const transitionsError = transitionsQuery.isError
+  // Khoá các nút chuyển trạng thái khi đang lưu hoặc dữ liệu nền đang cập nhật,
+  // tránh thao tác dựa trên trạng thái cũ.
+  const actionsBusy = saving || orderQuery.isFetching || orderQuery.isError || transitionsLoading
 
-  // T18: 3 nhóm hành động trong vùng "Việc cần làm tiếp" — tách rõ để khi CẢ BA đều
-  // rỗng (vd đơn đã hủy/hoàn thành) hiện trạng thái "quiet" thay vì khối cảnh báo to.
   const orderProgressTransitions = allowedTransitions.filter((status) => status !== 'CANCELLED')
-  const hasOrderGroup = orderProgressTransitions.length > 0 || transitionsError
-  const canCancelOrder = allowedTransitions.includes('CANCELLED')
+  const hasOrderGroup = orderProgressTransitions.length > 0 || transitionsLoading || transitionsError
+  const canCancelOrder = !transitionsError && allowedTransitions.includes('CANCELLED')
   const hasAnyAction = hasOrderGroup || canCancelOrder
+  const useMobileStickyActions = hasAnyAction && !transitionsLoading && !transitionsError
+  const paymentMethodLabel = order.paymentMethod
+    ? t(`status.paymentMethod.${order.paymentMethod}`, { defaultValue: t('common.unknown') })
+    : formatText()
+
+  function renderProgressAction(targetStatus, keyPrefix = '') {
+    const cfg = ORDER_STATUS_ACTION[targetStatus] ?? { variant: 'secondary' }
+    const isPrimary = cfg.variant === 'primary' || cfg.variant === 'success'
+    const isPending = pendingAction === `status:${targetStatus}`
+    return (
+      <Button
+        key={`${keyPrefix}${targetStatus}`}
+        type="button"
+        variant={isPrimary ? 'default' : 'secondary'}
+        className="min-h-11"
+        disabled={actionsBusy}
+        aria-busy={isPending}
+        onClick={() => handleStatusChange(targetStatus)}
+      >
+        {isPending
+          ? t('orders.detail.savingShort')
+          : <><ArrowRight size={14} aria-hidden="true" />{getOrderStatusLabel(targetStatus, order, t)}</>}
+      </Button>
+    )
+  }
+
+  function renderCancelAction(keyPrefix = '') {
+    const isPending = pendingAction === 'status:CANCELLED'
+    return (
+      <Button
+        key={`${keyPrefix}CANCELLED`}
+        type="button"
+        variant="ghost"
+        className="min-h-11 text-danger"
+        disabled={actionsBusy}
+        aria-busy={isPending}
+        onClick={() => handleStatusChange('CANCELLED')}
+      >
+        {isPending ? t('orders.detail.savingShort') : getOrderStatusLabel('CANCELLED', order, t)}
+      </Button>
+    )
+  }
 
   return (
-    <div>
+    <div className={useMobileStickyActions ? 'pb-32 md:pb-0' : undefined}>
       <div className="bb-screen-header">
         <div className="bb-screen-title">
           <h1 className="bb-heading-inline">
@@ -223,23 +279,42 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
               {formatText(order.orderNumber, `#${orderId}`)}
             </span>
           </h1>
-          <p className="bb-muted">
-            {t('orders.detail.orderDate')} {formatDateTime(order.createdAt)}
-            {' · '}{t('orders.detail.paymentMethod')} <span className="mono">{t(`status.paymentMethod.${order.paymentMethod}`, { defaultValue: formatText(order.paymentMethod) })}</span>
-          </p>
+          <dl className="bb-muted flex flex-wrap items-center gap-x-4 gap-y-1">
+            <div className="flex items-center gap-1">
+              <dt>{t('orders.detail.orderDate')}</dt>
+              <dd>{formatDateTime(order.createdAt)}</dd>
+            </div>
+            <div className="flex items-center gap-1">
+              <dt>{t('orders.detail.paymentMethod')}</dt>
+              <dd className="mono">{paymentMethodLabel}</dd>
+            </div>
+          </dl>
         </div>
         <div className="bb-screen-actions">
-          <Button type="button" variant="secondary" onClick={() => navigate(`/admin/orders${readListQuery()}`)}>
+          <Button type="button" variant="secondary" className="min-h-11" onClick={() => navigate(`/admin/orders${readListQuery()}`)}>
             {t('orders.detail.backToList')}
           </Button>
         </div>
       </div>
 
-      {warning && <ReadOnlyBanner warning={warning} />}
+      {!canUpdate ? <ReadOnlyBanner warning={t('orders.readOnlyWarning')} /> : null}
+
+      {orderQuery.isError && orderQuery.data ? (
+        <Alert tone="danger" size="sm" className="mb-4 flex flex-wrap items-center justify-between gap-3" role="alert">
+          <span>{t('orders.detail.refreshError')}</span>
+          <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={() => orderQuery.refetch()}>
+            {t('common.retry')}
+          </Button>
+        </Alert>
+      ) : orderQuery.isFetching && !orderQuery.isLoading ? (
+        <Alert tone="info" size="sm" className="mb-4" role="status">
+          {t('orders.refreshing')}
+        </Alert>
+      ) : null}
 
       {hasOtherAdmin ? (
         <Alert tone="warning" size="sm" className="mb-4">
-          {t('presence.otherAdminOrder', { defaultValue: 'Có quản trị viên khác đang mở đơn này. Hãy kiểm tra dữ liệu trước khi lưu.' })}
+          {t('orders.detail.otherAdminPresent')}
         </Alert>
       ) : null}
 
@@ -262,7 +337,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
         return (
           <div className="bb-status-summary">
             {tiles}
-            <div className="bb-actionzone">
+            <div className={`bb-actionzone ${useMobileStickyActions ? 'hide-on-mobile' : ''}`}>
               {!hasAnyAction ? (
                 <div className="bb-actionzone-quiet">
                   <span className="dot" aria-hidden="true" />
@@ -276,27 +351,20 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     <div className="bb-actionzone-group">
                       <div className="bb-actionzone-group-label">{t('orders.detail.orderStatus')}</div>
                       <div className="bb-actionzone-actions">
-                        {orderProgressTransitions.map((status) => {
-                          const cfg = ORDER_STATUS_ACTION[status] ?? { variant: 'secondary' }
-                          const isPrimary = cfg.variant === 'primary' || cfg.variant === 'success'
-                          const isPending = pendingAction === `status:${status}`
-                          return (
-                            <Button
-                              key={status}
-                              type="button"
-                              variant={isPrimary ? 'default' : 'secondary'}
-                              disabled={actionsBusy}
-                              onClick={() => handleStatusChange(status)}
-                            >
-                              {isPending ? t('orders.detail.savingShort') : <><ArrowRight size={14} aria-hidden="true" />{getOrderStatusLabel(status, order, t)}</>}
+                        {transitionsLoading ? (
+                          <span role="status" className="bb-muted">{t('orders.detail.loadingActions')}</span>
+                        ) : null}
+                        {transitionsError ? (
+                          <>
+                            <span role="alert" className="text-danger">{t('orders.detail.transitionsLoadError')}</span>
+                            <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={() => transitionsQuery.refetch()}>
+                              {t('common.retry')}
                             </Button>
-                          )
-                        })}
-                        {transitionsError && (
-                          <Button type="button" variant="ghost" size="sm" onClick={() => setTransitionsKey((key) => key + 1)}>
-                            {t('common.retry')}
-                          </Button>
-                        )}
+                          </>
+                        ) : null}
+                        {!transitionsLoading && !transitionsError
+                          ? orderProgressTransitions.map((targetStatus) => renderProgressAction(targetStatus))
+                          : null}
                       </div>
                     </div>
                   )}
@@ -305,18 +373,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     <div className="bb-actionzone-group">
                       <div className="bb-actionzone-group-label">{t('orders.detail.otherActions')}</div>
                       <div className="bb-actionzone-actions">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="text-danger"
-                          disabled={actionsBusy}
-                          onClick={() => handleStatusChange('CANCELLED')}
-                        >
-                          {pendingAction === 'status:CANCELLED'
-                            ? t('orders.detail.savingShort')
-                            : getOrderStatusLabel('CANCELLED', order, t)}
-                        </Button>
+                        {renderCancelAction()}
                       </div>
                     </div>
                   )}
@@ -343,6 +400,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                 <div className="hide-on-mobile">
                 <div className="bb-table-wrap">
                   <table className="bb-table">
+                    <caption className="sr-only">{t('orders.detail.items')}</caption>
                     <thead>
                       <tr>
                         <th>{t('orders.detail.colProduct')}</th>
@@ -409,6 +467,18 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                       <dd className="text-danger">-{formatCurrencyVnd(order.discount)}</dd>
                     </>
                   )}
+                  {order.feeAmount > 0 && (
+                    <>
+                      <dt>{t('orders.detail.feeAmount')}</dt>
+                      <dd>{formatCurrencyVnd(order.feeAmount)}</dd>
+                    </>
+                  )}
+                  {order.taxAmount > 0 && (
+                    <>
+                      <dt>{t('orders.detail.taxAmount')}</dt>
+                      <dd>{formatCurrencyVnd(order.taxAmount)}</dd>
+                    </>
+                  )}
                   <dt className="bb-total-label">{t('orders.detail.total')}</dt>
                   <dd className="bb-total-value">
                     {formatCurrencyVnd(order.total)}
@@ -431,6 +501,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                 <div className="hide-on-mobile">
                 <div className="bb-table-wrap">
                   <table className="bb-table">
+                    <caption className="sr-only">{t('orders.detail.payments')}</caption>
                     <thead>
                       <tr>
                         <th>{t('orders.detail.colPaymentMethod')}</th>
@@ -442,8 +513,12 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     <tbody>
                       {(order.payments ?? []).map((p, i) => (
                         <tr key={p.id ?? i}>
-                          <td className="mono">{t(`status.paymentMethod.${p.paymentMethod}`, { defaultValue: formatText(p.paymentMethod) })}</td>
-                          <td>{t(`status.paymentRecord.${p.status}`, { defaultValue: p.status })}</td>
+                          <td className="mono">
+                            {p.paymentMethod
+                              ? t(`status.paymentMethod.${p.paymentMethod}`, { defaultValue: t('common.unknown') })
+                              : formatText()}
+                          </td>
+                          <td>{p.status ? t(`status.paymentRecord.${p.status}`, { defaultValue: t('common.unknown') }) : t('common.unknown')}</td>
                           <td className="num">{formatCurrencyVnd(p.amount)}</td>
                           <td className="num bb-muted">{p.paidAt ? formatDateTime(p.paidAt) : '—'}</td>
                         </tr>
@@ -456,11 +531,18 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                   {(order.payments ?? []).map((p, i) => (
                     <MobileCard
                       key={p.id ?? i}
-                      title={t(`status.paymentMethod.${p.paymentMethod}`, { defaultValue: formatText(p.paymentMethod) })}
+                      title={p.paymentMethod
+                        ? t(`status.paymentMethod.${p.paymentMethod}`, { defaultValue: t('common.unknown') })
+                        : formatText()}
                       subtitle={p.paidAt ? formatDateTime(p.paidAt) : undefined}
                       meta={[
                         { label: t('orders.detail.colAmount'), value: formatCurrencyVnd(p.amount), tone: 'strong' },
-                        { label: t('orders.detail.colPaymentRecordStatus'), value: t(`status.paymentRecord.${p.status}`, { defaultValue: p.status }) },
+                        {
+                          label: t('orders.detail.colPaymentRecordStatus'),
+                          value: p.status
+                            ? t(`status.paymentRecord.${p.status}`, { defaultValue: t('common.unknown') })
+                            : t('common.unknown'),
+                        },
                       ]}
                     />
                   ))}
@@ -484,7 +566,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                   ) : auditQuery.isError ? (
                     <div className="flex items-center gap-3 flex-wrap">
                       <p className="bb-muted m-0">{t('orders.audit.error')}</p>
-                      <Button type="button" variant="ghost" size="sm" onClick={() => auditQuery.refetch()}>
+                      <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={() => auditQuery.refetch()}>
                         {t('common.retry')}
                       </Button>
                     </div>
@@ -492,19 +574,33 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     <p className="bb-muted">{t('orders.audit.empty')}</p>
                   ) : (
                     <ul className="bb-list-clean">
-                      {(auditQuery.data ?? []).map((entry, i) => (
-                        <li key={entry.id ?? i} className="bb-list-item">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="bb-list-title">
-                              {t(`orders.audit.action.${entry.action}`, { defaultValue: entry.action })}
-                            </span>
-                            <span className="bb-muted">{entry.createdAt ? formatDateTime(entry.createdAt) : ''}</span>
-                          </div>
-                          <div className="bb-list-meta">
-                            {t(`orders.audit.actor.${entry.actorType}`, { defaultValue: entry.actorType })}{entry.ipAddress ? ` · ${entry.ipAddress}` : ''}
-                          </div>
-                        </li>
-                      ))}
+                      {(auditQuery.data ?? []).map((entry, i) => {
+                        const details = getOrderAuditDetails(entry, t)
+                        return (
+                          <li key={entry.id ?? i} className="bb-list-item">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="bb-list-title">
+                                {entry.action
+                                  ? t(`orders.audit.action.${entry.action}`, { defaultValue: t('common.unknown') })
+                                  : t('common.unknown')}
+                              </span>
+                              <span className="bb-muted">{entry.createdAt ? formatDateTime(entry.createdAt) : ''}</span>
+                            </div>
+                            <div className="bb-list-meta">
+                              {entry.actorType
+                                ? t(`orders.audit.actor.${entry.actorType}`, { defaultValue: t('common.unknown') })
+                                : t('common.unknown')}
+                              {entry.ipAddress ? ` · ${entry.ipAddress}` : ''}
+                            </div>
+                            {details.transition ? <div className="bb-list-meta">{details.transition}</div> : null}
+                            {details.cancelReason ? (
+                              <div className="bb-list-meta">
+                                {t('orders.audit.cancelReason', { reason: details.cancelReason })}
+                              </div>
+                            ) : null}
+                          </li>
+                        )
+                      })}
                     </ul>
                   )}
                 </div>
@@ -522,10 +618,10 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
               <dl className="bb-info-grid">
                 <dt>{t('orders.detail.name')}</dt><dd>{formatText(order.customerName)}</dd>
                 <dt>{t('orders.detail.email')}</dt><dd>{formatText(order.customerEmail)}</dd>
+                <dt>{t('orders.detail.phone')}</dt>
+                <dd>{formatText(order.shippingAddress?.phone || order.customerPhone)}</dd>
                 {order.shippingAddress && (
                   <>
-                    <dt>{t('orders.detail.phone')}</dt>
-                    <dd>{formatText(order.shippingAddress.phone)}</dd>
                     <dt>{t('orders.detail.address')}</dt>
                     <dd>{addressLine(order.shippingAddress) || '—'}</dd>
                   </>
@@ -560,12 +656,20 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                 {order.completedAt && (<><dt>{t('orders.detail.tsCompletedAt')}</dt><dd>{formatDateTime(order.completedAt)}</dd></>)}
                 {order.cancelledAt && (<><dt>{t('orders.detail.tsCancelledAt')}</dt><dd>{formatDateTime(order.cancelledAt)}</dd></>)}
                 {order.cancelReason && (<><dt>{t('orders.detail.cancelReasonLabel')}</dt><dd>{order.cancelReason}</dd></>)}
-                {order.updatedAt && (<><dt>{t('orders.detail.tsUpdatedAt')}</dt><dd>{formatDateTime(order.updatedAt)}</dd></>)}
               </dl>
             </div>
           </div>
         </div>
       </div>
+
+      {canUpdate && useMobileStickyActions ? (
+        <div className="show-on-mobile fixed inset-x-0 bottom-4 z-40 bg-background pb-[env(safe-area-inset-bottom)] [&_.sticky-action-bar]:m-0">
+          <StickyActionBar ariaLabel={t('orders.detail.mobileActionsLabel')}>
+            {orderProgressTransitions.map((targetStatus) => renderProgressAction(targetStatus, 'mobile-'))}
+            {canCancelOrder ? renderCancelAction('mobile-') : null}
+          </StickyActionBar>
+        </div>
+      ) : null}
 
       {reasonModal && (
         <ReasonConfirmModal

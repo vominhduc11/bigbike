@@ -1571,11 +1571,16 @@ a {
 
 /* ─── Category tree view ─────────────────────────────────────────────────── */
 
-.cat-tree-wrap { margin-top: var(--admin-space-3); }
+.cat-tree-wrap { margin-top: var(--admin-space-4); }
 
 /* min-width keeps the fixed-layout columns legible on mobile: instead of
    crushing 6-7 columns, the parent .table-scroll-wrap (overflow-x:auto) scrolls. */
-.cat-tree-table { width: 100%; min-width: 760px; border-collapse: collapse; table-layout: fixed; }
+.cat-tree-table {
+  width: 100%;
+  min-width: 960px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
 .cat-tree-table th,
 .cat-tree-table td {
   padding: var(--admin-space-2) var(--admin-space-3);
@@ -1592,8 +1597,11 @@ a {
 }
 .cat-tree-table th {
   background: var(--admin-color-surface-muted);
-  font-weight: 600;
-  color: var(--admin-color-text-secondary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--admin-color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   position: sticky;
   /* Default: stick to viewport top.
      also sticky at top:0 it would otherwise overlap the header — so the
@@ -1614,22 +1622,22 @@ a {
 .cat-tree-table .align-right { text-align: right; }
 
 /* #14: column widths khi tree-mode (5 cột: name, desc, visibility, updated, actions) */
-.cat-tree-table.cat-table-tree col.col-name      { width: 40%; }
-.cat-tree-table.cat-table-tree col.col-desc      { width: 25%; }
-.cat-tree-table.cat-table-tree col.col-vis       { width: 15%; }
-.cat-tree-table.cat-table-tree col.col-updated   { width: 12%; }
-.cat-tree-table.cat-table-tree col.col-actions   { width: 8%; }
+.cat-tree-table.cat-table-tree col.col-name      { width: 38%; }
+.cat-tree-table.cat-table-tree col.col-desc      { width: 22%; }
+.cat-tree-table.cat-table-tree col.col-vis       { width: 170px; }
+.cat-tree-table.cat-table-tree col.col-updated   { width: 150px; }
+.cat-tree-table.cat-table-tree col.col-actions   { width: 156px; }
 
 /* #14: column widths khi flat-mode (6 cột: thêm sortOrder) */
-.cat-tree-table.cat-table-flat col.col-name      { width: 34%; }
-.cat-tree-table.cat-table-flat col.col-desc      { width: 23%; }
-.cat-tree-table.cat-table-flat col.col-vis       { width: 15%; }
-.cat-tree-table.cat-table-flat col.col-sort      { width: 7%; }
-.cat-tree-table.cat-table-flat col.col-updated   { width: 13%; }
-.cat-tree-table.cat-table-flat col.col-actions   { width: 8%; }
+.cat-tree-table.cat-table-flat col.col-name      { width: 32%; }
+.cat-tree-table.cat-table-flat col.col-desc      { width: 21%; }
+.cat-tree-table.cat-table-flat col.col-vis       { width: 170px; }
+.cat-tree-table.cat-table-flat col.col-sort      { width: 96px; }
+.cat-tree-table.cat-table-flat col.col-updated   { width: 150px; }
+.cat-tree-table.cat-table-flat col.col-actions   { width: 156px; }
 
 /* Khi có checkbox thêm 1 cột select đầu tiên */
-.cat-tree-table col.col-select { width: 40px; }
+.cat-tree-table col.col-select { width: 48px; }
 
 /* #16: chỉ làm nhợt text/image/badge — không nhợt button + checkbox */
 /* A2: dùng màu chữ muted (contrast ~4.83:1, đạt AA) thay vì opacity trên màu đậm (opacity 0.55 chỉ ~3.96:1) */
@@ -1646,17 +1654,18 @@ a {
 }
 
 .cat-select-cell {
-  width: 40px;
+  width: 48px;
   text-align: center;
   vertical-align: middle;
   padding-left: var(--admin-space-2);
-  padding-right: 0;
+  padding-right: var(--admin-space-2);
 }
 /* #5: bulk action bar sticky dưới sticky header. + #15: fade-in mượt */
 .cat-name-cell {
   display: flex;
   align-items: center;
   gap: var(--admin-space-2);
+  min-width: 0;
 }
 
 /* Tên là button — trông như link, không như button */
@@ -1710,7 +1719,7 @@ a {
 .cat-expand-btn.is-open svg { transform: rotate(90deg); }
 .cat-expand-spacer { display: inline-block; width: 22px; flex-shrink: 0; }
 
-.thumbnail-wrap--sm { width: 36px; height: 36px; flex-shrink: 0; }
+.thumbnail-wrap--sm { width: 40px; height: 40px; flex-shrink: 0; }
 .thumbnail-wrap--sm img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--admin-radius-thumb); }
 .thumbnail-placeholder {
   display: flex; align-items: center; justify-content: center;

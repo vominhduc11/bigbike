@@ -5,7 +5,7 @@ import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
-import { ChevronRight, Copy, ExternalLink, Eye, EyeOff, GripVertical, ImageOff, MoreHorizontal, Pencil, Plus, Trash2, Undo2 } from 'lucide-react'
+import { ChevronRight, Copy, ExternalLink, Eye, EyeOff, GripVertical, ImageOff, MoreHorizontal, Pencil, Plus, RefreshCw, Trash2, Undo2 } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -48,7 +48,7 @@ import {
 } from './category-list/constants'
 import { CategoryEmptyState } from './category-list/CategoryEmptyState'
 import { CategoryFlatTableHead, CategoryTreeTableHead } from './category-list/CategoryTableHead'
-import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
+import { FilterBar, MobileCardList, MobileCard, Screen, ScreenHeader } from '../components/layout'
 
 // Wrap matched substring(s) in <mark> for live search highlighting.
 function highlightMatch(text, term) {
@@ -127,6 +127,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   const {
     data: allCatsResult,
     isError: isTreeError,
+    isFetching: isTreeFetching,
     error: treeError,
     refetch: refetchTree,
   } = useQuery({
@@ -612,7 +613,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     }
   }
 
-  const useTreeMode = isTreeShape && treeRows.length > 0
+  const useTreeMode = isTreeShape && !isTreeError
 
   // In tree mode:
   //   - With no search: show every node whose ancestors are all expanded.
@@ -811,7 +812,6 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   // Kéo-thả sắp xếp vẫn chỉ ở desktop; mobile hiển thị dạng danh sách phẳng.
   const mobileCategoryCard = (category) => {
     const breadcrumb = breadcrumbMap.get(category.id) || category.name
-    const descText = stripHtml(category.description)
     return (
       <MobileCard
         key={category.id}
@@ -825,8 +825,8 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           </span>
         )}
         meta={[
-          { label: t('categories.colDescription'), value: descText || <span className="bb-muted">—</span> },
           { label: t('categories.colUpdated'), value: formatDateTime(category.updatedAt) },
+          { label: t('categories.colSortOrder'), value: category.sortOrder ?? <span className="bb-muted">—</span> },
         ]}
         onClick={() => navigate(`/admin/categories/${category.id}`)}
         selectable={canUpdate && category.id !== 'uncategorized'}
@@ -1025,6 +1025,21 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     })
   }
 
+  const hasActiveFilters = activeFilterChips.length > 0
+  const isRefreshing = useTreeMode ? isTreeFetching : paginatedState.isFetching
+  const resultSummary = useTreeMode
+    ? t('categories.resultSummaryTree', {
+      shown: visibleTreeRows.length,
+      total: allItems.length,
+      defaultValue: `${visibleTreeRows.length}/${allItems.length} danh mục`,
+    })
+    : flatModeStatus === 'success'
+      ? t('categories.resultSummaryFlat', {
+        count: paginatedState.pagination?.totalItems ?? flatItems.length,
+        defaultValue: `${paginatedState.pagination?.totalItems ?? flatItems.length} danh mục`,
+      })
+      : ''
+
   const resultAnnounce = useTreeMode
     ? t('categories.resultsAnnounceTree', {
       shown: visibleTreeRows.length,
@@ -1039,23 +1054,18 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       : ''
 
   return (
-    <div>
-      <div className="bb-screen-header">
-        <div className="bb-screen-title">
-          <p className="bb-screen-eyebrow">{t('categories.eyebrow')}</p>
-          <h1>{t('categories.title')}</h1>
-          <p className="bb-muted">{t('categories.description')}</p>
-        </div>
-        <div className="bb-screen-actions">
-          <Button
-            type="button"
-            onClick={() => navigate('/admin/categories/new')}
-            disabled={!canUpdate}
-          >
-            <Plus size={14} />{canUpdate ? t('categories.create') : t('common.noPermission')}
+    <Screen>
+      <ScreenHeader
+        eyebrow={t('categories.eyebrow')}
+        title={t('categories.title')}
+        description={t('categories.description')}
+        actions={canUpdate ? (
+          <Button type="button" className="min-h-11" onClick={() => navigate('/admin/categories/new')}>
+            <Plus size={16} aria-hidden="true" />
+            {t('categories.create')}
           </Button>
-        </div>
-      </div>
+        ) : null}
+      />
 
       {/* O9 — Vừa xem gần đây */}
       <RecentItemsChips items={recentCategoryItems} onSelect={(item) => navigate(`/admin/categories/${item.id}`)} />
@@ -1066,44 +1076,12 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           ? <ReadOnlyBanner warning={paginatedState.warning} />
           : null}
 
-      {/* T3: chuyển đổi cây↔danh sách trước đây tự động theo filter Trạng thái
-          hiển thị/Sắp xếp, khiến phân trang xuất hiện/biến mất không rõ lý do.
-          Segmented control này biến việc đó thành lựa chọn tường minh: bấm
-          "Dạng danh sách" tự set sort sang updatedAt:desc (thoát khỏi điều
-          kiện cây), bấm "Dạng cây" reset lại visibility/sort mặc định. */}
-      <div
-        className="bb-seg mb-3"
-        role="tablist"
-        aria-label={t('categories.viewModeAria')}
-      >
-        <Button variant="unstyled"
-          type="button"
-          role="tab"
-          aria-selected={useTreeMode}
-          disabled={query.deleted}
-          title={query.deleted ? t('categories.viewModeTreeUnavailableTrash') : undefined}
-          className={useTreeMode ? 'active' : undefined}
-          onClick={() => updateQuery({ visibility: 'ALL', sort: 'sortOrder:asc' }, { resetPage: true })}
-        >
-          {t('categories.viewModeTree')}
-        </Button>
-        <Button variant="unstyled"
-          type="button"
-          role="tab"
-          aria-selected={!useTreeMode}
-          className={!useTreeMode ? 'active' : undefined}
-          onClick={() => updateQuery({ sort: 'updatedAt:desc' }, { resetPage: true })}
-        >
-          {t('categories.viewModeFlat')}
-        </Button>
-      </div>
-
       {/* N2: query cây lỗi trước đây bị nuốt im lặng — rơi vĩnh viễn về "Dạng
           danh sách" không cảnh báo, và bấm lại tab "Dạng cây" không refetch.
           Hiện rõ lỗi + nút "Thử lại" gọi đúng refetch của query cây (không
           nhầm với paginatedState.refetch() của chế độ danh sách phẳng). */}
       {isTreeError && (
-        <Alert tone="danger" size="sm" className="mb-3">
+        <Alert tone="danger" size="sm" className="mt-4">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <span>
               {t('categories.treeLoadError', { defaultValue: 'Không tải được cây danh mục.' })}
@@ -1116,12 +1094,13 @@ export function CategoryListScreen({ navigate, canUpdate }) {
         </Alert>
       )}
 
-      <div className="bb-filter-bar">
+      <FilterBar ariaLabel={t('categories.filterAria', { defaultValue: 'Bộ lọc danh mục' })} className="mt-4">
         <FilterSearchInput
           value={searchInput}
           onChange={setSearchInput}
           placeholder={t('categories.searchPlaceholder')}
-          wrapperClassName="flex-1 min-w-56"
+          ariaLabel={t('categories.searchPlaceholder')}
+          wrapperClassName="min-w-64 flex-1"
         />
         <FilterSelect
           value={query.deleted ? 'TRASH' : 'ACTIVE'}
@@ -1159,25 +1138,65 @@ export function CategoryListScreen({ navigate, canUpdate }) {
             onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
           />
         )}
-        {useTreeMode && (
-          <div className="ml-auto flex items-center gap-2">
-            {/* Chế độ cây ẩn phân trang nên không có tổng số bản ghi; hiện
-                tổng số danh mục để admin vẫn biết quy mô dữ liệu (tiêu chí 6.3). */}
-            <span className="bb-muted text-xs">
-              {t('categories.treeTotalCount', { count: allItems.length, defaultValue: `${allItems.length} danh mục` })}
-            </span>
-            <div className="flex gap-1">
-              <Button type="button" variant="ghost" size="sm" onClick={expandAll}>
-                {t('categories.expandAll')}
-              </Button>
-              <Button type="button" variant="ghost" size="sm" onClick={collapseAll}>
-                {t('categories.collapseAll')}
-              </Button>
-            </div>
+        <div className="flex min-w-full flex-wrap items-center gap-3 border-t border-border pt-3">
+          <div
+            className="bb-seg"
+            role="tablist"
+            aria-label={t('categories.viewModeAria')}
+          >
+            <Button
+              variant="unstyled"
+              type="button"
+              role="tab"
+              aria-selected={isTreeShape}
+              disabled={query.deleted}
+              title={query.deleted ? t('categories.viewModeTreeUnavailableTrash') : undefined}
+              className={isTreeShape ? 'active' : undefined}
+              onClick={() => updateQuery({ visibility: 'ALL', sort: 'sortOrder:asc' }, { resetPage: true })}
+            >
+              {t('categories.viewModeTree')}
+            </Button>
+            <Button
+              variant="unstyled"
+              type="button"
+              role="tab"
+              aria-selected={!isTreeShape}
+              className={!isTreeShape ? 'active' : undefined}
+              onClick={() => updateQuery({ sort: 'updatedAt:desc' }, { resetPage: true })}
+            >
+              {t('categories.viewModeFlat')}
+            </Button>
           </div>
-        )}
-        <ColumnVisibilityToggle allColumns={allColumnDefs} hiddenKeys={hiddenColumnKeys} onToggle={toggleColumn} />
-      </div>
+          {resultSummary ? (
+            <span className="text-sm text-muted-foreground" role="status" aria-live="polite">
+              {resultSummary}
+            </span>
+          ) : null}
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            {useTreeMode ? (
+              <>
+                <Button type="button" variant="secondary" size="sm" onClick={expandAll}>
+                  {t('categories.expandAll')}
+                </Button>
+                <Button type="button" variant="secondary" size="sm" onClick={collapseAll}>
+                  {t('categories.collapseAll')}
+                </Button>
+              </>
+            ) : null}
+            <ColumnVisibilityToggle allColumns={allColumnDefs} hiddenKeys={hiddenColumnKeys} onToggle={toggleColumn} />
+            <Button
+              type="button"
+              variant="secondary"
+              className="min-h-9"
+              disabled={isRefreshing}
+              onClick={() => (useTreeMode ? refetchTree() : paginatedState.refetch())}
+            >
+              <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : undefined} aria-hidden="true" />
+              {t('common.refresh', { defaultValue: 'Làm mới' })}
+            </Button>
+          </div>
+        </div>
+      </FilterBar>
 
       {/* Active filter chips. Visible only when at least one filter
           differs from the default — gives users a quick way to see and
@@ -1240,23 +1259,29 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       {useTreeMode && (
         <div className="cat-tree-wrap">
           {allCatsResult == null ? (
-            <div className="bb-card">
-              <div className="bb-card-body bb-card-body--flush">
-                <div className="table-scroll-wrap">
-                  <table className="admin-table cat-tree-table cat-table-tree" aria-busy="true">
-                    <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenColumnKeys} />
-                    <tbody>
-                      {Array.from({ length: 8 }).map((_, i) => (
-                        <tr key={i} className="skel-row">
-                          {Array.from({ length: (canUpdate ? 6 : 5) - hiddenColumnKeys.length }).map((__, j) => (
-                            <td key={j}><span className="bb-skel w-4/5 h-5" /></td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+            <div className="overflow-hidden rounded-md border border-border bg-surface">
+              <div className="table-scroll-wrap hide-on-mobile">
+                <table className="admin-table cat-tree-table cat-table-tree" aria-busy="true">
+                  <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenColumnKeys} />
+                  <tbody>
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <tr key={i} className="skel-row">
+                        {Array.from({ length: (canUpdate ? 6 : 5) - hiddenColumnKeys.length }).map((__, j) => (
+                          <td key={j}><span className="bb-skel w-4/5 h-5" /></td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
+              <MobileCardList className="p-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <li key={i} className="mobile-card animate-pulse">
+                    <div className="h-4 w-1/2 rounded-xs bg-surface-muted" />
+                    <div className="h-3 w-3/4 rounded-xs bg-surface-muted" />
+                  </li>
+                ))}
+              </MobileCardList>
             </div>
           ) : visibleTreeRows.length === 0 ? (
             <CategoryEmptyState
@@ -1267,36 +1292,34 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               onCreate={() => navigate('/admin/categories/new')}
             />
           ) : (
-            <div className="bb-card">
-              <div className="bb-card-body bb-card-body--flush">
-                <div className="table-scroll-wrap hide-on-mobile">
-                  <DndContext
-                    sensors={dndSensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
+            <div className="overflow-hidden rounded-md border border-border bg-surface">
+              <div className="table-scroll-wrap hide-on-mobile">
+                <DndContext
+                  sensors={dndSensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={visibleTreeRows.map((r) => r.id)}
+                    strategy={verticalListSortingStrategy}
                   >
-                    <SortableContext
-                      items={visibleTreeRows.map((r) => r.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <table className="admin-table cat-tree-table cat-table-tree">
-                        <caption className="sr-only">{t('categories.tableCaption')}</caption>
-                        <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenColumnKeys} />
-                        <tbody>
-                          {visibleTreeRows.map((row) =>
-                            canUpdate && !searchTerm
-                              ? <SortableTreeRow key={row.id} category={row} depth={row._depth} renderCategoryRow={renderCategoryRow} />
-                              : renderCategoryRow(row, row._depth)
-                          )}
-                        </tbody>
-                      </table>
-                    </SortableContext>
-                  </DndContext>
-                </div>
-                <MobileCardList>
-                  {visibleTreeRows.map((cat) => mobileCategoryCard(cat))}
-                </MobileCardList>
+                    <table className="admin-table cat-tree-table cat-table-tree">
+                      <caption className="sr-only">{t('categories.tableCaption')}</caption>
+                      <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenColumnKeys} />
+                      <tbody>
+                        {visibleTreeRows.map((row) =>
+                          canUpdate && !searchTerm
+                            ? <SortableTreeRow key={row.id} category={row} depth={row._depth} renderCategoryRow={renderCategoryRow} />
+                            : renderCategoryRow(row, row._depth)
+                        )}
+                      </tbody>
+                    </table>
+                  </SortableContext>
+                </DndContext>
               </div>
+              <MobileCardList className="p-3">
+                {visibleTreeRows.map((cat) => mobileCategoryCard(cat))}
+              </MobileCardList>
             </div>
           )}
         </div>
@@ -1312,55 +1335,72 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               description={paginatedState.error || t('common.unknownError')}
               actionLabel={t('common.retry')}
               onAction={() => paginatedState.refetch()}
+              className="mt-4"
             />
           ) : null}
 
           {flatModeStatus === 'success' && flatItems.length === 0 ? (
             <StatePanel
               tone="neutral"
-              title={t('categories.empty')}
-              description={t('categories.emptyDesc')}
-              actionLabel={t('common.resetFilters')}
-              onAction={resetFilters}
+              title={hasActiveFilters
+                ? t('categories.emptyFiltered', { defaultValue: 'Không có danh mục phù hợp' })
+                : t('categories.empty')}
+              description={hasActiveFilters
+                ? t('categories.emptyFilteredDesc', { defaultValue: 'Hãy đổi từ khóa hoặc bộ lọc để xem kết quả khác.' })
+                : t('categories.emptyDesc')}
+              actionLabel={hasActiveFilters ? t('common.resetFilters') : canUpdate ? t('categories.create') : undefined}
+              onAction={hasActiveFilters ? resetFilters : canUpdate ? () => navigate('/admin/categories/new') : undefined}
+              className="mt-4"
             />
           ) : null}
 
           {flatModeStatus === 'loading' || (flatModeStatus === 'success' && flatItems.length > 0) ? (
-            <div className="bb-card">
-              <div className="bb-card-body bb-card-body--flush">
-                <div className="table-scroll-wrap hide-on-mobile">
-                  <table className="admin-table cat-tree-table cat-table-flat">
-                    <caption className="sr-only">{t('categories.tableCaption')}</caption>
-                    <CategoryFlatTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenColumnKeys} />
-                    <tbody>
-                      {flatModeStatus === 'loading'
-                        ? Array.from({ length: query.pageSize }).map((_, i) => (
-                            <tr key={i} className="skel-row">
-                              {Array.from({ length: (canUpdate ? 7 : 6) - hiddenColumnKeys.length }).map((__, j) => (
-                                <td key={j}><span className="bb-skel w-4/5 h-5" /></td>
-                              ))}
-                            </tr>
-                          ))
-                        : flatItems.map((cat) => renderCategoryRow(cat, 0))}
-                    </tbody>
-                  </table>
-                </div>
-                {flatModeStatus === 'success' && flatItems.length > 0 && (
-                  <MobileCardList>
-                    {flatItems.map((cat) => mobileCategoryCard(cat))}
-                  </MobileCardList>
-                )}
+            <div className="mt-4 overflow-hidden rounded-md border border-border bg-surface">
+              <div className="table-scroll-wrap hide-on-mobile">
+                <table className="admin-table cat-tree-table cat-table-flat">
+                  <caption className="sr-only">{t('categories.tableCaption')}</caption>
+                  <CategoryFlatTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenColumnKeys} />
+                  <tbody>
+                    {flatModeStatus === 'loading'
+                      ? Array.from({ length: query.pageSize }).map((_, i) => (
+                          <tr key={i} className="skel-row">
+                            {Array.from({ length: (canUpdate ? 7 : 6) - hiddenColumnKeys.length }).map((__, j) => (
+                              <td key={j}><span className="bb-skel w-4/5 h-5" /></td>
+                            ))}
+                          </tr>
+                        ))
+                      : flatItems.map((cat) => renderCategoryRow(cat, 0))}
+                  </tbody>
+                </table>
               </div>
+              {flatModeStatus === 'loading' ? (
+                <MobileCardList className="p-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <li key={i} className="mobile-card animate-pulse">
+                      <div className="h-4 w-1/2 rounded-xs bg-surface-muted" />
+                      <div className="h-3 w-3/4 rounded-xs bg-surface-muted" />
+                    </li>
+                  ))}
+                </MobileCardList>
+              ) : null}
+              {flatModeStatus === 'success' && flatItems.length > 0 ? (
+                <MobileCardList className="p-3">
+                  {flatItems.map((cat) => mobileCategoryCard(cat))}
+                </MobileCardList>
+              ) : null}
               {flatModeStatus === 'success' && (
-                <PaginationControls
-                  pagination={paginatedState.pagination}
-                  onPageChange={(nextPage) => updateQuery({ page: nextPage })}
-                />
+                <div className="px-4">
+                  <PaginationControls
+                    pagination={paginatedState.pagination}
+                    disabled={paginatedState.isFetching || Boolean(bulkProgress)}
+                    onPageChange={(nextPage) => updateQuery({ page: nextPage })}
+                  />
+                </div>
               )}
             </div>
           ) : null}
         </>
       )}
-    </div>
+    </Screen>
   )
 }

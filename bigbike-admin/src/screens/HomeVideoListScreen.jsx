@@ -34,7 +34,15 @@ import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { useSaveShortcut } from '@/lib/useSaveShortcut'
 import { useUrlSyncedState } from '@/lib/useUrlSyncedState'
 import { useContentLang } from '../lib/contentLang'
-import { extractAllowedYouTubeId, extractAllowedTikTokId, tiktokEmbedUrl, isAllowedFacebookVideoUrl, facebookEmbedUrl, validateHomeVideoUrl } from '../lib/urlPolicies'
+import {
+  extractAllowedYouTubeId,
+  extractAllowedTikTokId,
+  tiktokEmbedUrl,
+  isAllowedFacebookVideoUrl,
+  facebookEmbedUrl,
+  isAllowedMediaVideoUrl,
+  validateHomeVideoUrl,
+} from '../lib/urlPolicies'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -356,11 +364,9 @@ export function HomeVideoListScreen({ canUpdate }) {
     const next = {
       title: video.title,
       titleEn: video.titleEn || '',
-      videoType: video.youtubeId
+      videoType: (video.youtubeId || extractAllowedYouTubeId(video.videoUrl))
         ? 'youtube'
-        : extractAllowedTikTokId(video.videoUrl)
-          ? 'tiktok'
-          : (isAllowedFacebookVideoUrl(video.videoUrl) ? 'facebook' : 'upload'),
+        : (isAllowedMediaVideoUrl(video.videoUrl) ? 'upload' : ''),
       videoUrl: video.videoUrl,
       thumbnailUrl: video.thumbnail?.url || '',
       isActive: video.isActive,
@@ -381,6 +387,19 @@ export function HomeVideoListScreen({ canUpdate }) {
     toggleActiveMutation.mutate({ id: video.id, isActive: !video.isActive })
   }
 
+  async function handleVideoTypeChange(value) {
+    if (value === form.videoType) return
+    if (form.videoUrl.trim()) {
+      const confirmed = await showConfirm(
+        t('homeVideos.switchSourceConfirm'),
+        t('homeVideos.switchSourceConfirmTitle'),
+      )
+      if (!confirmed) return
+    }
+    setForm((prev) => ({ ...prev, videoType: value, videoUrl: '' }))
+    clearFieldError('videoUrl')
+  }
+
   // Kiểm tra hợp lệ trả về lỗi gắn theo từng ô để hiện ngay cạnh ô sai (tiêu chí 7.2/7.3).
   function validateForm(values) {
     const errors = {}
@@ -388,21 +407,17 @@ export function HomeVideoListScreen({ canUpdate }) {
       errors.title = t('homeVideos.validationTitle')
     }
     const videoCheck = validateHomeVideoUrl(values.videoUrl)
+    if (!['youtube', 'upload'].includes(values.videoType)) {
+      errors.videoUrl = t('homeVideos.validationSource')
+      return errors
+    }
     const invalidMessage = values.videoType === 'youtube'
       ? t('homeVideos.validationYoutube')
-      : values.videoType === 'tiktok'
-        ? t('homeVideos.validationTiktok')
-        : values.videoType === 'facebook'
-          ? t('homeVideos.validationFacebook')
-          : t('homeVideos.validationUpload')
+      : t('homeVideos.validationUpload')
     if (!videoCheck.valid) {
       errors.videoUrl = invalidMessage
     } else if (values.videoType === 'youtube' && !extractAllowedYouTubeId(values.videoUrl)) {
       errors.videoUrl = t('homeVideos.validationYoutube')
-    } else if (values.videoType === 'tiktok' && !extractAllowedTikTokId(values.videoUrl)) {
-      errors.videoUrl = t('homeVideos.validationTiktok')
-    } else if (values.videoType === 'facebook' && !isAllowedFacebookVideoUrl(values.videoUrl)) {
-      errors.videoUrl = t('homeVideos.validationFacebook')
     } else if (values.videoType === 'upload' && videoCheck.source !== 'upload') {
       errors.videoUrl = t('homeVideos.validationUpload')
     }
@@ -758,20 +773,12 @@ export function HomeVideoListScreen({ canUpdate }) {
             {t('homeVideos.formSource')}
             <RadioGroup
               value={form.videoType}
-              onValueChange={(value) => { setForm((prev) => ({ ...prev, videoType: value, videoUrl: '' })); clearFieldError('videoUrl') }}
-              className="flex gap-5 font-normal"
+              onValueChange={(value) => { void handleVideoTypeChange(value) }}
+              className="flex flex-wrap gap-5 font-normal"
             >
               <label className="flex items-center gap-1.5 cursor-pointer">
                 <RadioGroupItem value="youtube" />
                 {t('homeVideos.sourceYoutube')}
-              </label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <RadioGroupItem value="tiktok" />
-                {t('homeVideos.sourceTiktok')}
-              </label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <RadioGroupItem value="facebook" />
-                {t('homeVideos.sourceFacebook')}
               </label>
               <label className="flex items-center gap-1.5 cursor-pointer">
                 <RadioGroupItem value="upload" />
@@ -805,45 +812,7 @@ export function HomeVideoListScreen({ canUpdate }) {
                 />
               )}
             </div>
-          ) : form.videoType === 'tiktok' ? (
-            <div className="flex flex-col gap-1">
-              <FormField
-                label={t('homeVideos.formTiktokUrl')}
-                required
-                error={fieldErrors.videoUrl}
-                helper={t('homeVideos.tiktokHint')}
-              >
-                <Input
-                  required
-                  type="url"
-                  value={form.videoUrl}
-                  onChange={(event) => { setForm((prev) => ({ ...prev, videoUrl: event.target.value })); clearFieldError('videoUrl') }}
-                  onBlur={() => validateField('videoUrl')}
-                  placeholder="https://www.tiktok.com/@ten/video/..."
-                />
-              </FormField>
-              <p className="text-xs font-normal text-muted-foreground">{t('homeVideos.tiktokThumbHint')}</p>
-            </div>
-          ) : form.videoType === 'facebook' ? (
-            <div className="flex flex-col gap-1">
-              <FormField
-                label={t('homeVideos.formFacebookUrl')}
-                required
-                error={fieldErrors.videoUrl}
-                helper={t('homeVideos.facebookHint')}
-              >
-                <Input
-                  required
-                  type="url"
-                  value={form.videoUrl}
-                  onChange={(event) => { setForm((prev) => ({ ...prev, videoUrl: event.target.value })); clearFieldError('videoUrl') }}
-                  onBlur={() => validateField('videoUrl')}
-                  placeholder="https://www.facebook.com/.../videos/..."
-                />
-              </FormField>
-              <p className="text-xs font-normal text-muted-foreground">{t('homeVideos.facebookThumbHint')}</p>
-            </div>
-          ) : (
+          ) : form.videoType === 'upload' ? (
             <div className="flex flex-col gap-1 text-sm font-semibold">
               {t('homeVideos.formUpload')}
               {fieldErrors.videoUrl ? (
@@ -881,6 +850,10 @@ export function HomeVideoListScreen({ canUpdate }) {
                   {t('homeVideos.uploadHint')}
                 </span>
               )}
+            </div>
+          ) : (
+            <div className="rounded-sm border border-warning-border bg-warning-bg p-3 text-sm text-warning" role="alert">
+              {t('homeVideos.legacySourceWarning')}
             </div>
           )}
 

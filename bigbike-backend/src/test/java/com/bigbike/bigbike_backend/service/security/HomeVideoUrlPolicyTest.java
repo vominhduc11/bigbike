@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.service.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -19,30 +20,36 @@ class HomeVideoUrlPolicyTest {
     }
 
     @Test
-    void allowsApprovedFullUrlForMatchingProvider() {
+    void allowsOnlyYoutubeAndApprovedUploadForMatchingProvider() {
         assertThat(policy.isAllowedForProvider(
                 "youtube", "https://www.youtube.com/watch?v=dQw4w9WgXcQ")).isTrue();
-        assertThat(policy.isAllowedForProvider(
-                "tiktok", "https://www.tiktok.com/@bigbike/video/7251234567890123456")).isTrue();
-        assertThat(policy.isAllowedForProvider(
-                "facebook", "https://www.facebook.com/BigBike/videos/1234567890")).isTrue();
 
         when(safeMediaAssetUrlPolicy.isAllowedVideoMediaUrl("/media/product-review.mp4")).thenReturn(true);
         assertThat(policy.isAllowedForProvider("upload", "/media/product-review.mp4")).isTrue();
     }
 
     @Test
-    void rejectsShortenedTikTokAndFacebookLinks() {
+    void rejectsTikTokAndFacebookProvidersIncludingFullUrls() {
+        assertThat(policy.isAllowedForProvider(
+                "tiktok", "https://www.tiktok.com/@bigbike/video/7251234567890123456")).isFalse();
+        assertThat(policy.isAllowedForProvider(
+                "facebook", "https://www.facebook.com/BigBike/videos/1234567890")).isFalse();
         assertThat(policy.isAllowedForProvider("tiktok", "https://vt.tiktok.com/ZSabcDEF/")).isFalse();
-        assertThat(policy.isAllowedForProvider("tiktok", "https://vm.tiktok.com/ZSabcDEF/")).isFalse();
         assertThat(policy.isAllowedForProvider("facebook", "https://fb.watch/abcdEF123/")).isFalse();
+
+        assertThatThrownBy(() -> policy.validateOrThrow(
+                "https://www.tiktok.com/@bigbike/video/7251234567890123456", "videoUrl"))
+                .isInstanceOf(com.bigbike.bigbike_backend.api.error.ValidationException.class);
+        assertThatThrownBy(() -> policy.validateOrThrow(
+                "https://www.facebook.com/BigBike/videos/1234567890", "videoUrl"))
+                .isInstanceOf(com.bigbike.bigbike_backend.api.error.ValidationException.class);
     }
 
     @Test
     void rejectsProviderMismatchVimeoAndExternalUpload() {
         assertThat(policy.isAllowedForProvider(
                 "youtube", "https://www.facebook.com/BigBike/videos/1234567890")).isFalse();
-        assertThat(policy.isAllowedForProvider("facebook", "https://vimeo.com/123456")).isFalse();
+        assertThat(policy.isAllowedForProvider("youtube", "https://vimeo.com/123456")).isFalse();
         assertThat(policy.isAllowedForProvider("upload", "https://example.com/video.mp4")).isFalse();
     }
 }

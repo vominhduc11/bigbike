@@ -320,7 +320,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     if (Object.keys(clientErrors).length > 0) {
       setValidationErrors(clientErrors)
       // Đưa lỗi đang bị ẩn ra chỗ nhìn thấy: bung nhóm tùy chọn / SEO nếu lỗi nằm trong đó.
-      if (clientErrors.description || clientErrors.logoUrl) setOptionalOpen(true)
+      if (clientErrors.description || clientErrors.logoUrl || clientErrors.bannerUrl) setOptionalOpen(true)
       if (clientErrors.seoTitle || clientErrors.seoDescription || clientErrors.seoCanonicalUrl || clientErrors.seoOgImageUrl) setSeoOpen(true)
       return
     }
@@ -508,7 +508,12 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
           </div>
           <div>
             <dt className="text-muted-foreground">{t('brands.detail.isVisible')}</dt>
-            <dd className="mt-1"><StatusBadge type="visibility" status={state.item?.isVisible} /></dd>
+            <dd className="mt-1">
+              <StatusBadge
+                type="trash"
+                status={state.item?.isVisible === true ? false : state.item?.isVisible === false ? true : undefined}
+              />
+            </dd>
           </div>
           <div>
             <dt className="text-muted-foreground">{t('brands.detail.showOnHomepage')}</dt>

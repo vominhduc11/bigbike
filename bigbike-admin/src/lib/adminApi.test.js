@@ -58,7 +58,7 @@ describe('mapValidationErrors', () => {
     ])
 
     expect(mapValidationErrors(error)).toEqual({
-      targetUrl: 'URL đích không hợp lệ. Hãy dùng đường dẫn nội bộ bắt đầu bằng "/" (ví dụ /san-pham-moi).',
+      targetUrl: 'URL đích không hợp lệ. Hãy dùng đường dẫn nội bộ bắt đầu bằng "/" (ví dụ /sp/).',
     })
   })
 })

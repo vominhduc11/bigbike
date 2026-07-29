@@ -13,6 +13,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.ProductTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantOptionRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantRequest;
+import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
@@ -87,6 +88,8 @@ class AdminMutationApiTest {
                   "name": "Phase 4G Product %s",
                   "categoryId": "cat_helmet",
                   "brandId": "brand_ls2",
+                  "gender": "Unisex",
+                  "sku": "PHASE4G-%s",
                   "retailPrice": 2500000,
                   "salePrice": 2300000,
                   "currency": "VND",
@@ -105,7 +108,7 @@ class AdminMutationApiTest {
                     "alt": "Phase 4G Product"
                   }
                 }
-                """.formatted(slug, suffix, suffix, suffix, suffix, slug, MEDIA_PUBLIC_BASE_URL, slug);
+                """.formatted(slug, suffix, suffix, suffix, suffix, suffix, slug, MEDIA_PUBLIC_BASE_URL, slug);
 
         mockMvc.perform(post("/api/v1/admin/products")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -155,6 +158,132 @@ class AdminMutationApiTest {
     }
 
     @Test
+    void productDetailSaveCannotPublishDraftButPreservesPublishedStatus() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String slug = "product-save-status-" + suffix;
+        String payloadTemplate = """
+                {
+                  "slug": "%s",
+                  "name": "Product Save Status %s",
+                  "categoryId": "cat_helmet",
+                  "brandId": "brand_ls2",
+                  "gender": "Unisex",
+                  "sku": "SAVE-STATUS-%s",
+                  "retailPrice": 1500000,
+                  "publishStatus": "%s",
+                  "translations": {
+                    "en": { "name": "Product Save Status EN %s" }
+                  },
+                  "image": {
+                    "url": "%s/wp-uploads/products/%s.jpg",
+                    "alt": "Product Save Status"
+                  }
+                }
+                """;
+
+        String publishedCreate = payloadTemplate.formatted(
+                slug, suffix, suffix, "PUBLISHED", suffix, MEDIA_PUBLIC_BASE_URL, slug);
+        mockMvc.perform(post("/api/v1/admin/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content(publishedCreate))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].field").value("publishStatus"));
+
+        String draftCreate = payloadTemplate.formatted(
+                slug, suffix, suffix, "DRAFT", suffix, MEDIA_PUBLIC_BASE_URL, slug);
+        mockMvc.perform(post("/api/v1/admin/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content(draftCreate))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.publishStatus").value("DRAFT"));
+
+        ProductEntity product = productJpaRepository.findBySlug(slug)
+                .orElseThrow(() -> new IllegalStateException("Expected created product."));
+
+        mockMvc.perform(patch("/api/v1/admin/products/{id}", product.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content("{\"publishStatus\":\"PUBLISHED\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].field").value("publishStatus"));
+        assertThat(productJpaRepository.findById(product.getId()).orElseThrow().getPublishStatus())
+                .isEqualTo(PublishStatus.DRAFT);
+
+        mockMvc.perform(patch("/api/v1/admin/products/{id}/publish", product.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content("{\"publishStatus\":\"PUBLISHED\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.publishStatus").value("PUBLISHED"));
+
+        mockMvc.perform(patch("/api/v1/admin/products/{id}", product.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content("{\"publishStatus\":\"PUBLISHED\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.publishStatus").value("PUBLISHED"));
+
+        mockMvc.perform(patch("/api/v1/admin/products/{id}", product.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content("{\"publishStatus\":\"DRAFT\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].field").value("publishStatus"));
+        assertThat(productJpaRepository.findById(product.getId()).orElseThrow().getPublishStatus())
+                .isEqualTo(PublishStatus.PUBLISHED);
+    }
+
+    @Test
+    void publishGateRejectsSystemOnlyCategoryAndBrand() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String slug = "system-bucket-publish-gate-" + suffix;
+        String payload = """
+                {
+                  "slug": "%s",
+                  "name": "System Bucket Publish Gate %s",
+                  "categoryId": "uncategorized",
+                  "brandId": "uncategorized-brand",
+                  "gender": "Unisex",
+                  "sku": "SYSTEM-BUCKET-%s",
+                  "retailPrice": 1500000,
+                  "publishStatus": "DRAFT",
+                  "translations": {
+                    "en": { "name": "System Bucket Publish Gate EN %s" }
+                  },
+                  "image": {
+                    "url": "%s/wp-uploads/products/%s.jpg",
+                    "alt": "System Bucket Publish Gate"
+                  }
+                }
+                """.formatted(
+                slug, suffix, suffix, suffix, MEDIA_PUBLIC_BASE_URL, slug);
+
+        mockMvc.perform(post("/api/v1/admin/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.publishStatus").value("DRAFT"));
+
+        ProductEntity product = productJpaRepository.findBySlug(slug)
+                .orElseThrow(() -> new IllegalStateException("Expected created product."));
+        mockMvc.perform(patch("/api/v1/admin/products/{id}/publish", product.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content("{\"publishStatus\":\"PUBLISHED\"}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error.code").value("PRODUCT_NOT_READY_TO_PUBLISH"))
+                .andExpect(jsonPath("$.error.details[0].field").value("categoryIds"))
+                .andExpect(jsonPath("$.error.details[1].field").value("brandId"));
+    }
+
+    @Test
     void shouldPreviewProductWithoutPersisting() throws Exception {
         long countBefore = productJpaRepository.count();
         String slug = "preview-dry-run-" + System.currentTimeMillis();
@@ -191,6 +320,30 @@ class AdminMutationApiTest {
     }
 
     @Test
+    void shouldRejectUnsupportedProductPreviewLanguage() throws Exception {
+        String slug = "preview-invalid-lang-" + System.currentTimeMillis();
+        mockMvc.perform(post("/api/v1/admin/products/preview")
+                        .param("lang", "fr")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content("""
+                                {
+                                  "slug": "%s",
+                                  "name": "Preview Invalid Language",
+                                  "categoryId": "cat_helmet",
+                                  "brandId": "brand_ls2",
+                                  "gender": "Unisex",
+                                  "sku": "PREVIEW-INVALID-LANG",
+                                  "retailPrice": 1500000,
+                                  "publishStatus": "DRAFT"
+                                }
+                                """.formatted(slug)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
     void shouldPreviewExistingProductWithoutFlaggingItsOwnSlugAsDuplicate() throws Exception {
         // Regression: editing an existing product and opening the live preview sends
         // the product's already-saved slug. Slug uniqueness is a persistence concern
@@ -204,14 +357,17 @@ class AdminMutationApiTest {
                   "slug": "%s",
                   "name": "Preview Existing Slug Product",
                   "categoryId": "cat_helmet",
+                  "brandId": "brand_ls2",
+                  "gender": "Unisex",
+                  "sku": "PREVIEW-%s",
                   "retailPrice": 1990000,
                   "currency": "VND",
-                  "publishStatus": "PUBLISHED",
+                  "publishStatus": "DRAFT",
                   "translations": {
                     "en": { "name": "Preview Existing Slug Product EN" }
                   }
                 }
-                """.formatted(slug);
+                """.formatted(slug, slug);
 
         mockMvc.perform(post("/api/v1/admin/products")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -268,6 +424,9 @@ class AdminMutationApiTest {
                   "slug": "phase4g-invalid-sale-%d",
                   "name": "Invalid Sale Product",
                   "categoryId": "cat_helmet",
+                  "brandId": "brand_ls2",
+                  "gender": "Unisex",
+                  "sku": "INVALID-SALE",
                   "retailPrice": 1000000,
                   "salePrice": 1000000,
                   "stockState": "IN_STOCK",
@@ -288,6 +447,9 @@ class AdminMutationApiTest {
                   "slug": "phase4g-invalid-media-%d",
                   "name": "Invalid Media Product",
                   "categoryId": "cat_helmet",
+                  "brandId": "brand_ls2",
+                  "gender": "Unisex",
+                  "sku": "INVALID-MEDIA",
                   "retailPrice": 1000000,
                   "stockState": "IN_STOCK",
                   "publishStatus": "DRAFT",
@@ -317,6 +479,9 @@ class AdminMutationApiTest {
                   "slug": "%s",
                   "name": "Phase 3 SEO Content Product %s",
                   "categoryId": "cat_helmet",
+                  "brandId": "brand_ls2",
+                  "gender": "Unisex",
+                  "sku": "SEO-%s",
                   "retailPrice": 2500000,
                   "stockState": "IN_STOCK",
                   "publishStatus": "DRAFT",
@@ -339,6 +504,7 @@ class AdminMutationApiTest {
                 }
                 """.formatted(
                 slug,
+                suffix,
                 suffix,
                 suffix,
                 suffix,
@@ -443,6 +609,8 @@ class AdminMutationApiTest {
         create.setSlug("phase1-variant-price-" + suffix);
         create.setName("Phase 1 Variant Price Product " + suffix);
         create.setCategoryId("cat_helmet");
+        create.setBrandId("brand_ls2");
+        create.setGender("Unisex");
         create.setRetailPrice(new BigDecimal("2500000"));
         create.setSalePrice(new BigDecimal("2300000"));
         create.setCurrency("VND");
@@ -521,6 +689,9 @@ class AdminMutationApiTest {
                     "slug": "%s",
                     "name": "Phase 2 Trash Product %s",
                     "categoryId": "cat_helmet",
+                    "brandId": "brand_ls2",
+                    "gender": "Unisex",
+                    "sku": "TRASH-%s",
                     "retailPrice": 1250000,
                     "stockState": "IN_STOCK",
                     "publishStatus": "DRAFT",
@@ -532,7 +703,7 @@ class AdminMutationApiTest {
                       "alt": "Phase 2 Trash Product"
                     }
                   }
-                  """.formatted(slug, suffix, suffix, MEDIA_PUBLIC_BASE_URL, slug);
+                  """.formatted(slug, suffix, suffix, suffix, MEDIA_PUBLIC_BASE_URL, slug);
 
         mockMvc.perform(post("/api/v1/admin/products")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -572,6 +743,9 @@ class AdminMutationApiTest {
                     "slug": "%s",
                     "name": "Phase 2 Restore Permission Product %s",
                     "categoryId": "cat_helmet",
+                    "brandId": "brand_ls2",
+                    "gender": "Unisex",
+                    "sku": "RESTORE-%s",
                     "retailPrice": 1250000,
                     "stockState": "IN_STOCK",
                     "publishStatus": "DRAFT",
@@ -583,7 +757,7 @@ class AdminMutationApiTest {
                       "alt": "Phase 2 Restore Permission Product"
                     }
                   }
-                  """.formatted(slug, suffix, suffix, MEDIA_PUBLIC_BASE_URL, slug);
+                  """.formatted(slug, suffix, suffix, suffix, MEDIA_PUBLIC_BASE_URL, slug);
 
         mockMvc.perform(post("/api/v1/admin/products")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -954,6 +1128,82 @@ class AdminMutationApiTest {
     }
 
     @Test
+    void categoryBannerShouldRejectUrlOutsideTheMediaLibrary() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "slug":"cat-banner-external-%s",
+                                  "name":"Danh mục banner ngoài %s",
+                                  "translations":{"en":{"name":"External banner category %s"}},
+                                  "banner":{"url":"https://cdn.ben-thu-ba.com/hero.jpg"}
+                                }
+                                """.formatted(suffix, suffix, suffix)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].field").value("banner.url"))
+                .andExpect(jsonPath("$.error.details[0].code").value("INVALID_VALUE"));
+
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "slug":"cat-mobile-banner-external-%s",
+                                  "name":"Danh mục banner mobile ngoài %s",
+                                  "translations":{"en":{"name":"External mobile banner category %s"}},
+                                  "mobileBanner":{"url":"https://cdn.ben-thu-ba.com/hero-mobile.jpg"}
+                                }
+                                """.formatted(suffix, suffix, suffix)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].field").value("mobileBanner.url"));
+    }
+
+    @Test
+    void categoryShouldAllowClearingDescriptionAndIntroContent() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String slug = "cat-clear-desc-" + suffix;
+
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "slug":"%s",
+                                  "name":"Danh mục mô tả %s",
+                                  "description":"<p>Mô tả ban đầu</p>",
+                                  "introContent":"<p>Giới thiệu ban đầu</p>",
+                                  "translations":{"en":{"name":"Description category %s"}}
+                                }
+                                """.formatted(slug, suffix, suffix)))
+                .andExpect(status().isOk());
+
+        CategoryEntity created = categoryJpaRepository.findBySlug(slug).orElseThrow();
+        assertThat(created.getDescription()).isEqualTo("<p>Mô tả ban đầu</p>");
+        assertThat(created.getIntroContent()).isEqualTo("<p>Giới thiệu ban đầu</p>");
+
+        // Chuỗi rỗng = xóa (presence-flag): admin phải xoá được mô tả + khối giới thiệu cũ.
+        mockMvc.perform(patch("/api/v1/admin/categories/{id}", created.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"description":"","introContent":"","translations":{"en":{"name":"Description category %s"}}}
+                                """.formatted(suffix)))
+                .andExpect(status().isOk());
+
+        CategoryEntity cleared = categoryJpaRepository.findById(created.getId()).orElseThrow();
+        assertThat(cleared.getDescription()).isNull();
+        assertThat(cleared.getIntroContent()).isNull();
+    }
+
+    @Test
     void patchCategoryVisibleFalseWithHiddenChildShouldSucceed() throws Exception {
         String suffix = String.valueOf(System.currentTimeMillis());
         String parentSlug = "hide-guard-hidden-child-parent-" + suffix;
@@ -1165,6 +1415,213 @@ class AdminMutationApiTest {
         assertThat(cleared.getSeoDescription()).isNull();
         assertThat(cleared.getSeoCanonicalUrl()).isNull();
         assertThat(cleared.getSeoOgImageUrl()).isNull();
+    }
+
+    // ── Featured-grid placement (PRODUCT_RULE_015) ────────────────────────────
+
+    /** Creates a fully-populated product and publishes it, returning the persisted entity. */
+    private ProductEntity createPublishedProduct(String slug, String suffix) throws Exception {
+        mockMvc.perform(post("/api/v1/admin/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content("""
+                                {
+                                  "slug": "%s",
+                                  "name": "Sản phẩm nổi bật %s",
+                                  "categoryId": "cat_helmet",
+                                  "brandId": "brand_ls2",
+                                  "gender": "Unisex",
+                                  "sku": "FEATURED-%s",
+                                  "retailPrice": 2500000,
+                                  "currency": "VND",
+                                  "publishStatus": "DRAFT",
+                                  "translations": { "en": { "name": "Featured product %s" } },
+                                  "image": { "url": "%s/wp-uploads/products/%s.jpg", "alt": "Ảnh sản phẩm" }
+                                }
+                                """.formatted(slug, suffix, suffix, suffix, MEDIA_PUBLIC_BASE_URL, slug)))
+                .andExpect(status().isOk());
+
+        ProductEntity created = productJpaRepository.findBySlug(slug).orElseThrow();
+
+        mockMvc.perform(patch("/api/v1/admin/products/{id}/publish", created.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content("{\"publishStatus\":\"PUBLISHED\"}"))
+                .andExpect(status().isOk());
+
+        return productJpaRepository.findById(created.getId()).orElseThrow();
+    }
+
+    private void pinToFeaturedGrid(String productId) throws Exception {
+        mockMvc.perform(post("/api/v1/admin/products/homepage-blocks")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content("{\"featuredGrid\":[\"%s\"]}".formatted(productId)))
+                .andExpect(status().isOk());
+        assertThat(productJpaRepository.findById(productId).orElseThrow().getHomepageBlock())
+                .isEqualTo(HomepageBlock.FEATURED_GRID);
+    }
+
+    @Test
+    void unpublishingAProductShouldDropItFromTheFeaturedGrid() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String slug = "featured-unpublish-" + suffix;
+
+        ProductEntity product = createPublishedProduct(slug, suffix);
+        pinToFeaturedGrid(product.getId());
+
+        mockMvc.perform(patch("/api/v1/admin/products/{id}/publish", product.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content("{\"publishStatus\":\"DRAFT\"}"))
+                .andExpect(status().isOk());
+
+        ProductEntity unpublished = productJpaRepository.findById(product.getId()).orElseThrow();
+        assertThat(unpublished.getHomepageBlock()).isEqualTo(HomepageBlock.NONE);
+        assertThat(unpublished.getHomepageOrder()).isNull();
+
+        // Đăng bán lại KHÔNG tự đưa sản phẩm trở lại khối nổi bật.
+        mockMvc.perform(patch("/api/v1/admin/products/{id}/publish", product.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content("{\"publishStatus\":\"PUBLISHED\"}"))
+                .andExpect(status().isOk());
+        assertThat(productJpaRepository.findById(product.getId()).orElseThrow().getHomepageBlock())
+                .isEqualTo(HomepageBlock.NONE);
+    }
+
+    @Test
+    void softDeletingAProductShouldDropItFromTheFeaturedGrid() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis() + 1);
+        String slug = "featured-trash-" + suffix;
+
+        ProductEntity product = createPublishedProduct(slug, suffix);
+        pinToFeaturedGrid(product.getId());
+
+        mockMvc.perform(delete("/api/v1/admin/products/{id}", product.getId())
+                        .header("X-Admin-Permissions", "products.update"))
+                .andExpect(status().isOk());
+
+        ProductEntity trashed = productJpaRepository.findById(product.getId()).orElseThrow();
+        assertThat(trashed.getPublishStatus()).isEqualTo(PublishStatus.TRASH);
+        assertThat(trashed.getHomepageBlock()).isEqualTo(HomepageBlock.NONE);
+        assertThat(trashed.getHomepageOrder()).isNull();
+    }
+
+    @Test
+    void brandBannerShouldRejectUrlOutsideTheMediaLibrary() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+
+        mockMvc.perform(post("/api/v1/admin/brands")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "slug":"brand-banner-external-%s",
+                                  "name":"Thương hiệu banner ngoài %s",
+                                  "banner":{"url":"https://cdn.ben-thu-ba.com/banner.jpg"}
+                                }
+                                """.formatted(suffix, suffix)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].field").value("banner.url"))
+                .andExpect(jsonPath("$.error.details[0].code").value("INVALID_VALUE"));
+
+        mockMvc.perform(post("/api/v1/admin/brands")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "slug":"brand-mobile-banner-external-%s",
+                                  "name":"Thương hiệu banner mobile ngoài %s",
+                                  "mobileBanner":{"url":"https://cdn.ben-thu-ba.com/banner-mobile.jpg"}
+                                }
+                                """.formatted(suffix, suffix)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].field").value("mobileBanner.url"));
+    }
+
+    @Test
+    void brandShouldKeepImageAltTextAndAllowClearingDescription() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String slug = "brand-alt-desc-" + suffix;
+
+        mockMvc.perform(post("/api/v1/admin/brands")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "slug":"%s",
+                                  "name":"Thương hiệu ảnh %s",
+                                  "description":"<p>Mô tả ban đầu</p>",
+                                  "logo":{"url":"/media/brands/logo.png","alt":"Logo thương hiệu"},
+                                  "banner":{"url":"/media/brands/banner.jpg","alt":"Ảnh bìa thương hiệu"}
+                                }
+                                """.formatted(slug, suffix)))
+                .andExpect(status().isOk());
+
+        BrandEntity created = brandJpaRepository.findBySlug(slug).orElseThrow();
+        assertThat(created.getLogoAlt()).isEqualTo("Logo thương hiệu");
+        assertThat(created.getBannerAlt()).isEqualTo("Ảnh bìa thương hiệu");
+        assertThat(created.getDescription()).isEqualTo("<p>Mô tả ban đầu</p>");
+
+        // Chuỗi rỗng = xóa (presence-flag): admin phải xoá được mô tả cũ, và alt gửi kèm
+        // ảnh không được biến mất sau lần lưu tiếp theo.
+        mockMvc.perform(patch("/api/v1/admin/brands/{id}", created.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "description":"",
+                                  "logo":{"url":"/media/brands/logo.png","alt":"Logo thương hiệu"},
+                                  "banner":{"url":"/media/brands/banner.jpg","alt":"Ảnh bìa thương hiệu"}
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        BrandEntity updated = brandJpaRepository.findById(created.getId()).orElseThrow();
+        assertThat(updated.getDescription()).isNull();
+        assertThat(updated.getLogoAlt()).isEqualTo("Logo thương hiệu");
+        assertThat(updated.getBannerAlt()).isEqualTo("Ảnh bìa thương hiệu");
+    }
+
+    @Test
+    void brandWithLegacyExternalBannerShouldStayEditable() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String slug = "brand-legacy-banner-" + suffix;
+        String legacyBanner = "https://legacy.bigbike.vn/wp/banner-cu.jpg";
+
+        mockMvc.perform(post("/api/v1/admin/brands")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"Thương hiệu cũ %s"}
+                                """.formatted(slug, suffix)))
+                .andExpect(status().isOk());
+
+        BrandEntity brand = brandJpaRepository.findBySlug(slug).orElseThrow();
+        brand.setBannerUrl(legacyBanner);
+        brandJpaRepository.save(brand);
+
+        // URL cũ giữ nguyên → không bị chặn (grandfathered), chỉ URL MỚI phải nằm trong kho ảnh.
+        mockMvc.perform(patch("/api/v1/admin/brands/{id}", brand.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"name":"Thương hiệu cũ đổi tên %s","banner":{"url":"%s"}}
+                                """.formatted(suffix, legacyBanner)))
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -1482,7 +1939,8 @@ class AdminMutationApiTest {
         BrandEntity brand = brandJpaRepository.findBySlug(brandSlug)
                 .orElseThrow(() -> new IllegalStateException("Expected brand."));
 
-        // Create a published product assigned to that brand
+        // Create a draft product assigned to that brand, then publish through the
+        // dedicated lifecycle endpoint.
         mockMvc.perform(post("/api/v1/admin/products")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "products.update")
@@ -1492,14 +1950,37 @@ class AdminMutationApiTest {
                                   "name":"Product Hidden Brand %s",
                                   "categoryId":"cat_helmet",
                                   "brandId":"%s",
+                                  "gender":"Unisex",
+                                  "sku":"HIDDEN-BRAND-%s",
                                   "retailPrice":1500000,
                                   "stockState":"IN_STOCK",
-                                  "publishStatus":"PUBLISHED",
-                                  "translations":{"en":{"name":"Product Hidden Brand EN %s"}}
+                                  "publishStatus":"DRAFT",
+                                  "translations":{"en":{"name":"Product Hidden Brand EN %s"}},
+                                  "image":{
+                                    "url":"%s/wp-uploads/products/%s.jpg",
+                                    "alt":"Product Hidden Brand"
+                                  }
                                 }
-                                """.formatted(productSlug, suffix, brand.getId(), suffix)))
+                                """.formatted(
+                                        productSlug,
+                                        suffix,
+                                        brand.getId(),
+                                        suffix,
+                                        suffix,
+                                        MEDIA_PUBLIC_BASE_URL,
+                                        productSlug
+                                )))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.brand.slug").value(brandSlug));
+
+        ProductEntity product = productJpaRepository.findBySlug(productSlug)
+                .orElseThrow(() -> new IllegalStateException("Expected product."));
+        mockMvc.perform(patch("/api/v1/admin/products/{id}/publish", product.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content("{\"publishStatus\":\"PUBLISHED\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.publishStatus").value("PUBLISHED"));
 
         // Soft-delete (hide) the brand
         mockMvc.perform(delete("/api/v1/admin/brands/{id}", brand.getId())
@@ -1522,14 +2003,10 @@ class AdminMutationApiTest {
                 .andExpect(jsonPath("$.data.brand").doesNotExist());
 
         // Admin product detail: brand still visible for management
-        BrandEntity brandEntity = brandJpaRepository.findBySlug(brandSlug)
-                .orElseThrow(() -> new IllegalStateException("Expected brand."));
-        mockMvc.perform(get("/api/v1/admin/products")
-                        .param("q", productSlug)
+        mockMvc.perform(get("/api/v1/admin/products/{id}", product.getId())
                         .header("X-Admin-Permissions", "products.read"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].brand.slug").value(brandSlug));
+                .andExpect(jsonPath("$.data.brand.slug").value(brandSlug));
     }
 
     private static VariantOptionRequest variantOption(String optionName, String optionValue) {

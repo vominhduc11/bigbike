@@ -31,7 +31,7 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { LivePreview } from '../components/LivePreview'
 import { useAutoHideSidebar } from '../components/AdminShell'
 import { Screen, ScreenHeader, StickyActionBar, Tabs } from '../components/layout'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
@@ -161,13 +161,26 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   const isDirty = useMemo(() => JSON.stringify(form) !== initialSnapshot, [form, initialSnapshot])
   const isReadOnly = !canUpdate || isSubmitting
   const persistedTrash = !isCreate && state.item?.publishStatus === 'TRASH'
+  // A freshly loaded legacy article can briefly have its form field unset while
+  // the persisted record already has a valid status. Use that persisted value
+  // as the form's effective value so the control and a subsequent save stay safe.
+  const selectedPublishStatus = form.publishStatus || state.item?.publishStatus || 'DRAFT'
   // Publish targets limited to what the backend accepts from the persisted state.
   // On create there is no persisted state, so all standard targets are offered.
   const publishOptions = useMemo(
-    () => persistedTrash
-      ? ['TRASH']
-      : allowedPublishOptions(isCreate ? null : state.item?.publishStatus),
-    [isCreate, persistedTrash, state.item?.publishStatus],
+    () => {
+      const options = persistedTrash
+        ? ['TRASH']
+        : allowedPublishOptions(isCreate ? null : state.item?.publishStatus)
+
+      // Radix Select only renders the selected label when its value has a matching
+      // SelectItem. Keep the loaded value available while the form and persisted
+      // record are being synchronized, so a published article never appears blank.
+      return selectedPublishStatus && !options.includes(selectedPublishStatus)
+        ? [selectedPublishStatus, ...options]
+        : options
+    },
+    [isCreate, persistedTrash, selectedPublishStatus, state.item?.publishStatus],
   )
   const formRef = useRef(null)
 
@@ -340,7 +353,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
   async function handlePrimarySave() {
     if (!persistedTrash) {
-      await saveCandidate(form)
+      await saveCandidate({ ...form, publishStatus: selectedPublishStatus })
       return
     }
     if (restoreConfirmingRef.current) return
@@ -898,11 +911,15 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                 <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
                   <Field required label={t('content.detail.publishStatus')} error={validationErrors.publishStatus}>
                     <Select
-                      value={form.publishStatus}
+                      value={selectedPublishStatus}
                       onValueChange={(val) => updateField('publishStatus', val)}
                       disabled={isReadOnly || persistedTrash}
                     >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger>
+                        {/* Render the loaded label directly. Radix can miss the initial
+                            item-text lookup even though the matching option is present. */}
+                        <span>{t(`status.publish.${selectedPublishStatus}`, { defaultValue: selectedPublishStatus })}</span>
+                      </SelectTrigger>
                       <SelectContent>
                         {publishOptions.map((status) => (
                           <SelectItem key={status} value={status}>{t(`status.publish.${status}`)}</SelectItem>

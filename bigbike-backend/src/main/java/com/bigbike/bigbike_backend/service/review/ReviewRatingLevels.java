@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * REVIEW_RULE_008: đánh giá chấp nhận bước 0,5 sao — 10 mức từ 1.0 đến 5.0.
+ * REVIEW_RULE_008: đánh giá chấp nhận bước 0,5 sao — 9 mức từ 1.0 đến 5.0.
  * Dùng chung giữa submit (validate) và ratingBreakdown (build đủ 9 dòng, key không số 0 thừa).
  */
 public final class ReviewRatingLevels {

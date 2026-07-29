@@ -413,6 +413,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
   function mobileCard(item) {
     return {
       title: formatText(item.title),
+      selectionLabel: t('common.selectNamedRow', { name: formatText(item.title) }),
       subtitle: `/${formatText(item.slug)}`,
       status: <PublishStatusBadge value={item.publishStatus} />,
       meta: [{ label: t('content.colUpdated'), value: formatDateTime(item.updatedAt) }],

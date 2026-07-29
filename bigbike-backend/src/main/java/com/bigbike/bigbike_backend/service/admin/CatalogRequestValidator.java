@@ -126,19 +126,12 @@ public class CatalogRequestValidator {
             // share the same imageUrl column) already saved on the entity are not re-validated on
             // unrelated edits — only newly-submitted URLs must pass the MinIO whitelist.
             Set<String> existingGalleryUrls = new HashSet<>();
-            // Same idea for video source URLs (product-level videos[] + video gallery items) —
-            // only NEW video URLs go through the YouTube/TikTok/Facebook/MinIO whitelist.
-            Set<String> existingVideoUrls = new HashSet<>();
             if (current != null) {
                 if (current.getGallery() != null) {
                     for (GalleryMedia item : current.getGallery()) {
                         String u = item.image() != null ? AdminMutationValidators.trimToNull(item.image().url()) : null;
                         if (u != null) {
                             existingGalleryUrls.add(u);
-                        }
-                        String vu = AdminMutationValidators.trimToNull(item.videoUrl());
-                        if (vu != null) {
-                            existingVideoUrls.add(vu);
                         }
                     }
                 }
@@ -150,20 +143,12 @@ public class CatalogRequestValidator {
                                 if (u != null) {
                                     existingGalleryUrls.add(u);
                                 }
-                                String vu = AdminMutationValidators.trimToNull(img.getVideoUrl());
-                                if (vu != null) {
-                                    existingVideoUrls.add(vu);
-                                }
                             }
                         }
                     }
                 }
                 if (current.getVideos() != null) {
                     for (VideoAsset video : current.getVideos()) {
-                        String vu = AdminMutationValidators.trimToNull(video.url());
-                        if (vu != null) {
-                            existingVideoUrls.add(vu);
-                        }
                         String tu = video.thumbnail() != null ? AdminMutationValidators.trimToNull(video.thumbnail().url()) : null;
                         if (tu != null) {
                             existingGalleryUrls.add(tu);
@@ -175,7 +160,7 @@ public class CatalogRequestValidator {
             if (request.getGallery() != null) {
                 for (int i = 0; i < request.getGallery().size(); i++) {
                     GalleryImageRequest imgReq = request.getGallery().get(i);
-                    validateGalleryMediaUrls(imgReq, "gallery[" + i + "]", existingGalleryUrls, existingVideoUrls, errors);
+                    validateGalleryMediaUrls(imgReq, "gallery[" + i + "]", existingGalleryUrls, errors);
                 }
             }
             if (request.getVariants() != null) {
@@ -185,7 +170,7 @@ public class CatalogRequestValidator {
                         for (int j = 0; j < v.getGallery().size(); j++) {
                             GalleryImageRequest imgReq = v.getGallery().get(j);
                             validateGalleryMediaUrls(
-                                    imgReq, "variants[" + i + "].gallery[" + j + "]", existingGalleryUrls, existingVideoUrls, errors);
+                                    imgReq, "variants[" + i + "].gallery[" + j + "]", existingGalleryUrls, errors);
                         }
                     }
                 }
@@ -197,11 +182,12 @@ public class CatalogRequestValidator {
                         continue;
                     }
                     String videoUrl = AdminMutationValidators.trimToNull(videoReq.getUrl());
-                    if (videoUrl != null && !existingVideoUrls.contains(videoUrl) && !homeVideoUrlPolicy.isAllowed(videoUrl)) {
+                    if (videoUrl != null
+                            && !homeVideoUrlPolicy.isAllowedForProvider(videoReq.getProvider(), videoUrl)) {
                         errors.add(new ApiErrorDetail(
                                 "videos[" + i + "].url",
                                 "INVALID_VALUE",
-                                "Video URL must be a supported YouTube/TikTok/Facebook URL or an approved internal media URL."
+                                "Video source must be YouTube or upload, and the URL must match its provider."
                         ));
                     }
                     String thumbnailUrl = AdminMutationValidators.trimToNull(videoReq.getThumbnailUrl());
@@ -217,8 +203,8 @@ public class CatalogRequestValidator {
             }
 
             // Media URLs already stored on the product (body blocks) are grandfathered so
-            // editing legacy content that hotlinks old images is never blocked (MEDIA_RULE_003,
-            // mirrors the gallery/video legacy tolerance above). Only NEW external urls are rejected.
+            // editing legacy content that hotlinks old images is never blocked (MEDIA_RULE_003).
+            // Video blocks are validated whenever descriptionBlocks is submitted (MEDIA_RULE_004).
             Set<String> existingBlockMediaUrls = new HashSet<>();
             if (current != null) {
                 existingBlockMediaUrls.addAll(AdminMutationValidators.collectBlockMediaUrls(current.getDescriptionBlocks()));
@@ -359,7 +345,6 @@ public class CatalogRequestValidator {
             GalleryImageRequest imgReq,
             String fieldPrefix,
             Set<String> existingGalleryUrls,
-            Set<String> existingVideoUrls,
             List<ApiErrorDetail> errors
     ) {
         if (imgReq == null) {
@@ -367,11 +352,12 @@ public class CatalogRequestValidator {
         }
         if (ProductFieldApplier.isVideoGalleryItem(imgReq)) {
             String videoUrl = AdminMutationValidators.trimToNull(imgReq.getVideoUrl());
-            if (videoUrl != null && !existingVideoUrls.contains(videoUrl) && !homeVideoUrlPolicy.isAllowed(videoUrl)) {
+            if (videoUrl != null
+                    && !homeVideoUrlPolicy.isAllowedForProvider(imgReq.getVideoProvider(), videoUrl)) {
                 errors.add(new ApiErrorDetail(
                         fieldPrefix + ".videoUrl",
                         "INVALID_VALUE",
-                        "Video URL must be a supported YouTube/TikTok/Facebook URL or an approved internal media URL."
+                        "Video source must be YouTube or upload, and the URL must match its provider."
                 ));
             }
             String thumbnailUrl = AdminMutationValidators.trimToNull(imgReq.getUrl());
@@ -411,7 +397,7 @@ public class CatalogRequestValidator {
                 }
             } else if (block instanceof DescriptionBlock.VideoBlock videoBlock) {
                 AdminMutationValidators.validateVideoBlockUrl(
-                        videoBlock, fieldPrefix + "[" + i + "].url", existing, homeVideoUrlPolicy, errors);
+                        videoBlock, fieldPrefix + "[" + i + "].url", homeVideoUrlPolicy, errors);
             }
             AdminMutationValidators.validateHtmlInlineImages(
                     AdminMutationValidators.blockRawHtml(block), fieldPrefix + "[" + i + "].html",
@@ -635,6 +621,23 @@ public class CatalogRequestValidator {
                 current == null ? null : current.getMenuIconUrl(),
                 errors
         );
+        // Banner (desktop + mobile) is admin-managed media and must satisfy the same MinIO
+        // whitelist as image/icon/menuIcon. Previously unvalidated, which let a category hero
+        // point at an external host; existing URLs stay grandfathered so legacy rows still save.
+        AdminMutationValidators.validateImageAsset(
+                request.getBanner(),
+                "banner",
+                mediaUrlProperties.getPublicBaseUrl(),
+                current == null ? null : current.getBannerUrl(),
+                errors
+        );
+        AdminMutationValidators.validateImageAsset(
+                request.getMobileBanner(),
+                "mobileBanner",
+                mediaUrlProperties.getPublicBaseUrl(),
+                current == null ? null : current.getMobileBannerUrl(),
+                errors
+        );
         AdminMutationValidators.validateSeoMeta(
                 request.getSeo(),
                 "seo",
@@ -738,6 +741,23 @@ public class CatalogRequestValidator {
                 "logo",
                 mediaUrlProperties.getPublicBaseUrl(),
                 current == null ? null : current.getLogoUrl(),
+                errors
+        );
+        // Banner (desktop + mobile) is admin-managed media too and must satisfy the same
+        // MinIO whitelist as the logo. Previously unvalidated, which let a brand hero point
+        // at an external host; existing URLs stay grandfathered so legacy records still save.
+        AdminMutationValidators.validateImageAsset(
+                request.getBanner(),
+                "banner",
+                mediaUrlProperties.getPublicBaseUrl(),
+                current == null ? null : current.getBannerUrl(),
+                errors
+        );
+        AdminMutationValidators.validateImageAsset(
+                request.getMobileBanner(),
+                "mobileBanner",
+                mediaUrlProperties.getPublicBaseUrl(),
+                current == null ? null : current.getMobileBannerUrl(),
                 errors
         );
         AdminMutationValidators.validateSeoMeta(

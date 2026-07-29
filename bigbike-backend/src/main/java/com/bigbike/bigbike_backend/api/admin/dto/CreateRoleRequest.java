@@ -10,7 +10,7 @@ public record CreateRoleRequest(
         String id,
 
         @NotBlank(message = "Tên vai trò không được để trống.")
-        @Size(max = 120, message = "Tên vai trò không được vượt quá 120 ký tự.")
+        @Size(max = 100, message = "Tên vai trò không được vượt quá 100 ký tự.")
         String name,
 
         @Size(max = 1000, message = "Mô tả không được vượt quá 1000 ký tự.")

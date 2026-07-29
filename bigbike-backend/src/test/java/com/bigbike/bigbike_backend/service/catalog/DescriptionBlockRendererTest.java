@@ -116,6 +116,19 @@ class DescriptionBlockRendererTest {
     }
 
     @Test
+    void legacyVideoProvidersStillRenderForReadCompatibility() {
+        for (String provider : List.of("tiktok", "facebook")) {
+            var block = new DescriptionBlock.VideoBlock();
+            block.setProvider(provider);
+            block.setUrl("https://legacy.example/video/123");
+
+            assertThat(renderer.renderBlocksToHtml(List.of(block)))
+                    .contains("class=\"bb-video\"")
+                    .contains("data-provider=\"" + provider + "\"");
+        }
+    }
+
+    @Test
     void callout_rendersVariantClass() {
         var block = new DescriptionBlock.CalloutBlock();
         block.setVariant("warning");
@@ -331,11 +344,17 @@ class DescriptionBlockRendererTest {
         video.setProvider("youtube"); video.setUrl("https://youtu.be/abc");
         assertThat(validator.validate(video)).isEmpty();
 
-        for (String provider : List.of("tiktok", "facebook", "upload")) {
-            var supportedVideo = new DescriptionBlock.VideoBlock();
-            supportedVideo.setProvider(provider);
-            supportedVideo.setUrl("https://example.com/video");
-            assertThat(validator.validate(supportedVideo)).isEmpty();
+        var uploadVideo = new DescriptionBlock.VideoBlock();
+        uploadVideo.setProvider("upload");
+        uploadVideo.setUrl("/media/video.mp4");
+        assertThat(validator.validate(uploadVideo)).isEmpty();
+
+        for (String provider : List.of("tiktok", "facebook")) {
+            var legacyVideo = new DescriptionBlock.VideoBlock();
+            legacyVideo.setProvider(provider);
+            legacyVideo.setUrl("https://legacy.example/video");
+            assertThat(validator.validate(legacyVideo))
+                    .anyMatch(cv -> cv.getPropertyPath().toString().equals("provider"));
         }
 
         var callout = new DescriptionBlock.CalloutBlock();

@@ -6,6 +6,7 @@ import com.bigbike.bigbike_backend.api.checkout.dto.OrderSummaryResponse;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.domain.commerce.PaymentRecordStatus;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.CheckoutIdempotencyKeyEntity;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
@@ -49,7 +50,6 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 public class CheckoutService {
 
     private static final String CART_STATUS_CONVERTED = "CONVERTED";
-    private static final String PAYMENT_RECORD_STATUS_PENDING = "PENDING";
     private static final String CURRENCY_VND = "VND";
     private static final String FLOW_CHECKOUT = "CHECKOUT";
 
@@ -330,7 +330,7 @@ public class CheckoutService {
         payment.setOrder(order);
         payment.setPaymentMethod(paymentMethod);
         payment.setProvider("INTERNAL");
-        payment.setStatus(PAYMENT_RECORD_STATUS_PENDING);
+        payment.setStatus(PaymentRecordStatus.PENDING);
         payment.setAmount(amount);
         payment.setCurrency(CURRENCY_VND);
         payment.setCreatedAt(now);

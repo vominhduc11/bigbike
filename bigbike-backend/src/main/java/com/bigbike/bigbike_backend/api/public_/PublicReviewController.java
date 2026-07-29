@@ -41,6 +41,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class PublicReviewController {
 
     private static final int MAX_PHOTOS = 10;
+    private static final String REVIEW_PHOTO_PATH_PREFIX = "/media/reviews/";
 
     private final PublicReviewService publicReviewService;
     private final ApiResponseFactory apiResponseFactory;
@@ -90,7 +91,7 @@ public class PublicReviewController {
         return apiResponseFactory.data(Map.of("url", url), request);
     }
 
-    /** Photos must be internal MinIO URLs (/media/...) and capped at 10 \u2014 external/hotlink rejected. */
+    /** Photos must be review-upload URLs (/media/reviews/...) and capped at 10. */
     private void validatePhotos(List<String> photos) {
         if (photos == null || photos.isEmpty()) {
             return;
@@ -99,19 +100,23 @@ public class PublicReviewController {
             throw ValidationException.fromField(
                     "photos",
                     "TOO_MANY",
-                    "Ch\u1ec9 \u0111\u01b0\u1ee3c \u0111\u00ednh k\u00e8m t\u1ed1i \u0111a 10 \u1ea3nh.");
+                    "Chỉ được đính kèm tối đa 10 ảnh.");
         }
         for (String url : photos) {
-            if (url != null && !url.isBlank()) {
-                // Reuse the media-URL whitelist (same gate as category menuIcon) \u2014 throws on external URLs.
-                safeMediaAssetUrlPolicy.validateImageUrlOrThrow(url, "photos");
+            if (url == null || url.isBlank()
+                    || !url.trim().startsWith(REVIEW_PHOTO_PATH_PREFIX)) {
+                throw ValidationException.fromField(
+                        "photos",
+                        "INVALID_REVIEW_PHOTO_URL",
+                        "Ảnh đánh giá phải được tải lên từ mục ảnh đánh giá.");
             }
+            safeMediaAssetUrlPolicy.validateImageUrlOrThrow(url.trim(), "photos");
         }
     }
 
     /**
      * Non-throwing read of the current customer's id, if any. Unlike {@code CustomerController}'s
-     * {@code requireCustomer()}, this endpoint stays permitAll \u2014 a logged-in customer is a bonus
+     * {@code requireCustomer()}, this endpoint stays permitAll — a logged-in customer is a bonus
      * (lets the review link to their account so its avatar can be resolved later), not a requirement.
      * {@code CustomerSessionFilter} already populates the SecurityContext from the bb_session cookie
      * on this path even though it's public.

@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.config;
 
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,6 +36,10 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // The initial REQUEST dispatch is fully authenticated and permission-checked.
+                        // Allow only its container-managed ASYNC continuation so streamed responses
+                        // are not rejected after headers have already been committed.
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                         // Admin auth endpoints
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/refresh").permitAll()

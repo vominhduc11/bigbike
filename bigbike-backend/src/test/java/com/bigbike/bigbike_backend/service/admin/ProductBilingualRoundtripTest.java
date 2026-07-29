@@ -51,6 +51,7 @@ class ProductBilingualRoundtripTest {
             c.setId("test-cat-bilingual");
             c.setSlug("test-cat-bilingual");
             c.setName("Test Cat Bilingual");
+            c.setVisible(true);
             c.setCreatedAt(Instant.now());
             c.setUpdatedAt(Instant.now());
             return categoryRepo.save(c);
@@ -75,7 +76,7 @@ class ProductBilingualRoundtripTest {
         req.setGender("Unisex");
         req.setSku("SKU-" + slug);
         req.setRetailPrice(new BigDecimal("1000000"));
-        req.setPublishStatus(PublishStatus.PUBLISHED);
+        req.setPublishStatus(PublishStatus.DRAFT);
         com.bigbike.bigbike_backend.api.admin.dto.ImageAssetRequest img = new com.bigbike.bigbike_backend.api.admin.dto.ImageAssetRequest();
         img.setUrl("http://localhost:9000/bigbike-media/products/test.jpg");
         img.setAlt("test");

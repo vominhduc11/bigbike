@@ -16,7 +16,7 @@ import { formatBytes, mergeMediaCacheItem } from './media-picker/pickerUtils'
 import { useModalFocusTrap, useBodyScrollLock } from './media-picker/useModalBehavior'
 
 const ALLOWED_MIME = ['video/mp4']
-const MAX_FILE_SIZE = 50 * 1024 * 1024
+const MAX_FILE_SIZE = 200 * 1024 * 1024
 const PAGE_SIZE = 20
 
 function IconVideo() {

@@ -199,7 +199,7 @@ class AdminUsersApiTest {
         createAdminUserDirectly(email, "EDITOR", "ACTIVE");
 
         String body = """
-                {"email":"%s","displayName":"Dup","role":"ADMIN","password":"Secure@123"}
+                {"email":"%s","displayName":"Dup","role":"ADMIN"}
                 """.formatted(email);
 
         mockMvc.perform(post(BASE_URL)
@@ -213,7 +213,7 @@ class AdminUsersApiTest {
     @Test
     void createAdminUser_invalidEmailFormat_returns409() throws Exception {
         String body = """
-                {"email":"not-an-email","displayName":"Bad","role":"EDITOR","password":"Secure@123"}
+                {"email":"not-an-email","displayName":"Bad","role":"EDITOR"}
                 """;
         mockMvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -226,7 +226,7 @@ class AdminUsersApiTest {
     @Test
     void createAdminUser_invalidRole_returns409() throws Exception {
         String body = """
-                {"email":"au-badrole-%s@bigbike.test","displayName":"Bad","role":"GOD_MODE","password":"Secure@123"}
+                {"email":"au-badrole-%s@bigbike.test","displayName":"Bad","role":"GOD_MODE"}
                 """.formatted(UUID.randomUUID().toString().substring(0, 8));
         mockMvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -235,24 +235,24 @@ class AdminUsersApiTest {
                 .andExpect(status().isConflict());
     }
 
-    // 12. Password too short → 409
+    // 12. Password too short on update → 400
     @Test
-    void createAdminUser_shortPassword_returns409() throws Exception {
-        String body = """
-                {"email":"au-shortpw-%s@bigbike.test","displayName":"Short","role":"EDITOR","password":"abc"}
-                """.formatted(UUID.randomUUID().toString().substring(0, 8));
-        mockMvc.perform(post(BASE_URL)
+    void updateAdminUser_shortPassword_returns400() throws Exception {
+        UUID id = createAdminUserDirectly(
+                "au-shortpw-" + UUID.randomUUID() + "@bigbike.test", "EDITOR", "ACTIVE");
+
+        mockMvc.perform(patch(BASE_URL + "/" + id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body)
+                        .content("{\"newPassword\":\"abc\"}")
                         .header("Authorization", "Bearer " + actorToken))
-                .andExpect(status().isConflict());
+                .andExpect(status().isBadRequest());
     }
 
     // 13. Missing display name → 409
     @Test
     void createAdminUser_missingDisplayName_returns409() throws Exception {
         String body = """
-                {"email":"au-noname-%s@bigbike.test","role":"EDITOR","password":"Secure@123"}
+                {"email":"au-noname-%s@bigbike.test","role":"EDITOR"}
                 """.formatted(UUID.randomUUID().toString().substring(0, 8));
         mockMvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -274,6 +274,18 @@ class AdminUsersApiTest {
         mockMvc.perform(patch(BASE_URL + "/" + id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"INVITED\"}")
+                        .header("Authorization", "Bearer " + actorToken))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void updateAdminUser_invitedAccountCannotBeManuallyActivated_returns409() throws Exception {
+        String email = "au-invited-" + UUID.randomUUID() + "@bigbike.test";
+        UUID id = createAdminUserDirectly(email, "EDITOR", "INVITED");
+
+        mockMvc.perform(patch(BASE_URL + "/" + id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"ACTIVE\"}")
                         .header("Authorization", "Bearer " + actorToken))
                 .andExpect(status().isConflict());
     }

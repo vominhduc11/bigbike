@@ -208,7 +208,7 @@ export function PdpSkeleton() {
   );
 }
 
-/** Catalog (san-pham, danh-muc-san-pham) — page-head + sidebar + product-grid */
+/** Catalog (sp, danh-muc) — page-head + sidebar + product-grid */
 export function CatalogSkeleton({ withHero = false }: { withHero?: boolean }) {
   return (
     <SkeletonRoot labelKey="category">

@@ -32,6 +32,13 @@ async function confirmDialog(page: Page, action: string) {
   await dialog.getByRole('button', { name: action, exact: true }).click()
 }
 
+// Xoá / Khôi phục / Xóa vĩnh viễn nằm trong menu "Thao tác" của từng dòng (Radix
+// DropdownMenu, render qua portal nên menuitem tra ở cấp page). Ẩn/Hiện là nút icon riêng.
+async function clickRowMenuItem(page: Page, row: ReturnType<Page['locator']>, itemName: string) {
+  await row.getByRole('button', { name: 'Thao tác', exact: true }).click()
+  await page.getByRole('menuitem', { name: itemName, exact: true }).click()
+}
+
 async function captureCategoryScreens(page: Page, testInfo: TestInfo, label: string) {
   const viewports = [
     { name: '1440', width: 1440, height: 1000 },
@@ -62,7 +69,7 @@ async function purgePriorE2ECategories(page: Page) {
   while (await rows.count()) {
     const previousCount = await rows.count()
     const row = rows.first()
-    await row.getByRole('button', { name: 'Xoá', exact: true }).click()
+    await clickRowMenuItem(page, row, 'Xoá')
     await Promise.all([
       page.waitForResponse((r) => r.request().method() === 'DELETE'
         && /\/admin\/categories\/[^/]+$/.test(new URL(r.url()).pathname)),
@@ -77,7 +84,7 @@ async function purgePriorE2ECategories(page: Page) {
   while (await rows.count()) {
     const previousCount = await rows.count()
     const row = rows.first()
-    await row.getByRole('button', { name: 'Xóa vĩnh viễn', exact: true }).click()
+    await clickRowMenuItem(page, row, 'Xóa vĩnh viễn')
     await Promise.all([
       page.waitForResponse((r) => r.request().method() === 'DELETE'
         && new URL(r.url()).pathname.endsWith('/permanent')),
@@ -103,16 +110,19 @@ test.describe('E2E_CATEGORY_lifecycle', () => {
       await adminPage.locator('#category-form input[name="name"]').fill(name)
       await adminPage.locator('#category-form input[name="slug"]').fill(slug)
 
-      const homepageCheckbox = adminPage.locator('#category-form [role="checkbox"]')
-      await expect(homepageCheckbox).toHaveAttribute('data-state', 'unchecked')
+      // Công tắc "Hiển thị trên trang chủ" là Radix Switch (role="switch"), tắt sẵn khi tạo mới.
+      const homepageToggle = adminPage.locator('#category-form [role="switch"]')
+      await expect(homepageToggle).toHaveAttribute('data-state', 'unchecked')
 
       await adminPage.locator('.lang-switcher').first().getByRole('button', { name: 'EN', exact: true }).click()
       await adminPage.locator('#category-form input[name="translations.en.name"]').fill(`${name} English`)
       await adminPage.locator('.lang-switcher').first().getByRole('button', { name: 'VI', exact: true }).click()
 
+      // Màn chi tiết có 2 nút Lưu cùng submit form (đầu trang + mục "Lưu thay đổi" bên cạnh);
+      // bấm nút đầu là đủ.
       const [response] = await Promise.all([
         adminPage.waitForResponse((r) => r.request().method() === 'POST' && new URL(r.url()).pathname.endsWith('/admin/categories')),
-        adminPage.getByRole('button', { name: 'Tạo danh mục', exact: true }).click(),
+        adminPage.getByRole('button', { name: 'Tạo danh mục', exact: true }).first().click(),
       ])
       expect(response.status(), 'API tạo danh mục phải trả 2xx').toBeLessThan(300)
       expect(response.request().postDataJSON()).not.toHaveProperty('showOnHomepage')
@@ -133,7 +143,7 @@ test.describe('E2E_CATEGORY_lifecycle', () => {
 
     await test.step('ẩn khỏi website là thao tác riêng, không chuyển vào Thùng rác', async () => {
       const row = await findCategoryRow(adminPage, name)
-      await row.getByRole('button', { name: 'Ẩn', exact: true }).click()
+      await row.getByRole('button', { name: 'Ẩn khỏi website', exact: true }).click()
       await expect(adminPage.getByRole('dialog')).toContainText('không bị chuyển vào Thùng rác')
       const [response] = await Promise.all([
         adminPage.waitForResponse((r) => r.request().method() === 'PATCH' && new URL(r.url()).pathname.endsWith(`/admin/categories/${categoryId}`)),
@@ -144,7 +154,7 @@ test.describe('E2E_CATEGORY_lifecycle', () => {
 
     await test.step('xóa mềm, khôi phục từ Thùng rác và xem trước xóa vĩnh viễn', async () => {
       let row = await findCategoryRow(adminPage, name)
-      await row.getByRole('button', { name: 'Xoá', exact: true }).click()
+      await clickRowMenuItem(adminPage, row, 'Xoá')
       const [softDeleteResponse] = await Promise.all([
         adminPage.waitForResponse((r) => r.request().method() === 'DELETE' && new URL(r.url()).pathname.endsWith(`/admin/categories/${categoryId}`)),
         confirmDialog(adminPage, 'Xoá'),
@@ -153,7 +163,7 @@ test.describe('E2E_CATEGORY_lifecycle', () => {
 
       await selectTrashFilter(adminPage, 'Thùng rác')
       row = await findCategoryRow(adminPage, name)
-      await row.getByRole('button', { name: 'Khôi phục', exact: true }).click()
+      await clickRowMenuItem(adminPage, row, 'Khôi phục')
       const [restoreResponse] = await Promise.all([
         adminPage.waitForResponse((r) => r.request().method() === 'POST' && new URL(r.url()).pathname.endsWith(`/admin/categories/${categoryId}/restore`)),
         confirmDialog(adminPage, 'Khôi phục'),
@@ -162,7 +172,7 @@ test.describe('E2E_CATEGORY_lifecycle', () => {
 
       await selectTrashFilter(adminPage, 'Hoạt động')
       row = await findCategoryRow(adminPage, name)
-      await row.getByRole('button', { name: 'Xoá', exact: true }).click()
+      await clickRowMenuItem(adminPage, row, 'Xoá')
       await Promise.all([
         adminPage.waitForResponse((r) => r.request().method() === 'DELETE' && new URL(r.url()).pathname.endsWith(`/admin/categories/${categoryId}`)),
         confirmDialog(adminPage, 'Xoá'),
@@ -170,7 +180,7 @@ test.describe('E2E_CATEGORY_lifecycle', () => {
 
       await selectTrashFilter(adminPage, 'Thùng rác')
       row = await findCategoryRow(adminPage, name)
-      await row.getByRole('button', { name: 'Xóa vĩnh viễn', exact: true }).click()
+      await clickRowMenuItem(adminPage, row, 'Xóa vĩnh viễn')
       await expect(adminPage.getByRole('dialog')).toContainText('sản phẩm sẽ bị gỡ liên kết')
       await expect(adminPage.getByRole('dialog')).toContainText('sản phẩm không còn danh mục nào')
       const [permanentDeleteResponse] = await Promise.all([

@@ -59,13 +59,13 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
     // ── Customer admin aggregate ──────────────────────────────────────────────
 
     @Query("SELECT o.customerId, COUNT(o), COALESCE(SUM(o.totalAmount), 0) " +
-           "FROM OrderEntity o WHERE o.customerId IN :ids GROUP BY o.customerId")
+           "FROM OrderEntity o WHERE o.customerId IN :ids AND o.status <> 'CANCELLED' GROUP BY o.customerId")
     List<Object[]> countAndSumByCustomerIds(@Param("ids") java.util.Collection<UUID> ids);
 
-    // Customer IDs whose lifetime order total reaches the VIP threshold —
+    // Customer IDs whose non-cancelled lifetime order total reaches the VIP threshold —
     // mirrors AdminCustomerService.deriveSegment so the KPI count and the
-    // per-customer segment label stay in agreement.
-    @Query("SELECT o.customerId FROM OrderEntity o WHERE o.customerId IS NOT NULL "
+    // per-customer segment label stay in agreement (CUSTOMER_RULE_006).
+    @Query("SELECT o.customerId FROM OrderEntity o WHERE o.customerId IS NOT NULL AND o.status <> 'CANCELLED' "
            + "GROUP BY o.customerId HAVING COALESCE(SUM(o.totalAmount), 0) >= :threshold")
     List<UUID> findVipCustomerIds(@Param("threshold") BigDecimal threshold);
 

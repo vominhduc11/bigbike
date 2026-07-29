@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { isAllowedMediaVideoUrl } from './urlPolicies'
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const URL_REGEX = /^https?:\/\//
@@ -105,11 +106,14 @@ export function createProductSchema(t, isCreate = false) {
       gallery: z.array(z.object({
         url: z.string(),
         alt: z.string().optional(),
+        mediaType: z.string().optional(),
+        videoUrl: z.string().optional(),
+        provider: z.string().optional(),
       })).max(50, 'Thư viện ảnh tối đa 50 ảnh.').optional(),
       videos: z.array(z.object({
         url: z.string(),
         title: z.string(),
-        type: z.enum(['youtube', 'tiktok', 'facebook', 'upload']).optional(),
+        type: z.string().optional(),
       })).max(20, 'Danh sách video tối đa 20 video.').optional(),
       faqs: z.array(z.object({
         _key: z.string().optional(),
@@ -142,7 +146,9 @@ export function createProductSchema(t, isCreate = false) {
         gallery: z.array(z.object({
           url: z.string(),
           alt: z.string().optional(),
+          mediaType: z.string().optional(),
           videoUrl: z.string().optional(),
+          provider: z.string().optional(),
         })).optional(),
       })).max(200, 'Biến thể tối đa 200 mục.').optional(),
       relatedProductIds: z.array(z.string()).max(24, 'Sản phẩm liên quan tối đa 24 mục.').optional(),
@@ -289,13 +295,6 @@ export function createProductSchema(t, isCreate = false) {
           path: ['shortDescription'],
         })
       }
-      if (String(data.contentBottom ?? '').length > 50000) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: t('products.detail.errContentBottomTooLong'),
-          path: ['contentBottom'],
-        })
-      }
       if ((data.seoTitle ?? '').trim().length > 255) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -339,7 +338,7 @@ export function createProductSchema(t, isCreate = false) {
       }
       const enLimits = [
         ['name', 255], ['shortDescription', 2000], ['description', 20000],
-        ['contentBottom', 50000], ['specifications', 50000], ['specStats', 50000], ['trustBadges', 50000],
+        ['specifications', 50000], ['specStats', 50000], ['trustBadges', 50000],
         ['quickAnswerSummary', 600],
         ['seoTitle', 255], ['seoDescription', 5000],
       ]
@@ -415,10 +414,39 @@ export function createProductSchema(t, isCreate = false) {
         })
       }
 
-      // Validate gallery URLs
+      const validateVideoSource = (provider, url, path) => {
+        if (!['youtube', 'upload'].includes(provider)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t('products.detail.video.legacySourceError'),
+            path,
+          })
+          return
+        }
+        if (provider === 'upload') {
+          if (!isAllowedMediaVideoUrl(url)) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.video.invalidUploadUrl'), path })
+          }
+          return
+        }
+        if (!/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|v\/))[A-Za-z0-9_-]{11}/.test(url)) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.video.invalidYoutubeUrl'), path })
+        }
+      }
+
+      data.descriptionBlocks?.forEach((block, index) => {
+        if (block?.type === 'video' && String(block.url || '').trim()) {
+          validateVideoSource(block.provider, String(block.url).trim(), ['descriptionBlocks', index, 'url'])
+        }
+      })
+
+      // Validate gallery URLs and video provider/URL pairs.
       data.gallery?.forEach((img, i) => {
         if (img.url.trim() && !MEDIA_URL_REGEX.test(img.url.trim())) {
           ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errImageUrl'), path: ['gallery', i, 'url'] })
+        }
+        if (img.mediaType === 'video' && (img.videoUrl || '').trim()) {
+          validateVideoSource(img.provider, img.videoUrl.trim(), ['gallery', i, 'videoUrl'])
         }
       })
 
@@ -434,30 +462,7 @@ export function createProductSchema(t, isCreate = false) {
           }
           return
         }
-        if (v.type === 'upload') {
-          if (!MEDIA_URL_REGEX.test(url)) {
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'URL video không hợp lệ.', path: ['videos', i, 'url'] })
-          }
-          return
-        }
-        if (v.type === 'tiktok') {
-          // Link đầy đủ TikTok (vt./vm. short link không có id số → reject).
-          if (!/(?:www\.|m\.)?tiktok\.com\/(?:@[\w.-]+\/video\/|video\/|v\/|embed\/v2\/|embed\/)\d{6,30}/.test(url)) {
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'URL TikTok không hợp lệ. Dán link đầy đủ dạng tiktok.com/@tên/video/… (không dùng link rút gọn vt.tiktok.com).', path: ['videos', i, 'url'] })
-          }
-          return
-        }
-        if (v.type === 'facebook') {
-          // Link video Facebook đầy đủ (fb.watch rút gọn → reject).
-          if (!/^https?:\/\/(?:www\.|m\.|web\.)?facebook\.com\/(?:[^?#]*\/videos\/|reel\/|watch\/?(?:\?|$)|[^?#]*video\.php)/i.test(url)) {
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'URL Facebook không hợp lệ. Dán link video Facebook đầy đủ (không dùng link rút gọn fb.watch); video phải công khai.', path: ['videos', i, 'url'] })
-          }
-          return
-        }
-        // Default to YouTube: parse YouTube ID using same regex as the editor.
-        if (!/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|v\/))[A-Za-z0-9_-]{11}/.test(url)) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'URL YouTube không hợp lệ. Hỗ trợ youtube.com/watch?v=…, youtu.be/…, youtube.com/shorts/…', path: ['videos', i, 'url'] })
-        }
+        validateVideoSource(v.type, url, ['videos', i, 'url'])
       })
 
       // Validate variants.
@@ -497,6 +502,9 @@ export function createProductSchema(t, isCreate = false) {
         v.gallery?.forEach((img, j) => {
           if (img.url.trim() && !MEDIA_URL_REGEX.test(img.url.trim())) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errImageUrl'), path: ['variants', i, 'gallery', j, 'url'] })
+          }
+          if (img.mediaType === 'video' && (img.videoUrl || '').trim()) {
+            validateVideoSource(img.provider, img.videoUrl.trim(), ['variants', i, 'gallery', j, 'videoUrl'])
           }
         })
       })
@@ -608,6 +616,7 @@ export function createBrandSchema(t) {
     name: z.string(),
     description: z.string().optional(),
     logoUrl: z.string().optional(),
+    bannerUrl: z.string().optional(),
     seoCanonicalUrl: z.string().optional(),
     seoOgImageUrl: z.string().optional(),
     // English content (V137). BRAND_RULE_001/003: brand name and slug are shared
@@ -634,6 +643,11 @@ export function createBrandSchema(t) {
     }
     if (data.logoUrl?.trim() && !MEDIA_URL_REGEX.test(data.logoUrl.trim())) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('brands.detail.errLogoUrl'), path: ['logoUrl'] })
+    }
+    // Ảnh banner thương hiệu là media do admin quản lý → phải nằm trong kho ảnh nội bộ,
+    // không nhận link ngoài (cùng chuẩn với logo và ảnh chia sẻ SEO).
+    if (data.bannerUrl?.trim() && !MEDIA_URL_REGEX.test(data.bannerUrl.trim())) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('brands.detail.errBannerUrl'), path: ['bannerUrl'] })
     }
     if (data.seoCanonicalUrl?.trim() && !URL_REGEX.test(data.seoCanonicalUrl.trim())) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('brands.detail.errSeoCanonicalUrl'), path: ['seoCanonicalUrl'] })
@@ -711,6 +725,30 @@ export function createContentSchema(t, _isCreate, _normalizedType) {
     if (!hasBody && !hasBlocks) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('content.detail.errBodyRequired'), path: ['bodyBlocks'] })
     }
+    data.bodyBlocks?.forEach((block, index) => {
+      if (block?.type !== 'video') return
+      const url = String(block.url || '').trim()
+      if (!['youtube', 'upload'].includes(block.provider)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t('products.detail.blocks.legacySourceError'),
+          path: ['bodyBlocks', index, 'url'],
+        })
+      } else if (block.provider === 'upload' && !isAllowedMediaVideoUrl(url)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t('products.detail.video.invalidUploadUrl'),
+          path: ['bodyBlocks', index, 'url'],
+        })
+      } else if (block.provider === 'youtube'
+        && !/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|v\/))[A-Za-z0-9_-]{11}/.test(url)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t('products.detail.video.invalidYoutubeUrl'),
+          path: ['bodyBlocks', index, 'url'],
+        })
+      }
+    })
     if (!data.publishStatus) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('content.detail.errPublishRequired'), path: ['publishStatus'] })
     }

@@ -9,6 +9,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.ProductTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantOptionRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.VideoRequest;
 import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.config.MediaUrlProperties;
 import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
@@ -62,7 +63,6 @@ class CatalogRequestValidatorTest {
         when(brandJpaRepositoryProvider.getIfAvailable()).thenReturn(brandJpaRepository);
 
         homeVideoUrlPolicy = mock(HomeVideoUrlPolicy.class);
-        when(homeVideoUrlPolicy.isAllowed(org.mockito.ArgumentMatchers.anyString())).thenReturn(true);
         when(homeVideoUrlPolicy.isAllowedForProvider(
                 org.mockito.ArgumentMatchers.anyString(),
                 org.mockito.ArgumentMatchers.anyString()
@@ -437,7 +437,7 @@ class CatalogRequestValidatorTest {
     }
 
     @Test
-    void validateProductRequest_unchangedLegacyVideoBlockUrl_isAccepted() {
+    void validateProductRequest_resubmittedLegacyVideoBlockUrl_isRejected() {
         String legacyUrl = "https://legacy.example/video/123";
         when(homeVideoUrlPolicy.isAllowedForProvider("youtube", legacyUrl)).thenReturn(false);
 
@@ -458,8 +458,56 @@ class CatalogRequestValidatorTest {
         List<ApiErrorDetail> errors = new ArrayList<>();
         validator.validateProductRequest(request, current, false, false, errors);
 
-        assertThat(errors).noneSatisfy(error ->
+        assertThat(errors).anySatisfy(error ->
                 assertThat(error.field()).isEqualTo("descriptionBlocks[0].url"));
+    }
+
+    @Test
+    void validateProductRequest_rejectsLegacyProductVideoProvider() {
+        String legacyUrl = "https://www.facebook.com/BigBike/videos/1234567890";
+        when(homeVideoUrlPolicy.isAllowedForProvider("facebook", legacyUrl)).thenReturn(false);
+
+        VideoRequest video = new VideoRequest();
+        video.setProvider("facebook");
+        video.setUrl(legacyUrl);
+        UpsertProductRequest request = createBaseRequest();
+        request.setVideos(List.of(video));
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        validator.validateProductRequest(request, null, true, false, errors);
+
+        assertThat(errors).anySatisfy(error ->
+                assertThat(error.field()).isEqualTo("videos[0].url"));
+    }
+
+    @Test
+    void validateProductRequest_rejectsLegacyGalleryAndVariantGalleryProviders() {
+        String legacyUrl = "https://www.tiktok.com/@bigbike/video/7251234567890123456";
+        when(homeVideoUrlPolicy.isAllowedForProvider("tiktok", legacyUrl)).thenReturn(false);
+
+        GalleryImageRequest productGallery = new GalleryImageRequest();
+        productGallery.setMediaType("video");
+        productGallery.setVideoProvider("tiktok");
+        productGallery.setVideoUrl(legacyUrl);
+
+        GalleryImageRequest variantGallery = new GalleryImageRequest();
+        variantGallery.setMediaType("video");
+        variantGallery.setVideoProvider("tiktok");
+        variantGallery.setVideoUrl(legacyUrl);
+        VariantRequest variant = new VariantRequest();
+        variant.setSku("VIDEO-VARIANT");
+        variant.setRetailPrice(BigDecimal.TEN);
+        variant.setGallery(List.of(variantGallery));
+
+        UpsertProductRequest request = createBaseRequest();
+        request.setGallery(List.of(productGallery));
+        request.setVariants(List.of(variant));
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        validator.validateProductRequest(request, null, true, false, errors);
+
+        assertThat(errors).extracting(ApiErrorDetail::field)
+                .contains("gallery[0].videoUrl", "variants[0].gallery[0].videoUrl");
     }
 
     @Test

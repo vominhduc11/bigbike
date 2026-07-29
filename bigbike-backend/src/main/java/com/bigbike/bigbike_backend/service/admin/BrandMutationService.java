@@ -173,7 +173,8 @@ public class BrandMutationService {
                     "Không thể xoá thương hiệu \"Chưa phân loại\" — đây là thương hiệu hệ thống.");
         }
         if (entity.isVisible()) {
-            throw new ConflictException("Only trashed brands can be permanently deleted.");
+            throw new ConflictException(
+                    "Chỉ xoá vĩnh viễn được thương hiệu đang ở Thùng rác. Hãy chuyển thương hiệu vào Thùng rác trước.");
         }
 
         List<String> reassignedProductIds = productJpaRepository.findIdsByBrand_Id(brandId);

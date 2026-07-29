@@ -1,0 +1,4 @@
+interface:
+  display_name: "Web Page"
+  short_description: "Scaffold a BigBike web route"
+  default_prompt: "Use $web-page to add a new customer-facing Next.js route with metadata, data loading, states, and brand styling."

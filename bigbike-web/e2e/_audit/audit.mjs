@@ -44,8 +44,8 @@ const VIEWPORTS = QUICK ? VIEWPORTS_QUICK : VIEWPORTS_FULL;
 // Static routes always tested.
 const STATIC_ROUTES = [
   "/",
-  "/san-pham",
-  "/danh-muc-san-pham",
+  "/sp",
+  "/sp",
   "/brands",
   "/tin-tuc",
   "/gioi-thieu",
@@ -66,7 +66,7 @@ const STATIC_ROUTES = [
 
 // Routes that get full-page screenshots (subset) at SHOT_VIEWPORTS.
 const SHOT_ROUTE_HINTS = [
-  "/", "/san-pham", "/danh-muc-san-pham", "/tin-tuc", "/dang-nhap",
+  "/", "/sp", "/tin-tuc", "/dang-nhap",
   "/gio-hang", "/dat-hang", "/gioi-thieu", "/lien-he", "/brands",
 ];
 const SHOT_VIEWPORTS = QUICK ? [[390, 844], [1280, 900]] : [[390, 844], [768, 1024], [1280, 900], [1920, 1080]];
@@ -213,8 +213,8 @@ async function discoverDynamic(page) {
       if (m) found[key] = m.startsWith("http") ? new URL(m).pathname + new URL(m).search : m;
     } catch (e) { /* ignore */ }
   };
-  await grab("/san-pham", /\/product\//, "product");
-  await grab("/danh-muc-san-pham", /\/danh-muc-san-pham\/[^/?#]+$/, "category");
+  await grab("/sp", /\/product\//, "product");
+  await grab("/sp", /\/danh-muc\/[^/?#]+\/?$/, "category");
   await grab("/brands", /\/brands\/[^/?#]+$/, "brand");
   await grab("/tin-tuc", /\/tin-tuc\/[^/?#]+$/, "article");
   // policy + guide + cms catch-all from footer links on home
@@ -234,7 +234,7 @@ async function run() {
 
   let routes = [...STATIC_ROUTES];
   for (const v of Object.values(dyn)) if (v && !routes.includes(v)) routes.push(v);
-  if (QUICK) routes = routes.filter((r) => ["/", "/san-pham", "/dang-nhap", "/gio-hang", dyn.product, dyn.category].includes(r));
+  if (QUICK) routes = routes.filter((r) => ["/", "/sp", "/dang-nhap", "/gio-hang", dyn.product, dyn.category].includes(r));
   if (process.env.BB_ONLY) routes = process.env.BB_ONLY.split(",").map((s) => s.trim()).filter(Boolean);
 
   const report = { tag: TAG, base: BASE, when: "", viewports: VIEWPORTS, dynamic: dyn, routes: {} };

@@ -4,6 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +42,27 @@ class Phase1KOpenApiContractTest {
                 .andExpect(status().isOk())
                 .andReturn();
         return result.getResponse().getContentAsString();
+    }
+
+    private JsonNode parameterNamed(JsonNode parameters, String name) {
+        for (JsonNode parameter : parameters) {
+            if (name.equals(parameter.path("name").asText())) {
+                return parameter;
+            }
+        }
+        return parameters.path(-1);
+    }
+
+    private List<String> textValues(JsonNode arrayNode) {
+        return StreamSupport.stream(arrayNode.spliterator(), false)
+                .map(JsonNode::asText)
+                .toList();
+    }
+
+    private List<String> fieldNames(JsonNode objectNode) {
+        List<String> names = new ArrayList<>();
+        objectNode.fieldNames().forEachRemaining(names::add);
+        return names;
     }
 
     // ── 1. Endpoint availability ──────────────────────────────────────────────
@@ -88,11 +114,285 @@ class Phase1KOpenApiContractTest {
     }
 
     @Test
+    void openApi_adminOrderContractMatchesControllerFiltersAndAuditEndpoint() throws Exception {
+        JsonNode document = new ObjectMapper().readTree(fetchApiDocs());
+        JsonNode paths = document.path("paths");
+        JsonNode listParameters = paths.path("/api/v1/admin/orders").path("get").path("parameters");
+        JsonNode exportOperation = paths.path("/api/v1/admin/reports/orders/export").path("get");
+        JsonNode exportParameters = exportOperation.path("parameters");
+
+        assertThat(listParameters.findValuesAsText("name"))
+                .contains("page", "size", "status", "q", "from", "to", "sort");
+        assertThat(parameterNamed(listParameters, "from").path("description").asText())
+                .contains("Asia/Ho_Chi_Minh");
+        assertThat(parameterNamed(listParameters, "to").path("description").asText())
+                .contains("Asia/Ho_Chi_Minh");
+        assertThat(paths.path("/api/v1/admin/orders").path("get").path("responses").has("400")).isTrue();
+
+        assertThat(exportParameters.findValuesAsText("name"))
+                .containsExactly("q", "status", "from", "to");
+        assertThat(parameterNamed(exportParameters, "q").path("description").asText())
+                .doesNotContain("customer name");
+        assertThat(textValues(parameterNamed(exportParameters, "status").path("schema").path("enum")))
+                .containsExactly("PENDING", "PROCESSING", "COMPLETED", "CANCELLED");
+        assertThat(parameterNamed(exportParameters, "from").path("schema").path("format").asText())
+                .isEqualTo("date");
+        assertThat(parameterNamed(exportParameters, "from").path("description").asText())
+                .contains("Asia/Ho_Chi_Minh");
+        assertThat(parameterNamed(exportParameters, "to").path("schema").path("format").asText())
+                .isEqualTo("date");
+        assertThat(exportOperation.path("responses").path("200").path("headers")
+                .path("X-Export-Uncapped").path("schema").path("enum").get(0).asText())
+                .isEqualTo("true");
+        assertThat(exportOperation.path("responses").path("200").path("content")
+                .path("text/csv").path("schema").path("format").asText())
+                .isEqualTo("binary");
+        assertThat(exportOperation.path("responses").has("400")).isTrue();
+        assertThat(exportOperation.path("responses").has("403")).isTrue();
+
+        assertThat(paths.has("/api/v1/admin/orders/{orderId}/allowed-transitions")).isTrue();
+        assertThat(paths.has("/api/v1/admin/orders/{orderId}/audit")).isTrue();
+        assertThat(paths.path("/api/v1/admin/orders/{orderId}/audit")
+                .path("get").path("parameters").get(0).path("schema").path("format").asText())
+                .isEqualTo("uuid");
+
+        JsonNode paymentStatus = document.path("components").path("schemas")
+                .path("OrderPaymentResponse").path("properties").path("status");
+        assertThat(textValues(paymentStatus.path("enum")))
+                .containsExactly("PENDING", "SUCCEEDED", "FAILED", "CANCELLED");
+        assertThat(paths.path("/api/v1/admin/orders/{orderId}").path("get").path("responses")
+                .path("200").path("content").path("application/json").path("schema").path("$ref").asText())
+                .isEqualTo("#/components/schemas/AdminOrderDetailDataResponse");
+        assertThat(paths.path("/api/v1/admin/orders").path("get").path("responses")
+                .path("200").path("content").path("application/json").path("schema").path("$ref").asText())
+                .isEqualTo("#/components/schemas/AdminOrderListResponse");
+        assertThat(paths.path("/api/v1/admin/orders/{orderId}/status").path("patch").path("responses")
+                .path("200").path("content").path("application/json").path("schema").path("$ref").asText())
+                .isEqualTo("#/components/schemas/AdminOrderDetailDataResponse");
+        assertThat(paths.path("/api/v1/admin/orders/{orderId}/allowed-transitions").path("get")
+                .path("responses").path("200").path("content").path("application/json")
+                .path("schema").path("$ref").asText())
+                .isEqualTo("#/components/schemas/AdminOrderAllowedTransitionsDataResponse");
+        assertThat(paths.path("/api/v1/admin/orders/{orderId}/audit").path("get").path("responses")
+                .path("200").path("content").path("application/json").path("schema").path("$ref").asText())
+                .isEqualTo("#/components/schemas/AdminOrderAuditTrailDataResponse");
+        assertThat(document.path("components").path("schemas").path("OrderPaymentResponse")
+                .path("properties").path("paymentMethod").path("nullable").asBoolean()).isTrue();
+    }
+
+    @Test
+    void openApi_adminProductContractCoversLifecycleImportExportAndCurrentFields() throws Exception {
+        JsonNode document = new ObjectMapper().readTree(fetchApiDocs());
+        JsonNode paths = document.path("paths");
+
+        assertThat(fieldNames(paths)).contains(
+                "/api/v1/admin/products",
+                "/api/v1/admin/products/{id}",
+                "/api/v1/admin/products/preview",
+                "/api/v1/admin/products/{id}/publish",
+                "/api/v1/admin/products/{id}/restore",
+                "/api/v1/admin/products/{id}/permanent",
+                "/api/v1/admin/products/homepage-blocks",
+                "/api/v1/admin/products/export.csv",
+                "/api/v1/admin/products/import/validate",
+                "/api/v1/admin/products/import/commit",
+                "/api/v1/admin/products/import/export/{id}");
+
+        JsonNode listParameters = paths.path("/api/v1/admin/products").path("get").path("parameters");
+        assertThat(listParameters.findValuesAsText("name"))
+                .contains("page", "size", "pageSize", "sort", "q", "search",
+                        "publishStatus", "stockState", "brandId", "categoryId",
+                        "filter_gender", "homepageBlock", "lang");
+        assertThat(textValues(parameterNamed(listParameters, "filter_gender").path("schema").path("enum")))
+                .containsExactly("Nam", "Nữ", "Unisex");
+
+        JsonNode preview = paths.path("/api/v1/admin/products/preview").path("post");
+        assertThat(textValues(parameterNamed(preview.path("parameters"), "lang").path("schema").path("enum")))
+                .containsExactly("vi", "en");
+        assertThat(preview.path("responses").path("200").path("content")
+                .path("application/json").path("schema").path("$ref").asText())
+                .isEqualTo("#/components/schemas/ProductDataResponse");
+
+        assertThat(paths.path("/api/v1/admin/products/{id}/publish").path("patch")
+                .path("requestBody").path("content").path("application/json")
+                .path("schema").path("$ref").asText())
+                .isEqualTo("#/components/schemas/ProductPublishRequest");
+        assertThat(paths.path("/api/v1/admin/products/{id}/permanent").path("delete")
+                .path("responses").has("204")).isTrue();
+        assertThat(paths.path("/api/v1/admin/products/export.csv").path("get")
+                .path("responses").path("200").path("content").path("text/csv")
+                .path("schema").path("format").asText()).isEqualTo("binary");
+        assertThat(paths.path("/api/v1/admin/products/import/validate").path("post")
+                .path("requestBody").path("content").has("multipart/form-data")).isTrue();
+        assertThat(paths.path("/api/v1/admin/products/import/commit").path("post")
+                .path("requestBody").path("content").path("multipart/form-data")
+                .path("schema").path("properties").has("skipRowKeys")).isTrue();
+
+        JsonNode schemas = document.path("components").path("schemas");
+        JsonNode upsertProperties = schemas.path("UpsertProductRequest").path("properties");
+        assertThat(fieldNames(upsertProperties)).contains(
+                "sku", "slug", "name", "brandId", "categoryIds", "image",
+                "retailPrice", "salePrice", "available", "publishStatus", "gender",
+                "seo", "translations", "gallery", "videos", "variants",
+                "descriptionBlocks", "suitabilitySection", "sizeGuideSection");
+        assertThat(upsertProperties.has("contentBottom")).isFalse();
+
+        JsonNode productProperties = schemas.path("ProductResponse").path("properties");
+        assertThat(fieldNames(productProperties)).contains(
+                "slugEn", "brand", "categories", "price", "stockState", "available",
+                "publishStatus", "gallery", "videos", "variants", "seo", "translations");
+        assertThat(productProperties.has("contentBottom")).isFalse();
+    }
+
+    @Test
+    void openApi_reviewContractMatchesLifecyclePrivacyAndBulkShapes() throws Exception {
+        JsonNode document = new ObjectMapper().readTree(fetchApiDocs());
+        JsonNode paths = document.path("paths");
+        JsonNode schemas = document.path("components").path("schemas");
+
+        JsonNode publicReviews = paths.path("/api/v1/products/{productId}/reviews");
+        assertThat(publicReviews.path("post").path("responses").path("201")
+                .path("content").path("application/json").path("schema").path("$ref").asText())
+                .isEqualTo("#/components/schemas/SubmitReviewSuccessDataResponse");
+        assertThat(paths.has("/api/v1/products/{productId}/reviews/photos")).isTrue();
+        assertThat(textValues(schemas.path("ReviewRating").path("enum")))
+                .containsExactly("1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5");
+        assertThat(textValues(schemas.path("SubmitReviewRequest").path("required")))
+                .containsExactly("rating");
+        assertThat(schemas.path("SubmitReviewRequest").path("properties")
+                .path("photos").path("items").path("pattern").asText())
+                .isEqualTo("^/media/reviews/");
+        assertThat(schemas.path("PublicProductReviewsResponse").path("properties")
+                .path("ratingBreakdown").path("minProperties").asInt()).isEqualTo(9);
+
+        JsonNode listItem = schemas.path("AdminReviewListItem");
+        assertThat(listItem.path("properties").has("authorEmail")).isFalse();
+        assertThat(listItem.path("properties").has("version")).isTrue();
+        assertThat(schemas.path("AdminReview").path("allOf").get(1)
+                .path("properties").has("authorEmail")).isTrue();
+
+        JsonNode patch = paths.path("/api/v1/admin/reviews/{id}/status").path("patch");
+        assertThat(patch.path("responses").path("200").path("content")
+                .path("application/json").path("schema").path("$ref").asText())
+                .isEqualTo("#/components/schemas/AdminReviewMutationDataResponse");
+        assertThat(schemas.path("AdminReviewMutationDataResponse").path("properties")
+                .path("data").path("$ref").asText())
+                .isEqualTo("#/components/schemas/AdminReviewListItem");
+        assertThat(textValues(schemas.path("UpdateReviewStatusRequest").path("required")))
+                .containsExactly("status", "expectedVersion");
+
+        JsonNode deleteOperation = paths.path("/api/v1/admin/reviews/{id}").path("delete");
+        JsonNode expectedVersion = parameterNamed(deleteOperation.path("parameters"), "expectedVersion");
+        assertThat(expectedVersion.path("required").asBoolean()).isTrue();
+        assertThat(deleteOperation.path("responses").has("409")).isTrue();
+        assertThat(schemas.path("BulkReviewStatusRequest").path("properties")
+                .path("items").path("items").path("$ref").asText())
+                .isEqualTo("#/components/schemas/VersionedReviewItem");
+        assertThat(textValues(schemas.path("AdminReviewBulkSkipped").path("properties")
+                .path("reason").path("enum")))
+                .containsExactly(
+                        "DUPLICATE_ID",
+                        "NOT_FOUND",
+                        "VERSION_CONFLICT",
+                        "INVALID_TRANSITION",
+                        "NOT_IN_TRASH",
+                        "NO_CHANGE");
+    }
+
+    @Test
     void openApi_containsAdminCustomerMediaEndpoints() throws Exception {
         String body = fetchApiDocs();
         assertThat(body).contains("/api/v1/admin/customers");
         assertThat(body).contains("/api/v1/admin/media");
         assertThat(body).contains("/api/v1/home-videos");
+    }
+
+    @Test
+    void openApi_adminCustomerContractMatchesFiltersMutationsAndResponses() throws Exception {
+        JsonNode document = new ObjectMapper().readTree(fetchApiDocs());
+        JsonNode paths = document.path("paths");
+        JsonNode schemas = document.path("components").path("schemas");
+
+        assertThat(fieldNames(paths)).contains(
+                "/api/v1/admin/customers",
+                "/api/v1/admin/customers/summary",
+                "/api/v1/admin/customers/{customerId}",
+                "/api/v1/admin/customers/{customerId}/status",
+                "/api/v1/admin/customers/{customerId}/avatar");
+
+        JsonNode list = paths.path("/api/v1/admin/customers").path("get");
+        JsonNode listParameters = list.path("parameters");
+        assertThat(listParameters.findValuesAsText("name"))
+                .containsExactly("page", "size", "q", "status", "synthetic", "emailVerified");
+        assertThat(list.path("responses").has("400")).isTrue();
+        assertThat(list.path("responses").has("403")).isTrue();
+        assertThat(list.path("responses").path("200").path("content")
+                .path("application/json").path("schema").path("$ref").asText())
+                .isEqualTo("#/components/schemas/AdminCustomerListResponse");
+
+        JsonNode customerExport =
+                paths.path("/api/v1/admin/reports/customers/export").path("get");
+        assertThat(customerExport.path("parameters").findValuesAsText("name"))
+                .containsExactly("q", "status", "synthetic", "emailVerified");
+        assertThat(customerExport.path("responses").path("200").path("headers")
+                .path("X-Export-Uncapped").path("schema").path("enum").get(0).asText())
+                .isEqualTo("true");
+        assertThat(customerExport.path("responses").path("200").path("content")
+                .path("text/csv").path("schema").path("format").asText())
+                .isEqualTo("binary");
+        assertThat(customerExport.path("responses").has("400")).isTrue();
+        assertThat(customerExport.path("responses").has("403")).isTrue();
+
+        assertThat(textValues(schemas.path("CustomerStatus").path("enum")))
+                .containsExactly("ACTIVE", "DISABLED", "PENDING", "BLOCKED");
+        assertThat(paths.path("/api/v1/admin/customers/summary").path("get")
+                .path("responses").path("200").path("content").path("application/json")
+                .path("schema").path("$ref").asText())
+                .isEqualTo("#/components/schemas/AdminCustomerSummaryDataResponse");
+        assertThat(schemas.path("AdminCustomerSummaryResponse").path("properties")
+                .path("newLast30Days").path("description").asText())
+                .contains("Non-synthetic");
+        assertThat(schemas.path("AdminCustomerSummaryResponse").path("properties")
+                .path("active").path("description").asText())
+                .contains("Non-synthetic");
+        assertThat(paths.path("/api/v1/admin/customers/{customerId}").path("get")
+                .path("responses").path("200").path("content").path("application/json")
+                .path("schema").path("$ref").asText())
+                .isEqualTo("#/components/schemas/AdminCustomerDetailDataResponse");
+
+        JsonNode profileRequest = schemas.path("UpdateCustomerRequest").path("properties");
+        assertThat(fieldNames(profileRequest)).containsExactly("displayName", "phone");
+        assertThat(profileRequest.has("email")).isFalse();
+        assertThat(profileRequest.has("firstName")).isFalse();
+        assertThat(profileRequest.has("lastName")).isFalse();
+        assertThat(schemas.path("UpdateCustomerRequest").path("additionalProperties").asBoolean()).isFalse();
+        assertThat(paths.path("/api/v1/admin/customers/{customerId}").path("patch")
+                .path("requestBody").path("content").path("application/json")
+                .path("schema").path("$ref").asText())
+                .isEqualTo("#/components/schemas/UpdateCustomerRequest");
+
+        assertThat(paths.path("/api/v1/admin/customers/{customerId}/status").path("patch")
+                .path("requestBody").path("content").path("application/json")
+                .path("schema").path("$ref").asText())
+                .isEqualTo("#/components/schemas/UpdateCustomerStatusRequest");
+        assertThat(schemas.path("UpdateCustomerStatusRequest").path("properties")
+                .path("reason").path("maxLength").asInt()).isEqualTo(1000);
+        assertThat(paths.path("/api/v1/admin/customers/{customerId}/status").path("patch")
+                .path("responses").has("409")).isTrue();
+
+        JsonNode avatar = paths.path("/api/v1/admin/customers/{customerId}/avatar");
+        assertThat(avatar.has("post")).isFalse();
+        assertThat(avatar.path("delete").path("description").asText())
+                .contains("CUSTOMER_AVATAR_REMOVED");
+        assertThat(avatar.path("delete").path("responses").path("200").path("content")
+                .path("application/json").path("schema").path("$ref").asText())
+                .isEqualTo("#/components/schemas/AdminCustomerDetailDataResponse");
+        assertThat(schemas.path("AdminCustomerDetailResponse").path("properties")
+                .path("email").path("readOnly").asBoolean()).isTrue();
+        assertThat(schemas.path("AdminCustomerDetailResponse").path("properties")
+                .path("firstName").path("readOnly").asBoolean()).isTrue();
+        assertThat(schemas.path("AdminCustomerDetailResponse").path("properties")
+                .path("lastName").path("readOnly").asBoolean()).isTrue();
     }
 
     @Test
@@ -126,5 +426,18 @@ class Phase1KOpenApiContractTest {
         assertThat(body.trim()).startsWith("{");
         assertThat(body).contains("\"openapi\"");
         assertThat(body).contains("3.0");
+    }
+
+    @Test
+    void openApi_allLocalReferencesResolve() throws Exception {
+        JsonNode document = new ObjectMapper().readTree(fetchApiDocs());
+        for (JsonNode referenceNode : document.findValues("$ref")) {
+            String reference = referenceNode.asText();
+            if (reference.startsWith("#/")) {
+                assertThat(document.at(reference.substring(1)).isMissingNode())
+                        .as("OpenAPI reference must resolve: %s", reference)
+                        .isFalse();
+            }
+        }
     }
 }

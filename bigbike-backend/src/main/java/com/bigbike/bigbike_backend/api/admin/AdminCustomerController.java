@@ -94,7 +94,8 @@ public class AdminCustomerController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "customers.write");
-        return apiResponseFactory.data(adminCustomerService.removeAvatar(customerId), request);
+        return apiResponseFactory.data(
+                adminCustomerService.removeAvatar(customerId, resolveAdminId()), request);
     }
 
 }

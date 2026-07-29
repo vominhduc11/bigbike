@@ -261,6 +261,86 @@ class AdminMutationValidatorsTest {
         assertThat(toPublished.get(0).code()).isEqualTo("INVALID_STATE_TRANSITION");
     }
 
+    @Test
+    void validateProductSavePublishStatus_newProductMustStartAsDraft() {
+        List<ApiErrorDetail> draftErrors = new ArrayList<>();
+        AdminMutationValidators.validateProductSavePublishStatus(
+                null,
+                com.bigbike.bigbike_backend.domain.catalog.PublishStatus.DRAFT,
+                true,
+                draftErrors
+        );
+        assertThat(draftErrors).isEmpty();
+
+        List<ApiErrorDetail> publishedErrors = new ArrayList<>();
+        AdminMutationValidators.validateProductSavePublishStatus(
+                null,
+                com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED,
+                true,
+                publishedErrors
+        );
+        assertThat(publishedErrors)
+                .singleElement()
+                .satisfies(error -> {
+                    assertThat(error.field()).isEqualTo("publishStatus");
+                    assertThat(error.code()).isEqualTo("INVALID_STATE_TRANSITION");
+                });
+    }
+
+    @Test
+    void validateProductSavePublishStatus_statusChangesAreRejectedButSameStatusSavesAreAllowed() {
+        List<ApiErrorDetail> draftToPublished = new ArrayList<>();
+        AdminMutationValidators.validateProductSavePublishStatus(
+                com.bigbike.bigbike_backend.domain.catalog.PublishStatus.DRAFT,
+                com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED,
+                false,
+                draftToPublished
+        );
+        assertThat(draftToPublished)
+                .singleElement()
+                .satisfies(error -> assertThat(error.code()).isEqualTo("INVALID_STATE_TRANSITION"));
+
+        List<ApiErrorDetail> draftSave = new ArrayList<>();
+        AdminMutationValidators.validateProductSavePublishStatus(
+                com.bigbike.bigbike_backend.domain.catalog.PublishStatus.DRAFT,
+                com.bigbike.bigbike_backend.domain.catalog.PublishStatus.DRAFT,
+                false,
+                draftSave
+        );
+        assertThat(draftSave).isEmpty();
+
+        List<ApiErrorDetail> publishedSave = new ArrayList<>();
+        AdminMutationValidators.validateProductSavePublishStatus(
+                com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED,
+                com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED,
+                false,
+                publishedSave
+        );
+        assertThat(publishedSave).isEmpty();
+
+        List<ApiErrorDetail> publishedToDraft = new ArrayList<>();
+        AdminMutationValidators.validateProductSavePublishStatus(
+                com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED,
+                com.bigbike.bigbike_backend.domain.catalog.PublishStatus.DRAFT,
+                false,
+                publishedToDraft
+        );
+        assertThat(publishedToDraft)
+                .singleElement()
+                .satisfies(error -> assertThat(error.code()).isEqualTo("INVALID_STATE_TRANSITION"));
+
+        List<ApiErrorDetail> draftToTrash = new ArrayList<>();
+        AdminMutationValidators.validateProductSavePublishStatus(
+                com.bigbike.bigbike_backend.domain.catalog.PublishStatus.DRAFT,
+                com.bigbike.bigbike_backend.domain.catalog.PublishStatus.TRASH,
+                false,
+                draftToTrash
+        );
+        assertThat(draftToTrash)
+                .singleElement()
+                .satisfies(error -> assertThat(error.code()).isEqualTo("INVALID_STATE_TRANSITION"));
+    }
+
     // PRODUCT_RULE_005 — validateProductFieldsRequired: the required-field matrix, branched on
     // has-variants and on requireImages (draft vs publish). Bare entity with nothing set.
 
@@ -405,6 +485,47 @@ class AdminMutationValidatorsTest {
         AdminMutationValidators.validatePublishReadiness(entity, errors);
 
         assertThat(fields(errors)).containsExactly("imageUrl");
+    }
+
+    @Test
+    void validatePublishReadiness_rejectsOnlySystemCategoryAndSystemBrand() {
+        ProductEntity entity = completeCoreEntity();
+        entity.setImageUrl("http://localhost:9000/bigbike-media/products/ls2-ff800/main.jpg");
+
+        CategoryEntity uncategorized = new CategoryEntity();
+        uncategorized.setId("uncategorized");
+        entity.setCategories(List.of(uncategorized));
+
+        BrandEntity uncategorizedBrand = new BrandEntity();
+        uncategorizedBrand.setId("uncategorized-brand");
+        entity.setBrand(uncategorizedBrand);
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        AdminMutationValidators.validatePublishReadiness(entity, errors);
+
+        assertThat(fields(errors)).containsExactlyInAnyOrder("categoryIds", "brandId");
+        assertThat(errors).allSatisfy(error -> assertThat(error.code()).isEqualTo("INVALID_STATE"));
+    }
+
+    @Test
+    void validatePublishReadiness_allowsSystemCategoryAlongsideRealCategory() {
+        ProductEntity entity = completeCoreEntity();
+        entity.setImageUrl("http://localhost:9000/bigbike-media/products/ls2-ff800/main.jpg");
+
+        CategoryEntity uncategorized = new CategoryEntity();
+        uncategorized.setId("uncategorized");
+        CategoryEntity realCategory = new CategoryEntity();
+        realCategory.setId("cat_helmet");
+        entity.setCategories(List.of(uncategorized, realCategory));
+
+        BrandEntity realBrand = new BrandEntity();
+        realBrand.setId("brand_ls2");
+        entity.setBrand(realBrand);
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        AdminMutationValidators.validatePublishReadiness(entity, errors);
+
+        assertThat(errors).isEmpty();
     }
 
     private static Set<String> fields(List<ApiErrorDetail> errors) {

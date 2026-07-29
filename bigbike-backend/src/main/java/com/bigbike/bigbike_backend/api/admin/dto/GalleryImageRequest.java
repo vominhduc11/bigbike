@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.api.admin.dto;
 
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,6 +24,7 @@ public class GalleryImageRequest {
     private String videoUrl;
 
     @Size(max = 16, message = "Gallery video provider is too long.")
+    @Pattern(regexp = "youtube|upload", message = "Gallery video provider must be 'youtube' or 'upload'.")
     private String videoProvider;
 
     @Size(max = 2048, message = "Gallery image URL is too long.")

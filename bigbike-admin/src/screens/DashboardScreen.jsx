@@ -121,7 +121,7 @@ export function DashboardScreen({ navigate }) {
     refetchOnWindowFocus: true,
   })
 
-  const { data: invSummary, isError: invIsError } = useQuery({
+  const { data: invSummary, isLoading: invIsLoading, isError: invIsError } = useQuery({
     queryKey: ['inventory-summary'],
     queryFn: fetchInventorySummary,
     staleTime: 60_000,
@@ -142,7 +142,9 @@ export function DashboardScreen({ navigate }) {
   ]
 
   // Dữ liệu có thể về thiếu (partial) — mảng breakdown có thể undefined dù `data` tồn tại.
-  const orderStatusBreakdown = data?.orderStatusBreakdown ?? []
+  const orderStatusBreakdown = Array.isArray(data?.orderStatusBreakdown)
+    ? data.orderStatusBreakdown
+    : []
   const pieTotal = orderStatusBreakdown.reduce((s, d) => s + (d.count ?? 0), 0)
 
   const pieDataWithTotal = orderStatusBreakdown.map((d) => ({
@@ -152,16 +154,18 @@ export function DashboardScreen({ navigate }) {
     total: pieTotal,
   }))
 
-  const revenueData = data?.revenueData ?? []
+  const revenueData = Array.isArray(data?.revenueData) ? data.revenueData : []
   const hasRevenue = revenueData.some((d) => d.revenue > 0)
-  const recentOrders = data?.recentOrders ?? []
-  const topProducts = data?.topProducts ?? []
+  const recentOrders = Array.isArray(data?.recentOrders) ? data.recentOrders : []
+  const topProducts = Array.isArray(data?.topProducts) ? data.topProducts : []
 
   function revenueTrend(kpi) {
     const pct = kpi?.todayRevenuePct
     if (pct == null) return { direction: 'neutral', label: t('dashboard.kpi.trendNoData') }
     const absPct = Math.abs(pct)
-    const formattedValue = absPct > 999 ? '>999' : absPct
+    const formattedValue = absPct > 999
+      ? '>999'
+      : new Intl.NumberFormat(numberLocale, { maximumFractionDigits: 1 }).format(absPct)
     if (pct > 0)  return { direction: 'up',   label: t('dashboard.kpi.trendUp',   { value: formattedValue }) }
     if (pct < 0)  return { direction: 'down', label: t('dashboard.kpi.trendDown', { value: formattedValue }) }
     return { direction: 'neutral', label: t('dashboard.kpi.trendFlat') }
@@ -205,7 +209,7 @@ export function DashboardScreen({ navigate }) {
       count: pendingOrdersCount,
       hint: t('dashboard.attention.pendingOrders.hint'),
       cta: t('dashboard.attention.viewAction'),
-      onClick: () => navigate('/admin/orders'),
+      onClick: () => navigate('/admin/orders?orderStatus=PENDING'),
     },
   ]
     .filter(Boolean)
@@ -320,7 +324,7 @@ export function DashboardScreen({ navigate }) {
             <div
               className="bb-kpi clickable"
               {...clickableProps(
-                () => navigate('/admin/orders'),
+                () => navigate('/admin/orders?orderStatus=PENDING'),
                 t('dashboard.kpi.pendingOrdersAria'),
               )}
             >
@@ -342,7 +346,7 @@ export function DashboardScreen({ navigate }) {
             <div
               className="bb-kpi clickable"
               {...clickableProps(
-                () => navigate('/admin/products'),
+                () => navigate('/admin/products?publishStatus=PUBLISHED'),
                 t('dashboard.kpi.activeProductsAria'),
               )}
             >
@@ -444,10 +448,13 @@ export function DashboardScreen({ navigate }) {
                   description={t('dashboard.attention.inventoryWarn')}
                 />
               )}
+              {invIsLoading && (
+                <SkeletonBlock height={72} />
+              )}
               {/* Chỉ báo "tất cả đều ổn" khi thực sự nạp được tồn kho. Nếu tồn kho lỗi,
                   ta không biết có sản phẩm hết hàng hay không → chỉ hiện cảnh báo ở trên,
                   không khẳng định rỗng. */}
-              {attentionItems.length === 0 && !invIsError && (
+              {attentionItems.length === 0 && !invIsLoading && !invIsError && (
                 <SectionEmpty
                   title={t('dashboard.attention.empty')}
                   description={t('dashboard.attention.emptyDesc')}
@@ -525,7 +532,7 @@ export function DashboardScreen({ navigate }) {
                                   style={{ color: 'var(--bb-primary)' }}
                                   onClick={() => navigate(`/admin/orders/${order.id}`)}
                                 >
-                                  {order.orderNumber}
+                                  {order.orderNumber || t('common.unknown')}
                                 </Button>
                                 <span className="text-xs text-muted leading-none mt-0.5">
                                   {formatRelativeTime(order.placedAt, t)}
@@ -547,7 +554,7 @@ export function DashboardScreen({ navigate }) {
                     {recentOrders.map((order) => (
                       <MobileCard
                         key={order.id}
-                        title={order.orderNumber}
+                        title={order.orderNumber || t('common.unknown')}
                         subtitle={`${order.customerName || order.customerEmail || t('common.unknown')} • ${formatRelativeTime(order.placedAt, t)}`}
                         status={<StatusBadge type="order" status={order.orderStatus} />}
                         meta={[
@@ -618,7 +625,7 @@ export function DashboardScreen({ navigate }) {
                                 <span title={product.name}>{product.name || t('common.unknown')}</span>
                               </Button>
                             </td>
-                            <td className="num">{product.units}</td>
+                            <td className="num">{(product.units ?? 0).toLocaleString(numberLocale)}</td>
                             <td className="num" style={{ fontWeight: 700, color: 'var(--bb-primary)' }}>
                               {formatVndShort(product.revenue)}
                             </td>
@@ -634,7 +641,7 @@ export function DashboardScreen({ navigate }) {
                         key={product.productId}
                         title={`${idx + 1}. ${product.name || t('common.unknown')}`}
                         meta={[
-                          { label: t('dashboard.topProducts.units'), value: product.units },
+                          { label: t('dashboard.topProducts.units'), value: (product.units ?? 0).toLocaleString(numberLocale) },
                           { label: t('dashboard.topProducts.revenue'), value: formatVndShort(product.revenue), tone: 'strong' },
                         ]}
                         onClick={() => navigate(`/admin/products/${product.productId}`)}

@@ -7,6 +7,7 @@ import com.bigbike.bigbike_backend.api.public_.dto.PublicProductReviewsResponse;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ReviewEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewPhotoUploadJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.service.review.ReviewRatingLevels;
@@ -18,9 +19,11 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -29,6 +32,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -47,6 +51,7 @@ public class PublicReviewService {
 
     private final ReviewJpaRepository reviewRepo;
     private final ProductJpaRepository productRepo;
+    private final ReviewPhotoUploadJpaRepository reviewPhotoUploadRepo;
     private final CustomerJpaRepository customerRepo;
     private final ReviewPhotoStorageService reviewPhotoStorageService;
     private final AdminReviewWsService adminReviewWsService;
@@ -56,24 +61,31 @@ public class PublicReviewService {
     }
 
     /**
-     * @param rating optional star filter, one of the 10 half-star levels 1..5 (REVIEW_RULE_008);
+     * @param rating optional star filter, one of the 9 half-star levels 1..5 (REVIEW_RULE_008);
      *               {@code null} returns every approved review.
      * @param sort   ordering key: {@code newest} (default), {@code highest}, {@code lowest}.
-     *               The rating filter narrows only the list \u2014 avgRating, totalReviews and the
+     *               The rating filter narrows only the list — avgRating, totalReviews and the
      *               ratingBreakdown histogram always reflect every approved review so the summary
      *               panel stays stable while the customer drills into one star bucket.
      */
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public PublicProductReviewsResponse getProductReviews(
             String productId, int page, int size, BigDecimal rating, String sort) {
         if (!productRepo.existsById(productId)) {
-            throw new NotFoundException("S\u1ea3n ph\u1ea9m kh\u00f4ng t\u1ed3n t\u1ea1i.");
+            throw new NotFoundException("Sản phẩm không tồn tại.");
+        }
+        if (rating != null && !ReviewRatingLevels.isValid(rating)) {
+            throw ValidationException.fromField(
+                    "rating",
+                    "INVALID",
+                    "Đánh giá phải là 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5 hoặc 5 sao.");
         }
 
         int normalizedPage = Math.max(DEFAULT_PAGE, page);
         int normalizedSize = size <= 0 ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
 
         PageRequest pageRequest = PageRequest.of(normalizedPage - 1, normalizedSize, resolveSort(sort));
-        Page<ReviewEntity> approvedPage = ReviewRatingLevels.isValid(rating)
+        Page<ReviewEntity> approvedPage = rating != null
                 ? reviewRepo.findByProductIdAndStatusAndRating(productId, APPROVED_STATUS, rating, pageRequest)
                 : reviewRepo.findByProductIdAndStatus(productId, APPROVED_STATUS, pageRequest);
         ReviewJpaRepository.ReviewAggregate aggregate =
@@ -115,18 +127,22 @@ public class PublicReviewService {
     public void submitReview(
             String productId, String authorName, String authorEmail, BigDecimal rating, String comment,
             List<String> photos, UUID customerId) {
-        productRepo.findById(productId)
-                .orElseThrow(() -> new NotFoundException("S\u1ea3n ph\u1ea9m kh\u00f4ng t\u1ed3n t\u1ea1i."));
+        // Serialize submissions for one product before the query-then-insert duplicate
+        // guard. Without this row lock, two concurrent requests could both observe no
+        // duplicate and persist the same normalized author/body pair.
+        productRepo.findByIdForUpdate(productId)
+                .orElseThrow(() -> new NotFoundException("Sản phẩm không tồn tại."));
         if (!ReviewRatingLevels.isValid(rating)) {
             throw ValidationException.fromField(
-                    "rating", "INVALID", "\u0110\u00e1nh gi\u00e1 ph\u1ea3i l\u00e0 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5 ho\u1eb7c 5 sao.");
+                    "rating", "INVALID", "Đánh giá phải là 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5 hoặc 5 sao.");
         }
 
-        String normalizedName = authorName.trim();
-        String normalizedEmail = (authorEmail != null && !authorEmail.isBlank())
-                ? authorEmail.trim() : null;
+        ReviewAuthor reviewAuthor = resolveReviewAuthor(customerId, authorName, authorEmail);
+        String normalizedName = reviewAuthor.name();
+        String normalizedEmail = reviewAuthor.email();
         String normalizedComment = comment != null ? comment.trim() : "";
         List<String> normalizedPhotos = normalizePhotos(photos);
+        List<String> photoObjectKeys = validateUniqueReviewPhotoKeys(normalizedPhotos);
         Instant now = Instant.now();
 
         // Duplicate guard: same productId + normalized(authorName) + normalized(body)
@@ -144,7 +160,7 @@ public class PublicReviewService {
                         && normalizeForDup(r.getBody()).equals(dupKeyComment));
         if (duplicate) {
             throw new ConflictException(
-                    "B\u1ea1n \u0111\u00e3 g\u1eedi \u0111\u00e1nh gi\u00e1 t\u01b0\u01a1ng t\u1ef1 g\u1ea7n \u0111\u00e2y. Vui l\u00f2ng ch\u1edd ki\u1ec3m duy\u1ec7t ho\u1eb7c ch\u1ec9nh s\u1eeda n\u1ed9i dung.");
+                    "Bạn đã gửi đánh giá tương tự gần đây. Vui lòng chờ kiểm duyệt hoặc chỉnh sửa nội dung.");
         }
 
         ReviewEntity entity = new ReviewEntity();
@@ -161,7 +177,8 @@ public class PublicReviewService {
             entity.setCustomerId(customerId);
         }
 
-        ReviewEntity saved = reviewRepo.save(entity);
+        ReviewEntity saved = reviewRepo.saveAndFlush(entity);
+        claimReviewPhotos(productId, saved.getId(), photoObjectKeys, now);
         adminReviewWsService.pushEvent(new ReviewWsEvent(
                 "REVIEW_SUBMITTED",
                 saved.getId(),
@@ -178,7 +195,7 @@ public class PublicReviewService {
         if (!productRepo.existsById(productId)) {
             throw new NotFoundException("Sản phẩm không tồn tại.");
         }
-        return reviewPhotoStorageService.store(file);
+        return reviewPhotoStorageService.store(productId, file);
     }
 
     private static List<String> normalizePhotos(List<String> photos) {
@@ -192,6 +209,93 @@ public class PublicReviewService {
             }
         }
         return cleaned.size() > MAX_PHOTOS ? cleaned.subList(0, MAX_PHOTOS) : cleaned;
+    }
+
+    private ReviewAuthor resolveReviewAuthor(UUID customerId, String authorName, String authorEmail) {
+        if (customerId != null) {
+            CustomerEntity customer = customerRepo.findById(customerId)
+                    .orElseThrow(() -> new NotFoundException("Tài khoản khách hàng không còn tồn tại."));
+            String accountEmail = trimToNull(customer.getEmail());
+            String accountName = trimToNull(customer.getDisplayName());
+            if (accountName == null) {
+                accountName = emailLocalPart(accountEmail);
+            }
+            if (accountName == null) {
+                accountName = "Khách hàng";
+            }
+            return new ReviewAuthor(accountName, accountEmail);
+        }
+
+        String guestName = trimToNull(authorName);
+        if (guestName == null) {
+            throw ValidationException.fromField("authorName", "REQUIRED", "Vui lòng nhập tên.");
+        }
+        if (guestName.length() > 80) {
+            throw ValidationException.fromField(
+                    "authorName", "TOO_LONG", "Tên không được vượt quá 80 ký tự.");
+        }
+        String guestEmail = trimToNull(authorEmail);
+        if (guestEmail != null) {
+            if (guestEmail.length() > 255) {
+                throw ValidationException.fromField(
+                        "authorEmail", "TOO_LONG", "Email không được vượt quá 255 ký tự.");
+            }
+            if (!guestEmail.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+                throw ValidationException.fromField(
+                        "authorEmail", "INVALID_EMAIL", "Email không hợp lệ.");
+            }
+        }
+        return new ReviewAuthor(guestName, guestEmail);
+    }
+
+    private static String trimToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private static String emailLocalPart(String email) {
+        if (email == null) {
+            return null;
+        }
+        int separator = email.indexOf('@');
+        String localPart = separator > 0 ? email.substring(0, separator) : email;
+        return trimToNull(localPart);
+    }
+
+    /**
+     * A stored review-photo object may belong to only one review. Comparing canonical
+     * object keys also catches legacy absolute URLs that point to the same object as a
+     * newer relative URL.
+     */
+    private List<String> validateUniqueReviewPhotoKeys(List<String> photos) {
+        if (photos.isEmpty()) {
+            return List.of();
+        }
+
+        Set<String> requestedKeys = new LinkedHashSet<>();
+        for (String url : photos) {
+            String key = ReviewPhotoStorageService.reviewObjectKey(url);
+            String canonicalUrl = key != null ? "/media/" + key : null;
+            if (key == null || !canonicalUrl.equals(url) || !requestedKeys.add(key)) {
+                throw new ConflictException(
+                        "Mỗi ảnh chỉ được đính kèm vào một đánh giá và không được lặp lại.");
+            }
+        }
+        return List.copyOf(requestedKeys);
+    }
+
+    private void claimReviewPhotos(
+            String productId,
+            Long reviewId,
+            List<String> objectKeys,
+            Instant claimedAt
+    ) {
+        for (String objectKey : objectKeys) {
+            int claimed = reviewPhotoUploadRepo.claim(objectKey, productId, reviewId, claimedAt);
+            if (claimed != 1) {
+                throw new ConflictException(
+                        "Ảnh không tồn tại, không thuộc sản phẩm này hoặc đã được dùng cho đánh giá khác.");
+            }
+        }
     }
 
     private static String normalizeForDup(String value) {
@@ -235,7 +339,7 @@ public class PublicReviewService {
         return Math.round(avgRating * 10.0) / 10.0;
     }
 
-    /** Batch-fetches avatar URLs for every distinct linked customerId on the page \u2014 avoids an N+1 lookup. */
+    /** Batch-fetches avatar URLs for every distinct linked customerId on the page — avoids an N+1 lookup. */
     private Map<UUID, String> fetchAvatarsByCustomerId(List<ReviewEntity> reviews) {
         List<UUID> customerIds = reviews.stream()
                 .map(ReviewEntity::getCustomerId)
@@ -256,11 +360,13 @@ public class PublicReviewService {
                 : null;
         return new PublicProductReviewsResponse.ReviewItem(
                 review.getId(),
-                review.getAuthorName() != null ? review.getAuthorName() : "\u1ea8n danh",
+                review.getAuthorName() != null ? review.getAuthorName() : "Ẩn danh",
                 review.getRating(),
                 review.getBody() != null ? review.getBody() : "",
                 review.getPhotos() != null ? review.getPhotos() : List.of(),
                 review.getCreatedAt() != null ? review.getCreatedAt().toString() : "",
                 (avatarUrl != null && !avatarUrl.isBlank()) ? avatarUrl : null);
     }
+
+    private record ReviewAuthor(String name, String email) {}
 }

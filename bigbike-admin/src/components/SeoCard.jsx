@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 // BrandDetailScreen với category-detail/SeoCard (audit P1-13). Tham số hoá theo:
 //   i18nPrefix     — tiền tố khoá dịch, vd 'categories.detail' | 'brands.detail'
 //   descKey        — khoá dịch cho dòng mô tả nhỏ dưới tiêu đề
-//   previewBase    — gốc URL để dựng preview Google (vd '.../danh-muc-san-pham')
+//   previewBase    — gốc URL để dựng preview Google (vd '.../danh-muc')
 //   previewSlugDefault — slug mẫu khi chưa nhập
 // `collapsible`/`open`/`onToggle`: gập thẻ để chống ngợp form (audit P0-2). Khi gập,
 // chỉ hiện tiêu đề + chevron, ẩn body.

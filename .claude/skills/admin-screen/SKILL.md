@@ -1,15 +1,15 @@
 ---
 name: admin-screen
-description: Dùng khi tạo một screen mới trong bigbike-admin (ví dụ trang quản lý list/detail mới). Scaffold screen theo đúng convention React + react-query + react-i18next + shadcn/Tailwind của dự án, và wire vào App.jsx tại đủ 5 điểm bắt buộc (lazy import, nav group, route parse, permission map, render switch), kèm cả 2 file locale. Gọi bằng /admin-screen <tên resource>.
+description: "Dùng khi tạo screen mới trong bigbike-admin, ví dụ trang quản lý list/detail mới. Scaffold screen theo convention React, react-query, react-i18next, shadcn và Tailwind của dự án; wire đủ 5 điểm trong App.jsx gồm lazy import, nav group, route parse, permission map và render switch; đồng thời cập nhật cả vi.json và en.json."
 ---
 
-# /admin-screen — Scaffold screen mới cho bigbike-admin
+# admin-screen — Scaffold screen mới cho bigbike-admin
 
 Routing ở admin là **thủ công** trong `App.jsx` — quên 1 trong 5 điểm là screen không chạy hoặc 403. Đây là giá trị chính của skill.
 
 ## Bước 0 — Docs-First
 
-Nếu screen động đến API/permission/data shape mới → chạy `/docs-first <mô tả>` trước (đọc `API_CONTRACT.md`, `PERMISSION_MATRIX.md`, `DATA_CONTRACT.md`). Permission key phải khớp `PERMISSION_MATRIX.md`.
+Nếu screen động đến API/permission/data shape mới → đọc trước `API_CONTRACT.md`, `PERMISSION_MATRIX.md`, `DATA_CONTRACT.md` (chỉ section liên quan; bảng tra đầy đủ ở `CLAUDE.md` / `AGENTS.md` §3–§4). Permission key phải khớp `PERMISSION_MATRIX.md`.
 
 ## Bước 1 — Copy một exemplar đúng loại
 
@@ -67,10 +67,17 @@ Thêm key vào **`src/locales/vi.json`** và **`src/locales/en.json`** (cùng c�
 ## Bước 5 — Designed states + UI stack
 
 - Mọi state phải có thiết kế: loading / empty / error / success / disabled / permission-denied. Dùng `StatePanel` (loading/empty/error), `ReadOnlyBanner` khi `!canUpdate`, `PaginationControls`, `StatusBadge`, `showConfirm` (`src/lib/confirm`) cho hành động destructive.
-- Layout primitives từ `src/components/layout` (import từ `index.js`): `Screen, ScreenHeader, FilterBar/FilterField, SummaryCard/SummaryCardGrid, Tabs, Modal, StickyActionBar, MobileCardList/MobileCard, FormField`. **Kiểm tra reuse trước khi tạo mới.**
+- Component dùng chung — **lấy đúng đường dẫn, kiểm tra reuse trước khi tạo mới**:
+
+| Từ `src/components/layout/` (barrel `index.js`) | Từ `src/components/` (import trực tiếp) |
+|---|---|
+| `Screen`, `ScreenHeader`, `FilterBar`, `MobileCardList`/`MobileCard`, `StickyActionBar`, `FormField`, `Modal`, `Tabs` | `AdminTable`, `StatusBadge`, `PaginationControls`, `PageSizeSelect`, `FilterSelect`, `FilterSearchInput`, `FilterChips`, `BulkActionBar`, `ReadOnlyBanner`, `StatePanel`, `ScreenSkeleton`, `ConfirmDialog`, `ColumnVisibilityToggle`, `ExportButton`, `SectionCard`, `DetailSection`, `SeoCard` |
+
 - shadcn từ `@/components/ui/*` (Button, Input, Checkbox, Textarea…). KHÔNG dùng native `<select>/<button>/<input type=checkbox>`.
-- CSS: tái dùng class cấu trúc `bb-*` + layout primitives như các screen xung quanh; **styling mới viết Tailwind token thẳng vào className** (`border-border`, `text-danger`, `bg-muted`, `rounded-none`). KHÔNG thêm class mới vào `admin-prototype.css`. Font admin: Bungee (display) / Exo (body) — không dùng font web.
+- CSS: tái dùng class cấu trúc `bb-*` + layout primitives như các screen xung quanh; **styling mới viết Tailwind token thẳng vào className** (`border-border`, `text-danger`, `bg-muted`). KHÔNG thêm class mới vào `admin-prototype.css`.
+- **Font admin:** Inter (body), Oswald (display/KPI/H1), JetBrains Mono (mã/SKU). KHÔNG dùng Exo/Barlow/Bungee, không dùng font của web.
+- **Bo góc:** theo token ngữ nghĩa, không hardcode px và **không** `rounded-none` (đó là quy ước của web): card/panel/KPI `--admin-radius-card` (12px), button/input/select/menu `--admin-radius-control` (8px), thumbnail `--admin-radius-thumb` (5px).
 
 ## Bước 6 — Đóng gate
 
-Chạy `/preflight` (admin = `npm run lint` + `npm run build`; **không có** `npm run test`).
+Chạy quy trình `hygiene` rồi `preflight` (admin = `npm run lint` + `npm run test` + `npm run build`). Screen mới nên có Vitest bám mẫu `src/screens/BrandListScreen.test.jsx`.

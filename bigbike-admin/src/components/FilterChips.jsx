@@ -15,8 +15,10 @@ export function FilterChips({
   const clearAll = clearAllLabel || t('common.clearAllFilters', { defaultValue: 'Xoá tất cả bộ lọc' })
   const removeFallback = removeChipLabel || t('common.removeFilterLabel', { defaultValue: 'Xoá bộ lọc' })
 
+  // role="group" để `aria-label` thực sự được trình đọc màn hình đọc lên —
+  // aria-label trên <div> trần (không vai trò) bị bỏ qua.
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-1.5" aria-label={ariaLabel}>
+    <div role="group" className="mb-3 flex flex-wrap items-center gap-1.5" aria-label={ariaLabel}>
       {chips.map((chip) => {
         // Nếu chip không tự khai báo removeLabel mà nhãn là chuỗi, ghép để aria nói rõ chip nào.
         const removeLabel = chip.removeLabel

@@ -73,6 +73,9 @@ public class ReviewImporter implements DomainImporter {
                 entity.setBody(mr.body());
                 entity.setStatus(mr.status());
                 entity.setUpdatedAt(Instant.now());
+                if (APPROVED_STATUS.equals(mr.status()) && entity.getFirstApprovedAt() == null) {
+                    entity.setFirstApprovedAt(entity.getCreatedAt());
+                }
 
                 if (!options.dryRun()) reviewRepo.save(entity);
                 if (isNew) inserted++; else updated++;

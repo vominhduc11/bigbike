@@ -7,6 +7,7 @@ import com.bigbike.bigbike_backend.migration.wordpress.importer.MigrationExecuti
 import com.bigbike.bigbike_backend.migration.wordpress.importer.MigrationExecutionReport;
 import com.bigbike.bigbike_backend.migration.wordpress.importer.ProductVariationImporter;
 import com.bigbike.bigbike_backend.migration.wordpress.importer.WordPressMigrationImportService;
+import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressMediaMapper.MappedMedia;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressVariationMapper.MappedVariation;
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationDomain;
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.WordPressMigrationWritePlanService;
@@ -100,7 +101,7 @@ class Phase2D2ProductVariationImporterTest {
     }
 
     @Test
-    void variation_mapping_stockStateInStock() {
+    void variation_mapping_legacyInStockDoesNotEnableVariant() {
         MappedVariation mv = variation(99102L, 99001L, null,
                 new BigDecimal("200000"), null, null,
                 null, "instock", Map.of(), "ACTIVE");
@@ -108,8 +109,8 @@ class Phase2D2ProductVariationImporterTest {
         variationImporter.importBatch(List.of(mv), opts(false));
 
         ProductVariantEntity saved = variantRepo.findById("wp-var-99102").orElseThrow();
-        assertThat(saved.getStockState()).isEqualTo(ProductStockState.IN_STOCK);
-        assertThat(saved.isAvailable()).isTrue();
+        assertThat(saved.getStockState()).isEqualTo(ProductStockState.OUT_OF_STOCK);
+        assertThat(saved.isAvailable()).isFalse();
     }
 
     @Test
@@ -138,6 +139,56 @@ class Phase2D2ProductVariationImporterTest {
         assertThat(saved.getOptions()).hasSize(2);
         assertThat(saved.getOptions()).anyMatch(o -> "color".equals(o.getOptionName()) && "red".equals(o.getOptionValue()));
         assertThat(saved.getOptions()).anyMatch(o -> "size".equals(o.getOptionName()) && "L".equals(o.getOptionValue()));
+    }
+
+    @Test
+    void variation_mapping_blankOptionIsOmittedWithoutDroppingVariant() {
+        MappedVariation mv = variation(99107L, 99001L, "SKU-BLANK-OPT",
+                new BigDecimal("300000"), null, null,
+                2, "instock", Map.of("color", " ", "size", "L"), "ACTIVE");
+
+        MigrationExecutionReport.DomainResult result =
+                variationImporter.importBatch(List.of(mv), opts(false));
+
+        assertThat(result.inserted()).isEqualTo(1);
+        ProductVariantEntity saved = variantRepo.findById("wp-var-99107").orElseThrow();
+        assertThat(saved.getOptions()).singleElement()
+                .satisfies(option -> {
+                    assertThat(option.getOptionName()).isEqualTo("size");
+                    assertThat(option.getOptionValue()).isEqualTo("L");
+                });
+        assertThat(saved.getName()).contains("size: L").doesNotContain("color:");
+    }
+
+    @Test
+    void variation_mapping_firstGalleryImageBecomesMissingCover() {
+        MappedVariation mv = new MappedVariation(
+                99108L, 99001L, "SKU-GALLERY-COVER",
+                new BigDecimal("300000"), null, null,
+                null, "instock", Map.of("color", "black"), "ACTIVE",
+                List.of(701L, 702L), List.of());
+        MappedMedia first = new MappedMedia(
+                701L, "2026/01/first.jpg", "image/jpeg", "Ảnh đầu", "Ảnh đầu",
+                1200, 800, null, "ACTIVE", List.of());
+        MappedMedia second = new MappedMedia(
+                702L, "2026/01/second.jpg", "image/jpeg", "Ảnh sau", "Ảnh sau",
+                1000, 700, null, "ACTIVE", List.of());
+
+        variationImporter.importBatch(
+                List.of(mv),
+                opts(false),
+                Map.of(701L, first, 702L, second),
+                "https://media.example");
+
+        ProductVariantEntity saved = variantRepo.findById("wp-var-99108").orElseThrow();
+        assertThat(saved.getImageId()).isEqualTo("701");
+        assertThat(saved.getImageUrl())
+                .isEqualTo("https://media.example/wp-uploads/2026/01/first.jpg");
+        assertThat(saved.getImageAlt()).isEqualTo("Ảnh đầu");
+        assertThat(saved.getImageWidth()).isEqualTo(1200);
+        assertThat(saved.getImageHeight()).isEqualTo(800);
+        assertThat(saved.getImageMimeType()).isEqualTo("image/jpeg");
+        assertThat(saved.getGallery()).hasSize(2);
     }
 
     @Test
@@ -232,7 +283,9 @@ class Phase2D2ProductVariationImporterTest {
         assertThat(result.failed()).isEqualTo(0);
         assertThat(result.warnings()).anyMatch(w -> w.contains("Created placeholder parent product"));
         assertThat(variantRepo.findById("wp-var-99301")).isPresent();
-        assertThat(productRepo.findById("wp-prod-99999")).isPresent();
+        ProductEntity placeholder = productRepo.findById("wp-prod-99999").orElseThrow();
+        assertThat(placeholder.getStockState()).isEqualTo(ProductStockState.OUT_OF_STOCK);
+        assertThat(placeholder.getAvailable()).isFalse();
     }
 
     @Test

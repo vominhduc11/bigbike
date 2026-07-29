@@ -60,7 +60,7 @@ const DEFAULT_SITE_NAME = "BigBike";
 // nguyên bản cuối cùng đã lưu trong DB trước khi gỡ; sửa sau này cần sửa thẳng code.
 const PROMO_TITLE = "LS2 DUAL SPORT MX436 PIONEER";
 const PROMO_OFF = "20% OFF";
-const PROMO_HREF = "/san-pham";
+const PROMO_HREF = "/sp/";
 const PROMO_IMAGE_SRC = "/brand/home/promo-banner.jpg";
 const PROMO_ALT = `${PROMO_TITLE} — ${PROMO_OFF}`;
 

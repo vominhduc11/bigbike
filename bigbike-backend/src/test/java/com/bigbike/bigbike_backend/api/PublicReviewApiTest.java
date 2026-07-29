@@ -1,15 +1,26 @@
 package com.bigbike.bigbike_backend.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ReviewPhotoUploadEntity;
+import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewPhotoUploadJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
+import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -31,6 +42,9 @@ class PublicReviewApiTest {
     private static final String REVIEWS_URL = "/api/v1/products/" + PRODUCT_ID + "/reviews";
 
     @Autowired WebApplicationContext webApplicationContext;
+    @Autowired ReviewJpaRepository reviewRepo;
+    @Autowired ReviewPhotoUploadJpaRepository reviewPhotoUploadRepo;
+    @Autowired CustomerJpaRepository customerRepo;
 
     private MockMvc mockMvc;
 
@@ -144,5 +158,156 @@ class PublicReviewApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    void submitReview_authenticatedCustomer_ignoresForgedBodyIdentity() throws Exception {
+        CustomerEntity customer = new CustomerEntity();
+        customer.setEmail("real-account-" + UUID.randomUUID() + "@example.test");
+        customer.setDisplayName("Tên tài khoản thật");
+        customer.setStatus("ACTIVE");
+        customer.setSynthetic(false);
+        customer.setCreatedAt(Instant.now());
+        customer.setUpdatedAt(Instant.now());
+        customer = customerRepo.saveAndFlush(customer);
+
+        CustomerPrincipal principal = new CustomerPrincipal(
+                customer.getId(), customer.getEmail(), null, UUID.randomUUID());
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(principal, null, List.of()));
+        try {
+            mockMvc.perform(post(REVIEWS_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "authorName": "Tên giả",
+                                      "authorEmail": "not-an-email",
+                                      "rating": 4.5,
+                                      "comment": "Danh tính phải lấy từ tài khoản."
+                                    }
+                                    """))
+                    .andExpect(status().isCreated());
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+
+        UUID customerId = customer.getId();
+        var saved = reviewRepo.findAll().stream()
+                .filter(review -> customerId.equals(review.getCustomerId()))
+                .max(java.util.Comparator.comparingLong(review -> review.getId()))
+                .orElseThrow();
+        assertThat(saved.getAuthorName()).isEqualTo("Tên tài khoản thật");
+        assertThat(saved.getAuthorEmail()).isEqualTo(customer.getEmail());
+        assertThat(saved.getStatus()).isEqualTo("PENDING");
+    }
+
+    @Test
+    void submitReview_guestInvalidEmail_returns400() throws Exception {
+        mockMvc.perform(post(REVIEWS_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "authorName": "Khách",
+                                  "authorEmail": "not-an-email",
+                                  "rating": 4,
+                                  "comment": "Email khách phải hợp lệ."
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
+    void submitReview_claimsRegisteredPhotoExactlyOnce() throws Exception {
+        String url = registerPhotoUpload(PRODUCT_ID);
+        String firstAuthor = "PhotoAuthor-" + UUID.randomUUID();
+
+        mockMvc.perform(post(REVIEWS_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reviewBody(firstAuthor, "First photo claim", url)))
+                .andExpect(status().isCreated());
+
+        ReviewPhotoUploadEntity claimed = reviewPhotoUploadRepo.findById(objectKey(url)).orElseThrow();
+        assertThat(claimed.getClaimedAt()).isNotNull();
+        assertThat(claimed.getReviewId()).isNotNull();
+        assertThat(reviewRepo.findById(claimed.getReviewId()).orElseThrow().getPhotos())
+                .containsExactly(url);
+
+        mockMvc.perform(post(REVIEWS_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reviewBody(
+                                "SecondPhotoAuthor-" + UUID.randomUUID(),
+                                "Second claim must fail",
+                                url)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+
+        assertThat(reviewPhotoUploadRepo.findById(objectKey(url)).orElseThrow().getReviewId())
+                .isEqualTo(claimed.getReviewId());
+    }
+
+    @Test
+    void submitReview_unregisteredOrCrossProductPhoto_returns409() throws Exception {
+        String unregistered = "/media/reviews/" + UUID.randomUUID() + "/unregistered.jpg";
+        mockMvc.perform(post(REVIEWS_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reviewBody(
+                                "Unregistered-" + UUID.randomUUID(),
+                                "No upload record",
+                                unregistered)))
+                .andExpect(status().isConflict());
+
+        String crossProduct = registerPhotoUpload("another-product");
+        mockMvc.perform(post(REVIEWS_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reviewBody(
+                                "CrossProduct-" + UUID.randomUUID(),
+                                "Wrong product",
+                                crossProduct)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void submitReview_nullBlankOrWrongPhotoPath_returns400() throws Exception {
+        String author = "InvalidPhoto-" + UUID.randomUUID();
+        mockMvc.perform(post(REVIEWS_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"authorName\":\"" + author
+                                + "\",\"rating\":4,\"comment\":\"Null photo\",\"photos\":[null]}"))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post(REVIEWS_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"authorName\":\"" + author
+                                + "-blank\",\"rating\":4,\"comment\":\"Blank photo\",\"photos\":[\"  \"]}"))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post(REVIEWS_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"authorName\":\"" + author
+                                + "-wrong\",\"rating\":4,\"comment\":\"Wrong photo\","
+                                + "\"photos\":[\"/media/products/not-review.jpg\"]}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    private String registerPhotoUpload(String productId) {
+        String unique = UUID.randomUUID().toString();
+        String url = "/media/reviews/" + unique + "/photo.jpg";
+        ReviewPhotoUploadEntity upload = new ReviewPhotoUploadEntity();
+        upload.setObjectKey(objectKey(url));
+        upload.setPublicUrl(url);
+        upload.setProductId(productId);
+        upload.setUploadedAt(Instant.now());
+        reviewPhotoUploadRepo.saveAndFlush(upload);
+        return url;
+    }
+
+    private String reviewBody(String author, String comment, String photoUrl) {
+        return "{\"authorName\":\"" + author + "\",\"rating\":4,\"comment\":\""
+                + comment + "\",\"photos\":[\"" + photoUrl + "\"]}";
+    }
+
+    private String objectKey(String url) {
+        return url.substring("/media/".length());
     }
 }

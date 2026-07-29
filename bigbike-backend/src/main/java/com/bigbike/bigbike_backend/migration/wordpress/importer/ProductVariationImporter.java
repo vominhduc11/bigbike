@@ -113,12 +113,10 @@ public class ProductVariationImporter implements DomainImporter {
                 entity.setSalePrice(salePrice != null && salePrice.signum() > 0 ? salePrice : null);
                 entity.setCurrency("VND");
 
-                // STOCK_RULE_001/003 + STOCK_RULE_005: import không nạp serial, biến thể
-                // luôn khởi tạo OUT_OF_STOCK (xem resolveStockState). isAvailable giữ theo
-                // trạng thái ACTIVE để biến thể vẫn chọn được (làm mờ, không khoá),
-                // độc lập với mức tồn.
-                entity.setStockState(resolveStockState(mv.stockStatus()));
-                entity.setAvailable("ACTIVE".equals(mv.status()));
+                // Legacy quantity and status fields do not constitute a trusted manual
+                // availability decision. Keep the two active availability fields aligned.
+                entity.setStockState(ProductStockState.OUT_OF_STOCK);
+                entity.setAvailable(false);
                 entity.setSortOrder(0);
 
                 warnings.addAll(mv.warnings());
@@ -143,6 +141,10 @@ public class ProductVariationImporter implements DomainImporter {
                         entity.getGallery().clear();
                     }
                     entity.getGallery().addAll(galleryList);
+                    if ((entity.getImageUrl() == null || entity.getImageUrl().isBlank())
+                            && !galleryList.isEmpty()) {
+                        applyCoverFromGallery(entity, galleryList.get(0));
+                    }
 
                     variantRepo.save(entity);
                 }
@@ -185,8 +187,9 @@ public class ProductVariationImporter implements DomainImporter {
         entity.setCategories(new ArrayList<>(List.of(category)));
         entity.setRetailPrice(BigDecimal.ZERO);
         entity.setCurrency("VND");
-        // STOCK_RULE_001: sản phẩm mới khởi tạo OUT_OF_STOCK tới khi có tồn/serial thật.
+        // A placeholder has no trusted availability decision.
         entity.setStockState(ProductStockState.OUT_OF_STOCK);
+        entity.setAvailable(false);
         entity.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.DRAFT);
         entity.setHomepageBlock(com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.NONE);
         entity.setCreatedAt(Instant.now());
@@ -200,10 +203,15 @@ public class ProductVariationImporter implements DomainImporter {
         }
         StringBuilder sb = new StringBuilder();
         for (Map.Entry<String, String> e : mv.attributes().entrySet()) {
+            String code = normalizeAttributeCode(e.getKey());
+            String value = e.getValue() == null ? "" : e.getValue().trim();
+            if (code == null || code.isBlank() || value.isBlank()) {
+                continue;
+            }
             if (sb.length() > 0) sb.append(", ");
-            sb.append(e.getKey()).append(": ").append(e.getValue());
+            sb.append(code).append(": ").append(value);
         }
-        return sb.toString();
+        return sb.isEmpty() ? "Biến thể " + mv.sourceId() : sb.toString();
     }
 
     /**
@@ -245,6 +253,16 @@ public class ProductVariationImporter implements DomainImporter {
         return result;
     }
 
+    private void applyCoverFromGallery(
+            ProductVariantEntity variant, ProductVariantGalleryImageEntity firstGalleryImage) {
+        variant.setImageId(firstGalleryImage.getImageId());
+        variant.setImageUrl(firstGalleryImage.getImageUrl());
+        variant.setImageAlt(firstGalleryImage.getImageAlt());
+        variant.setImageWidth(firstGalleryImage.getImageWidth());
+        variant.setImageHeight(firstGalleryImage.getImageHeight());
+        variant.setImageMimeType(firstGalleryImage.getImageMimeType());
+    }
+
     private String buildMediaUrl(String mediaPublicBaseUrl, String storagePath) {
         String base = mediaPublicBaseUrl == null ? "" : mediaPublicBaseUrl;
         if (base.endsWith("/")) base = base.substring(0, base.length() - 1);
@@ -262,6 +280,9 @@ public class ProductVariationImporter implements DomainImporter {
         for (Map.Entry<String, String> entry : attributes.entrySet()) {
             String code = normalizeAttributeCode(entry.getKey());
             String valueSlug = entry.getValue() == null ? "" : entry.getValue().trim();
+            if (code == null || code.isBlank() || valueSlug.isBlank()) {
+                continue;
+            }
             AttributeEntity attribute = resolveAttribute(code);
             AttributeValueEntity attributeValue = resolveAttributeValue(attribute, valueSlug);
 
@@ -343,11 +364,4 @@ public class ProductVariationImporter implements DomainImporter {
         return Character.toUpperCase(value.charAt(0)) + value.substring(1);
     }
 
-    private ProductStockState resolveStockState(String stockStatus) {
-        // STOCK_RULE_001/003: tồn kho biến thể suy ra từ số serial IN_STOCK. Import WP
-        // KHÔNG nạp serial nào → biến thể luôn khởi tạo OUT_OF_STOCK; chỉ chuyển
-        // "Còn hàng" khi nhập serial/tồn thật. Cờ stockStatus của WP cố ý bị bỏ qua
-        // để không tái tạo tình trạng "còn hàng ảo".
-        return ProductStockState.OUT_OF_STOCK;
-    }
 }

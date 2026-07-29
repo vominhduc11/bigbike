@@ -118,9 +118,9 @@ public class CategoryMutationService {
         categoryJpaRepository.save(entity);
         auditLog("CATEGORY_UPDATED", "CATEGORY", adminId, before, categoryJson(entity));
         if (!previousSlug.equals(entity.getSlug())) {
-            slugRedirectHelper.autoCreateSlugRedirect("/danh-muc-san-pham/" + previousSlug, "/danh-muc-san-pham/" + entity.getSlug());
+            slugRedirectHelper.autoCreateSlugRedirect("/danh-muc/" + previousSlug, "/danh-muc/" + entity.getSlug());
         }
-        slugRedirectHelper.autoCreateSlugEnRedirect("/categories/", "/danh-muc-san-pham/", previousSlugEn, entity.getSlugEn(), entity.getSlug());
+        slugRedirectHelper.autoCreateSlugEnRedirect("/categories/", "/danh-muc/", previousSlugEn, entity.getSlugEn(), entity.getSlug());
         webRevalidationService.revalidateCategory(entity.getSlug(), previousSlug);
 
         return catalogReadRepository.findCategoryById(entity.getId())

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
 import { useHasPermission } from '@/lib/auth'
-import { Download, Eye, EyeOff, ExternalLink, MoreHorizontal, Package, Pencil, Plus, Trash2, Undo2 } from 'lucide-react'
+import { Download, Eye, EyeOff, ExternalLink, MoreHorizontal, Package, Pencil, Plus, RefreshCw, Trash2, Undo2 } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { ExportButton } from '@/components/ExportButton'
 import { ImportProductsDialog } from '@/components/ImportProductsDialog'
@@ -31,11 +31,15 @@ import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { queryKeys } from '../lib/queryKeys'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { PaginationControls } from '../components/PaginationControls'
+import { FilterBar, Screen, ScreenHeader } from '../components/layout'
 import { HOMEPAGE_BLOCK_LABEL_KEYS, HOMEPAGE_BLOCK_LIMITS, INITIAL_QUERY, buildCategoryTreeOrder, categoryLabel } from './product-list/constants'
 import { StockCell } from './product-list/cells'
 import { buildFormFromItem } from './product-detail/constants'
 import { PublishChecklistModal } from './product-detail/Modals'
+
+const CATEGORY_FILTER_INDENT_CLASSES = ['ps-0', 'ps-4', 'ps-8', 'ps-12', 'ps-16', 'ps-20', 'ps-24', 'ps-28']
 
 export function ProductListScreen({ navigate, canUpdate }) {
   const { t } = useTranslation()
@@ -84,8 +88,8 @@ export function ProductListScreen({ navigate, canUpdate }) {
     'columns:products',
   )
 
-  // Bộ lọc trên màn duyệt = strict-EN theo PRODUCT_RULE_004 (ẩn mục chưa dịch để
-  // biết cái nào còn thiếu bản tiếng Anh) — khác với selector trong form (full).
+  // PRODUCT_RULE_004: mọi bản ghi vẫn xuất hiện ở chế độ tiếng Anh; mục chưa dịch
+  // dùng tên tiếng Việt để người vận hành không mất khả năng tìm và chọn dữ liệu.
   // Key riêng brandsFilter() (khác brandsAll() của ProductDetailScreen) vì params
   // khác nhau (sort:'name:asc' vs không sort) — dùng chung key trước đây khiến 2
   // màn hình đọc nhầm cache của nhau khi cùng contentLang.
@@ -287,6 +291,15 @@ export function ProductListScreen({ navigate, canUpdate }) {
   const items = useMemo(() => state.items || [], [state.items])
   const pagination = state.pagination
 
+  useEffect(() => {
+    if (state.status !== 'success' || state.isFetching || !pagination) return
+    const lastPage = Math.max(1, Number(pagination.totalPages) || 1)
+    if (query.page <= lastPage) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelected(new Set())
+    setQuery((previous) => ({ ...previous, page: lastPage }))
+  }, [pagination, query.page, state.isFetching, state.status])
+
   const isTrashView = query.publishStatus === 'TRASH'
 
   // In-header sort: maps a column to query.sort (định dạng "field:dir" như endpoint
@@ -406,15 +419,15 @@ export function ProductListScreen({ navigate, canUpdate }) {
       label: t('products.colProduct'),
       sortable: true,
       render: (product) => (
-        <div className="bb-product-cell">
-          <span className="bb-product-thumb" style={{ width: 40, height: 40 }}>
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="bb-product-thumb h-10 w-10 shrink-0">
             {product.image?.url ? (
               <img
                 src={product.image.url}
                 alt={product.image.alt || product.name}
                 referrerPolicy="no-referrer"
                 loading="lazy"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                className="h-full w-full object-cover"
               />
             ) : (
               <Package size={22} />
@@ -427,7 +440,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
     {
       key: 'sku',
       label: 'SKU',
-      render: (product) => <span className="mono">{formatText(product.sku, 'SKU TBD')}</span>,
+      render: (product) => <span className="mono">{formatText(product.sku, t('products.skuFallback'))}</span>,
     },
     {
       key: 'price',
@@ -437,18 +450,18 @@ export function ProductListScreen({ navigate, canUpdate }) {
       render: (product) => {
         const sale = product.price?.salePrice
         return (
-          <span style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>
+          <div className="whitespace-nowrap font-bold">
             {sale > 0 ? (
               <>
                 {formatCurrencyVnd(sale)}
-                <div className="bb-cell-sub" style={{ textDecoration: 'line-through' }}>
+                <div className="bb-cell-sub line-through">
                   {formatCurrencyVnd(product.price.retailPrice)}
                 </div>
               </>
             ) : (
               formatCurrencyVnd(product.price?.retailPrice)
             )}
-          </span>
+          </div>
         )
       },
     },
@@ -461,8 +474,8 @@ export function ProductListScreen({ navigate, canUpdate }) {
       key: 'category',
       label: t('products.colCategory'),
       render: (product) => {
-        const catName = categoryLabel(product)
-        return catName ? formatText(catName) : <span className="bb-muted">—</span>
+        const catName = categoryLabel(product, t('products.uncategorized'))
+        return formatText(catName)
       },
     },
     {
@@ -477,7 +490,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
         const block = product.homepageBlock
         if (!block || block === 'NONE') return <span className="bb-muted">—</span>
         return (
-          <span style={{ fontSize: 12.5, fontWeight: 600 }}>
+          <span className="text-xs font-semibold">
             {t('products.homepageFeatured')}
             {Number.isFinite(product.homepageOrder) ? ` · #${product.homepageOrder}` : ''}
           </span>
@@ -505,28 +518,47 @@ export function ProductListScreen({ navigate, canUpdate }) {
         const isBusy = deletingId === product.id || restoringId === product.id
         const isPublished = product.publishStatus === 'PUBLISHED'
         const detailPath = `/admin/products/${product.id}`
+        const detailActionLabel = canUpdate ? t('common.edit') : t('common.view')
         return (
           <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-            <Button variant="unstyled" type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => navigate(detailPath)}>
-              <Pencil size={14} />
+            <Button
+              variant="ghost"
+              size="icon"
+              type="button"
+              className="min-h-11 min-w-11"
+              title={detailActionLabel}
+              aria-label={detailActionLabel}
+              onClick={() => navigate(detailPath)}
+            >
+              {canUpdate ? <Pencil size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
             </Button>
             {/* P1-1: bật/tắt xuất bản ngay trên dòng (1 chạm) — đồng bộ với Danh mục/Thương hiệu */}
             {canUpdate && !isTrashed && (
-              <Button variant="unstyled"
+              <Button
+                variant="ghost"
+                size="icon"
                 type="button"
-                className="bb-icon-btn"
-                disabled={togglingPublishId === product.id}
+                className="min-h-11 min-w-11"
+                loading={togglingPublishId === product.id}
                 title={isPublished ? t('products.unpublishAction', { defaultValue: 'Chuyển về Nháp' }) : t('products.publishAction', { defaultValue: 'Xuất bản' })}
+                aria-label={isPublished ? t('products.unpublishAction', { defaultValue: 'Chuyển về Nháp' }) : t('products.publishAction', { defaultValue: 'Xuất bản' })}
                 onClick={() => handleTogglePublish(product)}
               >
-                {isPublished ? <EyeOff size={14} /> : <Eye size={14} />}
+                {isPublished ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
               </Button>
             )}
             {/* P1-2: menu chuẩn (Radix) — điều hướng bàn phím, Escape đóng, quản lý focus */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="unstyled" type="button" className="bb-icon-btn" title={t('common.actions')}>
-                  <MoreHorizontal size={15} />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  type="button"
+                  className="min-h-11 min-w-11"
+                  title={t('common.actions')}
+                  aria-label={t('common.actions')}
+                >
+                  <MoreHorizontal size={16} aria-hidden="true" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -575,21 +607,23 @@ export function ProductListScreen({ navigate, canUpdate }) {
   function mobileCard(product) {
     const isTrashed = product.publishStatus === 'TRASH'
     const isBusy = deletingId === product.id || restoringId === product.id
+    const isPublished = product.publishStatus === 'PUBLISHED'
     const block = product.homepageBlock
     const detailPath = `/admin/products/${product.id}`
     const sale = product.price?.salePrice
-    const catName = categoryLabel(product)
+    const catName = categoryLabel(product, t('products.uncategorized'))
+    const detailActionLabel = canUpdate ? t('common.edit') : t('common.view')
     return {
       title: (
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span className="bb-product-thumb" style={{ width: 32, height: 32, flexShrink: 0 }}>
+        <span className="flex items-center gap-2">
+          <span className="bb-product-thumb h-8 w-8 shrink-0">
             {product.image?.url ? (
               <img
                 src={product.image.url}
                 alt={product.image.alt || product.name}
                 referrerPolicy="no-referrer"
                 loading="lazy"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                className="h-full w-full object-cover"
               />
             ) : (
               <Package size={18} />
@@ -598,7 +632,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
           {formatText(product.name)}
         </span>
       ),
-      subtitle: formatText(product.sku, 'SKU TBD'),
+      subtitle: formatText(product.sku, t('products.skuFallback')),
       status: <PublishStatusBadge value={product.publishStatus} />,
       meta: [
         {
@@ -606,7 +640,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
           value: sale > 0 ? (
             <span>
               {formatCurrencyVnd(sale)}
-              <span style={{ textDecoration: 'line-through', marginLeft: 8 }}>
+              <span className="ms-2 line-through">
                 {formatCurrencyVnd(product.price.retailPrice)}
               </span>
             </span>
@@ -616,14 +650,14 @@ export function ProductListScreen({ navigate, canUpdate }) {
           tone: 'strong',
         },
         { label: t('products.colStock'), value: <StockCell state={product.stockState} /> },
-        { label: t('products.colCategory'), value: catName ? formatText(catName) : <span className="bb-muted">—</span> },
+        { label: t('products.colCategory'), value: formatText(catName) },
         { label: t('products.colBrand'), value: product.brand?.name ? formatText(product.brand.name) : <span className="bb-muted">—</span> },
         {
           label: t('products.colHomepage'),
           value: (!block || block === 'NONE') ? (
             <span className="bb-muted">—</span>
           ) : (
-            <span style={{ fontSize: 12.5, fontWeight: 600 }}>
+            <span className="text-xs font-semibold">
               {t('products.homepageFeatured')}
               {Number.isFinite(product.homepageOrder) ? ` · #${product.homepageOrder}` : ''}
             </span>
@@ -632,49 +666,98 @@ export function ProductListScreen({ navigate, canUpdate }) {
         { label: t('products.colUpdated'), value: formatDateTime(product.updatedAt) },
       ],
       actions: (
-        <div onClick={(e) => e.stopPropagation()}>
-          <Button variant="unstyled" type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => navigate(detailPath)}>
-            <Pencil size={14} />
-          </Button>
-          <Button variant="unstyled"
+        <div className="flex flex-wrap items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <Button
+            variant="ghost"
+            size="icon"
             type="button"
-            className="bb-icon-btn"
+            className="min-h-11 min-w-11"
+            title={detailActionLabel}
+            aria-label={detailActionLabel}
+            onClick={() => navigate(detailPath)}
+          >
+            {canUpdate ? <Pencil size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+          </Button>
+          {canUpdate && !isTrashed && (
+            <Button
+              variant="ghost"
+              size="icon"
+              type="button"
+              className="min-h-11 min-w-11"
+              loading={togglingPublishId === product.id}
+              title={isPublished ? t('products.unpublishAction') : t('products.publishAction')}
+              aria-label={isPublished ? t('products.unpublishAction') : t('products.publishAction')}
+              onClick={() => handleTogglePublish(product)}
+            >
+              {isPublished ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+            </Button>
+          )}
+          {canUpdate && !isTrashed && (
+            <Button
+              variant="ghost"
+              size="icon"
+              type="button"
+              className="min-h-11 min-w-11"
+              loading={exportingJsonId === product.id}
+              title={t('products.exportJson')}
+              aria-label={t('products.exportJson')}
+              onClick={() => handleExportJson(product)}
+            >
+              <Download size={16} aria-hidden="true" />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            type="button"
+            className="min-h-11 min-w-11"
             title={t('common.openInNewTab')}
+            aria-label={t('common.openInNewTab')}
             onClick={() => window.open(detailPath, '_blank', 'noopener')}
           >
-            <ExternalLink size={14} />
+            <ExternalLink size={16} aria-hidden="true" />
           </Button>
           {canUpdate && isTrashed && (
             <>
-              <Button variant="unstyled"
+              <Button
+                variant="ghost"
+                size="icon"
                 type="button"
-                className="bb-icon-btn"
-                disabled={isBusy}
+                className="min-h-11 min-w-11"
+                loading={restoringId === product.id}
+                disabled={isBusy && restoringId !== product.id}
                 title={restoringId === product.id ? t('products.restoringLabel') : t('products.restore')}
+                aria-label={restoringId === product.id ? t('products.restoringLabel') : t('products.restore')}
                 onClick={() => handleRestore(product)}
               >
-                <Undo2 size={14} />
+                <Undo2 size={16} aria-hidden="true" />
               </Button>
-              <Button variant="unstyled"
+              <Button
+                variant="ghost"
+                size="icon"
                 type="button"
-                className="bb-icon-btn danger"
+                className="min-h-11 min-w-11 text-destructive hover:text-destructive"
                 disabled={isBusy}
                 title={t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' })}
+                aria-label={t('common.permanentDelete', { defaultValue: 'Xóa vĩnh viễn' })}
                 onClick={() => handlePermanentDelete(product)}
               >
-                <Trash2 size={14} />
+                <Trash2 size={16} aria-hidden="true" />
               </Button>
             </>
           )}
           {canUpdate && !isTrashed && (
-            <Button variant="unstyled"
+            <Button
+              variant="ghost"
+              size="icon"
               type="button"
-              className="bb-icon-btn"
+              className="min-h-11 min-w-11 text-destructive hover:text-destructive"
               disabled={isBusy}
               title={deletingId === product.id ? t('products.deletingLabel') : t('common.delete')}
+              aria-label={deletingId === product.id ? t('products.deletingLabel') : t('common.delete')}
               onClick={() => handleDelete(product)}
             >
-              <Trash2 size={14} />
+              <Trash2 size={16} aria-hidden="true" />
             </Button>
           )}
         </div>
@@ -684,14 +767,13 @@ export function ProductListScreen({ navigate, canUpdate }) {
   }
 
   return (
-    <div>
-      <div className="bb-screen-header">
-        <div className="bb-screen-title">
-          <p className="bb-screen-eyebrow">{t('products.eyebrow')}</p>
-          <h1>{t('products.title')}</h1>
-          <p className="bb-muted">{t('products.description')}</p>
-        </div>
-        <div className="bb-screen-actions">
+    <Screen>
+      <ScreenHeader
+        eyebrow={t('products.eyebrow')}
+        title={t('products.title')}
+        description={t('products.description')}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
           <ExportButton
             disabled={!canExport}
             title={!canExport ? t('products.requirePermission') : undefined}
@@ -706,7 +788,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
           >
             {t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
           </ExportButton>
-          <input
+          <Input
             ref={importFileInputRef}
             type="file"
             accept=".json"
@@ -730,8 +812,9 @@ export function ProductListScreen({ navigate, canUpdate }) {
           >
             <Plus size={14} />{canUpdate ? t('products.create') : t('common.noPermission')}
           </Button>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       <ImportProductsDialog
         key={importFile ? `${importFile.name}-${importFile.lastModified}-${importFile.size}` : 'none'}
@@ -751,7 +834,15 @@ export function ProductListScreen({ navigate, canUpdate }) {
       {/* O9 — Vừa xem gần đây */}
       <RecentItemsChips items={recentProductItems} onSelect={(item) => navigate(`/admin/products/${item.id}`)} />
 
-      {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
+      {!canUpdate ? (
+        <ReadOnlyBanner
+          warning={t('products.readOnly', {
+            defaultValue: 'Bạn chỉ có quyền xem sản phẩm. Cần quyền cập nhật danh mục để thay đổi dữ liệu.',
+          })}
+        />
+      ) : state.warning ? (
+        <ReadOnlyBanner warning={state.warning} />
+      ) : null}
 
       {/* O5: preset lọc nhanh 1-click cho các view thường dùng nhất, thay vì phải
           mở dropdown FilterSelect rồi chọn giá trị. */}
@@ -780,12 +871,15 @@ export function ProductListScreen({ navigate, canUpdate }) {
         </Button>
       </div>
 
-      <div className="bb-filter-bar">
+      <FilterBar
+        ariaLabel={t('products.filterAria', { defaultValue: 'Bộ lọc sản phẩm' })}
+        className="mt-4"
+      >
         <FilterSearchInput
           value={searchInput}
           onChange={setSearchInput}
           placeholder={t('products.searchPlaceholder')}
-          wrapperClassName="flex-1 min-w-[200px]"
+          wrapperClassName="min-w-52 flex-1"
         />
         <FilterSelect
           value={query.categoryId || 'ALL'}
@@ -795,7 +889,11 @@ export function ProductListScreen({ navigate, canUpdate }) {
             { value: 'ALL', label: t('products.filterCategory') },
             ...categoryTreeOptions.map((c) => ({
               value: c.id,
-              label: <span style={{ paddingInlineStart: `${c.depth * 16}px` }}>{c.name}</span>,
+              label: (
+                <span className={CATEGORY_FILTER_INDENT_CLASSES[Math.min(c.depth, CATEGORY_FILTER_INDENT_CLASSES.length - 1)]}>
+                  {c.name}
+                </span>
+              ),
             })),
           ]}
         />
@@ -846,7 +944,22 @@ export function ProductListScreen({ navigate, canUpdate }) {
           onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
         />
         <ColumnVisibilityToggle allColumns={allColumnDefs} hiddenKeys={hiddenColumnKeys} onToggle={toggleColumn} />
-      </div>
+        <Button
+          type="button"
+          variant="secondary"
+          className="min-h-11"
+          disabled={state.isFetching}
+          onClick={() => state.refetch()}
+        >
+          <RefreshCw size={16} className={state.isFetching ? 'animate-spin' : undefined} aria-hidden="true" />
+          {t('common.refresh', { defaultValue: 'Làm mới' })}
+        </Button>
+        {state.isFetching && state.status === 'success' ? (
+          <span className="text-sm text-muted-foreground" role="status" aria-live="polite">
+            {t('products.refreshing', { defaultValue: 'Đang cập nhật' })}
+          </span>
+        ) : null}
+      </FilterBar>
 
       <FilterChips
         chips={filterChips}
@@ -927,11 +1040,12 @@ export function ProductListScreen({ navigate, canUpdate }) {
           {state.status === 'success' && pagination && (
             <PaginationControls
               pagination={pagination}
+              disabled={state.isFetching || bulkBusy || Boolean(deletingId) || Boolean(restoringId) || Boolean(togglingPublishId)}
               onPageChange={(p) => updateQuery({ page: p })}
             />
           )}
         </div>
       )}
-    </div>
+    </Screen>
   )
 }

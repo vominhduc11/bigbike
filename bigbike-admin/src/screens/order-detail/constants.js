@@ -26,7 +26,53 @@ export const ORDER_STATUS_ACTION = {
 export function getOrderStatusLabel(targetStatus, order, t) {
   const key = ORDER_STATUS_ACTION[targetStatus]?.labelKey
   if (key) return t(key)
-  // Transition lạ (backend thêm trạng thái mới) → dùng nhãn trạng thái đã dịch nếu có,
-  // chỉ rơi về enum thô khi thật sự chưa có bản dịch.
-  return t(`status.order.${targetStatus}`, { defaultValue: targetStatus })
+  return t(`status.order.${targetStatus}`, { defaultValue: t('common.unknown') })
+}
+
+export function getOrderMutationError(error, t) {
+  switch (Number(error?.status)) {
+    case 400:
+      return t('orders.detail.errorValidation')
+    case 403:
+      return t('orders.detail.errorForbidden')
+    case 404:
+      return t('orders.detail.errorNotFound')
+    case 409:
+      return t('orders.detail.errorConflict')
+    default:
+      if (
+        error instanceof TypeError
+        || error?.code === 'NETWORK_ERROR'
+        || /failed to fetch|network/i.test(String(error?.message ?? ''))
+      ) {
+        return t('orders.detail.errorNetwork')
+      }
+      return t('orders.detail.updateStatusError')
+  }
+}
+
+export function parseOrderAuditData(value) {
+  if (value && typeof value === 'object' && !Array.isArray(value)) return value
+  if (typeof value !== 'string' || !value.trim()) return {}
+  try {
+    const parsed = JSON.parse(value)
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+export function getOrderAuditDetails(entry, t) {
+  const before = parseOrderAuditData(entry?.beforeData)
+  const after = parseOrderAuditData(entry?.afterData)
+  const fromStatus = typeof before.status === 'string' ? before.status : ''
+  const toStatus = typeof after.status === 'string' ? after.status : ''
+  const transition = fromStatus && toStatus
+    ? t('orders.audit.transition', {
+        from: t(`status.order.${fromStatus}`, { defaultValue: t('common.unknown') }),
+        to: t(`status.order.${toStatus}`, { defaultValue: t('common.unknown') }),
+      })
+    : ''
+  const cancelReason = typeof after.cancelReason === 'string' ? after.cancelReason.trim() : ''
+  return { transition, cancelReason }
 }

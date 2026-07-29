@@ -1,3 +1,5 @@
+import { normalizeStorefrontUrl } from "@/lib/utils/routes";
+
 const DANGEROUS_SCHEMES = ["javascript:", "vbscript:", "data:"];
 
 export function normalizeMenuUrl(url: string): string {
@@ -18,7 +20,7 @@ export function normalizeMenuUrl(url: string): string {
   }
 
   // Chuẩn hóa và map các URL cũ sang URL tĩnh mới để tránh 404
-  let normalizedPath = path;
+  let normalizedPath = normalizeStorefrontUrl(path);
   if (normalizedPath.startsWith("/")) {
     // Loại bỏ trailing slash và .html để so khớp
     const cleanPath = normalizedPath.replace(/\/$/, "").replace(/\.html$/, "");

@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { generateId } from '@/lib/utils'
+import { cn, generateId } from '@/lib/utils'
 import { showConfirm } from '../../lib/confirm'
 import { parseSpecsFromHtml, mergeSpecsIntoHtml } from '../../lib/specSheet'
 import { mergeHighlightsPairHtmlIntoItems, serializeHighlightsPairToHtml } from '../../lib/highlightsBlock'
@@ -51,11 +51,22 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
 
   // ── KHỐI VIDEO trong gallery (V248): YouTube/Upload + thumbnail tuỳ chọn ──
   if (isVideo) {
-    const provider = item.provider || 'youtube'
+    const provider = item.provider || ((item.videoUrl || '').trim() ? '' : 'youtube')
     const ytId = provider === 'youtube' ? extractYouTubeId(item.videoUrl || '') : null
     const posterUrl = trimmed
       ? displayUrl
       : (ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : '')
+    const changeProvider = async (nextProvider) => {
+      if (provider === nextProvider) return
+      if ((item.videoUrl || '').trim()) {
+        const confirmed = await showConfirm(
+          t('products.detail.video.switchProviderConfirm'),
+          t('products.detail.video.switchProviderTitle'),
+        )
+        if (!confirmed) return
+      }
+      onUpdate({ provider: nextProvider, videoUrl: '' })
+    }
     return (
       <div
         ref={sortable?.setNodeRef}
@@ -95,13 +106,9 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
         <div className="gallery-card-body flex flex-col gap-2">
           <div className="flex gap-1 p-1 bg-muted w-fit">
             <Button type="button" variant={provider === 'youtube' ? 'default' : 'ghost'} size="sm"
-              onClick={() => onUpdate({ provider: 'youtube' })} disabled={disabled}>YouTube</Button>
-            <Button type="button" variant={provider === 'tiktok' ? 'default' : 'ghost'} size="sm"
-              onClick={() => onUpdate({ provider: 'tiktok' })} disabled={disabled}>TikTok</Button>
-            <Button type="button" variant={provider === 'facebook' ? 'default' : 'ghost'} size="sm"
-              onClick={() => onUpdate({ provider: 'facebook' })} disabled={disabled}>Facebook</Button>
+              onClick={() => { void changeProvider('youtube') }} disabled={disabled}>YouTube</Button>
             <Button type="button" variant={provider === 'upload' ? 'default' : 'ghost'} size="sm"
-              onClick={() => { onUpdate({ provider: 'upload' }); }} disabled={disabled}>
+              onClick={() => { void changeProvider('upload') }} disabled={disabled}>
               {t('products.detail.gallery.videoUpload', { defaultValue: 'Tải lên' })}
             </Button>
           </div>
@@ -113,28 +120,16 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
               onChange={(e) => onUpdate({ videoUrl: e.target.value })}
               disabled={disabled}
             />
-          ) : provider === 'tiktok' ? (
-            <Input
-              type="text"
-              placeholder={t('products.detail.gallery.tiktokUrlPlaceholder', { defaultValue: 'Dán link TikTok đầy đủ' })}
-              value={item.videoUrl || ''}
-              onChange={(e) => onUpdate({ videoUrl: e.target.value })}
-              disabled={disabled}
-            />
-          ) : provider === 'facebook' ? (
-            <Input
-              type="text"
-              placeholder={t('products.detail.gallery.facebookUrlPlaceholder', { defaultValue: 'Dán link video Facebook (công khai)' })}
-              value={item.videoUrl || ''}
-              onChange={(e) => onUpdate({ videoUrl: e.target.value })}
-              disabled={disabled}
-            />
-          ) : (
+          ) : provider === 'upload' ? (
             <div className="flex flex-col gap-1">
               <Button variant="outline" size="sm" onClick={() => setVideoPickerOpen(true)} disabled={disabled} className="self-start">
                 {item.videoUrl ? t('products.detail.gallery.videoChange', { defaultValue: 'Đổi video' }) : t('products.detail.gallery.videoPick', { defaultValue: 'Chọn video' })}
               </Button>
               <MediaRequirementHint recommend={IMAGE_RECO.video} />
+            </div>
+          ) : (
+            <div className="rounded-sm border border-warning-border bg-warning-bg p-3 text-sm text-warning" role="alert">
+              {t('products.detail.gallery.legacySourceWarning')}
             </div>
           )}
           <Button variant="outline" size="sm" onClick={() => setPickerOpen(true)} disabled={disabled} className="self-start">
@@ -147,7 +142,13 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
             recommend={IMAGE_RECO.productImage}
             kind="image"
             onSelect={(url, media) => {
-              onUpdate({ url, alt: pickAlt(item.alt, media) })
+              onUpdate({
+                url,
+                alt: pickAlt(item.alt, media),
+                width: media.width ?? null,
+                height: media.height ?? null,
+                mimeType: media.mimeType ?? null,
+              })
               setPickerOpen(false)
             }}
             onClose={() => setPickerOpen(false)}
@@ -216,7 +217,13 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
           recommend={IMAGE_RECO.productImage}
           kind="image"
           onSelect={(url, media) => {
-            onUpdate({ url, alt: pickAlt(item.alt, media) })
+            onUpdate({
+              url,
+              alt: pickAlt(item.alt, media),
+              width: media.width ?? null,
+              height: media.height ?? null,
+              mimeType: media.mimeType ?? null,
+            })
             setPickerOpen(false)
           }}
           onClose={() => setPickerOpen(false)}
@@ -266,7 +273,7 @@ export function GalleryEditor({ items, onChange, disabled, validationErrors = {}
             onUpdate={(patch) => updateItem(index, patch)}
             onRemove={() => removeItem(index)}
             disabled={disabled}
-            urlError={validationErrors[`gallery.${index}.url`]}
+            urlError={validationErrors[`gallery.${index}.videoUrl`] || validationErrors[`gallery.${index}.url`]}
           />
         )}
         footer={!disabled && (
@@ -311,11 +318,11 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
     }
     onChange(items.filter((_, i) => i !== index))
   }
-  // Đổi nguồn video (YouTube/TikTok/Facebook/Thư viện) phải xoá liên kết cũ vì mỗi nguồn có định
+  // Đổi nguồn video (YouTube/Thư viện) phải xoá liên kết cũ vì mỗi nguồn có định
   // dạng khác nhau — hỏi xác nhận khi ô đang có link để không xoá mất dữ liệu ngoài ý muốn.
   async function changeType(index, nextType) {
     const item = items[index]
-    if ((item?.type || 'youtube') === nextType) return
+    if (item?.type === nextType) return
     if ((item?.url || '').trim()) {
       const confirmed = await showConfirm(
         t('products.detail.video.switchProviderConfirm', { defaultValue: 'Đổi nguồn video sẽ xóa liên kết đã nhập. Bạn có chắc muốn tiếp tục?' }),
@@ -331,7 +338,7 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
   return (
     <div className="list-editor">
       {items.map((item, index) => {
-        const type = item.type || 'youtube'
+        const type = item.type || ((item.url || '').trim() ? '' : 'youtube')
         const urlError = validationErrors[`videos.${index}.url`]
         const ytId = type === 'youtube' ? extractYouTubeId(item.url) : null
         return (
@@ -349,24 +356,6 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
                   disabled={disabled}
                 >
                   YouTube
-                </Button>
-                <Button
-                  type="button"
-                  variant={type === 'tiktok' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => changeType(index, 'tiktok')}
-                  disabled={disabled}
-                >
-                  TikTok
-                </Button>
-                <Button
-                  type="button"
-                  variant={type === 'facebook' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => changeType(index, 'facebook')}
-                  disabled={disabled}
-                >
-                  Facebook
                 </Button>
                 <Button
                   type="button"
@@ -397,31 +386,7 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
                     />
                   )}
                 </div>
-              ) : type === 'tiktok' ? (
-                <div>
-                  <Input className={urlError ? 'border-danger' : undefined}
-                    placeholder={t('products.detail.video.tiktokPlaceholder')}
-                    aria-label={t('products.detail.video.urlLabel', { defaultValue: 'Liên kết video' })}
-                    value={item.url}
-                    onChange={(e) => updateItem(index, { url: e.target.value })}
-                    disabled={disabled}
-                  />
-                  {urlError && <small className="field-error">{urlError}</small>}
-                  <p className="mt-1 text-xs text-muted-foreground">{t('products.detail.video.tiktokHint')}</p>
-                </div>
-              ) : type === 'facebook' ? (
-                <div>
-                  <Input className={urlError ? 'border-danger' : undefined}
-                    placeholder={t('products.detail.video.facebookPlaceholder')}
-                    aria-label={t('products.detail.video.urlLabel', { defaultValue: 'Liên kết video' })}
-                    value={item.url}
-                    onChange={(e) => updateItem(index, { url: e.target.value })}
-                    disabled={disabled}
-                  />
-                  {urlError && <small className="field-error">{urlError}</small>}
-                  <p className="mt-1 text-xs text-muted-foreground">{t('products.detail.video.facebookHint')}</p>
-                </div>
-              ) : (
+              ) : type === 'upload' ? (
                 <div>
                   <div className="flex gap-2 items-center flex-wrap">
                     <Button
@@ -461,6 +426,11 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
                       className="mt-2 w-full max-w-xs h-auto rounded border border-border"
                     />
                   )}
+                </div>
+              ) : (
+                <div className="rounded-sm border border-warning-border bg-warning-bg p-3 text-sm text-warning" role="alert">
+                  {t('products.detail.video.legacySourceWarning')}
+                  {urlError && <small className="mt-1 block field-error">{urlError}</small>}
                 </div>
               )}
               <Input
@@ -676,9 +646,6 @@ export function SpecificationsEditor({ disabled, html = '', onHtmlChange }) {
   )
 }
 
-const PROS_ACCENT = '#0A6E2A'
-const CONS_ACCENT = '#D4000F'
-
 /** Xem trước khối Ưu/Nhược điểm ở chế độ "Dán mã HTML" — dựng lại ĐÚNG layout thẻ màu mà
  *  bigbike-web thật sự render (ProductProsCons: viền trên + nền nhạt theo màu, icon Check/X),
  *  thay vì đổ thẳng HTML thô ra (không có màu/icon, không giống thật). Đọc trực tiếp từ
@@ -689,28 +656,31 @@ function HighlightsCardsPreview({ positiveNotes, negativeNotes, isEn, prosLabel,
   const cons = (negativeNotes || []).map((n) => (n?.[field] || '').trim()).filter(Boolean)
   if (pros.length === 0 && cons.length === 0) return null
 
-  const card = (accent, bg, label, list, textColor) => (
-    <div style={{ borderTop: `2px solid ${accent}`, background: bg, padding: '1.25rem' }}>
-      <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: accent }}>
+  const card = (tone, label, list) => {
+    const isPositive = tone === 'positive'
+    return (
+    <div className={cn('border-t-2 p-5', isPositive ? 'border-success bg-success/10' : 'border-danger bg-danger/10')}>
+      <h3 className={cn('mb-3 text-base font-bold uppercase tracking-wide', isPositive ? 'text-success' : 'text-danger')}>
         {label}
       </h3>
-      <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', margin: 0, padding: 0, listStyle: 'none' }}>
+      <ul className="flex list-none flex-col gap-2 p-0">
         {list.map((html, i) => (
-          <li key={i} style={{ display: 'flex', gap: '0.5rem', color: textColor, fontSize: '1rem' }}>
-            {accent === PROS_ACCENT
-              ? <Check size={16} style={{ marginTop: '2px', flexShrink: 0, color: accent }} aria-hidden="true" />
-              : <X size={16} style={{ marginTop: '2px', flexShrink: 0, color: accent }} aria-hidden="true" />}
+          <li key={i} className={cn('flex gap-2 text-base', !isPositive && 'text-muted-foreground')}>
+            {isPositive
+              ? <Check size={16} className="mt-0.5 shrink-0 text-success" aria-hidden="true" />
+              : <X size={16} className="mt-0.5 shrink-0 text-danger" aria-hidden="true" />}
             <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }} />
           </li>
         ))}
       </ul>
     </div>
-  )
+    )
+  }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
-      {pros.length > 0 && card(PROS_ACCENT, 'rgba(10,110,42,0.07)', prosLabel, pros, '#000000')}
-      {cons.length > 0 && card(CONS_ACCENT, 'rgba(212,0,15,0.06)', consLabel, cons, '#6f6f6f')}
+    <div className="grid gap-6 sm:grid-cols-2">
+      {pros.length > 0 && card('positive', prosLabel, pros)}
+      {cons.length > 0 && card('negative', consLabel, cons)}
     </div>
   )
 }
@@ -727,25 +697,20 @@ function FaqAccordionPreview({ items, isEn }) {
   if (rows.length === 0) return null
 
   return (
-    <div className="faq-accordion-preview" style={{ borderTop: '1px solid #dddddd' }}>
+    <div className="faq-accordion-preview border-t border-border">
       {rows.map((row, i) => (
-        <details key={i} open={i === 0} style={{ borderBottom: '1px solid #dddddd' }}>
-          <summary
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem',
-              padding: '0.75rem 0', cursor: 'pointer', color: '#000000',
-            }}
-          >
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
-              <span style={{ flexShrink: 0, fontWeight: 700, fontSize: '1rem', color: '#6f6f6f', fontVariantNumeric: 'tabular-nums' }}>
+        <details key={i} open={i === 0} className="border-b border-border">
+          <summary className="flex cursor-pointer items-center justify-between gap-3 py-3 text-foreground">
+            <span className="flex min-w-0 items-center gap-3">
+              <span className="shrink-0 text-base font-bold tabular-nums text-muted-foreground">
                 {String(i + 1).padStart(2, '0')}
               </span>
-              <span style={{ fontSize: '1rem', fontWeight: 600 }}>{row.question}</span>
+              <span className="text-base font-semibold">{row.question}</span>
             </span>
-            <ChevronDown className="faq-chevron" size={16} style={{ flexShrink: 0, color: '#6f6f6f' }} aria-hidden="true" />
+            <ChevronDown className="faq-chevron shrink-0 text-muted-foreground" size={16} aria-hidden="true" />
           </summary>
           <div
-            style={{ paddingLeft: '2.25rem', paddingBottom: '0.75rem', color: '#6f6f6f', fontSize: '0.8125rem' }}
+            className="pb-3 ps-9 text-sm text-muted-foreground"
             dangerouslySetInnerHTML={{ __html: sanitizeHtml(row.answer) }}
           />
         </details>

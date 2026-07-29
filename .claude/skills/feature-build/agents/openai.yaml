@@ -1,0 +1,4 @@
+interface:
+  display_name: "Feature Build"
+  short_description: "Build a cross-app BigBike feature"
+  default_prompt: "Use $feature-build to add a new business feature across docs, backend, admin, web, and tests."

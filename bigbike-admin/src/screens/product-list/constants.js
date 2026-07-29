@@ -27,7 +27,7 @@ export const HOMEPAGE_BLOCK_LABEL_KEYS = {
 }
 
 // Pure helper (kept out of the .jsx cell file so fast-refresh stays component-only).
-export function categoryLabel(product) {
+export function categoryLabel(product, fallbackLabel = '') {
   const category = product.category
-  return category && category.id !== 'uncategorized' ? category.name : null
+  return category?.name || fallbackLabel
 }

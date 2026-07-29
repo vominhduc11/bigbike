@@ -1,0 +1,4 @@
+interface:
+  display_name: "Hygiene"
+  short_description: "Check UI text, CSS, and mock data"
+  default_prompt: "Use $hygiene to scan recent UI changes for dead CSS, mojibake, missing Vietnamese accents, and hardcoded business data."

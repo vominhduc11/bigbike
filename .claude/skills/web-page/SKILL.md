@@ -1,19 +1,19 @@
 ---
 name: web-page
-description: Dùng khi thêm page/route mới vào bigbike-web (Next.js app router). Scaffold route directory theo convention dự án — async server component với params/searchParams await (Next 15 là Promise), generateMetadata qua buildPublicMetadata, data qua lib/api/public-api.ts, 'use client' chỉ cho child tương tác, shell PageHero/layout, và state loading/error/not-found. Gọi bằng /web-page <route slug>.
+description: "Dùng khi thêm page hoặc route mới vào bigbike-web với Next.js app router. Scaffold route directory theo convention dự án: async server component, params và searchParams được await, generateMetadata qua buildPublicMetadata, data qua lib/api/public-api.ts, use client chỉ cho child tương tác, dùng shell PageHero hoặc layout sẵn có, và đủ state loading, error, empty, not-found."
 ---
 
-# /web-page — Scaffold page mới cho bigbike-web (Next.js app router)
+# web-page — Scaffold page mới cho bigbike-web (Next.js app router)
 
 ## Bước 0 — Docs-First
 
-Nếu page gọi API/shape mới → `/docs-first <mô tả>` (đọc `API_CONTRACT.md`, `API_FLOW_MAP.md`, `DATA_CONTRACT.md`). SEO behavior đọc `AGENTS.md` §12.
+Nếu page gọi API/shape mới → đọc trước `API_CONTRACT.md`, `API_FLOW_MAP.md`, `DATA_CONTRACT.md` (chỉ section liên quan; bảng tra đầy đủ ở `CLAUDE.md` / `AGENTS.md` §3–§4). SEO behavior đọc `AGENTS.md` §12.
 
 ## Bước 1 — Tạo route directory
 
 - Route tĩnh: `app/<viet-slug>/page.tsx` (slug tiếng Việt, ví dụ `lien-he`, `huong-dan`).
 - Route động: `app/<viet-slug>/[slug]/page.tsx`.
-- Exemplar: `app/danh-muc-san-pham/page.tsx` (list + filter), `app/product/[slug]/page.tsx` (dynamic + generateStaticParams).
+- Exemplar: `app/sp/page.tsx` (list + filter), `app/danh-muc/[slug]/page.tsx` (dynamic + generateStaticParams).
 
 ## Bước 2 — Page = async server component, params là Promise (Next 15)
 
@@ -55,7 +55,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 ## Bước 4 — Data qua `lib/api/public-api.ts`
 
-Dùng helper sẵn có (`listProducts`, `getProductBySlug`, `listArticles`…) — chúng đọc base URL từ `env.ts` (`BIGBIKE_API_BASE_URL`), set `revalidate` + cache tags. KHÔNG hardcode business data / fixture legacy (guard `check:no-runtime-business-data` chặn `WP_*`, email/phone/địa chỉ storefront cũ…). Cần endpoint mới → thêm helper vào `public-api.ts`.
+Dùng helper sẵn có (`listProducts`, `getProductBySlug`, `listArticles`…) — chúng đọc base URL từ `bigbike-web/env.ts` (`BIGBIKE_API_BASE_URL` / `NEXT_PUBLIC_API_BASE_URL`), set `revalidate` + cache tags. KHÔNG hardcode business data / fixture legacy (guard `check:no-runtime-business-data` chặn `WP_*`, email/phone/địa chỉ storefront cũ…). Cần endpoint mới → thêm helper vào `public-api.ts`.
 
 ## Bước 5 — Shell, special files, i18n, designed states
 
@@ -66,8 +66,8 @@ Dùng helper sẵn có (`listProducts`, `getProductBySlug`, `listArticles`…) �
 
 ## Bước 6 — UI stack
 
-shadcn từ `components/ui`, Tailwind brand token (`text-primary`, `bg-brand`, `border-border`), `rounded-none` mặc định. Font: Barlow / Oswald / Barlow Condensed. Reuse `components/layout`, `components/catalog` (ProductCard, ProductGallery…) trước khi tạo mới.
+shadcn từ `components/ui`, Tailwind brand token (`text-primary`, `bg-brand`, `border-border`), `rounded-none` mặc định. **Font:** Barlow/Arial (body) + Barlow Condensed (heading/CTA/nav/display, UPPERCASE) — **Oswald đã gỡ khỏi web**, không dùng; cũng không dùng font của admin. Reuse `components/layout`, `components/catalog` (ProductCard, ProductGallery…) trước khi tạo mới.
 
 ## Bước 7 — Đóng gate
 
-Chạy `/preflight` (web = `npm run lint` + `npm run test` + `npm run build`).
+Chạy quy trình `preflight` (web = `npm run lint` + `npm run test` + `npm run build`).

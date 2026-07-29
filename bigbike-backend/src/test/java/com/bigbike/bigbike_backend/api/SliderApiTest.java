@@ -83,7 +83,7 @@ class SliderApiTest {
                                 {
                                   "location": "category",
                                   "sortOrder": 9991,
-                                  "externalLink": "/san-pham/",
+                                  "externalLink": "/sp/",
                                   "isActive": true
                                 }
                                 """))

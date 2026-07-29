@@ -5,6 +5,8 @@ import com.bigbike.bigbike_backend.api.admin.dto.review.AdminReviewSummaryRespon
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
+import com.bigbike.bigbike_backend.api.error.ForbiddenException;
+import com.bigbike.bigbike_backend.config.ClientIpResolver;
 import com.bigbike.bigbike_backend.service.admin.AdminReviewService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,7 +16,10 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.List;
@@ -42,6 +47,7 @@ public class AdminReviewController extends AdminControllerSupport {
     private final AdminReviewService adminReviewService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
+    private final ClientIpResolver clientIpResolver;
 
     @GetMapping
     public ApiListResponse<Map<String, Object>> listReviews(
@@ -84,7 +90,8 @@ public class AdminReviewController extends AdminControllerSupport {
                         resolveAdminId(),
                         id,
                         body.status(),
-                        request.getRemoteAddr(),
+                        body.expectedVersion(),
+                        clientIpResolver.resolve(request),
                         request.getHeader("User-Agent")
                 ),
                 request
@@ -95,13 +102,15 @@ public class AdminReviewController extends AdminControllerSupport {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteReview(
             @PathVariable Long id,
+            @RequestParam @Min(0) Long expectedVersion,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "reviews.write");
+        requireSuperAdminWithReviewsWrite(request);
         adminReviewService.deleteReview(
                 resolveAdminId(),
                 id,
-                request.getRemoteAddr(),
+                expectedVersion,
+                clientIpResolver.resolve(request),
                 request.getHeader("User-Agent")
         );
     }
@@ -116,14 +125,19 @@ public class AdminReviewController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "reviews.write");
-        int affected = adminReviewService.bulkUpdateStatus(
+        AdminReviewService.BulkReviewResult result = adminReviewService.bulkUpdateStatus(
                 resolveAdminId(),
-                body.ids(),
+                body.items().stream()
+                        .map(item -> new AdminReviewService.VersionedReviewId(
+                                item.id(), item.expectedVersion()))
+                        .toList(),
                 body.status(),
-                request.getRemoteAddr(),
+                clientIpResolver.resolve(request),
                 request.getHeader("User-Agent")
         );
-        return apiResponseFactory.data(Map.of("affected", affected), request);
+        return apiResponseFactory.data(Map.of(
+                "affected", result.affected(),
+                "skipped", result.skipped()), request);
     }
 
     /** Bulk counterpart of {@link #deleteReview}. */
@@ -132,23 +146,44 @@ public class AdminReviewController extends AdminControllerSupport {
             @Valid @RequestBody BulkIdsRequest body,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "reviews.write");
-        int affected = adminReviewService.bulkDelete(
+        requireSuperAdminWithReviewsWrite(request);
+        AdminReviewService.BulkReviewResult result = adminReviewService.bulkDelete(
                 resolveAdminId(),
-                body.ids(),
-                request.getRemoteAddr(),
+                body.items().stream()
+                        .map(item -> new AdminReviewService.VersionedReviewId(
+                                item.id(), item.expectedVersion()))
+                        .toList(),
+                clientIpResolver.resolve(request),
                 request.getHeader("User-Agent")
         );
-        return apiResponseFactory.data(Map.of("affected", affected), request);
+        return apiResponseFactory.data(Map.of(
+                "affected", result.affected(),
+                "skipped", result.skipped()), request);
     }
 
     public record BulkStatusRequest(
-            @NotEmpty @Size(max = 500) List<@NotNull Long> ids,
-            @NotNull String status
+            @NotEmpty @Size(max = 500) List<@NotNull @Valid VersionedReviewItem> items,
+            @NotBlank
+            @Pattern(
+                    regexp = "(?i)APPROVED|PENDING|SPAM|TRASH",
+                    message = "Trạng thái không hợp lệ.")
+            String status
     ) {}
 
     public record BulkIdsRequest(
-            @NotEmpty @Size(max = 500) List<@NotNull Long> ids
+            @NotEmpty @Size(max = 500) List<@NotNull @Valid VersionedReviewItem> items
     ) {}
 
+    public record VersionedReviewItem(
+            @NotNull Long id,
+            @NotNull @PositiveOrZero Long expectedVersion
+    ) {}
+
+    private void requireSuperAdminWithReviewsWrite(HttpServletRequest request) {
+        var admin = devAdminAuthService.requirePermission(request, "reviews.write");
+        if (admin.roles().stream().noneMatch("SUPER_ADMIN"::equals)) {
+            throw new ForbiddenException(
+                    "Chỉ Super Admin được xóa vĩnh viễn đánh giá.");
+        }
+    }
 }

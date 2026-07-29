@@ -32,7 +32,11 @@ public class AdminAdminUsersService {
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
 
-    private static final Set<String> VALID_STATUSES = Set.of("INVITED", "ACTIVE", "DISABLED", "SUSPENDED");
+    // Trạng thái admin được phép ĐẶT TAY qua PATCH. INVITED cố tình KHÔNG nằm đây: nó chỉ
+    // được luồng mời (createAdminUser) đặt kèm gửi email đặt mật khẩu — cho PATCH thẳng về
+    // INVITED sẽ khoá đăng nhập một admin đang hoạt động mà không gửi lời mời nào. Bộ lọc
+    // danh sách vẫn lọc được theo INVITED (không dùng hằng số này).
+    private static final Set<String> MANUALLY_SETTABLE_STATUSES = Set.of("ACTIVE", "DISABLED", "SUSPENDED");
 
     private static final String SUPER_ADMIN = "SUPER_ADMIN";
 
@@ -181,8 +185,11 @@ public class AdminAdminUsersService {
         // --- Guards: validate BEFORE applying changes ---
         if (status != null && !status.isBlank()) {
             String normalizedStatus = status.trim().toUpperCase(Locale.ROOT);
-            if (!VALID_STATUSES.contains(normalizedStatus)) {
+            if (!MANUALLY_SETTABLE_STATUSES.contains(normalizedStatus)) {
                 throw new ConflictException("Invalid status: " + normalizedStatus + ". Must be ACTIVE, DISABLED or SUSPENDED.");
+            }
+            if ("INVITED".equals(beforeStatus) && !normalizedStatus.equals(beforeStatus)) {
+                throw new ConflictException("INVITED accounts must accept their invite before becoming active.");
             }
             if (id.equals(actorId) && !"ACTIVE".equals(normalizedStatus)) {
                 throw new ConflictException("Admin cannot deactivate their own account.");

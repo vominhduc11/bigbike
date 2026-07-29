@@ -146,7 +146,7 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
           id="menu-item-url"
           value={value.url}
           onChange={(e) => onChange({ url: e.target.value, targetType: 'CUSTOM', targetId: null })}
-          placeholder="/danh-muc-san-pham/... hoặc https://..."
+          placeholder="/danh-muc/... hoặc https://..."
           readOnly={categoryLinked}
           disabled={categoryLinked}
           aria-required={!categoryLinked}
@@ -158,7 +158,7 @@ export function ItemForm({ value, onChange, parentOptions, categoryOptions, cate
         ) : value.url.trim() ? (
           urlInvalid && (
             <small id="menu-item-url-hint" className="menu-form-hint menu-form-hint--danger">
-              {t('menus.urlInvalid', { defaultValue: 'Lỗi: URL không hợp lệ. Ví dụ: /danh-muc-san-pham/xe-may hoặc https://example.com' })}
+              {t('menus.urlInvalid', { defaultValue: 'Lỗi: URL không hợp lệ. Ví dụ: /danh-muc/xe-may hoặc https://example.com' })}
             </small>
           )
         ) : (

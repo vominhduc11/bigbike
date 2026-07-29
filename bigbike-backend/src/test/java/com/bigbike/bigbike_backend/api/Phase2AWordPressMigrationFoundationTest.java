@@ -267,8 +267,18 @@ class Phase2AWordPressMigrationFoundationTest {
         assertThat(result.totalAmount()).isEqualByComparingTo(new BigDecimal("35000000"));
         assertThat(result.currency()).isEqualTo("VND");
         assertThat(result.paymentMethod()).isEqualTo("cod");
+        assertThat(result.payment().status()).isEqualTo("SUCCEEDED");
         assertThat(result.lineItems()).hasSize(1);
         assertThat(result.lineItems().get(0).name()).isEqualTo("Honda ABC 125");
+    }
+
+    @Test
+    void orderMapper_usesCanonicalPaymentRecordStatuses() {
+        assertThat(mapPaymentStatus("wc-processing", 602L)).isEqualTo("PENDING");
+        assertThat(mapPaymentStatus("wc-completed", 603L)).isEqualTo("SUCCEEDED");
+        assertThat(mapPaymentStatus("wc-cancelled", 604L)).isEqualTo("CANCELLED");
+        assertThat(mapPaymentStatus("wc-failed", 605L)).isEqualTo("CANCELLED");
+        assertThat(mapPaymentStatus("wc-refunded", 606L)).isEqualTo("CANCELLED");
     }
 
     // ── 12. Menu mapper: maps nav_menu_item basics ────────────────────────────
@@ -397,5 +407,19 @@ class Phase2AWordPressMigrationFoundationTest {
     private Path fixtureFile(String name) throws Exception {
         ClassPathResource resource = new ClassPathResource("fixtures/wordpress/" + name);
         return resource.getFile().toPath();
+    }
+
+    private String mapPaymentStatus(String postStatus, long orderId) {
+        WpPost order = new WpPost(
+                orderId, 0L, LocalDateTime.now(), LocalDateTime.now(),
+                "", "", "", postStatus, "closed",
+                "", "shop_order", 0L, 0, "", "", 0L
+        );
+        List<WpPostMeta> metas = List.of(
+                new WpPostMeta(orderId * 10 + 1, orderId, "_order_total", "100000"),
+                new WpPostMeta(orderId * 10 + 2, orderId, "_order_currency", "VND"),
+                new WpPostMeta(orderId * 10 + 3, orderId, "_payment_method", "cod")
+        );
+        return orderMapper.map(order, metas, List.of()).payment().status();
     }
 }

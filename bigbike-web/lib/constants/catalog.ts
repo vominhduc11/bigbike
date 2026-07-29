@@ -1,6 +1,6 @@
 /**
- * Shared query defaults for the PRODUCT catalog pages (`/san-pham`,
- * `/danh-muc-san-pham/[slug]`, `/brands/[slug]`).
+ * Shared query defaults for the PRODUCT catalog pages (`/sp`,
+ * `/danh-muc/[slug]`, `/brands/[slug]`).
  *
  * Config-only constants (sort key, page size, numeric param bound) — no business
  * data — so the `check:no-runtime-business-data` guard is satisfied.

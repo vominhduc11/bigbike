@@ -14,8 +14,8 @@ import { CatalogSidebar } from "@/components/catalog/CatalogSidebar";
 import type { Brand, CatalogFacets, Category, Product } from "@/lib/contracts/public";
 
 /**
- * Lưới sản phẩm CSR dùng chung cho các trang archive (/danh-muc-san-pham/[slug],
- * /san-pham, /tim-kiem, /brands/[slug]). Trang chỉ render shell tĩnh (ISR theo
+ * Lưới sản phẩm CSR dùng chung cho các trang archive (/danh-muc/[slug],
+ * /sp, /tim-kiem, /brands/[slug]). Trang chỉ render shell tĩnh (ISR theo
  * slug/tag); component này đọc searchParams ở CLIENT và fetch danh sách lọc/phân
  * trang qua React Query → đổi filter/sort/trang chỉ refetch client, KHÔNG SSR.
  *
@@ -35,7 +35,7 @@ export type CatalogClientProps = {
   routeCategorySlug?: string;
   /** Trang thương hiệu: cố định brand theo route. */
   routeBrandSlug?: string;
-  /** Trang /san-pham, /tim-kiem: cho phép đọc category từ query param. */
+  /** Trang /sp, /tim-kiem: cho phép đọc category từ query param. */
   includeCategoryParam?: boolean;
   /** Khoá đọc từ khoá tìm kiếm (vd /tim-kiem dùng ["s","q"]). */
   queryParamKeys?: string[];

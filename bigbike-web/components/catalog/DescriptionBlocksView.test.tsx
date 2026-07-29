@@ -114,3 +114,41 @@ describe("DescriptionBlocksView — khối feature adaptive", () => {
     expect(container.querySelectorAll("section")).toHaveLength(2);
   });
 });
+
+describe("DescriptionBlocksView — legacy video compatibility", () => {
+  it.each([
+    [
+      "tiktok",
+      "https://www.tiktok.com/@bigbike/video/7412345678901234567",
+      "https://www.tiktok.com/embed/v2/7412345678901234567",
+    ],
+    [
+      "facebook",
+      "https://www.facebook.com/bigbike/videos/123456789",
+      "https://www.facebook.com/plugins/video.php",
+    ],
+  ])("vẫn render block %s cũ", (provider, url, expectedSrc) => {
+    const block = { type: "video", provider, url, caption: "Legacy block" } as unknown as DescriptionBlock;
+    const { container, getByText } = render(<DescriptionBlocksView blocks={[block]} />);
+
+    expect(container.querySelector("iframe")).toHaveAttribute(
+      "src",
+      expect.stringContaining(expectedSrc),
+    );
+    expect(getByText("Legacy block")).toBeInTheDocument();
+  });
+
+  it("nguồn không nhận diện dùng fallback an toàn và không gây lỗi render", () => {
+    const block = {
+      type: "video",
+      provider: "unknown",
+      url: "https://cdn.example.com/legacy-source",
+    } as unknown as DescriptionBlock;
+    const { container } = render(<DescriptionBlocksView blocks={[block]} />);
+
+    expect(container.querySelector("video")).toHaveAttribute(
+      "src",
+      "https://cdn.example.com/legacy-source",
+    );
+  });
+});

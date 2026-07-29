@@ -145,35 +145,38 @@ class Phase1IAdminManagementApiTest {
                 .andExpect(jsonPath("$.data.orderSummary.orderCount").isNumber());
     }
 
-    // 5. Update customer basic info
+    // 5. Update the two admin-editable customer profile fields
     @Test
     void updateCustomer_updatesBasicInfo() throws Exception {
         String email = "upd-" + UUID.randomUUID() + "@bigbike.test";
         UUID customerId = createTestCustomer(email);
+        String phone = "09" + String.format(
+                "%08d", Math.floorMod(UUID.randomUUID().hashCode(), 100_000_000));
 
         mockMvc.perform(patch("/api/v1/admin/customers/" + customerId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"displayName\":\"Updated Name\",\"firstName\":\"Tran\",\"lastName\":\"Van B\"}")
+                        .content("{\"displayName\":\"Updated Name\",\"phone\":\"" + phone + "\"}")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.displayName").value("Updated Name"))
-                .andExpect(jsonPath("$.data.firstName").value("Tran"));
+                .andExpect(jsonPath("$.data.phone").value(phone));
     }
 
-    // 6. Update customer — duplicate email → 409
+    // 6. Admin API keeps account-identity fields read-only
     @Test
-    void updateCustomer_duplicateEmail_returns409() throws Exception {
+    void updateCustomer_emailIsReadOnly_returns400() throws Exception {
         String emailA = "dup-a-" + UUID.randomUUID() + "@bigbike.test";
         String emailB = "dup-b-" + UUID.randomUUID() + "@bigbike.test";
         UUID customerA = createTestCustomer(emailA);
         createTestCustomer(emailB);
 
-        // Try to assign emailB to customerA → conflict
         mockMvc.perform(patch("/api/v1/admin/customers/" + customerA)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"" + emailB + "\"}")
                         .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isConflict());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[?(@.field == 'email')]").exists());
     }
 
     @Test

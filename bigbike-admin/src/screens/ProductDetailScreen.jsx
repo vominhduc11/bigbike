@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
 import {
-  AlertCircle, Check, ChevronDown, ChevronRight, Eye, EyeOff, Info, Loader2, Lock, Save, Search as PfSearch, X,
+  AlertCircle, Check, ChevronDown, ChevronRight, Eye, Info, Loader2, Lock, Save, Search as PfSearch, X,
 } from 'lucide-react'
 
 import {
@@ -14,7 +14,6 @@ import {
   fetchProductDetail,
   mapValidationErrors,
   previewProduct,
-  publishProduct,
   updateProduct,
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
@@ -22,7 +21,7 @@ import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { clearNavGuard } from '@/lib/navigationGuard'
 import { recordRecentItem } from '../lib/useRecentItems'
 import { formatDateTime } from '../lib/formatters'
-import { useContentLang, overlayEnNames } from '../lib/contentLang'
+import { setContentLang, useContentLang, overlayEnNames } from '../lib/contentLang'
 import { queryKeys } from '../lib/queryKeys'
 import { createProductSchema, zodErrors, normalizeVariantToken, isColorAttributeName } from '../lib/schemas'
 import { Screen, ScreenHeader, StickyActionBar, Tabs } from '../components/layout'
@@ -76,7 +75,6 @@ import {
   computeSectionErrorsFromMap,
   findTabForErrors,
   computeAttrSetWarning,
-  getPublishReadiness,
   MAIN_SECTION_GROUPS,
   MAIN_GROUPS_DEFAULT_OPEN,
   groupsWithErrors,
@@ -84,6 +82,7 @@ import {
   RELATED_PRODUCTS_MAX,
   SPEC_STAT_MAX,
   VARIANTS_FILTER_THRESHOLD,
+  SYSTEM_CATEGORY_ID,
 } from './product-detail/constants'
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
@@ -107,8 +106,6 @@ import {
   SpecStatEditor,
   TrustBadgesEditor,
 } from './product-detail/RowEditors'
-import { PublishChecklistModal } from './product-detail/Modals'
-
 import {
   VariantsEditor,
   VariantMatrixWizard,
@@ -151,7 +148,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const [validationErrors, setValidationErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isRestoreConfirming, setIsRestoreConfirming] = useState(false)
-  const [publishChecklist, setPublishChecklist] = useState(null)
   const [variantsDeletedToEmpty, setVariantsDeletedToEmpty] = useState(false)
   const restoreConfirmingRef = useRef(false)
   const slugEditedByUser = useRef(false)
@@ -175,7 +171,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   useAutoHideSidebar(previewOpen)
 
   useEffect(() => {
-    if (!previewOpen) return
+    if (!previewOpen || !canUpdate) return
     let cancelled = false
     const handle = setTimeout(async () => {
       setPreviewLoading(true)
@@ -195,7 +191,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       cancelled = true
       clearTimeout(handle)
     }
-  }, [previewOpen, previewLang, form])
+  }, [previewOpen, previewLang, form, canUpdate])
 
   // Autosave / draft recovery
   const autosaveKey = getAutosaveKey(productId, isCreate)
@@ -486,7 +482,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     if (isLocked && !selected) return
     setProductCategories(selected
       ? form.categoryIds.filter((id) => id !== categoryId)
-      : [...(form.categoryIds ?? []), categoryId])
+      : [
+          ...(form.categoryIds ?? []).filter((id) => id !== SYSTEM_CATEGORY_ID),
+          categoryId,
+        ])
   }
 
   function moveProductCategory(categoryId, direction) {
@@ -755,23 +754,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     },
   })
 
-  const publishStatusMutation = useMutation({
-    mutationFn: ({ id, nextStatus }) => publishProduct(id, nextStatus),
-    onSuccess: (response, variables) => {
-      const nextStatus = response?.item?.publishStatus || variables.nextStatus
-      setForm((previous) => ({ ...previous, publishStatus: nextStatus }))
-      queryClient.invalidateQueries({ queryKey: ['products'] })
-      queryClient.setQueryData(['product', variables.id], (old) => {
-        if (!old?.item) return old
-        return { ...old, item: { ...old.item, publishStatus: nextStatus } }
-      })
-      toast.success(t('products.publishToggleSuccess', { defaultValue: 'Đã đổi trạng thái xuất bản.' }))
-    },
-    onError: (error) => {
-      toast.error(error?.message || t('products.detail.errPublishFailed', { defaultValue: 'Không thể cập nhật trạng thái xuất bản.' }))
-    },
-  })
-
   function focusFirstError() {
     // Use double-rAF so we run AFTER React's commit phase, including the
     // adjust-state-during-render pass that auto-expands a variant card.
@@ -796,6 +778,13 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   // Khi lưu lỗi (client hoặc server trả về): chuyển sang tab chứa lỗi, BUNG các nhóm đang thu gọn
   // có chứa mục lỗi (để không giấu lỗi sau nhóm đã đóng), rồi focus ô lỗi đầu tiên.
   function revealErrorSections(errorsMap) {
+    const hasEnglishError = Object.keys(errorsMap).some((key) => key.startsWith('translations.en.'))
+    if (hasEnglishError && !isEnLang) {
+      setContentLang('en')
+      toast.error(t('products.detail.englishErrorsToast', {
+        defaultValue: 'Có lỗi ở nội dung tiếng Anh. Màn hình đã chuyển sang English để bạn bổ sung.',
+      }))
+    }
     const failedSections = computeSectionErrorsFromMap(errorsMap)
     const failedTab = findTabForErrors(failedSections)
     if (failedTab && failedTab !== activeTab) setActiveTab(failedTab)
@@ -921,6 +910,17 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   }
 
   if (state.status === 'error') {
+    if (!isCreate && fetchError?.status === 404) {
+      return (
+        <StatePanel
+          tone="neutral"
+          title={t('products.detail.notFound')}
+          description={t('products.detail.notFoundDesc')}
+          actionLabel={t('products.detail.backToList')}
+          onAction={() => navigate('/admin/products')}
+        />
+      )
+    }
     return (
       <StatePanel
         tone="danger"
@@ -1013,57 +1013,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     ? t('products.detail.restoreAndSave')
     : isPublished ? t('products.detail.saveBtn') : t('products.detail.saveDraft')
 
-  async function handleQuickUnpublish() {
-    if (isCreate || !productId || publishStatusMutation.isPending) return
-    if (isDirty) {
-      const confirmed = await showConfirm(
-        t('products.detail.unpublishDirtyConfirm'),
-        t('products.detail.unpublishDirtyTitle'),
-        { variant: 'default', confirmLabel: t('products.unpublishAction') },
-      )
-      if (!confirmed) return
-    }
-
-    try {
-      await publishStatusMutation.mutateAsync({ id: productId, nextStatus: 'DRAFT' })
-    } catch {
-      // The mutation's onError already presents the API error to the admin.
-    }
-  }
-
-  async function handleQuickPublish() {
-    if (isCreate || !productId || publishStatusMutation.isPending || isSubmitting) return
-
-    let readinessForm = form
-    if (isDirty) {
-      const savedForm = await handleSave()
-      if (!savedForm) return
-      readinessForm = savedForm
-    }
-
-    const blockers = getPublishReadiness(readinessForm, t).filter((item) => item.required && !item.ok)
-    if (blockers.length > 0) {
-      setPublishChecklist(readinessForm)
-      return
-    }
-
-    try {
-      await publishStatusMutation.mutateAsync({ id: productId, nextStatus: 'PUBLISHED' })
-    } catch {
-      // The mutation's onError already presents the API error to the admin.
-    }
-  }
-
-  async function confirmPublishFromChecklist() {
-    if (!publishChecklist || !productId || publishStatusMutation.isPending) return
-    setPublishChecklist(null)
-    try {
-      await publishStatusMutation.mutateAsync({ id: productId, nextStatus: 'PUBLISHED' })
-    } catch {
-      // The mutation's onError already presents the API error to the admin.
-    }
-  }
-
   async function handlePrimarySave() {
     if (isTrashed) {
       if (restoreConfirmingRef.current) return
@@ -1094,6 +1043,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       )
       if (!confirmed) return
     }
+    clearNavGuard()
     navigate('/admin/products')
   }
 
@@ -1117,7 +1067,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   <>
                     {' · '}
                     {t('products.detail.langEnHint', {
-                      defaultValue: 'Bản tiếng Anh không bắt buộc',
+                      defaultValue: 'Tên tiếng Anh là bắt buộc; nội dung tiếng Anh khác có thể bổ sung sau.',
                     })}
                   </>
                 )}
@@ -1125,7 +1075,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             ) : isEnLang ? (
               <span className="text-xs">
                 {t('products.detail.langEnHint', {
-                  defaultValue: 'Bản tiếng Anh không bắt buộc',
+                  defaultValue: 'Tên tiếng Anh là bắt buộc; nội dung tiếng Anh khác có thể bổ sung sau.',
                 })}
               </span>
             ) : null
@@ -1135,31 +1085,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <span className={publishBadgeClass(form.publishStatus)}>
                 {t(`status.publish.${form.publishStatus}`, { defaultValue: form.publishStatus })}
               </span>
-              {!isCreate && canUpdate && isPublished && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={isReadOnly || publishStatusMutation.isPending}
-                  onClick={handleQuickUnpublish}
-                >
-                  <EyeOff size={14} className="mr-1.5" />
-                  {t('products.unpublishAction')}
-                </Button>
-              )}
-              {!isCreate && canUpdate && form.publishStatus === 'DRAFT' && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={isReadOnly || publishStatusMutation.isPending}
-                  onClick={handleQuickPublish}
-                >
-                  <Eye size={14} className="mr-1.5" />
-                  {t('products.publishAction')}
-                </Button>
-              )}
-              {isReadOnly && (
+              {!canUpdate && (
                 <span className="bb-badge bb-badge-warning">
                   <Lock size={11} />
                   {t('products.detail.readOnlyBadge', { defaultValue: 'Chỉ đọc' })}
@@ -1172,6 +1098,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <Button
                 variant="ghost"
                 size="icon"
+                className="min-h-11 min-w-11"
                 onClick={handleClose}
                 aria-label={t('common.cancel')}
                 data-screen-close="true"
@@ -1315,12 +1242,14 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     required={!isEnLang}
                     error={isEnLang ? validationErrors['translations.en.slug'] : validationErrors.slug}
                     helper={isEnLang
-                      ? t('products.detail.slugHintEn', { defaultValue: 'Đường dẫn tiếng Anh (tùy chọn) — để trống sẽ dùng đường dẫn tiếng Việt.' })
+                      ? t('products.detail.slugHintEn', { defaultValue: 'Đường dẫn tiếng Anh (tùy chọn) — để trống nghĩa là sản phẩm chưa có trang tiếng Anh.' })
                       : t('products.detail.slugHint')}
                   >
                     <Input
-                      value={isEnLang ? (form.translations?.en?.slug || form.slug || '') : (form.slug || '')}
-                      placeholder={isEnLang ? 'vd: fullface-helmet-agv-k1s' : 'vd: mu-bao-hiem-fullface-agv-k1s'}
+                      value={isEnLang ? (form.translations?.en?.slug || '') : (form.slug || '')}
+                      placeholder={isEnLang
+                        ? t('products.detail.slugPlaceholderEn')
+                        : t('products.detail.slugPlaceholderVi')}
                       onChange={(e) => (isEnLang ? handleEnSlugChange(e.target.value) : handleSlugChange(e.target.value))}
                       onBlur={(e) => {
                         if (isEnLang) {
@@ -1385,19 +1314,21 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                             const isExpanded = expandedCategoryIds.has(category.id)
                             const parentPath = categoryParentPathById.get(category.id)
                             return (
-                              <label
+                              <div
                                 key={category.id}
                                 title={categoryPathById.get(category.id) || category.name}
                                 className={cn(
-                                  'flex min-h-11 cursor-pointer items-center gap-3 py-2 pr-2 text-sm hover:bg-muted',
+                                  'flex min-h-11 items-center gap-3 py-2 pr-2 text-sm hover:bg-muted',
                                   CATEGORY_TREE_INDENT_CLASSES[Math.min(category.depth, CATEGORY_TREE_INDENT_CLASSES.length - 1)],
-                                  locked && !selected && 'cursor-not-allowed opacity-60',
+                                  locked && !selected && 'opacity-60',
                                 )}
                               >
                                 {hasChildren ? (
-                                  <button
+                                  <Button
                                     type="button"
-                                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted-foreground/10"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="min-h-11 min-w-11 shrink-0 text-muted-foreground"
                                     onClick={(e) => {
                                       e.preventDefault()
                                       e.stopPropagation()
@@ -1410,28 +1341,33 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                                     {isExpanded
                                       ? <ChevronDown size={14} aria-hidden="true" />
                                       : <ChevronRight size={14} aria-hidden="true" />}
-                                  </button>
+                                  </Button>
                                 ) : (
-                                  <span className="h-4 w-4 shrink-0" aria-hidden="true" />
+                                  <span className="min-h-11 min-w-11 shrink-0" aria-hidden="true" />
                                 )}
-                                <Checkbox
-                                  checked={selected}
-                                  disabled={isReadOnly || (locked && !selected)}
-                                  onCheckedChange={() => toggleProductCategory(category.id)}
-                                />
-                                <span className="min-w-0 flex-1">
-                                  <span className="block truncate">{category.name}</span>
-                                  {parentPath && (
-                                    <span className="block truncate text-xs text-muted-foreground">{parentPath}</span>
-                                  )}
-                                  {locked && (
-                                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                      <Lock size={12} aria-hidden="true" />
-                                      {t('products.detail.categoryLocked')}
-                                    </span>
-                                  )}
-                                </span>
-                              </label>
+                                <label className={cn(
+                                  'flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3',
+                                  locked && !selected && 'cursor-not-allowed',
+                                )}>
+                                  <Checkbox
+                                    checked={selected}
+                                    disabled={isReadOnly || (locked && !selected)}
+                                    onCheckedChange={() => toggleProductCategory(category.id)}
+                                  />
+                                  <span className="min-w-0 flex-1">
+                                    <span className="block truncate">{category.name}</span>
+                                    {parentPath && (
+                                      <span className="block truncate text-xs text-muted-foreground">{parentPath}</span>
+                                    )}
+                                    {locked && (
+                                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                        <Lock size={12} aria-hidden="true" />
+                                        {t('products.detail.categoryLocked')}
+                                      </span>
+                                    )}
+                                  </span>
+                                </label>
+                              </div>
                             )
                           })}
                         </div>
@@ -1462,7 +1398,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                className="h-8 px-2 text-xs"
+                                className="min-h-11 px-2 text-xs"
                                 disabled={isReadOnly || locked || index === 0}
                                 onClick={() => moveProductCategory(category.id, -1)}
                               >
@@ -1472,7 +1408,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                className="h-8 px-2 text-xs"
+                                className="min-h-11 px-2 text-xs"
                                 disabled={isReadOnly || locked || index === selectedCategories.length - 1}
                                 onClick={() => moveProductCategory(category.id, 1)}
                               >
@@ -1482,7 +1418,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                className="h-8 px-2 text-xs"
+                                className="min-h-11 px-2 text-xs"
                                 disabled={isReadOnly}
                                 onClick={() => toggleProductCategory(category.id)}
                               >
@@ -1510,7 +1446,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     helper={t('products.detail.trust.originBrandHint', { defaultValue: 'Nhập riêng cho từng ngôn ngữ — chuyển tab VI/EN ở góc trên để nhập bản còn lại (vd: "Nhật Bản" ở tab VI, "Japan" ở tab EN).' })}
                   >
                     <Input
-                      placeholder={isEn ? 'e.g. Japan' : 'vd: Ý'}
+                      placeholder={isEn
+                        ? t('products.detail.originBrandPlaceholderEn')
+                        : t('products.detail.originBrandPlaceholderVi')}
                       value={langValue('originBrandCountry')}
                       onChange={(e) => langChange('originBrandCountry', e.target.value)}
                       disabled={isReadOnly}
@@ -1561,10 +1499,15 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               </SectionCard>
 
               {/* ── Card: Ảnh đại diện ── */}
-              <SectionCard title={t('products.detail.mainImageTitle')} required badge={<RoleBadge role="content" />}>
+              <SectionCard title={t('products.detail.mainImageTitle')} required={isPublished} badge={<RoleBadge role="content" />}>
                 <ImageUrlInput
                   value={form.imageUrl}
-                  onChange={(url) => updateField('imageUrl', url)}
+                  onChange={(url, media) => {
+                    updateField('imageUrl', url)
+                    updateField('imageWidth', media?.width ?? null)
+                    updateField('imageHeight', media?.height ?? null)
+                    updateField('imageMimeType', media?.mimeType ?? null)
+                  }}
                   alt={form.imageAlt}
                   onAltChange={(v) => updateField('imageAlt', v)}
                   disabled={isReadOnly}
@@ -1612,7 +1555,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
-                      placeholder="vd: 5.900.000"
+                      placeholder={t('products.detail.retailPricePlaceholder')}
                       value={formatPrice(form.retailPrice)}
                       onChange={(e) => updateField('retailPrice', e.target.value.replace(/\D/g, ''))}
                       onBlur={() => validateFieldOnBlur('retailPrice')}
@@ -1635,7 +1578,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                         type="text"
                         inputMode="numeric"
                         pattern="[0-9]*"
-                        placeholder="vd: 5.500.000"
+                        placeholder={t('products.detail.salePricePlaceholder')}
                         value={formatPrice(form.salePrice)}
                         onChange={(e) => updateField('salePrice', e.target.value.replace(/\D/g, ''))}
                         disabled={isReadOnly}
@@ -1759,6 +1702,35 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   disabled={isReadOnly}
                   html={langValue('trustBadges')}
                   onHtmlChange={(v) => langChange('trustBadges', v)}
+                />
+              </SectionCard>
+
+              {/* ── Card: Cam kết (dưới nút mua hàng) (V232) — web render khối này NGAY DƯỚI CTA mua hàng
+                  (đầu trang, cùng nguồn dữ liệu lặp lại ở Trust "Mua tại BigBike.vn" #11 cuối trang) —
+                  đặt cùng Nhóm 1 để khớp vị trí ưu tiên cao trên web, không nằm chung nhóm Video/Phụ kiện. ── */}
+              <SectionCard
+                title={t('products.detail.sectionCommitments')}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <span className="bb-count-pill">
+                      {form.commitments.length} {t('products.detail.commitments.unit', { defaultValue: 'dòng' })}
+                    </span>
+                    <RoleBadge role="content" />
+                  </div>
+                }
+              >
+                <p className="text-xs text-muted-foreground mb-2">{t('products.detail.commitments.hint')}</p>
+                {validationErrors.commitments && (
+                  <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
+                    <AlertCircle size={13} className="shrink-0" />
+                    {validationErrors.commitments}
+                  </p>
+                )}
+                <CommitmentEditor
+                  items={form.commitments}
+                  onChange={(next) => updateField('commitments', next)}
+                  disabled={isReadOnly}
+                  contentLang={contentLang}
                 />
               </SectionCard>
               </CollapsibleSection>
@@ -1947,7 +1919,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     items={form.relatedProductChips}
                     disabled={isReadOnly}
                     onReorder={reorderRelatedProducts}
-                    className="flex flex-col gap-1.5 mb-3 max-h-[22rem] overflow-y-auto pr-1"
+                    className="mb-3 flex max-h-96 flex-col gap-1.5 overflow-y-auto pr-1"
                     renderItem={(chip, sortable) => (
                       <RelatedProductRow
                         chip={chip}
@@ -2086,7 +2058,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
               {/* ══ Nhóm 3: Video, cam kết & bán kèm ══ */}
               <CollapsibleSection
-                title={t('products.detail.groupExtras', { defaultValue: 'Video, cam kết & bán kèm' })}
+                title={t('products.detail.groupExtras', { defaultValue: 'Video & bán kèm' })}
                 hint={t('products.detail.groupExtrasHint', { defaultValue: 'Không bắt buộc' })}
                 open={openGroups.extras}
                 onToggle={() => toggleGroup('extras')}
@@ -2100,7 +2072,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 badge={
                   <div className="flex items-center gap-1.5">
                     <span className="bb-count-pill">
-                      {form.videos.length} video
+                      {t('products.detail.videoCount', { count: form.videos.length })}
                     </span>
                     <RoleBadge role="content" />
                   </div>
@@ -2111,33 +2083,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   onChange={(next) => updateField('videos', next)}
                   disabled={isReadOnly}
                   validationErrors={validationErrors}
-                />
-              </SectionCard>
-
-              {/* ── Card: Cam kết (dưới nút mua hàng) (V232) — khối Trust "Mua tại BigBike.vn" #11, đặt ngay trước Phụ kiện #12 ── */}
-              <SectionCard
-                title={t('products.detail.sectionCommitments')}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="bb-count-pill">
-                      {form.commitments.length} {t('products.detail.commitments.unit', { defaultValue: 'dòng' })}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <p className="text-xs text-muted-foreground mb-2">{t('products.detail.commitments.hint')}</p>
-                {validationErrors.commitments && (
-                  <p className="field-error mb-2 flex items-center gap-1 text-xs font-semibold text-danger" role="alert">
-                    <AlertCircle size={13} className="shrink-0" />
-                    {validationErrors.commitments}
-                  </p>
-                )}
-                <CommitmentEditor
-                  items={form.commitments}
-                  onChange={(next) => updateField('commitments', next)}
-                  disabled={isReadOnly}
-                  contentLang={contentLang}
                 />
               </SectionCard>
 
@@ -2162,7 +2107,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     items={form.accessoryProductChips}
                     disabled={isReadOnly}
                     onReorder={reorderAccessoryProducts}
-                    className="flex flex-col gap-1.5 mb-3 max-h-[22rem] overflow-y-auto pr-1"
+                    className="mb-3 flex max-h-96 flex-col gap-1.5 overflow-y-auto pr-1"
                     renderItem={(chip, sortable) => (
                       <RelatedProductRow
                         chip={chip}
@@ -2218,13 +2163,17 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                       <span>{t('products.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
                     </div>
                     <div className="text-xs text-google-url break-all mb-1">
-                      {canonicalUrlFromSlug(form.slug) || `https://bigbike.vn/product/duong-dan-san-pham/`}
+                      {isEnLang
+                        ? (form.translations?.en?.slug
+                            ? `https://bigbike.vn/products/${form.translations.en.slug}/`
+                            : t('products.detail.serpNoEnglishUrl', { defaultValue: 'Chưa có trang tiếng Anh' }))
+                        : (canonicalUrlFromSlug(form.slug) || 'https://bigbike.vn/product/duong-dan-san-pham/')}
                     </div>
                     <div className="text-lg leading-snug text-google-title break-words mb-1">
-                      {(form.seoTitle || form.name || t('products.detail.serpTitleFallback', { defaultValue: 'Tiêu đề sản phẩm trên Google' })).slice(0, 60)}
+                      {(seoTitleVal || langValue('name') || t('products.detail.serpTitleFallback', { defaultValue: 'Tiêu đề sản phẩm trên Google' })).slice(0, 60)}
                     </div>
                     <div className="text-sm leading-relaxed text-google-description break-words">
-                      {form.seoDescription || form.shortDescription || t('products.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn về sản phẩm sẽ hiển thị ở đây.' })}
+                      {seoDescVal || langValue('shortDescription') || t('products.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn về sản phẩm sẽ hiển thị ở đây.' })}
                     </div>
                   </div>
                 </div>
@@ -2235,7 +2184,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     label={t('products.detail.seoTitle')}
                     count={`${langValue('seoTitle').length} / 60`}
                     countWarn={langValue('seoTitle').length > 60}
-                    error={validationErrors.seoTitle}
+                    error={isEnLang ? validationErrors['translations.en.seoTitle'] : validationErrors.seoTitle}
                   >
                     <Input
                       value={langValue('seoTitle')}
@@ -2251,7 +2200,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     label={t('products.detail.seoDescription')}
                     count={`${langValue('seoDescription').length} / 155`}
                     countWarn={langValue('seoDescription').length > 155}
-                    error={validationErrors.seoDescription}
+                    error={isEnLang ? validationErrors['translations.en.seoDescription'] : validationErrors.seoDescription}
                   >
                     <Textarea
                       value={langValue('seoDescription')}
@@ -2262,10 +2211,20 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     />
                   </Field>
 
-                  <Field full label={t('products.detail.seoOgImageUrl')} helper="1200×630px (chuẩn mạng xã hội)." error={validationErrors.seoOgImageUrl}>
+                  <Field
+                    full
+                    label={t('products.detail.seoOgImageUrl')}
+                    helper={t('products.detail.seoOgImageHint', { defaultValue: 'Kích thước đề xuất 1200×630 px cho mạng xã hội.' })}
+                    error={validationErrors.seoOgImageUrl}
+                  >
                     <ImageUrlInput
                       value={form.seoOgImageUrl}
-                      onChange={(url) => updateField('seoOgImageUrl', url)}
+                      onChange={(url, media) => {
+                        updateField('seoOgImageUrl', url)
+                        updateField('seoOgImageWidth', media?.width ?? null)
+                        updateField('seoOgImageHeight', media?.height ?? null)
+                        updateField('seoOgImageMimeType', media?.mimeType ?? null)
+                      }}
                       alt={form.seoOgImageAlt}
                       onAltChange={(v) => updateField('seoOgImageAlt', v)}
                       disabled={isReadOnly}
@@ -2324,18 +2283,22 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           }
         >
 
-          <Button
-            variant="outline"
-            type="button"
-            onClick={() => setPreviewOpen(true)}
-            title={t('products.detail.preview.title', { defaultValue: 'Xem trước trang sản phẩm' })}
-          >
-            <Eye size={14} className="mr-1.5" />
-            {t('products.detail.preview.open', { defaultValue: 'Xem trước' })}
-          </Button>
+          {canUpdate && (
+            <Button
+              variant="outline"
+              type="button"
+              className="min-h-11"
+              onClick={() => setPreviewOpen(true)}
+              title={t('products.detail.preview.title', { defaultValue: 'Xem trước trang sản phẩm' })}
+            >
+              <Eye size={14} className="mr-1.5" />
+              {t('products.detail.preview.open', { defaultValue: 'Xem trước' })}
+            </Button>
+          )}
 
           <Button
             type="button"
+            className="min-h-11"
             disabled={isReadOnly || isSubmitting || isRestoreConfirming || !isDirty}
             onClick={handlePrimarySave}
           >
@@ -2373,13 +2336,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           />
         )}
 
-        {publishChecklist && (
-          <PublishChecklistModal
-            form={publishChecklist}
-            onConfirm={confirmPublishFromChecklist}
-            onCancel={() => setPublishChecklist(null)}
-          />
-        )}
       </Screen>
     </div>
         <LivePreview

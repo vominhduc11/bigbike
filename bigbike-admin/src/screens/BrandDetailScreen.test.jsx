@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { getBrandRequiredProgress, toBrandPayload } from './brandPayload'
+import { createBrandSchema, zodErrors } from '../lib/schemas'
 import { BrandDetailScreen } from './BrandDetailScreen'
 
 function formWithSeo(overrides = {}) {
@@ -12,7 +13,9 @@ function formWithSeo(overrides = {}) {
     description: '',
     showOnHomepage: true,
     logoUrl: '',
+    logoAlt: '',
     bannerUrl: '',
+    bannerAlt: '',
     seoTitle: '',
     seoDescription: '',
     seoCanonicalUrl: '',
@@ -57,6 +60,51 @@ describe('BrandDetailScreen toPayload', () => {
     const payload = toBrandPayload(formWithSeo({ showOnHomepage: false }))
     expect(payload.showOnHomepage).toBe(false)
     expect(payload).not.toHaveProperty('visible')
+  })
+
+  it('gửi kèm nội dung alt của logo và banner để không mất chữ admin vừa nhập', () => {
+    const payload = toBrandPayload(formWithSeo({
+      logoUrl: '/media/brands/ls2-logo.png',
+      logoAlt: 'Logo thương hiệu LS2',
+      bannerUrl: '/media/brands/ls2-banner.jpg',
+      bannerAlt: 'Ảnh bìa thương hiệu LS2',
+    }))
+    expect(payload.logo).toEqual({ url: '/media/brands/ls2-logo.png', alt: 'Logo thương hiệu LS2' })
+    expect(payload.banner).toEqual({ url: '/media/brands/ls2-banner.jpg', alt: 'Ảnh bìa thương hiệu LS2' })
+  })
+
+  it('gửi alt rỗng thành null khi admin xóa hết chữ alt', () => {
+    const payload = toBrandPayload(formWithSeo({ logoUrl: '/media/brands/ls2-logo.png', logoAlt: '   ' }))
+    expect(payload.logo).toEqual({ url: '/media/brands/ls2-logo.png', alt: null })
+  })
+
+  it('luôn gửi mô tả kể cả khi rỗng để admin xóa được mô tả cũ', () => {
+    const payload = toBrandPayload(formWithSeo({ description: '' }))
+    expect(payload).toHaveProperty('description')
+    expect(payload.description).toBe('')
+  })
+
+  it('gửi đúng mô tả đã nhập', () => {
+    const payload = toBrandPayload(formWithSeo({ description: '  <p>Mũ bảo hiểm LS2</p>  ' }))
+    expect(payload.description).toBe('<p>Mũ bảo hiểm LS2</p>')
+  })
+})
+
+// Ô ảnh banner trước đây không hề được kiểm ở form nên `validationErrors.bannerUrl`
+// mà JSX đang hiển thị không bao giờ có giá trị. Form kiểm ĐỊNH DẠNG địa chỉ (giống
+// logo và ảnh chia sẻ SEO); việc bắt ảnh phải nằm trong kho ảnh nội bộ do máy chủ chốt.
+describe('createBrandSchema ảnh banner', () => {
+  const t = (key) => key
+
+  it('chặn địa chỉ ảnh banner sai định dạng', () => {
+    const result = createBrandSchema(t).safeParse(formWithSeo({ bannerUrl: 'anh-banner.jpg' }))
+    expect(result.success).toBe(false)
+    expect(zodErrors(result).bannerUrl).toBe('brands.detail.errBannerUrl')
+  })
+
+  it('nhận ảnh banner lấy từ thư viện ảnh nội bộ', () => {
+    const result = createBrandSchema(t).safeParse(formWithSeo({ bannerUrl: '/media/brands/ls2-banner.jpg' }))
+    expect(result.success).toBe(true)
   })
 })
 
@@ -176,5 +224,31 @@ describe('BrandDetailScreen restore/hide action', () => {
     await user.click(restoreButton)
     await waitFor(() => expect(mocks.restoreBrand).toHaveBeenCalledWith('brand_ls2'))
     expect(mocks.deleteBrand).not.toHaveBeenCalled()
+  })
+})
+
+describe('BrandDetailScreen thương hiệu hệ thống "Chưa phân loại"', () => {
+  const systemBrand = {
+    id: 'uncategorized-brand',
+    slug: 'uncategorized-brand',
+    name: 'Chưa phân loại',
+    isVisible: false,
+    showOnHomepage: false,
+    updatedAt: '2026-07-22T00:00:00Z',
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.showConfirm.mockResolvedValue(true)
+  })
+
+  it('khóa toàn bộ thao tác ghi và không cho chuyển vào Thùng rác hay khôi phục', async () => {
+    renderScreen({ item: systemBrand })
+
+    // Lời nhắc hiện ở cả phần mô tả đầu trang và bảng cảnh báo giữa trang.
+    expect((await screen.findAllByText('brands.detail.systemDesc')).length).toBeGreaterThan(0)
+    expect(screen.queryByRole('button', { name: 'brands.detail.hideBtn' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'brands.detail.restoreBtn' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /brands.detail.saveBtn/ })).toBeDisabled()
   })
 })

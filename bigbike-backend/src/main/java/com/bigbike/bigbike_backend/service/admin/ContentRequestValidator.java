@@ -79,6 +79,16 @@ public class ContentRequestValidator {
                 current == null ? null : current.getCoverImageUrl(),
                 errors
         );
+        // productImage is admin-managed media too (article "Ảnh sản phẩm") and must satisfy the
+        // same MinIO whitelist as coverImage. Previously unvalidated, which let it point at an
+        // external host; existing URLs stay grandfathered so legacy articles still save.
+        AdminMutationValidators.validateImageAsset(
+                request.getProductImage(),
+                "productImage",
+                mediaUrlProperties.getPublicBaseUrl(),
+                current == null ? null : current.getProductImageUrl(),
+                errors
+        );
         AdminMutationValidators.validateSeoMeta(
                 request.getSeo(),
                 "seo",
@@ -111,7 +121,6 @@ public class ContentRequestValidator {
                     AdminMutationValidators.validateVideoBlockUrl(
                             videoBlock,
                             "bodyBlocks[" + index + "].url",
-                            existingBlockMediaUrls,
                             homeVideoUrlPolicy,
                             errors
                     );

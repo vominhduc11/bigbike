@@ -53,7 +53,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 new SeoMeta(
                         "Mũ bảo hiểm BigBike",
                         "Danh mục mũ bảo hiểm cho biker.",
-                        "https://bigbike.vn/danh-muc-san-pham/mu-bao-hiem/",
+                        "https://bigbike.vn/danh-muc/mu-bao-hiem/",
                         null,
                         false
                 ),
@@ -89,7 +89,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 new SeoMeta(
                         "Áo giáp bảo hộ BigBike",
                         "Danh mục áo giáp bảo hộ cho rider.",
-                        "https://bigbike.vn/danh-muc-san-pham/ao-giap-bao-ho/",
+                        "https://bigbike.vn/danh-muc/ao-giap-bao-ho/",
                         null,
                         false
                 ),
@@ -469,7 +469,15 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
-    public List<Product> findProductsFiltered(String query, String publishStatus, String stockState, String brandId, String categoryId, String locale) {
+    public List<Product> findProductsFiltered(
+            String query,
+            String publishStatus,
+            String stockState,
+            String brandId,
+            String categoryId,
+            String gender,
+            String locale
+    ) {
         boolean trashFilter = publishStatus != null && publishStatus.equalsIgnoreCase("TRASH");
         boolean allIncludingTrash = publishStatus != null && publishStatus.equalsIgnoreCase("ALL_INCLUDING_TRASH");
         boolean defaultList = publishStatus == null || publishStatus.isBlank() || publishStatus.equalsIgnoreCase("ALL");
@@ -487,6 +495,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         || (p.brand() != null && p.brand().id().equals(brandId)))
                 .filter(p -> categoryId == null || categoryId.isBlank()
                         || safeCategories(p).stream().anyMatch(category -> categoryId.equals(category.id())))
+                .filter(p -> gender == null || gender.isBlank()
+                        || (p.gender() != null && p.gender().equalsIgnoreCase(gender)))
                 .toList();
     }
 

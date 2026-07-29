@@ -6,6 +6,7 @@ import { PageHero, type PageHeroCrumb } from "@/components/layout/PageHero";
 import { Container } from "@/components/layout/Container";
 import { CatalogClient } from "@/components/catalog/CatalogClient";
 import { CatalogDefault } from "@/components/catalog/CatalogDefault";
+import { CollapsibleContent } from "@/components/ui/collapsible-content";
 import { AltSlugRegistrar } from "@/components/i18n/AltSlugProvider";
 import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
 import { Tr } from "@/components/i18n/Tr";
@@ -120,12 +121,14 @@ export default async function BrandDetailPage({ params }: BrandDetailPageProps) 
     ? sanitizeRichHtml(brand.description, { rewriteMediaUrls: true })
     : null;
   const beforeGridNode = brandDescriptionHtml ? (
-    <LHtml
-      field="description"
-      viHtml={brandDescriptionHtml}
-      className={richContentClassName}
-      rewriteMediaUrls
-    />
+    <CollapsibleContent className="mb-8">
+      <LHtml
+        field="description"
+        viHtml={brandDescriptionHtml}
+        className={richContentClassName}
+        rewriteMediaUrls
+      />
+    </CollapsibleContent>
   ) : undefined;
 
   const heroBreadcrumb: PageHeroCrumb[] = [

@@ -130,6 +130,30 @@ class Phase1DCustomerAuthTest {
     }
 
     @Test
+    void formattedLegacyPhoneMatchesLoginAndBlocksDuplicateRegistration() throws Exception {
+        String suffix = String.format(
+                "%07d", Math.floorMod(UUID.randomUUID().hashCode(), 10_000_000));
+        String canonical = "091" + suffix;
+        registerCustomer(null, canonical, "pass1234");
+
+        var legacy = customerRepo.findByPhone(canonical).orElseThrow();
+        legacy.setPhone("+84 (91)." + canonical.substring(3, 6) + "-" + canonical.substring(6));
+        customerRepo.saveAndFlush(legacy);
+
+        mockMvc.perform(post("/api/v1/customer/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"login\":\"" + canonical + "\",\"password\":\"pass1234\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/customer/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"phone\":\"" + canonical + "\",\"password\":\"secret123\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONFLICT"))
+                .andExpect(jsonPath("$.error.message").value("Thông tin đăng ký không hợp lệ."));
+    }
+
+    @Test
     void login_wrongPassword_returns_401() throws Exception {
         String email = "badpw-" + UUID.randomUUID() + "@bigbike.vn";
         registerCustomer(email, null, "correctpassword");

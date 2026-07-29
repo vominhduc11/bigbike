@@ -36,6 +36,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { generateId } from '@/lib/utils'
+import { useMediaAltSync } from '@/lib/useMediaAltSync'
 import { SortableList, DragHandle } from '../../components/Sortable'
 import { BulkActionBar } from '../../components/BulkActionBar'
 import {
@@ -748,6 +749,7 @@ function getVariantRowErrorLabels(fieldErrors, t) {
 // (desktop, khi mở rộng) và thẻ trên mobile để không lặp lại markup/logic.
 function VariantDetailFields({ variant, onChange, disabled, fieldErrors = {}, contentLang, label }) {
   const { t } = useTranslation()
+  const { pickAlt } = useMediaAltSync()
   const [pickerOpen, setPickerOpen] = useState(false)
   const updateField = (field, value) => onChange(variant._key, { [field]: value })
   const colorValue = getVariantColorValue(variant)
@@ -848,7 +850,7 @@ function VariantDetailFields({ variant, onChange, disabled, fieldErrors = {}, co
           onSelect={(url, media) => {
             onChange(variant._key, {
               imageUrl: url,
-              imageAlt: '',
+              imageAlt: pickAlt(variant.imageAlt, media),
               imageWidth: media.width,
               imageHeight: media.height,
               imageMimeType: media.mimeType,

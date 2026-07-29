@@ -47,6 +47,7 @@ import {
   buildCategoryTreeOrder,
   collectDescendantIds,
   isItemFormValid,
+  normalizeMenuUrlForSave,
 } from './menu/constants'
 import { Modal } from './menu/Modal'
 import { ItemForm } from './menu/ItemForm'
@@ -201,7 +202,7 @@ export function MenuScreen({ canUpdate }) {
       const patchPayload = {
         label: data.label,
         labelEn: data.labelEn,
-        url: data.url,
+        url: normalizeMenuUrlForSave(data.url),
         targetType: data.targetType || 'CUSTOM',
         targetId: data.targetType === 'CATEGORY' ? (data.targetId || null) : null,
         sortOrder: data.sortOrder,
@@ -247,7 +248,7 @@ export function MenuScreen({ canUpdate }) {
     mutationFn: ({ item, nextStatus }) => updateMenuItem(selectedMenuId, item.id, {
       label: item.label,
       labelEn: item.labelEn,
-      url: item.url,
+      url: normalizeMenuUrlForSave(item.url),
       targetType: item.targetType || 'CUSTOM',
       targetId: item.targetType === 'CATEGORY' ? (item.targetId || null) : null,
       sortOrder: item.sortOrder,
@@ -313,7 +314,7 @@ export function MenuScreen({ canUpdate }) {
     addItemMutation.mutate({
       label: newItem.label.trim(),
       labelEn: newItem.labelEn.trim(),
-      url: newItem.url.trim(),
+      url: normalizeMenuUrlForSave(newItem.url),
       targetType: newItem.targetType || 'CUSTOM',
       targetId: newItem.targetType === 'CATEGORY' ? (newItem.targetId || null) : null,
       parentId: newItem.parentId || null,

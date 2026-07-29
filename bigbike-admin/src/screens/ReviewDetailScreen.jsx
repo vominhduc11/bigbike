@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Check, Copy, ExternalLink, Image as ImageIcon, Loader2, RefreshCw, Trash2, X } from 'lucide-react'
+import { Check, Copy, ExternalLink, EyeOff, Image as ImageIcon, Loader2, RefreshCw, Trash2, Undo2, X } from 'lucide-react'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { DetailSection } from '../components/DetailSection'
@@ -16,6 +16,7 @@ import { deleteReview, fetchReviewDetail, updateReviewStatus } from '../lib/admi
 import { resolveDisplayUrl } from '../lib/contracts'
 import { useContentLang } from '../lib/contentLang'
 import { formatDateTime, formatText } from '../lib/formatters'
+import { canPermanentlyDeleteReview, getReviewStatusTargets } from '../lib/reviewModeration'
 import { recordRecentItem } from '../lib/useRecentItems'
 import { toast } from '@/lib/toast'
 
@@ -49,7 +50,7 @@ function PhotoButton({ url, index, alt, onOpen, t }) {
   )
 }
 
-export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
+export function ReviewDetailScreen({ reviewId, navigate, canUpdate, isSuperAdmin = false }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
   const queryClient = useQueryClient()
@@ -58,13 +59,19 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
   const [photoIndex, setPhotoIndex] = useState(null)
   const [copyState, setCopyState] = useState('idle')
   const [actionError, setActionError] = useState('')
+  const [stale, setStale] = useState(false)
 
   const loadReview = useCallback(async ({ refresh = false } = {}) => {
     setState((current) => ({ ...current, status: refresh ? current.status : 'loading', error: '', refreshing: refresh }))
     try {
       const result = await fetchReviewDetail(reviewId)
       setState({ status: 'success', item: result.item, error: '', refreshing: false })
+      setStale(false)
     } catch (error) {
+      if (error?.status === 404) {
+        setState({ status: 'not-found', item: null, error: '', refreshing: false })
+        return
+      }
       setState((current) => ({ status: refresh && current.item ? 'success' : 'error', item: refresh ? current.item : null, error: error.message, refreshing: false }))
     }
   }, [reviewId])
@@ -75,35 +82,67 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
     if (state.item?.id) recordRecentItem('recent:reviews', { id: state.item.id, label: formatText(state.item.authorName, `#${state.item.id}`) })
   }, [state.item?.id, state.item?.authorName])
 
+  const confirmStatusChange = useCallback(async (nextStatus) => {
+    if (nextStatus === 'PENDING') return true
+    const confirmation = {
+      APPROVED: {
+        message: t('reviews.approveConfirmMany', { count: 1 }),
+        title: t('reviews.approveConfirmTitle'),
+        label: t('reviews.approve'),
+        variant: 'default',
+      },
+      SPAM: {
+        message: t('reviews.spamConfirmMany', { count: 1 }),
+        title: t('reviews.spamConfirmTitle'),
+        label: t('reviews.spam'),
+        variant: 'danger',
+      },
+      TRASH: {
+        message: t('reviews.trashConfirmMany', { count: 1 }),
+        title: t('reviews.trashConfirmTitle'),
+        label: t('reviews.moveToTrash'),
+        variant: 'danger',
+      },
+    }[nextStatus]
+    if (!confirmation) return false
+    return showConfirm(
+      confirmation.message,
+      confirmation.title,
+      { variant: confirmation.variant, confirmLabel: confirmation.label, cancelLabel: t('common.cancel') },
+    )
+  }, [t])
+
   const handleStatusChange = useCallback(async (nextStatus) => {
-    if (pendingAction) return
-    if (nextStatus === 'SPAM') {
-      const confirmed = await showConfirm(
-        t('reviews.spamConfirmMany', { count: 1, defaultValue: 'Đánh dấu đánh giá này là spam? Đánh giá và ảnh sẽ không còn hiển thị công khai.' }),
-        t('reviews.spamConfirmTitle'),
-        { variant: 'danger', confirmLabel: t('reviews.spam') },
-      )
-      if (!confirmed) return
-    }
+    if (pendingAction || stale) return
+    if (!getReviewStatusTargets(state.item?.status).includes(nextStatus)) return
+    if (!(await confirmStatusChange(nextStatus))) return
     setActionError('')
     setPendingAction(nextStatus)
     try {
-      const result = await updateReviewStatus(reviewId, nextStatus)
-      setState((current) => ({ ...current, item: result.item }))
+      const result = await updateReviewStatus(reviewId, nextStatus, state.item?.version ?? 0)
+      setState((current) => ({ ...current, item: { ...current.item, ...result.item } }))
       await queryClient.invalidateQueries({ queryKey: ['reviews'] })
       await queryClient.invalidateQueries({ queryKey: ['review-summary'] })
       toast.success(t('reviews.detail.statusUpdated'))
     } catch (error) {
-      const message = error.message || t('reviews.approveError')
-      setActionError(message)
-      toast.error(message)
+      if (error?.status === 409) {
+        const message = t('reviews.staleConflict')
+        setStale(true)
+        setActionError(message)
+        toast.error(message)
+        await loadReview({ refresh: true })
+      } else {
+        const message = error.message || t('reviews.statusUpdateError')
+        setActionError(message)
+        toast.error(message)
+      }
     } finally {
       setPendingAction(null)
     }
-  }, [pendingAction, queryClient, reviewId, t])
+  }, [confirmStatusChange, loadReview, pendingAction, queryClient, reviewId, stale, state.item?.status, state.item?.version, t])
 
   const handleDelete = useCallback(async () => {
-    if (pendingAction) return
+    if (pendingAction || stale || !canPermanentlyDeleteReview(state.item, isSuperAdmin)) return
     const confirmed = await showConfirm(
       t('reviews.deleteConfirmPermanent', { count: 1, defaultValue: 'Xóa vĩnh viễn đánh giá này? Không thể hoàn tác; đánh giá và ảnh đính kèm sẽ bị xóa.' }),
       t('reviews.deleteConfirmTitle'),
@@ -113,19 +152,27 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
     setActionError('')
     setPendingAction('DELETE')
     try {
-      await deleteReview(reviewId)
+      await deleteReview(reviewId, state.item?.version ?? 0)
       await queryClient.invalidateQueries({ queryKey: ['reviews'] })
       await queryClient.invalidateQueries({ queryKey: ['review-summary'] })
       toast.success(t('reviews.detail.deleteSuccess'))
       navigate(`/admin/reviews${readListQuery()}`)
     } catch (error) {
-      const message = error.message || t('reviews.deleteError')
-      setActionError(message)
-      toast.error(message)
+      if (error?.status === 409) {
+        const message = t('reviews.staleConflict')
+        setStale(true)
+        setActionError(message)
+        toast.error(message)
+        await loadReview({ refresh: true })
+      } else {
+        const message = error.message || t('reviews.deleteError')
+        setActionError(message)
+        toast.error(message)
+      }
     } finally {
       setPendingAction(null)
     }
-  }, [navigate, pendingAction, queryClient, reviewId, t])
+  }, [isSuperAdmin, loadReview, navigate, pendingAction, queryClient, reviewId, stale, state.item, t])
 
   const copyEmail = useCallback(async () => {
     const email = state.item?.authorEmail
@@ -141,17 +188,22 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
 
   if (state.status === 'loading' && !state.item) return <Screen><StatePanel tone="info" title={t('reviews.detail.loading')} description={t('common.pleaseWait')} /></Screen>
   if (state.status === 'error' && !state.item) return <Screen><StatePanel tone="danger" title={t('reviews.detail.error')} description={state.error} actionLabel={t('common.retry')} onAction={() => loadReview()} /></Screen>
+  if (state.status === 'not-found') return <Screen><StatePanel tone="neutral" title={t('reviews.detail.notFound')} description={`ID: ${reviewId}`} actionLabel={t('common.back')} onAction={() => navigate('/admin/reviews')} /></Screen>
   if (!state.item) return <Screen><StatePanel tone="neutral" title={t('reviews.detail.notFound')} description={`ID: ${reviewId}`} actionLabel={t('common.back')} onAction={() => navigate('/admin/reviews')} /></Screen>
 
   const review = state.item
+  const statusTargets = getReviewStatusTargets(review.status)
   const productName = formatText(contentLang === 'en' ? (review.productNameEn || review.productName) : review.productName, t('reviews.unknownProduct'))
   const authorName = formatText(review.authorName, t('reviews.unknownAuthor'))
   const actionButtons = (
     <div className="flex flex-wrap gap-2">
-      {canUpdate && review.status !== 'APPROVED' ? <Button type="button" variant="secondary" className="min-h-11" disabled={Boolean(pendingAction)} loading={pendingAction === 'APPROVED'} onClick={() => handleStatusChange('APPROVED')}><Check size={16} />{t('reviews.approve')}</Button> : null}
-      {canUpdate && review.status !== 'SPAM' ? <Button type="button" variant="outline" className="min-h-11" disabled={Boolean(pendingAction)} loading={pendingAction === 'SPAM'} onClick={() => handleStatusChange('SPAM')}><X size={16} />{t('reviews.spam')}</Button> : null}
-      {canUpdate ? <Button type="button" variant="danger" className="min-h-11" disabled={Boolean(pendingAction)} loading={pendingAction === 'DELETE'} onClick={handleDelete}><Trash2 size={16} />{t('reviews.deletePermanent')}</Button> : null}
+      {canUpdate && statusTargets.includes('APPROVED') ? <Button type="button" variant="secondary" className="min-h-11" disabled={Boolean(pendingAction) || stale} loading={pendingAction === 'APPROVED'} onClick={() => handleStatusChange('APPROVED')}><Check size={16} />{t('reviews.approve')}</Button> : null}
+      {canUpdate && statusTargets.includes('SPAM') ? <Button type="button" variant="outline" className="min-h-11 text-danger" disabled={Boolean(pendingAction) || stale} loading={pendingAction === 'SPAM'} onClick={() => handleStatusChange('SPAM')}><EyeOff size={16} />{t('reviews.spam')}</Button> : null}
+      {canUpdate && statusTargets.includes('TRASH') ? <Button type="button" variant="outline" className="min-h-11 text-danger" disabled={Boolean(pendingAction) || stale} loading={pendingAction === 'TRASH'} onClick={() => handleStatusChange('TRASH')}><Trash2 size={16} />{t('reviews.moveToTrash')}</Button> : null}
+      {canUpdate && statusTargets.includes('PENDING') ? <Button type="button" variant="secondary" className="min-h-11" disabled={Boolean(pendingAction) || stale} loading={pendingAction === 'PENDING'} onClick={() => handleStatusChange('PENDING')}><Undo2 size={16} />{review.status === 'TRASH' ? t('reviews.restore') : t('reviews.returnPending')}</Button> : null}
+      {canUpdate && canPermanentlyDeleteReview(review, isSuperAdmin) ? <Button type="button" variant="danger" className="min-h-11" disabled={Boolean(pendingAction) || stale} loading={pendingAction === 'DELETE'} onClick={handleDelete}><Trash2 size={16} />{t('reviews.deletePermanent')}</Button> : null}
       {!canUpdate ? <span className="self-center text-sm text-muted-foreground">{t('reviews.detail.noActionPermission')}</span> : null}
+      {canUpdate && review.status === 'TRASH' && !isSuperAdmin ? <span className="self-center text-sm text-muted-foreground">{t('reviews.detail.superAdminDeleteHint')}</span> : null}
     </div>
   )
 
@@ -180,7 +232,11 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
           <DetailSection title={t('reviews.detail.sectionReview')}>
             <dl className="m-0">
               <DetailRow label={t('reviews.colStatus')}><StatusBadge type="review" status={review.status} /></DetailRow>
-              <DetailRow label={t('reviews.colRating')}><span className="inline-flex items-center gap-2"><ReviewStars rating={review.rating} /><span>{review.rating}/5</span></span></DetailRow>
+              <DetailRow label={t('reviews.colRating')}>
+                {Number.isFinite(review.rating)
+                  ? <span className="inline-flex items-center gap-2"><ReviewStars rating={review.rating} /><span>{review.rating}/5</span></span>
+                  : <span className="text-muted-foreground">—</span>}
+              </DetailRow>
               <DetailRow label={t('reviews.colAuthor')}><span className="font-semibold">{authorName}</span></DetailRow>
               <DetailRow label={t('reviews.detail.authorEmail')}><span className="inline-flex flex-wrap items-center gap-2">{formatText(review.authorEmail, t('reviews.detail.emailMissing'))}{review.authorEmail ? <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={copyEmail}><Copy size={16} />{copyState === 'copied' ? t('reviews.detail.emailCopied') : t('reviews.detail.copyEmail')}</Button> : null}</span></DetailRow>
               <DetailRow label={t('reviews.colDate')}>{formatDateTime(review.createdAt)}</DetailRow>
@@ -208,7 +264,7 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
         </div>
 
         <aside className="hidden h-fit lg:sticky lg:top-4 lg:block">
-          <DetailSection title={t('reviews.detail.sectionActions')} description={t('reviews.detail.permanentDeleteHint')}>
+          <DetailSection title={t('reviews.detail.sectionActions')} description={canPermanentlyDeleteReview(review, isSuperAdmin) ? t('reviews.detail.permanentDeleteHint') : t('reviews.detail.lifecycleHint')}>
             {actionButtons}
           </DetailSection>
         </aside>

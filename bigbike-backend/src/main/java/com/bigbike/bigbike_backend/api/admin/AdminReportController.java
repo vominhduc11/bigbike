@@ -7,6 +7,8 @@ import com.bigbike.bigbike_backend.domain.auth.AdminUserProfile;
 import com.bigbike.bigbike_backend.domain.commerce.OrderStatus;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.customer.CustomerStatus;
+import com.bigbike.bigbike_backend.service.admin.AdminCustomerCsvExportService;
+import com.bigbike.bigbike_backend.service.admin.AdminOrderCsvExportService;
 import com.bigbike.bigbike_backend.service.admin.AdminReportService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,6 +31,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 @Validated
 @RestController
@@ -46,6 +49,8 @@ public class AdminReportController {
             Arrays.stream(CustomerStatus.values()).map(Enum::name).collect(Collectors.toUnmodifiableSet());
 
     private final AdminReportService adminReportService;
+    private final AdminOrderCsvExportService adminOrderCsvExportService;
+    private final AdminCustomerCsvExportService adminCustomerCsvExportService;
     private final DevAdminAuthService devAdminAuthService;
     private final ClientIpResolver clientIpResolver;
 
@@ -61,37 +66,48 @@ public class AdminReportController {
     }
 
     @GetMapping("/orders/export")
-    public ResponseEntity<byte[]> exportOrders(
+    public ResponseEntity<StreamingResponseBody> exportOrders(
+            @RequestParam(required = false) String q,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to,
             HttpServletRequest request
     ) {
         AdminUserProfile actor = devAdminAuthService.requirePermission(request, "reports.export");
-        validateDateRange(from, to);
+        validateOrderDateRange(from, to);
         if (status != null && !status.isBlank()
                 && !VALID_ORDER_STATUSES.contains(status.toUpperCase(Locale.ROOT))) {
             throw ValidationException.fromField("status", "INVALID_ORDER_STATUS",
                     "Unknown order status: " + status);
         }
-        AdminReportService.ExportResult ordersResult = adminReportService.exportOrdersCsv(status, from, to);
         adminReportService.recordExportAudit(
                 actor.id(),
                 "ORDERS",
                 filters(
+                        "searchApplied", q != null && !q.isBlank(),
                         "status", blankToNull(status),
                         "from", blankToNull(from),
                         "to", blankToNull(to)
                 ),
+                null,
+                true,
                 clientIpResolver.resolve(request),
                 request.getHeader("User-Agent")
         );
-        return csvResponse(ordersResult, "orders_" + LocalDate.now().format(FILE_DATE) + ".csv");
+        return completeOrderCsvResponse(
+                outputStream -> adminOrderCsvExportService.writeTo(
+                        outputStream, status, q, from, to
+                ),
+                "orders_" + LocalDate.now().format(FILE_DATE) + ".csv"
+        );
     }
 
     @GetMapping("/customers/export")
-    public ResponseEntity<byte[]> exportCustomers(
+    public ResponseEntity<StreamingResponseBody> exportCustomers(
+            @RequestParam(required = false) String q,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) Boolean synthetic,
+            @RequestParam(required = false) Boolean emailVerified,
             HttpServletRequest request
     ) {
         AdminUserProfile actor = devAdminAuthService.requirePermission(request, "reports.export");
@@ -100,15 +116,26 @@ public class AdminReportController {
             throw ValidationException.fromField("status", "INVALID_CUSTOMER_STATUS",
                     "Unknown customer status: " + status);
         }
-        AdminReportService.ExportResult customersResult = adminReportService.exportCustomersCsv(status);
         adminReportService.recordExportAudit(
                 actor.id(),
                 "CUSTOMERS",
-                filters("status", blankToNull(status)),
+                filters(
+                        "searchApplied", q != null && !q.isBlank(),
+                        "status", blankToNull(status),
+                        "synthetic", synthetic,
+                        "emailVerified", emailVerified
+                ),
+                null,
+                true,
                 clientIpResolver.resolve(request),
                 request.getHeader("User-Agent")
         );
-        return csvResponse(customersResult, "customers_" + LocalDate.now().format(FILE_DATE) + ".csv");
+        return completeCustomerCsvResponse(
+                outputStream -> adminCustomerCsvExportService.writeTo(
+                        outputStream, q, status, synthetic, emailVerified
+                ),
+                "customers_" + LocalDate.now().format(FILE_DATE) + ".csv"
+        );
     }
 
     @GetMapping("/products/export")
@@ -170,6 +197,49 @@ public class AdminReportController {
             headers.set("X-Export-Truncated", "true");
         }
         return ResponseEntity.ok().headers(headers).body(result.csv());
+    }
+
+    private void validateOrderDateRange(String from, String to) {
+        LocalDate fromDate = parseCalendarDate(from, "from");
+        LocalDate toDate = parseCalendarDate(to, "to");
+        if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
+            throw ValidationException.fromField(
+                    "from", "DATE_RANGE_INVALID", "'from' must not be after 'to'."
+            );
+        }
+    }
+
+    private LocalDate parseCalendarDate(String value, String fieldName) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            return LocalDate.parse(value);
+        } catch (Exception exception) {
+            throw ValidationException.fromField(
+                    fieldName,
+                    "INVALID_DATE_FORMAT",
+                    "Date must be in YYYY-MM-DD format: " + value
+            );
+        }
+    }
+
+    private ResponseEntity<StreamingResponseBody> completeOrderCsvResponse(
+            StreamingResponseBody body, String filename
+    ) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("text/csv; charset=UTF-8"));
+        headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
+        headers.set("X-Export-Uncapped", "true");
+        return ResponseEntity.ok().headers(headers).body(body);
+    }
+
+    private ResponseEntity<StreamingResponseBody> completeCustomerCsvResponse(
+            StreamingResponseBody body, String filename
+    ) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("text/csv; charset=UTF-8"));
+        headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
+        headers.set("X-Export-Uncapped", "true");
+        return ResponseEntity.ok().headers(headers).body(body);
     }
 
     private static Map<String, Object> filters(Object... keyValues) {

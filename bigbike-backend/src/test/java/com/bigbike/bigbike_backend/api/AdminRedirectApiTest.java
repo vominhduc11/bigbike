@@ -93,7 +93,7 @@ class AdminRedirectApiTest {
     void shouldAllowSeoEditorToListAndCreateRedirects() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         String sourcePattern = "/seo-test-" + suffix;
-        String targetUrl = "/san-pham/seo-" + suffix;
+        String targetUrl = "/sp/?q=seo-" + suffix;
 
         mockMvc.perform(get("/api/v1/admin/redirects")
                         .with(principalAuth("seo-id", "SEO_EDITOR"))
@@ -125,7 +125,7 @@ class AdminRedirectApiTest {
     void shouldListCreateUpdateAndDeleteRedirects() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         String sourcePattern = "/legacy-product-" + suffix;
-        String targetUrl = "/san-pham/redirect-" + suffix;
+        String targetUrl = "/sp/?q=redirect-" + suffix;
 
         mockMvc.perform(get("/api/v1/admin/redirects")
                         .with(devAuth())

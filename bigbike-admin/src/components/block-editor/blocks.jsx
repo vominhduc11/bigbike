@@ -238,22 +238,30 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo, conte
   const { t } = useTranslation()
   const isEn = contentLang === 'en'
   const fCaption = isEn ? 'captionEn' : 'caption'
+  const provider = ['youtube', 'upload'].includes(block.provider) ? block.provider : undefined
+  const changeProvider = async (nextProvider) => {
+    if (provider === nextProvider) return
+    if ((block.url || '').trim()) {
+      const confirmed = await showConfirm(
+        t('products.detail.video.switchProviderConfirm'),
+        t('products.detail.video.switchProviderTitle'),
+      )
+      if (!confirmed) return
+    }
+    onChange({ provider: nextProvider, url: '' })
+  }
   return (
     <div className="flex-1 flex flex-col gap-2">
-      {/* Đổi nguồn KHÔNG xóa URL đang nhập nữa (tránh mất dữ liệu khi bấm nhầm); admin tự sửa lại
-          đường dẫn cho khớp nguồn mới. */}
-      <Select value={block.provider} onValueChange={(v) => onChange({ provider: v })} disabled={disabled || isEn}>
+      <Select value={provider} onValueChange={(value) => { void changeProvider(value) }} disabled={disabled || isEn}>
         <SelectTrigger className="w-44" aria-label={t('products.detail.blocks.videoProviderLabel', { defaultValue: 'Nguồn video' })}>
-          <SelectValue />
+          <SelectValue placeholder={t('products.detail.blocks.videoProviderPlaceholder')} />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="youtube">{t('products.detail.blocks.videoYouTube')}</SelectItem>
-          <SelectItem value="tiktok">{t('products.detail.blocks.videoTikTok')}</SelectItem>
-          <SelectItem value="facebook">{t('products.detail.blocks.videoFacebook')}</SelectItem>
           <SelectItem value="upload">{t('products.detail.blocks.videoUpload')}</SelectItem>
         </SelectContent>
       </Select>
-      {block.provider === 'youtube' ? (
+      {provider === 'youtube' ? (
         <div className="flex items-center gap-2">
           <Input
             aria-label={t('products.detail.blocks.videoUrlLabel', { defaultValue: 'Đường dẫn video' })}
@@ -272,45 +280,7 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo, conte
             </Button>
           )}
         </div>
-      ) : block.provider === 'tiktok' ? (
-        <div className="flex items-center gap-2">
-          <Input
-            aria-label={t('products.detail.blocks.videoUrlLabel', { defaultValue: 'Đường dẫn video' })}
-            placeholder={t('products.detail.blocks.tiktokUrlPlaceholder')}
-            value={block.url || ''}
-            onChange={(e) => onChange({ url: e.target.value })}
-            disabled={disabled || isEn}
-            maxLength={2000}
-            className="flex-1"
-          />
-          {block.url && (
-            <Button variant="ghost" size="sm" className="shrink-0 text-danger hover:bg-danger-bg"
-              onClick={() => onChange({ url: '' })} disabled={disabled || isEn}>
-              <X size={14} aria-hidden="true" />
-              {t('products.detail.blocks.videoRemove')}
-            </Button>
-          )}
-        </div>
-      ) : block.provider === 'facebook' ? (
-        <div className="flex items-center gap-2">
-          <Input
-            aria-label={t('products.detail.blocks.videoUrlLabel', { defaultValue: 'Đường dẫn video' })}
-            placeholder={t('products.detail.blocks.facebookUrlPlaceholder')}
-            value={block.url || ''}
-            onChange={(e) => onChange({ url: e.target.value })}
-            disabled={disabled || isEn}
-            maxLength={2000}
-            className="flex-1"
-          />
-          {block.url && (
-            <Button variant="ghost" size="sm" className="shrink-0 text-danger hover:bg-danger-bg"
-              onClick={() => onChange({ url: '' })} disabled={disabled || isEn}>
-              <X size={14} aria-hidden="true" />
-              {t('products.detail.blocks.videoRemove')}
-            </Button>
-          )}
-        </div>
-      ) : (
+      ) : provider === 'upload' ? (
         <>
           <div className="flex gap-2 items-center">
             <Input
@@ -335,6 +305,10 @@ export function VideoBlockEditor({ block, onChange, disabled, onPickVideo, conte
           </div>
           <MediaRequirementHint recommend={IMAGE_RECO.contentVideo} />
         </>
+      ) : (
+        <div className="rounded-sm border border-warning-border bg-warning-bg p-3 text-sm text-warning" role="alert">
+          {t('products.detail.blocks.legacySourceWarning')}
+        </div>
       )}
       <Input
         aria-label={t('products.detail.blocks.videoCaptionPlaceholder')}

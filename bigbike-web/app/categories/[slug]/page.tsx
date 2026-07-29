@@ -6,6 +6,7 @@ import { PageHero, type PageHeroCrumb } from "@/components/layout/PageHero";
 import { Container } from "@/components/layout/Container";
 import { CatalogClient } from "@/components/catalog/CatalogClient";
 import { CatalogDefault } from "@/components/catalog/CatalogDefault";
+import { CollapsibleContent } from "@/components/ui/collapsible-content";
 import { AltSlugRegistrar } from "@/components/i18n/AltSlugProvider";
 import { LHtml, LText } from "@/components/i18n/LocalizedContent";
 import { getCatalogFacets, getCategoryBySlug, listBrands, listCategories, listProducts } from "@/lib/api/public-api";
@@ -20,7 +21,7 @@ import { richContentClassName } from "@/components/layout/RichContent";
 
 // English category detail — real server-rendered page at its own URL. Chỉ tồn tại cho
 // danh mục có `slugEn`; guard bên dưới 404 nếu param không khớp đúng slugEn
-// (CATEGORY_RULE_003). Khuôn giống hệt app/danh-muc-san-pham/[slug]/page.tsx (bản VI),
+// (CATEGORY_RULE_003). Khuôn giống hệt app/danh-muc/[slug]/page.tsx (bản VI),
 // chỉ khác locale cố định "en" và canonical tự trỏ về chính URL này.
 export async function generateStaticParams() {
   return [];
@@ -86,12 +87,14 @@ export default async function CategoryDetailPageEn({ params }: CategoryDetailPag
     ? sanitizeRichHtml(category.introContent, { rewriteMediaUrls: true })
     : null;
   const beforeGridNode = categoryIntroHtml ? (
-    <LHtml
-      field="introContent"
-      viHtml={categoryIntroHtml}
-      className={richContentClassName}
-      rewriteMediaUrls
-    />
+    <CollapsibleContent className="mb-8">
+      <LHtml
+        field="introContent"
+        viHtml={categoryIntroHtml}
+        className={richContentClassName}
+        rewriteMediaUrls
+      />
+    </CollapsibleContent>
   ) : undefined;
 
   const heroBreadcrumb: PageHeroCrumb[] = [

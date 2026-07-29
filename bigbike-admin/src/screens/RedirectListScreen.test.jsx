@@ -121,4 +121,25 @@ describe('RedirectListScreen — lỗi submit hiện đúng field bằng tiếng
     expect(await screen.findByTestId('redirect-table')).toBeInTheDocument()
     expect(mocks.createRedirect).not.toHaveBeenCalled()
   })
+
+  it('gửi đúng nguồn/đích đã cắt khoảng trắng khi tạo thành công', async () => {
+    const user = userEvent.setup()
+    mocks.createRedirect.mockResolvedValue({ id: 'rd_1', sourcePattern: '/old-page', targetUrl: '/new-page' })
+    renderScreen()
+
+    await user.click(await screen.findByRole('button', { name: 'Tạo chuyển hướng' }))
+    await user.type(screen.getByPlaceholderText('/old-url'), '  /old-page  ')
+    await user.type(screen.getByPlaceholderText('/new-url'), '  /new-page  ')
+    await user.click(screen.getByRole('button', { name: 'common.save' }))
+
+    await waitFor(() => expect(mocks.createRedirect).toHaveBeenCalledWith(
+      expect.objectContaining({ sourcePattern: '/old-page', targetUrl: '/new-page', redirectType: 'PERMANENT' }),
+    ))
+  })
+
+  it('chỉ có quyền đọc thì ẩn nút tạo chuyển hướng', async () => {
+    renderScreen(false)
+    expect(await screen.findByTestId('redirect-table')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Tạo chuyển hướng' })).not.toBeInTheDocument()
+  })
 })

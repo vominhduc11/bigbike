@@ -262,9 +262,18 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
-    public List<Product> findProductsFiltered(String query, String publishStatus, String stockState, String brandId, String categoryId, String locale) {
+    public List<Product> findProductsFiltered(
+            String query,
+            String publishStatus,
+            String stockState,
+            String brandId,
+            String categoryId,
+            String gender,
+            String locale
+    ) {
         Set<String> categoryIds = resolveCategoryIdWithDescendants(categoryId);
-        Specification<ProductEntity> spec = buildProductSpec(query, publishStatus, stockState, brandId, categoryIds, locale);
+        Specification<ProductEntity> spec = buildProductSpec(
+                query, publishStatus, stockState, brandId, categoryIds, gender, locale);
         return productJpaRepository.findAll(spec).stream()
                 .map(entity -> toDomainListItem(entity, locale))
                 .toList();
@@ -474,7 +483,15 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         return cb.function("unaccent", String.class, cb.lower(value.as(String.class)));
     }
 
-    private static Specification<ProductEntity> buildProductSpec(String query, String publishStatus, String stockState, String brandId, Collection<String> categoryIds, String locale) {
+    private static Specification<ProductEntity> buildProductSpec(
+            String query,
+            String publishStatus,
+            String stockState,
+            String brandId,
+            Collection<String> categoryIds,
+            String gender,
+            String locale
+    ) {
         return (root, criteriaQuery, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (publishStatus == null || publishStatus.isBlank() || "ALL".equalsIgnoreCase(publishStatus)) {
@@ -508,6 +525,12 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
             if (categoryIds != null && !categoryIds.isEmpty()) {
                 predicates.add(root.join("categories", JoinType.INNER).get("id").in(categoryIds));
                 criteriaQuery.distinct(true);
+            }
+            if (gender != null && !gender.isBlank()) {
+                predicates.add(cb.equal(
+                        cb.lower(root.get("gender")),
+                        gender.toLowerCase(Locale.ROOT)
+                ));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };

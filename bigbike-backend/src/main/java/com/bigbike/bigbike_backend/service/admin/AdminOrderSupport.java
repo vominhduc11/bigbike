@@ -1,14 +1,23 @@
 package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderListItemResponse;
+import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.domain.commerce.OrderStatus;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
+import jakarta.persistence.criteria.Predicate;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 
 /**
  * Stateless helper functions extracted verbatim from {@link AdminOrderService}.
@@ -19,6 +28,11 @@ import org.springframework.data.domain.Sort;
  * no Spring annotation.
  */
 final class AdminOrderSupport {
+
+    static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final Set<String> ORDER_STATUSES = java.util.Arrays.stream(OrderStatus.values())
+            .map(Enum::name)
+            .collect(Collectors.toUnmodifiableSet());
 
     private AdminOrderSupport() {}
 
@@ -52,15 +66,65 @@ final class AdminOrderSupport {
     static Instant parseFromDate(String date) {
         if (date == null || date.isBlank()) return null;
         try {
-            return LocalDate.parse(date).atStartOfDay(ZoneOffset.UTC).toInstant();
-        } catch (Exception e) { return null; }
+            return LocalDate.parse(date).atStartOfDay(VN_ZONE).toInstant();
+        } catch (Exception e) {
+            throw ValidationException.fromField(
+                    "from", "INVALID_DATE_FORMAT", "Date must be in YYYY-MM-DD format: " + date
+            );
+        }
     }
 
     static Instant parseToDate(String date) {
         if (date == null || date.isBlank()) return null;
         try {
-            return LocalDate.parse(date).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
-        } catch (Exception e) { return null; }
+            return LocalDate.parse(date).plusDays(1).atStartOfDay(VN_ZONE).toInstant();
+        } catch (Exception e) {
+            throw ValidationException.fromField(
+                    "to", "INVALID_DATE_FORMAT", "Date must be in YYYY-MM-DD format: " + date
+            );
+        }
+    }
+
+    static Specification<OrderEntity> buildFilterSpecification(
+            String status, String q, String from, String to
+    ) {
+        Instant fromInstant = parseFromDate(from);
+        Instant toInstant = parseToDate(to);
+        String normalizedStatus = status == null ? null : status.trim().toUpperCase(Locale.ROOT);
+        if (normalizedStatus != null && !normalizedStatus.isBlank()
+                && !ORDER_STATUSES.contains(normalizedStatus)) {
+            throw ValidationException.fromField(
+                    "status", "INVALID_ORDER_STATUS", "Unknown order status: " + status
+            );
+        }
+        if (fromInstant != null && toInstant != null && !fromInstant.isBefore(toInstant)) {
+            throw ValidationException.fromField(
+                    "from", "DATE_RANGE_INVALID", "'from' must not be after 'to'."
+            );
+        }
+
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (normalizedStatus != null && !normalizedStatus.isBlank()) {
+                predicates.add(cb.equal(root.get("status"), normalizedStatus));
+            }
+            if (q != null && !q.isBlank()) {
+                String pattern = "%" + q.trim().toLowerCase(Locale.ROOT) + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("orderNumber")), pattern),
+                        cb.like(cb.lower(root.get("orderKey")), pattern),
+                        cb.like(cb.lower(root.get("customerEmail")), pattern),
+                        cb.like(cb.lower(root.get("customerPhone")), pattern)
+                ));
+            }
+            if (fromInstant != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("placedAt"), fromInstant));
+            }
+            if (toInstant != null) {
+                predicates.add(cb.lessThan(root.get("placedAt"), toInstant));
+            }
+            return cb.and(predicates.toArray(Predicate[]::new));
+        };
     }
 
     static Sort resolveSort(String sort) {

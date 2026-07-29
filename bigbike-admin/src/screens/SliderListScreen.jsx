@@ -15,15 +15,10 @@ import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { useSaveShortcut } from '@/lib/useSaveShortcut'
-import { validateSafePublicLink } from '../lib/urlPolicies'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
-
-// Chỉ còn vị trí Trang chủ (owner decision 2026-07-15, FIX_PROMPT §2 #4): website chỉ
-// render slider `home`, 3 vị trí cũ (category/category_sidebar/promotion) đã gỡ khỏi
-// admin — dữ liệu cũ trong DB không bị xóa nhưng không quản lý qua màn này nữa.
-const HOME_LOCATION = 'home'
+import { HOME_LOCATION, buildSliderPayload, validateSliderLinkGroup } from './slider-list/sliderPayload'
 // Nhãn tiếng Việt thân thiện cho mã vị trí kỹ thuật (T2). Mã lạ → trả nguyên mã.
 function locationLabel(t, code) {
   return code === HOME_LOCATION
@@ -375,39 +370,10 @@ export function SliderListScreen({ canUpdate }) {
     toggleActiveMutation.mutate({ id: slider.id, isActive: slider.isActive === false })
   }
 
-  function buildPayload() {
-    const payload = {
-      location: form.location,
-      sortOrder: Number(form.sortOrder),
-      isActive: form.isActive,
-      externalLink: form.externalLink.trim() || undefined,
-      productId: form.productId.trim() || undefined,
-    }
-    if (form.desktopImageUrl.trim()) {
-      payload.desktopImage = { url: form.desktopImageUrl.trim() }
-    }
-    // The homepage slider is a Hero. Its hidden legacy asset is forwarded intact
-    // during a full edit because the backend would otherwise clear the old data.
-    if (form.legacyMobileImage?.url) {
-      payload.mobileImage = form.legacyMobileImage
-    }
-    return payload
-  }
+  const buildPayload = () => buildSliderPayload(form)
 
-  // Kiểm tra cặp link ngoài / sản phẩm. Trả message lỗi (chuỗi rỗng = hợp lệ)
-  // để dùng chung cho cả on-blur (F3) lẫn on-submit.
-  function validateLinkGroup(values) {
-    if (!values.externalLink.trim() && !values.productId.trim()) {
-      return t('sliders.formRequired')
-    }
-    if (values.externalLink.trim()) {
-      const linkValidation = validateSafePublicLink(values.externalLink)
-      if (!linkValidation.valid) {
-        return t('sliders.formExternalLinkInvalid')
-      }
-    }
-    return ''
-  }
+  // Kiểm tra cặp link ngoài / sản phẩm (chọn 1 trong 2); dùng chung on-blur (F3) lẫn on-submit.
+  const validateLinkGroup = (values) => validateSliderLinkGroup(values, t)
 
   // Validate ngay khi rời ô link ngoài / cụm liên kết (F3) — không đợi bấm Lưu.
   function handleLinkBlur() {

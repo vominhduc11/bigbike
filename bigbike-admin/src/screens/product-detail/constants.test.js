@@ -5,8 +5,12 @@ import {
   buildCategoryPathMap,
   buildCategoryTreeOrder,
   buildVisibleCategoryTreeRows,
+  buildFormFromItem,
+  cleanDescriptionBlocks,
   computeAttrSetWarning,
+  getPublishReadiness,
   resolveColorChangeMedia,
+  toPayload,
 } from './constants'
 
 // Stub i18n: return defaultValue when provided, else the raw key — đủ để khẳng định hành vi.
@@ -164,5 +168,234 @@ describe('resolveColorChangeMedia — giữ/kế thừa ảnh khi đổi giá tr
     expect(media.imageUrl).toBe('')
     expect(media.gallery).toEqual([])
     expect(media.imageWidth).toBeNull()
+  })
+})
+
+describe('media metadata round-trip', () => {
+  const item = {
+    id: 'product-1',
+    sku: 'AGV-K1S',
+    slug: 'mu-agv-k1s',
+    name: 'Mũ AGV K1S',
+    shortDescription: 'Mũ fullface đạt chuẩn ECE 22.06.',
+    description: '',
+    brandId: 'brand-agv',
+    categories: [{ id: 'helmet', name: 'Mũ bảo hiểm' }],
+    price: { retailPrice: 5900000, salePrice: 5500000 },
+    available: true,
+    publishStatus: 'DRAFT',
+    image: {
+      rawUrl: '/media/product-main.jpg',
+      alt: 'Mũ AGV K1S màu đen',
+      width: 1200,
+      height: 1200,
+      mimeType: 'image/jpeg',
+    },
+    seo: {
+      title: 'Mũ AGV K1S',
+      description: 'Mô tả SEO',
+      ogImage: {
+        rawUrl: '/media/product-og.png',
+        alt: 'Ảnh chia sẻ AGV K1S',
+        width: 1200,
+        height: 630,
+        mimeType: 'image/png',
+      },
+    },
+    gallery: [
+      {
+        mediaType: 'image',
+        rawUrl: '/media/gallery-1.webp',
+        alt: 'Mặt trước mũ',
+        width: 1600,
+        height: 1200,
+        mimeType: 'image/webp',
+      },
+      {
+        mediaType: 'video',
+        videoUrl: 'https://www.youtube.com/watch?v=abcdefghijk',
+        provider: 'youtube',
+        rawUrl: '/media/video-poster.jpg',
+        alt: 'Video giới thiệu mũ',
+        width: 1280,
+        height: 720,
+        mimeType: 'image/jpeg',
+      },
+    ],
+    variants: [{
+      id: 'variant-black',
+      sku: 'AGV-K1S-BLACK',
+      name: 'Đen',
+      price: { retailPrice: 5900000, salePrice: 5500000 },
+      isAvailable: true,
+      options: [{ name: 'Màu', value: 'Đen' }],
+      image: {
+        url: '/media/variant-black.png',
+        alt: 'Mũ màu đen',
+        width: 900,
+        height: 900,
+        mimeType: 'image/png',
+      },
+      gallery: [{
+        mediaType: 'image',
+        rawUrl: '/media/variant-gallery.jpg',
+        alt: 'Chi tiết màu đen',
+        width: 1000,
+        height: 800,
+        mimeType: 'image/jpeg',
+      }],
+    }],
+    translations: { en: { name: 'AGV K1S Helmet' } },
+  }
+
+  it('giữ nguyên metadata ảnh chính, OG, gallery và biến thể khi chỉ mở rồi lưu', () => {
+    const payload = toPayload(buildFormFromItem(item))
+
+    expect(payload.image).toEqual({
+      url: '/media/product-main.jpg',
+      alt: 'Mũ AGV K1S màu đen',
+      width: 1200,
+      height: 1200,
+      mimeType: 'image/jpeg',
+    })
+    expect(payload.seo.ogImage).toEqual({
+      url: '/media/product-og.png',
+      alt: 'Ảnh chia sẻ AGV K1S',
+      width: 1200,
+      height: 630,
+      mimeType: 'image/png',
+    })
+    expect(payload.gallery).toEqual([
+      {
+        mediaType: 'image',
+        url: '/media/gallery-1.webp',
+        alt: 'Mặt trước mũ',
+        width: 1600,
+        height: 1200,
+        mimeType: 'image/webp',
+        sortOrder: 0,
+      },
+      {
+        mediaType: 'video',
+        videoUrl: 'https://www.youtube.com/watch?v=abcdefghijk',
+        videoProvider: 'youtube',
+        url: '/media/video-poster.jpg',
+        alt: 'Video giới thiệu mũ',
+        width: 1280,
+        height: 720,
+        mimeType: 'image/jpeg',
+        sortOrder: 1,
+      },
+    ])
+    expect(payload.variants[0]).toEqual(expect.objectContaining({
+      imageUrl: '/media/variant-black.png',
+      imageAlt: 'Mũ màu đen',
+      imageWidth: 900,
+      imageHeight: 900,
+      imageMimeType: 'image/png',
+      gallery: [{
+        mediaType: 'image',
+        url: '/media/variant-gallery.jpg',
+        alt: 'Chi tiết màu đen',
+        width: 1000,
+        height: 800,
+        mimeType: 'image/jpeg',
+        sortOrder: 0,
+      }],
+    }))
+  })
+
+  it('xoá URL thì không gửi lại metadata ảnh cũ', () => {
+    const form = buildFormFromItem(item)
+    form.imageUrl = ''
+    form.seoOgImageUrl = ''
+    form.gallery[0].url = ''
+
+    const payload = toPayload(form)
+    expect(payload.image).toBeNull()
+    expect(payload.seo.ogImage).toBeNull()
+    expect(payload.gallery).toHaveLength(1)
+    expect(payload.gallery[0].mediaType).toBe('video')
+  })
+
+  it('không tự đổi nguồn legacy thành YouTube và không phát sinh payload TikTok/Facebook', () => {
+    const legacyItem = structuredClone(item)
+    legacyItem.videos = [{
+      url: 'https://www.tiktok.com/@bigbike/video/7412345678901234567',
+      provider: 'tiktok',
+      title: 'Legacy TikTok',
+    }]
+    legacyItem.gallery[1].provider = 'facebook'
+    legacyItem.gallery[1].videoUrl = 'https://www.facebook.com/bigbike/videos/123456789'
+
+    const form = buildFormFromItem(legacyItem)
+    expect(form.videos[0].type).toBe('')
+    expect(form.gallery[1].provider).toBe('')
+
+    const payload = toPayload(form)
+    expect(JSON.stringify(payload)).not.toMatch(/tiktok|facebook/i)
+    expect(payload.videos).toHaveLength(0)
+    expect(payload.gallery.some((item) => item.mediaType === 'video')).toBe(false)
+  })
+})
+
+describe('description block media metadata', () => {
+  it('giữ cả alt tiếng Việt và tiếng Anh cho khối ảnh và khối feature', () => {
+    const blocks = cleanDescriptionBlocks([
+      {
+        _key: 'image-1',
+        type: 'image',
+        url: '/media/detail.jpg',
+        alt: 'Chi tiết sản phẩm',
+        altEn: 'Product detail',
+      },
+      {
+        _key: 'feature-1',
+        type: 'feature',
+        url: '/media/feature.jpg',
+        alt: 'Lớp lót',
+        altEn: 'Liner',
+        heading: 'Thoáng khí',
+        items: ['Êm', ''],
+        itemsEn: ['Comfortable', ''],
+      },
+    ])
+
+    expect(blocks[0]).toEqual(expect.objectContaining({
+      alt: 'Chi tiết sản phẩm',
+      altEn: 'Product detail',
+    }))
+    expect(blocks[1]).toEqual(expect.objectContaining({
+      alt: 'Lớp lót',
+      altEn: 'Liner',
+      items: ['Êm'],
+      itemsEn: ['Comfortable'],
+    }))
+  })
+})
+
+describe('publish readiness — mục phân loại hệ thống', () => {
+  function readyForm(overrides = {}) {
+    return {
+      name: 'Mũ AGV K1S',
+      slug: 'mu-agv-k1s',
+      sku: 'AGV-K1S',
+      categoryIds: ['helmet'],
+      brandId: 'brand-agv',
+      gender: 'Unisex',
+      imageUrl: '/media/main.jpg',
+      retailPrice: '5900000',
+      variants: [],
+      translations: { en: { name: 'AGV K1S Helmet' } },
+      ...overrides,
+    }
+  }
+
+  it('chặn đăng bán khi danh mục hoặc thương hiệu vẫn là mục Chưa phân loại', () => {
+    const categoryItems = getPublishReadiness(readyForm({ categoryIds: ['uncategorized'] }), t)
+    const brandItems = getPublishReadiness(readyForm({ brandId: 'uncategorized-brand' }), t)
+
+    expect(categoryItems.find((entry) => entry.id === 'category')?.ok).toBe(false)
+    expect(brandItems.find((entry) => entry.id === 'brand')?.ok).toBe(false)
   })
 })

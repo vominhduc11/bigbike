@@ -44,9 +44,40 @@ function productNameEn(retry: number) {
 let createdProductId: string | null = null
 let createdProductSku: string | null = null
 let createdProductName: string | null = null
+let validationProductSku: string | null = null
+const recoveryProductSkus = (process.env.E2E_PRODUCT_CLEANUP_SKUS || '')
+  .split(',')
+  .map((sku) => sku.trim())
+  .filter(Boolean)
 
 function sectionCard(page: Page, title: string): Locator {
   return page.locator('.bb-card').filter({ has: page.locator('.bb-card-header h3', { hasText: title }) })
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function productRowBySku(page: Page, sku: string) {
+  const exactSkuCell = page.locator('td').filter({
+    hasText: new RegExp(`^\\s*${escapeRegExp(sku)}\\s*$`),
+  })
+  return page.locator('tbody tr').filter({ has: exactSkuCell })
+}
+
+async function filterProductRows(page: Page, sku: string) {
+  const searchInput = page.getByPlaceholder('Tên sản phẩm, SKU, slug')
+  await searchInput.fill('')
+  await expect(searchInput).toHaveValue('')
+
+  const filteredResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url())
+    return response.request().method() === 'GET'
+      && url.pathname.endsWith('/api/v1/admin/products')
+      && url.searchParams.get('q') === sku
+  })
+  await searchInput.fill(sku)
+  await filteredResponse
 }
 
 // Field↔control linkage (htmlFor/id from product-detail/Layout.jsx's <Field>) is a
@@ -66,7 +97,7 @@ async function pickFirstOption(page: Page, combobox: Locator) {
 // its role="textbox" from RichTextEditor.jsx's editorProps.attributes) — TipTap wraps
 // it in a <p> like any normal keystroke would.
 async function fillRichText(card: Locator, text: string) {
-  await card.getByRole('textbox').fill(text)
+  await card.locator('[contenteditable="true"][role="textbox"]').fill(text)
 }
 
 // Product main image must be a REAL upload to MinIO — DATA_CONTRACT media rule — and
@@ -106,7 +137,7 @@ interface FillOptions {
 async function fillRequiredProductFields(page: Page, opts: FillOptions) {
   const basicCard = sectionCard(page, 'Thông tin cơ bản')
   await basicCard.getByLabel('Tên', { exact: false }).fill(opts.name) // also auto-derives slug
-  await basicCard.getByLabel('Mã model', { exact: false }).fill(opts.sku)
+  await basicCard.getByLabel('SKU', { exact: false }).fill(opts.sku)
 
   // The category picker is a multi-select popover; choose the first available
   // category so it becomes the primary category. The remaining comboboxes are
@@ -130,7 +161,7 @@ async function fillRequiredProductFields(page: Page, opts: FillOptions) {
 
   // "Mô tả chi tiết" lives in the "body" CollapsibleGroup, collapsed by default
   // (PRODUCT_GROUPS in product-detail/constants.js) — must expand it first.
-  await page.getByRole('button', { name: 'Mô tả & nội dung trang' }).click()
+  await page.getByRole('button', { name: 'Nội dung trang', exact: false }).click()
   const descCard = sectionCard(page, 'Mô tả chi tiết')
   // Sản phẩm không còn dropdown "Thêm khối" — nút tự gợi ý so le, khối đầu tiên luôn là
   // "Ảnh phải + chữ trái" (nextProductFeatureSide mặc định 'right' khi chưa có khối nào).
@@ -140,30 +171,24 @@ async function fillRequiredProductFields(page: Page, opts: FillOptions) {
   await fillEnglishName(page, basicCard, opts.nameEn)
 }
 
-// Going from a non-PUBLISHED product to PUBLISHED always shows the publish-quality
-// checklist modal first (ProductDetailScreen.jsx handleSave) — confirm inside it
-// performs the actual save. Surfaces inline field errors in the thrown message
-// instead of just timing out if the checklist never opens.
-async function publishViaChecklist(page: Page) {
-  await page.getByRole('button', { name: 'Tạo & Đăng bán' }).click()
-
+// PRODUCT_RULE_010: publishing lives only on Product List. The row action first
+// loads full detail, opens the quality checklist, then calls the dedicated
+// /publish endpoint after confirmation.
+async function publishDraftRow(page: Page, sku: string) {
+  await filterProductRows(page, sku)
+  const row = productRowBySku(page, sku)
+  await expect(row, `Không tìm thấy sản phẩm nháp ${sku}`).toHaveCount(1, { timeout: 10_000 })
+  await row.getByRole('button', { name: 'Xuất bản', exact: true }).click()
   const checklist = page.getByRole('dialog', { name: 'Kiểm tra trước khi đăng bán' })
-  try {
-    await expect(checklist).toBeVisible({ timeout: 8_000 })
-  } catch {
-    const errors = await page.locator('.field-error').allInnerTexts()
-    throw new Error(
-      errors.length
-        ? `Không mở được hộp thoại xác nhận xuất bản — form đang báo lỗi: ${errors.join(' | ')}`
-        : 'Không mở được hộp thoại xác nhận xuất bản, cũng không thấy lỗi field nào.',
-    )
-  }
+  await expect(checklist).toBeVisible({ timeout: 10_000 })
 
   const publishNowBtn = checklist.getByRole('button', { name: 'Đăng bán ngay' })
   await expect(publishNowBtn, 'Checklist báo còn mục bắt buộc chưa điền — nút "Đăng bán ngay" không hiện').toBeVisible()
 
   const [response] = await Promise.all([
-    page.waitForResponse((r) => r.request().method() === 'POST' && new URL(r.url()).pathname.endsWith('/admin/products')),
+    page.waitForResponse((r) =>
+      r.request().method() === 'PATCH'
+      && new URL(r.url()).pathname.endsWith('/publish')),
     publishNowBtn.click(),
   ])
   return response
@@ -172,17 +197,25 @@ async function publishViaChecklist(page: Page) {
 // Caller navigates to /admin/products ONCE beforehand — re-navigating to the same
 // path between the soft-delete and permanent-delete steps would remount the screen
 // and reset its filter state, undoing the "Thùng rác" filter switch in between.
-async function deleteRowBySku(page: Page, sku: string, buttonName: string, dialogConfirmName: string) {
-  await page.getByPlaceholder('Tên sản phẩm, SKU, slug').fill(sku)
-  const row = page.locator('tbody tr').filter({ hasText: sku })
+async function deleteRowBySku(
+  page: Page,
+  sku: string,
+  buttonName: string,
+  dialogConfirmName: string,
+  allowMissing = false,
+) {
+  await filterProductRows(page, sku)
+  const row = productRowBySku(page, sku)
+  if (allowMissing && await row.count() === 0) return false
   await expect(row, `Không tìm thấy sản phẩm test với SKU ${sku} trong danh sách`).toHaveCount(1, { timeout: 10_000 })
-  await row.locator('[data-row-menu-trigger]').click()
-  await page.locator('.bb-row-menu').getByRole('button', { name: buttonName, exact: true }).click()
+  await row.getByRole('button', { name: 'Thao tác', exact: true }).click()
+  await page.getByRole('menu').getByRole('menuitem', { name: buttonName, exact: true }).click()
   await page.getByRole('dialog').getByRole('button', { name: dialogConfirmName, exact: true }).click()
+  return true
 }
 
 test.describe('product-crud', () => {
-  test('product-crud · create new product (PUBLISHED) succeeds', async ({ adminPage, collect }, testInfo) => {
+  test('product-crud · create new product as DRAFT succeeds', async ({ adminPage, collect }, testInfo) => {
     test.setTimeout(150_000)
 
     createdProductName = productName(testInfo.retry)
@@ -195,15 +228,22 @@ test.describe('product-crud', () => {
       await fillRequiredProductFields(adminPage, { name: createdProductName!, sku: createdProductSku!, nameEn })
     })
 
-    await test.step('bấm Tạo & Đăng bán, xác nhận checklist, kỳ vọng API 2xx', async () => {
-      const response = await publishViaChecklist(adminPage)
-      expect(response.status(), 'API tạo sản phẩm phải trả 2xx').toBeLessThan(300)
+    await test.step('lưu nháp, kỳ vọng API tạo trả 2xx', async () => {
+      const [response] = await Promise.all([
+        adminPage.waitForResponse((r) =>
+          r.request().method() === 'POST'
+          && new URL(r.url()).pathname.endsWith('/api/v1/admin/products')),
+        adminPage.getByRole('button', { name: 'Lưu nháp', exact: true }).click(),
+      ])
+      expect(response.status(), 'API tạo sản phẩm nháp phải trả 2xx').toBeLessThan(300)
 
       await expect(adminPage).toHaveURL(/\/admin\/products\/[^/]+$/, { timeout: 15_000 })
       createdProductId = adminPage.url().match(/\/admin\/products\/([^/?#]+)/)?.[1] ?? null
       expect(createdProductId, 'Không lấy được id sản phẩm vừa tạo từ URL').toBeTruthy()
 
       await expect(adminPage.getByText('Tạo sản phẩm thành công.')).toBeVisible()
+      await expect(adminPage.getByRole('button', { name: 'Xuất bản', exact: true })).toHaveCount(0)
+      await expect(adminPage.getByRole('button', { name: 'Đăng bán ngay', exact: true })).toHaveCount(0)
     })
 
     await test.step('sản phẩm xuất hiện trong danh sách /admin/products', async () => {
@@ -212,6 +252,20 @@ test.describe('product-crud', () => {
       await expect(adminPage.getByRole('link', { name: createdProductName!, exact: false })).toBeVisible({ timeout: 10_000 })
     })
 
+    expectRuntimeClean(collect)
+  })
+
+  test('product-crud · publish from Product List checklist succeeds', async ({ adminPage, collect }) => {
+    test.skip(!createdProductSku, 'Bỏ qua: bước tạo sản phẩm ở test trước chưa thành công')
+    test.setTimeout(90_000)
+
+    await navigateSpa(adminPage, '/admin/products')
+    const response = await publishDraftRow(adminPage, createdProductSku!)
+    expect(response.status(), 'API xuất bản chuyên biệt phải trả 2xx').toBeLessThan(300)
+    await expect(adminPage.getByText('Đã đổi trạng thái xuất bản.')).toBeVisible()
+
+    const row = productRowBySku(adminPage, createdProductSku!)
+    await expect(row.getByText('Đã xuất bản', { exact: true })).toBeVisible()
     expectRuntimeClean(collect)
   })
 
@@ -226,6 +280,8 @@ test.describe('product-crud', () => {
       const basicCard = sectionCard(adminPage, 'Thông tin cơ bản')
       const pricingCard = sectionCard(adminPage, 'Giá & trạng thái')
 
+      await expect(adminPage.getByRole('button', { name: 'Xuất bản', exact: true })).toHaveCount(0)
+      await expect(adminPage.getByRole('button', { name: 'Chuyển về Nháp', exact: true })).toHaveCount(0)
       await basicCard.getByLabel('Tên', { exact: false }).fill(editedName)
       await pricingCard.getByLabel('Giá niêm yết', { exact: false }).fill(RETAIL_PRICE_EDITED)
 
@@ -245,38 +301,62 @@ test.describe('product-crud', () => {
       await expect(basicCard.getByLabel('Tên', { exact: false })).toHaveValue(editedName)
       const priceValue = await pricingCard.getByLabel('Giá niêm yết', { exact: false }).inputValue()
       expect(priceValue.replace(/\D/g, '')).toBe(RETAIL_PRICE_EDITED)
+      await expect(adminPage.getByText('Đã xuất bản', { exact: true })).toBeVisible()
     })
 
     createdProductName = editedName
     expectRuntimeClean(collect)
   })
 
-  test('product-crud · publish blocked when a required field (image) is missing', async ({ adminPage }, testInfo) => {
+  test('product-crud · Product List blocks publishing when image is missing', async ({ adminPage }, testInfo) => {
+    validationProductSku = `${productSku(testInfo.retry)}-NOIMAGE`
     await navigateSpa(adminPage, '/admin/products/new')
 
     await fillRequiredProductFields(adminPage, {
-      name: `${productName(testInfo.retry)}_novalidate`,
-      sku: `${productSku(testInfo.retry)}-NOVALIDATE`,
-      nameEn: `${productNameEn(testInfo.retry)} NoValidate`,
+      name: `${productName(testInfo.retry)} thiếu ảnh`,
+      sku: validationProductSku,
+      nameEn: `${productNameEn(testInfo.retry)} Without Image`,
       skipImage: true,
     })
 
-    await adminPage.getByRole('button', { name: 'Tạo & Đăng bán' }).click()
+    const [createResponse] = await Promise.all([
+      adminPage.waitForResponse((r) =>
+        r.request().method() === 'POST'
+        && new URL(r.url()).pathname.endsWith('/api/v1/admin/products')),
+      adminPage.getByRole('button', { name: 'Lưu nháp', exact: true }).click(),
+    ])
+    expect(createResponse.status(), 'Sản phẩm thiếu ảnh vẫn phải lưu Nháp được').toBeLessThan(300)
 
-    await expect(adminPage.getByText('Vui lòng chọn ảnh đại diện.')).toBeVisible()
-    await expect(adminPage.getByRole('dialog', { name: 'Kiểm tra trước khi đăng bán' })).toHaveCount(0)
-    expect(new URL(adminPage.url()).pathname).toBe('/admin/products/new')
+    await navigateSpa(adminPage, '/admin/products')
+    await adminPage.getByPlaceholder('Tên sản phẩm, SKU, slug').fill(validationProductSku)
+    const row = productRowBySku(adminPage, validationProductSku)
+    await expect(row).toHaveCount(1, { timeout: 10_000 })
+    await row.getByRole('button', { name: 'Xuất bản', exact: true }).click()
+
+    const checklist = adminPage.getByRole('dialog', { name: 'Kiểm tra trước khi đăng bán' })
+    await expect(checklist).toBeVisible()
+    await expect(checklist.getByText('Ảnh đại diện', { exact: true })).toBeVisible()
+    await expect(checklist.getByRole('button', { name: 'Đăng bán ngay' })).toHaveCount(0)
+    await checklist.getByRole('button', { name: 'Quay lại sửa' }).click()
+    await expect(row.getByText('Nháp', { exact: true })).toBeVisible()
   })
 
-  test('product-crud · cleanup test product', async ({ adminPage }) => {
-    test.skip(!createdProductSku, 'Không có sản phẩm test nào cần xoá')
+  test('product-crud · cleanup test products', async ({ adminPage }) => {
+    const testSkus = [...new Set(
+      [createdProductSku, validationProductSku, ...recoveryProductSkus].filter(
+        (sku): sku is string => Boolean(sku),
+      ),
+    )]
+    test.skip(testSkus.length === 0, 'Không có sản phẩm test nào cần xoá')
     test.setTimeout(90_000)
 
     await navigateSpa(adminPage, '/admin/products')
 
     await test.step('xoá (chuyển vào thùng rác)', async () => {
-      await deleteRowBySku(adminPage, createdProductSku!, 'Xoá', 'Chuyển vào thùng rác')
-      await expect(adminPage.getByText('Đã xoá sản phẩm')).toBeVisible()
+      for (const sku of testSkus) {
+        const deleted = await deleteRowBySku(adminPage, sku, 'Xoá', 'Chuyển vào thùng rác', true)
+        if (deleted) await expect(adminPage.getByText('Đã xoá sản phẩm').last()).toBeVisible()
+      }
     })
 
     await test.step('xoá vĩnh viễn khỏi thùng rác', async () => {
@@ -284,11 +364,15 @@ test.describe('product-crud', () => {
       await statusFilter.click()
       await adminPage.getByRole('option', { name: 'Thùng rác', exact: true }).click()
 
-      await deleteRowBySku(adminPage, createdProductSku!, 'Xóa vĩnh viễn', 'Xóa vĩnh viễn')
-      await expect(adminPage.getByText(/Xóa vĩnh viễn sản phẩm thành công/)).toBeVisible()
+      for (const sku of testSkus) {
+        const deleted = await deleteRowBySku(adminPage, sku, 'Xóa vĩnh viễn', 'Xóa vĩnh viễn', true)
+        if (deleted) await expect(adminPage.getByText(/Xóa vĩnh viễn sản phẩm thành công/).last()).toBeVisible()
+      }
     })
 
     createdProductId = null
     createdProductSku = null
+    createdProductName = null
+    validationProductSku = null
   })
 })

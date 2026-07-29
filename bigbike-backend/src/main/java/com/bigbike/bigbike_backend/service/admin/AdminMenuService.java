@@ -27,6 +27,8 @@ import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.common.PaginationService;
 import static com.bigbike.bigbike_backend.service.admin.MenuSupport.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -53,22 +55,79 @@ public class AdminMenuService {
     private static final Set<String> ALLOWED_ITEM_STATUSES = Set.of("ACTIVE", "INACTIVE");
 
     // Icon line đơn sắc của mục menu danh mục: resolve từ DB theo slug trong URL mục menu
-    // (/danh-muc-san-pham/{slug}) → CategoryEntity.menuIconUrl. Thay cho map slug hard-code cũ
+    // (/danh-muc/{slug} hoặc /categories/{slugEn}) → CategoryEntity.menuIconUrl.
     // (WP-parity) — giờ icon gắn theo danh mục trong DB, không còn phụ thuộc tên slug. Xem V213.
-    private static final String CATEGORY_URL_PREFIX = "/danh-muc-san-pham/";
+    private static final String CATEGORY_VI_URL_PREFIX = "/danh-muc/";
+    private static final String CATEGORY_EN_URL_PREFIX = "/categories/";
 
     private String resolveMenuIconUrl(String url) {
         if (url == null || url.isBlank()) return null;
-        String path = url.trim();
+        String path = normalizeStorefrontUrl(url);
         int q = path.indexOf('?');
         if (q != -1) path = path.substring(0, q);
-        if (!path.startsWith(CATEGORY_URL_PREFIX)) return null;
-        String slug = path.substring(CATEGORY_URL_PREFIX.length());
+        boolean englishPath = path.startsWith(CATEGORY_EN_URL_PREFIX);
+        String prefix = englishPath ? CATEGORY_EN_URL_PREFIX : CATEGORY_VI_URL_PREFIX;
+        if (!path.startsWith(prefix)) return null;
+        String slug = path.substring(prefix.length());
         if (slug.endsWith("/")) slug = slug.substring(0, slug.length() - 1);
         if (slug.isBlank()) return null;
-        return categoryRepo.findBySlug(slug.toLowerCase(Locale.ROOT))
+        Optional<CategoryEntity> category = englishPath
+                ? categoryRepo.findBySlugEn(slug.toLowerCase(Locale.ROOT))
+                : categoryRepo.findBySlug(slug.toLowerCase(Locale.ROOT));
+        return category
                 .map(CategoryEntity::getMenuIconUrl)
                 .orElse(null);
+    }
+
+    private String categoryUrl(CategoryEntity category, String lang) {
+        if ("en".equalsIgnoreCase(lang)
+                && category.getSlugEn() != null
+                && !category.getSlugEn().isBlank()) {
+            return CATEGORY_EN_URL_PREFIX + category.getSlugEn() + "/";
+        }
+        return CATEGORY_VI_URL_PREFIX + category.getSlug() + "/";
+    }
+
+    private String normalizeStorefrontPath(String path) {
+        String clean = path.length() > 1 ? path.replaceFirst("/+$", "") : path;
+        if ("/san-pham".equals(clean)
+                || "/danh-muc".equals(clean)
+                || "/danh-muc-san-pham".equals(clean)
+                || "/danh-muc-san-pham.html".equals(clean)) {
+            return "/sp/";
+        }
+        String oldPrefix = "/danh-muc-san-pham/";
+        if (clean.startsWith(oldPrefix)) {
+            String slug = clean.substring(oldPrefix.length());
+            return slug.isBlank() ? "/sp/" : CATEGORY_VI_URL_PREFIX + slug + "/";
+        }
+        return path;
+    }
+
+    private String normalizeStorefrontUrl(String rawUrl) {
+        if (rawUrl == null || rawUrl.isBlank()) return rawUrl;
+        String value = rawUrl.trim();
+        if (value.regionMatches(true, 0, "http://", 0, 7)
+                || value.regionMatches(true, 0, "https://", 0, 8)) {
+            try {
+                URI parsed = new URI(value);
+                String normalizedPath = normalizeStorefrontPath(parsed.getPath());
+                if (normalizedPath.equals(parsed.getPath())) return value;
+                return new URI(
+                        parsed.getScheme(), parsed.getUserInfo(), parsed.getHost(), parsed.getPort(),
+                        normalizedPath, parsed.getQuery(), parsed.getFragment()
+                ).toString();
+            } catch (URISyntaxException ignored) {
+                return value;
+            }
+        }
+
+        int query = value.indexOf('?');
+        int fragment = value.indexOf('#');
+        int suffixAt = value.length();
+        if (query >= 0) suffixAt = Math.min(suffixAt, query);
+        if (fragment >= 0) suffixAt = Math.min(suffixAt, fragment);
+        return normalizeStorefrontPath(value.substring(0, suffixAt)) + value.substring(suffixAt);
     }
 
     // A menu item can link straight to a category (targetType=CATEGORY, targetId=category id)
@@ -103,8 +162,8 @@ public class AdminMenuService {
     // since deleted, so a stale link never breaks the menu.
     private String resolveDisplayUrl(MenuItemEntity item, String lang) {
         return resolveLinkedCategory(item)
-                .map(cat -> CATEGORY_URL_PREFIX + pick(cat.getSlug(), cat.getSlugEn(), lang))
-                .orElseGet(item::getUrl);
+                .map(cat -> categoryUrl(cat, lang))
+                .orElseGet(() -> normalizeStorefrontUrl(item.getUrl()));
     }
 
     // Admin reads (list/detail/create/update) show the same live-resolved label/url as the
@@ -118,7 +177,7 @@ public class AdminMenuService {
         CategoryEntity category = cat.get();
         return new AdminMenuItemResponse(
                 i.getId(), i.getMenu().getId(), i.getParentId(),
-                category.getName(), category.getNameEn(), CATEGORY_URL_PREFIX + category.getSlug(),
+                category.getName(), category.getNameEn(), categoryUrl(category, "vi"),
                 i.getTargetType(), i.getTargetId(),
                 i.getSortOrder(), i.isOpenInNewTab(), i.getCssClass(),
                 i.getStatus(), i.getCreatedAt(), i.getUpdatedAt()
@@ -311,7 +370,7 @@ public class AdminMenuService {
             CategoryEntity category = categoryRepo.findById(req.targetId()).orElseThrow();
             item.setLabel(category.getName());
             item.setLabelEn(category.getNameEn());
-            item.setUrl(CATEGORY_URL_PREFIX + category.getSlug());
+            item.setUrl(categoryUrl(category, "vi"));
         } else {
             if (req.label() == null || req.label().isBlank()) {
                 throw ValidationException.fromField("label", "REQUIRED",
@@ -321,7 +380,7 @@ public class AdminMenuService {
             validateMenuItemUrl(req.url());
             item.setLabel(req.label().trim());
             item.setLabelEn(normalizeOptional(req.labelEn()));
-            item.setUrl(req.url());
+            item.setUrl(normalizeStorefrontUrl(req.url()));
         }
         item.setTargetType(req.targetType());
         item.setTargetId(req.targetId());
@@ -383,7 +442,7 @@ public class AdminMenuService {
             CategoryEntity category = linkedCategory.get();
             item.setLabel(category.getName());
             item.setLabelEn(category.getNameEn());
-            item.setUrl(CATEGORY_URL_PREFIX + category.getSlug());
+            item.setUrl(categoryUrl(category, "vi"));
         } else {
             if (req.label() != null && !req.label().isBlank()) {
                 item.setLabel(req.label().trim());
@@ -394,7 +453,7 @@ public class AdminMenuService {
             }
             if (req.url() != null) {
                 validateMenuItemUrl(req.url());
-                item.setUrl(req.url());
+                item.setUrl(normalizeStorefrontUrl(req.url()));
             }
         }
         if (req.sortOrder() != null) {

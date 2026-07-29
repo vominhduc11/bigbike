@@ -13,6 +13,7 @@ import {
   toCanonicalUrl,
   toCategoryPath,
   toHomePath,
+  toProductListPath,
   toProductPath,
 } from "@/lib/utils/routes";
 
@@ -85,7 +86,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
-      url: toCanonicalUrl("/san-pham/"),
+      url: toCanonicalUrl(toProductListPath()),
       lastModified: STATIC_PAGE_DATES.productList,
       changeFrequency: "daily",
       priority: 0.9,

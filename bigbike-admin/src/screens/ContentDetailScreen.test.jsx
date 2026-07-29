@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ContentDetailScreen } from './ContentDetailScreen'
@@ -132,7 +132,7 @@ function renderScreen({
 } = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const navigate = vi.fn()
-  render(
+  const renderResult = render(
     <QueryClientProvider client={client}>
       <ContentDetailScreen
         contentType="ARTICLE"
@@ -143,7 +143,7 @@ function renderScreen({
       />
     </QueryClientProvider>,
   )
-  return { navigate }
+  return { navigate, ...renderResult }
 }
 
 beforeEach(() => {
@@ -179,6 +179,17 @@ describe('ContentDetailScreen', () => {
 
     expect(await screen.findByText('content.detail.notFound')).toBeInTheDocument()
     expect(screen.queryByText('content.detail.loadError')).not.toBeInTheDocument()
+  })
+
+  it('hiển thị trạng thái đã xuất bản trong ô chọn', async () => {
+    mocks.fetchContentDetail.mockResolvedValue({
+      item: { ...baseArticle, publishStatus: 'PUBLISHED' },
+    })
+    const { container } = renderScreen()
+
+    await waitFor(() => {
+      expect(within(container).getByRole('combobox')).toHaveTextContent('status.publish.PUBLISHED')
+    })
   })
 
   it('dùng cùng hướng dẫn SEO với màn Sản phẩm và không hiện tùy chọn riêng', async () => {

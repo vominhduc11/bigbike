@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.Setter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,6 +17,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.bigbike.bigbike_backend.domain.commerce.PaymentRecordStatus;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 
 @Entity
@@ -38,7 +41,8 @@ public class PaymentEntity {
     private String provider;
 
     @Column(nullable = false, length = 50)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private PaymentRecordStatus status;
 
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount = BigDecimal.ZERO;

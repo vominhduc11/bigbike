@@ -4,7 +4,7 @@ import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Crown, UserCheck, UserPlus, Users } from 'lucide-react'
+import { Crown, RefreshCw, UserCheck, UserPlus, Users } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import { ExportButton } from '@/components/ExportButton'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
@@ -17,6 +17,7 @@ import { RecentItemsChips } from '../components/RecentItemsChips'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 import { exportCustomersCsv, fetchCustomers, fetchCustomerSummary, updateCustomerStatus } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
@@ -27,9 +28,9 @@ import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { useHasPermission } from '@/lib/auth'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
 
-// O4: tái dùng đúng danh sách trạng thái có thể set thủ công của CustomerDetailScreen
-// (giữ local thay vì import chéo giữa 2 screen — mỗi screen là 1 lazy chunk riêng).
-const CUSTOMER_STATUSES = ['ACTIVE', 'DISABLED', 'BLOCKED']
+// Backend accepts all CustomerStatus values for an explicit admin status change.
+// Keep local to avoid importing one lazy-loaded screen from another.
+const CUSTOMER_STATUSES = ['ACTIVE', 'PENDING', 'DISABLED', 'BLOCKED']
 
 const STATUS_BADGE = {
   ACTIVE: 'bb-badge-success',
@@ -39,12 +40,19 @@ const STATUS_BADGE = {
   UNKNOWN: 'bb-badge-neutral',
 }
 
-const INITIAL_QUERY = { search: '', status: 'ALL', synthetic: 'ALL', page: 1, pageSize: 20 }
+const INITIAL_QUERY = {
+  search: '',
+  status: 'ALL',
+  synthetic: 'ALL',
+  emailVerified: 'ALL',
+  page: 1,
+  pageSize: 20,
+}
 
 // N5: khung skeleton cùng chiều cao 1 thẻ .bb-kpi thật, dự trữ không gian ngay từ lần
 // render đầu tiên (cùng cách DashboardScreen.jsx làm với khối bb-kpi-grid của nó).
-function SkeletonBlock({ height }) {
-  return <div className="bb-skeleton-block" style={{ height }} />
+function SkeletonBlock() {
+  return <div className="bb-skeleton-block h-30" />
 }
 
 function CustomerStatusBadge({ value }) {
@@ -73,8 +81,8 @@ export function CustomerListScreen({ navigate, canUpdate }) {
   const isFirstSearchRender = useRef(true)
   // O4: id khách hàng đang đổi trạng thái ngay trên dòng — khoá Select + chặn double-submit.
   const [statusSaving, setStatusSaving] = useState({})
-  // Đổi trạng thái sang BLOCKED/DISABLED mở modal xin lý do (tùy chọn) thay vì confirm
-  // đơn thuần — { customer, value } của dòng đang chờ xác nhận.
+  // Every non-ACTIVE target revokes all active sessions. Ask for explicit
+  // confirmation and an optional audit reason before applying that side effect.
   const [reasonModal, setReasonModal] = useState(null)
   // O9 — khách hàng admin vừa xem gần đây, cho phép quay lại nhanh.
   const recentCustomerItems = useRecentItems('recent:customers')
@@ -102,11 +110,9 @@ export function CustomerListScreen({ navigate, canUpdate }) {
     try { sessionStorage.setItem('customers:listQuery', window.location.search) } catch { /* ignore */ }
   }, [query])
 
-  // O4: đổi trạng thái ngay trên 1 dòng — tái dùng CUSTOMER_STATUSES; BLOCKED/DISABLED
-  // mở modal xin lý do (tùy chọn) thay vì confirm đơn thuần, không cần rời danh sách.
   async function handleStatusChange(customer, value) {
     if (!value || value === customer.status || statusSaving[customer.id]) return
-    if (value === 'BLOCKED' || value === 'DISABLED') {
+    if (value !== 'ACTIVE') {
       setReasonModal({ customer, value })
       return
     }
@@ -165,7 +171,19 @@ export function CustomerListScreen({ navigate, canUpdate }) {
 
   const items = state.items || []
   const pagination = state.pagination
-  const isFiltered = !!query.search || query.status !== 'ALL' || query.synthetic !== 'ALL'
+
+  useEffect(() => {
+    if (state.status !== 'success' || state.isFetching || !pagination) return
+    const lastPage = Math.max(1, Number(pagination.totalPages) || 1)
+    if (query.page <= lastPage) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setQuery((previous) => ({ ...previous, page: lastPage }))
+  }, [pagination, query.page, state.isFetching, state.status])
+
+  const isFiltered = !!query.search
+    || query.status !== 'ALL'
+    || query.synthetic !== 'ALL'
+    || query.emailVerified !== 'ALL'
 
   const activeFilterChips = []
   if (query.search) {
@@ -201,6 +219,20 @@ export function CustomerListScreen({ navigate, canUpdate }) {
       onRemove: () => updateQuery({ synthetic: 'ALL' }, { resetPage: true }),
     })
   }
+  if (query.emailVerified !== 'ALL') {
+    activeFilterChips.push({
+      key: 'emailVerified',
+      label: t('customers.filterChipEmailVerified', {
+        value: query.emailVerified === 'true'
+          ? t('customers.emailVerified')
+          : t('customers.emailNotVerified'),
+      }),
+      removeLabel: t('customers.removeFilter', {
+        filter: t('customers.filterEmailVerified'),
+      }),
+      onRemove: () => updateQuery({ emailVerified: 'ALL' }, { resetPage: true }),
+    })
+  }
 
   // O4: control đổi trạng thái dùng chung cho cả bảng (desktop) và thẻ (mobile) để
   // giữ đúng năng lực chỉnh nhanh trạng thái trên mọi kích thước màn hình.
@@ -211,7 +243,12 @@ export function CustomerListScreen({ navigate, canUpdate }) {
         onValueChange={(v) => handleStatusChange(c, v)}
         disabled={!!statusSaving[c.id]}
       >
-        <SelectTrigger className="h-8 w-auto" aria-label={t('customers.colStatus')} onClick={(e) => e.stopPropagation()}>
+        <SelectTrigger
+          className="min-h-11 w-auto"
+          aria-label={t('customers.colStatus')}
+          aria-busy={!!statusSaving[c.id]}
+          onClick={(e) => e.stopPropagation()}
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent onClick={(e) => e.stopPropagation()}>
@@ -228,7 +265,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
       key: 'customer',
       label: t('customers.colCustomer'),
       render: (c) => {
-        const name = formatText(c.fullName)
+        const name = formatText(c.fullName, c.email)
         // Chữ cái đại diện lấy từ tên/email thật, không lấy ký tự placeholder "—".
         const initialSource = (c.fullName || c.email || '').trim()
         const initial = initialSource ? initialSource.charAt(0).toUpperCase() : '?'
@@ -237,7 +274,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
             <span className="bb-product-thumb">{initial}</span>
             <span>
               <div>{name}</div>
-              <div className="bb-cell-sub">{formatText(c.email)}</div>
+              {c.fullName ? <div className="bb-cell-sub">{formatText(c.email)}</div> : null}
             </span>
           </div>
         )
@@ -249,7 +286,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
       label: t('customers.colStatus'),
       // Trạng thái ngoài nhóm set-được (vd PENDING "chờ kích hoạt") → huy hiệu chỉ-đọc,
       // KHÔNG để Select trống trông như lỗi (audit P0-5).
-      render: (c) => (canUpdate && CUSTOMER_STATUSES.includes(c.status))
+      render: (c) => (canUpdate && !c.isSynthetic && CUSTOMER_STATUSES.includes(c.status))
         ? renderStatusSelect(c)
         : <CustomerStatusBadge value={c.status} />,
     },
@@ -263,8 +300,8 @@ export function CustomerListScreen({ navigate, canUpdate }) {
   const { visibleColumns, hiddenKeys, toggle: toggleColumn, allColumns } = useColumnVisibility(columns, 'columns:customers')
 
   const mobileCard = (c) => ({
-    title: formatText(c.fullName),
-    subtitle: formatText(c.email),
+    title: formatText(c.fullName, c.email),
+    subtitle: c.fullName ? formatText(c.email) : undefined,
     status: <CustomerStatusBadge value={c.status} />,
     meta: [
       { label: t('customers.colPhone'), value: formatText(c.phone) },
@@ -275,7 +312,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
     ],
     // Parity với bảng desktop: cho đổi nhanh trạng thái ngay trên thẻ mobile (đặt ở
     // hàng thao tác, nằm ngoài vùng bấm mở chi tiết để không lồng nút).
-    actions: (canUpdate && CUSTOMER_STATUSES.includes(c.status)) ? (
+    actions: (canUpdate && !c.isSynthetic && CUSTOMER_STATUSES.includes(c.status)) ? (
       <div className="flex items-center gap-2">
         <span className="text-xs text-muted-foreground">{t('customers.colStatus')}</span>
         {renderStatusSelect(c)}
@@ -283,6 +320,13 @@ export function CustomerListScreen({ navigate, canUpdate }) {
     ) : undefined,
     onClick: () => navigate(`/admin/customers/${c.id}`),
   })
+  const activeRegisteredFilter = query.status === 'ACTIVE' && query.synthetic === 'false'
+  const toggleActiveRegisteredFilter = () => updateQuery(
+    activeRegisteredFilter
+      ? { status: 'ALL', synthetic: 'ALL' }
+      : { status: 'ACTIVE', synthetic: 'false' },
+    { resetPage: true },
+  )
 
   return (
     <div>
@@ -297,8 +341,12 @@ export function CustomerListScreen({ navigate, canUpdate }) {
             <ExportButton
               onExport={async () => {
                 try {
-                  const r = await exportCustomersCsv({ status: query.status !== 'ALL' ? query.status : undefined })
-                  if (r?.truncated) toast.warning(t('export.truncated', { max: r.maxRows }))
+                  await exportCustomersCsv({
+                    q: query.search || undefined,
+                    status: query.status !== 'ALL' ? query.status : undefined,
+                    synthetic: query.synthetic !== 'ALL' ? query.synthetic : undefined,
+                    emailVerified: query.emailVerified !== 'ALL' ? query.emailVerified : undefined,
+                  })
                 } catch {
                   throw new Error(t('export.error'))
                 }
@@ -313,11 +361,9 @@ export function CustomerListScreen({ navigate, canUpdate }) {
       {/* O9 — Vừa xem gần đây */}
       <RecentItemsChips items={recentCustomerItems} onSelect={(item) => navigate(`/admin/customers/${item.id}`)} />
 
-      {/* O5: chỉ thẻ "Đang hoạt động" click được ra filter — nó khớp 1-1 với
-          query.status=ACTIVE đã có. VIP/Mới 30 ngày tính theo phân khúc chi tiêu/ngày
-          đăng ký, API danh sách khách hàng hiện chưa có filter tương ứng (chỉ filter
-          theo status ACTIVE/PENDING/DISABLED/BLOCKED) nên chưa thể click-lọc đúng mà
-          không đổi API — để nguyên dạng số liệu tĩnh cho 2 thẻ đó. */}
+      {/* Thẻ "Đang hoạt động" lọc đúng cùng tập tài khoản đăng ký như KPI:
+          status=ACTIVE và synthetic=false. VIP/Mới 30 ngày chưa có bộ lọc danh sách
+          tương ứng nên giữ dạng số liệu tĩnh. */}
       {summary ? (
         <div className="bb-kpi-grid bb-kpi-grid-4">
           <div className="bb-kpi">
@@ -345,15 +391,15 @@ export function CustomerListScreen({ navigate, canUpdate }) {
             <div className="bb-kpi-foot"><span className="bb-kpi-foot-label">{t('customers.kpi.new30dHint')}</span></div>
           </div>
           <div
-            className={`bb-kpi clickable${query.status === 'ACTIVE' ? ' active' : ''}`}
+            className={`bb-kpi clickable${activeRegisteredFilter ? ' active' : ''}`}
             role="button"
             tabIndex={0}
             aria-label={t('customers.kpi.activeFilterAria', { defaultValue: 'Đang hoạt động — lọc danh sách theo trạng thái Hoạt động' })}
-            onClick={() => updateQuery({ status: query.status === 'ACTIVE' ? 'ALL' : 'ACTIVE' }, { resetPage: true })}
+            onClick={toggleActiveRegisteredFilter}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
-                updateQuery({ status: query.status === 'ACTIVE' ? 'ALL' : 'ACTIVE' }, { resetPage: true })
+                toggleActiveRegisteredFilter()
               }
             }}
           >
@@ -383,18 +429,25 @@ export function CustomerListScreen({ navigate, canUpdate }) {
       )}
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
+      {!canUpdate ? (
+        <ReadOnlyBanner
+          warning={t('customers.readOnlyHint')}
+        />
+      ) : null}
 
       <div className="bb-filter-bar">
         <FilterSearchInput
           value={searchInput}
           onChange={setSearchInput}
           placeholder={t('customers.searchPlaceholder')}
-          wrapperClassName="flex-1 min-w-[200px]"
+          className="min-h-11"
+          wrapperClassName="min-w-48 flex-1"
         />
         <FilterSelect
           value={query.status}
           onValueChange={(v) => updateQuery({ status: v }, { resetPage: true })}
           ariaLabel={t('customers.filterStatus')}
+          className="min-h-11"
           options={[
             { value: 'ALL', label: t('customers.filterStatus') },
             { value: 'ACTIVE', label: t('status.customer.ACTIVE') },
@@ -407,17 +460,49 @@ export function CustomerListScreen({ navigate, canUpdate }) {
           value={query.synthetic}
           onValueChange={(v) => updateQuery({ synthetic: v }, { resetPage: true })}
           ariaLabel={t('customers.filterSource')}
+          className="min-h-11"
           options={[
             { value: 'ALL', label: t('customers.filterSource') },
             { value: 'false', label: t('customers.sourceReal') },
             { value: 'true', label: t('customers.sourceSynthetic') },
           ]}
         />
+        <FilterSelect
+          value={query.emailVerified}
+          onValueChange={(v) => updateQuery({ emailVerified: v }, { resetPage: true })}
+          ariaLabel={t('customers.filterEmailVerified')}
+          className="min-h-11"
+          options={[
+            { value: 'ALL', label: t('customers.filterEmailVerified') },
+            { value: 'true', label: t('customers.emailVerified') },
+            { value: 'false', label: t('customers.emailNotVerified') },
+          ]}
+        />
         <PageSizeSelect
           value={query.pageSize}
           onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
+          className="min-h-11"
         />
         <ColumnVisibilityToggle allColumns={allColumns} hiddenKeys={hiddenKeys} onToggle={toggleColumn} />
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11"
+          disabled={state.isFetching}
+          onClick={() => state.refetch()}
+        >
+          <RefreshCw
+            size={16}
+            className={state.isFetching ? 'animate-spin' : undefined}
+            aria-hidden="true"
+          />
+          {t('customers.refresh')}
+        </Button>
+        {state.isFetching && state.status === 'success' ? (
+          <span className="text-sm text-muted-foreground" role="status" aria-live="polite">
+            {t('customers.refreshing')}
+          </span>
+        ) : null}
       </div>
 
       {/* Filter chips — báo gọn đang lọc gì + gỡ từng filter / xoá tất cả. */}
@@ -457,6 +542,7 @@ export function CustomerListScreen({ navigate, canUpdate }) {
           {state.status === 'success' && pagination && (
             <PaginationControls
               pagination={pagination}
+              disabled={state.isFetching || Object.keys(statusSaving).length > 0}
               onPageChange={(p) => updateQuery({ page: p })}
             />
           )}
@@ -468,9 +554,9 @@ export function CustomerListScreen({ navigate, canUpdate }) {
           title={t('customers.detail.statusConfirmTitle', { defaultValue: 'Đổi trạng thái tài khoản' })}
           description={t('customers.detail.statusConfirmBody', {
             status: t(`status.customer.${reasonModal.value}`, { defaultValue: reasonModal.value }),
-            defaultValue: `Đánh dấu tài khoản là "{{status}}". Trạng thái này dùng để quản lý nội bộ.`,
           })}
           confirmLabel={t('customers.detail.statusConfirmOk', { defaultValue: 'Đổi trạng thái' })}
+          confirmVariant={reasonModal.value === 'BLOCKED' || reasonModal.value === 'DISABLED' ? 'danger' : 'default'}
           loading={!!statusSaving[reasonModal.customer.id]}
           onConfirm={async (reason) => {
             const ok = await applyStatusChange(reasonModal.customer, reasonModal.value, reason)

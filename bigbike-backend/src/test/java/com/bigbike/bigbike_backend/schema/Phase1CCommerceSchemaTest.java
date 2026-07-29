@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.bigbike.bigbike_backend.domain.commerce.PaymentRecordStatus;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAddressEntity;
@@ -223,7 +224,7 @@ class Phase1CCommerceSchemaTest {
         payment.setOrder(order);
         payment.setPaymentMethod("bacs");
         payment.setProvider("manual");
-        payment.setStatus("PENDING");
+        payment.setStatus(PaymentRecordStatus.PENDING);
         payment.setAmount(new BigDecimal("4500000.00"));
         payment.setCreatedAt(Instant.now());
         payment.setUpdatedAt(Instant.now());
@@ -242,7 +243,7 @@ class Phase1CCommerceSchemaTest {
         payment.setOrder(order);
         payment.setPaymentMethod(null);
         payment.setProvider("manual");
-        payment.setStatus("PENDING");
+        payment.setStatus(PaymentRecordStatus.PENDING);
         payment.setAmount(new BigDecimal("4500000.00"));
         payment.setCreatedAt(Instant.now());
         payment.setUpdatedAt(Instant.now());

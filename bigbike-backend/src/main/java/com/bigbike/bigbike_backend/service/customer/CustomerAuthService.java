@@ -201,9 +201,11 @@ public class CustomerAuthService {
             emailChanged = true;
         }
         if (newPhone != null && !newPhone.equals(customer.getPhone())) {
-            findByPhoneFlexible(newPhone).ifPresent(c -> {
-                throw new ConflictException("Thông tin cập nhật không hợp lệ.");
-            });
+            findByPhoneFlexible(newPhone)
+                    .filter(c -> !c.getId().equals(customerId))
+                    .ifPresent(c -> {
+                        throw new ConflictException("Thông tin cập nhật không hợp lệ.");
+                    });
             customer.setPhone(newPhone);
         }
         if (req.displayName() != null && !req.displayName().isBlank()) {
@@ -251,15 +253,11 @@ public class CustomerAuthService {
     }
 
     /**
-     * Tra khách theo SĐT đã chuẩn hóa, có thử thêm biến thể {@code +84…} để vẫn khớp
-     * những hồ sơ cũ lưu trước khi áp chuẩn hóa (chưa backfill). Trả về Optional rỗng nếu null/không thấy.
+     * Tra khách theo SĐT đã chuẩn hóa. Repository chuẩn hóa giá trị lưu cũ ngay trong truy vấn,
+     * nên cả local, {@code +84…} và các ký tự định dạng cũ đều khớp mà không cần backfill.
      */
     private java.util.Optional<CustomerEntity> findByPhoneFlexible(String normalizedPhone) {
-        if (normalizedPhone == null) return java.util.Optional.empty();
-        var byNormalized = customerRepo.findByPhone(normalizedPhone);
-        if (byNormalized.isPresent()) return byNormalized;
-        String intl = PhoneNumbers.toInternationalVariant(normalizedPhone);
-        return intl != null ? customerRepo.findByPhone(intl) : java.util.Optional.empty();
+        return customerRepo.findFirstByNormalizedPhone(normalizedPhone);
     }
 
     private String deriveDisplayName(CustomerRegisterRequest req) {

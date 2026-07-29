@@ -254,6 +254,17 @@ class Phase2D4RedirectMappingTest {
     }
 
     @Test
+    void fallback_redirect_generated_for_categories_uses_canonical_vietnamese_path() {
+        LegacyUrlMapper.MappingResult result = legacyMapper.generateFallbacks();
+
+        boolean categoryRedirectPresent = result.redirects().stream()
+                .anyMatch(r -> r.sourcePattern().equals("/" + CATEGORY_SLUG + ".html")
+                        && r.targetPattern().equals("/danh-muc/" + CATEGORY_SLUG + "/"));
+        assertThat(categoryRedirectPresent).isTrue();
+        assertThat(result.categoryCount()).isGreaterThan(0);
+    }
+
+    @Test
     void fallback_redirects_have_301_status() {
         LegacyUrlMapper.MappingResult result = legacyMapper.generateFallbacks();
         assertThat(result.redirects()).isNotEmpty();

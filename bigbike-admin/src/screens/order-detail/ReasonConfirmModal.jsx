@@ -63,10 +63,10 @@ export function ReasonConfirmModal({ onConfirm, onClose, loading = false }) {
           )}
         </div>
         <div className="flex gap-2 justify-end">
-          <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={busy}>
+          <Button type="button" variant="outline" size="sm" className="min-h-11" onClick={onClose} disabled={busy}>
             {t('common.cancel')}
           </Button>
-          <Button type="submit" variant="danger" size="sm" disabled={busy}>
+          <Button type="submit" variant="danger" size="sm" className="min-h-11" disabled={busy} aria-busy={busy}>
             {busy ? t('orders.detail.savingShort') : title}
           </Button>
         </div>

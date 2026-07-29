@@ -2,12 +2,19 @@ package com.bigbike.bigbike_backend.service.public_;
 
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.config.MinioProperties;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ReviewPhotoUploadEntity;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewPhotoUploadJpaRepository;
 import com.bigbike.bigbike_backend.service.media.CompressionProfile;
 import com.bigbike.bigbike_backend.service.media.ImageCompressionService;
+import io.minio.ListObjectsArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
+import io.minio.Result;
+import io.minio.messages.Item;
 import java.io.ByteArrayInputStream;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,6 +26,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.Tika;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -46,11 +56,13 @@ public class ReviewPhotoStorageService {
     private final MinioClient minioClient;
     private final MinioProperties minioProperties;
     private final ImageCompressionService imageCompressionService;
+    private final ReviewPhotoUploadJpaRepository uploadRepo;
 
     /**
      * Validate + store one image. Returns the relative public URL ({@code /media/reviews/...}).
      */
-    public String store(MultipartFile file) {
+    @Transactional
+    public String store(String productId, MultipartFile file) {
         String mimeType = validateImage(file);
 
         byte[] bytes;
@@ -61,7 +73,7 @@ public class ReviewPhotoStorageService {
         }
         bytes = imageCompressionService.compress(bytes, mimeType, REVIEW_PROFILE);
 
-        String safeFilename = sanitizeFilename(file.getOriginalFilename());
+        String safeFilename = canonicalFilename(file.getOriginalFilename(), mimeType);
         String objectKey = "reviews/" + UUID.randomUUID() + "/" + safeFilename;
         String bucket = minioProperties.getBucket();
 
@@ -77,7 +89,20 @@ public class ReviewPhotoStorageService {
             throw new IllegalStateException("Failed to upload review photo to storage: " + e.getMessage(), e);
         }
 
-        return MEDIA_PATH_PREFIX + objectKey;
+        String publicUrl = MEDIA_PATH_PREFIX + objectKey;
+        try {
+            ReviewPhotoUploadEntity upload = new ReviewPhotoUploadEntity();
+            upload.setObjectKey(objectKey);
+            upload.setPublicUrl(publicUrl);
+            upload.setProductId(productId);
+            upload.setUploadedAt(Instant.now());
+            uploadRepo.saveAndFlush(upload);
+            deleteObjectIfTransactionRollsBack(objectKey);
+            return publicUrl;
+        } catch (RuntimeException exception) {
+            deleteObject(objectKey);
+            throw exception;
+        }
     }
 
     /**
@@ -91,24 +116,107 @@ public class ReviewPhotoStorageService {
         if (urls == null || urls.isEmpty()) return;
         String bucket = minioProperties.getBucket();
         for (String url : urls) {
-            String objectKey = toReviewObjectKey(url);
+            String objectKey = reviewObjectKey(url);
             if (objectKey == null) continue;
             try {
                 minioClient.removeObject(
                         RemoveObjectArgs.builder().bucket(bucket).object(objectKey).build());
             } catch (Exception e) {
                 log.warn("Failed to delete review photo object '{}': {}", objectKey, e.getMessage());
+            } finally {
+                try {
+                    uploadRepo.deleteById(objectKey);
+                } catch (Exception exception) {
+                    log.warn("Failed to remove review photo claim '{}': {}",
+                            objectKey, exception.getMessage());
+                }
             }
         }
     }
 
-    /** Extract the MinIO object key from a stored review photo URL; null if it isn't a review object. */
-    private static String toReviewObjectKey(String url) {
+    /**
+     * Lists old objects so the scheduled cleanup can recover the narrow crash
+     * window between the MinIO put and upload-ledger insert.
+     */
+    public List<StoredReviewObject> listObjectsOlderThan(Instant cutoff) {
+        List<StoredReviewObject> objects = new ArrayList<>();
+        try {
+            Iterable<Result<Item>> results = minioClient.listObjects(
+                    ListObjectsArgs.builder()
+                            .bucket(minioProperties.getBucket())
+                            .prefix("reviews/")
+                            .recursive(true)
+                            .build());
+            for (Result<Item> result : results) {
+                Item item = result.get();
+                if (item.lastModified() != null
+                        && item.lastModified().toInstant().isBefore(cutoff)) {
+                    objects.add(new StoredReviewObject(
+                            item.objectName(),
+                            MEDIA_PATH_PREFIX + item.objectName(),
+                            item.lastModified().toInstant()));
+                }
+            }
+        } catch (Exception exception) {
+            log.warn("Failed to list old review photo objects: {}", exception.getMessage());
+        }
+        return objects;
+    }
+
+    /**
+     * Extract the canonical MinIO object key from a stored review photo URL.
+     * Accepts canonical relative URLs and legacy absolute URLs, but never keys
+     * outside {@code reviews/}.
+     */
+    public static String reviewObjectKey(String url) {
         if (url == null || url.isBlank()) return null;
         int idx = url.indexOf(MEDIA_PATH_PREFIX + "reviews/");
         if (idx < 0) return null;
         String key = url.substring(idx + MEDIA_PATH_PREFIX.length());
-        return key.startsWith("reviews/") ? key : null;
+        int suffix = key.indexOf('?');
+        if (suffix >= 0) {
+            key = key.substring(0, suffix);
+        }
+        suffix = key.indexOf('#');
+        if (suffix >= 0) {
+            key = key.substring(0, suffix);
+        }
+        if (!key.startsWith("reviews/") || key.isBlank()) {
+            return null;
+        }
+        for (String segment : key.split("/")) {
+            if (segment.equals(".") || segment.equals("..")) {
+                return null;
+            }
+        }
+        return key;
+    }
+
+    private void deleteObjectIfTransactionRollsBack(String objectKey) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status != TransactionSynchronization.STATUS_COMMITTED) {
+                    deleteObject(objectKey);
+                }
+            }
+        });
+    }
+
+    private void deleteObject(String objectKey) {
+        try {
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(minioProperties.getBucket())
+                            .object(objectKey)
+                            .build());
+        } catch (Exception exception) {
+            log.warn("Failed to roll back review photo object '{}': {}",
+                    objectKey, exception.getMessage());
+        }
     }
 
     /**
@@ -138,18 +246,45 @@ public class ReviewPhotoStorageService {
             throw ValidationException.fromField("file", "EMPTY_FILE", "Vui lòng chọn một ảnh.");
         }
         String detected = TIKA.detect(Arrays.copyOf(header, read), file.getOriginalFilename());
-        if (!ALLOWED_MIME_TYPES.contains(detected)) {
+        if (!ALLOWED_MIME_TYPES.contains(detected) || !detected.equals(declared)) {
             throw ValidationException.fromField(
-                    "file", "MIME_MISMATCH", "Nội dung tệp không phải ảnh hợp lệ.");
+                    "file",
+                    "MIME_MISMATCH",
+                    "Loại ảnh khai báo không khớp với nội dung tệp.");
         }
         return declared;
     }
 
-    private static String sanitizeFilename(String original) {
+    static String canonicalFilename(String original, String mimeType) {
+        String safeName = sanitizeFilename(original);
+        int separator = safeName.lastIndexOf('.');
+        String stem = separator > 0 ? safeName.substring(0, separator) : safeName;
+        if (stem.isBlank() || ".".equals(stem) || "..".equals(stem)) {
+            stem = "photo";
+        }
+        String extension = switch (mimeType) {
+            case "image/jpeg" -> ".jpg";
+            case "image/png" -> ".png";
+            case "image/webp" -> ".webp";
+            default -> "";
+        };
+        int maxStemLength = Math.max(1, 200 - extension.length());
+        if (stem.length() > maxStemLength) {
+            stem = stem.substring(0, maxStemLength);
+        }
+        return stem + extension;
+    }
+
+    static String sanitizeFilename(String original) {
         if (original == null || original.isBlank()) {
             return "photo";
         }
         String name = original.replaceAll("[^a-zA-Z0-9._-]", "_").toLowerCase(Locale.ROOT);
+        if (name.isBlank() || ".".equals(name) || "..".equals(name)) {
+            return "photo";
+        }
         return name.length() > 200 ? name.substring(0, 200) : name;
     }
+
+    public record StoredReviewObject(String objectKey, String publicUrl, Instant lastModified) {}
 }

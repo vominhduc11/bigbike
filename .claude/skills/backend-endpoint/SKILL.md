@@ -1,13 +1,13 @@
 ---
 name: backend-endpoint
-description: Dùng khi thêm endpoint/resource mới vào bigbike-backend (Spring Boot). Scaffold vertical slice theo đúng convention dự án — controller bọc response qua ApiResponseFactory (ApiDataResponse/ApiListResponse), request DTO @Valid (Lombok + Bean Validation), response DTO record, MapStruct mapper, JpaRepository, entity Lombok, permission DB-driven qua requirePermission (KHÔNG @PreAuthorize), và Flyway V-migration. Gọi bằng /backend-endpoint <resource>.
+description: "Dùng khi thêm endpoint hoặc resource mới vào bigbike-backend Spring Boot. Scaffold vertical slice theo convention dự án: controller bọc response qua ApiResponseFactory, request DTO có Valid và Bean Validation, response DTO dạng record, mapper MapStruct, JpaRepository, entity Lombok, permission DB-driven qua requirePermission thay vì PreAuthorize, và Flyway migration khi đổi schema."
 ---
 
-# /backend-endpoint — Scaffold vertical slice cho bigbike-backend
+# backend-endpoint — Scaffold vertical slice cho bigbike-backend
 
 ## Bước 0 — Docs-First (bắt buộc cho backend logic)
 
-Chạy `/docs-first <mô tả>`: đọc `API_CONTRACT.md` (endpoint shape), `DATA_CONTRACT.md` (entity/field), `PERMISSION_MATRIX.md` (permission key), `STATE_MACHINES.md` (nếu có transition), `BUSINESS_RULES.md` (rule liên quan). Đổi shape/rule → update docs trước.
+Đọc trước (chỉ section liên quan; bảng tra đầy đủ ở `CLAUDE.md` / `AGENTS.md` §3–§4): `API_CONTRACT.md` (endpoint shape), `DATA_CONTRACT.md` (entity/field), `PERMISSION_MATRIX.md` (permission key), `STATE_MACHINES.md` (nếu có transition), `BUSINESS_RULES.md` (rule liên quan). Đổi shape/rule → update docs trước.
 
 ## Bước 1 — Package layout (base `com.bigbike.bigbike_backend`)
 
@@ -104,13 +104,16 @@ Transition có side effect → command endpoint (`POST .../{id}/cancel`, `.../st
 
 ## Bước 7 — Flyway migration (nếu đổi schema)
 
-```bash
+```powershell
 # Tìm số version cao nhất hiện tại
-ls bigbike-backend/src/main/resources/db/migration | grep -oE '^V[0-9]+' | sed 's/V//' | sort -n | tail -1
+Get-ChildItem bigbike-backend/src/main/resources/db/migration -Filter 'V*.sql' |
+  ForEach-Object { if ($_.Name -match '^V(\d+)__') { [int]$Matches[1] } } |
+  Sort-Object -Descending |
+  Select-Object -First 1
 ```
 
-Tạo file kế tiếp `V<n+1>__<mo_ta>.sql` (hiện cao nhất là **V149** → kế tiếp **V150**, nhưng luôn re-check bằng lệnh trên). PostgreSQL dialect, idempotent (`IF EXISTS`/`IF NOT EXISTS`), comment mô tả intent.
+Tạo file version kế tiếp theo dạng `V` + số vừa tìm được cộng 1 + `__mo_ta.sql`. Không ghi cứng version hiện tại vào skill; repo đổi liên tục. PostgreSQL dialect, idempotent (`IF EXISTS`/`IF NOT EXISTS`), comment mô tả intent.
 
 ## Bước 8 — Đóng gate
 
-Chạy `/preflight` (backend = `./mvnw test`; `./mvnw package` trước release). Verify response khớp `API_CONTRACT.md`.
+Chạy quy trình `preflight` (backend = `./mvnw test`; `./mvnw package` trước release). Verify response khớp `API_CONTRACT.md`.

@@ -31,19 +31,35 @@ async function confirmDialog(page: Page, action: string) {
   await dialog.getByRole('button', { name: action, exact: true }).click()
 }
 
-async function captureResponsiveList(page: Page, testInfo: TestInfo) {
-  const viewports = [
-    { name: '1440', width: 1440, height: 1000 },
-    { name: '768', width: 768, height: 1024 },
-    { name: '375', width: 375, height: 812 },
-  ]
+const CAPTURE_VIEWPORTS = [
+  { name: '1440', width: 1440, height: 1000 },
+  { name: '768', width: 768, height: 1024 },
+  { name: '375', width: 375, height: 812 },
+]
 
-  for (const viewport of viewports) {
+async function captureResponsiveList(page: Page, testInfo: TestInfo) {
+  for (const viewport of CAPTURE_VIEWPORTS) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
     await expectNoHorizontalOverflow(page, `Brand list ${viewport.name}px`)
     const path = testInfo.outputPath(`brand-list-after-${viewport.name}.png`)
     await page.screenshot({ path, fullPage: true })
     await testInfo.attach(`Brand list after ${viewport.name}px`, { path, contentType: 'image/png' })
+  }
+
+  await page.setViewportSize({ width: 1440, height: 1000 })
+}
+
+// Màn chi tiết cũng phải được chụp/kiểm tràn ngang ở cả 3 khổ màn hình — trước đây
+// chỉ có màn danh sách, nên lỗi bố cục trong form thương hiệu không bị bắt.
+async function captureResponsiveDetail(page: Page, testInfo: TestInfo, brandId: string) {
+  for (const viewport of CAPTURE_VIEWPORTS) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height })
+    await navigateSpa(page, `/admin/brands/${brandId}`)
+    await expect(page.locator('#brand-form')).toBeVisible()
+    await expectNoHorizontalOverflow(page, `Brand detail ${viewport.name}px`)
+    const path = testInfo.outputPath(`brand-detail-after-${viewport.name}.png`)
+    await page.screenshot({ path, fullPage: true })
+    await testInfo.attach(`Brand detail after ${viewport.name}px`, { path, contentType: 'image/png' })
   }
 
   await page.setViewportSize({ width: 1440, height: 1000 })
@@ -78,6 +94,10 @@ test.describe('brand-lifecycle', () => {
       expect(brandId, 'Không lấy được id thương hiệu vừa tạo').toBeTruthy()
       await expect(adminPage.getByText('Tạo thương hiệu thành công.')).toBeVisible()
       await expect(adminPage.getByText('Không', { exact: true }).first()).toBeVisible()
+    })
+
+    await test.step('chụp màn chi tiết ở 3 khổ màn hình', async () => {
+      await captureResponsiveDetail(adminPage, testInfo, brandId!)
     })
 
     await test.step('ẩn mềm và kiểm tra nội dung xác nhận', async () => {

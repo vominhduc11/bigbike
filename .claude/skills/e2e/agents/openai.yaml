@@ -1,0 +1,4 @@
+interface:
+  display_name: "E2E"
+  short_description: "Write and run BigBike Playwright tests"
+  default_prompt: "Use $e2e to write and run a Playwright test for the main checkout flow."

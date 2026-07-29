@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
-import { fetchMedia, uploadMedia, fetchMediaFolders, fetchMediaTags } from '../lib/adminApi'
+import { toast } from '@/lib/toast'
+import { deleteMedia, fetchMedia, uploadMedia, fetchMediaFolders, fetchMediaTags } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { useDebounce } from '../lib/useDebounce'
 import { useHasPermission } from '../lib/auth'
@@ -244,6 +245,31 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
       }
     }
     closeDetail()
+  }
+
+  async function handleDetailDeleted(mediaToDelete) {
+    await deleteMedia(mediaToDelete.id)
+
+    const deletedUrl = mediaToDelete.publicUrl
+    setState((prev) => ({
+      ...prev,
+      items: prev.items.filter((item) => item.id !== mediaToDelete.id),
+    }))
+    if (deletedUrl) {
+      mediaCacheRef.current.delete(deletedUrl)
+      setSelectedUrls((prev) => {
+        if (multiSelect) {
+          const next = new Set(prev)
+          next.delete(deletedUrl)
+          return next
+        }
+        return prev === deletedUrl ? null : prev
+      })
+    }
+
+    closeDetail()
+    setRefreshKey((key) => key + 1)
+    toast.success(t('media.deleteSuccess'))
   }
 
   // ── Selection helpers ────────────────────────────────────────────────────────
@@ -552,6 +578,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
           media={detailMedia}
           onSave={handleDetailSaved}
           onClose={closeDetail}
+          onDelete={canWrite ? handleDetailDeleted : undefined}
         />
       )}
     </>,

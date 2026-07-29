@@ -24,6 +24,8 @@ import org.jsoup.nodes.Element;
 final class AdminMutationValidators {
 
     private static final String REQUIRED = "REQUIRED";
+    private static final String UNCATEGORIZED_CATEGORY_ID = "uncategorized";
+    private static final String UNCATEGORIZED_BRAND_ID = "uncategorized-brand";
     private static final Pattern SLUG_PATTERN = Pattern.compile("^[a-z0-9]+(?:-[a-z0-9]+)*$");
     private static final Pattern WINDOWS_PATH_PATTERN = Pattern.compile("^[A-Za-z]:[\\\\/].*");
 
@@ -301,8 +303,9 @@ final class AdminMutationValidators {
      * {@code ImageBlock}/{@code FeatureBlock}/{@code VideoBlock} urls plus inline {@code <img src>} inside raw-HTML
      * block fields (paragraph/callout/feature), VI **and** EN (V326: each block carries both
      * languages inline, so a pasted image can hide in either {@code html} or {@code htmlEn}). Used to
-     * grandfather legacy hotlinks when a product/article is edited, mirroring the gallery/video
-     * legacy tolerance (MEDIA_RULE_002 / MEDIA_RULE_003) so old imported content stays editable.
+     * grandfather legacy image hotlinks when a product/article is edited
+     * (MEDIA_RULE_002 / MEDIA_RULE_003). Video URLs may be collected for completeness but are
+     * never grandfathered by write validation (MEDIA_RULE_004).
      * Since V327/V328, {@code suitability}/{@code sizeGuide} are no longer block types here — see
      * {@link #suitabilitySectionMediaUrls} / {@link #sizeGuideSectionMediaUrls} for their own scan.
      */
@@ -337,19 +340,18 @@ final class AdminMutationValidators {
     static void validateVideoBlockUrl(
             DescriptionBlock.VideoBlock block,
             String field,
-            Set<String> existing,
             HomeVideoUrlPolicy videoUrlPolicy,
             List<ApiErrorDetail> errors
     ) {
         String url = trimToNull(block.getUrl());
-        if (url == null || (existing != null && existing.contains(url))) {
+        if (url == null) {
             return;
         }
         if (!videoUrlPolicy.isAllowedForProvider(block.getProvider(), url)) {
             errors.add(new ApiErrorDetail(
                     field,
                     "INVALID_VALUE",
-                    "Video URL must match its YouTube/TikTok/Facebook provider or be approved internal upload media."
+                    "Video source must be YouTube or upload, and the URL must match its provider."
             ));
         }
     }
@@ -492,6 +494,35 @@ final class AdminMutationValidators {
         }
     }
 
+    /**
+     * New products start in DRAFT. Existing products retain their lifecycle state
+     * while saving details; state changes belong to the dedicated publish, trash,
+     * and restore endpoints.
+     */
+    static void validateProductSavePublishStatus(
+            PublishStatus current,
+            PublishStatus requested,
+            boolean create,
+            List<ApiErrorDetail> errors
+    ) {
+        if (requested == null) {
+            return;
+        }
+        boolean invalid = create
+                ? requested != PublishStatus.DRAFT
+                : requested != current;
+        if (!invalid) {
+            return;
+        }
+        errors.add(new ApiErrorDetail(
+                "publishStatus",
+                "INVALID_STATE_TRANSITION",
+                create
+                        ? "New products must be saved as DRAFT. Publish through the publish endpoint."
+                        : "Product status changes must use the dedicated lifecycle endpoint."
+        ));
+    }
+
     static void throwIfErrors(List<ApiErrorDetail> errors) {
         if (!errors.isEmpty()) {
             throw new ValidationException("Validation failed.", List.copyOf(errors));
@@ -585,6 +616,23 @@ final class AdminMutationValidators {
 
     static void validatePublishReadiness(ProductEntity entity, List<ApiErrorDetail> errors) {
         validateProductFieldsRequired(entity, true, errors);
+        if (entity.getCategories() != null
+                && !entity.getCategories().isEmpty()
+                && entity.getCategories().stream()
+                .allMatch(category -> UNCATEGORIZED_CATEGORY_ID.equals(category.getId()))) {
+            errors.add(new ApiErrorDetail(
+                    "categoryIds",
+                    "INVALID_STATE",
+                    "Assign at least one category other than Uncategorized before publishing."
+            ));
+        }
+        if (entity.getBrand() != null && UNCATEGORIZED_BRAND_ID.equals(entity.getBrand().getId())) {
+            errors.add(new ApiErrorDetail(
+                    "brandId",
+                    "INVALID_STATE",
+                    "Assign a brand other than Uncategorized before publishing."
+            ));
+        }
     }
 
     static void throwIfPublishErrors(List<ApiErrorDetail> errors) {

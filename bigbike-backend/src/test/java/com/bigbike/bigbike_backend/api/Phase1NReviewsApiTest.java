@@ -16,6 +16,8 @@ import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepos
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.JwtService;
+import com.bigbike.bigbike_backend.service.email.EmailDispatchService;
+import com.bigbike.bigbike_backend.service.public_.ReviewPhotoStorageService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -30,6 +32,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -60,10 +63,12 @@ class Phase1NReviewsApiTest {
     @Autowired AuditLogJpaRepository auditLogRepo;
     @Autowired JwtService jwtService;
     @Autowired AdminUserJpaRepository adminUserRepo;
+    @MockitoBean EmailDispatchService emailDispatchService;
+    @MockitoBean ReviewPhotoStorageService reviewPhotoStorageService;
 
-    // Plain MockMvc (no Spring Security) â€” for functional behavior tests
+    // Plain MockMvc (no Spring Security) — for functional behavior tests
     private MockMvc mockMvc;
-    // Security-aware MockMvc â€” for auth/permission tests
+    // Security-aware MockMvc — for auth/permission tests
     private MockMvc secMvc;
 
     private Long approvedReviewId;
@@ -77,9 +82,11 @@ class Phase1NReviewsApiTest {
                 .apply(SecurityMockMvcConfigurers.springSecurity())
                 .build();
 
-        approvedReviewId = insertReview(PRODUCT_ID, "Reviewer APPROVED", 5, "Tuyá»‡t vá»i!", "APPROVED");
-        pendingReviewId = insertReview(PRODUCT_ID, "Reviewer PENDING", 3, "BĂ¬nh thÆ°á»ng", "PENDING");
+        approvedReviewId = insertReview(PRODUCT_ID, "Reviewer APPROVED", 5, "Tuyệt vời!", "APPROVED");
+        pendingReviewId = insertReview(PRODUCT_ID, "Reviewer PENDING", 3, "Bình thường", "PENDING");
         spamReviewId = insertReview(PRODUCT_ID, "Spam Bot", 1, "Buy cheap!", "SPAM");
+        org.mockito.Mockito.clearInvocations(emailDispatchService);
+        org.mockito.Mockito.clearInvocations(reviewPhotoStorageService);
     }
 
     @Test
@@ -94,7 +101,7 @@ class Phase1NReviewsApiTest {
 
     @Test
     void publicGetReviews_avgRatingAndTotalCountOnlyApproved() throws Exception {
-        insertReview(PRODUCT_ID, "Reviewer APPROVED 2", 3, "Táº¡m á»•n", "APPROVED");
+        insertReview(PRODUCT_ID, "Reviewer APPROVED 2", 3, "Tạm ổn", "APPROVED");
 
         mockMvc.perform(get("/api/v1/products/" + PRODUCT_ID + "/reviews"))
                 .andExpect(status().isOk())
@@ -220,6 +227,11 @@ class Phase1NReviewsApiTest {
 
         mockMvc.perform(get("/api/v1/products/" + PRODUCT_ID + "/reviews")
                         .param("rating", "6"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+
+        mockMvc.perform(get("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .param("rating", "4.2"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
     }
@@ -556,7 +568,7 @@ class Phase1NReviewsApiTest {
     void adminPatchStatus_approve_returns200WithApprovedStatus() throws Exception {
         mockMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"APPROVED\"}")
+                        .content(statusBody(pendingReviewId, "APPROVED"))
                         .header("X-Admin-Permissions", "reviews.write"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("APPROVED"));
@@ -566,7 +578,7 @@ class Phase1NReviewsApiTest {
     void adminPatchStatus_spam_returns200WithSpamStatus() throws Exception {
         mockMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"SPAM\"}")
+                        .content(statusBody(pendingReviewId, "SPAM"))
                         .header("X-Admin-Permissions", "reviews.write"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("SPAM"));
@@ -574,9 +586,9 @@ class Phase1NReviewsApiTest {
 
     @Test
     void adminPatchStatus_trash_returns200WithTrashStatus() throws Exception {
-        mockMvc.perform(patch("/api/v1/admin/reviews/" + approvedReviewId + "/status")
+        mockMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"TRASH\"}")
+                        .content(statusBody(pendingReviewId, "TRASH"))
                         .header("X-Admin-Permissions", "reviews.write"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("TRASH"));
@@ -586,17 +598,104 @@ class Phase1NReviewsApiTest {
     void adminPatchStatus_pending_returns200WithPendingStatus() throws Exception {
         mockMvc.perform(patch("/api/v1/admin/reviews/" + spamReviewId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"PENDING\"}")
+                        .content(statusBody(spamReviewId, "PENDING"))
                         .header("X-Admin-Permissions", "reviews.write"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("PENDING"));
     }
 
     @Test
+    void adminPatchStatus_sameState_isNoOp() throws Exception {
+        ReviewEntity before = reviewRepo.findById(pendingReviewId).orElseThrow();
+        long versionBefore = before.getVersion();
+        Instant updatedAtBefore = before.getUpdatedAt();
+        long auditCountBefore = countReviewAudits("REVIEW_STATUS_CHANGED", pendingReviewId);
+
+        mockMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(statusBody(pendingReviewId, "PENDING"))
+                        .header("X-Admin-Permissions", "reviews.write"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
+                .andExpect(jsonPath("$.data.authorEmail").doesNotExist())
+                .andExpect(jsonPath("$.data.version").value(versionBefore));
+
+        ReviewEntity after = reviewRepo.findById(pendingReviewId).orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(after.getVersion()).isEqualTo(versionBefore);
+        org.assertj.core.api.Assertions.assertThat(after.getUpdatedAt()).isEqualTo(updatedAtBefore);
+        org.assertj.core.api.Assertions.assertThat(
+                countReviewAudits("REVIEW_STATUS_CHANGED", pendingReviewId)).isEqualTo(auditCountBefore);
+        org.mockito.Mockito.verifyNoInteractions(emailDispatchService);
+    }
+
+    @Test
+    void adminPatchStatus_invalidTransition_returns409WithoutMutation() throws Exception {
+        long versionBefore = versionOf(approvedReviewId);
+        long auditCountBefore = countReviewAudits("REVIEW_STATUS_CHANGED", approvedReviewId);
+
+        mockMvc.perform(patch("/api/v1/admin/reviews/" + approvedReviewId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(statusBody(approvedReviewId, "TRASH"))
+                        .header("X-Admin-Permissions", "reviews.write"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+
+        ReviewEntity after = reviewRepo.findById(approvedReviewId).orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(after.getStatus()).isEqualTo("APPROVED");
+        org.assertj.core.api.Assertions.assertThat(after.getVersion()).isEqualTo(versionBefore);
+        org.assertj.core.api.Assertions.assertThat(
+                countReviewAudits("REVIEW_STATUS_CHANGED", approvedReviewId)).isEqualTo(auditCountBefore);
+    }
+
+    @Test
+    void adminPatchStatus_staleVersion_returns409ConcurrentModification() throws Exception {
+        long staleVersion = versionOf(pendingReviewId);
+        changeStatus(pendingReviewId, "SPAM");
+
+        mockMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"PENDING\",\"expectedVersion\":" + staleVersion + "}")
+                        .header("X-Admin-Permissions", "reviews.write"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONCURRENT_MODIFICATION"));
+
+        org.assertj.core.api.Assertions.assertThat(
+                reviewRepo.findById(pendingReviewId).orElseThrow().getStatus()).isEqualTo("SPAM");
+    }
+
+    @Test
+    void adminPatchStatus_approvalEmail_isSentOnlyOnFirstApproval() throws Exception {
+        ReviewEntity pending = reviewRepo.findById(pendingReviewId).orElseThrow();
+        pending.setAuthorEmail("reviewer@example.test");
+        pending.setFirstApprovedAt(null);
+        reviewRepo.saveAndFlush(pending);
+        org.mockito.Mockito.clearInvocations(emailDispatchService);
+
+        changeStatus(pendingReviewId, "APPROVED");
+        Instant firstApprovedAt = reviewRepo.findById(pendingReviewId).orElseThrow().getFirstApprovedAt();
+        changeStatus(pendingReviewId, "PENDING");
+        changeStatus(pendingReviewId, "APPROVED");
+
+        org.mockito.ArgumentCaptor<org.thymeleaf.context.Context> contextCaptor =
+                org.mockito.ArgumentCaptor.forClass(org.thymeleaf.context.Context.class);
+        org.mockito.Mockito.verify(emailDispatchService, org.mockito.Mockito.times(1)).send(
+                org.mockito.ArgumentMatchers.eq("reviewer@example.test"),
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.eq("review-approved"),
+                contextCaptor.capture());
+        org.assertj.core.api.Assertions.assertThat(
+                contextCaptor.getValue().getVariable("productUrl"))
+                .isEqualTo("https://bigbike.vn/product/mu-bao-hiem-ls2-ff800/");
+        org.assertj.core.api.Assertions.assertThat(
+                reviewRepo.findById(pendingReviewId).orElseThrow().getFirstApprovedAt())
+                .isEqualTo(firstApprovedAt);
+    }
+
+    @Test
     void adminPatchStatus_invalidStatus_returns400() throws Exception {
         mockMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"HAHA\"}")
+                        .content(statusBody(pendingReviewId, "HAHA"))
                         .header("X-Admin-Permissions", "reviews.write"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
@@ -608,7 +707,7 @@ class Phase1NReviewsApiTest {
 
         mockMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"HAHA\"}")
+                        .content(statusBody(pendingReviewId, "HAHA"))
                         .header("X-Admin-Permissions", "reviews.write"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
@@ -632,7 +731,8 @@ class Phase1NReviewsApiTest {
         mockMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
                         .with(remoteAddress("203.0.113.10"))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"APPROVED\"}")
+                        .content(statusBody(pendingReviewId, "APPROVED"))
+                        .header("X-Forwarded-For", "192.0.2.250")
                         .header("User-Agent", "Phase2C-Test-Agent")
                         .header("X-Admin-Permissions", "reviews.write"))
                 .andExpect(status().isOk());
@@ -652,6 +752,45 @@ class Phase1NReviewsApiTest {
     }
 
     @Test
+    void adminPatchStatus_trustedProxyAuditUsesForwardedClientIp() throws Exception {
+        mockMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
+                        .with(remoteAddress("127.0.0.1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(statusBody(pendingReviewId, "APPROVED"))
+                        .header("X-Forwarded-For", "198.51.100.77, 127.0.0.1")
+                        .header("X-Admin-Permissions", "reviews.write"))
+                .andExpect(status().isOk());
+
+        AuditLogEntity auditLog = findLatestReviewAudit(
+                "REVIEW_STATUS_CHANGED", pendingReviewId).orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(auditLog.getIpAddress())
+                .isEqualTo("198.51.100.77");
+    }
+
+    @Test
+    void adminPatchStatus_auditSnapshotRedactsReviewerContentAndIdentity() throws Exception {
+        ReviewEntity review = reviewRepo.findById(pendingReviewId).orElseThrow();
+        review.setAuthorName("Tên riêng cần ẩn");
+        review.setAuthorEmail("private-reviewer@example.test");
+        review.setBody("Nội dung đánh giá riêng cần ẩn");
+        review.setPhotos(java.util.List.of("/media/reviews/private/photo.jpg"));
+        reviewRepo.saveAndFlush(review);
+
+        changeStatus(pendingReviewId, "APPROVED");
+
+        AuditLogEntity auditLog = findLatestReviewAudit("REVIEW_STATUS_CHANGED", pendingReviewId)
+                .orElseThrow();
+        String snapshots = String.valueOf(auditLog.getBeforeData())
+                + String.valueOf(auditLog.getAfterData());
+        org.assertj.core.api.Assertions.assertThat(snapshots)
+                .contains("\"productName\":\"LS2 FF800 Storm\"")
+                .doesNotContain("Tên riêng cần ẩn")
+                .doesNotContain("private-reviewer@example.test")
+                .doesNotContain("Nội dung đánh giá riêng cần ẩn")
+                .doesNotContain("/media/reviews/private/photo.jpg");
+    }
+
+    @Test
     void adminPatchStatus_notFound_doesNotCreateAuditLog() throws Exception {
         Long missingReviewId = reviewRepo.findAll().stream()
                 .map(ReviewEntity::getId)
@@ -661,7 +800,7 @@ class Phase1NReviewsApiTest {
 
         mockMvc.perform(patch("/api/v1/admin/reviews/" + missingReviewId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"APPROVED\"}")
+                        .content("{\"status\":\"APPROVED\",\"expectedVersion\":0}")
                         .header("X-Admin-Permissions", "reviews.write"))
                 .andExpect(status().isNotFound());
 
@@ -678,7 +817,7 @@ class Phase1NReviewsApiTest {
 
         mockMvc.perform(patch("/api/v1/admin/reviews/" + pendingId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"APPROVED\"}")
+                        .content(statusBody(pendingId, "APPROVED"))
                         .header("X-Admin-Permissions", "reviews.write"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("APPROVED"));
@@ -703,17 +842,17 @@ class Phase1NReviewsApiTest {
     }
 
     @Test
-    void adminPatchStatus_trashApprovedReview_syncsProductRatingCache() throws Exception {
+    void adminPatchStatus_returnApprovedToPending_syncsProductRatingCache() throws Exception {
         TestProductRef product = createPublishedProductCopy("Rating Sync Trash");
         Long approvedId = insertReview(product.id(), "Approved Review", 5, "Great", "APPROVED");
         setProductRatingCache(product.id(), new BigDecimal("4.8"), 88);
 
         mockMvc.perform(patch("/api/v1/admin/reviews/" + approvedId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"TRASH\"}")
+                        .content(statusBody(approvedId, "PENDING"))
                         .header("X-Admin-Permissions", "reviews.write"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("TRASH"));
+                .andExpect(jsonPath("$.data.status").value("PENDING"));
 
         mockMvc.perform(get("/api/v1/products/" + product.id() + "/reviews"))
                 .andExpect(status().isOk())
@@ -742,8 +881,13 @@ class Phase1NReviewsApiTest {
         Long approvedId = insertReview(product.id(), "Approved Review", 4, "Good", "APPROVED");
         setProductRatingCache(product.id(), new BigDecimal("4.9"), 77);
 
+        changeStatus(approvedId, "PENDING");
+        changeStatus(approvedId, "TRASH");
+
         mockMvc.perform(delete("/api/v1/admin/reviews/" + approvedId)
-                        .header("X-Admin-Permissions", "reviews.write"))
+                        .param("expectedVersion", String.valueOf(versionOf(approvedId)))
+                        .header("X-Admin-Permissions", "reviews.write")
+                        .header("X-Admin-Role", "SUPER_ADMIN"))
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(get("/api/v1/products/" + product.id() + "/reviews"))
@@ -770,22 +914,68 @@ class Phase1NReviewsApiTest {
     @Test
     void adminDeleteReview_returns204() throws Exception {
         Long toDelete = insertReview(PRODUCT_ID, "To Delete", 2, "Will be deleted", "PENDING");
+        changeStatus(toDelete, "TRASH");
 
         mockMvc.perform(delete("/api/v1/admin/reviews/" + toDelete)
-                        .header("X-Admin-Permissions", "reviews.write"))
+                        .param("expectedVersion", String.valueOf(versionOf(toDelete)))
+                        .header("X-Admin-Permissions", "reviews.write")
+                        .header("X-Admin-Role", "SUPER_ADMIN"))
                 .andExpect(status().isNoContent());
 
         org.assertj.core.api.Assertions.assertThat(reviewRepo.findById(toDelete)).isEmpty();
     }
 
     @Test
+    void adminDeleteReview_nonTrash_returns409() throws Exception {
+        mockMvc.perform(delete("/api/v1/admin/reviews/" + pendingReviewId)
+                        .param("expectedVersion", String.valueOf(versionOf(pendingReviewId)))
+                        .header("X-Admin-Permissions", "reviews.write")
+                        .header("X-Admin-Role", "SUPER_ADMIN"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+
+        org.assertj.core.api.Assertions.assertThat(reviewRepo.findById(pendingReviewId)).isPresent();
+    }
+
+    @Test
+    void adminDeleteReview_nonSuperAdmin_returns403() throws Exception {
+        changeStatus(pendingReviewId, "TRASH");
+
+        mockMvc.perform(delete("/api/v1/admin/reviews/" + pendingReviewId)
+                        .param("expectedVersion", String.valueOf(versionOf(pendingReviewId)))
+                        .header("X-Admin-Permissions", "reviews.write")
+                        .header("X-Admin-Role", "ADMIN"))
+                .andExpect(status().isForbidden());
+
+        org.assertj.core.api.Assertions.assertThat(reviewRepo.findById(pendingReviewId)).isPresent();
+    }
+
+    @Test
+    void adminDeleteReview_staleVersion_returns409ConcurrentModification() throws Exception {
+        changeStatus(pendingReviewId, "TRASH");
+        long staleVersion = versionOf(pendingReviewId) - 1;
+
+        mockMvc.perform(delete("/api/v1/admin/reviews/" + pendingReviewId)
+                        .param("expectedVersion", String.valueOf(staleVersion))
+                        .header("X-Admin-Permissions", "reviews.write")
+                        .header("X-Admin-Role", "SUPER_ADMIN"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONCURRENT_MODIFICATION"));
+
+        org.assertj.core.api.Assertions.assertThat(reviewRepo.findById(pendingReviewId)).isPresent();
+    }
+
+    @Test
     void adminDeleteReview_writesAuditLog() throws Exception {
         Long toDelete = insertReview(PRODUCT_ID, "To Delete With Audit", 2, "Will be deleted", "PENDING");
+        changeStatus(toDelete, "TRASH");
 
         mockMvc.perform(delete("/api/v1/admin/reviews/" + toDelete)
+                        .param("expectedVersion", String.valueOf(versionOf(toDelete)))
                         .with(remoteAddress("198.51.100.25"))
                         .header("User-Agent", "Phase2C-Delete-Agent")
-                        .header("X-Admin-Permissions", "reviews.write"))
+                        .header("X-Admin-Permissions", "reviews.write")
+                        .header("X-Admin-Role", "SUPER_ADMIN"))
                 .andExpect(status().isNoContent());
 
         AuditLogEntity auditLog = findLatestReviewAudit("REVIEW_DELETED", toDelete)
@@ -795,7 +985,7 @@ class Phase1NReviewsApiTest {
         org.assertj.core.api.Assertions.assertThat(auditLog.getActorId()).isEqualTo(DEV_ADMIN_ID);
         org.assertj.core.api.Assertions.assertThat(auditLog.getResourceType()).isEqualTo("REVIEW");
         org.assertj.core.api.Assertions.assertThat(auditLog.getBeforeData()).contains("\"id\":" + toDelete);
-        org.assertj.core.api.Assertions.assertThat(auditLog.getBeforeData()).contains("\"status\":\"PENDING\"");
+        org.assertj.core.api.Assertions.assertThat(auditLog.getBeforeData()).contains("\"status\":\"TRASH\"");
         org.assertj.core.api.Assertions.assertThat(auditLog.getAfterData()).contains("\"id\":" + toDelete);
         org.assertj.core.api.Assertions.assertThat(auditLog.getAfterData()).contains("\"deleted\":true");
         org.assertj.core.api.Assertions.assertThat(auditLog.getIpAddress()).isEqualTo("198.51.100.25");
@@ -811,7 +1001,9 @@ class Phase1NReviewsApiTest {
         long countBefore = countReviewAudits("REVIEW_DELETED", missingReviewId);
 
         mockMvc.perform(delete("/api/v1/admin/reviews/" + missingReviewId)
-                        .header("X-Admin-Permissions", "reviews.write"))
+                        .param("expectedVersion", "0")
+                        .header("X-Admin-Permissions", "reviews.write")
+                        .header("X-Admin-Role", "SUPER_ADMIN"))
                 .andExpect(status().isNotFound());
 
         org.assertj.core.api.Assertions.assertThat(countReviewAudits("REVIEW_DELETED", missingReviewId))
@@ -860,6 +1052,64 @@ class Phase1NReviewsApiTest {
     }
 
     @Test
+    void adminListReviews_invalidStatusAndHalfStepRating_return400() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/reviews")
+                        .param("status", "UNKNOWN")
+                        .header("X-Admin-Permissions", "reviews.read"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+
+        mockMvc.perform(get("/api/v1/admin/reviews")
+                        .param("rating", "4.2")
+                        .header("X-Admin-Permissions", "reviews.read"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
+    void adminListReviews_searchTreatsWildcardsAsLiteral() throws Exception {
+        Long literalId = insertReview(
+                PRODUCT_ID, "Literal %_! Marker", 2, "Literal search", "PENDING");
+
+        mockMvc.perform(get("/api/v1/admin/reviews")
+                        .param("q", "%_!")
+                        .param("page", "1")
+                        .param("size", "20")
+                        .header("X-Admin-Permissions", "reviews.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value(literalId));
+    }
+
+    @Test
+    void adminReviewListOmitsEmail_detailIncludesEmailAndVersion() throws Exception {
+        ReviewEntity review = reviewRepo.findById(pendingReviewId).orElseThrow();
+        review.setAuthorEmail("detail-only@example.test");
+        reviewRepo.saveAndFlush(review);
+
+        mockMvc.perform(get("/api/v1/admin/reviews")
+                        .param("q", "Reviewer PENDING")
+                        .header("X-Admin-Permissions", "reviews.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].authorEmail").doesNotExist())
+                .andExpect(jsonPath("$.data[0].version").isNumber());
+
+        mockMvc.perform(get("/api/v1/admin/reviews/" + pendingReviewId)
+                        .header("X-Admin-Permissions", "reviews.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.authorEmail").value("detail-only@example.test"))
+                .andExpect(jsonPath("$.data.version").isNumber());
+
+        mockMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(statusBody(pendingReviewId, "SPAM"))
+                        .header("X-Admin-Permissions", "reviews.write"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.authorEmail").doesNotExist())
+                .andExpect(jsonPath("$.data.version").isNumber());
+    }
+
+    @Test
     void adminReviewSummary_countsApprovedAndPendingGlobally() throws Exception {
         long approvedBefore = reviewRepo.countByStatus("APPROVED");
         long pendingBefore = reviewRepo.countByStatus("PENDING");
@@ -875,7 +1125,15 @@ class Phase1NReviewsApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.approved.totalReviews").value(approvedBefore + 2))
                 .andExpect(jsonPath("$.data.approved.averageRating").isNumber())
+                .andExpect(jsonPath("$.data.approved.ratingBreakdown.length()").value(9))
                 .andExpect(jsonPath("$.data.approved.ratingBreakdown['1']").isNumber())
+                .andExpect(jsonPath("$.data.approved.ratingBreakdown['1.5']").isNumber())
+                .andExpect(jsonPath("$.data.approved.ratingBreakdown['2']").isNumber())
+                .andExpect(jsonPath("$.data.approved.ratingBreakdown['2.5']").isNumber())
+                .andExpect(jsonPath("$.data.approved.ratingBreakdown['3']").isNumber())
+                .andExpect(jsonPath("$.data.approved.ratingBreakdown['3.5']").isNumber())
+                .andExpect(jsonPath("$.data.approved.ratingBreakdown['4']").isNumber())
+                .andExpect(jsonPath("$.data.approved.ratingBreakdown['4.5']").isNumber())
                 .andExpect(jsonPath("$.data.approved.ratingBreakdown['5']").isNumber())
                 .andExpect(jsonPath("$.data.pending.totalReviews").value(pendingBefore + 1))
                 .andExpect(jsonPath("$.data.pending.oneStarReviews").value(pendingOneStarBefore + 1));
@@ -888,7 +1146,7 @@ class Phase1NReviewsApiTest {
 
         mockMvc.perform(post("/api/v1/admin/reviews/bulk-status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"ids\":[" + first + "," + second + "],\"status\":\"APPROVED\"}")
+                        .content(bulkStatusBody("APPROVED", first, second))
                         .header("X-Admin-Permissions", "reviews.write"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.affected").value(2));
@@ -896,15 +1154,131 @@ class Phase1NReviewsApiTest {
         org.assertj.core.api.Assertions.assertThat(reviewRepo.findById(first).orElseThrow().getStatus()).isEqualTo("APPROVED");
         org.assertj.core.api.Assertions.assertThat(reviewRepo.findById(second).orElseThrow().getStatus()).isEqualTo("APPROVED");
 
+        mockMvc.perform(post("/api/v1/admin/reviews/bulk-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bulkStatusBody("PENDING", first, second))
+                        .header("X-Admin-Permissions", "reviews.write"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.affected").value(2));
+
+        mockMvc.perform(post("/api/v1/admin/reviews/bulk-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bulkStatusBody("TRASH", first, second))
+                        .header("X-Admin-Permissions", "reviews.write"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.affected").value(2));
+
         mockMvc.perform(post("/api/v1/admin/reviews/bulk-delete")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"ids\":[" + first + "," + second + "]}")
-                        .header("X-Admin-Permissions", "reviews.write"))
+                        .content(bulkDeleteBody(first, second))
+                        .header("X-Admin-Permissions", "reviews.write")
+                        .header("X-Admin-Role", "SUPER_ADMIN"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.affected").value(2));
 
         org.assertj.core.api.Assertions.assertThat(reviewRepo.findById(first)).isEmpty();
         org.assertj.core.api.Assertions.assertThat(reviewRepo.findById(second)).isEmpty();
+    }
+
+    @Test
+    void adminBulkStatus_isBestEffortAndReportsEverySkipReason() throws Exception {
+        Long first = insertReview(PRODUCT_ID, "Bulk Valid", 2, "Bulk", "PENDING");
+        Long stale = insertReview(PRODUCT_ID, "Bulk Stale", 3, "Bulk", "PENDING");
+        long missing = reviewRepo.findAll().stream()
+                .map(ReviewEntity::getId)
+                .max(Long::compareTo)
+                .orElse(0L) + 900_000L;
+        String body = """
+                {"items":[
+                  {"id":%d,"expectedVersion":%d},
+                  {"id":%d,"expectedVersion":%d},
+                  {"id":%d,"expectedVersion":%d},
+                  {"id":%d,"expectedVersion":%d},
+                  {"id":%d,"expectedVersion":0},
+                  {"id":%d,"expectedVersion":%d}
+                ],"status":"SPAM"}
+                """.formatted(
+                first, versionOf(first),
+                first, versionOf(first),
+                stale, versionOf(stale) + 99,
+                approvedReviewId, versionOf(approvedReviewId),
+                missing,
+                spamReviewId, versionOf(spamReviewId));
+
+        mockMvc.perform(post("/api/v1/admin/reviews/bulk-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .header("X-Admin-Permissions", "reviews.write"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.affected").value(1))
+                .andExpect(jsonPath("$.data.skipped[0].reason").value("DUPLICATE_ID"))
+                .andExpect(jsonPath("$.data.skipped[1].reason").value("VERSION_CONFLICT"))
+                .andExpect(jsonPath("$.data.skipped[2].reason").value("INVALID_TRANSITION"))
+                .andExpect(jsonPath("$.data.skipped[3].reason").value("NOT_FOUND"))
+                .andExpect(jsonPath("$.data.skipped[4].reason").value("NO_CHANGE"));
+
+        org.assertj.core.api.Assertions.assertThat(
+                reviewRepo.findById(first).orElseThrow().getStatus()).isEqualTo("SPAM");
+        org.assertj.core.api.Assertions.assertThat(
+                reviewRepo.findById(stale).orElseThrow().getStatus()).isEqualTo("PENDING");
+    }
+
+    @Test
+    void adminBulkDelete_isBestEffortAndRequiresTrashPerItem() throws Exception {
+        Long trash = insertReview(PRODUCT_ID, "Bulk Trash", 2, "Bulk", "PENDING");
+        String uniquePhoto = "/media/reviews/bulk/unique.jpg";
+        String sharedPhoto = "/media/reviews/bulk/shared.jpg";
+        ReviewEntity trashReview = reviewRepo.findById(trash).orElseThrow();
+        trashReview.setPhotos(java.util.List.of(uniquePhoto, sharedPhoto));
+        reviewRepo.saveAndFlush(trashReview);
+        ReviewEntity stillReferenced = reviewRepo.findById(pendingReviewId).orElseThrow();
+        stillReferenced.setPhotos(java.util.List.of(sharedPhoto));
+        reviewRepo.saveAndFlush(stillReferenced);
+        changeStatus(trash, "TRASH");
+        long trashVersion = versionOf(trash);
+        long missing = reviewRepo.findAll().stream()
+                .map(ReviewEntity::getId)
+                .max(Long::compareTo)
+                .orElse(0L) + 800_000L;
+        String body = """
+                {"items":[
+                  {"id":%d,"expectedVersion":%d},
+                  {"id":%d,"expectedVersion":%d},
+                  {"id":%d,"expectedVersion":%d},
+                  {"id":%d,"expectedVersion":0}
+                ]}
+                """.formatted(
+                trash, trashVersion,
+                trash, trashVersion,
+                pendingReviewId, versionOf(pendingReviewId),
+                missing);
+
+        mockMvc.perform(post("/api/v1/admin/reviews/bulk-delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .header("X-Admin-Permissions", "reviews.write")
+                        .header("X-Admin-Role", "SUPER_ADMIN"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.affected").value(1))
+                .andExpect(jsonPath("$.data.skipped[0].reason").value("DUPLICATE_ID"))
+                .andExpect(jsonPath("$.data.skipped[1].reason").value("NOT_IN_TRASH"))
+                .andExpect(jsonPath("$.data.skipped[2].reason").value("NOT_FOUND"));
+
+        org.assertj.core.api.Assertions.assertThat(reviewRepo.findById(trash)).isEmpty();
+        org.assertj.core.api.Assertions.assertThat(reviewRepo.findById(pendingReviewId)).isPresent();
+        org.mockito.Mockito.verify(reviewPhotoStorageService, org.mockito.Mockito.times(1))
+                .deletePhotos(org.mockito.ArgumentMatchers.argThat(
+                        photos -> photos.size() == 1 && photos.contains(uniquePhoto)));
+    }
+
+    @Test
+    void adminBulkStatus_nullItem_returns400() throws Exception {
+        mockMvc.perform(post("/api/v1/admin/reviews/bulk-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"items\":[null],\"status\":\"APPROVED\"}")
+                        .header("X-Admin-Permissions", "reviews.write"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
     }
 
     @Test
@@ -937,7 +1311,7 @@ class Phase1NReviewsApiTest {
     void adminAuditLogList_canFilterReviewResource() throws Exception {
         mockMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"APPROVED\"}")
+                        .content(statusBody(pendingReviewId, "APPROVED"))
                         .header("X-Admin-Permissions", "reviews.write"))
                 .andExpect(status().isOk());
 
@@ -976,13 +1350,14 @@ class Phase1NReviewsApiTest {
     void adminPatchStatus_noAuth_returns401() throws Exception {
         secMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"APPROVED\"}"))
+                        .content(statusBody(pendingReviewId, "APPROVED")))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void adminDeleteReview_noAuth_returns401() throws Exception {
-        secMvc.perform(delete("/api/v1/admin/reviews/" + pendingReviewId))
+        secMvc.perform(delete("/api/v1/admin/reviews/" + pendingReviewId)
+                        .param("expectedVersion", String.valueOf(versionOf(pendingReviewId))))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -1001,7 +1376,7 @@ class Phase1NReviewsApiTest {
 
         secMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"APPROVED\"}")
+                        .content(statusBody(pendingReviewId, "APPROVED"))
                         .header("Authorization", "Bearer " + editorToken))
                 .andExpect(status().isForbidden());
     }
@@ -1013,7 +1388,7 @@ class Phase1NReviewsApiTest {
 
         secMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"APPROVED\"}")
+                        .content(statusBody(pendingReviewId, "APPROVED"))
                         .header("Authorization", "Bearer " + editorToken))
                 .andExpect(status().isForbidden());
 
@@ -1026,6 +1401,7 @@ class Phase1NReviewsApiTest {
         String editorToken = createActiveAdminAndToken("EDITOR");
 
         secMvc.perform(delete("/api/v1/admin/reviews/" + pendingReviewId)
+                        .param("expectedVersion", String.valueOf(versionOf(pendingReviewId)))
                         .header("Authorization", "Bearer " + editorToken))
                 .andExpect(status().isForbidden());
     }
@@ -1036,6 +1412,7 @@ class Phase1NReviewsApiTest {
         long countBefore = countReviewAudits("REVIEW_DELETED", pendingReviewId);
 
         secMvc.perform(delete("/api/v1/admin/reviews/" + pendingReviewId)
+                        .param("expectedVersion", String.valueOf(versionOf(pendingReviewId)))
                         .header("Authorization", "Bearer " + editorToken))
                 .andExpect(status().isForbidden());
 
@@ -1080,6 +1457,9 @@ class Phase1NReviewsApiTest {
         review.setRating(BigDecimal.valueOf(rating));
         review.setBody(body);
         review.setStatus(status);
+        if ("APPROVED".equals(status)) {
+            review.setFirstApprovedAt(createdAt);
+        }
         review.setCreatedAt(createdAt);
         review.setUpdatedAt(createdAt);
         return reviewRepo.save(review).getId();
@@ -1099,7 +1479,6 @@ class Phase1NReviewsApiTest {
         entity.setSlug("review-sync-" + slugSeed + "-" + unique);
         entity.setName("Review Sync " + nameSuffix);
         entity.setSku(source.getSku());
-        entity.setCategory(source.getCategory());
         entity.setBrand(source.getBrand());
         entity.setRetailPrice(source.getRetailPrice());
         entity.setSalePrice(source.getSalePrice());
@@ -1148,6 +1527,48 @@ class Phase1NReviewsApiTest {
                 .filter(log -> "REVIEW".equals(log.getResourceType()))
                 .filter(log -> contains(log.getBeforeData(), reviewIdSnippet) || contains(log.getAfterData(), reviewIdSnippet))
                 .count();
+    }
+
+    private long versionOf(Long reviewId) {
+        return reviewRepo.findById(reviewId)
+                .map(ReviewEntity::getVersion)
+                .orElseThrow(() -> new AssertionError("Expected review " + reviewId));
+    }
+
+    private String statusBody(Long reviewId, String status) {
+        return "{\"status\":\"" + status + "\",\"expectedVersion\":" + versionOf(reviewId) + "}";
+    }
+
+    private void changeStatus(Long reviewId, String status) throws Exception {
+        mockMvc.perform(patch("/api/v1/admin/reviews/" + reviewId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(statusBody(reviewId, status))
+                        .header("X-Admin-Permissions", "reviews.write"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());
+    }
+
+    private String bulkStatusBody(String status, Long... reviewIds) {
+        return "{\"items\":" + versionedItemsJson(reviewIds) + ",\"status\":\"" + status + "\"}";
+    }
+
+    private String bulkDeleteBody(Long... reviewIds) {
+        return "{\"items\":" + versionedItemsJson(reviewIds) + "}";
+    }
+
+    private String versionedItemsJson(Long... reviewIds) {
+        StringBuilder body = new StringBuilder("[");
+        for (int index = 0; index < reviewIds.length; index++) {
+            if (index > 0) {
+                body.append(',');
+            }
+            Long id = reviewIds[index];
+            body.append("{\"id\":")
+                    .append(id)
+                    .append(",\"expectedVersion\":")
+                    .append(versionOf(id))
+                    .append('}');
+        }
+        return body.append(']').toString();
     }
 
     private RequestPostProcessor remoteAddress(String remoteAddress) {

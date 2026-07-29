@@ -24,7 +24,18 @@ export function MobileCardList({ children, className }) {
  *  - selectable/selected/onSelectChange: khi selectable, hiện Checkbox chọn dòng ở đầu card
  *    (khôi phục năng lực bulk trên mobile — desktop dùng cột checkbox trong bảng)
  */
-export function MobileCard({ title, subtitle, status, meta = [], actions, onClick, selectable = false, selected = false, onSelectChange }) {
+export function MobileCard({
+  title,
+  subtitle,
+  status,
+  meta = [],
+  actions,
+  onClick,
+  selectable = false,
+  selected = false,
+  onSelectChange,
+  selectionLabel = 'Chọn hàng',
+}) {
   function valueClass(tone) {
     if (tone === 'strong') return 'mobile-card-meta-value mobile-card-meta-value--strong'
     if (tone === 'danger') return 'mobile-card-meta-value mobile-card-meta-value--danger'
@@ -37,11 +48,11 @@ export function MobileCard({ title, subtitle, status, meta = [], actions, onClic
     <>
       {(title || subtitle || status) && (
         <div className="mobile-card-head">
-          <div>
-            {title ? <p className="mobile-card-title">{title}</p> : null}
-            {subtitle ? <p className="mobile-card-subtitle">{subtitle}</p> : null}
+          <div className="min-w-0 flex-1">
+            {title ? <div className="mobile-card-title break-words">{title}</div> : null}
+            {subtitle ? <div className="mobile-card-subtitle break-words [overflow-wrap:anywhere]">{subtitle}</div> : null}
           </div>
-          {status}
+          {status ? <div className="shrink-0">{status}</div> : null}
         </div>
       )}
       {meta.length > 0 && (
@@ -77,7 +88,7 @@ export function MobileCard({ title, subtitle, status, meta = [], actions, onClic
             <Checkbox
               checked={selected}
               onCheckedChange={onSelectChange}
-              aria-label="Chọn hàng"
+              aria-label={selectionLabel}
               className="mt-0.5 shrink-0"
             />
             <div className="min-w-0 flex-1">{main}</div>

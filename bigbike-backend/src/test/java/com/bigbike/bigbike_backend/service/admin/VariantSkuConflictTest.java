@@ -10,7 +10,9 @@ import com.bigbike.bigbike_backend.api.admin.dto.VariantRequest;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.repository.catalog.CatalogReadRepository;
@@ -62,10 +64,12 @@ class VariantSkuConflictTest {
 
     @Autowired ProductMutationService mutationService;
     @Autowired CatalogReadRepository readRepository;
+    @Autowired BrandJpaRepository brandRepo;
     @Autowired CategoryJpaRepository categoryRepo;
     @Autowired ProductVariantJpaRepository variantRepo;
 
     private CategoryEntity category;
+    private BrandEntity brand;
 
     @BeforeEach
     void setup() {
@@ -74,9 +78,20 @@ class VariantSkuConflictTest {
             c.setId("test-cat-vsku");
             c.setSlug("test-cat-vsku");
             c.setName("Test Cat VSku");
+            c.setVisible(true);
             c.setCreatedAt(Instant.now());
             c.setUpdatedAt(Instant.now());
             return categoryRepo.save(c);
+        });
+        brand = brandRepo.findBySlug("test-brand-vsku").orElseGet(() -> {
+            BrandEntity entity = new BrandEntity();
+            entity.setId("test-brand-vsku");
+            entity.setSlug("test-brand-vsku");
+            entity.setName("Test Brand VSku");
+            entity.setVisible(true);
+            entity.setCreatedAt(Instant.now());
+            entity.setUpdatedAt(Instant.now());
+            return brandRepo.save(entity);
         });
     }
 
@@ -164,8 +179,11 @@ class VariantSkuConflictTest {
         request.setSlug(slug);
         request.setName(name);
         request.setCategoryId(category.getId());
+        request.setBrandId(brand.getId());
+        request.setGender("Unisex");
+        request.setSku("SKU-" + slug);
         request.setRetailPrice(new BigDecimal("1000000"));
-        request.setPublishStatus(PublishStatus.PUBLISHED);
+        request.setPublishStatus(PublishStatus.DRAFT);
         request.setTranslations(englishName(name + " EN"));
         return request;
     }

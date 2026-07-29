@@ -54,11 +54,12 @@ File này liên quan trực tiếp đến:
 | Category | `deleted` + `isVisible` | `deleted`: `false`, `true`; `isVisible`: `true`, `false` | `deleted` is the independent Trash lifecycle; `isVisible` independently controls storefront display. Soft-delete/restore cascade the tree; hiding is rejected when a direct child remains visible. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `CategoryMutationService.java`, `CatalogReadService.java` |
 | Brand | `visible` | `true`, `false` | Delete sets visible false; public only visible. | Backend service | `CONFIRMED_BACKEND_ENFORCED` for visibility; no full transition map | `BrandMutationService.java`, `CatalogReadService.java` |
 | Order | `status` | `PENDING`, `PROCESSING`, `COMPLETED`, `CANCELLED` | Một state machine duy nhất; không còn shipment-tracking metadata (đã gỡ bỏ 2026-07-23). | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java`, `CheckoutService.java` |
-| Payment record | `status` on Payment | Payment record giữ lifecycle kỹ thuật nội bộ để lưu snapshot giao dịch; không tạo thêm trục trạng thái trên Order. | Không dùng để điều khiển chuyển trạng thái đơn. | Backend service | `STATUS_ONLY` | `CheckoutService.java`, payment persistence |
+| Payment record | `status` on Payment | `PENDING`, `SUCCEEDED`, `FAILED`, `CANCELLED` | Snapshot đối soát đọc-chỉ; không tạo thêm trục trạng thái trên Order và không điều khiển chuyển trạng thái đơn. | Backend service + DB constraint | `STATUS_ONLY` | `CheckoutService.java`, `WordPressOrderMapper.java`, payment persistence |
 | Inventory / Stock | `stockState`, availability flag | `IN_STOCK`, `OUT_OF_STOCK` | `stockState` mirrors the boolean availability toggle (V261). New variants default available; a new no-variant product defaults `IN_STOCK` unless admin marks it Hết. Selling/cancelling does not change availability. | Backend policy/service | `CONFIRMED_BACKEND_ENFORCED` | `ProductStockState.java`, `InventoryPolicyService.java`, `ProductMutationService.java`, `CheckoutService.java`, `BUSINESS_RULES.md` STOCK_RULE_001–009 |
 | Admin User | `status`, `role` | Status: `INVITED`, `ACTIVE`, `DISABLED`, `SUSPENDED`; Roles: `SUPER_ADMIN`, `ADMIN`, `EDITOR`, `SHOP_MANAGER` (built-in, V211) + custom roles. New users start `INVITED` (no password) and become `ACTIVE` on accepting an email invite. | Status/role update validation; self-deactivation and Super Admin demotion guardrails; invite token lifecycle. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminAdminUsersService.java`, `AdminInviteService.java`, `SecurityConfig.java` |
 | Content Article | `publishStatus` | Same `PublishStatus` enum; active values: `DRAFT`, `PUBLISHED`, `TRASH`; legacy `HIDDEN`/`ARCHIVED`/`PENDING`/`PRIVATE` all migrated to `DRAFT` (V324). | Publish transitions enforced on update (DRAFT ↔ PUBLISHED both directions); delete sequences `PUBLISHED → DRAFT → TRASH` in one request (soft-delete, restore `TRASH` → `DRAFT`). | Backend service | `CONFIRMED_BACKEND_ENFORCED`; public filtering `NEEDS_VERIFICATION` | `AdminContentController.java`, `AdminContentMutationService.java`, `AdminMutationValidators.java` |
 | Media | `status` | `ACTIVE`, `INACTIVE`, `DELETED` | Upload creates `ACTIVE`; update validates allowed statuses; soft-delete sets `DELETED`; restore sets `ACTIVE`; hard-delete removes row/object. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminMediaService.java` |
+| Review | `status` | `PENDING`, `APPROVED`, `SPAM`, `TRASH` | New public review starts `PENDING`; moderation follows the controlled graph in §15A; `TRASH` is restorable and permanent deletion is a separate Super Admin action. | Backend service + optimistic version | `OWNER_CONFIRMED_2026-07-28` | `BUSINESS_RULES.md` `REVIEW_RULE_009`/`010`, `AdminReviewService.java` |
 | Notification | `admin_notification_reads.lastReadAt` per admin | Shared notification backlog + per-admin read/unread state. Response `isRead` is derived for the caller; legacy shared `admin_notifications.is_read` is unused. | `mark-all-read` advances only the caller's high-water mark; no shared row is mutated and no backlog is removed. | Backend service | `CONFIRMED_FROM_CODE` | `AdminNotificationService.java`, `AdminNotificationController.java`, `V339__admin_notification_per_admin_read_state.sql`, `AdminNotificationServiceTest.java` |
 | Settings | No lifecycle state confirmed | Public/private behavior exists in docs/controllers; no state machine confirmed. | N/A | `STATUS_ONLY` / `NEEDS_VERIFICATION` | `AdminSettingsController`, `PublicSettingsController`, `PHASE_1J...` |
 
@@ -89,8 +90,10 @@ Legacy values (còn trong enum cho backward compat với dữ liệu cũ, không
 
 ### Initial State
 
-- Create product yêu cầu `publishStatus` trong request.
-- Trong patch logic, nếu create mà request không có publishStatus thì fallback `DRAFT`, nhưng validate create yêu cầu publishStatus nên fallback chủ yếu là safety fallback.
+- `POST /api/v1/admin/products` chỉ tạo `DRAFT`. Payload không được dùng để
+  xuất bản ngay.
+- Xuất bản là thao tác riêng từ Product List, qua
+  `PATCH /api/v1/admin/products/{id}/publish`.
 
 ### Terminal States
 
@@ -106,9 +109,9 @@ Admin live preview (`POST /api/v1/admin/products/preview`) render nội dung nh�
 
 | From | To | Actor / Role | Preconditions | Side Effects | Enforcement | Evidence |
 |---|---|---|---|---|---|---|
-| `DRAFT` | `PUBLISHED` | Admin / role có `products.update` | Product exists; transition request valid. | Product có thể public nếu public read filter trả `PUBLISHED`. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java`, `ProductMutationService.java` |
+| `DRAFT` | `PUBLISHED` | Admin / role có `products.update` | Chỉ qua endpoint `/publish`; sản phẩm đạt publish-readiness, gồm danh mục/thương hiệu thật thay vì placeholder. | Product có thể public nếu public read filter trả `PUBLISHED`. | `CONFIRMED_BACKEND_ENFORCED` | `PRODUCT_RULE_005`, `PRODUCT_RULE_009`, `PRODUCT_RULE_010`, `AdminMutationValidators.java`, `ProductMutationService.java` |
 | `DRAFT` | `TRASH` | Admin / role có `products.update` | Product exists. | Soft-delete. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java`, `ProductMutationService.java` |
-| `PUBLISHED` | `DRAFT` | Admin / role có `products.update` | Product exists. | Product bị loại khỏi public vì public chỉ trả `PUBLISHED`. Cho phép trực tiếp từ 2026-07-07 (trước đó phải qua `HIDDEN`). | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java`, `CatalogReadService.java` |
+| `PUBLISHED` | `DRAFT` | Admin / role có `products.update` | Chỉ qua endpoint `/publish`. | Product bị loại khỏi public vì public chỉ trả `PUBLISHED`. Cho phép trực tiếp từ 2026-07-07 (trước đó phải qua `HIDDEN`). | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java`, `CatalogReadService.java` |
 | `PUBLISHED` | `TRASH` | Admin / role có `products.update` | Product exists. | Soft-delete: service tự sequence `PUBLISHED → DRAFT → TRASH` trong cùng transaction/request — admin chỉ thấy 1 click, không có bước trung gian hiển thị. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java`, `ProductMutationService.java` |
 | `TRASH` | `DRAFT` | Admin / role có `products.update` | Product in trash. | Restore into draft. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java` |
 | `HIDDEN` / `ARCHIVED` / `PENDING` / `PRIVATE` (legacy source) | `DRAFT` | Admin / role có `products.update` | Product exists (residual pre-migration record). | Escape path duy nhất về active state. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java` |
@@ -118,15 +121,20 @@ Admin live preview (`POST /api/v1/admin/products/preview`) render nội dung nh�
 
 | From | To | Reason | Enforcement | Evidence |
 |---|---|---|---|---|
-| `DRAFT` | `PUBLISHED` (skip) | Không đi thẳng DRAFT→PUBLISHED nếu muốn review trước; nhưng hiện tại business cho phép. | Không bị block. | `AdminMutationValidators.java` |
+| `DRAFT` | `PUBLISHED` qua `POST`/`PATCH` upsert | Upsert chỉ lưu nội dung; xuất bản phải qua endpoint `/publish` từ Product List. | Backend rejects. | `PRODUCT_RULE_010`, `AdminMutationValidators.java`, `ProductMutationService.java` |
+| `DRAFT` | `DRAFT` qua update | Lưu nội dung, không phải transition. | Backend giữ nguyên `DRAFT`. | `ProductMutationService.java` |
+| `PUBLISHED` | `PUBLISHED` qua update | Lưu nội dung đã xuất bản, không phải transition. | Backend giữ nguyên `PUBLISHED`. | `ProductMutationService.java` |
 | any | `HIDDEN` / `ARCHIVED` / `PENDING` / `PRIVATE` | Legacy values, không được set qua admin API (kể cả `HIDDEN`, từ 2026-07-07). | Backend rejects với `RESERVED_PUBLISH_STATUS`. | `AdminMutationValidators.java` |
 | `TRASH` | anything except `DRAFT` | Restore từ trash chỉ được về DRAFT. | Backend rejects. | `AdminMutationValidators.java` |
 | any state | same state | No-op; không phải transition. | Backend không báo lỗi. | `AdminMutationValidators.java` |
 
 ### Frontend Behavior
 
-- Admin routes/actions exist for products in `bigbike-admin/README.md` and `bigbike-admin/src/lib/adminApi.js`.
-- Specific UI button visibility by `publishStatus` needs dedicated UI audit.
+- Product Detail chỉ tạo/lưu nội dung; không có nút xuất bản hoặc chuyển về
+  nháp.
+- Product List sở hữu checklist và thao tác `DRAFT ↔ PUBLISHED`.
+- Người chỉ có `products.read` xem được danh sách/chi tiết nhưng không thấy
+  mutation controls.
 - Public web visibility is backend-enforced by `CatalogReadService`, not just UI.
 
 ### Backend Enforcement
@@ -137,14 +145,18 @@ Admin live preview (`POST /api/v1/admin/products/preview`) render nội dung nh�
 
 ### Test Coverage
 
-- Direct transition test files were not found by targeted search in this task.
-- Status: `MISSING_TEST_COVERAGE`.
+- Backend transition tests cover create/update status retention, publish and
+  unpublish through the dedicated action, reserved-state rejection, trash and
+  restore.
+- Product List/Detail screen tests cover ownership of the publish action and
+  read-only behavior.
+- Status: `CONFIRMED_TEST_COVERAGE`.
 
 ### Needs Verification
 
-- Admin UI behavior by status.
-- Whether `PENDING`/`PRIVATE` are only WordPress-import states or can be created manually.
-- DB enum/schema constraints.
+- DB constraints still accept some removed legacy enum values; runtime validation
+  rejects them. Tightening those constraints requires a dedicated data migration
+  audit.
 
 ## 5. Category / Brand State Machine
 
@@ -308,9 +320,11 @@ From checkout behavior:
 - Fresh tests for every allowed and forbidden transition.
 - Migration verification against the production order snapshot before applying V350.
 
-## 7. Payment State Machine — Removed
+## 7. Order-level Payment State Machine — Removed
 
-Order-level payment state is no longer part of the contract. Payment records may retain their technical persistence status for audit/snapshot purposes, but no payment status is stored on or exposed from `OrderEntity`, and no payment-state transition endpoint exists.
+Order-level payment state is no longer part of the contract. No payment status is stored on or exposed from `OrderEntity`, and no payment-state transition endpoint exists.
+
+The separate `payments` snapshot rows remain readable in order detail. Their technical status vocabulary is fixed to `PENDING`, `SUCCEEDED`, `FAILED`, `CANCELLED` (`PAY_RULE_003`). These values are historical/reconciliation metadata only: the admin cannot transition them, and they never permit or block an order transition.
 
 ## 8. Shipping / Fulfillment State Machine — Removed
 
@@ -441,6 +455,8 @@ Custom role support exists through role repository/controller.
 | `SUPER_ADMIN` self role | not `SUPER_ADMIN` | Prevent self-demotion. | Backend rejects. | `AdminAdminUsersService.java` |
 | last active `SUPER_ADMIN` | not `SUPER_ADMIN` | Prevent losing final Super Admin. | Backend rejects. | `AdminAdminUsersService.java` |
 | any status | unknown status | Must be `INVITED`, `ACTIVE`, `DISABLED`, or `SUSPENDED`. | Backend rejects. | `AdminAdminUsersService.java` |
+| any status | `INVITED` through admin PATCH | `INVITED` is created only by the invite flow; setting it manually would lock an account without issuing a usable invite. | Backend rejects. | `AdminAdminUsersService.java` |
+| `INVITED` | any status through admin PATCH | Activation must consume a valid invite token and set a password atomically; admin PATCH cannot bypass that flow. | Backend rejects. | `AdminAdminUsersService.java` |
 | `INVITED` | login | Account has no password until invite accepted. | Login rejected (no password hash). | `AdminAuthService.login` |
 | any role | invalid role | Must be built-in or custom role existing in role repository. | Backend rejects. | `AdminAdminUsersService.java` |
 
@@ -642,7 +658,74 @@ Order events are persisted in a shared admin notification backlog so staff who w
 - Archive/delete state is not part of the current notification contract.
 - Email delivery status not tracked in repo.
 
-## 15. Cross-Entity State Dependencies
+## 15. Customer Account Status State Machine
+
+### 15.1 Stored states
+
+| State | Meaning | Authentication/session behavior |
+|---|---|---|
+| `ACTIVE` | Account may operate normally. | Login and an otherwise-valid active session are allowed. |
+| `DISABLED` | Account disabled by an admin. | Login is rejected; all active sessions are revoked when the status is set. |
+| `PENDING` | Registration/verification is not complete. | Login is rejected; all active sessions are revoked when the status is set. |
+| `BLOCKED` | Account blocked by an admin. | Login is rejected; all active sessions are revoked when the status is set. |
+
+`INACTIVE` is not a stored state. It is only a computed customer segment label for a customer with no qualifying orders.
+
+### 15.2 Admin transition contract
+
+For a non-synthetic customer, `PATCH /api/v1/admin/customers/{customerId}/status` may set any current state to any one of the four stored states above. An unknown or blank status returns `400 VALIDATION_ERROR`; the backend never persists it. Setting any non-`ACTIVE` target revokes all active customer sessions immediately.
+
+A synthetic customer imported from guest-order data cannot transition to a different stored status; such an attempt returns `409 CONFLICT`. Correcting its `displayName` or `phone` does not change this restriction.
+
+The optional `reason` is limited to 1000 characters and is written only to the `CUSTOMER_STATUS_UPDATED` audit entry together with the before/after status. It is not a customer-row field.
+
+Status: `CONFIRMED_BACKEND_ENFORCED` for the four stored statuses, validation, audit-only reason, authentication rejection, and session revocation. The synthetic-customer no-transition guard is `CONFIRMED_FROM_OWNER_DECISION` (2026-07-28).
+
+Evidence:
+
+- `CUSTOMER_RULE_001`–`CUSTOMER_RULE_003`, `CUSTOMER_RULE_007`
+- `CustomerStatus.java`
+- `AdminCustomerService.updateCustomerStatus`
+- `CustomerSessionFilter.java`
+- `Phase1I1CustomerStatusLoginTest.java`
+
+## 15A. Review Moderation State Machine
+
+### State field and initial state
+
+`reviews.status` accepts `PENDING`, `APPROVED`, `SPAM`, `TRASH`. A review
+submitted through the public API always starts at `PENDING`.
+
+### Allowed transitions
+
+| From | To | Preconditions / actor | Side effects |
+|---|---|---|---|
+| `PENDING` | `APPROVED` | `reviews.write`; current `expectedVersion` | Makes the review public and recomputes the product rating. The first approval only sets the durable first-approval marker and queues one approval email after commit. |
+| `PENDING` | `SPAM` | `reviews.write`; current `expectedVersion` | Removes the review from the moderation queue; never public. |
+| `PENDING` | `TRASH` | `reviews.write`; current `expectedVersion` | Moves the review into the restorable trash. |
+| `APPROVED` | `PENDING` | `reviews.write`; current `expectedVersion` | Hides the review and recomputes the product rating. |
+| `SPAM` | `PENDING` | `reviews.write`; current `expectedVersion` | Restores the review to the moderation queue. |
+| `TRASH` | `PENDING` | `reviews.write`; current `expectedVersion` | Restores the review to the moderation queue. |
+| any | same state | `reviews.write`; current `expectedVersion` | No-op: no version/update timestamp/audit/recompute/revalidation/email change. |
+| `TRASH` | physically deleted | Exact built-in role `SUPER_ADMIN` **and** `reviews.write`; current `expectedVersion` | Permanently deletes the row. Review-photo cleanup runs after commit and remains reference-safe for legacy shared URLs. |
+
+Every other status edge is forbidden. In particular, `APPROVED`, `SPAM` and
+`TRASH` cannot jump directly to each other; they must first return to `PENDING`.
+Permanent deletion from `PENDING`, `APPROVED` or `SPAM` is forbidden.
+
+### Concurrency and bulk behavior
+
+List/detail responses expose `version`. Every single mutation and every bulk item
+must echo it as `expectedVersion`; stale data returns `409
+CONCURRENT_MODIFICATION`. Bulk is best-effort per item, deduplicates IDs, counts
+only distinct successful changes in `affected`, and exposes deterministic
+`skipped[]` reasons (`DUPLICATE_ID`, `NOT_FOUND`, `VERSION_CONFLICT`,
+`INVALID_TRANSITION`, `NOT_IN_TRASH`, `NO_CHANGE`).
+
+Status: `OWNER_CONFIRMED_2026-07-28`. Canonical rules:
+`BUSINESS_RULES.md` `REVIEW_RULE_009` and `REVIEW_RULE_010`.
+
+## 16. Cross-Entity State Dependencies
 
 | Source Entity | Source State | Affected Entity | Required / Resulting State | Reason | Status |
 |---|---|---|---|---|---|
@@ -653,13 +736,13 @@ Order events are persisted in a shared admin notification backlog so staff who w
 | Order | `CANCELLED` | Inventory | No stock change (V261). | Availability is a manual boolean — cancelling does not restore quantity. | `CONFIRMED_FROM_CODE` |
 | Order | `COMPLETED` | Order timestamps | `completedAt` set if null. | Record completion time. | `CONFIRMED_BACKEND_ENFORCED` |
 | Order | `CANCELLED` | Order timestamps | `cancelledAt` set if null. | Record cancellation time. | `CONFIRMED_BACKEND_ENFORCED` |
-| Payment | `PAID` | Payment record | Payment record can be set `SUCCEEDED`; paidAt set. | Reflect successful payment. | `CONFIRMED_BACKEND_ENFORCED` |
+| Payment record | `SUCCEEDED` | Payment snapshot | `paidAt` may be present for a successful historical/manual record. | Read-only reconciliation metadata; no effect on order state. | `STATUS_ONLY` |
 | Content | `PUBLISHED` | Public Web / SEO | `publishedAt` set; web revalidation triggered. | Public content lifecycle. | `CONFIRMED_BACKEND_ENFORCED`; public filtering `NEEDS_VERIFICATION` |
 | Media | `DELETED` | Media Library | Excluded by default from admin media list. | Avoid showing deleted media. | `CONFIRMED_BACKEND_ENFORCED` |
 | Admin User | `DISABLED` / `SUSPENDED` | Auth/API | Blocks login (`AdminAuthService.login`) **and every subsequent authenticated request**, not just login. | Security — fixed 2026-07-06: `JwtAuthFilter` now re-checks the admin's current status/role from DB (cached, evicted on write) on every request instead of trusting the JWT claims alone, so a lock/suspend/demote takes effect on the admin's very next request instead of surviving up to the ~15min access-token TTL. | `CONFIRMED_BACKEND_ENFORCED` — `JwtAuthFilter.java`, `AdminAccountStatusService.java`, `AdminAdminUsersService.java` (evicts cache on status/role change) |
 | ~~Shipping Method~~ | — | — | **REMOVED 2026-06-23** (`SHIP_RULE_001`): shipping-method management dropped (V264); no shipping choice or fee at checkout. | — | `REMOVED` |
 
-## 16. Invalid Transition Policy
+## 17. Invalid Transition Policy
 
 - Transition không nằm trong allowed transition map phải bị backend reject.
 - Unknown status phải bị backend reject với validation error.
@@ -670,7 +753,7 @@ Order events are persisted in a shared admin notification backlog so staff who w
 - Durable side effects such as notifications/audit records must remain in the transactional service flow when they affect persisted data. Inventory has no sale/cancel restore side effect under the manual boolean model.
 - **Audit log là best-effort, non-blocking:** ghi qua `AuditLogWriter` trong một giao dịch RIÊNG (`REQUIRES_NEW`) có bọc try/catch. Lỗi ghi nhật ký KHÔNG được rollback hay làm hỏng thao tác nghiệp vụ chính (`AuditLogWriter.java`, `AuditLogPersister.java`).
 
-## 17. Backend Enforcement Requirements
+## 18. Backend Enforcement Requirements
 
 | Requirement | Applies To | Current Evidence | Status |
 |---|---|---|---|
@@ -682,7 +765,7 @@ Order events are persisted in a shared admin notification backlog so staff who w
 | Invalid transition error clear. | Product/order/payment/admin user/media. | Validation/conflict messages present. | `CONFIRMED_BACKEND_ENFORCED` |
 | Positive/negative tests cover transitions. | All critical state machines. | Direct tests not found by targeted search. | `MISSING_TEST_COVERAGE` |
 
-## 18. Test Coverage Requirements
+## 19. Test Coverage Requirements
 
 | Entity | Transition | Positive Test | Negative Test | Status |
 |---|---|---|---|---|
@@ -691,19 +774,20 @@ Order events are persisted in a shared admin notification backlog so staff who w
 | Category | Hide category without visible children | Needed | Needed for visible child conflict | `MISSING_TEST_COVERAGE` |
 | Brand | Visible true/false public filtering | Needed | Needed | `MISSING_TEST_COVERAGE` |
 | Order | Allowed order transitions map, including `PROCESSING -> COMPLETED` | `Phase1HAdminOrderApiTest` covers allowed transitions and `cancelledAt`/audit side effects | The same test covers `CANCELLED`/`COMPLETED` terminal guards | `CONFIRMED_TEST_COVERAGE` |
-| Payment record | Technical payment-record persistence | Needed | Verify historical snapshot fields remain readable | `PARTIAL_TEST_COVERAGE` |
+| Payment record | Canonical `PENDING`/`SUCCEEDED`/`FAILED`/`CANCELLED` persistence | Verify new checkout/import rows and legacy normalization | Reject non-canonical DB values; historical snapshots remain readable | `PARTIAL_TEST_COVERAGE` |
 | Inventory | Availability boolean toggle | Per-variant `isAvailable` checkout gate covered by checkout API tests | Availability-toggle endpoint tests still needed (V261) | `PARTIAL_TEST_COVERAGE` |
 | Admin User | `ACTIVE -> DISABLED/SUSPENDED`, restore to active | Needed | Needed for self-deactivation/Super Admin demotion | `MISSING_TEST_COVERAGE` |
 | Content | Publish transitions and delete to archive | Needed | Needed for forbidden transitions | `MISSING_TEST_COVERAGE` |
 | Media | Upload active, update inactive/deleted, restore active, hard delete | Needed | Needed for invalid status/MIME/size | `MISSING_TEST_COVERAGE` |
 | Notification | Per-admin read/unread high-water mark | `markAllRead_isPerAdmin_doesNotClearUnreadForOtherAdmins`, `inbox_keepsBacklogVisibleAfterMarkAllRead` | Cross-admin isolation assertions in the same suite | `CONFIRMED_TEST_COVERAGE` (`AdminNotificationServiceTest`) |
+| Customer | Real-customer changes among all four stored statuses; non-active session revocation | `Phase1IAdminManagementApiTest`, `Phase1I1CustomerStatusLoginTest` | Unknown status and synthetic status-change conflict covered by Customer Admin audit tests | `CONFIRMED_TEST_COVERAGE` |
 
 Notes:
 
 - Targeted tests are cited above for fulfillment and per-admin notification state. This file is not evidence that the full backend suite is green; full-suite stale failures are tracked separately at AUD-046.
 - Existing phase reports remain historical context, not a substitute for current targeted tests.
 
-## 19. Missing / Not Confirmed State Machines
+## 20. Missing / Not Confirmed State Machines
 
 | Entity / State Machine | Status | Gap |
 |---|---|---|
@@ -711,12 +795,11 @@ Notes:
 | Shipping Provider/Tracking automation | `NOT_FOUND_IN_REPO` | No carrier integration found; shipment-tracking metadata was removed entirely (2026-07-23). |
 | Serial lifecycle | `REMOVED` | Serial-number tracking was removed platform-wide (2026-06-23, V259). There is no serial lifecycle. Inventory is manual boolean availability only. |
 | Settings lifecycle | `STATUS_ONLY` / `NEEDS_VERIFICATION` | Settings APIs exist; no state machine confirmed. |
-| Review moderation lifecycle | `NEEDS_VERIFICATION` | Review controllers exist in prior docs, but review status transitions not audited here. |
-| Customer account status lifecycle | `NEEDS_VERIFICATION` | Customer auth exists, but customer status/disable lifecycle not confirmed. |
+| Review moderation lifecycle | `CONFIRMED_OWNER_RULE` | Controlled graph, optimistic concurrency, trash restore and Super-Admin-only permanent deletion are specified in §15A and `REVIEW_RULE_009`/`010`. |
 | Admin role lifecycle | `STATUS_ONLY` / `NEEDS_VERIFICATION` | Custom role CRUD exists, but role active/inactive lifecycle not confirmed. |
 | POS order lifecycle | `REMOVED` | POS (point of sale / walk-in / `IN_STORE`) was removed platform-wide (owner decision 2026-06-23, online-only). There is no longer a POS create-order path, no auto-complete-at-counter order, and no `IN_STORE` fulfillment branch. Every order now flows through the online order + delivery state machines above. |
 
-## 20. Evidence Summary
+## 21. Evidence Summary
 
 | Entity | Evidence Path | What It Proves | Confidence |
 |---|---|---|---|
@@ -726,6 +809,7 @@ Notes:
 | Public product/category/brand visibility | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/catalog/CatalogReadService.java` | Product `PUBLISHED` and category/brand visible filters. | High |
 | Order/payment transitions | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminOrderService.java` | Order/payment allowed transition maps, timestamps, audit, notification/websocket side effects. (No stock restore — availability is a manual boolean, V261.) | High |
 | Checkout initial state | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java` | Manual `COD`/`BANK_TRANSFER` initial order state, payment-record snapshot, per-variant `isAvailable` gate, order creation. Legacy BACS/null remains read-compatible only. (No quantity decrement — V261.) | High |
+| Customer account status | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCustomerService.java`, `service/customer/CustomerSessionService.java`, `security/CustomerSessionFilter.java` | Four allowed stored statuses, validation, synthetic-customer transition guard, non-active session revocation, and authentication rejection. | High |
 | Inventory states | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/domain/catalog/ProductStockState.java` | Product stock states. | High |
 | Inventory availability | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminInventoryController.java` | Per-variant / per-product boolean availability toggle (V261); `stockState` mirrors it. | High |
 | Content state | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminContentController.java` | Admin content accepted status filters and permission boundary. | Medium-High |
@@ -737,7 +821,7 @@ Notes:
 | Existing workflow overview | `docs/business/WORKFLOW_OVERVIEW.md` | Workflow context and cross-entity side effects. | High |
 | Existing role doc | `docs/business/USER_ROLES.md` | Actor/role context for transitions. | High |
 
-## 21. Known Ambiguities / Needs Verification
+## 22. Known Ambiguities / Needs Verification
 
 1. Product/content both use shared `PublishStatus`; content admin controller status regex now exposes only `DRAFT`, `PUBLISHED`, `TRASH` for filters (`HIDDEN` removed 2026-07-07 — legacy-only, no live rows after V324). DTO acceptance for legacy `PENDING`, `PRIVATE`, `HIDDEN` as mutation targets is confirmed rejected via `RESERVED_PUBLISH_STATUS`.
 2. Product public visibility is confirmed in `CatalogReadService`, but cache/revalidation/public UI behavior should be verified.
@@ -753,7 +837,7 @@ Notes:
 12. Frontend hide/disable action behavior by status was not deeply audited in this task.
 13. Targeted fulfillment and notification tests were run for the documented fixes; do not treat this file as full-suite green-build evidence (see AUD-046).
 
-## 22. Relationship With Other Docs
+## 23. Relationship With Other Docs
 
 | Document | Relationship |
 |---|---|

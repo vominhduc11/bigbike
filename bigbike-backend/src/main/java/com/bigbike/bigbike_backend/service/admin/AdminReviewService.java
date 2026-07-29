@@ -4,6 +4,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.review.AdminReviewSummaryRespon
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
@@ -14,6 +15,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepo
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.email.EmailDispatchService;
+import com.bigbike.bigbike_backend.service.public_.ReviewPhotoStorageService;
 import com.bigbike.bigbike_backend.service.review.ReviewRatingLevels;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import java.math.BigDecimal;
@@ -21,27 +23,42 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.thymeleaf.context.Context;
 
 @Service
+@Slf4j
 public class AdminReviewService {
 
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
     private static final String APPROVED_STATUS = "APPROVED";
     private static final Set<String> ALLOWED_STATUSES = Set.of("APPROVED", "PENDING", "SPAM", "TRASH");
+    private static final Map<String, Set<String>> ALLOWED_TRANSITIONS = Map.of(
+            "PENDING", Set.of("APPROVED", "SPAM", "TRASH"),
+            "APPROVED", Set.of("PENDING"),
+            "SPAM", Set.of("PENDING"),
+            "TRASH", Set.of("PENDING"));
     private static final String REVIEW_RESOURCE_TYPE = "REVIEW";
     private static final String REVIEW_STATUS_CHANGED_ACTION = "REVIEW_STATUS_CHANGED";
     private static final String REVIEW_DELETED_ACTION = "REVIEW_DELETED";
@@ -53,7 +70,8 @@ public class AdminReviewService {
     private final AuditLogFactory auditLogFactory;
     private final WebRevalidationService webRevalidationService;
     private final EmailDispatchService emailDispatchService;
-    private final com.bigbike.bigbike_backend.service.public_.ReviewPhotoStorageService reviewPhotoStorageService;
+    private final ReviewPhotoStorageService reviewPhotoStorageService;
+    private final TransactionTemplate requiresNewTransaction;
     private final String siteBaseUrl;
 
     public AdminReviewService(
@@ -63,7 +81,8 @@ public class AdminReviewService {
             AuditLogFactory auditLogFactory,
             WebRevalidationService webRevalidationService,
             EmailDispatchService emailDispatchService,
-            com.bigbike.bigbike_backend.service.public_.ReviewPhotoStorageService reviewPhotoStorageService,
+            ReviewPhotoStorageService reviewPhotoStorageService,
+            PlatformTransactionManager transactionManager,
             @Value("${bigbike.site.base-url:https://bigbike.vn}") String siteBaseUrl
     ) {
         this.reviewRepo = reviewRepo;
@@ -73,6 +92,8 @@ public class AdminReviewService {
         this.webRevalidationService = webRevalidationService;
         this.emailDispatchService = emailDispatchService;
         this.reviewPhotoStorageService = reviewPhotoStorageService;
+        this.requiresNewTransaction = new TransactionTemplate(transactionManager);
+        this.requiresNewTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         this.siteBaseUrl = siteBaseUrl;
     }
 
@@ -88,20 +109,32 @@ public class AdminReviewService {
 
         // Empty string (not null) keeps repository filter logic predictable for blank status values.
         String statusFilter = (status != null && !status.isBlank()) ? status.toUpperCase(Locale.ROOT) : "";
-        String qFilter = (q != null && !q.isBlank()) ? q : "";
-        BigDecimal ratingFilter = ReviewRatingLevels.isValid(rating) ? rating : BigDecimal.ZERO;
+        if (!statusFilter.isEmpty() && !ALLOWED_STATUSES.contains(statusFilter)) {
+            throw ValidationException.fromField(
+                    "status",
+                    "INVALID",
+                    "Trạng thái lọc không hợp lệ. Chỉ chấp nhận: APPROVED, PENDING, SPAM, TRASH.");
+        }
+        String qFilter = (q != null && !q.isBlank()) ? escapeLikePattern(q.trim()) : "";
+        if (rating != null && !ReviewRatingLevels.isValid(rating)) {
+            throw ValidationException.fromField(
+                    "rating",
+                    "INVALID",
+                    "Mức sao phải là 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5 hoặc 5.");
+        }
+        BigDecimal ratingFilter = rating != null ? rating : BigDecimal.ZERO;
 
         PageRequest pageRequest = PageRequest.of(
                 normalizedPage - 1,
                 normalizedSize,
-                Sort.by(Sort.Direction.DESC, "createdAt")
+                Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"))
         );
         // strictEnglish=false → show all reviews regardless of product translation state.
         Page<ReviewEntity> dbPage = reviewRepo.findByFilters(statusFilter, qFilter, ratingFilter, false, pageRequest);
 
         Map<String, ProductReviewMetadata> productMetadata = loadProductMetadata(dbPage.getContent());
         List<Map<String, Object>> mapped = dbPage.getContent().stream()
-                .map(review -> toMap(review, productMetadata.get(review.getProductId())))
+                .map(review -> toMap(review, productMetadata.get(review.getProductId()), false))
                 .toList();
         return new PageResult<>(mapped, normalizedPage, normalizedSize,
                 dbPage.getTotalElements(), dbPage.getTotalPages());
@@ -111,6 +144,7 @@ public class AdminReviewService {
      * Global moderation KPIs. This deliberately does not use the paginated list,
      * because the admin list may be filtered or show only one page.
      */
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public AdminReviewSummaryResponse getSummary() {
         ReviewJpaRepository.ReviewAggregate approved =
                 reviewRepo.findGlobalAggregateByStatus(APPROVED_STATUS);
@@ -148,7 +182,7 @@ public class AdminReviewService {
     public Map<String, Object> getReview(Long id) {
         ReviewEntity review = reviewRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Review not found."));
-        return toMap(review);
+        return toDetailMap(review);
     }
 
     @Transactional
@@ -156,31 +190,47 @@ public class AdminReviewService {
             UUID adminId,
             Long id,
             String status,
+            Long expectedVersion,
             String ipAddress,
             String userAgent
     ) {
-        if (status == null || status.isBlank()) {
-            throw ValidationException.fromField("status", "REQUIRED", "Trạng thái không được để trống.");
-        }
+        return updateStatusOutcome(
+                adminId, id, status, expectedVersion, ipAddress, userAgent).payload();
+    }
 
-        String normalized = status.toUpperCase(Locale.ROOT);
-        if (!ALLOWED_STATUSES.contains(normalized)) {
-            throw ValidationException.fromField(
-                    "status",
-                    "INVALID",
-                    "Trạng thái không hợp lệ. Chỉ chấp nhận: APPROVED, PENDING, SPAM, TRASH."
-            );
-        }
-
+    private StatusUpdateOutcome updateStatusOutcome(
+            UUID adminId,
+            Long id,
+            String status,
+            Long expectedVersion,
+            String ipAddress,
+            String userAgent
+    ) {
+        String normalized = validateStatus(status);
         ReviewEntity entity = reviewRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Review not found."));
-        ProductReviewMetadata productMetadata = loadProductMetadata(List.of(entity)).get(entity.getProductId());
-        Instant now = Instant.now();
-        String before = snapshot(entity, productMetadata);
+        requireExpectedVersion(entity, expectedVersion);
+        ProductReviewMetadata productMetadata =
+                loadProductMetadata(List.of(entity)).get(entity.getProductId());
         String previousStatus = entity.getStatus();
 
+        if (normalized.equals(previousStatus)) {
+            return new StatusUpdateOutcome(toMap(entity, productMetadata, false), false);
+        }
+        if (!ALLOWED_TRANSITIONS.getOrDefault(previousStatus, Set.of()).contains(normalized)) {
+            throw new ConflictException(
+                    "Không thể chuyển đánh giá từ " + previousStatus + " sang " + normalized + ".");
+        }
+
+        Instant now = Instant.now();
+        String before = snapshot(entity, productMetadata);
+        boolean firstApproval = APPROVED_STATUS.equals(normalized)
+                && entity.getFirstApprovedAt() == null;
         entity.setStatus(normalized);
         entity.setUpdatedAt(now);
+        if (firstApproval) {
+            entity.setFirstApprovedAt(now);
+        }
 
         ReviewEntity saved = reviewRepo.save(entity);
         reviewRepo.flush();
@@ -196,62 +246,112 @@ public class AdminReviewService {
                 ipAddress,
                 userAgent
         ));
-
-        Map<String, Object> result = toMap(saved, productMetadata);
         revalidateProduct(entity.getProductId());
 
-        if (APPROVED_STATUS.equals(normalized) && !APPROVED_STATUS.equals(previousStatus)
-                && entity.getAuthorEmail() != null && !entity.getAuthorEmail().isBlank()) {
-            sendReviewApprovedEmail(entity, productMetadata);
+        if (firstApproval && entity.getAuthorEmail() != null
+                && !entity.getAuthorEmail().isBlank()) {
+            sendReviewApprovedEmailAfterCommit(entity, productMetadata);
         }
-
-        return result;
+        return new StatusUpdateOutcome(toMap(saved, productMetadata, false), true);
     }
 
-    /**
-     * Bulk moderation — same per-item logic as {@link #updateStatus} but looped server-side
-     * in one request/transaction instead of the admin browser firing N sequential HTTP
-     * requests (see ReviewListScreen.jsx runBulk). Best-effort: a missing/invalid id is
-     * skipped rather than aborting the whole batch, mirroring AdminMediaService.bulkSoftDelete.
-     */
-    @Transactional
-    public int bulkUpdateStatus(UUID adminId, List<Long> ids, String status, String ipAddress, String userAgent) {
-        if (ids == null || ids.isEmpty()) return 0;
-        int count = 0;
-        for (Long id : ids) {
+    public BulkReviewResult bulkUpdateStatus(
+            UUID adminId,
+            List<VersionedReviewId> items,
+            String status,
+            String ipAddress,
+            String userAgent
+    ) {
+        validateStatus(status);
+        if (items == null || items.isEmpty()) {
+            return new BulkReviewResult(0, List.of());
+        }
+
+        int affected = 0;
+        Set<Long> seen = new LinkedHashSet<>();
+        List<BulkReviewSkipped> skipped = new java.util.ArrayList<>();
+        for (VersionedReviewId item : items) {
+            if (!seen.add(item.id())) {
+                skipped.add(new BulkReviewSkipped(item.id(), "DUPLICATE_ID"));
+                continue;
+            }
             try {
-                updateStatus(adminId, id, status, ipAddress, userAgent);
-                count++;
-            } catch (NotFoundException ignored) {
-                // skip missing ones — caller asked for best-effort
+                StatusUpdateOutcome outcome = requiresNewTransaction.execute(transactionStatus ->
+                        updateStatusOutcome(
+                                adminId,
+                                item.id(),
+                                status,
+                                item.expectedVersion(),
+                                ipAddress,
+                                userAgent));
+                if (outcome != null && outcome.changed()) {
+                    affected++;
+                } else {
+                    skipped.add(new BulkReviewSkipped(item.id(), "NO_CHANGE"));
+                }
+            } catch (NotFoundException exception) {
+                skipped.add(new BulkReviewSkipped(item.id(), "NOT_FOUND"));
+            } catch (ObjectOptimisticLockingFailureException exception) {
+                skipped.add(new BulkReviewSkipped(item.id(), "VERSION_CONFLICT"));
+            } catch (ConflictException exception) {
+                skipped.add(new BulkReviewSkipped(item.id(), "INVALID_TRANSITION"));
             }
         }
-        return count;
+        return new BulkReviewResult(affected, List.copyOf(skipped));
     }
 
-    /** Bulk counterpart of {@link #deleteReview}. See {@link #bulkUpdateStatus} for the pattern. */
-    @Transactional
-    public int bulkDelete(UUID adminId, List<Long> ids, String ipAddress, String userAgent) {
-        if (ids == null || ids.isEmpty()) return 0;
-        int count = 0;
-        for (Long id : ids) {
+    public BulkReviewResult bulkDelete(
+            UUID adminId,
+            List<VersionedReviewId> items,
+            String ipAddress,
+            String userAgent
+    ) {
+        if (items == null || items.isEmpty()) {
+            return new BulkReviewResult(0, List.of());
+        }
+
+        int affected = 0;
+        Set<Long> seen = new LinkedHashSet<>();
+        List<BulkReviewSkipped> skipped = new java.util.ArrayList<>();
+        List<String> deletedPhotoCandidates = new java.util.ArrayList<>();
+        for (VersionedReviewId item : items) {
+            if (!seen.add(item.id())) {
+                skipped.add(new BulkReviewSkipped(item.id(), "DUPLICATE_ID"));
+                continue;
+            }
             try {
-                deleteReview(adminId, id, ipAddress, userAgent);
-                count++;
-            } catch (NotFoundException ignored) {
-                // skip missing ones — caller asked for best-effort
+                List<String> itemPhotos = requiresNewTransaction.execute(transactionStatus ->
+                        deleteReviewInternal(
+                                adminId,
+                                item.id(),
+                                item.expectedVersion(),
+                                ipAddress,
+                                userAgent));
+                if (itemPhotos != null) {
+                    deletedPhotoCandidates.addAll(itemPhotos);
+                }
+                affected++;
+            } catch (NotFoundException exception) {
+                skipped.add(new BulkReviewSkipped(item.id(), "NOT_FOUND"));
+            } catch (ObjectOptimisticLockingFailureException exception) {
+                skipped.add(new BulkReviewSkipped(item.id(), "VERSION_CONFLICT"));
+            } catch (ConflictException exception) {
+                skipped.add(new BulkReviewSkipped(item.id(), "NOT_IN_TRASH"));
             }
         }
-        return count;
+        if (!deletedPhotoCandidates.isEmpty()) {
+            deleteUnreferencedReviewPhotos(deletedPhotoCandidates);
+        }
+        return new BulkReviewResult(affected, List.copyOf(skipped));
     }
 
     private void sendReviewApprovedEmail(ReviewEntity review, ProductReviewMetadata productMetadata) {
         Context ctx = new Context();
         ctx.setVariable("authorName", review.getAuthorName() != null ? review.getAuthorName() : "Khách hàng");
         ctx.setVariable("productName", productMetadata != null ? productMetadata.name() : "sản phẩm");
-        String productUrl = (productMetadata != null && productMetadata.slug() != null)
-                ? siteBaseUrl + "/san-pham/" + productMetadata.slug()
-                : siteBaseUrl;
+        String productUrl = productMetadata != null
+                ? buildProductUrl(siteBaseUrl, productMetadata.slug())
+                : normalizeSiteBaseUrl(siteBaseUrl);
         ctx.setVariable("productUrl", productUrl);
         emailDispatchService.send(
                 review.getAuthorEmail(),
@@ -261,25 +361,57 @@ public class AdminReviewService {
         );
     }
 
+    private void sendReviewApprovedEmailAfterCommit(
+            ReviewEntity review,
+            ProductReviewMetadata productMetadata
+    ) {
+        Runnable send = () -> sendReviewApprovedEmail(review, productMetadata);
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    send.run();
+                }
+            });
+            return;
+        }
+        send.run();
+    }
+
     @Transactional
     public void deleteReview(
             UUID adminId,
             Long id,
+            Long expectedVersion,
+            String ipAddress,
+            String userAgent
+    ) {
+        List<String> photos =
+                deleteReviewInternal(adminId, id, expectedVersion, ipAddress, userAgent);
+        scheduleReferenceSafePhotoCleanup(photos);
+    }
+
+    private List<String> deleteReviewInternal(
+            UUID adminId,
+            Long id,
+            Long expectedVersion,
             String ipAddress,
             String userAgent
     ) {
         ReviewEntity entity = reviewRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Review not found."));
+        requireExpectedVersion(entity, expectedVersion);
+        if (!"TRASH".equals(entity.getStatus())) {
+            throw new ConflictException(
+                    "Chỉ đánh giá trong Thùng rác mới được xóa vĩnh viễn.");
+        }
         ProductReviewMetadata productMetadata = loadProductMetadata(List.of(entity)).get(entity.getProductId());
         String productId = entity.getProductId();
         List<String> photos = entity.getPhotos();
-        Instant now = Instant.now();
         String before = snapshot(entity, productMetadata);
 
         reviewRepo.delete(entity);
         reviewRepo.flush();
-        // Remove the review's MinIO photos so they don't linger as orphans (AUD-037).
-        reviewPhotoStorageService.deletePhotos(photos);
         recomputeProductReviewAggregate(productId);
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN",
@@ -294,6 +426,103 @@ public class AdminReviewService {
         ));
 
         revalidateProduct(productId);
+        return photos != null ? List.copyOf(photos) : List.of();
+    }
+
+    /**
+     * Delete review objects only after the database transaction commits and only
+     * when no remaining review (including legacy rows) references the same object.
+     */
+    private void scheduleReferenceSafePhotoCleanup(List<String> photos) {
+        if (photos == null || photos.isEmpty()) {
+            return;
+        }
+        List<String> candidates = List.copyOf(photos);
+        Runnable cleanup = () -> deleteUnreferencedReviewPhotos(candidates);
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    cleanup.run();
+                }
+            });
+            return;
+        }
+        cleanup.run();
+    }
+
+    private void deleteUnreferencedReviewPhotos(List<String> candidates) {
+        try {
+            Set<String> referencedKeys = reviewRepo.findAllWithPhotos().stream()
+                    .filter(review -> review.getPhotos() != null)
+                    .flatMap(review -> review.getPhotos().stream())
+                    .map(ReviewPhotoStorageService::reviewObjectKey)
+                    .filter(key -> key != null)
+                    .collect(Collectors.toSet());
+
+            Map<String, String> deletableByKey = new LinkedHashMap<>();
+            for (String url : candidates) {
+                String key = ReviewPhotoStorageService.reviewObjectKey(url);
+                if (key != null && !referencedKeys.contains(key)) {
+                    deletableByKey.putIfAbsent(key, url);
+                }
+            }
+            reviewPhotoStorageService.deletePhotos(List.copyOf(deletableByKey.values()));
+        } catch (Exception exception) {
+            // Database deletion is already committed; storage cleanup remains fail-safe.
+            log.warn("Skipped review photo cleanup because reference verification failed: {}",
+                    exception.getMessage());
+        }
+    }
+
+    private static void requireExpectedVersion(ReviewEntity review, Long expectedVersion) {
+        if (expectedVersion == null) {
+            throw ValidationException.fromField(
+                    "expectedVersion",
+                    "REQUIRED",
+                    "Phiên bản đánh giá không được để trống.");
+        }
+        if (review.getVersion() == null || !review.getVersion().equals(expectedVersion)) {
+            throw new ObjectOptimisticLockingFailureException(ReviewEntity.class, review.getId());
+        }
+    }
+
+    private static String validateStatus(String status) {
+        if (status == null || status.isBlank()) {
+            throw ValidationException.fromField(
+                    "status", "REQUIRED", "Trạng thái không được để trống.");
+        }
+        String normalized = status.toUpperCase(Locale.ROOT);
+        if (!ALLOWED_STATUSES.contains(normalized)) {
+            throw ValidationException.fromField(
+                    "status",
+                    "INVALID",
+                    "Trạng thái không hợp lệ. Chỉ chấp nhận: APPROVED, PENDING, SPAM, TRASH.");
+        }
+        return normalized;
+    }
+
+    private static String escapeLikePattern(String value) {
+        return value
+                .replace("!", "!!")
+                .replace("%", "!%")
+                .replace("_", "!_");
+    }
+
+    static String buildProductUrl(String baseUrl, String slug) {
+        String base = normalizeSiteBaseUrl(baseUrl);
+        if (slug == null || slug.isBlank()) {
+            return base;
+        }
+        return base + "/product/" + slug.trim() + "/";
+    }
+
+    private static String normalizeSiteBaseUrl(String baseUrl) {
+        String normalized = baseUrl == null ? "" : baseUrl.trim();
+        while (normalized.endsWith("/")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        return normalized;
     }
 
     private void recomputeProductReviewAggregate(String productId) {
@@ -324,8 +553,11 @@ public class AdminReviewService {
         });
     }
 
-    private Map<String, Object> toMap(ReviewEntity review) {
-        return toMap(review, loadProductMetadata(List.of(review)).get(review.getProductId()));
+    private Map<String, Object> toDetailMap(ReviewEntity review) {
+        return toMap(
+                review,
+                loadProductMetadata(List.of(review)).get(review.getProductId()),
+                true);
     }
 
     private Map<String, ProductReviewMetadata> loadProductMetadata(List<ReviewEntity> reviews) {
@@ -344,7 +576,11 @@ public class AdminReviewService {
         return result;
     }
 
-    private Map<String, Object> toMap(ReviewEntity review, ProductReviewMetadata productMetadata) {
+    private Map<String, Object> toMap(
+            ReviewEntity review,
+            ProductReviewMetadata productMetadata,
+            boolean includeEmail
+    ) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("id", review.getId());
         payload.put("productId", review.getProductId());
@@ -352,24 +588,47 @@ public class AdminReviewService {
         payload.put("productNameEn", productMetadata != null ? productMetadata.nameEn() : null);
         payload.put("productSlug", productMetadata != null ? productMetadata.slug() : null);
         payload.put("authorName", review.getAuthorName() != null ? review.getAuthorName() : "");
-        payload.put("authorEmail", review.getAuthorEmail() != null ? review.getAuthorEmail() : "");
+        if (includeEmail) {
+            payload.put("authorEmail", review.getAuthorEmail() != null ? review.getAuthorEmail() : "");
+        }
         payload.put("rating", review.getRating());
         payload.put("body", review.getBody() != null ? review.getBody() : "");
         payload.put("photos", review.getPhotos() != null ? review.getPhotos() : List.of());
         payload.put("status", review.getStatus());
+        payload.put("version", review.getVersion() != null ? review.getVersion() : 0L);
         payload.put("createdAt", review.getCreatedAt() != null ? review.getCreatedAt().toString() : "");
         payload.put("updatedAt", review.getUpdatedAt() != null ? review.getUpdatedAt().toString() : "");
         return payload;
     }
 
     private String snapshot(ReviewEntity review, ProductReviewMetadata productMetadata) {
-        return writeJson(toMap(review, productMetadata));
+        return writeJson(toAuditMap(review, productMetadata));
     }
 
     private String deletedSnapshot(ReviewEntity review, ProductReviewMetadata productMetadata) {
-        Map<String, Object> payload = new LinkedHashMap<>(toMap(review, productMetadata));
+        Map<String, Object> payload = new LinkedHashMap<>(toAuditMap(review, productMetadata));
         payload.put("deleted", true);
         return writeJson(payload);
+    }
+
+    private Map<String, Object> toAuditMap(
+            ReviewEntity review,
+            ProductReviewMetadata productMetadata
+    ) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("id", review.getId());
+        payload.put("productId", review.getProductId());
+        if (productMetadata != null) {
+            payload.put("productName", productMetadata.name());
+            payload.put("productSlug", productMetadata.slug());
+        }
+        payload.put("rating", review.getRating());
+        payload.put("status", review.getStatus());
+        payload.put("photoCount", review.getPhotos() != null ? review.getPhotos().size() : 0);
+        payload.put("version", review.getVersion() != null ? review.getVersion() : 0L);
+        payload.put("createdAt", review.getCreatedAt() != null ? review.getCreatedAt().toString() : "");
+        payload.put("updatedAt", review.getUpdatedAt() != null ? review.getUpdatedAt().toString() : "");
+        return payload;
     }
 
     private String writeJson(Map<String, Object> payload) {
@@ -386,6 +645,14 @@ public class AdminReviewService {
         }
         return BigDecimal.valueOf(avgRating).setScale(1, RoundingMode.HALF_UP);
     }
+
+    public record VersionedReviewId(Long id, Long expectedVersion) {}
+
+    public record BulkReviewSkipped(Long id, String reason) {}
+
+    public record BulkReviewResult(int affected, List<BulkReviewSkipped> skipped) {}
+
+    private record StatusUpdateOutcome(Map<String, Object> payload, boolean changed) {}
 
     private record ProductReviewMetadata(String name, String nameEn, String slug) {}
 }

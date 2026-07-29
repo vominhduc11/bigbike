@@ -9,6 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/ui/Avatar";
 import { useAuth } from "@/lib/auth/auth-store";
+import {
+  ReviewRequestError,
+  submitProductReview,
+  uploadReviewPhoto,
+} from "./api";
 import { StarRatingInput } from "./stars";
 import type { PhotoItem } from "./types";
 
@@ -60,22 +65,15 @@ export function WriteReviewForm({
     const previewUrl = URL.createObjectURL(file);
     setPhotos((prev) => [...prev, { id, previewUrl, status: "uploading" }]);
     try {
-      const form = new FormData();
-      form.set("file", file);
-      const res = await fetch(`/api/products/${productId}/reviews/photos/`, {
-        method: "POST",
-        body: form,
-      });
-      const json = (await res.json().catch(() => null)) as { url?: string; error?: string } | null;
-      if (!res.ok || !json?.url) {
-        setPhotos((prev) => prev.map((p) => (p.id === id ? { ...p, status: "error" } : p)));
-        setPhotoError(json?.error ?? t("errorPhotoUpload"));
-        return;
-      }
-      setPhotos((prev) => prev.map((p) => (p.id === id ? { ...p, status: "done", url: json.url } : p)));
-    } catch {
+      const url = await uploadReviewPhoto(productId, file);
+      setPhotos((prev) => prev.map((p) => (p.id === id ? { ...p, status: "done", url } : p)));
+    } catch (uploadError) {
       setPhotos((prev) => prev.map((p) => (p.id === id ? { ...p, status: "error" } : p)));
-      setPhotoError(t("errorPhotoUpload"));
+      setPhotoError(
+        uploadError instanceof ReviewRequestError && uploadError.message
+          ? uploadError.message
+          : t("errorPhotoUpload"),
+      );
     }
   }
 
@@ -130,33 +128,28 @@ export function WriteReviewForm({
       const photoUrls = photos
         .filter((p) => p.status === "done" && p.url)
         .map((p) => p.url as string);
-      const res = await fetch(`/api/products/${productId}/reviews/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      await submitProductReview(productId, {
           authorName: effectiveName,
           authorEmail: effectiveEmail || undefined,
           rating,
           comment: comment.trim(),
           photos: photoUrls,
           website,
-        }),
       });
-      const json = (await res.json().catch(() => null)) as { error?: string } | null;
-      if (!res.ok) {
-        if (res.status === 429) {
-          setError(t("errorRateLimit"));
-        } else if (res.status === 409) {
-          setError(json?.error ?? t("errorDuplicate"));
-        } else {
-          setError(json?.error ?? t("errorSubmit"));
-        }
-        return;
-      }
       setDone(true);
       onSuccess();
-    } catch {
-      setError(t("errorNetwork"));
+    } catch (submitError) {
+      if (submitError instanceof ReviewRequestError) {
+        if (submitError.status === 429) {
+          setError(t("errorRateLimit"));
+        } else if (submitError.status === 409) {
+          setError(submitError.message || t("errorDuplicate"));
+        } else {
+          setError(submitError.message || t("errorSubmit"));
+        }
+      } else {
+        setError(t("errorNetwork"));
+      }
     } finally {
       setSubmitting(false);
     }

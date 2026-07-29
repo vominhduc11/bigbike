@@ -8,6 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
@@ -52,5 +54,36 @@ class CorsConfigTest {
         mockMvc.perform(get("/api/v1/products")
                         .header(HttpHeaders.ORIGIN, "http://evil.com"))
                 .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "/api/v1/products/product-1/reviews",
+            "/api/v1/products/product-1/reviews/photos"
+    })
+    void reviewMutationPreflightAllowsStorefrontCredentials(String path) throws Exception {
+        mockMvc.perform(options(path)
+                        .header(HttpHeaders.ORIGIN, "http://localhost:3000")
+                        .header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers", "content-type"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"))
+                .andExpect(header().string("Access-Control-Allow-Credentials", "true"))
+                .andExpect(header().string("Access-Control-Allow-Methods", org.hamcrest.Matchers.containsString("POST")));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "/api/v1/products/product-1/reviews",
+            "/api/v1/products/product-1/reviews/photos"
+    })
+    void reviewMutationPreflightRejectsUnknownOrigin(String path) throws Exception {
+        mockMvc.perform(options(path)
+                        .header(HttpHeaders.ORIGIN, "https://evil.invalid")
+                        .header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers", "content-type"))
+                .andExpect(status().isForbidden())
+                .andExpect(header().doesNotExist("Access-Control-Allow-Origin"))
+                .andExpect(header().doesNotExist("Access-Control-Allow-Credentials"));
     }
 }

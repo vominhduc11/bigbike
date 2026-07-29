@@ -161,7 +161,7 @@ export const TAB_ORDER = [
 // Tabs whose values directly affect pricing / checkout / operations — saving
 // these requires an explicit confirmation. (Trống từ V310 — nhóm STORE duy nhất
 // từng nằm ở đây đã gỡ hẳn vì không điều khiển gì; giữ cơ chế cho tab tương lai.)
-export const SENSITIVE_SETTING_TABS = new Set()
+export const SENSITIVE_SETTING_TABS = new Set(['PAYMENT'])
 
 // Group/key bị ẩn vì không thuộc trách nhiệm của admin shop:
 // - PUBLIC_HERO: ảnh banner đầu trang render bằng trình riêng (BannerScreen) có preview ráp sẵn,
@@ -173,17 +173,14 @@ export const SENSITIVE_SETTING_TABS = new Set()
 //   Trang Liên hệ nay là TRANG TĨNH, không còn trình dựng — không màn admin nào sửa nhóm này (cố định
 //   theo yêu cầu owner). Bản ghi vẫn ở site_settings để web/header đọc; muốn cho sửa lại thì bỏ
 //   'CONTACT' khỏi HIDDEN_GROUPS để hiện lại tab Cài đặt › Liên hệ.
-// - PAYMENT: bỏ tab theo yêu cầu owner (2026-07-03). Nhóm chứa số TK nhận chuyển khoản
-//   (bank_account_holder/number/name/branch) — web vẫn đọc từ site_settings để hiện ở trang xác
-//   nhận đơn BACS (xem bigbike-web/lib/utils/orders.ts resolveBankTransfer), nên KHÔNG xoá dữ liệu/
-//   setting definition, chỉ ẩn khỏi admin. Đổi số TK sau này cần sửa thẳng site_settings (DB) hoặc
-//   bỏ 'PAYMENT' khỏi HIDDEN_GROUPS để hiện lại tab.
+// - PAYMENT: hiển thị lại theo PAY_RULE_001 (2026-07-21): khách có thể chọn chuyển khoản
+//   thủ công, nên chủ shop phải cập nhật được tài khoản nhận tiền mà không sửa trực tiếp DB.
 // - PRODUCT_ASSIGN: banner Phân công (product_assign_title + product_assign_roles, JSON động
 //   1-6 vai trò từ V318) render bằng trình riêng AssignmentRolesScreen (nhúng làm tab "Phân công"
 //   NGAY TRONG màn Cài đặt, xem ASSIGN_TAB_ID) — ẩn khỏi luồng SettingTabPanel/SettingField chung
 //   vì cần UI thêm/xóa vai trò động mà form field tĩnh không đáp ứng được.
 // (PUBLIC_ABOUT đã gỡ hẳn V274 — trang Giới thiệu là trang tĩnh, không còn nhóm settings.)
-export const HIDDEN_GROUPS = new Set(['PUBLIC_HERO', 'CONTACT', 'PAYMENT', 'PRODUCT_ASSIGN'])
+export const HIDDEN_GROUPS = new Set(['PUBLIC_HERO', 'CONTACT', 'PRODUCT_ASSIGN'])
 
 // Field cụ thể bị ẩn — hiện không còn field nào (nhóm STORE duy nhất từng ở đây đã gỡ hẳn V310).
 export const HIDDEN_KEYS = new Set()

@@ -56,6 +56,45 @@ class HomeVideoApiTest {
     }
 
     @Test
+    void createHomeVideo_acceptsInternalMediaUpload() throws Exception {
+        mockMvc.perform(post("/api/v1/admin/home-videos")
+                        .header("X-Admin-Permissions", "home_videos.write")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "Uploaded video",
+                                  "videoUrl": "/media-proxy/uploads/demo.mp4",
+                                  "sortOrder": 1,
+                                  "isActive": true
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.videoUrl").value("/media-proxy/uploads/demo.mp4"));
+    }
+
+    @Test
+    void createHomeVideo_rejectsTikTokAndFacebook() throws Exception {
+        for (String videoUrl : new String[] {
+                "https://www.tiktok.com/@bigbike/video/7251234567890123456",
+                "https://www.facebook.com/BigBike/videos/1234567890"
+        }) {
+            mockMvc.perform(post("/api/v1/admin/home-videos")
+                            .header("X-Admin-Permissions", "home_videos.write")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "title": "Legacy source",
+                                      "videoUrl": "%s",
+                                      "sortOrder": 2,
+                                      "isActive": true
+                                    }
+                                    """.formatted(videoUrl)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.error.details[0].field").value("videoUrl"));
+        }
+    }
+
+    @Test
     void createHomeVideo_rejectsUnsafeExternalUrl() throws Exception {
         mockMvc.perform(post("/api/v1/admin/home-videos")
                         .header("X-Admin-Permissions", "home_videos.write")
@@ -121,6 +160,34 @@ class HomeVideoApiTest {
                         .value("https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1&rel=0"))
                 .andExpect(jsonPath("$.data[0].autoThumbnailUrl")
                         .value("https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg"));
+    }
+
+    @Test
+    void legacyHomeVideo_canBeReadAndPatchedWithoutResubmittingVideoUrl() throws Exception {
+        HomeVideoEntity legacy = homeVideo("hv_legacy_tiktok", 22, true);
+        legacy.setVideoUrl("https://www.tiktok.com/@bigbike/video/7251234567890123456");
+        legacy.setYoutubeId(null);
+        homeVideoJpaRepository.save(legacy);
+
+        mockMvc.perform(get("/api/v1/home-videos"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].videoUrl").value(legacy.getVideoUrl()))
+                .andExpect(jsonPath("$.data[0].embedUrl").isNotEmpty());
+
+        mockMvc.perform(patch("/api/v1/admin/home-videos/" + legacy.getId())
+                        .header("X-Admin-Permissions", "home_videos.write")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"isActive\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.videoUrl").value(legacy.getVideoUrl()))
+                .andExpect(jsonPath("$.data.isActive").value(false));
+
+        mockMvc.perform(patch("/api/v1/admin/home-videos/" + legacy.getId())
+                        .header("X-Admin-Permissions", "home_videos.write")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"videoUrl\":\"" + legacy.getVideoUrl() + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].field").value("videoUrl"));
     }
 
     @Test

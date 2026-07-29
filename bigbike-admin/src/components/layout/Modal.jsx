@@ -22,7 +22,10 @@ export function Modal({
       <DialogContent
         showClose={false}
         aria-describedby={undefined}
-        className={cn('p-0 flex flex-col max-h-[90vh]', contentClassName || (wide ? 'max-w-3xl' : 'max-w-lg'))}
+        className={cn(
+          'p-0 flex flex-col max-h-[90vh] overflow-hidden',
+          contentClassName || (wide ? 'max-w-3xl' : 'max-w-lg')
+        )}
       >
         <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-border shrink-0">
           <div className="min-w-0">
@@ -39,7 +42,7 @@ export function Modal({
             <X size={16} />
           </Button>
         </div>
-        <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
+        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4">{children}</div>
         {actions ? (
           <div className="flex flex-wrap justify-end gap-2 px-5 py-3 border-t border-border shrink-0 max-sm:flex-col max-sm:[&>button]:w-full">
             {actions}

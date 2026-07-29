@@ -73,7 +73,15 @@ public interface CatalogReadRepository {
      * {@code "en"}; the display {@code name} falls back to Vietnamese when
      * {@code name_en} is blank (see {@code PRODUCT_RULE_002}).
      */
-    List<Product> findProductsFiltered(String query, String publishStatus, String stockState, String brandId, String categoryId, String locale);
+    List<Product> findProductsFiltered(
+            String query,
+            String publishStatus,
+            String stockState,
+            String brandId,
+            String categoryId,
+            String gender,
+            String locale
+    );
 
     Optional<Product> findProductBySlug(String slug, String locale);
 

@@ -157,14 +157,25 @@ export function normalizeGalleryMedia(input) {
     return {
       mediaType: 'video',
       videoUrl,
-      provider: toTrimmedString(input.provider || input.videoProvider) || 'youtube',
+      provider: toTrimmedString(input.provider || input.videoProvider) || undefined,
       url: image?.url,
       rawUrl: image?.rawUrl,
       alt: image?.alt,
+      width: image?.width,
+      height: image?.height,
+      mimeType: image?.mimeType,
     }
   }
   if (!image) return undefined
-  return { mediaType: 'image', url: image.url, rawUrl: image.rawUrl, alt: image.alt }
+  return {
+    mediaType: 'image',
+    url: image.url,
+    rawUrl: image.rawUrl,
+    alt: image.alt,
+    width: image.width,
+    height: image.height,
+    mimeType: image.mimeType,
+  }
 }
 
 export function normalizeVideoAsset(input) {
@@ -183,6 +194,7 @@ export function normalizeVideoAsset(input) {
     title: toTrimmedString(input.title) || undefined,
     provider: toTrimmedString(input.provider) || undefined,
     thumbnail: normalizeImageAsset(input.thumbnail),
+    description: toTrimmedString(input.description) || undefined,
   }
 }
 
@@ -326,7 +338,6 @@ function normalizeProductTranslations(input) {
     name: toTrimmedString(source.name) || undefined,
     shortDescription: toTrimmedString(source.shortDescription) || undefined,
     description: toTrimmedString(source.description) || undefined,
-    contentBottom: toTrimmedString(source.contentBottom) || undefined,
     suitabilityAdvisory: toTrimmedString(source.suitabilityAdvisory) || undefined,
     // "Dán mã HTML" bản EN (V255/V256/V257) — surface để translationFormFromItem nạp vào
     // form.translations.en; nếu không, mở SP hiện trống bản EN → Lưu ghi đè xoá HTML EN đã lưu.
@@ -378,7 +389,6 @@ export function normalizeProduct(input) {
     name: toTrimmedString(source.name) || 'Untitled product',
     shortDescription: toTrimmedString(source.shortDescription) || undefined,
     description: toTrimmedString(source.description) || undefined,
-    contentBottom: toTrimmedString(source.contentBottom) || undefined,
     // Template/trust fields (V175) — render trên PDP web. PHẢI surface ở đây, nếu không
     // form admin nạp undefined → mở SP hiện trống → bấm Lưu gửi null/[] → xoá mất dữ liệu.
     gender: normalizeGender(source.gender),
@@ -659,7 +669,7 @@ function normalizeOrderItem(input) {
   return {
     id: toTrimmedStringLocal(s.id) || 'unknown',
     productId: toTrimmedStringLocal(s.productId) || undefined,
-    productName: toTrimmedStringLocal(s.productName) || 'Unknown product',
+    productName: toTrimmedStringLocal(s.productName) || 'Sản phẩm không xác định',
     variantName: toTrimmedStringLocal(s.variantName) || undefined,
     sku: toTrimmedStringLocal(s.sku) || undefined,
     quantity: toIntegerLocal(s.quantity, 1),
@@ -751,7 +761,6 @@ export function normalizeOrder(input) {
     cancelledAt: toTrimmedStringLocal(s.cancelledAt) || undefined,
     cancelReason: toTrimmedStringLocal(s.cancelReason) || undefined,
     createdAt: toTrimmedStringLocal(s.placedAt) || undefined,
-    updatedAt: toTrimmedStringLocal(s.updatedAt) || undefined,
   }
 }
 
@@ -770,7 +779,10 @@ export function normalizeCustomer(input) {
     id: toTrimmedStringLocal(s.id) || 'unknown-customer',
     email: toTrimmedStringLocal(s.email) || undefined,
     displayName: toTrimmedStringLocal(s.displayName) || undefined,
-    fullName: toTrimmedStringLocal(s.displayName) || toTrimmedStringLocal(s.fullName) || toTrimmedStringLocal(s.name) || 'Unknown',
+    fullName: toTrimmedStringLocal(s.displayName)
+      || toTrimmedStringLocal(s.fullName)
+      || toTrimmedStringLocal(s.name)
+      || undefined,
     firstName: toTrimmedStringLocal(s.firstName) || undefined,
     lastName: toTrimmedStringLocal(s.lastName) || undefined,
     phone: toTrimmedStringLocal(s.phone) || undefined,

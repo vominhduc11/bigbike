@@ -87,7 +87,7 @@ test.describe("Visual — chrome", () => {
   });
 
   test("mobile bottom nav", async ({ page }) => {
-    await prep(page, "/san-pham/", MOBILE);
+    await prep(page, "/sp/", MOBILE);
     await expect(page.locator("nav.bb-bottom-nav")).toHaveScreenshot("bottom-nav-mobile.png", {
       mask: dynamicMasks(page),
     });
@@ -133,7 +133,7 @@ test.describe("Visual — overlays", () => {
 test.describe("Visual — pages (full-page baselines)", { tag: "@advisory" }, () => {
   const pages: { name: string; path: string }[] = [
     { name: "home", path: "/" },
-    { name: "plp", path: "/san-pham/" },
+    { name: "plp", path: "/sp/" },
     { name: "pdp", path: SAMPLE.product },
   ];
   for (const p of pages) {

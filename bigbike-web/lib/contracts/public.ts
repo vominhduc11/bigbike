@@ -79,7 +79,7 @@ export type HomeSlider = {
   productId?: string | null;
   externalLink?: string | null;
   /**
-   * Computed by the backend from the linked product's slug: `/san-pham/<slug>`.
+   * Computed by the backend from the linked product's legacy-compatible slug: `/sp/<slug>.html`.
    * Populated only when `productId` is set and the product exists.
    * Consumers (e.g. `app/page.tsx#toHeroSlide`) prefer `link` first, then fall back
    * to `productLink`, then `externalLink`.
@@ -168,6 +168,8 @@ export type DescriptionBlock =
   | { type: "paragraph"; html?: string }
   | { type: "list"; style?: "bulleted" | "numbered"; items?: string[] }
   | { type: "image"; url?: string; alt?: string; caption?: string }
+  // Read contract intentionally keeps legacy providers. Admin/backend write contracts
+  // accept only youtube|upload, while old content must remain renderable.
   | { type: "video"; provider?: "youtube" | "tiktok" | "facebook" | "upload"; url?: string; caption?: string }
   | { type: "callout"; variant?: "info" | "warning" | "note"; html?: string }
   | { type: "divider" }

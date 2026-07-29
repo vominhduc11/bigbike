@@ -414,9 +414,9 @@ function AdminApp() {
     case 'redirects':
       screen = <RedirectListScreen canUpdate={hasPermission('redirects.write')} />; break
     case 'reviews':
-      screen = <ReviewListScreen navigate={navigate} canUpdate={hasPermission('reviews.write')} />; break
+      screen = <ReviewListScreen navigate={navigate} canUpdate={hasPermission('reviews.write')} isSuperAdmin={userRoles.includes('SUPER_ADMIN')} />; break
     case 'review-detail':
-      screen = <ReviewDetailScreen reviewId={route.reviewId} navigate={navigate} canUpdate={hasPermission('reviews.write')} />; break
+      screen = <ReviewDetailScreen reviewId={route.reviewId} navigate={navigate} canUpdate={hasPermission('reviews.write')} isSuperAdmin={userRoles.includes('SUPER_ADMIN')} />; break
     case 'admin-users':
       screen = <AdminUsersScreen canUpdate={hasPermission('admin-users.write')} isSuperAdmin={hasPermission('*')} currentUserId={authState.user?.id} />; break
     case 'settings':

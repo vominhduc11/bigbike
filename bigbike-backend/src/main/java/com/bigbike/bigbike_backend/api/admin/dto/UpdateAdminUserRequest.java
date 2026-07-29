@@ -13,7 +13,7 @@ public record UpdateAdminUserRequest(
         )
         String status,
 
-        @Size(max = 128, message = "Mật khẩu không được vượt quá 128 ký tự.")
+        @Size(min = 8, max = 128, message = "Mật khẩu phải có từ 8 đến 128 ký tự.")
         String newPassword,
 
         @Size(max = 50, message = "Vai trò không được vượt quá 50 ký tự.")

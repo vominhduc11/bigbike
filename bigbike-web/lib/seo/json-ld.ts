@@ -1,5 +1,6 @@
 import type { Article, Brand, Category, Product, VideoAsset } from "@/lib/contracts/public";
 import {
+  normalizeStorefrontUrl,
   toArticleListPath,
   toArticlePath,
   toBrandListPath,
@@ -239,7 +240,9 @@ export function buildCategoryBreadcrumbJsonLd(
       "@type": "ListItem",
       position: 3,
       name: parent.name,
-      item: toCanonicalUrl(parent.seo?.canonicalUrl ?? toCategoryPath(parent.slug)),
+      item: toCanonicalUrl(
+        normalizeStorefrontUrl(parent.seo?.canonicalUrl ?? toCategoryPath(parent.slug)),
+      ),
     });
   }
 
@@ -247,7 +250,11 @@ export function buildCategoryBreadcrumbJsonLd(
     "@type": "ListItem",
     position: items.length + 1,
     name: category.name,
-    item: toCanonicalUrl(canonicalPathOverride ?? category.seo?.canonicalUrl ?? toCategoryPath(category.slug)),
+    item: toCanonicalUrl(
+      normalizeStorefrontUrl(
+        canonicalPathOverride ?? category.seo?.canonicalUrl ?? toCategoryPath(category.slug),
+      ),
+    ),
   });
 
   return {

@@ -108,7 +108,7 @@ describe("safe public href", () => {
   });
 
   it("falls back when href is unsafe", () => {
-    expect(toSafePublicHref("javascript:alert(1)", "/san-pham/")).toBe("/san-pham/");
+    expect(toSafePublicHref("javascript:alert(1)", "/sp/")).toBe("/sp/");
   });
 });
 

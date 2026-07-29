@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.api.admin.dto;
 
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,6 +22,7 @@ public class VideoRequest {
     private String title;
 
     @Size(max = 50, message = "Video provider is too long.")
+    @Pattern(regexp = "youtube|upload", message = "Video provider must be 'youtube' or 'upload'.")
     private String provider;
 
     @Size(max = 5000, message = "Video description is too long.")

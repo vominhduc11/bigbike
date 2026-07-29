@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Download, X } from 'lucide-react'
+import { AlertCircle, Download, X } from 'lucide-react'
 import { AdminTable } from '../components/AdminTable'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { PaginationControls } from '../components/PaginationControls'
-import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { fetchAuditLogs } from '../lib/adminApi'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
@@ -36,7 +35,7 @@ export function AuditLogListScreen() {
   const initialQuery = useMemo(() => readQueryFromUrl(INITIAL_QUERY), [])
   const [query, setQuery]             = useState(initialQuery)
   const [searchInput, setSearchInput] = useState(() => initialQuery.q)
-  const [state, setState]             = useState({ status: 'loading', items: [], pagination: null, warning: '' })
+  const [state, setState]             = useState({ status: 'loading', items: [], pagination: null })
   const [activePreset, setActivePreset] = useState(null)
   const [showMobileFilter, setShowMobileFilter] = useState(false)
   // Client-side sort of the current page. The audit-log endpoint returns a fixed
@@ -50,6 +49,12 @@ export function AuditLogListScreen() {
   const [selectedLog, setSelectedLog] = useState(null)
 
   const isFiltered = query.actorType !== 'ALL' || query.resourceType !== 'ALL' || !!query.q || !!query.from || !!query.to
+  // Khoảng ngày ngược (từ > đến) luôn trả về 0 kết quả — báo ngay tại chỗ thay vì
+  // để người dùng nhìn màn hình trống mà không hiểu vì sao. Bản mobile đã kiểm
+  // tra sẵn, bản desktop trước đây thì không.
+  const dateRangeError = query.from && query.to && query.from > query.to
+    ? t('auditLog.dateRangeError', { defaultValue: 'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.' })
+    : ''
   const activeFilterCount = [
     query.actorType    !== 'ALL',
     query.resourceType !== 'ALL',
@@ -59,24 +64,30 @@ export function AuditLogListScreen() {
 
   useEffect(() => {
     syncQueryToUrl(query, INITIAL_QUERY)
+    // Khoảng ngày ngược thì không gọi máy chủ — thông báo đã hiện ngay dưới ô
+    // nhập, và phần kết quả bên dưới bị ẩn hẳn (xem điều kiện render).
+    if (dateRangeError) return undefined
     let active = true
     fetchAuditLogs(query)
       .then((r) => {
         if (!active) return
-        setState({ status: 'success', items: r.items, pagination: r.pagination, warning: '' })
+        setState({ status: 'success', items: r.items, pagination: r.pagination })
         // Restore detail drawer from URL deep-link on initial load
         if (initialDetailId) {
           const match = r.items.find((item) => item.id === initialDetailId)
           if (match) setSelectedLog(match)
+          // Không tìm thấy dòng đó trong trang đang tải: bỏ tham số khỏi địa chỉ
+          // để URL không tiếp tục hứa hẹn một bản ghi mà màn hình không mở được.
+          else setDetailParam(null)
         }
       })
       .catch((e) => {
         if (!active) return
-        setState({ status: 'error', items: [], pagination: null, warning: '', error: e.message })
+        setState({ status: 'error', items: [], pagination: null, error: e.message })
       })
     return () => { active = false }
     // initialDetailId is a one-time deep-link seed; re-running on its change would reopen the drawer.
-  }, [query]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [query, dateRangeError]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const columns = useMemo(() => [
     {
@@ -173,8 +184,10 @@ export function AuditLogListScreen() {
   }
 
   function handleExport() {
-    if (state.items.length === 0) return
-    exportToCsv(state.items, t)
+    if (sortedItems.length === 0) return
+    // Xuất theo đúng thứ tự đang hiển thị — trước đây luôn xuất thứ tự gốc của
+    // máy chủ nên tệp tải về không khớp bảng khi người dùng đã bấm sắp xếp.
+    exportToCsv(sortedItems, t)
   }
 
   const totalItems = state.pagination?.totalItems
@@ -247,8 +260,6 @@ export function AuditLogListScreen() {
           </Button>
         </div>
       </div>
-
-      {state.warning && <ReadOnlyBanner warning={state.warning} />}
 
       {/* ── Desktop filter bar — 2-row layout (#3) ── */}
       <section className="bb-filter-bar audit-filter-bar">
@@ -339,6 +350,7 @@ export function AuditLogListScreen() {
               <Input
                 type="date"
                 value={query.from}
+                aria-invalid={dateRangeError ? true : undefined}
                 onChange={(e) => { setActivePreset(null); updateQuery({ from: e.target.value }, { resetPage: true }) }}
                />
             </label>
@@ -347,6 +359,7 @@ export function AuditLogListScreen() {
               <Input
                 type="date"
                 value={query.to}
+                aria-invalid={dateRangeError ? true : undefined}
                 onChange={(e) => { setActivePreset(null); updateQuery({ to: e.target.value }, { resetPage: true }) }}
                />
             </label>
@@ -357,6 +370,12 @@ export function AuditLogListScreen() {
             )}
           </div>
         </div>
+
+        {dateRangeError && (
+          <span className="flex items-center gap-1.5 text-xs text-danger" role="alert">
+            <AlertCircle size={13} aria-hidden="true" /> {dateRangeError}
+          </span>
+        )}
       </section>
 
       {/* ── Mobile filter toggle — #10: hidden at ≤900px via CSS ── */}
@@ -419,7 +438,7 @@ export function AuditLogListScreen() {
       )}
 
       {/* ── Empty state ── */}
-      {state.status === 'success' && state.items.length === 0 && (
+      {state.status === 'success' && state.items.length === 0 && !dateRangeError && (
         <StatePanel
           tone="neutral"
           title={isFiltered ? t('auditLog.emptyFiltered') : t('auditLog.empty')}
@@ -429,7 +448,7 @@ export function AuditLogListScreen() {
       )}
 
       {/* ── Data ── */}
-      {(state.status === 'loading' || (state.status === 'success' && state.items.length > 0)) && (
+      {!dateRangeError && (state.status === 'loading' || (state.status === 'success' && state.items.length > 0)) && (
         <>
           <div className="audit-table-wrapper">
             <AdminTable

@@ -14,12 +14,13 @@ import { useModalFocusTrap, useBodyScrollLock } from './media-picker/useModalBeh
  * Modal for editing altText / title of a media item,
  * and displaying all places where this file is currently in use.
  */
-export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
+export function MediaDetailModal({ media, onSave, onClose, onPreview, onDelete }) {
   const { t } = useTranslation()
   const modalRef = useRef(null)
   const [altText, setAltText] = useState(media.altText ?? '')
   const [title, setTitle] = useState(media.title ?? '')
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
 
   const { refs, refsLoading } = useMediaReferences(media)
@@ -32,6 +33,7 @@ export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
   const dirty = altText !== (media.altText ?? '') || title !== (media.title ?? '')
 
   const attemptClose = useCallback(async () => {
+    if (saving || deleting) return
     if (dirty) {
       const ok = await showConfirm(
         t('media.discardConfirm'),
@@ -40,7 +42,7 @@ export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
       if (!ok) return
     }
     onClose()
-  }, [dirty, onClose, t])
+  }, [deleting, dirty, onClose, saving, t])
 
   // Focus-trap + Escape + khoá scroll nền dùng chung (thay cho bản tự dựng).
   // Escape đi qua attemptClose để không bỏ mất thay đổi chưa lưu.
@@ -58,6 +60,26 @@ export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
       setError(err.message || t('media.saveError'))
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!onDelete) return
+    const ok = await showConfirm(
+      dirty ? t('media.deleteDirtyConfirm') : t('media.deleteConfirm'),
+      t('media.deleteConfirmTitle'),
+      { variant: 'danger', confirmLabel: t('common.delete') },
+    )
+    if (!ok) return
+
+    setDeleting(true)
+    setError('')
+    try {
+      await onDelete(media)
+    } catch (err) {
+      setError(err.message || t('media.deleteError'))
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -168,12 +190,19 @@ export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
         </div>
 
         <div className="mpicker-footer">
-          <span className="text-xs text-muted-foreground truncate max-w-[260px]">
-            {(media.filename ?? '').split('/').pop()}
-          </span>
+          <div className="flex min-w-0 items-center gap-3">
+            {onDelete && (
+              <Button variant="danger" type="button" onClick={handleDelete} loading={deleting} disabled={saving}>
+                {t('common.delete')}
+              </Button>
+            )}
+            <span className="text-xs text-muted-foreground truncate max-w-[260px]">
+              {(media.filename ?? '').split('/').pop()}
+            </span>
+          </div>
           <div className="mpicker-footer-actions">
-            <Button variant="secondary" type="button" onClick={attemptClose} disabled={saving}>{t('common.cancel')}</Button>
-            <Button type="submit" form="media-detail-form" disabled={saving || !dirty}>
+            <Button variant="secondary" type="button" onClick={attemptClose} disabled={saving || deleting}>{t('common.cancel')}</Button>
+            <Button type="submit" form="media-detail-form" disabled={saving || deleting || !dirty}>
               {saving ? t('common.saving') : t('common.save')}
             </Button>
           </div>

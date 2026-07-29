@@ -150,7 +150,7 @@ public class SettingDefinitionRegistry {
                 // ── PUBLIC_HERO ── (hero banner cho các trang listing, không thuộc CMS)
                 SettingDefinition.builder("hero_products_image_url", "public_hero", SettingValueType.IMAGE_URL)
                         .publicAllowed()
-                        .description("Ảnh nền hero trang Tất cả sản phẩm (/san-pham).").build(),
+                        .description("Ảnh nền hero trang Tất cả sản phẩm (/sp/).").build(),
                 SettingDefinition.builder("hero_products_mobile_image_url", "public_hero", SettingValueType.IMAGE_URL)
                         .publicAllowed()
                         .description("Ảnh nền hero trang Tất cả sản phẩm cho điện thoại (viewport ≤767px). Ảnh dọc ~750×1125px. Bỏ trống sẽ dùng ảnh desktop.").build(),

@@ -5,7 +5,10 @@ import { formatDateTimeWithSeconds } from '../../lib/formatters'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
-import { DANGEROUS_ACTIONS, DANGEROUS_VALUES, toBadgeVariant, tryParse } from './constants'
+import {
+  DANGEROUS_ACTIONS, DANGEROUS_VALUES, toBadgeVariant, tryParse,
+  getModuleTone, getModuleLabel, getActionLabel,
+} from './constants'
 import { DetailRow } from './cells'
 
 export function AuditDetailDrawer({ log, onClose }) {
@@ -14,16 +17,11 @@ export function AuditDetailDrawer({ log, onClose }) {
   const hasRaw = !!(log.beforeData || log.afterData)
   const [showRaw, setShowRaw] = useState(false)
 
-  const TONE_MAP = {
-    ORDER: 'info', PRODUCT: 'success', CATEGORY: 'neutral', BRAND: 'neutral',
-    INVENTORY: 'warning', CUSTOMER: 'neutral', SITE_SETTING: 'danger',
-    MEDIA: 'neutral', MENU: 'neutral', CONTENT: 'neutral', ADMIN_ROLE: 'danger', ADMIN_USER: 'neutral', REDIRECT: 'warning',
-  }
-  const moduleTone = TONE_MAP[log.resourceType] || 'neutral'
-  const moduleLabel = t(`auditLog.module.${log.resourceType}`, { defaultValue: log.resourceType || t('auditLog.module.OTHER') })
-  const actionLabel = log.action
-    ? t(`auditLog.action.${log.action}`, { defaultValue: null }) ?? t('auditLog.actionOther', { code: log.action })
-    : '—'
+  // Dùng chung helper với bảng + thẻ mobile — trước đây drawer tự khai báo bảng
+  // màu và cách dựng nhãn riêng, dễ lệch khỏi phần còn lại của màn hình.
+  const moduleTone = getModuleTone(log.resourceType)
+  const moduleLabel = getModuleLabel(t, log.resourceType)
+  const actionLabel = getActionLabel(t, log.action)
   const displayName = log.actorDisplayName || log.actorEmail || null
   const actorFallback = t(`auditLog.actorType.${log.actorType}`, { defaultValue: t('auditLog.actorType.ADMIN') })
 
@@ -103,6 +101,14 @@ export function AuditDetailDrawer({ log, onClose }) {
                 <strong className="text-sm">
                   {log.resourceCode || log.resourceDisplayName || log.resourceId?.slice(0, 8)}
                 </strong>
+              </DetailRow>
+            )}
+
+            {/* Địa chỉ truy cập: API đã trả về sẵn nhưng màn hình chưa từng hiển thị.
+                Rất cần cho các sự kiện đăng nhập sai / khoá tài khoản. */}
+            {log.ipAddress && (
+              <DetailRow label={t('auditLog.drawerIpLabel')}>
+                <span className="font-mono text-sm">{log.ipAddress}</span>
               </DetailRow>
             )}
           </div>

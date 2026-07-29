@@ -6,6 +6,7 @@ import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerAddressEn
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerAddressJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
+import com.bigbike.bigbike_backend.util.PhoneNumbers;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,10 +47,11 @@ public class CustomerImporter implements DomainImporter {
 
         for (MappedCustomer mc : items) {
             try {
+                String normalizedPhone = truncate(PhoneNumbers.normalize(mc.phone()), 50);
                 Optional<CustomerEntity> existing = customerRepo.findByLegacyId(mc.sourceId());
                 // Fallback: avoid duplicate phone/email constraint violations
-                if (existing.isEmpty() && mc.phone() != null && !mc.phone().isBlank()) {
-                    existing = customerRepo.findByPhone(truncate(mc.phone(), 50));
+                if (existing.isEmpty() && normalizedPhone != null) {
+                    existing = customerRepo.findFirstByNormalizedPhone(normalizedPhone);
                 }
                 if (existing.isEmpty() && mc.email() != null && !mc.email().isBlank()) {
                     existing = customerRepo.findByEmail(truncate(mc.email(), 255));
@@ -66,7 +68,7 @@ public class CustomerImporter implements DomainImporter {
                 }
                 entity.setLegacyId(mc.sourceId());
                 entity.setEmail(truncate(mc.email(), 255));
-                entity.setPhone(truncate(mc.phone(), 50));
+                entity.setPhone(normalizedPhone);
                 entity.setDisplayName(truncate(graphemeSafeTruncate(mc.displayName(), 255), 255));
                 entity.setFirstName(truncate(graphemeSafeTruncate(mc.firstName(), 127), 127));
                 entity.setLastName(truncate(graphemeSafeTruncate(mc.lastName(), 127), 127));

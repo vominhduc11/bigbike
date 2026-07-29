@@ -7,7 +7,7 @@ import { buildCategoryTreeOrder } from '../product-detail/constants'
 
 export { buildCategoryTreeOrder }
 
-const CATEGORY_URL_PREFIX = '/danh-muc-san-pham/'
+const CATEGORY_URL_PREFIX = '/danh-muc/'
 
 export function safeMenuDetailCache(data) {
   if (!data) return data
@@ -129,14 +129,57 @@ export function formatCategoryOption(item) {
 // Bản tiếng Anh được backend tự resolve theo `slugEn` lúc đọc public — xem
 // AdminMenuService.resolveDisplayUrl.
 export function buildCategoryMenuUrl(category) {
-  return `${CATEGORY_URL_PREFIX}${category.slug}`
+  return `${CATEGORY_URL_PREFIX}${category.slug}/`
+}
+
+export function normalizeMenuUrlForSave(url) {
+  const value = url.trim()
+  if (!value) return value
+
+  const normalizePath = (pathname) => {
+    const clean = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname
+    if (
+      clean === '/san-pham'
+      || clean === '/danh-muc'
+      || clean === '/danh-muc-san-pham'
+      || clean === '/danh-muc-san-pham.html'
+    ) return '/sp/'
+    if (clean.startsWith('/danh-muc-san-pham/')) {
+      return `/danh-muc/${clean.slice('/danh-muc-san-pham/'.length)}/`
+    }
+    return pathname
+  }
+
+  if (/^https?:\/\//i.test(value)) {
+    try {
+      const parsed = new URL(value)
+      parsed.pathname = normalizePath(parsed.pathname)
+      return parsed.toString()
+    } catch {
+      return value
+    }
+  }
+
+  const suffixAt = [value.indexOf('?'), value.indexOf('#')]
+    .filter((index) => index >= 0)
+    .reduce((min, index) => Math.min(min, index), value.length)
+  return normalizePath(value.slice(0, suffixAt)) + value.slice(suffixAt)
 }
 
 export function isValidCustomUrl(url) {
   const v = url.trim()
   if (!v) return false
+  // Mirror máy chủ (MenuSupport.validateMenuItemUrl): chặn CRLF + scheme nguy hiểm +
+  // URL giao thức-tương-đối (//). Trước đây dùng thẳng `new URL(v)` nên client coi
+  // `javascript:`/`data:`/`vbscript:` là hợp lệ, để form submit rồi mới bị server chặn
+  // bằng lỗi khó hiểu — nay client từ chối ngay cho khớp.
+  if (v.includes('\n') || v.includes('\r')) return false
+  const lower = v.toLowerCase()
+  if (lower.startsWith('javascript:') || lower.startsWith('data:')
+      || lower.startsWith('vbscript:') || lower.startsWith('//')) return false
   if (v.startsWith('/') || v.startsWith('#') || v.startsWith('tel:') || v.startsWith('mailto:')) return true
-  try { new URL(v); return true } catch { return false }
+  // Chỉ chấp nhận http/https cho URL tuyệt đối (đồng bộ danh sách scheme an toàn của server).
+  return lower.startsWith('http://') || lower.startsWith('https://')
 }
 
 export function isItemFormValid(data) {

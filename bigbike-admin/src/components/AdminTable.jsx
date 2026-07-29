@@ -23,7 +23,7 @@ function fromInteractiveChild(e) {
 /**
  * AdminTable — shared data table.
  *
- * `mobileCard` (optional): `(row) => ({ title, subtitle, status, meta, actions, onClick })`.
+ * `mobileCard` (optional): `(row) => ({ title, subtitle, status, meta, actions, onClick, selectionLabel })`.
  * When provided, narrow screens (<640px) render the rows as cards via
  * MobileCardList instead of a horizontally-scrolling table. When omitted,
  * the table renders exactly as before — existing screens are unaffected.
@@ -233,6 +233,9 @@ export function AdminTable({
                   selectable={selectable}
                   selected={selectedIds.includes(row.id)}
                   onSelectChange={() => toggleOne(row.id)}
+                  selectionLabel={card.selectionLabel || t('common.selectNamedRow', {
+                    name: typeof card.title === 'string' ? card.title : row.id,
+                  })}
                 />
               )
             })}

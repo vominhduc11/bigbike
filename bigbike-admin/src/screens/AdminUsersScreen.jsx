@@ -44,6 +44,7 @@ const STATUS_META = {
   DISABLED:  { labelKey: 'adminUsers.statusDisabled'  },
   SUSPENDED: { labelKey: 'adminUsers.statusSuspended' },
 }
+const MANUALLY_EDITABLE_STATUSES = ['ACTIVE', 'DISABLED', 'SUSPENDED']
 
 // Role → bb-badge palette.
 const ROLE_BADGE = {
@@ -67,6 +68,15 @@ const AVATAR_COLORS = [
   'bg-secondary text-secondary-foreground',
 ]
 
+function avatarColorFor(user) {
+  const stableKey = String(user?.id || user?.email || user?.displayName || '')
+  let hash = 0
+  for (let i = 0; i < stableKey.length; i += 1) {
+    hash = ((hash * 31) + stableKey.charCodeAt(i)) | 0
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
+}
+
 const ADMIN_USER_BACKEND_ERROR_TRANSLATIONS = {
   'Only a SUPER_ADMIN can modify a SUPER_ADMIN account': {
     key: 'adminUsers.errSuperAdminModify',
@@ -79,6 +89,22 @@ const ADMIN_USER_BACKEND_ERROR_TRANSLATIONS = {
   'Cannot disable the last active SUPER_ADMIN': {
     key: 'adminUsers.errLastSuperAdminDisable',
     defaultValue: 'Không thể vô hiệu hoá Chủ hệ thống cuối cùng đang hoạt động.',
+  },
+  'SUPER_ADMIN cannot demote themselves': {
+    key: 'adminUsers.errSelfDemote',
+    defaultValue: 'Chủ hệ thống không thể tự hạ quyền của chính mình.',
+  },
+  'Cannot demote the last active SUPER_ADMIN': {
+    key: 'adminUsers.errLastSuperAdminDemote',
+    defaultValue: 'Không thể hạ quyền Chủ hệ thống cuối cùng đang hoạt động.',
+  },
+  'Admin cannot deactivate their own account': {
+    key: 'adminUsers.errSelfDeactivate',
+    defaultValue: 'Bạn không thể tự khóa tài khoản đang đăng nhập.',
+  },
+  'INVITED accounts must accept their invite before becoming active': {
+    key: 'adminUsers.errInviteMustBeAccepted',
+    defaultValue: 'Tài khoản chờ kích hoạt phải dùng liên kết mời để đặt mật khẩu và kích hoạt.',
   },
 }
 
@@ -168,6 +194,10 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
     () => (isSuperAdmin ? roleOptions : roleOptions.filter((role) => role !== 'SUPER_ADMIN')),
     [isSuperAdmin, roleOptions],
   )
+  const editRoleOptions = useMemo(
+    () => (isSuperAdmin ? roleOptions : roleOptions.filter((role) => role !== 'SUPER_ADMIN')),
+    [isSuperAdmin, roleOptions],
+  )
 
   // Đổi mã vai trò thô (vd vai trò tuỳ chỉnh) sang nhãn dễ đọc: ưu tiên nhãn i18n của
   // vai trò dựng sẵn, rồi tên hiển thị của vai trò tuỳ chỉnh, cuối cùng mới là mã.
@@ -181,6 +211,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
 
   // Chặn double-submit của nút kích hoạt/khoá ngay trên dòng: khoá nút đang xử lý.
   const [togglingId, setTogglingId] = useState(null)
+  const [resendingId, setResendingId] = useState(null)
 
   // ── Edit drawer state ───────────────────────────────────────────────────
   const [editUser, setEditUser] = useState(null)
@@ -303,6 +334,9 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
   // Kiểm tra hợp lệ phía client cho drawer sửa — trả về true nếu hợp lệ.
   function validateEditForm() {
     const errs = {}
+    if (!(editForm.displayName || '').trim()) {
+      errs.displayName = t('adminUsers.errDisplayNameRequired', { defaultValue: 'Vui lòng nhập tên hiển thị.' })
+    }
     const pwd = (editForm.newPassword || '').trim()
     if (pwd && pwd.length < PASSWORD_MIN_LENGTH) {
       errs.newPassword = t('adminUsers.errPasswordTooShort', {
@@ -316,7 +350,12 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
 
   // Validate một ô của drawer sửa khi rời ô (on-blur), không xoá lỗi ô khác.
   function validateEditField(field) {
-    if (field === 'newPassword') {
+    if (field === 'displayName') {
+      const err = !(editForm.displayName || '').trim()
+        ? t('adminUsers.errDisplayNameRequired', { defaultValue: 'Vui lòng nhập tên hiển thị.' })
+        : ''
+      setEditFieldErrors((p) => ({ ...p, displayName: err || undefined }))
+    } else if (field === 'newPassword') {
       const pwd = (editForm.newPassword || '').trim()
       const err = pwd && pwd.length < PASSWORD_MIN_LENGTH
         ? t('adminUsers.errPasswordTooShort', {
@@ -331,6 +370,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
   // Submit edit — with confirmation for sensitive changes.
   async function requestEditSubmit() {
     setEditError('')
+    if (isSuperAdminAccountLocked) return
     if (!validateEditForm()) return
 
     const statusChanged = editForm.status !== editUser.status
@@ -338,7 +378,15 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
     const sensitiveStatus = statusChanged && editForm.status !== 'ACTIVE'
     const passwordChanged = editForm.newPassword.trim() !== ''
 
-    if (sensitiveStatus) {
+    const sensitiveChangeCount = [sensitiveStatus, passwordChanged, roleChanged].filter(Boolean).length
+    if (sensitiveChangeCount > 1) {
+      const ok = await showConfirm(
+        t('adminUsers.confirmMultipleChanges'),
+        t('adminUsers.confirmSensitiveTitle'),
+        { variant: 'danger' },
+      )
+      if (!ok) return
+    } else if (sensitiveStatus) {
       const ok = await showConfirm(
         t('adminUsers.confirmDisable'),
         t('adminUsers.confirmSensitiveTitle'),
@@ -469,11 +517,15 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
   }
 
   async function handleResendInvite(user) {
+    if (resendingId) return
+    setResendingId(user.id)
     try {
       const r = await resendAdminInvite(user.id)
       setInviteInfo({ email: user.email, emailSent: r.inviteEmailSent, inviteUrl: r.inviteUrl })
     } catch (err) {
       setInviteInfo({ email: user.email, emailSent: false, inviteUrl: '', error: getAdminUserErrorMessage(err, t) })
+    } finally {
+      setResendingId(null)
     }
   }
 
@@ -536,7 +588,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
   }
 
   // Sắp xếp phía client theo cột đang chọn (chỉ trên trang hiện tại).
-  // Gắn _idx để màu avatar giữ ổn định theo thứ tự hiển thị.
+  // Màu avatar được băm từ định danh tài khoản nên không đổi khi sắp xếp.
   const items = useMemo(() => {
     const base = listState.items || []
     let ordered = base
@@ -557,7 +609,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
         return 0
       })
     }
-    return ordered.map((u, i) => ({ ...u, _idx: i }))
+    return ordered
   }, [listState.items, sort])
 
   const isLoading = listState.status === 'loading' && (listState.items || []).length === 0
@@ -572,7 +624,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
     const label = activating ? t('adminUsers.actionActivate') : t('adminUsers.actionLock')
     return (
       <Button variant="unstyled" type="button" className="bb-icon-btn" title={label} aria-label={label}
-        disabled={togglingId === u.id} onClick={() => handleToggleStatus(u)}>
+        disabled={Boolean(togglingId)} onClick={() => handleToggleStatus(u)}>
         {activating ? <UserCheck size={14} /> : <Lock size={14} />}
       </Button>
     )
@@ -588,13 +640,13 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
         const name = u.displayName || u.email
         return (
           <div className="product-cell">
-            <span className={`inline-flex items-center justify-center size-12 rounded-full text-sm font-bold flex-shrink-0 ${AVATAR_COLORS[(u._idx ?? 0) % AVATAR_COLORS.length]}`}>
+            <span className={`inline-flex items-center justify-center size-12 rounded-full text-sm font-bold flex-shrink-0 ${avatarColorFor(u)}`}>
               {(name || '?').charAt(0).toUpperCase()}
             </span>
             <div className="info">
               <div className="name">{name}</div>
               {u.displayName && (
-                <div className="sku" style={{ fontFamily: 'inherit' }}>{u.email}</div>
+                <div className="sku font-body">{u.email}</div>
               )}
             </div>
           </div>
@@ -635,7 +687,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
           render: (u) => (
             <div className="inline-flex items-center justify-end gap-1">
               {u.status === 'INVITED' && (
-                <Button variant="unstyled" type="button" className="bb-icon-btn" title={t('adminUsers.resendInvite')} aria-label={t('adminUsers.resendInvite')} onClick={() => handleResendInvite(u)}>
+                <Button variant="unstyled" type="button" className="bb-icon-btn" title={t('adminUsers.resendInvite')} aria-label={t('adminUsers.resendInvite')} disabled={Boolean(resendingId)} onClick={() => handleResendInvite(u)}>
                   <Mail size={14} />
                 </Button>
               )}
@@ -657,7 +709,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
     return {
       title: (
         <span className="flex items-center gap-2">
-          <span className={`inline-flex items-center justify-center size-8 rounded-full text-xs font-bold flex-shrink-0 ${AVATAR_COLORS[(u._idx ?? 0) % AVATAR_COLORS.length]}`}>
+          <span className={`inline-flex items-center justify-center size-8 rounded-full text-xs font-bold flex-shrink-0 ${avatarColorFor(u)}`}>
             {(name || '?').charAt(0).toUpperCase()}
           </span>
           {name}
@@ -672,7 +724,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
       actions: canUpdate ? (
         <>
           {u.status === 'INVITED' && (
-            <Button variant="unstyled" type="button" className="bb-icon-btn" title={t('adminUsers.resendInvite')} aria-label={t('adminUsers.resendInvite')} onClick={() => handleResendInvite(u)}>
+            <Button variant="unstyled" type="button" className="bb-icon-btn" title={t('adminUsers.resendInvite')} aria-label={t('adminUsers.resendInvite')} disabled={Boolean(resendingId)} onClick={() => handleResendInvite(u)}>
               <Mail size={14} />
             </Button>
           )}
@@ -703,6 +755,9 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
       </div>
 
       {listState.warning ? <ReadOnlyBanner warning={listState.warning} /> : null}
+      {!canUpdate && !listState.warning ? (
+        <ReadOnlyBanner warning={t('adminUsers.readOnlyHint')} />
+      ) : null}
 
       {rolesError && (
         <Alert tone="warning" icon={AlertCircle} dismissible onDismiss={() => setRolesError(false)}>
@@ -825,7 +880,13 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
             <Button type="button" variant="outline" size="sm" onClick={requestCloseEdit}>
               {t('common.cancel')}
             </Button>
-            <Button type="button" size="sm" loading={editSaving} onClick={requestEditSubmit}>
+            <Button
+              type="button"
+              size="sm"
+              loading={editSaving}
+              disabled={isSuperAdminAccountLocked || !isEditFormDirty()}
+              onClick={requestEditSubmit}
+            >
               {t('adminUsers.saveBtn')}
             </Button>
           </>
@@ -863,6 +924,8 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
                   <Input
                     value={editForm.displayName}
                     onChange={(e) => setEditForm((p) => ({ ...p, displayName: e.target.value }))}
+                    onBlur={() => validateEditField('displayName')}
+                    disabled={isSuperAdminAccountLocked}
                   />
                 </FormField>
                 <FormField label={t('adminUsers.formRole')} error={editFieldErrors.role}>
@@ -873,22 +936,29 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
                   >
                     <SelectTrigger aria-invalid={editFieldErrors.role ? true : undefined}><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {roleOptions.map((r) => (
+                      {editRoleOptions.map((r) => (
                         <SelectItem key={r} value={r}>{resolveRoleLabel(r)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </FormField>
-                <FormField label={t('adminUsers.formStatus')} error={editFieldErrors.status}>
+                <FormField
+                  label={t('adminUsers.formStatus')}
+                  error={editFieldErrors.status}
+                  helper={editUser.status === 'INVITED' ? t('adminUsers.inviteStatusLocked') : undefined}
+                >
                   <Select
                     value={editForm.status}
-                    disabled={isSelf || isSuperAdminAccountLocked}
+                    disabled={isSelf || isSuperAdminAccountLocked || editUser.status === 'INVITED'}
                     onValueChange={(val) => setEditForm((p) => ({ ...p, status: val }))}
                   >
                     <SelectTrigger aria-invalid={editFieldErrors.status ? true : undefined}><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {Object.entries(STATUS_META).map(([key, meta]) => (
-                        <SelectItem key={key} value={key}>{t(meta.labelKey)}</SelectItem>
+                      {editUser.status === 'INVITED' && (
+                        <SelectItem value="INVITED" disabled>{t(STATUS_META.INVITED.labelKey)}</SelectItem>
+                      )}
+                      {MANUALLY_EDITABLE_STATUSES.map((key) => (
+                        <SelectItem key={key} value={key}>{t(STATUS_META[key].labelKey)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -902,7 +972,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId, isSuperAdmin }) {
                 value={editForm.newPassword}
                 onChange={(e) => setEditForm((p) => ({ ...p, newPassword: e.target.value }))}
                 onBlur={() => validateEditField('newPassword')}
-                disabled={isSelf || isSuperAdminAccountLocked}
+                disabled={isSuperAdminAccountLocked}
                 placeholder={t('adminUsers.formPasswordHint')}
                 label={t('adminUsers.formPasswordNew')}
                 hint={t('adminUsers.formPasswordStrengthHint')}

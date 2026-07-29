@@ -286,14 +286,14 @@ public class WordPressOrderMapper {
                                         String transactionId, BigDecimal paidAmount,
                                         BigDecimal total, List<String> warnings) {
         if ("CANCELLED".equals(orderStatus)) return "CANCELLED";
-        if (paidAt != null) return "PAID";
-        if (transactionId != null && !transactionId.isBlank()) return "PAID";
-        if ("COMPLETED".equals(orderStatus)) return "PAID";
+        if (paidAt != null) return "SUCCEEDED";
+        if (transactionId != null && !transactionId.isBlank()) return "SUCCEEDED";
+        if ("COMPLETED".equals(orderStatus)) return "SUCCEEDED";
         if ("PROCESSING".equals(orderStatus)) {
-            warnings.add("Order PROCESSING but no paid date or transaction ID — defaulting payment record status to UNPAID");
-            return "UNPAID";
+            warnings.add("Order PROCESSING but no paid date or transaction ID — defaulting payment record status to PENDING");
+            return "PENDING";
         }
-        return "UNPAID";
+        return "PENDING";
     }
 
     private String resolveProvider(String paymentMethod) {

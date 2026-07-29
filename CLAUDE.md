@@ -171,6 +171,31 @@ Chi tiết: [AGENTS.md](AGENTS.md) §5.7.
 
 ---
 
+## ⚠️ Quy trình dựng sẵn — dùng thay vì tự bịa cách làm
+
+Repo có 11 quy trình viết thành file ở `.claude/skills/<tên>/SKILL.md`. Claude Code gọi bằng `/<tên>`; agent khác (Codex…) đọc thẳng file đó rồi làm theo — **cùng một nguồn, không có bản sao**.
+
+Riêng Docs-First không có skill — dùng thẳng bảng tra ở đầu file này.
+
+| Việc | Gọi |
+|---|---|
+| **Làm mới/mở rộng 1 tính năng qua cả 3 app** | `/feature-build <tính năng>` |
+| Audit 1 module admin | `/admin-module-audit <module>` |
+| Quét audit hết module admin | `/admin-audit-all` |
+| Audit 1 tính năng xuyên web + admin + backend | `/feature-audit <tính năng>` |
+| Quét audit hết luồng nghiệp vụ đầu-cuối | `/workflow-audit-all` |
+| Tạo screen admin / page web / endpoint backend | `/admin-screen`, `/web-page`, `/backend-endpoint` |
+| Kiểm thử đầu-cuối trên hệ thống thật | `/e2e <luồng>` |
+| Trước khi chốt UI/text | `/hygiene` |
+| Trước khi commit/push/PR | `/preflight` |
+| Chạy & chụp màn hình admin thật | `/run-bigbike-admin` |
+
+**Chế độ chạy:** một lần gọi = chạy tới xong, không dừng giữa chừng xin duyệt. Cần owner quyết → hỏi bằng bảng chọn phương án (`AskUserQuestion`) rồi chạy tiếp. Vướng kỹ thuật → ghi `Not run: <lý do>` rồi chạy tiếp.
+
+Chi tiết + cách chia việc khi chạy nhiều agent song song: [AGENTS.md](AGENTS.md) §19.
+
+---
+
 ## Đọc thêm
 
-Full operating rules: [AGENTS.md](AGENTS.md) — §2 Docs-First, §3 Reading Order, §4 Source of Truth, §5 Global Rules, §6 Frontend Stack, §7 Backend Stack, §14 File/Asset.
+Full operating rules: [AGENTS.md](AGENTS.md) — §2 Docs-First, §3 Reading Order, §4 Source of Truth, §5 Global Rules, §6 Frontend Stack, §7 Backend Stack, §14 File/Asset, §19 Agent Workflows.

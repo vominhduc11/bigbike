@@ -3,8 +3,10 @@ package com.bigbike.bigbike_backend.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
@@ -187,9 +189,12 @@ class AdminAuditLogApiTest {
     @Test
     void exportAuditLog_hasNonNullIpAddress() throws Exception {
         // Trigger a report export through the API so an audit log is written
-        mockMvc.perform(get("/api/v1/admin/reports/orders/export")
+        MvcResult started = mockMvc.perform(get("/api/v1/admin/reports/orders/export")
                         .header("X-Forwarded-For", "10.10.10.10")
                         .with(principalAuth(ADMIN_ID, "ADMIN")))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+        mockMvc.perform(asyncDispatch(started))
                 .andExpect(status().isOk());
 
         // Check that audit logs for REPORT_EXPORT_CREATED have a non-null ipAddress

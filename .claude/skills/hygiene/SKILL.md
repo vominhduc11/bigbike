@@ -1,24 +1,24 @@
 ---
 name: hygiene
-description: Dùng trước khi finalize thay đổi UI/text trong bigbike-web hoặc bigbike-admin để bắt các lỗi cơ học mà CI và contract quan tâm — dead CSS (theo đúng quy trình grep-trước-khi-xóa), mojibake hoặc tiếng Việt mất dấu, và business-data legacy hardcode (email/phone/địa chỉ) mà guard script chặn. Gọi bằng /hygiene.
+description: "Dùng trước khi finalize thay đổi UI hoặc text trong bigbike-web hoặc bigbike-admin để bắt lỗi cơ học mà CI và contract quan tâm: dead CSS theo quy trình rg-trước-khi-xóa, mojibake hoặc tiếng Việt mất dấu, và business-data legacy hardcode như email, phone hoặc địa chỉ mà guard script chặn."
 ---
 
-# /hygiene — Quét dead CSS, mojibake, business-data hardcode
+# hygiene — Quét dead CSS, mojibake, business-data hardcode
 
 Ba loại lỗi cơ học, dễ quên, nhưng CI/contract bắt. Quét trên file đã đổi (hoặc theo yêu cầu).
 
-## 1. Dead CSS — grep trước khi xóa
+## 1. Dead CSS — rg trước khi xóa
 
 Dead CSS = class định nghĩa trong `.css` nhưng không `.jsx/.tsx/.js/.ts` nào reference.
 
-```bash
+```powershell
 # Xác nhận một class cụ thể trước khi kết luận dead (chạy từ root repo)
-grep -rn "ten-class" bigbike-admin/src --include="*.jsx" --include="*.tsx" --include="*.js"
-grep -rn "ten-class" bigbike-web --include="*.jsx" --include="*.tsx" --include="*.js" --include="*.ts"
+rg -n "ten-class" bigbike-admin/src -g "*.jsx" -g "*.tsx" -g "*.js"
+rg -n "ten-class" bigbike-web -g "*.jsx" -g "*.tsx" -g "*.js" -g "*.ts"
 ```
 
-- Grep ra kết quả → đang dùng → giữ.
-- Grep ra 0 kết quả → dead → **xóa ngay trong cùng task**, không ghi TODO.
+- `rg` ra kết quả → đang dùng → giữ.
+- `rg` ra 0 kết quả → dead → **xóa ngay trong cùng task**, không ghi TODO.
 
 **Ngoại lệ KHÔNG tính dead:** selector third-party (`.tiptap`, `.recharts-*`, `.rdp-*`), class set qua `classList.add`/`element.className` trong JS, `@keyframes` (chỉ dead nếu không có `animation`/`animation-name` reference cùng file).
 
@@ -30,14 +30,13 @@ grep -rn "ten-class" bigbike-web --include="*.jsx" --include="*.tsx" --include="
 
 Mọi text UI (JSX content, string literal, placeholder, aria-label, alt, toast, log, comment) phải UTF-8, có dấu đầy đủ, không vỡ mã.
 
-```bash
+```powershell
 # Tìm dấu hiệu mojibake / unicode escape thủ công trong file đã đổi
-grep -rnP "Ã|Â|áº|â€|�|&#[0-9]+;" bigbike-web/app bigbike-web/components bigbike-admin/src \
-  --include="*.tsx" --include="*.jsx" --include="*.ts" --include="*.js"
+rg -n "\x{00C3}|\x{00C2}|\x{00E1}\x{00BA}|\x{00E2}\x{20AC}|\x{FFFD}|&#[0-9]+;" bigbike-web/app bigbike-web/components bigbike-admin/src -g "*.tsx" -g "*.jsx" -g "*.ts" -g "*.js"
 ```
 
-- `ThÃ nh toÃ¡n`, `Gi&#7843;m`, `�` → vỡ mã, phải sửa thành tiếng Việt thẳng UTF-8.
-- Tiếng Việt mất dấu (`Thanh toan`, `San pham noi bat`) khó grep tự động → **đọc mắt các string UI vừa thêm/sửa**, đảm bảo có dấu.
+- Chuỗi nhìn như chữ bị vỡ mã, HTML numeric escape dạng ampersand-hash-number-semicolon, hoặc ký tự replacement `U+FFFD` → phải sửa thành tiếng Việt thẳng UTF-8.
+- Tiếng Việt mất dấu (`Thanh toan`, `San pham noi bat`) khó tự động hóa hoàn toàn → **đọc mắt các string UI vừa thêm/sửa**, đảm bảo có dấu.
 
 ## 3. Business-data hardcode (guard script chặn)
 

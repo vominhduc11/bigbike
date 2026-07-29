@@ -322,6 +322,7 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
           onCancel={() => setShowCreateDialog(false)}
           saving={createSaving}
           roles={roles}
+          sensitiveKeys={SENSITIVE_PERMS}
         />
       )}
 

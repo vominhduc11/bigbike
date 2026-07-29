@@ -1492,7 +1492,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
    web 0 caller — PageHero/Breadcrumb hiện render bằng Tailwind utilities. */
 
 
-/* WP-parity trang shop (/san-pham): tiêu đề banner chữ thường ("Tất cả sản phẩm"),
+/* WP-parity trang shop (/sp): tiêu đề banner chữ thường ("Tất cả sản phẩm"),
    breadcrumb đặt DƯỚI tiêu đề dạng tên site "Bigbike.vn" (không in hoa, không
    letter-spacing). Scoped trong .bb-product-archive nên không đụng hero trang khác. */
 

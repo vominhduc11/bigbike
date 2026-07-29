@@ -85,7 +85,7 @@ class AdminMenuServiceTest {
         assertThat(response.targetId()).isEqualTo(CATEGORY_ID);
         assertThat(response.label()).isEqualTo("Mũ bảo hiểm chính hãng");
         assertThat(response.labelEn()).isEqualTo("Genuine helmets");
-        assertThat(response.url()).isEqualTo("/danh-muc-san-pham/mu-bao-hiem");
+        assertThat(response.url()).isEqualTo("/danh-muc/mu-bao-hiem/");
     }
 
     @Test
@@ -143,7 +143,7 @@ class AdminMenuServiceTest {
         PublicMenuResponse response = service.getPublicMenuByLocation("primary", "en");
 
         assertThat(response.items()).hasSize(1);
-        assertThat(response.items().get(0).url()).isEqualTo("/danh-muc-san-pham/helmets");
+        assertThat(response.items().get(0).url()).isEqualTo("/categories/helmets/");
         assertThat(response.items().get(0).label()).isEqualTo("Helmets");
     }
 
@@ -159,7 +159,7 @@ class AdminMenuServiceTest {
 
         PublicMenuResponse response = service.getPublicMenuByLocation("primary", "en");
 
-        assertThat(response.items().get(0).url()).isEqualTo("/danh-muc-san-pham/mu-bao-hiem");
+        assertThat(response.items().get(0).url()).isEqualTo("/danh-muc/mu-bao-hiem/");
         assertThat(response.items().get(0).label()).isEqualTo("Mũ bảo hiểm");
     }
 
@@ -174,7 +174,7 @@ class AdminMenuServiceTest {
 
         PublicMenuResponse response = service.getPublicMenuByLocation("primary", "en");
 
-        assertThat(response.items().get(0).url()).isEqualTo("/danh-muc-san-pham/mu-bao-hiem");
+        assertThat(response.items().get(0).url()).isEqualTo("/danh-muc/mu-bao-hiem/");
         assertThat(response.items().get(0).label()).isEqualTo("Mũ bảo hiểm");
     }
 
@@ -196,7 +196,7 @@ class AdminMenuServiceTest {
 
         assertThat(response.label()).isEqualTo("Mũ bảo hiểm chính hãng");
         assertThat(response.labelEn()).isEqualTo("Genuine helmets");
-        assertThat(response.url()).isEqualTo("/danh-muc-san-pham/mu-bao-hiem");
+        assertThat(response.url()).isEqualTo("/danh-muc/mu-bao-hiem/");
         assertThat(response.sortOrder()).isEqualTo(5);
     }
 }

@@ -13,8 +13,7 @@ export type RouteDef = {
 
 export const PUBLIC_ROUTES: RouteDef[] = [
   { path: "/", name: "Trang chủ", group: "home", kind: "data" },
-  { path: "/san-pham/", name: "Danh sách sản phẩm (PLP)", group: "catalog", kind: "data" },
-  { path: "/danh-muc-san-pham/", name: "Danh mục sản phẩm", group: "catalog", kind: "data" },
+  { path: "/sp/", name: "Danh sách sản phẩm (PLP)", group: "catalog", kind: "data" },
   { path: "/brands/", name: "Thương hiệu", group: "catalog", kind: "data" },
   { path: "/tin-tuc/", name: "Tin tức", group: "content", kind: "data" },
   { path: "/gioi-thieu/", name: "Giới thiệu", group: "content", kind: "static" },
@@ -32,7 +31,7 @@ export const PUBLIC_ROUTES: RouteDef[] = [
 /** Real deep-link slugs (harvested from live sitemap / listing pages). */
 export const SAMPLE = {
   product: "/product/agv-k1s/",
-  category: "/danh-muc-san-pham/ao-bao-ho-tui-khi/",
+  category: "/danh-muc/ao-bao-ho-tui-khi/",
   brand: "/brands/alpinestars/",
   news: "/tin-tuc/cach-chon-balo-phuot/",
   policy: "/chinh-sach/chinh-sach-doi-tra-hang/",

@@ -43,8 +43,8 @@ const VIEWPORTS = [
 
 const ROUTES = [
   { path: "/", label: "homepage" },
-  { path: "/san-pham", label: "product-listing" },
-  { path: "/danh-muc-san-pham", label: "category-listing" },
+  { path: "/sp", label: "product-listing" },
+  { path: "/danh-muc/non-bao-hiem-moto", label: "category-listing" },
   { path: "/product/ls2-koku-kidney-belt", label: "product-detail" },
   { path: "/tim-kiem", label: "search" },
   { path: "/tin-tuc", label: "news-list" },

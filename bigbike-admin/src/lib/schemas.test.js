@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createBrandSchema, createCategorySchema, createProductSchema } from './schemas'
+import { createBrandSchema, createCategorySchema, createContentSchema, createProductSchema } from './schemas'
 
 // Stub i18n: return the defaultValue when provided, otherwise the raw key —
 // enough for asserting on error *paths*, which is what these tests check.
@@ -26,6 +26,58 @@ function pathsOf(result) {
   if (result.success) return []
   return result.error.issues.map((i) => i.path.join('.'))
 }
+
+describe('MEDIA_RULE_004 — writable video sources', () => {
+  it('product videos and gallery accept YouTube/upload and reject legacy providers', () => {
+    const schema = createProductSchema(t, false)
+    const valid = schema.safeParse(baseForm({
+      videos: [
+        { url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', title: '', type: 'youtube' },
+        { url: '/media/videos/demo.mp4', title: '', type: 'upload' },
+      ],
+      gallery: [
+        { mediaType: 'video', videoUrl: '/media/videos/gallery.mp4', provider: 'upload', url: '', alt: '' },
+      ],
+    }))
+    expect(valid.success).toBe(true)
+
+    const legacy = schema.safeParse(baseForm({
+      videos: [
+        { url: 'https://www.tiktok.com/@x/video/7412345678901234567', title: '', type: 'tiktok' },
+      ],
+      gallery: [
+        { mediaType: 'video', videoUrl: 'https://www.facebook.com/x/videos/123', provider: 'facebook', url: '', alt: '' },
+      ],
+    }))
+    expect(pathsOf(legacy)).toEqual(expect.arrayContaining(['videos.0.url', 'gallery.0.videoUrl']))
+  })
+
+  it('article video blocks reject TikTok/Facebook but accept YouTube/upload', () => {
+    const schema = createContentSchema(t, true, 'article')
+    const base = {
+      slug: 'article-video',
+      title: 'Bài viết video',
+      excerpt: '',
+      body: '',
+      publishStatus: 'DRAFT',
+      translations: { en: { title: 'Video article' } },
+    }
+
+    for (const block of [
+      { type: 'video', provider: 'youtube', url: 'https://youtu.be/dQw4w9WgXcQ' },
+      { type: 'video', provider: 'upload', url: '/media/videos/article.mp4' },
+    ]) {
+      expect(schema.safeParse({ ...base, bodyBlocks: [block] }).success).toBe(true)
+    }
+
+    for (const block of [
+      { type: 'video', provider: 'tiktok', url: 'https://www.tiktok.com/@x/video/7412345678901234567' },
+      { type: 'video', provider: 'facebook', url: 'https://www.facebook.com/x/videos/123' },
+    ]) {
+      expect(pathsOf(schema.safeParse({ ...base, bodyBlocks: [block] }))).toContain('bodyBlocks.0.url')
+    }
+  })
+})
 
 describe('createProductSchema — PRODUCT_RULE_005 required-field matrix', () => {
   it('no variants / draft: name-slug-category-brand-gender-sku-retailPrice always required, isCreate not needed', () => {

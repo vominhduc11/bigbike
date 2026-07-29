@@ -9,15 +9,15 @@ import { useProductPicker } from '../lib/useProductPicker'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { clearNavGuard } from '@/lib/navigationGuard'
 import { showConfirm } from '../lib/confirm'
-import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { SortableList } from '../components/Sortable'
 import { Screen } from '../components/layout/Screen'
 import { ScreenHeader } from '../components/layout/ScreenHeader'
 import { Button } from '@/components/ui/button'
+import { Alert } from '@/components/ui/alert'
+import { PublishStatusBadge } from '../components/StatusBadge'
 import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
-
-const FEATURED_GRID_MAX = 12
+import { FEATURED_GRID_MAX, featuredSaveErrorMessage, isFeaturedLive } from './featured-products/constants'
 
 function ProductPicker({ onAdd, disabledIds, disabled }) {
   const { t } = useTranslation()
@@ -79,6 +79,9 @@ function ProductRow({ product, canUpdate, onRemove, sortable }) {
           src={product.image.url}
           alt={product.image.alt || product.name}
           referrerPolicy="no-referrer"
+          loading="lazy"
+          // Ảnh hỏng/404 trước đây để lại ô ảnh vỡ giữa dòng — ẩn hẳn để dòng không bị lệch.
+          onError={(event) => { event.currentTarget.hidden = true }}
           className="w-12 h-12 object-cover flex-shrink-0"
         />
       )}
@@ -88,6 +91,14 @@ function ProductRow({ product, canUpdate, onRemove, sortable }) {
           <p className="text-xs text-muted-foreground mt-0.5">SKU: {product.sku}</p>
         )}
       </div>
+      {/* Sản phẩm bị chuyển về Nháp/Thùng rác vẫn nằm trong danh sách nổi bật nhưng KHÔNG
+          hiện trên trang chủ, và chặn luôn thao tác lưu. Gắn nhãn trạng thái để chủ shop
+          thấy ngay thay vì chỉ biết khi bấm Lưu và nhận thông báo lỗi. */}
+      {!isFeaturedLive(product) && (
+        <span className="flex-shrink-0">
+          <PublishStatusBadge value={product.publishStatus} />
+        </span>
+      )}
       {canUpdate && (
         <Button
           variant="unstyled"
@@ -170,7 +181,7 @@ export function FeaturedProductsScreen({ canUpdate }) {
       toast.success(t('featuredProducts.savedSuccess'))
     },
     onError(err) {
-      toast.error(err?.message || t('common.errorOccurred'))
+      toast.error(featuredSaveErrorMessage(t, err, items))
     },
   })
 
@@ -210,6 +221,7 @@ export function FeaturedProductsScreen({ canUpdate }) {
   }
 
   const disabledIds = new Set(items.map((p) => p.id))
+  const staleItems = items.filter((product) => !isFeaturedLive(product))
 
   const pickerRef = useRef(null)
   function focusPicker() {
@@ -257,9 +269,10 @@ export function FeaturedProductsScreen({ canUpdate }) {
   }
 
   return (
+    // Route của màn này yêu cầu sẵn quyền sửa sản phẩm (`routePermission` trong App.jsx),
+    // nên không có trường hợp mở được màn mà chỉ được xem — không cần dải "chỉ xem".
+    // Owner chốt 2026-07-28: giữ nguyên cách phân quyền này.
     <Screen maxWidth="720px">
-      {!canUpdate && <ReadOnlyBanner />}
-
       <ScreenHeader
         eyebrow={t('featuredProducts.eyebrow')}
         title={t('featuredProducts.title')}
@@ -294,6 +307,16 @@ export function FeaturedProductsScreen({ canUpdate }) {
               {items.length} / {FEATURED_GRID_MAX}
             </span>
           </div>
+
+          {staleItems.length > 0 && (
+            <Alert tone="warning" size="sm">
+              {t('featuredProducts.staleWarning', {
+                count: staleItems.length,
+                names: staleItems.map((p) => p.name).join(', '),
+                defaultValue: 'Có {{count}} sản phẩm trong danh sách hiện không còn đang bán nên không hiện trên trang chủ: {{names}}. Hãy đăng bán lại hoặc bỏ khỏi danh sách — chưa xử lý thì không lưu được thay đổi.',
+              })}
+            </Alert>
+          )}
 
           {items.length === 0 && (
             <StatePanel

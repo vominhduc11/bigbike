@@ -85,8 +85,8 @@ Nguyên tắc đọc file này:
 |---|---|
 | Category | Project Term |
 | Definition | Website public cho khách, ưu tiên SEO, product discovery, PDP, cart, checkout và content. |
-| BigBike Context | App `bigbike-web` dùng Next.js App Router, route tiếng Việt như `/san-pham/`, `/gio-hang/`, `/thanh-toan/`. |
-| Example | `/product/{slug}/`, `/danh-muc-san-pham/`, `/tin-tuc/{slug}/`. |
+| BigBike Context | App `bigbike-web` dùng Next.js App Router, route tiếng Việt như `/sp/`, `/gio-hang/`, `/thanh-toan/`. |
+| Example | `/product/{slug}/`, `/danh-muc/{slug}/`, `/tin-tuc/{slug}/`. |
 | Related Docs | `MODULE_CATALOG.md`, `WORKFLOW_OVERVIEW.md` |
 | Status | `CONFIRMED_FROM_REPO` |
 | Evidence | `bigbike-web/lib/utils/routes.ts`, `README.md` |
@@ -184,7 +184,7 @@ Nguyên tắc đọc file này:
 | Category | Business Term |
 | Definition | Danh mục dùng để tổ chức catalog sản phẩm. |
 | BigBike Context | Public category route/API tồn tại; admin quản lý category; visible category mới public. |
-| Example | `/danh-muc-san-pham/{slug}/`. |
+| Example | `/danh-muc/{slug}/`. |
 | Related Docs | `MODULE_CATALOG.md`, `STATE_MACHINES.md` |
 | Status | `CONFIRMED_FROM_REPO` |
 | Evidence | `CatalogController.java`, `bigbike-web/lib/utils/routes.ts` |
@@ -436,7 +436,7 @@ Nguyên tắc đọc file này:
 |---|---|
 | Definition | UI building blocks: route là đường dẫn, screen/page là màn hình, component là UI unit tái sử dụng. |
 | BigBike Context | Public web routes nằm trong Next.js app/route helpers; admin screens nằm trong SPA. |
-| Example | `/san-pham/`, `/admin/products`, `ProductDetailScreen`, `HeroSlider`. |
+| Example | `/sp/`, `/admin/products`, `ProductDetailScreen`, `HeroSlider`. |
 | Related Docs | `MODULE_CATALOG.md` |
 | Status | `CONFIRMED_FROM_REPO` |
 | Evidence | `bigbike-web/lib/utils/routes.ts`, `bigbike-admin/README.md` |

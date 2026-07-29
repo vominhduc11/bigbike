@@ -208,7 +208,7 @@ Status: `CONFIRMED_FROM_CODE`
 
 Evidence: `OrderEntity.cancelReason`, `AdminOrderService.updateOrderStatus`, `V351__add_orders_cancel_reason.sql`
 
-**Phone normalization:** `customers.phone` is stored in normalized form (`PhoneNumbers.normalize`: strip spaces/dashes, `+84`/`84` → `0`) consistently across **online registration, login, profile update, and admin customer edit**. This makes phone a reliable identity key (the same person typing `+84…` or `0…` resolves to one profile). Lookups also try the `+84…` variant so pre-existing rows stored before this change (no backfill performed) still match. The WordPress importer (`CustomerImporter`) is intentionally excluded — historical import data is left as-is.
+**Phone normalization:** `customers.phone` is stored in normalized form (`PhoneNumbers.normalize`: retain digits, `+84`/`84` → `0`) consistently across **online registration, login, profile update, admin customer edit, and new WordPress customer imports**. This makes phone a reliable identity key (the same person typing `+84…` or `0…` resolves to one profile). Identity and uniqueness lookups normalize the stored value inside the database query, so pre-existing `+84…` and formatted rows still match. There is no bulk backfill of existing database rows; the importer normalizes only rows processed from this change onward.
 
 Status: `CONFIRMED_FROM_CODE`
 
@@ -223,6 +223,27 @@ This storage compatibility does **not** make the current checkout contract optio
 storefront checkout order uses `COD` or `BANK_TRANSFER`; an omitted request value is normalized to
 `COD`, and any other explicit method is rejected. `BANK_TRANSFER` is the new manual-transfer code
 and must not reuse legacy `BACS`; `BACS`/`null` are read compatibility only. `CONFIRMED_FROM_CODE`
+
+### Payment record status vocabulary
+
+`payments.status` is required and is exposed only as read-only transaction metadata in
+`OrderPaymentResponse.status`. It is not `OrderEntity.status` and does not control order
+transitions.
+
+| Value | Meaning |
+|---|---|
+| `PENDING` | Chưa có bằng chứng thanh toán thành công |
+| `SUCCEEDED` | Bản ghi thanh toán thành công |
+| `FAILED` | Bản ghi thanh toán thất bại |
+| `CANCELLED` | Bản ghi đã huỷ; gồm dữ liệu hoàn tiền cũ sau khi refund bị gỡ |
+
+Migration `V353__normalize_payment_record_status.sql` normalizes legacy
+`UNPAID`/`PARTIALLY_PAID → PENDING`, `PAID → SUCCEEDED`, and
+`REFUNDED`/`PARTIALLY_REFUNDED → CANCELLED`, preserves existing canonical values,
+and stops on unknown values instead of guessing. It then adds
+`ck_payments_status` for exactly the four values above. Checkout and WordPress
+import code must write only the same vocabulary. The admin order detail may
+display it but provides no payment-status mutation control. See `PAY_RULE_003`.
 
 ### Admin invite (email-based admin user onboarding)
 
@@ -327,17 +348,19 @@ Evidence:
 - `V165__aggregate_variant_product_stock_state.sql` (trigger giữ `products.stockState` đồng bộ với variants)
 - `V261__inventory_availability_toggle.sql` (boolean availability; backfill `is_available` + `stock_state` từ số lượng hiện tại — 2026-06-23)
 
-### Product rich-text content fields
+### Product rich-text content field
 
-Two independent rich-HTML columns on the `products` table feed distinct
-section bands of the product detail page (PDP). Both are admin-editable, optional
-(nullable), stored as `TEXT`, and limited to 50 000 characters by the upsert
-DTO (`@Size(max = 50000)`).
+`description` / `description_en` are the flat rendered HTML fields for the
+"Mô tả sản phẩm" section on the PDP. They are optional `TEXT` values and may be
+authored through `descriptionBlocks`, whose renderer keeps the flat fields in
+sync.
 
-| Field | DB column | PDP surface |
-|---|---|---|
-| `description` | `description` | "Mô tả sản phẩm" section band |
-| `contentBottom` | `content_bottom` (added `V43`) | Long-form SEO copy band below the related-products grid |
+`contentBottom` / `content_bottom(_en)` were removed by
+`V151__drop_product_content_bottom.sql`: the storefront never rendered them and
+all rows were verified `NULL`. They are not part of Product domain, mutation,
+response, admin normalizer or validation contracts. The similarly named
+homepage setting and Category's historical `content_bottom` rename are separate
+features.
 
 **Đã xóa (2026-07-07):** `promotionContent`/`promotion_content(_en)` (added `V124`, deprecated on web/admin since 2026-06-18) và `installationGuide`/`installation_guide(_en)` (added `V133`, format đổi ở `V242`) — cả cột DB lẫn `Product`/`UpsertProductRequest` field đã bị drop hẳn (`V325__drop_dead_product_fields.sql`), không còn ngủ yên. Cả hai chưa từng được `bigbike-web` render cho khách (xác nhận qua audit — không có renderer nào tham chiếu tới chúng) và không có ô nhập trên admin. Xem `BUSINESS_RULES.md` `PRODUCT_RULE_006`.
 
@@ -530,7 +553,7 @@ Status: `CONFIRMED_FROM_CODE` — `DescriptionBlock.java` (sealed interface, `re
 **Phân biệt Block Menu (CONTENT_MENU vs PRODUCT_MENU):**
 - **Menu bài viết (`CONTENT_MENU`):** `heading`, `paragraph`, `list`, `image`, `video`.
 - **Menu sản phẩm (`PRODUCT_MENU`):** `feature` (preset ảnh trái/phải) ×2 — `paragraph`/`image` đã gỡ (2026-07-20).
-- YouTube/TikTok/Facebook không phải ba block type riêng; đều là `video` và phân biệt bằng field `provider`. `upload` cũng dùng block này nhưng URL phải thuộc kho media nội bộ.
+- Khối `video` khi ghi chỉ nhận `provider="youtube"` hoặc `provider="upload"`. `upload` dùng URL video thuộc kho media nội bộ; dữ liệu TikTok/Facebook cũ vẫn có thể xuất hiện trên đường đọc để renderer tương thích.
 
 ### Product FAQ entries — `products.faqs` JSONB (V133 → V331/V332/V333)
 
@@ -708,7 +731,8 @@ Shape: JSON array of `GalleryMedia { mediaType, image: ImageAsset|null, videoUrl
 videoProvider }` — `image: ImageAsset { id, url, alt, width, height, mimeType }`.
 `mediaType="image"` → `image` là ảnh, `videoUrl`/`videoProvider` null. `mediaType="video"`
 → `image` là thumbnail/poster tuỳ chọn (có thể null), `videoUrl`+`videoProvider`
-(`youtube`|`tiktok`|`facebook`|`upload`) là video.
+là video. Request ghi chỉ nhận `videoProvider` `youtube|upload` và URL phải khớp provider.
+Response đọc có thể còn trả `tiktok|facebook` cho dữ liệu legacy; đây không phải giá trị hợp lệ để ghi lại.
 
 Upsert DTO (`GalleryImageRequest`, wire shape **không đổi** qua lần chuyển này) nhận
 `url`/`alt`/`width`/`height`/`mimeType`/`mediaType`/`videoUrl`/`videoProvider`/`sortOrder`.
@@ -719,9 +743,10 @@ luôn `null` (request không mang field id trên wire). Exposed trên public + a
 product detail responses là `gallery` array trên domain `Product`; product *list*
 responses trả `[]` (detail-only).
 
-**Whitelist ảnh (write-time, MEDIA_RULE_003)**: `CatalogRequestValidator.validateProductRequest`
-grandfathers mọi URL ảnh/video ĐÃ lưu trên entity hiện tại (không re-validate khi edit
-không đụng gallery); chỉ URL MỚI phải qua `AdminMutationValidators.validateWhitelistedMediaUrl`.
+**Validation khi ghi:** URL ảnh đã lưu trên entity hiện tại tiếp tục được grandfather theo
+`MEDIA_RULE_003`. Video không dùng cơ chế grandfather khi request có gửi lại item video:
+`videoProvider` phải là `youtube|upload` và URL phải khớp provider. PATCH bỏ hẳn field
+gallery thì dữ liệu video legacy không bị đụng.
 
 Status: `CONFIRMED_FROM_CODE` — `GalleryMedia`/`ImageAsset` domain record, `GalleryImageRequest`,
 `ProductFieldApplier.applyGallery`, `ProductGalleryConverter` JSONB converter trên
@@ -750,6 +775,11 @@ lưu = thứ tự sau khi sort theo `sortOrder` (null → dùng index gốc), gi
 trên public + admin product detail responses là `videos` array trên domain `Product`;
 product *list* responses trả `[]` (detail-only).
 
+Khi ghi, `provider` chỉ nhận `youtube|upload` và URL phải khớp provider; TikTok/Facebook
+hoặc provider lạ trả `400 INVALID_VALUE`. Response đọc vẫn có thể chứa provider legacy
+để dữ liệu cũ render an toàn. PATCH không gửi `videos` giữ nguyên cột JSONB hiện có;
+gửi lại item legacy bắt buộc thay nguồn.
+
 Status: `CONFIRMED_FROM_CODE` — `VideoAsset`/`ImageAsset` domain record, `VideoRequest`,
 `ProductFieldApplier.applyVideos`, `ProductVideosConverter` JSONB converter trên
 `ProductEntity.videos`, `JpaCatalogReadRepository.toVideos`,
@@ -773,7 +803,7 @@ Field-level attributes:
 - **DB column:** `products.gender VARCHAR(20)`, nullable, no default, no enum constraint.
 - **Domain:** `Product.gender()` — exposed on **both list and detail** responses.
 - **Admin mutation:** `UpsertProductRequest.gender` (`@Size(max=20)`, presence-flag pattern — omitting the key on PATCH leaves the column untouched).
-- **Filter param:** `filter_gender` on `GET /api/v1/products` — case-insensitive exact match on `product.gender`; blank/absent = no filter.
+- **Filter param:** `filter_gender` on `GET /api/v1/products` and `GET /api/v1/admin/products` — case-insensitive exact match on `product.gender`; blank/absent = no filter.
 - **Facet:** `CatalogFacets.genders[]` — fixed set `[Nam, Nữ, Unisex]` with live counts; buckets with `count = 0` are omitted.
 
 Status: `CONFIRMED_FROM_CODE`
@@ -898,9 +928,37 @@ Cache denormalized của review **APPROVED**, phục vụ list/detail đọc nha
 - `products.rating` — `numeric(3,2)`, nullable, **không có default** (thêm ở `V18`, check constraint `ck_products_rating`: `NULL` hoặc `0..5`). Giá trị = trung bình cộng điểm review đã duyệt, làm tròn **1 decimal HALF_UP** (`AdminReviewService.toCachedRating`).
 - `products.rating_count` — `integer`, nullable, **không có default** (thêm ở `V43`). Giá trị = số review đã duyệt.
 - `reviews.rating` — `numeric(2,1) NOT NULL`, check giá trị thuộc tập `{1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5}` bước 0,5 (`V14` tạo `smallint 1..5`; **`V347` nới sang thập phân nửa sao** — `BUSINESS_RULES.md` `REVIEW_RULE_008`, owner decision 2026-07-22) — nên hễ có ≥ 1 review đã duyệt thì trung bình luôn ≥ 1.
-- `reviews.photos` — `jsonb`, nullable (`V234`). Mảng URL ảnh khách hàng trong MinIO (`/media/reviews/...`), tối đa 10. `NULL`/`[]` = không có ảnh. Map qua `@JdbcTypeCode(SqlTypes.JSON)` (mirror `products.description_blocks`, cùng cơ chế JSONB + converter). Chỉ phục vụ hiển thị khi review `APPROVED` (xem `BUSINESS_RULES.md` `REVIEW_RULE_005`). (Cột `reviews.title`, thêm cùng `V234`, đã bị **drop ở `V298`** — xem §"Review title — REMOVED (V298)".)
+- `reviews.photos` — `jsonb`, nullable (`V234`). Mảng URL ảnh khách hàng đúng namespace MinIO `/media/reviews/...`, tối đa 10. `NULL`/`[]` = không có ảnh. Chỉ phục vụ hiển thị khi review `APPROVED` (`REVIEW_RULE_005`).
+- `reviews.version` — `bigint NOT NULL DEFAULT 0` (`V355`), optimistic concurrency token. Admin list/detail trả field này; single mutation và từng item bulk phải echo `expectedVersion`.
+- `reviews.first_approved_at` — `timestamptz NULL` (`V356`), marker bền vững cho email duyệt lần đầu. `V356` backfill row đang `APPROVED`; `V358` đọc audit `REVIEW_STATUS_CHANGED` lịch sử để backfill cả review từng được duyệt rồi đã về `PENDING`/`SPAM`/`TRASH`, trước khi redaction audit. Marker không bị xóa khi review rời `APPROVED`, nên restore rồi duyệt lại không gửi email lần hai.
 
-**Recompute flow (đường duy nhất được ghi cache):** `AdminReviewService.recomputeProductReviewAggregate` chạy sau **mọi** chuyển trạng thái review (`updateStatus`, kể cả APPROVED → PENDING/SPAM/TRASH) và sau `deleteReview`. Khi 0 review approved: `rating = NULL` (không phải 0) và `rating_count = 0`. `PublicReviewService.submitReview` tạo review PENDING và **không** recompute (đúng — pending không được tính). Admin upsert product **không thể** set tay 2 field này (`UpsertProductRequest` cố ý không khai báo field; xem comment "Phase 2D" trong `AdminCatalogMutationService`).
+`review_photo_uploads` (`V357`) là sổ claim ảnh bền vững, tách khỏi JSON hiển thị:
+
+| Column | Type / constraint | Meaning |
+|---|---|---|
+| `object_key` | `varchar(500) PRIMARY KEY` | Canonical MinIO key under `reviews/`; uniqueness is the atomic single-claim boundary. |
+| `public_url` | `varchar(600) NOT NULL UNIQUE` | Canonical `/media/reviews/...` URL returned to the browser. |
+| `product_id` | `varchar(64) NOT NULL` | Product supplied at upload; submit must match it. |
+| `uploaded_at` | `timestamptz NOT NULL` | Starts the 24-hour unclaimed retention window. |
+| `claimed_at` | `timestamptz NULL` | Set atomically in the review-submit transaction. |
+| `review_id` | `bigint NULL`, FK `reviews(id) ON DELETE SET NULL` | Owning review after claim. Multiple photos may belong to one review; one object key cannot belong to two reviews. |
+
+Submit first persists the `PENDING` review, then conditionally updates every upload
+row where `object_key`, `product_id` match and `claimed_at IS NULL`. Any zero-row
+claim aborts the whole transaction. A scheduled cleanup atomically removes
+unclaimed rows older than 24 hours before deleting their MinIO objects, so cleanup
+cannot race a successful claim. It also sweeps old untracked MinIO objects left by
+an interrupted upload. Hard-delete cleanup happens after commit and checks legacy
+JSON references before deleting; product-delete cascade sets `review_id = NULL`,
+allowing the same scheduled sweep to collect those objects.
+
+Review audit snapshots never serialize author name/email, `body`/comment, or entries
+in `photos`; only safe operational metadata such as IDs, product metadata,
+status/rating/photo count and version is retained (`REVIEW_RULE_011`). `V358`
+rewrites historical Review snapshots to that allowlist; malformed legacy JSON is
+replaced by a safe redacted marker, while non-Review audit rows are untouched.
+
+**Recompute flow (đường duy nhất được ghi cache):** `AdminReviewService.recomputeProductReviewAggregate` chạy sau **mọi chuyển trạng thái được phép thực sự làm đổi dữ liệu** (`PENDING → APPROVED|SPAM|TRASH` hoặc `APPROVED|SPAM|TRASH → PENDING`) và sau `deleteReview`; same-state no-op không recompute theo `REVIEW_RULE_009`. Khi 0 review approved: `rating = NULL` (không phải 0) và `rating_count = 0`. `PublicReviewService.submitReview` tạo review PENDING và **không** recompute (đúng — pending không được tính). Admin upsert product **không thể** set tay 2 field này (`UpsertProductRequest` cố ý không khai báo field; xem comment "Phase 2D" trong `AdminCatalogMutationService`).
 
 **Trạng thái NULL hợp lệ:** sản phẩm admin tạo mới có `rating = NULL` và `rating_count = NULL` (chưa từng recompute) cho tới khi review đầu tiên được duyệt.
 
@@ -1119,7 +1177,7 @@ còn 1 cột tên (`name`) và 1 cột slug (`slug`), không tách VI/EN.
 
 **Response:** domain record của category/product/article trả cả `slug` (canonical vi, không đổi theo locale) lẫn `slugEn` (nullable). Web dùng `slug` cho canonical + `slugEn` cho URL/hreflang tiếng Anh; `slugEn` trống → URL EN lùi về `slug` vi. `Brand`/`BrandSummary` domain record **không có field `slugEn`** (đã bỏ hẳn cùng `V352`); web luôn dùng `brand.slug` cho mọi locale. Mọi `CategorySummary` trong `category` và `categories[]` đều mang `slugEn`, `visible`, `deleted`; `category` là phần tử đầu của danh sách có thứ tự để breadcrumb PDP điều hướng đúng URL EN và chỉ tạo liên kết khi danh mục còn công khai.
 
-**Redirect:** catalog danh mục/sản phẩm/bài viết đổi/xoá `slug_en` tự sinh 301 (`autoCreateSlugRedirect`/`autoCreateSlugEnRedirect`) — đổi → old-EN-URL→new-EN-URL; xoá → old-EN-URL→URL vi; honored runtime bởi `bigbike-web/proxy.ts` qua `/api/internal/redirect`. Từ 2026-07-24, URL EN là route thật riêng (`/products/`, `/categories/`, `/news/` — khác prefix VI `/product/`, `/danh-muc-san-pham/`, `/tin-tuc/`), nên redirect nguồn/đích dùng đúng 2 prefix khác nhau thay vì dùng chung 1 prefix như trước. Brand không có khái niệm slug EN nên không sinh redirect riêng. **Bài viết trước 2026-07-24 KHÔNG có cơ chế redirect** (module nội dung chưa wiring `SlugRedirectHelper`) — từ 2026-07-24 đã bổ sung, hành vi giờ đồng nhất với Sản phẩm/Danh mục.
+**Redirect:** catalog danh mục/sản phẩm/bài viết đổi/xoá `slug_en` tự sinh 301 (`autoCreateSlugRedirect`/`autoCreateSlugEnRedirect`) — đổi → old-EN-URL→new-EN-URL; xoá → old-EN-URL→URL vi; honored runtime bởi `bigbike-web/proxy.ts` qua `/api/internal/redirect`. Từ 2026-07-24, URL EN là route thật riêng (`/products/`, `/categories/`, `/news/` — khác prefix VI `/product/`, `/danh-muc/`, `/tin-tuc/`), nên redirect nguồn/đích dùng đúng 2 prefix khác nhau thay vì dùng chung 1 prefix như trước. Từ 2026-07-29, mọi redirect danh mục VI mới dùng `/danh-muc/{slug}/`; nguồn `/danh-muc-san-pham/{slug}/` cũ được giữ làm tương thích 301. Brand không có khái niệm slug EN nên không sinh redirect riêng. **Bài viết trước 2026-07-24 KHÔNG có cơ chế redirect** (module nội dung chưa wiring `SlugRedirectHelper`) — từ 2026-07-24 đã bổ sung, hành vi giờ đồng nhất với Sản phẩm/Danh mục.
 
 **Ngoài phạm vi:** trang thông tin/chính sách nay là **nội dung tĩnh ở web** (module pages đã gỡ 2026-06-24, bảng `pages` drop ở `V271`) — web định tuyến bằng slug cố định trong `static-pages.json`, không qua backend.
 
@@ -1270,7 +1328,7 @@ Status: `CONFIRMED_FROM_CODE` — `HomeVideoEntity.titleEn`, `HomeVideo.titleEn`
 
 7 block type cho bài viết/content: `heading`, `paragraph`, `list`, `image`, `video`, `callout`, `divider`.
 
-Admin hiện cho tạo mới `heading`, `paragraph`, `list`, `image`, `video`; các type khác vẫn được đọc/render để tương thích dữ liệu cũ. Khối `video` tuân theo `MEDIA_RULE_004`: `provider` chỉ nhận `youtube|tiktok|facebook|upload`, URL nền tảng phải là link đầy đủ thuộc host được duyệt, `upload` phải là media nội bộ, link rút gọn TikTok/Facebook và Vimeo bị từ chối.
+Admin hiện cho tạo mới `heading`, `paragraph`, `list`, `image`, `video`; các type khác vẫn được đọc/render để tương thích dữ liệu cũ. Khối `video` tuân theo `MEDIA_RULE_004`: request ghi chỉ nhận `provider` `youtube|upload`, URL YouTube phải hợp lệ và `upload` phải là media nội bộ. TikTok/Facebook chỉ còn là dữ liệu legacy trên đường đọc/render; khi gửi lại `bodyBlocks`, mọi khối video legacy phải được thay nguồn.
 
 **Migration (V141):** HTML cũ trong cột `body` của tất cả article đã được parse sang blocks bởi `BodyBlockParser` khi chạy migration. Parser ánh xạ từng top-level HTML element sang block type gần nhất. Element không nhận dạng được trở thành fallback `paragraph` (outerHTML được giữ nguyên).
 
@@ -1512,7 +1570,19 @@ A `CustomerStatus` Java enum (`domain/customer/CustomerStatus.java`) codifies th
 
 Status: `CONFIRMED_FROM_CODE`
 
-Evidence: `AdminCustomerService.java` line 48, `deriveSegment()` method
+Evidence: `CustomerStatus.java`, `AdminCustomerService.ALLOWED_STATUSES`, `AdminCustomerService.deriveSegment()`
+
+### Admin customer mutation and KPI projection (owner decision 2026-07-28)
+
+- The admin mutation contract and OpenAPI expose only editable `displayName` and `phone`. The transport DTO temporarily retains `email`, `firstName`, and `lastName` only as forbidden-field sentinels so legacy/stale clients receive deterministic `400 VALIDATION_ERROR` instead of a silent ignored write. The persisted identity columns remain readable in admin detail but are not writable through the admin customer API.
+- Synthetic rows (`is_synthetic = true`) use the same editable profile fields but cannot transition to a different account status.
+- `AdminCustomerListItemResponse.orderCount` / `totalSpent` and `AdminCustomerOrderSummaryResponse.orderCount` / `totalSpent` / `avgOrderValue` / derived segment exclude `orders.status = 'CANCELLED'`.
+- `AdminCustomerSummaryResponse.vip` uses the same non-cancelled lifetime-spend basis. `latestOrders`, `firstOrderAt`, and `lastOrderAt` remain full-history projections and may include cancelled orders.
+- `AdminCustomerSummaryResponse.total` and `vip` include synthetic rows. `active` and `newLast30Days` describe registered accounts and exclude `is_synthetic = true`.
+
+Status: `CONFIRMED_FROM_OWNER_DECISION`
+
+Evidence: `CUSTOMER_RULE_004`, `CUSTOMER_RULE_006`–`CUSTOMER_RULE_008`, `AdminCustomerService.java`, `OrderJpaRepository.java`.
 
 ## Customer `isSynthetic` Flag
 
@@ -1523,6 +1593,31 @@ Both `AdminCustomerListItemResponse.isSynthetic` and `AdminCustomerDetailRespons
 Status: `CONFIRMED_FROM_CODE`
 
 Evidence: `CustomerEntity.java` (`is_synthetic` column), `WordPressCustomerMapper.java` (`mapSynthetic`), `CustomerImporter.java`, `CustomerAuthService.java` (`setSynthetic(false)`), `AdminCustomerListItemResponse.java`, `AdminCustomerDetailResponse.java`
+
+## Customer Export CSV Contract
+
+`GET /api/v1/admin/reports/customers/export` is an uncapped read projection over
+`customers`. It accepts the same `q`, `status`, `synthetic`, and `emailVerified`
+filters as `GET /api/v1/admin/customers`, streams all matching pages, and does not
+apply the generic 10,000-row report limit.
+
+The CSV columns, in order, are:
+
+1. `id`
+2. `email`
+3. `phone`
+4. `display_name`
+5. `first_name`
+6. `last_name`
+7. `status`
+8. `gender`
+9. `email_verified_at`
+10. `last_login_at`
+11. `created_at`
+
+Status: `CONFIRMED_FROM_OWNER_DECISION`
+
+Evidence: `CUSTOMER_RULE_009`, `AdminCustomerCsvExportService.java`, `AdminReportController.java`.
 
 ## Reports Analytics Response Shape
 
@@ -1569,7 +1664,12 @@ Evidence: `AdminAnalyticsResponse.java`, `AdminReportService.java`, `OrderJpaRep
 
 ## Order Export CSV Contract
 
-The `GET /api/v1/admin/reports/orders/export` endpoint returns a CSV with the following columns:
+The `GET /api/v1/admin/reports/orders/export` endpoint accepts the same operational
+filters as the Orders list (`q`, `status`, `from`, `to`) and returns every matching
+order across all pages. `from`/`to` are inclusive Vietnam calendar dates
+(`Asia/Ho_Chi_Minh`); the export has no 10,000-row truncation limit.
+
+The CSV contains the following columns:
 1. `order_number`
 2. `status`
 3. `customer_email`
@@ -1582,7 +1682,7 @@ The `GET /api/v1/admin/reports/orders/export` endpoint returns a CSV with the fo
 10. `placed_at`
 11. `paid_at`
 12. `completed_at`
-14. `cancelled_at`
+13. `cancelled_at`
 
 *(Note: the "discount" column was removed on 2026-07-04 since discounts are no longer supported)*
 

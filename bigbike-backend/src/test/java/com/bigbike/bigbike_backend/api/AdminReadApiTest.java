@@ -1,6 +1,9 @@
 package com.bigbike.bigbike_backend.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -78,7 +81,59 @@ class AdminReadApiTest {
     }
 
     @Test
-    void shouldReturnProductSeoAndContentBottomInAdminDetail() throws Exception {
+    void shouldFilterAdminProductsByGenderCaseInsensitively() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+
+        UpsertProductRequest men = new UpsertProductRequest();
+        men.setSlug("gender-men-" + suffix);
+        men.setName("Gender Men Product " + suffix);
+        men.setCategoryId("cat_helmet");
+        men.setBrandId("brand_ls2");
+        men.setGender("Nam");
+        men.setSku("GENDER-MEN-" + suffix);
+        men.setRetailPrice(new BigDecimal("1500000"));
+        men.setPublishStatus(PublishStatus.DRAFT);
+        men.setTranslations(new ProductTranslationRequest(
+                ProductTranslationRequest.ProductContentRequest.builder()
+                        .name("Gender Men Product EN " + suffix)
+                        .build()));
+
+        UpsertProductRequest women = new UpsertProductRequest();
+        women.setSlug("gender-women-" + suffix);
+        women.setName("Gender Women Product " + suffix);
+        women.setCategoryId("cat_helmet");
+        women.setBrandId("brand_ls2");
+        women.setGender("Nữ");
+        women.setSku("GENDER-WOMEN-" + suffix);
+        women.setRetailPrice(new BigDecimal("1500000"));
+        women.setPublishStatus(PublishStatus.DRAFT);
+        women.setTranslations(new ProductTranslationRequest(
+                ProductTranslationRequest.ProductContentRequest.builder()
+                        .name("Gender Women Product EN " + suffix)
+                        .build()));
+
+        productMutationService.createProduct(men, DEV_ADMIN_ID);
+        productMutationService.createProduct(women, DEV_ADMIN_ID);
+
+        mockMvc.perform(get("/api/v1/admin/products")
+                        .param("filter_gender", "nam")
+                        .param("size", "100")
+                        .header("X-Admin-Permissions", "products.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].gender", everyItem(is("Nam"))))
+                .andExpect(jsonPath("$.data[*].slug", hasItem(men.getSlug())));
+
+        mockMvc.perform(get("/api/v1/admin/products")
+                        .param("filter_gender", "Nữ")
+                        .param("size", "100")
+                        .header("X-Admin-Permissions", "products.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].gender", everyItem(is("Nữ"))))
+                .andExpect(jsonPath("$.data[*].slug", hasItem(women.getSlug())));
+    }
+
+    @Test
+    void shouldReturnProductSeoWithoutRemovedContentBottomInAdminDetail() throws Exception {
         String suffix = String.valueOf(System.currentTimeMillis());
         String slug = "phase3-read-seo-" + suffix;
         String canonicalUrl = "https://bigbike.vn/products/" + slug;
@@ -113,7 +168,7 @@ class AdminReadApiTest {
                         .header("X-Admin-Permissions", "products.read"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(created.id()))
-                .andExpect(jsonPath("$.data.contentBottom").value("<p>Phase 3 read content " + suffix + "</p>"))
+                .andExpect(jsonPath("$.data.contentBottom").doesNotExist())
                 .andExpect(jsonPath("$.data.seo.title").value("Phase 3 read SEO title " + suffix))
                 .andExpect(jsonPath("$.data.seo.description").value("Phase 3 read SEO description " + suffix))
                 .andExpect(jsonPath("$.data.seo.canonicalUrl").value(canonicalUrl))

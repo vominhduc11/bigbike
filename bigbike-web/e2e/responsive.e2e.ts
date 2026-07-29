@@ -10,7 +10,7 @@ import { SAMPLE } from "./helpers/routes";
  */
 const KEY_ROUTES: { path: string; name: string }[] = [
   { path: "/", name: "Trang chủ" },
-  { path: "/san-pham/", name: "PLP" },
+  { path: "/sp/", name: "PLP" },
   { path: SAMPLE.product, name: "PDP" },
   { path: SAMPLE.category, name: "Danh mục chi tiết" },
   { path: SAMPLE.brand, name: "Thương hiệu chi tiết" },

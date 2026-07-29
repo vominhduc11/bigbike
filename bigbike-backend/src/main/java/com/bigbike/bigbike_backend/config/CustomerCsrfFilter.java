@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,8 @@ public class CustomerCsrfFilter extends OncePerRequestFilter {
     static final String CSRF_HEADER = "X-CSRF-Token";
 
     private static final Set<String> SAFE_METHODS = Set.of("GET", "HEAD", "OPTIONS");
+    private static final Pattern PUBLIC_REVIEW_MUTATION_PATH = Pattern.compile(
+            "^/api/v1/products/[^/]+/reviews(?:/photos)?$");
 
     /**
      * Exact URI paths that are exempt from CSRF validation.
@@ -51,8 +54,7 @@ public class CustomerCsrfFilter extends OncePerRequestFilter {
     private static final Set<String> CSRF_EXEMPT_PREFIXES = Set.of(
             "/api/v1/auth/",         // admin auth (has its own CSRF)
             "/api/v1/admin/",        // admin API uses JWT Bearer tokens, not cookies — CSRF not needed
-            "/api/internal/",        // internal API (called server-to-server)
-            "/api/v1/products/"      // public catalog POSTs (e.g. review submit) — no customer session, server-to-server proxy
+            "/api/internal/"         // internal API (called server-to-server)
     );
 
     private final ObjectMapper objectMapper;
@@ -64,7 +66,7 @@ public class CustomerCsrfFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
-        if (SAFE_METHODS.contains(request.getMethod()) || isExempt(request.getRequestURI())) {
+        if (SAFE_METHODS.contains(request.getMethod()) || isExempt(request)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -85,12 +87,17 @@ public class CustomerCsrfFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private boolean isExempt(String uri) {
+    private boolean isExempt(HttpServletRequest request) {
+        String uri = request.getRequestURI();
         if (CSRF_EXEMPT_EXACT.contains(uri)) return true;
         for (String prefix : CSRF_EXEMPT_PREFIXES) {
             if (uri.startsWith(prefix)) return true;
         }
-        return false;
+        // These are the only public product mutations that intentionally bypass the
+        // customer double-submit token. They support guests, while credentials allow
+        // the API-host session cookie to supply authoritative identity when present.
+        return "POST".equalsIgnoreCase(request.getMethod())
+                && PUBLIC_REVIEW_MUTATION_PATH.matcher(uri).matches();
     }
 
     /** Constant-time string comparison to prevent timing attacks. */

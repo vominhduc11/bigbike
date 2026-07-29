@@ -29,7 +29,7 @@ const ORDERBY_INVALID_MESSAGE = "orderby không hợp lệ.";
 
  type CatalogListParseOptions = {
   /**
-   * Trang /san-pham và /tim-kiem cho phép lọc theo `category` qua query param;
+   * Trang /sp và /tim-kiem cho phép lọc theo `category` qua query param;
    * trang danh mục/thương hiệu lấy category từ route nên không đọc param này.
    */
   includeCategoryParam?: boolean;
@@ -65,7 +65,7 @@ const ORDERBY_INVALID_MESSAGE = "orderby không hợp lệ.";
 
 /**
  * Parse + validate searchParams dùng chung cho 4 trang archive sản phẩm
- * (/san-pham, /tim-kiem, /danh-muc-san-pham/[slug], /brands/[slug]). Gom khối
+ * (/sp, /tim-kiem, /danh-muc/[slug], /brands/[slug]). Gom khối
  * parse page/size/brand/color/giá/sort vốn copy gần như y hệt ở cả 4 trang.
  */
 export function parseCatalogListParams(

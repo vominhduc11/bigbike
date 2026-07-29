@@ -82,6 +82,9 @@ function SlotCard({ slotNumber, product, onProductChange, disabled }) {
               src={product.image.url}
               alt={product.image.alt || product.name}
               referrerPolicy="no-referrer"
+              loading="lazy"
+              // Ảnh sản phẩm hỏng/404 không để lại ô ảnh vỡ trong slot (nhất quán với các màn khác).
+              onError={(event) => { event.currentTarget.hidden = true }}
               className="w-16 h-16 object-cover flex-shrink-0"
             />
           )}

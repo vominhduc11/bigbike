@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import {
   Info, TrendingUp, TrendingDown, Minus,
-  CircleDollarSign, Wallet, RotateCcw, PiggyBank, ShoppingBag, Receipt,
+  CircleDollarSign, Wallet, ShoppingBag, Receipt,
   ArrowRight,
 } from 'lucide-react'
 import { toast } from '@/lib/toast'
@@ -17,15 +17,19 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { AdminTable } from '../components/AdminTable'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { ExportButton } from '../components/ExportButton'
 import { fetchAnalytics, exportOrdersCsv, exportProductsCsv, exportCustomersCsv } from '../lib/adminApi'
 import { formatCurrencyVnd, fmtIsoDateShort } from '../lib/formatters'
-
-const PRESET_VALUES = [
-  { key: 'preset7d',  value: '7d',  days: 7 },
-  { key: 'preset30d', value: '30d', days: 30 },
-  { key: 'preset90d', value: '90d', days: 90 },
-]
+import {
+  REPORT_PRESETS,
+  inclusiveDateSpan,
+  isIsoCalendarDate,
+  normalizeReportPreset,
+  resolveReportRange,
+  shiftRangeBack,
+  todayInVietnam,
+} from './reports/dateRange'
 
 function RevenueTooltip({ active, payload, label, locale }) {
   if (!active || !payload?.length) return null
@@ -111,39 +115,6 @@ function RankTable({ title, rows, cols, noDataLabel }) {
   )
 }
 
-// Dựng chuỗi YYYY-MM-DD theo LỊCH ĐỊA PHƯƠNG (year/month/date local, pad 0) — KHÔNG
-// dùng toISOString()/UTC. Backend parse mốc ngày theo Asia/Ho_Chi_Minh (REPORT_RULE_008);
-// dùng UTC làm lệch ngày quanh nửa đêm ở giờ VN.
-function formatLocalYmd(d) {
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-function toLocalDateString(daysAgo) {
-  const d = new Date()
-  d.setDate(d.getDate() - daysAgo)
-  return formatLocalYmd(d)
-}
-
-// Dịch khoảng ngày lùi về kỳ liền trước cùng độ dài (để so sánh kỳ-trên-kỳ).
-function shiftRangeBack(from, to) {
-  if (!from || !to) return { from: '', to: '' }
-  const fromD = new Date(`${from}T00:00:00`)
-  const toD = new Date(`${to}T00:00:00`)
-  if (Number.isNaN(fromD.getTime()) || Number.isNaN(toD.getTime())) return { from: '', to: '' }
-  const spanDays = Math.round((toD - fromD) / 86400000) + 1
-  const prevTo = new Date(fromD)
-  prevTo.setDate(prevTo.getDate() - 1)
-  const prevFrom = new Date(prevTo)
-  prevFrom.setDate(prevFrom.getDate() - (spanDays - 1))
-  return {
-    from: formatLocalYmd(prevFrom),
-    to: formatLocalYmd(prevTo),
-  }
-}
-
 // % thay đổi giữa kỳ hiện tại và kỳ trước → {direction, label} cho TrendPill.
 function makeTrend(current, previous, t) {
   if (previous == null) return { direction: 'neutral', label: t('reports.trendNoData', { defaultValue: 'Chưa có kỳ trước' }) }
@@ -167,7 +138,16 @@ export function ReportsScreen() {
   const hasPermission = useHasPermission()
   const canExport = hasPermission('reports.export')
 
-  const [query, setQuery] = useUrlSyncedState({ preset: '30d', from: '', to: '' })
+  const [query, setQuery] = useUrlSyncedState(
+    { preset: '30d', from: '', to: '' },
+    {
+      deserialize: {
+        preset: normalizeReportPreset,
+        from: (value) => isIsoCalendarDate(value) ? value : '',
+        to: (value) => isIsoCalendarDate(value) ? value : '',
+      },
+    },
+  )
 
   const { preset, from: customFrom, to: customTo } = query
 
@@ -188,14 +168,7 @@ export function ReportsScreen() {
   }
 
   const resolvedDates = useCallback(() => {
-    if (preset === 'custom') {
-      return { from: customFrom, to: customTo }
-    }
-    const p = PRESET_VALUES.find((x) => x.value === preset) || PRESET_VALUES[1]
-    return {
-      from: toLocalDateString(p.days - 1),
-      to: toLocalDateString(0),
-    }
+    return resolveReportRange(preset, customFrom, customTo)
   }, [preset, customFrom, customTo])
 
   const { from, to } = resolvedDates()
@@ -204,16 +177,11 @@ export function ReportsScreen() {
   const isEnabled = Boolean(from && to)
   const isRangeValid = !isEnabled || (from <= to)
 
-  const dateSpanDays = useMemo(() => {
-    if (!from || !to) return 0
-    const fromD = new Date(`${from}T00:00:00`)
-    const toD = new Date(`${to}T00:00:00`)
-    return Math.round((toD - fromD) / 86400000) + 1
-  }, [from, to])
-
-  const isRangeWithinLimit = dateSpanDays <= 90
+  const dateSpanDays = useMemo(() => inclusiveDateSpan(from, to), [from, to])
+  const isRangeWithinLimit = dateSpanDays == null || dateSpanDays <= 90
 
   const shouldFetch = isEnabled && isRangeValid && isRangeWithinLimit
+  const rangeHasError = isEnabled && (!isRangeValid || !isRangeWithinLimit)
 
   const {
     data: currentResult,
@@ -265,6 +233,7 @@ export function ReportsScreen() {
       refetchCurrent()
     }
   }
+  const canRetryError = isCurrentError || (isEnabled && !isRangeValid)
 
   const { from: exportFrom, to: exportTo } = resolvedDates()
   const tickFmt = (v) => `${(v / 1000000).toFixed(0)}M`
@@ -274,7 +243,7 @@ export function ReportsScreen() {
     : ''
 
   const presetTabs = [
-    ...PRESET_VALUES.map((p) => ({ key: p.value, label: t(`reports.${p.key}`) })),
+    ...REPORT_PRESETS.map((p) => ({ key: p.value, label: t(`reports.${p.key}`) })),
     { key: 'custom', label: t('reports.presetCustom') },
   ]
 
@@ -299,7 +268,7 @@ export function ReportsScreen() {
       raw: state.data.summary.grossOrderValue,
       prev: state.prev?.summary.grossOrderValue,
       color: 'danger', money: true, icon: <CircleDollarSign size={15} />,
-      hint: t('reports.kpiGmvHint', { defaultValue: 'Tổng giá trị các đơn đã đặt trong kỳ.' }),
+      hint: t('reports.kpiGmvHint', { defaultValue: 'Tổng giá trị đơn trong kỳ, không tính đơn đã huỷ.' }),
     },
     {
       key: 'paid',
@@ -308,7 +277,7 @@ export function ReportsScreen() {
       raw: state.data.summary.paidRevenue,
       prev: state.prev?.summary.paidRevenue,
       color: 'success', money: true, icon: <Wallet size={15} />,
-      hint: t('reports.kpiPaidRevenueHint', { defaultValue: 'Số tiền thực sự đã thu được từ các đơn trong kỳ.' }),
+      hint: t('reports.kpiPaidRevenueHint', { defaultValue: 'Tổng giá trị các đơn đã hoàn tất trong kỳ; không phải số giao dịch thanh toán đã thu.' }),
     },
     {
       key: 'orders',
@@ -317,7 +286,7 @@ export function ReportsScreen() {
       raw: state.data.summary.orderCount,
       prev: state.prev?.summary.orderCount,
       color: 'info', icon: <ShoppingBag size={15} />,
-      hint: t('reports.kpiOrderCountHint', { defaultValue: 'Số đơn hàng phát sinh trong kỳ.' }),
+      hint: t('reports.kpiOrderCountHint', { defaultValue: 'Số đơn phát sinh trong kỳ, không tính đơn đã huỷ.' }),
     },
     {
       key: 'aov',
@@ -326,7 +295,7 @@ export function ReportsScreen() {
       raw: state.data.summary.avgOrderValue,
       prev: state.prev?.summary.avgOrderValue,
       color: 'brand', money: true, icon: <Receipt size={15} />,
-      hint: t('reports.kpiAovHint', { defaultValue: 'Giá trị trung bình mỗi đơn = doanh số chia số đơn.' }),
+      hint: t('reports.kpiAovHint', { defaultValue: 'Doanh số chia số đơn hợp lệ; không tính đơn đã huỷ.' }),
     },
   ] : []
 
@@ -355,21 +324,23 @@ export function ReportsScreen() {
           </div>
           {preset === 'custom' && (
             <>
-              <input
+              <Input
                 type="date"
                 className="bb-input"
                 aria-label={t('reports.customFrom')}
+                aria-invalid={rangeHasError}
                 value={customFrom}
-                max={toLocalDateString(0)}
+                max={todayInVietnam()}
                 onChange={(e) => setCustomFrom(e.target.value)}
               />
               <ArrowRight size={14} className="bb-muted self-center shrink-0" aria-hidden="true" />
-              <input
+              <Input
                 type="date"
                 className="bb-input"
                 aria-label={t('reports.customTo')}
+                aria-invalid={rangeHasError}
                 value={customTo}
-                max={toLocalDateString(0)}
+                max={todayInVietnam()}
                 onChange={(e) => setCustomTo(e.target.value)}
               />
             </>
@@ -423,8 +394,8 @@ export function ReportsScreen() {
           tone="danger"
           title={t('reports.loadError')}
           description={state.error}
-          actionLabel={t('common.retry')}
-          onAction={handleRetry}
+          actionLabel={canRetryError ? t('common.retry') : undefined}
+          onAction={canRetryError ? handleRetry : undefined}
         />
       )}
 

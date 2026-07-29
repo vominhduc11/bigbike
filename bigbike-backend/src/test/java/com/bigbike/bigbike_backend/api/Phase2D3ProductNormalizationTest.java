@@ -235,6 +235,20 @@ class Phase2D3ProductNormalizationTest {
     }
 
     @Test
+    void wordpressImport_dormantQuantityDoesNotEnableProduct() {
+        ResolvedProduct product =
+                resolvedProduct(80603L, "legacy-stock-unknown", "Legacy Stock Unknown", "test-norm-cat");
+
+        productImporter.importBatch(
+                List.of(product), importOpts(), Map.of(), MEDIA_PUBLIC_BASE_URL);
+
+        ProductEntity saved = productRepo.findById("wp-prod-80603").orElseThrow();
+        assertThat(saved.getStockQuantity()).isEqualTo(10);
+        assertThat(saved.getStockState()).isEqualTo(ProductStockState.OUT_OF_STOCK);
+        assertThat(saved.getAvailable()).isFalse();
+    }
+
+    @Test
     void wordpressImport_preservesAllOrderedCategorySlugs() {
         CategoryEntity secondary = categoryRepo.findBySlug("test-norm-secondary").orElseGet(() -> {
             CategoryEntity category = new CategoryEntity();

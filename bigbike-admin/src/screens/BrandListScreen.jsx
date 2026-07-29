@@ -14,11 +14,13 @@ import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { AdminTable } from '../components/AdminTable'
 import { FilterChips } from '../components/FilterChips'
+import { RecentItemsChips } from '../components/RecentItemsChips'
 import { FilterBar, Screen, ScreenHeader } from '../components/layout'
 import { deleteBrand, fetchBrands, permanentDeleteBrand, restoreBrand } from '../lib/adminApi'
 import { formatDateTime, formatText } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
 import { useContentLang } from '../lib/contentLang'
+import { useRecentItems } from '../lib/useRecentItems'
 import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 
@@ -53,6 +55,12 @@ function brandActionError(t, error, fallback) {
   return error?.message || fallback
 }
 
+function brandTrashStatus(isVisible) {
+  if (isVisible === true) return false
+  if (isVisible === false) return true
+  return undefined
+}
+
 export function BrandListScreen({ navigate, canUpdate }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
@@ -62,6 +70,9 @@ export function BrandListScreen({ navigate, canUpdate }) {
   const [activeAction, setActiveAction] = useState(null)
   const isFirstSearchRender = useRef(true)
   const debouncedSearch = useDebounce(searchInput, 300)
+  // O9: thương hiệu vừa mở gần đây — BrandDetailScreen đã ghi vào 'recent:brands'
+  // nhưng trước đây không màn nào đọc ra, nên dữ liệu ghi xong bị bỏ không.
+  const recentBrandItems = useRecentItems('recent:brands')
   const state = useAdminList(['brands', query, contentLang], () => fetchBrands(query))
 
   useEffect(() => {
@@ -270,7 +281,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
     {
       key: 'visibility',
       label: t('brands.colVisibility', { defaultValue: 'Hiển thị' }),
-      render: (brand) => <StatusBadge type="visibility" status={brand.isVisible} />,
+      render: (brand) => <StatusBadge type="trash" status={brandTrashStatus(brand.isVisible)} />,
     },
     {
       key: 'showOnHomepage',
@@ -320,7 +331,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
   const mobileCard = (brand) => ({
     title: formatText(brand.name),
     subtitle: `/${formatText(brand.slug)}`,
-    status: <StatusBadge type="visibility" status={brand.isVisible} />,
+    status: <StatusBadge type="trash" status={brandTrashStatus(brand.isVisible)} />,
     meta: [
       {
         label: t('brands.detail.showOnHomepage', { defaultValue: 'Hiển thị trên trang chủ' }),
@@ -396,6 +407,9 @@ export function BrandListScreen({ navigate, canUpdate }) {
         removeChipLabel={t('common.clear', { defaultValue: 'Bỏ lọc' })}
         ariaLabel={t('brands.activeFiltersAria', { defaultValue: 'Bộ lọc đang áp dụng' })}
       />
+
+      {/* O9 — Vừa xem gần đây */}
+      <RecentItemsChips items={recentBrandItems} onSelect={(item) => navigate(`/admin/brands/${item.id}`)} />
 
       {state.status === 'error' ? (
         <StatePanel

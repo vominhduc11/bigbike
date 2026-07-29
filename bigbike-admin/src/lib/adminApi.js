@@ -388,7 +388,7 @@ function translateValidationMessage(field, detail) {
     return 'URL đích phải là đường dẫn nội bộ hoặc cùng tên miền với website — không được trỏ ra trang ngoài.'
   }
   if (code === 'UNSAFE_TARGET' && field === 'targetUrl') {
-    return 'URL đích không hợp lệ. Hãy dùng đường dẫn nội bộ bắt đầu bằng "/" (ví dụ /san-pham-moi).'
+    return 'URL đích không hợp lệ. Hãy dùng đường dẫn nội bộ bắt đầu bằng "/" (ví dụ /sp/).'
   }
 
   return rawMessage || 'Giá trị chưa hợp lệ.'
@@ -814,8 +814,8 @@ export async function fetchOrders(query) {
         sort: query?.sort,
         q: query?.search,
         status: query?.orderStatus !== 'ALL' ? query?.orderStatus : undefined,
-        from: query?.dateRange?.from?.toISOString().slice(0, 10),
-        to: query?.dateRange?.to?.toISOString().slice(0, 10),
+        from: query?.from,
+        to: query?.to,
       },
     })
     return withLiveData(parseListPayload(payload, normalizeOrder, Number(query?.pageSize) || 10))
@@ -1383,22 +1383,54 @@ export async function acceptAdminInvite(token, password) {
 
 // Reviews
 
+function safeReviewString(value) {
+  return typeof value === 'string' ? value : ''
+}
+
+function safeReviewPhoto(value) {
+  if (typeof value !== 'string') return ''
+  const candidate = value.trim()
+  if (!candidate.startsWith('/media/reviews/') || candidate.includes('?') || candidate.includes('#') || candidate.includes('\\')) return ''
+  try {
+    const decoded = decodeURIComponent(candidate)
+    if (decoded.includes('?') || decoded.includes('#') || decoded.includes('\\')) return ''
+    const segments = decoded.slice('/media/reviews/'.length).split('/')
+    return segments.length > 0 && segments.every((segment) => segment && segment !== '.' && segment !== '..')
+      ? candidate
+      : ''
+  } catch {
+    return ''
+  }
+}
+
+function safeReviewCount(value) {
+  const number = Number(value)
+  return Number.isInteger(number) && number >= 0 ? number : 0
+}
+
+function safeReviewAverage(value) {
+  const number = Number(value)
+  return Number.isFinite(number) && number >= 0 && number <= 5 ? number : 0
+}
+
 function normalizeReview(input) {
   const s = input && typeof input === 'object' ? input : {}
+  const rating = Number(s.rating)
   return {
-    id: s.id,
-    productId: String(s.productId || ''),
-    productName: String(s.productName || ''),
-    productNameEn: String(s.productNameEn || ''),
-    productSlug: String(s.productSlug || ''),
-    authorName: String(s.authorName || ''),
-    authorEmail: String(s.authorEmail || ''),
-    rating: Number(s.rating ?? 0),
-    body: String(s.body || ''),
-    photos: Array.isArray(s.photos) ? s.photos.map(String) : [],
-    status: String(s.status || ''),
-    createdAt: s.createdAt || '',
-    updatedAt: s.updatedAt || '',
+    id: typeof s.id === 'string' || Number.isFinite(s.id) ? s.id : '',
+    productId: typeof s.productId === 'string' || Number.isFinite(s.productId) ? String(s.productId) : '',
+    productName: safeReviewString(s.productName),
+    productNameEn: safeReviewString(s.productNameEn),
+    productSlug: safeReviewString(s.productSlug),
+    authorName: safeReviewString(s.authorName),
+    authorEmail: safeReviewString(s.authorEmail),
+    rating: Number.isFinite(rating) && rating >= 1 && rating <= 5 && Number.isInteger(rating * 2) ? rating : null,
+    body: safeReviewString(s.body),
+    photos: Array.isArray(s.photos) ? s.photos.map(safeReviewPhoto).filter(Boolean) : [],
+    status: safeReviewString(s.status),
+    version: Number.isInteger(Number(s.version)) && Number(s.version) >= 0 ? Number(s.version) : 0,
+    createdAt: safeReviewString(s.createdAt),
+    updatedAt: safeReviewString(s.updatedAt),
   }
 }
 
@@ -1431,17 +1463,17 @@ export async function fetchReviewSummary() {
       : {}
     return {
       approved: {
-        averageRating: Number.isFinite(Number(approved.averageRating)) ? Number(approved.averageRating) : 0,
-        totalReviews: Number.isFinite(Number(approved.totalReviews)) ? Number(approved.totalReviews) : 0,
+        averageRating: safeReviewAverage(approved.averageRating),
+        totalReviews: safeReviewCount(approved.totalReviews),
         // REVIEW_RULE_008: 9 mức nửa sao (5 → 1, bước 0,5).
         ratingBreakdown: Object.fromEntries([5, 4.5, 4, 3.5, 3, 2.5, 2, 1.5, 1].map((star) => [
           String(star),
-          Number.isFinite(Number(ratingBreakdown[String(star)])) ? Number(ratingBreakdown[String(star)]) : 0,
+          safeReviewCount(ratingBreakdown[String(star)]),
         ])),
       },
       pending: {
-        totalReviews: Number.isFinite(Number(pending.totalReviews)) ? Number(pending.totalReviews) : 0,
-        oneStarReviews: Number.isFinite(Number(pending.oneStarReviews)) ? Number(pending.oneStarReviews) : 0,
+        totalReviews: safeReviewCount(pending.totalReviews),
+        oneStarReviews: safeReviewCount(pending.oneStarReviews),
       },
     }
   } catch (error) {
@@ -1458,34 +1490,57 @@ export async function fetchReviewDetail(reviewId) {
   }
 }
 
-export async function updateReviewStatus(reviewId, status) {
+export async function updateReviewStatus(reviewId, status, expectedVersion) {
   const payload = await requestJson(`/admin/reviews/${reviewId}/status`, {
     method: 'PATCH',
-    body: { status },
+    body: { status, expectedVersion },
   })
-  return { item: normalizeReview(payload?.data || {}) }
+  const data = payload?.data && typeof payload.data === 'object' ? payload.data : {}
+  const item = normalizeReview(data)
+  // PATCH returns the privacy-safe list projection. Preserve the detail-only
+  // email already loaded by omitting this key when the server omits it.
+  if (!Object.prototype.hasOwnProperty.call(data, 'authorEmail')) delete item.authorEmail
+  return { item }
 }
 
-export async function deleteReview(reviewId) {
-  await requestJson(`/admin/reviews/${reviewId}`, { method: 'DELETE' })
+export async function deleteReview(reviewId, expectedVersion) {
+  await requestJson(`/admin/reviews/${reviewId}`, {
+    method: 'DELETE',
+    query: { expectedVersion },
+  })
 }
 
-/** Bulk moderation — one request instead of N sequential PATCH calls (see ReviewListScreen runBulk). */
-export async function bulkUpdateReviewStatus(reviewIds, status) {
+function normalizeReviewBulkResult(payload) {
+  const data = payload?.data || {}
+  return {
+    affected: Number.isInteger(Number(data.affected)) && Number(data.affected) >= 0
+      ? Number(data.affected)
+      : 0,
+    skipped: Array.isArray(data.skipped)
+      ? data.skipped.map((item) => ({
+          id: item?.id,
+          reason: String(item?.reason || 'UNKNOWN'),
+        }))
+      : [],
+  }
+}
+
+/** Versioned, best-effort bulk moderation; see API_CONTRACT.md "Admin Reviews Contract". */
+export async function bulkUpdateReviewStatus(items, status) {
   const payload = await requestJson('/admin/reviews/bulk-status', {
     method: 'POST',
-    body: { ids: reviewIds, status },
+    body: { items, status },
   })
-  return payload?.data?.affected ?? 0
+  return normalizeReviewBulkResult(payload)
 }
 
 /** Bulk counterpart of {@link deleteReview}. */
-export async function bulkDeleteReviews(reviewIds) {
+export async function bulkDeleteReviews(items) {
   const payload = await requestJson('/admin/reviews/bulk-delete', {
     method: 'POST',
-    body: { ids: reviewIds },
+    body: { items },
   })
-  return payload?.data?.affected ?? 0
+  return normalizeReviewBulkResult(payload)
 }
 
 // Audit Logs
@@ -1643,6 +1698,7 @@ async function fetchCsvBlob(path, params = {}, fallbackName = 'export.csv', acce
 
 export async function exportOrdersCsv(filters = {}) {
   return fetchCsvBlob('/admin/reports/orders/export', {
+    q: filters.q,
     status: filters.status,
     from: filters.from,
     to: filters.to,
@@ -1650,7 +1706,12 @@ export async function exportOrdersCsv(filters = {}) {
 }
 
 export async function exportCustomersCsv(filters = {}) {
-  return fetchCsvBlob('/admin/reports/customers/export', { status: filters.status }, 'customers.csv')
+  return fetchCsvBlob('/admin/reports/customers/export', {
+    q: filters.q,
+    status: filters.status,
+    synthetic: filters.synthetic,
+    emailVerified: filters.emailVerified,
+  }, 'customers.csv')
 }
 
 export async function exportProductsCsv(filters = {}) {

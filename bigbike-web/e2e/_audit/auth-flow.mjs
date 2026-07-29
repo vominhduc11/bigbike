@@ -55,7 +55,7 @@ try {
 
   // 2. PDP add to cart
   // discover an in-stock product
-  await page.goto(BASE + "/san-pham", { waitUntil: "load", timeout: 45000 });
+  await page.goto(BASE + "/sp", { waitUntil: "load", timeout: 45000 });
   await settle(page, 1000);
   let productUrl = await page.$$eval("a[href*='/product/']", (as) => as.map((a) => a.getAttribute("href")).find(Boolean));
   if (productUrl && productUrl.startsWith("http")) productUrl = new URL(productUrl).pathname;

@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
@@ -37,7 +38,7 @@ public class ReviewEntity {
     @Column(name = "author_email")
     private String authorEmail;
 
-    // REVIEW_RULE_008: bước 0,5 (1.0..5.0), enforce ở request validation + DB check constraint (V347).
+    // REVIEW_RULE_008: bước 0,5, gồm 9 mức từ 1.0 đến 5.0; enforce ở request + DB (V347).
     @Column(nullable = false, precision = 2, scale = 1)
     private BigDecimal rating;
 
@@ -63,5 +64,16 @@ public class ReviewEntity {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @Column(name = "first_approved_at")
+    private Instant firstApprovedAt;
+
+    /**
+     * Optimistic concurrency token for admin moderation. Clients echo this value
+     * as expectedVersion so a stale screen cannot overwrite a newer decision.
+     */
+    @Version
+    @Column(nullable = false)
+    private Long version;
 
 }

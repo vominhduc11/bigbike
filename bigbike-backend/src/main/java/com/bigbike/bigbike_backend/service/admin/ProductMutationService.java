@@ -10,6 +10,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.VariantRequest;
 import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.MutationNotImplementedException;
+import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
@@ -109,6 +110,8 @@ public class ProductMutationService {
         List<CategoryEntity> categories = catalogRequestValidator.validateAndResolveCategories(request, true, errors);
         BrandEntity brand = catalogRequestValidator.validateAndResolveBrand(request.getBrandId(), errors);
         String slug = catalogRequestValidator.validateProductRequest(request, null, true, false, errors);
+        AdminMutationValidators.validateProductSavePublishStatus(
+                null, request.getPublishStatus(), true, errors);
         AdminMutationValidators.throwIfErrors(errors);
 
         Instant now = Instant.now();
@@ -118,6 +121,7 @@ public class ProductMutationService {
         entity.setUpdatedAt(now);
 
         applyProductPatch(entity, request, slug, categories, brand, true);
+        dropFeaturedPlacementIfNotPublished(entity);
 
         List<ApiErrorDetail> readinessErrors = new ArrayList<>();
         AdminMutationValidators.validateProductFieldsRequired(
@@ -170,11 +174,15 @@ public class ProductMutationService {
         BrandEntity brand = catalogRequestValidator.validateAndResolveBrand(request.getBrandId(), errors);
         String slug = catalogRequestValidator.validateProductRequest(request, entity, false, false, errors);
         PublishStatus nextPublishStatus = request.getPublishStatus() == null ? entity.getPublishStatus() : request.getPublishStatus();
-        AdminMutationValidators.validatePublishTransition(entity.getPublishStatus(), nextPublishStatus, "publishStatus", errors);
+        AdminMutationValidators.validateProductSavePublishStatus(
+                entity.getPublishStatus(), request.getPublishStatus(), false, errors);
+        AdminMutationValidators.validatePublishTransition(
+                entity.getPublishStatus(), nextPublishStatus, "publishStatus", errors);
         AdminMutationValidators.throwIfErrors(errors);
 
         entity.setUpdatedAt(Instant.now());
         applyProductPatch(entity, request, slug, categories, brand, false);
+        dropFeaturedPlacementIfNotPublished(entity);
 
         List<ApiErrorDetail> readinessErrors = new ArrayList<>();
         AdminMutationValidators.validateProductFieldsRequired(
@@ -192,6 +200,24 @@ public class ProductMutationService {
 
         return catalogReadRepository.findProductById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Product not found."));
+    }
+
+    /**
+     * Owner decision 2026-07-28 (PRODUCT_RULE_015): a product that leaves {@code PUBLISHED} is
+     * dropped from the homepage "Sản phẩm nổi bật" grid automatically. Leaving the FEATURED_GRID
+     * marker on a DRAFT/TRASH product silently shrank the homepage grid (public reads filter to
+     * PUBLISHED) and — because {@code setHomepageBlocks} rejects any non-PUBLISHED id — blocked
+     * every later edit of the featured list until an admin removed that row by hand.
+     * Re-publishing does NOT restore the placement; the admin re-adds it deliberately.
+     */
+    private static void dropFeaturedPlacementIfNotPublished(ProductEntity entity) {
+        if (entity.getPublishStatus() == PublishStatus.PUBLISHED) {
+            return;
+        }
+        if (entity.getHomepageBlock() == HomepageBlock.FEATURED_GRID) {
+            entity.setHomepageBlock(HomepageBlock.NONE);
+            entity.setHomepageOrder(null);
+        }
     }
 
     @Transactional
@@ -222,6 +248,7 @@ public class ProductMutationService {
         }
 
         entity.setPublishStatus(publishStatus);
+        dropFeaturedPlacementIfNotPublished(entity);
         entity.setUpdatedAt(Instant.now());
         productJpaRepository.save(entity);
         auditLog("PRODUCT_PUBLISH_STATUS_UPDATED", "PRODUCT", adminId, before, productJson(entity));
@@ -259,6 +286,7 @@ public class ProductMutationService {
         AdminMutationValidators.throwIfErrors(errors);
 
         entity.setPublishStatus(PublishStatus.TRASH);
+        dropFeaturedPlacementIfNotPublished(entity);
         entity.setUpdatedAt(Instant.now());
         productJpaRepository.save(entity);
         auditLog("PRODUCT_SOFT_DELETED", "PRODUCT", adminId, before, productJson(entity));

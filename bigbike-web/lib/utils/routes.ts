@@ -55,7 +55,7 @@ export function translatePath(pathname: string, targetLocale: Locale): string {
     else if (seg0 === "dang-ky") mapped = ["register"];
     else if (seg0 === "quen-mat-khau") mapped = ["forgot-password"];
     else if (seg0 === "xac-nhan-email") mapped = ["verify-email"];
-    else if (seg0 === "san-pham") mapped = ["products"];
+    else if (seg0 === "sp" || seg0 === "san-pham") mapped = ["products"];
     else if (seg0 === "lien-he") mapped = ["contact"];
     else if (seg0 === "gioi-thieu") mapped = ["about"];
     else if (seg0 === "chinh-sach") {
@@ -67,8 +67,8 @@ export function translatePath(pathname: string, targetLocale: Locale): string {
       if (seg1) mapped.push(seg1, ...remaining);
     }
     else if (seg0 === "tim-kiem") mapped = ["search"];
-    else if (seg0 === "danh-muc-san-pham") {
-      if (segments.length === 1) mapped = ["categories"];
+    else if (seg0 === "danh-muc" || seg0 === "danh-muc-san-pham") {
+      if (segments.length === 1) mapped = ["products"];
     }
     else if (seg0 === "tin-tuc") {
       if (segments.length === 1) mapped = ["news"];
@@ -98,7 +98,7 @@ export function translatePath(pathname: string, targetLocale: Locale): string {
       // Only the bare list path is an alias for the VI list page — /products/{slug}/
       // is now a real EN product detail route (app/products/[slug]/page.tsx) and
       // must not be rewritten/redirected away.
-      if (segments.length === 1) mapped = ["san-pham"];
+      if (segments.length === 1) mapped = ["sp"];
     }
     else if (seg0 === "contact") mapped = ["lien-he"];
     else if (seg0 === "about") mapped = ["gioi-thieu"];
@@ -113,7 +113,8 @@ export function translatePath(pathname: string, targetLocale: Locale): string {
     else if (seg0 === "search") mapped = ["tim-kiem"];
     else if (seg0 === "categories") {
       // Same reasoning: /categories/{slug}/ is now a real EN category detail route.
-      if (segments.length === 1) mapped = ["danh-muc-san-pham"];
+      // The bare category archive shares the canonical product listing.
+      if (segments.length === 1) mapped = ["sp"];
     }
     else if (seg0 === "news") {
       // Same reasoning: /news/{slug}/ is now a real EN article detail route.
@@ -139,7 +140,7 @@ export function toProductPath(slug: string, locale?: Locale, isEnSlug?: boolean)
 
 export function toProductListPath(locale?: Locale): string {
   const currentLocale = locale || getActiveLocale();
-  return currentLocale === "en" ? "/products/" : "/san-pham/";
+  return currentLocale === "en" ? "/products/" : "/sp/";
 }
 
 
@@ -149,7 +150,7 @@ export function toCategoryPath(slug: string, locale?: Locale, isEnSlug?: boolean
   if (currentLocale === "en" && isEnSlug) {
     return `/categories/${slug}/`;
   }
-  return `/danh-muc-san-pham/${slug}/`;
+  return `/danh-muc/${slug}/`;
 }
 
 
@@ -176,8 +177,55 @@ export function toArticleListPath(locale?: Locale): string {
 }
 
 export function toCategoryListPath(locale?: Locale): string {
-  const currentLocale = locale || getActiveLocale();
-  return currentLocale === "en" ? "/categories/" : "/danh-muc-san-pham/";
+  return toProductListPath(locale);
+}
+
+/**
+ * Normalizes storefront URLs that may come from persisted admin content.
+ * Redirect sources keep the legacy values; generated links and canonical URLs do not.
+ */
+export function normalizeStorefrontUrl(value: string): string {
+  const normalizePath = (pathname: string): string => {
+    const withoutTrailingSlash = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+
+    if (
+      withoutTrailingSlash === "/san-pham" ||
+      withoutTrailingSlash === "/danh-muc" ||
+      withoutTrailingSlash === "/danh-muc-san-pham" ||
+      withoutTrailingSlash === "/danh-muc-san-pham.html"
+    ) {
+      return "/sp/";
+    }
+
+    const legacyCategoryPrefix = "/danh-muc-san-pham/";
+    if (withoutTrailingSlash.startsWith(legacyCategoryPrefix)) {
+      const slug = withoutTrailingSlash.slice(legacyCategoryPrefix.length);
+      return slug ? `/danh-muc/${slug}/` : "/sp/";
+    }
+
+    return pathname;
+  };
+
+  const trimmed = value.trim();
+  if (!trimmed) return trimmed;
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const parsed = new URL(trimmed);
+      parsed.pathname = normalizePath(parsed.pathname);
+      return parsed.toString();
+    } catch {
+      return trimmed;
+    }
+  }
+
+  const suffixIndexes = [trimmed.indexOf("?"), trimmed.indexOf("#")].filter(
+    (index) => index >= 0,
+  );
+  const suffixIndex = suffixIndexes.length > 0 ? Math.min(...suffixIndexes) : trimmed.length;
+  const pathname = trimmed.slice(0, suffixIndex);
+  const suffix = trimmed.slice(suffixIndex);
+  return normalizePath(pathname) + suffix;
 }
 
 export function toPagePath(slug: string, locale?: Locale): string {
@@ -306,7 +354,7 @@ export function getLocalizedRoute(
 
   if (locale === "en") {
     // Is this an EN display URL that has a VI physical equivalent?
-    // (e.g. /cart/ → /gio-hang/, /categories/slug/ → /danh-muc-san-pham/slug/)
+    // (e.g. /cart/ → /gio-hang/). True EN entity routes pass through unchanged.
     const viEquivalent = translatePath(pathname, "vi");
     if (viEquivalent !== pathname) {
       // Rewrite: serve the VI physical file while keeping the EN URL in the browser.

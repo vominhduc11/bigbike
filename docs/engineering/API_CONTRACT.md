@@ -41,7 +41,11 @@ request. `CONFIRMED_FROM_CODE`
 | `GET` | `/api/v1/auth/admin/invite?token=…` | **Public.** Validate an admin invite token; returns the invitee email + expiry so the set-password page can render. Invalid/expired/used → `400` | `ApiDataResponse<InviteInfoResponse>` | `CONFIRMED_FROM_CODE` | `AuthController.java`, `AdminInviteService.validateToken` |
 | `POST` | `/api/v1/auth/admin/accept-invite` | **Public.** Body `{token, password}`. Sets the invited admin's password and flips status `INVITED → ACTIVE`, consuming the token. Password ≥ 8. Rate-limited | `ApiDataResponse<Void>` | `CONFIRMED_FROM_CODE` | `AuthController.java`, `AdminInviteService.acceptInvite` |
 
-**Admin user creation is invite-based.** `POST /api/v1/admin/admin-users` (`admin-users.write`) now takes `{email, displayName, role}` only — **no `password`**. It creates the user `status = INVITED` (no password), generates an invite token and sends an email with a set-password link (`{ADMIN_BASE}/accept-invite?token=…`). The response includes `inviteEmailSent` (boolean) and, when SMTP is not configured, the `inviteUrl` so a Super Admin can deliver it manually. Resend: `POST /api/v1/admin/admin-users/{id}/resend-invite` (`admin-users.write`). Status: `CONFIRMED_FROM_CODE` — `AdminAdminUsersController.java`, `AdminInviteService.java`.
+**Admin user creation is invite-based.** `POST /api/v1/admin/admin-users` (`admin-users.write`) now takes `{email, displayName, role}` only — **no `password`**. It creates the user `status = INVITED` (no password), generates an invite token and sends an email with a set-password link (`{ADMIN_BASE}/accept-invite?token=…`). The response includes `inviteEmailSent` (boolean) and, when SMTP is not configured, the `inviteUrl` so a Super Admin can deliver it manually. Resend: `POST /api/v1/admin/admin-users/{id}/resend-invite` (`admin-users.write`).
+
+`PATCH /api/v1/admin/admin-users/{id}` (`admin-users.write`) accepts partial `{displayName, status, newPassword, role}`. `newPassword`, when present, must contain 8–128 characters. The manually settable statuses are `ACTIVE`, `DISABLED`, and `SUSPENDED`; callers cannot set `INVITED`, and an account currently in `INVITED` cannot be moved manually to another status because `INVITED → ACTIVE` belongs exclusively to the token-gated invite-acceptance flow. Super-admin privilege, self-lockout, and last-active-super-admin guards follow `PERMISSION_MATRIX.md` §Role Governance.
+
+Status: `CONFIRMED_FROM_CODE` — `AdminAdminUsersController.java`, `AdminAdminUsersService.java`, `AdminInviteService.java`.
 
 **`refresh` error contract:** a **missing, blank, invalid, revoked or expired** refresh token returns **`401 UNAUTHORIZED`** (the standard `ApiResponse` error envelope), not `500`. In particular, calling `/api/v1/auth/refresh` with no cookie and no body (e.g. before logging in, or after a reload dropped the in-memory access token) is an expected unauthenticated case and yields `401`. Status: `CONFIRMED_FROM_CODE` — `AdminAuthService.refresh` guards a null/blank token and throws `UnauthorizedException`; `UnauthorizedException → HttpStatus.UNAUTHORIZED`.
 
@@ -111,7 +115,7 @@ Status: `CONFIRMED_FROM_CODE` — `PublicCacheHeaderFilter.java`, `SecurityConfi
 | `GET` | `/api/v1/customer/me` | Current customer profile (requires `ROLE_CUSTOMER`) | `ApiDataResponse<CustomerSummary>` | `CONFIRMED_FROM_CODE` | `CustomerController.java` |
 | `PATCH` | `/api/v1/customer/me` | Update own profile. Changing `email`, `phone` or `newPassword` requires `currentPassword` | `ApiDataResponse<CustomerSummary>` | `CONFIRMED_FROM_CODE` | `CustomerController.java`, `CustomerAuthService.updateProfile` |
 
-- **Changing `email` clears `email_verified_at`** and sends a fresh verification email to the new address. Guest-order auto-linking (`GuestOrderLinkingService`) stays disabled until the new email is verified again — linking requires proven ownership of the address (security fix AUD-001, 2026-07-15). The same reset applies when an admin changes a customer's email via `PATCH /api/v1/admin/customers/{id}`.
+- **Changing `email` through the customer's own `PATCH /api/v1/customer/me` clears `email_verified_at`** and sends a fresh verification email to the new address. Guest-order auto-linking (`GuestOrderLinkingService`) stays disabled until the new email is verified again — linking requires proven ownership of the address (security fix AUD-001, 2026-07-15). The admin customer endpoint does not accept email changes (`CUSTOMER_RULE_004`).
 
 ### Customer avatar upload/remove (2026-07-21, owner decision)
 
@@ -164,30 +168,41 @@ Lists **APPROVED** reviews only (PENDING/SPAM/TRASH are never exposed). Response
 Query params (all optional):
 - `page` — 1-based page, `@Min(1)`, default `1`.
 - `size` — page size, `@Min(1) @Max(50)`, default `10`.
-- `rating` — star filter, accepts the 10 half-star levels `1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5` (`REVIEW_RULE_008`, changed 2026-07-22 from integer-only `@Min(1)@Max(5)`). When present, **only the `reviews` list is narrowed to that exact star level**; `avgRating`, `totalReviews` and `ratingBreakdown` stay global (computed over all approved reviews) so the summary panel is stable while the customer drills into one bucket.
+- `rating` — star filter, accepts the 9 half-star levels `1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5` (`REVIEW_RULE_008`, changed 2026-07-22 from integer-only `@Min(1)@Max(5)`). When present, **only the `reviews` list is narrowed to that exact star level**; `avgRating`, `totalReviews` and `ratingBreakdown` stay global (computed over all approved reviews) so the summary panel is stable while the customer drills into one bucket.
 - `sort` — ordering of the list: `newest` (default — `createdAt` desc), `highest` (`rating` desc, then `createdAt` desc), `lowest` (`rating` asc, then `createdAt` desc). Unknown values fall back to `newest`.
 
 Response `data` shape:
 - `avgRating` (number, 1-decimal, **HALF_UP** — `PublicReviewService.roundAverage`), `totalReviews` (long) — **always global**, never affected by `rating`. Khi 0 review approved: `avgRating = 0.0` (không phải null) và `totalReviews = 0` — FE gate hiển thị sao bắt buộc bằng `totalReviews ≥ 1`, không bằng `avgRating > 0` (xem `BUSINESS_RULES.md` `REVIEW_RULE_003`).
 - `ratingBreakdown` — **9 keys** (changed 2026-07-22, `REVIEW_RULE_008`): `{ "5": n, "4.5": n, "4": n, "3.5": n, "3": n, "2.5": n, "2": n, "1.5": n, "1": n }`, every key present (no trailing `.0` — whole levels are `"5"` not `"5.0"`), global counts. Each review's `rating` contributes to exactly one of these 9 buckets (no rounding/merging into an adjacent whole-star bucket).
-- `reviews` — `[{ id, authorName, rating, comment, photos, createdAt, authorAvatarUrl }]`, filtered + sorted per params. `rating` is now a decimal (one of the 10 half-star levels above), not always a whole integer. `photos` is an array of MinIO media URLs (`/media/reviews/...`, possibly empty) — customer-uploaded photos for that review, surfacing only for `APPROVED` reviews (moderated together with the review). `authorAvatarUrl` (string, nullable, added 2026-07-21) — the linked customer's **current** avatar URL when the review was submitted while logged in (`reviews.customer_id` non-null); resolved **live** at read time (not a snapshot frozen at submission — if the customer later changes/removes their avatar, already-published reviews reflect the new state on next read), batch-fetched for all distinct `customer_id`s on the page in one query (no N+1). `null` for guest-submitted reviews or when the linked customer currently has no avatar — client renders the initials fallback in both cases identically.
+- `reviews` — `[{ id, authorName, rating, comment, photos, createdAt, authorAvatarUrl }]`, filtered + sorted per params. `rating` is a decimal (one of the 9 half-star levels above), not always a whole integer. `photos` is an array of MinIO media URLs (`/media/reviews/...`, possibly empty) — customer-uploaded photos for that review, surfacing only for `APPROVED` reviews (moderated together with the review). `authorAvatarUrl` (string, nullable, added 2026-07-21) — the linked customer's **current** avatar URL when the review was submitted while logged in (`reviews.customer_id` non-null); resolved **live** at read time (not a snapshot frozen at submission — if the customer later changes/removes their avatar, already-published reviews reflect the new state on next read), batch-fetched for all distinct `customer_id`s on the page in one query (no N+1). `null` for guest-submitted reviews or when the linked customer currently has no avatar — client renders the initials fallback in both cases identically.
 - `pagination` — `{ page, pageSize, totalItems, totalPages, hasNext, hasPrevious }`. `totalItems`/`totalPages`/`hasNext` follow the **filtered** list (so "load more" pages correctly within one star bucket); when `rating` is absent these equal the global approved count.
 
-Out-of-range `page`/`size`/`rating` (not one of the 10 half-star levels) → `400 VALIDATION_ERROR`. Unknown `productId` → `404`.
+Out-of-range `page`/`size`/`rating` (not one of the 9 half-star levels) → `400 VALIDATION_ERROR`. Unknown `productId` → `404`.
+
+The public review list, approved aggregate, 9-bucket breakdown and linked customer avatars are read in one repeatable-read snapshot, so a moderation commit cannot produce a response whose list and summary describe different points in time.
 
 ### `POST /api/v1/products/{productId}/reviews`
 
-Submits a review (`status = PENDING`, awaits admin moderation). Honeypot `website` field → accept-and-drop silently. Duplicate guard: same `productId` + normalized author + normalized body within 24h → `409`. See `SubmitReviewRequest`.
+Submits a review (`status = PENDING`, awaits admin moderation). Honeypot `website` field → accept-and-drop silently. Duplicate guard: same `productId` + normalized author + normalized body within 24h → `409`. Concurrent submits for the same product are serialized on that product before the duplicate query and insert, so two racing identical requests cannot both pass the guard. See `SubmitReviewRequest`.
 
-Body fields: `authorName` (required, ≤80), `rating` (required, **decimal, one of `1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5`** — half-star step, `REVIEW_RULE_008`, changed 2026-07-22 from integer-only `1..5`), `comment` (optional, ≤1000), `website` (honeypot), plus `photos` (optional, `string[]`, ≤10). Any value outside the 10 half-star levels (e.g. `4.2`) → `400 VALIDATION_ERROR`. Each `photos[]` entry **must** be an internal MinIO media URL (`/media/...`) — external/hotlink URLs are rejected `400 VALIDATION_ERROR` (`photos/INVALID`); more than 10 entries → `photos/TOO_MANY`. Reuses `SafeMediaAssetUrlPolicy.validateImageUrlOrThrow`.
+Body fields: `rating` (required, **decimal, one of `1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5`** — 9 half-star levels), `comment` (optional, ≤1000), `website` (honeypot), plus `photos` (optional, `string[]`, ≤10). For guests, `authorName` is required (≤80) and `authorEmail` is optional (≤255, valid email when present). For an authenticated customer, both body fields are optional and ignored: the backend resolves display name and email from the current account (`REVIEW_RULE_007`). Any rating outside the 9 levels (e.g. `4.2`) → `400 VALIDATION_ERROR`.
 
-**Customer linking (2026-07-21, owner decision):** this endpoint stays `permitAll()` (guest submission fully supported, unchanged), but when the request carries a valid `bb_session` cookie, `CustomerSessionFilter` (which runs globally except `/api/v1/admin/**`/`/api/v1/auth/**`) has already populated the `SecurityContext` with a `CustomerPrincipal` by the time this handler runs. The controller reads it optionally (non-throwing) and, when present, the review's `customer_id` is set server-side to that customer — **never client-supplied**. This is what makes `authorAvatarUrl` (below) resolvable for reviews submitted while logged in. `bigbike-web`'s same-origin proxy route (`app/api/products/[id]/reviews/route.ts`) forwards only the `bb_session` cookie value to the upstream call for this reason.
+Each `photos[]` entry must be a canonical Review URL under `/media/reviews/...`. The object must have been created by this module's upload endpoint for the same `productId` and be unclaimed. Submit atomically claims each object for the newly created review; a missing, foreign-product, duplicate or already-claimed object returns `409`. This is a server-side ownership check, not URL-prefix trust alone (`REVIEW_RULE_005`/`011`).
+
+**Customer linking and authoritative identity (2026-07-21; backend hardening 2026-07-28):** this endpoint stays `permitAll()` (guest submission remains supported), but a valid `bb_session` gives the backend a `CustomerPrincipal`. The controller passes only that server-derived customer ID. The service loads the current customer row and persists its `displayName` (fallback email local-part) and email, ignoring any fake `authorName`/`authorEmail` supplied in the body. Email text alone never links an account.
+
+The storefront browser calls this public backend endpoint directly with
+credentials included (and does the same for `/reviews/photos`), rather than
+proxying through a shared Next.js server request. This preserves the real
+`bb_session` identity and the real client-IP rate-limit bucket.
 
 ### `POST /api/v1/products/{productId}/reviews/photos`
 
 Public, no auth. `multipart/form-data` with a single `file` part — uploads one customer review photo to MinIO and returns its URL so the submit body can reference it. Rate-limited per IP (`REVIEW_PHOTO` tier). Response `data`: `{ url }` (e.g. `/media/reviews/{uuid}/{filename}`).
 
-Validation: image only — declared + Apache Tika magic-byte must be `image/jpeg`, `image/png`, or `image/webp` (no SVG/GIF/video). Max **8 MB** per file. Unknown `productId` → `404`; wrong type / oversize / empty → `400 VALIDATION_ERROR`. Photos are stored directly under the `reviews/` prefix and are **not** registered in the admin media library (`media` table). Server downscales to max **1600px** wide before storing (`ImageCompressionService`, MEDIA_RULE_006) — the returned URL points at the compressed file, not the bytes the client uploaded. Evidence: `PublicReviewController.uploadPhoto`, `ReviewPhotoStorageService`.
+Validation: image only — declared Content-Type and Apache Tika magic-byte detection must **match exactly** and be `image/jpeg`, `image/png`, or `image/webp` (no SVG/GIF/video); the stored object gets the canonical `.jpg`/`.png`/`.webp` extension for that verified type rather than trusting the client filename. Max **8 MB** per file. Unknown `productId` → `404`; wrong type / mismatch / oversize / empty → `400 VALIDATION_ERROR`. Photos are stored directly under the `reviews/` prefix and are **not** registered in the admin media library (`media` table). Contract target is to downscale to max **1600px** wide before storing (`ImageCompressionService`, MEDIA_RULE_006). JPEG/PNG currently meet that target; accepted WebP currently falls back to the original bytes because the runtime has no WebP ImageIO reader (`CODE_GAP_WEBP_2026-07-28`, shared Media P2 debt). Evidence: `PublicReviewController.uploadPhoto`, `ReviewPhotoStorageService`, `ReviewPhotoStorageServiceTest`, `ImageCompressionServiceTest`.
+
+Every successful upload also creates a durable unclaimed record containing its canonical object key, product ID and upload timestamp. A scheduled cleanup atomically removes records still unclaimed after 24 hours and then deletes the corresponding MinIO object. Once claimed by a submitted review, the object cannot be claimed again.
 
 ## Content Categories Contract
 
@@ -315,7 +330,7 @@ Admin detail reads (`AdminContentItem`) của Article bao gồm `bodyBlocks: Des
 - Gửi key `bodyBlocks: [...]` trong `UpsertArticleRequest` → server render HTML từ blocks, ghi đè cả `body_blocks` lẫn `body`.
 - Bỏ key `bodyBlocks` hoàn toàn → `body` được patch bình thường; `body_blocks` không bị đụng (presence-flag pattern, giống `products.descriptionBlocks`).
 - **Tạo mới (`POST`):** nội dung là bắt buộc — chấp nhận **hoặc** `body` **hoặc** `bodyBlocks` non-empty. Gửi `bodyBlocks` mà bỏ `body` vẫn hợp lệ (server tự render `body` từ blocks); chỉ báo lỗi `body REQUIRED` khi thiếu cả hai.
-- Khối `video` trong bài viết dùng `provider` `youtube|tiktok|facebook|upload`; URL nền tảng phải là link đầy đủ thuộc host được duyệt, còn `upload` phải là media nội bộ. Link rút gọn TikTok/Facebook và Vimeo bị từ chối. URL cũ không đạt chuẩn nhưng không thay đổi vẫn được phép giữ lại khi sửa bài viết. Mô tả chi tiết sản phẩm không còn tạo block video; video sản phẩm là mục riêng (`videos[]`).
+- Khối `video` trong bài viết khi ghi chỉ dùng `provider` `youtube|upload`; URL YouTube phải hợp lệ, còn `upload` phải là media nội bộ. `tiktok`, `facebook`, provider lạ hoặc provider không khớp URL trả `400 INVALID_VALUE`. PATCH không gửi `bodyBlocks` giữ nguyên dữ liệu cũ; nếu gửi lại `bodyBlocks`, mọi khối video legacy phải được thay nguồn. Đường đọc/render vẫn chấp nhận dữ liệu TikTok/Facebook cũ. Mô tả chi tiết sản phẩm không còn tạo block video; video sản phẩm là mục riêng (`videos[]`).
 
 Status: `CONFIRMED_FROM_CODE` — `UpsertArticleRequest.bodyBlocksPresent`, `AdminContentMutationService`, `AdminContentItem.bodyBlocks`. Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article body blocks (V140)".
 
@@ -380,6 +395,8 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
 
 **Ghi:**
 - `POST /api/v1/admin/categories` và `PATCH /api/v1/admin/categories/{id}` nhận `UpsertCategoryRequest`: name/slug VI, `translations.en.name` bắt buộc khi field name được tạo/sửa, `slugEn` tùy chọn, parent, mô tả/intro/SEO song ngữ, asset theo vai trò, `sortOrder` và `showOnHomepage`.
+- **Ảnh theo vai trò** (`image` thumbnail lưới, `icon` hero, `menuIcon` icon menu, `banner` hero desktop, `mobileBanner` hero mobile): tất cả đi qua whitelist kho ảnh MinIO theo `BUSINESS_RULES.md` `MEDIA_RULE_002`, có tha URL cũ đang lưu trên bản ghi; URL mới ngoài `/media/`·`/media-proxy/`·base MinIO bị chặn `400 INVALID_VALUE` với `field` = `<vai trò>.url`. Gửi `url: ""`/`null` để xóa ảnh. `alt` bị ghi đè mỗi lần lưu nên form luôn gửi kèm (audit 2026-07-28 — trước đó `banner`/`mobileBanner` **không** được máy chủ kiểm whitelist dù form đã kiểm định dạng, để lọt ảnh hero trỏ host ngoài).
+- **Xóa mô tả / khối giới thiệu**: `description` và `introContent` theo presence-flag — **không gửi** field thì giữ nguyên, gửi chuỗi rỗng `""` thì xóa. Form quản trị luôn gửi cả hai (kể cả rỗng) để admin xóa được nội dung cũ, cùng cách form luôn gửi khối `seo`.
 - `isVisible` là patch trạng thái riêng (`PATCH /{id}`); ẩn Category có con trực tiếp đang hiển thị trả `409` với hướng dẫn ẩn hoặc chuyển cha cho con trước. Không áp dụng kiểm tra đệ quy.
 - `showOnHomepage` độc lập với `isVisible` và `deleted`, mặc định `false`. Create client không gửi field ở giá trị mặc định; PATCH bỏ field giữ nguyên. `seo` bị bỏ qua thì giữ nguyên, SEO được gửi với text trống được chuẩn hóa thành `null`, và `seo: {}` xóa toàn bộ SEO cũ gồm ảnh chia sẻ.
 - `uncategorized` được trả trong danh sách admin nhưng mọi route ghi cho record này (kể cả restore) trả `409`.
@@ -405,6 +422,8 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
   - Admin phải gọi phép xem trước này trước hộp xác nhận xóa đơn lẻ/hàng loạt và hiển thị **đồng thời** hai số đếm theo `BUSINESS_RULES.md` `CATEGORY_RULE_004`.
 
 ### 3. Brands (Thương hiệu)
+- **Ảnh thương hiệu** (`POST/PATCH /api/v1/admin/brands`): 3 field ảnh đơn `logo`, `banner`, `mobileBanner` (shape `ImageAssetRequest`: `url`, `alt`, `width`, `height`, `mimeType`). Cả 3 đi qua whitelist kho ảnh MinIO theo `BUSINESS_RULES.md` `MEDIA_RULE_002`, có tha URL cũ đang lưu trên bản ghi; URL mới ngoài `/media/`·`/media-proxy/`·base MinIO bị chặn `400 INVALID_VALUE` với `field` = `logo.url`/`banner.url`/`mobileBanner.url`. Gửi `url: ""` để xóa ảnh. **`alt` phải được gửi kèm mỗi lần lưu**: field không gửi bị ghi `null`, nên form quản trị luôn gửi cả `url` và `alt` (audit 2026-07-28 — trước đó form bỏ `alt`, làm mất chữ thay-thế-ảnh admin vừa nhập ngay ở lần lưu đó).
+- **Xóa mô tả**: `description` theo presence-flag — **không gửi** field thì giữ nguyên mô tả cũ, gửi chuỗi rỗng `""` thì xóa. Form quản trị luôn gửi `description` (kể cả rỗng) để admin xóa được mô tả cũ, cùng cách form luôn gửi khối `seo`.
 - **Sửa SEO**: `PATCH /api/v1/admin/brands/{id}` giữ nguyên SEO hiện có khi request **không gửi** field `seo`; nếu gửi `seo`, từng giá trị trống được chuẩn hóa thành `null`, và `seo: {}` xóa toàn bộ SEO cũ (gồm ảnh chia sẻ). Form quản trị luôn gửi khối `seo` khi lưu để thao tác xóa hết các ô được ghi nhận rõ ràng, thay vì bị hiểu nhầm là không chỉnh sửa.
 - **Đặt trên trang chủ**: `POST/PATCH /api/v1/admin/brands` nhận field `showOnHomepage` (boolean, mặc định `true`). Field này chỉ điều khiển dải logo thương hiệu ở trang chủ; không ẩn thương hiệu khỏi `/brands`, `/brands/{slug}`, facet thương hiệu hoặc brand nhúng trong sản phẩm.
 - **Danh sách public**: `GET /api/v1/brands` nhận query param tùy chọn `showOnHomepage` (boolean). Chỉ khi truyền `true` hoặc `false` thì danh sách mới lọc theo cờ homepage; khi bỏ qua, danh sách vẫn chỉ loại Brand có `isVisible = false` theo quy tắc public hiện tại. Response Brand trả thêm `showOnHomepage`.
@@ -483,8 +502,8 @@ Status: `CONFIRMED_FROM_CODE`
 | Endpoint | Permission | Current behavior | Status | Evidence |
 |---|---|---|---|---|
 | `GET /api/v1/admin/reports/analytics?from=YYYY-MM-DD&to=YYYY-MM-DD` | `reports.read` | Returns PeriodSummary, daily revenue series, top products, and top customers. | `CONFIRMED_FROM_CODE` | `AdminReportController.java`, `AdminReportService.java` |
-| `GET /api/v1/admin/reports/orders/export?status=...&from=...&to=...` | `reports.export` | Exports orders matching order-status/date filters to a UTF-8 BOM CSV file. | `CONFIRMED_FROM_CODE` | `AdminReportController.java`, `AdminReportService.java` |
-| `GET /api/v1/admin/reports/customers/export?status=...` | `reports.export` | Exports customers matching filters to a UTF-8 BOM CSV file. | `CONFIRMED_FROM_CODE` | `AdminReportController.java`, `AdminReportService.java` |
+| `GET /api/v1/admin/reports/orders/export?q=...&status=...&from=...&to=...` | `reports.export` | Exports every order matching the current Orders-screen search/status/date filters to a UTF-8 BOM CSV file. `from`/`to` are inclusive Vietnam calendar dates and the export is not capped at 10,000 rows. | `CONFIRMED_FROM_CODE` | `ORDER_RULE_011`, `ORDER_RULE_012`, `AdminOrderCsvExportService.java` |
+| `GET /api/v1/admin/reports/customers/export?q=...&status=...&synthetic=...&emailVerified=...` | `reports.export` | Exports every customer matching the current Customers-screen search/status/synthetic/email-verification filters to a UTF-8 BOM CSV file. The export is streamed across all pages and has no 10,000-row cap. | `CONFIRMED_BACKEND_ENFORCED` | `CUSTOMER_RULE_009`, `AdminReportController.java`, `AdminCustomerCsvExportService.java` |
 | `GET /api/v1/admin/reports/products/export?publishStatus=...` | `reports.export` | Exports the limited product report (13 reporting columns), optionally filtered by publish status, to a UTF-8 BOM CSV file. It is not the catalog backup/export endpoint. | `CONFIRMED_FROM_CODE` | `AdminReportController.java`, `AdminReportService.java` |
 
 **Custom range limit (frontend-only, `REPORT_RULE_011`):** The admin UI restricts the custom `from`/`to` range picker on the Reports screen to a maximum 90-day span. This is not enforced by `/analytics` itself, which only validates `from <= to`.
@@ -502,9 +521,19 @@ The CSV file generated by `/api/v1/admin/reports/orders/export` contains the fol
 - `order_number`, `status`, `customer_email`, `customer_phone`, `currency`, `subtotal`, `shipping`, `total`, `paid_amount`, `placed_at`, `paid_at`, `completed_at`, `cancelled_at`
 *(Note: the `"discount"` column was removed on 2026-07-04 as promotion codes/discounts are retired).*
 
+The export applies `q` to the same case-insensitive fields as the Orders list
+(order number/key and customer email/phone), applies `status`, and interprets
+`from`/`to` at `Asia/Ho_Chi_Minh` day boundaries. It exports every match across
+all pages with no silent row cap.
+
 ### Customer Export Format
 The CSV file generated by `/api/v1/admin/reports/customers/export` contains the following headers in order:
 - `id`, `email`, `phone`, `display_name`, `first_name`, `last_name`, `status`, `gender`, `email_verified_at`, `last_login_at`, `created_at`
+
+The export applies `q` to the same case-insensitive literal-substring fields as the Customers list
+(`email`, `phone`, `displayName`), applies `status`, `synthetic`, and `emailVerified`, and exports
+every matching row across all pages without silent truncation. The response declares
+`X-Export-Uncapped: true`.
 
 ### Product Export Format
 The CSV file generated by `/api/v1/admin/reports/products/export` contains the following headers in order:
@@ -514,13 +543,37 @@ This is a reporting-only export. The Product module's **"Xuất CSV"** action mu
 
 ## Admin Catalog Contract
 
+### Product admin lifecycle endpoints
+
+| Method | Path | Permission | Contract |
+|---|---|---|---|
+| `GET` | `/api/v1/admin/products` | `products.read` | Paginated operational list with search, category/brand, publish/stock/homepage/gender filters and sorting. |
+| `GET` | `/api/v1/admin/products/{id}` | `products.read` | Full bilingual edit payload, including media metadata, variants and current lifecycle state. |
+| `POST` | `/api/v1/admin/products` | `products.update` | Creates a product in `DRAFT`. A create payload cannot publish the product. |
+| `PATCH` | `/api/v1/admin/products/{id}` | `products.update` | Saves content without changing lifecycle: a `DRAFT` remains `DRAFT`, and a `PUBLISHED` product remains `PUBLISHED`. |
+| `POST` | `/api/v1/admin/products/preview?lang=vi\|en` | `products.update` | Dry-run storefront render. `lang` accepts only `vi` or `en`; any other value is a validation error. |
+| `PATCH` | `/api/v1/admin/products/{id}/publish` | `products.update` | The only active publish/unpublish action. Body selects `DRAFT` or `PUBLISHED`; the admin exposes it from Product List after the publish-readiness checklist. |
+| `DELETE` | `/api/v1/admin/products/{id}` | `products.update` | Soft-deletes to `TRASH`. |
+| `POST` | `/api/v1/admin/products/{id}/restore` | `products.update` | Restores `TRASH` to `DRAFT`. |
+| `DELETE` | `/api/v1/admin/products/{id}/permanent` | `products.update` | Permanently deletes a trashed product. |
+| `POST` | `/api/v1/admin/products/homepage-blocks` | `products.update` | Atomically replaces the ordered featured-product placement. |
+
+Publishing is deliberately separate from ordinary create/save (`PRODUCT_RULE_010`):
+the detail form only saves content, while the Product List owns both directions of
+the publish action. The backend enforces this boundary so a direct API caller
+cannot bypass the same operational flow.
+
 ### Full product catalog CSV export
 
 `GET /api/v1/admin/products/export.csv` is the authoritative full-catalog export used by the Product module's **"Xuất CSV"** action. It requires `reports.export`, records an audit event, accepts **no filters or pagination**, and exports every product currently stored in the catalog, including `DRAFT` and `TRASH` rows. It is streamed in deterministic `id` order; there is no 10,000-row (or other silent) truncation limit.
 
 The response is `text/csv; charset=UTF-8`, has a UTF-8 BOM for Excel, and sets a `Content-Disposition` attachment filename. One CSV row represents one product. Scalar data is emitted in these columns, in order:
 
-`id`, `legacy_id`, `sku`, `slug`, `slug_en`, `name_vi`, `name_en`, `short_description_vi`, `short_description_en`, `description_vi`, `description_en`, `category_id`, `category_slug`, `category_name_vi`, `category_name_en`, `brand_id`, `brand_slug`, `brand_name`, `image_id`, `image_url`, `image_alt`, `image_width`, `image_height`, `image_mime_type`, `retail_price`, `sale_price`, `currency`, `stock_state`, `stock_quantity`, `manage_stock`, `backorders`, `length_cm`, `width_cm`, `height_cm`, `available`, `discount_percent_override`, `publish_status`, `homepage_block`, `homepage_order`, `rating`, `rating_count`, `pdp_shipping_line`, `pdp_return_line`, `origin_brand_country_vi`, `origin_brand_country_en`, `size_guide_vi`, `size_guide_en`, `suitability_advisory_vi`, `suitability_advisory_en`, `specifications_vi`, `specifications_en`, `spec_stats_vi`, `spec_stats_en`, `trust_badges_vi`, `trust_badges_en`, `quick_answer_summary_vi`, `quick_answer_summary_en`, `gender`, `seo_title_vi`, `seo_title_en`, `seo_description_vi`, `seo_description_en`, `seo_canonical_url`, `seo_og_image_id`, `seo_og_image_url`, `seo_og_image_alt`, `seo_og_image_width`, `seo_og_image_height`, `seo_og_image_mime_type`, `created_at`, `updated_at`, `version`.
+`id`, `legacy_id`, `sku`, `slug`, `slug_en`, `name_vi`, `name_en`, `short_description_vi`, `short_description_en`, `description_vi`, `description_en`, `category_ids`, `category_slugs`, `category_names_vi`, `category_names_en`, `brand_id`, `brand_slug`, `brand_name`, `image_id`, `image_url`, `image_alt`, `image_width`, `image_height`, `image_mime_type`, `retail_price`, `sale_price`, `currency`, `stock_state`, `stock_quantity`, `manage_stock`, `backorders`, `length_cm`, `width_cm`, `height_cm`, `available`, `discount_percent_override`, `publish_status`, `homepage_block`, `homepage_order`, `rating`, `rating_count`, `pdp_shipping_line`, `pdp_return_line`, `origin_brand_country_vi`, `origin_brand_country_en`, `size_guide_vi`, `size_guide_en`, `suitability_advisory_vi`, `suitability_advisory_en`, `specifications_vi`, `specifications_en`, `spec_stats_vi`, `spec_stats_en`, `trust_badges_vi`, `trust_badges_en`, `quick_answer_summary_vi`, `quick_answer_summary_en`, `gender`, `seo_title_vi`, `seo_title_en`, `seo_description_vi`, `seo_description_en`, `seo_canonical_url`, `seo_og_image_id`, `seo_og_image_url`, `seo_og_image_alt`, `seo_og_image_width`, `seo_og_image_height`, `seo_og_image_mime_type`, `created_at`, `updated_at`, `version`.
+
+The four plural category columns preserve every ordered category as a
+pipe-separated value; the first entry remains the primary category. They are not
+singular fields because one product may belong to multiple categories.
 
 The following columns hold valid compact JSON strings, so nested/multi-row contract data is preserved without flattening or omission: `description_blocks_json`, `suitability_section_json`, `size_guide_section_json`, `faqs_json`, `commitments_json`, `highlights_json`, `gallery_json`, `videos_json`, `variants_json`, `related_products_json`, `accessory_products_json`.
 
@@ -545,6 +598,8 @@ Status: `CONFIRMED_FROM_CODE`
 **New endpoint (V149):** `POST /api/v1/admin/products/homepage-blocks` — atomically sets the full ordered list of FEATURED_GRID products. Requires `products.update` permission. Request: `{ "featuredGrid": ["<id>", ...] }` (max 12 ids, each must be PUBLISHED). Response: updated list of FEATURED_GRID products.
 
 `homepageBlock` and `homepageOrder` are no longer editable in the per-product form; they are set exclusively via the homepage-blocks endpoint.
+
+**Auto-clear on unpublish (owner decision 2026-07-28, `BUSINESS_RULES.md` `PRODUCT_RULE_015`):** whenever a product's `publishStatus` leaves `PUBLISHED` — via `PATCH /admin/products/{id}/publish-status`, `DELETE /admin/products/{id}` (soft delete), or a `PATCH /admin/products/{id}` that changes the status — the server resets `homepageBlock` to `NONE` and `homepageOrder` to `null`. Re-publishing does not restore the placement. This keeps `POST /admin/products/homepage-blocks` from being permanently blocked by a stale non-`PUBLISHED` id.
 
 Status: `CONFIRMED_FROM_CODE`
 
@@ -597,7 +652,7 @@ renders; the heavy detail-only payload is served exclusively by
 | `brand`, `category`, `categories`, `image`, `price` | ✅ present | ✅ present |
 | `stockState`, `available`, `rating`, `ratingCount`, `homepageBlock`, `homepageOrder` | ✅ present | ✅ present |
 | **Note (V261):** `stockQuantity` / `quantityOnHand` are absent from the product and variant API shapes — availability is boolean. The storefront shows only "Còn hàng / Hết hàng" from `stockState`; the old "Chỉ còn N sản phẩm" low-stock message was removed. | | |
-| `description`, `contentBottom`, `suitabilityAdvisory` | ❌ `null` | ✅ present |
+| `description`, `suitabilityAdvisory` | ❌ `null` | ✅ present |
 | `originBrandCountry`, `sizeGuide`, `specifications`, `specStats`, `trustBadges`, `suitabilitySection`, `sizeGuideSection` | ❌ `null` | ✅ present |
 | `gallery`, `videos`, `faqs`, `commitments` | ❌ `[]` | ✅ present |
 | `highlights` (object `{ positiveNotes: [], negativeNotes: [] }`, gộp 2 field cũ — 2026-07-07) | ❌ cả 2 mảng con rỗng | ✅ present |
@@ -732,7 +787,7 @@ Powers the **live preview** in the product editor: render exactly what the store
 | Aspect | Value |
 |---|---|
 | Permission | `products.update` (same as create/edit — the body is a full upsert payload and preview is a sub-step of authoring) |
-| Request | `UpsertProductRequest` (byte-for-byte identical to `POST /api/v1/admin/products`) + optional `?lang=vi\|en` (default `vi`) |
+| Request | `UpsertProductRequest` (byte-for-byte identical to `POST /api/v1/admin/products`) + optional `?lang=vi\|en` (default `vi`; any other value returns `400 VALIDATION_ERROR`) |
 | Response | `ApiDataResponse<Product>` — the **public** product shape (`publicView=true`: `costPrice` hidden, stock quantity masked), identical to `GET /api/v1/products/{slug}` |
 
 - **No persistence.** Backend validates the payload, builds a transient `ProductEntity` in memory via `applyProductPatch` (never `save`d), and maps it through the same detail mapper the storefront uses. No row is created or updated; the method is `@Transactional(readOnly = true)`.
@@ -783,7 +838,7 @@ Lets a shop owner create/update many products at once from a single JSON file (t
 
 **Export-only groups ignored on import:** bulk import accepts but discards fields that are not used while creating/updating Draft products: product `image`/`gallery`/`videos`, variant `id`/cover media/`gallery`, `publishStatus`, `relatedProductIds`, and `accessoryProductIds`. The discard happens before bean validation and before saving, so a single-product exported JSON file can be re-imported without those optional groups causing validation errors or overwriting Admin-managed media/relations. Net effect: single-product export is complete for review/backup of that product, while import remains safe for Draft data entry. Changing media, related products, accessories, or publishing status remains a direct Admin action, not a bulk-import side effect.
 
-**Description blocks:** a JSON row carries a single `descriptionBlocks` key (unchanged shape — `ProductImportRow.descriptionBlocks` is the same `List<DescriptionBlock>` type `UpsertProductRequest` uses, passed through as-is by `ProductImportRowMapper`) — since V326 each block carries both languages inline (`html`/`htmlEn`, `text`/`textEn`, ...), there is no separate `descriptionBlocksEn` key anymore. Sending `descriptionBlocks` (including `[]`) makes the renderer own the `description`/`description_en` columns for that row (see "Product description blocks — `descriptionBlocks` (V139)" below), omitting the key leaves both untouched. Product JSON import accepts only the owner-approved product description block vocabulary: `paragraph`, `image`, and `feature` with `side="right"` or `side="left"` for the two feature presets (image right/text left, image left/text right). Any other block type, or `feature.side` outside `left|right`, is a row validation error in both validate and commit. The **single-product JSON export** (`GET /import/export/{id}`) emits the same owner-approved vocabulary only. Legacy/unsupported product blocks are not emitted to the product JSON export; if no exportable block remains, export falls back to the raw `description` string. **Since V327/V328,** `suitabilitySection`/`sizeGuideSection` are 2 more top-level keys on the same row (same object shape as the standalone product fields — see "Product PDP sections" above), also passed through as-is by `ProductImportRowMapper`/`toExportRow`; they are no longer part of `descriptionBlocks` in either the import or export shape.
+**Description blocks:** a JSON row carries a single `descriptionBlocks` key (unchanged shape — `ProductImportRow.descriptionBlocks` is the same `List<DescriptionBlock>` type `UpsertProductRequest` uses, passed through as-is by `ProductImportRowMapper`) — since V326 each block carries both languages inline (`html`/`htmlEn`, `text`/`textEn`, ...), there is no separate `descriptionBlocksEn` key anymore. Sending `descriptionBlocks` (including `[]`) makes the renderer own the `description`/`description_en` columns for that row (see "Product description blocks — `descriptionBlocks` (V139)" below), omitting the key leaves both untouched. Product JSON import accepts only the owner-approved `feature` block, with `side="right"` or `side="left"` for the two feature presets (image right/text left, image left/text right). Any other block type, or `feature.side` outside `left|right`, is a row validation error in both validate and commit. The **single-product JSON export** (`GET /import/export/{id}`) emits the same importable vocabulary: only `feature` blocks and only explicit alternating `left`/`right` sides. A legacy `side="auto"` is normalized deterministically in the downloaded file without writing the database. Legacy/unsupported product blocks are not emitted; if no exportable block remains, export falls back to the raw `description` string. **Since V327/V328,** `suitabilitySection`/`sizeGuideSection` are 2 more top-level keys on the same row (same object shape as the standalone product fields — see "Product PDP sections" above), also passed through as-is by `ProductImportRowMapper`/`toExportRow`; they are no longer part of `descriptionBlocks` in either the import or export shape.
 
 Status: `CONFIRMED_FROM_CODE`
 
@@ -853,7 +908,7 @@ Evidence: `UpsertProductRequest.java` (`specifications`/`specStats`/`trustBadges
 
 `POST /api/v1/admin/products` and `PATCH /api/v1/admin/products/{id}` accept `descriptionBlocks`: an optional array of typed block objects. Each element must include a `type` discriminator plus its type-specific required fields (validated via Bean Validation cascade). Since V326, each block also carries an optional sibling `*En` field per translatable field (`html`/`htmlEn`, `text`/`textEn`, `items`/`itemsEn`, ...) — there is **no separate `descriptionBlocksEn` array anymore** (that was V229; dropped). Vietnamese is structurally authoritative (block count/order); English only fills in the `*En` siblings of blocks that already exist in Vietnamese. The wire schema accepts the sealed set (`heading`, `paragraph`, `list`, `image`, `video`, `callout`, `divider`, `feature`) because the model is shared with Content. **Owner decision 2026-07-20:** the product admin editor authors only `feature` with `side="right"`/`"left"` — `paragraph`/`image` were removed from the product menu (narrower than the earlier 2026-07-15 4-choice set). `paragraph`/`image` remain valid at the wire-schema level (a direct PATCH can still send them; the shared sealed interface isn't narrowed), but the **Import flow** (`ProductImportService.checkImportDescriptionBlocks`) now rejects any product `descriptionBlocks` element whose `type` isn't `feature` (400 `INVALID_VALUE`), and a one-time migration (`V343__MigrateLegacyDescriptionBlocksToFeature.java`) converted every pre-existing `paragraph`/`image` block in `products.description_blocks` to an equivalent `feature` block (text-only or image-only) at rollout, so Export→Import round-trips no longer hit a legacy block of the removed types. The `feature` block (image + `subheading` eyebrow + `heading` + paragraph + list combined; optional `side` = `auto`\|`left`\|`right`, product menu only offers `left`/`right`) renders as a 2-column image–text row on the PDP and is the explicit replacement for the removed implicit image+text grouping — see `DATA_CONTRACT.md` § "Product description blocks". **Since V327/V328, `suitability`/`sizeGuide` are no longer valid `type` values here at all** (removed from the sealed interface entirely, not just unauthored) — sending either 400s (`VALIDATION_ERROR`, malformed discriminator) instead of silently accepting it; see the new `suitabilitySection`/`sizeGuideSection` top-level fields below.
 
-`video` block shape: `{ type: "video", provider: "youtube"|"tiktok"|"facebook"|"upload", url, caption?, captionEn? }`. Link YouTube/TikTok/Facebook phải là URL video đầy đủ được parser tương ứng chấp nhận; `upload` phải là URL video MinIO/media nội bộ. Link `vt.tiktok.com`, `vm.tiktok.com`, `fb.watch` và nền tảng ngoài danh sách bị từ chối (`400 INVALID_VALUE`). URL legacy đã lưu được giữ nguyên khi không đổi (`MEDIA_RULE_004`).
+`video` block write shape: `{ type: "video", provider: "youtube"|"upload", url, caption?, captionEn? }`. Link YouTube phải được parser chấp nhận; `upload` phải là URL video MinIO/media nội bộ. Provider khác hoặc provider không khớp URL bị từ chối (`400 INVALID_VALUE`). Response đọc có thể chứa `tiktok|facebook` cho dữ liệu legacy để renderer tương thích; các giá trị đó không hợp lệ khi ghi lại (`MEDIA_RULE_004`).
 
 **Mutation semantics:** Sending `descriptionBlocks` (including `[]`) triggers the block renderer, which converts the array to sanitized HTML and atomically overwrites the `description_blocks` (JSONB, raw blocks) column plus **both** flat HTML columns `description` (VI, base fields) and `description_en` (EN, resolved per-field with VI fallback via `DescriptionBlock.resolveForLocale` — same policy as every other bilingual field). Omitting the key on PATCH leaves all three untouched — backward-compatible with products authored via the legacy RichTextEditor. There is a single presence flag (`descriptionBlocksPresent`); the old, separate `descriptionBlocksEn`/`descriptionBlocksEnPresent` pair no longer exists.
 
@@ -997,7 +1052,7 @@ Evidence: `UpsertProductRequest.java` (`relatedProductIds`), `AdminCatalogMutati
 
 `gallery` (sản phẩm) và `variants[].gallery` (biến thể) giờ là **media hỗn hợp**. Mỗi phần tử
 `GalleryImageRequest` nhận thêm: `mediaType` (`image`|`video`, mặc định `image`), `videoUrl`
-(link YouTube/TikTok/Facebook / URL MinIO khi là video), `videoProvider` (`youtube`|`tiktok`|`facebook`|`upload`).
+(link YouTube hoặc URL MinIO khi là video), `videoProvider` (`youtube`|`upload`) trên đường ghi.
 Item ảnh dùng `url`/`alt` như cũ; item video dùng `videoUrl`+`videoProvider`,
 còn `url`/`alt` (nếu có) là **thumbnail/poster**.
 Full-replace như trước; item rỗng (ảnh thiếu `url` HOẶC video thiếu `videoUrl`) bị bỏ. Ảnh bìa biến thể
@@ -1033,7 +1088,7 @@ Sản phẩm có 2 bản nội dung: tiếng Việt (canonical) và tiếng Anh 
 trường** khi cột `_en` rỗng (`COALESCE`). Storefront `bigbike-web` lưu lựa chọn
 trong cookie `NEXT_LOCALE` (1 năm); server pages đọc cookie qua `getLocale()`
 của next-intl và truyền vào `lang` query. Các trường được dịch: `name`,
-`shortDescription`, `description`, `contentBottom`, `suitabilityAdvisory`,
+`shortDescription`, `description`, `suitabilityAdvisory`,
 `seo.title`, `seo.description`, các khối HTML-only (`specifications`,
 `specStats`, `trustBadges`), `suitabilitySection`, `sizeGuideSection`,
 `faqs[]` (`question`/`answer`), `commitments[]`, và `highlights`. Response public **giữ
@@ -1048,7 +1103,7 @@ phần còn lại của trang. `pricing`/`stock` không có text dịch nên kh�
 
 **Đọc admin — cả 2 bản:** `GET /api/v1/admin/products/{id}` trả các trường chính
 ở bản tiếng Việt **và** thêm:
-- `translations.en` — object `{ name, shortDescription, description, contentBottom,
+- `translations.en` — object `{ name, shortDescription, description,
   suitabilityAdvisory, seoTitle, seoDescription, specifications, specStats,
   trustBadges }` chứa bản tiếng
   Anh thô (giá trị thật của các cột `_en`, không fallback). `null` nếu chưa có bản
@@ -1208,7 +1263,7 @@ Status: `CONFIRMED_FROM_CODE` — `AdminMenuService.validateCategoryTarget`,
 `GET /api/v1/menus/{location}` trả mỗi mục menu kèm `iconUrl` (icon line đơn sắc, null cho mục không phải
 danh mục). Shape **không đổi**; chỉ đổi **nguồn**: trước V213 resolve từ map slug hard-code
 (`CATEGORY_SLUG_ICON_MAP`), từ V213 resolve theo danh mục trong DB — backend tách slug từ URL mục menu
-(`/danh-muc-san-pham/{slug}`) → `CategoryEntity.menuIconUrl`. Đổi tên danh mục/slug không còn làm mất icon.
+(`/danh-muc/{slug}` cho VI, `/categories/{slugEn}` cho EN) → `CategoryEntity.menuIconUrl`. Đổi tên danh mục/slug không còn làm mất icon.
 
 `GET /api/v1/categories`, `/api/v1/categories/{slug}` cũng trả thêm field `menuIconUrl` trên mỗi Category
 (dùng bởi bộ lọc "Danh mục sản phẩm" ở `bigbike-web`). Xem `DATA_CONTRACT` §"Category menu/sidebar line-icon".
@@ -1229,8 +1284,8 @@ Field `introContent` (cột `intro_content` + `intro_content_en`; **đổi tên 
 qua `V290`** — tên cũ là di sản WP ACF khi nội dung nằm dưới lưới) là **khối giới thiệu hiển thị ở ĐẦU
 trang danh mục** (`bigbike-web` render `introContent` ở `beforeGridNode`, phía trên lưới sản phẩm — thay
 cho `description` trước đây). Field `description`/`description_en` **không còn render trên trang**, chỉ còn
-là nguồn fallback cho SEO meta description. (Khác hẳn `product.contentBottom` — field sản phẩm, vẫn render
-ở CUỐI PDP; không liên quan.)
+là nguồn fallback cho SEO meta description. Tên cột cũ của Category không liên
+quan đến Product: `product.contentBottom` đã bị gỡ cùng hai cột sản phẩm ở V151.
 
 **Ghi (admin):** `POST/PATCH /api/v1/admin/categories` nhận thêm:
 - `introContent` (string, ≤50 000 ký tự, rich HTML) — bản tiếng Việt, ở root request.
@@ -1280,7 +1335,10 @@ Storefront truyền `getLocale()` vào `lang`.
 
 **Đọc admin:** `GET /api/v1/admin/home-videos` trả thêm `titleEn` thô để editor sửa
 song ngữ. **Ghi:** `POST/PATCH /api/v1/admin/home-videos` nhận thêm `titleEn` (tùy
-chọn, ≤255); PATCH gửi `titleEn` blank → xóa bản EN.
+chọn, ≤255); PATCH gửi `titleEn` blank → xóa bản EN. `videoUrl` khi ghi chỉ nhận
+URL YouTube hợp lệ hoặc URL video media nội bộ; TikTok/Facebook và host khác trả
+`400 INVALID_VALUE`. PATCH không gửi `videoUrl` vẫn cho phép cập nhật field khác và
+giữ nguyên URL legacy. Public/admin GET tiếp tục trả URL legacy để xem trước/render.
 
 Status: `CONFIRMED_FROM_CODE` — `PublicHomeVideoController` (`lang` param),
 `PublicHomeVideoResponse.from(video, lang)`, `AdminHomeVideoService`,
@@ -1358,22 +1416,26 @@ Trang `/lien-he` là **trang tĩnh hoàn toàn**: bố cục, nhãn, tiêu đề
 
 > **REMOVED (2026-06-24).** Trang Hướng dẫn `/huong-dan` (+ đúng 2 trang con `size-mu`/`size-trang-phuc`) nay là **nội dung tĩnh trong `bigbike-web`**. URL `mua-hang` chuyển về trang Hướng dẫn; `size-gang-tay` chuyển sang `size-trang-phuc`. Toàn bộ endpoint guide-page đã gỡ: admin `GET`/`PUT /api/v1/admin/guide-page` và public `GET /api/v1/guide-page` không còn tồn tại. Bảng `guide_page_layout` drop ở `V271`; trình dựng GuidePageBuilder trong admin cũng đã gỡ.
 
-## Admin Orders — Cancellation Reason
+## Admin Orders
 
-`PATCH /api/v1/admin/orders/{orderId}/status` accepts `UpdateOrderStatusRequest.status` and optional `cancelReason`. When `status = "CANCELLED"`, `cancelReason` is mandatory; the backend stores the trimmed value in `orders.cancel_reason` and rejects blank/missing values with `VALIDATION_ERROR`.
-
-`GET /api/v1/admin/orders/{orderId}` returns `cancelReason` on admin order detail immediately after `cancelledAt`. This field is internal-admin only and is not returned by customer order detail or guest lookup responses.
+| Method | Path | Permission | Current behavior | Status | Evidence |
+|---|---|---|---|---|---|
+| `GET` | `/api/v1/admin/orders` | `orders.read` | Paginated order list. Query: `page` (≥1, default 1), `size` (1–100, default 20), `status`, `q` (order number/key, customer email or phone), `from`/`to` (`YYYY-MM-DD`, inclusive calendar dates interpreted at `Asia/Ho_Chi_Minh` day boundaries), and `sort` (default `placedAt:desc`; supports placed/created date and total amount). | `CONFIRMED_FROM_CODE` | `ORDER_RULE_011`, `AdminOrderController.listOrders`, `AdminOrderService.listOrders`, `AdminOrderSupport` |
+| `GET` | `/api/v1/admin/orders/{orderId}` | `orders.read` | Admin order detail, including line-item/address/payment snapshots and internal-only `cancelReason` immediately after `cancelledAt`. Customer and guest order-detail responses do not expose `cancelReason`. | `CONFIRMED_FROM_CODE` | `AdminOrderController.getOrderDetail`, `AdminOrderDetailResponse` |
+| `GET` | `/api/v1/admin/orders/{orderId}/allowed-transitions` | `orders.read` | Returns only the legal next values in the single order-status lifecycle documented in `STATE_MACHINES.md` §6. | `CONFIRMED_FROM_CODE` | `AdminOrderController.listAllowedTransitions`, `AdminOrderService.ALLOWED_TRANSITIONS` |
+| `PATCH` | `/api/v1/admin/orders/{orderId}/status` | `orders.write` | Accepts `UpdateOrderStatusRequest.status` and optional `cancelReason`. When transitioning into `CANCELLED`, `cancelReason` is mandatory; the backend stores the trimmed value in `orders.cancel_reason` and rejects blank/missing values with `VALIDATION_ERROR`. Repeating the already-current status is an idempotent no-op; invalid lifecycle moves return conflict. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderController.updateOrderStatus`, `AdminOrderService.updateOrderStatus` |
+| `GET` | `/api/v1/admin/orders/{orderId}/audit` | `orders.read` | Returns the order's internal audit trail in reverse chronological order. | `CONFIRMED_FROM_CODE` | `AdminOrderController.listAuditTrail`, `AdminOrderService.listAuditTrail` |
 
 ## Customer Admin
 
 | Method | Path | Permission | Current behavior | Status | Evidence |
 |---|---|---|---|---|---|
-| `GET` | `/api/v1/admin/customers` | `customers.read` | Paginated customer list for the admin Customers screen. Query: `page` (≥1, default 1), `size` (1-100, default 20), `q` (matches email/phone/displayName, case-insensitive substring), `status` (one of the Customer Status Enum values below), `synthetic` (boolean — filters on `isSynthetic`, see below), `emailVerified` (boolean — `true` = `emailVerifiedAt IS NOT NULL`, `false` = `IS NULL`). Each item includes `orderCount`/`totalSpent` aggregated per-page (no N+1). | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java`, `AdminCustomerService.listCustomers` |
-| `GET` | `/api/v1/admin/customers/{customerId}` | `customers.read` | Customer detail: profile fields, `addresses[]`, `orderSummary` (count/totalSpent/avgOrderValue/segment/first-last order/latest 5 orders). | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java`, `AdminCustomerService.getCustomerDetail` |
-| `GET` | `/api/v1/admin/customers/summary` | `customers.read` | KPI counts for the admin Customers screen. Returns `AdminCustomerSummaryResponse`: `total` (all customers), `vip` (customers whose lifetime order total ≥ 10,000,000 VND — mirrors `AdminCustomerService.deriveSegment` VIP rule), `newLast30Days` (registered within the last 30 days), `active` (status = `ACTIVE`). | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java`, `AdminCustomerService.java` |
-| `PATCH` | `/api/v1/admin/customers/{customerId}` | `customers.write` | Updates profile fields. `phone = null` means unchanged; blank phone explicitly clears the stored number; a non-blank phone must pass validation and normalization or returns `400 VALIDATION_ERROR` on field `phone`. A normalized number owned by another customer returns `409`. | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java`, `AdminCustomerService.java`, `Phase1IAdminManagementApiTest.java` |
-| `PATCH` | `/api/v1/admin/customers/{customerId}/status` | `customers.write` | Sets `status` to one of the Customer Status Enum values (rejects unknown values with `400 VALIDATION_ERROR`). Optional `reason` (free text, ≤1000 chars) is not stored on the customer row — it is written only into the `CUSTOMER_STATUS_UPDATED` audit log entry alongside the before/after status. Setting any non-`ACTIVE` status revokes all of the customer's active sessions immediately (defence-in-depth alongside `CustomerSessionFilter`'s own status check). | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java`, `AdminCustomerService.updateCustomerStatus` |
-| `DELETE` | `/api/v1/admin/customers/{customerId}/avatar` | `customers.write` | Admin removes a customer's avatar (owner decision 2026-07-21) — same delete semantics as the customer's own `DELETE /api/v1/customer/me/avatar` (deletes the MinIO object, nulls `avatar_url`, idempotent). **No admin upload endpoint exists** — admins can only view and remove, never upload on a customer's behalf. | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java` |
+| `GET` | `/api/v1/admin/customers` | `customers.read` | Paginated customer list for the admin Customers screen. Query: `page` (≥1, default 1), `size` (1-100, default 20), `q` (matches email/phone/displayName, case-insensitive substring), `status` (one of the Customer Status Enum values below; unknown values return `400 VALIDATION_ERROR`), `synthetic` (boolean — filters on `isSynthetic`, see below), `emailVerified` (boolean — `true` = `emailVerifiedAt IS NOT NULL`, `false` = `IS NULL`). Each item includes `orderCount`/`totalSpent` aggregated in one per-page query (no N+1) and excluding `CANCELLED` orders. | `CONFIRMED_BACKEND_ENFORCED` | `CUSTOMER_RULE_001`, `CUSTOMER_RULE_006`, `AdminCustomerController.java`, `AdminCustomerService.listCustomers` |
+| `GET` | `/api/v1/admin/customers/{customerId}` | `customers.read` | Customer detail: profile fields, `addresses[]`, `orderSummary`. Its `orderCount`, `totalSpent`, `avgOrderValue`, VIP/segment calculations exclude `CANCELLED`; `latestOrders` and first/last-order timestamps keep the complete history including cancelled orders. | `CONFIRMED_BACKEND_ENFORCED` | `CUSTOMER_RULE_006`, `AdminCustomerController.java`, `AdminCustomerService.getCustomerDetail` |
+| `GET` | `/api/v1/admin/customers/summary` | `customers.read` | KPI counts for the admin Customers screen. Returns `AdminCustomerSummaryResponse`: `total` (all customer rows, including synthetic), `vip` (all rows, including synthetic, whose non-cancelled lifetime order total ≥ 10,000,000 VND — mirrors `AdminCustomerService.deriveSegment` VIP rule), `newLast30Days` (non-synthetic registered accounts created within the last 30 days), `active` (non-synthetic registered accounts whose status is `ACTIVE`). | `CONFIRMED_BACKEND_ENFORCED` | `CUSTOMER_RULE_006`, `CUSTOMER_RULE_008`, `AdminCustomerController.java`, `AdminCustomerService.java` |
+| `PATCH` | `/api/v1/admin/customers/{customerId}` | `customers.write` | Admin may update only `displayName` and `phone`; attempts to write `email`, `firstName`, or `lastName` return `400 VALIDATION_ERROR`. `phone = null` means unchanged; blank phone explicitly clears the stored number; a non-blank phone accepts common display separators, is normalized before validation, and returns `400 VALIDATION_ERROR` on field `phone` when invalid. Uniqueness compares the normalized database value, covering canonical local `0…`, legacy `+84…`, and legacy formatted storage; any matching number owned by another customer returns `409`. Synthetic customer rows use the same two-field edit contract. | `CONFIRMED_BACKEND_ENFORCED` | `CUSTOMER_RULE_004`, `CUSTOMER_RULE_007`, `AdminCustomerController.java`, `AdminCustomerService.java`, `Phase1IAdminManagementApiTest.java` |
+| `PATCH` | `/api/v1/admin/customers/{customerId}/status` | `customers.write` | Sets a real customer's `status` to one of the Customer Status Enum values (rejects unknown values with `400 VALIDATION_ERROR`). A synthetic customer's status cannot be changed to a different value (`409`). Optional `reason` (free text, ≤1000 chars) is not stored on the customer row — it is written only into the `CUSTOMER_STATUS_UPDATED` audit log entry alongside the before/after status. Setting any non-`ACTIVE` status revokes all of the customer's active sessions immediately (defence-in-depth alongside `CustomerSessionFilter`'s own status check). | `CONFIRMED_BACKEND_ENFORCED` | `CUSTOMER_RULE_001`–`CUSTOMER_RULE_003`, `CUSTOMER_RULE_007`, `AdminCustomerController.java`, `AdminCustomerService.updateCustomerStatus` |
+| `DELETE` | `/api/v1/admin/customers/{customerId}/avatar` | `customers.write` | Admin removes a customer's avatar (owner decisions 2026-07-21 and 2026-07-28) — same storage semantics as the customer's own `DELETE /api/v1/customer/me/avatar` (deletes the MinIO object, nulls `avatar_url`, idempotent). An actual removal writes one `CUSTOMER_AVATAR_REMOVED` audit event; a repeated no-op writes none. **No admin upload endpoint exists** — admins can only view and remove, never upload on a customer's behalf. | `CONFIRMED_BACKEND_ENFORCED` | `CUSTOMER_RULE_005`, `AdminCustomerController.java`, `AdminCustomerService.removeAvatar` |
 
 ## Redirect Management Contract
 
@@ -1426,7 +1488,7 @@ Evidence: `AdminRedirectController.java`, `AdminRedirectService.java`, `Internal
 - `BRAND` — create/update/soft-delete (AdminCatalogMutationService). Snapshot (fixed 2026-07-04) adds description, logoUrl, bannerUrl; before-snapshot bug fixed same as PRODUCT.
 - `INVENTORY` — manual availability changes (`AdminInventoryService`)
 - `CONTENT` — article create/update/soft-delete/restore/hard-delete (AdminContentMutationService). Snapshot (fixed 2026-07-04) adds excerpt, coverImageUrl, categoryId; before-snapshot bug fixed on update/soft-delete/restore.
-- `CUSTOMER` — AdminCustomerService
+- `CUSTOMER` — `AdminCustomerService`: `CUSTOMER_UPDATED`, `CUSTOMER_STATUS_UPDATED`, and `CUSTOMER_AVATAR_REMOVED` (the avatar action is emitted only when a stored avatar is actually cleared).
 - `MEDIA` — AdminMediaService
 - `MENU` / `MENU_ITEM` — AdminMenuService
 - `REDIRECT` — AdminRedirectService
@@ -1467,7 +1529,7 @@ Persistent counterpart of the WebSocket order feed — admins offline when an ev
 |---|---|---|---|
 | Connect endpoint | `/ws` | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java` |
 | CONNECT auth | native header `Authorization: Bearer <admin-jwt>` | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java`, `adminWebSocket.js` |
-| Allowed roles | `ADMIN`, `SUPER_ADMIN` | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java` |
+| Allowed admins | Any active built-in or custom admin role may connect; each subscription is authorized by the destination-specific permission (for example, `/topic/admin/reviews` requires `reviews.read`) | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java` |
 | Confirmed topic | `/topic/admin/orders` | `CONFIRMED_FROM_CODE` | `AdminOrderWsService.java`, `adminWebSocket.js` |
 | Payload | `OrderWsEvent` with `type`, `orderId`, `orderNumber`, `customerName`, `total`, `status`, `paymentMethod`, `timestamp` | `CONFIRMED_FROM_CODE` | `OrderWsEvent.java` |
 | Confirmed topic | `/topic/admin/inventory` | `CONFIRMED_FROM_CODE` | `AdminInventoryWsService.java`, `adminWebSocket.js` |
@@ -1487,15 +1549,40 @@ Admin review endpoints require an Admin JWT and the permission shown below. Evid
 
 | Method | Path | Permission | Purpose |
 |---|---|---|---|
-| `GET` | `/api/v1/admin/reviews` | `reviews.read` | Paginated review list. Optional `page`, `size`, `q`, `status`, `rating` (one of the 10 half-star levels `1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5` — `REVIEW_RULE_008`, changed 2026-07-22 from integer-only 1–5), and `lang`. `pagination.totalItems` is the count after all supplied filters. |
-| `GET` | `/api/v1/admin/reviews/{id}` | `reviews.read` | Review detail, including product metadata and review photos. |
+| `GET` | `/api/v1/admin/reviews` | `reviews.read` | Paginated review list. Optional `page`, `size`, literal-text `q`, `status` (`PENDING|APPROVED|SPAM|TRASH`), `rating` (one of the 9 half-star levels), and `lang`. Invalid filter enums/ratings return `400`. Stable order is `createdAt DESC, id DESC`. List items expose `version` but deliberately omit `authorEmail`. |
+| `GET` | `/api/v1/admin/reviews/{id}` | `reviews.read` | Review detail, including `version`, author email, product metadata and review photos. Email is detail-only. |
 | `GET` | `/api/v1/admin/reviews/summary` | `reviews.read` | Whole-system moderation summary, independent of list filters and page. |
-| `PATCH` | `/api/v1/admin/reviews/{id}/status` | `reviews.write` | Apply one of the statuses currently accepted by the backend. This contract does not add or redefine lifecycle transitions. |
-| `DELETE` | `/api/v1/admin/reviews/{id}` | `reviews.write` | Permanent deletion. The review cannot be restored and its review photos are deleted from media storage. Returns `204`. |
-| `POST` | `/api/v1/admin/reviews/bulk-status` | `reviews.write` | Apply the existing status operation to up to 500 IDs. Returns `{ "affected": number }`. |
-| `POST` | `/api/v1/admin/reviews/bulk-delete` | `reviews.write` | Permanently delete up to 500 IDs, including their review photos. Returns `{ "affected": number }`. |
+| `PATCH` | `/api/v1/admin/reviews/{id}/status` | `reviews.write` | Body `{ "status": "...", "expectedVersion": n }`. Enforces `REVIEW_RULE_009`; a same-state request is a no-op. Stale version → `409 CONCURRENT_MODIFICATION`. Response includes the updated mutation-safe review payload and `version`, but omits detail-only `authorEmail`. |
+| `DELETE` | `/api/v1/admin/reviews/{id}?expectedVersion=n` | exact role `SUPER_ADMIN` **and** `reviews.write` | Permanent deletion, allowed only while status is `TRASH`. Returns `204`; wrong state/stale version → `409`, insufficient role → `403`. Photos are cleaned after commit and reference-safely. |
+| `POST` | `/api/v1/admin/reviews/bulk-status` | `reviews.write` | Body `{ "items": [{ "id": 1, "expectedVersion": 2 }], "status": "APPROVED" }`, at most 500 items. Best-effort per item with deterministic result below. |
+| `POST` | `/api/v1/admin/reviews/bulk-delete` | exact role `SUPER_ADMIN` **and** `reviews.write` | Body `{ "items": [{ "id": 1, "expectedVersion": 2 }] }`, at most 500 items. Each item must currently be `TRASH`. |
+
+Status transitions are exactly those in `STATE_MACHINES.md` §15A:
+`PENDING → APPROVED|SPAM|TRASH`, and `APPROVED|SPAM|TRASH → PENDING`.
+Choosing the current status changes nothing. The first-ever transition to `APPROVED`
+sets a durable marker; the approval email is queued only for that first transition
+and dispatched only after commit.
+
+Bulk response `data`:
+
+```json
+{
+  "affected": 1,
+  "skipped": [
+    { "id": 12, "reason": "VERSION_CONFLICT" },
+    { "id": 12, "reason": "DUPLICATE_ID" }
+  ]
+}
+```
+
+`affected` counts distinct items actually changed/deleted. Occurrence one of an ID
+is processed; later occurrences are skipped. Allowed reason values are
+`DUPLICATE_ID`, `NOT_FOUND`, `VERSION_CONFLICT`, `INVALID_TRANSITION`,
+`NOT_IN_TRASH`, and `NO_CHANGE`.
 
 `GET /api/v1/admin/reviews/summary` returns `ApiDataResponse<AdminReviewSummaryResponse>`:
+
+Its approved aggregate/breakdown and pending counters are read in one repeatable-read snapshot to keep the cards internally consistent while moderators are changing statuses.
 
 ```json
 {
@@ -1517,6 +1604,10 @@ filters. Review photos remain limited to the existing `REVIEW_RULE_005` constrai
 The list `rating` filter affects only the returned rows and `pagination.totalItems`; it never changes
 the summary endpoint. Unknown or missing products/authors remain representable in the response with
 empty nullable metadata so the admin UI can render an explicit fallback.
+
+Review audit snapshots intentionally contain no `authorEmail`, review body/comment
+or photo URLs. They retain only operational metadata such as review/product ID,
+status, rating, photo count, timestamps and optimistic version.
 
 ## Admin Roles Contract
 
@@ -1548,7 +1639,7 @@ remain unchanged.
 | Method | Path | Permission | Request | Response |
 |---|---|---|---|---|
 | `GET` | `/api/v1/admin/roles` | `roles.read` | None | `200 ApiDataResponse<Role[]>` |
-| `POST` | `/api/v1/admin/roles` | `roles.write` | `{id, name, description?, permissions?}`; id 2–50 chars, name required, permissions max 300 | `201 ApiDataResponse<Role>` |
+| `POST` | `/api/v1/admin/roles` | `roles.write` | `{id, name, description?, permissions?}`; id 2–50 chars matching `[A-Z][A-Z0-9_]{1,49}`, name required and max 100 chars, description max 1,000 chars, permissions max 300 | `201 ApiDataResponse<Role>` |
 | `PUT` | `/api/v1/admin/roles/{id}/permissions` | `roles.write` | `{permissions?}`; max 300 permission keys | `200 ApiDataResponse<Role>` |
 | `DELETE` | `/api/v1/admin/roles/{id}` | `roles.write` | None | `204 No Content` |
 | `GET` | `/api/v1/admin/permissions` | `roles.read` | None | `200 ApiDataResponse<PermissionGroup[]>` |
@@ -1556,6 +1647,8 @@ remain unchanged.
 `PermissionGroup` is `{groupKey, permissions}`, and each permission entry is
 `{key, sensitive}`. Missing/invalid authentication returns `401`; insufficient permission returns
 `403`. Existing validation, not-found, conflict and unknown-permission responses remain unchanged.
+Updating the role currently assigned to the acting admin cannot remove either `roles.read` or
+`roles.write`; the API returns `409` so direct calls cannot bypass the UI self-lockout guard.
 
 Status: `CONFIRMED_FROM_CODE`
 

@@ -22,11 +22,11 @@ function parseTags(body: unknown): string[] {
 }
 
 function pathsForTag(tag: string): string[] {
-  if (tag === "products") return ["/san-pham/", "/"];
-  if (tag === "categories") return ["/san-pham/", "/"];
-  if (tag === "brands") return ["/brands/", "/san-pham/"];
+  if (tag === "products") return ["/sp/", "/"];
+  if (tag === "categories") return ["/sp/", "/"];
+  if (tag === "brands") return ["/brands/", "/sp/"];
   if (tag === "articles") return ["/tin-tuc/", "/"];
-  if (tag === "settings") return ["/", "/san-pham/", "/brands/", "/tin-tuc/"];
+  if (tag === "settings") return ["/", "/sp/", "/brands/", "/tin-tuc/"];
   if (tag === "menus") return ["/"];
   if (tag === "sliders" || tag === "home-videos" || tag === "home-highlights") return ["/"];
 
@@ -34,9 +34,9 @@ function pathsForTag(tag: string): string[] {
   const slug = rest.join(":").trim();
   if (!slug) return [];
 
-  if (kind === "product") return [`/product/${slug}/`, "/san-pham/"];
-  if (kind === "category") return [`/danh-muc-san-pham/${slug}/`, "/san-pham/"];
-  if (kind === "brand") return [`/brands/${slug}/`, "/brands/", "/san-pham/"];
+  if (kind === "product") return [`/product/${slug}/`, "/sp/"];
+  if (kind === "category") return [`/danh-muc/${slug}/`, "/sp/"];
+  if (kind === "brand") return [`/brands/${slug}/`, "/brands/", "/sp/"];
   if (kind === "article") return [`/tin-tuc/${slug}/`, "/tin-tuc/"];
 
   return [];

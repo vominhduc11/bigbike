@@ -17,6 +17,7 @@ import {
   toOrderDetailPath,
   toOrderConfirmPath,
   getSafeLoginHref,
+  normalizeStorefrontUrl,
 } from "../../lib/utils/routes";
 
 describe("Route Localization Utility Tests", () => {
@@ -32,6 +33,7 @@ describe("Route Localization Utility Tests", () => {
       expect(translatePath("/dang-nhap/", "en")).toBe("/login/");
       expect(translatePath("/dang-ky/", "en")).toBe("/register/");
       expect(translatePath("/quen-mat-khau/", "en")).toBe("/forgot-password/");
+      expect(translatePath("/sp/", "en")).toBe("/products/");
       expect(translatePath("/san-pham/", "en")).toBe("/products/");
       expect(translatePath("/lien-he/", "en")).toBe("/contact/");
       expect(translatePath("/gioi-thieu/", "en")).toBe("/about/");
@@ -49,7 +51,7 @@ describe("Route Localization Utility Tests", () => {
       expect(translatePath("/login/", "vi")).toBe("/dang-nhap/");
       expect(translatePath("/register/", "vi")).toBe("/dang-ky/");
       expect(translatePath("/forgot-password/", "vi")).toBe("/quen-mat-khau/");
-      expect(translatePath("/products/", "vi")).toBe("/san-pham/");
+      expect(translatePath("/products/", "vi")).toBe("/sp/");
       expect(translatePath("/contact/", "vi")).toBe("/lien-he/");
       expect(translatePath("/about/", "vi")).toBe("/gioi-thieu/");
       expect(translatePath("/search/", "vi")).toBe("/tim-kiem/");
@@ -64,14 +66,14 @@ describe("Route Localization Utility Tests", () => {
     });
 
     it("should preserve original path for category detail if admin enSlug is not verified", () => {
-      expect(translatePath("/danh-muc-san-pham/ao-giap-chong-nuoc/", "en")).toBe("/danh-muc-san-pham/ao-giap-chong-nuoc/");
+      expect(translatePath("/danh-muc/ao-giap-chong-nuoc/", "en")).toBe("/danh-muc/ao-giap-chong-nuoc/");
       expect(translatePath("/tin-tuc/bai-viet-moi/", "en")).toBe("/tin-tuc/bai-viet-moi/");
     });
 
     it("should translate list pages for categories and news", () => {
-      expect(translatePath("/danh-muc-san-pham/", "en")).toBe("/categories/");
+      expect(translatePath("/danh-muc/", "en")).toBe("/products/");
       expect(translatePath("/tin-tuc/", "en")).toBe("/news/");
-      expect(translatePath("/categories/", "vi")).toBe("/danh-muc-san-pham/");
+      expect(translatePath("/categories/", "vi")).toBe("/sp/");
       expect(translatePath("/news/", "vi")).toBe("/tin-tuc/");
     });
   });
@@ -100,24 +102,21 @@ describe("Route Localization Utility Tests", () => {
       expect(res.url).toBe("/gio-hang/");
     });
 
-    it("should rewrite EN category/news paths with custom slug to VI physical paths", () => {
-      const catRes = getLocalizedRoute("/categories/waterproof-armor/", "en") as { action: string; url: string };
-      expect(catRes.action).toBe("rewrite");
-      expect(catRes.url).toBe("/danh-muc-san-pham/waterproof-armor/");
+    it("should passthrough true EN category and news paths", () => {
+      const catRes = getLocalizedRoute("/categories/waterproof-armor/", "en");
+      expect(catRes.action).toBe("passthrough");
 
-      const newsRes = getLocalizedRoute("/news/new-article/", "en") as { action: string; url: string };
-      expect(newsRes.action).toBe("rewrite");
-      expect(newsRes.url).toBe("/tin-tuc/new-article/");
+      const newsRes = getLocalizedRoute("/news/new-article/", "en");
+      expect(newsRes.action).toBe("passthrough");
     });
 
-    it("should redirect EN category/news paths to VI physical paths if cookie is vi", () => {
-      const catRes = getLocalizedRoute("/categories/waterproof-armor/", "vi") as { action: string; url: string };
-      expect(catRes.action).toBe("redirect");
-      expect(catRes.url).toBe("/danh-muc-san-pham/waterproof-armor/");
+    it("should passthrough true EN category paths even if the cookie is vi", () => {
+      const catRes = getLocalizedRoute("/categories/waterproof-armor/", "vi");
+      expect(catRes.action).toBe("passthrough");
     });
 
     it("should passthrough VI category/news paths even if cookie is en (since slug availability must be page-managed)", () => {
-      const catRes = getLocalizedRoute("/danh-muc-san-pham/ao-giap-chong-nuoc/", "en");
+      const catRes = getLocalizedRoute("/danh-muc/ao-giap-chong-nuoc/", "en");
       expect(catRes.action).toBe("passthrough");
     });
   });
@@ -125,8 +124,8 @@ describe("Route Localization Utility Tests", () => {
   describe("Individual path generator functions", () => {
     it("toCategoryPath", () => {
       expect(toCategoryPath("waterproof-armor", "en", true)).toBe("/categories/waterproof-armor/");
-      expect(toCategoryPath("ao-giap-chong-nuoc", "en", false)).toBe("/danh-muc-san-pham/ao-giap-chong-nuoc/");
-      expect(toCategoryPath("ao-giap-chong-nuoc", "vi", false)).toBe("/danh-muc-san-pham/ao-giap-chong-nuoc/");
+      expect(toCategoryPath("ao-giap-chong-nuoc", "en", false)).toBe("/danh-muc/ao-giap-chong-nuoc/");
+      expect(toCategoryPath("ao-giap-chong-nuoc", "vi", false)).toBe("/danh-muc/ao-giap-chong-nuoc/");
     });
 
     it("toArticlePath", () => {
@@ -139,8 +138,23 @@ describe("Route Localization Utility Tests", () => {
       expect(toCartPath("vi")).toBe("/gio-hang/");
       expect(toCheckoutPath("en")).toBe("/order/");
       expect(toProductListPath("en")).toBe("/products/");
-      expect(toCategoryListPath("en")).toBe("/categories/");
+      expect(toProductListPath("vi")).toBe("/sp/");
+      expect(toCategoryListPath("en")).toBe("/products/");
+      expect(toCategoryListPath("vi")).toBe("/sp/");
       expect(toArticleListPath("en")).toBe("/news/");
+    });
+
+    it("normalizes persisted legacy storefront URLs without dropping query strings", () => {
+      expect(normalizeStorefrontUrl("/danh-muc-san-pham/non-bao-hiem-moto/?page=2")).toBe(
+        "/danh-muc/non-bao-hiem-moto/?page=2",
+      );
+      expect(normalizeStorefrontUrl("/danh-muc-san-pham.html")).toBe("/sp/");
+      expect(normalizeStorefrontUrl("/san-pham/#filters")).toBe("/sp/#filters");
+      expect(
+        normalizeStorefrontUrl(
+          "https://bigbike.vn/danh-muc-san-pham/non-bao-hiem-moto/?page=2",
+        ),
+      ).toBe("https://bigbike.vn/danh-muc/non-bao-hiem-moto/?page=2");
     });
 
     // Regression coverage for the "URL không đổi sang tiếng Anh" fix: these helpers

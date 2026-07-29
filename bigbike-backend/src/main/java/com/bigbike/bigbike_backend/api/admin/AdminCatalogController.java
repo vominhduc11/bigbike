@@ -75,6 +75,7 @@ public class AdminCatalogController extends AdminControllerSupport {
             @RequestParam(required = false) @Pattern(regexp = STOCK_STATE_REGEX, message = "Invalid stockState.") String stockState,
             @RequestParam(required = false) @Size(max = 100) String brandId,
             @RequestParam(required = false) @Size(max = 100) String categoryId,
+            @RequestParam(name = "filter_gender", required = false) @Size(max = 20) String filterGender,
             @RequestParam(required = false) @Pattern(regexp = HOMEPAGE_BLOCK_REGEX, message = "Invalid homepageBlock.") String homepageBlock,
             @RequestParam(defaultValue = "vi") @Pattern(regexp = LANG_REGEX, message = "Invalid lang.") String lang,
             HttpServletRequest request
@@ -92,6 +93,7 @@ public class AdminCatalogController extends AdminControllerSupport {
                         stockState,
                         brandId,
                         categoryId,
+                        filterGender,
                         homepageBlock,
                         lang
                 ),
@@ -126,7 +128,8 @@ public class AdminCatalogController extends AdminControllerSupport {
     @PostMapping("/products/preview")
     public ApiDataResponse<Product> previewProduct(
             @Valid @RequestBody UpsertProductRequest payload,
-            @RequestParam(name = "lang", required = false) String lang,
+            @RequestParam(name = "lang", defaultValue = "vi")
+            @Pattern(regexp = LANG_REGEX, message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "products.update");

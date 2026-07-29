@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { exportFullProductCatalogCsv } from './adminApi'
+import { exportCustomersCsv, exportFullProductCatalogCsv, exportOrdersCsv } from './adminApi'
 
 describe('exportFullProductCatalogCsv', () => {
   afterEach(() => vi.restoreAllMocks())
@@ -19,5 +19,59 @@ describe('exportFullProductCatalogCsv', () => {
     expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/admin/products/export.csv')
     expect(fetchMock.mock.calls[0][0]).not.toContain('?')
     expect(click).toHaveBeenCalledOnce()
+  })
+})
+
+describe('exportOrdersCsv', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('sends the complete Orders-screen filter set', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['order_number,status\nBB-1,PROCESSING']),
+      headers: new Headers({ 'Content-Disposition': 'attachment; filename="orders.csv"' }),
+    })
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    await exportOrdersCsv({
+      q: '0909 123 456',
+      status: 'PROCESSING',
+      from: '2026-07-20',
+      to: '2026-07-24',
+    })
+
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      '/api/v1/admin/reports/orders/export'
+      + '?q=0909%20123%20456&status=PROCESSING&from=2026-07-20&to=2026-07-24',
+    )
+  })
+})
+
+describe('exportCustomersCsv', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('sends the complete Customers-screen filter set', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['email,status\nkhach@bigbike.test,ACTIVE']),
+      headers: new Headers({ 'Content-Disposition': 'attachment; filename="customers.csv"' }),
+    })
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    await exportCustomersCsv({
+      q: 'Nguyễn Văn A',
+      status: 'ACTIVE',
+      synthetic: 'false',
+      emailVerified: 'true',
+    })
+
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      '/api/v1/admin/reports/customers/export'
+      + '?q=Nguy%E1%BB%85n%20V%C4%83n%20A&status=ACTIVE&synthetic=false&emailVerified=true',
+    )
   })
 })

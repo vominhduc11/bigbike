@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
  * Rules (applied in priority order — first match wins):
  *   Products  : /{slug}.html       → /product/{slug}/
  *   Brands    : /brand/{slug}      → /brands/{slug}
- *   Categories: /{slug}.html       → /danh-muc-san-pham/{slug}
+ *   Categories: /{slug}.html       → /danh-muc/{slug}/
  *
  * If a product and a category share the same slug, the product source pattern wins
  * and the category redirect is skipped (conflict counted).
@@ -38,7 +38,7 @@ public class LegacyUrlMapper {
     static final String PRODUCT_TARGET_SUFFIX = "/";
     static final String BRAND_SOURCE_PREFIX = "/brand/";
     static final String BRAND_TARGET_PREFIX = "/brands/";
-    static final String CATEGORY_TARGET_PREFIX = "/danh-muc-san-pham/";
+    static final String CATEGORY_TARGET_PREFIX = "/danh-muc/";
 
     private final ProductJpaRepository productRepo;
     private final BrandJpaRepository brandRepo;
@@ -88,13 +88,13 @@ public class LegacyUrlMapper {
             brandCount++;
         }
 
-        // 3. Categories: /{slug}.html → /danh-muc-san-pham/{slug}
+        // 3. Categories: /{slug}.html → /danh-muc/{slug}/
         // Product slugs take priority — if source pattern already claimed by a product, skip.
         for (CategoryEntity cat : categoryRepo.findAll()) {
             String slug = cat.getSlug();
             if (slug == null || slug.isBlank()) continue;
             String source = "/" + slug + PRODUCT_HTML_SUFFIX;
-            String target = CATEGORY_TARGET_PREFIX + slug;
+            String target = CATEGORY_TARGET_PREFIX + slug + "/";
             if (source.equals(target)) { selfLoops++; continue; }
             if (seenSources.contains(source)) { conflicts++; continue; }
             seenSources.add(source);

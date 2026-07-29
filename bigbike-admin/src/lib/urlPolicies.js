@@ -9,8 +9,8 @@ const YOUTUBE_HOSTS = new Set([
   'www.youtube-nocookie.com',
 ])
 
-// Host TikTok được duyệt làm nguồn video nhúng (owner chốt 2026-06-25). Link rút gọn
-// vt.tiktok.com / vm.tiktok.com KHÔNG nằm đây vì path không chứa id số → reject.
+// Chỉ dùng để đọc/xem trước dữ liệu legacy. Không dùng các helper TikTok/Facebook
+// này trong validation hoặc payload ghi mới (MEDIA_RULE_004).
 const TIKTOK_HOSTS = new Set([
   'tiktok.com',
   'www.tiktok.com',
@@ -183,12 +183,6 @@ export function validateHomeVideoUrl(value) {
   }
   if (extractAllowedYouTubeId(normalized)) {
     return { valid: true, normalized, source: 'youtube' }
-  }
-  if (extractAllowedTikTokId(normalized)) {
-    return { valid: true, normalized, source: 'tiktok' }
-  }
-  if (isAllowedFacebookVideoUrl(normalized)) {
-    return { valid: true, normalized, source: 'facebook' }
   }
   if (isAllowedMediaVideoUrl(normalized)) {
     return { valid: true, normalized, source: 'upload' }

@@ -7,6 +7,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Random;
 import javax.imageio.ImageIO;
 import org.junit.jupiter.api.Test;
@@ -78,6 +79,23 @@ class ImageCompressionServiceTest {
         byte[] garbage = "definitely not an image".getBytes(StandardCharsets.UTF_8);
         byte[] result = service.compress(garbage, "image/jpeg", new CompressionProfile(400, 400, 0.85f, false));
         assertThat(result).isSameAs(garbage);
+    }
+
+    /**
+     * Documents CODE_GAP_WEBP_2026-07-28 without silently changing the accepted format.
+     * The fixture is a valid 2000x10 lossless WebP. Once a shared reader + MIME-safe
+     * encoder is introduced, this test must be replaced by an assertion that the stored
+     * result is at most 1600px wide.
+     */
+    @Test
+    void webpCurrentlyFallsBackUnchangedWithoutAnImageIoReader() throws IOException {
+        byte[] wideWebp = Base64.getDecoder().decode(
+                "UklGRiIAAABXRUJQVlA4TBUAAAAvz0cCAAcQ9Y/+BwAU6f9/ieh/KhwA");
+
+        assertThat(ImageIO.read(new ByteArrayInputStream(wideWebp))).isNull();
+        byte[] result = service.compress(
+                wideWebp, "image/webp", new CompressionProfile(1600, 1600, 0.85f, false));
+        assertThat(result).isSameAs(wideWebp);
     }
 
     private static BufferedImage noisyImage(int width, int height, boolean alpha) {

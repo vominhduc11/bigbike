@@ -156,15 +156,14 @@ class AdminRolesApiTest {
     }
 
     @Test
-    void listPermissions_includesPosRefundAndInventoryKeys() throws Exception {
+    void listPermissions_excludesRemovedPosAndIncludesInventoryKeys() throws Exception {
         MvcResult result = mockMvc.perform(get(PERMS_URL)
                         .header("Authorization", "Bearer " + superToken))
                 .andExpect(status().isOk())
                 .andReturn();
         String json = result.getResponse().getContentAsString();
-        // FULL-01: these permissions are seeded into role_permissions by V109/V112
-        // and must be exposed by the catalog so they are grantable via the Roles UI.
-        assertThat(json).contains("pos.refund");
+        // POS permissions were removed with the POS module; inventory remains grantable.
+        assertThat(json).doesNotContain("pos.refund");
         assertThat(json).contains("inventory.read");
         assertThat(json).contains("inventory.write");
     }
@@ -227,6 +226,16 @@ class AdminRolesApiTest {
     }
 
     @Test
+    void createRole_nameLongerThanDatabaseColumn_returns400() throws Exception {
+        String longName = "N".repeat(101);
+        mockMvc.perform(post(ROLES_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"id\":\"VALID_NAME_LIMIT\",\"name\":\"" + longName + "\"}")
+                        .header("Authorization", "Bearer " + superToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void createRole_invalidIdFormat_returns400() throws Exception {
         mockMvc.perform(post(ROLES_URL)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -267,13 +276,16 @@ class AdminRolesApiTest {
     }
 
     @Test
-    void createRole_withPosRefundAndInventoryPermissions_returns201() throws Exception {
-        // FULL-01: a custom role must be assignable pos.refund / inventory.read /
-        // inventory.write — these are real permissions seeded by V109/V112.
+    void createRole_withInventoryPermissions_returns201() throws Exception {
+        // FULL-01 (cập nhật 2026-07-29): custom role phải gán được inventory.read /
+        // inventory.write — vẫn là permission thật trong PermissionCatalog. Permission
+        // `pos.refund` đã bị GỠ cùng module POS (ORDER_RULE_008 / project pos_removal),
+        // nên không còn assignable — dùng nó ở đây sẽ bị chặn UNKNOWN_PERMISSION (xem
+        // createRole_withRemovedPosPermission_returns400 bên dưới).
         String id = "INV_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
         String body = """
-                {"id":"%s","name":"Warehouse Role","description":"Inventory + refund",
-                 "permissions":["pos.refund","inventory.read","inventory.write"]}
+                {"id":"%s","name":"Warehouse Role","description":"Inventory",
+                 "permissions":["inventory.read","inventory.write"]}
                 """.formatted(id);
 
         mockMvc.perform(post(ROLES_URL)
@@ -283,6 +295,24 @@ class AdminRolesApiTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.id").value(id))
                 .andExpect(jsonPath("$.data.permissions").isArray());
+    }
+
+    @Test
+    void createRole_withRemovedPosPermission_returns400() throws Exception {
+        // Chốt hành vi: permission đã gỡ (pos.*) không còn được gán cho role mới.
+        String id = "POS_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+        String body = """
+                {"id":"%s","name":"Legacy POS Role","description":"stale",
+                 "permissions":["pos.refund"]}
+                """.formatted(id);
+
+        mockMvc.perform(post(ROLES_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .header("Authorization", "Bearer " + superToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].code").value("UNKNOWN_PERMISSION"));
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -348,6 +378,30 @@ class AdminRolesApiTest {
                         .content("{\"permissions\":[\"orders.read\"]}")
                         .header("Authorization", "Bearer " + superToken))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void updatePermissions_cannotRemoveRoleManagementFromOwnRole_returns409() throws Exception {
+        String roleId = "SELF_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+        String roleBody = """
+                {"id":"%s","name":"Self Managed Role",
+                 "permissions":["roles.read","roles.write"]}
+                """.formatted(roleId);
+        mockMvc.perform(post(ROLES_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(roleBody)
+                        .header("Authorization", "Bearer " + superToken))
+                .andExpect(status().isCreated());
+
+        String email = "role-self-" + UUID.randomUUID() + "@bigbike.test";
+        ensureAdminUser(email, "Temp@12345678", roleId);
+        String ownRoleToken = loginAdmin(email, "Temp@12345678");
+
+        mockMvc.perform(put(ROLES_URL + "/" + roleId + "/permissions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"permissions\":[\"roles.read\"]}")
+                        .header("Authorization", "Bearer " + ownRoleToken))
+                .andExpect(status().isConflict());
     }
 
     // ══════════════════════════════════════════════════════════════════════════
