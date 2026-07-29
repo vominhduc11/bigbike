@@ -56,7 +56,6 @@ import {
 } from './content-detail/constants'
 import { ContentAssignmentBanner } from './content-detail/ContentAssignmentBanner'
 import { SectionCard } from '../components/SectionCard'
-import { CollapsibleSection } from '../components/CollapsibleSection'
 import { FormField as Field } from '../components/layout/FormField'
 
 // Module chỉ còn quản lý BÀI VIẾT (ARTICLE). Trang thông tin tĩnh + trình dựng /huong-dan đã gỡ
@@ -311,9 +310,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     }
     const failedTab = findTabForErrors(computeSectionErrorsFromMap(errors))
     if (failedTab) setActiveTab(failedTab)
-    if (keys.some((key) => key.startsWith('seoOgImage'))) {
-      setSeoAdvancedOpen(true)
-    }
     window.setTimeout(() => {
       formRef.current?.querySelector('[aria-invalid="true"]')?.focus()
     }, 0)
@@ -417,7 +413,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
   // ── Tab navigation state (replaces TOC sidebar) ───────────────────────────
   const [activeTab, setActiveTab] = useState('content')
-  const [seoAdvancedOpen, setSeoAdvancedOpen] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
 
   const isEnLang = contentLang === 'en'
@@ -952,13 +947,17 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       <span>{t('content.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
                     </div>
                     <div className="text-xs text-google-url break-all mb-1">
-                      {storefrontOrigin}<span className="text-google-crumb"> › tin-tuc › {form.slug || 'duong-dan'}</span>
+                      {isEnLang
+                        ? (form.translations?.en?.slug
+                            ? `${storefrontOrigin}/news/${form.translations.en.slug}/`
+                            : t('content.detail.serpNoEnglishUrl', { defaultValue: 'Chưa có trang tiếng Anh' }))
+                        : `${storefrontOrigin}/tin-tuc/${form.slug || 'duong-dan'}/`}
                     </div>
                     <div className="text-lg leading-snug text-google-title break-words mb-1">
-                      {(langValue('seoTitle') || form.title || t('content.detail.serpTitleFallback', { defaultValue: 'Tiêu đề trên Google' })).slice(0, 60)}
+                      {(langValue('seoTitle') || langValue('title') || t('content.detail.serpTitleFallback', { defaultValue: 'Tiêu đề trên Google' })).slice(0, 60)}
                     </div>
                     <div className="text-sm leading-relaxed text-google-description break-words">
-                      {langValue('seoDescription') || form.excerpt || t('content.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn sẽ hiển thị ở đây.' })}
+                      {langValue('seoDescription') || langValue('excerpt') || t('content.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn sẽ hiển thị ở đây.' })}
                     </div>
                   </div>
                 </div>
@@ -967,8 +966,8 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                   <Field
                     full
                     label={t('content.detail.seoTitle', { defaultValue: 'Tiêu đề SEO' })}
-                    count={`${langValue('seoTitle').length} / 255`}
-                    countWarn={langValue('seoTitle').length > 230}
+                    count={`${langValue('seoTitle').length} / 60`}
+                    countWarn={langValue('seoTitle').length > 60}
                     error={isEnLang ? validationErrors['translations.en.seoTitle'] : validationErrors.seoTitle}
                     helper={isEnLang ? t('content.detail.enFieldHint') : undefined}
                   >
@@ -976,7 +975,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       value={isEnLang ? (form.translations?.en?.seoTitle ?? '') : form.seoTitle}
                       onChange={(e) => isEnLang ? updateTranslation('seoTitle', e.target.value) : updateField('seoTitle', e.target.value)}
                       disabled={isReadOnly}
-                      placeholder={form.title || t('content.detail.seoTitle', { defaultValue: 'Tiêu đề SEO' })}
+                      placeholder={t('content.detail.seoTitle', { defaultValue: 'Tiêu đề SEO' })}
                       maxLength={255}
                     />
                   </Field>
@@ -984,8 +983,8 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                   <Field
                     full
                     label={t('content.detail.seoDescription', { defaultValue: 'Mô tả SEO' })}
-                    count={`${langValue('seoDescription').length} / 5000`}
-                    countWarn={langValue('seoDescription').length > 4500}
+                    count={`${langValue('seoDescription').length} / 155`}
+                    countWarn={langValue('seoDescription').length > 155}
                     error={isEnLang ? validationErrors['translations.en.seoDescription'] : validationErrors.seoDescription}
                     helper={isEnLang ? t('content.detail.enFieldHint') : undefined}
                   >
@@ -995,50 +994,27 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       disabled={isReadOnly}
                       rows={3}
                       maxLength={5000}
+                      placeholder={t('content.detail.seoDescription', { defaultValue: 'Mô tả SEO' })}
                     />
                   </Field>
 
+                  <Field
+                    full
+                    label={t('content.detail.seoOgImageUrl', { defaultValue: 'SEO OG image URL' })}
+                    helper={t('content.detail.seoOgImageUrlHint', { defaultValue: 'Ảnh chia sẻ MXH, 1200×630px.' })}
+                    error={validationErrors.seoOgImageUrl || validationErrors.seoOgImageAlt}
+                  >
+                    <ImageUrlInput
+                      value={form.seoOgImageUrl}
+                      onChange={(url, media) => updateImageAsset('seoOgImage', url, media)}
+                      alt={form.seoOgImageAlt}
+                      onAltChange={(alt) => updateField('seoOgImageAlt', alt)}
+                      disabled={isReadOnly}
+                      error={validationErrors.seoOgImageUrl}
+                      recommend={IMAGE_RECO.cover}
+                    />
+                  </Field>
                 </div>
-
-                {/* Tùy chọn nâng cao: canonical + ảnh chia sẻ + noindex — thu gọn sẵn (P2-4) */}
-                <CollapsibleSection
-                  title={t('content.detail.seoAdvanced', { defaultValue: 'Tùy chọn nâng cao' })}
-                  hint={t('content.detail.seoAdvancedHint', { defaultValue: 'Ảnh chia sẻ, chặn lập chỉ mục' })}
-                  open={seoAdvancedOpen}
-                  onToggle={() => setSeoAdvancedOpen((v) => !v)}
-                >
-                  <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
-                    <Field
-                      full
-                      label={t('content.detail.seoOgImageUrl', { defaultValue: 'SEO OG image URL' })}
-                      helper={t('content.detail.seoOgImageUrlHint', { defaultValue: 'Ảnh chia sẻ MXH, 1200×630px.' })}
-                      error={validationErrors.seoOgImageUrl || validationErrors.seoOgImageAlt}
-                    >
-                      <ImageUrlInput
-                        value={form.seoOgImageUrl}
-                        onChange={(url, media) => updateImageAsset('seoOgImage', url, media)}
-                        alt={form.seoOgImageAlt}
-                        onAltChange={(alt) => updateField('seoOgImageAlt', alt)}
-                        disabled={isReadOnly}
-                        error={validationErrors['seoOgImageUrl']}
-                        recommend={IMAGE_RECO.cover}
-                      />
-                    </Field>
-                  </div>
-
-                  {/* noindex toggle — chỉ bài viết */}
-                    <div className="mt-4 flex flex-col gap-1.5">
-                      <label className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
-                        <Checkbox
-                          checked={form.seoNoIndex}
-                          onCheckedChange={(checked) => updateField('seoNoIndex', checked === true)}
-                          disabled={isReadOnly}
-                        />
-                        <span>{t('content.detail.seoNoIndex')}</span>
-                      </label>
-                      <span className="text-xs text-muted-foreground">{t('content.detail.seoNoIndexHint')}</span>
-                    </div>
-                </CollapsibleSection>
 
                 {/* SEO checklist */}
                 <div className="mt-4 p-3 border border-border bg-muted/30">

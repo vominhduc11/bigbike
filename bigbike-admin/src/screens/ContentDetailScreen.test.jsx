@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   mapValidationErrors: vi.fn(() => ({})),
   showConfirm: vi.fn(),
   setContentLang: vi.fn(),
+  contentLang: 'vi',
   toast: { success: vi.fn(), error: vi.fn() },
 }))
 
@@ -35,7 +36,7 @@ vi.mock('../lib/adminApi', () => ({
 vi.mock('../lib/confirm', () => ({ showConfirm: mocks.showConfirm }))
 vi.mock('@/lib/toast', () => ({ toast: mocks.toast }))
 vi.mock('../lib/contentLang', () => ({
-  useContentLang: () => 'vi',
+  useContentLang: () => mocks.contentLang,
   setContentLang: mocks.setContentLang,
 }))
 vi.mock('../lib/useUnsavedChanges', () => ({ useUnsavedChanges: vi.fn() }))
@@ -147,6 +148,7 @@ function renderScreen({
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mocks.contentLang = 'vi'
   localStorage.clear()
   mocks.fetchContentDetail.mockResolvedValue({ item: baseArticle })
   mocks.createContent.mockResolvedValue({ item: baseArticle })
@@ -177,6 +179,30 @@ describe('ContentDetailScreen', () => {
 
     expect(await screen.findByText('content.detail.notFound')).toBeInTheDocument()
     expect(screen.queryByText('content.detail.loadError')).not.toBeInTheDocument()
+  })
+
+  it('dùng cùng hướng dẫn SEO với màn Sản phẩm và không hiện tùy chọn riêng', async () => {
+    const user = userEvent.setup()
+    renderScreen()
+
+    await user.click(await screen.findByRole('tab', { name: 'content.detail.tabSeoPublish' }))
+
+    expect(screen.getByText('0 / 60')).toBeInTheDocument()
+    expect(screen.getByText('0 / 155')).toBeInTheDocument()
+    expect(screen.getByText('content.detail.seoOgImageUrl')).toBeInTheDocument()
+    expect(screen.queryByText('content.detail.seoAdvanced')).not.toBeInTheDocument()
+    expect(screen.queryByText('content.detail.seoNoIndex')).not.toBeInTheDocument()
+  })
+
+  it('xem trước SEO tiếng Anh bằng đúng đường dẫn và nội dung tiếng Anh', async () => {
+    const user = userEvent.setup()
+    mocks.contentLang = 'en'
+    renderScreen()
+
+    await user.click(await screen.findByRole('tab', { name: 'content.detail.tabSeoPublish' }))
+
+    expect(screen.getByText(/\/news\/article\/$/)).toBeInTheDocument()
+    expect(screen.getByText('Article')).toBeInTheDocument()
   })
 
   it('bài trong Thùng rác chỉ cho khôi phục và lưu về Nháp sau xác nhận', async () => {
@@ -236,7 +262,7 @@ describe('ContentDetailScreen', () => {
     expect(mocks.createContent).not.toHaveBeenCalled()
   })
 
-  it('tự mở tab SEO và phần nâng cao khi máy chủ báo lỗi ảnh OG', async () => {
+  it('tự mở tab SEO và đưa focus tới lỗi ảnh OG đang hiển thị', async () => {
     const user = userEvent.setup()
     mocks.updateContent.mockRejectedValue(new Error('Ảnh OG không hợp lệ'))
     mocks.mapValidationErrors.mockReturnValue({ seoOgImageUrl: 'content.detail.errSeoOgImageUrl' })
