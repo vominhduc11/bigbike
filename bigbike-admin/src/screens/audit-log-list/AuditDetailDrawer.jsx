@@ -1,183 +1,265 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import {
+  ChevronDown,
+  ChevronUp,
+  CircleDot,
+  FileJson2,
+} from 'lucide-react'
 import { Modal } from '../../components/layout'
+import { DetailSection } from '../../components/DetailSection'
 import { formatDateTimeWithSeconds } from '../../lib/formatters'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
+import { cn } from '@/lib/utils'
 import {
-  DANGEROUS_ACTIONS, DANGEROUS_VALUES, toBadgeVariant, tryParse,
-  getModuleTone, getModuleLabel, getActionLabel,
+  DANGEROUS_ACTIONS,
+  DANGEROUS_VALUES,
+  getActionLabel,
+  getModuleLabel,
+  getModuleTone,
+  toBadgeVariant,
+  tryParse,
 } from './constants'
 import { DetailRow } from './cells'
 
+function displayValue(value, t) {
+  if (value === null || value === undefined || value === '') return '—'
+  const serialized = typeof value === 'object' ? JSON.stringify(value) : String(value)
+  return t(`auditLog.value.${serialized}`, { defaultValue: serialized })
+}
+
 export function AuditDetailDrawer({ log, onClose }) {
   const { t } = useTranslation()
-  const isDangerous = DANGEROUS_ACTIONS.has(log.action)
-  const hasRaw = !!(log.beforeData || log.afterData)
   const [showRaw, setShowRaw] = useState(false)
-
-  // Dùng chung helper với bảng + thẻ mobile — trước đây drawer tự khai báo bảng
-  // màu và cách dựng nhãn riêng, dễ lệch khỏi phần còn lại của màn hình.
+  const isDangerous = DANGEROUS_ACTIONS.has(log.action)
+  const hasRaw = Boolean(log.beforeData || log.afterData)
   const moduleTone = getModuleTone(log.resourceType)
   const moduleLabel = getModuleLabel(t, log.resourceType)
   const actionLabel = getActionLabel(t, log.action)
-  const displayName = log.actorDisplayName || log.actorEmail || null
-  const actorFallback = t(`auditLog.actorType.${log.actorType}`, { defaultValue: t('auditLog.actorType.ADMIN') })
+  const actorName = log.actorDisplayName
+    || log.actorEmail
+    || t(`auditLog.actorType.${log.actorType}`, {
+      defaultValue: t('auditLog.actorType.ADMIN'),
+    })
+  const actorTypeLabel = t(`auditLog.actorType.${log.actorType}`, {
+    defaultValue: log.actorType || t('auditLog.actorType.ADMIN'),
+  })
+  const resourceLabel = log.resourceCode
+    || log.resourceDisplayName
+    || (log.resourceId ? log.resourceId.slice(0, 8) : '—')
 
   const diff = useMemo(() => {
     const before = log.beforeData ? tryParse(log.beforeData) : null
-    const after  = log.afterData  ? tryParse(log.afterData)  : null
-    if (!before || !after || typeof before !== 'object' || typeof after !== 'object' || Array.isArray(before) || Array.isArray(after)) return null
-    // Object/array phải serialize bằng JSON, không để String() ép thành "[object Object]" — nếu không
-    // hai object khác nhau sẽ cùng ra một chuỗi → so sánh nhầm "không thay đổi" và cell hiện sai.
-    const fmt = (v) => (v !== null && typeof v === 'object' ? JSON.stringify(v) : String(v))
+    const after = log.afterData ? tryParse(log.afterData) : null
+    const comparable = before && after
+      && typeof before === 'object'
+      && typeof after === 'object'
+      && !Array.isArray(before)
+      && !Array.isArray(after)
+
+    if (!comparable) return null
+
     const allKeys = new Set([...Object.keys(before), ...Object.keys(after)])
-    const changes = []
-    for (const key of allKeys) {
-      if (fmt(before[key]) !== fmt(after[key])) {
-        const mapVal = (v) => {
-          if (v === null || v === undefined) return '—'
-          const str = fmt(v)
-          return t(`auditLog.value.${str}`, { defaultValue: str })
-        }
-        changes.push({
-          key,
-          label: t(`auditLog.field.${key}`, { defaultValue: key }),
-          before: mapVal(before[key]),
-          after:  mapVal(after[key]),
-          // rawAfter chỉ dùng để dò DANGEROUS_VALUES (giá trị scalar) → giữ nguyên với primitive,
-          // object thì để rỗng để không lọt nhầm vào tập cảnh báo.
-          rawAfter: after[key] !== null && typeof after[key] === 'object' ? '' : String(after[key] ?? ''),
-        })
-      }
-    }
-    return changes
+    return [...allKeys].flatMap((key) => {
+      const beforeSerialized = typeof before[key] === 'object'
+        ? JSON.stringify(before[key])
+        : String(before[key])
+      const afterSerialized = typeof after[key] === 'object'
+        ? JSON.stringify(after[key])
+        : String(after[key])
+
+      if (beforeSerialized === afterSerialized) return []
+
+      return [{
+        key,
+        label: t(`auditLog.field.${key}`, { defaultValue: key }),
+        before: displayValue(before[key], t),
+        after: displayValue(after[key], t),
+        rawAfter: after[key] !== null && typeof after[key] === 'object'
+          ? ''
+          : String(after[key] ?? ''),
+      }]
+    })
   }, [log.beforeData, log.afterData, t])
 
   return (
     <Modal
       open={Boolean(log)}
       onClose={onClose}
-      title={t('auditLog.drawerTitle')}
+      title={actionLabel}
+      description={`${t('auditLog.drawerTitle')} · ${formatDateTimeWithSeconds(log.createdAt)}`}
       closeLabel={t('auditLog.drawerClose')}
       wide
     >
-      <div className="-mx-5 -my-4">
-        <div className="audit-drawer-body">
-          {isDangerous && (
-            <Alert tone="danger">{t('auditLog.drawerDangerBanner')}</Alert>
-          )}
+      <div className="grid gap-5">
+        {isDangerous ? (
+          <Alert tone="danger" size="sm">
+            {t('auditLog.drawerDangerBanner')}
+          </Alert>
+        ) : null}
 
-          <div className="audit-detail-section">
+        <DetailSection
+          title={t('auditLog.drawerOverviewLabel', { defaultValue: 'Thông tin hoạt động' })}
+          headingLevel={3}
+          contentClassName="p-4"
+        >
+          <dl className="grid gap-3 sm:grid-cols-2">
             <DetailRow label={t('auditLog.drawerTimeLabel')}>
-              <time title={log.createdAt}>{formatDateTimeWithSeconds(log.createdAt)}</time>
+              <time title={log.createdAt || undefined}>
+                {formatDateTimeWithSeconds(log.createdAt)}
+              </time>
             </DetailRow>
 
             <DetailRow label={t('auditLog.drawerActorLabel')}>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {displayName
-                  ? <strong className="text-sm">{displayName}</strong>
-                  : <span className="text-sm italic text-muted-foreground">{actorFallback}</span>
-                }
-                {log.actorType && log.actorType !== 'ADMIN' && (
-                  <Badge variant="muted" className="text-xs">
-                    {t(`auditLog.actorType.${log.actorType}`, { defaultValue: log.actorType })}
-                  </Badge>
-                )}
-              </div>
+              <span className="font-semibold">{actorName}</span>
+              {log.actorDisplayName && log.actorEmail ? (
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  {log.actorEmail}
+                </span>
+              ) : null}
+              {log.actorType ? (
+                <Badge variant="muted" className="mt-2">
+                  {actorTypeLabel}
+                </Badge>
+              ) : null}
             </DetailRow>
 
             <DetailRow label={t('auditLog.drawerActionLabel')}>
-              <strong>{actionLabel}</strong>
+              <span className={cn('font-semibold', isDangerous && 'text-danger')}>
+                {actionLabel}
+              </span>
             </DetailRow>
 
             <DetailRow label={t('auditLog.drawerModuleLabel')}>
               <Badge variant={toBadgeVariant(moduleTone)}>{moduleLabel}</Badge>
             </DetailRow>
 
-            {(log.resourceCode || log.resourceDisplayName || log.resourceId) && (
-              <DetailRow label={t('auditLog.drawerEntityLabel')}>
-                <strong className="text-sm">
-                  {log.resourceCode || log.resourceDisplayName || log.resourceId?.slice(0, 8)}
-                </strong>
-              </DetailRow>
-            )}
+            <DetailRow label={t('auditLog.drawerEntityLabel')}>
+              <span className="font-semibold">{resourceLabel}</span>
+              {log.resourceCode && log.resourceDisplayName
+                && log.resourceCode !== log.resourceDisplayName ? (
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    {log.resourceDisplayName}
+                  </span>
+                ) : null}
+            </DetailRow>
 
-            {/* Địa chỉ truy cập: API đã trả về sẵn nhưng màn hình chưa từng hiển thị.
-                Rất cần cho các sự kiện đăng nhập sai / khoá tài khoản. */}
-            {log.ipAddress && (
+            {log.ipAddress ? (
               <DetailRow label={t('auditLog.drawerIpLabel')}>
                 <span className="font-mono text-sm">{log.ipAddress}</span>
               </DetailRow>
-            )}
-          </div>
+            ) : null}
+          </dl>
+        </DetailSection>
 
-          <div className="audit-drawer-section">
-            <h3 className="audit-drawer-section-title">{t('auditLog.drawerChangesLabel')}</h3>
-            {(!diff || diff.length === 0) && (
-              <p className="audit-no-changes">{t('auditLog.drawerNoChanges')}</p>
-            )}
-            {diff && diff.length > 0 && (
-              <table className="audit-diff-table">
-                <thead>
-                  <tr>
-                    <th>{t('auditLog.drawerFieldCol')}</th>
-                    <th>{t('auditLog.drawerBefore')}</th>
-                    <th>{t('auditLog.drawerAfter')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {diff.map((row) => {
-                    const isDangerousAfter = DANGEROUS_VALUES.has(row.rawAfter)
-                    return (
-                      <tr key={row.key}>
-                        <td className="audit-diff-field">{row.label}</td>
-                        <td className="audit-diff-before">{row.before}</td>
-                        <td className={`audit-diff-after${isDangerousAfter ? ' audit-diff-after--danger' : ''}`}>{row.after}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
-
-          {/* #2: Raw JSON panel — only shown if data exists; hidden for non-dev but togglable */}
-          {hasRaw && (
-            <div className="audit-drawer-section">
-              <Button
-                variant="unstyled"
-                className="audit-tech-toggle"
-                onClick={() => setShowRaw((p) => !p)}
-                aria-expanded={showRaw}
-              >
-                {t('auditLog.drawerTechData')}
-                <span aria-hidden="true" className="ml-1">{showRaw ? '▲' : '▼'}</span>
-              </Button>
-              {showRaw && (
-                <div className="audit-tech-body">
-                  {log.beforeData && (
-                    <>
-                      <p className="audit-tech-label">{t('auditLog.drawerBefore')}</p>
-                      <pre className="audit-tech-pre">
-                        {JSON.stringify(tryParse(log.beforeData) ?? log.beforeData, null, 2)}
-                      </pre>
-                    </>
-                  )}
-                  {log.afterData && (
-                    <>
-                      <p className="audit-tech-label mt-3">{t('auditLog.drawerAfter')}</p>
-                      <pre className="audit-tech-pre">
-                        {JSON.stringify(tryParse(log.afterData) ?? log.afterData, null, 2)}
-                      </pre>
-                    </>
-                  )}
-                </div>
-              )}
+        <DetailSection
+          title={t('auditLog.drawerChangesLabel')}
+          description={t('auditLog.drawerChangesHint', {
+            defaultValue: 'Chỉ hiển thị những thông tin đã thay đổi.',
+          })}
+          headingLevel={3}
+          contentClassName="p-0"
+        >
+          {diff && diff.length > 0 ? (
+            <div className="divide-y divide-border">
+              <div className="hidden grid-cols-3 gap-3 bg-surface-muted px-4 py-2 text-xs font-semibold text-muted-foreground sm:grid">
+                <span>{t('auditLog.drawerFieldCol')}</span>
+                <span>{t('auditLog.drawerBefore')}</span>
+                <span>{t('auditLog.drawerAfter')}</span>
+              </div>
+              {diff.map((row) => {
+                const isDangerousAfter = DANGEROUS_VALUES.has(row.rawAfter)
+                return (
+                  <div key={row.key} className="grid gap-3 px-4 py-3 sm:grid-cols-3">
+                    <div>
+                      <span className="text-xs font-semibold text-muted-foreground sm:hidden">
+                        {t('auditLog.drawerFieldCol')}
+                      </span>
+                      <p className="mt-0.5 break-words text-sm font-semibold text-foreground sm:mt-0">
+                        {row.label}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-xs font-semibold text-muted-foreground sm:hidden">
+                        {t('auditLog.drawerBefore')}
+                      </span>
+                      <p className="mt-0.5 break-words text-sm text-danger line-through sm:mt-0">
+                        {row.before}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-xs font-semibold text-muted-foreground sm:hidden">
+                        {t('auditLog.drawerAfter')}
+                      </span>
+                      <p className={cn(
+                        'mt-0.5 break-words text-sm font-semibold text-success sm:mt-0',
+                        isDangerousAfter && 'text-danger',
+                      )}>
+                        {row.after}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="flex items-start gap-3 p-4 text-sm text-muted-foreground">
+              <CircleDot size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+              <p>{t('auditLog.drawerNoChanges')}</p>
             </div>
           )}
-        </div>
+        </DetailSection>
+
+        {hasRaw ? (
+          <section className="rounded-md border border-border bg-surface">
+            <Button
+              variant="ghost"
+              className="min-h-11 w-full justify-between px-4"
+              onClick={() => setShowRaw((current) => !current)}
+              aria-expanded={showRaw}
+            >
+              <span className="inline-flex items-center gap-2">
+                <FileJson2 size={16} aria-hidden="true" />
+                {t('auditLog.drawerTechData')}
+              </span>
+              {showRaw
+                ? <ChevronUp size={16} aria-hidden="true" />
+                : <ChevronDown size={16} aria-hidden="true" />}
+            </Button>
+
+            {showRaw ? (
+              <div className="grid gap-4 border-t border-border p-4">
+                <p className="text-xs text-muted-foreground">
+                  {t('auditLog.drawerRawHint', {
+                    defaultValue: 'Dữ liệu gốc dành cho đối soát chuyên sâu.',
+                  })}
+                </p>
+                {log.beforeData ? (
+                  <div className="grid gap-2">
+                    <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {t('auditLog.drawerBefore')}
+                    </h4>
+                    <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-surface-muted p-3 font-mono text-xs text-foreground">
+                      {JSON.stringify(tryParse(log.beforeData) ?? log.beforeData, null, 2)}
+                    </pre>
+                  </div>
+                ) : null}
+                {log.afterData ? (
+                  <div className="grid gap-2">
+                    <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {t('auditLog.drawerAfter')}
+                    </h4>
+                    <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-surface-muted p-3 font-mono text-xs text-foreground">
+                      {JSON.stringify(tryParse(log.afterData) ?? log.afterData, null, 2)}
+                    </pre>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </section>
+        ) : null}
       </div>
     </Modal>
   )

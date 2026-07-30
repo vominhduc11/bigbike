@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
-import { toast } from '@/lib/toast'
-import { deleteMedia, fetchMedia, uploadMedia, fetchMediaFolders, fetchMediaTags } from '../lib/adminApi'
+import { fetchMedia, uploadMedia, fetchMediaFolders, fetchMediaTags } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { useDebounce } from '../lib/useDebounce'
 import { useHasPermission } from '../lib/auth'
 import { resolveDisplayUrl, resolveThumbUrl } from '../lib/contracts'
-import { MediaDetailModal } from './MediaDetailModal'
 import { MediaRequirementHint, MediaValidationError } from './MediaRequirementHint'
 import { useMediaValidation } from '../lib/useMediaDimensions'
 import { Button } from '@/components/ui/button'
@@ -30,37 +28,28 @@ function IconImage() {
   )
 }
 
-function IconPencil() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-    </svg>
-  )
-}
-
 /**
  * MediaPickerModal — browse + upload media, call onSelect on pick.
  *
+ * Chỉ làm đúng một việc: tìm/tải lên/chọn. Sửa mô tả ảnh và xoá file thuộc về màn
+ * Thư viện media — alt text nhập ở màn gọi đã được `useMediaAltSync` ghi ngược về
+ * thư viện nên không cần ô sửa lồng trong picker.
+ *
  * Props:
- *   onSelect(url, media)          — single-select mode (default): url string, plus the
- *                                    full media item ({id, altText, title, isNewUpload, ...})
- *                                    so callers can prefill a context alt field. `media` is
- *                                    the 2nd arg so existing `onSelect={(url) => ...}` callers
- *                                    keep working unchanged.
- *   onSelectMultiple(urls, items) — multi-select mode: array of URL strings, plus the
- *                                    matching array of media items (same order)
- *   multiSelect                   — enable multi-select (default: false)
+ *   onSelect(url, media)          — url string, plus the full media item
+ *                                    ({id, altText, title, isNewUpload, ...}) so callers can
+ *                                    prefill a context alt field. `media` is the 2nd arg so
+ *                                    existing `onSelect={(url) => ...}` callers keep working.
  *   onClose()                     — called when modal should close
  *   recommend                     — spec từ imageRecommendations.js; có thì CHẶN xác nhận khi ảnh
- *                                    đã chọn không đạt (chỉ áp dụng ở chế độ single-select)
+ *                                    đã chọn không đạt
  *   kind                          — 'image' | 'video', mặc định 'image' (đo naturalWidth/Height
  *                                    hay videoWidth/Height tương ứng)
  */
-export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = false, onClose, recommend, kind = 'image' }) {
+export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' }) {
   const { t } = useTranslation()
   const hasPermission = useHasPermission()
-  // media.write gates both uploading new files and editing metadata (alt/title).
+  // media.write gates uploading new files from inside the picker.
   const canWrite = hasPermission('media.write')
   const modalRef = useRef(null)
   const [search, setSearch] = useState('')
@@ -73,23 +62,19 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
   const [filtersError, setFiltersError] = useState(false)
   const [page, setPage] = useState(1)
   const [state, setState] = useState({ status: 'loading', items: [], totalPages: 1 })
-  // Single-select: string | null; Multi-select: Set<string>
-  const [selectedUrls, setSelectedUrls] = useState(() => multiSelect ? new Set() : null)
+  const [selectedUrl, setSelectedUrl] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [uploadQueue, setUploadQueue] = useState([]) // { name, progress, error }
   const [uploadError, setUploadError] = useState('')
   const [isDragOver, setIsDragOver] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
-  // Inline metadata editor (alt/title) without leaving the picker.
-  const [detailMedia, setDetailMedia] = useState(null)
-  const detailOpenRef = useRef(false)
   const fileInputRef = useRef(null)
   const PAGE_SIZE = 30
   // Full media objects by URL, so handleConfirm can hand callers altText/title —
   // not just the URL. Populated from fetched pages and from this session's uploads
   // (uploads are tagged isNewUpload so callers know to sync alt text back).
   const mediaCacheRef = useRef(new Map())
-  const validation = useMediaValidation(kind, !multiSelect ? selectedUrls : null, recommend)
+  const validation = useMediaValidation(kind, selectedUrl, recommend)
 
   // Reset page on new search / filter.
   useEffect(() => {
@@ -132,10 +117,8 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
     return () => { active = false }
   }, [debouncedSearch, page, refreshKey, kind, folderFilter, tag])
 
-  // While the detail editor is open it owns the keyboard (Escape/Tab); let its own
-  // handler manage focus so we don't close the whole picker.
   // Escape đi qua attemptClose để hỏi xác nhận khi đang tải lên / đã chọn.
-  useModalFocusTrap({ modalRef, onClose: attemptClose, isSuspendedRef: detailOpenRef })
+  useModalFocusTrap({ modalRef, onClose: attemptClose })
   useBodyScrollLock()
 
   // ── Upload helpers ──────────────────────────────────────────────────────────
@@ -188,14 +171,8 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
     setPage(1)
     setSearch('')
     setRefreshKey((k) => k + 1)
-    // Auto-select uploaded images
-    if (uploadedUrls.length > 0) {
-      if (multiSelect) {
-        setSelectedUrls((prev) => new Set([...prev, ...uploadedUrls]))
-      } else {
-        setSelectedUrls(uploadedUrls[uploadedUrls.length - 1])
-      }
-    }
+    // Auto-select uploaded image
+    if (uploadedUrls.length > 0) setSelectedUrl(uploadedUrls[uploadedUrls.length - 1])
     setTimeout(() => setUploadQueue([]), 2000)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
@@ -223,87 +200,21 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
     if (files.length) uploadFiles(files)
   }
 
-  // ── Inline metadata editor ───────────────────────────────────────────────────
-
-  function openDetail(media) {
-    detailOpenRef.current = true
-    setDetailMedia(media)
-  }
-  function closeDetail() {
-    detailOpenRef.current = false
-    setDetailMedia(null)
-  }
-  function handleDetailSaved(updated) {
-    if (updated?.id) {
-      setState((prev) => ({
-        ...prev,
-        items: prev.items.map((it) => (it.id === updated.id ? { ...it, ...updated } : it)),
-      }))
-      if (updated.publicUrl) {
-        const cached = mediaCacheRef.current.get(updated.publicUrl)
-        mediaCacheRef.current.set(updated.publicUrl, { ...cached, ...updated })
-      }
-    }
-    closeDetail()
-  }
-
-  async function handleDetailDeleted(mediaToDelete) {
-    await deleteMedia(mediaToDelete.id)
-
-    const deletedUrl = mediaToDelete.publicUrl
-    setState((prev) => ({
-      ...prev,
-      items: prev.items.filter((item) => item.id !== mediaToDelete.id),
-    }))
-    if (deletedUrl) {
-      mediaCacheRef.current.delete(deletedUrl)
-      setSelectedUrls((prev) => {
-        if (multiSelect) {
-          const next = new Set(prev)
-          next.delete(deletedUrl)
-          return next
-        }
-        return prev === deletedUrl ? null : prev
-      })
-    }
-
-    closeDetail()
-    setRefreshKey((key) => key + 1)
-    toast.success(t('media.deleteSuccess'))
-  }
-
   // ── Selection helpers ────────────────────────────────────────────────────────
 
   function toggleUrl(url) {
-    if (multiSelect) {
-      setSelectedUrls((prev) => {
-        const next = new Set(prev)
-        if (next.has(url)) next.delete(url)
-        else next.add(url)
-        return next
-      })
-    } else {
-      setSelectedUrls((prev) => (prev === url ? null : url))
-    }
-  }
-
-  function isSelected(url) {
-    return multiSelect ? selectedUrls.has(url) : selectedUrls === url
+    setSelectedUrl((prev) => (prev === url ? null : url))
   }
 
   function handleConfirm() {
-    if (multiSelect) {
-      const urls = [...selectedUrls]
-      if (urls.length) onSelectMultiple?.(urls, urls.map((u) => mediaCacheRef.current.get(u) ?? null))
-    } else {
-      if (selectedUrls && !validation.blocked) onSelect?.(selectedUrls, mediaCacheRef.current.get(selectedUrls) ?? null)
+    if (selectedUrl && !validation.blocked) {
+      onSelect?.(selectedUrl, mediaCacheRef.current.get(selectedUrl) ?? null)
     }
   }
 
-  const hasSelection = multiSelect ? selectedUrls.size > 0 : Boolean(selectedUrls)
-  const selectionCount = multiSelect ? selectedUrls.size : (selectedUrls ? 1 : 0)
+  const hasSelection = Boolean(selectedUrl)
   const isLoading = state.status === 'loading'
-  const canConfirm = hasSelection && (multiSelect || (!validation.blocked && validation.status !== 'loading'))
+  const canConfirm = hasSelection && !validation.blocked && validation.status !== 'loading'
 
   // Hỏi xác nhận khi đóng lúc đang tải lên hoặc đã chọn để tránh mất lựa chọn/tiến
   // trình. Dùng cho backdrop, nút đóng, Huỷ và Escape (qua useModalFocusTrap).
@@ -344,10 +255,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
 
         {/* Header */}
         <div className="mpicker-header">
-          <h3 className="mpicker-title">
-            {t('media.picker.title')}
-            {multiSelect && <span className="mpicker-mode-badge">{t('media.picker.multiMode')}</span>}
-          </h3>
+          <h3 className="mpicker-title">{t('media.picker.title')}</h3>
           <div className="mpicker-header-actions">
             {canWrite && (
               <>
@@ -382,7 +290,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
           {recommend
             ? <MediaRequirementHint recommend={recommend} />
             : <p className="text-xs text-muted-foreground">{t('media.picker.sizeHint')}</p>}
-          {!multiSelect && selectedUrls && (
+          {selectedUrl && (
             <MediaValidationError
               reasons={validation.reasons}
               kind={kind}
@@ -472,12 +380,12 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
               {state.items.map((media) => {
                 const url = media.publicUrl
                 const thumbUrl = resolveThumbUrl(media)
-                const sel = isSelected(url)
+                const sel = selectedUrl === url
                 return (
-                  <div key={media.id} className="relative group">
                     <Button
+                      key={media.id}
                       variant="unstyled"
-                      className={`mpicker-item w-full${sel ? ' is-selected' : ''}`}
+                      className={`mpicker-item${sel ? ' is-selected' : ''}`}
                       onClick={() => toggleUrl(url)}
                       aria-pressed={sel}
                       title={media.filename?.split('/').pop() ?? ''}
@@ -508,18 +416,6 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
                         ) : null}
                       </div>
                     </Button>
-                    {canWrite && (
-                      <Button
-                        variant="unstyled"
-                        onClick={(e) => { e.stopPropagation(); openDetail(media) }}
-                        className="absolute top-1.5 left-1.5 z-10 flex h-[22px] w-[22px] items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition-opacity hover:bg-black/75 focus:opacity-100 group-hover:opacity-100"
-                        title={t('media.picker.editInfo')}
-                        aria-label={t('media.picker.editInfo')}
-                      >
-                        <IconPencil />
-                      </Button>
-                    )}
-                  </div>
                 )
               })}
             </div>
@@ -551,12 +447,10 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
         <div className="mpicker-footer">
           {hasSelection ? (
             <span className="mpicker-hint mpicker-hint--selected">
-              {t('media.picker.selectedCount', { count: selectionCount })}
+              {t('media.picker.selectedCount', { count: 1 })}
             </span>
           ) : (
-            <span className="mpicker-hint">
-              {multiSelect ? t('media.picker.multiSelectHint') : t('media.picker.singleSelectHint')}
-            </span>
+            <span className="mpicker-hint">{t('media.picker.singleSelectHint')}</span>
           )}
           <div className="mpicker-footer-actions">
             <Button variant="secondary" type="button" onClick={attemptClose}>
@@ -567,20 +461,11 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
               onClick={handleConfirm}
               disabled={!canConfirm}
             >
-              {multiSelect ? t('media.picker.confirmMulti', { count: selectionCount }) : t('media.picker.confirmSingle')}
+              {t('media.picker.confirmSingle')}
             </Button>
           </div>
         </div>
       </div>
-
-      {detailMedia && (
-        <MediaDetailModal
-          media={detailMedia}
-          onSave={handleDetailSaved}
-          onClose={closeDetail}
-          onDelete={canWrite ? handleDetailDeleted : undefined}
-        />
-      )}
     </>,
     document.body,
   )

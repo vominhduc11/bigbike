@@ -1,6 +1,6 @@
 import { Children, isValidElement } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { CustomerListScreen } from './CustomerListScreen'
@@ -15,6 +15,9 @@ const mocks = vi.hoisted(() => ({
   exportCustomersCsv: vi.fn(),
   hasPermission: vi.fn(() => false),
   toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
+  subscribeAdminWs: vi.fn(),
+  unsubscribeAdminWs: vi.fn(),
+  wsHandler: null,
 }))
 
 vi.mock('react-i18next', () => ({
@@ -30,6 +33,9 @@ vi.mock('../lib/adminApi', () => ({
   fetchCustomerSummary: mocks.fetchCustomerSummary,
   updateCustomerStatus: mocks.updateCustomerStatus,
   exportCustomersCsv: mocks.exportCustomersCsv,
+}))
+vi.mock('../lib/adminWebSocket', () => ({
+  subscribeAdminWs: mocks.subscribeAdminWs,
 }))
 vi.mock('../lib/useDebounce', () => ({ useDebounce: (value) => value }))
 vi.mock('@/lib/auth', () => ({ useHasPermission: () => mocks.hasPermission }))
@@ -116,6 +122,7 @@ function renderScreen(canUpdate = true) {
 beforeEach(() => {
   vi.clearAllMocks()
   window.history.replaceState({}, '', '/admin/customers')
+  mocks.wsHandler = null
   mocks.fetchCustomers.mockResolvedValue({
     items: [realCustomer, syntheticCustomer],
     pagination: { page: 1, pageSize: 20, totalItems: 2, totalPages: 1 },
@@ -124,6 +131,10 @@ beforeEach(() => {
   mocks.updateCustomerStatus.mockResolvedValue({ item: { ...realCustomer, status: 'ACTIVE' } })
   mocks.exportCustomersCsv.mockResolvedValue({ filename: 'customers.csv' })
   mocks.hasPermission.mockReturnValue(false)
+  mocks.subscribeAdminWs.mockImplementation((_destination, handler) => {
+    mocks.wsHandler = handler
+    return mocks.unsubscribeAdminWs
+  })
 })
 
 describe('CustomerListScreen', () => {
@@ -133,6 +144,34 @@ describe('CustomerListScreen', () => {
     expect(await screen.findByText('Nguyen Van A')).toBeInTheDocument()
     expect(screen.getByText('Tran Thi B')).toBeInTheDocument()
     expect(screen.getByText('2')).toBeInTheDocument() // KPI total
+  })
+
+  it('không còn nút "Làm mới" thủ công — websocket là nguồn cập nhật chính', async () => {
+    renderScreen()
+    await screen.findByText('Nguyen Van A')
+
+    expect(screen.queryByRole('button', { name: 'customers.refresh' })).not.toBeInTheDocument()
+  })
+
+  it('làm mới danh sách và số liệu KPI khi có thông báo khách hàng thời gian thực', async () => {
+    renderScreen()
+    await screen.findByText('Nguyen Van A')
+
+    expect(mocks.subscribeAdminWs).toHaveBeenCalledWith(
+      '/topic/admin/customers',
+      expect.any(Function),
+    )
+    const customersCallsBefore = mocks.fetchCustomers.mock.calls.length
+    const summaryCallsBefore = mocks.fetchCustomerSummary.mock.calls.length
+
+    await act(async () => {
+      mocks.wsHandler()
+    })
+
+    await waitFor(() => {
+      expect(mocks.fetchCustomers.mock.calls.length).toBeGreaterThan(customersCallsBefore)
+      expect(mocks.fetchCustomerSummary.mock.calls.length).toBeGreaterThan(summaryCallsBefore)
+    })
   })
 
   it('thẻ KPI đang hoạt động lọc đúng tài khoản đăng ký, không lẫn hồ sơ từ đơn hàng', async () => {

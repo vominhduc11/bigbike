@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import { Trash2, Upload, Grid as GridIcon, List as ListIcon, X as XIcon } from 'lucide-react'
+import { Trash2, Upload, X as XIcon } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -13,13 +13,9 @@ import { FilterChips } from '../components/FilterChips'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { MediaGridSkeleton } from '../components/MediaCardSkeleton'
 import { MediaCard } from '../components/MediaCard'
-import { MediaListRow } from '../components/MediaListRow'
-import { RecentItemsChips } from '../components/RecentItemsChips'
 import { showConfirm } from '../lib/confirm'
-import { recordRecentItem, useRecentItems } from '../lib/useRecentItems'
 import {
   bulkDeleteMedia,
-  bulkHardDeleteMedia,
   bulkMoveMedia,
   bulkRestoreMedia,
   deleteMedia,
@@ -47,9 +43,6 @@ import {
   DEFAULT_QUERY,
   formatBytes,
   formatNumber,
-  dateToInstantStart,
-  dateToInstantEnd,
-  hasAdvancedFilters,
   buildActiveChips,
 } from './media-library/constants'
 import { UploadQueue } from './media-library/UploadQueue'
@@ -65,23 +58,10 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
   const [uploadQueue, setUploadQueue] = useState([]) // {id, name, progress, status, error}
   const [editingMedia, setEditingMedia] = useState(null)
   const [previewIndex, setPreviewIndex] = useState(null) // null = closed
-  const [showAdvanced, setShowAdvanced] = useState(() => hasAdvancedFilters(query))
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
   const [bulkMoveOpen, setBulkMoveOpen] = useState(false)
   const [folders, setFolders] = useState([])
-
-  // O9: file vừa mở gần đây (ghi lại mỗi khi mở panel chi tiết — màn này không có
-  // route riêng theo id nên "mở chi tiết" đóng vai trò tương đương màn chi tiết).
-  const recentMediaItems = useRecentItems('recent:media')
-  useEffect(() => {
-    if (editingMedia?.id) {
-      recordRecentItem('recent:media', {
-        id: editingMedia.id,
-        label: (editingMedia.title || editingMedia.filename || editingMedia.publicUrl || '').split('/').pop() || editingMedia.id,
-      })
-    }
-  }, [editingMedia])
 
   // Sidebar refresh signal — bumped when folder list might have changed (after bulk move, etc.)
   const [folderRefreshKey, setFolderRefreshKey] = useState(0)
@@ -104,11 +84,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     setQuery((p) => ({ ...p, search: debouncedSearch, page: 1 }))
   }, [debouncedSearch]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const apiQuery = useMemo(() => ({
-    ...query,
-    uploadedFrom: dateToInstantStart(query.uploadedFrom),
-    uploadedTo: dateToInstantEnd(query.uploadedTo),
-  }), [query])
+  const apiQuery = query
 
   useEffect(() => {
     let active = true
@@ -127,8 +103,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
       .catch((e) => { if (active) toast.error(e.message || t('common.error')) })
     return () => { active = false }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiQuery.search, apiQuery.mimeType, apiQuery.status, apiQuery.uploadedFrom, apiQuery.uploadedTo,
-      apiQuery.minSize, apiQuery.maxSize, apiQuery.minWidth, apiQuery.minHeight])
+  }, [apiQuery.search, apiQuery.mimeType, apiQuery.status, apiQuery.folderFilter, apiQuery.tag])
 
   function updateQuery(partial, options = { resetPage: true }) {
     setQuery((p) => {
@@ -141,7 +116,6 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
   function resetFilters() {
     setSearchInput(DEFAULT_QUERY.search)
     setQuery({ ...DEFAULT_QUERY })
-    setShowAdvanced(false)
   }
 
   // ── Upload (single + multi + drag-drop) ─────────────────────
@@ -330,26 +304,6 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     finally { setBulkBusy(false) }
   }
 
-  async function handleBulkHardDelete() {
-    if (selectedIds.size === 0) return
-    const confirmed = await showConfirm(
-      t('media.bulkHardDeleteConfirm', { count: selectedIds.size }),
-      t('media.bulkHardDeleteConfirmTitle'))
-    if (!confirmed) return
-    setBulkBusy(true)
-    try {
-      const result = await bulkHardDeleteMedia([...selectedIds])
-      setSelectedIds(new Set())
-      setQuery((p) => ({ ...p }))
-      if (result.blocked > 0) {
-        toast.warning(t('media.bulkHardDeleteSummary', result))
-      } else {
-        toast.success(t('media.bulkHardDeleteSummary', result))
-      }
-    } catch (e) { toast.error(e.message || t('media.deleteError')) }
-    finally { setBulkBusy(false) }
-  }
-
   // ── Selection ────────────────────────────────────────────────
   function toggleSelected(id) {
     setSelectedIds((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n })
@@ -378,13 +332,14 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     onActivate: (i) => { const m = state.items[i]; if (m) setEditingMedia(m) },
     onSelect: (i) => { const m = state.items[i]; if (m && canUpdate) toggleSelected(m.id) },
     onDelete: (i) => {
-      const m = state.items[i]; if (!m || !canUpdate) return
-      if (isTrash && canHardDelete) handleHardDelete(m)
-      else if (!isTrash) handleDelete(m.id)
+      const m = state.items[i]; if (!m || !canUpdate || isTrash) return
+      handleDelete(m.id)
     },
   })
 
-  const rowProps = (media, idx) => ({
+  // Xoá vĩnh viễn KHÔNG có mặt trên thẻ ảnh — chỉ trong bảng chi tiết khi đang ở
+  // thùng rác, để hành động không hoàn tác được luôn đi kèm cảnh báo "đang dùng ở đâu".
+  const cardProps = (media, idx) => ({
     media,
     selected: selectedIds.has(media.id),
     focused: focusIndex === idx,
@@ -394,7 +349,6 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     onEdit: canUpdate && !isTrash ? () => setEditingMedia(media) : null,
     onDelete: canUpdate && !isTrash ? () => handleDelete(media.id) : null,
     onRestore: canUpdate && isTrash ? () => handleRestore(media.id) : null,
-    onHardDelete: canHardDelete && isTrash ? () => handleHardDelete(media) : null,
   })
 
   const panelOpen = !!editingMedia
@@ -439,14 +393,6 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           )}
         </div>
       </div>
-
-      {/* O9 — Vừa xem gần đây */}
-      <RecentItemsChips items={recentMediaItems} onSelect={(item) => {
-        const found = state.items.find((m) => m.id === item.id)
-        if (found) { setEditingMedia(found); return }
-        // Không còn trên trang hiện tại (đổi trang/bộ lọc) — tìm lại theo tên file.
-        setSearchInput(item.label)
-      }} />
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
@@ -514,36 +460,12 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
             onValueChange={(val) => { const [sort, dir] = val.split(':'); updateQuery({ sort, dir }) }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
             <SelectItem value="createdAt:desc">{t('media.sortNewest')}</SelectItem>
             <SelectItem value="createdAt:asc">{t('media.sortOldest')}</SelectItem>
-            <SelectItem value="fileSize:desc">{t('media.sortLargest')}</SelectItem>
-            <SelectItem value="fileSize:asc">{t('media.sortSmallest')}</SelectItem>
             <SelectItem value="title:asc">{t('media.sortNameAZ')}</SelectItem>
-            <SelectItem value="usageCount:desc">{t('media.sortMostUsed')}</SelectItem>
           </SelectContent></Select>
         </label>
-
-        <Button variant="outline" size="sm" onClick={() => setShowAdvanced((s) => !s)}>
-          {showAdvanced ? t('media.hideAdvanced') : t('media.showAdvanced')}
-        </Button>
       </section>
 
-      {showAdvanced && (
-        <section className="medialib-filter-bar">
-          <label>{t('media.uploadedFrom')}<Input type="date" value={query.uploadedFrom} onChange={(e) => updateQuery({ uploadedFrom: e.target.value })}  /></label>
-          <label>{t('media.uploadedTo')}<Input type="date" value={query.uploadedTo} onChange={(e) => updateQuery({ uploadedTo: e.target.value })}  /></label>
-          <label>{t('media.minSizeMB')}<Input type="number" min="0" step="0.1"
-            value={query.minSize ? (Number(query.minSize) / (1024 * 1024)).toFixed(1) : ''}
-            onChange={(e) => updateQuery({ minSize: e.target.value ? Math.round(Number(e.target.value) * 1024 * 1024) : '' })}
-            placeholder="0"  /></label>
-          <label>{t('media.maxSizeMB')}<Input type="number" min="0" step="0.1"
-            value={query.maxSize ? (Number(query.maxSize) / (1024 * 1024)).toFixed(1) : ''}
-            onChange={(e) => updateQuery({ maxSize: e.target.value ? Math.round(Number(e.target.value) * 1024 * 1024) : '' })}
-            placeholder="50"  /></label>
-          <label>{t('media.minWidthPx')}<Input type="number" min="0" value={query.minWidth} onChange={(e) => updateQuery({ minWidth: e.target.value })} placeholder="1920"  /></label>
-          <label>{t('media.minHeightPx')}<Input type="number" min="0" value={query.minHeight} onChange={(e) => updateQuery({ minHeight: e.target.value })} placeholder="1080"  /></label>
-        </section>
-      )}
-
-      {/* Toolbar: chips + summary + view switch */}
+      {/* Toolbar: chips + summary */}
       <div className="medialib-toolbar-row">
         <FilterChips
           chips={activeChips}
@@ -567,21 +489,6 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
             onChange={(n) => updateQuery({ pageSize: n })}
             options={PAGE_SIZE_OPTIONS}
           />
-          <div className="medialib-view-switcher" role="tablist"
-            aria-label={t('media.viewSwitcherLabel', { defaultValue: 'Kiểu hiển thị' })}>
-            <Button variant="unstyled" type="button" role="tab" aria-selected={query.view === 'grid'}
-              onClick={() => updateQuery({ view: 'grid' }, { resetPage: false })}
-              className={`focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--admin-color-primary)] ${query.view === 'grid' ? 'medialib-is-active' : ''}`}
-              title={t('media.viewGrid')} aria-label={t('media.viewGrid')}>
-              <GridIcon size={14} />
-            </Button>
-            <Button variant="unstyled" type="button" role="tab" aria-selected={query.view === 'list'}
-              onClick={() => updateQuery({ view: 'list' }, { resetPage: false })}
-              className={`focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--admin-color-primary)] ${query.view === 'list' ? 'medialib-is-active' : ''}`}
-              title={t('media.viewList')} aria-label={t('media.viewList')}>
-              <ListIcon size={14} />
-            </Button>
-          </div>
         </div>
       </div>
 
@@ -593,7 +500,6 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           closeLabel={t('common.clear')}
           actions={isTrash ? [
             { label: t('media.bulkRestore'), onClick: handleBulkRestore, disabled: bulkBusy },
-            ...(canHardDelete ? [{ label: t('media.bulkHardDelete'), onClick: handleBulkHardDelete, tone: 'danger', disabled: bulkBusy }] : []),
           ] : [
             { label: t('media.bulkMove'), onClick: () => setBulkMoveOpen(true), disabled: bulkBusy },
             { label: t('media.bulkDelete'), onClick: handleBulkDelete, tone: 'danger', disabled: bulkBusy },
@@ -657,24 +563,9 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
 
       {state.status === 'success' && state.items.length > 0 && (
         <>
-          {query.view === 'list' ? (
-            <div className="medialib-list" ref={gridRef}>
-              <div className="medialib-list-header sticky top-0 z-10">
-                <span></span><span></span>
-                <span>{t('media.colName')}</span>
-                <span>{t('media.colSize')}</span>
-                <span>{t('media.colDimensions')}</span>
-                <span>{t('media.colDate')}</span>
-                <span>{t('media.colUsage')}</span>
-                <span className="text-right">{t('common.actions')}</span>
-              </div>
-              {state.items.map((m, i) => <MediaListRow key={m.id} {...rowProps(m, i)} />)}
-            </div>
-          ) : (
-            <div className="medialib-grid" ref={gridRef}>
-              {state.items.map((m, i) => <MediaCard key={m.id} {...rowProps(m, i)} />)}
-            </div>
-          )}
+          <div className="medialib-grid" ref={gridRef}>
+            {state.items.map((m, i) => <MediaCard key={m.id} {...cardProps(m, i)} />)}
+          </div>
 
           {/* Số mỗi trang chỉ còn 1 chỗ duy nhất — bộ chọn ở thanh công cụ phía trên
               (PageSizeSelect). Bỏ bản lặp cạnh phân trang để tránh 2 control cùng chức năng. */}

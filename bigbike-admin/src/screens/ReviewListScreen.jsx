@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Check, Eye, EyeOff, Image as ImageIcon, Loader2, MessageSquare, RefreshCw, Trash2, Undo2 } from 'lucide-react'
+import { Check, Eye, EyeOff, Image as ImageIcon, Loader2, MessageSquare, Trash2, Undo2 } from 'lucide-react'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { FilterSelect } from '../components/FilterSelect'
@@ -472,22 +472,12 @@ export function ReviewListScreen({ navigate, canUpdate, isSuperAdmin = false }) 
   const listLoading = state.status === 'loading' && items.length === 0
   const refreshing = state.isFetching || summaryQuery.isFetching
 
-  const refreshAll = useCallback(async () => {
-    await Promise.all([state.refetch(), summaryQuery.refetch()])
-  }, [state, summaryQuery])
-
   return (
     <Screen>
       <ScreenHeader
         eyebrow={t('reviews.eyebrow')}
         title={t('reviews.title')}
         description={t('reviews.description')}
-        actions={(
-          <Button type="button" variant="secondary" className="min-h-11" onClick={refreshAll} disabled={refreshing}>
-            <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} aria-hidden="true" />
-            {refreshing ? t('reviews.refreshing') : t('reviews.refresh')}
-          </Button>
-        )}
       />
 
       {refreshing ? <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground" role="status" aria-live="polite"><Loader2 size={16} className="animate-spin" />{t('reviews.refreshing')}</div> : null}

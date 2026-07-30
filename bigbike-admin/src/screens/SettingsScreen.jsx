@@ -1,5 +1,5 @@
-import { useMemo, useEffect, useState, useCallback, Suspense } from 'react'
-import { CheckCircle2, Save } from 'lucide-react'
+import { useMemo, useEffect, useState, useCallback, useRef, Suspense } from 'react'
+import { AlertTriangle, Layers3, ListChecks, Lock, RefreshCw, Save } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -12,9 +12,11 @@ import { Button } from '@/components/ui/button'
 import { formatDateTime } from '../lib/formatters'
 import { lazyScreen } from '../lib/lazyScreen'
 import { setContentLang } from '../lib/contentLang'
+import { ScreenHeader, Tabs } from '@/components/layout'
+import { cn } from '@/lib/utils'
 import {
   validateValue, isTranslatableSetting, REQUIRED_SETTING_KEYS, TAB_ORDER, SENSITIVE_SETTING_TABS, HIDDEN_GROUPS, HIDDEN_KEYS,
-  TAB_META, FALLBACK_META, tabLabel, BANNERS_TAB_ID, ASSIGN_TAB_ID,
+  TAB_META, FALLBACK_META, tabLabel, tabDescription, displayValue, isSettingDirty, BANNERS_TAB_ID, ASSIGN_TAB_ID,
   getAutosaveKey, saveFormToStorage, loadFormFromStorage, clearFormFromStorage,
 } from './settings/constants'
 import { SettingTabPanel } from './settings/SettingTabPanel'
@@ -30,26 +32,49 @@ const AssignmentRolesScreen = lazyScreen(() => import('./AssignmentRolesScreen')
 
 export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
   const { t } = useTranslation()
-  const [state, setState] = useState({ status: 'loading', items: [], warning: '' })
-  const [fetchKey, setFetchKey] = useState(0)
+  const [state, setState] = useState({
+    status: 'loading',
+    items: [],
+    warning: '',
+    isRefreshing: false,
+    refreshError: '',
+  })
   const [activeTabOverride, setActiveTabOverride] = useState(null)
   const [drafts, setDrafts] = useState({})
   const [draftsEn, setDraftsEn] = useState({})
   const [errors, setErrors] = useState({})
   const [saving, setSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
+  const [saveError, setSaveError] = useState('')
+  const [embeddedStates, setEmbeddedStates] = useState({})
+  const [visitedTabs, setVisitedTabs] = useState(() => new Set())
 
   // F9: autosave / khôi phục bản nháp — cùng cơ chế localStorage với Sản phẩm/
   // Danh mục/Nội dung. Cài đặt là màn đơn nên key cố định, gộp mọi tab.
   const autosaveKey = getAutosaveKey()
   const [draftRecovery, setDraftRecovery] = useState(null)
+  const requestIdRef = useRef(0)
+  const tRef = useRef(t)
+  tRef.current = t
 
-  useEffect(() => {
-    let active = true
-    fetchSettings()
-      .then((r) => {
-        if (!active) return
-        setState({ status: 'success', items: r.items, warning: '' })
+  const loadSettings = useCallback(async ({ refresh = false } = {}) => {
+    const requestId = ++requestIdRef.current
+    if (refresh) {
+      setState((previous) => ({ ...previous, isRefreshing: true, refreshError: '' }))
+    } else {
+      setState((previous) => ({ ...previous, status: 'loading', refreshError: '' }))
+    }
+    try {
+      const result = await fetchSettings()
+      if (requestId !== requestIdRef.current) return
+      setState({
+        status: 'success',
+        items: result.items,
+        warning: '',
+        isRefreshing: false,
+        refreshError: '',
+      })
+      if (!refresh) {
         // Bản nháp autosave còn dở từ phiên trước → gợi ý khôi phục.
         const draft = loadFormFromStorage(autosaveKey)
         const hasDraftValues = draft?.form && (
@@ -57,13 +82,32 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
           Object.keys(draft.form.draftsEn || {}).length > 0
         )
         if (hasDraftValues) setDraftRecovery(draft)
-      })
-      .catch((e) => {
-        if (!active) return
-        setState({ status: 'error', items: [], warning: '', error: e.message })
-      })
-    return () => { active = false }
-  }, [fetchKey, autosaveKey])
+      }
+    } catch (error) {
+      if (requestId !== requestIdRef.current) return
+      if (refresh) {
+        setState((previous) => ({
+          ...previous,
+          isRefreshing: false,
+          refreshError: error.message || tRef.current('settings.refreshError'),
+        }))
+      } else {
+        setState({
+          status: 'error',
+          items: [],
+          warning: '',
+          error: error.message,
+          isRefreshing: false,
+          refreshError: '',
+        })
+      }
+    }
+  }, [autosaveKey])
+
+  useEffect(() => {
+    loadSettings()
+    return () => { requestIdRef.current += 1 }
+  }, [loadSettings])
 
   const groups = useMemo(() => {
     const map = new Map()
@@ -106,7 +150,9 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
   // Derive active tab: user pick takes priority, else first available tab
   const firstTab = groups.size > 0 ? [...groups.keys()][0] : null
   const isValidOverride = activeTabOverride && (
-    groups.has(activeTabOverride) || activeTabOverride === BANNERS_TAB_ID || activeTabOverride === ASSIGN_TAB_ID
+    groups.has(activeTabOverride)
+    || activeTabOverride === BANNERS_TAB_ID
+    || (activeTabOverride === ASSIGN_TAB_ID && isSuperAdmin)
   )
   const activeTab = isValidOverride ? activeTabOverride : firstTab
 
@@ -115,18 +161,65 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
     return groups.get(activeTab) || []
   }, [activeTab, groups])
 
+  useEffect(() => {
+    if (activeTab !== BANNERS_TAB_ID && activeTab !== ASSIGN_TAB_ID) return
+    setVisitedTabs((previous) => {
+      if (previous.has(activeTab)) return previous
+      const next = new Set(previous)
+      next.add(activeTab)
+      return next
+    })
+  }, [activeTab])
+
+  const handleEditorStateChange = useCallback((tabId, nextState) => {
+    setEmbeddedStates((previous) => {
+      const current = previous[tabId]
+      if (
+        current?.dirtyCount === nextState.dirtyCount
+        && current?.saving === nextState.saving
+        && current?.saveSuccess === nextState.saveSuccess
+        && current?.error === nextState.error
+      ) return previous
+      return { ...previous, [tabId]: nextState }
+    })
+  }, [])
+  const handleBannerEditorState = useCallback(
+    (nextState) => handleEditorStateChange(BANNERS_TAB_ID, nextState),
+    [handleEditorStateChange],
+  )
+  const handleAssignmentEditorState = useCallback(
+    (nextState) => handleEditorStateChange(ASSIGN_TAB_ID, nextState),
+    [handleEditorStateChange],
+  )
+
   const handleDraftChange = useCallback((key, value) => {
-    setDrafts((p) => ({ ...p, [key]: value }))
+    const original = displayValue(state.items.find((setting) => setting.key === key)?.value)
+    setDrafts((previous) => {
+      if (displayValue(value) !== original) return { ...previous, [key]: value }
+      if (previous[key] === undefined) return previous
+      const next = { ...previous }
+      delete next[key]
+      return next
+    })
     // "Reward early, punish late": khi đang gõ chỉ XÓA lỗi cũ, không bắt lỗi từng
     // ký tự (gõ dở email/URL/hotline không bị báo đỏ ngay). Validate đầy đủ chạy
     // lại ở handleSave trước khi lưu, nên không bỏ sót giá trị sai.
     setErrors((p) => (p[key] ? { ...p, [key]: '' } : p))
-  }, [])
+    setSaveError('')
+  }, [state.items])
 
   // English drafts: text-only, no validation (titles/descriptions).
   const handleDraftChangeEn = useCallback((key, value) => {
-    setDraftsEn((p) => ({ ...p, [key]: value }))
-  }, [])
+    const original = displayValue(state.items.find((setting) => setting.key === key)?.valueEn)
+    setDraftsEn((previous) => {
+      if (displayValue(value) !== original) return { ...previous, [key]: value }
+      if (previous[key] === undefined) return previous
+      const next = { ...previous }
+      delete next[key]
+      return next
+    })
+    setSaveError('')
+  }, [state.items])
 
   // Validate khi rời ô (F3): báo lỗi email/URL/hotline/ngưỡng ngay khi blur,
   // không bắt lỗi từng ký tự lúc đang gõ. handleSave vẫn validate lại lần cuối.
@@ -145,11 +238,12 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
     setDrafts(dropKeys)
     setDraftsEn(dropKeys)
     setErrors(dropKeys)
+    setSaveError('')
   }, [activeItems])
 
   const handleSave = useCallback(async () => {
     // Validate all dirty fields in this tab (VI values only; EN is free text)
-    const dirty = activeItems.filter((s) => drafts[s.key] !== undefined || draftsEn[s.key] !== undefined)
+    const dirty = activeItems.filter((setting) => isSettingDirty(setting, drafts, draftsEn))
     if (dirty.length === 0) return
     const newErrors = {}
     for (const s of dirty) {
@@ -184,6 +278,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
 
     setSaving(true)
     setSaveSuccess(false)
+    setSaveError('')
 
     try {
       const result = await batchUpdateSettings(
@@ -222,9 +317,8 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
       }
       setDraftRecovery(null)
     } catch (e) {
-      // Show error on all dirty fields — batch is all-or-nothing so mark all dirty fields
-      const errMsg = e.message || t('settings.saveError')
-      setErrors((p) => ({ ...p, ...Object.fromEntries(dirty.map((s) => [s.key, errMsg])) }))
+      // Lỗi mạng/server là lỗi của lần lưu, không phải bằng chứng rằng mọi field sai.
+      setSaveError(e.message || t('settings.saveError'))
     } finally {
       setSaving(false)
     }
@@ -233,49 +327,228 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
   // F6: cảnh báo khi rời màn Cài đặt lúc còn thay đổi chưa lưu (chặn điều hướng
   // nội bộ qua navigate + beforeunload reload/đóng tab). Đổi tab nội bộ KHÔNG mất
   // draft (giữ ở state component) nên chỉ cần chặn khi thực sự rời màn.
-  const isDirty = Object.keys(drafts).length > 0 || Object.keys(draftsEn).length > 0
+  const genericDirtyItems = useMemo(
+    () => state.items.filter((setting) => isSettingDirty(setting, drafts, draftsEn)),
+    [drafts, draftsEn, state.items],
+  )
+  const isDirty = genericDirtyItems.length > 0
   useUnsavedChanges(isDirty)
 
   // F9: autosave — lưu bản nháp vào localStorage sau 10s không thao tác khi có
   // thay đổi chưa lưu (mọi tab, không chỉ tab đang xem).
   useEffect(() => {
-    if (!isDirty) return
+    if (!isDirty) {
+      if (
+        state.status === 'success'
+        && (Object.keys(drafts).length > 0 || Object.keys(draftsEn).length > 0)
+      ) clearFormFromStorage(autosaveKey)
+      return
+    }
     const timer = setTimeout(() => saveFormToStorage(autosaveKey, { drafts, draftsEn }), 10_000)
     return () => clearTimeout(timer)
-  }, [drafts, draftsEn, isDirty, autosaveKey])
+  }, [drafts, draftsEn, isDirty, autosaveKey, state.status])
 
   // O3: Ctrl/Cmd+S lưu tab đang xem — chỉ bật khi có quyền sửa, không ở tab Banner
   // (tab đó có luồng lưu riêng của BannerScreen) và tab hiện tại có thay đổi chưa lưu.
-  const activeDirtyCount = activeItems.filter((s) => drafts[s.key] !== undefined || draftsEn[s.key] !== undefined).length
+  const activeDirtyCount = activeItems.filter((setting) => isSettingDirty(setting, drafts, draftsEn)).length
   useSaveShortcut(
     canUpdate && activeTab !== BANNERS_TAB_ID && activeTab !== ASSIGN_TAB_ID && activeDirtyCount > 0,
     handleSave,
   )
 
-  if (state.status === 'loading') {
-    return <StatePanel tone="info" title={t('settings.loading')} description={t('common.pleaseWait')} />
+  const visibleSettingCount = state.items.filter((setting) => {
+    if (HIDDEN_KEYS.has(setting.key)) return false
+    const group = (setting.settingGroup || 'GENERAL').toUpperCase()
+    if (group === 'CONTACT') return false
+    if (setting.superAdminOnly && !isSuperAdmin) return false
+    return true
+  }).length
+  const embeddedDirtyCount = Object.values(embeddedStates)
+    .reduce((total, editorState) => total + (editorState.dirtyCount || 0), 0)
+  const totalDirtyCount = genericDirtyItems.length + embeddedDirtyCount
+  const attentionLabels = [
+    groups.has('PAYMENT') ? tabLabel('PAYMENT', t) : null,
+    isSuperAdmin ? tabLabel('PRODUCT_ASSIGN', t) : null,
+  ].filter(Boolean)
+  const anySaving = saving || Object.values(embeddedStates).some((editorState) => editorState.saving)
+
+  const getTabInfo = (tab) => {
+    if (tab.kind === 'banners') {
+      const rawItems = state.items.filter((setting) =>
+        (setting.settingGroup || '').toUpperCase() === 'PUBLIC_HERO' && !HIDDEN_KEYS.has(setting.key))
+      return {
+        ...tab,
+        label: tabLabel('PUBLIC_HERO', t),
+        description: tabDescription('PUBLIC_HERO', t),
+        icon: TAB_META.PUBLIC_HERO.icon,
+        itemCount: rawItems.length,
+        dirtyCount: embeddedStates[BANNERS_TAB_ID]?.dirtyCount || 0,
+        sensitive: false,
+        restricted: false,
+      }
+    }
+    if (tab.kind === 'assign') {
+      const rawItems = state.items.filter((setting) =>
+        (setting.settingGroup || '').toUpperCase() === 'PRODUCT_ASSIGN' && !HIDDEN_KEYS.has(setting.key))
+      return {
+        ...tab,
+        label: tabLabel('PRODUCT_ASSIGN', t),
+        description: tabDescription('PRODUCT_ASSIGN', t),
+        icon: TAB_META.PRODUCT_ASSIGN.icon,
+        itemCount: rawItems.length,
+        dirtyCount: embeddedStates[ASSIGN_TAB_ID]?.dirtyCount || 0,
+        sensitive: false,
+        restricted: true,
+      }
+    }
+    const items = groups.get(tab.id) || []
+    const meta = TAB_META[tab.id] || FALLBACK_META
+    return {
+      ...tab,
+      label: tabLabel(tab.id, t),
+      description: tabDescription(tab.id, t),
+      icon: meta.icon,
+      itemCount: items.length,
+      dirtyCount: items.filter((setting) => isSettingDirty(setting, drafts, draftsEn)).length,
+      sensitive: SENSITIVE_SETTING_TABS.has(tab.id),
+      restricted: false,
+    }
   }
+  const tabInfos = navTabs.map(getTabInfo)
+  const mobileTabItems = tabInfos.map((tab) => {
+    const Icon = tab.icon
+    return {
+      key: tab.id,
+      count: tab.dirtyCount > 0 ? tab.dirtyCount : undefined,
+      label: (
+        <span className="inline-flex items-center gap-1.5">
+          <Icon size={14} aria-hidden="true" />
+          <span>{tab.label}</span>
+          {tab.restricted ? <Lock size={12} aria-hidden="true" /> : null}
+        </span>
+      ),
+    }
+  })
+
+  const header = (
+    <ScreenHeader
+      eyebrow={t('settings.eyebrow')}
+      title={t('settings.title')}
+      description={t('settings.description')}
+      badge={(
+        <span className={canUpdate ? 'bb-badge bb-badge-success' : 'bb-badge bb-badge-warning'}>
+          {canUpdate
+            ? t('settings.accessEditable', { defaultValue: 'Có thể chỉnh sửa' })
+            : t('settings.accessReadOnly', { defaultValue: 'Chỉ xem' })}
+        </span>
+      )}
+      actions={(
+        <Button
+          variant="secondary"
+          className="min-h-11"
+          onClick={() => loadSettings({ refresh: state.status === 'success' })}
+          disabled={state.status === 'loading' || state.isRefreshing || anySaving}
+        >
+          <RefreshCw size={16} className={state.isRefreshing ? 'animate-spin' : undefined} aria-hidden="true" />
+          {state.isRefreshing ? t('settings.refreshing') : t('settings.refresh')}
+        </Button>
+      )}
+    />
+  )
+
+  if (state.status === 'loading') {
+    return (
+      <div>
+        {header}
+        <div className="bb-kpi-grid bb-kpi-grid-4" aria-label={t('settings.summaryAria')}>
+          {[...Array(4)].map((_, index) => (
+            <div key={index} className="bb-kpi animate-pulse">
+              <div className="h-4 w-24 rounded-sm bg-surface-muted" />
+              <div className="mt-3 h-8 w-16 rounded-sm bg-surface-muted" />
+              <div className="mt-2 h-3 w-32 rounded-sm bg-surface-muted" />
+            </div>
+          ))}
+        </div>
+        <ScreenSkeleton />
+      </div>
+    )
+  }
+
   if (state.status === 'error') {
     return (
-      <StatePanel
-        tone="danger"
-        title={t('settings.loadError')}
-        description={state.error}
-        actionLabel={t('common.retry')}
-        onAction={() => setFetchKey((k) => k + 1)}
-      />
+      <div>
+        {header}
+        <StatePanel
+          tone="danger"
+          title={t('settings.loadError')}
+          description={state.error}
+          actionLabel={t('common.retry')}
+          onAction={() => loadSettings()}
+        />
+      </div>
     )
   }
 
   return (
     <div>
-      <div className="bb-screen-header">
-        <div className="bb-screen-title">
-          <p className="bb-screen-eyebrow">{t('settings.eyebrow')}</p>
-          <h1>{t('settings.title')}</h1>
-          <p className="bb-muted">{t('settings.description')}</p>
+      {header}
+
+      <div className="bb-kpi-grid bb-kpi-grid-4" aria-label={t('settings.summaryAria')}>
+        <div className="bb-kpi">
+          <div className="bb-kpi-head">
+            <span className="bb-kpi-icon info"><Layers3 size={15} /></span>
+            <span>{t('settings.kpi.groups')}</span>
+          </div>
+          <div className="bb-kpi-value">{state.items.length > 0 ? navTabs.length : 0}</div>
+          <div className="bb-kpi-foot">
+            <span className="bb-kpi-foot-label">{t('settings.kpi.groupsHint')}</span>
+          </div>
+        </div>
+        <div className="bb-kpi">
+          <div className="bb-kpi-head">
+            <span className="bb-kpi-icon brand"><ListChecks size={15} /></span>
+            <span>{t('settings.kpi.items')}</span>
+          </div>
+          <div className="bb-kpi-value">{visibleSettingCount}</div>
+          <div className="bb-kpi-foot">
+            <span className="bb-kpi-foot-label">{t('settings.kpi.itemsHint')}</span>
+          </div>
+        </div>
+        <div className={cn('bb-kpi', totalDirtyCount > 0 && 'active')}>
+          <div className="bb-kpi-head">
+            <span className="bb-kpi-icon warning"><Save size={15} /></span>
+            <span>{t('settings.kpi.unsaved')}</span>
+          </div>
+          <div className="bb-kpi-value">{totalDirtyCount}</div>
+          <div className="bb-kpi-foot">
+            <span className="bb-kpi-foot-label">
+              {totalDirtyCount > 0 ? t('settings.kpi.unsavedHint') : t('settings.kpi.unsavedEmpty')}
+            </span>
+          </div>
+        </div>
+        <div className="bb-kpi">
+          <div className="bb-kpi-head">
+            <span className="bb-kpi-icon danger"><AlertTriangle size={15} /></span>
+            <span>{t('settings.kpi.attention')}</span>
+          </div>
+          <div className="bb-kpi-value">{attentionLabels.length}</div>
+          <div className="bb-kpi-foot">
+            <span className="bb-kpi-foot-label">
+              {attentionLabels.length > 0 ? attentionLabels.join(' · ') : t('settings.kpi.attentionEmpty')}
+            </span>
+          </div>
         </div>
       </div>
+
+      {state.refreshError ? (
+        <div className="bb-alert danger" role="alert">
+          <AlertTriangle size={16} className="shrink-0" aria-hidden="true" />
+          <span className="bb-alert-main">{state.refreshError}</span>
+          <Button variant="secondary" size="sm" onClick={() => loadSettings({ refresh: true })}>
+            {t('common.retry')}
+          </Button>
+        </div>
+      ) : null}
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
       {/* Không có quyền sửa mà cũng chưa có cảnh báo read-only từ máy chủ: nêu rõ
@@ -323,101 +596,106 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
       {state.items.length === 0 ? (
         <StatePanel tone="neutral" title={t('settings.noSettings')} description={t('settings.noSettingsDesc')} />
       ) : (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[200px_1fr]">
-          {/* Tab sidebar — prototype .settings-nav */}
-          <nav className="settings-nav" aria-label={t('settings.tabsAria')}>
-            {navTabs.map((tab) => {
-              // Tab "Banner trang" — nhúng trình sửa banner, không có settingGroup/đếm dirty riêng.
-              if (tab.kind === 'banners') {
-                const Icon = TAB_META.PUBLIC_HERO.icon
-                const isActive = activeTab === BANNERS_TAB_ID
-                return (
-                  <Button variant="unstyled"
-                    key={tab.id}
-                    type="button"
-                    className={isActive ? 'active' : ''}
-                    onClick={() => setActiveTabOverride(BANNERS_TAB_ID)}
-                    aria-current={isActive ? 'true' : undefined}
-                  >
-                    <Icon size={15} />
-                    <span className="flex-1">{tabLabel('PUBLIC_HERO', t)}</span>
-                  </Button>
-                )
-              }
+        <>
+          <div className="sticky top-0 z-10 mb-4 bg-background py-2 lg:hidden">
+            <Tabs
+              items={mobileTabItems}
+              value={activeTab}
+              onChange={setActiveTabOverride}
+              ariaLabel={t('settings.tabsAria')}
+            />
+          </div>
 
-              // Tab "Phân công" — nhúng AssignmentRolesScreen, cùng cơ chế với Banner ở trên.
-              if (tab.kind === 'assign') {
-                const Icon = TAB_META.PRODUCT_ASSIGN.icon
-                const isActive = activeTab === ASSIGN_TAB_ID
-                return (
-                  <Button variant="unstyled"
-                    key={tab.id}
-                    type="button"
-                    className={isActive ? 'active' : ''}
-                    onClick={() => setActiveTabOverride(ASSIGN_TAB_ID)}
-                    aria-current={isActive ? 'true' : undefined}
-                  >
-                    <Icon size={15} />
-                    <span className="flex-1">{tabLabel('PRODUCT_ASSIGN', t)}</span>
-                  </Button>
-                )
-              }
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+            <div className="hidden lg:block">
+              <nav className="bb-card sticky top-0 p-2" aria-label={t('settings.tabsAria')}>
+                <div className="border-b border-border px-3 pb-3 pt-2">
+                  <p className="m-0 text-sm font-semibold text-foreground">{t('settings.navigatorTitle')}</p>
+                  <p className="mb-0 mt-1 text-xs leading-relaxed text-muted-foreground">
+                    {t('settings.navigatorDescription')}
+                  </p>
+                </div>
+                <div className="mt-2 space-y-1">
+                  {tabInfos.map((tab) => {
+                    const Icon = tab.icon
+                    const isActive = activeTab === tab.id
+                    return (
+                      <Button
+                        variant="unstyled"
+                        key={tab.id}
+                        type="button"
+                        className={cn(
+                          'flex min-h-14 w-full items-start gap-3 rounded-md border px-3 py-2.5 text-left transition-colors',
+                          isActive
+                            ? 'border-primary bg-surface-selected text-primary'
+                            : 'border-transparent text-foreground hover:bg-surface-hover',
+                        )}
+                        onClick={() => setActiveTabOverride(tab.id)}
+                        aria-label={tab.label}
+                        aria-current={isActive ? 'page' : undefined}
+                      >
+                        <Icon size={17} className="mt-0.5 shrink-0" aria-hidden="true" />
+                        <span className="min-w-0 flex-1">
+                          <span className="flex flex-wrap items-center gap-1.5">
+                            <span className="font-semibold">{tab.label}</span>
+                            {tab.restricted ? (
+                              <span className="bb-badge bb-badge-neutral">
+                                <Lock size={11} aria-hidden="true" /> {t('settings.superAdminOnly')}
+                              </span>
+                            ) : null}
+                            {tab.sensitive ? (
+                              <span className="bb-badge bb-badge-warning">{t('settings.confirmRequired')}</span>
+                            ) : null}
+                          </span>
+                          <span className="mt-1 block text-xs font-normal leading-relaxed text-muted-foreground">
+                            {tab.description}
+                          </span>
+                          <span className="mt-1.5 flex items-center gap-2 text-xs font-normal text-muted-foreground">
+                            <span>{t('settings.itemCountShort', { count: tab.itemCount })}</span>
+                            {tab.dirtyCount > 0 ? (
+                              <span className="bb-badge bb-badge-warning" aria-label={t('settings.tabChangeCount', { count: tab.dirtyCount })}>
+                                {t('settings.unsavedShort', { count: tab.dirtyCount })}
+                              </span>
+                            ) : null}
+                          </span>
+                        </span>
+                      </Button>
+                    )
+                  })}
+                </div>
+              </nav>
+            </div>
 
-              const group = tab.id
-              const items = groups.get(group) || []
-              const meta = TAB_META[group] || FALLBACK_META
-              const Icon = meta.icon
-              const label = tabLabel(group, t)
-              const isActive = activeTab === group
-              const dirtyInGroup = items.filter((s) => drafts[s.key] !== undefined || draftsEn[s.key] !== undefined).length
+            <div className="min-w-0 lg:col-span-3">
+              {(visitedTabs.has(BANNERS_TAB_ID) || activeTab === BANNERS_TAB_ID) ? (
+                <div hidden={activeTab !== BANNERS_TAB_ID}>
+                  <Suspense fallback={<ScreenSkeleton />}>
+                    <BannerScreen
+                      embedded
+                      canUpdate={canUpdate}
+                      navigate={navigate}
+                      onEditorStateChange={handleBannerEditorState}
+                    />
+                  </Suspense>
+                </div>
+              ) : null}
 
-              return (
-                <Button variant="unstyled"
-                  key={group}
-                  type="button"
-                  className={isActive ? 'active' : ''}
-                  onClick={() => setActiveTabOverride(group)}
-                  aria-current={isActive ? 'true' : undefined}
-                >
-                  <Icon size={15} />
-                  <span className="flex-1">{label}</span>
-                  {dirtyInGroup > 0 && (
-                    <span className="bb-badge bb-badge-warning" aria-label={t('settings.tabChangeCount', { count: dirtyInGroup })}>
-                      {dirtyInGroup}
-                    </span>
-                  )}
-                </Button>
-              )
-            })}
-          </nav>
-
-          {/* Content panel */}
-          <div>
-            {saveSuccess && activeTab !== BANNERS_TAB_ID && activeTab !== ASSIGN_TAB_ID && (
-              <div
-                role="status"
-                className="settings-save-banner mb-3"
-              >
-                <CheckCircle2 size={15} />
-                {t('settings.saveSuccess')}
-              </div>
-            )}
-
-            {activeTab === BANNERS_TAB_ID && (
-              <Suspense fallback={<ScreenSkeleton />}>
-                <BannerScreen embedded canUpdate={canUpdate} navigate={navigate} />
-              </Suspense>
-            )}
-
-            {activeTab === ASSIGN_TAB_ID && (
-              <Suspense fallback={<ScreenSkeleton />}>
-                <AssignmentRolesScreen embedded canUpdate={canUpdate} />
-              </Suspense>
-            )}
+              {(visitedTabs.has(ASSIGN_TAB_ID) || activeTab === ASSIGN_TAB_ID) ? (
+                <div hidden={activeTab !== ASSIGN_TAB_ID}>
+                  <Suspense fallback={<ScreenSkeleton />}>
+                    <AssignmentRolesScreen
+                      embedded
+                      canUpdate={canUpdate}
+                      onEditorStateChange={handleAssignmentEditorState}
+                    />
+                  </Suspense>
+                </div>
+              ) : null}
 
             {activeTab && activeTab !== BANNERS_TAB_ID && activeTab !== ASSIGN_TAB_ID && (
               <SettingTabPanel
                 title={tabLabel(activeTab, t)}
+                description={tabDescription(activeTab, t)}
                 items={activeItems}
                 canUpdate={canUpdate}
                 drafts={drafts}
@@ -429,10 +707,13 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                 onSave={handleSave}
                 onDiscard={handleDiscard}
                 saving={saving}
+                saveSuccess={saveSuccess}
+                saveError={saveError}
               />
             )}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )

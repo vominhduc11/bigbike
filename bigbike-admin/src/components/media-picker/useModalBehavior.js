@@ -5,18 +5,13 @@ const FOCUSABLE_SELECTOR = 'button:not([disabled]), [href], input:not([disabled]
 /**
  * Focus trap + Escape-to-close + Tab-cycle + khôi phục focus khi đóng, dùng chung
  * cho MediaPickerModal/VideoPickerModal.
- *
- * `isSuspendedRef` (tuỳ chọn) — ref boolean, đọc `.current` mỗi lần bấm phím thay vì
- * nhận callback (callback mới mỗi render sẽ làm effect chạy lại và cướp focus khỏi ô
- * tìm kiếm). Dùng khi có 1 dialog con (vd MediaDetailModal) cần tạm giữ quyền bàn phím
- * thay vì để cả picker đóng theo Escape.
  */
-export function useModalFocusTrap({ modalRef, onClose, isSuspendedRef }) {
+export function useModalFocusTrap({ modalRef, onClose }) {
   const previousFocusRef = useRef(null)
   // Giữ onClose trong ref: caller thường truyền arrow inline (tham chiếu mới mỗi
   // render, vd `attemptClose` có guard). Nếu để onClose trong deps, effect
   // setup/cleanup chạy lại mỗi render → trap khởi tạo lại và cướp focus khỏi ô
-  // tìm kiếm đang gõ. modalRef/isSuspendedRef là ref nên effect chỉ chạy 1 lần.
+  // tìm kiếm đang gõ. modalRef là ref nên effect chỉ chạy 1 lần.
   const onCloseRef = useRef(onClose)
   useEffect(() => { onCloseRef.current = onClose }, [onClose])
 
@@ -27,7 +22,6 @@ export function useModalFocusTrap({ modalRef, onClose, isSuspendedRef }) {
     if (initialFocusTarget) initialFocusTarget.focus()
 
     function onKey(e) {
-      if (isSuspendedRef?.current) return
       if (e.key === 'Escape') {
         e.preventDefault()
         onCloseRef.current?.()
@@ -55,7 +49,7 @@ export function useModalFocusTrap({ modalRef, onClose, isSuspendedRef }) {
         previousFocusRef.current.focus()
       }
     }
-  }, [modalRef, isSuspendedRef])
+  }, [modalRef])
 }
 
 /** Khoá scroll nền trong lúc modal mở, trả lại giá trị cũ khi đóng. */

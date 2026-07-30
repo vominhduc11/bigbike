@@ -122,4 +122,21 @@ describe('BannerScreen', () => {
     }
     expect(screen.queryByRole('button', { name: 'common.save' })).not.toBeInTheDocument()
   })
+
+  it('reports editor state to the parent without changing standalone behavior', async () => {
+    const user = userEvent.setup()
+    const onEditorStateChange = vi.fn()
+    renderScreen({ embedded: true, onEditorStateChange })
+
+    const firstTitle = (await screen.findAllByLabelText('banners.fieldTitle'))[0]
+    await waitFor(() => expect(onEditorStateChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ dirtyCount: 0, saving: false }),
+    ))
+
+    await user.clear(firstTitle)
+    await user.type(firstTitle, 'Banner mới')
+    await waitFor(() => expect(onEditorStateChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ dirtyCount: 1, saving: false }),
+    ))
+  })
 })

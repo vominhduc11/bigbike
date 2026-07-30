@@ -1,49 +1,44 @@
+import { AlertTriangle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { formatDateTimeWithSeconds } from '../../lib/formatters'
-import { Badge } from '@/components/ui/badge'
-import { DANGEROUS_ACTIONS, toBadgeVariant, getModuleTone, getModuleLabel, getActionLabel } from './constants'
+import { MobileCard } from '../../components/layout'
+import { cn } from '@/lib/utils'
+import { getAuditCardData } from './constants'
+import { ModuleBadge } from './cells'
 
 export function AuditCard({ log, onClick }) {
   const { t } = useTranslation()
-  const moduleTone = getModuleTone(log.resourceType)
-  const moduleLabel = getModuleLabel(t, log.resourceType)
-  const actionLabel = getActionLabel(t, log.action)
-  const actorName = log.actorDisplayName || log.actorEmail || t(`auditLog.actorType.${log.actorType}`, { defaultValue: '' })
-  const resourceLabel = log.resourceCode || log.resourceDisplayName || null
-  const isDangerous = DANGEROUS_ACTIONS.has(log.action)
-
-  function handleKey(e) {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() }
-  }
+  const card = getAuditCardData(log, t)
 
   return (
-    <div
-      className={`audit-card${isDangerous ? ' audit-card--danger' : ''}`}
-      role="button"
-      tabIndex={0}
+    <MobileCard
+      title={(
+      <span className={cn(
+        'flex items-start gap-2 font-semibold leading-snug',
+        card.isDangerous && 'text-danger',
+      )}>
+        {card.isDangerous ? <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden="true" /> : null}
+        <span>{card.actionLabel}</span>
+      </span>
+      )}
+      subtitle={(
+      <time title={log.createdAt || undefined}>
+        {card.timeLabel}
+      </time>
+      )}
+      status={<ModuleBadge resourceType={log.resourceType} />}
+      meta={[
+        {
+        label: t('auditLog.colActor'),
+        value: card.actorLabel,
+        tone: 'strong',
+        },
+        {
+        label: t('auditLog.colEntity'),
+        value: card.resourceLabel,
+        },
+      ]}
       onClick={onClick}
-      onKeyDown={handleKey}
-      aria-label={`${actionLabel}, ${formatDateTimeWithSeconds(log.createdAt)}`}
-    >
-      <div className="audit-card-top">
-        <span className="audit-card-action">
-          {isDangerous && <span className="audit-danger-icon" aria-hidden="true">⚠ </span>}
-          {actionLabel}
-        </span>
-        <time className="audit-card-time" title={log.createdAt}>
-          {formatDateTimeWithSeconds(log.createdAt)}
-        </time>
-      </div>
-      <div className="audit-card-meta">
-        <Badge variant={toBadgeVariant(moduleTone)} className="text-xs">
-          {moduleLabel}
-        </Badge>
-        <span>{actorName}</span>
-        {resourceLabel && (
-          <span className="audit-resource-label text-xs">{resourceLabel}</span>
-        )}
-      </div>
-      <div className="audit-card-chevron" aria-hidden="true">›</div>
-    </div>
+      selectionLabel={card.selectionLabel}
+    />
   )
 }

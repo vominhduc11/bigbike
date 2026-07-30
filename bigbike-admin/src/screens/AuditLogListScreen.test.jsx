@@ -130,6 +130,32 @@ describe('tải danh sách', () => {
     )
   })
 
+  it('giữ dữ liệu cũ và báo đang cập nhật khi đổi bộ lọc', async () => {
+    const user = userEvent.setup()
+    resolveWith([makeLog()])
+    render(<AuditLogListScreen />)
+    await waitFor(() => expect(screen.getByTestId('audit-table')).toHaveAttribute('data-loading', 'false'))
+
+    let finishRefresh
+    mocks.fetchAuditLogs.mockReturnValueOnce(new Promise((resolve) => {
+      finishRefresh = resolve
+    }))
+
+    await user.type(screen.getByPlaceholderText('auditLog.filterSearchPlaceholder'), 'LS2')
+    await user.click(screen.getByRole('button', { name: 'auditLog.filterQuickSearch' }))
+
+    expect(screen.getByTestId('audit-table')).toHaveAttribute('data-loading', 'false')
+    expect(screen.getByTestId('audit-row')).toBeInTheDocument()
+    expect(screen.getAllByText('Đang cập nhật…').length).toBeGreaterThan(0)
+
+    finishRefresh({
+      items: [makeLog({ id: 'log-2', resourceDisplayName: 'Mũ LS2 mới' })],
+      pagination: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 },
+      mode: 'live',
+    })
+    await waitFor(() => expect(screen.getAllByText('Mũ LS2 mới').length).toBeGreaterThan(0))
+  })
+
   it('đánh dấu dòng nguy hiểm cho thao tác xoá vĩnh viễn', async () => {
     resolveWith([makeLog({ id: 'log-hard', action: 'PRODUCT_HARD_DELETED' })])
     render(<AuditLogListScreen />)
@@ -343,6 +369,9 @@ describe('bảng chi tiết', () => {
     await waitFor(() => expect(screen.getByTestId('audit-row')).toBeInTheDocument())
     expect(screen.queryByRole('dialog', { name: 'chi-tiet' })).not.toBeInTheDocument()
     expect(new URLSearchParams(window.location.search).get('detail')).toBeNull()
+    expect(screen.getByText(
+      'Hoạt động được liên kết không nằm trong trang kết quả hiện tại.',
+    )).toBeInTheDocument()
   })
 })
 

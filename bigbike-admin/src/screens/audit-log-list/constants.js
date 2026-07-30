@@ -88,6 +88,27 @@ export function getActionLabel(t, action) {
   return t('auditLog.actionOther', { code: action, defaultValue: `(${action})` })
 }
 
+export function getAuditCardData(log, t) {
+  const actionLabel = getActionLabel(t, log.action)
+  return {
+    actionLabel,
+    isDangerous: DANGEROUS_ACTIONS.has(log.action),
+    timeLabel: formatDateTimeWithSeconds(log.createdAt),
+    actorLabel: log.actorDisplayName
+      || log.actorEmail
+      || t(`auditLog.actorType.${log.actorType}`, {
+        defaultValue: t('auditLog.actorType.ADMIN'),
+      }),
+    resourceLabel: log.resourceCode
+      || log.resourceDisplayName
+      || (log.resourceId ? log.resourceId.slice(0, 8) : '—'),
+    selectionLabel: t('auditLog.openDetailAria', {
+      action: actionLabel,
+      defaultValue: `Mở chi tiết: ${actionLabel}`,
+    }),
+  }
+}
+
 // ── Diff helpers ───────────────────────────────────────────────────────────────
 export function tryParse(str) {
   try { return JSON.parse(str) } catch { return null }

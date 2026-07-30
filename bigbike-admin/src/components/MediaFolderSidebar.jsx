@@ -37,6 +37,9 @@ export function MediaFolderSidebar({
   const [tagsStatus, setTagsStatus] = useState('loading') // 'loading' | 'error' | 'ready'
   const [editingId, setEditingId] = useState(null)
   const [creating, setCreating] = useState(false)
+  // Tạo/đổi tên/xoá thư mục là việc thỉnh thoảng mới làm — ẩn sau công tắc "Quản lý"
+  // để trạng thái nghỉ của sidebar chỉ còn danh sách để lọc, không có nút nào.
+  const [manageMode, setManageMode] = useState(false)
 
   // Tags are local — they don't drive bulk actions, so the sidebar can own them.
   // Trạng thái tải/lỗi hiển thị rõ ngay trong khu vực tag thay vì chỉ toast rồi im.
@@ -117,10 +120,19 @@ export function MediaFolderSidebar({
         <div className="mediafolder-section-header">
           <p className="mediafolder-section-title">{t('media.myFolders')}</p>
           {canUpdate && (
-            <Button variant="unstyled" onClick={() => setCreating(true)} className="mediafolder-add-btn"
-              aria-label={t('media.folderAdd')} title={t('media.folderAdd')}>
-              <Plus size={14} />
-            </Button>
+            <div className="flex items-center gap-1">
+              {manageMode && (
+                <Button variant="unstyled" onClick={() => setCreating(true)} className="mediafolder-add-btn"
+                  aria-label={t('media.folderAdd')} title={t('media.folderAdd')}>
+                  <Plus size={14} />
+                </Button>
+              )}
+              <Button variant="unstyled" aria-pressed={manageMode}
+                onClick={() => { setManageMode((s) => !s); setCreating(false); setEditingId(null) }}
+                className="mediafolder-action-btn w-auto px-1.5 text-xs">
+                {manageMode ? t('media.folderManageDone') : t('media.folderManage')}
+              </Button>
+            </div>
           )}
         </div>
         {folders.length === 0 && !creating && (
@@ -148,7 +160,7 @@ export function MediaFolderSidebar({
                     <span className="mediafolder-item-label">{f.name}</span>
                     <span className="mediafolder-item-count">{f.mediaCount}</span>
                   </Button>
-                  {canUpdate && (
+                  {canUpdate && manageMode && (
                     <div className="mediafolder-item-actions">
                       <Button variant="unstyled" onClick={() => setEditingId(f.id)}
                         className="mediafolder-action-btn" aria-label={t('common.edit')} title={t('common.edit')}>

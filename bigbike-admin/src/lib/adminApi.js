@@ -975,14 +975,6 @@ export async function bulkRestoreMedia(ids) {
   return payload?.data?.affected ?? 0
 }
 
-export async function bulkHardDeleteMedia(ids) {
-  const payload = await requestJson('/admin/media/bulk-hard-delete', {
-    method: 'POST',
-    body: { ids },
-  })
-  return payload?.data ?? { deleted: 0, missing: 0, blocked: 0 }
-}
-
 export async function bulkMoveMedia(ids, folderId) {
   const payload = await requestJson('/admin/media/bulk-move', {
     method: 'POST',

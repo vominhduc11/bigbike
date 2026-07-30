@@ -505,6 +505,14 @@ describe('OrderListScreen', () => {
     expect(window.location.search).not.toContain('to=')
   })
 
+  it('không còn nút "Làm mới" thủ công trong toolbar — websocket là nguồn cập nhật chính', async () => {
+    renderScreen()
+    await screen.findByText('BB-2026-0001')
+
+    expect(screen.queryByRole('button', { name: 'orders.refresh' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'orders.refreshing' })).not.toBeInTheDocument()
+  })
+
   it('làm mới dữ liệu khi có thông báo đơn hàng thời gian thực ở mọi bộ lọc', async () => {
     mocks.fetchOrders.mockImplementation(async (query) => orderResponse({
       items: [pendingOrder],

@@ -4,7 +4,7 @@ import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Crown, RefreshCw, UserCheck, UserPlus, Users } from 'lucide-react'
+import { Crown, UserCheck, UserPlus, Users } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import { ExportButton } from '@/components/ExportButton'
 import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
@@ -484,20 +484,6 @@ export function CustomerListScreen({ navigate, canUpdate }) {
           className="min-h-11"
         />
         <ColumnVisibilityToggle allColumns={allColumns} hiddenKeys={hiddenKeys} onToggle={toggleColumn} />
-        <Button
-          type="button"
-          variant="outline"
-          className="min-h-11"
-          disabled={state.isFetching}
-          onClick={() => state.refetch()}
-        >
-          <RefreshCw
-            size={16}
-            className={state.isFetching ? 'animate-spin' : undefined}
-            aria-hidden="true"
-          />
-          {t('customers.refresh')}
-        </Button>
         {state.isFetching && state.status === 'success' ? (
           <span className="text-sm text-muted-foreground" role="status" aria-live="polite">
             {t('customers.refreshing')}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertCircle, AlertTriangle, CheckCircle2, Trash2 } from 'lucide-react'
@@ -85,7 +85,7 @@ function RoleCard({ role, open, showError, canUpdate, atMin, onToggle, onUpdate,
 // Dùng react-query (queryKey ['product-assignment']) thay vì fetch thủ công như BannerScreen vì
 // key này còn được ProductDetailScreen/ContentAssignmentBanner đọc cùng lúc: invalidateQueries
 // sau khi lưu giúp banner ở tab sản phẩm/bài viết đang mở khác cập nhật ngay, không cần F5.
-export function AssignmentRolesScreen({ canUpdate = false, embedded = false }) {
+export function AssignmentRolesScreen({ canUpdate = false, embedded = false, onEditorStateChange }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { data, isLoading, isError, error, refetch } = useQuery({
@@ -121,6 +121,15 @@ export function AssignmentRolesScreen({ canUpdate = false, embedded = false }) {
   const isDirty = Boolean(
     baseline && (title !== baseline.title || JSON.stringify(roles) !== JSON.stringify(baseline.roles)),
   )
+
+  useEffect(() => {
+    onEditorStateChange?.({
+      dirtyCount: isDirty ? 1 : 0,
+      saving,
+      saveSuccess,
+      error: saveError,
+    })
+  }, [isDirty, onEditorStateChange, saveError, saveSuccess, saving])
 
   useUnsavedChanges(isDirty)
 
@@ -300,10 +309,10 @@ export function AssignmentRolesScreen({ canUpdate = false, embedded = false }) {
 
       {canUpdate && (isDirty || saveSuccess) && (
         <StickyActionBar ariaLabel={t('common.actionBarLabel')} info={statusInfo}>
-          <Button variant="ghost" size="sm" onClick={handleCancel} disabled={saving || !isDirty}>
+          <Button className="min-h-11" variant="secondary" onClick={handleCancel} disabled={saving || !isDirty}>
             {t('common.cancel')}
           </Button>
-          <Button size="sm" onClick={handleSave} loading={saving} disabled={!isDirty}>
+          <Button className="min-h-11" onClick={handleSave} loading={saving} disabled={!isDirty}>
             {t('common.save')}
           </Button>
         </StickyActionBar>

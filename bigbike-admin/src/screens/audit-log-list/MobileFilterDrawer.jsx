@@ -1,132 +1,194 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlertCircle, X } from 'lucide-react'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { RotateCcw, SlidersHorizontal } from 'lucide-react'
+import { Modal, FormField } from '../../components/layout'
+import { FilterSelect } from '../../components/FilterSelect'
+import { PageSizeSelect } from '../../components/PageSizeSelect'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { useModalFocusTrap, useBodyScrollLock } from '@/components/media-picker/useModalBehavior'
+import { Alert } from '@/components/ui/alert'
 import { ACTOR_OPTIONS, PRESET_KEYS, RESOURCE_OPTIONS, getDatePreset } from './constants'
 
-export function MobileFilterDrawer({ query, searchInput, onSearch, setSearchInput, onUpdate, onReset, onClose, isFiltered }) {
+export function MobileFilterDrawer({
+  query,
+  searchInput,
+  activeFilterCount,
+  onApply,
+  onReset,
+  onClose,
+  isFiltered,
+}) {
   const { t } = useTranslation()
-  const sheetRef = useRef(null)
-  const [localFrom, setLocalFrom] = useState(query.from)
-  const [localTo, setLocalTo]     = useState(query.to)
+  const [draft, setDraft] = useState({
+    q: searchInput,
+    resourceType: query.resourceType,
+    actorType: query.actorType,
+    pageSize: query.pageSize,
+    from: query.from,
+    to: query.to,
+  })
+  const [activePreset, setActivePreset] = useState(null)
 
-  // Dialog semantics: khoá scroll nền + bẫy focus + Escape để đóng (trước đây thiếu).
-  useBodyScrollLock()
-  useModalFocusTrap({ modalRef: sheetRef, onClose })
-
-  // Ngày bắt đầu không được sau ngày kết thúc.
-  const dateError = localFrom && localTo && localFrom > localTo
-    ? t('auditLog.dateRangeError', { defaultValue: 'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.' })
+  const dateError = draft.from && draft.to && draft.from > draft.to
+    ? t('auditLog.dateRangeError', {
+      defaultValue: 'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.',
+    })
     : ''
 
-  function applyDates() {
-    if (dateError) return
-    onUpdate({ from: localFrom, to: localTo }, { resetPage: true })
-    onClose()
+  function updateDraft(partial) {
+    setDraft((current) => ({ ...current, ...partial }))
   }
 
   function applyPreset(preset) {
-    const { from, to } = getDatePreset(preset)
-    setLocalFrom(from)
-    setLocalTo(to)
-    onUpdate({ from, to }, { resetPage: true })
+    setActivePreset(preset)
+    updateDraft(getDatePreset(preset))
+  }
+
+  function applyFilters() {
+    if (dateError) return
+    onApply(draft)
     onClose()
   }
 
   return (
-    <div className="audit-mobile-filter-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div
-        ref={sheetRef}
-        className="audit-mobile-filter-sheet"
-        role="dialog"
-        aria-modal="true"
-        aria-label={t('auditLog.mobileFilterLabel')}
-      >
-        <div className="audit-mobile-filter-header">
-          <strong>{t('auditLog.mobileFilterLabel')}</strong>
-          <Button variant="outline" size="icon" onClick={onClose} aria-label={t('auditLog.drawerClose')}><X size={16} aria-hidden="true" /></Button>
-        </div>
-        <div className="audit-mobile-filter-body">
-          <label>
-            <span>{t('auditLog.filterSearch')}</span>
-            <div className="flex gap-1.5">
-              <Input
-                type="search"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') { onSearch(); onClose() } }}
-                placeholder={t('auditLog.filterSearchPlaceholder')}
-               />
-              <Button variant="outline" onClick={() => { onSearch(); onClose() }}>
-                {t('auditLog.mobileSearchBtn')}
-              </Button>
-            </div>
-          </label>
-
-          <label>
-            <span>{t('auditLog.filterModule')}</span>
-            <Select value={query.resourceType}
-              onValueChange={(val) => onUpdate({ resourceType: val }, { resetPage: true })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-              <SelectItem value="ALL">{t('common.all')}</SelectItem>
-              {RESOURCE_OPTIONS.filter((r) => r !== 'ALL').map((r) => (
-                <SelectItem key={r} value={r}>{t(`auditLog.module.${r}`, { defaultValue: r })}</SelectItem>
-              ))}
-            </SelectContent></Select>
-          </label>
-
-          <label>
-            <span>{t('auditLog.filterActorType')}</span>
-            <Select value={query.actorType}
-              onValueChange={(val) => onUpdate({ actorType: val }, { resetPage: true })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-              <SelectItem value="ALL">{t('common.all')}</SelectItem>
-              {ACTOR_OPTIONS.filter((a) => a !== 'ALL').map((a) => (
-                <SelectItem key={a} value={a}>{t(`auditLog.actorType.${a}`, { defaultValue: a })}</SelectItem>
-              ))}
-            </SelectContent></Select>
-          </label>
-
-          <div>
-            <span className="mb-1.5 block text-sm font-medium">
-              {t('auditLog.filterQuickTime')}
-            </span>
-            <div className="audit-preset-chips">
-              {PRESET_KEYS.map((key) => (
-                <Button key={key} variant="outline" size="sm" onClick={() => applyPreset(key)}>
-                  {t(`auditLog.preset.${key}`)}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            <label className="flex-1">
-              <span>{t('auditLog.filterFrom')}</span>
-              <Input type="date" value={localFrom} onChange={(e) => setLocalFrom(e.target.value)} aria-invalid={dateError ? true : undefined}  />
-            </label>
-            <label className="flex-1">
-              <span>{t('auditLog.filterTo')}</span>
-              <Input type="date" value={localTo} onChange={(e) => setLocalTo(e.target.value)} aria-invalid={dateError ? true : undefined}  />
-            </label>
-          </div>
-          {dateError && (
-            <span className="flex items-center gap-1.5 text-xs text-danger" role="alert">
-              <AlertCircle size={13} aria-hidden="true" /> {dateError}
-            </span>
-          )}
-          <Button className="w-full" onClick={applyDates} disabled={!!dateError}>
-            {t('auditLog.mobileFilterApplyDates')}
-          </Button>
-
-          {isFiltered && (
-            <Button variant="outline" className="w-full" onClick={() => { onReset(); onClose() }}>
+    <Modal
+      open
+      onClose={onClose}
+      title={t('auditLog.mobileFilterLabel')}
+      description={activeFilterCount > 0
+        ? t('auditLog.mobileFiltersApplied', {
+          count: activeFilterCount,
+          defaultValue: `Đang áp dụng ${activeFilterCount} bộ lọc`,
+        })
+        : t('auditLog.mobileFilterDescription', {
+          defaultValue: 'Thu hẹp danh sách theo người thực hiện, khu vực và thời gian.',
+        })}
+      closeLabel={t('auditLog.drawerClose')}
+      actions={(
+        <>
+          {isFiltered ? (
+            <Button
+              variant="outline"
+              className="min-h-11"
+              onClick={() => {
+                onReset()
+                onClose()
+              }}
+            >
+              <RotateCcw size={16} aria-hidden="true" />
               {t('auditLog.mobileFilterResetAll')}
             </Button>
-          )}
+          ) : null}
+          <Button className="min-h-11" onClick={applyFilters} disabled={Boolean(dateError)}>
+            <SlidersHorizontal size={16} aria-hidden="true" />
+            {t('auditLog.mobileFilterApply', { defaultValue: 'Áp dụng bộ lọc' })}
+          </Button>
+        </>
+      )}
+    >
+      <div className="grid gap-5">
+        <FormField label={t('auditLog.filterSearch')}>
+          <Input
+            type="search"
+            value={draft.q}
+            onChange={(event) => updateDraft({ q: event.target.value })}
+            placeholder={t('auditLog.filterSearchPlaceholder')}
+            className="min-h-11"
+          />
+        </FormField>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label={t('auditLog.filterModule')}>
+            <FilterSelect
+              value={draft.resourceType}
+              onValueChange={(value) => updateDraft({ resourceType: value })}
+              ariaLabel={t('auditLog.filterModule')}
+              className="min-h-11 w-full"
+              options={RESOURCE_OPTIONS.map((resourceType) => ({
+                value: resourceType,
+                label: resourceType === 'ALL'
+                  ? t('common.all')
+                  : t(`auditLog.module.${resourceType}`, { defaultValue: resourceType }),
+              }))}
+            />
+          </FormField>
+
+          <FormField label={t('auditLog.filterActorType')}>
+            <FilterSelect
+              value={draft.actorType}
+              onValueChange={(value) => updateDraft({ actorType: value })}
+              ariaLabel={t('auditLog.filterActorType')}
+              className="min-h-11 w-full"
+              options={ACTOR_OPTIONS.map((actorType) => ({
+                value: actorType,
+                label: actorType === 'ALL'
+                  ? t('common.all')
+                  : t(`auditLog.actorType.${actorType}`, { defaultValue: actorType }),
+              }))}
+            />
+          </FormField>
         </div>
+
+        <FormField label={t('auditLog.pageSizeLabel')}>
+          <PageSizeSelect
+            value={draft.pageSize}
+            onChange={(pageSize) => updateDraft({ pageSize })}
+            className="min-h-11 w-full"
+          />
+        </FormField>
+
+        <fieldset className="grid gap-3">
+          <legend className="text-sm font-semibold text-foreground">
+            {t('auditLog.filterQuickTime')}
+          </legend>
+          <div className="flex flex-wrap gap-1 rounded-md border border-border bg-surface-muted p-1">
+            {PRESET_KEYS.map((key) => (
+              <Button
+                key={key}
+                variant={activePreset === key ? 'default' : 'ghost'}
+                size="sm"
+                className="min-h-9 flex-1"
+                onClick={() => applyPreset(key)}
+              >
+                {t(`auditLog.preset.${key}`)}
+              </Button>
+            ))}
+          </div>
+        </fieldset>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label={t('auditLog.filterFrom')}>
+            <Input
+              type="date"
+              value={draft.from}
+              aria-invalid={dateError ? true : undefined}
+              onChange={(event) => {
+                setActivePreset(null)
+                updateDraft({ from: event.target.value })
+              }}
+              className="min-h-11"
+            />
+          </FormField>
+          <FormField label={t('auditLog.filterTo')}>
+            <Input
+              type="date"
+              value={draft.to}
+              aria-invalid={dateError ? true : undefined}
+              onChange={(event) => {
+                setActivePreset(null)
+                updateDraft({ to: event.target.value })
+              }}
+              className="min-h-11"
+            />
+          </FormField>
+        </div>
+
+        {dateError ? (
+          <Alert tone="danger" size="sm">
+            {dateError}
+          </Alert>
+        ) : null}
       </div>
-    </div>
+    </Modal>
   )
 }

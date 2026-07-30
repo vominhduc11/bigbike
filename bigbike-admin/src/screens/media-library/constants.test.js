@@ -3,10 +3,7 @@ import {
   ALLOWED_MIME,
   MAX_FILE_SIZE,
   DEFAULT_QUERY,
-  hasAdvancedFilters,
   buildActiveChips,
-  dateToInstantStart,
-  dateToInstantEnd,
 } from './constants'
 
 describe('media constants', () => {
@@ -19,28 +16,20 @@ describe('media constants', () => {
   it('giới hạn dung lượng client là 50MB', () => {
     expect(MAX_FILE_SIZE).toBe(50 * 1024 * 1024)
   })
-})
 
-describe('hasAdvancedFilters', () => {
-  it('false khi không có bộ lọc nâng cao', () => {
-    expect(hasAdvancedFilters(DEFAULT_QUERY)).toBe(false)
+  // Đợt tinh gọn: bỏ hẳn bộ lọc nâng cao (ngày/dung lượng/kích thước) và kiểu xem
+  // lưới/bảng. Khoá lại để không ai vô tình thêm lại vào query mặc định.
+  it('không còn bộ lọc nâng cao và kiểu xem trong query mặc định', () => {
+    for (const key of ['uploadedFrom', 'uploadedTo', 'minSize', 'maxSize', 'minWidth', 'minHeight', 'view']) {
+      expect(DEFAULT_QUERY).not.toHaveProperty(key)
+    }
   })
-  it('true khi có bất kỳ bộ lọc ngày/dung lượng/kích thước', () => {
-    expect(hasAdvancedFilters({ ...DEFAULT_QUERY, minSize: '1000' })).toBe(true)
-    expect(hasAdvancedFilters({ ...DEFAULT_QUERY, uploadedFrom: '2026-07-01' })).toBe(true)
-    expect(hasAdvancedFilters({ ...DEFAULT_QUERY, minWidth: '800' })).toBe(true)
-  })
-})
 
-describe('dateToInstant helpers', () => {
-  it('start = 00:00 cùng ngày, end = 00:00 ngày kế (nửa mở)', () => {
-    expect(dateToInstantStart('2026-07-15')).toContain('2026-07-1')
-    const end = dateToInstantEnd('2026-07-15')
-    expect(new Date(end).getTime()).toBeGreaterThan(new Date(dateToInstantStart('2026-07-15')).getTime())
-  })
-  it('rỗng khi ngày trống hoặc sai', () => {
-    expect(dateToInstantStart('')).toBe('')
-    expect(dateToInstantEnd('khong-phai-ngay')).toBe('')
+  it('giữ đúng bộ lọc cơ bản trong query mặc định', () => {
+    expect(Object.keys(DEFAULT_QUERY).sort()).toEqual([
+      'dir', 'folderFilter', 'mimeType', 'page', 'pageSize',
+      'search', 'sort', 'status', 'tag', 'usageFilter',
+    ])
   })
 })
 

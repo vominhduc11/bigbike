@@ -1,4 +1,4 @@
-import { Pencil, Trash2, RotateCcw, AlertTriangle, Music, FileText, Copy } from 'lucide-react'
+import { Pencil, Trash2, RotateCcw, Music, FileText, Copy } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
 import { formatText } from '../lib/formatters'
@@ -11,11 +11,12 @@ const isImage = (m) => m && m.startsWith('image/')
 const isVideo = (m) => m && m.startsWith('video/')
 const isAudio = (m) => m && m.startsWith('audio/')
 
+// Tối đa 3 nút nổi trên mỗi thẻ: Copy URL · Sửa · Xoá (thùng rác: chỉ Khôi phục).
+// Xoá vĩnh viễn cố ý KHÔNG có ở đây — chỉ trong bảng chi tiết ở thùng rác.
 export function MediaCard({
   media, selected, focused, deleting,
   onToggleSelect, onPreview,
-  onEdit, onDelete, onRestore, onHardDelete,
-  onCopyUrl,
+  onEdit, onDelete, onRestore,
 }) {
   const { t } = useTranslation()
   const filename = formatText((media.filename ?? '').split('/').pop())
@@ -37,7 +38,6 @@ export function MediaCard({
     navigator.clipboard.writeText(toClipboardUrl(media.publicUrl))
       .then(() => toast.success(t('media.urlCopied')))
       .catch(() => toast.error(t('media.copyFailed')))
-    onCopyUrl?.()
   }
 
   return (
@@ -76,7 +76,9 @@ export function MediaCard({
           aria-label={t('media.previewNamed', { name: displayName, defaultValue: 'Xem lớn {{name}}' })}
           className="absolute inset-0 cursor-zoom-in border-0 bg-transparent p-0" />
 
-        {(onEdit || onDelete || onRestore || onHardDelete || onCopyUrl) && (
+        {/* Copy URL chỉ cần quyền xem — không gộp vào điều kiện quyền sửa, nếu không
+            người chỉ có quyền xem sẽ mất luôn cả nút sao chép link. */}
+        {(media.publicUrl || onEdit || onDelete || onRestore) && (
           <div className="medialib-action-overlay">
             <div className="medialib-overlay-actions">
               {media.publicUrl && (
@@ -105,13 +107,6 @@ export function MediaCard({
                   className="medialib-icon-btn medialib-btn-danger" disabled={deleting}
                   title={t('common.delete')} aria-label={t('common.delete')}>
                   <Trash2 size={14} />
-                </Button>
-              )}
-              {onHardDelete && (
-                <Button variant="unstyled" onClick={(e) => { e.stopPropagation(); onHardDelete() }}
-                  className="medialib-icon-btn medialib-btn-danger-solid" disabled={deleting}
-                  title={t('media.hardDelete')} aria-label={t('media.hardDelete')}>
-                  <AlertTriangle size={14} />
                 </Button>
               )}
             </div>

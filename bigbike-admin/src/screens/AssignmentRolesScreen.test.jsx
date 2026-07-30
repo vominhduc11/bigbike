@@ -91,4 +91,21 @@ describe('AssignmentRolesScreen', () => {
       },
     ]))
   })
+
+  it('reports dirty and save states to the embedded settings screen', async () => {
+    const user = userEvent.setup()
+    const onEditorStateChange = vi.fn()
+    renderScreen({ onEditorStateChange })
+
+    const roleName = await screen.findByLabelText('settings.assign.roleNameLabel')
+    await waitFor(() => expect(onEditorStateChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ dirtyCount: 0, saving: false }),
+    ))
+
+    await user.clear(roleName)
+    await user.type(roleName, 'Điều phối nội dung')
+    await waitFor(() => expect(onEditorStateChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ dirtyCount: 1, saving: false }),
+    ))
+  })
 })

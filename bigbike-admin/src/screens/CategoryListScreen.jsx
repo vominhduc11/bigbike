@@ -666,14 +666,12 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   }
 
   const selectAllCheckbox = canUpdate ? (
-    <th className="cat-select-cell">
-      <Checkbox
-        aria-label={t('categories.selectAllAria')}
-        checked={allCurrentSelected ? true : someCurrentSelected ? 'indeterminate' : false}
-        onCheckedChange={toggleSelectAllOnPage}
-        disabled={Boolean(bulkProgress) || currentPageIds.length === 0}
-       />
-    </th>
+    <Checkbox
+      aria-label={t('categories.selectAllAria')}
+      checked={allCurrentSelected ? true : someCurrentSelected ? 'indeterminate' : false}
+      onCheckedChange={toggleSelectAllOnPage}
+      disabled={Boolean(bulkProgress) || currentPageIds.length === 0}
+    />
   ) : null
 
   // Nút thao tác dòng danh mục — dùng chung cho bảng (.cat-actions) và thẻ mobile (P2-2).
@@ -879,41 +877,44 @@ export function CategoryListScreen({ navigate, canUpdate }) {
             ) : (
               <span className="cat-expand-spacer" />
             )}
-            <div className="thumbnail-wrap thumbnail-wrap--sm cat-thumb-hover">
-              {category.image?.url ? (
-                <>
-                  <img src={category.image.url} alt={category.image.alt || category.name} referrerPolicy="no-referrer" loading="lazy" />
-                  {/* Hover preview popup — same URL, no extra request */}
+            <div className="bb-product-cell min-w-0 flex-1">
+              <div className="cat-thumb-hover shrink-0">
+                <span className="bb-product-thumb">
+                  {category.image?.url ? (
+                    <img src={category.image.url} alt={category.image.alt || category.name} referrerPolicy="no-referrer" loading="lazy" />
+                  ) : (
+                    <span className="thumbnail-placeholder" aria-hidden="true">
+                      <ImageOff size={14} />
+                    </span>
+                  )}
+                </span>
+                {category.image?.url ? (
                   <div className="cat-thumb-popover" aria-hidden="true">
                     <img src={category.image.url} alt="" referrerPolicy="no-referrer" />
                   </div>
-                </>
-              ) : (
-                <span className="thumbnail-placeholder" aria-hidden="true">
-                  <ImageOff size={14} />
+                ) : null}
+              </div>
+              <a
+                href={`/admin/categories/${category.id}`}
+                className="cat-name-link"
+                title={t('categories.openDetail')}
+                onClick={(e) => {
+                  // Ctrl/Cmd-click hoặc chuột-giữa → để trình duyệt mở tab mới.
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return
+                  e.preventDefault()
+                  goToDetail()
+                }}
+              >
+                <strong>
+                  {searchTerm ? highlightMatch(formatText(category.name), searchTerm) : formatText(category.name)}
+                </strong>
+                <span className="bb-cell-sub cat-slug">
+                  {category.slug
+                    ? <>/{searchTerm ? highlightMatch(category.slug, searchTerm) : category.slug}</>
+                    : '—'}
                 </span>
-              )}
+              </a>
             </div>
-            <a
-              href={`/admin/categories/${category.id}`}
-              className="cat-name-link"
-              title={t('categories.openDetail')}
-              onClick={(e) => {
-                // Ctrl/Cmd-click hoặc chuột-giữa → để trình duyệt mở tab mới.
-                if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return
-                e.preventDefault()
-                goToDetail()
-              }}
-            >
-              <strong>
-                {searchTerm ? highlightMatch(formatText(category.name), searchTerm) : formatText(category.name)}
-              </strong>
-              <span className="cat-slug">
-                {category.slug
-                  ? <>/{searchTerm ? highlightMatch(category.slug, searchTerm) : category.slug}</>
-                  : '—'}
-              </span>
-            </a>
           </div>
         </td>
 
@@ -1234,29 +1235,31 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       {useTreeMode && (
         <div className="cat-tree-wrap">
           {allCatsResult == null ? (
-            <div className="overflow-hidden rounded-md border border-border bg-surface">
-              <div className="table-scroll-wrap hide-on-mobile">
-                <table className="admin-table cat-tree-table cat-table-tree" aria-busy="true">
-                  <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} />
-                  <tbody>
-                    {Array.from({ length: 8 }).map((_, i) => (
-                      <tr key={i} className="skel-row">
-                        {Array.from({ length: canUpdate ? 6 : 5 }).map((__, j) => (
-                          <td key={j}><span className="bb-skel w-4/5 h-5" /></td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <div className="bb-card">
+              <div className="bb-card-body bb-card-body--flush">
+                <div className="table-scroll-wrap hide-on-mobile">
+                  <table className="cat-tree-table cat-table-tree" aria-busy="true">
+                    <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} />
+                    <tbody>
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <tr key={i} className="skel-row">
+                          {Array.from({ length: canUpdate ? 6 : 5 }).map((__, j) => (
+                            <td key={j}><span className="bb-skel w-4/5 h-5" /></td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <MobileCardList className="p-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <li key={i} className="mobile-card animate-pulse">
+                      <div className="h-4 w-1/2 rounded-xs bg-surface-muted" />
+                      <div className="h-3 w-3/4 rounded-xs bg-surface-muted" />
+                    </li>
+                  ))}
+                </MobileCardList>
               </div>
-              <MobileCardList className="p-3">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <li key={i} className="mobile-card animate-pulse">
-                    <div className="h-4 w-1/2 rounded-xs bg-surface-muted" />
-                    <div className="h-3 w-3/4 rounded-xs bg-surface-muted" />
-                  </li>
-                ))}
-              </MobileCardList>
             </div>
           ) : visibleTreeRows.length === 0 ? (
             <CategoryEmptyState
@@ -1267,34 +1270,36 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               onCreate={() => navigate('/admin/categories/new')}
             />
           ) : (
-            <div className="overflow-hidden rounded-md border border-border bg-surface">
-              <div className="table-scroll-wrap hide-on-mobile">
-                <DndContext
-                  sensors={dndSensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext
-                    items={visibleTreeRows.map((r) => r.id)}
-                    strategy={verticalListSortingStrategy}
+            <div className="bb-card">
+              <div className="bb-card-body bb-card-body--flush">
+                <div className="table-scroll-wrap hide-on-mobile">
+                  <DndContext
+                    sensors={dndSensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
                   >
-                    <table className="admin-table cat-tree-table cat-table-tree">
-                      <caption className="sr-only">{t('categories.tableCaption')}</caption>
-                      <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} />
-                      <tbody>
-                        {visibleTreeRows.map((row) =>
-                          canUpdate && !searchTerm
-                            ? <SortableTreeRow key={row.id} category={row} depth={row._depth} renderCategoryRow={renderCategoryRow} />
-                            : renderCategoryRow(row, row._depth)
-                        )}
-                      </tbody>
-                    </table>
-                  </SortableContext>
-                </DndContext>
+                    <SortableContext
+                      items={visibleTreeRows.map((r) => r.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <table className="cat-tree-table cat-table-tree">
+                        <caption className="sr-only">{t('categories.tableCaption')}</caption>
+                        <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} />
+                        <tbody>
+                          {visibleTreeRows.map((row) =>
+                            canUpdate && !searchTerm
+                              ? <SortableTreeRow key={row.id} category={row} depth={row._depth} renderCategoryRow={renderCategoryRow} />
+                              : renderCategoryRow(row, row._depth)
+                          )}
+                        </tbody>
+                      </table>
+                    </SortableContext>
+                  </DndContext>
+                </div>
+                <MobileCardList className="p-3">
+                  {visibleTreeRows.map((cat) => mobileCategoryCard(cat))}
+                </MobileCardList>
               </div>
-              <MobileCardList className="p-3">
-                {visibleTreeRows.map((cat) => mobileCategoryCard(cat))}
-              </MobileCardList>
             </div>
           )}
         </div>
@@ -1330,39 +1335,41 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           ) : null}
 
           {flatModeStatus === 'loading' || (flatModeStatus === 'success' && flatItems.length > 0) ? (
-            <div className="mt-4 overflow-hidden rounded-md border border-border bg-surface">
-              <div className="table-scroll-wrap hide-on-mobile">
-                <table className="admin-table cat-tree-table cat-table-flat">
-                  <caption className="sr-only">{t('categories.tableCaption')}</caption>
-                  <CategoryFlatTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} />
-                  <tbody>
-                    {flatModeStatus === 'loading'
-                      ? Array.from({ length: query.pageSize }).map((_, i) => (
-                          <tr key={i} className="skel-row">
-                            {Array.from({ length: canUpdate ? 6 : 5 }).map((__, j) => (
-                              <td key={j}><span className="bb-skel w-4/5 h-5" /></td>
-                            ))}
-                          </tr>
-                        ))
-                      : flatItems.map((cat) => renderCategoryRow(cat, 0))}
-                  </tbody>
-                </table>
+            <div className="bb-card mt-4">
+              <div className="bb-card-body bb-card-body--flush">
+                <div className="table-scroll-wrap hide-on-mobile">
+                  <table className="cat-tree-table cat-table-flat" aria-busy={flatModeStatus === 'loading'}>
+                    <caption className="sr-only">{t('categories.tableCaption')}</caption>
+                    <CategoryFlatTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} />
+                    <tbody>
+                      {flatModeStatus === 'loading'
+                        ? Array.from({ length: query.pageSize }).map((_, i) => (
+                            <tr key={i} className="skel-row">
+                              {Array.from({ length: canUpdate ? 6 : 5 }).map((__, j) => (
+                                <td key={j}><span className="bb-skel w-4/5 h-5" /></td>
+                              ))}
+                            </tr>
+                          ))
+                        : flatItems.map((cat) => renderCategoryRow(cat, 0))}
+                    </tbody>
+                  </table>
+                </div>
+                {flatModeStatus === 'loading' ? (
+                  <MobileCardList className="p-3">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <li key={i} className="mobile-card animate-pulse">
+                        <div className="h-4 w-1/2 rounded-xs bg-surface-muted" />
+                        <div className="h-3 w-3/4 rounded-xs bg-surface-muted" />
+                      </li>
+                    ))}
+                  </MobileCardList>
+                ) : null}
+                {flatModeStatus === 'success' && flatItems.length > 0 ? (
+                  <MobileCardList className="p-3">
+                    {flatItems.map((cat) => mobileCategoryCard(cat))}
+                  </MobileCardList>
+                ) : null}
               </div>
-              {flatModeStatus === 'loading' ? (
-                <MobileCardList className="p-3">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <li key={i} className="mobile-card animate-pulse">
-                      <div className="h-4 w-1/2 rounded-xs bg-surface-muted" />
-                      <div className="h-3 w-3/4 rounded-xs bg-surface-muted" />
-                    </li>
-                  ))}
-                </MobileCardList>
-              ) : null}
-              {flatModeStatus === 'success' && flatItems.length > 0 ? (
-                <MobileCardList className="p-3">
-                  {flatItems.map((cat) => mobileCategoryCard(cat))}
-                </MobileCardList>
-              ) : null}
               {flatModeStatus === 'success' && (
                 <div className="px-4">
                   <PaginationControls

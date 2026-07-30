@@ -8,6 +8,7 @@ import { showConfirm } from '../lib/confirm'
 import { useSaveShortcut } from '@/lib/useSaveShortcut'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { TagInput } from './TagInput'
+import { CollapsibleSection } from './CollapsibleSection'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -38,6 +39,9 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
   const [saving, setSaving] = useState(false)
   const [replacing, setReplacing] = useState(false)
   const [error, setError] = useState('')
+  // Thao tác hiếm + không hoàn tác được (thay ảnh) và danh sách biến thể kỹ thuật
+  // gom vào đây, đóng sẵn — luồng chính chỉ còn xem, sửa mô tả, phân loại, xoá.
+  const [advancedOpen, setAdvancedOpen] = useState(false)
   const { refs, refsLoading } = useMediaReferences(media)
   const replaceInputRef = useRef(null)
 
@@ -46,6 +50,8 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
   const isAudio = media.mimeType?.startsWith('audio/')
   const isTrash = media.status === 'DELETED'
   const filename = (media.filename ?? media.publicUrl ?? '').split('/').pop()
+  const canReplace = canUpdate && !isTrash && isImage
+  const hasVariants = Boolean(media.sizes && Object.keys(media.sizes).length > 0)
 
   const dirty =
     altText !== (media.altText ?? '') ||
@@ -191,22 +197,6 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
               <Copy size={14} />
             </Button>
           </div>
-
-          {canUpdate && !isTrash && isImage && (
-            <>
-              {/* Raw hidden file input is required to trigger the OS file picker. */}
-              <input ref={replaceInputRef} type="file" accept="image/*"
-                className="hidden" onChange={handleReplaceFile} />
-              <Button variant="outline" size="sm" onClick={handleReplaceClick}
-                loading={replacing} className="w-full">
-                <RefreshCw size={13} />
-                {t('media.replaceFile')}
-              </Button>
-              <p className="text-xs text-muted-foreground m-0">
-                {t('media.replaceHint')}
-              </p>
-            </>
-          )}
         </section>
 
         {/* Metadata fields */}
@@ -256,31 +246,6 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
           </dl>
         </section>
 
-        {/* Image variants */}
-        {media.sizes && Object.keys(media.sizes).length > 0 && (
-          <section className="mediadetail-info">
-            <p className="mediadetail-section-title">{t('media.variants')}</p>
-            <ul className="list-none m-0 p-0 flex flex-col gap-1.5">
-              {Object.entries(media.sizes).map(([name, url]) => (
-                <li key={name} className="flex items-center gap-1.5 text-xs">
-                  <span className="bg-surface-muted border border-border rounded-xs px-2 py-px text-xs font-bold text-muted-foreground uppercase shrink-0">
-                    {name}
-                  </span>
-                  <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-muted-foreground" title={url}>
-                    {url}
-                  </span>
-                  <Button variant="ghost" size="icon" type="button" onClick={() => handleCopyUrl(url)}
-                    aria-label={t('media.copyUrl')} title={t('media.copyUrl')}
-                    className="text-muted-foreground hover:text-primary h-6 w-6 shrink-0 rounded-xs"
-                  >
-                    <Copy size={13} />
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
         {/* Usage / references */}
         <section className="mediadetail-info">
           <p className="mediadetail-section-title">
@@ -308,6 +273,55 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
             </ul>
           )}
         </section>
+
+        {/* Nâng cao — thao tác hiếm, đóng sẵn */}
+        {(hasVariants || canReplace) && (
+          <CollapsibleSection
+            title={t('media.advancedSection')}
+            open={advancedOpen}
+            onToggle={() => setAdvancedOpen((s) => !s)}
+          >
+            {canReplace && (
+              <div className="flex flex-col gap-1.5">
+                {/* Raw hidden file input is required to trigger the OS file picker. */}
+                <input ref={replaceInputRef} type="file" accept="image/*"
+                  className="hidden" onChange={handleReplaceFile} />
+                <Button variant="outline" size="sm" onClick={handleReplaceClick}
+                  loading={replacing} className="w-full">
+                  <RefreshCw size={13} />
+                  {t('media.replaceFile')}
+                </Button>
+                <p className="text-xs text-muted-foreground m-0">
+                  {t('media.replaceHint')}
+                </p>
+              </div>
+            )}
+
+            {hasVariants && (
+              <div className="mt-3">
+                <p className="mediadetail-section-title">{t('media.variants')}</p>
+                <ul className="list-none m-0 p-0 flex flex-col gap-1.5">
+                  {Object.entries(media.sizes).map(([name, url]) => (
+                    <li key={name} className="flex items-center gap-1.5 text-xs">
+                      <span className="bg-surface-muted border border-border rounded-xs px-2 py-px text-xs font-bold text-muted-foreground uppercase shrink-0">
+                        {name}
+                      </span>
+                      <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-muted-foreground" title={url}>
+                        {url}
+                      </span>
+                      <Button variant="ghost" size="icon" type="button" onClick={() => handleCopyUrl(url)}
+                        aria-label={t('media.copyUrl')} title={t('media.copyUrl')}
+                        className="text-muted-foreground hover:text-primary h-6 w-6 shrink-0 rounded-xs"
+                      >
+                        <Copy size={13} />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </CollapsibleSection>
+        )}
       </div>
 
       <footer className="mediadetail-footer">

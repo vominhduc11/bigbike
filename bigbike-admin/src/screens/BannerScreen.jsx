@@ -12,6 +12,7 @@ import { resolveDisplayUrl } from '@/lib/contracts'
 import { useContentLang } from '@/lib/contentLang'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { StickyActionBar } from '@/components/layout'
 
 // Storefront base — dùng để mở "Xem trên web" và để preview ảnh fallback cứng của theme
 // (các ảnh /wp-content/... chỉ tồn tại ở app web, không có trong admin).
@@ -280,7 +281,7 @@ function CrossLinksCard({ navigate, t }) {
 // ── Screen ───────────────────────────────────────────────────────────────────
 // `embedded` = render bên trong một tab của màn Cài đặt: bỏ tiêu đề trang riêng
 // (tránh trùng heading), chỉ giữ phần mô tả ngắn để có ngữ cảnh.
-export function BannerScreen({ canUpdate = false, navigate, embedded = false }) {
+export function BannerScreen({ canUpdate = false, navigate, embedded = false, onEditorStateChange }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
   const [state, setState] = useState({ status: 'loading', items: [], warning: '' })
@@ -319,6 +320,15 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false }) 
     for (const [k, v] of Object.entries(draftsEn)) if (v !== unquote(byKey.get(k)?.valueEn)) keys.add(k)
     return [...keys]
   }, [drafts, draftsEn, byKey])
+
+  useEffect(() => {
+    onEditorStateChange?.({
+      dirtyCount: dirtyKeys.length,
+      saving,
+      saveSuccess,
+      error: saveError,
+    })
+  }, [dirtyKeys.length, onEditorStateChange, saveError, saveSuccess, saving])
 
   // F6: cảnh báo khi rời trang lúc còn thay đổi chưa lưu. Đăng ký nav guard nên
   // mọi điều hướng nội bộ qua navigate() (gồm 2 nút trong CrossLinksCard) sẽ hỏi
@@ -451,10 +461,36 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false }) 
         <CrossLinksCard navigate={navigate} t={t} />
       </div>
 
-      {canUpdate && (dirtyKeys.length > 0 || saveSuccess) && (
-        <div
-          className="bb-card bb-save-bar"
-        >
+      {canUpdate && (dirtyKeys.length > 0 || saving || saveSuccess || saveError) && (
+        embedded ? (
+          <StickyActionBar
+            ariaLabel={t('common.actionBarLabel')}
+            info={(
+              <span
+                className={saveError ? 'inline-flex items-center gap-1.5 font-semibold text-danger' : 'inline-flex items-center gap-1.5 text-muted-foreground'}
+                role={saveError ? 'alert' : 'status'}
+              >
+                {saveError ? (
+                  <><AlertCircle size={14} aria-hidden="true" /> {saveError}</>
+                ) : saveSuccess ? (
+                  <><CheckCircle2 size={15} className="text-success" aria-hidden="true" /> {t('banners.saveSuccess')}</>
+                ) : (
+                  <><AlertCircle size={14} aria-hidden="true" /> {t('banners.unsavedCount', { count: dirtyKeys.length })}</>
+                )}
+              </span>
+            )}
+          >
+            {dirtyKeys.length > 0 ? (
+              <Button className="min-h-11" variant="secondary" onClick={handleDiscard} disabled={saving}>
+                {t('common.cancel')}
+              </Button>
+            ) : null}
+            <Button className="min-h-11" onClick={handleSave} loading={saving} disabled={dirtyKeys.length === 0}>
+              {t('common.save')}
+            </Button>
+          </StickyActionBar>
+        ) : (
+          <div className="bb-card bb-save-bar">
           <span
             className={`bb-save-bar-status ${saveError ? 'danger' : ''}`}
             role={saveError ? 'alert' : undefined}
@@ -477,7 +513,8 @@ export function BannerScreen({ canUpdate = false, navigate, embedded = false }) 
               {t('common.save')}
             </Button>
           </div>
-        </div>
+          </div>
+        )
       )}
     </div>
   )

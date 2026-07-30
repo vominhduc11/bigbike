@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReviewListScreen } from './ReviewListScreen'
@@ -12,6 +12,9 @@ const mocks = vi.hoisted(() => ({
   bulkDeleteReviews: vi.fn(),
   bulkUpdateReviewStatus: vi.fn(),
   showConfirm: vi.fn(),
+  subscribeAdminWs: vi.fn(),
+  unsubscribeAdminWs: vi.fn(),
+  wsHandler: null,
 }))
 const {
   fetchReviews,
@@ -43,6 +46,9 @@ vi.mock('../lib/contentLang', () => ({ useContentLang: () => 'vi' }))
 vi.mock('../lib/useDebounce', () => ({ useDebounce: (value) => value }))
 vi.mock('../lib/useRecentItems', () => ({ useRecentItems: () => [] }))
 vi.mock('../lib/confirm', () => ({ showConfirm: mocks.showConfirm }))
+vi.mock('../lib/adminWebSocket', () => ({
+  subscribeAdminWs: mocks.subscribeAdminWs,
+}))
 vi.mock('@/lib/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 vi.mock('../components/AdminTable', () => ({
@@ -93,12 +99,17 @@ const review = {
 beforeEach(() => {
   vi.clearAllMocks()
   window.history.replaceState({}, '', '/admin/reviews')
+  mocks.wsHandler = null
   fetchReviews.mockResolvedValue({ items: [review], pagination: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 } })
   fetchReviewSummary.mockResolvedValue({
     approved: { averageRating: 4.2, totalReviews: 8, ratingBreakdown: { 1: 1, 1.5: 0, 2: 0, 2.5: 0, 3: 1, 3.5: 0, 4: 2, 4.5: 0, 5: 4 } },
     pending: { totalReviews: 3, oneStarReviews: 1 },
   })
   showConfirm.mockResolvedValue(false)
+  mocks.subscribeAdminWs.mockImplementation((_destination, handler) => {
+    mocks.wsHandler = handler
+    return mocks.unsubscribeAdminWs
+  })
 })
 
 describe('ReviewListScreen', () => {
@@ -218,15 +229,31 @@ describe('ReviewListScreen', () => {
     expect(screen.queryByText('reviews.emptyAll')).not.toBeInTheDocument()
   })
 
-  it('refreshes list and summary together', async () => {
-    const user = userEvent.setup()
+  it('không còn nút "Làm mới" thủ công — websocket là nguồn cập nhật chính', async () => {
     renderScreen(false)
 
-    await user.click(await screen.findByRole('button', { name: 'reviews.refresh' }))
+    await screen.findByText('reviews.publicScoreTitle')
+    expect(screen.queryByRole('button', { name: 'reviews.refresh' })).not.toBeInTheDocument()
+  })
+
+  it('làm mới danh sách và số liệu khi có thông báo đánh giá thời gian thực', async () => {
+    renderScreen(false)
+    await screen.findByText('reviews.publicScoreTitle')
+
+    expect(mocks.subscribeAdminWs).toHaveBeenCalledWith(
+      '/topic/admin/reviews',
+      expect.any(Function),
+    )
+    const reviewsCallsBefore = fetchReviews.mock.calls.length
+    const summaryCallsBefore = fetchReviewSummary.mock.calls.length
+
+    await act(async () => {
+      mocks.wsHandler()
+    })
 
     await waitFor(() => {
-      expect(fetchReviews.mock.calls.length).toBeGreaterThanOrEqual(2)
-      expect(fetchReviewSummary.mock.calls.length).toBeGreaterThanOrEqual(2)
+      expect(fetchReviews.mock.calls.length).toBeGreaterThan(reviewsCallsBefore)
+      expect(fetchReviewSummary.mock.calls.length).toBeGreaterThan(summaryCallsBefore)
     })
   })
 

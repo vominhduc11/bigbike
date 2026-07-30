@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { SettingsScreen } from './SettingsScreen'
 
@@ -90,6 +90,87 @@ beforeEach(() => {
 })
 
 describe('SettingsScreen', () => {
+  it('shows a designed loading state before settings are available', () => {
+    mocks.fetchSettings.mockReturnValue(new Promise(() => {}))
+    renderScreen()
+
+    expect(screen.getByRole('button', { name: 'settings.refresh' })).toBeDisabled()
+    expect(screen.getByLabelText('settings.summaryAria')).toBeInTheDocument()
+  })
+
+  it('shows the initial error state and allows retrying', async () => {
+    mocks.fetchSettings.mockRejectedValueOnce(new Error('Mất kết nối'))
+    renderScreen()
+
+    expect(await screen.findByText('settings.loadError')).toBeInTheDocument()
+    expect(screen.getByText('Mất kết nối')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'common.retry' }))
+    expect(mocks.fetchSettings).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows a clear empty state when no settings are available', async () => {
+    mocks.fetchSettings.mockResolvedValue({ items: [] })
+    renderScreen()
+
+    expect(await screen.findByText('settings.noSettings')).toBeInTheDocument()
+    expect(screen.getByText('settings.noSettingsDesc')).toBeInTheDocument()
+  })
+
+  it('keeps the current tab and local draft while refreshing', async () => {
+    const user = userEvent.setup()
+    let resolveRefresh
+    mocks.fetchSettings
+      .mockResolvedValueOnce({ items: settings })
+      .mockReturnValueOnce(new Promise((resolve) => { resolveRefresh = resolve }))
+    renderScreen()
+
+    const siteName = await screen.findByLabelText(/Tên shop/)
+    await user.clear(siteName)
+    await user.type(siteName, 'BigBike mới')
+    await user.click(screen.getByRole('button', { name: 'settings.refresh' }))
+
+    expect(screen.getByRole('button', { name: 'settings.refreshing' })).toBeDisabled()
+    expect(siteName).toHaveValue('BigBike mới')
+
+    resolveRefresh({ items: settings })
+    await waitFor(() => expect(screen.getByRole('button', { name: 'settings.refresh' })).toBeEnabled())
+    expect(siteName).toHaveValue('BigBike mới')
+  })
+
+  it('keeps existing data and draft visible when refresh fails', async () => {
+    const user = userEvent.setup()
+    mocks.fetchSettings
+      .mockResolvedValueOnce({ items: settings })
+      .mockRejectedValueOnce(new Error('Không thể cập nhật'))
+    renderScreen()
+
+    const siteName = await screen.findByLabelText(/Tên shop/)
+    await user.clear(siteName)
+    await user.type(siteName, 'BigBike nháp')
+    await user.click(screen.getByRole('button', { name: 'settings.refresh' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Không thể cập nhật')
+    expect(siteName).toHaveValue('BigBike nháp')
+  })
+
+  it('derives KPI counts from visible settings and the current role', async () => {
+    const { unmount } = render(
+      <SettingsScreen canUpdate isSuperAdmin={false} navigate={vi.fn()} />,
+    )
+    const regularSummary = await screen.findByLabelText('settings.summaryAria')
+    expect(
+      Array.from(regularSummary.querySelectorAll('.bb-kpi-value')).map((node) => node.textContent),
+    ).toEqual(['3', '3', '0', '1'])
+
+    unmount()
+    renderScreen({ isSuperAdmin: true })
+    await screen.findByRole('button', { name: 'GENERAL' })
+    const superSummary = screen.getByLabelText('settings.summaryAria')
+    expect(
+      Array.from(superSummary.querySelectorAll('.bb-kpi-value')).map((node) => node.textContent),
+    ).toEqual(['4', '4', '0', '2'])
+  })
+
   it('shows the bank-transfer settings tab required by the current checkout rules', async () => {
     const user = userEvent.setup()
     renderScreen()
@@ -146,5 +227,33 @@ describe('SettingsScreen', () => {
 
     expect(await screen.findByText('Bạn chỉ có quyền xem cài đặt, không thể chỉnh sửa.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'settings.saveCount' })).not.toBeInTheDocument()
+  })
+
+  it('does not count a field as unsaved after reverting to its original value', async () => {
+    const user = userEvent.setup()
+    renderScreen()
+
+    const siteName = await screen.findByLabelText(/Tên shop/)
+    await user.clear(siteName)
+    await user.type(siteName, 'BigBike tạm')
+    expect(screen.getByRole('button', { name: 'settings.saveCount' })).toBeInTheDocument()
+
+    await user.clear(siteName)
+    await user.type(siteName, 'BigBike')
+    expect(screen.queryByRole('button', { name: 'settings.saveCount' })).not.toBeInTheDocument()
+    const summary = screen.getByLabelText('settings.summaryAria')
+    expect(within(summary).getByText('settings.kpi.unsaved').closest('.bb-kpi')).toHaveTextContent('0')
+  })
+
+  it('supports keyboard navigation in the mobile tab strip', async () => {
+    const user = userEvent.setup()
+    renderScreen()
+
+    const tabs = await screen.findAllByRole('tab')
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'true')
+    tabs[0].focus()
+    await user.keyboard('{ArrowRight}')
+    expect(tabs[1]).toHaveAttribute('aria-selected', 'true')
+    expect(tabs[1]).toHaveFocus()
   })
 })

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, RefreshCw, SlidersHorizontal } from 'lucide-react'
+import { ArrowRight, SlidersHorizontal } from 'lucide-react'
 import { ExportButton } from '@/components/ExportButton'
 import { toast } from '@/lib/toast'
 import { PageSizeSelect } from '../components/PageSizeSelect'
@@ -463,12 +463,14 @@ export function OrderListScreen({ navigate, canUpdate }) {
           value={searchInput}
           onChange={setSearchInput}
           placeholder={t('orders.searchPlaceholder')}
+          className="min-h-11"
           wrapperClassName="min-w-48 flex-1"
         />
         <FilterSelect
           value={query.sort}
           onValueChange={(v) => updateQuery({ sort: v }, { resetPage: true })}
           ariaLabel={t('orders.filterSort')}
+          className="min-h-11"
           options={[
             { value: 'createdAt:desc', label: t('sort.newestOrder') },
             { value: 'createdAt:asc', label: t('sort.oldestOrder') },
@@ -504,14 +506,16 @@ export function OrderListScreen({ navigate, canUpdate }) {
         <PageSizeSelect
           value={query.pageSize}
           onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
+          className="min-h-11"
         />
         <div className="hide-on-mobile">
-          <ColumnVisibilityToggle allColumns={allColumns} hiddenKeys={hiddenKeys} onToggle={toggleColumn} />
+          <ColumnVisibilityToggle
+            allColumns={allColumns}
+            hiddenKeys={hiddenKeys}
+            onToggle={toggleColumn}
+            className="min-h-11"
+          />
         </div>
-        <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={() => state.refetch()} disabled={state.isFetching}>
-          <RefreshCw size={13} className={state.isFetching ? 'animate-spin' : undefined} aria-hidden="true" />
-          {state.isFetching ? t('orders.refreshing') : t('orders.refresh')}
-        </Button>
         <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={resetFilters} disabled={!isFiltered}>
           <SlidersHorizontal size={13} aria-hidden="true" />{t('orders.clearFilters')}
         </Button>

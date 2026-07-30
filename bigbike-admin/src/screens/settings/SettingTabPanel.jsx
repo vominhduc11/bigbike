@@ -1,59 +1,123 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlertCircle, Lock } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Loader2, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StickyActionBar } from '@/components/layout'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
+import { cn } from '@/lib/utils'
 import { SettingField } from './SettingField'
-import { groupBySection, sectionTitle, settingWhere, SECTION_GUIDE } from './constants'
+import {
+  groupBySection,
+  isSettingDirty,
+  isWideSetting,
+  sectionDescription,
+  sectionTitle,
+  settingWhere,
+  SECTION_GUIDE,
+} from './constants'
 
 export function SettingTabPanel({
-  title, items, canUpdate, drafts, draftsEn, errors, onDraftChange, onDraftChangeEn,
-  onDraftBlur, onSave, onDiscard, saving,
+  title, description, items, canUpdate, drafts, draftsEn, errors, onDraftChange, onDraftChangeEn,
+  onDraftBlur, onSave, onDiscard, saving, saveSuccess, saveError,
 }) {
   const { t } = useTranslation()
-  const isDirtyField = (s) => drafts[s.key] !== undefined || draftsEn[s.key] !== undefined
+  const isDirtyField = (setting) => isSettingDirty(setting, drafts, draftsEn)
   const dirtyCount = items.filter(isDirtyField).length
-  const hasError = items.some((s) => errors[s.key])
+  const hasError = items.some((setting) => errors[setting.key])
 
   const sections = useMemo(() => groupBySection(items), [items])
-  // Chống ngợp: khối đầu (bắt buộc/thường dùng) luôn mở; các khối sau gom vào
-  // CollapsibleSection, đóng sẵn — admin bung khi cần. `keepMounted` để không
-  // giấu lỗi/không reset ô khi đóng.
+  const errorSections = useMemo(
+    () => new Set(
+      sections
+        .slice(1)
+        .filter(({ fields }) => fields.some((setting) => errors[setting.key]))
+        .map(({ sec }) => sec),
+    ),
+    [errors, sections],
+  )
   const [openOverride, setOpenOverride] = useState({})
-  const isOpen = (sec) => openOverride[sec] ?? false
-  const toggle = (sec) => setOpenOverride((p) => ({ ...p, [sec]: !(p[sec] ?? false) }))
+  const isOpen = (sec) => errorSections.has(sec) || (openOverride[sec] ?? false)
+  const toggle = (sec) => setOpenOverride((previous) => ({
+    ...previous,
+    [sec]: !(previous[sec] ?? false),
+  }))
 
-  const renderField = (setting) => (
-    <SettingField
-      key={setting.key}
-      setting={setting}
-      where={settingWhere(setting, t)}
-      canUpdate={canUpdate}
-      draft={drafts[setting.key]}
-      draftEn={draftsEn[setting.key]}
-      error={errors[setting.key]}
-      onChange={onDraftChange}
-      onChangeEn={onDraftChangeEn}
-      onBlur={onDraftBlur}
-    />
+  const renderFields = (fields) => (
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      {fields.map((setting) => (
+        <div key={setting.key} className={cn(isWideSetting(setting) && 'xl:col-span-2')}>
+          <SettingField
+            setting={setting}
+            where={settingWhere(setting, t)}
+            canUpdate={canUpdate}
+            draft={drafts[setting.key]}
+            draftEn={draftsEn[setting.key]}
+            error={errors[setting.key]}
+            onChange={onDraftChange}
+            onChangeEn={onDraftChangeEn}
+            onBlur={onDraftBlur}
+          />
+        </div>
+      ))}
+    </div>
   )
 
   const internalLabel = t('settings.internal', { defaultValue: 'Nội bộ' })
+  let actionInfo = null
+  if (saveError) {
+    actionInfo = (
+      <span className="inline-flex items-center gap-1.5 font-semibold text-danger" role="alert">
+        <AlertCircle size={14} aria-hidden="true" /> {saveError}
+      </span>
+    )
+  } else if (saving) {
+    actionInfo = (
+      <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+        <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+        {t('settings.saving', { defaultValue: 'Đang lưu thay đổi…' })}
+      </span>
+    )
+  } else if (saveSuccess) {
+    actionInfo = (
+      <span className="inline-flex items-center gap-1.5 font-semibold text-success">
+        <CheckCircle2 size={15} aria-hidden="true" />
+        {t('settings.saveSuccess')}
+      </span>
+    )
+  } else {
+    actionInfo = (
+      <span className="inline-flex items-center gap-1.5 font-semibold text-warning">
+        <AlertCircle size={14} aria-hidden="true" />
+        {t('settings.unsavedCount', { count: dirtyCount })}
+      </span>
+    )
+  }
 
   return (
     <>
-      <div className="bb-card">
+      <div className="bb-card overflow-hidden">
         <div className="bb-card-header">
-          <div>
-            <h3>{title}</h3>
-            <p>{t('settings.panelSummary', { count: items.length, defaultValue: '{{count}} mục cài đặt' })}</p>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3>{title}</h3>
+              {dirtyCount > 0 ? (
+                <span className="bb-badge bb-badge-warning">
+                  {t('settings.unsavedShort', { count: dirtyCount, defaultValue: '{{count}} chưa lưu' })}
+                </span>
+              ) : null}
+            </div>
+            <p>{description || t('settings.panelSummary', { count: items.length, defaultValue: '{{count}} mục cài đặt' })}</p>
           </div>
+          <span className="bb-badge bb-badge-neutral">
+            {t('settings.panelSummary', { count: items.length, defaultValue: '{{count}} mục cài đặt' })}
+          </span>
         </div>
-        <div className="bb-card-body">
+
+        <div className="bb-card-body space-y-5">
           {sections.map(({ sec, fields }, idx) => {
             const meta = SECTION_GUIDE[sec]
             const secTitle = sectionTitle(sec, t)
+            const secDescription = sectionDescription(sec, t)
             const dirtyInSec = fields.filter(isDirtyField).length
             const dirtyBadge = dirtyInSec > 0 ? (
               <span className="bb-badge bb-badge-warning" aria-label={t('settings.tabChangeCount', { count: dirtyInSec })}>
@@ -61,20 +125,27 @@ export function SettingTabPanel({
               </span>
             ) : null
 
-            // Khối đầu: giữ mở, render phẳng như trước (không cần chevron cho khối luôn hiện).
             if (idx === 0) {
               return (
-                <div key={sec}>
-                  <div className="flex items-center justify-between gap-2 mt-4 mb-3 pb-2 border-b border-border">
-                    <span className="font-semibold text-[length:var(--admin-text-sm)]">{secTitle}</span>
-                    {meta?.internal ? (
-                      <span className="bb-muted inline-flex items-center gap-1 text-xs whitespace-nowrap">
-                        <Lock size={12} /> {internalLabel}
-                      </span>
-                    ) : null}
+                <section key={sec} className="rounded-md border border-border bg-surface-muted p-4">
+                  <div className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
+                    <div className="min-w-0">
+                      <h4 className="m-0 text-base font-semibold text-foreground">{secTitle}</h4>
+                      {secDescription ? (
+                        <p className="mb-0 mt-1 text-sm text-muted-foreground">{secDescription}</p>
+                      ) : null}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {meta?.internal ? (
+                        <span className="bb-badge bb-badge-neutral">
+                          <Lock size={12} aria-hidden="true" /> {internalLabel}
+                        </span>
+                      ) : null}
+                      {dirtyBadge}
+                    </div>
                   </div>
-                  {fields.map(renderField)}
-                </div>
+                  {renderFields(fields)}
+                </section>
               )
             }
 
@@ -82,37 +153,38 @@ export function SettingTabPanel({
               <CollapsibleSection
                 key={sec}
                 title={secTitle}
-                hint={meta?.internal ? internalLabel : undefined}
+                hint={secDescription || (meta?.internal ? internalLabel : undefined)}
                 open={isOpen(sec)}
                 onToggle={() => toggle(sec)}
                 keepMounted
                 badge={dirtyBadge}
               >
-                {fields.map(renderField)}
+                {renderFields(fields)}
               </CollapsibleSection>
             )
           })}
         </div>
       </div>
 
-      {canUpdate && dirtyCount > 0 && (
-        <StickyActionBar
-          ariaLabel={t('common.actionBarLabel')}
-          info={
-            <span className="settings-unsaved-hint">
-              <AlertCircle size={14} />
-              {t('settings.unsavedCount', { count: dirtyCount })}
-            </span>
-          }
-        >
-          <Button variant="secondary" size="sm" onClick={onDiscard} disabled={saving}>
-            {t('common.cancel')}
-          </Button>
-          <Button size="sm" loading={saving} disabled={hasError} onClick={onSave}>
-            {t('settings.saveCount', { count: dirtyCount })}
-          </Button>
+      {canUpdate && (dirtyCount > 0 || saving || saveSuccess || saveError) ? (
+        <StickyActionBar ariaLabel={t('common.actionBarLabel')} info={actionInfo}>
+          {dirtyCount > 0 ? (
+            <Button className="min-h-11" variant="secondary" onClick={onDiscard} disabled={saving}>
+              {t('common.cancel')}
+            </Button>
+          ) : null}
+          {dirtyCount > 0 ? (
+            <Button
+              className="min-h-11"
+              loading={saving}
+              disabled={hasError}
+              onClick={onSave}
+            >
+              {t('settings.saveCount', { count: dirtyCount })}
+            </Button>
+          ) : null}
         </StickyActionBar>
-      )}
+      ) : null}
     </>
   )
 }

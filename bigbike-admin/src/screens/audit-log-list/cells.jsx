@@ -1,6 +1,14 @@
+import { AlertTriangle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
-import { DANGEROUS_ACTIONS, toBadgeVariant, getModuleTone, getModuleLabel, getActionLabel } from './constants'
+import { cn } from '@/lib/utils'
+import {
+  DANGEROUS_ACTIONS,
+  getActionLabel,
+  getModuleLabel,
+  getModuleTone,
+  toBadgeVariant,
+} from './constants'
 
 export function ModuleBadge({ resourceType }) {
   const { t } = useTranslation()
@@ -12,53 +20,84 @@ export function ModuleBadge({ resourceType }) {
 export function ActorCell({ log }) {
   const { t } = useTranslation()
   const displayName = log.actorDisplayName || log.actorEmail || null
-  const fallback = t(`auditLog.actorType.${log.actorType}`, { defaultValue: t('auditLog.actorType.ADMIN') })
-  const actorTypeLabel = log.actorType && log.actorType !== 'ADMIN'
-    ? t(`auditLog.actorType.${log.actorType}`, { defaultValue: log.actorType })
-    : null
+  const fallback = t(`auditLog.actorType.${log.actorType}`, {
+    defaultValue: t('auditLog.actorType.ADMIN'),
+  })
+  const secondary = log.actorDisplayName && log.actorEmail
+    ? log.actorEmail
+    : (log.actorType && log.actorType !== 'ADMIN'
+      ? t(`auditLog.actorType.${log.actorType}`, { defaultValue: log.actorType })
+      : null)
 
   return (
-    <div className="audit-actor-cell">
-      {displayName
-        ? <span className="audit-actor-name">
-            {displayName}
-            {actorTypeLabel && <span className="audit-actor-type"> ({actorTypeLabel})</span>}
-          </span>
-        : <span className="audit-actor-unknown">{fallback}</span>
-      }
+    <div className="min-w-0">
+      <span className={cn(
+        'block max-w-48 truncate text-sm font-medium text-foreground',
+        !displayName && 'italic text-muted-foreground',
+      )}>
+        {displayName || fallback}
+      </span>
+      {secondary ? (
+        <span className="mt-0.5 block max-w-48 truncate text-xs text-muted-foreground">
+          {secondary}
+        </span>
+      ) : null}
     </div>
   )
 }
 
 export function ResourceCell({ log }) {
-  const label = log.resourceCode || log.resourceDisplayName || null
-  if (label) return <span className="audit-resource-label">{label}</span>
-  if (log.resourceId) {
-    // #9: show raw ID instead of "ID #abc123" prefix — just the short hex
-    return <span className="audit-resource-label audit-resource-id" title={log.resourceId}>{log.resourceId.slice(0, 8)}</span>
-  }
-  return <span className="text-muted-foreground">—</span>
+  const primary = log.resourceCode
+    || log.resourceDisplayName
+    || (log.resourceId ? log.resourceId.slice(0, 8) : null)
+  const secondary = log.resourceCode && log.resourceDisplayName
+    && log.resourceCode !== log.resourceDisplayName
+    ? log.resourceDisplayName
+    : null
+
+  if (!primary) return <span className="text-muted-foreground">—</span>
+
+  return (
+    <div className="min-w-0">
+      <span
+        className={cn(
+          'block max-w-56 truncate text-sm font-medium text-foreground',
+          !log.resourceCode && !log.resourceDisplayName && 'font-mono text-xs text-muted-foreground',
+        )}
+        title={log.resourceId || primary}
+      >
+        {primary}
+      </span>
+      {secondary ? (
+        <span className="mt-0.5 block max-w-56 truncate text-xs text-muted-foreground">
+          {secondary}
+        </span>
+      ) : null}
+    </div>
+  )
 }
 
 export function ActionLabel({ action }) {
   const { t } = useTranslation()
   const isDangerous = DANGEROUS_ACTIONS.has(action)
-  // #9: fall back to raw code in parens rather than generic "other activity" (helper dùng chung)
   const label = getActionLabel(t, action)
 
   return (
-    <span className={`audit-action-label${isDangerous ? ' audit-action-danger' : ''}`}>
-      {isDangerous && <span className="audit-danger-icon" aria-label={label}>⚠</span>}
-      {label}
+    <span className={cn(
+      'inline-flex items-start gap-1.5 text-sm font-medium text-foreground',
+      isDangerous && 'text-danger',
+    )}>
+      {isDangerous ? <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden="true" /> : null}
+      <span>{label}</span>
     </span>
   )
 }
 
 export function DetailRow({ label, children }) {
   return (
-    <div className="audit-detail-row">
-      <span className="audit-detail-label">{label}</span>
-      <span className="audit-detail-value">{children}</span>
+    <div className="min-w-0 rounded-md border border-border bg-surface-muted p-3">
+      <dt className="text-xs font-semibold text-muted-foreground">{label}</dt>
+      <dd className="mt-1 break-words text-sm text-foreground">{children}</dd>
     </div>
   )
 }

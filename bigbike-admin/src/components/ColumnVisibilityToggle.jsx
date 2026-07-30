@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Columns3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
   DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem,
@@ -9,13 +10,13 @@ import {
 // T7 — dropdown "Cột hiển thị" dùng chung cho mọi AdminTable. Ghép với
 // useColumnVisibility (lib/useColumnVisibility.js): screen tự lọc `columns`
 // truyền vào AdminTable, component này chỉ render UI bật/tắt.
-export function ColumnVisibilityToggle({ allColumns, hiddenKeys, onToggle }) {
+export function ColumnVisibilityToggle({ allColumns, hiddenKeys, onToggle, className }) {
   const { t } = useTranslation()
   const visibleCount = allColumns.length - hiddenKeys.length
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button type="button" variant="outline" size="sm" className="gap-1.5">
+        <Button type="button" variant="outline" size="sm" className={cn('gap-1.5', className)}>
           <Columns3 size={14} aria-hidden="true" />
           {t('common.columns', { defaultValue: 'Cột hiển thị' })}
         </Button>

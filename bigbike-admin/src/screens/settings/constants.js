@@ -17,6 +17,18 @@ export function displayValue(val) {
   return val ?? ''
 }
 
+export function isSettingDirty(setting, drafts, draftsEn) {
+  const viDirty = drafts[setting.key] !== undefined
+    && displayValue(drafts[setting.key]) !== displayValue(setting.value)
+  const enDirty = draftsEn[setting.key] !== undefined
+    && displayValue(draftsEn[setting.key]) !== displayValue(setting.valueEn)
+  return viDirty || enDirty
+}
+
+export function isWideSetting(setting) {
+  return ['HTML', 'IMAGE_URL', 'LONG_TEXT'].includes(setting.valueType)
+}
+
 const INPUT_TYPE_MAP = {
   email: 'email',
   url: 'url',
@@ -186,12 +198,36 @@ export const HIDDEN_GROUPS = new Set(['PUBLIC_HERO', 'CONTACT', 'PRODUCT_ASSIGN'
 export const HIDDEN_KEYS = new Set()
 
 export const TAB_META = {
-  GENERAL:     { icon: Store,      labelKey: 'settings.group_general' },
-  CONTACT:     { icon: Phone,      labelKey: 'settings.group_contact' },
-  PAYMENT:     { icon: Landmark,   labelKey: 'settings.group_payment' },
-  PUBLIC_HERO: { icon: ImageIcon,  labelKey: 'settings.group_public_hero' },
-  SEO:         { icon: Globe,      labelKey: 'settings.group_seo' },
-  PRODUCT_ASSIGN: { icon: Users,   labelKey: 'settings.group_product_assign' },
+  GENERAL: {
+    icon: Store,
+    labelKey: 'settings.group_general',
+    descriptionKey: 'settings.groupDescription.general',
+  },
+  CONTACT: {
+    icon: Phone,
+    labelKey: 'settings.group_contact',
+    descriptionKey: 'settings.groupDescription.contact',
+  },
+  PAYMENT: {
+    icon: Landmark,
+    labelKey: 'settings.group_payment',
+    descriptionKey: 'settings.groupDescription.payment',
+  },
+  PUBLIC_HERO: {
+    icon: ImageIcon,
+    labelKey: 'settings.group_public_hero',
+    descriptionKey: 'settings.groupDescription.publicHero',
+  },
+  SEO: {
+    icon: Globe,
+    labelKey: 'settings.group_seo',
+    descriptionKey: 'settings.groupDescription.seo',
+  },
+  PRODUCT_ASSIGN: {
+    icon: Users,
+    labelKey: 'settings.group_product_assign',
+    descriptionKey: 'settings.groupDescription.productAssign',
+  },
 }
 
 // Bản dịch tiếng Việt cho từng setting key (admin shop motor đọc dễ hiểu hơn description English từ migrations)
@@ -275,19 +311,52 @@ export function tabLabel(group, t) {
   return meta.fallbackLabel ?? group ?? t('settings.groupGeneral')
 }
 
+export function tabDescription(group, t) {
+  const meta = TAB_META[group?.toUpperCase()] || FALLBACK_META
+  if (!meta.descriptionKey) return ''
+  return t(meta.descriptionKey)
+}
+
 // ── Hướng dẫn vị trí: mỗi ô render ở đâu trên web ───────────
 
 // Khối hiển thị → tiêu đề.
 export const SECTION_GUIDE = {
-  general_brand:   { title: 'SEO & thông tin shop — mọi trang' },
-  contact_main:    { title: 'Trang Liên hệ + Header' },
-  contact_social:  { title: 'Mạng xã hội — chat nổi + trang Liên hệ' },
-  payment_bank:    { title: 'Hiện khi khách đặt đơn & chọn chuyển khoản' },
-  hero_products:   { title: 'Banner đầu trang Tất cả sản phẩm' },
-  hero_brands:     { title: 'Banner đầu trang Thương hiệu' },
-  hero_news:       { title: 'Banner đầu trang Tin tức' },
-  hero_default:    { title: 'Banner mặc định — trang listing chưa đặt ảnh riêng' },
-  seo_home:        { title: 'Nội dung SEO cuối trang chủ' },
+  general_brand: {
+    title: 'SEO & thông tin shop — mọi trang',
+    description: 'Thông tin nhận diện chính được dùng xuyên suốt website.',
+  },
+  contact_main: {
+    title: 'Trang Liên hệ + Header',
+    description: 'Thông tin khách nhìn thấy khi cần liên hệ với cửa hàng.',
+  },
+  contact_social: {
+    title: 'Mạng xã hội — chat nổi + trang Liên hệ',
+    description: 'Các kênh hỗ trợ và mạng xã hội công khai của cửa hàng.',
+  },
+  payment_bank: {
+    title: 'Tài khoản nhận chuyển khoản',
+    description: 'Thông tin hiển thị cho khách khi chọn thanh toán chuyển khoản.',
+  },
+  hero_products: {
+    title: 'Banner đầu trang Tất cả sản phẩm',
+    description: 'Hình ảnh và nội dung mở đầu trang danh sách sản phẩm.',
+  },
+  hero_brands: {
+    title: 'Banner đầu trang Thương hiệu',
+    description: 'Hình ảnh và nội dung mở đầu trang thương hiệu.',
+  },
+  hero_news: {
+    title: 'Banner đầu trang Tin tức',
+    description: 'Hình ảnh và nội dung mở đầu trang tin tức.',
+  },
+  hero_default: {
+    title: 'Banner mặc định',
+    description: 'Dùng khi trang danh sách chưa có ảnh riêng.',
+  },
+  seo_home: {
+    title: 'Nội dung SEO cuối trang chủ',
+    description: 'Nội dung dài hỗ trợ tìm kiếm, hiển thị ở cuối trang chủ.',
+  },
 }
 export const SECTION_ORDER = Object.keys(SECTION_GUIDE)
 
@@ -347,6 +416,12 @@ export function groupBySection(items) {
   }
   const idx = (s) => { const i = SECTION_ORDER.indexOf(s); return i === -1 ? 999 : i }
   return [...map.keys()].sort((a, b) => idx(a) - idx(b)).map((sec) => ({ sec, fields: map.get(sec) }))
+}
+
+export function sectionDescription(sec, t) {
+  const fallback = SECTION_GUIDE[sec]?.description || ''
+  if (!fallback) return ''
+  return t(`settings.sectionDescription.${sec}`, { defaultValue: fallback })
 }
 
 // ── Autosave utilities (F9) ──────────────────────────────────────────────────

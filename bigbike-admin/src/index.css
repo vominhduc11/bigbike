@@ -1580,55 +1580,33 @@ a {
   border-collapse: collapse;
   table-layout: fixed;
 }
-.cat-tree-table th,
 .cat-tree-table td {
-  padding: var(--admin-space-2) var(--admin-space-3);
+  height: var(--bb-row-h);
+  padding: var(--admin-space-3);
   text-align: left;
   border-bottom: 1px solid var(--admin-color-border-subtle);
   font-size: var(--admin-text-sm);
+  color: var(--admin-color-text-primary);
   vertical-align: middle;
 }
-/* S1: align data-cell density to bb-table (44px row, zero vertical padding); header keeps its padding */
-.cat-tree-table td {
-  padding-top: 0;
-  padding-bottom: 0;
-  height: var(--bb-row-h);
-}
-.cat-tree-table th {
-  background: var(--admin-color-surface-muted);
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: var(--admin-color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  position: sticky;
-  /* Default: stick to viewport top.
-     also sticky at top:0 it would otherwise overlap the header — so the
-     wrapper bumps --thead-top to push the header down by the bar height. */
-  top: var(--thead-top, 0px);
-  z-index: 2;
-  /* #19: shadow tách lớp khi sticky cuộn dưới các row.
-     The token-driven shadow already swaps to a darker rgba in dark mode. */
-  box-shadow: 0 1px 0 var(--admin-color-border-subtle), var(--admin-shadow-xs);
-}
 
-/* When the bulk action bar precedes a tree-table within the same scroll
-   container, push the table header down so the two sticky strips stack. */
 .cat-tree-table tbody tr {
-  transition: background-color 120ms ease-out;
+  transition: background-color var(--admin-transition-fast);
 }
 .cat-tree-table tbody tr:hover td { background: var(--admin-color-surface-hover); }
+.cat-tree-table tbody tr:last-child td { border-bottom: 0; }
 .cat-tree-table .align-right { text-align: right; }
+.cat-tree-table td.align-right { white-space: nowrap; }
 
-/* Tree and flat modes share the same compact column rhythm as Brand list. */
+/* Tree and flat modes share the same column rhythm as the standard admin lists. */
 .cat-tree-table col.col-name      { width: auto; }
-.cat-tree-table col.col-vis       { width: 150px; }
-.cat-tree-table col.col-homepage  { width: 180px; }
-.cat-tree-table col.col-updated   { width: 160px; }
-.cat-tree-table col.col-actions   { width: 168px; }
+.cat-tree-table col.col-vis       { width: 8.5rem; }
+.cat-tree-table col.col-homepage  { width: 9.5rem; }
+.cat-tree-table col.col-updated   { width: 9.5rem; }
+.cat-tree-table col.col-actions   { width: 10.25rem; }
 
 /* Khi có checkbox thêm 1 cột select đầu tiên */
-.cat-tree-table col.col-select { width: 48px; }
+.cat-tree-table col.col-select { width: 3rem; }
 
 /* #16: chỉ làm nhợt text/image/badge — không nhợt button + checkbox */
 /* A2: dùng màu chữ muted (contrast ~4.83:1, đạt AA) thay vì opacity trên màu đậm (opacity 0.55 chỉ ~3.96:1) */
@@ -1637,17 +1615,17 @@ a {
   color: var(--admin-color-text-muted);
 }
 
-.cat-row--hidden .thumbnail-wrap--sm,
+.cat-row--hidden .bb-product-thumb,
 .cat-row--hidden .cat-status-badge {
   opacity: 0.55;
 }
 
 .cat-select-cell {
-  width: 48px;
+  width: 3rem;
   text-align: center;
   vertical-align: middle;
-  padding-left: var(--admin-space-2);
-  padding-right: var(--admin-space-2);
+  padding-left: var(--admin-space-3);
+  padding-right: 0;
 }
 /* #5: bulk action bar sticky dưới sticky header. + #15: fade-in mượt */
 .cat-name-cell {
@@ -1657,11 +1635,10 @@ a {
   min-width: 0;
 }
 
-/* Tên là button — trông như link, không như button */
+/* Tên danh mục là row link chuẩn, giữ tên chính và slug phụ cùng một nhịp. */
 .cat-name-link {
   display: flex;
   flex-direction: column;
-  gap: 2px;
   background: none;
   border: 0;
   padding: 0;
@@ -1682,11 +1659,13 @@ a {
   font-weight: 600;
 }
 .cat-name-link:hover strong { color: var(--admin-color-primary); text-decoration: underline; }
+.cat-name-link:focus-visible {
+  outline: 2px solid var(--admin-color-primary);
+  outline-offset: 2px;
+  border-radius: var(--admin-radius-xs);
+}
 .cat-name-link:focus-visible strong {
   color: var(--admin-color-primary);
-  outline: 2px solid currentColor;
-  outline-offset: 2px;
-  border-radius: 2px;
 }
 
 /* #3: chevron rotate khi mở */
@@ -1694,9 +1673,11 @@ a {
   background: none;
   border: 0;
   cursor: pointer;
-  padding: 4px;
+  width: var(--admin-space-6);
+  height: var(--admin-space-6);
+  padding: 0;
   color: var(--admin-color-text-muted);
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
@@ -1706,22 +1687,16 @@ a {
 .cat-expand-btn:hover { background: var(--admin-color-surface-raised); }
 .cat-expand-btn svg { transition: transform 160ms ease-out; }
 .cat-expand-btn.is-open svg { transform: rotate(90deg); }
-.cat-expand-spacer { display: inline-block; width: 22px; flex-shrink: 0; }
+.cat-expand-spacer { display: inline-block; width: var(--admin-space-6); flex-shrink: 0; }
 
-.thumbnail-wrap--sm { width: 40px; height: 40px; flex-shrink: 0; }
-.thumbnail-wrap--sm img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--admin-radius-thumb); }
 .thumbnail-placeholder {
   display: flex; align-items: center; justify-content: center;
   width: 100%; height: 100%;
-  background: var(--admin-color-surface-raised);
-  border: 1px dashed var(--admin-color-border-default);
-  border-radius: var(--admin-radius-xs);
+  background: transparent;
   color: var(--admin-color-text-muted);
 }
 
 .cat-slug {
-  font-size: var(--admin-text-xs);
-  color: var(--admin-color-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1748,14 +1723,13 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 22px;
+  width: var(--admin-space-6);
+  height: var(--admin-space-6);
   border: 0;
   background: transparent;
   color: var(--admin-color-text-placeholder);
   cursor: grab;
   padding: 0;
-  margin-right: 4px;
   flex-shrink: 0;
   border-radius: var(--admin-radius-xs);
   touch-action: none;
@@ -1998,16 +1972,6 @@ a {
   transition: width 0.2s;
 }
 .mpicker-upload-err { color: var(--admin-color-status-danger-text); font-size: var(--admin-text-xs); }
-.mpicker-mode-badge {
-  margin-left: var(--admin-space-2);
-  font-size: var(--admin-text-xs);
-  font-weight: 500;
-  background: var(--admin-color-primary);
-  color: var(--admin-color-text-inverse);
-  border-radius: var(--admin-radius-full);
-  padding: 2px 8px;
-  vertical-align: middle;
-}
 .mpicker-hint--selected { color: var(--admin-color-primary); font-weight: 500; }
 
 /* ─── Modal responsive (mobile) ──────────────────────────────────────────────*/
@@ -2773,28 +2737,6 @@ a {
   font-weight: 700;
 }
 
-.medialib-view-switcher {
-  display: inline-flex;
-  border: 1px solid var(--c-border);
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.medialib-view-switcher button {
-  background: transparent;
-  border: none;
-  padding: 6px 10px;
-  cursor: pointer;
-  color: var(--c-text-muted);
-  display: flex;
-  align-items: center;
-}
-
-.medialib-view-switcher button.medialib-is-active {
-  background: var(--c-primary);
-  color: #fff;
-}
-
 .medialib-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -2999,9 +2941,8 @@ a {
   border-color: rgba(255, 255, 255, 0.7);
 }
 
-/* A1: ring focus-visible cho nút icon trên thẻ/dòng media (dùng trong component chung). */
-.medialib-icon-btn:focus-visible,
-.medialib-icon-btn-light:focus-visible {
+/* A1: ring focus-visible cho nút icon trên thẻ media. */
+.medialib-icon-btn:focus-visible {
   outline: 2px solid var(--bb-primary);
   outline-offset: 2px;
 }
@@ -3019,168 +2960,9 @@ a {
   border-color: rgba(255, 200, 200, 0.8);
 }
 
-.medialib-btn-danger-solid {
-  background: color-mix(in srgb, var(--admin-color-status-danger-text) 70%, transparent);
-  border-color: rgba(255, 255, 255, 0.5);
-  color: #fff;
-}
-
-.medialib-btn-danger-solid:hover {
-  background: color-mix(in srgb, var(--admin-color-status-danger-text) 95%, transparent);
-  border-color: rgba(255, 200, 200, 0.85);
-}
-
 .medialib-icon-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-/* Light variant — used in list-view actions where the background is the surface,
-   not a dark gradient. Same shape, dark icon, subtle border. */
-.medialib-icon-btn-light {
-  flex: none;
-  background: var(--c-surface);
-  color: var(--c-text-primary);
-  border: 1px solid var(--c-border);
-  border-radius: 4px;
-  padding: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-
-.medialib-icon-btn-light:hover {
-  background: var(--c-bg-subtle);
-  border-color: var(--c-primary);
-  color: var(--c-primary);
-}
-
-.medialib-icon-btn-light.medialib-btn-danger {
-  background: var(--c-surface);
-  border-color: var(--c-border);
-  color: var(--c-danger);
-}
-
-.medialib-icon-btn-light.medialib-btn-danger:hover {
-  background: color-mix(in srgb, var(--admin-color-brand-red) 8%, transparent);
-  border-color: var(--c-danger);
-}
-
-.medialib-icon-btn-light.medialib-btn-danger-solid {
-  background: var(--c-surface);
-  border-color: var(--c-border);
-  color: var(--admin-color-brand-red-active);
-}
-
-.medialib-icon-btn-light.medialib-btn-danger-solid:hover {
-  background: color-mix(in srgb, var(--admin-color-brand-red-active) 10%, transparent);
-  border-color: var(--admin-color-brand-red-active);
-}
-
-.medialib-icon-btn-light:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* List view */
-.medialib-list {
-  border: 1px solid var(--c-border);
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--c-surface);
-}
-
-.medialib-list-row {
-  display: grid;
-  grid-template-columns: 32px 64px 1fr 100px 100px 100px 80px 160px;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--c-border);
-  transition: background 0.1s;
-}
-
-.medialib-list-row:last-child { border-bottom: none; }
-.medialib-list-row:hover { background: var(--c-bg-subtle); }
-.medialib-list-row.medialib-is-selected { background: var(--admin-color-surface-selected); }
-
-.medialib-list-thumb {
-  width: 56px;
-  height: 56px;
-  border-radius: 4px;
-  overflow: hidden;
-  background: var(--c-bg-subtle);
-  cursor: zoom-in;
-  border: 1px solid var(--c-border);
-}
-
-.medialib-list-thumb img,
-.medialib-list-thumb video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.medialib-list-name {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.medialib-list-name-primary {
-  font-size: 0.85rem;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.medialib-list-name-secondary {
-  font-size: 0.72rem;
-  color: var(--c-text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.medialib-list-actions {
-  display: flex;
-  gap: 4px;
-  justify-content: flex-end;
-}
-
-.medialib-list-header {
-  display: grid;
-  grid-template-columns: 32px 64px 1fr 100px 100px 100px 80px 160px;
-  gap: 12px;
-  padding: 8px 12px;
-  background: var(--c-bg-subtle);
-  border-bottom: 1px solid var(--c-border);
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  color: var(--c-text-muted);
-}
-
-/* responsive (RC-9): the fixed 8-column list grid overflows below ~md.
-   Hide the column header and let each row wrap into a flex card instead. */
-@media (max-width: 768px) {
-  .medialib-list-header { display: none; }
-  .medialib-list-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 12px;
-  }
-  .medialib-list-name { flex: 1 1 55%; }
-  .medialib-list-actions { flex: 1 1 100%; justify-content: flex-start; }
 }
 
 /* Pagination wrapper */
@@ -3588,10 +3370,6 @@ a {
   position: relative;
 }
 
-.mediafolder-item-hover:hover .mediafolder-item-actions {
-  opacity: 1;
-}
-
 .mediafolder-item-btn {
   all: unset;
   display: flex;
@@ -3643,6 +3421,7 @@ a {
   color: #fff;
 }
 
+/* Chỉ render khi bật chế độ "Quản lý" nên hiện luôn, không ẩn chờ hover. */
 .mediafolder-item-actions {
   position: absolute;
   right: 4px;
@@ -3650,8 +3429,6 @@ a {
   transform: translateY(-50%);
   display: flex;
   gap: 2px;
-  opacity: 0;
-  transition: opacity 0.1s;
   background: var(--c-surface);
   padding: 2px;
 }
