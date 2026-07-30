@@ -18,9 +18,12 @@ import com.bigbike.bigbike_backend.persistence.repository.media.MediaJpaReposito
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import io.minio.MinioClient;
 import io.minio.RemoveObjectArgs;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.UUID;
+import javax.imageio.ImageIO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -94,6 +97,20 @@ class AdminMediaP0Test {
     }
 
     @Test
+    void uploadSmallValidPng_isAcceptedWithoutSharedPixelFloor() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "givi-logo.png", "image/png", pngBytes(400, 200));
+
+        mockMvc.perform(multipart("/api/v1/admin/media")
+                        .file(file)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.mimeType").value("image/png"))
+                .andExpect(jsonPath("$.data.width").value(400))
+                .andExpect(jsonPath("$.data.height").value(200));
+    }
+
+    @Test
     void upload_svgWithScript_isSanitizedAndReturns201() throws Exception {
         // SVG upload is now accepted; the sanitizer strips the embedded <script> before storage.
         // (Per-vector sanitization is asserted at the unit level in SvgSanitizerTest.)
@@ -159,6 +176,14 @@ class AdminMediaP0Test {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
+
+    private static byte[] pngBytes(int width, int height) throws IOException {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            ImageIO.write(image, "png", output);
+            return output.toByteArray();
+        }
     }
 
     // ── Permission ────────────────────────────────────────────────────────────

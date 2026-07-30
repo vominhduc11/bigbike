@@ -124,6 +124,10 @@ describe('BrandListScreen', () => {
     const user = userEvent.setup()
 
     const chip = await screen.findByRole('button', { name: 'LS2' })
+    const recentItems = screen.getByRole('group', { name: 'common.recentItems' })
+    const filterBar = screen.getByRole('region', { name: 'brands.filterAria' })
+    expect(recentItems.compareDocumentPosition(filterBar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
     await user.click(chip)
     expect(navigate).toHaveBeenCalledWith('/admin/brands/brand_ls2')
     localStorage.removeItem('recent:brands')

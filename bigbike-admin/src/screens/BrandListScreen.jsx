@@ -361,28 +361,37 @@ export function BrandListScreen({ navigate, canUpdate }) {
         ) : null}
       />
 
+      {/* O9 — Vừa xem gần đây */}
+      <RecentItemsChips items={recentBrandItems} onSelect={(item) => navigate(`/admin/brands/${item.id}`)} />
+
       {!canUpdate ? (
         <ReadOnlyBanner warning={t('brands.readOnly', { defaultValue: 'Bạn chỉ có quyền xem thương hiệu. Cần quyền cập nhật danh mục để thay đổi dữ liệu.' })} />
       ) : null}
 
-      <FilterBar ariaLabel={t('brands.filterAria', { defaultValue: 'Bộ lọc thương hiệu' })} className="mt-4">
+      <FilterBar ariaLabel={t('brands.filterAria', { defaultValue: 'Bộ lọc thương hiệu' })} className="items-center">
         <FilterSearchInput
           value={searchInput}
           onChange={setSearchInput}
           placeholder={t('brands.searchPlaceholder')}
           ariaLabel={t('brands.searchPlaceholder')}
-          className="min-w-56"
+          className="min-h-11"
+          wrapperClassName="min-w-48 flex-1"
         />
         <FilterSelect
           value={query.visibility}
           onValueChange={(value) => updateQuery({ visibility: value }, true)}
           ariaLabel={t('brands.filterVisibility')}
+          className="min-h-11"
           options={[
             { value: 'VISIBLE', label: t('brands.filterVisibilityVisible', { defaultValue: 'Đang hiển thị' }) },
             { value: 'HIDDEN', label: t('brands.filterVisibilityHidden', { defaultValue: 'Thùng rác' }) },
           ]}
         />
-        <PageSizeSelect value={query.pageSize} onChange={(pageSize) => updateQuery({ pageSize }, true)} />
+        <PageSizeSelect
+          value={query.pageSize}
+          onChange={(pageSize) => updateQuery({ pageSize }, true)}
+          className="min-h-11"
+        />
         <Button
           type="button"
           variant="secondary"
@@ -407,9 +416,6 @@ export function BrandListScreen({ navigate, canUpdate }) {
         removeChipLabel={t('common.clear', { defaultValue: 'Bỏ lọc' })}
         ariaLabel={t('brands.activeFiltersAria', { defaultValue: 'Bộ lọc đang áp dụng' })}
       />
-
-      {/* O9 — Vừa xem gần đây */}
-      <RecentItemsChips items={recentBrandItems} onSelect={(item) => navigate(`/admin/brands/${item.id}`)} />
 
       {state.status === 'error' ? (
         <StatePanel

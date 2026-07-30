@@ -74,14 +74,6 @@ public class AdminMediaService {
     private static final long MAX_UPLOAD_BYTES = 200L * 1024 * 1024; // 200 MB
     private static final String MINIO_PROVIDER = "MINIO";
     static final String MEDIA_PATH_PREFIX = "/media/";
-    // Sàn kích thước tối thiểu áp dụng cho MỌI ảnh raster upload — phòng vệ server-side, không
-    // thay cho validate theo từng vị trí (xem bigbike-admin/src/lib/imageRecommendations.js).
-    // = giá trị minW/minH NHỎ NHẤT trong toàn bộ bảng IMAGE_RECO (categoryImage 520, videoThumb
-    // 500 theo chiều rộng; logo 400 theo chiều cao) — không chặn nhầm ảnh hợp lệ cho bất kỳ vị trí
-    // nào, chỉ chặn ảnh quá nhỏ cho MỌI vị trí (upload trực tiếp qua API, bỏ qua UI admin).
-    private static final int MIN_UPLOAD_WIDTH = 500;
-    private static final int MIN_UPLOAD_HEIGHT = 400;
-
     // Stored original is capped at 2000px wide (owner-approved, MEDIA_RULE_006) — variants
     // (thumb/medium/large, max 1600px) are always smaller anyway, so this only shrinks what
     // gets served when someone requests the full-size original directly.
@@ -124,10 +116,9 @@ public class AdminMediaService {
             bytes = SvgSanitizer.sanitize(bytes);
         }
 
-        // Extract + reject too-small raster images BEFORE writing to MinIO — a rejected upload
-        // must not leave an orphaned object in storage. SVG (vector) and WEBP (unsupported by the
-        // JDK's built-in ImageIO plugins) can't be measured here and skip this floor; per-field
-        // precision (exact size + ratio) is enforced client-side in bigbike-admin instead.
+        // Extract raster dimensions for metadata before writing to MinIO. The library upload has
+        // no shared minimum pixel floor; position-specific ratio checks happen when a media item
+        // is assigned to a field in the admin UI.
         Integer width = null;
         Integer height = null;
         if (RASTER_IMAGE_TYPES.contains(mimeType)) {
@@ -140,17 +131,10 @@ public class AdminMediaService {
             } catch (IOException e) {
                 log.warn("Could not extract image dimensions for {}: {}", file.getOriginalFilename(), e.getMessage());
             }
-            if (width != null && height != null && (width < MIN_UPLOAD_WIDTH || height < MIN_UPLOAD_HEIGHT)) {
-                throw ValidationException.fromField("file", "IMAGE_TOO_SMALL",
-                        "Image is too small (" + width + "x" + height + "px). Minimum is "
-                                + MIN_UPLOAD_WIDTH + "x" + MIN_UPLOAD_HEIGHT + "px.");
-            }
         }
 
-        // Downscale the stored original (MEDIA_RULE_006). The floor check above ran against the
-        // pre-compression image so a wide/short banner over 2000px can't be rejected by a shrink
-        // it hasn't undergone yet. width/height are re-measured below from what's actually
-        // written to MinIO, not from what the admin uploaded.
+        // Downscale the stored original (MEDIA_RULE_006) without upscaling. width/height are
+        // re-measured below from what's actually written to MinIO, not from the uploaded bytes.
         if (mimeType.startsWith("image/")) {
             bytes = imageCompressionService.compress(bytes, mimeType, ADMIN_ORIGINAL_PROFILE);
             if (RASTER_IMAGE_TYPES.contains(mimeType)) {
@@ -251,19 +235,14 @@ public class AdminMediaService {
             bytes = SvgSanitizer.sanitize(bytes);
         }
 
-        // Extract + reject too-small raster images BEFORE overwriting storage (same floor as
-        // uploadMedia — see MIN_UPLOAD_WIDTH/HEIGHT).
+        // Extract raster dimensions for metadata before overwriting storage. Replacement follows
+        // the same no-shared-minimum rule as a new library upload.
         Integer width = null, height = null;
         if (RASTER_IMAGE_TYPES.contains(newMime)) {
             try {
                 BufferedImage img = ImageIO.read(new java.io.ByteArrayInputStream(bytes));
                 if (img != null) { width = img.getWidth(); height = img.getHeight(); }
             } catch (IOException ignored) {}
-            if (width != null && height != null && (width < MIN_UPLOAD_WIDTH || height < MIN_UPLOAD_HEIGHT)) {
-                throw ValidationException.fromField("file", "IMAGE_TOO_SMALL",
-                        "Image is too small (" + width + "x" + height + "px). Minimum is "
-                                + MIN_UPLOAD_WIDTH + "x" + MIN_UPLOAD_HEIGHT + "px.");
-            }
         }
 
         // Downscale the stored original (MEDIA_RULE_006) — same reasoning as uploadMedia().

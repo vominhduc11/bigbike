@@ -11,8 +11,8 @@
 // Ý nghĩa các trường:
 //   idealW / idealH  — kích thước khuyến nghị hiển thị cho admin NGAY TẠI ô upload (đã ở mức 2×).
 //   minW   / minH    — CHỈ còn là số khuyến nghị (trùng idealW/idealH) — KHÔNG còn chặn lưu ở
-//                      client theo vị trí (đổi 2026-07-04). Sàn kích thước duy nhất còn lại nằm
-//                      ở server (AdminMediaService, 500×400 chung cho mọi vị trí).
+//                      client theo vị trí (đổi 2026-07-04). Media Library không có sàn pixel
+//                      chung ở server.
 //   ratio  = [w, h]  — tỉ lệ khung hiển thị thật; lệch quá ratioTolerance → chặn lưu (wrongRatio).
 //   ratio  = null    — khung không ép tỉ lệ cố định (ảnh tự do / native-render) — vị trí này
 //                      KHÔNG còn tiêu chí nào để chặn ở client.

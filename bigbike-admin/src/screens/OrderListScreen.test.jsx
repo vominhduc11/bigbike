@@ -302,7 +302,7 @@ describe('OrderListScreen', () => {
     renderScreen()
     await screen.findByText('BB-2026-0001')
 
-    await user.click(screen.getByRole('button', { name: 'status.order.PROCESSING' }))
+    await user.selectOptions(screen.getByLabelText('orders.filterStatus'), 'PROCESSING')
     await waitFor(() => expect(mocks.fetchOrders).toHaveBeenLastCalledWith(
       expect.objectContaining({ orderStatus: 'PROCESSING', page: 1 }),
     ))
@@ -505,12 +505,22 @@ describe('OrderListScreen', () => {
     expect(window.location.search).not.toContain('to=')
   })
 
-  it('không còn nút "Làm mới" thủ công trong toolbar — websocket là nguồn cập nhật chính', async () => {
+  it('xếp bộ lọc chính và nút làm mới trong thanh lọc chung', async () => {
+    const user = userEvent.setup()
     renderScreen()
     await screen.findByText('BB-2026-0001')
 
-    expect(screen.queryByRole('button', { name: 'orders.refresh' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'orders.refreshing' })).not.toBeInTheDocument()
+    const filterBar = screen.getByRole('region', { name: 'orders.filterAria' })
+    expect(filterBar).toContainElement(screen.getByRole('searchbox', { name: 'orders.searchPlaceholder' }))
+    expect(filterBar).toContainElement(screen.getByLabelText('orders.filterStatus'))
+    expect(filterBar).toContainElement(screen.getByLabelText('orders.filterSort'))
+    expect(filterBar).toContainElement(screen.getByLabelText('orders.filterFrom'))
+    expect(filterBar).toContainElement(screen.getByLabelText('orders.filterTo'))
+    expect(filterBar).toContainElement(screen.getByRole('button', { name: 'common.refresh' }))
+
+    const callsBeforeRefresh = mocks.fetchOrders.mock.calls.length
+    await user.click(screen.getByRole('button', { name: 'common.refresh' }))
+    await waitFor(() => expect(mocks.fetchOrders.mock.calls.length).toBeGreaterThan(callsBeforeRefresh))
   })
 
   it('làm mới dữ liệu khi có thông báo đơn hàng thời gian thực ở mọi bộ lọc', async () => {

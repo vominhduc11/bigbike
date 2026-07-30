@@ -29,7 +29,7 @@ Evidence:
 - `AdminMediaService.java`
 - product/content DTO mappings in repo
 
-### Media dimension validation — ratio enforced, minimum size advisory only (2026-07-04, thay thế audit 2026-07-03)
+### Media dimension validation — ratio enforced, size is advisory only (owner clarification 2026-07-30)
 
 Business rule (đổi 2026-07-04): mọi ảnh/video admin gán vào một vị trí hiển thị cụ thể **chỉ
 cần đúng tỉ lệ** (nếu vị trí đó ép khung, tức `ratio` khác `null`) — không đạt tỉ lệ thì **bị từ
@@ -37,12 +37,13 @@ chối, không lưu được**. **Không còn chặn theo kích thước tối t
 client theo từng vị trí nữa; các số `idealW`/`idealH`/`minW`/`minH` trong `IMAGE_RECO` giờ chỉ
 còn vai trò **khuyến nghị hiển thị** cho admin (gợi ý nên dùng ảnh nét cỡ nào), không dùng để
 chặn lưu. Vị trí có `ratio: null` (`logo`, `squareMedium`, `illustration`, `general`) do đó
-**không còn bất kỳ điều kiện chặn nào ở client** — chỉ còn sàn kích thước chung 500×400 ở server
-(bullet 2 dưới) áp dụng đồng loạt bất kể vị trí.
+**không có điều kiện chặn theo kích thước**; Media Library cũng không áp dụng một sàn pixel
+chung cho ảnh raster. Ảnh nhỏ hợp lệ vẫn được lưu, không upscale.
 
 **Lịch sử:** trước 2026-07-03 chỉ cảnh báo (không chặn) → audit 2026-07-03 đổi thành chặn cả
 kích thước tối thiểu VÀ tỉ lệ → **2026-07-04 bỏ chặn kích thước tối thiểu ở client, chỉ còn
-chặn tỉ lệ** (kích thước xuống hàng khuyến nghị).
+chặn tỉ lệ** (kích thước xuống hàng khuyến nghị) → **2026-07-30 bỏ sàn pixel chung ở server**
+theo owner clarification.
 
 **Phương pháp (không đổi):** đo khung hiển thị THẬT bằng cách đọc trực tiếp component + CSS của
 `bigbike-web` (desktop tham chiếu 1920×1080, mobile 390×844) — không suy đoán. Kích thước
@@ -75,7 +76,7 @@ audit, sửa code thì sửa cả bảng này.
 **Chặn ở đâu:**
 
 1. **Client (bigbike-admin, chặn theo tỉ lệ, không còn chặn theo kích thước):** `MediaPickerModal`/`VideoPickerModal` nhận prop `recommend` (spec ở trên) — đo kích thước ảnh/video vừa chọn (`useMediaValidation`), disable nút xác nhận + báo lỗi nếu sai tỉ lệ (`wrongRatio`) khi `spec.ratio` khác `null`. Không còn reason `tooSmall` — ảnh/video đúng tỉ lệ nhưng nhỏ hơn số khuyến nghị vẫn được chấp nhận. Ô upload hiện dòng khuyến nghị kích thước (không dùng từ "yêu cầu"/"bắt buộc" cho phần size) + nêu tỉ lệ bắt buộc nếu vị trí đó ép khung.
-2. **Server (`AdminMediaService.java`, phòng vệ chung, không đổi):** từ chối MỌI ảnh raster (jpeg/png/gif — SVG và WEBP không đo được kích thước do giới hạn `ImageIO`) nhỏ hơn **500×400px** — chặn TRƯỚC khi ghi vào MinIO để không để lại file rác. Đây là sàn duy nhất còn lại theo kích thước trong toàn hệ thống (không phân biệt vị trí, không có khái niệm tỉ lệ). Không enforce tỉ lệ ở server (chỉ client biết ảnh dùng cho vị trí nào).
+2. **Server (`AdminMediaService.java`):** kiểm tra file rỗng, giới hạn dung lượng, declared MIME và Apache Tika content detection; **không chặn ảnh raster theo kích thước pixel**. Server vẫn ghi nhận width/height khi runtime đọc được để trả metadata, nén theo `MEDIA_RULE_006` nhưng không upscale. Không enforce tỉ lệ ở server vì upload chưa gắn với vị trí hiển thị; client kiểm tra tỉ lệ khi chọn media cho field có khung ép.
 
 Status: `CONFIRMED_FROM_CODE` (đo trực tiếp component bigbike-web + code hiện tại, xem evidence)
 
@@ -83,7 +84,7 @@ Evidence:
 
 - `bigbike-web/components/catalog/ProductGallery.tsx`, `components/wp/WpCategoryHero.tsx`, `components/home/HeroSlider.tsx`, `components/home/video-carousel/VideoCard.tsx`, `components/home/video-carousel/VideoModal.tsx`, `components/home/ExperienceCarousel.tsx`, `components/catalog/description-blocks/blocks.tsx`, `app/page.tsx`, `app/globals.css` (container width tiers)
 - `bigbike-admin/src/lib/imageRecommendations.js`, `lib/useMediaDimensions.js`, `components/MediaPickerModal.jsx`, `components/VideoPickerModal.jsx`, `components/MediaRequirementHint.jsx`
-- `bigbike-backend/.../service/admin/AdminMediaService.java` (`MIN_UPLOAD_WIDTH`/`MIN_UPLOAD_HEIGHT`)
+- `bigbike-backend/.../service/admin/AdminMediaService.java` (MIME validation, dimension metadata, compression)
 
 ### SKU fields
 

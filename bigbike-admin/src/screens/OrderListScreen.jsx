@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, SlidersHorizontal } from 'lucide-react'
+import { ArrowRight, RefreshCw, SlidersHorizontal } from 'lucide-react'
 import { ExportButton } from '@/components/ExportButton'
 import { toast } from '@/lib/toast'
 import { PageSizeSelect } from '../components/PageSizeSelect'
@@ -22,7 +22,7 @@ import { StatusBadge } from '../components/StatusBadge'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { FilterBar } from '@/components/layout/FilterBar'
 import { orderRowAccent } from '../lib/statusTone'
 import { useAdminList } from '../lib/useAdminList'
 import { useColumnVisibility } from '../lib/useColumnVisibility'
@@ -154,11 +154,6 @@ export function OrderListScreen({ navigate, canUpdate }) {
       page: 1,
     }))
   }
-
-  const statusTabs = useMemo(() => [
-    { key: 'ALL', label: t('common.all') },
-    ...ORDER_STATUS_KEYS.map((k) => ({ key: k, label: t(`status.order.${k}`) })),
-  ], [t])
 
   const items = useMemo(() => state.items || [], [state.items])
   const pagination = state.pagination
@@ -442,29 +437,29 @@ export function OrderListScreen({ navigate, canUpdate }) {
         </Alert>
       ) : null}
 
-      {/* Status tabs */}
-      <div className="bb-seg mb-3" role="group" aria-label={t('orders.filterStatus')}>
-        {statusTabs.map((tab) => (
-          <Button
-            variant="unstyled"
-            key={tab.key}
-            aria-pressed={query.orderStatus === tab.key}
-            className={query.orderStatus === tab.key ? 'active min-h-11' : 'min-h-11'}
-            onClick={() => updateQuery({ orderStatus: tab.key }, { resetPage: true })}
-          >
-            {tab.label}
-          </Button>
-        ))}
-      </div>
-
-      {/* Filter bar */}
-      <div className="bb-filter-bar">
+      <FilterBar
+        ariaLabel={t('orders.filterAria', { defaultValue: 'Bộ lọc đơn hàng' })}
+        className="items-center"
+      >
         <FilterSearchInput
           value={searchInput}
           onChange={setSearchInput}
           placeholder={t('orders.searchPlaceholder')}
           className="min-h-11"
-          wrapperClassName="min-w-48 flex-1"
+          wrapperClassName="w-full min-w-0 sm:min-w-48 sm:flex-1"
+        />
+        <FilterSelect
+          value={query.orderStatus}
+          onValueChange={(v) => updateQuery({ orderStatus: v }, { resetPage: true })}
+          ariaLabel={t('orders.filterStatus')}
+          className="min-h-11"
+          options={[
+            { value: 'ALL', label: t('orders.filterStatus') },
+            ...ORDER_STATUS_KEYS.map((status) => ({
+              value: status,
+              label: t(`status.order.${status}`),
+            })),
+          ]}
         />
         <FilterSelect
           value={query.sort}
@@ -477,27 +472,23 @@ export function OrderListScreen({ navigate, canUpdate }) {
             { value: 'total:desc', label: t('sort.highestValue') },
           ]}
         />
-        <div className="grid min-w-40 gap-1">
-          <Label htmlFor="orders-filter-from" className="text-xs text-muted-foreground">
-            {t('orders.filterFrom')}
-          </Label>
+        <div className="w-full sm:w-40">
           <Input
             id="orders-filter-from"
             type="date"
-            className="min-h-11"
+            aria-label={t('orders.filterFrom')}
+            className="min-h-11 w-full"
             value={query.from}
             max={query.to || undefined}
             onChange={(event) => updateQuery({ from: event.target.value }, { resetPage: true })}
           />
         </div>
-        <div className="grid min-w-40 gap-1">
-          <Label htmlFor="orders-filter-to" className="text-xs text-muted-foreground">
-            {t('orders.filterTo')}
-          </Label>
+        <div className="w-full sm:w-40">
           <Input
             id="orders-filter-to"
             type="date"
-            className="min-h-11"
+            aria-label={t('orders.filterTo')}
+            className="min-h-11 w-full"
             value={query.to}
             min={query.from || undefined}
             onChange={(event) => updateQuery({ to: event.target.value }, { resetPage: true })}
@@ -508,6 +499,16 @@ export function OrderListScreen({ navigate, canUpdate }) {
           onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
           className="min-h-11"
         />
+        <Button
+          type="button"
+          variant="secondary"
+          className="min-h-11"
+          disabled={state.isFetching}
+          onClick={() => state.refetch()}
+        >
+          <RefreshCw size={16} className={state.isFetching ? 'animate-spin' : undefined} aria-hidden="true" />
+          {t('common.refresh', { defaultValue: 'Làm mới' })}
+        </Button>
         <div className="hide-on-mobile">
           <ColumnVisibilityToggle
             allColumns={allColumns}
@@ -519,7 +520,12 @@ export function OrderListScreen({ navigate, canUpdate }) {
         <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={resetFilters} disabled={!isFiltered}>
           <SlidersHorizontal size={13} aria-hidden="true" />{t('orders.clearFilters')}
         </Button>
-      </div>
+        {state.isFetching && state.status === 'success' ? (
+          <span className="text-sm text-muted-foreground" role="status" aria-live="polite">
+            {t('orders.refreshing', { defaultValue: 'Đang cập nhật' })}
+          </span>
+        ) : null}
+      </FilterBar>
 
       <FilterChips
         chips={filterChips}
