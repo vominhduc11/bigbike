@@ -40,30 +40,6 @@ public final class AdminRolePermissions {
                     "home_highlights.read", "home_highlights.write",
                     "redirects.read", "redirects.write",
                     "reports.read", "reports.export"
-            ),
-            "SHOP_MANAGER", List.of(
-                    "products.read", "products.update",
-                    "inventory.read", "inventory.write",
-                    "catalog.read",
-                    "orders.read", "orders.write",
-                    "customers.read", "customers.write",
-                    "reviews.read", "reviews.write",
-                    "reports.read", "reports.export"
-            ),
-            "EDITOR", List.of(
-                    "products.read", "catalog.read",
-                    // inventory.read granted by V121 backfill-compat (EDITOR had products.read);
-                    // pending post-launch RBAC cleanup if EDITOR should be content-only.
-                    "inventory.read",
-                    "content.read", "content.update",
-                    "media.read", "media.write",
-                    "menus.read", "menus.write",
-                    "sliders.read", "sliders.write",
-                    // SEO redirects folded in from the removed SEO_EDITOR role (V211).
-                    "redirects.read", "redirects.write",
-                    "home_highlights.read", "home_highlights.write"
             )
-            // AUTHOR, CONTRIBUTOR, SEO_EDITOR removed in V211__reduce_default_roles.sql
-            // (WordPress-legacy content roles; SEO redirects folded into EDITOR).
     );
 }

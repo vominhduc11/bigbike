@@ -15,6 +15,8 @@ import com.bigbike.bigbike_backend.persistence.repository.auth.AdminRoleJpaRepos
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -95,6 +97,30 @@ class AdminRolesApiTest {
         String json = result.getResponse().getContentAsString();
         assertThat(json).contains("SUPER_ADMIN");
         assertThat(json).contains("ADMIN");
+    }
+
+    @Test
+    void listRoles_onlyHasTwoSystemRoles_andRetainsHistoricalRolesAsCustom() throws Exception {
+        MvcResult result = mockMvc.perform(get(ROLES_URL)
+                        .header("Authorization", "Bearer " + superToken))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode roles = objectMapper.readTree(result.getResponse().getContentAsString()).get("data");
+        List<String> systemRoleIds = new ArrayList<>();
+        roles.forEach(role -> {
+            if (role.path("isSystem").asBoolean()) {
+                systemRoleIds.add(role.path("id").asText());
+            }
+        });
+
+        assertThat(systemRoleIds).containsExactlyInAnyOrder("SUPER_ADMIN", "ADMIN");
+
+        JsonNode editor = findRole(roles, "EDITOR");
+        assertThat(editor).isNotNull();
+        assertThat(editor.path("isSystem").asBoolean()).isFalse();
+        assertThat(editor.path("assignedUserCount").asLong()).isGreaterThanOrEqualTo(1L);
+        assertThat(editor.path("permissions").toString()).contains("content.read");
     }
 
     @Test

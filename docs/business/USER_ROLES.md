@@ -43,8 +43,8 @@ File này dùng làm nền cho:
 | Customer | Human user | Đăng ký/đăng nhập, checkout, quản lý profile/address/order. | Public web account area, customer APIs. | `CONFIRMED_FROM_CODE` | `CustomerAuthController`, `CustomerOrderController`, `CustomerAddressController`, `SecurityConfig`, `PHASE_1D_CUSTOMER_AUTH_REPORT.md` |
 | Admin | Internal user | Vận hành hệ thống ở mức rộng: product, order, customer, content, settings, media, users, reports. | Admin portal, admin APIs. | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java`, `SecurityConfig`, `bigbike-admin/README.md`, admin controllers |
 | Super Admin | Internal user | Quyền cao nhất, có wildcard permission và bảo vệ chống tự hạ quyền/last super admin demotion. | Admin portal, admin users/roles/settings/all admin modules. | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java`, `AdminAdminUsersService.java` |
-| Shop Manager | Internal user | Quản lý bán hàng/vận hành shop: products, orders, customers, reviews. | Admin portal selected business modules. | `CONFIRMED_FROM_CODE` for role mapping; UI behavior `NEEDS_VERIFICATION` | `AdminRolePermissions.java` |
-| Editor | Internal user | Quản lý content/media/menu/slider, SEO redirects và đọc catalog. | Admin content/media/menu/slider/redirects modules. | `CONFIRMED_FROM_CODE` for role mapping; UI behavior `NEEDS_VERIFICATION` | `AdminRolePermissions.java`, `V211__reduce_default_roles.sql` |
+| Shop Manager | Custom admin role (historical preset) | Quản lý bán hàng/vận hành shop: products, orders, customers, reviews. | Admin portal selected business modules. | `CONFIRMED_FROM_MIGRATION` | `V361__retain_two_system_roles.sql` |
+| Editor | Custom admin role (historical preset) | Quản lý content/media/menu/slider, SEO redirects và đọc catalog. | Admin content/media/menu/slider/redirects modules. | `CONFIRMED_FROM_MIGRATION` | `V361__retain_two_system_roles.sql` |
 | Staff | Internal user | Role nghiệp vụ chung để gọi nhân viên vận hành; repo không có role exact `STAFF`. | Admin modules depending assigned role. | `INFERRED_FROM_STRUCTURE` | Business docs/admin scope; exact technical role absent in `AdminRolePermissions.java` |
 | System | System actor | Tự động validate, tạo order/payment/shipping data, gửi notification, audit, websocket event. (Không trừ/hoàn kho — availability là cờ boolean admin tự bật/tắt, V261.) | Backend services/internal workflows. | `CONFIRMED_FROM_CODE` | `CheckoutService`, `AdminOrderService`, `AdminOrderWsService` |
 | Email Service | Third-party/system actor | Gửi transactional email cho order/admin notifications. | Backend notification/email integration. | `CONFIRMED_FROM_CODE` for code path; runtime `NEEDS_VERIFICATION` | `OrderNotificationService`, `bigbike-backend/pom.xml`, `docker-compose.yaml` |
@@ -175,7 +175,7 @@ Admin default role has broad business access to read/update many admin modules. 
 - Whether UI visibly protects Super Admin destructive actions.
 - Whether custom roles can accidentally receive dangerous permissions without business approval.
 
-### Role: Shop Manager
+### Custom role example: Shop Manager
 
 | Field | Value |
 |---|---|
@@ -185,15 +185,15 @@ Admin default role has broad business access to read/update many admin modules. 
 | Restricted Actions | Không thấy permissions cho settings, admin users, media write, menus, redirects. |
 | Related Modules | Products, Orders, Customers, Reviews. |
 | Related Business Processes | Product Management, Order Management, Customer Management, Review Moderation. |
-| Status | `CONFIRMED_FROM_CODE` for role map; UI behavior `NEEDS_VERIFICATION` |
-| Evidence | `AdminRolePermissions.java` |
+| Status | `CONFIRMED_FROM_MIGRATION`; UI behavior `NEEDS_VERIFICATION` |
+| Evidence | `V361__retain_two_system_roles.sql`, `role_permissions` |
 
 #### Needs Verification
 
 - Whether admin UI labels this role as `Shop Manager` or business uses another Vietnamese role name.
 - Whether this role should handle inventory adjustment; current map does not list separate inventory permission and inventory uses product permissions.
 
-### Role: Editor
+### Custom role example: Editor
 
 | Field | Value |
 |---|---|
@@ -203,8 +203,8 @@ Admin default role has broad business access to read/update many admin modules. 
 | Restricted Actions | Không thấy quyền order/customer/settings/admin-users/shipping. |
 | Related Modules | Content, Media, Menus, Sliders, Redirects/SEO, Products/Catalog read. |
 | Related Business Processes | Content/SEO Management, Media Management, Homepage Content Management, Redirect Management. |
-| Status | `CONFIRMED_FROM_CODE` for role map; UI behavior `NEEDS_VERIFICATION` |
-| Evidence | `AdminRolePermissions.java`, `V211__reduce_default_roles.sql`, `AdminRedirectController` |
+| Status | `CONFIRMED_FROM_MIGRATION`; UI behavior `NEEDS_VERIFICATION` |
+| Evidence | `V361__retain_two_system_roles.sql`, `role_permissions`, `AdminRedirectController` |
 
 ### Role: Staff
 
@@ -310,8 +310,8 @@ Admin default role has broad business access to read/update many admin modules. 
 | Customer | Account auth, profile/address, checkout, order history/detail, returns. | Customer Account, Orders, Returns, Checkout. | Customer Account, Checkout, Return/Refund. | `CONFIRMED_FROM_CODE` |
 | Admin | Broad shop operation and admin module management. | Products, Orders, Customers, Media, Content, Settings, Reports, Users. | Product/Order/Content/Settings/Admin management. | `CONFIRMED_FROM_CODE` |
 | Super Admin | Highest-level system/admin governance. | All admin modules, users, roles, settings. | RBAC/User Management, Configuration, all operations. | `CONFIRMED_FROM_CODE` |
-| Shop Manager | Commercial/shop operations. | Products, Orders, Customers, Reviews. | Product Management, Order Management, Customer Management. | `CONFIRMED_FROM_CODE`; UI `NEEDS_VERIFICATION` |
-| Editor | Content/media/menu/slider/redirect operations. | Content, Media, Menus, Sliders, Redirects. | Content/SEO, Media, Homepage Content, Redirect Management. | `CONFIRMED_FROM_CODE`; UI `NEEDS_VERIFICATION` |
+| Shop Manager (custom preset) | Commercial/shop operations. | Products, Orders, Customers, Reviews. | Product Management, Order Management, Customer Management. | `CONFIRMED_FROM_MIGRATION`; UI `NEEDS_VERIFICATION` |
+| Editor (custom preset) | Content/media/menu/slider/redirect operations. | Content, Media, Menus, Sliders, Redirects. | Content/SEO, Media, Homepage Content, Redirect Management. | `CONFIRMED_FROM_MIGRATION`; UI `NEEDS_VERIFICATION` |
 | Staff | Generic internal operator; exact access depends on assigned role/custom role. | Depends on role. | Depends on role. | `INFERRED_FROM_STRUCTURE` |
 | System | Enforce business rules and internal automation. | Checkout, Orders, Inventory, Returns, Notification, Audit. | Cross-process automation. | `CONFIRMED_FROM_CODE` |
 | Email Service | Deliver notifications. | Notification. | Checkout, Order, Return. | `CONFIRMED_FROM_CODE`; runtime `NEEDS_VERIFICATION` |
@@ -330,8 +330,8 @@ Admin default role has broad business access to read/update many admin modules. 
 | Admin | Not automatically wildcard. | `ADMIN` has listed permissions; `SUPER_ADMIN` has `*`. | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` |
 | Super Admin | Cannot demote themselves from Super Admin. | Prevent lockout / governance issue. | `CONFIRMED_FROM_CODE` | `AdminAdminUsersService.java` |
 | Super Admin / Admin user management | Cannot demote last active Super Admin. | Prevent losing highest admin access. | `CONFIRMED_FROM_CODE` | `AdminAdminUsersService.java` |
-| Shop Manager | No default settings/admin-user write permission. | Role map excludes settings/admin-users. | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` |
-| Editor | No default order/customer/settings/admin-user permissions. | Role map excludes those scopes (content/media/menu/slider/redirects only). | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` |
+| Shop Manager (custom preset) | No settings/admin-user write permission in the retained preset. | The preserved permission set excludes settings/admin-users. | `CONFIRMED_FROM_MIGRATION` | `V361__retain_two_system_roles.sql`, `role_permissions` |
+| Editor (custom preset) | No order/customer/settings/admin-user permissions in the retained preset. | The preserved permission set scopes to content/media/menu/slider/redirects. | `CONFIRMED_FROM_MIGRATION` | `V361__retain_two_system_roles.sql`, `role_permissions` |
 | Staff | Restrictions depend on assigned technical role. | No exact `STAFF` role in default role map. | `NEEDS_VERIFICATION` | `AdminRolePermissions.java` |
 | Payment Provider | Cannot be confirmed as system actor. | No webhook/provider flow found. | `NOT_FOUND_IN_REPO` | N/A |
 | Shipping Provider | Cannot be confirmed as system actor. | No carrier integration found. | `NOT_FOUND_IN_REPO` | N/A |
@@ -344,8 +344,8 @@ Admin default role has broad business access to read/update many admin modules. 
 | Customer | Account, Profile, Addresses, Orders, Returns, Cart, Checkout. | View/manage own account and orders. | `CONFIRMED_FROM_CODE` | `CustomerAuthController`, `CustomerOrderController`, `SecurityConfig` |
 | Admin | Most admin business modules. | Manage/process/configure depending permission list. | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` |
 | Super Admin | All admin modules. | Manage/configure/govern all. | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` |
-| Shop Manager | Products, Catalog, Orders, Customers, Reviews. | Manage/process shop operations. | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` |
-| Editor | Products read, Catalog read, Content, Media, Menus, Sliders, Redirects. | Manage content/media/navigation/SEO redirects. | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` |
+| Shop Manager (custom preset) | Products, Catalog, Orders, Customers, Reviews. | Manage/process shop operations. | `CONFIRMED_FROM_MIGRATION` | `V361__retain_two_system_roles.sql`, `role_permissions` |
+| Editor (custom preset) | Products read, Catalog read, Content, Media, Menus, Sliders, Redirects. | Manage content/media/navigation/SEO redirects. | `CONFIRMED_FROM_MIGRATION` | `V361__retain_two_system_roles.sql`, `role_permissions` |
 | Staff | Depends on assigned role/custom role. | Needs verification. | `NEEDS_VERIFICATION` | `AdminRolePermissions.java`, `AdminRoleService` |
 | System | Checkout, Orders, Payment, Inventory, Returns, Notification, Audit. | System-only. | `CONFIRMED_FROM_CODE` | services |
 | Email Service | Notification. | System integration. | `CONFIRMED_FROM_CODE`; runtime `NEEDS_VERIFICATION` | `OrderNotificationService`, mail config |
@@ -405,7 +405,7 @@ Confirmed evidence:
 - `SUPER_ADMIN` has wildcard `*`.
 - Admin user management validates built-in/custom roles and writes audit logs.
 - Role management (`AdminRoleService`) supports listing roles, editing role permissions, creating custom roles and deleting custom roles.
-- **Role governance** (enforced, not just inferred): the **4 built-in roles** (`SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER`, `EDITOR`) are **system roles** (`is_system = TRUE`) and **cannot be deleted**. `V49__create_roles_permissions_tables.sql` originally seeded 7; `V211__reduce_default_roles.sql` removed the WordPress-legacy content roles (`AUTHOR`, `CONTRIBUTOR`, `SEO_EDITOR`) and folded their SEO redirect permissions into `EDITOR`. `SUPER_ADMIN` permissions are **immutable** (`*`); the other 3 system roles can have their permission set **edited** but not deleted. Only **custom roles** can be deleted — and only when no admin user is still assigned. `CUSTOMER` is a **storefront auth role** (`ROLE_CUSTOMER`), not a row in `admin_roles`. Full detail: `PERMISSION_MATRIX.md` → Role Governance.
+- **Role governance** (enforced, not just inferred): only the **2 built-in roles** (`SUPER_ADMIN`, `ADMIN`) are **system roles** (`is_system = TRUE`) and cannot be deleted. `V361__retain_two_system_roles.sql` reclassifies every other historical system role—including `SHOP_MANAGER` and `EDITOR`—as custom while preserving permissions and assigned users. `SUPER_ADMIN` permissions are immutable (`*`); custom roles can be edited and can be deleted only when no admin user is still assigned. `CUSTOMER` is a storefront auth role (`ROLE_CUSTOMER`), not a row in `admin_roles`. Full detail: `PERMISSION_MATRIX.md` → Role Governance.
 
 Important distinction:
 
@@ -440,8 +440,8 @@ Production auth status:
 | Customer | `CustomerAuthController`, `CustomerOrderController`, `CustomerAddressController`, `SecurityConfig`, `PHASE_1D_CUSTOMER_AUTH_REPORT.md` | Customer auth/account/order/return capabilities and `ROLE_CUSTOMER` protection. | High |
 | Admin | `AdminRolePermissions.java`, `SecurityConfig`, `DevAdminAuthService.java`, admin controllers | Admin role/permission mapping and admin API protection. | High |
 | Super Admin | `AdminRolePermissions.java`, `AdminAdminUsersService.java`, `AdminRolesController.java` | Wildcard permission and Super Admin guardrails. | High |
-| Shop Manager | `AdminRolePermissions.java` | Built-in role and default permission set. | High for role existence; UI Medium |
-| Editor | `AdminRolePermissions.java`, `V211__reduce_default_roles.sql` | Built-in content/media/menu/slider/redirect role. | High for role existence; UI Medium |
+| Shop Manager | `V361__retain_two_system_roles.sql` | Historical role retained as a custom role with its permission set. | High |
+| Editor | `V361__retain_two_system_roles.sql` | Historical role retained as a custom role with its permission set. | High |
 | Staff | `AdminRolePermissions.java`, admin docs | No exact staff role; business umbrella inferred. | Medium-Low |
 | System | `CheckoutService`, `AdminOrderService`, `AdminReturnService`, `AdminOrderWsService` | Internal business automation/side effects. | High |
 | Email Service | `OrderNotificationService`, `bigbike-backend/pom.xml`, `docker-compose.yaml` | Notification code paths and mail dependency/config. | Medium-High |
@@ -458,7 +458,7 @@ Production auth status:
 1. `Staff` is a business-friendly umbrella role, but no exact `STAFF` technical role was found. Use built-in roles or custom roles instead.
 2. Production admin authentication **is implemented** (JWT login via `AuthController`/`AdminAuthService`/`JwtService`/`JwtAuthFilter`, with startup fail-fast on a weak `BIGBIKE_JWT_SECRET` under the prod profile). Remaining verification is operational: login brute-force/lockout and refresh-token revocation depth.
 3. Admin UI route guards and action-level disabled/hidden behavior need a dedicated UI audit. Backend permission enforcement is clearer than UI behavior.
-4. `SHOP_MANAGER` and `EDITOR` are confirmed in permission map, but business naming/Vietnamese labels and user-facing admin UI need verification. (`AUTHOR`, `CONTRIBUTOR`, `SEO_EDITOR` removed in `V211__reduce_default_roles.sql`.)
+4. `SHOP_MANAGER` and `EDITOR` are retained custom-role presets; business naming/Vietnamese labels and user-facing admin UI need verification. (`AUTHOR`, `CONTRIBUTOR`, `SEO_EDITOR` were removed in `V211__reduce_default_roles.sql`.)
 5. `SUPER_ADMIN` guardrails exist in admin user service, but UI confirmation/destructive-action safeguards need verification.
 6. Custom role creation/edit/delete exists; role governance (system roles non-deletable, `SUPER_ADMIN` immutable, custom-only deletion) is now documented in `PERMISSION_MATRIX.md` → Role Governance and section 12 above.
 7. Customer role is confirmed, including returns creation/list/detail, but return eligibility rules need deeper audit in `CustomerReturnService`.

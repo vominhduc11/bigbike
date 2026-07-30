@@ -427,14 +427,12 @@ From `AdminAdminUsersService.VALID_STATUSES`:
 - `DISABLED`
 - `SUSPENDED`
 
-Built-in roles (4, after `V211__reduce_default_roles.sql`):
+Built-in system roles (2, after `V361__retain_two_system_roles.sql`):
 
 - `SUPER_ADMIN`
 - `ADMIN`
-- `EDITOR`
-- `SHOP_MANAGER`
 
-Custom role support exists through role repository/controller.
+Custom role support exists through role repository/controller. Historical `EDITOR` and `SHOP_MANAGER` role records, when present, are custom roles and keep their assigned users and permissions.
 
 ### Initial State
 

@@ -2,6 +2,15 @@
 
 Only rules verified from current code, config, migration, or test are documented here.
 
+## Admin system roles
+
+- **`ROLE_RULE_001` (owner decision 2026-07-30)** — The only default system roles are `SUPER_ADMIN` (Chủ hệ thống) and `ADMIN` (Quản trị viên). Any other role, including historically seeded `SHOP_MANAGER` and `EDITOR`, is a custom role (`is_system = false`). The reclassification must preserve its assigned users and permission set; custom roles remain deletable only when no admin user is assigned. `CONFIRMED_FROM_OWNER_DECISION`
+
+Evidence:
+
+- `V361__retain_two_system_roles.sql`
+- `AdminRoleService.java`
+
 ## Catalog Availability
 
 - Public catalog/cart/checkout only accept products with publish status `PUBLISHED`. `CONFIRMED_FROM_CODE`

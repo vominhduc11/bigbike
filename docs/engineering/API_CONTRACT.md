@@ -1634,9 +1634,9 @@ Evidence: `AdminRolesController.java`, `AdminPermissionsController.java`, `Admin
 
 ```json
 {
-  "id": "EDITOR",
-  "name": "Editor",
-  "description": "Content editor",
+  "id": "ADMIN",
+  "name": "Administrator",
+  "description": "Full business operations",
   "isSystem": true,
   "permissions": ["content.read", "content.update"],
   "assignedUserCount": 2,

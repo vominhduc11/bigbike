@@ -57,6 +57,7 @@ vi.mock('./roles/RoleDetail', () => ({
   }) => (
     <div data-testid="role-detail">
       <span>selected-{role.id}</span>
+      <span>role-type-{role.id}-{role.isSystem ? 'system' : 'custom'}</span>
       {!editMode && canUpdate && role.id !== 'SUPER_ADMIN'
         ? <button type="button" onClick={onStartEdit}>start-edit</button>
         : null}
@@ -146,6 +147,22 @@ const ROLES = [
     assignedUserCount: 0,
     updatedAt: '2026-07-29T00:00:00Z',
   },
+  {
+    id: 'SHOP_MANAGER',
+    name: 'Quản lý cửa hàng',
+    isSystem: false,
+    permissions: ['orders.read', 'orders.write'],
+    assignedUserCount: 1,
+    updatedAt: '2026-07-29T00:00:00Z',
+  },
+  {
+    id: 'EDITOR',
+    name: 'Biên tập viên',
+    isSystem: false,
+    permissions: ['content.read', 'content.update'],
+    assignedUserCount: 1,
+    updatedAt: '2026-07-29T00:00:00Z',
+  },
 ]
 
 beforeEach(() => {
@@ -162,6 +179,18 @@ describe('RolesScreen', () => {
     expect(await screen.findByText('selected-ADMIN')).toBeInTheDocument()
     expect(mocks.fetchRoles).toHaveBeenCalledTimes(1)
     expect(mocks.fetchPermissionCatalog).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows former system roles as custom roles from the API response', async () => {
+    const user = userEvent.setup()
+    render(<RolesScreen canUpdate currentUserRoles={['ADMIN']} />)
+
+    await screen.findByText('selected-ADMIN')
+    await user.click(screen.getByRole('button', { name: 'role-SHOP_MANAGER' }))
+    expect(screen.getByText('role-type-SHOP_MANAGER-custom')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'role-EDITOR' }))
+    expect(screen.getByText('role-type-EDITOR-custom')).toBeInTheDocument()
   })
 
   it('shows a retryable full-page error when the role list fails', async () => {

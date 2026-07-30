@@ -182,6 +182,8 @@ CREATE SEQUENCE IF NOT EXISTS return_number_seq START WITH 1000 INCREMENT BY 1;
 -- ── System roles + permissions (mirrors Flyway V49/V58/V78/V79) ──────────────
 -- Flyway is disabled in H2 test env; seed the role catalog so DB-backed
 -- AdminPermissionService.getPermissionsForRole() returns non-empty for built-in roles.
+-- Only SUPER_ADMIN and ADMIN are system roles; the remaining records are
+-- custom-role fixtures used by authorization tests.
 
 INSERT INTO admin_roles (id, name, description, is_system, created_at, updated_at)
 SELECT 'SUPER_ADMIN', 'Super Admin', 'Full system access', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
@@ -192,28 +194,34 @@ SELECT 'ADMIN', 'Admin', 'Full business operations', TRUE, CURRENT_TIMESTAMP, CU
 WHERE NOT EXISTS (SELECT 1 FROM admin_roles WHERE id = 'ADMIN');
 
 INSERT INTO admin_roles (id, name, description, is_system, created_at, updated_at)
-SELECT 'SHOP_MANAGER', 'Shop Manager', 'Orders, catalog, customers', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+SELECT 'SHOP_MANAGER', 'Shop Manager', 'Orders, catalog, customers', FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM admin_roles WHERE id = 'SHOP_MANAGER');
 
 INSERT INTO admin_roles (id, name, description, is_system, created_at, updated_at)
-SELECT 'EDITOR', 'Editor', 'Content and catalog editor', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+SELECT 'EDITOR', 'Editor', 'Content and catalog editor', FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM admin_roles WHERE id = 'EDITOR');
 
 -- AUTHOR / CONTRIBUTOR / SEO_EDITOR are no longer production built-in roles
--- (removed by V200__reduce_default_roles.sql). They are kept here purely as
+-- (removed by V211__reduce_default_roles.sql). They are kept here purely as
 -- test fixtures for DB-driven RBAC tests (AdminRedirectApiTest uses SEO_EDITOR;
 -- Phase1KInventoryP0FixApiTest uses CONTRIBUTOR as a minimal-permission principal).
 INSERT INTO admin_roles (id, name, description, is_system, created_at, updated_at)
-SELECT 'AUTHOR', 'Author', 'Content author', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+SELECT 'AUTHOR', 'Author', 'Content author', FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM admin_roles WHERE id = 'AUTHOR');
 
 INSERT INTO admin_roles (id, name, description, is_system, created_at, updated_at)
-SELECT 'CONTRIBUTOR', 'Contributor', 'Read-only content', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+SELECT 'CONTRIBUTOR', 'Contributor', 'Read-only content', FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM admin_roles WHERE id = 'CONTRIBUTOR');
 
 INSERT INTO admin_roles (id, name, description, is_system, created_at, updated_at)
-SELECT 'SEO_EDITOR', 'SEO Editor', 'Content and redirects', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+SELECT 'SEO_EDITOR', 'SEO Editor', 'Content and redirects', FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM admin_roles WHERE id = 'SEO_EDITOR');
+
+UPDATE admin_roles
+   SET is_system = FALSE,
+       updated_at = CURRENT_TIMESTAMP
+ WHERE is_system = TRUE
+   AND id NOT IN ('SUPER_ADMIN', 'ADMIN');
 
 -- SUPER_ADMIN wildcard
 INSERT INTO role_permissions (role_id, permission)
