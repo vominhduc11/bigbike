@@ -114,6 +114,7 @@
   --text-a3-section: var(--bb-text-a3-section);
   --text-a4-content: var(--bb-text-a4-content);
   --text-a5-meta: var(--bb-text-a5-meta);
+  --text-category-label: var(--bb-text-category-label);
 
   /* Letter-spacing tối thiểu (TYPOGRAPHY §7.6): normal mặc định, wide cho uppercase
      nav/button/kicker, display cho eyebrow nổi bật. Override Tailwind built-in tracking-wide

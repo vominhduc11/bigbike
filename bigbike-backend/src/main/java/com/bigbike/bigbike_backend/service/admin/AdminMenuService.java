@@ -59,6 +59,18 @@ public class AdminMenuService {
     // (WP-parity) — giờ icon gắn theo danh mục trong DB, không còn phụ thuộc tên slug. Xem V213.
     private static final String CATEGORY_VI_URL_PREFIX = "/danh-muc/";
     private static final String CATEGORY_EN_URL_PREFIX = "/categories/";
+    private static final Map<String, String> LEGACY_MENU_ICON_FALLBACKS = Map.ofEntries(
+            Map.entry("/danh-muc/san-pham-khuyen-mai", "/media/uploads/wp-icons/icon-1.png"),
+            Map.entry("/danh-muc/non-bao-hiem-moto", "/media/uploads/wp-icons/icon-2.svg"),
+            Map.entry("/danh-muc/ao-quan-moto-phuot", "/media/uploads/wp-icons/icon-3.svg"),
+            Map.entry("/danh-muc/gang-tay", "/media/uploads/wp-icons/icon-4.svg"),
+            Map.entry("/danh-muc/giay-bao-ho-moto-phuot", "/media/uploads/wp-icons/icon-5.svg"),
+            Map.entry("/danh-muc/bao-ho-tay-chan-phu-kien-do-bao-ho", "/media/uploads/wp-icons/icon-6.svg"),
+            Map.entry("/danh-muc/balo-tui-deo-tui-treo-xe", "/media/uploads/wp-icons/icon-7.svg"),
+            Map.entry("/danh-muc/tai-nghe-bluetooth-mu-bao-hiem", "/media/uploads/wp-icons/icon-8.svg"),
+            Map.entry("/danh-muc/gia-do-dien-thoai-phu-kien-camera", "/media/uploads/wp-icons/icon-9.svg"),
+            Map.entry("/danh-muc/phu-kien-khac-do-lot-do-mua", "/media/uploads/wp-icons/icon-10.svg")
+    );
 
     private String resolveMenuIconUrl(String url) {
         if (url == null || url.isBlank()) return null;
@@ -74,9 +86,11 @@ public class AdminMenuService {
         Optional<CategoryEntity> category = englishPath
                 ? categoryRepo.findBySlugEn(slug.toLowerCase(Locale.ROOT))
                 : categoryRepo.findBySlug(slug.toLowerCase(Locale.ROOT));
-        return category
-                .map(CategoryEntity::getMenuIconUrl)
-                .orElse(null);
+        String iconUrl = category.map(CategoryEntity::getMenuIconUrl).orElse(null);
+        if (iconUrl != null && !iconUrl.isBlank()) {
+            return iconUrl;
+        }
+        return LEGACY_MENU_ICON_FALLBACKS.get(path);
     }
 
     private String categoryUrl(CategoryEntity category, String lang) {

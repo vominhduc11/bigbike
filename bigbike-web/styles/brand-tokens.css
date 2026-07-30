@@ -143,6 +143,7 @@
   --bb-text-a3-section: 1.125rem;   /* 18px mobile → 20px desktop */
   --bb-text-a4-content: 1rem;       /* 16px mobile → 18px desktop */
   --bb-text-a5-meta: 0.8125rem;     /* 13px mobile → 14px desktop */
+  --bb-text-category-label: 1rem;    /* WP homepage category label = 16px at every breakpoint */
 
   --bb-font-weight-regular: 400;
   --bb-font-weight-medium: 500;

@@ -1103,6 +1103,8 @@ icon không quản được trong admin. Đã chuyển hẳn sang DATA-DRIVEN, m
   định từ WP import — không drift như slug) cho 13 danh mục, idempotent + guard (chỉ đè NULL hoặc giá-trị-mặc-
   định `/wp/*`,`/media/uploads/wp-icons/*`). `WpCategorySidebar` render mask-image cho **cả danh mục con** (không
   chỉ gốc) và đã **xóa toàn bộ rule icon-theo-slug** trong 8 file `wp-theme-*.css`.
+- **`V360`** bổ sung fallback slug→icon cho các mục menu header legacy không còn category record tương ứng, để
+  các item lịch sử trên menu chính vẫn hiển thị icon đúng theo asset MinIO dù DB category không có dòng khớp.
 
 **Admin-writable:** admin chỉnh ở form danh mục (`CategoryDetailScreen` → "Icon menu / bộ lọc danh mục"), gửi
 qua `UpsertCategoryRequest.menuIcon` → `menu_icon_url`. URL phải qua whitelist

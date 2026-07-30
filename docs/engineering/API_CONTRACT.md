@@ -1270,12 +1270,14 @@ Status: `CONFIRMED_FROM_CODE` — `AdminMenuService.validateCategoryTarget`,
 (cột có sẵn, không migration mới), `CategoryEntity.name/nameEn/slug/slugEn`,
 `AdminMenuServiceTest`.
 
-### Menu/category line-icon — DB-driven (V213)
+### Menu/category line-icon — DB-driven with legacy slug fallback (V213/V360)
 
-`GET /api/v1/menus/{location}` trả mỗi mục menu kèm `iconUrl` (icon line đơn sắc, null cho mục không phải
-danh mục). Shape **không đổi**; chỉ đổi **nguồn**: trước V213 resolve từ map slug hard-code
-(`CATEGORY_SLUG_ICON_MAP`), từ V213 resolve theo danh mục trong DB — backend tách slug từ URL mục menu
-(`/danh-muc/{slug}` cho VI, `/categories/{slugEn}` cho EN) → `CategoryEntity.menuIconUrl`. Đổi tên danh mục/slug không còn làm mất icon.
+`GET /api/v1/menus/{location}` trả mỗi mục menu kèm `iconUrl` (icon line đơn sắc). Shape **không đổi**;
+chỉ đổi **nguồn**:
+- Ưu tiên resolve theo danh mục trong DB: backend tách slug từ URL mục menu (`/danh-muc/{slug}` cho VI,
+  `/categories/{slugEn}` cho EN) → `CategoryEntity.menuIconUrl`. Đổi tên danh mục/slug không còn làm mất icon.
+- Nếu mục menu là item legacy không còn category record tương ứng, backend dùng fallback slug→icon cho các
+  menu/header item lịch sử của WP, với asset phục vụ từ MinIO (`/media/uploads/wp-icons/*`).
 
 `GET /api/v1/categories`, `/api/v1/categories/{slug}` cũng trả thêm field `menuIconUrl` trên mỗi Category
 (dùng bởi bộ lọc "Danh mục sản phẩm" ở `bigbike-web`). Xem `DATA_CONTRACT` §"Category menu/sidebar line-icon".
@@ -1286,9 +1288,9 @@ bỏ khóa `menuIcon` thì PATCH giữ nguyên; gửi `menuIcon: { url: null }` 
 form danh mục (`CategoryDetailScreen`, field "Icon menu / bộ lọc danh mục"). Khác với `icon` (ảnh hero
 trang danh mục → `icon_url`).
 
-Status: `CONFIRMED_FROM_CODE` — `AdminMenuService.resolveMenuIconUrl` (DB lookup), `Category` domain record
-(`menuIconUrl`), `CatalogController` `/categories`, `UpsertCategoryRequest.menuIcon` +
-`AdminCatalogMutationService.applyCategoryPatch` (ghi admin), migration `V213`.
+Status: `CONFIRMED_FROM_CODE` — `AdminMenuService.resolveMenuIconUrl` (DB lookup + legacy slug fallback),
+`Category` domain record (`menuIconUrl`), `CatalogController` `/categories`, `UpsertCategoryRequest.menuIcon`
++ `AdminCatalogMutationService.applyCategoryPatch` (ghi admin), migrations `V213`/`V360`.
 
 ### Category `introContent` — khối giới thiệu ĐẦU trang danh mục (admin-editable)
 

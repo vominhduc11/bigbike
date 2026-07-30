@@ -179,6 +179,29 @@ class AdminMenuServiceTest {
     }
 
     @Test
+    void getPublicMenuByLocation_customMenuItem_usesLegacyIconFallbackWhenCategoryMissing() {
+        UUID menuId = UUID.randomUUID();
+        MenuEntity menuEntity = menu(menuId, "primary");
+        MenuItemEntity item = new MenuItemEntity();
+        item.setId(UUID.randomUUID());
+        item.setMenu(menuEntity);
+        item.setLabel("Khuyến mãi hot");
+        item.setUrl("/danh-muc/san-pham-khuyen-mai");
+        item.setSortOrder(0);
+        item.setStatus("ACTIVE");
+        item.setCreatedAt(Instant.now());
+        item.setUpdatedAt(Instant.now());
+
+        when(menuRepo.findByLocation("primary")).thenReturn(Optional.of(menuEntity));
+        when(menuItemRepo.findByMenuIdOrderBySortOrderAsc(menuId)).thenReturn(List.of(item));
+
+        PublicMenuResponse response = service.getPublicMenuByLocation("primary", "vi");
+
+        assertThat(response.items()).hasSize(1);
+        assertThat(response.items().get(0).iconUrl()).isEqualTo("/media/uploads/wp-icons/icon-1.png");
+    }
+
+    @Test
     void updateMenuItem_categoryLinked_reSyncsLabelUrlFromCategory_ignoringRequestLabel() {
         UUID menuId = UUID.randomUUID();
         MenuEntity menuEntity = menu(menuId, "primary");
