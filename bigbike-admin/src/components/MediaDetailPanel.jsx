@@ -11,7 +11,7 @@ import { TagInput } from './TagInput'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { REFERENCE_TYPE_KEYS, formatBytes, toClipboardUrl } from './media-picker/pickerUtils'
+import { getMediaReferenceAdminPath, REFERENCE_TYPE_KEYS, formatBytes, toClipboardUrl } from './media-picker/pickerUtils'
 
 
 function formatDate(iso) {
@@ -295,13 +295,16 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
           )}
           {!refsLoading && refs.length > 0 && (
             <ul className="mediadetail-ref-list">
-              {refs.map((r, i) => (
-                <li key={i}>
-                  <span className="mediadetail-ref-type">{REFERENCE_TYPE_KEYS[r.type] ? t(REFERENCE_TYPE_KEYS[r.type]) : r.type}</span>
-                  {r.adminPath ? <a href={r.adminPath} title={r.name}>{r.name}</a>
-                    : <span title={r.name}>{r.name}</span>}
-                </li>
-              ))}
+              {refs.map((r, i) => {
+                const adminPath = getMediaReferenceAdminPath(r)
+                return (
+                  <li key={i}>
+                    <span className="mediadetail-ref-type">{REFERENCE_TYPE_KEYS[r.type] ? t(REFERENCE_TYPE_KEYS[r.type]) : r.type}</span>
+                    {adminPath ? <a href={adminPath} title={r.name}>{r.name}</a>
+                      : <span title={r.name}>{r.name}</span>}
+                  </li>
+                )
+              })}
             </ul>
           )}
         </section>

@@ -171,9 +171,8 @@ async function fillRequiredProductFields(page: Page, opts: FillOptions) {
   await fillEnglishName(page, basicCard, opts.nameEn)
 }
 
-// PRODUCT_RULE_010: publishing lives only on Product List. The row action first
-// loads full detail, opens the quality checklist, then calls the dedicated
-// /publish endpoint after confirmation.
+// PRODUCT_RULE_005: Product List and Product Detail share the same readiness
+// checklist and dedicated /publish endpoint.
 async function publishDraftRow(page: Page, sku: string) {
   await filterProductRows(page, sku)
   const row = productRowBySku(page, sku)
@@ -242,7 +241,7 @@ test.describe('product-crud', () => {
       expect(createdProductId, 'Không lấy được id sản phẩm vừa tạo từ URL').toBeTruthy()
 
       await expect(adminPage.getByText('Tạo sản phẩm thành công.')).toBeVisible()
-      await expect(adminPage.getByRole('button', { name: 'Xuất bản', exact: true })).toHaveCount(0)
+      await expect(adminPage.getByRole('button', { name: 'Xuất bản', exact: true })).toBeVisible()
       await expect(adminPage.getByRole('button', { name: 'Đăng bán ngay', exact: true })).toHaveCount(0)
     })
 
@@ -252,6 +251,43 @@ test.describe('product-crud', () => {
       await expect(adminPage.getByRole('link', { name: createdProductName!, exact: false })).toBeVisible({ timeout: 10_000 })
     })
 
+    expectRuntimeClean(collect)
+  })
+
+  test('product-crud · publish and move back to draft from Product Detail', async ({ adminPage, collect }) => {
+    test.skip(!createdProductId, 'Bỏ qua: bước tạo sản phẩm ở test trước chưa thành công')
+    test.setTimeout(90_000)
+
+    await navigateSpa(adminPage, `/admin/products/${createdProductId}`)
+    const detailUrl = adminPage.url()
+
+    await adminPage.getByRole('button', { name: 'Xuất bản', exact: true }).click()
+    const checklist = adminPage.getByRole('dialog', { name: 'Kiểm tra trước khi đăng bán' })
+    const publishNow = checklist.getByRole('button', { name: 'Đăng bán ngay' })
+    await expect(publishNow).toBeVisible()
+    const [publishResponse] = await Promise.all([
+      adminPage.waitForResponse((r) =>
+        r.request().method() === 'PATCH'
+        && new URL(r.url()).pathname.endsWith(`/api/v1/admin/products/${createdProductId}/publish`)),
+      publishNow.click(),
+    ])
+    expect(publishResponse.status(), 'API xuất bản từ trang chi tiết phải trả 2xx').toBeLessThan(300)
+    await expect(adminPage.getByText('Đã xuất bản', { exact: true })).toBeVisible()
+    await expect(adminPage.getByRole('button', { name: 'Chuyển về Nháp', exact: true })).toBeVisible()
+    expect(adminPage.url(), 'Đổi trạng thái không được điều hướng khỏi trang chi tiết').toBe(detailUrl)
+
+    await adminPage.getByRole('button', { name: 'Chuyển về Nháp', exact: true }).click()
+    const confirmDialog = adminPage.getByRole('dialog', { name: 'Chuyển sản phẩm về Nháp?' })
+    const [unpublishResponse] = await Promise.all([
+      adminPage.waitForResponse((r) =>
+        r.request().method() === 'PATCH'
+        && new URL(r.url()).pathname.endsWith(`/api/v1/admin/products/${createdProductId}/publish`)),
+      confirmDialog.getByRole('button', { name: 'Chuyển về Nháp', exact: true }).click(),
+    ])
+    expect(unpublishResponse.status(), 'API chuyển về Nháp từ trang chi tiết phải trả 2xx').toBeLessThan(300)
+    await expect(adminPage.getByText('Nháp', { exact: true })).toBeVisible()
+    await expect(adminPage.getByRole('button', { name: 'Xuất bản', exact: true })).toBeVisible()
+    expect(adminPage.url(), 'Chuyển về Nháp không được điều hướng khỏi trang chi tiết').toBe(detailUrl)
     expectRuntimeClean(collect)
   })
 
@@ -280,8 +316,7 @@ test.describe('product-crud', () => {
       const basicCard = sectionCard(adminPage, 'Thông tin cơ bản')
       const pricingCard = sectionCard(adminPage, 'Giá & trạng thái')
 
-      await expect(adminPage.getByRole('button', { name: 'Xuất bản', exact: true })).toHaveCount(0)
-      await expect(adminPage.getByRole('button', { name: 'Chuyển về Nháp', exact: true })).toHaveCount(0)
+      await expect(adminPage.getByRole('button', { name: 'Chuyển về Nháp', exact: true })).toBeVisible()
       await basicCard.getByLabel('Tên', { exact: false }).fill(editedName)
       await pricingCard.getByLabel('Giá niêm yết', { exact: false }).fill(RETAIL_PRICE_EDITED)
 

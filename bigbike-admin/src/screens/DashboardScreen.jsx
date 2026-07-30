@@ -5,6 +5,7 @@ import {
   ArrowRight,
   CircleDollarSign,
   Clock,
+  Info,
   Minus,
   Package,
   PackageOpen,
@@ -140,6 +141,7 @@ export function DashboardScreen({ navigate }) {
     { key: '30d', label: t('dashboard.period30d') },
     { key: '90d', label: t('dashboard.period90d') },
   ]
+  const selectedPeriodLabel = periodTabs.find((tab) => tab.key === period)?.label ?? periodTabs[1].label
 
   // Dữ liệu có thể về thiếu (partial) — mảng breakdown có thể undefined dù `data` tồn tại.
   const orderStatusBreakdown = Array.isArray(data?.orderStatusBreakdown)
@@ -147,15 +149,18 @@ export function DashboardScreen({ navigate }) {
     : []
   const pieTotal = orderStatusBreakdown.reduce((s, d) => s + (d.count ?? 0), 0)
 
-  const pieDataWithTotal = orderStatusBreakdown.map((d) => ({
-    ...d,
-    name: t(`status.order.${d.status}`, d.status),
-    color: ORDER_STATUS_COLORS[d.status] ?? 'var(--admin-color-text-muted)',
-    total: pieTotal,
-  }))
+  const pieDataWithTotal = orderStatusBreakdown
+    .map((d) => ({
+      ...d,
+      count: Number(d.count) || 0,
+      name: t(`status.order.${d.status}`, d.status),
+      color: ORDER_STATUS_COLORS[d.status] ?? 'var(--admin-color-text-muted)',
+      total: pieTotal,
+    }))
+    .sort((a, b) => b.count - a.count)
 
   const revenueData = Array.isArray(data?.revenueData) ? data.revenueData : []
-  const hasRevenue = revenueData.some((d) => d.revenue > 0)
+  const zeroRevenueDays = revenueData.filter((d) => !(Number(d.revenue) > 0)).length
   const recentOrders = Array.isArray(data?.recentOrders) ? data.recentOrders : []
   const topProducts = Array.isArray(data?.topProducts) ? data.topProducts : []
 
@@ -370,14 +375,29 @@ export function DashboardScreen({ navigate }) {
               <div className="bb-card-header">
                 <div>
                   <h3>{t('dashboard.revenueChart.title')}</h3>
-                  <p>{t('dashboard.revenueChart.subtitle')}</p>
+                  <p>{t('dashboard.revenueChart.subtitle', { period: selectedPeriodLabel })}</p>
                 </div>
               </div>
               <div className="bb-card-body">
-                {hasRevenue ? (
-                  <Suspense fallback={<SkeletonBlock height={260} />}>
-                    <RevenueAreaChart revenueData={revenueData} />
-                  </Suspense>
+                {revenueData.length > 0 ? (
+                  <>
+                    <Suspense fallback={<SkeletonBlock height={260} />}>
+                      <RevenueAreaChart revenueData={revenueData} />
+                    </Suspense>
+                    {zeroRevenueDays > 0 && (
+                      <p className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
+                        <Info size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
+                        <span>
+                          {zeroRevenueDays === revenueData.length
+                            ? t('dashboard.revenueChart.allZeroNote', { total: revenueData.length })
+                            : t('dashboard.revenueChart.zeroDaysNote', {
+                                count: zeroRevenueDays,
+                                total: revenueData.length,
+                              })}
+                        </span>
+                      </p>
+                    )}
+                  </>
                 ) : (
                   <SectionEmpty
                     title={t('dashboard.revenueChart.empty')}
@@ -389,7 +409,10 @@ export function DashboardScreen({ navigate }) {
 
             <div className="bb-card">
               <div className="bb-card-header">
-                <h3>{t('dashboard.orderStatusChart.title')}</h3>
+                <div>
+                  <h3>{t('dashboard.orderStatusChart.title')}</h3>
+                  <p>{t('dashboard.orderStatusChart.subtitle', { period: selectedPeriodLabel })}</p>
+                </div>
                 {pieTotal > 0 && (
                   <Button
                     type="button"
@@ -407,27 +430,58 @@ export function DashboardScreen({ navigate }) {
                     <Suspense fallback={<SkeletonBlock height={200} />}>
                       <OrderStatusPie pieDataWithTotal={pieDataWithTotal} />
                     </Suspense>
-                    <div className="flex flex-col gap-2 mt-3">
-                      {pieDataWithTotal.map((d) => (
-                        <div key={d.status} className="flex items-center gap-2 text-xs">
-                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: d.color }} />
-                          <span className="flex-1 bb-muted">{d.name}</span>
-                          <span className="font-bold">
-                            {d.count}
-                            <span className="bb-muted font-normal ml-1">
-                              ({pieTotal > 0 ? Math.round((d.count / pieTotal) * 100) : 0}%)
-                            </span>
-                          </span>
-                        </div>
-                      ))}
-                      <div className="flex justify-between pt-2 mt-1 text-xs border-t border-dashed border-[color:var(--bb-border)]">
-                        <span className="bb-muted">{t('dashboard.orderStatusChart.total')}</span>
-                        <strong>{pieTotal}</strong>
-                      </div>
+                    <div className="mt-3 flex flex-col gap-3">
+                      {pieDataWithTotal.map((d, index) => {
+                        const percentage = pieTotal > 0 ? (d.count / pieTotal) * 100 : 0
+                        const formattedPercentage = new Intl.NumberFormat(numberLocale, {
+                          maximumFractionDigits: 1,
+                        }).format(percentage)
+                        return (
+                          <div key={d.status} className="text-xs">
+                            <div className="mb-1.5 flex items-center gap-2">
+                              <span
+                                className="h-3 w-3 shrink-0 rounded-sm"
+                                style={{ backgroundColor: d.color }}
+                                aria-hidden="true"
+                              />
+                              <span className={index === 0 ? 'flex-1 font-semibold text-foreground' : 'flex-1 bb-muted'}>
+                                {d.name}
+                              </span>
+                              {index === 0 && (
+                                <span className="bb-badge bb-badge-muted">
+                                  {t('dashboard.orderStatusChart.dominant')}
+                                </span>
+                              )}
+                              <strong className="tabular-nums">
+                                {d.count.toLocaleString(numberLocale)}
+                                <span className="ml-1 font-normal text-muted-foreground">
+                                  ({formattedPercentage}%)
+                                </span>
+                              </strong>
+                            </div>
+                            <div
+                              className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
+                              role="img"
+                              aria-label={t('dashboard.orderStatusChart.shareAria', {
+                                status: d.name,
+                                percentage: formattedPercentage,
+                              })}
+                            >
+                              <div
+                                className="h-full rounded-full"
+                                style={{ width: `${percentage}%`, backgroundColor: d.color }}
+                              />
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
                 ) : (
-                  <SectionEmpty title={t('dashboard.orderStatusChart.empty')} />
+                  <SectionEmpty
+                    title={t('dashboard.orderStatusChart.empty')}
+                    description={t('dashboard.orderStatusChart.emptyDesc')}
+                  />
                 )}
               </div>
             </div>

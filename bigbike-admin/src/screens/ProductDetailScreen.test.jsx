@@ -11,8 +11,10 @@ const mocks = vi.hoisted(() => ({
   fetchProductAssignment: vi.fn(),
   createProduct: vi.fn(),
   updateProduct: vi.fn(),
+  publishProduct: vi.fn(),
   previewProduct: vi.fn(),
   mapValidationErrors: vi.fn(() => ({})),
+  showConfirm: vi.fn(),
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }))
 
@@ -30,12 +32,13 @@ vi.mock('../lib/adminApi', () => ({
   fetchProductAssignment: mocks.fetchProductAssignment,
   createProduct: mocks.createProduct,
   updateProduct: mocks.updateProduct,
+  publishProduct: mocks.publishProduct,
   previewProduct: mocks.previewProduct,
   mapValidationErrors: mocks.mapValidationErrors,
 }))
 
 vi.mock('@/lib/toast', () => ({ toast: mocks.toast }))
-vi.mock('../lib/confirm', () => ({ showConfirm: vi.fn() }))
+vi.mock('../lib/confirm', () => ({ showConfirm: mocks.showConfirm }))
 vi.mock('@/lib/useUnsavedChanges', () => ({ useUnsavedChanges: () => {} }))
 vi.mock('@/lib/navigationGuard', () => ({ clearNavGuard: vi.fn() }))
 vi.mock('../lib/useRecentItems', () => ({ recordRecentItem: vi.fn() }))
@@ -192,6 +195,10 @@ beforeEach(() => {
   mocks.fetchBrands.mockResolvedValue({ items: [product.brand] })
   mocks.fetchCategoryTree.mockResolvedValue({ items: product.categories })
   mocks.fetchProductAssignment.mockResolvedValue({})
+  mocks.publishProduct.mockImplementation(async (_id, publishStatus) => ({
+    item: { ...product, publishStatus },
+  }))
+  mocks.showConfirm.mockResolvedValue(true)
   mocks.updateProduct.mockImplementation(async (_id, payload) => ({
     item: { ...product, name: payload.name },
   }))
@@ -203,8 +210,102 @@ describe('ProductDetailScreen', () => {
 
     expect(await screen.findByText('products.detail.permissionDesc')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'products.detail.preview.open' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'products.publishAction' })).not.toBeInTheDocument()
     expect(screen.getByDisplayValue('Mũ AGV K1S')).toBeDisabled()
     expect(screen.getByRole('button', { name: 'products.detail.saveDraft' })).toBeDisabled()
+  })
+
+  it('xuất bản DRAFT bằng checklist và cập nhật badge ngay trên trang', async () => {
+    const user = userEvent.setup()
+    renderScreen()
+
+    await user.click(await screen.findByRole('button', { name: 'products.publishAction' }))
+    await user.click(screen.getByRole('button', { name: 'products.detail.checklist.publishNow' }))
+
+    await waitFor(() => {
+      expect(mocks.publishProduct).toHaveBeenCalledWith(product.id, 'PUBLISHED')
+    })
+    expect(await screen.findByText('status.publish.PUBLISHED')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'products.unpublishAction' })).toBeInTheDocument()
+    expect(mocks.toast.success).toHaveBeenCalledWith('products.publishToggleSuccess')
+  })
+
+  it('chặn xuất bản khi checklist còn blocker', async () => {
+    const user = userEvent.setup()
+    mocks.fetchProductDetail.mockResolvedValue({
+      item: { ...product, image: null },
+    })
+    renderScreen()
+
+    await user.click(await screen.findByRole('button', { name: 'products.publishAction' }))
+
+    expect(screen.getByText('products.detail.checklist.image')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'products.detail.checklist.publishNow' })).not.toBeInTheDocument()
+    expect(mocks.publishProduct).not.toHaveBeenCalled()
+  })
+
+  it('xác nhận trước khi chuyển PUBLISHED về DRAFT và cập nhật badge tại chỗ', async () => {
+    const user = userEvent.setup()
+    const publishedProduct = { ...product, publishStatus: 'PUBLISHED' }
+    mocks.fetchProductDetail.mockResolvedValue({ item: publishedProduct })
+    mocks.publishProduct.mockResolvedValue({
+      item: { ...publishedProduct, publishStatus: 'DRAFT' },
+    })
+    renderScreen()
+
+    await user.click(await screen.findByRole('button', { name: 'products.unpublishAction' }))
+
+    expect(mocks.showConfirm).toHaveBeenCalledWith(
+      'products.detail.unpublishConfirm',
+      'products.detail.unpublishConfirmTitle',
+      expect.objectContaining({ confirmLabel: 'products.unpublishAction' }),
+    )
+    await waitFor(() => {
+      expect(mocks.publishProduct).toHaveBeenCalledWith(product.id, 'DRAFT')
+    })
+    expect(await screen.findByText('status.publish.DRAFT')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'products.publishAction' })).toBeInTheDocument()
+  })
+
+  it('khóa đổi trạng thái khi form dirty và giữ nguyên nội dung đang sửa', async () => {
+    const user = userEvent.setup()
+    renderScreen()
+
+    const nameInput = await screen.findByDisplayValue('Mũ AGV K1S')
+    await user.clear(nameInput)
+    await user.type(nameInput, 'Tên đang sửa chưa lưu')
+
+    const publishButton = screen.getByRole('button', { name: 'products.publishAction' })
+    expect(publishButton).toBeDisabled()
+    expect(publishButton).toHaveAttribute('title', 'products.detail.publishRequiresSavedForm')
+    expect(nameInput).toHaveValue('Tên đang sửa chưa lưu')
+    expect(mocks.publishProduct).not.toHaveBeenCalled()
+  })
+
+  it('không hiện toggle cho TRASH và giữ nguyên flow khôi phục hiện có', async () => {
+    const user = userEvent.setup()
+    mocks.fetchProductDetail.mockResolvedValue({
+      item: { ...product, publishStatus: 'TRASH' },
+    })
+    renderScreen()
+
+    const nameInput = await screen.findByDisplayValue('Mũ AGV K1S')
+    expect(screen.queryByRole('button', { name: 'products.publishAction' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'products.unpublishAction' })).not.toBeInTheDocument()
+
+    await user.type(nameInput, ' cập nhật')
+    await user.click(screen.getByRole('button', { name: 'products.detail.restoreAndSave' }))
+
+    expect(mocks.showConfirm).toHaveBeenCalledWith(
+      'products.detail.restoreAndSaveConfirm',
+      'products.detail.restoreAndSaveConfirmTitle',
+      expect.objectContaining({ confirmLabel: 'products.detail.restoreAndSave' }),
+    )
+    await waitFor(() => expect(mocks.updateProduct).toHaveBeenCalledTimes(1))
+    expect(mocks.updateProduct.mock.calls[0][1]).toEqual(
+      expect.objectContaining({ publishStatus: 'DRAFT' }),
+    )
+    expect(mocks.publishProduct).not.toHaveBeenCalled()
   })
 
   it('giữ metadata ảnh trong PATCH khi chỉ sửa tên sản phẩm', async () => {

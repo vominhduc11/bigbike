@@ -15,6 +15,67 @@ export const REFERENCE_TYPE_KEYS = {
   SLIDER_MOBILE: 'media.referenceType.SLIDER_MOBILE',
 }
 
+const REFERENCE_PATH_BUILDERS = {
+  PRODUCT: (id) => `/admin/products/${id}`,
+  PRODUCT_GALLERY: (id) => `/admin/products/${id}`,
+  CATEGORY: (id) => `/admin/categories/${id}`,
+  BRAND: (id) => `/admin/brands/${id}`,
+  HOME_VIDEO: () => '/admin/home-videos',
+  CONTENT: (id) => `/admin/content/ARTICLE/${id}`,
+  CONTENT_PRODUCT_IMG: (id) => `/admin/content/ARTICLE/${id}`,
+  CONTENT_SEO_OG: (id) => `/admin/content/ARTICLE/${id}`,
+  SLIDER_DESKTOP: () => '/admin/sliders',
+  SLIDER_MOBILE: () => '/admin/sliders',
+}
+
+const SAFE_REFERENCE_PATHS = [
+  /^\/admin\/products\/[^/?#]+$/,
+  /^\/admin\/categories\/[^/?#]+$/,
+  /^\/admin\/brands\/[^/?#]+$/,
+  /^\/admin\/content\/ARTICLE\/[^/?#]+$/,
+  /^\/admin\/home-videos$/,
+  /^\/admin\/sliders$/,
+]
+
+function normalizeLegacyAdminPath(path, type) {
+  if (!path.startsWith('/') || path.startsWith('//')) return ''
+  if (path.startsWith('/admin/')) return path
+  if (path.startsWith('/products/')) return `/admin${path}`
+  if (path.startsWith('/categories/')) return `/admin${path}`
+  if (path.startsWith('/brands/')) return `/admin${path}`
+  if (path === '/home-videos' || path === '/sliders') return `/admin${path}`
+  if ((type === 'CONTENT' || type === 'CONTENT_PRODUCT_IMG' || type === 'CONTENT_SEO_OG')
+      && /^\/content\/[^/?#]+$/.test(path)) {
+    return path.replace('/content/', '/admin/content/ARTICLE/')
+  }
+  return ''
+}
+
+/**
+ * Chỉ trả route nội bộ đã biết của admin. Với tham chiếu có đủ id, route được
+ * dựng lại từ type thay vì tin vào adminPath do API cũ có thể trả route public.
+ * Tham chiếu biến thể cần product id nên dùng adminPath, nhưng vẫn phải qua
+ * allowlist trước khi render thành link.
+ */
+export function getMediaReferenceAdminPath(reference) {
+  if (!reference || typeof reference !== 'object') return ''
+
+  const type = typeof reference.type === 'string' ? reference.type.trim().toUpperCase() : ''
+  const id = typeof reference.id === 'string' ? reference.id.trim() : ''
+  const builder = REFERENCE_PATH_BUILDERS[type]
+  if (builder) {
+    const routeDoesNotNeedId = type === 'HOME_VIDEO' || type.startsWith('SLIDER_')
+    if (!id && !routeDoesNotNeedId) return ''
+    const encodedId = id ? encodeURIComponent(id) : ''
+    const derivedPath = builder(encodedId)
+    return SAFE_REFERENCE_PATHS.some((pattern) => pattern.test(derivedPath)) ? derivedPath : ''
+  }
+
+  const rawPath = typeof reference.adminPath === 'string' ? reference.adminPath.trim() : ''
+  const normalizedPath = normalizeLegacyAdminPath(rawPath, type)
+  return SAFE_REFERENCE_PATHS.some((pattern) => pattern.test(normalizedPath)) ? normalizedPath : ''
+}
+
 export function formatBytes(bytes) {
   // '—' là ký hiệu "không có giá trị" trung tính (giống nhau ở VI/EN) nên giữ nguyên.
   if (!bytes) return '—'

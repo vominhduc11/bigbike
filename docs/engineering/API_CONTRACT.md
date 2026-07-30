@@ -450,6 +450,10 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
   - Thực hiện xóa cứng bài viết khỏi DB.
 
 ### 5. Thư viện ảnh (Media)
+- **Nơi đang sử dụng**: `GET /api/v1/admin/media/{id}/references`
+  - Mỗi tham chiếu trả `type`, `id`, `name`, `adminPath`.
+  - `adminPath` chỉ được trỏ tới route quản trị hợp lệ dưới `/admin`; tham chiếu sản phẩm và ảnh/biến thể của sản phẩm mở `/admin/products/{productId}`.
+  - Nếu không xác định được route quản trị an toàn hoặc entity không còn tồn tại thì client hiển thị tên tham chiếu dạng chỉ đọc, không điều hướng sang route public hoặc route 404.
 - **Xóa mềm**: `DELETE /api/v1/admin/media/{id}`
   - Đặt `status = "DELETED"`.
 - **Khôi phục**: `POST /api/v1/admin/media/{id}/restore`
@@ -552,16 +556,18 @@ This is a reporting-only export. The Product module's **"Xuất CSV"** action mu
 | `POST` | `/api/v1/admin/products` | `products.update` | Creates a product in `DRAFT`. A create payload cannot publish the product. |
 | `PATCH` | `/api/v1/admin/products/{id}` | `products.update` | Saves content without changing lifecycle: a `DRAFT` remains `DRAFT`, and a `PUBLISHED` product remains `PUBLISHED`. |
 | `POST` | `/api/v1/admin/products/preview?lang=vi\|en` | `products.update` | Dry-run storefront render. `lang` accepts only `vi` or `en`; any other value is a validation error. |
-| `PATCH` | `/api/v1/admin/products/{id}/publish` | `products.update` | The only active publish/unpublish action. Body selects `DRAFT` or `PUBLISHED`; the admin exposes it from Product List after the publish-readiness checklist. |
+| `PATCH` | `/api/v1/admin/products/{id}/publish` | `products.update` | The only active publish/unpublish action. Body selects `DRAFT` or `PUBLISHED`; Product List and Product Detail may both trigger it. `DRAFT → PUBLISHED` uses the shared publish-readiness checklist; `PUBLISHED → DRAFT` requires a clear confirmation on Product Detail. |
 | `DELETE` | `/api/v1/admin/products/{id}` | `products.update` | Soft-deletes to `TRASH`. |
 | `POST` | `/api/v1/admin/products/{id}/restore` | `products.update` | Restores `TRASH` to `DRAFT`. |
 | `DELETE` | `/api/v1/admin/products/{id}/permanent` | `products.update` | Permanently deletes a trashed product. |
 | `POST` | `/api/v1/admin/products/homepage-blocks` | `products.update` | Atomically replaces the ordered featured-product placement. |
 
-Publishing is deliberately separate from ordinary create/save (`PRODUCT_RULE_010`):
-the detail form only saves content, while the Product List owns both directions of
-the publish action. The backend enforces this boundary so a direct API caller
-cannot bypass the same operational flow.
+Publishing is deliberately separate from ordinary create/save (`PRODUCT_RULE_005`):
+the detail form's Save action only saves content, while Product List and Product
+Detail may both trigger the dedicated `/publish` action. Product Detail blocks
+the action while its form has unsaved changes. The backend contract is unchanged:
+create/update cannot perform the lifecycle transition, and only this endpoint
+changes `DRAFT ↔ PUBLISHED`.
 
 ### Full product catalog CSV export
 

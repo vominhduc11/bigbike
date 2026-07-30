@@ -6,7 +6,7 @@ import { showConfirm } from '../lib/confirm'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { IconClose } from './media-picker/pickerIcons'
-import { REFERENCE_TYPE_KEYS } from './media-picker/pickerUtils'
+import { getMediaReferenceAdminPath, REFERENCE_TYPE_KEYS } from './media-picker/pickerUtils'
 import { useModalFocusTrap, useBodyScrollLock } from './media-picker/useModalBehavior'
 
 
@@ -165,24 +165,27 @@ export function MediaDetailModal({ media, onSave, onClose, onPreview, onDelete }
 
             {!refsLoading && refs.length > 0 && (
               <ul className="list-none m-0 p-0 flex flex-col gap-1.5">
-                {refs.map((ref, i) => (
-                  <li key={i} className="flex items-center gap-2 text-xs">
-                    <span className="bg-surface-muted border border-border rounded-xs px-1.5 py-px text-xs font-semibold text-muted-foreground whitespace-nowrap shrink-0">
-                      {REFERENCE_TYPE_KEYS[ref.type] ? t(REFERENCE_TYPE_KEYS[ref.type]) : ref.type}
-                    </span>
-                    {ref.adminPath ? (
-                      <a
-                        href={ref.adminPath}
-                        className="text-primary no-underline truncate"
-                        title={ref.name}
-                      >
-                        {ref.name}
-                      </a>
-                    ) : (
-                      <span className="truncate" title={ref.name}>{ref.name}</span>
-                    )}
-                  </li>
-                ))}
+                {refs.map((ref, i) => {
+                  const adminPath = getMediaReferenceAdminPath(ref)
+                  return (
+                    <li key={i} className="flex items-center gap-2 text-xs">
+                      <span className="bg-surface-muted border border-border rounded-xs px-1.5 py-px text-xs font-semibold text-muted-foreground whitespace-nowrap shrink-0">
+                        {REFERENCE_TYPE_KEYS[ref.type] ? t(REFERENCE_TYPE_KEYS[ref.type]) : ref.type}
+                      </span>
+                      {adminPath ? (
+                        <a
+                          href={adminPath}
+                          className="text-primary no-underline truncate"
+                          title={ref.name}
+                        >
+                          {ref.name}
+                        </a>
+                      ) : (
+                        <span className="truncate" title={ref.name}>{ref.name}</span>
+                      )}
+                    </li>
+                  )
+                })}
               </ul>
             )}
           </div>

@@ -14,6 +14,7 @@ import {
   fetchProductDetail,
   mapValidationErrors,
   previewProduct,
+  publishProduct,
   updateProduct,
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
@@ -78,6 +79,7 @@ import {
   MAIN_SECTION_GROUPS,
   MAIN_GROUPS_DEFAULT_OPEN,
   groupsWithErrors,
+  getPublishReadiness,
   publishBadgeClass,
   RELATED_PRODUCTS_MAX,
   SPEC_STAT_MAX,
@@ -121,6 +123,7 @@ import { SectionCard } from '../components/SectionCard'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
 import { FormField as Field } from '../components/layout/FormField'
 import { AssignmentConfigContext } from './product-detail/constants'
+import { PublishChecklistModal } from './product-detail/Modals'
 
 // "Phù hợp với ai" (suitability) và "Bảng size" (sizeGuide) có card riêng NGOÀI trình dựng mô tả, và
 // (V327/V328) dữ liệu của chúng giờ cũng lưu ở 2 field riêng (form.suitabilitySection/sizeGuideSection)
@@ -147,6 +150,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const [isDirty, setIsDirty] = useState(false)
   const [validationErrors, setValidationErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isPublishToggling, setIsPublishToggling] = useState(false)
+  const [showPublishChecklist, setShowPublishChecklist] = useState(false)
   const [isRestoreConfirming, setIsRestoreConfirming] = useState(false)
   const [variantsDeletedToEmpty, setVariantsDeletedToEmpty] = useState(false)
   const restoreConfirmingRef = useRef(false)
@@ -440,7 +445,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     error: fetchError?.message ?? '',
   }
 
-  const isReadOnly = !canUpdate || isSubmitting
+  const isReadOnly = !canUpdate || isSubmitting || isPublishToggling
   const formRef = useRef(null)
 
   // F6: cảnh báo khi rời trang lúc còn thay đổi chưa lưu — phủ CẢ điều hướng nội
@@ -754,6 +759,29 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     },
   })
 
+  const togglePublishMutation = useMutation({
+    mutationFn: (nextStatus) => publishProduct(productId, nextStatus),
+    onSuccess: (response, nextStatus) => {
+      setForm((previous) => ({ ...previous, publishStatus: nextStatus }))
+      setShowPublishChecklist(false)
+      queryClient.setQueryData(['product', productId], (previous) => {
+        if (response?.item) return response
+        if (!previous?.item) return previous
+        return {
+          ...previous,
+          item: { ...previous.item, publishStatus: nextStatus },
+        }
+      })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      toast.success(t('products.publishToggleSuccess', { defaultValue: 'Đã đổi trạng thái xuất bản.' }))
+      setIsPublishToggling(false)
+    },
+    onError: (error) => {
+      toast.error(error?.message || t('products.detail.errPublishFailed'))
+      setIsPublishToggling(false)
+    },
+  })
+
   function focusFirstError() {
     // Use double-rAF so we run AFTER React's commit phase, including the
     // adjust-state-during-render pass that auto-expands a variant card.
@@ -1012,6 +1040,50 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const primaryLabel = isTrashed
     ? t('products.detail.restoreAndSave')
     : isPublished ? t('products.detail.saveBtn') : t('products.detail.saveDraft')
+  const publishActionLabel = isPublished
+    ? t('products.unpublishAction', { defaultValue: 'Chuyển về Nháp' })
+    : t('products.publishAction', { defaultValue: 'Xuất bản' })
+
+  function changePublishStatus(nextStatus) {
+    setIsPublishToggling(true)
+    togglePublishMutation.mutate(nextStatus)
+  }
+
+  async function handlePublishAction() {
+    if (!canUpdate || isCreate || isTrashed || isPublishToggling) return
+    if (isDirty) {
+      toast.info(t('products.detail.publishRequiresSavedForm', {
+        defaultValue: 'Hãy lưu các thay đổi trước khi đổi trạng thái xuất bản.',
+      }))
+      return
+    }
+
+    if (!isPublished) {
+      setShowPublishChecklist(true)
+      return
+    }
+
+    const confirmed = await showConfirm(
+      t('products.detail.unpublishConfirm', {
+        defaultValue: 'Sản phẩm sẽ ngừng hiển thị trên website và chuyển về Nháp. Tiếp tục?',
+      }),
+      t('products.detail.unpublishConfirmTitle', { defaultValue: 'Chuyển sản phẩm về Nháp?' }),
+      {
+        variant: 'default',
+        confirmLabel: t('products.unpublishAction', { defaultValue: 'Chuyển về Nháp' }),
+      },
+    )
+    if (confirmed) changePublishStatus('DRAFT')
+  }
+
+  function confirmPublishFromChecklist() {
+    const blockers = getPublishReadiness(form, t).filter((item) => item.required && !item.ok)
+    if (blockers.length > 0) {
+      toast.error(t('products.detail.checklist.blockerMessage', { count: blockers.length }))
+      return
+    }
+    changePublishStatus('PUBLISHED')
+  }
 
   async function handlePrimarySave() {
     if (isTrashed) {
@@ -2273,6 +2345,14 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           )}
         </form>
 
+        {showPublishChecklist && (
+          <PublishChecklistModal
+            form={form}
+            onConfirm={confirmPublishFromChecklist}
+            onCancel={() => setShowPublishChecklist(false)}
+          />
+        )}
+
         <StickyActionBar
           ariaLabel={t('common.actionBarLabel', { defaultValue: 'Thanh thao tác' })}
           info={
@@ -2293,6 +2373,24 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             >
               <Eye size={14} className="mr-1.5" />
               {t('products.detail.preview.open', { defaultValue: 'Xem trước' })}
+            </Button>
+          )}
+
+          {canUpdate && !isCreate && !isTrashed && (
+            <Button
+              variant="outline"
+              type="button"
+              className="min-h-11"
+              disabled={isReadOnly || isDirty}
+              onClick={handlePublishAction}
+              title={isDirty
+                ? t('products.detail.publishRequiresSavedForm', {
+                    defaultValue: 'Hãy lưu các thay đổi trước khi đổi trạng thái xuất bản.',
+                  })
+                : publishActionLabel}
+            >
+              {isPublishToggling && <Loader2 size={14} className="mr-1.5 animate-spin" />}
+              {publishActionLabel}
             </Button>
           )}
 

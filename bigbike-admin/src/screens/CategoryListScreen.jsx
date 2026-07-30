@@ -22,13 +22,11 @@ import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { FilterChips } from '../components/FilterChips'
-import { ColumnVisibilityToggle } from '../components/ColumnVisibilityToggle'
 import { RecentItemsChips } from '../components/RecentItemsChips'
 import { fetchCategories, fetchCategoryDetail, fetchCategoryTree, updateCategory, softDeleteCategory, restoreCategory, hardDeleteCategory, previewCategoryPermanentDelete } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
-import { formatDateTime, formatText, stripHtml } from '../lib/formatters'
+import { formatDateTime, formatText } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
-import { useColumnVisibility } from '../lib/useColumnVisibility'
 import { useContentLang } from '../lib/contentLang'
 import { useDebounce } from '../lib/useDebounce'
 import { useRecentItems } from '../lib/useRecentItems'
@@ -43,7 +41,6 @@ import {
   EMPTY_ITEMS,
   INITIAL_QUERY,
   STOREFRONT_BASE,
-  buildBreadcrumbMap,
   buildTree,
 } from './category-list/constants'
 import { CategoryEmptyState } from './category-list/CategoryEmptyState'
@@ -109,15 +106,6 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   // O9: danh mục vừa mở gần đây (ghi lại từ CategoryDetailScreen khi mount).
   const recentCategoryItems = useRecentItems('recent:categories')
 
-  // T7: cho phép ẩn/hiện cột Mô tả/Cập nhật trên bảng danh mục, lưu theo trình duyệt.
-  const { hiddenKeys: hiddenColumnKeys, toggle: toggleColumn, allColumns: allColumnDefs } = useColumnVisibility(
-    [
-      { key: 'description', label: t('categories.colDescription') },
-      { key: 'updatedAt', label: t('categories.colUpdated') },
-    ],
-    'columns:categories',
-  )
-
   const paginatedState = useAdminList(['categories', query, contentLang], () => fetchCategories(query))
 
   // N2: đọc thêm isError/error/refetch riêng của query cây — trước đây lỗi ở
@@ -136,8 +124,6 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   })
 
   const allItems = useMemo(() => allCatsResult?.items ?? EMPTY_ITEMS, [allCatsResult?.items])
-
-  const breadcrumbMap = useMemo(() => buildBreadcrumbMap(allItems), [allItems])
 
   // DnD optimistic-order state. Declared early so memos that build the
   // tree can apply the override without a temporal-dead-zone forward
@@ -712,25 +698,6 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           <Pencil size={15} aria-hidden="true" />
         </Button>
 
-        {storefrontAvailable && (
-          <Button
-            asChild
-            variant="unstyled"
-            size="icon"
-            className="bb-icon-btn min-h-11 min-w-11"
-            title={t('categories.viewOnSite')}
-            aria-label={t('categories.viewOnSite')}
-          >
-            <a
-              href={`${STOREFRONT_BASE}/${category.slug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <ExternalLink size={15} aria-hidden="true" />
-            </a>
-          </Button>
-        )}
-
         {canUpdate && !isSystemCategory && !query.deleted && (
           <Button
             variant="unstyled"
@@ -751,7 +718,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           </Button>
         )}
 
-        {canUpdate && !isSystemCategory && (
+        {(storefrontAvailable || (canUpdate && !isSystemCategory)) && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -767,7 +734,22 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {!query.deleted && (
+              {storefrontAvailable && (
+                <>
+                  <DropdownMenuItem asChild>
+                    <a
+                      href={`${STOREFRONT_BASE}/${category.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <ExternalLink size={14} className="mr-2" aria-hidden="true" />
+                      {t('categories.viewOnSite')}
+                    </a>
+                  </DropdownMenuItem>
+                  {canUpdate && !isSystemCategory ? <DropdownMenuSeparator /> : null}
+                </>
+              )}
+              {canUpdate && !isSystemCategory && !query.deleted && (
                 <>
                   <DropdownMenuItem disabled={rowBusy} onSelect={() => handleDuplicate(category)}>
                     <Copy size={14} className="mr-2" aria-hidden="true" />
@@ -784,7 +766,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                   </DropdownMenuItem>
                 </>
               )}
-              {query.deleted && (
+              {canUpdate && !isSystemCategory && query.deleted && (
                 <>
                   <DropdownMenuItem disabled={rowBusy} onSelect={() => handleRestore(category)}>
                     <Undo2 size={14} className="mr-2" aria-hidden="true" />
@@ -811,22 +793,22 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   // Thẻ mobile cho 1 danh mục — thay bảng cuộn ngang trên điện thoại (P2-2).
   // Kéo-thả sắp xếp vẫn chỉ ở desktop; mobile hiển thị dạng danh sách phẳng.
   const mobileCategoryCard = (category) => {
-    const breadcrumb = breadcrumbMap.get(category.id) || category.name
     return (
       <MobileCard
         key={category.id}
         title={formatText(category.name)}
-        subtitle={breadcrumb && breadcrumb !== category.name ? breadcrumb : (category.slug ? `/${category.slug}` : undefined)}
-        status={(
-          <span className="flex flex-wrap justify-end gap-1">
-            <StatusBadge type="visibility" status={category.isVisible} />
-            <StatusBadge type="homepage" status={Boolean(category.showOnHomepage)} />
-            {query.deleted ? <StatusBadge type="trash" status /> : null}
-          </span>
-        )}
+        subtitle={category.slug ? `/${category.slug}` : undefined}
+        status={<StatusBadge type="visibility" status={category.isVisible} />}
         meta={[
+          {
+            label: t('categories.colHomepage'),
+            value: category.showOnHomepage === true
+              ? t('common.yes')
+              : category.showOnHomepage === false
+                ? t('common.no')
+                : t('common.unknown'),
+          },
           { label: t('categories.colUpdated'), value: formatDateTime(category.updatedAt) },
-          { label: t('categories.colSortOrder'), value: category.sortOrder ?? <span className="bb-muted">—</span> },
         ]}
         onClick={() => navigate(`/admin/categories/${category.id}`)}
         selectable={canUpdate && category.id !== 'uncategorized'}
@@ -840,8 +822,6 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   const renderCategoryRow = (category, depth = 0, sortableProps = null) => {
     const hasChildren = useTreeMode && treeRows.some((r) => r.parentId === category.id && r._depth > 0)
     const isExpanded = expandedIds.has(category.id)
-    const breadcrumb = breadcrumbMap.get(category.id) || category.name
-    const descText = stripHtml(category.description)
     const goToDetail = () => navigate(`/admin/categories/${category.id}`)
     const isMatch = category._isMatch
     const isDimmed = searchTerm && !isMatch
@@ -929,38 +909,34 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                 {searchTerm ? highlightMatch(formatText(category.name), searchTerm) : formatText(category.name)}
               </strong>
               <span className="cat-slug">
-                {searchTerm ? highlightMatch(category.slug || '', searchTerm) : category.slug}
+                {category.slug
+                  ? <>/{searchTerm ? highlightMatch(category.slug, searchTerm) : category.slug}</>
+                  : '—'}
               </span>
-              {!useTreeMode && category.parentId && (
-                <span className="cat-breadcrumb">{breadcrumb}</span>
-              )}
             </a>
           </div>
         </td>
 
-        {/* Description */}
-        {!hiddenColumnKeys.includes('description') && (
-          <td className="cat-desc">
-            {descText ? descText : <span className="cell-empty">—</span>}
-          </td>
-        )}
-
-        {/* Status badges: visibility, homepage, trash */}
+        {/* Display status */}
         <td>
-          <span className="flex flex-wrap gap-1">
-            <StatusBadge type="visibility" status={category.isVisible} className="cat-status-badge" />
-            <StatusBadge type="homepage" status={Boolean(category.showOnHomepage)} />
-            {query.deleted ? <StatusBadge type="trash" status /> : null}
+          <StatusBadge type="visibility" status={category.isVisible} className="cat-status-badge" />
+        </td>
+
+        {/* Homepage */}
+        <td>
+          <span className="text-sm text-foreground">
+            {category.showOnHomepage === true
+              ? t('common.yes')
+              : category.showOnHomepage === false
+                ? t('common.no')
+                : t('common.unknown')}
           </span>
         </td>
 
-        {/* Sort order — flat mode only */}
-        {!useTreeMode && (
-          <td className="align-right">{category.sortOrder ?? <span className="cell-empty">—</span>}</td>
-        )}
-
         {/* Updated */}
-        {!hiddenColumnKeys.includes('updatedAt') && <td>{formatDateTime(category.updatedAt)}</td>}
+        <td className="align-right">
+          <span className="text-xs text-muted-foreground">{formatDateTime(category.updatedAt)}</span>
+        </td>
 
         {/* Actions */}
         <td className="align-right">
@@ -1183,7 +1159,6 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                 </Button>
               </>
             ) : null}
-            <ColumnVisibilityToggle allColumns={allColumnDefs} hiddenKeys={hiddenColumnKeys} onToggle={toggleColumn} />
             <Button
               type="button"
               variant="secondary"
@@ -1262,11 +1237,11 @@ export function CategoryListScreen({ navigate, canUpdate }) {
             <div className="overflow-hidden rounded-md border border-border bg-surface">
               <div className="table-scroll-wrap hide-on-mobile">
                 <table className="admin-table cat-tree-table cat-table-tree" aria-busy="true">
-                  <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenColumnKeys} />
+                  <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} />
                   <tbody>
                     {Array.from({ length: 8 }).map((_, i) => (
                       <tr key={i} className="skel-row">
-                        {Array.from({ length: (canUpdate ? 6 : 5) - hiddenColumnKeys.length }).map((__, j) => (
+                        {Array.from({ length: canUpdate ? 6 : 5 }).map((__, j) => (
                           <td key={j}><span className="bb-skel w-4/5 h-5" /></td>
                         ))}
                       </tr>
@@ -1305,7 +1280,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                   >
                     <table className="admin-table cat-tree-table cat-table-tree">
                       <caption className="sr-only">{t('categories.tableCaption')}</caption>
-                      <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenColumnKeys} />
+                      <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} />
                       <tbody>
                         {visibleTreeRows.map((row) =>
                           canUpdate && !searchTerm
@@ -1359,12 +1334,12 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               <div className="table-scroll-wrap hide-on-mobile">
                 <table className="admin-table cat-tree-table cat-table-flat">
                   <caption className="sr-only">{t('categories.tableCaption')}</caption>
-                  <CategoryFlatTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} hiddenKeys={hiddenColumnKeys} />
+                  <CategoryFlatTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} />
                   <tbody>
                     {flatModeStatus === 'loading'
                       ? Array.from({ length: query.pageSize }).map((_, i) => (
                           <tr key={i} className="skel-row">
-                            {Array.from({ length: (canUpdate ? 7 : 6) - hiddenColumnKeys.length }).map((__, j) => (
+                            {Array.from({ length: canUpdate ? 6 : 5 }).map((__, j) => (
                               <td key={j}><span className="bb-skel w-4/5 h-5" /></td>
                             ))}
                           </tr>

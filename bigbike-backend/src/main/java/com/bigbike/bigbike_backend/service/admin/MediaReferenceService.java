@@ -51,42 +51,42 @@ public class MediaReferenceService {
         List<MediaReferenceItem> refs = new ArrayList<>();
 
         collectLike(refs, "SELECT id::text, name FROM products WHERE image_url LIKE ?",
-                suffix, rs -> new MediaReferenceItem("PRODUCT", rs.getString(1), rs.getString(2), "/products/" + rs.getString(1)));
+                suffix, rs -> new MediaReferenceItem("PRODUCT", rs.getString(1), rs.getString(2), "/admin/products/" + rs.getString(1)));
 
         collectGalleryReferences(refs, media.getFilePath());
 
         collectLike(refs,
                 "SELECT v.id::text, COALESCE(p.name,'') || ' / ' || COALESCE(v.sku, v.id::text) AS label, p.id::text " +
                 "FROM product_variants v JOIN products p ON p.id = v.product_id WHERE v.image_url LIKE ?",
-                suffix, rs -> new MediaReferenceItem("PRODUCT_VARIANT", rs.getString(1), rs.getString(2), "/products/" + rs.getString(3)));
+                suffix, rs -> new MediaReferenceItem("PRODUCT_VARIANT", rs.getString(1), rs.getString(2), "/admin/products/" + rs.getString(3)));
 
         collectLike(refs,
                 "SELECT v.id::text, COALESCE(p.name,'') || ' / ' || COALESCE(v.sku, v.id::text) AS label, p.id::text " +
                 "FROM product_variant_gallery_images g JOIN product_variants v ON v.id = g.variant_id JOIN products p ON p.id = v.product_id WHERE g.image_url LIKE ?",
-                suffix, rs -> new MediaReferenceItem("PRODUCT_VARIANT_GALLERY", rs.getString(1), rs.getString(2), "/products/" + rs.getString(3)));
+                suffix, rs -> new MediaReferenceItem("PRODUCT_VARIANT_GALLERY", rs.getString(1), rs.getString(2), "/admin/products/" + rs.getString(3)));
 
         collectLike(refs, "SELECT id::text, name FROM categories WHERE image_url LIKE ?",
-                suffix, rs -> new MediaReferenceItem("CATEGORY", rs.getString(1), rs.getString(2), "/categories/" + rs.getString(1)));
+                suffix, rs -> new MediaReferenceItem("CATEGORY", rs.getString(1), rs.getString(2), "/admin/categories/" + rs.getString(1)));
 
         collectLike(refs, "SELECT id::text, name FROM brands WHERE logo_url LIKE ?",
-                suffix, rs -> new MediaReferenceItem("BRAND", rs.getString(1), rs.getString(2), "/brands/" + rs.getString(1)));
+                suffix, rs -> new MediaReferenceItem("BRAND", rs.getString(1), rs.getString(2), "/admin/brands/" + rs.getString(1)));
 
         collectLike(refs, "SELECT id::text, title FROM home_videos WHERE video_url LIKE ?",
-                suffix, rs -> new MediaReferenceItem("HOME_VIDEO", rs.getString(1), rs.getString(2), "/home-videos"));
+                suffix, rs -> new MediaReferenceItem("HOME_VIDEO", rs.getString(1), rs.getString(2), "/admin/home-videos"));
 
         collectLike(refs, "SELECT id::text, title FROM articles WHERE cover_image_url LIKE ?",
-                suffix, rs -> new MediaReferenceItem("CONTENT", rs.getString(1), rs.getString(2), "/content/" + rs.getString(1)));
+                suffix, rs -> new MediaReferenceItem("CONTENT", rs.getString(1), rs.getString(2), "/admin/content/ARTICLE/" + rs.getString(1)));
 
         collectLike(refs, "SELECT id::text, title FROM articles WHERE seo_og_image_url LIKE ?",
-                suffix, rs -> new MediaReferenceItem("CONTENT_SEO_OG", rs.getString(1), rs.getString(2), "/content/" + rs.getString(1)));
+                suffix, rs -> new MediaReferenceItem("CONTENT_SEO_OG", rs.getString(1), rs.getString(2), "/admin/content/ARTICLE/" + rs.getString(1)));
 
         // Sliders: file_path may appear anywhere inside the JSON blob (not necessarily at the end)
         String anywhere = "%" + media.getFilePath() + "%";
         collectLike(refs, "SELECT id::text, COALESCE(location,'') FROM sliders WHERE desktop_image::text LIKE ?",
-                anywhere, rs -> new MediaReferenceItem("SLIDER_DESKTOP", rs.getString(1), "Banner desktop – " + rs.getString(2), "/sliders"));
+                anywhere, rs -> new MediaReferenceItem("SLIDER_DESKTOP", rs.getString(1), "Banner desktop – " + rs.getString(2), "/admin/sliders"));
 
         collectLike(refs, "SELECT id::text, COALESCE(location,'') FROM sliders WHERE mobile_image::text LIKE ?",
-                anywhere, rs -> new MediaReferenceItem("SLIDER_MOBILE", rs.getString(1), "Banner mobile – " + rs.getString(2), "/sliders"));
+                anywhere, rs -> new MediaReferenceItem("SLIDER_MOBILE", rs.getString(1), "Banner mobile – " + rs.getString(2), "/admin/sliders"));
 
         return refs;
     }
@@ -272,7 +272,7 @@ public class MediaReferenceService {
             String name = rs.getString("name");
             for (String url : extractGalleryImageUrls(rs.getString("gallery"))) {
                 if (url != null && url.endsWith(filePath)) {
-                    target.add(new MediaReferenceItem("PRODUCT_GALLERY", id, name, "/products/" + id));
+                    target.add(new MediaReferenceItem("PRODUCT_GALLERY", id, name, "/admin/products/" + id));
                 }
             }
         });

@@ -17,35 +17,88 @@ import { formatVndShort, fmtIsoDateShort } from '../../lib/formatters'
 // recharts (~346KB) lives only in this module so DashboardScreen can lazy-load it:
 // the dashboard shell (KPIs + tables) paints first, the charts stream in after.
 
-function fmtAxisMillions(value) {
+function fmtAxisMillions(value, locale, millionUnit) {
   if (!value && value !== 0) return ''
-  return (value / 1_000_000).toFixed(value >= 10_000_000 ? 0 : 1)
+  if (value === 0) return '0 ₫'
+  const formatted = new Intl.NumberFormat(locale, {
+    maximumFractionDigits: value >= 10_000_000 ? 0 : 1,
+  }).format(value / 1_000_000)
+  return `${formatted} ${millionUnit}`
 }
 
-function RevenueTooltip({ active, payload, label, ordersUnit }) {
+function formatTooltipDate(isoDate, locale) {
+  if (!isoDate || typeof isoDate !== 'string') return ''
+  const parsed = new Date(`${isoDate}T00:00:00`)
+  if (Number.isNaN(parsed.getTime())) return isoDate
+  return parsed.toLocaleDateString(locale, {
+    weekday: 'short',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+}
+
+function RevenueTooltip({
+  active,
+  payload,
+  label,
+  locale,
+  revenueLabel,
+  ordersLabel,
+  ordersUnit,
+}) {
   if (!active || !payload?.length) return null
+  const point = payload[0]?.payload ?? {}
   return (
     <div className="bb-dash-tooltip">
-      <div className="bb-dash-tooltip-date">{fmtIsoDateShort(label)}</div>
-      {payload.map((p) => (
-        <div key={p.dataKey} className="bb-dash-tooltip-row">
-          {p.name}: {p.dataKey === 'revenue' ? formatVndShort(p.value) : `${p.value} ${ordersUnit}`}
+      <div className="bb-dash-tooltip-date">{formatTooltipDate(label, locale)}</div>
+      <div className="mt-2 grid gap-1.5">
+        <div className="grid grid-cols-[auto_1fr] items-baseline gap-4">
+          <span className="bb-dash-tooltip-row">{revenueLabel}</span>
+          <strong className="text-right text-foreground tabular-nums">
+            {formatVndShort(point.revenue)}
+          </strong>
         </div>
-      ))}
+        <div className="grid grid-cols-[auto_1fr] items-baseline gap-4">
+          <span className="bb-dash-tooltip-row">{ordersLabel}</span>
+          <strong className="text-right text-foreground tabular-nums">
+            {(point.orders ?? 0).toLocaleString(locale)} {ordersUnit}
+          </strong>
+        </div>
+      </div>
     </div>
   )
 }
 
-function PieTooltip({ active, payload, orderUnit }) {
+function PieTooltip({
+  active,
+  payload,
+  locale,
+  countLabel,
+  shareLabel,
+  orderUnit,
+}) {
   if (!active || !payload?.length) return null
   const d = payload[0]
   const total = d.payload?.total || 1
-  const pct = Math.round((d.value / total) * 100)
+  const pct = (d.value / total) * 100
+  const formattedPct = new Intl.NumberFormat(locale, {
+    maximumFractionDigits: 1,
+  }).format(pct)
   return (
     <div className="bb-dash-tooltip">
       <div className="bb-dash-tooltip-name">{d.name}</div>
-      <div className="bb-dash-tooltip-meta">
-        {d.value} {orderUnit} ({pct}%)
+      <div className="mt-2 grid gap-1.5">
+        <div className="grid grid-cols-[auto_1fr] items-baseline gap-4">
+          <span className="bb-dash-tooltip-meta">{countLabel}</span>
+          <strong className="text-right text-foreground tabular-nums">
+            {d.value.toLocaleString(locale)} {orderUnit}
+          </strong>
+        </div>
+        <div className="grid grid-cols-[auto_1fr] items-baseline gap-4">
+          <span className="bb-dash-tooltip-meta">{shareLabel}</span>
+          <strong className="text-right text-foreground tabular-nums">{formattedPct}%</strong>
+        </div>
       </div>
     </div>
   )
@@ -67,7 +120,12 @@ function useMountedAfterLayout() {
 }
 
 export function RevenueAreaChart({ revenueData }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
+  const maxRevenue = revenueData.reduce(
+    (max, point) => Math.max(max, Number(point.revenue) || 0),
+    0,
+  )
 
   // Tóm tắt cho screen reader: tổng doanh thu trong kỳ + ngày cao nhất.
   // Biểu đồ recharts (SVG) không tự phát ra số liệu, tooltip lại chỉ hiện khi
@@ -107,10 +165,24 @@ export function RevenueAreaChart({ revenueData }) {
           tick={{ fontSize: 11, fill: 'var(--bb-text-muted)' }}
           tickLine={false}
           axisLine={false}
-          tickFormatter={fmtAxisMillions}
-          width={40}
+          domain={[0, maxRevenue === 0 ? 1_000_000 : 'auto']}
+          tickFormatter={(value) => fmtAxisMillions(
+            value,
+            locale,
+            t('dashboard.revenueChart.millionUnit'),
+          )}
+          width={62}
         />
-        <Tooltip content={<RevenueTooltip ordersUnit={t('dashboard.revenueChart.ordersAxis')} />} />
+        <Tooltip
+          content={(
+            <RevenueTooltip
+              locale={locale}
+              revenueLabel={t('dashboard.revenueChart.revenue')}
+              ordersLabel={t('dashboard.revenueChart.orders')}
+              ordersUnit={t('dashboard.revenueChart.ordersAxis')}
+            />
+          )}
+        />
         <Area
           type="monotone"
           dataKey="revenue"
@@ -128,10 +200,12 @@ export function RevenueAreaChart({ revenueData }) {
 }
 
 export function OrderStatusPie({ pieDataWithTotal }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
   // Bản đọc-được cho biểu đồ tròn: legend dạng chữ đã có ở DashboardScreen,
   // nên ở đây chỉ cần tên truy cập tổng quát cho vùng đồ hoạ.
   const label = t('dashboard.orderStatusChart.a11yLabel')
+  const total = pieDataWithTotal[0]?.total ?? 0
   const mounted = useMountedAfterLayout()
   return (
     <div role="group" aria-label={label}>
@@ -151,7 +225,40 @@ export function OrderStatusPie({ pieDataWithTotal }) {
               <Cell key={entry.status} fill={entry.color} stroke="transparent" />
             ))}
           </Pie>
-          <Tooltip content={<PieTooltip orderUnit={t('dashboard.orderStatusChart.orderUnit')} />} />
+          <text
+            x="50%"
+            y="45%"
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill="var(--bb-text)"
+            fontFamily="var(--admin-font-display)"
+            fontSize="24"
+            fontWeight="600"
+            aria-hidden="true"
+          >
+            {total.toLocaleString(locale)}
+          </text>
+          <text
+            x="50%"
+            y="58%"
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill="var(--bb-text-muted)"
+            fontSize="11"
+            aria-hidden="true"
+          >
+            {t('dashboard.orderStatusChart.total')}
+          </text>
+          <Tooltip
+            content={(
+              <PieTooltip
+                locale={locale}
+                countLabel={t('dashboard.orderStatusChart.count')}
+                shareLabel={t('dashboard.orderStatusChart.share')}
+                orderUnit={t('dashboard.orderStatusChart.orderUnit')}
+              />
+            )}
+          />
         </PieChart>
       </ResponsiveContainer>
       )}

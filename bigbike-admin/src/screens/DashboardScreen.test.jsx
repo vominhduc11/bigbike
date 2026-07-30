@@ -38,8 +38,14 @@ vi.mock('../lib/adminWebSocket', () => ({
   subscribeAdminWs: mocks.subscribeAdminWs,
 }))
 vi.mock('./dashboard/charts', () => ({
-  RevenueAreaChart: () => <div data-testid="revenue-chart" />,
-  OrderStatusPie: () => <div data-testid="status-chart" />,
+  RevenueAreaChart: ({ revenueData }) => (
+    <div data-testid="revenue-chart">{revenueData.length} points</div>
+  ),
+  OrderStatusPie: ({ pieDataWithTotal }) => (
+    <div data-testid="status-chart">
+      {pieDataWithTotal.map((item) => `${item.status}:${item.count}`).join('|')}
+    </div>
+  ),
 }))
 vi.mock('../components/RecentItemsChips', () => ({
   RecentItemsChips: () => null,
@@ -152,6 +158,42 @@ describe('DashboardScreen', () => {
     expect(screen.getByText('dashboard.topProducts.empty')).toBeInTheDocument()
   })
 
+  it('keeps an all-zero revenue series visible and explains that it is valid data', async () => {
+    mocks.fetchDashboardSummary.mockResolvedValue({
+      data: {
+        ...BASE_DASHBOARD,
+        revenueData: [
+          { date: '2026-07-29', revenue: 0, orders: 0 },
+          { date: '2026-07-30', revenue: 0, orders: 0 },
+        ],
+      },
+    })
+    renderScreen()
+
+    expect(await screen.findByTestId('revenue-chart')).toHaveTextContent('2 points')
+    expect(screen.getByText('dashboard.revenueChart.allZeroNote')).toBeInTheDocument()
+    expect(screen.queryByText('dashboard.revenueChart.empty')).not.toBeInTheDocument()
+  })
+
+  it('sorts order statuses by share and marks the largest group', async () => {
+    mocks.fetchDashboardSummary.mockResolvedValue({
+      data: {
+        ...BASE_DASHBOARD,
+        orderStatusBreakdown: [
+          { status: 'PENDING', count: 2 },
+          { status: 'COMPLETED', count: 8 },
+          { status: 'CANCELLED', count: 1 },
+        ],
+      },
+    })
+    renderScreen()
+
+    expect(await screen.findByTestId('status-chart')).toHaveTextContent(
+      'COMPLETED:8|PENDING:2|CANCELLED:1',
+    )
+    expect(screen.getByText('dashboard.orderStatusChart.dominant')).toBeInTheDocument()
+  })
+
   it('rounds the revenue trend to one decimal in the selected language', async () => {
     renderScreen()
 
@@ -174,5 +216,9 @@ describe('DashboardScreen', () => {
     expect(enLocale.dashboard.kpi.activeProductsHint).toBe('Published products')
     expect(viLocale.dashboard.topProducts.emptyDesc).toContain('đơn hàng hợp lệ')
     expect(enLocale.dashboard.topProducts.emptyDesc).toContain('valid orders')
+    expect(viLocale.dashboard.revenueChart.title).toBe('Xu hướng doanh thu theo ngày')
+    expect(viLocale.dashboard.orderStatusChart.title).toBe('Cơ cấu đơn hàng theo trạng thái')
+    expect(viLocale.dashboard.revenueChart.subtitle).toContain('{{period}} gần nhất')
+    expect(enLocale.dashboard.orderStatusChart.subtitle).toContain('{{period}}')
   })
 })

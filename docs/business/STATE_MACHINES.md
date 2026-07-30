@@ -92,8 +92,8 @@ Legacy values (còn trong enum cho backward compat với dữ liệu cũ, không
 
 - `POST /api/v1/admin/products` chỉ tạo `DRAFT`. Payload không được dùng để
   xuất bản ngay.
-- Xuất bản là thao tác riêng từ Product List, qua
-  `PATCH /api/v1/admin/products/{id}/publish`.
+- Xuất bản là thao tác riêng với lưu nội dung, được kích hoạt từ Product List
+  hoặc Product Detail qua `PATCH /api/v1/admin/products/{id}/publish`.
 
 ### Terminal States
 
@@ -121,7 +121,7 @@ Admin live preview (`POST /api/v1/admin/products/preview`) render nội dung nh�
 
 | From | To | Reason | Enforcement | Evidence |
 |---|---|---|---|---|
-| `DRAFT` | `PUBLISHED` qua `POST`/`PATCH` upsert | Upsert chỉ lưu nội dung; xuất bản phải qua endpoint `/publish` từ Product List. | Backend rejects. | `PRODUCT_RULE_010`, `AdminMutationValidators.java`, `ProductMutationService.java` |
+| `DRAFT` | `PUBLISHED` qua `POST`/`PATCH` upsert | Upsert chỉ lưu nội dung; xuất bản phải qua endpoint `/publish`, dù action được kích hoạt từ Product List hay Product Detail. | Backend rejects. | `PRODUCT_RULE_005`, `AdminMutationValidators.java`, `ProductMutationService.java` |
 | `DRAFT` | `DRAFT` qua update | Lưu nội dung, không phải transition. | Backend giữ nguyên `DRAFT`. | `ProductMutationService.java` |
 | `PUBLISHED` | `PUBLISHED` qua update | Lưu nội dung đã xuất bản, không phải transition. | Backend giữ nguyên `PUBLISHED`. | `ProductMutationService.java` |
 | any | `HIDDEN` / `ARCHIVED` / `PENDING` / `PRIVATE` | Legacy values, không được set qua admin API (kể cả `HIDDEN`, từ 2026-07-07). | Backend rejects với `RESERVED_PUBLISH_STATUS`. | `AdminMutationValidators.java` |
@@ -130,9 +130,17 @@ Admin live preview (`POST /api/v1/admin/products/preview`) render nội dung nh�
 
 ### Frontend Behavior
 
-- Product Detail chỉ tạo/lưu nội dung; không có nút xuất bản hoặc chuyển về
-  nháp.
-- Product List sở hữu checklist và thao tác `DRAFT ↔ PUBLISHED`.
+- Product Detail vẫn có nút Lưu chỉ để lưu nội dung, đồng thời có action riêng
+  để chuyển `DRAFT ↔ PUBLISHED` qua endpoint `/publish`; action không xuất hiện
+  cho `TRASH`.
+- Product List và Product Detail dùng chung `getPublishReadiness` và
+  `PublishChecklistModal` cho `DRAFT → PUBLISHED`. Còn blocker bắt buộc thì
+  không được publish.
+- `PUBLISHED → DRAFT` trên Product Detail phải có xác nhận rõ ràng và không cần
+  checklist.
+- Product Detail khóa action đổi trạng thái khi form còn dirty; người dùng phải
+  lưu nội dung trước. Sau thành công, badge/action cập nhật tại chỗ, không điều
+  hướng và không tải lại toàn trang.
 - Người chỉ có `products.read` xem được danh sách/chi tiết nhưng không thấy
   mutation controls.
 - Public web visibility is backend-enforced by `CatalogReadService`, not just UI.
@@ -148,8 +156,9 @@ Admin live preview (`POST /api/v1/admin/products/preview`) render nội dung nh�
 - Backend transition tests cover create/update status retention, publish and
   unpublish through the dedicated action, reserved-state rejection, trash and
   restore.
-- Product List/Detail screen tests cover ownership of the publish action and
-  read-only behavior.
+- Product List/Detail screen tests cover cả hai nơi kích hoạt publish action,
+  checklist blocker, xác nhận unpublish, dirty-form guard, cập nhật badge tại
+  chỗ và read-only behavior.
 - Status: `CONFIRMED_TEST_COVERAGE`.
 
 ### Needs Verification
@@ -770,7 +779,7 @@ Status: `OWNER_CONFIRMED_2026-07-28`. Canonical rules:
 | Entity | Transition | Positive Test | Negative Test | Status |
 |---|---|---|---|---|
 | Product | All `PublishStatus` allowed transitions | Needed | Needed | `MISSING_TEST_COVERAGE` |
-| Product | Forbidden transitions such as `PUBLISHED -> DRAFT`, `TRASH -> PUBLISHED` | Needed | Needed | `MISSING_TEST_COVERAGE` |
+| Product | Forbidden transitions such as `TRASH -> PUBLISHED` or any active state -> legacy reserved status | Needed | Needed | `MISSING_TEST_COVERAGE` |
 | Category | Hide category without visible children | Needed | Needed for visible child conflict | `MISSING_TEST_COVERAGE` |
 | Brand | Visible true/false public filtering | Needed | Needed | `MISSING_TEST_COVERAGE` |
 | Order | Allowed order transitions map, including `PROCESSING -> COMPLETED` | `Phase1HAdminOrderApiTest` covers allowed transitions and `cancelledAt`/audit side effects | The same test covers `CANCELLED`/`COMPLETED` terminal guards | `CONFIRMED_TEST_COVERAGE` |
